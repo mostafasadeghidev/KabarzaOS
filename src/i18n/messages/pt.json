@@ -2097,5 +2097,8 @@
   "دسترسی‌ای که این نقش می‌دهد": "Acesso que este papel concede",
   "مدیرِ تیم — مدیریتِ دفترهای اساین‌شده": "Gerente de equipa — gere os escritórios atribuídos",
   "مدیرِ حسابداری — همهٔ حساب‌ها": "Gestor de contabilidade — todas as contas",
-  "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Gestor de projeto — controlo total dos projetos onde está atribuído"
+  "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Gestor de projeto — controlo total dos projetos onde está atribuído",
+  "هنوز حسابی ساخته نشده. از مدیرِ مالی بخواهید یکی بسازد.": "Ainda não existe nenhuma conta. Peça a um gestor financeiro para criar uma.",
+  "برای شروع یک حساب بسازید؛ هر ردیفِ دفترکل به یک حساب می‌چسبد.": "Crie uma conta para começar; cada linha do livro-razão pertence a uma.",
+  "مشخصاتِ شرکت": "Dados da empresa"
 }

@@ -49,7 +49,6 @@ const NAV: Array<NavItem & {
   { href: '/reports', label: t("گزارش‌ها"), icon: 'reports', group: 'data', section: 'reports' },
   { href: '/activity', label: t("فعالیت"), icon: 'activity', group: 'data', permission: 'activity.view' },
   // ⚠️ تنظیمات بخشِ دیدنی ندارد؛ با مجوزِ مدیریتش گارد می‌شود.
-  { href: '/settings', label: t("تنظیمات"), icon: 'settings', group: 'data', permission: 'settings.manage' },
 ];
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -100,8 +99,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    * ⚠️ اگر دفتری نداشته باشد، منو اصلاً ساخته نمی‌شود؛ منویی که همیشه خالی
    * است فقط سردرگم‌کننده است.
    */
-  // پروفایل برای همه — مجوزِ خاصی ندارد.
-  items.push({ href: '/profile', label: t("پروفایلِ من"), icon: 'profile', group: 'data' });
+  // ⚠️ پروفایل و تنظیمات عمداً در سایدبار نیستند: جای متعارفشان منوی
+  // حسابِ کاربر در پایینِ سایدبار است، و سایدبار برای کارِ روزمره می‌ماند.
 
   if (await hasTeamScope(actor)) {
     items.push({ href: '/team', label: t("تیمِ من"), icon: 'team', group: 'operations' });
@@ -128,6 +127,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         pulse={{ enabled: system.pulseEnabled, interval: system.pulseInterval }}
         unreadMessages={unreadMessages}
         onLogout={logout}
+        canManageSettings={can(actor, 'settings.manage')}
         onLocaleChange={setLocale}
       />
       <SidebarInset>

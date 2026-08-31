@@ -7,6 +7,8 @@ const tagSelectClass =
   + ' focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 import { CatalogSection } from './catalog-section';
+import { CompanySection } from './company-section';
+import { Separator } from '@/components/ui/separator';
 import { ColorPicker } from '@/components/ui/color-picker';
 import {
   groupChoices, groupFieldLabel, supportsClosed, supportsGrant, supportsReview,
@@ -37,6 +39,10 @@ export interface SettingsData {
   /** برای پنهان‌کردنِ تب‌های مالکانه از دیدِ حسابدار. */
   isOwner: boolean;
   telegram: TelegramSettingsView;
+  company: {
+    name: string; address: string; taxId: string; email: string; phone: string;
+    website: string; bank: string; invoiceFooter: string; logoFileId: number | null;
+  };
   staff: StaffRow[];
   reportConfig: ReportConfig;
   systemConfig: SystemConfig;
@@ -87,8 +93,8 @@ const TABS = [
    * را باز می‌کرد و `manage_options` این‌ها را. حسابدار نباید حتی ببیندشان؛
    * دکمه‌ای که همیشه «فقط مدیرِ کل» جواب بدهد فقط اعتماد را می‌خورد.
    */
+  { key: 'company', label: 'مشخصاتِ شرکت', ownerOnly: true },
   { key: 'staff', label: 'دسترسی همکاران', ownerOnly: true },
-  { key: 'report', label: 'گزارش روزانه', ownerOnly: true },
   { key: 'system', label: 'سامانه', ownerOnly: false },
   { key: 'fiscal', label: 'دورهٔ مالی', ownerOnly: true },
 ] as const;
@@ -459,6 +465,14 @@ export function SettingsView({ data }: { data: SettingsData }) {
                   ))}
                 </select>
               </div>
+              <label className="flex items-center gap-2 text-sm sm:col-span-3">
+                <input
+                  type="checkbox" name="isActive"
+                  defaultChecked={editing ? editing.isActive : true}
+                  className="size-4 accent-primary"
+                />
+                {tr("فعال")}
+              </label>
             </div>
           )}
         />
@@ -566,9 +580,25 @@ export function SettingsView({ data }: { data: SettingsData }) {
 
       {tab === 'staff' && <StaffSection staff={data.staff} />}
 
-      {tab === 'report' && <ReportSection config={data.reportConfig} />}
 
-      {tab === 'system' && <SystemSection config={data.systemConfig} health={data.health} isOwner={data.isOwner} telegram={data.telegram} />}
+      {tab === 'company' && data.company && <CompanySection company={data.company} />}
+
+      {/*
+        ⚠️ گزارشِ روزانه زیرِ «سامانه» است، نه تبِ جدا: هر دو تنظیمِ خودِ
+        سامانه‌اند و هر دو به زمان‌بند وابسته‌اند — جداکردنشان یعنی کاربر
+        برای یک کار در دو تب می‌گشت.
+      */}
+      {tab === 'system' && (
+        <div className="grid gap-6">
+          <SystemSection config={data.systemConfig} health={data.health} isOwner={data.isOwner} telegram={data.telegram} />
+          {data.isOwner && (
+            <>
+              <Separator />
+              <ReportSection config={data.reportConfig} />
+            </>
+          )}
+        </div>
+      )}
 
       {tab === 'fiscal' && <FiscalSection lockDate={data.lockDate} today={data.today} />}
     </div>

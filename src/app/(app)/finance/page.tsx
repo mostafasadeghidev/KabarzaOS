@@ -8,6 +8,8 @@ import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FinancePage } from './finance-page';
 import { t } from '@/i18n/server';
+import { AccountsView } from './accounts-view';
+import { can } from '@/domain/access/permissions';
 
 /** حسابداری — دفترکلِ حساب‌ها. */
 export default async function Finance({
@@ -35,12 +37,44 @@ export default async function Finance({
     throw error;
   }
 
+  /**
+   * ⚠️ بدونِ حساب، دفترکل قابلِ ساختن نیست (هر ردیف به یک حساب می‌چسبد)، پس
+   * صفحهٔ عادی رندر نمی‌شود. ولی پیامِ خالی به‌تنهایی **بن‌بست** بود: تبِ
+   * «حساب‌های بانکی» — تنها جایی که می‌شود حساب ساخت — هم با همان پیام
+   * جایگزین می‌شد، و کاربر می‌خواند «اول حساب بساز» بی‌آنکه راهی به آن
+   * داشته باشد. حالا خودِ فرمِ ساخت اینجاست.
+   */
   if (accounts.length === 0) {
+    const canManage = can(actor, 'finance.manage');
+    if (!canManage) {
+      return (
+        <main className="p-6">
+          <EmptyState
+            title={t("حسابی تعریف نشده")}
+            description={t("هنوز حسابی ساخته نشده. از مدیرِ مالی بخواهید یکی بسازد.")}
+          />
+        </main>
+      );
+    }
+    const firstOptions = await getAccountFormOptions(actor);
     return (
-      <main className="p-6">
-        <EmptyState
-          title={t("حسابی تعریف نشده")}
-          description={t("ابتدا یک حساب بانکی در بخش «حساب‌های بانکی» تعریف کنید.")}
+      <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+        <header>
+          <h1 className="text-xl font-semibold">{t("مالی")}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {t("برای شروع یک حساب بسازید؛ هر ردیفِ دفترکل به یک حساب می‌چسبد.")}
+          </p>
+        </header>
+        <AccountsView
+          accounts={[]}
+          options={{
+            currencies: firstOptions.currencies,
+            offices: firstOptions.offices,
+            people: firstOptions.people,
+            // Map → Record، همان تبدیلی که مسیرِ عادی هم می‌کند.
+            accountantsByAccount: Object.fromEntries(firstOptions.accountantsByAccount),
+          }}
+          canManage
         />
       </main>
     );

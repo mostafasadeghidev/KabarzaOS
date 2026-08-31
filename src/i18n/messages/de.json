@@ -2097,5 +2097,8 @@
   "دسترسی‌ای که این نقش می‌دهد": "Zugriff, den diese Rolle gewährt",
   "مدیرِ تیم — مدیریتِ دفترهای اساین‌شده": "Teamleiter — verwaltet zugewiesene Büros",
   "مدیرِ حسابداری — همهٔ حساب‌ها": "Buchhaltungsleiter — alle Konten",
-  "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Projektleiter — volle Kontrolle über Projekte, auf denen er markiert ist"
+  "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Projektleiter — volle Kontrolle über Projekte, auf denen er markiert ist",
+  "هنوز حسابی ساخته نشده. از مدیرِ مالی بخواهید یکی بسازد.": "Es gibt noch kein Konto. Bitten Sie einen Finanzmanager, eines anzulegen.",
+  "برای شروع یک حساب بسازید؛ هر ردیفِ دفترکل به یک حساب می‌چسبد.": "Legen Sie zum Start ein Konto an; jede Buchungszeile gehört zu einem.",
+  "مشخصاتِ شرکت": "Firmendaten"
 }

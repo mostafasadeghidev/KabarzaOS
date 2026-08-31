@@ -120,6 +120,8 @@ export async function saveOfficeAction(_prev: SettingsState, formData: FormData)
     name: String(formData.get('name') ?? ''),
     location: String(formData.get('location') ?? ''),
     defaultCurrencyId: num(formData.get('defaultCurrencyId')),
+    // ⚠️ چک‌باکسِ تیک‌نخورده اصلاً فرستاده نمی‌شود؛ نبودش یعنی «غیرفعال».
+    isActive: formData.get('isActive') !== null,
   }), 'دفتر ذخیره نشد.');
 }
 

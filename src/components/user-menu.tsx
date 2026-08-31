@@ -1,6 +1,8 @@
 'use client';
 
-import { ChevronsUpDown, LogOut, Moon, Sun, Monitor, Settings } from 'lucide-react';
+import Link from 'next/link';
+
+import { ChevronsUpDown, LogOut, Moon, Sun, Monitor, Settings, User } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -48,12 +50,15 @@ export function UserMenu({
   userRole,
   locale,
   onLogout,
+  canManageSettings = false,
   onLocaleChange,
 }: {
   userName: string;
   userRole: string;
   locale: Locale;
   onLogout: () => void;
+  /** آیتمِ تنظیمات فقط برای کسی که اجازه دارد. */
+  canManageSettings?: boolean;
   onLocaleChange: (locale: Locale) => void;
 }) {
   const t = useT();
@@ -129,13 +134,25 @@ export function UserMenu({
         <DropdownMenuSeparator />
 
         {/*
-          تنظیمات — تا وقتی صفحه‌اش ساخته نشده غیرفعال است.
-          لینکِ مرده بدتر از دکمهٔ غیرفعال است.
+          پروفایل و تنظیمات هر دو اینجا — جای متعارفشان همین منوی حسابِ
+          کاربر است، و سایدبار از دو آیتمی که به کارِ روزمره ربط ندارند
+          سبک می‌شود.
         */}
-        <DropdownMenuItem disabled>
-          <Settings className="size-4" />
-          <span>{t("تنظیمات")}</span>
+        <DropdownMenuItem asChild>
+          <Link href="/profile">
+            <User className="size-4" />
+            <span>{t("پروفایلِ من")}</span>
+          </Link>
         </DropdownMenuItem>
+
+        {canManageSettings && (
+          <DropdownMenuItem asChild>
+            <Link href="/settings">
+              <Settings className="size-4" />
+              <span>{t("تنظیمات")}</span>
+            </Link>
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuItem onSelect={onLogout} variant="destructive">
           <LogOut className="size-4" />

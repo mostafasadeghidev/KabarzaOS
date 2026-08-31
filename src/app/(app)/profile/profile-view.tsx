@@ -46,7 +46,6 @@ const TABS = [
   { key: 'password', label: 'رمزِ ورود', icon: Lock },
   { key: 'notify', label: 'اعلان‌ها', icon: Bell },
   { key: 'telegram', label: 'تلگرام', icon: Send },
-  { key: 'company', label: 'مشخصات شرکت', icon: Building2 },
 ] as const;
 
 function Notice({ state }: { state: ProfileState }) {
@@ -66,7 +65,7 @@ function Submit({ children }: { children: React.ReactNode }) {
 /** پروفایلِ من — حساب بانکی، ترجیحات، تلگرام، و (برای مالک) مشخصاتِ شرکت. */
 export function ProfileView({ data }: { data: ProfileData }) {
   const tr = useT();
-  const visible = TABS.filter((t) => t.key !== 'company' || data.isOwner);
+  const visible = TABS;
   const [tab, setTab] = useState<string>(visible[0]!.key);
 
   const [tzState, saveTz] = useActionState(saveTimezoneAction, {} as ProfileState);
@@ -307,84 +306,6 @@ export function ProfileView({ data }: { data: ProfileData }) {
         </div>
       )}
 
-      {tab === 'company' && data.isOwner && (
-        <div className="grid max-w-2xl gap-4">
-          {/*
-            لوگو — فرمِ **جدا** از مشخصات، چون آپلود فایل است نه متن و
-            ذخیره‌اش هم مستقل است. ⚠️ فایل از مسیرِ گیت‌شده سِرو می‌شود
-            (D-009)، پس اینجا هم `/api/files/…` است نه لینکِ مستقیم.
-          */}
-          <form
-            action={async (fd) => { setLogoState(await setCompanyLogoAction(fd)); }}
-            className="flex flex-wrap items-center gap-3 rounded-md border p-3"
-          >
-            {data.company.logoFileId ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={`/api/files/${data.company.logoFileId}`}
-                alt={tr('لوگوی شرکت')}
-                className="h-12 w-auto max-w-[10rem] rounded border object-contain"
-              />
-            ) : (
-              <span className="text-xs text-muted-foreground">{tr('لوگویی ثبت نشده')}</span>
-            )}
-            <input
-              type="file" name="logo" accept="image/*"
-              className="text-xs file:me-2 file:rounded-md file:border file:bg-background file:px-2 file:py-1 file:text-xs"
-            />
-            <Button type="submit" size="sm" variant="outline">{tr('بارگذاری لوگو')}</Button>
-            {logoState.error && <span className="text-sm text-destructive">{logoState.error}</span>}
-            {logoState.message && (
-              <span className="text-sm text-muted-foreground">{logoState.message}</span>
-            )}
-          </form>
-
-        <form action={saveCompany} className="grid gap-3">
-          <p className="text-sm text-muted-foreground">
-            {tr("این مشخصات روی فاکتورها چاپ می‌شود.")}
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5">
-              <Label htmlFor="c-name">{tr("نامِ شرکت")}</Label>
-              <Input id="c-name" name="name" defaultValue={data.company.name} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="c-tax">{tr("شناسهٔ مالیاتی")}</Label>
-              <Input id="c-tax" name="taxId" className="num" defaultValue={data.company.taxId} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="c-email">{tr("ایمیل")}</Label>
-              <Input id="c-email" name="email" type="email" defaultValue={data.company.email} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="c-phone">{tr("تلفن")}</Label>
-              <Input id="c-phone" name="phone" className="num" defaultValue={data.company.phone} />
-            </div>
-            <div className="grid gap-1.5 sm:col-span-2">
-              <Label htmlFor="c-web">{tr("وب‌سایت")}</Label>
-              {/* ⚠️ متنِ ساده، نه type=url — اجبارِ https:// آدرس را روی فاکتور شلوغ می‌کند. */}
-              <Input id="c-web" name="website" defaultValue={data.company.website} placeholder="example.com" />
-            </div>
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="c-address">{tr("نشانی")}</Label>
-            <Textarea id="c-address" name="address" rows={2} defaultValue={data.company.address} />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="c-bank">{tr("اطلاعاتِ حسابِ شرکت")}</Label>
-            <Textarea id="c-bank" name="bank" rows={2} defaultValue={data.company.bank} />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="c-footer">{tr("پانویسِ فاکتور")}</Label>
-            <Textarea id="c-footer" name="invoiceFooter" rows={2} defaultValue={data.company.invoiceFooter} />
-          </div>
-          <div className="flex items-center gap-3">
-            <Submit>{tr("ذخیره مشخصات")}</Submit>
-            <Notice state={companyState} />
-          </div>
-        </form>
-        </div>
-      )}
     </div>
   );
 }

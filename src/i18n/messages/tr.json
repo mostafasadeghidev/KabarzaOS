@@ -2097,5 +2097,8 @@
   "دسترسی‌ای که این نقش می‌دهد": "Bu rolün verdiği erişim",
   "مدیرِ تیم — مدیریتِ دفترهای اساین‌شده": "Takım yöneticisi — atanan ofisleri yönetir",
   "مدیرِ حسابداری — همهٔ حساب‌ها": "Muhasebe müdürü — tüm hesaplar",
-  "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Proje yöneticisi — etiketlendiği projelerde tam yetki"
+  "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Proje yöneticisi — etiketlendiği projelerde tam yetki",
+  "هنوز حسابی ساخته نشده. از مدیرِ مالی بخواهید یکی بسازد.": "Henüz hesap yok. Bir finans yöneticisinden oluşturmasını isteyin.",
+  "برای شروع یک حساب بسازید؛ هر ردیفِ دفترکل به یک حساب می‌چسبد.": "Başlamak için bir hesap oluşturun; her defter satırı bir hesaba aittir.",
+  "مشخصاتِ شرکت": "Şirket bilgileri"
 }

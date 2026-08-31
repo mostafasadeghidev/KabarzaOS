@@ -135,7 +135,7 @@ describe('دفتر و طرف‌حساب', () => {
   it('⚠️ دفتر حذف نمی‌شود، غیرفعال می‌شود', async () => {
     // ارجاع‌های قدیمی (ردیفِ دفتر، عضویت) نباید بشکنند.
     const id = await service.saveOffice(admin(), {
-      id: null, name: 'دفتر تست', location: '', defaultCurrencyId: null,
+      id: null, name: 'دفتر تست', location: '', defaultCurrencyId: null, isActive: true,
     });
     await service.deleteOffice(admin(), id);
     const row = (await db.select().from(offices).where(eq(offices.id, id)))[0]!;

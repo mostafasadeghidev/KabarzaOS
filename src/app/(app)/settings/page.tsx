@@ -12,6 +12,7 @@ import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SettingsView } from './settings-view';
 import { t } from '@/i18n/server';
+import { getCompany } from '@/server/people/profile-service';
 
 /**
  * تنظیمات — فهرست‌های پایه.
@@ -24,7 +25,7 @@ export default async function SettingsPage() {
   let data;
   try {
     // فهرستِ همکاران فقط برای مالک است؛ برای بقیه تبِ «دسترسی همکاران» خالی می‌ماند.
-    const [settings, staff, reportConfig, systemConfig, lockDate, tick, telegram] = await Promise.all([
+    const [settings, staff, reportConfig, systemConfig, lockDate, tick, telegram, company] = await Promise.all([
       getSettings(actor),
       listStaff(actor).catch(() => []),
       getReportConfig(),
@@ -33,9 +34,15 @@ export default async function SettingsPage() {
       lastTickAt(),
       // ⚠️ فقط «توکنی هست یا نه» — خودِ توکن هرگز به کلاینت نمی‌رود.
       getTelegramSettings(actor).catch(() => ({ hasToken: false, username: '', fromEnv: false })),
+      // مشخصاتِ شرکت — روی فاکتور و سربرگ می‌نشیند.
+      getCompany(),
     ]);
     data = {
       ...settings, staff, reportConfig, systemConfig, lockDate, telegram,
+      company: company ?? {
+        name: '', address: '', taxId: '', email: '',
+        phone: '', website: '', bank: '', invoiceFooter: '', logoFileId: null,
+      },
       isOwner: actor.roles.includes('owner'),
       health: schedulerHealth(tick, new Date()),
       today: new Date().toISOString().slice(0, 10),

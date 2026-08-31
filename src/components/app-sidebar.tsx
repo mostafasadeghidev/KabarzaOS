@@ -69,6 +69,7 @@ export function AppSidebar({
   pulse,
   unreadMessages,
   onLogout,
+  canManageSettings,
   onLocaleChange,
 }: {
   items: NavItem[];
@@ -80,6 +81,7 @@ export function AppSidebar({
   /** شمارِ اولیهٔ پیامِ خوانده‌نشده از سرور؛ نبض تازه‌اش می‌کند. */
   unreadMessages: number;
   onLogout: () => void;
+  canManageSettings?: boolean;
   onLocaleChange: (locale: Locale) => void;
 }) {
   const t = useT();
@@ -157,6 +159,7 @@ export function AppSidebar({
               userRole={userRole}
               locale={locale}
               onLogout={onLogout}
+              canManageSettings={canManageSettings}
               onLocaleChange={onLocaleChange}
             />
           </SidebarMenuItem>

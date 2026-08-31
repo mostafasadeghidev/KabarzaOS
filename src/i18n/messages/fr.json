@@ -2097,5 +2097,8 @@
   "دسترسی‌ای که این نقش می‌دهد": "Accès accordé par ce rôle",
   "مدیرِ تیم — مدیریتِ دفترهای اساین‌شده": "Manager d’équipe — gère les bureaux assignés",
   "مدیرِ حسابداری — همهٔ حساب‌ها": "Responsable comptable — tous les comptes",
-  "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Chef de projet — contrôle total des projets où il est assigné"
+  "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Chef de projet — contrôle total des projets où il est assigné",
+  "هنوز حسابی ساخته نشده. از مدیرِ مالی بخواهید یکی بسازد.": "Aucun compte n’existe encore. Demandez à un responsable financier d’en créer un.",
+  "برای شروع یک حساب بسازید؛ هر ردیفِ دفترکل به یک حساب می‌چسبد.": "Créez un compte pour commencer ; chaque ligne du grand livre appartient à un compte.",
+  "مشخصاتِ شرکت": "Informations de l’entreprise"
 }

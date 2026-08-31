@@ -261,11 +261,23 @@ export async function deleteTag(actor: Actor, id: number) {
 
 export async function saveOffice(
   actor: Actor,
-  input: { id: number | null; name: string; location: string; defaultCurrencyId: number | null },
+  input: {
+    id: number | null; name: string; location: string;
+    defaultCurrencyId: number | null; isActive: boolean;
+  },
 ) {
   assertSettings(actor);
   const name = assertName(input.name);
-  const values = { name, location: input.location, defaultCurrencyId: input.defaultCurrencyId };
+  /**
+   * ⚠️ `isActive` از فرم می‌آید تا دفترِ غیرفعال دوباره فعال شود. حذفِ
+   * دفتر آن را `false` می‌کند (ارجاع‌های قدیمی نباید بشکنند) و پیش از این
+   * هیچ راهی برای برگرداندن نبود — یعنی حذف عملاً برگشت‌ناپذیر بود.
+   */
+  const values = {
+    name, location: input.location,
+    defaultCurrencyId: input.defaultCurrencyId,
+    isActive: input.isActive,
+  };
 
   if (input.id) {
     await db.update(offices).set({ ...values, updatedAt: new Date() }).where(eq(offices.id, input.id));
