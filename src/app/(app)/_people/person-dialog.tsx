@@ -121,7 +121,7 @@ export function PersonDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? section.editLabel : section.addLabel}</DialogTitle>
+          <DialogTitle>{tr(isEdit ? section.editLabel : section.addLabel)}</DialogTitle>
           <DialogDescription>
             {section.supportsOffices
               ? 'نقش‌ها و دفاترِ عضو، دسترسی و گزارش‌هایش را تعیین می‌کنند.'
@@ -334,7 +334,7 @@ export function PersonDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {tr("انصراف")}
             </Button>
-            <SubmitButton label={isEdit ? 'ذخیرهٔ تغییرات' : section.addLabel} />
+            <SubmitButton label={isEdit ? tr('ذخیرهٔ تغییرات') : tr(section.addLabel)} />
           </DialogFooter>
         </form>
       </DialogContent>

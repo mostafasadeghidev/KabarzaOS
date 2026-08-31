@@ -83,7 +83,7 @@ export function PeopleGrid({
               tab === 'active' ? 'bg-primary/10 font-medium' : 'text-muted-foreground hover:bg-muted'
             }`}
           >
-            {section.role === 'member' ? 'اعضای فعال' : 'فعال'} (<span className="num">{counts.active}</span>)
+            {section.role === 'member' ? t('اعضای فعال') : t('فعال')} (<span className="num">{counts.active}</span>)
           </button>
           <button
             type="button"
@@ -92,7 +92,7 @@ export function PeopleGrid({
               tab === 'former' ? 'bg-primary/10 font-medium' : 'text-muted-foreground hover:bg-muted'
             }`}
           >
-            {section.role === 'member' ? 'اعضای سابق' : 'سابق'} (<span className="num">{counts.former}</span>)
+            {section.role === 'member' ? t('اعضای سابق') : t('سابق')} (<span className="num">{counts.former}</span>)
           </button>
           </>
           )}
@@ -101,7 +101,7 @@ export function PeopleGrid({
         {canManage && (
           <Button size="sm" onClick={openAdd}>
             <Plus className="size-4" />
-            {section.addLabel}
+            {t(section.addLabel)}
           </Button>
         )}
       </div>
@@ -146,7 +146,7 @@ export function PeopleGrid({
 
       {visible.length === 0 ? (
         <EmptyState
-          title={!section.supportsOffboarding || tab === 'active' ? 'کسی پیدا نشد' : 'موردِ سابقی نیست'}
+          title={!section.supportsOffboarding || tab === 'active' ? t('کسی پیدا نشد') : t('موردِ سابقی نیست')}
           description={query || officeIds.length > 0 ? 'فیلترها را بردارید.' : undefined}
         />
       ) : (

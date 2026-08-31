@@ -1,11 +1,21 @@
-Tabbed project dialog (1.8.0)
+Gregorian calendar for Persian, and fix two blind spots in translation
 
-The project form was one long scroll, so reaching "access scope" meant
-passing "price" and "tender" on the way. It is now split the way the
-previous system split it: details, then settings and access.
+Calendar: fa-IR-u-ca-gregory — Gregorian dates with Persian text and
+digits. The system stores and reasons in Gregorian throughout, so a
+Jalali display meant converting between two calendars mentally.
 
-Both panels stay mounted and are only hidden. Unmounting the inactive tab
-would drop its fields from FormData, and saving would silently blank
-them.
+Translation, found by actually running the app in English rather than
+trusting the coverage check:
+
+- Members and Clients rendered wholly in Persian in every language. Both
+  pages were synchronous; layouts and pages render in parallel, so t()
+  ran before the translator was primed and returned the source string.
+  Every other page is fine only because it awaits data first.
+- The extractor never saw table headers (header: '…') or add buttons
+  (addLabel="…"). They arrive as props and never sit inside t(), so the
+  check reported zero missing while they stayed Persian everywhere. Both
+  forms are extracted now and translated at the point they render.
+- Six strings had a translation that was never used because the literal
+  and the key differed by a hamza or a zero-width space.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

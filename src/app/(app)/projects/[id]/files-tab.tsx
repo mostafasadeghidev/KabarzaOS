@@ -45,7 +45,7 @@ function SubmitButton({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? 'در حالِ ارسال…' : children}
+      {pending ? 'در حال ارسال…' : children}
     </Button>
   );
 }

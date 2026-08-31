@@ -26,6 +26,11 @@ import { useT } from '@/i18n/client';
  */
 
 export interface Column<T> {
+  /**
+   * ⚠️ **کلیدِ ترجمه**، نه متنِ نهایی: خودِ جدول ترجمه‌اش می‌کند. اگر
+   * فراخوان `t()` بزند، رشته در زمانِ ساختِ آرایه ترجمه می‌شود — پیش از
+   * آنکه زبانِ کاربر معلوم باشد — و برای همه فارسی می‌ماند.
+   */
   header: string;
   cell: (row: T) => React.ReactNode;
   numeric?: boolean;
@@ -79,7 +84,7 @@ export function CatalogSection<T extends { id: number }>({
           onClick={() => { setEditing(null); setOpen(true); setNotice(null); }}
         >
           <Plus className="size-4" />
-          {addLabel}
+          {tr(addLabel)}
         </Button>
       </div>
 
@@ -90,7 +95,7 @@ export function CatalogSection<T extends { id: number }>({
       <Dialog open={open} onOpenChange={(next) => { setOpen(next); if (!next) setNotice(null); }}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? tr('ویرایش') : addLabel}</DialogTitle>
+            <DialogTitle>{editing ? tr('ویرایش') : tr(addLabel)}</DialogTitle>
           </DialogHeader>
           {/* key: با باز/بستهٔ دیالوگ، مقادیرِ پیش‌فرضِ فرم از نو خوانده شوند. */}
           <form key={editing?.id ?? 'new'} action={formAction} className="grid gap-3">
@@ -113,7 +118,7 @@ export function CatalogSection<T extends { id: number }>({
           <Table>
             <TableHeader>
               <TableRow>
-                {columns.map((c) => <TableHead key={c.header}>{c.header}</TableHead>)}
+                {columns.map((c) => <TableHead key={c.header}>{tr(c.header)}</TableHead>)}
                 <TableHead />
               </TableRow>
             </TableHeader>

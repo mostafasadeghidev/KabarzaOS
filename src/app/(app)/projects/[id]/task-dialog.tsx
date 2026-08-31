@@ -265,7 +265,7 @@ export function TaskDialog({
                 <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} required />
                 {noteState.error && <p className="text-xs text-destructive">{noteState.error}</p>}
                 <div className="flex justify-end">
-                  <SubmitButton label={t("ارسال")} busy="در حالِ ارسال…" />
+                  <SubmitButton label={t("ارسال")} busy="در حال ارسال…" />
                 </div>
               </form>
             </section>

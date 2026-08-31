@@ -15,7 +15,13 @@ import { join } from 'node:path';
 const PERSIAN = /[؀-ۿ]/;
 
 /** کلیدهایی که مقدارشان بعداً پویا ترجمه می‌شود، مثلِ `t(card.label)`. */
-const LABEL_KEYS = new Set(['label', 'title', 'description', 'hint', 'empty']);
+// ⚠️ `header` و `addLabel` بعداً اضافه شدند: سرستون‌های جدول و دکمهٔ افزودن
+// از راهِ پراپ پاس می‌شوند و هرگز داخلِ `t()` نمی‌آیند، پس استخراج‌گر
+// نمی‌دیدشان و «صفر کلیدِ کم» گزارش می‌داد در حالی که در همهٔ زبان‌ها
+// فارسی می‌ماندند.
+const LABEL_KEYS = new Set([
+  'label', 'title', 'description', 'hint', 'empty', 'header', 'addLabel',
+]);
 
 export function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
@@ -62,6 +68,10 @@ export function usedKeys(root = 'src') {
   // رجکسِ فقط-دوتایی بی‌صدا از شمارش می‌افتادند.
   const call = /\b(?:t|tr)\(\s*(['"])((?:(?!\1)[^\\]|\\.)*)\1\s*[),]/g;
   const label = /\b([a-zA-Z]+)\s*:\s*(['"])([^'"\n]*[؀-ۿ][^'"\n]*)\2/g;
+  // JSX form of the same props: addLabel="…" uses = not :. Without this
+  // the "Add …" button of every catalogue stayed Persian in all locales,
+  // and the coverage check reported zero missing because it never saw them.
+  const attr = /\b([a-zA-Z]+)\s*=\s*"([^"\n]*[\u0600-\u06FF][^"\n]*)"/g;
   const map = /\bconst\s+([A-Z][A-Z0-9_]*_(?:LABELS?|NAMES?|TITLES?))\b[^=]*=\s*\{/g;
 
   for (const file of walk(root)) {
@@ -78,6 +88,10 @@ export function usedKeys(root = 'src') {
     while ((m = label.exec(src))) {
       if (!LABEL_KEYS.has(m[1]) || !PERSIAN.test(m[3])) continue;
       keys.add(m[3]);
+    }
+    while ((m = attr.exec(src))) {
+      if (!LABEL_KEYS.has(m[1]) || !PERSIAN.test(m[2])) continue;
+      keys.add(m[2]);
     }
     while ((m = map.exec(src))) {
       // ⚠️ نامِ زبان ترجمه نمی‌شود: «فارسی» در رابطِ انگلیسی هم «فارسی»

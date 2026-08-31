@@ -68,7 +68,7 @@ export async function disconnectTelegramAction(): Promise<ProfileState> {
     return { error: message(error) };
   }
   revalidatePath('/profile');
-  return { message: 'اتصالِ تلگرام قطع شد.' };
+  return { message: 'اتصال تلگرام قطع شد.' };
 }
 
 export async function saveCompanyAction(_prev: ProfileState, formData: FormData): Promise<ProfileState> {

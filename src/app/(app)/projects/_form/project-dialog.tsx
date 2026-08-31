@@ -104,7 +104,7 @@ function NativeSelect({
 function SubmitButton({ isEdit }: { isEdit: boolean }) {
   const { pending } = useFormStatus();
   const busy = isEdit ? 'در حالِ ذخیره…' : 'در حالِ ساخت…';
-  const idle = isEdit ? 'ذخیرهٔ تغییرات' : 'ساختِ پروژه';
+  const idle = isEdit ? 'ذخیرهٔ تغییرات' : 'ساخت پروژه';
   return <Button type="submit" disabled={pending}>{pending ? busy : idle}</Button>;
 }
 

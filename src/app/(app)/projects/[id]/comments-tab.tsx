@@ -34,7 +34,7 @@ function SendButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? 'در حالِ ارسال…' : 'ارسال'}
+      {pending ? 'در حال ارسال…' : 'ارسال'}
     </Button>
   );
 }

@@ -42,10 +42,10 @@ export async function PeopleSectionPage({ section }: { section: SectionConfig })
   return (
     <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
       <header>
-        <h1 className="text-xl font-semibold">{section.title}</h1>
+        <h1 className="text-xl font-semibold">{t(section.title)}</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
           <span className="num">{activeCount}</span>{' '}
-          {section.role === 'member' ? 'عضو فعال' : 'کارفرما'}
+          {section.role === 'member' ? t('عضوِ فعال') : t('کارفرما')}
         </p>
       </header>
 

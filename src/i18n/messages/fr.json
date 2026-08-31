@@ -2103,5 +2103,14 @@
   "مشخصاتِ شرکت": "Informations de l’entreprise",
   "نامِ کاربری (اختیاری)": "Nom d’utilisateur (facultatif)",
   "با ایمیل هم می‌تواند وارد شود؛ این فقط راهِ دوم است.": "Il peut aussi se connecter avec son e-mail ; ceci n’est qu’une seconde voie.",
-  "تنظیمات و دسترسی": "Paramètres et accès"
+  "تنظیمات و دسترسی": "Paramètres et accès",
+  "به": "Vers",
+  "تمام‌شده": "Terminé",
+  "افزودن نرخ": "Ajouter un taux",
+  "رنگِ دلخواه": "Couleur personnalisée",
+  "کدِ رنگ": "Code couleur",
+  "اعضای فعال": "Membres actifs",
+  "اعضای سابق": "Anciens membres",
+  "کسی پیدا نشد": "Personne trouvée",
+  "موردِ سابقی نیست": "Aucune entrée antérieure"
 }

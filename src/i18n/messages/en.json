@@ -2103,5 +2103,14 @@
   "مشخصاتِ شرکت": "Company details",
   "نامِ کاربری (اختیاری)": "Username (optional)",
   "با ایمیل هم می‌تواند وارد شود؛ این فقط راهِ دوم است.": "They can also sign in with their email; this is just a second way.",
-  "تنظیمات و دسترسی": "Settings and access"
+  "تنظیمات و دسترسی": "Settings and access",
+  "به": "To",
+  "تمام‌شده": "Done",
+  "افزودن نرخ": "Add rate",
+  "رنگِ دلخواه": "Custom colour",
+  "کدِ رنگ": "Colour code",
+  "اعضای فعال": "Active members",
+  "اعضای سابق": "Former members",
+  "کسی پیدا نشد": "Nobody found",
+  "موردِ سابقی نیست": "No former entries"
 }

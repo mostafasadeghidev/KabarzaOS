@@ -37,7 +37,7 @@ function timeLabel(date: Date): string {
 function trendLine(delta: number, unit: string): string {
   if (delta > 0) return t('{n} {unit} بیشتر از هفتهٔ قبل', { n: delta, unit });
   if (delta < 0) return t('{n} {unit} کمتر از هفتهٔ قبل', { n: Math.abs(delta), unit });
-  return 'بدونِ تغییر نسبت به هفتهٔ قبل';
+  return t('بدون تغییر نسبت به هفتهٔ قبل');
 }
 
 export default async function DashboardPage() {

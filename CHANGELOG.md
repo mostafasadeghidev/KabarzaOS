@@ -2,6 +2,34 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.9.0]
+
+### Changed
+
+- **The Persian locale now uses the Gregorian calendar.** The BCP-47 tag
+  is `fa-IR-u-ca-gregory`: Gregorian dates with Persian text and digits.
+  The whole system stores and reasons in Gregorian dates — deadlines,
+  fiscal periods, meetings — so showing Jalali beside them meant
+  converting between two calendars in your head.
+
+### Fixed
+
+- **Members and Clients rendered entirely in Persian** whatever the
+  chosen language. Both pages were synchronous, and layouts and pages
+  render in parallel in the App Router — so `t()` ran before the
+  translator container was primed and always returned the source string.
+  Every other page happens to be fine because it awaits data first.
+- **The coverage check was blind to two whole classes of string.** Table
+  headers (`header: '…'`) and add buttons (`addLabel="…"`) reach the
+  component as props and never appear inside `t()`, so the extractor never
+  saw them and reported zero missing while they stayed Persian in all nine
+  languages. Both forms are now extracted and translated where they render.
+- Six strings whose translation existed but was never used, because the
+  literal in the code and the key in the message file differed by a
+  hamza or a zero-width space.
+
+---
+
 ## [1.8.0]
 
 Review pass over settings, people and projects.
