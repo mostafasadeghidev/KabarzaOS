@@ -1791,7 +1791,7 @@
   "موردی ثبت نشده.": "Hiçbir öğe kaydedilmedi.",
   "موردی در انتظار بررسی نیست.": "İnceleme bekleyen bir şey yok.",
   "موردی در انتظارِ بررسی نیست.": "İnceleme bekleyen bir şey yok.",
-  "موردی نیست": "Hiçbir şey yok",
+  "موردی نیست": "Burada bir şey yok",
   "موردی نیست.": "Hiçbir şey yok.",
   "موردی یافت نشد.": "Hiçbir sonuç bulunamadı.",
   "موضوع جلسه": "Toplantı konusu",
@@ -2112,5 +2112,12 @@
   "اعضای فعال": "Aktif üyeler",
   "اعضای سابق": "Eski üyeler",
   "کسی پیدا نشد": "Kimse bulunamadı",
-  "موردِ سابقی نیست": "Eski kayıt yok"
+  "موردِ سابقی نیست": "Eski kayıt yok",
+  "انتخابِ نقش‌ها…": "Rolleri seç…",
+  "عضوِ این دفاتر": "Bu ofislerin üyesi",
+  "انتخابِ دفاتر…": "Ofisleri seç…",
+  "مدیرِ این دفاتر": "Bu ofisleri yönetir",
+  "مدیریت جداست از عضویت — می‌تواند دفتری را بگرداند بی‌آنکه عضوش باشد.": "Yönetmek üyelikten ayrıdır — bir ofisi üyesi olmadan da yönetebilir.",
+  "این کاربر با همان نام و ایمیلِ فعلی‌اش به این بخش اضافه می‌شود.": "Bu kullanıcı mevcut adı ve e-postasıyla eklenir.",
+  "یک کاربرِ ثبت‌شده را انتخاب کنید، یا فیلدهای زیر را برای ساختِ کاربرِ نو پر کنید.": "Zaten hesabı olan birini seç ya da yeni bir hesap için aşağıdaki alanları doldur."
 }

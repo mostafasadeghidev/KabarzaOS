@@ -1791,7 +1791,7 @@
   "موردی ثبت نشده.": "No entries.",
   "موردی در انتظار بررسی نیست.": "Nothing awaiting review.",
   "موردی در انتظارِ بررسی نیست.": "Nothing is awaiting review.",
-  "موردی نیست": "None",
+  "موردی نیست": "Nothing here",
   "موردی نیست.": "Nothing here.",
   "موردی یافت نشد.": "Nothing found.",
   "موضوع جلسه": "Meeting topic",
@@ -2112,5 +2112,12 @@
   "اعضای فعال": "Active members",
   "اعضای سابق": "Former members",
   "کسی پیدا نشد": "Nobody found",
-  "موردِ سابقی نیست": "No former entries"
+  "موردِ سابقی نیست": "No former entries",
+  "انتخابِ نقش‌ها…": "Select roles…",
+  "عضوِ این دفاتر": "Member of these offices",
+  "انتخابِ دفاتر…": "Select offices…",
+  "مدیرِ این دفاتر": "Manages these offices",
+  "مدیریت جداست از عضویت — می‌تواند دفتری را بگرداند بی‌آنکه عضوش باشد.": "Managing is separate from membership — they can run an office without belonging to it.",
+  "این کاربر با همان نام و ایمیلِ فعلی‌اش به این بخش اضافه می‌شود.": "This user joins this section with their current name and e-mail.",
+  "یک کاربرِ ثبت‌شده را انتخاب کنید، یا فیلدهای زیر را برای ساختِ کاربرِ نو پر کنید.": "Pick someone who already has an account, or fill in the fields below to create a new one."
 }

@@ -1791,7 +1791,7 @@
   "موردی ثبت نشده.": "Aucun élément enregistré.",
   "موردی در انتظار بررسی نیست.": "Rien en attente d’examen.",
   "موردی در انتظارِ بررسی نیست.": "Rien n’est en attente de revue.",
-  "موردی نیست": "Rien",
+  "موردی نیست": "Rien ici",
   "موردی نیست.": "Rien.",
   "موردی یافت نشد.": "Aucun résultat trouvé.",
   "موضوع جلسه": "Sujet de la réunion",
@@ -2112,5 +2112,12 @@
   "اعضای فعال": "Membres actifs",
   "اعضای سابق": "Anciens membres",
   "کسی پیدا نشد": "Personne trouvée",
-  "موردِ سابقی نیست": "Aucune entrée antérieure"
+  "موردِ سابقی نیست": "Aucune entrée antérieure",
+  "انتخابِ نقش‌ها…": "Choisir des rôles…",
+  "عضوِ این دفاتر": "Membre de ces bureaux",
+  "انتخابِ دفاتر…": "Choisir des bureaux…",
+  "مدیرِ این دفاتر": "Gère ces bureaux",
+  "مدیریت جداست از عضویت — می‌تواند دفتری را بگرداند بی‌آنکه عضوش باشد.": "Gérer est distinct d’être membre — on peut diriger un bureau sans en faire partie.",
+  "این کاربر با همان نام و ایمیلِ فعلی‌اش به این بخش اضافه می‌شود.": "Cet utilisateur rejoint cette section avec son nom et son e-mail actuels.",
+  "یک کاربرِ ثبت‌شده را انتخاب کنید، یا فیلدهای زیر را برای ساختِ کاربرِ نو پر کنید.": "Choisissez une personne ayant déjà un compte, ou remplissez les champs ci-dessous pour en créer un."
 }

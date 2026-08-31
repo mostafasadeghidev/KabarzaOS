@@ -9,6 +9,7 @@ import { Thumb } from '@/components/thumb';
 import type { PersonView, SectionConfig } from './person-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
 import {
@@ -160,8 +161,8 @@ export function PersonDialog({
               {picked && <input type="hidden" name="existingUserId" value={picked.id} />}
               <p className="text-xs text-muted-foreground">
                 {picked
-                  ? 'این کاربر با همان نام و ایمیلِ فعلی‌اش به این بخش اضافه می‌شود.'
-                  : 'یک کاربرِ ثبت‌شده را انتخاب کنید، یا فیلدهای زیر را برای ساختِ کاربرِ نو پر کنید.'}
+                  ? tr('این کاربر با همان نام و ایمیلِ فعلی‌اش به این بخش اضافه می‌شود.')
+                  : tr('یک کاربرِ ثبت‌شده را انتخاب کنید، یا فیلدهای زیر را برای ساختِ کاربرِ نو پر کنید.')}
               </p>
             </div>
           )}
@@ -264,62 +265,43 @@ export function PersonDialog({
           )}
 
           {section.supportsTags && (
-          <fieldset className="grid gap-1.5">
-            <legend className="text-sm font-medium">{tr("نقش‌ها")}</legend>
-            <div className="flex flex-wrap gap-3">
-              {options.roleTags.map((t) => (
-                <label key={t.id} className="flex items-center gap-1.5 text-sm">
-                  <input
-                    type="checkbox"
-                    name="tagIds"
-                    value={t.id}
-                    defaultChecked={tagIds.has(t.id)}
-                    className="size-4 accent-primary"
-                  />
-                  {t.name}
-                </label>
-              ))}
-              {options.roleTags.length === 0 && (
-                <p className="text-xs text-muted-foreground">{tr("هنوز نقشی تعریف نشده.")}</p>
-              )}
-            </div>
+          <fieldset className="grid gap-1.5 rounded-md border border-dashed p-3">
+            <legend className="px-1 text-sm font-medium">{tr("نقش‌ها")}</legend>
+            <MultiSelect
+              name="tagIds"
+              options={options.roleTags.map((t) => ({ id: t.id, label: t.name }))}
+              defaultSelected={[...tagIds]}
+              placeholder={tr("انتخابِ نقش‌ها…")}
+              emptyText={tr("هنوز نقشی تعریف نشده.")}
+            />
           </fieldset>
           )}
 
           {section.supportsOffices && (
-          <fieldset className="grid gap-1.5">
-            <legend className="text-sm font-medium">{tr("دفاتر")}</legend>
-            <p className="text-xs text-muted-foreground">
-              {tr("ستارهٔ دوم یعنی این عضو آن دفتر را **مدیریت** می‌کند، نه فقط عضوش است.")}
-            </p>
-            <div className="grid gap-1">
-              {options.offices.map((o) => (
-                <div key={o.id} className="flex items-center gap-4 text-sm">
-                  <label className="flex items-center gap-1.5">
-                    <input
-                      type="checkbox"
-                      name="officeIds"
-                      value={o.id}
-                      defaultChecked={officeIds.has(o.id)}
-                      className="size-4 accent-primary"
-                    />
-                    {o.name}
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      name="managedOfficeIds"
-                      value={o.id}
-                      defaultChecked={managedIds.has(o.id)}
-                      className="size-3.5 accent-primary"
-                    />
-                    {tr("مدیرِ دفتر")}
-                  </label>
-                </div>
-              ))}
-              {options.offices.length === 0 && (
-                <p className="text-xs text-muted-foreground">{tr("هنوز دفتری تعریف نشده.")}</p>
-              )}
+          <fieldset className="grid gap-3 rounded-md border border-dashed p-3">
+            <legend className="px-1 text-sm font-medium">{tr("دفاتر")}</legend>
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">{tr("عضوِ این دفاتر")}</Label>
+              <MultiSelect
+                name="officeIds"
+                options={options.offices.map((o) => ({ id: o.id, label: o.name }))}
+                defaultSelected={[...officeIds]}
+                placeholder={tr("انتخابِ دفاتر…")}
+                emptyText={tr("هنوز دفتری تعریف نشده.")}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">{tr("مدیرِ این دفاتر")}</Label>
+              <MultiSelect
+                name="managedOfficeIds"
+                options={options.offices.map((o) => ({ id: o.id, label: o.name }))}
+                defaultSelected={[...managedIds]}
+                placeholder={tr("هیچ‌کدام")}
+                emptyText={tr("هنوز دفتری تعریف نشده.")}
+              />
+              <p className="text-xs text-muted-foreground">
+                {tr("مدیریت جداست از عضویت — می‌تواند دفتری را بگرداند بی‌آنکه عضوش باشد.")}
+              </p>
             </div>
           </fieldset>
           )}

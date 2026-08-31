@@ -1,28 +1,16 @@
-Every page primes its own translations (1.9.1)
+Dialogs keep their contents, and roles/offices are multi-selects
 
-Reported as: switch language, some pages are English, navigate away and
-back and they are Persian again.
-
-Root cause is not caching. On a client-side navigation Next re-renders
-only the changed page segment and reuses the layout from the cached tree.
-primeTranslations() lived only in the root layout, so it never ran for
-those requests and t() returned the source Persian string. A hard load
-was correct; navigating there was not — which is what made it look like
-a cache problem.
-
-All nineteen server pages prime translations themselves now. cache()
-keeps it to one call per request.
-
-Two supporting changes found while reproducing it:
-
-- Sidebar links no longer prefetch. Every page is per-user — language,
-  permissions, visible scope — so a prefetched copy is a copy of
-  somebody's state at some earlier moment.
-- Changing the language reloads the page. The router cache holds RSC
-  payloads for routes already visited and neither revalidatePath nor
-  router.refresh() clears them all. staleTimes cannot fix this either:
-  Next rejects static below 30s and invalidates the whole block.
-
-Also translates the theme label, which had never passed through t().
+- Clicking outside a dialog (or pressing Escape) discarded a half-filled
+  form without warning. On "add project", with dozens of fields, that
+  meant starting over. Dismissal is explicit now — the ✕ or Cancel — and
+  `dismissable` opts back in for display-only dialogs.
+- Roles and offices were open rows of checkboxes that grew the form by
+  several lines and buried the selected ones among the unselected. They
+  are fields now: chips for what is chosen, a list on click.
+- Office membership and office management are separate fields. They were
+  two checkboxes on one row, which read as one setting with a modifier
+  rather than two independent facts.
+- Sections are separated by a dashed frame, matching the existing-user
+  block.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
