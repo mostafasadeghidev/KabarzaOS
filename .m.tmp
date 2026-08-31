@@ -1,19 +1,11 @@
-Member creation: username, password policy, and no secret in the audit log
+Tabbed project dialog (1.8.0)
 
-Three defects in createPerson, all found by reading it against the
-previous system's equivalent:
+The project form was one long scroll, so reaching "access scope" meant
+passing "price" and "tender" on the way. It is now split the way the
+previous system split it: details, then settings and access.
 
-- The plaintext password was spread into the audit trail. It is now
-  omitted and only `hasPassword` is recorded. Audit rows are widely
-  readable and nobody expects a secret in one.
-- No password policy at creation, while changing a password enforced one.
-  A password rejected by the change form could be planted at creation.
-- Email uniqueness compared case-sensitively while the database index is
-  case-insensitive, so "A@x.com" passed the guard and then hit a raw
-  Postgres error instead of a readable message.
-
-Also adds an optional username at creation, matching the login form which
-already accepted either identifier, validated by the same rule the setup
-wizard uses.
+Both panels stay mounted and are only hidden. Unmounting the inactive tab
+would drop its fields from FormData, and saving would silently blank
+them.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

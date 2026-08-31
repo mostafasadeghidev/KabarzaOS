@@ -2,6 +2,47 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.8.0]
+
+Review pass over settings, people and projects.
+
+### Fixed
+
+- **Finance was a dead end on a fresh install.** With no accounts the page
+  showed "create a bank account first" while replacing the very tab where
+  accounts are created. You now land on the create form.
+- **The plaintext password of a new member went into the audit log.** Only
+  `hasPassword` is recorded now. Audit rows are widely readable and nobody
+  expects a secret in one.
+- **No password policy when creating a member**, while changing a password
+  enforced one — a password the change form rejected could be planted at
+  creation.
+- **Email uniqueness compared case-sensitively** while the database index
+  does not, so `A@x.com` passed the check and then hit a raw Postgres
+  error instead of a readable message.
+- **Deleting an office was permanent in practice.** It sets `isActive`
+  false so old references survive, but no form field could set it back.
+
+### Changed
+
+- **Company details moved from Profile to Settings.** Profile is about the
+  user; company data belongs to the organisation.
+- **Profile and Settings moved into the account menu** at the bottom of
+  the sidebar. The Settings entry there had been disabled with a comment
+  saying its page did not exist yet; it does.
+- **Daily report is a section under System**, not its own tab — both are
+  system settings and both depend on the scheduler.
+- **The project dialog is tabbed** (details / settings and access) instead
+  of one long scroll. Both panels stay mounted, so hidden fields still
+  submit.
+
+### Added
+
+- **Optional username when creating a member.** The login form already
+  accepted either identifier; there was no way to set the second one.
+
+---
+
 ## [1.7.0]
 
 ### Added

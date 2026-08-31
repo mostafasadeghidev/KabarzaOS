@@ -126,6 +126,7 @@ export function ProjectDialog({
   const tr = useT();
   const isEdit = project !== undefined;
   const [open, setOpen] = useState(false);
+  const [formTab, setFormTab] = useState<'basics' | 'more'>('basics');
   const [state, formAction] = useActionState<FormState, FormData>(
     isEdit ? updateProjectAction : createProjectAction,
     {},
@@ -195,6 +196,37 @@ export function ProjectDialog({
               {tr("تغییرات ذخیره شد.")}
             </p>
           )}
+          {/*
+            ⚠️ تب‌بندی، نه یک فرمِ بلندِ اسکرولی: پروژه ده‌ها فیلد دارد و
+            پشتِ‌سرِ هم چیدنشان یعنی کاربر برای دیدنِ «دامنهٔ دسترسی» باید
+            از کنارِ «مبلغ» و «مناقصه» رد شود. همان تقسیم‌بندیِ نسخهٔ
+            قبلی: اطلاعاتِ پایه، و بقیه.
+
+            ⚠️ هر دو پنل همیشه در DOM اند و فقط پنهان می‌شوند — با unmount
+            کردنِ تبِ غیرفعال، فیلدهایش از FormData بیرون می‌افتادند و
+            ذخیره بی‌صدا مقادیر را پاک می‌کرد.
+          */}
+          <div className="flex gap-1 border-b">
+            {([
+              ['basics', tr('اطلاعات')],
+              ['more', tr('تنظیمات و دسترسی')],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFormTab(key)}
+                className={`-mb-px border-b-2 px-3 py-1.5 text-sm transition ${
+                  formTab === key
+                    ? 'border-primary font-medium text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className={formTab === 'basics' ? 'grid gap-4' : 'hidden'}>
 
           <Field label={tr("عنوان")} name="title" error={fe.title}>
             {(id) => <Input id={id} name="title" defaultValue={keep('title')} required autoFocus />}
@@ -258,7 +290,9 @@ export function ProjectDialog({
               )}
             </Field>
           </div>
+          </div>
 
+          <div className={formTab === 'more' ? 'grid gap-4' : 'hidden'}>
           <Field
             label={tr("پروژهٔ والد (زیرپروژه؟)")}
             name="parentId"
@@ -391,6 +425,7 @@ export function ProjectDialog({
           {!isEdit && options.bootstrap && (
             <BootstrapSections options={options.bootstrap} isUnitBased={isUnitBased} />
           )}
+          </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
