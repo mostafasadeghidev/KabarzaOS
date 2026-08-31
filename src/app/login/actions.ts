@@ -1,0 +1,74 @@
+'use server';
+
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { or, sql } from 'drizzle-orm';
+import { db } from '@/db/client';
+import { users } from '@/db/schema';
+import { attemptLogin, type AuthUser } from '@/domain/auth/login';
+import { canSignIn, type MemberState } from '@/domain/people/offboarding';
+import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from '@/domain/auth/session';
+import { sessionSecret } from '@/server/auth';
+import { loginSchema, type LoginState } from './schema';
+
+
+const MESSAGES: Record<string, string> = {
+  invalid_credentials: 'ایمیل یا رمز عبور نادرست است.',
+  inactive: 'این حساب غیرفعال است.',
+  rate_limited: 'تلاش‌های ناموفق زیاد بوده؛ کمی بعد دوباره تلاش کنید.',
+};
+
+export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const parsed = loginSchema.safeParse({
+    email: formData.get('email'),
+    password: formData.get('password'),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'ورودی نامعتبر است.' };
+  }
+
+  const lookup = {
+    /**
+     * ⚠️ یک کوئری برای هر دو شناسه، با مقایسهٔ بی‌اعتنا به حروف: ایمیل و
+     * نامِ کاربری هر دو در دیتابیس همان‌طور که کاربر نوشته ذخیره می‌شوند،
+     * ولی «Ali@X.com» باید همان «ali@x.com» را پیدا کند. شاخصِ
+     * `lower(...)` ِ مهاجرتِ 0017 این جست‌وجو را ارزان نگه می‌دارد.
+     */
+    async findByIdentifier(identifier: string): Promise<AuthUser | null> {
+      const rows = await db.select().from(users).where(or(
+        sql`lower(${users.email}) = ${identifier}`,
+        sql`lower(${users.username}) = ${identifier}`,
+      ));
+      const u = rows[0];
+      return u
+        ? {
+            id: u.id,
+            email: u.email,
+            passwordHash: u.passwordHash,
+            /**
+             * ⚠️ R-PEOPLE-03 — «فقط مالی» **می‌تواند وارد شود**؛ فقط
+             * «قطع‌شده» نمی‌تواند. اینجا اول `=== 'active'` بود و عضوِ سابق
+             * را هم بیرون می‌گذاشت — یعنی صفحهٔ تسویه‌اش اصلاً در دسترس
+             * نبود. تصمیم یک‌جاست: `canSignIn`.
+             */
+            isActive: canSignIn(u.memberState as MemberState, u.deletedAt !== null),
+            deletedAt: u.deletedAt,
+          }
+        : null;
+    },
+  };
+
+  const result = await attemptLogin(lookup, parsed.data.email, parsed.data.password);
+  if (!result.ok) {
+    return { error: MESSAGES[result.reason] ?? MESSAGES['invalid_credentials']! };
+  }
+
+  const token = await createSessionToken({ userId: result.userId }, sessionSecret());
+  (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions());
+  redirect('/');
+}
+
+export async function logout(): Promise<void> {
+  (await cookies()).delete(SESSION_COOKIE);
+  redirect('/login');
+}

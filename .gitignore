@@ -1,0 +1,42 @@
+# وابستگی‌ها و خروجیِ ساخت
+node_modules/
+.next/
+out/
+build/
+
+# ⚠️ رازها هرگز کامیت نمی‌شوند. فقط .env.example — که مقادیرش محلی‌اند —
+# در مخزن است. هر فایلِ .env ِ دیگر بیرون می‌ماند.
+# ⚠️ فهرستِ سفید، نه سیاه: هر .env ِ تازه‌ای که بعداً ساخته شود (.env.prod،
+# .env.staging، …) خودبه‌خود بیرون می‌ماند. الگوی قبلی نام‌به‌نام بود و
+# .env.prod را نمی‌گرفت — یعنی یک راز یک قدم تا کامیت‌شدن فاصله داشت.
+.env
+.env.*
+!.env.example
+
+# کشِ ابزارها
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+.turbo/
+coverage/
+
+# لاگ و موقتی
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# سیستم‌عامل و ادیتور
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# فایل‌های آپلودشدهٔ محلی (اگر خارج از S3 نگه داشته شوند)
+/uploads/
+/storage/
+
+# قواعدِ کاریِ داخلی — روی دیسک می‌مانند، در مخزن نه.
+docs/rules/
+docs/REQUIREMENTS.md
+scripts/extract-translations.py
+scripts/i18n-merge.mjs

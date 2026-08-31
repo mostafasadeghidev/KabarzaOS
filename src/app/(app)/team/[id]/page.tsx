@@ -1,0 +1,100 @@
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { currentActor } from '@/server/auth';
+import { teamMember } from '@/server/team/service';
+import { ForbiddenError } from '@/domain/access/guard';
+import { hoursLabel } from '@/domain/timelogs/timer';
+import { RANGE_LABELS, type RangeKey } from '@/domain/access/office-scope';
+import { EmptyState } from '@/components/ui/empty-state';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+} from '@/components/ui/table';
+import { t } from '@/i18n/server';
+
+/**
+ * پروفایلِ کاریِ یک عضو برای مدیرِ دفتر.
+ * ⚠️ گاردِ دامنه در سرویس است — شناسهٔ خارج از دامنه ۴۰۳ می‌گیرد، نه صفحهٔ خالی.
+ */
+export default async function TeamMemberPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ range?: string }>;
+}) {
+  const actor = await currentActor();
+  if (!actor) redirect('/login');
+
+  const userId = Number((await params).id);
+  const query = await searchParams;
+
+  let data;
+  try {
+    data = await teamMember(actor, userId, query);
+  } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return (
+        <main className="p-6">
+          <EmptyState title={t("دسترسی ندارید")} description={t("این عضو در دامنهٔ مدیریتِ شما نیست.")} />
+        </main>
+      );
+    }
+    throw error;
+  }
+
+  const total = data.logs.reduce((sum, l) => sum + l.minutes, 0);
+
+  return (
+    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+      <header className="grid gap-1">
+        <Link href="/team" className="text-xs text-muted-foreground hover:underline">{t("← تیمِ من")}</Link>
+        <h1 className="text-xl font-semibold">{data.person?.name ?? `#${userId}`}</h1>
+        <p className="text-sm text-muted-foreground">
+          {t(RANGE_LABELS[(data.period.range ?? 'week') as RangeKey])} · {t('مجموع')}{' '}
+          <span className="num">{hoursLabel(total)}</span>
+        </p>
+      </header>
+
+      <section className="grid gap-2">
+        <h2 className="text-sm font-semibold">{t("ساعتِ کاری به تفکیکِ پروژه")}</h2>
+        {data.logs.length === 0 ? (
+          <EmptyState title={t("ساعتی در این بازه ثبت نشده")} />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("پروژه")}</TableHead>
+                <TableHead>{t("ساعت کاری")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.logs.map((l) => (
+                <TableRow key={l.projectId ?? 'general'}>
+                  <TableCell>{l.projectTitle ?? 'کارِ عمومی'}</TableCell>
+                  <TableNumericCell>{hoursLabel(l.minutes)}</TableNumericCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </section>
+
+      <section className="grid gap-2">
+        <h2 className="text-sm font-semibold">{t("تسک‌های بازِ این عضو")}</h2>
+        {data.openTasks.length === 0 ? (
+          <p className="text-xs text-muted-foreground">{t("تسکِ بازی ندارد.")}</p>
+        ) : (
+          <ul className="grid gap-1">
+            {data.openTasks.map((t) => (
+              <li key={t.id} className="rounded-md border px-3 py-2 text-sm">
+                {t.title}
+                <span className="ms-2 text-xs text-muted-foreground">{t.projectTitle}</span>
+                {t.dueDate && <span className="num ms-2 text-xs text-muted-foreground">{t.dueDate}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </main>
+  );
+}

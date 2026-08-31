@@ -1,0 +1,49 @@
+# محیطِ توسعه — فقط دیتابیس و ذخیره‌ساز. خودِ اپ روی همین ماشین با
+# `pnpm dev` اجرا می‌شود.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#
+# ⚠️ استقرارِ تولید در docker-compose.yml است (اپ را هم داخلِ کانتینر می‌برد).
+# D-009 در docs/DECISIONS.md
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: kabarza
+      POSTGRES_PASSWORD: kabarza
+      POSTGRES_DB: kabarza
+    ports:
+      # ⚠️ سمتِ میزبان ۶۴۳۲ است نه ۵۴۳۲: ویندوز بازهٔ ۵۴۱۳–۵۵۱۲ را برای
+      # WinNAT/Hyper-V رزرو می‌کند و بایندِ ۵۴۳۲ با خطای «forbidden by its
+      # access permissions» شکست می‌خورد. داخلِ کانتینر همان ۵۴۳۲ است.
+      - '6432:5432'          # فقط محلی؛ در تولید هرگز بیرون داده نمی‌شود
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U kabarza']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # D-009 — فایل‌ها روی S3، نه فایل‌سیستمِ کانتینر. MinIO همان APIِ S3 را
+  # می‌دهد، پس کدِ محلی و تولید یکی است و مسیرِ واقعی همین‌جا تست می‌شود.
+  storage:
+    image: minio/minio:latest
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: kabarza
+      MINIO_ROOT_PASSWORD: kabarza-dev-1234
+    ports:
+      - '9000:9000'          # API
+      - '9001:9001'          # کنسولِ مدیریت
+    volumes:
+      - storage_data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db_data:
+  storage_data:

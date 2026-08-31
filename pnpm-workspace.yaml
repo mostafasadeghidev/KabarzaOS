@@ -1,0 +1,7 @@
+# ⚠️ pnpm ۱۱ اسکریپتِ build ِ تأییدنشده را اجرا نمی‌کند و نصبِ غیرتعاملی
+# (داکر/CI) را با ERR_PNPM_IGNORED_BUILDS می‌شکند. فرمتِ تأیید در v11 همین
+# `allowBuilds` است (onlyBuiltDependencies ِ v10 دیگر خوانده نمی‌شود).
+# esbuild ِ vitest اسکریپت دارد؛ sharp روی پلتفرمِ بی‌باینری build می‌خواهد.
+allowBuilds:
+  esbuild: true
+  sharp: true

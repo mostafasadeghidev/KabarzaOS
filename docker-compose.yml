@@ -1,0 +1,120 @@
+# استقرارِ تولید — یک فرمان:  docker compose up -d --build
+#
+# ⚠️ عمداً نامش docker-compose.yml است، نه docker-compose.prod.yml: ابزارهای
+# استقرار (Coolify، Portainer، Dokploy) و خودِ `docker compose` بدونِ سوئیچ
+# همین نام را برمی‌دارند. محیطِ توسعه در docker-compose.dev.yml است.
+#
+# ⚠️ هیچ متغیرِ اجباری‌ای ندارد: با `docker compose up -d` ِ خالی هم بالا
+# می‌آید. SESSION_SECRET و CRON_SECRET را خودِ کانتینر
+# بارِ اول می‌سازد و در والیومِ app_data نگه می‌دارد (docker-entrypoint.sh).
+# این برای ابزارهای گرافیکی (Coolify، Portainer، Dokploy) لازم است: آنها
+# install.sh را اجرا نمی‌کنند و فقط همین فایل را می‌خوانند.
+#
+# ⚠️ هر متغیری که خودت ست کنی اولویت دارد و جای ساختِ خودکار را می‌گیرد.
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      # required:false تا اعتبارسنجیِ فایل پیش از ساختِ .env.prod هم کار کند
+      - path: .env.prod
+        required: false
+    environment:
+      # ⚠️ نامِ میزبان‌ها داخلِ شبکهٔ compose اند، نه localhost. اینها عمداً
+      # اینجا ست می‌شوند تا .env.prod ِ کاربر نتواند اشتباهشان کند.
+      DATABASE_URL: postgres://kabarza:${DB_PASSWORD:-kabarza-internal}@db:5432/kabarza
+      S3_ENDPOINT: http://storage:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-kabarza}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-kabarza-internal-storage}
+    ports:
+      # ⚠️ پیش‌فرض روی همهٔ رابط‌ها منتشر می‌شود، نه فقط 127.0.0.1: ابزارهای
+      # استقرار پراکسی‌شان را در کانتینرِ دیگری اجرا می‌کنند و لوکال‌هاستِ
+      # میزبان را نمی‌بینند — آن‌وقت اپ سالم است ولی «مرده» به‌نظر می‌رسد.
+      # برای بستنش پشتِ پراکسیِ خودت: BIND=127.0.0.1
+      #
+      # پورتِ میزبان با APP_PORT عوض می‌شود (اگر ۳۰۰۰ اشغال باشد).
+      - '${BIND:-0.0.0.0}:${APP_PORT:-3000}:3000'
+    volumes:
+      # رازهای ساخته‌شده — بدونِ این، هر بازسازیِ کانتینر همه را بیرون می‌اندازد.
+      - app_data:/app/data
+    depends_on:
+      db: { condition: service_healthy }
+      storage: { condition: service_started }
+    healthcheck:
+      # ⚠️ با node، نه curl: ایمیجِ node:22-slim کرل ندارد.
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kabarza
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-kabarza-internal}
+      POSTGRES_DB: kabarza
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    # ⚠️ هیچ ports ای: دیتابیس فقط از شبکهٔ داخلیِ compose دیده می‌شود، و
+    # به همین دلیل پیش‌فرضِ ثابتِ رمز اینجا بی‌خطر است. اگر روزی پورت را
+    # بیرون دادی، حتماً DB_PASSWORD را ست کن.
+    # ⚠️ عوض‌کردنِ DB_PASSWORD بعد از اولین بوت کار نمی‌کند: Postgres رمز را
+    # موقعِ initdb می‌گیرد و بعد نگه می‌دارد.
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U kabarza']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  storage:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-kabarza}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-kabarza-internal-storage}
+    volumes:
+      - storage_data:/data
+    # ⚠️ عمداً هیچ ports ای: باکت را ensureBucket() خودش می‌سازد، پس کنسولِ
+    # مدیریت هرگز لازم نمی‌شود. نبودنش هم سطحِ حمله را کم می‌کند و هم جلوی
+    # تصادمِ پورتِ ۹۰۰۱ با سرویس‌های دیگرِ سرور را می‌گیرد. اگر روزی
+    # خواستیش، موقت بالا بیاورش:
+    #   docker compose run --rm -p 127.0.0.1:9001:9001 storage
+
+  cron:
+    # زمان‌بند: بدونِ این، یادآور، اعلانِ جلسه، هشدارِ تایمرِ رها، گزارشِ
+    # روزانه و پاک‌سازیِ خودکار هیچ‌کدام اجرا نمی‌شوند.
+    image: curlimages/curl:latest
+    restart: unless-stopped
+    environment:
+      # خالی هم اشکالی ندارد: آن‌وقت راز از فایلِ ساختهٔ اپ خوانده می‌شود.
+      CRON_SECRET: ${CRON_SECRET:-}
+    volumes:
+      # ⚠️ همان والیومِ اپ، فقط‌خواندنی: باید **همان** رازی را بفرستد که اپ
+      # انتظار دارد، و اپ آن را خودش ساخته.
+      - app_data:/secrets:ro
+    # ⚠️ همان uid ِ اپ (کاربرِ node = 1000): فایلِ راز مجوزِ 600 دارد، پس
+    # خواننده باید مالکش باشد. این‌طور هیچ کانتینری root نیست و مجوزِ فایل
+    # هم شل نمی‌شود.
+    user: "1000:1000"
+    # ⚠️ $$ یعنی «دلارِ واقعی برای شل»، نه جای‌گذاریِ compose.
+    command: >
+      sh -c 'while true; do
+        S="$$CRON_SECRET";
+        [ -n "$$S" ] || S=$$(cat /secrets/cron_secret 2>/dev/null || true);
+        [ -n "$$S" ] && curl -fsS -m 30 -H "x-cron-secret: $$S" http://app:3000/api/cron/tick >/dev/null || true;
+        sleep 300;
+      done'
+    # ⚠️ service_healthy نه service_started: با started، اولین تیک به اپِ
+    # هنوز بالا نیامده می‌خورد، شکست می‌خورد و ۵ دقیقه می‌خوابد — یعنی
+    # پنجرهٔ مردهٔ بی‌دلیل در هر راه‌اندازی.
+    depends_on:
+      app: { condition: service_healthy }
+
+volumes:
+  db_data:
+  storage_data:
+  app_data:

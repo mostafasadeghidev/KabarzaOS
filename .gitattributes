@@ -1,0 +1,8 @@
+# ⚠️ اسکریپت‌های شل و فایل‌های داکر همیشه LF، حتی روی ویندوز با
+# core.autocrlf=true. اگر CRLF چک‌اوت شوند، داخلِ کانتینرِ لینوکسی با
+# «bad interpreter: /bin/sh^M» می‌شکنند — خطایی که هیچ ربطی به محتوای
+# اسکریپت ندارد و به همین دلیل پیداکردنش سخت است.
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
