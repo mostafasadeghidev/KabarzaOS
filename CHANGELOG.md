@@ -2,6 +2,35 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.10.0]
+
+### Changed
+
+- **Dialogs no longer close on an outside click or Escape.** A stray click
+  discarded a half-filled form without warning; on "add project", with
+  dozens of fields, that meant starting over. Dismissal is explicit now —
+  the ✕ or Cancel. Display-only dialogs can opt back in.
+- **Roles and offices are fields, not rows of checkboxes.** Chips show
+  what is selected; the list opens on click. Office membership and office
+  management are now two separate fields — they were two checkboxes on one
+  row, which read as one setting with a modifier rather than two
+  independent facts.
+- **Creating a project is tabbed** — Team, Tasks, QA, Files — the way the
+  previous system grouped it. Reaching "Files" used to mean scrolling past
+  tasks and QA.
+- **The ledger's project filter is a live search.** It listed every
+  project, which on a long-running agency is hundreds of rows — slower to
+  scan than typing the name.
+
+### Fixed
+
+- **A project member could be assigned a role they do not hold.** The
+  dropdown listed every role in the system, and the per-role effort report
+  would then report something that was never true. It lists only the roles
+  tagged on that person now.
+
+---
+
 ## [1.9.1]
 
 ### Fixed

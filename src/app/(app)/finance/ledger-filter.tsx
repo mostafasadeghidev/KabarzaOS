@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Combobox } from '@/components/ui/combobox';
 import { useT } from '@/i18n/client';
 
 export interface LedgerPaging {
@@ -40,6 +42,18 @@ export function LedgerFilter({
   const params = useSearchParams();
 
   const value = (key: string) => params.get(key) ?? '';
+
+  /**
+   * ⚠️ state ِ محلی چون Combobox کنترل‌شده است. مقدارِ اولیه از **آدرس**
+   * می‌آید تا لینکِ فیلترشده و دکمهٔ برگشتِ مرورگر کار کند (همان قاعده‌ای
+   * که بقیهٔ فیلترها دارند).
+   */
+  const initialProject = (() => {
+    const id = Number(params.get('project')) || null;
+    const found = id ? options.projects.find((p) => p.id === id) : null;
+    return { id: found?.id ?? null, label: found?.title ?? '' };
+  })();
+  const [project, setProject] = useState(initialProject);
   const hasFilter = ['from', 'to', 'tag', 'project', 'party'].some((k) => value(k) !== '');
 
   const go = (changes: Record<string, string>) => {
@@ -93,12 +107,19 @@ export function LedgerFilter({
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="lf-project" className="text-xs">{tr('پروژه')}</Label>
-          <select id="lf-project" name="project" defaultValue={value('project')} className={cell}>
-            <option value="">{tr('همه')}</option>
-            {options.projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.title}</option>
-            ))}
-          </select>
+          {/*
+            ⚠️ جستجوی زنده، نه فهرستِ بازشونده: فهرست همهٔ پروژه‌ها را
+            می‌آورد و روی یک آژانسِ چندساله می‌شود صدها ردیف که پیداکردنِ
+            یکی در آن از تایپ‌کردنِ نامش کندتر است.
+          */}
+          <Combobox
+            id="lf-project"
+            name="project"
+            options={options.projects.map((p) => ({ value: p.id, label: p.title }))}
+            value={project}
+            onChange={setProject}
+            placeholder={tr('همه')}
+          />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="lf-party" className="text-xs">{tr('طرف‌حساب')}</Label>
@@ -116,7 +137,10 @@ export function LedgerFilter({
         {hasFilter && (
           <Button
             type="button" size="sm" variant="ghost" className="gap-1.5"
-            onClick={() => go({ from: '', to: '', tag: '', project: '', party: '' })}
+            onClick={() => {
+              setProject({ id: null, label: '' });
+              go({ from: '', to: '', tag: '', project: '', party: '' });
+            }}
           >
             <X className="size-3.5" />
             {tr('پاک‌کردن')}

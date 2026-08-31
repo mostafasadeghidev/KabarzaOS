@@ -1,17 +1,9 @@
-Create-project sections are tabbed, and member roles are per-person
+Live project search in the ledger filter (1.10.0)
 
-Creating a project collects five sections; stacked one after another,
-reaching "Files" meant scrolling past tasks and QA. They are tabs now —
-Team, Tasks, QA, Files — the way the previous system grouped them. All
-panels stay mounted and are only hidden; unmounting the inactive tab
-would drop its inputs from FormData and the section would be silently
-ignored.
-
-The role dropdown beside a project member listed every role in the
-system, so someone could be signed onto a project as a role they do not
-hold — and the per-role effort report would then say something that was
-never true. It now lists only the roles tagged on that person, and stays
-empty until a person is chosen rather than inviting a choice that will
-be rejected.
+The filter listed every project in a dropdown. On an agency with years of
+history that is hundreds of rows, and scanning it is slower than typing
+the name. It is the same live-search combobox the people forms use, and
+the selected id still travels as a hidden input so the URL-driven filter
+keeps working — shareable links and the back button included.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
