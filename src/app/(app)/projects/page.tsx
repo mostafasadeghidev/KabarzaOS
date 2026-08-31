@@ -95,6 +95,7 @@ export default async function ProjectsPage({
               bootstrap: {
                 people: formOptions.people.map((p) => ({ value: p.id, label: p.name })),
                 clients: formOptions.clientPeople.map((c) => ({ value: c.id, label: c.name })),
+                memberRoles: formOptions.memberRoles,
                 roleTags: formOptions.roleTags,
                 priorities: formOptions.priorities.map((p) => ({ id: p.id, label: p.name })),
                 currencies: formOptions.currencies.map((c) => ({ id: c.id, label: c.code })),

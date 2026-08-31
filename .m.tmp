@@ -1,16 +1,17 @@
-Dialogs keep their contents, and roles/offices are multi-selects
+Create-project sections are tabbed, and member roles are per-person
 
-- Clicking outside a dialog (or pressing Escape) discarded a half-filled
-  form without warning. On "add project", with dozens of fields, that
-  meant starting over. Dismissal is explicit now — the ✕ or Cancel — and
-  `dismissable` opts back in for display-only dialogs.
-- Roles and offices were open rows of checkboxes that grew the form by
-  several lines and buried the selected ones among the unselected. They
-  are fields now: chips for what is chosen, a list on click.
-- Office membership and office management are separate fields. They were
-  two checkboxes on one row, which read as one setting with a modifier
-  rather than two independent facts.
-- Sections are separated by a dashed frame, matching the existing-user
-  block.
+Creating a project collects five sections; stacked one after another,
+reaching "Files" meant scrolling past tasks and QA. They are tabs now —
+Team, Tasks, QA, Files — the way the previous system grouped them. All
+panels stay mounted and are only hidden; unmounting the inactive tab
+would drop its inputs from FormData and the section would be silently
+ignored.
+
+The role dropdown beside a project member listed every role in the
+system, so someone could be signed onto a project as a role they do not
+hold — and the per-role effort report would then say something that was
+never true. It now lists only the roles tagged on that person, and stays
+empty until a person is chosen rather than inviting a choice that will
+be rejected.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

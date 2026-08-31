@@ -412,7 +412,7 @@ export async function getProjectFormOptions(actor: Actor, excludeId?: number) {
   assertCanManage(actor, 'projects');
   const [
     statuses, currencyRows, officeRows, parents, roleTagRows,
-    people, clientPeople, priorities, qaRows,
+    people, clientPeople, priorities, qaRows, memberRoles,
   ] = await Promise.all([
     repo.statusTags(),
     repo.currencyOptions(),
@@ -426,6 +426,7 @@ export async function getProjectFormOptions(actor: Actor, excludeId?: number) {
     repo.clientCandidates(),
     repo.taskPriorityTags(),
     repo.qaLibrary(),
+    repo.memberRoleMap(),
   ]);
   return {
     statuses,
@@ -439,6 +440,8 @@ export async function getProjectFormOptions(actor: Actor, excludeId?: number) {
     priorities,
     // ⚠️ فقط «خالی نبودن» مهم است؛ خودِ آیتم‌ها به مرورگر فرستاده نمی‌شوند.
     hasQaLibrary: qaRows.length > 0,
+    /** نقش‌های هر عضو — فرم فقط همان‌ها را پیشنهاد می‌دهد. */
+    memberRoles,
   };
 }
 

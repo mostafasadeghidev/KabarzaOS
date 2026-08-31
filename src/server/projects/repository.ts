@@ -471,6 +471,25 @@ export async function memberCandidates() {
     .orderBy(users.name);
 }
 
+/**
+ * نقش‌های امضاشده روی هر عضو — `{ userId: tagId[] }`.
+ *
+ * ⚠️ فرمِ افزودنِ عضو به پروژه باید فقط نقش‌های **خودِ آن فرد** را نشان
+ * دهد. بدونِ این، فهرست همهٔ نقش‌های سامانه را می‌داد و می‌شد کسی را با
+ * نقشی روی پروژه امضا کرد که اصلاً آن نقش را ندارد.
+ */
+export async function memberRoleMap(): Promise<Record<number, number[]>> {
+  const rows = await db
+    .select({ userId: tagRelations.objectId, tagId: tagRelations.tagId })
+    .from(tagRelations)
+    .innerJoin(tags, eq(tags.id, tagRelations.tagId))
+    .where(and(eq(tagRelations.objectType, 'user'), eq(tags.type, 'member_role')));
+
+  const out: Record<number, number[]> = {};
+  for (const r of rows) (out[r.userId] ??= []).push(r.tagId);
+  return out;
+}
+
 /** تگ‌های نقشِ عضو — ستونِ «نقش» در فرمِ اعضا. */
 export async function memberRoleTags() {
   return db

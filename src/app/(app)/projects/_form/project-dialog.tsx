@@ -103,8 +103,11 @@ function NativeSelect({
 
 function SubmitButton({ isEdit }: { isEdit: boolean }) {
   const { pending } = useFormStatus();
-  const busy = isEdit ? 'در حالِ ذخیره…' : 'در حالِ ساخت…';
-  const idle = isEdit ? 'ذخیرهٔ تغییرات' : 'ساخت پروژه';
+  // ⚠️ مترجم اینجا هم لازم است: این جزء بیرونِ کامپوننتِ اصلی است و
+  // پراپِ ترجمه‌شده نمی‌گیرد، پس بدونِ آن دکمه در هر زبانی فارسی می‌ماند.
+  const tr = useT();
+  const busy = isEdit ? tr('در حالِ ذخیره…') : tr('در حالِ ساخت…');
+  const idle = isEdit ? tr('ذخیرهٔ تغییرات') : tr('ساخت پروژه');
   return <Button type="submit" disabled={pending}>{pending ? busy : idle}</Button>;
 }
 
@@ -176,7 +179,7 @@ export function ProjectDialog({
 
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'ویرایشِ پروژه' : 'افزودن پروژه'}</DialogTitle>
+          <DialogTitle>{isEdit ? tr('ویرایشِ پروژه') : tr('افزودن پروژه')}</DialogTitle>
           <DialogDescription>
             {isEdit
               ? 'اعضا و تسک‌ها از بخش‌های خودشان مدیریت می‌شوند.'
@@ -429,7 +432,7 @@ export function ProjectDialog({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              {isEdit ? 'بستن' : 'انصراف'}
+              {isEdit ? tr('بستن') : tr('انصراف')}
             </Button>
             <SubmitButton isEdit={isEdit} />
           </DialogFooter>

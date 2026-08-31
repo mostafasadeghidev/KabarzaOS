@@ -18,6 +18,8 @@ export interface BootstrapOptions {
   defaultCurrencyId: number | null;
   /** آیا کتابخانهٔ QA چیزی دارد؟ تبِ خالی نشان داده نمی‌شود. */
   hasQaLibrary: boolean;
+  /** نقش‌های امضاشده روی هر عضو — `{ userId: tagId[] }`. */
+  memberRoles: Record<number, number[]>;
 }
 
 interface MemberRow {
@@ -95,6 +97,14 @@ export function BootstrapSections({
 
   const defaultCurrency = options.defaultCurrencyId ? String(options.defaultCurrencyId) : '';
 
+  const [tab, setTab] = useState<'team' | 'tasks' | 'qa' | 'files'>('team');
+  /** نقش‌های امضاشده روی یک فرد؛ بدونِ انتخابِ فرد، خالی. */
+  const rolesFor = (userId: number | null) => {
+    if (userId === null) return [];
+    const mine = new Set(options.memberRoles[userId] ?? []);
+    return options.roleTags.filter((t) => mine.has(t.id));
+  };
+
   const roleOptions: ComboOption[] = options.roleTags.map((t) => ({ value: t.id, label: t.label }));
 
   return (
@@ -103,6 +113,37 @@ export function BootstrapSections({
         {tr("این بخش‌ها اختیاری‌اند و بلافاصله پس از ساختِ پروژه اعمال می‌شوند.")}
       </p>
 
+      {/*
+        ⚠️ تب‌بندی مثلِ نسخهٔ قبلی: ساختِ پروژه پنج بخش دارد و پشتِ‌سرِ هم
+        چیدنشان یعنی برای رسیدن به «فایل‌ها» باید از تسک‌ها و QA رد شوی.
+
+        ⚠️ همهٔ پنل‌ها در DOM می‌مانند و فقط پنهان می‌شوند — با unmount
+        کردنِ تبِ غیرفعال، ورودی‌هایش از FormData بیرون می‌افتادند و
+        ساختِ پروژه بی‌صدا آن بخش را نادیده می‌گرفت.
+      */}
+      <div className="flex flex-wrap gap-1 border-b">
+        {([
+          ['team', tr('تیم')],
+          ['tasks', tr('تسک‌ها')],
+          ['qa', tr('QA')],
+          ['files', tr('فایل‌ها')],
+        ] as const).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={`-mb-px border-b-2 px-3 py-1.5 text-sm transition ${
+              tab === key
+                ? 'border-primary font-medium text-foreground'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className={tab === "team" ? "grid gap-5" : "hidden"}>
       {/* ------------------------------------------------ اعضا */}
       <section className="grid gap-2">
         <SectionTitle hint={tr("نقش و مبلغِ توافقیِ هر عضو. مبلغ خالی یعنی صفر.")}>{tr("اعضا")}</SectionTitle>
@@ -132,7 +173,16 @@ export function BootstrapSections({
                 className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
               >
                 <option value="">{tr("— نقش —")}</option>
-                {options.roleTags.map((t) => (
+                {/*
+                  ⚠️ فقط نقش‌هایی که روی **خودِ این فرد** امضا شده‌اند.
+                  پیش‌تر همهٔ نقش‌های سامانه می‌آمد و می‌شد کسی را با نقشی
+                  روی پروژه گذاشت که اصلاً آن را ندارد — و بعد گزارشِ
+                  «کارکرد بر حسبِ نقش» چیزی می‌گفت که در واقعیت نبود.
+
+                  ⚠️ تا وقتی عضوی انتخاب نشده، فهرست خالی است نه کامل:
+                  فهرستِ کامل یعنی دعوت به انتخابی که بعداً رد می‌شود.
+                */}
+                {rolesFor(row.userId).map((t) => (
                   <option key={t.id} value={t.id}>{t.label}</option>
                 ))}
               </select>
@@ -218,6 +268,9 @@ export function BootstrapSections({
         />
       </section>
 
+      </div>
+
+      <div className={tab === "tasks" ? "grid gap-5" : "hidden"}>
       {/* ------------------------------------------------ تسک‌های اولیه */}
       <section className="grid gap-2">
         <SectionTitle hint={tr("به یک یا چند نقش سپرده می‌شوند، نه به یک فرد.")}>
@@ -304,6 +357,9 @@ export function BootstrapSections({
         </div>
       </section>
 
+      </div>
+
+      <div className={tab === "qa" ? "grid gap-5" : "hidden"}>
       {/* ------------------------------------------------ چک‌لیستِ QA */}
       {options.hasQaLibrary && (
         <section className="grid gap-2">
@@ -330,6 +386,9 @@ export function BootstrapSections({
         </section>
       )}
 
+      </div>
+
+      <div className={tab === "files" ? "grid gap-5" : "hidden"}>
       {/* ------------------------------------------------ لینک‌ها */}
       <section className="grid gap-2">
         <SectionTitle hint={tr("فایل روی سرور آورده نمی‌شود؛ فقط نشانی ذخیره می‌شود.")}>
@@ -369,6 +428,8 @@ export function BootstrapSections({
           </Button>
         </div>
       </section>
+      </div>
+
     </div>
   );
 }
