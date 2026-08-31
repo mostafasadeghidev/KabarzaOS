@@ -1,21 +1,28 @@
-Gregorian calendar for Persian, and fix two blind spots in translation
+Every page primes its own translations (1.9.1)
 
-Calendar: fa-IR-u-ca-gregory — Gregorian dates with Persian text and
-digits. The system stores and reasons in Gregorian throughout, so a
-Jalali display meant converting between two calendars mentally.
+Reported as: switch language, some pages are English, navigate away and
+back and they are Persian again.
 
-Translation, found by actually running the app in English rather than
-trusting the coverage check:
+Root cause is not caching. On a client-side navigation Next re-renders
+only the changed page segment and reuses the layout from the cached tree.
+primeTranslations() lived only in the root layout, so it never ran for
+those requests and t() returned the source Persian string. A hard load
+was correct; navigating there was not — which is what made it look like
+a cache problem.
 
-- Members and Clients rendered wholly in Persian in every language. Both
-  pages were synchronous; layouts and pages render in parallel, so t()
-  ran before the translator was primed and returned the source string.
-  Every other page is fine only because it awaits data first.
-- The extractor never saw table headers (header: '…') or add buttons
-  (addLabel="…"). They arrive as props and never sit inside t(), so the
-  check reported zero missing while they stayed Persian everywhere. Both
-  forms are extracted now and translated at the point they render.
-- Six strings had a translation that was never used because the literal
-  and the key differed by a hamza or a zero-width space.
+All nineteen server pages prime translations themselves now. cache()
+keeps it to one call per request.
+
+Two supporting changes found while reproducing it:
+
+- Sidebar links no longer prefetch. Every page is per-user — language,
+  permissions, visible scope — so a prefetched copy is a copy of
+  somebody's state at some earlier moment.
+- Changing the language reloads the page. The router cache holds RSC
+  payloads for routes already visited and neither revalidatePath nor
+  router.refresh() clears them all. staleTimes cannot fix this either:
+  Next rejects static below 30s and invalidates the whole block.
+
+Also translates the theme label, which had never passed through t().
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

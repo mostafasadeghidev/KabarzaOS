@@ -11,7 +11,7 @@ import { currentLockDate } from '@/server/finance/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SettingsView } from './settings-view';
-import { t } from '@/i18n/server';
+import { primeTranslations, t } from '@/i18n/server';
 import { getCompany } from '@/server/people/profile-service';
 
 /**
@@ -19,6 +19,15 @@ import { getCompany } from '@/server/people/profile-service';
  * ⚠️ مالک‌محور است: مجوزِ `settings.manage` هم برای دیدن لازم است، مثلِ نسخهٔ قبلی.
  */
 export default async function SettingsPage() {
+  /**
+   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
+   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
+   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
+   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
+   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
+   */
+  await primeTranslations();
+
   const actor = await currentActor();
   if (!actor) redirect('/login');
 

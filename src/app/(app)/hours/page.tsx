@@ -6,10 +6,19 @@ import {
 import { EmptyState } from '@/components/ui/empty-state';
 import { toDateString } from '@/domain/timelogs/timer';
 import { HoursView } from './hours-view';
-import { t } from '@/i18n/server';
+import { primeTranslations, t } from '@/i18n/server';
 
 /** ساعتِ کاری — تایمر، ثبتِ دستی و فهرستِ ثبت‌های خودِ کاربر. */
 export default async function HoursPage() {
+  /**
+   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
+   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
+   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
+   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
+   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
+   */
+  await primeTranslations();
+
   const actor = await currentActor();
   if (!actor) redirect('/login');
 

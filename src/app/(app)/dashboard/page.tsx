@@ -7,7 +7,7 @@ import {
   CardGroup, CompactCard, DashHeading, DashPanel, MetricCard, RiskList,
 } from '@/components/ui/dash';
 import { MemberHoursChart, StatusChart, WeeklyTrendChart } from './charts';
-import { activeLocale, t } from '@/i18n/server';
+import { activeLocale, primeTranslations, t } from '@/i18n/server';
 import { intlTag } from '@/i18n/config';
 
 /**
@@ -41,6 +41,15 @@ function trendLine(delta: number, unit: string): string {
 }
 
 export default async function DashboardPage() {
+  /**
+   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
+   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
+   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
+   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
+   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
+   */
+  await primeTranslations();
+
   const actor = await currentActor();
   if (!actor) redirect('/login');
 

@@ -2,6 +2,33 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.9.1]
+
+### Fixed
+
+- **Pages fell back to Persian on client-side navigation.** On such a
+  navigation Next re-renders only the changed page segment and reuses the
+  layout from the cached tree — so `primeTranslations()`, which lived only
+  in the root layout, never ran for that request and `t()` returned the
+  source string. A full reload was correct, navigating there was not,
+  which is why it looked like a caching bug.
+
+  All nineteen server pages now prime translations themselves rather than
+  relying on the layout. `cache()` keeps it to one call per request.
+
+- Sidebar links no longer prefetch. Every page here is per-user — language,
+  permissions, visible scope — so a prefetched copy is a copy of somebody's
+  state at some earlier moment.
+
+- Changing the language reloads the page. The router cache holds RSC
+  payloads for routes already visited, and neither `revalidatePath` nor
+  `router.refresh()` clears them all; the previous language kept coming
+  back on the pages you had already opened.
+
+- The theme label ("System", "Light", "Dark") was never translated.
+
+---
+
 ## [1.9.0]
 
 ### Changed

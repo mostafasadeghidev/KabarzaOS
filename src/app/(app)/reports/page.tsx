@@ -9,7 +9,7 @@ import { visibleReportTabs } from '@/server/people/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ReportsView } from './reports-view';
-import { t } from '@/i18n/server';
+import { primeTranslations, t } from '@/i18n/server';
 
 /** گزارش‌ها — همهٔ اعداد در ارزِ پایه و از ستون‌های منجمد. */
 export default async function ReportsPage({
@@ -17,6 +17,15 @@ export default async function ReportsPage({
 }: {
   searchParams: Promise<{ tab?: string; date?: string }>;
 }) {
+  /**
+   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
+   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
+   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
+   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
+   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
+   */
+  await primeTranslations();
+
   const actor = await currentActor();
   if (!actor) redirect('/login');
 

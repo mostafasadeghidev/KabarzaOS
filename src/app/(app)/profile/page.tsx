@@ -3,10 +3,19 @@ import { can } from '@/domain/access/permissions';
 import { currentActor } from '@/server/auth';
 import { getCompany, getMyProfile } from '@/server/people/profile-service';
 import { ProfileView } from './profile-view';
-import { t } from '@/i18n/server';
+import { primeTranslations, t } from '@/i18n/server';
 
 /** پروفایلِ من — هر کاربرِ واردشده‌ای دارد؛ مجوزِ خاصی لازم نیست. */
 export default async function ProfilePage() {
+  /**
+   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
+   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
+   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
+   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
+   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
+   */
+  await primeTranslations();
+
   const actor = await currentActor();
   if (!actor) redirect('/login');
 

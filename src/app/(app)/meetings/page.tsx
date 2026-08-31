@@ -4,10 +4,19 @@ import { getMeetingFormOptions, listMeetings, listReminders } from '@/server/mee
 import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MeetingsView } from './meetings-view';
-import { t } from '@/i18n/server';
+import { primeTranslations, t } from '@/i18n/server';
 
 /** جلسات — دو تبِ `Meetings_Page`: «جلسات» و «یادآورهای من». */
 export default async function MeetingsPage() {
+  /**
+   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
+   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
+   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
+   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
+   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
+   */
+  await primeTranslations();
+
   const actor = await currentActor();
   if (!actor) redirect('/login');
 

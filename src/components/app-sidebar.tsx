@@ -82,7 +82,7 @@ export function AppSidebar({
   unreadMessages: number;
   onLogout: () => void;
   canManageSettings?: boolean;
-  onLocaleChange: (locale: Locale) => void;
+  onLocaleChange: (locale: Locale) => void | Promise<void>;
 }) {
   const t = useT();
   const pathname = usePathname();
@@ -107,7 +107,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/">
+              <Link href="/" prefetch={false}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
                   <span className="text-sm font-bold">K</span>
                 </div>
@@ -132,7 +132,14 @@ export function AppSidebar({
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton asChild isActive={active} tooltip={t(item.label)}>
-                        <Link href={item.href}>
+                        {/*
+                          ⚠️ prefetch خاموش: کلِ محتوای این اپ per-user است
+                          (زبان، مجوز، دامنهٔ دید). با prefetch، Next پاسخِ
+                          RSC ِ هر لینکِ دیدهٔ سایدبار را کش می‌کند و بعد از
+                          تعویضِ زبان همان کهنه را نشان می‌دهد — سایدبار
+                          انگلیسی و محتوا فارسی، در یک صفحه. آزموده شد.
+                        */}
+                        <Link href={item.href} prefetch={false}>
                           <Icon />
                           <span>{t(item.label)}</span>
                           {item.icon === 'messages' && unread > 0 && (

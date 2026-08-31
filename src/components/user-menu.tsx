@@ -59,7 +59,7 @@ export function UserMenu({
   onLogout: () => void;
   /** آیتمِ تنظیمات فقط برای کسی که اجازه دارد. */
   canManageSettings?: boolean;
-  onLocaleChange: (locale: Locale) => void;
+  onLocaleChange: (locale: Locale) => void | Promise<void>;
 }) {
   const t = useT();
   const { theme, setTheme } = useTheme();
@@ -104,7 +104,24 @@ export function UserMenu({
             <select
               id="um-locale"
               value={locale}
-              onChange={(e) => onLocaleChange(e.target.value as Locale)}
+              onChange={async (e) => {
+                await onLocaleChange(e.target.value as Locale);
+                /**
+                 * ⚠️ بارگذاریِ کامل، نه `router.refresh()`.
+                 *
+                 * `revalidatePath` در اکشن کشِ **سرور** را باطل می‌کند و
+                 * `refresh()` صفحهٔ **جاری** را از نو می‌گیرد — ولی کشِ
+                 * مسیریابِ مرورگر پاسخِ RSC ِ صفحه‌های دیگری که قبلاً دیده
+                 * یا prefetch شده‌اند نگه می‌دارد. آزموده شد: با برگشتن به
+                 * داشبورد، سایدبار انگلیسی بود و محتوا فارسی — یک صفحه، دو
+                 * زبان.
+                 *
+                 * تغییرِ زبان کارِ نادری است، پس هزینهٔ یک بارگذاریِ کامل
+                 * ناچیز است و در عوض هیچ گوشه‌ای از اپ به زبانِ قبلی
+                 * نمی‌ماند.
+                 */
+                window.location.reload();
+              }}
               className="h-7 rounded-md border bg-background px-2 text-xs"
             >
               {LOCALES.map((code) => (
@@ -126,7 +143,7 @@ export function UserMenu({
               className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs hover:bg-muted"
             >
               <ThemeIcon className="size-3.5" />
-              <span>{THEME_LABEL[theme]}</span>
+              <span>{t(THEME_LABEL[theme])}</span>
             </button>
           </div>
         </div>

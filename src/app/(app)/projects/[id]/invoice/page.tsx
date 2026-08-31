@@ -5,7 +5,7 @@ import { getInvoice } from '@/server/finance/invoice-service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { format } from '@/domain/money/money';
 import { EmptyState } from '@/components/ui/empty-state';
-import { t } from '@/i18n/server';
+import { primeTranslations, t } from '@/i18n/server';
 
 /**
  * فاکتورِ پروژه — سندِ قابلِ چاپ.
@@ -14,6 +14,15 @@ import { t } from '@/i18n/server';
  * بدونِ دکمه (کلاسِ `print:hidden`)، و با جدولی که در چاپ نمی‌شکند.
  */
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
+  /**
+   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
+   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
+   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
+   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
+   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
+   */
+  await primeTranslations();
+
   const actor = await currentActor();
   if (!actor) redirect('/login');
 

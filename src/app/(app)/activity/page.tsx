@@ -11,7 +11,7 @@ import { weekOrder, type Slot } from '@/domain/availability/weekly';
 import { can } from '@/domain/access/permissions';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { ActivityView } from './activity-view';
-import { t } from '@/i18n/server';
+import { primeTranslations, t } from '@/i18n/server';
 
 /** فعالیت و حضور — از همان لاگِ ممیزی که هر سرویس در آن می‌نویسد. */
 export default async function ActivityPage({
@@ -19,6 +19,15 @@ export default async function ActivityPage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
+  /**
+   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
+   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
+   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
+   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
+   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
+   */
+  await primeTranslations();
+
   const actor = await currentActor();
   if (!actor) redirect('/login');
 

@@ -5,13 +5,22 @@ import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PeopleGrid } from './people-grid';
 import type { SectionConfig } from './person-card';
-import { t } from '@/i18n/server';
+import { primeTranslations, t } from '@/i18n/server';
 
 /**
  * صفحهٔ پایهٔ افراد — همان نقشی که در نسخهٔ قبلی دارد.
  * «اعضا» و «کارفرمایان» فقط پیکربندیِ متفاوتی به آن می‌دهند (R-PEOPLE-04).
  */
 export async function PeopleSectionPage({ section }: { section: SectionConfig }) {
+  /**
+   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
+   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
+   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
+   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
+   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
+   */
+  await primeTranslations();
+
   const actor = await currentActor();
   if (!actor) redirect('/login');
 

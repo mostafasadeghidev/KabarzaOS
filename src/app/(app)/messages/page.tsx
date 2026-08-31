@@ -4,7 +4,7 @@ import { getRecipientFilterData, getRecipients, listInbox } from '@/server/messa
 import { can } from '@/domain/access/permissions';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { MessagesView } from './messages-view';
-import { t } from '@/i18n/server';
+import { primeTranslations, t } from '@/i18n/server';
 
 /**
  * پیام‌ها — صندوقِ **شخصی**.
@@ -12,6 +12,15 @@ import { t } from '@/i18n/server';
  * ساخته می‌شود، پس کسی که رشته‌ای ندارد چیزی هم نمی‌بیند (R-MSG-02).
  */
 export default async function MessagesPage() {
+  /**
+   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
+   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
+   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
+   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
+   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
+   */
+  await primeTranslations();
+
   const actor = await currentActor();
   if (!actor) redirect('/login');
 

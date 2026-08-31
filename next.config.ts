@@ -12,6 +12,15 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['@node-rs/argon2'],
   // خطاهای تایپ هرگز در بیلد نادیده گرفته نمی‌شوند (REQUIREMENTS الف-۱)
   typescript: { ignoreBuildErrors: false },
+  /**
+   * ⚠️ `staleTimes.dynamic: 0` تنها نیمِ راه است و `static: 0` را Next
+   * نمی‌پذیرد (کمینه‌اش ۳۰ ثانیه است و کلِ بلوک را نامعتبر می‌کند). پس
+   * کشِ ناوبری با `prefetch={false}` روی لینک‌های سایدبار خاموش می‌شود —
+   * جایی که واقعاً اهمیت دارد.
+   */
+  experimental: {
+    staleTimes: { dynamic: 0 },
+  },
 };
 
 export default nextConfig;
