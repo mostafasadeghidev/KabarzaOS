@@ -12,6 +12,8 @@ import {
   assertCurrencyDeletable, assertName, assertRateValid, assertTagDeletable,
   planSetDefaultCurrency,
 } from '@/domain/settings/catalogs';
+import { isValidGroup, supportsClosed, supportsReview } from '@/domain/tags/groups';
+import type { TagType } from '@/db/schema/base';
 
 /**
  * سرویسِ فهرست‌های پایه — ارز، نرخ، تگ، دفتر، طرف‌حساب، کتابخانهٔ QA.
@@ -174,6 +176,7 @@ export async function saveTag(
     color: string;
     statusGroup: string;
     isReview: boolean;
+    isClosed: boolean;
     sortOrder: number;
     grantsCap?: string;
     nameI18n?: Record<string, string> | null;
@@ -186,8 +189,19 @@ export async function saveTag(
     name,
     type: input.type as 'member_role',
     color: input.color,
-    statusGroup: input.statusGroup,
-    isReview: input.isReview,
+    /**
+     * ⚠️ معنیِ `status_group` به نوعِ تگ بستگی دارد (ستونِ کانبان، تبِ
+     * خط‌لوله، یا جهتِ حسابداری). مقدارِ بیرون از فهرستِ همان نوع دور
+     * ریخته می‌شود، وگرنه یک رشتهٔ ساختگی تگ را از هر دسته‌بندی‌ای بیرون
+     * می‌اندازد و کاربر فقط می‌بیند تگش «ناپدید» شده.
+     */
+    statusGroup: isValidGroup(input.type as TagType, input.statusGroup)
+      ? input.statusGroup
+      : '',
+    /** فقط وضعیتِ تسک ستونِ بررسی دارد. */
+    isReview: supportsReview(input.type as TagType) && input.isReview,
+    /** «تمام‌شده» فقط برای وضعیتِ تسک و پروژه معنا دارد. */
+    isClosed: supportsClosed(input.type as TagType) && input.isClosed,
     sortOrder: input.sortOrder,
     /**
      * ⚠️ فقط مقدارِ شناخته‌شده ذخیره می‌شود و فقط روی تگِ **نقشِ عضو**.

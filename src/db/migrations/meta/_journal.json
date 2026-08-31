@@ -134,6 +134,13 @@
       "when": 1788661200001,
       "tag": "0018_base_currencies",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1788661200002,
+      "tag": "0019_default_tags",
+      "breakpoints": true
     }
   ]
 }

@@ -2084,5 +2084,18 @@
   "نامِ کاربریِ بات": "Nom d’utilisateur du bot",
   "ثبت‌شده": "défini",
   "توکن از متغیرِ محیطیِ {env} می‌آید و از اینجا قابلِ تغییر نیست.": "Le jeton provient de la variable d’environnement {env} et ne peut pas être modifié ici.",
-  "بات را با @BotFather بساز. آزمون‌های زیر پیامی برای کسی نمی‌فرستند مگر آنکه نامشان بگوید.": "Créez le bot avec @BotFather. Les tests ci-dessous n’envoient rien à personne, sauf si leur nom l’indique."
+  "بات را با @BotFather بساز. آزمون‌های زیر پیامی برای کسی نمی‌فرستند مگر آنکه نامشان بگوید.": "Créez le bot avec @BotFather. Les tests ci-dessous n’envoient rien à personne, sauf si leur nom l’indique.",
+  "احتمالِ عقدِ قرارداد": "Contrat probable",
+  "این وضعیت ستونِ «نیازمندِ بررسی» است": "Ce statut est la colonne de révision",
+  "این وضعیت یعنی تسک تمام‌شده است": "Ce statut signifie que la tâche est terminée",
+  "این وضعیت یعنی پروژه بسته شده است": "Ce statut signifie que le projet est clos",
+  "برای انجام": "À faire",
+  "تکمیل": "Terminé",
+  "حسابدار — فقط حساب‌های اساین‌شده": "Comptable — comptes assignés uniquement",
+  "در حالِ انجام": "En cours",
+  "دسترسی را اضافه می‌کند؛ هرگز چیزی را پس نمی‌گیرد.": "Accorde un accès ; n’en retire jamais.",
+  "دسترسی‌ای که این نقش می‌دهد": "Accès accordé par ce rôle",
+  "مدیرِ تیم — مدیریتِ دفترهای اساین‌شده": "Manager d’équipe — gère les bureaux assignés",
+  "مدیرِ حسابداری — همهٔ حساب‌ها": "Responsable comptable — tous les comptes",
+  "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Chef de projet — contrôle total des projets où il est assigné"
 }

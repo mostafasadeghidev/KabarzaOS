@@ -1,0 +1,23 @@
+Default tag catalogue and a tag form that shows what it means (1.7.0)
+
+Only three status tags shipped, so a fresh install could not give a
+project a status, tag a ledger row, or assign a member role. All 32
+defaults now ship as a migration with names in nine languages, guarded per
+slug so an operator's renames survive.
+
+The form exposed none of the meaning the schema already carried:
+
+- status_group was a free-text box with the placeholder `in_progress`.
+  It is now a dropdown whose choices AND label change with the tag type —
+  kanban column, pipeline tab, or accounting direction. The column is
+  reused on purpose and its meaning has always depended on the type;
+  nothing in the UI said so.
+- is_closed and is_review had no control at all, so the app read columns
+  nothing could set.
+- Two of five grantable access categories were exposed.
+
+Also: catalogue forms open in a dialog rather than expanding in place and
+pushing the table out of view, and a swatch picker replaces the raw
+colour input the browser renders as an oversized box.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

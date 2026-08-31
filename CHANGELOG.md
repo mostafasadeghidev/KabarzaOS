@@ -2,6 +2,41 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.7.0]
+
+### Added
+
+- **The full default tag catalogue** — 32 tags: member roles, ledger
+  categories, project statuses, task statuses and priorities, each with
+  names in all nine languages. Only three status tags shipped before,
+  which left a fresh install unable to give a project a status, tag a
+  ledger row, or assign a role.
+- **Tags now expose what they actually mean.** `status_group` is a
+  dropdown whose choices and label change with the tag type — kanban
+  column for task statuses, pipeline tab for project statuses, and
+  **accounting direction** (deposit / withdrawal / both) for ledger
+  categories. It used to be a free-text box whose placeholder was
+  `in_progress`, so the value had to be memorised.
+- **"This status means the task is done"** and **"this status is the
+  review column"** checkboxes. The columns existed in the schema and were
+  read by the app, but nothing could set them.
+- **All five access categories** a member-role tag can grant: project
+  manager, team manager, accountant (assigned accounts), accounting
+  manager (all accounts), or none. Two were exposed before.
+
+### Changed
+
+- **Catalogue forms open in a dialog** instead of expanding in place. The
+  form used to push the table down by its own height, so on longer lists
+  the row being edited scrolled out of view.
+- **A colour picker with swatches** replaces the raw `<input type=color>`,
+  which the browser renders as an oversized box that does not line up with
+  the rest of the form.
+- Catalogue tables show readable labels instead of raw keys, and drop
+  columns that do not apply to the tag type being viewed.
+
+---
+
 ## [1.6.1]
 
 ### Fixed

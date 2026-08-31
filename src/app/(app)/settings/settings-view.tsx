@@ -2,7 +2,16 @@
 
 import { useState, useTransition } from 'react';
 import { Star } from 'lucide-react';
+const tagSelectClass =
+  'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none'
+  + ' focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
+
 import { CatalogSection } from './catalog-section';
+import { ColorPicker } from '@/components/ui/color-picker';
+import {
+  groupChoices, groupFieldLabel, supportsClosed, supportsGrant, supportsReview,
+} from '@/domain/tags/groups';
+import type { TagType } from '@/db/schema/base';
 import {
   deleteCurrencyAction, deleteOfficeAction, deleteQaItemAction, deleteRateAction,
   deleteTagAction, deleteVendorAction, saveCurrencyAction, saveOfficeAction,
@@ -42,8 +51,9 @@ export interface SettingsData {
     fromCurrencyId: number; toCurrencyId: number; rate: string; effectiveDate: string;
   }>;
   tags: Array<{
-    id: number; name: string; type: string; color: string;
-    statusGroup: string; isReview: boolean; sortOrder: number; grantsCap: string;
+    id: number; name: string; type: TagType; color: string;
+    statusGroup: string; isReview: boolean; isClosed: boolean;
+    sortOrder: number; grantsCap: string;
     nameI18n: Record<string, string> | null;
   }>;
   offices: Array<{
@@ -58,7 +68,7 @@ export interface SettingsData {
 }
 
 /** نوعِ تگ‌ها — همان پنج نوعِ نسخهٔ قبلی. */
-const TAG_TYPES: Array<{ key: string; label: string }> = [
+const TAG_TYPES: Array<{ key: TagType; label: string }> = [
   { key: 'member_role', label: 'نقشِ عضو' },
   { key: 'project_status', label: 'وضعیتِ پروژه' },
   { key: 'task_status', label: 'وضعیتِ تسک' },
@@ -88,7 +98,7 @@ const field = 'h-9 w-full rounded-md border border-input bg-transparent px-3 tex
 export function SettingsView({ data }: { data: SettingsData }) {
   const tr = useT();
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('currencies');
-  const [tagType, setTagType] = useState('member_role');
+  const [tagType, setTagType] = useState<TagType>('member_role');
   const [pending, startTransition] = useTransition();
 
   const currencyName = (id: number | null) =>
@@ -254,11 +264,30 @@ export function SettingsView({ data }: { data: SettingsData }) {
                   ? <span className="inline-block size-4 rounded" style={{ backgroundColor: t.color }} />
                   : '—',
               },
-              { header: 'گروه', cell: (t) => t.statusGroup || '—' },
+              /*
+                ⚠️ برچسبِ خوانا، نه کلیدِ خام: ستون پیش‌تر `in_progress` نشان
+                می‌داد، که برای کسی که اسکیما را ندیده هیچ معنایی ندارد.
+                عنوانِ ستون هم با نوعِ تگ عوض می‌شود، چون معنای مقدار
+                عوض می‌شود.
+              */
               {
-                header: 'دسترسی',
-                cell: (t) => GRANTABLE_CAPS.find((c) => c.value === t.grantsCap)?.label ?? '—',
+                header: groupFieldLabel(tagType) || 'گروه',
+                cell: (t) => groupChoices(tagType).find((c) => c.value === t.statusGroup)?.label
+                  ?? (t.statusGroup || '—'),
               },
+              ...(supportsGrant(tagType)
+                ? [{
+                    header: 'دسترسی',
+                    cell: (t: { grantsCap: string }) =>
+                      GRANTABLE_CAPS.find((c) => c.value === t.grantsCap)?.label ?? '—',
+                  }]
+                : []),
+              ...(supportsClosed(tagType)
+                ? [{
+                    header: 'تمام‌شده',
+                    cell: (t: { isClosed: boolean }) => (t.isClosed ? '✓' : '—'),
+                  }]
+                : []),
               { header: 'ترتیب', cell: (t) => t.sortOrder, numeric: true },
             ]}
             saveAction={saveTagAction}
@@ -266,30 +295,68 @@ export function SettingsView({ data }: { data: SettingsData }) {
             renderForm={(editing) => (
               <>
                 <input type="hidden" name="type" value={tagType} />
-                <div className="grid gap-3 sm:grid-cols-4">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <div className="grid gap-1.5">
                     <Label htmlFor="t-name">{tr("نام")}</Label>
                     <Input id="t-name" name="name" defaultValue={editing?.name ?? ''} required />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="t-color">{tr("رنگ")}</Label>
-                    <Input id="t-color" name="color" type="color" defaultValue={editing?.color || '#6c5ce7'} />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="t-group">{tr("گروهِ وضعیت")}</Label>
-                    <Input
-                      id="t-group"
-                      name="statusGroup"
-                      className="num"
-                      placeholder="in_progress"
-                      defaultValue={editing?.statusGroup ?? ''}
-                    />
                   </div>
                   <div className="grid gap-1.5">
                     <Label htmlFor="t-sort">{tr("ترتیب")}</Label>
                     <Input id="t-sort" name="sortOrder" type="number" className="num" defaultValue={editing?.sortOrder ?? 0} />
                   </div>
                 </div>
+
+                <div className="grid gap-1.5">
+                  <Label htmlFor="t-color">{tr("رنگ")}</Label>
+                  <ColorPicker id="t-color" name="color" defaultValue={editing?.color || '#6c5ce7'} />
+                </div>
+
+                {/*
+                  ⚠️ `status_group` معنایش با نوعِ تگ عوض می‌شود: ستونِ کانبان،
+                  تبِ خط‌لوله، یا جهتِ حسابداری. پیش‌تر یک ورودیِ متنیِ آزاد
+                  بود و کاربر باید رشته‌هایی مثل `in_progress` را از بر
+                  می‌بود — عملاً غیرقابلِ استفاده.
+                */}
+                {groupChoices(tagType).length > 0 && (
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="t-group">{groupFieldLabel(tagType)}</Label>
+                    <select
+                      id="t-group" name="statusGroup" className={tagSelectClass}
+                      defaultValue={editing?.statusGroup ?? ''}
+                    >
+                      {groupChoices(tagType).map((c) => (
+                        <option key={c.value || 'none'} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {(supportsClosed(tagType) || supportsReview(tagType)) && (
+                  <div className="grid gap-2 rounded-md border p-3">
+                    {supportsClosed(tagType) && (
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox" name="isClosed" value="1"
+                          defaultChecked={editing?.isClosed ?? false}
+                          className="size-4 accent-primary"
+                        />
+                        {tagType === 'task_status'
+                          ? tr("این وضعیت یعنی تسک تمام‌شده است")
+                          : tr("این وضعیت یعنی پروژه بسته شده است")}
+                      </label>
+                    )}
+                    {supportsReview(tagType) && (
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox" name="isReview" value="1"
+                          defaultChecked={editing?.isReview ?? false}
+                          className="size-4 accent-primary"
+                        />
+                        {tr("این وضعیت ستونِ «نیازمندِ بررسی» است")}
+                      </label>
+                    )}
+                  </div>
+                )}
                 {/*
                   ترجمهٔ نامِ تگ — پورتِ `$i18n_fields` ِ نسخهٔ قبلی.
 
@@ -327,34 +394,23 @@ export function SettingsView({ data }: { data: SettingsData }) {
                   چیزی است که عضو با آن روی پروژه امضا می‌شود، و اختیارِ
                   «مدیرِ پروژه» از همان‌جا می‌آید (R-RBAC-12).
                 */}
-                {tagType === 'member_role' && (
+                {supportsGrant(tagType) && (
                   <div className="grid gap-1.5">
-                    <Label htmlFor="t-cap">{tr("دسترسیِ این تگ")}</Label>
+                    <Label htmlFor="t-cap">{tr("دسترسی‌ای که این نقش می‌دهد")}</Label>
                     <select
                       id="t-cap"
                       name="grantsCap"
                       defaultValue={editing?.grantsCap ?? ''}
-                      className="h-9 rounded-md border bg-background px-2 text-sm"
+                      className={tagSelectClass}
                     >
                       {GRANTABLE_CAPS.map((c) => (
-                        <option key={c.value} value={c.value}>{tr(c.label)}</option>
+                        <option key={c.value || 'none'} value={c.value}>{tr(c.label)}</option>
                       ))}
                     </select>
                     <p className="text-xs text-muted-foreground">
-                      {tr("عضوی که با این نقش روی پروژه‌ای امضا شود، همان پروژه را کامل می‌گرداند — بدونِ هیچ دسترسیِ سراسری.")}
+                      {tr("دسترسی را اضافه می‌کند؛ هرگز چیزی را پس نمی‌گیرد.")}
                     </p>
                   </div>
-                )}
-                {tagType === 'task_status' && (
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      name="isReview"
-                      defaultChecked={editing?.isReview ?? false}
-                      className="size-4 accent-primary"
-                    />
-                    {tr("این وضعیت یعنی «نیاز به ریویو»")}
-                  </label>
                 )}
               </>
             )}

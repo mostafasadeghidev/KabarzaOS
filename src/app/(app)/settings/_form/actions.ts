@@ -103,6 +103,7 @@ export async function saveTagAction(_prev: SettingsState, formData: FormData) {
         .map(([key, value]) => [key.slice(5), String(value)]),
     ),
     isReview: formData.get('isReview') !== null,
+    isClosed: formData.get('isClosed') !== null,
     sortOrder: Number(formData.get('sortOrder') ?? 0) || 0,
   }), 'تگ ذخیره نشد.');
 }

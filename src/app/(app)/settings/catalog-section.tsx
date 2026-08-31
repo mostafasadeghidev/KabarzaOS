@@ -5,6 +5,9 @@ import { useFormStatus } from 'react-dom';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import type { SettingsState } from './_form/actions';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -12,11 +15,14 @@ import {
 import { useT } from '@/i18n/client';
 
 /**
- * الگوی مشترکِ هر فهرستِ پایه: جدول + فرمِ درجا + حذف.
+ * الگوی مشترکِ هر فهرستِ پایه: جدول + فرم در دیالوگ + حذف.
  *
- * ⚠️ چون همهٔ این فهرست‌ها یک شکل دارند (,
- * در نسخهٔ قبلی هم تقریباً یکی‌اند)، یک جزء
- * مشترک ساخته شده تا رفتارِ حذف و پیام‌های خطا همه‌جا یکسان بماند.
+ * ⚠️ چرا دیالوگ و نه فرمِ درجا: فرم پیش‌تر بالای جدول باز می‌شد و صفحه را
+ * به اندازهٔ خودش پایین می‌راند؛ روی فهرست‌های بلند، جدول از دید بیرون
+ * می‌رفت و کاربر نمی‌دانست چه چیزی را ویرایش می‌کند.
+ *
+ * ⚠️ یک جزءِ مشترک برای همهٔ فهرست‌ها، تا رفتارِ حذف و پیام‌های خطا
+ * همه‌جا یکسان بماند.
  */
 
 export interface Column<T> {
@@ -81,18 +87,24 @@ export function CatalogSection<T extends { id: number }>({
         <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{notice}</p>
       )}
 
-      {open && (
-        <form key={editing?.id ?? 'new'} action={formAction} className="grid gap-3 rounded-md border p-3">
-          {editing && <input type="hidden" name="id" value={editing.id} />}
-          {renderForm(editing)}
-          <div className="flex justify-end gap-2">
-            <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
-              {tr("انصراف")}
-            </Button>
-            <SaveButton />
-          </div>
-        </form>
-      )}
+      <Dialog open={open} onOpenChange={(next) => { setOpen(next); if (!next) setNotice(null); }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editing ? tr('ویرایش') : addLabel}</DialogTitle>
+          </DialogHeader>
+          {/* key: با باز/بستهٔ دیالوگ، مقادیرِ پیش‌فرضِ فرم از نو خوانده شوند. */}
+          <form key={editing?.id ?? 'new'} action={formAction} className="grid gap-3">
+            {editing && <input type="hidden" name="id" value={editing.id} />}
+            {renderForm(editing)}
+            <DialogFooter>
+              <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
+                {tr("انصراف")}
+              </Button>
+              <SaveButton />
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {rows.length === 0 ? (
         <EmptyState title={t("موردی ثبت نشده")} />

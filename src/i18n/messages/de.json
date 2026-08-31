@@ -2084,5 +2084,18 @@
   "نامِ کاربریِ بات": "Bot-Benutzername",
   "ثبت‌شده": "gesetzt",
   "توکن از متغیرِ محیطیِ {env} می‌آید و از اینجا قابلِ تغییر نیست.": "Das Token stammt aus der Umgebungsvariable {env} und kann hier nicht geändert werden.",
-  "بات را با @BotFather بساز. آزمون‌های زیر پیامی برای کسی نمی‌فرستند مگر آنکه نامشان بگوید.": "Erstelle den Bot mit @BotFather. Die Tests unten senden niemandem etwas, sofern ihr Name nichts anderes sagt."
+  "بات را با @BotFather بساز. آزمون‌های زیر پیامی برای کسی نمی‌فرستند مگر آنکه نامشان بگوید.": "Erstelle den Bot mit @BotFather. Die Tests unten senden niemandem etwas, sofern ihr Name nichts anderes sagt.",
+  "احتمالِ عقدِ قرارداد": "Abschluss wahrscheinlich",
+  "این وضعیت ستونِ «نیازمندِ بررسی» است": "Dieser Status ist die Review-Spalte",
+  "این وضعیت یعنی تسک تمام‌شده است": "Dieser Status bedeutet, die Aufgabe ist erledigt",
+  "این وضعیت یعنی پروژه بسته شده است": "Dieser Status bedeutet, das Projekt ist abgeschlossen",
+  "برای انجام": "Zu erledigen",
+  "تکمیل": "Fertig",
+  "حسابدار — فقط حساب‌های اساین‌شده": "Buchhalter — nur zugewiesene Konten",
+  "در حالِ انجام": "In Arbeit",
+  "دسترسی را اضافه می‌کند؛ هرگز چیزی را پس نمی‌گیرد.": "Gewährt Zugriff; nimmt niemals welchen weg.",
+  "دسترسی‌ای که این نقش می‌دهد": "Zugriff, den diese Rolle gewährt",
+  "مدیرِ تیم — مدیریتِ دفترهای اساین‌شده": "Teamleiter — verwaltet zugewiesene Büros",
+  "مدیرِ حسابداری — همهٔ حساب‌ها": "Buchhaltungsleiter — alle Konten",
+  "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Projektleiter — volle Kontrolle über Projekte, auf denen er markiert ist"
 }

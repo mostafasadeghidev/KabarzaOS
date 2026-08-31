@@ -17,16 +17,26 @@
 export const PM_CAP = 'pm';
 
 /**
- * دسترسی‌هایی که یک تگِ نقشِ عضو می‌تواند بدهد.
+ * دسترسی‌هایی که یک تگِ نقشِ عضو می‌تواند بدهد — همان پنج‌تای نسخهٔ قبلی.
  *
- * ⚠️ فقط همین یکی منتقل شده و عمدی است: بقیهٔ capهای نسخهٔ قبلی در اپ از راهِ
- * ساختاری‌تری می‌آیند — مدیرِ دفتر از `user_offices.manages`، مدیرِ مالی از
- * نقشِ `finance`، و حسابدارِ محدود از دامنهٔ حساب. تکرارشان اینجا یعنی دو
- * منبعِ حقیقت برای یک چیز.
+ * ⚠️ چرا از راهِ تگ و نه فقط ساختار: مدلِ ذهنیِ مدیر «به این آدم نقشِ
+ * حسابدار می‌دهم» است، نه «او را به دفتر X اساین می‌کنم و نقشِ finance
+ * می‌دهم». هر دو راه باز است و تگ از هر دو ارزان‌تر است.
+ *
+ * ⚠️ اینها **اضافه** می‌کنند، هرگز کم نمی‌کنند: تگ نمی‌تواند دسترسیِ
+ * ساختاری را پس بگیرد، وگرنه برداشتنِ یک تگ می‌توانست مدیرِ دفتر را
+ * بی‌صدا از کار بیندازد.
  */
+export const OFFICE_MANAGER_CAP = 'office_manager';
+export const FINANCE_SCOPED_CAP = 'finance_scoped';
+export const MANAGE_FINANCE_CAP = 'manage_finance';
+
 export const GRANTABLE_CAPS: Array<{ value: string; label: string }> = [
   { value: '', label: 'بدونِ دسترسیِ خاص' },
-  { value: PM_CAP, label: 'مدیرِ پروژه (مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده)' },
+  { value: PM_CAP, label: 'مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده' },
+  { value: OFFICE_MANAGER_CAP, label: 'مدیرِ تیم — مدیریتِ دفترهای اساین‌شده' },
+  { value: FINANCE_SCOPED_CAP, label: 'حسابدار — فقط حساب‌های اساین‌شده' },
+  { value: MANAGE_FINANCE_CAP, label: 'مدیرِ حسابداری — همهٔ حساب‌ها' },
 ];
 
 export function isGrantableCap(value: string): boolean {

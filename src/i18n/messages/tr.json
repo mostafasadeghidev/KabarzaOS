@@ -2084,5 +2084,18 @@
   "نامِ کاربریِ بات": "Bot kullanıcı adı",
   "ثبت‌شده": "ayarlı",
   "توکن از متغیرِ محیطیِ {env} می‌آید و از اینجا قابلِ تغییر نیست.": "Jeton {env} ortam değişkeninden gelir ve buradan değiştirilemez.",
-  "بات را با @BotFather بساز. آزمون‌های زیر پیامی برای کسی نمی‌فرستند مگر آنکه نامشان بگوید.": "Botu @BotFather ile oluştur. Aşağıdaki testler, adları söylemedikçe kimseye bir şey göndermez."
+  "بات را با @BotFather بساز. آزمون‌های زیر پیامی برای کسی نمی‌فرستند مگر آنکه نامشان بگوید.": "Botu @BotFather ile oluştur. Aşağıdaki testler, adları söylemedikçe kimseye bir şey göndermez.",
+  "احتمالِ عقدِ قرارداد": "Sözleşme olası",
+  "این وضعیت ستونِ «نیازمندِ بررسی» است": "Bu durum inceleme sütunudur",
+  "این وضعیت یعنی تسک تمام‌شده است": "Bu durum görevin tamamlandığı anlamına gelir",
+  "این وضعیت یعنی پروژه بسته شده است": "Bu durum projenin kapandığı anlamına gelir",
+  "برای انجام": "Yapılacak",
+  "تکمیل": "Tamamlandı",
+  "حسابدار — فقط حساب‌های اساین‌شده": "Muhasebeci — yalnızca atanan hesaplar",
+  "در حالِ انجام": "Devam ediyor",
+  "دسترسی را اضافه می‌کند؛ هرگز چیزی را پس نمی‌گیرد.": "Erişim ekler; asla geri almaz.",
+  "دسترسی‌ای که این نقش می‌دهد": "Bu rolün verdiği erişim",
+  "مدیرِ تیم — مدیریتِ دفترهای اساین‌شده": "Takım yöneticisi — atanan ofisleri yönetir",
+  "مدیرِ حسابداری — همهٔ حساب‌ها": "Muhasebe müdürü — tüm hesaplar",
+  "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Proje yöneticisi — etiketlendiği projelerde tam yetki"
 }
