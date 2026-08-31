@@ -10,6 +10,7 @@ import {
 import { ForbiddenError } from '@/domain/access/guard';
 import type { RemoveOutcome } from '@/domain/people/offboarding';
 import type { Role } from '@/domain/access/permissions';
+import { isValidUsername } from '@/domain/auth/login';
 
 /**
  * اقدام‌های صفحهٔ افراد.و اقدام‌های ردیفِ نسخهٔ قبلی.
@@ -45,6 +46,15 @@ const personSchema = z.object({
    */
   password: z.string().min(8, 'رمز دستِ‌کم ۸ نویسه باشد').optional()
     .or(z.literal('').transform(() => undefined)),
+  /**
+   * ⚠️ اختیاری: خالی یعنی فقط با ایمیل وارد می‌شود. قاعده‌اش همان قاعدهٔ
+   * ویزاردِ نصب است، تا دو تعریفِ متفاوت از «نامِ کاربریِ معتبر» نداشته
+   * باشیم.
+   */
+  username: z.string().trim().toLowerCase()
+    .refine((v) => v === '' || isValidUsername(v),
+      'نامِ کاربری باید ۳ تا ۳۲ نویسهٔ لاتین، رقم، نقطه، خط تیره یا زیرخط باشد')
+    .default(''),
   tagIds: idList,
   officeIds: idList,
   managedOfficeIds: idList,
@@ -52,7 +62,7 @@ const personSchema = z.object({
 
 export interface PersonFormState {
   error?: string;
-  fieldErrors?: Partial<Record<'name' | 'email' | 'phone' | 'password', string>>;
+  fieldErrors?: Partial<Record<'name' | 'email' | 'phone' | 'password' | 'username', string>>;
   values?: Record<string, string>;
   ok?: boolean;
 }
@@ -62,12 +72,14 @@ function parse(formData: FormData) {
     name: String(formData.get('name') ?? ''),
     email: String(formData.get('email') ?? ''),
     phone: String(formData.get('phone') ?? ''),
+    username: String(formData.get('username') ?? ''),
   };
 
   const parsed = personSchema.safeParse({
     name: values.name,
     email: values.email,
     phone: values.phone,
+    username: values.username,
     // ⚠️ عمداً در `values` نیست: مقدارِ بازگشتی به فرم برمی‌گردد و رمز
     // نباید در HTML ِ پاسخ بنشیند.
     password: String(formData.get('password') ?? ''),
@@ -82,7 +94,7 @@ function parse(formData: FormData) {
 function fieldErrorsOf(issues: Array<{ path: PropertyKey[]; message: string }>) {
   const out: PersonFormState['fieldErrors'] = {};
   for (const issue of issues) {
-    const key = issue.path[0] as 'name' | 'email' | 'phone';
+    const key = issue.path[0] as 'name' | 'email' | 'phone' | 'username';
     if (key && !out[key]) out[key] = issue.message;
   }
   return out;

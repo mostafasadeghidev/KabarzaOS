@@ -1,8 +1,9 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, sql as raw } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, tagRelations, userOffices, userPermissions, userRoles, users } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor, type Role } from '@/domain/access/permissions';
 import { checkPasswordPolicy, hashPassword } from '@/domain/auth/password';
+import { isValidUsername, normalizeIdentifier } from '@/domain/auth/login';
 import {
   hiddenTabsFrom, hideRowsFor, isStorablePermission, levelsOf, permissionsFor, REPORT_TABS,
 } from '@/domain/access/staff-levels';
@@ -73,6 +74,8 @@ export interface PersonInput {
   name: string;
   email: string;
   phone: string;
+  /** نامِ کاربری برای ورود؛ خالی یعنی فقط با ایمیل وارد می‌شود. */
+  username?: string;
   /** رمزِ اولیه؛ خالی یعنی کاربر هنوز نمی‌تواند وارد شود. */
   password?: string;
   tagIds: number[];
@@ -84,13 +87,37 @@ export interface PersonInput {
 export async function createPerson(actor: Actor, role: Role, input: PersonInput): Promise<number> {
   assertCanManage(actor, 'members');
 
-  const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email));
-  if (existing.length > 0) throw new ForbiddenError('email.taken');
+  const email = normalizeIdentifier(input.email);
+  const username = normalizeIdentifier(input.username ?? '');
+
+  /**
+   * ⚠️ مقایسه روی حروفِ کوچک، چون شاخصِ یکتاییِ دیتابیس هم همان است.
+   * با مقایسهٔ حساس‌به‌حروف، «A@x.com» از این گارد رد می‌شد و بعد به خطای
+   * خامِ Postgres می‌خورد — یعنی پیامِ نامفهوم به‌جای «این ایمیل ثبت شده».
+   */
+  const clash = await db.select({ id: users.id }).from(users).where(
+    username === ''
+      ? raw`lower(${users.email}) = ${email}`
+      : or(raw`lower(${users.email}) = ${email}`, raw`lower(${users.username}) = ${username}`),
+  );
+  if (clash.length > 0) throw new ForbiddenError('email.taken');
+  if (username !== '' && !isValidUsername(username)) throw new ForbiddenError('username.invalid');
+
+  /**
+   * ⚠️ همان سیاستی که تغییرِ رمز اعمال می‌کند. پیش‌تر ساختِ کاربر هر رشته‌ای
+   * را می‌پذیرفت، پس رمزی که از راهِ «تغییرِ رمز» رد می‌شد از راهِ «ساخت»
+   * قابلِ کاشتن بود.
+   */
+  if (input.password) {
+    const policy = checkPasswordPolicy(input.password);
+    if (!policy.ok) throw new ForbiddenError(`password.${policy.reason}`);
+  }
 
   const id = await db.transaction(async (tx) => {
     const rows = await tx.insert(users).values({
       name: input.name,
-      email: input.email,
+      email,
+      username: username || null,
       phone: input.phone,
       // ⚠️ بدونِ رمز، ردیف ساخته می‌شود ولی ورود ممکن نیست — مدیر بعداً
       // از همان صفحه رمز می‌گذارد. هرگز رمزِ پیش‌فرضِ حدس‌زدنی نمی‌سازیم.
@@ -104,7 +131,13 @@ export async function createPerson(actor: Actor, role: Role, input: PersonInput)
     return userId;
   });
 
-  await audit(actor, 'person.create', id, null, { role, ...input });
+  /**
+   * ⚠️ رمز از ردِ ممیزی بیرون کشیده می‌شود. پیش‌تر کلِ ورودی اسپرد می‌شد،
+   * یعنی رمزِ خام برای همیشه در جدولِ ممیزی می‌ماند — جایی که خیلی‌ها
+   * دسترسیِ خواندن دارند و هیچ‌کس انتظارِ راز ندارد.
+   */
+  const { password: _omit, ...safe } = input;
+  await audit(actor, 'person.create', id, null, { role, ...safe, hasPassword: Boolean(input.password) });
   return id;
 }
 

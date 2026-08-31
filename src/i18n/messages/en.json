@@ -2100,5 +2100,7 @@
   "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Project manager — full control of projects they are tagged on",
   "هنوز حسابی ساخته نشده. از مدیرِ مالی بخواهید یکی بسازد.": "No account exists yet. Ask a finance manager to create one.",
   "برای شروع یک حساب بسازید؛ هر ردیفِ دفترکل به یک حساب می‌چسبد.": "Create an account to start; every ledger row belongs to one.",
-  "مشخصاتِ شرکت": "Company details"
+  "مشخصاتِ شرکت": "Company details",
+  "نامِ کاربری (اختیاری)": "Username (optional)",
+  "با ایمیل هم می‌تواند وارد شود؛ این فقط راهِ دوم است.": "They can also sign in with their email; this is just a second way."
 }

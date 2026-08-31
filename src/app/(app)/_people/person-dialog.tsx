@@ -218,6 +218,31 @@ export function PersonDialog({
             «رمزِ ورود» روی کارتِ فرد) تا با یک ذخیرهٔ اتفاقیِ فرم، رمزِ
             کسی بی‌خبر عوض نشود.
           */}
+          {/*
+            نامِ کاربری — راهِ دومِ ورود، کنارِ ایمیل.
+            ⚠️ فقط هنگامِ ساخت: عوض‌کردنش بعداً یعنی کسی که با آن وارد
+            می‌شده ناگهان نمی‌تواند، و آن باید تصمیمِ آگاهانه باشد نه
+            عارضهٔ یک ذخیرهٔ فرم.
+          */}
+          {!person && (
+            <div className="grid gap-1.5">
+              <Label htmlFor="p-username">{tr("نامِ کاربری (اختیاری)")}</Label>
+              <Input
+                id="p-username"
+                name="username"
+                autoComplete="off"
+                dir="ltr"
+                placeholder="ali_ahmadi"
+              />
+              <p className="text-xs text-muted-foreground">
+                {tr("با ایمیل هم می‌تواند وارد شود؛ این فقط راهِ دوم است.")}
+              </p>
+              {state.fieldErrors?.username && (
+                <p className="text-xs text-destructive">{state.fieldErrors.username}</p>
+              )}
+            </div>
+          )}
+
           {!person && (
             <div className="grid gap-1.5">
               <Label htmlFor="p-password">{tr("رمزِ ورود (اختیاری)")}</Label>

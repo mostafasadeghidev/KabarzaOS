@@ -2100,5 +2100,7 @@
   "مدیرِ پروژه — مدیریتِ کاملِ پروژه‌هایی که رویشان امضا شده": "Projektleiter — volle Kontrolle über Projekte, auf denen er markiert ist",
   "هنوز حسابی ساخته نشده. از مدیرِ مالی بخواهید یکی بسازد.": "Es gibt noch kein Konto. Bitten Sie einen Finanzmanager, eines anzulegen.",
   "برای شروع یک حساب بسازید؛ هر ردیفِ دفترکل به یک حساب می‌چسبد.": "Legen Sie zum Start ein Konto an; jede Buchungszeile gehört zu einem.",
-  "مشخصاتِ شرکت": "Firmendaten"
+  "مشخصاتِ شرکت": "Firmendaten",
+  "نامِ کاربری (اختیاری)": "Benutzername (optional)",
+  "با ایمیل هم می‌تواند وارد شود؛ این فقط راهِ دوم است.": "Die Anmeldung ist auch per E-Mail möglich; dies ist nur ein zweiter Weg."
 }

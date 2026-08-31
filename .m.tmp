@@ -1,17 +1,19 @@
-Settings and navigation fixes from review
+Member creation: username, password policy, and no secret in the audit log
 
-- Finance was a dead end with no accounts: the empty state said "create a
-  bank account first" while replacing the very tab where accounts are
-  created. The create form is now what you land on.
-- Company details moved from Profile to Settings. Profile is about the
-  user; company data belongs to the organisation.
-- Offices can be reactivated. Deleting an office sets isActive=false so
-  old references survive, but no form field could set it back — deletion
-  was effectively permanent.
-- Daily report is a section under System rather than its own tab. Both are
-  system settings and both depend on the scheduler.
-- Profile and Settings moved into the account menu at the bottom of the
-  sidebar, their conventional place. The Settings entry there had been
-  disabled with a comment saying its page did not exist yet; it does.
+Three defects in createPerson, all found by reading it against the
+previous system's equivalent:
+
+- The plaintext password was spread into the audit trail. It is now
+  omitted and only `hasPassword` is recorded. Audit rows are widely
+  readable and nobody expects a secret in one.
+- No password policy at creation, while changing a password enforced one.
+  A password rejected by the change form could be planted at creation.
+- Email uniqueness compared case-sensitively while the database index is
+  case-insensitive, so "A@x.com" passed the guard and then hit a raw
+  Postgres error instead of a readable message.
+
+Also adds an optional username at creation, matching the login form which
+already accepted either identifier, validated by the same rule the setup
+wizard uses.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
