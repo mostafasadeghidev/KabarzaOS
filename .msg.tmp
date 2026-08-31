@@ -1,0 +1,23 @@
+Unique network aliases so the app finds its own database (1.6.1)
+
+Compose service names become DNS names on every network the container
+joins, and deployment tools attach the app to a shared proxy network as
+well. On a host running more than one stack, the generic name `db`
+resolved to a different project's Postgres, which reported
+
+  password authentication failed for user "kabarza"
+
+pointing at credentials when the real problem was the destination.
+
+It failed intermittently: each connection resolves the name on its own,
+so the setup wizard could succeed while the dashboard behind it failed on
+the very next request.
+
+Services now answer to unique aliases — kabarzaos-db, kabarzaos-storage,
+kabarzaos-app — which no other stack can claim. Service names are
+unchanged, so volumes are untouched.
+
+Confirmed on a host where this happened: `db` resolved to 172.18.0.4,
+another project's database, while the real one sat at 172.23.0.3.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

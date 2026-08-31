@@ -16,6 +16,13 @@ services:
   app:
     build: .
     restart: unless-stopped
+    # ⚠️ نامِ یکتا روی شبکه. نامِ سرویس (`app`, `db`) روی **هر** شبکه‌ای که
+    # کانتینر به آن وصل است DNS می‌شود. ابزارهای استقرار اپ را به شبکهٔ
+    # مشترکِ پراکسی هم وصل می‌کنند، و آنجا `db` ِ پروژهٔ دیگری زودتر پاسخ
+    # می‌دهد — اپ بی‌صدا به دیتابیسِ اشتباه وصل می‌شود.
+    networks:
+      default:
+        aliases: [kabarzaos-app]
     env_file:
       # required:false تا اعتبارسنجیِ فایل پیش از ساختِ .env.prod هم کار کند
       - path: .env.prod
@@ -23,8 +30,8 @@ services:
     environment:
       # ⚠️ نامِ میزبان‌ها داخلِ شبکهٔ compose اند، نه localhost. اینها عمداً
       # اینجا ست می‌شوند تا .env.prod ِ کاربر نتواند اشتباهشان کند.
-      DATABASE_URL: postgres://kabarza:${DB_PASSWORD:-kabarza-internal}@db:5432/kabarza
-      S3_ENDPOINT: http://storage:9000
+      DATABASE_URL: postgres://kabarza:${DB_PASSWORD:-kabarza-internal}@kabarzaos-db:5432/kabarza
+      S3_ENDPOINT: http://kabarzaos-storage:9000
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-kabarza}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-kabarza-internal-storage}
     ports:
@@ -52,6 +59,9 @@ services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    networks:
+      default:
+        aliases: [kabarzaos-db]
     environment:
       POSTGRES_USER: kabarza
       POSTGRES_PASSWORD: ${DB_PASSWORD:-kabarza-internal}
@@ -72,6 +82,9 @@ services:
   storage:
     image: minio/minio:latest
     restart: unless-stopped
+    networks:
+      default:
+        aliases: [kabarzaos-storage]
     command: server /data --console-address ':9001'
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY:-kabarza}
@@ -105,7 +118,7 @@ services:
       sh -c 'while true; do
         S="$$CRON_SECRET";
         [ -n "$$S" ] || S=$$(cat /secrets/cron_secret 2>/dev/null || true);
-        [ -n "$$S" ] && curl -fsS -m 30 -H "x-cron-secret: $$S" http://app:3000/api/cron/tick >/dev/null || true;
+        [ -n "$$S" ] && curl -fsS -m 30 -H "x-cron-secret: $$S" http://kabarzaos-app:3000/api/cron/tick >/dev/null || true;
         sleep 300;
       done'
     # ⚠️ service_healthy نه service_started: با started، اولین تیک به اپِ

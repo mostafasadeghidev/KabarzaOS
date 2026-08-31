@@ -2,6 +2,31 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.6.1]
+
+### Fixed
+
+- **The app could connect to another project's database.** Compose service
+  names become DNS names on *every* network the container joins, and
+  deployment tools attach the app to a shared proxy network as well. On a
+  host running more than one stack, the generic name `db` resolved to a
+  different project's Postgres — which reported
+  `password authentication failed for user "kabarza"`, pointing at
+  credentials when the real problem was the destination.
+
+  It failed *intermittently*: each connection resolves the name on its
+  own, so the setup wizard could succeed while the dashboard behind it
+  failed on the very next request.
+
+  Services now answer to unique network aliases — `kabarzaos-db`,
+  `kabarzaos-storage`, `kabarzaos-app` — which no other stack can claim.
+  Service names are unchanged, so volumes and habits are untouched.
+
+  ⚠️ Redeploy is required for the fix to take effect; the aliases only
+  exist once the new compose file is applied.
+
+---
+
 ## [1.6.0]
 
 ### Added
