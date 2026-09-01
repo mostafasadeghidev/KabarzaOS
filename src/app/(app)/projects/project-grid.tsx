@@ -12,6 +12,7 @@ import { ProjectCard } from './project-card';
 import type { StatusOption } from './status-picker';
 import type { CardOptions } from './card-quick-add';
 import { cn } from '@/lib/utils';
+import { CardPager, useCardPage } from '@/components/ui/card-pager';
 import { useT } from '@/i18n/client';
 
 /**
@@ -48,6 +49,9 @@ export function ProjectGrid({
       .filter((p) => matchesTab(tab, p))
       .filter((p) => (q ? p.title.toLowerCase().includes(q) : true));
   }, [projects, tab, query]);
+
+  // ⚠️ کوئریِ پروژه‌ها `LIMIT` ندارد؛ بریدن اینجا اتفاق می‌افتد.
+  const pager = useCardPage(visible);
 
   /** نتیجه‌های جستجو در تب‌های دیگر — تا کاربر گم نشود. */
   const otherHits = useMemo(() => {
@@ -106,7 +110,7 @@ export function ProjectGrid({
       ) : (
         <>
           <div className="grid gap-3 @2xl/main:grid-cols-2 @5xl/main:grid-cols-3">
-            {visible.map((p) => (
+            {pager.slice.map((p) => (
               <ProjectCard
                 key={p.id}
                 project={p}
@@ -116,6 +120,7 @@ export function ProjectGrid({
               />
             ))}
           </div>
+          <CardPager {...pager} />
           {otherHits > 0 && (
             <p className="text-xs text-muted-foreground">
               <span className="num">{otherHits}</span>

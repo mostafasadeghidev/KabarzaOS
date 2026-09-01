@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 /**
@@ -61,6 +62,7 @@ export function TaskDialog({
   const [deleting, startDelete] = useTransition();
 
   const [saveState, saveAction] = useActionState<TaskFormState, FormData>(updateTaskAction, {});
+  useActionToast(saveState, { success: 'تغییرات ذخیره شد.' });
   const [noteState, noteAction] = useActionState<TaskFormState, FormData>(addTaskNoteAction, {});
 
   // هر بار که تسکِ دیگری باز می‌شود از نو بارگذاری می‌کنیم.

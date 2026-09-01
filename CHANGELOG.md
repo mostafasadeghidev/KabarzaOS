@@ -2,6 +2,51 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.22.0]
+
+### Fixed
+
+- **Four buttons had been dead since 1.16.0.** The automated edit that added
+  translators in that release put `const tr = useT()` as the first statement
+  *inside* `startTransition(async () => {` in four files. A hook called
+  outside render throws immediately, so the callback died on its first line:
+  approve/reject a tender bid, pay or delete a recurring cost, delete a
+  meeting or reminder, and — worst — picking a message recipient.
+
+  The guard written in 1.17.0 missed them twice. First it judged scope by
+  indentation, and the inserted lines carried the wrong indentation. Then it
+  counted braces but looked for the nearest *named* function, and an
+  anonymous callback has no name, so it walked past the boundary to the
+  component outside. The rule is simply **any** function boundary. It is now
+  a test (`src/domain/__tests__/hook-placement.test.ts`) that also asserts the
+  detector catches the exact shape that escaped four times, so a green run
+  means something.
+
+- **The expense kind filter had a dead option.** It offered `one_off` where
+  the type is `once`, so choosing "one-off" always matched zero rows.
+
+### Changed
+
+- **"Payments and expenses" is now two tabs.** Members' money — payment
+  requests and their bank details — and the company's own recurring costs are
+  different work for different people and were never looked at together. The
+  previous system agrees: member finance is its own screen there, and
+  recurring costs live under the finance hub.
+
+- **The bank-accounts tab is hidden from view-only finance users** instead of
+  rendering an empty panel, matching the previous system's capability gating.
+
+### Added
+
+- **Pagination on the project and people grids.** Neither query has a `LIMIT`
+  — the whole table loads and the whole table renders. Harmless at a hundred
+  rows, quietly slow after that.
+
+- **More toasts**, on the forms where the surface disappears on success:
+  quick-add member and client, bank account, pay request, expense, task edit.
+
+---
+
 ## [1.21.0]
 
 ### Fixed

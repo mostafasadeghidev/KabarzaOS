@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { addClientAction, addMemberAction, type CardActionState } from './_form/card-actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 /**
@@ -43,7 +44,9 @@ export function CardQuickAdd({ projectId, options }: { projectId: number; option
   const [openForm, setOpenForm] = useState<'member' | 'client' | null>(null);
   const [pickedUser, setPickedUser] = useState('');
   const [memberState, memberAction] = useActionState<CardActionState, FormData>(addMemberAction, {});
+  useActionToast(memberState, { success: 'عضو اضافه شد.' });
   const [clientState, clientAction] = useActionState<CardActionState, FormData>(addClientAction, {});
+  useActionToast(clientState, { success: 'کارفرما اضافه شد.' });
 
   const toggle = (which: 'member' | 'client') =>
     setOpenForm((cur) => (cur === which ? null : which));

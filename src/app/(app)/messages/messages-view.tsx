@@ -208,7 +208,6 @@ export function MessagesView({
 
   const togglePick = (id: number) =>
     setPicked((cur) => {
-  const tr = useT();
       const next = new Set(cur);
       if (next.has(id)) next.delete(id);
       else next.add(id);

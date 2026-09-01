@@ -67,7 +67,6 @@ export function MeetingsView({
 
   const run = (fn: () => Promise<SimpleState>) =>
     startTransition(async () => {
-  const tr = useT();
       const result = await fn();
       setNotice(result.error ?? null);
     });

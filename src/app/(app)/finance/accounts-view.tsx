@@ -19,6 +19,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 // همان شکلِ `listAccounts` — یک تعریف برای هر دو تب.
@@ -62,6 +63,7 @@ export function AccountsView({
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [state, formAction] = useActionState<PayoutState, FormData>(saveAccountAction, {});
+  useActionToast(state, { success: 'حساب ذخیره شد.' });
 
   useEffect(() => {
     if (state.ok) { setOpen(false); setEditing(null); setNotice(null); }

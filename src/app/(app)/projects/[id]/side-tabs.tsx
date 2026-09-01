@@ -434,7 +434,6 @@ function BidActions({
 
   const run = (fn: () => Promise<QaActionState>) =>
     startTransition(async () => {
-  const tr = useT();
       setError(null);
       const result = await fn();
       if (result.error) setError(result.error);

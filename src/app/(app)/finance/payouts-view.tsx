@@ -23,6 +23,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { TablePager, TableSearch, useTableView } from '@/components/ui/table-search';
 import { BankDirectory, type BankRow } from './bank-directory';
@@ -84,6 +85,7 @@ function Submit({ label }: { label: string }) {
  * می‌خواهد و همان گاردهای حسابداری (قفلِ دوره) رویشان اعمال می‌شود.
  */
 export function PayoutsView({
+  section,
   requests,
   recurring,
   accounts,
@@ -93,6 +95,15 @@ export function PayoutsView({
   canManage,
   directory,
 }: {
+  /**
+   * کدام نیمه رندر شود.
+   *
+   * ⚠️ چرا یک پراپ و نه دو فایل: تقسیمِ فیزیکیِ این ۵۲۰ خط چهار چیز را
+   * می‌شکست — `field` و `Submit` که هر دو دیالوگ از آن استفاده می‌کنند،
+   * `TablePager` که بینِ دو بخش افتاده، و تایپ‌هایی که `finance-page`
+   * ایمپورت می‌کند. نتیجهٔ دیدنی همان است: دو تبِ جدا.
+   */
+  section: 'members' | 'expenses';
   requests: RequestRow[];
   recurring: RecurringRow[];
   accounts: Array<{ id: number; name: string; currencyCode: string | null }>;
@@ -120,14 +131,15 @@ export function PayoutsView({
   const [editing, setEditing] = useState<RecurringRow | null>(null);
 
   const [payState, payAction] = useActionState<PayoutState, FormData>(payRequestAction, {});
+  useActionToast(payState, { success: 'پرداخت ثبت شد.' });
   const [expenseState, expenseAction] = useActionState<PayoutState, FormData>(saveRecurringAction, {});
+  useActionToast(expenseState, { success: 'هزینه ذخیره شد.' });
 
   useEffect(() => { if (payState.ok) setPayTarget(null); }, [payState]);
   useEffect(() => { if (expenseState.ok) { setExpenseOpen(false); setEditing(null); } }, [expenseState]);
 
   const act = (fn: () => Promise<PayoutState>) =>
     startTransition(async () => {
-  const tr = useT();
       const result = await fn();
       setNotice(result.error ?? null);
     });
@@ -168,6 +180,7 @@ export function PayoutsView({
       )}
 
       {/* ---- درخواست‌های پرداخت ---- */}
+      {section === 'members' && (
       <section className="grid gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-semibold">{t("درخواست‌های پرداخت")}</h2>
@@ -245,10 +258,13 @@ export function PayoutsView({
           </div>
         )}
       </section>
+      )}
 
-      <TablePager view={requestsView} />
+      {/* ⚠️ صفحه‌بند به جدولِ درخواست‌ها تعلق دارد، نه به هزینه‌ها. */}
+      {section === 'members' && <TablePager view={requestsView} />}
 
       {/* ---- هزینه‌های دوره‌ای ---- */}
+      {section === 'expenses' && (
       <section className="grid gap-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">{t("هزینه‌های دوره‌ای")}</h2>
@@ -288,7 +304,7 @@ export function PayoutsView({
             >
               <option value="">{tr('هر نوع')}</option>
               <option value="recurring">{tr('دوره‌ای')}</option>
-              <option value="one_off">{tr('یک‌بار')}</option>
+              <option value="once">{tr('یک‌بار')}</option>
             </select>
           </div>
         )}
@@ -360,6 +376,7 @@ export function PayoutsView({
           ))
         )}
       </section>
+      )}
 
       {/* ---- مودالِ پرداختِ درخواست ---- */}
       <Dialog open={payTarget !== null} onOpenChange={(o) => !o && setPayTarget(null)}>
@@ -508,13 +525,16 @@ export function PayoutsView({
       </Dialog>
 
       {/*
-        ⚠️ زیرِ درخواست‌ها می‌نشیند، نه تبِ جدا: نسخهٔ قبلی هم آن را در همان
-        صفحهٔ پرداخت‌ها دارد، چون درست وقتی لازم می‌شود که کسی دارد پرداخت
-        می‌کند.
+        ⚠️ کنارِ درخواست‌های پرداخت می‌ماند، نه کنارِ هزینه‌های شرکت — نسخهٔ
+        قبلی هم هر دو را روی صفحهٔ «مالی اعضا» دارد، چون شمارهٔ حساب درست
+        وقتی لازم می‌شود که کسی دارد به یک **عضو** پرداخت می‌کند. هزینهٔ
+        دوره‌ای ربطی به آن ندارد.
       */}
-      <div className="rounded-md border p-3">
-        <BankDirectory rows={directory.rows} showPhone={directory.showPhone} />
-      </div>
+      {section === 'members' && (
+        <div className="rounded-md border p-3">
+          <BankDirectory rows={directory.rows} showPhone={directory.showPhone} />
+        </div>
+      )}
     </div>
   );
 }

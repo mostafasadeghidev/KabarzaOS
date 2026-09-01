@@ -8,6 +8,7 @@ import { AccessDialog } from './access-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { CardPager, useCardPage } from '@/components/ui/card-pager';
 import { useT } from '@/i18n/client';
 
 /**
@@ -63,6 +64,9 @@ export function PeopleGrid({
       .filter((p) => (q ? `${p.name} ${p.email}`.toLowerCase().includes(q) : true))
       .filter((p) => (officeIds.length === 0 ? true : p.offices.some((o) => officeIds.includes(o.id))));
   }, [people, tab, query, officeIds, section.supportsOffboarding]);
+
+  // ⚠️ کوئریِ افراد `LIMIT` ندارد؛ بریدن اینجا اتفاق می‌افتد.
+  const pager = useCardPage(visible);
 
   const openAdd = () => { setEditing(null); setDialogOpen(true); };
   const openEdit = (person: PersonView) => { setEditing(person); setDialogOpen(true); };
@@ -151,7 +155,7 @@ export function PeopleGrid({
         />
       ) : (
         <div className="grid gap-3 @3xl/main:grid-cols-3 @xl/main:grid-cols-2">
-          {visible.map((p) => (
+          {pager.slice.map((p) => (
             <PersonCard
               key={p.id}
               person={p}
@@ -166,6 +170,8 @@ export function PeopleGrid({
           ))}
         </div>
       )}
+
+      <CardPager {...pager} />
 
       {isOwner && (
         <AccessDialog
