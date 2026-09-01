@@ -27,6 +27,18 @@ export const TASK_STATUS_GROUPS: GroupChoice[] = [
   { value: 'complete', label: 'تکمیل' },
 ];
 
+/**
+ * برچسبِ گروه با کلیدش — برای منوهایی که سرگروه نشان می‌دهند.
+ *
+ * ⚠️ چرا اینجا و نه در خودِ منو: `status-picker` و `tasks-tab` هرکدام
+ * رونوشتِ خودشان را داشتند و رونوشتِ اولی از افزونه فاصله گرفته بود
+ * («متوقف» به‌جای «نگه‌داشته‌شده»، «لغوشده» به‌جای «کنسل‌شده»). یک منبع،
+ * یک جواب.
+ */
+export function groupLabels(choices: GroupChoice[]): Record<string, string> {
+  return Object.fromEntries(choices.map((c) => [c.value, c.label]));
+}
+
 /** تب‌های خط‌لوله در نمای پروژه‌ها. */
 export const PROJECT_STATUS_GROUPS: GroupChoice[] = [
   { value: 'not_started', label: 'شروع نشده' },

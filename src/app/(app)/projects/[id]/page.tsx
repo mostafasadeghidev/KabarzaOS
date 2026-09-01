@@ -197,7 +197,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           canManage,
           canSeeFinance: detail.canSeeFinance,
           tasks,
-          taskStatuses: taskStatuses.map((t) => ({ id: t.id, name: t.name, group: t.group })),
+          taskStatuses: taskStatuses.map((t) => ({
+            id: t.id, name: t.name, group: t.group, color: t.color,
+          })),
           taskFormOptions,
           qaForm: qaForm ? { roles: qaForm.roles } : null,
           tenderIsOpen: detail.tenderIsOpen,

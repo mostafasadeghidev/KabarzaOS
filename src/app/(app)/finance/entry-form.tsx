@@ -129,7 +129,6 @@ export function EntryForm({
     if (next !== null) setAmount(String(next));
   };
   const onAmountChange = (value: string) => {
-  const tr = useT();
     setAmount(value);
     const next = rateFromAmounts(Number(value), Number(settled));
     if (next !== null) setRate(String(next));

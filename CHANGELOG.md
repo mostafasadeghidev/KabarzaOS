@@ -2,6 +2,43 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.17.0]
+
+### Fixed
+
+- **The status menu did nothing when clicked.** A translator hook had been
+  inserted inside the `pick` callback rather than in the component body, so
+  the first click threw an invalid-hook-call and the status change never
+  reached the server. The same edit had landed in three places: project
+  status, task status, and the amount field of the finance entry form.
+
+  The check that was supposed to catch this used indentation to decide which
+  function a hook belonged to — and the inserted lines carried the wrong
+  indentation, so they looked top-level. It now counts braces.
+
+- **The same status appeared twice in the menu.** Migration 0016 wrote tag
+  translations by matching `status_group`, but a group is a bucket, not a
+  name: `in_progress` holds both "In progress" and "In review". Both were
+  given the English of the group, so every language except the source one
+  showed one option twice. Migration 0020 repairs the three affected rows,
+  and only while they still carry 0016's exact blob — a tag a manager has
+  since translated is left alone.
+
+- **Two sets of pipeline-group labels had drifted apart.** `status-picker`
+  kept a private copy that said "متوقف" and "لغوشده" where the tag form said
+  "نگه‌داشته‌شده" and "کنسل‌شده", so one group answered to two names — and
+  since those were also the tag names, two more groups read as duplicates.
+  Both menus now take their labels from `domain/tags/groups.ts`.
+
+### Added
+
+- **A colour dot on every status option, and a tick on the current one** —
+  `kteam-dot` and `kteam-status-cur` in the previous system, both missing
+  here. Without them a group header and its only option are the same text at
+  the same size, which is what made the list read as repeated.
+
+---
+
 ## [1.16.1]
 
 ### Fixed

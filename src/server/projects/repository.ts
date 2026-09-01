@@ -310,6 +310,8 @@ export async function projectImpact(
 export interface TaskRow {
   id: number;
   title: string;
+  /** شناسهٔ تگِ وضعیت — تا منوی تغییرِ وضعیت گزینهٔ فعلی را تیک بزند. */
+  statusTagId: number | null;
   statusName: string | null;
   statusGroup: string | null;
   statusColor: string | null;
@@ -329,6 +331,7 @@ export async function listTasks(projectId: number): Promise<TaskRow[]> {
     .select({
       id: tasks.id,
       title: tasks.title,
+      statusTagId: tasks.statusTagId,
       statusName: tagName(await currentLocale()),
       statusGroup: tags.statusGroup,
       statusColor: tags.color,
@@ -373,7 +376,13 @@ export { projects, projectMembers, projectClients, tasks, taskRoles };
 
 export async function statusTags() {
   return db
-    .select({ id: tags.id, name: tagName(await currentLocale()), group: tags.statusGroup })
+    .select({
+      id: tags.id,
+      name: tagName(await currentLocale()),
+      group: tags.statusGroup,
+      // رنگ: نقطهٔ کنارِ گزینه، تا سرگروه با آیتم اشتباه نشود (`kteam-dot`).
+      color: tags.color,
+    })
     .from(tags)
     .where(eq(tags.type, 'project_status'))
     .orderBy(tags.sortOrder, tags.id);
@@ -749,7 +758,13 @@ export async function getComment(id: number) {
 /** تگ‌های وضعیتِ تسک. */
 export async function taskStatusTags() {
   return db
-    .select({ id: tags.id, name: tagName(await currentLocale()), group: tags.statusGroup, isReview: tags.isReview })
+    .select({
+      id: tags.id,
+      name: tagName(await currentLocale()),
+      group: tags.statusGroup,
+      isReview: tags.isReview,
+      color: tags.color,
+    })
     .from(tags)
     .where(eq(tags.type, 'task_status'))
     .orderBy(tags.sortOrder, tags.id);

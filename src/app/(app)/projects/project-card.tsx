@@ -107,6 +107,7 @@ export function ProjectCard({
                 projectId={project.id}
                 name={project.statusName}
                 group={project.statusGroup}
+                statusId={project.statusTagId}
                 options={statuses}
                 canManage={cardOptions !== null}
               />

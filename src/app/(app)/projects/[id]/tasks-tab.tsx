@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { ChevronDown, Columns3, Hand, List as ListIcon, Lock, User } from 'lucide-react';
+import { Check, ChevronDown, Columns3, Hand, List as ListIcon, Lock, User } from 'lucide-react';
 import { claimTaskAction, setTaskStatusAction } from '../_form/tab-actions';
 import { BOARD_COLUMNS, canClaimTask, groupIntoColumns } from '@/domain/projects/claim';
+import { TASK_STATUS_GROUPS, groupLabels } from '@/domain/tags/groups';
 import { Button } from '@/components/ui/button';
 import { TaskDialog } from './task-dialog';
 import { AddTaskDialog, type TaskFormOptions } from './add-task-dialog';
@@ -32,6 +33,7 @@ export interface TaskRole {
 export interface TaskItem {
   id: number;
   title: string;
+  statusTagId: number | null;
   statusName: string | null;
   statusGroup: string | null;
   isReview: boolean | null;
@@ -46,13 +48,17 @@ export interface TaskStatusOption {
   id: number;
   name: string;
   group: string | null;
+  color: string | null;
 }
 
-/** برچسبِ گروه‌های وضعیتِ تسک — `Tags::status_groups()`. */
+/**
+ * برچسبِ گروه‌های وضعیتِ تسک — `Tags::status_groups()`.
+ *
+ * ⚠️ سه گروهِ اول از دامنه می‌آیند تا با فرمِ تگ یکی بمانند؛ `other` گروهِ
+ * واقعی نیست — سطلِ تگ‌هایی است که گروه ندارند.
+ */
 const GROUP_LABEL: Record<string, string> = {
-  todo: 'انجام‌نشده',
-  in_progress: 'در حال انجام',
-  complete: 'انجام‌شده',
+  ...groupLabels(TASK_STATUS_GROUPS),
   other: 'بدون دسته',
 };
 const GROUP_ORDER = ['todo', 'in_progress', 'complete', 'other'];
@@ -115,7 +121,6 @@ function TaskStatusPicker({
   }
 
   const pick = (statusTagId: number | null) => {
-  const tr = useT();
     setError(null);
     startTransition(async () => {
       const result = await setTaskStatusAction(task.id, statusTagId);
@@ -135,14 +140,23 @@ function TaskStatusPicker({
           <ChevronDown className="size-3 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
-          <DropdownMenuItem onSelect={() => pick(null)}>{tr("— بدون وضعیت —")}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => pick(null)}>
+            <span className="size-2 shrink-0" />
+            {tr("— بدون وضعیت —")}
+            {task.statusTagId === null && <Check className="ms-auto size-3.5" />}
+          </DropdownMenuItem>
           {[...grouped].map(([key, list]) => (
             <div key={key}>
               <DropdownMenuSeparator />
               {GROUP_LABEL[key] && <DropdownMenuLabel>{tr(GROUP_LABEL[key])}</DropdownMenuLabel>}
               {list.map((o) => (
                 <DropdownMenuItem key={o.id} onSelect={() => pick(o.id)}>
+                  <span
+                    className="size-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: o.color || 'var(--color-muted-foreground)' }}
+                  />
                   {o.name}
+                  {o.id === task.statusTagId && <Check className="ms-auto size-3.5" />}
                 </DropdownMenuItem>
               ))}
             </div>

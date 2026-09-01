@@ -68,6 +68,7 @@ export default async function ProjectsPage({
     id: s.id,
     name: s.name,
     group: s.group,
+    color: s.color,
   }));
 
   return (
