@@ -193,7 +193,7 @@ export function ProjectDialog({
           {isEdit && <input type="hidden" name="projectId" value={project.id} />}
           {state.error && (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {state.error}
+              {tr(state.error)}
             </p>
           )}
           {state.savedId && !state.error && (

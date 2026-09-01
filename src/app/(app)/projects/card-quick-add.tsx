@@ -90,7 +90,7 @@ export function CardQuickAdd({ projectId, options }: { projectId: number; option
               {tr("لغو")}
             </Button>
           </div>
-          {memberState.error && <p className="text-[11px] text-destructive">{memberState.error}</p>}
+          {memberState.error && <p className="text-[11px] text-destructive">{tr(memberState.error)}</p>}
         </form>
       )}
 
@@ -115,7 +115,7 @@ export function CardQuickAdd({ projectId, options }: { projectId: number; option
               {tr("لغو")}
             </Button>
           </div>
-          {clientState.error && <p className="text-[11px] text-destructive">{clientState.error}</p>}
+          {clientState.error && <p className="text-[11px] text-destructive">{tr(clientState.error)}</p>}
         </form>
       )}
     </div>

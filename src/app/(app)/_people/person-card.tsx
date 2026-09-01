@@ -266,7 +266,7 @@ export function PersonCard({
             </Button>
           </div>
           {passwordState.error && (
-            <p className="text-xs text-destructive">{passwordState.error}</p>
+            <p className="text-xs text-destructive">{tr(passwordState.error)}</p>
           )}
           {!person.hasPassword && !passwordState.error && (
             <p className="text-xs text-muted-foreground">

@@ -96,7 +96,7 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
 
           {state.error && (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {state.error}
+              {tr(state.error)}
             </p>
           )}
           {state.ok && state.summary && (

@@ -70,7 +70,7 @@ export function BankCard({
         <Submit />
         {(state.error || state.message) && (
           <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-            {state.error ?? state.message}
+            {tr(state.error ?? state.message ?? '')}
           </p>
         )}
       </div>

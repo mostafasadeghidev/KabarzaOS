@@ -43,7 +43,7 @@ export function LoginForm() {
 
             {state.error && (
               <p role="alert" className="rounded-[--radius] bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {state.error}
+                {t(state.error)}
               </p>
             )}
 

@@ -142,7 +142,7 @@ export function CommentsTab({
       <form action={formAction} className="grid gap-2">
         <input type="hidden" name="projectId" value={projectId} />
         <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} required />
-        {state.error && <p className="text-xs text-destructive">{state.error}</p>}
+        {state.error && <p className="text-xs text-destructive">{t(state.error)}</p>}
         <div className="flex justify-end">
           <SendButton />
         </div>

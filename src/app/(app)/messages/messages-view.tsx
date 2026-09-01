@@ -320,7 +320,7 @@ export function MessagesView({
               <form action={replyFormAction} className="grid gap-2">
                 <input type="hidden" name="threadId" value={thread.thread.id} />
                 <Textarea name="body" rows={2} placeholder={tr("پاسخ شما…")} required />
-                {replyState.error && <p className="text-xs text-destructive">{replyState.error}</p>}
+                {replyState.error && <p className="text-xs text-destructive">{tr(replyState.error)}</p>}
                 <div className="flex justify-end">
                   <SubmitButton label={tr("ارسال")} />
                 </div>
@@ -350,7 +350,7 @@ export function MessagesView({
               <Textarea id="mgmt-body" name="body" rows={5} required />
             </div>
             {mgmtState.error && (
-              <p className="text-xs text-destructive">{mgmtState.error}</p>
+              <p className="text-xs text-destructive">{tr(mgmtState.error)}</p>
             )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setMgmtOpen(false)}>
@@ -474,7 +474,7 @@ export function MessagesView({
 
             {composeState.error && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {composeState.error}
+                {tr(composeState.error)}
               </p>
             )}
 

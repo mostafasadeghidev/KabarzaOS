@@ -53,9 +53,9 @@ export function CompanySection({ company }: {
             className="text-xs file:me-2 file:rounded-md file:border file:bg-background file:px-2 file:py-1 file:text-xs"
           />
           <Button type="submit" size="sm" variant="outline">{tr('بارگذاری لوگو')}</Button>
-          {logoState.error && <span className="text-sm text-destructive">{logoState.error}</span>}
+          {logoState.error && <span className="text-sm text-destructive">{t(logoState.error)}</span>}
           {logoState.message && (
-            <span className="text-sm text-muted-foreground">{logoState.message}</span>
+            <span className="text-sm text-muted-foreground">{t(logoState.message)}</span>
           )}
         </form>
 
@@ -108,10 +108,11 @@ export function CompanySection({ company }: {
 }
 
 function Notice({ state }: { state: ProfileState }) {
+  const t = useT();
   if (!state.error && !state.message) return null;
   return (
     <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-      {state.error ?? state.message}
+      {t(state.error ?? state.message ?? '')}
     </p>
   );
 }

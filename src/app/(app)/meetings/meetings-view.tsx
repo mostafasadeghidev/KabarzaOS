@@ -84,7 +84,7 @@ export function MeetingsView({
                 tab === key ? 'bg-primary/10 font-medium' : 'text-muted-foreground hover:bg-muted'
               }`}
             >
-              {key === 'meetings' ? 'جلسات' : 'یادآورهای من'}
+              {key === 'meetings' ? tr('جلسات') : tr('یادآورهای من')}
             </button>
           ))}
         </div>
@@ -211,7 +211,7 @@ export function MeetingsView({
             </fieldset>
 
             {reminderState.error && (
-              <p className="text-xs text-destructive">{reminderState.error}</p>
+              <p className="text-xs text-destructive">{tr(reminderState.error)}</p>
             )}
             <div>
               <SubmitButton label={t("ثبت یادآور")} />

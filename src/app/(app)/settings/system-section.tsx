@@ -237,7 +237,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
         <Submit />
         {(state.error ?? state.message) && (
           <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-            {state.error ?? state.message}
+            {tr(state.error ?? state.message ?? '')}
           </p>
         )}
       </div>
@@ -284,7 +284,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
           )}
           {(tgState.error ?? tgState.message) && (
             <p className={`text-xs ${tgState.error ? 'text-destructive' : 'text-muted-foreground'}`}>
-              {tgState.error ?? tgState.message}
+              {tr(tgState.error ?? tgState.message ?? '')}
             </p>
           )}
           <p className="text-xs text-muted-foreground">
@@ -316,7 +316,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
             </Button>
             {(botState.error ?? botState.message) && (
               <p className={`text-xs ${botState.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                {botState.error ?? botState.message}
+                {tr(botState.error ?? botState.message ?? '')}
               </p>
             )}
           </div>

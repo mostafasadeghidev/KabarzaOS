@@ -70,7 +70,7 @@ function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['open
 
       {(state.error || state.message) && (
         <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-          {state.error ?? state.message}
+          {t(state.error ?? state.message ?? '')}
         </p>
       )}
     </form>

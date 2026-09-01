@@ -335,7 +335,7 @@ export function LedgerView({
               today={today}
               keep={keep}
               fieldErrors={entryState.fieldErrors}
-              error={entryState.error}
+              error={entryState.error ? tr(entryState.error) : undefined}
               onCancel={() => setFormOpen(false)}
             />
           </form>
@@ -388,7 +388,7 @@ export function LedgerView({
 
             {transferState.error && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {transferState.error}
+                {tr(transferState.error)}
               </p>
             )}
 

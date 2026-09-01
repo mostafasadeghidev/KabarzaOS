@@ -236,7 +236,7 @@ export function TaskDialog({
                   {tr("تسکِ خصوصی (فقط سازنده، مسئول و مدیران)")}
                 </label>
 
-                {saveState.error && <p className="text-xs text-destructive">{saveState.error}</p>}
+                {saveState.error && <p className="text-xs text-destructive">{tr(saveState.error)}</p>}
                 <div className="flex justify-end">
                   <SubmitButton label={t("ذخیرهٔ تغییرات")} busy="در حالِ ذخیره…" />
                 </div>
@@ -263,7 +263,7 @@ export function TaskDialog({
               <form action={noteAction} className="grid gap-2">
                 <input type="hidden" name="taskId" value={task.id} />
                 <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} required />
-                {noteState.error && <p className="text-xs text-destructive">{noteState.error}</p>}
+                {noteState.error && <p className="text-xs text-destructive">{tr(noteState.error)}</p>}
                 <div className="flex justify-end">
                   <SubmitButton label={t("ارسال")} busy="در حال ارسال…" />
                 </div>

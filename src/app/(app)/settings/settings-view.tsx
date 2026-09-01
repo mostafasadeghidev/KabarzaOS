@@ -273,17 +273,10 @@ export function SettingsView({ data }: { data: SettingsData }) {
               */
               {
                 header: 'نام',
-                cell: (t) => {
-                  const shown = t.nameI18n?.[locale] || t.name;
-                  return (
-                    <span className="flex flex-col">
-                      <span>{shown}</span>
-                      {shown !== t.name && (
-                        <span className="text-xs text-muted-foreground">{t.name}</span>
-                      )}
-                    </span>
-                  );
-                },
+                // ⚠️ فقط نامِ زبانِ جاری. نامِ پایه زیرش نمی‌آید: ستون را
+                // شلوغ می‌کرد و کاربر آن را «ترجمه‌نشده» می‌خواند، نه راهنما.
+                // نامِ پایه در فرمِ ویرایش دیده می‌شود، که جای درستش است.
+                cell: (t) => t.nameI18n?.[locale] || t.name,
               },
               {
                 header: 'رنگ',

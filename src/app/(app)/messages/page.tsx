@@ -38,7 +38,7 @@ export default async function MessagesPage() {
       <header>
         <h1 className="text-xl font-semibold">{t("پیام‌ها")}</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          <span className="num">{inbox.threads.length}</span> گفتگو
+          <span className="num">{inbox.threads.length}</span> {t("گفتگو")}
           {unread > 0 && <> · <span className="num">{unread}</span> {t("خوانده‌نشده")}</>}
         </p>
         {/*

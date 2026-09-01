@@ -102,8 +102,8 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
 
         <div className="flex items-center gap-3">
           <Submit />
-          {state.error && <span className="text-sm text-destructive">{state.error}</span>}
-          {state.message && <span className="text-sm text-muted-foreground">{state.message}</span>}
+          {state.error && <span className="text-sm text-destructive">{tr(state.error)}</span>}
+          {state.message && <span className="text-sm text-muted-foreground">{tr(state.message)}</span>}
         </div>
       </form>
 

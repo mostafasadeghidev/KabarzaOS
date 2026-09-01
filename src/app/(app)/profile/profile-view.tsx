@@ -49,10 +49,11 @@ const TABS = [
 ] as const;
 
 function Notice({ state }: { state: ProfileState }) {
+  const tr = useT();
   if (!state.error && !state.message) return null;
   return (
     <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-      {state.error ?? state.message}
+      {tr(state.error ?? state.message ?? '')}
     </p>
   );
 }

@@ -1,25 +1,23 @@
-Tag names follow the language, and 36 more strings become translatable
+Translate the 271 strings nothing could reach (1.15.0)
 
-Reported as: tag names do not change with the language.
+A systematic sweep, not the reported items one at a time: every
+user-visible Persian literal that never passes through t(). It found 271,
+of which 266 were not wrapped at all — no amount of translation would have
+reached them.
 
-Tags were translated everywhere except the settings table, which showed
-the raw base name. That was deliberate — it is the field you edit — but
-when it is the one place still in Persian it reads as the translation
-being broken. The table shows the name in the current language now, with
-the base name beneath it when they differ.
+Almost all were error and confirmation messages returned from server
+actions as { error: '…' }. Wrapping 266 call sites would have been
+invasive and easy to get wrong, so they are translated where they are
+displayed instead: ~30 client components, one point each. The translator
+falls back to the key, so an untranslated message still reads exactly as
+it does today.
 
-Chasing that turned up a third blind spot in the key extractor: Persian
-literals returned straight from a function, like the per-type field
-labels in domain/tags/groups.ts. It saw neither those nor, therefore, the
-36 error messages written the same way — "the amount is not valid", "a
-timer is already running", "you do not have access for this" — all of
-which stayed Persian in every language while the checker reported zero
-missing.
+All 271 now have translations in the eight non-source languages.
 
-Also: the access column and the kanban/pipeline labels went out
-untranslated for the same reason as `header` earlier — a hardcoded
-Persian label passed as data, never through t(). And the group column is
-dropped for tag types that have no groups instead of showing a column of
-dashes.
+Also fixed on the way:
+- The settings tag table no longer prints the base name under the
+  translated one. It was meant as a hint and read as "not translated".
+- Meeting tabs and the conversation counter were passed as data, the same
+  shape as `header` and `addLabel` before them.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

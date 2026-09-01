@@ -13,10 +13,11 @@ import { Label } from '@/components/ui/label';
 import { useT } from '@/i18n/client';
 
 function Notice({ state }: { state: ReportState }) {
+  const t = useT();
   if (!state.error && !state.message) return null;
   return (
     <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-      {state.error ?? state.message}
+      {t(state.error ?? state.message ?? '')}
     </p>
   );
 }

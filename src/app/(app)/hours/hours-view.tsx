@@ -43,10 +43,11 @@ const field =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs';
 
 function Notice({ state }: { state: HoursState }) {
+  const tr = useT();
   if (!state.error && !state.message) return null;
   return (
     <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-      {state.error ?? state.message}
+      {tr(state.error ?? state.message ?? '')}
     </p>
   );
 }

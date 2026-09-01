@@ -217,7 +217,7 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
         </label>
       </div>
 
-      {state.error && <p className="text-xs text-destructive">{state.error}</p>}
+      {state.error && <p className="text-xs text-destructive">{tr(state.error)}</p>}
       {state.ok && (
         <p className="text-xs text-emerald-700 dark:text-emerald-400">
           <span className="num">{state.added ?? 0}</span>

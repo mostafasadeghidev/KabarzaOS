@@ -102,7 +102,7 @@ function DeleteBox({
           <div>
             <DeleteSubmit label={t("حذف پروژه")} variant="destructive" onPick={() => {}} />
           </div>
-          {result.error && <p className="text-xs text-destructive">{result.error}</p>}
+          {result.error && <p className="text-xs text-destructive">{tr(result.error)}</p>}
         </form>
       ) : (
         <form action={formAction} className="grid gap-2">
@@ -140,7 +140,7 @@ function DeleteBox({
             {tr("«جداسازی»: پروژه می‌رود ولی تراکنش‌ها حذف نمی‌شوند و با ذکرِ نامِ پروژه در شرحشان در «پرداخت‌های بی‌پروژه» می‌مانند (مانده حساب دست‌نخورده). «حذف کامل»: تراکنش‌ها هم پاک و مانده حساب بازمحاسبه می‌شود.")}
           </p>
 
-          {result.error && <p className="text-xs text-destructive">{result.error}</p>}
+          {result.error && <p className="text-xs text-destructive">{tr(result.error)}</p>}
         </form>
       )}
     </section>
@@ -254,7 +254,7 @@ function ThumbnailForm({
         </p>
         {(state.error || state.message) && (
           <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-            {state.error ?? state.message}
+            {t(state.error ?? state.message ?? '')}
           </p>
         )}
       </div>
