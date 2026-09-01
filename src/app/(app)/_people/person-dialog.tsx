@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface PersonFormOptions {
@@ -47,19 +47,19 @@ function SubmitButton({ label }: { label: string }) {
 /** انتخاب و بارگذاریِ تصویرِ پروفایل. */
 function AvatarPicker({ person }: { person: PersonView }) {
   const tr = useT();
+  const { show } = useToast();
   const [pending, startTransition] = useTransition();
-  const [notice, setNotice] = useState<{ text: string; isError: boolean } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const upload = () => {
     const file = inputRef.current?.files?.[0];
-    if (!file) return setNotice({ text: tr('تصویری انتخاب نشده است.'), isError: true });
+    if (!file) { show(tr('تصویری انتخاب نشده است.'), 'error'); return; }
 
     const data = new FormData();
     data.set('avatar', file);
     startTransition(async () => {
       const result = await setAvatarAction(person.id, data);
-      setNotice({ text: result.error ?? result.message!, isError: Boolean(result.error) });
+      show(tr(result.error ?? result.message!), result.error ? 'error' : 'success');
       if (!result.error && inputRef.current) inputRef.current.value = '';
     });
   };
@@ -79,11 +79,6 @@ function AvatarPicker({ person }: { person: PersonView }) {
         <p className="text-xs text-muted-foreground">
           {tr('JPEG، PNG، GIF یا WebP — تا {size}.', { size: humanSize(MAX_SIZE.avatar, tr) })}
         </p>
-        {notice && (
-          <p className={`text-xs ${notice.isError ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-            {tr(notice.text)}
-          </p>
-        )}
       </div>
       <Button type="button" size="sm" variant="outline" disabled={pending} onClick={upload}>
         {pending ? tr('در حالِ ارسال…') : tr('ذخیره تصویر')}
@@ -353,11 +348,6 @@ export function PersonDialog({
           </fieldset>
           )}
 
-          {state.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {tr(state.error)}
-            </p>
-          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

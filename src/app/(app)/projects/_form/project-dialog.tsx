@@ -15,6 +15,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface Option {
@@ -137,6 +138,7 @@ export function ProjectDialog({
     isEdit ? updateProjectAction : createProjectAction,
     {},
   );
+  useActionToast(state, { success: 'تغییرات ذخیره شد.' });
   const [isTender, setIsTender] = useState(false);
   const [tenderRows, setTenderRows] = useState<Array<{ roleTagId: string; cap: string }>>([]);
   const [isUnitBased, setIsUnitBased] = useState(false);
@@ -192,16 +194,6 @@ export function ProjectDialog({
 
         <form action={formAction} className="grid gap-4">
           {isEdit && <input type="hidden" name="projectId" value={project.id} />}
-          {state.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {tr(state.error)}
-            </p>
-          )}
-          {state.savedId && !state.error && (
-            <p className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
-              {tr("تغییرات ذخیره شد.")}
-            </p>
-          )}
           {/*
             ⚠️ تب‌بندی، نه یک فرمِ بلندِ اسکرولی: پروژه ده‌ها فیلد دارد و
             پشتِ‌سرِ هم چیدنشان یعنی کاربر برای دیدنِ «دامنهٔ دسترسی» باید

@@ -59,6 +59,8 @@ export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export interface FormState {
   /** شناسهٔ پروژه در حالتِ ویرایش. */
   savedId?: number;
+  /** پیامِ موفقیت — توست از همین می‌خواند. */
+  message?: string;
   error?: string;
   /** خطای فیلدها برای نمایشِ کنارِ همان ورودی. */
   fieldErrors?: Partial<Record<keyof CreateProjectInput, string>>;

@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 /**
@@ -239,6 +240,7 @@ function ThumbnailForm({
 }) {
   const t = useT();
   const [state, action] = useActionState(setThumbnailAction, {});
+  useActionToast(state);
 
   return (
     <form action={action} className="flex flex-wrap items-end gap-3 rounded-md border p-3">
@@ -255,11 +257,6 @@ function ThumbnailForm({
             ? t('تصویرِ قبلی پس از ذخیره حذف می‌شود.')
             : t('بدونِ تصویر، تک‌نگارِ رنگی نشان داده می‌شود.')}
         </p>
-        {(state.error || state.message) && (
-          <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-            {t(state.error ?? state.message ?? '')}
-          </p>
-        )}
       </div>
 
       <ThumbnailSubmit />

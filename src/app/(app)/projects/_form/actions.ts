@@ -122,7 +122,12 @@ export async function updateProjectAction(_prev: FormState, formData: FormData):
 
   revalidatePath(`/projects/${id}`);
   revalidatePath('/projects');
-  return { savedId: id };
+  /**
+   * ⚠️ `message` هم برمی‌گردد، نه فقط `savedId`: توست روی `ok || message`
+   * روشن می‌شود و با `savedId` ِ تنها هرگز موفقیت را اعلام نمی‌کرد — یعنی
+   * ذخیرهٔ موفق بی‌صدا می‌ماند.
+   */
+  return { savedId: id, message: 'تغییرات ذخیره شد.' };
 }
 
 /**

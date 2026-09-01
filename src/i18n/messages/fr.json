@@ -2499,5 +2499,8 @@
   "حساب ذخیره شد.": "Compte enregistré.",
   "پرداخت ثبت شد.": "Paiement enregistré.",
   "هزینه ذخیره شد.": "Dépense enregistrée.",
-  "تعدادِ ردیف در هر صفحه": "Lignes par page"
+  "تعدادِ ردیف در هر صفحه": "Lignes par page",
+  "پیامِ شما به مدیریت فرستاده شد.": "Votre message a été envoyé à la direction.",
+  "{n} آیتم اعمال شد.": "{n} éléments appliqués.",
+  "اعضا ذخیره شد.": "Membres enregistrés."
 }

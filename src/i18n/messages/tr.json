@@ -2499,5 +2499,8 @@
   "حساب ذخیره شد.": "Hesap kaydedildi.",
   "پرداخت ثبت شد.": "Ödeme kaydedildi.",
   "هزینه ذخیره شد.": "Gider kaydedildi.",
-  "تعدادِ ردیف در هر صفحه": "Sayfa başına satır"
+  "تعدادِ ردیف در هر صفحه": "Sayfa başına satır",
+  "پیامِ شما به مدیریت فرستاده شد.": "Mesajınız yönetime gönderildi.",
+  "{n} آیتم اعمال شد.": "{n} öğe uygulandı.",
+  "اعضا ذخیره شد.": "Üyeler kaydedildi."
 }

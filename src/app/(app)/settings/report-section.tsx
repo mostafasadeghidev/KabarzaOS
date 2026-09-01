@@ -10,17 +10,8 @@ import { REPORT_SECTIONS, type ReportConfig } from '@/domain/scheduler/daily-rep
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
-
-function Notice({ state }: { state: ReportState }) {
-  const t = useT();
-  if (!state.error && !state.message) return null;
-  return (
-    <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-      {t(state.error ?? state.message ?? '')}
-    </p>
-  );
-}
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -37,7 +28,9 @@ export function ReportSection({ config }: { config: ReportConfig }) {
   const tr = useT();
   const t = useT();
   const [state, save] = useActionState(saveReportAction, {} as ReportState);
+  useActionToast(state);
   const [aux, setAux] = useState<ReportState>({});
+  useActionToast(aux);
   const [pending, startTransition] = useTransition();
 
   return (
@@ -123,8 +116,6 @@ export function ReportSection({ config }: { config: ReportConfig }) {
             <Send className="size-3.5" />
             {tr("ارسالِ فوری")}
           </Button>
-          <Notice state={state} />
-          <Notice state={aux} />
         </div>
       </form>
 

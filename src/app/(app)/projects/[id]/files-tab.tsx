@@ -12,6 +12,7 @@ import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface FileRow {
@@ -31,16 +32,6 @@ const KIND_ICON = {
   video: Film,
   file: FileText,
 } as const;
-
-function Notice({ state }: { state: FileFormState }) {
-  const tr = useT();
-  if (!state.error && !state.message) return null;
-  return (
-    <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-      {tr(state.error ?? state.message ?? '')}
-    </p>
-  );
-}
 
 function SubmitButton({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
@@ -73,7 +64,9 @@ export function FilesTab({
   const links = files.filter((f) => f.isLink);
 
   const [uploadState, upload] = useActionState(uploadAttachmentAction, {});
+  useActionToast(uploadState);
   const [linkState, addLink] = useActionState(addLinkAction, {});
+  useActionToast(linkState);
   const [removing, startRemove] = useTransition();
   const [removeError, setRemoveError] = useState<string | null>(null);
   const uploadForm = useRef<HTMLFormElement>(null);
@@ -119,7 +112,6 @@ export function FilesTab({
             <p className="text-xs text-muted-foreground">
               {tr('تصویر، ویدیو، PDF و سند — تا {size} برای هر فایل.', { size: humanSize(MAX_SIZE.attachment, tr) })}
             </p>
-            <Notice state={uploadState} />
           </form>
         )}
 
@@ -210,7 +202,6 @@ export function FilesTab({
             <p className="text-xs text-muted-foreground">
               {tr("فایل دانلود نمی‌شود؛ فقط نشانی نگه داشته می‌شود.")}
             </p>
-            <Notice state={linkState} />
           </form>
         )}
 

@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface UnitRow {
@@ -68,16 +69,6 @@ export interface MyMoneyData {
 const selectClass =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none';
 
-function Notice({ state }: { state: MoneyState }) {
-  const tr = useT();
-  if (!state.error && !state.message) return null;
-  return (
-    <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-      {tr(state.error ?? state.message ?? '')}
-    </p>
-  );
-}
-
 function Submit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
   const tr = useT();
@@ -94,7 +85,9 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
   const tr = useT();
   const t = useT();
   const [unitState, addUnit] = useActionState(addUnitAction, {} as MoneyState);
+  useActionToast(unitState);
   const [reqState, requestPayment] = useActionState(requestPaymentAction, {} as MoneyState);
+  useActionToast(reqState);
   const [pending, startTransition] = useTransition();
   const [rowError, setRowError] = useState<string | null>(null);
 
@@ -140,7 +133,6 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
               <Input id="u-note" name="note" placeholder={t("اختیاری")} />
             </div>
             <Submit>{t("ثبت")}</Submit>
-            <Notice state={unitState} />
           </form>
         )}
 
@@ -290,7 +282,6 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
                 <Input id="r-note" name="note" placeholder={t("اختیاری")} />
               </div>
               <Submit>{t("ثبتِ درخواست")}</Submit>
-              <Notice state={reqState} />
             </form>
           ) : (
             <p className="text-xs text-muted-foreground">

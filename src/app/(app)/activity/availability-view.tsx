@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { PresenceDot } from '@/components/presence';
 import type { PresenceState } from '@/domain/people/presence';
@@ -132,6 +133,7 @@ export function AvailabilityView({ data }: { data: AvailabilityData }) {
   // خواندنش را سخت می‌کند.
   const matrixView = useTableView(data.matrix, (m) => m.name, 25);
   const [state, save] = useActionState(saveAvailabilityAction, {} as AvailabilityState);
+  useActionToast(state);
 
   return (
     <div className="grid gap-5">
@@ -150,11 +152,6 @@ export function AvailabilityView({ data }: { data: AvailabilityData }) {
 
           <div className="flex items-center gap-3">
             <Submit />
-            {(state.error || state.message) && (
-              <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                {tr(state.error ?? state.message ?? '')}
-              </p>
-            )}
           </div>
         </form>
       </section>

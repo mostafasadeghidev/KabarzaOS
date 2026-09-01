@@ -2,6 +2,42 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.23.0]
+
+### Changed
+
+- **Feedback lives in the toast now.** Every inline status message is gone:
+  seven duplicated local `Notice` components with nineteen usages, about
+  twenty-five `state.error` / `state.message` paragraphs, and every local
+  `notice` state. An inline message inside a form that closes on save
+  disappears with the form — the worst possible place to say "it worked".
+
+  Messages that said more than "done" kept their wording rather than being
+  flattened: the member save still reports "2 added, 1 updated, 0 removed",
+  the QA apply still counts the items, sending to several people still names
+  the number, and "your message was sent to management" still names the
+  recipient.
+
+### Kept deliberately
+
+- **Field-level errors stay under their own input.** A toast in the corner
+  cannot say *which* field is wrong. The same goes for the per-row errors in
+  the members dialog — they are row-scoped validation, not feedback.
+- **Persistent state stays inline**: the "no mailer configured" warning, the
+  closed-period banner, the scheduler health panel, empty states, and the
+  hints under fields. None of them is the result of an action.
+- **The login and setup errors stay inline.** That card is the page's whole
+  content, and its message carries `role="alert"`; moving it to a polite
+  toast in the corner would be an accessibility downgrade.
+
+### Fixed
+
+- **Saving a project reported nothing.** `updateProjectAction` returned only
+  `savedId`, which no toast can observe, so a successful save was silent once
+  the inline line was removed.
+
+---
+
 ## [1.22.0]
 
 ### Fixed

@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface MeetingRow extends MeetingView {
@@ -57,18 +58,19 @@ export function MeetingsView({
   canManage: boolean;
 }) {
   const tr = useT();
+  const { show } = useToast();
   const t = useT();
   const [tab, setTab] = useState<'meetings' | 'reminders'>('meetings');
   const [editing, setEditing] = useState<MeetingView | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [reminderState, reminderAction] = useActionState<SimpleState, FormData>(saveReminderAction, {});
 
   const run = (fn: () => Promise<SimpleState>) =>
     startTransition(async () => {
       const result = await fn();
-      setNotice(result.error ?? null);
+      if (result.error) show(tr(result.error), 'error');
+      else show(tr('حذف شد.'), 'success');
     });
 
   return (
@@ -97,7 +99,6 @@ export function MeetingsView({
         )}
       </div>
 
-      {notice && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{tr(notice)}</p>}
 
       {tab === 'meetings' ? (
         meetings.length === 0 ? (

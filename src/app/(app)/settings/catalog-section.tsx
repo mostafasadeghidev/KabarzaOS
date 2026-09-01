@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 /**
@@ -67,17 +67,16 @@ export function CatalogSection<T extends { id: number }>({
   rowActions?: (row: T) => React.ReactNode;
 }) {
   const tr = useT();
+  const { show } = useToast();
   const t = useT();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<T | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [state, formAction] = useActionState<SettingsState, FormData>(saveAction, {});
   useActionToast(state, { success: 'ذخیره شد.' });
 
   useEffect(() => {
-    if (state.ok) { setOpen(false); setEditing(null); setNotice(null); }
-    else if (state.error) setNotice(state.error);
+    if (state.ok) { setOpen(false); setEditing(null); }
   }, [state]);
 
   return (
@@ -89,18 +88,14 @@ export function CatalogSection<T extends { id: number }>({
         </div>
         <Button
           size="sm"
-          onClick={() => { setEditing(null); setOpen(true); setNotice(null); }}
+          onClick={() => { setEditing(null); setOpen(true); }}
         >
           <Plus className="size-4" />
           {tr(addLabel)}
         </Button>
       </div>
 
-      {notice && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{t(notice)}</p>
-      )}
-
-      <Dialog open={open} onOpenChange={(next) => { setOpen(next); if (!next) setNotice(null); }}>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? tr('ویرایش') : tr(addLabel)}</DialogTitle>
@@ -146,7 +141,7 @@ export function CatalogSection<T extends { id: number }>({
                         variant="ghost"
                         className="size-8"
                         aria-label={t("ویرایش")}
-                        onClick={() => { setEditing(row); setOpen(true); setNotice(null); }}
+                        onClick={() => { setEditing(row); setOpen(true); }}
                       >
                         <Pencil className="size-3.5" />
                       </Button>
@@ -159,7 +154,8 @@ export function CatalogSection<T extends { id: number }>({
                         onClick={() =>
                           startTransition(async () => {
                             const result = await deleteAction(row);
-                            setNotice(result.error ?? null);
+                            if (result.error) show(t(result.error), 'error');
+                            else show(t('حذف شد.'), 'success');
                           })
                         }
                       >

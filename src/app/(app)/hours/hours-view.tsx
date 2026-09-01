@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface LogRow {
@@ -41,16 +42,6 @@ export interface HoursData {
 
 const field =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs';
-
-function Notice({ state }: { state: HoursState }) {
-  const tr = useT();
-  if (!state.error && !state.message) return null;
-  return (
-    <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-      {tr(state.error ?? state.message ?? '')}
-    </p>
-  );
-}
 
 function Submit({ children, variant }: { children: React.ReactNode; variant?: 'outline' | 'default' }) {
   const { pending } = useFormStatus();
@@ -105,10 +96,15 @@ export function HoursView({ data }: { data: HoursData }) {
   const tr = useT();
   const t = useT();
   const [startState, start] = useActionState(startTimerAction, {});
+  useActionToast(startState);
   const [stopState, stop] = useActionState(stopTimerAction, {});
+  useActionToast(stopState);
   const [confirmState, confirm] = useActionState(confirmPendingAction, {});
+  useActionToast(confirmState);
   const [logState, log] = useActionState(logHoursAction, {});
+  useActionToast(logState);
   const [editState, edit] = useActionState(updateLogAction, {});
+  useActionToast(editState);
   const [editing, setEditing] = useState<LogRow | null>(null);
 
   return (
@@ -170,7 +166,6 @@ export function HoursView({ data }: { data: HoursData }) {
                 {tr("دور بینداز")}
               </Button>
             </form>
-            <Notice state={confirmState} />
           </CardContent>
         </Card>
       )}
@@ -201,7 +196,6 @@ export function HoursView({ data }: { data: HoursData }) {
                     {tr("توقف و ثبت")}
                   </Submit>
                 </div>
-                <Notice state={stopState} />
               </form>
             ) : (
               <form action={start} className="flex flex-wrap items-end gap-2">
@@ -213,7 +207,6 @@ export function HoursView({ data }: { data: HoursData }) {
                   <Play className="size-3.5" />
                   {tr("شروع")}
                 </Submit>
-                <Notice state={startState} />
               </form>
             )}
           </CardContent>
@@ -257,7 +250,6 @@ export function HoursView({ data }: { data: HoursData }) {
             <p className="text-xs text-muted-foreground">
               {tr("ثبتِ همان روز و همان پروژه با ثبتِ قبلی **ادغام** می‌شود، نه ردیفِ تازه.")}
             </p>
-            <Notice state={logState} />
           </form>
         </CardContent>
       </Card>
@@ -331,7 +323,6 @@ export function HoursView({ data }: { data: HoursData }) {
               </div>
               <Submit>{t("ذخیره")}</Submit>
               <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(null)}>{t("بستن")}</Button>
-              <Notice state={editState} />
             </form>
           </CardContent>
         </Card>

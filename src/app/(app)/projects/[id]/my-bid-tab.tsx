@@ -8,6 +8,7 @@ import { format } from '@/domain/money/money';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface MyBidData {
@@ -33,6 +34,7 @@ function Submit({ label }: { label: string }) {
 function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['openRoles'][number] }) {
   const t = useT();
   const [state, action] = useActionState(submitBidAction, {} as BidState);
+  useActionToast(state);
   const cap = Number(role.cap ?? 0);
 
   return (
@@ -69,11 +71,6 @@ function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['open
         <Submit label={role.hasBid ? t('به‌روزرسانی') : t('ثبت')} />
       </div>
 
-      {(state.error || state.message) && (
-        <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-          {t(state.error ?? state.message ?? '')}
-        </p>
-      )}
     </form>
   );
 }

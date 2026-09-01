@@ -7,6 +7,7 @@ import { maskCard } from '@/domain/people/profile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 function Submit() {
@@ -35,6 +36,7 @@ export function BankCard({
   const tr = useT();
   const t = useT();
   const [state, save] = useActionState(saveBankAction, {} as ProfileState);
+  useActionToast(state);
 
   return (
     <form action={save} className="grid gap-3 rounded-md border p-3">
@@ -69,11 +71,6 @@ export function BankCard({
 
       <div className="flex items-center gap-3">
         <Submit />
-        {(state.error || state.message) && (
-          <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-            {tr(state.error ?? state.message ?? '')}
-          </p>
-        )}
       </div>
     </form>
   );

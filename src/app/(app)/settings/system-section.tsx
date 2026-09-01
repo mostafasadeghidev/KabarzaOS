@@ -14,6 +14,7 @@ import { WEEKDAYS } from '@/domain/availability/weekly';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { LOCALES, LOCALE_NAMES } from '@/i18n/config';
 import { agoParts, type SchedulerHealth } from '@/domain/scheduler/health';
@@ -114,7 +115,9 @@ export function SystemSection({ config, health, isOwner, telegram }: {
   const tr = useT();
   const t = useT();
   const [state, save] = useActionState(saveSystemAction, {} as SystemState);
+  useActionToast(state);
   const [botState, setBotState] = useState<SystemState>({});
+  useActionToast(botState);
   const [tgState, saveTelegram] = useActionState(saveTelegramAction, {} as SystemState);
   const [pending, startTransition] = useTransition();
 
@@ -236,11 +239,6 @@ export function SystemSection({ config, health, isOwner, telegram }: {
 
       <div className="flex items-center gap-3">
         <Submit />
-        {(state.error ?? state.message) && (
-          <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-            {tr(state.error ?? state.message ?? '')}
-          </p>
-        )}
       </div>
     </form>
 
@@ -315,11 +313,6 @@ export function SystemSection({ config, health, isOwner, telegram }: {
             >
               {tr("تستِ ارسالِ گزارش")}
             </Button>
-            {(botState.error ?? botState.message) && (
-              <p className={`text-xs ${botState.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                {tr(botState.error ?? botState.message ?? '')}
-              </p>
-            )}
           </div>
         </fieldset>
       )}

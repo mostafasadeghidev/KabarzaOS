@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 /**
@@ -24,6 +25,7 @@ export function CompanySection({ company }: {
   const t = useT();
   const tr = useT();
   const [companyState, saveCompany] = useActionState(saveCompanyAction, {} as ProfileState);
+  useActionToast(companyState);
   const [logoState, setLogoState] = useState<ProfileState>({});
   const data = { company };
 
@@ -100,20 +102,9 @@ export function CompanySection({ company }: {
         </div>
         <div className="flex items-center gap-3">
           <Submit>{tr("ذخیره مشخصات")}</Submit>
-          <Notice state={companyState} />
         </div>
       </form>
       </div>
-  );
-}
-
-function Notice({ state }: { state: ProfileState }) {
-  const t = useT();
-  if (!state.error && !state.message) return null;
-  return (
-    <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-      {t(state.error ?? state.message ?? '')}
-    </p>
   );
 }
 

@@ -19,7 +19,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 // همان شکلِ `listAccounts` — یک تعریف برای هر دو تب.
@@ -60,14 +60,13 @@ export function AccountsView({
   const t = useT();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AccountRow | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const { show } = useToast();
   const [pending, startTransition] = useTransition();
   const [state, formAction] = useActionState<PayoutState, FormData>(saveAccountAction, {});
   useActionToast(state, { success: 'حساب ذخیره شد.' });
 
   useEffect(() => {
-    if (state.ok) { setOpen(false); setEditing(null); setNotice(null); }
-    else if (state.error) setNotice(state.error);
+    if (state.ok) { setOpen(false); setEditing(null); }
   }, [state]);
 
   const assigned = new Set(editing ? (options.accountantsByAccount[editing.id] ?? []) : []);
@@ -77,16 +76,12 @@ export function AccountsView({
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold">{t("حساب‌های بانکی")}</h2>
         {canManage && (
-          <Button size="sm" onClick={() => { setEditing(null); setOpen(true); setNotice(null); }}>
+          <Button size="sm" onClick={() => { setEditing(null); setOpen(true); }}>
             <Plus className="size-4" />
             {tr("افزودن حساب")}
           </Button>
         )}
       </div>
-
-      {notice && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{t(notice)}</p>
-      )}
 
       {accounts.length === 0 ? (
         <EmptyState title={t("حسابی تعریف نشده")} />
@@ -124,7 +119,7 @@ export function AccountsView({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => { setEditing(a); setOpen(true); setNotice(null); }}
+                          onClick={() => { setEditing(a); setOpen(true); }}
                         >
                           {tr("ویرایش")}
                         </Button>
@@ -137,7 +132,8 @@ export function AccountsView({
                           onClick={() =>
                             startTransition(async () => {
                               const result = await deleteAccountAction(a.id);
-                              setNotice(result.error ?? null);
+                              if (result.error) show(t(result.error), 'error');
+                              else show(t('حذف شد.'), 'success');
                             })
                           }
                         >
@@ -261,11 +257,6 @@ export function AccountsView({
               </label>
             </div>
 
-            {state.error && (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {tr(state.error)}
-              </p>
-            )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("انصراف")}</Button>

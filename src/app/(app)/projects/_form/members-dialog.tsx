@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Plus, X } from 'lucide-react';
 import { setMembersAction } from './members-actions';
@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface MemberRow {
@@ -57,8 +58,37 @@ function SaveButton() {
 export function MembersDialog({ data }: { data: MembersFormData }) {
   const tr = useT();
   const t = useT();
+  const { show } = useToast();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState<MembersFormState, FormData>(setMembersAction, {});
+  /**
+   * ⚠️ شمارنده‌ها در پیام می‌مانند — «۲ افزوده، ۱ به‌روز، ۰ حذف» تنها راهی
+   * است که کاربر می‌فهمد ویرایشش واقعاً چه کرد. دلایلِ نگه‌داشتن (طلبِ
+   * تسویه‌نشده، عضوِ سابق) هم توستِ جداگانه می‌گیرند، چون هشدارند نه
+   * موفقیت.
+   */
+  useActionToast(state, {
+    success: state.summary
+      ? tr('ذخیره شد — {added} افزوده، {updated} به‌روز، {removed} حذف.', {
+        added: state.summary.added,
+        updated: state.summary.updated,
+        removed: state.summary.removed,
+      })
+      : tr('اعضا ذخیره شد.'),
+  });
+
+  useEffect(() => {
+    if (state.keptOwed?.length) {
+      show(tr('{names} حذف نشد چون روی این پروژه تسویه‌نشده دارد. اول تسویه کنید.', {
+        names: state.keptOwed.join('، '),
+      }), 'info');
+    }
+    if (state.keptFormer?.length) {
+      show(tr('{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.', {
+        names: state.keptFormer.join('، '),
+      }), 'info');
+    }
+  }, [state, show, tr]);
 
   const defaultCurrency = data.currencies.find((c) => c.isDefault)?.id ?? data.currencies[0]?.id ?? null;
   const blank = (): MemberRow => ({
@@ -94,39 +124,6 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
 
         <form action={formAction} className="grid gap-4">
           <input type="hidden" name="projectId" value={data.projectId} />
-
-          {state.error && (
-            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {tr(state.error)}
-            </p>
-          )}
-          {state.ok && state.summary && (
-            <p className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400">
-              {tr('ذخیره شد — {added} افزوده، {updated} به‌روز، {removed} حذف.', {
-                added: state.summary.added,
-                updated: state.summary.updated,
-                removed: state.summary.removed,
-              })}
-            </p>
-          )}
-          {/*
-            ⚠️ نگه‌داشتن باید دیده شود. حذفِ کسی که هنوز طلب دارد بی‌صدا رد
-            می‌شد و کاربر بارها دکمه را می‌زد بی‌آنکه بفهمد چرا برنمی‌گردد.
-          */}
-          {state.keptOwed && state.keptOwed.length > 0 && (
-            <p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-500">
-              {tr('{names} حذف نشد چون روی این پروژه تسویه‌نشده دارد. اول تسویه کنید.', {
-                names: state.keptOwed.join('، '),
-              })}
-            </p>
-          )}
-          {state.keptFormer && state.keptFormer.length > 0 && (
-            <p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-500">
-              {tr('{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.', {
-                names: state.keptFormer.join('، '),
-              })}
-            </p>
-          )}
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

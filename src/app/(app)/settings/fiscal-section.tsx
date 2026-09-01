@@ -7,17 +7,8 @@ import { closePeriodAction, reopenPeriodAction, type FiscalState } from './_form
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
-
-function Notice({ state }: { state: FiscalState }) {
-  const t = useT();
-  if (!state.error && !state.message) return null;
-  return (
-    <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-      {t(state.error ?? state.message ?? '')}
-    </p>
-  );
-}
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -41,7 +32,9 @@ export function FiscalSection({ lockDate, today }: { lockDate: string | null; to
   const tr = useT();
   const t = useT();
   const [state, close] = useActionState(closePeriodAction, {} as FiscalState);
+  useActionToast(state);
   const [aux, setAux] = useState<FiscalState>({});
+  useActionToast(aux);
   const [pending, startTransition] = useTransition();
   const [confirming, setConfirming] = useState(false);
 
@@ -87,7 +80,6 @@ export function FiscalSection({ lockDate, today }: { lockDate: string | null; to
 
         <div className="flex items-center gap-3">
           <Submit />
-          <Notice state={state} />
         </div>
       </form>
 
@@ -125,7 +117,6 @@ export function FiscalSection({ lockDate, today }: { lockDate: string | null; to
               {tr("بازگشاییِ دوره")}
             </Button>
           )}
-          <Notice state={aux} />
         </div>
       </div>
     </div>

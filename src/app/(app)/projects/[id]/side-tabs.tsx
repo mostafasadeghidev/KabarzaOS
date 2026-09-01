@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { removeQaRoleAction } from '../_form/tab-actions';
 
@@ -193,6 +194,12 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
   const tr = useT();
   const t = useT();
   const [state, formAction] = useActionState<QaActionState, FormData>(applyQaAction, {});
+  /**
+   * ⚠️ عدد در پیام می‌ماند: «۷ آیتم اعمال شد.» چیزی می‌گوید که «اعمال شد»
+   * نمی‌گوید — کاربر می‌خواهد بداند چند آیتم واقعاً نشست، چون تکراری‌ها
+   * دوباره اعمال نمی‌شوند.
+   */
+  useActionToast(state, { success: tr('{n} آیتم اعمال شد.', { n: state.added ?? 0 }) });
   const { pending } = useFormStatus();
 
   return (
@@ -217,13 +224,6 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
         </label>
       </div>
 
-      {state.error && <p className="text-xs text-destructive">{tr(state.error)}</p>}
-      {state.ok && (
-        <p className="text-xs text-emerald-700 dark:text-emerald-400">
-          <span className="num">{state.added ?? 0}</span>
-          {tr("آیتم اعمال شد.")}
-        </p>
-      )}
 
       <div>
         <Button type="submit" size="sm" disabled={pending}>

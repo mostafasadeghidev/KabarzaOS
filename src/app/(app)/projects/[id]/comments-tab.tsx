@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface CommentItem {
@@ -110,6 +111,7 @@ export function CommentsTab({
 }) {
   const t = useT();
   const [state, formAction] = useActionState<TabActionState, FormData>(addCommentAction, {});
+  useActionToast(state, { success: 'ثبت شد.' });
 
   return (
     <div className="grid gap-4">
@@ -147,7 +149,6 @@ export function CommentsTab({
       <form action={formAction} className="grid gap-2">
         <input type="hidden" name="projectId" value={projectId} />
         <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} required />
-        {state.error && <p className="text-xs text-destructive">{t(state.error)}</p>}
         <div className="flex justify-end">
           <SendButton />
         </div>

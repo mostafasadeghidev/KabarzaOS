@@ -2499,5 +2499,8 @@
   "حساب ذخیره شد.": "Account saved.",
   "پرداخت ثبت شد.": "Payment recorded.",
   "هزینه ذخیره شد.": "Expense saved.",
-  "تعدادِ ردیف در هر صفحه": "Rows per page"
+  "تعدادِ ردیف در هر صفحه": "Rows per page",
+  "پیامِ شما به مدیریت فرستاده شد.": "Your message was sent to management.",
+  "{n} آیتم اعمال شد.": "{n} items applied.",
+  "اعضا ذخیره شد.": "Members saved."
 }

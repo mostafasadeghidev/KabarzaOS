@@ -2499,5 +2499,8 @@
   "حساب ذخیره شد.": "Cuenta guardada.",
   "پرداخت ثبت شد.": "Pago registrado.",
   "هزینه ذخیره شد.": "Gasto guardado.",
-  "تعدادِ ردیف در هر صفحه": "Filas por página"
+  "تعدادِ ردیف در هر صفحه": "Filas por página",
+  "پیامِ شما به مدیریت فرستاده شد.": "Tu mensaje se envió a la dirección.",
+  "{n} آیتم اعمال شد.": "{n} elementos aplicados.",
+  "اعضا ذخیره شد.": "Miembros guardados."
 }

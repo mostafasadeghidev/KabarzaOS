@@ -48,7 +48,6 @@ export function StaffSection({
   const { show } = useToast();
   const [target, setTarget] = useState<StaffRow | null>(null);
   const [open, setOpen] = useState(false);
-  const [notice, setNotice] = useState<{ text: string; isError: boolean } | null>(null);
   const [pick, setPick] = useState('');
   const [pending, startTransition] = useTransition();
 
@@ -109,11 +108,6 @@ export function StaffSection({
         {tr("برای هر بخش تعیین کنید این همکار دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند. کارهای حساس (تنظیمات، حذف، بستنِ مالی) همیشه فقط برای مدیرِ کل است.")}
       </p>
 
-      {notice && (
-        <p className={`text-sm ${notice.isError ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-          {t(notice.text)}
-        </p>
-      )}
 
       <Table>
         <TableHeader>
@@ -177,7 +171,7 @@ export function StaffSection({
         person={target}
         open={open}
         onOpenChange={setOpen}
-        onNotice={(text, isError) => setNotice({ text, isError })}
+        onNotice={(text, isError) => show(t(text), isError ? 'error' : 'success')}
       />
     </div>
   );

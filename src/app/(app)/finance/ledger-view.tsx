@@ -23,7 +23,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { LedgerFilter, type LedgerPaging } from './ledger-filter';
 import { TableSearch, useTableView } from '@/components/ui/table-search';
@@ -142,10 +142,10 @@ export function LedgerView({
   const [formOpen, setFormOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [editing, setEditing] = useState<EntryRow | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const [entryState, entryAction] = useActionState<FinanceState, FormData>(saveEntryAction, {});
+  const { show } = useToast();
   const [transferState, transferFormAction] = useActionState<FinanceState, FormData>(transferAction, {});
   useActionToast(entryState, { success: 'ردیف ثبت شد.' });
   useActionToast(transferState, { success: 'انتقال ثبت شد.' });
@@ -210,10 +210,6 @@ export function LedgerView({
             date: lockDate,
           })}
         </p>
-      )}
-
-      {notice && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{tr(notice)}</p>
       )}
 
       <div className="grid gap-3 @2xl/main:grid-cols-5 @xl/main:grid-cols-3">
@@ -308,7 +304,8 @@ export function LedgerView({
                           onClick={() =>
                             startTransition(async () => {
                               const result = await deleteEntryAction(e.id);
-                              setNotice(result.error ?? null);
+                              if (result.error) show(tr(result.error), 'error');
+                              else show(tr('حذف شد.'), 'success');
                             })
                           }
                         >

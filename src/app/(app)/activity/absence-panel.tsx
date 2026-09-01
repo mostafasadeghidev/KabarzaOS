@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface MyAbsence {
@@ -52,6 +53,7 @@ function Submit() {
 export function AbsencePanel({ data }: { data: AbsencePanelData }) {
   const tr = useT();
   const [state, formAction] = useActionState(saveAbsenceAction, {} as AbsenceState);
+  useActionToast(state);
   const [pending, startTransition] = useTransition();
   const canPickPerson = data.targets.length > 1;
 
@@ -102,7 +104,6 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
 
         <div className="flex items-center gap-3">
           <Submit />
-          {state.error && <span className="text-sm text-destructive">{tr(state.error)}</span>}
           {state.message && <span className="text-sm text-muted-foreground">{tr(state.message)}</span>}
         </div>
       </form>

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardPager, useCardPage } from '@/components/ui/card-pager';
+import { useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 /**
@@ -39,12 +40,12 @@ export function PeopleGrid({
   isOwner: boolean;
 }) {
   const t = useT();
+  const { show } = useToast();
   const [tab, setTab] = useState<'active' | 'former'>('active');
   const [query, setQuery] = useState('');
   const [officeIds, setOfficeIds] = useState<number[]>([]);
   const [editing, setEditing] = useState<PersonView | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [notice, setNotice] = useState<{ text: string; isError: boolean } | null>(null);
   const [accessFor, setAccessFor] = useState<PersonView | null>(null);
   const [accessOpen, setAccessOpen] = useState(false);
 
@@ -110,20 +111,6 @@ export function PeopleGrid({
         )}
       </div>
 
-      {/* ⚠️ پیام اینجاست نه روی کارت — اقدام‌های off-boarding کارت را به تبِ
-          دیگری می‌برند و پیامِ روی کارت با آن ناپدید می‌شد. */}
-      {notice && (
-        <p
-          className={`rounded-md px-3 py-2 text-sm ${
-            notice.isError
-              ? 'bg-destructive/10 text-destructive'
-              : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-          }`}
-        >
-          {t(notice.text)}
-        </p>
-      )}
-
       <div className="flex flex-wrap items-center gap-2">
         <Input
           type="search"
@@ -165,7 +152,7 @@ export function PeopleGrid({
               isOwner={isOwner}
               onEdit={openEdit}
               onAccess={(p) => { setAccessFor(p); setAccessOpen(true); }}
-              onNotice={(text, isError) => setNotice({ text, isError })}
+              onNotice={(text, isError) => show(t(text), isError ? 'error' : 'success')}
             />
           ))}
         </div>
@@ -178,7 +165,7 @@ export function PeopleGrid({
           person={accessFor}
           open={accessOpen}
           onOpenChange={setAccessOpen}
-          onNotice={(text, isError) => setNotice({ text, isError })}
+          onNotice={(text, isError) => show(t(text), isError ? 'error' : 'success')}
         />
       )}
 

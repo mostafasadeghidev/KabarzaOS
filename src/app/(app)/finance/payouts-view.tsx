@@ -23,7 +23,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { TablePager, TableSearch, useTableView } from '@/components/ui/table-search';
 import { BankDirectory, type BankRow } from './bank-directory';
@@ -124,13 +124,13 @@ export function PayoutsView({
     requests, (r) => `${r.userName ?? ''} ${r.projectTitle ?? ''}`,
   );
   const t = useT();
-  const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [payTarget, setPayTarget] = useState<RequestRow | null>(null);
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [editing, setEditing] = useState<RecurringRow | null>(null);
 
   const [payState, payAction] = useActionState<PayoutState, FormData>(payRequestAction, {});
+  const { show } = useToast();
   useActionToast(payState, { success: 'پرداخت ثبت شد.' });
   const [expenseState, expenseAction] = useActionState<PayoutState, FormData>(saveRecurringAction, {});
   useActionToast(expenseState, { success: 'هزینه ذخیره شد.' });
@@ -141,7 +141,8 @@ export function PayoutsView({
   const act = (fn: () => Promise<PayoutState>) =>
     startTransition(async () => {
       const result = await fn();
-      setNotice(result.error ?? null);
+      if (result.error) show(tr(result.error), 'error');
+      else show(tr('انجام شد.'), 'success');
     });
 
   // هزینه‌ها بر پایهٔ سررسید سطل‌بندی می‌شوند — همان دسته‌های نسخهٔ قبلی.
@@ -175,10 +176,6 @@ export function PayoutsView({
 
   return (
     <div className="grid gap-6">
-      {notice && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{tr(notice)}</p>
-      )}
-
       {/* ---- درخواست‌های پرداخت ---- */}
       {section === 'members' && (
       <section className="grid gap-3">

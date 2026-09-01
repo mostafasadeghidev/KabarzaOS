@@ -20,6 +20,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface InboxRow {
@@ -91,10 +92,10 @@ export function MessagesView({
   canBroadcast: boolean;
 }) {
   const tr = useT();
+  const { show } = useToast();
   const [openId, setOpenId] = useState<number | null>(null);
   const [thread, setThread] = useState<Thread | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const [composeState, composeFormAction] = useActionState<MessageState, FormData>(composeAction, {});
@@ -135,7 +136,7 @@ export function MessagesView({
     let alive = true;
     openThreadAction(openId)
       .then((t) => { if (alive) setThread(t); })
-      .catch(() => setNotice('این گفتگو در دسترس نیست.'));
+      .catch(() => show(tr('این گفتگو در دسترس نیست.'), 'error'));
     return () => { alive = false; };
   }, [openId, replyState]);
 
@@ -191,10 +192,16 @@ export function MessagesView({
       setComposeOpen(false);
       setPicked(new Set());
       setAudience('');
-      setNotice(
+      /**
+       * ⚠️ جملهٔ شمارنده‌دار حفظ می‌شود: «پیام به ۷ نفر ارسال شد.» چیزی
+       * می‌گوید که «پیام ارسال شد.» نمی‌گوید — و کاربر پس از انتخابِ چند
+       * گیرنده دقیقاً همان عدد را می‌خواهد ببیند.
+       */
+      show(
         composeState.created && composeState.created > 1
           ? tr('پیام به {n} نفر ارسال شد.', { n: composeState.created })
-          : 'پیام ارسال شد.',
+          : tr('پیام ارسال شد.'),
+        'success',
       );
     }
   }, [composeState]);
@@ -202,7 +209,7 @@ export function MessagesView({
   useEffect(() => {
     if (mgmtState.ok) {
       setMgmtOpen(false);
-      setNotice('پیامِ شما به مدیریت فرستاده شد.');
+      show(tr('پیامِ شما به مدیریت فرستاده شد.'), 'success');
     }
   }, [mgmtState]);
 
@@ -240,11 +247,6 @@ export function MessagesView({
           </div>
         </div>
 
-        {notice && (
-          <p className="rounded-md bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400">
-            {tr(notice)}
-          </p>
-        )}
 
         {inbox.length === 0 ? (
           <EmptyState title={tr("هنوز پیامی ندارید.")} />
@@ -295,8 +297,8 @@ export function MessagesView({
                 onClick={() =>
                   startTransition(async () => {
                     const result = await leaveThreadAction(thread.thread.id);
-                    if (result.error) setNotice(result.error);
-                    else { setOpenId(null); setNotice('گفتگو حذف شد.'); }
+                    if (result.error) show(tr(result.error), 'error');
+                    else { setOpenId(null); show(tr('گفتگو حذف شد.'), 'success'); }
                   })
                 }
               >

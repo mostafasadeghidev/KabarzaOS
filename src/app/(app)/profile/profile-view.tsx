@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface ProfileData {
@@ -48,16 +49,6 @@ const TABS = [
   { key: 'telegram', label: 'تلگرام', icon: Send },
 ] as const;
 
-function Notice({ state }: { state: ProfileState }) {
-  const tr = useT();
-  if (!state.error && !state.message) return null;
-  return (
-    <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-      {tr(state.error ?? state.message ?? '')}
-    </p>
-  );
-}
-
 function Submit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
   const tr = useT();
@@ -73,12 +64,16 @@ export function ProfileView({ data }: { data: ProfileData }) {
   const [tab, setTab] = useState<string>(visible[0]!.key);
 
   const [tzState, saveTz] = useActionState(saveTimezoneAction, {} as ProfileState);
+  useActionToast(tzState);
   const [pwState, changePw] = useActionState(changePasswordAction, {} as ProfileState);
+  useActionToast(pwState);
   const [notifyState, saveNotify] = useActionState(saveNotifyAction, {} as ProfileState);
+  useActionToast(notifyState);
   const [companyState, saveCompany] = useActionState(saveCompanyAction, {} as ProfileState);
   const [logoState, setLogoState] = useState<ProfileState>({});
 
   const [tgState, setTgState] = useState<ProfileState>({});
+  useActionToast(tgState);
   const [pending, startTransition] = useTransition();
 
   return (
@@ -131,7 +126,6 @@ export function ProfileView({ data }: { data: ProfileData }) {
           </div>
           <div className="flex items-center gap-3">
             <Submit>{tr("ذخیره")}</Submit>
-            <Notice state={tzState} />
           </div>
         </form>
       )}
@@ -169,7 +163,6 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
           <div className="flex items-center gap-3">
             <Submit>{tr("تغییرِ رمز")}</Submit>
-            <Notice state={pwState} />
           </div>
         </form>
       )}
@@ -247,7 +240,6 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
           <div className="flex items-center gap-3">
             <Submit>{tr("ذخیره")}</Submit>
-            <Notice state={notifyState} />
           </div>
         </form>
       )}
@@ -270,7 +262,6 @@ export function ProfileView({ data }: { data: ProfileData }) {
                   {tr("قطع اتصال تلگرام")}
                 </Button>
               </div>
-              <Notice state={tgState} />
             </div>
           ) : (
             <div className="grid gap-2">
@@ -317,7 +308,6 @@ export function ProfileView({ data }: { data: ProfileData }) {
                   </Button>
                 </div>
               )}
-              <Notice state={tgState} />
             </div>
           )}
         </div>
