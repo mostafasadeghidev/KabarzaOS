@@ -13,10 +13,17 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { useT } from '@/i18n/client';
 
 /** گزینه‌های فرمِ تسک — از سرور می‌آیند (همان `getTaskFormOptions`). */
 export interface TaskFormOptions {
+  /**
+   * نقش‌های این پروژه. برای کارفرما **تنها** راهِ تخصیص است؛ برای بقیه
+   * جایگزینِ «به هرکس که این نقش را دارد».
+   */
+  roles: Array<{ id: number; name: string }>;
+  /** خالی یعنی بیننده حق ندارد به **شخص** تخصیص دهد (کارفرمای خالص). */
   assignees: Array<{ userId: number; label: string }>;
   statuses: Array<{ id: number; name: string }>;
   priorities: Array<{ id: number; name: string }>;
@@ -39,9 +46,12 @@ function SubmitButton() {
 export function AddTaskDialog({
   projectId,
   options,
+  canManage,
 }: {
   projectId: number;
   options: TaskFormOptions;
+  /** فقط مدیر «خصوصی» می‌بیند — سرور هم برای بقیه نادیده‌اش می‌گیرد. */
+  canManage: boolean;
 }) {
   const tr = useT();
   const t = useT();
@@ -97,15 +107,33 @@ export function AddTaskDialog({
               </select>
             </div>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="nt-assignee">{t("تخصیص به…")}</Label>
-              <select id="nt-assignee" name="assignedTo" className={cellSelect} defaultValue={keep('assignedTo')}>
-                <option value="">{t("— هیچ‌کدام —")}</option>
-                {options.assignees.map((a) => (
-                  <option key={a.userId} value={a.userId}>{a.label}</option>
-                ))}
-              </select>
-            </div>
+            {/*
+              ⚠️ کارفرمای خالص فهرستِ اشخاص را **خالی** می‌گیرد (سرور نامِ
+              اعضا را به او نمی‌دهد). نشان‌دادنِ یک انتخابگرِ خالی فقط
+              گیج‌کننده بود؛ به‌جایش انتخابگرِ نقش را می‌بیند.
+            */}
+            {options.assignees.length > 0 && (
+              <div className="grid gap-1.5">
+                <Label htmlFor="nt-assignee">{t("تخصیص به…")}</Label>
+                <select id="nt-assignee" name="assignedTo" className={cellSelect} defaultValue={keep('assignedTo')}>
+                  <option value="">{t("— هیچ‌کدام —")}</option>
+                  {options.assignees.map((a) => (
+                    <option key={a.userId} value={a.userId}>{a.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {options.roles.length > 0 && (
+              <div className="grid gap-1.5">
+                <Label>{t("تخصیص به نقش")}</Label>
+                <MultiSelect
+                  name="roleTagIds"
+                  options={options.roles.map((r) => ({ id: r.id, label: r.name }))}
+                  placeholder={t("نقش‌ها…")}
+                />
+              </div>
+            )}
 
             <div className="grid gap-1.5">
               <Label htmlFor="nt-priority">{t("اولویت…")}</Label>
@@ -126,10 +154,17 @@ export function AddTaskDialog({
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox name="isPrivate" value="1" />
-            {tr("تسکِ خصوصی (فقط سازنده، مسئول و مدیران)")}
-          </label>
+          {/*
+            ⚠️ فقط برای مدیر. سرور هم برای غیرمدیر نادیده‌اش می‌گیرد، ولی
+            نشان‌دادنِ تیکی که کاری نمی‌کند بدتر از نبودنش است — و تسکی که
+            کارفرما خصوصی کند حتی مدیرِ پروژه هم نمی‌دیدش.
+          */}
+          {canManage && (
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox name="isPrivate" value="1" />
+              {tr("تسکِ خصوصی (فقط سازنده، مسئول و مدیران)")}
+            </label>
+          )}
 
           {state.error && (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{tr(state.error)}</p>

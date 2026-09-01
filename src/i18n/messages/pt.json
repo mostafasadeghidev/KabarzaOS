@@ -2484,5 +2484,7 @@
   "سلام، {name}": "Olá, {name}",
   "پس از ساختِ پروژه آپلود می‌شوند.": "Carregados depois de o projeto ser criado.",
   "فایل‌های پروژه": "Ficheiros do projeto",
-  "تصویرِ شاخص": "Imagem em destaque"
+  "تصویرِ شاخص": "Imagem em destaque",
+  "تخصیص به نقش": "Atribuir a uma função",
+  "این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.": "Este projeto está arquivado ou fechado e não aceita alterações."
 }

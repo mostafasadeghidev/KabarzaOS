@@ -2484,5 +2484,7 @@
   "سلام، {name}": "Merhaba, {name}",
   "پس از ساختِ پروژه آپلود می‌شوند.": "Proje oluşturulduktan sonra yüklenir.",
   "فایل‌های پروژه": "Proje dosyaları",
-  "تصویرِ شاخص": "Öne çıkan görsel"
+  "تصویرِ شاخص": "Öne çıkan görsel",
+  "تخصیص به نقش": "Bir role ata",
+  "این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.": "Bu proje arşivlenmiş veya kapalı; değiştirilemez."
 }

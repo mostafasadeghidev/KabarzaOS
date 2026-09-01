@@ -31,6 +31,7 @@ import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/projec
 import {
   assignableToPeople, FALLBACK_MEMBER_LABEL, nameForViewer, type ViewerContext,
 } from '@/domain/access/viewer-names';
+import { resolveAssignment } from '@/domain/projects/assignment';
 import {
   assignmentDelta, commentRecipients, reviewRecipients, taskDoerIds,
 } from '@/server/notifications/audience';
@@ -895,6 +896,13 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
   const [visible] = filterVisible(actor, [task], 'projects');
   if (!visible) throw new NotFoundError();
 
+  /**
+   * ⚠️ این گارد **نبود**: پروژهٔ منجمد هر نوشتنِ دیگری را رد می‌کند، ولی
+   * وضعیتِ تسک از کنارش رد می‌شد — و چون این مسیر عمداً فقط «دیدن» را
+   * می‌خواهد، هر عضو یا کارفرمایی می‌توانست روی پروژهٔ بایگانی بنویسد.
+   */
+  await assertNotFrozen(task.projectId);
+
   if (statusTagId !== null) {
     const tag = await repo.getTag(statusTagId);
     // R-PROJ-25 (قرینه) — تگ باید از نوعِ وضعیتِ **تسک** باشد.
@@ -1036,7 +1044,13 @@ export interface TaskInput {
 /** گزینه‌های فرمِ تسک — مسئول، وضعیت، اولویت. */
 export async function getTaskFormOptions(actor: Actor, projectId: number, currentAssignee?: number | null) {
   await getProject(actor, projectId);
-  await assertCanManageProject(actor, projectId);
+  /**
+   * ⚠️ **دسترسی**، نه مدیریت — قرینهٔ `createTask`. اگر اینجا گاردِ مدیریت
+   * می‌ماند و صفحه فرم را برای کارفرما می‌خواست، این پرتاب از یک کامپوننتِ
+   * سرور **بیرونِ** try/catch ِ صفحه می‌آمد و کلِ صفحهٔ پروژه ۵۰۰ می‌شد،
+   * نه اینکه فقط دکمه پنهان بماند. سه گارد باید با هم حرکت کنند.
+   */
+  await assertCanViewProject(actor, projectId);
 
   const [members, clientIds, inactive, statuses, priorities] = await Promise.all([
     repo.listMembers(projectId),
@@ -1061,6 +1075,14 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
   );
 
   return {
+    /**
+     * نقش‌های این پروژه — تنها راهِ تخصیصِ کارفرما، و برای بقیه جایگزینِ
+     * «به هرکس که این نقش را دارد».
+     */
+    roles: [...new Map(members
+      .filter((m) => m.roleTagId !== null)
+      .map((m) => [m.roleTagId!, { id: m.roleTagId!, name: m.roleName ?? FALLBACK_MEMBER_LABEL }]),
+    ).values()],
     assignees: assignableToPeople(viewer)
       ? assigneeOptions(
         members.map((m) => ({ userId: m.userId, name: m.userName, roleName: m.roleName })),
@@ -1090,13 +1112,29 @@ export async function createTask(
   options: { silent?: boolean } = {},
 ): Promise<number> {
   const project = await getProject(actor, projectId);
-  await assertCanManageProject(actor, projectId);
+  /**
+   * ⚠️ گاردْ **دسترسی** است نه **مدیریت** — پورتِ `handle_add_task()` که فقط
+   * `user_can_access()` را می‌خواهد. عضو و کارفرمای پروژه هم تسک می‌سازند؛
+   * کارفرما آن را به یک نقش می‌دهد، نه به شخص.
+   *
+   * ⚠️ آنچه با بازشدنِ این گارد **باید** بسته می‌شد، پایین‌تر است: پیش از
+   * این `assignedTo`، `priorityTagId` و `roleTagIds` خام درج می‌شدند. تا
+   * وقتی فقط مدیر به فرم می‌رسید این بی‌دقتی بود؛ حالا راهِ سوءاستفاده بود.
+   */
+  await assertCanViewProject(actor, projectId);
   await assertNotFrozen(projectId);
 
-  if (input.statusTagId !== null) {
-    const tag = await repo.getTag(input.statusTagId);
-    if (!tag || tag.type !== 'task_status') throw new NotFoundError();
-  }
+  const canManage = await canManageProject(actor, projectId);
+  await assertTaskTags(input);
+
+  /**
+   * ⚠️ تخصیص از دامنه می‌گذرد: شخص باید روی پروژه باشد، نقش باید تگِ
+   * `member_role` باشد، و شخص نقش‌ها را پاک می‌کند. برای کارفرمای خالص
+   * `rolesOnly` است — در UI فقط نقش می‌بیند، ولی درخواست را می‌شود دستی
+   * ساخت و شناسهٔ یک عضوِ واقعی را گذاشت. نسخهٔ قبلی همین‌جا سوراخ است
+   * (`parse_assignment` فقط عضویتِ **هدف** را می‌سنجد، نه نقشِ فرستنده).
+   */
+  const assignment = await resolveTaskAssignment(actor, projectId, canManage, input);
 
   const rows = await db.insert(tasks).values({
     projectId,
@@ -1104,33 +1142,94 @@ export async function createTask(
     description: input.description,
     statusTagId: input.statusTagId,
     priorityTagId: input.priorityTagId,
-    assignedTo: input.assignedTo,
+    assignedTo: assignment.assignedTo,
     dueDate: input.dueDate,
-    isPrivate: input.isPrivate,
+    /**
+     * ⚠️ «خصوصی» فقط از مدیر پذیرفته می‌شود. `canSeePrivateRecord` به مجوزِ
+     * **سراسری** برمی‌گردد، پس تسکی که کارفرما خصوصی کند حتی مدیرِ خودِ
+     * پروژه هم نمی‌بیند — و چون سازنده‌اش هم نمی‌تواند پاکش کند، برای همیشه
+     * می‌ماند.
+     */
+    isPrivate: canManage ? input.isPrivate : false,
     createdBy: actor.id,
     scope: project.scope,
   }).returning({ id: tasks.id });
 
   const id = rows[0]!.id;
 
-  if (input.roleTagIds?.length) {
+  if (assignment.roleTagIds.length > 0) {
     await db.insert(taskRoles).values(
-      [...new Set(input.roleTagIds)].map((roleTagId) => ({ taskId: id, roleTagId })),
+      assignment.roleTagIds.map((roleTagId: number) => ({ taskId: id, roleTagId })),
     ).onConflictDoNothing();
   }
 
   await audit(actor, 'task.create', projectId, null, input);
 
-  // R-NOTIF-01 — فقط مسئولِ مستقیم؛ تسکِ نقشی اعلانِ per-user ندارد.
-  if (!options.silent && input.assignedTo && input.assignedTo !== actor.id) {
-    await notify([input.assignedTo], {
-      type: 'task.assigned',
-      title: 'تسکِ تازه به شما تخصیص یافت',
-      body: input.title,
-      url: `/projects/${projectId}`,
-    });
+  /**
+   * R-NOTIF-01 — مسئولِ مستقیم، و اگر تسک **نقشی** است دارندگانِ آن نقش.
+   *
+   * ⚠️ دارندگانِ نقش اضافه شدند چون بدونشان تسکی که کارفرما می‌سازد به
+   * هیچ‌کس نمی‌رسید: کارفرما به شخص تخصیص نمی‌دهد، پس شرطِ `assignedTo`
+   * هرگز برقرار نمی‌شد و کار در فهرست می‌ماند بی‌آنکه کسی خبردار شود.
+   */
+  if (!options.silent) {
+    const targets = assignment.assignedTo !== null
+      ? [assignment.assignedTo]
+      : await repo.usersWithRolesOnProject(projectId, assignment.roleTagIds);
+
+    const recipients = targets.filter((userId) => userId !== actor.id);
+    if (recipients.length > 0) {
+      await notify(recipients, {
+        type: 'task.assigned',
+        title: 'تسکِ تازه به شما تخصیص یافت',
+        body: input.title,
+        url: `/projects/${projectId}`,
+      });
+    }
   }
   return id;
+}
+
+/**
+ * تگ‌های تسک از نوعِ درست‌اند؟
+ *
+ * ⚠️ `priorityTagId` پیش از این **هیچ** بررسی‌ای نداشت (فقط وضعیت داشت)، پس
+ * هر شناسهٔ تگی — نقشِ عضو، دفتر، دستهٔ دفترکل — در جای اولویت می‌نشست و
+ * نامش به‌عنوانِ اولویت به همهٔ بینندگان نشان داده می‌شد.
+ */
+async function assertTaskTags(input: TaskInput): Promise<void> {
+  if (input.statusTagId !== null) {
+    const tag = await repo.getTag(input.statusTagId);
+    if (!tag || tag.type !== 'task_status') throw new NotFoundError();
+  }
+  if (input.priorityTagId !== null) {
+    const tag = await repo.getTag(input.priorityTagId);
+    if (!tag || tag.type !== 'task_priority') throw new NotFoundError();
+  }
+}
+
+/** واقعیت‌های لازم برای `resolveAssignment`، از دیتابیس. */
+async function resolveTaskAssignment(
+  actor: Actor,
+  projectId: number,
+  canManage: boolean,
+  input: TaskInput,
+) {
+  const [members, clientIds, roleTags] = await Promise.all([
+    repo.listMembers(projectId),
+    repo.listClientIds(projectId),
+    repo.memberRoleTags(),
+  ]);
+  const viewer = await viewerContext(actor, projectId, canManage, members);
+
+  return resolveAssignment(
+    { assignedTo: input.assignedTo, roleTagIds: input.roleTagIds ?? [] },
+    {
+      projectUserIds: new Set([...members.map((m) => m.userId), ...clientIds]),
+      memberRoleTagIds: new Set(roleTags.map((r) => r.id)),
+      rolesOnly: !assignableToPeople(viewer),
+    },
+  );
 }
 
 /** ویرایشِ تسک. */
@@ -1138,21 +1237,35 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
   const before = await repo.getTask(taskId);
   if (!before) throw new NotFoundError();
   await getProject(actor, before.projectId);
-  await assertCanManageProject(actor, before.projectId);
 
-  if (input.statusTagId !== null) {
-    const tag = await repo.getTag(input.statusTagId);
-    if (!tag || tag.type !== 'task_status') throw new NotFoundError();
+  /**
+   * ⚠️ «مدیرِ پروژه **یا** سازندهٔ تسک» — پورتِ `may_edit` ِ نسخهٔ قبلی.
+   * بدونِ شاخهٔ دوم، کارفرمایی که تازه اجازهٔ ساختِ تسک گرفته نمی‌توانست
+   * غلطِ تایپیِ خودش را هم درست کند و ردیف تا ابد می‌ماند.
+   */
+  const canManage = await canManageProject(actor, before.projectId);
+  if (!canManage && before.createdBy !== actor.id) {
+    throw new ForbiddenError('projects.manage');
   }
+  // ⚠️ پروژهٔ منجمد ویرایش نمی‌شود — این گارد اینجا **نبود**، برخلافِ حذف.
+  await assertNotFrozen(before.projectId);
+  await assertTaskTags(input);
+
+  const assignment = await resolveTaskAssignment(actor, before.projectId, canManage, input);
 
   await db.update(tasks).set({
     title: input.title,
     description: input.description,
     statusTagId: input.statusTagId,
     priorityTagId: input.priorityTagId,
-    assignedTo: input.assignedTo,
+    /**
+     * ⚠️ سازنده‌ای که مدیر نیست، مسئول و «خصوصی» را دست نمی‌زند: اینها
+     * تصمیمِ مدیریتی‌اند و باز گذاشتنشان همان دو رخنه‌ای بود که در ساخت
+     * بسته شد، فقط یک گام دیرتر.
+     */
+    assignedTo: canManage ? assignment.assignedTo : before.assignedTo,
     dueDate: input.dueDate,
-    isPrivate: input.isPrivate,
+    isPrivate: canManage ? input.isPrivate : before.isPrivate,
     updatedBy: actor.id,
     updatedAt: new Date(),
   }).where(eq(tasks.id, taskId));
@@ -1192,7 +1305,14 @@ export async function deleteTask(actor: Actor, taskId: number): Promise<number> 
   const task = await repo.getTask(taskId);
   if (!task) throw new NotFoundError();
   await getProject(actor, task.projectId);
-  await assertCanManageProject(actor, task.projectId);
+  /**
+   * ⚠️ «مدیرِ پروژه **یا** سازنده» — همان قاعدهٔ `updateTask`. اگر فقط
+   * مدیر می‌ماند، کارفرمایی که تسکِ اشتباهی ساخته راهی برای پس‌گرفتنش
+   * نداشت.
+   */
+  if (!(await canManageProject(actor, task.projectId)) && task.createdBy !== actor.id) {
+    throw new ForbiddenError('projects.manage');
+  }
   await assertNotFrozen(task.projectId);
 
   await db.update(tasks)
@@ -1235,12 +1355,33 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
   const [visible] = filterVisible(actor, [task], 'projects');
   if (!visible) throw new NotFoundError();
 
-  const [notes, roles] = await Promise.all([
+  const canManage = await canManageProject(actor, task.projectId);
+  const [notes, roles, members] = await Promise.all([
     repo.taskNotes(taskId),
     repo.taskRolesFor([taskId]),
+    repo.listMembers(task.projectId),
   ]);
 
-  return { task, notes, roles, canManage: await canManageProject(actor, task.projectId) };
+  /**
+   * ⚠️ این تنها مسیرِ خواندن بود که ماسکِ نام را **نداشت** — یعنی کارفرما
+   * با بازکردنِ هر تسکی نامِ واقعیِ اعضا را می‌دید، دقیقاً همان چیزی که
+   * `viewer-names` همه‌جای دیگر جلویش را می‌گیرد. مسئول، آخرین ویرایشگر و
+   * نویسندهٔ هر یادداشت، هر سه.
+   */
+  const viewer = await viewerContext(actor, task.projectId, canManage, members);
+  const mask = (id: number | null, name: string | null) =>
+    (id === null || name === null ? name : nameForViewer(id, name, viewer));
+
+  return {
+    task: {
+      ...task,
+      assigneeName: mask(task.assignedTo, task.assigneeName),
+      updatedByName: mask(task.updatedBy, task.updatedByName),
+    },
+    notes: notes.map((n) => ({ ...n, userName: mask(n.userId, n.userName) })),
+    roles,
+    canManage,
+  };
 }
 
 /** کتابخانهٔ QA + آنچه روی این پروژه اعمال شده — فرمِ «افزودن چک‌لیست». */

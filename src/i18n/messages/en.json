@@ -2484,5 +2484,7 @@
   "سلام، {name}": "Hello, {name}",
   "پس از ساختِ پروژه آپلود می‌شوند.": "Uploaded once the project is created.",
   "فایل‌های پروژه": "Project files",
-  "تصویرِ شاخص": "Featured image"
+  "تصویرِ شاخص": "Featured image",
+  "تخصیص به نقش": "Assign to a role",
+  "این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.": "This project is archived or closed and cannot be changed."
 }

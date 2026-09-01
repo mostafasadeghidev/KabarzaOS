@@ -293,7 +293,9 @@ export function TasksTab({
             <Columns3 className="size-3.5" />
           </button>
         </div>
-        {formOptions && <AddTaskDialog projectId={projectId} options={formOptions} />}
+        {formOptions && (
+          <AddTaskDialog projectId={projectId} options={formOptions} canManage={canManage} />
+        )}
       </div>
 
       {tasks.length === 0 && <EmptyState title={tr("تسکی ثبت نشده")} />}

@@ -2,6 +2,63 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.20.0]
+
+### Added
+
+- **A project's members and clients can create tasks**, matching
+  `handle_add_task()`, whose only gate is `user_can_access()` — project
+  participation, not a management capability. A client assigns to a
+  **role**; the person picker is not offered to them and the private
+  checkbox is not shown.
+
+- **Assignment by role in the create form.** `roleTagIds` existed in the
+  domain and in the database but no dialog ever sent it, and the action's
+  schema dropped it — so a client-authored task would have had no assignee
+  and no role, reached nobody, and been unclaimable.
+
+- **Role holders are notified** for a role-assigned task. The notification
+  only ever fired for a direct assignee, which a client never sets.
+
+- **The creator can edit and delete their own task**, as `may_edit` allows.
+  Without it a client could file a task and never correct it. A creator who
+  is not a manager cannot change the assignee or the private flag.
+
+### Security
+
+Opening that gate turned three pieces of sloppiness into exploitable holes,
+all closed server-side — the UI restriction is not the control:
+
+- **`assignedTo` was written unvalidated.** A client sees only roles in the
+  form, but a hand-built request could name a specific member — revealing
+  who that id is, and sending them a notification with attacker-chosen text.
+  The assignee must now be someone actually on the project, and a client
+  cannot set one at all.
+
+- **`isPrivate` was accepted from anyone.** Private visibility falls back to
+  the *global* manage capability, so a task a client marked private would
+  have been invisible to the project's own manager — and, before the change
+  above, undeletable by its author. It is ignored for non-managers.
+
+- **`priorityTagId` had no type check** where `statusTagId` had one, so any
+  tag — an office, a member role, a project status — could be planted in the
+  priority slot and shown to the whole team as the task's priority.
+
+- **`getTaskDetail` was the one read path with no name masking**, so a
+  client opening any task saw the real names of the assignee, the last
+  editor and every note author. This was live before this release.
+
+### Fixed
+
+- **`updateTask` and `setTaskStatus` had no frozen-project guard**, unlike
+  every neighbouring write. Status changes are deliberately open to anyone
+  who can see the task, so this was a writable path on an archived project.
+
+- **A frozen project now says so** when a task is submitted, instead of the
+  generic "not saved", and the Add-task button is hidden there.
+
+---
+
 ## [1.19.0]
 
 ### Security

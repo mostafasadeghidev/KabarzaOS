@@ -7,6 +7,7 @@ import {
   addTaskNote, createTask, deleteTask, getTaskDetail, getTaskFormOptions, updateTask,
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
+import { FrozenProjectError } from '@/server/projects/authority';
 
 /**
  * اقدام‌های تسک (op = load/save/add/delete/note).
@@ -32,6 +33,12 @@ const taskSchema = z.object({
   assignedTo: optionalId,
   dueDate: day,
   isPrivate: z.boolean().default(false),
+  /**
+   * ⚠️ نقش‌ها تا امروز اصلاً خوانده نمی‌شدند — Zod دورشان می‌ریخت و
+   * `createTask` هیچ ردیفِ `task_roles` نمی‌ساخت. برای کارفرما که فقط
+   * می‌تواند به نقش بدهد، یعنی تسکی بی‌مسئول و بی‌نقش.
+   */
+  roleTagIds: z.array(z.number().int().positive()).default([]),
 });
 
 export interface TaskFormState {
@@ -57,6 +64,9 @@ function parse(formData: FormData) {
     assignedTo: formData.get('assignedTo') ?? '',
     dueDate: formData.get('dueDate') ?? '',
     isPrivate: checked('isPrivate'),
+    roleTagIds: formData.getAll('roleTagIds')
+      .map((v) => Number(v))
+      .filter((n) => Number.isInteger(n) && n > 0),
   });
 
   return { parsed, values };
@@ -84,6 +94,10 @@ export async function createTaskAction(_prev: TaskFormState, formData: FormData)
     const actor = await requireActor();
     await createTask(actor, projectId, parsed.data);
   } catch (error) {
+    // ⚠️ انجماد پیامِ خودش را دارد؛ پیش از این زیرِ «ثبت نشد» گم می‌شد.
+    if (error instanceof FrozenProjectError) {
+      return { error: 'این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.', values };
+    }
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ افزودنِ تسک ندارید.', values };
     return { error: 'تسک ثبت نشد.', values };
   }

@@ -473,6 +473,29 @@ export async function owedUserIds(projectId: number): Promise<Set<number>> {
 }
 
 /**
+ * کسانی که روی این پروژه یکی از این نقش‌ها را دارند.
+ *
+ * ⚠️ گیرندگانِ اعلانِ تسکِ **نقشی**. بدونِ این، تسکی که کارفرما می‌سازد به
+ * هیچ‌کس اعلان نمی‌داد — او به شخص تخصیص نمی‌دهد، پس شرطِ `assignedTo`
+ * هرگز برقرار نمی‌شد.
+ */
+export async function usersWithRolesOnProject(
+  projectId: number,
+  roleTagIds: readonly number[],
+): Promise<number[]> {
+  if (roleTagIds.length === 0) return [];
+  const rows = await db
+    .selectDistinct({ userId: projectMembers.userId })
+    .from(projectMembers)
+    .where(and(
+      eq(projectMembers.projectId, projectId),
+      inArray(projectMembers.roleTagId, [...roleTagIds]),
+      eq(projectMembers.accessBlocked, false),
+    ));
+  return rows.map((r) => r.userId);
+}
+
+/**
  * نقش‌های خودِ کاربر روی هر پروژه — `projectId → نامِ نقش‌ها`.
  * ستونِ «نقشِ شما» ِ داشبوردِ عضو (`Projects::user_role_names`).
  */
@@ -850,6 +873,7 @@ export async function taskNotes(taskId: number) {
       id: comments.id,
       body: comments.body,
       createdAt: comments.createdAt,
+      userId: comments.userId,
       userName: users.name,
     })
     .from(comments)
@@ -881,6 +905,8 @@ export async function getTaskFull(id: number) {
       assignedTo: tasks.assignedTo,
       assigneeName: assignee.name,
       updatedAt: tasks.updatedAt,
+      // ⚠️ شناسه لازم است تا نام سمتِ سرور ماسک شود (viewer-names).
+      updatedBy: tasks.updatedBy,
       updatedByName: editor.name,
     })
     .from(tasks)

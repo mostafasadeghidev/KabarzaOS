@@ -131,7 +131,13 @@ export default async function ProjectDetailPage({
    */
   const [taskStatuses, taskFormOptions, qaForm] = await Promise.all([
     canManage ? getTaskStatusOptions(actor) : Promise.resolve([]),
-    canManage ? getTaskFormOptions(actor, project.id) : Promise.resolve(null),
+    /**
+     * ⚠️ فرمِ تسک برای **هر کسی که پروژه را می‌بیند** — عضو و کارفرما هم.
+     * سرویس همان گارد را دارد، پس این شرط و آن گارد یکی‌اند و از هم جدا
+     * نمی‌افتند. پروژهٔ منجمد فرم نمی‌گیرد (نوشتن رد می‌شود، پس دکمه هم
+     * نباید باشد).
+     */
+    project.isArchived ? Promise.resolve(null) : getTaskFormOptions(actor, project.id),
     canManage ? getQaForm(actor, project.id) : Promise.resolve(null),
   ]);
 

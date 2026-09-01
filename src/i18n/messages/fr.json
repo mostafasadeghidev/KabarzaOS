@@ -2484,5 +2484,7 @@
   "سلام، {name}": "Bonjour, {name}",
   "پس از ساختِ پروژه آپلود می‌شوند.": "Envoyés une fois le projet créé.",
   "فایل‌های پروژه": "Fichiers du projet",
-  "تصویرِ شاخص": "Image mise en avant"
+  "تصویرِ شاخص": "Image mise en avant",
+  "تخصیص به نقش": "Attribuer à un rôle",
+  "این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.": "Ce projet est archivé ou clos et n’accepte plus de modification."
 }
