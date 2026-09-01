@@ -37,6 +37,8 @@ export interface PersonView {
   isStaff: boolean;
   /** رمز دارد؟ اگر نه، هنوز نمی‌تواند وارد شود. */
   hasPassword: boolean;
+  /** گرنتِ دیدنِ پروژه‌های خصوصی — نقش نیست، گرنتِ per-user است. */
+  privateAccess: boolean;
   offices: Array<{ id: number; name: string; manages: boolean }>;
   tags: Array<{ id: number; name: string; color: string | null }>;
 }

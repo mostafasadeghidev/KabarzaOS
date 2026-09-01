@@ -2121,5 +2121,8 @@
   "این کاربر با همان نام و ایمیلِ فعلی‌اش به این بخش اضافه می‌شود.": "This user joins this section with their current name and e-mail.",
   "یک کاربرِ ثبت‌شده را انتخاب کنید، یا فیلدهای زیر را برای ساختِ کاربرِ نو پر کنید.": "Pick someone who already has an account, or fill in the fields below to create a new one.",
   "اعضا و تسک‌ها از بخش‌های خودشان مدیریت می‌شوند.": "Members and tasks are managed from their own sections.",
-  "تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.": "Tasks, files and QA are optional and are applied right after creation."
+  "تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.": "Tasks, files and QA are optional and are applied right after creation.",
+  "دسترسیِ ویژه": "Special access",
+  "دیدنِ پروژه‌های خصوصی": "Can see private projects",
+  "جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.": "Separate from their role, so revoking it is not a demotion."
 }

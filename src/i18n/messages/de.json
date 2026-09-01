@@ -2121,5 +2121,8 @@
   "این کاربر با همان نام و ایمیلِ فعلی‌اش به این بخش اضافه می‌شود.": "Diese Person wird mit ihrem aktuellen Namen und ihrer E-Mail hinzugefügt.",
   "یک کاربرِ ثبت‌شده را انتخاب کنید، یا فیلدهای زیر را برای ساختِ کاربرِ نو پر کنید.": "Wähle eine Person mit vorhandenem Konto oder fülle die Felder unten aus, um ein neues anzulegen.",
   "اعضا و تسک‌ها از بخش‌های خودشان مدیریت می‌شوند.": "Mitglieder und Aufgaben werden in ihren eigenen Bereichen verwaltet.",
-  "تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.": "Aufgaben, Dateien und QA sind optional und werden direkt nach dem Anlegen übernommen."
+  "تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.": "Aufgaben, Dateien und QA sind optional und werden direkt nach dem Anlegen übernommen.",
+  "دسترسیِ ویژه": "Sonderzugriff",
+  "دیدنِ پروژه‌های خصوصی": "Darf private Projekte sehen",
+  "جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.": "Unabhängig von der Rolle — ein Entzug ist also keine Herabstufung."
 }

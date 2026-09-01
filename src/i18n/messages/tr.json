@@ -2121,5 +2121,8 @@
   "این کاربر با همان نام و ایمیلِ فعلی‌اش به این بخش اضافه می‌شود.": "Bu kullanıcı mevcut adı ve e-postasıyla eklenir.",
   "یک کاربرِ ثبت‌شده را انتخاب کنید، یا فیلدهای زیر را برای ساختِ کاربرِ نو پر کنید.": "Zaten hesabı olan birini seç ya da yeni bir hesap için aşağıdaki alanları doldur.",
   "اعضا و تسک‌ها از بخش‌های خودشان مدیریت می‌شوند.": "Üyeler ve görevler kendi bölümlerinden yönetilir.",
-  "تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.": "Görevler, dosyalar ve QA isteğe bağlıdır ve oluşturmadan hemen sonra uygulanır."
+  "تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.": "Görevler, dosyalar ve QA isteğe bağlıdır ve oluşturmadan hemen sonra uygulanır.",
+  "دسترسیِ ویژه": "Özel erişim",
+  "دیدنِ پروژه‌های خصوصی": "Özel projeleri görebilir",
+  "جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.": "Rolünden ayrıdır; geri alınması bir rütbe düşürme değildir."
 }

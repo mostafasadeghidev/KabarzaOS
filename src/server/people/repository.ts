@@ -33,6 +33,8 @@ export interface PersonRow {
   avatarFileId: number | null;
   /** رمز دارد؟ بدونِ آن، فرد ساخته شده ولی نمی‌تواند وارد شود. */
   hasPassword: boolean;
+  /** گرنتِ دیدنِ پروژه‌های خصوصی — نقش نیست، گرنتِ per-user است. */
+  privateAccess: boolean;
   /** حضورِ زنده. */
   /** ⚠️ null یعنی حضور خاموش است — اصلاً نقطه‌ای نشان داده نمی‌شود. */
   presence: PresenceState | null;
@@ -49,6 +51,7 @@ export async function listByRole(role: Role): Promise<PersonRow[]> {
       email: users.email,
       phone: users.phone,
       memberState: users.memberState,
+      privateAccess: users.privateAccess,
       lastSeenAt: users.lastSeenAt,
       lastActiveAt: users.lastActiveAt,
       passwordHash: users.passwordHash,
@@ -140,6 +143,7 @@ export async function listByRole(role: Role): Promise<PersonRow[]> {
      * صفحه می‌نشاند.
      */
     hasPassword: Boolean(passwordHash),
+    privateAccess: r.privateAccess,
     presence: system.presenceEnabled
       ? deriveState({
         lastSeen: r.lastSeenAt,

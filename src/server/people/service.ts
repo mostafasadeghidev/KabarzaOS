@@ -7,7 +7,7 @@ import { isValidUsername, normalizeIdentifier } from '@/domain/auth/login';
 import {
   hiddenTabsFrom, hideRowsFor, isStorablePermission, levelsOf, permissionsFor, REPORT_TABS,
 } from '@/domain/access/staff-levels';
-import { assertCanManage, assertCanView, ForbiddenError } from '@/domain/access/guard';
+import { assertCanManage, assertCanView, canSeeScope, ForbiddenError } from '@/domain/access/guard';
 import {
   normalizeState, planRemovePerson, removeMessage,
   type MemberState, type RemoveOutcome,
@@ -78,9 +78,31 @@ export interface PersonInput {
   username?: string;
   /** رمزِ اولیه؛ خالی یعنی کاربر هنوز نمی‌تواند وارد شود. */
   password?: string;
+  /** گرنتِ دیدنِ پروژه‌های خصوصی. */
+  privateAccess?: boolean;
   tagIds: number[];
   officeIds: number[];
   managedOfficeIds: number[];
+}
+
+/**
+ * گرنتِ دیدِ خصوصی — فقط کسی که خودش دارد می‌تواند بدهد.
+ *
+ * ⚠️ بدونِ این گارد، همکارِ ادمینی که فقط `members.manage` دارد می‌توانست
+ * برای دیگران (و با ویرایشِ خودش، برای خودش) دیدِ خصوصی بسازد — یعنی
+ * ترفیعِ دسترسی از راهِ فرمِ اعضا.
+ *
+ * ⚠️ مقدارِ نامشخص یعنی «دست نزن»، نه «خاموش کن»: فرمی که این فیلد را
+ * اصلاً ندارد نباید گرنتِ موجود را پاک کند.
+ */
+function resolvePrivateAccess(
+  actor: Actor,
+  requested: boolean | undefined,
+  current: boolean,
+): boolean {
+  if (requested === undefined) return current;
+  if (!canSeeScope(actor, 'private')) return current;
+  return requested;
 }
 
 /** ساختِ فرد — نقشِ بخش را هم می‌گیرد. */
@@ -122,6 +144,7 @@ export async function createPerson(actor: Actor, role: Role, input: PersonInput)
       // ⚠️ بدونِ رمز، ردیف ساخته می‌شود ولی ورود ممکن نیست — مدیر بعداً
       // از همان صفحه رمز می‌گذارد. هرگز رمزِ پیش‌فرضِ حدس‌زدنی نمی‌سازیم.
       passwordHash: input.password ? await hashPassword(input.password) : null,
+      privateAccess: resolvePrivateAccess(actor, input.privateAccess, false),
     }).returning({ id: users.id });
     const userId = rows[0]!.id;
 
@@ -207,6 +230,7 @@ export async function updatePerson(actor: Actor, userId: number, input: PersonIn
       name: input.name,
       email: input.email,
       phone: input.phone,
+      privateAccess: resolvePrivateAccess(actor, input.privateAccess, before.privateAccess),
       updatedAt: new Date(),
     }).where(eq(users.id, userId));
 

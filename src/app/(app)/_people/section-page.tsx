@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { listPeople } from '@/server/people/service';
-import { ForbiddenError } from '@/domain/access/guard';
+import { canSeeScope, ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PeopleGrid } from './people-grid';
 import type { SectionConfig } from './person-card';
@@ -61,7 +61,13 @@ export async function PeopleSectionPage({ section }: { section: SectionConfig })
       <PeopleGrid
         people={data.people}
         offices={data.offices}
-        options={{ roleTags: data.roleTags, offices: data.offices, candidates: data.candidates }}
+        options={{
+          roleTags: data.roleTags,
+          offices: data.offices,
+          candidates: data.candidates,
+          // ⚠️ فقط کسی که خودش دیدِ خصوصی دارد می‌تواند بدهدش.
+          canGrantPrivate: canSeeScope(actor, 'private'),
+        }}
         section={section}
         canManage={data.canManage}
         canViewReports={data.canViewReports}

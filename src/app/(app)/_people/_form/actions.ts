@@ -58,6 +58,11 @@ const personSchema = z.object({
   tagIds: idList,
   officeIds: idList,
   managedOfficeIds: idList,
+  /**
+   * ⚠️ گرنتِ دیدِ خصوصی. اینجا فقط خوانده می‌شود؛ **گاردِ واقعی در سرویس
+   * است** (R-ARCH-01)، چون فرم را می‌شود دور زد.
+   */
+  privateAccess: z.boolean().default(false),
 });
 
 export interface PersonFormState {
@@ -86,6 +91,7 @@ function parse(formData: FormData) {
     tagIds: formData.getAll('tagIds').map(String),
     officeIds: formData.getAll('officeIds').map(String),
     managedOfficeIds: formData.getAll('managedOfficeIds').map(String),
+    privateAccess: formData.get('privateAccess') !== null,
   });
 
   return { parsed, values };

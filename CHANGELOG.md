@@ -2,6 +2,32 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.11.0]
+
+### Added
+
+- **Private-project access can now be granted.** The `private_access`
+  column existed and the whole visibility rule read it, but no form could
+  set it — so in practice only the owner ever saw a private project. It is
+  a checkbox on the member form now.
+
+  ⚠️ Only someone who has private access can grant it. Without that guard
+  a staff admin holding `members.manage` could grant it to others — or to
+  themselves by editing their own record — which is a privilege
+  escalation through the people form.
+
+  ⚠️ An absent value means "leave it alone", not "switch it off", so a
+  form that does not render the field cannot silently revoke an existing
+  grant.
+
+### Changed
+
+- **The project dialog has one tab bar**, matching the previous system:
+  Info | Tasks | Files | QA, with the project's team under Info. 1.10.0
+  had nested two bars.
+
+---
+
 ## [1.10.0]
 
 ### Changed

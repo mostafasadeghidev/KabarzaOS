@@ -1,16 +1,14 @@
-One tab bar in the project dialog, matching the previous system (1.10.1)
+Grant private-project access from the member form (1.11.0)
 
-1.10.0 nested two tab bars: an outer basics/settings pair plus an inner
-team/tasks/QA/files bar inside the bootstrap sections. The previous system
-has a single nav — Info | Tasks | Files | QA — and everything about the
-project, its team included, lives under Info.
+The private_access column existed and the visibility rule read it, but
+nothing could set it — so in practice only the owner ever saw a private
+project. Third instance today of a column the app reads and no form
+writes, after is_closed and is_review.
 
-Flattened to exactly that. The team section moved into the Info panel,
-where it belongs: a project's team is part of its identity, not a later
-step. The three bootstrap panels stay mounted and are only hidden, so
-their inputs still reach FormData.
-
-The three extra tabs appear only while creating; editing shows Info alone,
-since members and tasks are managed from their own sections afterwards.
+Only someone who has private access can grant it. Without that, a staff
+admin holding members.manage could grant it to others, or to themselves
+by editing their own record — a privilege escalation through the people
+form. An absent value means "leave it alone" rather than "switch it off",
+so a form without the field cannot silently revoke a grant.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

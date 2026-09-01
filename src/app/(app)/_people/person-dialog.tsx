@@ -23,6 +23,11 @@ export interface PersonFormOptions {
   offices: Array<{ id: number; name: string }>;
   /** کاربرانی که این نقش را ندارند — انتخابگرِ «کاربرِ موجود» در حالتِ افزودن. */
   candidates: Array<{ id: number; name: string; email: string; phone: string }>;
+  /**
+   * بازیگر خودش دیدِ خصوصی دارد؟ فقط او می‌تواند این گرنت را بدهد.
+   * ⚠️ این فقط **نمایش** را کنترل می‌کند؛ گاردِ واقعی در سرویس است.
+   */
+  canGrantPrivate: boolean;
 }
 
 function SubmitButton({ label }: { label: string }) {
@@ -262,6 +267,28 @@ export function PersonDialog({
                 <p className="text-xs text-destructive">{state.fieldErrors.password}</p>
               )}
             </div>
+          )}
+
+          {/*
+            ⚠️ فقط برای کسی که خودش دیدِ خصوصی دارد. دیدنِ دادهٔ خصوصی یک
+            **گرنت** است نه نقش، پس با تگ و دفتر یک جا نمی‌نشیند و کادرِ
+            خودش را دارد.
+          */}
+          {options.canGrantPrivate && (
+            <fieldset className="grid gap-1.5 rounded-md border border-dashed p-3">
+              <legend className="px-1 text-sm font-medium">{tr("دسترسیِ ویژه")}</legend>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox" name="privateAccess" value="1"
+                  defaultChecked={person?.privateAccess ?? false}
+                  className="size-4 accent-primary"
+                />
+                {tr("دیدنِ پروژه‌های خصوصی")}
+              </label>
+              <p className="text-xs text-muted-foreground">
+                {tr("جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.")}
+              </p>
+            </fieldset>
           )}
 
           {section.supportsTags && (

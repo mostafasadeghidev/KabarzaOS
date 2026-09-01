@@ -76,3 +76,36 @@ describe('ساختِ عضو', () => {
     expect(row!.passwordHash).toBeNull();
   });
 });
+
+/**
+ * گرنتِ دیدِ خصوصی.
+ *
+ * ⚠️ این یک **ترفیعِ دسترسی** است: کسی که خودش دیدِ خصوصی ندارد نباید
+ * بتواند برای دیگری (یا با ویرایشِ خودش، برای خودش) بسازدش.
+ */
+describe('گرنتِ دیدِ خصوصی', () => {
+  const withPrivate = (a: Actor): Actor => ({ ...a, privateAccess: true });
+  const withoutPrivate = (a: Actor): Actor => ({
+    ...a, roles: ['finance'], privateAccess: false,
+  });
+
+  it('کسی که خودش دارد، می‌تواند بدهد', async () => {
+    const id = await createPerson(withPrivate(admin), 'member', { ...base, privateAccess: true });
+    const [row] = await db.select().from(users).where(eq(users.id, id));
+    expect(row!.privateAccess).toBe(true);
+  });
+
+  it('⚠️ کسی که ندارد، نمی‌تواند بدهد — بی‌صدا نادیده گرفته می‌شود', async () => {
+    const id = await createPerson(
+      withoutPrivate(admin), 'member', { ...base, privateAccess: true },
+    );
+    const [row] = await db.select().from(users).where(eq(users.id, id));
+    expect(row!.privateAccess).toBe(false);
+  });
+
+  it('پیش‌فرض خاموش است', async () => {
+    const id = await createPerson(withPrivate(admin), 'member', base);
+    const [row] = await db.select().from(users).where(eq(users.id, id));
+    expect(row!.privateAccess).toBe(false);
+  });
+});
