@@ -2119,5 +2119,7 @@
   "مدیرِ این دفاتر": "Gère ces bureaux",
   "مدیریت جداست از عضویت — می‌تواند دفتری را بگرداند بی‌آنکه عضوش باشد.": "Gérer est distinct d’être membre — on peut diriger un bureau sans en faire partie.",
   "این کاربر با همان نام و ایمیلِ فعلی‌اش به این بخش اضافه می‌شود.": "Cet utilisateur rejoint cette section avec son nom et son e-mail actuels.",
-  "یک کاربرِ ثبت‌شده را انتخاب کنید، یا فیلدهای زیر را برای ساختِ کاربرِ نو پر کنید.": "Choisissez une personne ayant déjà un compte, ou remplissez les champs ci-dessous pour en créer un."
+  "یک کاربرِ ثبت‌شده را انتخاب کنید، یا فیلدهای زیر را برای ساختِ کاربرِ نو پر کنید.": "Choisissez une personne ayant déjà un compte, ou remplissez les champs ci-dessous pour en créer un.",
+  "اعضا و تسک‌ها از بخش‌های خودشان مدیریت می‌شوند.": "Les membres et les tâches se gèrent depuis leurs propres sections.",
+  "تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.": "Tâches, fichiers et QA sont facultatifs et s’appliquent juste après la création."
 }

@@ -129,7 +129,9 @@ export function ProjectDialog({
   const tr = useT();
   const isEdit = project !== undefined;
   const [open, setOpen] = useState(false);
-  const [formTab, setFormTab] = useState<'basics' | 'more'>('basics');
+  const [formTab, setFormTab] = useState<'info' | 'tasks' | 'files' | 'qa'>('info');
+  /** بخش‌های اولیه فقط هنگامِ ساخت وجود دارند. */
+  const showBootstrap = !isEdit && Boolean(options.bootstrap);
   const [state, formAction] = useActionState<FormState, FormData>(
     isEdit ? updateProjectAction : createProjectAction,
     {},
@@ -182,8 +184,8 @@ export function ProjectDialog({
           <DialogTitle>{isEdit ? tr('ویرایشِ پروژه') : tr('افزودن پروژه')}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? 'اعضا و تسک‌ها از بخش‌های خودشان مدیریت می‌شوند.'
-              : 'اطلاعاتِ پایه را ثبت کنید؛ بخش‌های پایین اختیاری‌اند.'}
+              ? tr('اعضا و تسک‌ها از بخش‌های خودشان مدیریت می‌شوند.')
+              : tr('تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -209,11 +211,13 @@ export function ProjectDialog({
             کردنِ تبِ غیرفعال، فیلدهایش از FormData بیرون می‌افتادند و
             ذخیره بی‌صدا مقادیر را پاک می‌کرد.
           */}
-          <div className="flex gap-1 border-b">
+          <div className="flex flex-wrap gap-1 border-b">
             {([
-              ['basics', tr('اطلاعات')],
-              ['more', tr('تنظیمات و دسترسی')],
-            ] as const).map(([key, label]) => (
+              ['info', tr('اطلاعات')],
+              ...(showBootstrap
+                ? ([['tasks', tr('تسک‌ها')], ['files', tr('فایل‌ها')], ['qa', 'QA']] as const)
+                : []),
+            ] as ReadonlyArray<readonly [typeof formTab, string]>).map(([key, label]) => (
               <button
                 key={key}
                 type="button"
@@ -229,7 +233,7 @@ export function ProjectDialog({
             ))}
           </div>
 
-          <div className={formTab === 'basics' ? 'grid gap-4' : 'hidden'}>
+          <div className={formTab === 'info' ? 'grid gap-4' : 'hidden'}>
 
           <Field label={tr("عنوان")} name="title" error={fe.title}>
             {(id) => <Input id={id} name="title" defaultValue={keep('title')} required autoFocus />}
@@ -293,9 +297,8 @@ export function ProjectDialog({
               )}
             </Field>
           </div>
-          </div>
 
-          <div className={formTab === 'more' ? 'grid gap-4' : 'hidden'}>
+
           <Field
             label={tr("پروژهٔ والد (زیرپروژه؟)")}
             name="parentId"
@@ -422,13 +425,33 @@ export function ProjectDialog({
           )}
 
           {/*
-            بخش‌های اولیه فقط هنگامِ ساخت — همان کاری که نسخهٔ قبلی پس از
-            `bootstrapProject` انجام می‌دهد.
+            ⚠️ «اعضا» داخلِ همین تبِ اطلاعات است، نه تبِ جدا — همان جایی که
+            نسخهٔ قبلی گذاشته: تیمِ پروژه بخشی از شناسنامهٔ آن است، نه یک
+            مرحلهٔ بعدی.
           */}
-          {!isEdit && options.bootstrap && (
-            <BootstrapSections options={options.bootstrap} isUnitBased={isUnitBased} />
+          {showBootstrap && (
+            <BootstrapSections options={options.bootstrap!} isUnitBased={isUnitBased} only="team" />
           )}
           </div>
+
+          {/*
+            ⚠️ سه پنلِ دیگر بیرونِ پنلِ اطلاعات‌اند ولی همیشه در DOM می‌مانند
+            و فقط پنهان می‌شوند: با unmount، ورودی‌هایشان از FormData بیرون
+            می‌افتند و ساختِ پروژه بی‌صدا آن بخش را نادیده می‌گیرد.
+          */}
+          {showBootstrap && (
+            <>
+              <div className={formTab === 'tasks' ? 'grid gap-4' : 'hidden'}>
+                <BootstrapSections options={options.bootstrap!} isUnitBased={isUnitBased} only="tasks" />
+              </div>
+              <div className={formTab === 'files' ? 'grid gap-4' : 'hidden'}>
+                <BootstrapSections options={options.bootstrap!} isUnitBased={isUnitBased} only="files" />
+              </div>
+              <div className={formTab === 'qa' ? 'grid gap-4' : 'hidden'}>
+                <BootstrapSections options={options.bootstrap!} isUnitBased={isUnitBased} only="qa" />
+              </div>
+            </>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
