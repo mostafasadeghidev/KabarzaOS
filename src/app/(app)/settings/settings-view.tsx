@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useT } from '@/i18n/client';
+import { useLocale, useT } from '@/i18n/client';
 import { GRANTABLE_CAPS } from '@/domain/access/project-scope';
 import type { SchedulerHealth } from '@/domain/scheduler/health';
 import { DEFAULT_LOCALE, isRtl, LOCALE_NAMES, LOCALES } from '@/i18n/config';
@@ -104,6 +104,7 @@ const field = 'h-9 w-full rounded-md border border-input bg-transparent px-3 tex
 export function SettingsView({ data }: { data: SettingsData }) {
   const tr = useT();
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('currencies');
+  const locale = useLocale();
   const [tagType, setTagType] = useState<TagType>('member_role');
   const [pending, startTransition] = useTransition();
 
@@ -263,7 +264,27 @@ export function SettingsView({ data }: { data: SettingsData }) {
             addLabel="افزودن تگ"
             rows={data.tags.filter((t) => t.type === tagType)}
             columns={[
-              { header: 'نام', cell: (t) => t.name },
+              /*
+                ⚠️ نامِ تگ **به زبانِ جاری**، نه ستونِ خام. بقیهٔ اپ ترجمه را
+                نشان می‌دهد؛ اگر این جدول تنها جایی باشد که نامِ پایه را
+                می‌دهد، کاربر فکر می‌کند ترجمه کار نکرده.
+                نامِ پایه وقتی با ترجمه فرق دارد به‌عنوانِ راهنما می‌آید،
+                چون همان است که در فرم ویرایش می‌شود.
+              */
+              {
+                header: 'نام',
+                cell: (t) => {
+                  const shown = t.nameI18n?.[locale] || t.name;
+                  return (
+                    <span className="flex flex-col">
+                      <span>{shown}</span>
+                      {shown !== t.name && (
+                        <span className="text-xs text-muted-foreground">{t.name}</span>
+                      )}
+                    </span>
+                  );
+                },
+              },
               {
                 header: 'رنگ',
                 cell: (t) => t.color
@@ -276,16 +297,27 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 عنوانِ ستون هم با نوعِ تگ عوض می‌شود، چون معنای مقدار
                 عوض می‌شود.
               */
-              {
-                header: groupFieldLabel(tagType) || 'گروه',
-                cell: (t) => groupChoices(tagType).find((c) => c.value === t.statusGroup)?.label
-                  ?? (t.statusGroup || '—'),
-              },
+              // ⚠️ نقشِ عضو و اولویت گروه ندارند؛ ستون برایشان کشیده نمی‌شود
+              // به‌جای اینکه سرستونِ بی‌معنا و ستونی پر از «—» بگیرد.
+              ...(groupChoices(tagType).length > 0
+                ? [{
+                    header: groupFieldLabel(tagType),
+                    // ⚠️ برچسب‌های `groups.ts` ثابتِ فارسی‌اند — کلیدِ ترجمه‌اند،
+                    // نه متنِ نهایی.
+                    cell: (t: { statusGroup: string }) => {
+                      const found = groupChoices(tagType).find((c) => c.value === t.statusGroup);
+                      return found ? tr(found.label) : (t.statusGroup || '—');
+                    },
+                  }]
+                : []),
               ...(supportsGrant(tagType)
                 ? [{
                     header: 'دسترسی',
-                    cell: (t: { grantsCap: string }) =>
-                      GRANTABLE_CAPS.find((c) => c.value === t.grantsCap)?.label ?? '—',
+                    // ⚠️ برچسبِ ثابتِ فارسی است؛ بدونِ tr() در هر زبانی فارسی می‌ماند.
+                    cell: (t: { grantsCap: string }) => {
+                      const found = GRANTABLE_CAPS.find((c) => c.value === t.grantsCap);
+                      return found ? tr(found.label) : '—';
+                    },
                   }]
                 : []),
               ...(supportsClosed(tagType)
@@ -325,13 +357,13 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 */}
                 {groupChoices(tagType).length > 0 && (
                   <div className="grid gap-1.5">
-                    <Label htmlFor="t-group">{groupFieldLabel(tagType)}</Label>
+                    <Label htmlFor="t-group">{tr(groupFieldLabel(tagType))}</Label>
                     <select
                       id="t-group" name="statusGroup" className={tagSelectClass}
                       defaultValue={editing?.statusGroup ?? ''}
                     >
                       {groupChoices(tagType).map((c) => (
-                        <option key={c.value || 'none'} value={c.value}>{c.label}</option>
+                        <option key={c.value || 'none'} value={c.value}>{tr(c.label)}</option>
                       ))}
                     </select>
                   </div>

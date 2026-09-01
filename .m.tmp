@@ -1,17 +1,25 @@
-Readable chart labels (1.13.1)
+Tag names follow the language, and 36 more strings become translatable
 
-Reported as: the project-status box on the dashboard is unreadable.
+Reported as: tag names do not change with the language.
 
-recharts draws axis labels with a hardcoded rgb(102,102,102). Against the
-dark panel that is roughly 3:1 — below the 4.5:1 minimum for 11px text,
-and it only got worse on the darker palettes. Ticks and grid lines use
---color-muted-foreground and --color-border now, so they follow whichever
-theme and palette is active instead of assuming a light background.
+Tags were translated everywhere except the settings table, which showed
+the raw base name. That was deliberate — it is the field you edit — but
+when it is the one place still in Persian it reads as the translation
+being broken. The table shows the name in the current language now, with
+the base name beneath it when they differ.
 
-Six axes across all three dashboard charts had it, not just the one that
-was reported.
+Chasing that turned up a third blind spot in the key extractor: Persian
+literals returned straight from a function, like the per-type field
+labels in domain/tags/groups.ts. It saw neither those nor, therefore, the
+36 error messages written the same way — "the amount is not valid", "a
+timer is already running", "you do not have access for this" — all of
+which stayed Persian in every language while the checker reported zero
+missing.
 
-Category labels also gained a tick margin: they sat 8px from the end of
-the bar and would touch it on fuller data.
+Also: the access column and the kanban/pipeline labels went out
+untranslated for the same reason as `header` earlier — a hardcoded
+Persian label passed as data, never through t(). And the group column is
+dropped for tag types that have no groups instead of showing a column of
+dashes.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

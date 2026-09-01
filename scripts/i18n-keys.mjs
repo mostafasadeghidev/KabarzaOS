@@ -72,6 +72,10 @@ export function usedKeys(root = 'src') {
   // the "Add …" button of every catalogue stayed Persian in all locales,
   // and the coverage check reported zero missing because it never saw them.
   const attr = /\b([a-zA-Z]+)\s*=\s*"([^"\n]*[\u0600-\u06FF][^"\n]*)"/g;
+  // Persian string literals returned straight from a function, e.g. the
+  // per-type field labels in domain/tags/groups.ts. They never sit inside
+  // t() and are not in a LABELS map, so nothing else here sees them.
+  const ret = /\breturn\s+'([^'\n]*[؀-ۿ][^'\n]*)'/g;
   const map = /\bconst\s+([A-Z][A-Z0-9_]*_(?:LABELS?|NAMES?|TITLES?))\b[^=]*=\s*\{/g;
 
   for (const file of walk(root)) {
@@ -92,6 +96,11 @@ export function usedKeys(root = 'src') {
     while ((m = attr.exec(src))) {
       if (!LABEL_KEYS.has(m[1]) || !PERSIAN.test(m[2])) continue;
       keys.add(m[2]);
+    }
+    while ((m = ret.exec(src))) {
+      // No LABEL_KEYS check here: a returned literal has no prop name to match.
+      if (!PERSIAN.test(m[1])) continue;
+      keys.add(m[1]);
     }
     while ((m = map.exec(src))) {
       // ⚠️ نامِ زبان ترجمه نمی‌شود: «فارسی» در رابطِ انگلیسی هم «فارسی»

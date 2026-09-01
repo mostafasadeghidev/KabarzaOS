@@ -25,6 +25,12 @@ import { useT } from '@/i18n/client';
  * همه‌جا یکسان بماند.
  */
 
+/**
+ * ⚠️ `title` و `description` هم مثلِ `header` **کلیدِ ترجمه**اند، نه متنِ
+ * نهایی: از راهِ پراپ می‌رسند و هرگز داخلِ `t()` نمی‌آیند، پس اگر فراخوان
+ * ترجمه‌شان کند، در زمانِ ساختِ آرایه ترجمه می‌شوند — پیش از آنکه زبانِ
+ * کاربر معلوم باشد.
+ */
 export interface Column<T> {
   /**
    * ⚠️ **کلیدِ ترجمه**، نه متنِ نهایی: خودِ جدول ترجمه‌اش می‌کند. اگر
@@ -76,8 +82,8 @@ export function CatalogSection<T extends { id: number }>({
     <section className="grid gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-base font-semibold">{title}</h2>
-          {description && <p className="text-xs text-muted-foreground">{description}</p>}
+          <h2 className="text-base font-semibold">{tr(title)}</h2>
+          {description && <p className="text-xs text-muted-foreground">{tr(description)}</p>}
         </div>
         <Button
           size="sm"
