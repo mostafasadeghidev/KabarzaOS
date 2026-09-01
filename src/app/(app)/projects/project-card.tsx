@@ -69,8 +69,13 @@ export function ProjectCard({
   const percent = taskProgress(project.doneTaskCount, project.totalTaskCount);
   const urgency = bar ? URGENCY[bar.urgency]! : null;
 
+  /*
+   * ⚠️ سایهٔ واقعی، نه `shadow-xs`: با پس‌زمینهٔ کاغذیِ تازه، کارت باید از
+   * صفحه بلند شود. `hover:shadow-md` بازخوردِ لمسی می‌دهد بی‌آنکه رنگی
+   * اضافه کند.
+   */
   return (
-    <Card className="relative gap-3 overflow-hidden py-4 shadow-xs transition-colors hover:bg-muted/30">
+    <Card className="relative gap-3 overflow-hidden py-4 shadow-sm transition-all hover:border-border/80 hover:shadow-md">
       {/* نوارهای گوشه — بایگانی و مناقصه، مثلِ ribbonهای نسخهٔ قبلی. */}
       <div className="absolute top-0 end-0 flex">
         {project.isArchived && (

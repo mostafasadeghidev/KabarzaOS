@@ -10,11 +10,16 @@
 @theme {
   --font-sans: Vazirmatn, 'Segoe UI', Tahoma, ui-sans-serif, system-ui, sans-serif;
 
-  --color-background: oklch(1 0 0);
-  --color-foreground: oklch(0.21 0.01 265);
-  --color-muted: oklch(0.968 0.004 265);
-  --color-muted-foreground: oklch(0.55 0.015 265);
-  --color-border: oklch(0.922 0.005 265);
+  /*
+   * ⚠️ پس‌زمینه سفیدِ خالص نیست و کارت هست — عمداً برعکسِ حالتِ قبل.
+   * وقتی هر دو سفید بودند، کارت فقط یک خطِ نازک بود و صفحه یک سطحِ صافِ
+   * بی‌عمق می‌شد. حالا کارت از کاغذ **بلند** می‌شود، بدونِ اینکه رنگی شود.
+   */
+  --color-background: oklch(0.985 0.004 55);
+  --color-foreground: oklch(0.21 0.011 55);
+  --color-muted: oklch(0.968 0.005 55);
+  --color-muted-foreground: oklch(0.55 0.016 55);
+  --color-border: oklch(0.922 0.006 55);
   --color-primary: oklch(0.55 0.18 264);
   --color-primary-foreground: oklch(0.985 0 0);
   --color-destructive: oklch(0.577 0.245 27.325);
@@ -22,13 +27,13 @@
   --color-warning: oklch(0.75 0.16 70);
 
   /* سایدبار — کمی سردتر و تیره‌تر از پس‌زمینه تا مرزش بدونِ خط دیده شود. */
-  --color-sidebar: oklch(0.978 0.003 265);
-  --color-sidebar-foreground: oklch(0.33 0.012 265);
+  --color-sidebar: oklch(0.978 0.004 55);
+  --color-sidebar-foreground: oklch(0.33 0.013 55);
   --color-sidebar-primary: oklch(0.55 0.18 264);
   --color-sidebar-primary-foreground: oklch(0.985 0 0);
-  --color-sidebar-accent: oklch(0.94 0.008 265);
-  --color-sidebar-accent-foreground: oklch(0.26 0.02 265);
-  --color-sidebar-border: oklch(0.91 0.006 265);
+  --color-sidebar-accent: oklch(0.94 0.009 55);
+  --color-sidebar-accent-foreground: oklch(0.26 0.02 55);
+  --color-sidebar-border: oklch(0.91 0.007 55);
   --color-sidebar-ring: oklch(0.55 0.18 264);
 
   /*
@@ -42,25 +47,25 @@
 
   /* سطحِ شناور — فهرستِ کمبوباکس، منوی کشویی، پالتِ فرمان. */
   --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.21 0.01 265);
+  --color-popover-foreground: oklch(0.21 0.011 55);
 
   /* برجسته‌سازیِ گذرا — گزینهٔ زیرِ نشانگر، ردیفِ فعالِ فهرست. */
-  --color-accent: oklch(0.965 0.005 265);
-  --color-accent-foreground: oklch(0.21 0.01 265);
+  --color-accent: oklch(0.965 0.006 55);
+  --color-accent-foreground: oklch(0.21 0.011 55);
 
   /* کارت — روی پس‌زمینه می‌نشیند و باید از آن جدا دیده شود. */
   --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.21 0.01 265);
+  --color-card-foreground: oklch(0.21 0.011 55);
 
   /* ورودی — مرزِ فیلدها؛ کمی پررنگ‌تر از مرزِ عمومی تا لبهٔ فیلد پیدا باشد. */
-  --color-input: oklch(0.9 0.006 265);
+  --color-input: oklch(0.9 0.007 55);
 
   /* حلقهٔ فوکوس — بدونِ آن، پیمایش با کیبورد کور است. */
   --color-ring: oklch(0.55 0.18 264);
 
   /* ثانویه — بجِ خنثی، دکمهٔ کم‌اهمیت. */
-  --color-secondary: oklch(0.965 0.005 265);
-  --color-secondary-foreground: oklch(0.26 0.02 265);
+  --color-secondary: oklch(0.965 0.006 55);
+  --color-secondary-foreground: oklch(0.26 0.02 55);
 
   --radius: 0.625rem;
 }
@@ -74,41 +79,41 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 .dark {
-  --color-background: oklch(0.16 0.006 265);
-  --color-foreground: oklch(0.97 0.003 265);
-  --color-muted: oklch(0.24 0.008 265);
-  --color-muted-foreground: oklch(0.68 0.012 265);
-  --color-border: oklch(0.29 0.008 265);
+  --color-background: oklch(0.145 0.008 55);
+  --color-foreground: oklch(0.97 0.004 55);
+  --color-muted: oklch(0.24 0.009 55);
+  --color-muted-foreground: oklch(0.68 0.013 55);
+  --color-border: oklch(0.29 0.009 55);
   --color-primary: oklch(0.62 0.17 264);
   --color-primary-foreground: oklch(0.99 0 0);
 
-  --color-sidebar: oklch(0.2 0.008 265);
-  --color-sidebar-foreground: oklch(0.93 0.005 265);
+  --color-sidebar: oklch(0.185 0.009 55);
+  --color-sidebar-foreground: oklch(0.93 0.006 55);
   --color-sidebar-primary: oklch(0.62 0.17 264);
   --color-sidebar-primary-foreground: oklch(0.99 0 0);
-  --color-sidebar-accent: oklch(0.27 0.012 265);
-  --color-sidebar-accent-foreground: oklch(0.97 0.003 265);
-  --color-sidebar-border: oklch(0.3 0.01 265);
+  --color-sidebar-accent: oklch(0.27 0.013 55);
+  --color-sidebar-accent-foreground: oklch(0.97 0.004 55);
+  --color-sidebar-border: oklch(0.3 0.011 55);
   --color-sidebar-ring: oklch(0.62 0.17 264);
 
   /*
    * ⚠️ در حالتِ تیره، `popover` باید **روشن‌تر** از پس‌زمینه باشد، نه تیره‌تر:
    * سطحِ شناور با نور بالا می‌آید. اگر هم‌رنگِ صفحه بماند، مرزش گم می‌شود.
    */
-  --color-popover: oklch(0.21 0.008 265);
-  --color-popover-foreground: oklch(0.97 0.003 265);
+  --color-popover: oklch(0.215 0.011 55);
+  --color-popover-foreground: oklch(0.97 0.004 55);
 
-  --color-accent: oklch(0.27 0.012 265);
-  --color-accent-foreground: oklch(0.97 0.003 265);
+  --color-accent: oklch(0.27 0.013 55);
+  --color-accent-foreground: oklch(0.97 0.004 55);
 
-  --color-card: oklch(0.2 0.008 265);
-  --color-card-foreground: oklch(0.97 0.003 265);
+  --color-card: oklch(0.205 0.011 55);
+  --color-card-foreground: oklch(0.97 0.004 55);
 
-  --color-input: oklch(0.32 0.01 265);
+  --color-input: oklch(0.32 0.011 55);
   --color-ring: oklch(0.62 0.17 264);
 
-  --color-secondary: oklch(0.27 0.012 265);
-  --color-secondary-foreground: oklch(0.95 0.004 265);
+  --color-secondary: oklch(0.27 0.013 55);
+  --color-secondary-foreground: oklch(0.95 0.005 55);
 }
 
 @layer base {
