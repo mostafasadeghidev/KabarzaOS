@@ -2,6 +2,29 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.16.1]
+
+### Fixed
+
+- **The last shape of untranslated message: `{notice.text}`.** 1.16.0 wrapped
+  every render site of a server-produced message that matched `{error}`,
+  `{notice}` or `{state.error}` — but the people pages hold theirs in an
+  object, and `{notice.text}` did not match. Deleting a member and
+  reactivating one both printed their result in the source language.
+
+  The check no longer enumerates known shapes. It reads every JSX expression
+  whose final property name looks like a message (`error`, `message`,
+  `notice`, `text`, `reason`, `summary`) at any depth, and reports the ones
+  that do not pass through the translator. That found eleven more:
+  `{state.fieldErrors.*}` on five forms, `{notice.text}` in the staff-access
+  section, and the per-row errors in the project-members dialog.
+
+- **The former-member badge** ("Former · cut off", "Former · finance only")
+  was rendered raw. `stateLabel()` returns a translation key, and the badge
+  printed it as-is.
+
+---
+
 ## [1.16.0]
 
 ### Fixed

@@ -80,7 +80,7 @@ function AvatarPicker({ person }: { person: PersonView }) {
         </p>
         {notice && (
           <p className={`text-xs ${notice.isError ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-            {notice.text}
+            {tr(notice.text)}
           </p>
         )}
       </div>
@@ -184,7 +184,7 @@ export function PersonDialog({
               required={picked === null}
             />
             {state.fieldErrors?.name && (
-              <p className="text-xs text-destructive">{state.fieldErrors.name}</p>
+              <p className="text-xs text-destructive">{tr(state.fieldErrors.name)}</p>
             )}
           </div>
 
@@ -202,7 +202,7 @@ export function PersonDialog({
                 required={picked === null}
               />
               {state.fieldErrors?.email && (
-                <p className="text-xs text-destructive">{state.fieldErrors.email}</p>
+                <p className="text-xs text-destructive">{tr(state.fieldErrors.email)}</p>
               )}
             </div>
 
@@ -244,7 +244,7 @@ export function PersonDialog({
                 {tr("با ایمیل هم می‌تواند وارد شود؛ این فقط راهِ دوم است.")}
               </p>
               {state.fieldErrors?.username && (
-                <p className="text-xs text-destructive">{state.fieldErrors.username}</p>
+                <p className="text-xs text-destructive">{tr(state.fieldErrors.username)}</p>
               )}
             </div>
           )}
@@ -264,7 +264,7 @@ export function PersonDialog({
                 {tr("خالی بگذارید و بعداً از دکمهٔ «رمزِ ورود» تعیینش کنید؛ تا آن موقع این فرد نمی‌تواند وارد شود.")}
               </p>
               {state.fieldErrors?.password && (
-                <p className="text-xs text-destructive">{state.fieldErrors.password}</p>
+                <p className="text-xs text-destructive">{tr(state.fieldErrors.password)}</p>
               )}
             </div>
           )}

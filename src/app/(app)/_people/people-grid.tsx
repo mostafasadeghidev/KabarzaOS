@@ -116,7 +116,7 @@ export function PeopleGrid({
               : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
           }`}
         >
-          {notice.text}
+          {t(notice.text)}
         </p>
       )}
 

@@ -199,7 +199,7 @@ export function MeetingForm({
               required
             />
             {state.fieldErrors?.title && (
-              <p className="text-xs text-destructive">{state.fieldErrors.title}</p>
+              <p className="text-xs text-destructive">{tr(state.fieldErrors.title)}</p>
             )}
           </div>
 
@@ -215,7 +215,7 @@ export function MeetingForm({
                 required
               />
               {state.fieldErrors?.meetAt && (
-                <p className="text-xs text-destructive">{state.fieldErrors.meetAt}</p>
+                <p className="text-xs text-destructive">{tr(state.fieldErrors.meetAt)}</p>
               )}
             </div>
 

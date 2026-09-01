@@ -77,7 +77,7 @@ export function AddTaskDialog({
             <Label htmlFor="nt-title">{t("عنوان تسک")}</Label>
             <Input id="nt-title" name="title" defaultValue={keep('title')} required autoFocus />
             {state.fieldErrors?.title && (
-              <p className="text-xs text-destructive">{state.fieldErrors.title}</p>
+              <p className="text-xs text-destructive">{tr(state.fieldErrors.title)}</p>
             )}
           </div>
 
@@ -121,7 +121,7 @@ export function AddTaskDialog({
               <Label htmlFor="nt-due">{t("ددلاین")}</Label>
               <Input id="nt-due" type="date" name="dueDate" className="num" defaultValue={keep('dueDate')} />
               {state.fieldErrors?.dueDate && (
-                <p className="text-xs text-destructive">{state.fieldErrors.dueDate}</p>
+                <p className="text-xs text-destructive">{tr(state.fieldErrors.dueDate)}</p>
               )}
             </div>
           </div>

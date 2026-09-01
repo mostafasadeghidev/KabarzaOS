@@ -135,7 +135,7 @@ export function PersonCard({
                 person.name
               )}
             </p>
-            {label && <Badge variant="outline" className="mt-0.5">{label}</Badge>}
+            {label && <Badge variant="outline" className="mt-0.5">{tr(label)}</Badge>}
           </div>
 
           {canManage && (

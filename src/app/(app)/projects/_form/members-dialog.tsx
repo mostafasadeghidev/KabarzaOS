@@ -222,7 +222,7 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
           {state.rowErrors && (
             <ul className="text-xs text-destructive">
               {Object.entries(state.rowErrors).map(([i, message]) => (
-                <li key={i}>{t("ردیفِ")} <span className="num">{Number(i) + 1}</span>: {message}</li>
+                <li key={i}>{t("ردیفِ")} <span className="num">{Number(i) + 1}</span>: {tr(message)}</li>
               ))}
             </ul>
           )}

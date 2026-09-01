@@ -57,7 +57,7 @@ export function StaffSection({ staff }: { staff: StaffRow[] }) {
 
       {notice && (
         <p className={`text-sm ${notice.isError ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
-          {notice.text}
+          {t(notice.text)}
         </p>
       )}
 

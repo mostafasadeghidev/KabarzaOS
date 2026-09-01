@@ -164,7 +164,7 @@ export function TaskDialog({
                   <Label htmlFor="t-title">{t("عنوان")}</Label>
                   <Input id="t-title" name="title" defaultValue={task.title} required />
                   {saveState.fieldErrors?.title && (
-                    <p className="text-xs text-destructive">{saveState.fieldErrors.title}</p>
+                    <p className="text-xs text-destructive">{t(saveState.fieldErrors.title)}</p>
                   )}
                 </div>
 

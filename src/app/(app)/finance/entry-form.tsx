@@ -153,7 +153,7 @@ export function EntryForm({
             defaultValue={keep('entryDate', editing?.entryDate ?? today)}
             required
           />
-          {fieldErrors?.entryDate && <p className="text-xs text-destructive">{fieldErrors.entryDate}</p>}
+          {fieldErrors?.entryDate && <p className="text-xs text-destructive">{tr(fieldErrors.entryDate)}</p>}
         </div>
 
         <div className="grid gap-1.5">
@@ -190,7 +190,7 @@ export function EntryForm({
             onChange={(e) => onAmountChange(e.target.value)}
             required
           />
-          {fieldErrors?.amount && <p className="text-xs text-destructive">{fieldErrors.amount}</p>}
+          {fieldErrors?.amount && <p className="text-xs text-destructive">{tr(fieldErrors.amount)}</p>}
         </div>
 
         <div className="grid gap-1.5">
