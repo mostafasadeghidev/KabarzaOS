@@ -145,6 +145,19 @@ export function PersonDialog({
           <input type="hidden" name="role" value={section.role} />
 
           {/*
+            ⚠️ تصویر در **همان فرمِ ساخت**: پیش از این فقط `AvatarPicker` ِ
+            بالا وجود داشت که تنها در ویرایش دیده می‌شود، پس کاربر باید فرد
+            را می‌ساخت، دوباره بازش می‌کرد و آن‌وقت عکس می‌گذاشت. اکشن پس از
+            ساخت آپلودش می‌کند (شناسه لازم است).
+          */}
+          {!isEdit && (
+            <div className="grid gap-1.5">
+              <Label htmlFor="p-new-avatar">{tr("تصویر پروفایل")}</Label>
+              <Input id="p-new-avatar" name="avatar" type="file" accept="image/*" />
+            </div>
+          )}
+
+          {/*
             انتخابگرِ کاربرِ موجود.
             ⚠️ فقط در حالتِ افزودن، و فقط وقتی کاندیدی هست. کاربری که همین
             نقش را دارد در فهرست نیست، چون انتخابش هیچ اثری ندارد.

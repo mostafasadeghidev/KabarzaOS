@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { format } from '@/domain/money/money';
 import { summarizeProject } from '@/domain/team-money/payments';
 import { deadlineBar, deadlineLabel, taskProgress } from '@/domain/projects/deadline';
-import type { ProjectListRow } from '@/server/projects/repository';
+import type { VisibleProjectRow } from '@/server/projects/service';
 import { Thumb } from '@/components/thumb';
 import { StatusPicker, type StatusOption } from './status-picker';
 import { CardQuickAdd, type CardOptions } from './card-quick-add';
@@ -57,7 +57,7 @@ export function ProjectCard({
   statuses,
   cardOptions,
 }: {
-  project: ProjectListRow;
+  project: VisibleProjectRow;
   today: string;
   statuses: StatusOption[];
   /** حاضر بودنش یعنی کاربر مجوزِ مدیریت دارد. */
@@ -142,18 +142,25 @@ export function ProjectCard({
       </CardHeader>
 
       <CardContent className="grid gap-3 px-4">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">{t("مبلغ")}</span>
-          {/*
-            R-TEAM-04 — «مبلغ» جمعِ قیمت و هزینه‌های قابلِ‌صورتحساب است،
-            نه قیمتِ تنها؛ کارفرما همین جمع را بدهکار است.
-          */}
-          <MaskedPrice
-            value={format(
-              String(summarizeProject(project.price, project.billableExpenses, '0').totalDue),
-            )}
-          />
-        </div>
+        {/*
+          ⚠️ ردیفِ «مبلغ» فقط برای کسی که حقِ دیدنِ قیمت دارد — مالک/مدیرِ
+          مالی و کارفرمای همین پروژه. سرویس قیمت را برای بقیه صفر می‌فرستد
+          (`maskPrices`)، پس نشان‌دادنِ «۰» گمراه‌کننده بود.
+        */}
+        {project.canSeePrice && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">{t("مبلغ")}</span>
+            {/*
+              R-TEAM-04 — «مبلغ» جمعِ قیمت و هزینه‌های قابلِ‌صورتحساب است،
+              نه قیمتِ تنها؛ کارفرما همین جمع را بدهکار است.
+            */}
+            <MaskedPrice
+              value={format(
+                String(summarizeProject(project.price, project.billableExpenses, '0').totalDue),
+              )}
+            />
+          </div>
+        )}
 
         {/* نوارِ ددلاین — پر می‌شود و روزهای مانده را نشان می‌دهد. */}
         {bar && urgency && (
@@ -172,7 +179,7 @@ export function ProjectCard({
         {/* دو شمارندهٔ ریویو — تسک و کامنت. */}
         <div className="flex gap-4 text-xs">
           <Link
-            href={`/projects/${project.id}`}
+            href={`/projects/${project.id}?tab=tasks&view=review`}
             className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
             title={t("تسک‌های نیازمند ریویو")}
           >
@@ -181,7 +188,7 @@ export function ProjectCard({
             <b className="num">{project.reviewCount}</b>
           </Link>
           <Link
-            href={`/projects/${project.id}`}
+            href={`/projects/${project.id}?tab=comments`}
             className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
             title={t("کامنت‌های نیازمند بررسی")}
           >
@@ -192,7 +199,11 @@ export function ProjectCard({
         </div>
 
         {/* پیشرفتِ تسک‌ها. */}
-        <Link href={`/projects/${project.id}`} className="grid gap-1" title={t("مشاهدهٔ تسک‌ها")}>
+        <Link
+          href={`/projects/${project.id}?tab=tasks`}
+          className="grid gap-1"
+          title={t("مشاهدهٔ تسک‌ها")}
+        >
           <div className="relative h-4 overflow-hidden rounded-full bg-muted">
             <div className="h-full bg-primary/70" style={{ width: `${percent}%` }} />
             <b className="num absolute inset-0 flex items-center justify-center text-[10px] font-semibold">

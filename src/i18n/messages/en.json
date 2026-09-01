@@ -2477,5 +2477,12 @@
   "کمی صبر کنید — تا ارسالِ بعدی {n} ثانیه مانده.": "Please wait — {n} seconds until you can send again.",
   "عوض‌کردنش یعنی نامِ کاربریِ قبلی دیگر برای ورود کار نمی‌کند.": "Changing it means the old username no longer works for signing in.",
   "{names} حذف نشد چون روی این پروژه تسویه‌نشده دارد. اول تسویه کنید.": "{names} was not removed — there is an unsettled balance on this project. Settle it first.",
-  "{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.": "{names} is a former member; their history on this project is kept."
+  "{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.": "{names} is a former member; their history on this project is kept.",
+  "دسترسی قطع": "Access cut",
+  "بازگرداندنِ دسترسی": "Restore access",
+  "قطعِ دسترسی به این پروژه": "Cut access to this project",
+  "سلام، {name}": "Hello, {name}",
+  "پس از ساختِ پروژه آپلود می‌شوند.": "Uploaded once the project is created.",
+  "فایل‌های پروژه": "Project files",
+  "تصویرِ شاخص": "Featured image"
 }

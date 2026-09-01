@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { matchesTab, type TabInfo, type TabKey } from '@/domain/projects/tabs';
-import type { ProjectListRow } from '@/server/projects/repository';
+import type { VisibleProjectRow } from '@/server/projects/service';
 import { ProjectCard } from './project-card';
 import type { StatusOption } from './status-picker';
 import type { CardOptions } from './card-quick-add';
@@ -28,7 +28,7 @@ export function ProjectGrid({
   statuses,
   cardOptions,
 }: {
-  projects: ProjectListRow[];
+  projects: VisibleProjectRow[];
   tabs: TabInfo[];
   initialTab: TabKey;
   /** تاریخِ امروز از **سرور** — تا نوارِ ددلاین در هیدریشن نپرد. */

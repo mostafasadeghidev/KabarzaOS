@@ -149,8 +149,32 @@ export async function savePersonAction(
 
   try {
     const actor = await requireActor();
-    if (userId) await updatePerson(actor, userId, parsed.data);
-    else await createPerson(actor, role, parsed.data);
+    if (userId) {
+      await updatePerson(actor, userId, parsed.data);
+    } else {
+      const newId = await createPerson(actor, role, parsed.data);
+      /**
+       * ⚠️ تصویر **بعد از** ساخت آپلود می‌شود، چون به شناسهٔ کاربر نیاز
+       * دارد. پیش از این فقط در فرمِ ویرایش ممکن بود و کاربر باید فرد را
+       * می‌ساخت، دوباره بازش می‌کرد و آنجا عکس می‌گذاشت.
+       *
+       * ⚠️ خطایش بلعیده می‌شود: فرد ساخته شده و برگرداندنِ خطا به نظر
+       * می‌رساند که ساخت انجام نشده.
+       */
+      const avatar = formData.get('avatar');
+      if (avatar instanceof File && avatar.size > 0) {
+        try {
+          const { setAvatar } = await import('@/server/files/service');
+          await setAvatar(actor, newId, {
+            name: avatar.name,
+            mime: avatar.type || 'application/octet-stream',
+            bytes: new Uint8Array(await avatar.arrayBuffer()),
+          });
+        } catch (uploadError) {
+          console.error('[person] avatar', uploadError);
+        }
+      }
+    }
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return {

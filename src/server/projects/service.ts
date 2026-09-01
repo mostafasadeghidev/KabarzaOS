@@ -25,8 +25,12 @@ import {
 import { notify } from '@/server/notifications/service';
 import {
   assertCanManageProject, assertCanViewProject, assertNotFrozen, canManageProject,
-  canViewProject, membershipProjectIds, projectRelation,
+  canViewProject, membershipProjectIds, moneyAudience, projectRelation,
 } from './authority';
+import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
+import {
+  assignableToPeople, FALLBACK_MEMBER_LABEL, nameForViewer, type ViewerContext,
+} from '@/domain/access/viewer-names';
 import {
   assignmentDelta, commentRecipients, reviewRecipients, taskDoerIds,
 } from '@/server/notifications/audience';
@@ -42,7 +46,7 @@ import * as repo from './repository';
 /** فهرستِ پروژه‌ها — فقط scopeهایی که بازیگر اجازه دارد. */
 export async function listProjects(actor: Actor) {
   if (canViewSection(actor, 'projects')) {
-    return repo.listProjects(visibleScopes(actor));
+    return maskPrices(actor, await repo.listProjects(visibleScopes(actor)));
   }
   /**
    * مسیرِ عضویتی — پورتِ «پروژه‌های من» ِ نسخهٔ قبلی: عضو/کارفرما فقط
@@ -50,7 +54,42 @@ export async function listProjects(actor: Actor) {
    * مقدم است (کسی که روی پروژهٔ خصوصی امضا شده، می‌بیندش).
    */
   const ids = await membershipProjectIds(actor.id);
-  return repo.listProjects(['company', 'private'], ids);
+  return maskPrices(actor, await repo.listProjects(['company', 'private'], ids));
+}
+
+/**
+ * قیمت را از ردیف‌هایی که کاربر حقِ دیدنشان را ندارد **بیرون می‌کشد**.
+ *
+ * ⚠️ صفر کردنِ عدد، نه پنهان‌کردنش در UI: کارتِ پروژه کامپوننتِ کلاینت است
+ * و هر چه به آن پاس شود در payload ِ صفحه می‌نشیند — پنهان‌کردن با شرطِ
+ * رندر، قیمت را از View Source پاک نمی‌کند.
+ *
+ * ⚠️ یک کوئریِ ثابت برای کلِ فهرست، نه یکی به‌ازای هر پروژه: مدیرِ سراسری و
+ * مدیرِ مالی اصلاً کوئری نمی‌خورند.
+ */
+/**
+ * ردیفِ پروژه آن‌طور که به فهرست می‌رسد — با پرچمِ حقِ دیدنِ قیمت.
+ * کارت باید بداند «قیمت را ندارم» با «قیمت صفر است» فرق دارد.
+ */
+export type VisibleProjectRow = repo.ProjectListRow & { canSeePrice: boolean };
+
+async function maskPrices<T extends { id: number; price: string; billableExpenses: string }>(
+  actor: Actor,
+  rows: T[],
+): Promise<Array<T & { canSeePrice: boolean }>> {
+  if (canManageSection(actor, 'projects') || canManageSection(actor, 'finance')) {
+    return rows.map((r) => ({ ...r, canSeePrice: true }));
+  }
+  if (rows.length === 0) return [];
+
+  const clientOf = await repo.clientProjectIds(actor.id, rows.map((r) => r.id));
+  return rows.map((r) => (clientOf.has(r.id)
+    /**
+     * ⚠️ پرچمِ صریح، نه حدس از روی «قیمت صفر است»: پروژه‌ای می‌تواند
+     * واقعاً صفر باشد و آن‌وقت کارت بی‌دلیل مبلغ را پنهان می‌کرد.
+     */
+    ? { ...r, canSeePrice: true }
+    : { ...r, price: '0', billableExpenses: '0', canSeePrice: false }));
 }
 
 export class NotFoundError extends Error {
@@ -190,6 +229,50 @@ export async function setMembers(actor: Actor, projectId: number, desired: Membe
   };
 }
 
+/**
+ * قطع/وصلِ دسترسیِ یک نفر به **این** پروژه — بدونِ برداشتنش.
+ *
+ * ⚠️ چرا لازم است: دو قاعده مانعِ حذفِ عضو می‌شوند (عضوِ سابق، و طلبِ
+ * تسویه‌نشده) و هر دو درست‌اند — پول نباید با یک ویرایشِ گروهی ناپدید شود.
+ * ولی راهِ سومی نبود: مدیر یا باید پول را رها می‌کرد یا دسترسی را. حالا
+ * ردیف می‌ماند و فقط دیدن قطع می‌شود.
+ *
+ * ⚠️ همهٔ ردیف‌های آن فرد روی این پروژه با هم عوض می‌شوند: عضوِ دو-نقشه دو
+ * ردیف دارد و قطع‌کردنِ یکی، دسترسی را از راهِ دیگری باز می‌گذاشت.
+ */
+export async function setProjectAccess(
+  actor: Actor,
+  projectId: number,
+  userId: number,
+  blocked: boolean,
+) {
+  await getProject(actor, projectId); // گاردِ scope
+  await assertCanManageProject(actor, projectId);
+
+  const [memberResult, clientResult] = await Promise.all([
+    db.update(projectMembers)
+      .set({ accessBlocked: blocked, updatedAt: new Date() })
+      .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)))
+      .returning({ id: projectMembers.id }),
+    db.update(projectClients)
+      .set({ accessBlocked: blocked, updatedAt: new Date() })
+      .where(and(eq(projectClients.projectId, projectId), eq(projectClients.userId, userId)))
+      .returning({ id: projectClients.id }),
+  ]);
+
+  const touched = memberResult.length + clientResult.length;
+  if (touched === 0) throw new NotFoundError();
+
+  await audit(
+    actor,
+    blocked ? 'project.access.block' : 'project.access.unblock',
+    projectId,
+    null,
+    { userId },
+  );
+  return touched;
+}
+
 export interface DeleteInput {
   mode?: 'full' | 'detach';
   confirmTitle?: string;
@@ -290,11 +373,62 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
     rolesByTask.set(r.taskId, list);
   }
 
+  const canManage = await canManageProject(actor, projectId);
+
+  /**
+   * ⚠️ ماسکِ نام **اینجا** اعمال می‌شود، نه در UI: کارفرما نباید نامِ اعضا
+   * را ببیند و عضو نباید نامِ کارفرما را — `domain/access/viewer-names`.
+   * اگر نامِ واقعی به کلاینت می‌رفت و آنجا پنهان می‌شد، در payload ِ همان
+   * صفحه می‌ماند و با View Source خوانده می‌شد.
+   */
+  const viewer = await viewerContext(actor, projectId, canManage, members);
+
   return {
     project,
-    members,
-    tasks: visibleTasks.map((t) => ({ ...t, roles: rolesByTask.get(t.id) ?? [] })),
-    canManage: await canManageProject(actor, projectId),
+    members: members.map((m) => ({
+      ...m,
+      userName: m.userName === null ? null : nameForViewer(m.userId, m.userName, viewer),
+    })),
+    tasks: visibleTasks.map((t) => ({
+      ...t,
+      assigneeName: t.assigneeName === null || t.assignedTo === null
+        ? t.assigneeName
+        : nameForViewer(t.assignedTo, t.assigneeName, viewer),
+      roles: rolesByTask.get(t.id) ?? [],
+    })),
+    canManage,
+    viewer,
+  };
+}
+
+/**
+ * زمینهٔ ماسکِ نام برای این بیننده روی این پروژه.
+ *
+ * ⚠️ `roleByUser` از همان `members` ِ خوانده‌شده ساخته می‌شود تا کوئریِ
+ * اضافه‌ای نخورد؛ فقط فهرستِ کارفرمایان جداگانه لازم است.
+ */
+async function viewerContext(
+  actor: Actor,
+  projectId: number,
+  canManage: boolean,
+  members: Array<{ userId: number; roleName: string | null }>,
+): Promise<ViewerContext> {
+  const [relation, clientIds] = await Promise.all([
+    projectRelation(actor.id, projectId),
+    repo.listClientIds(projectId),
+  ]);
+  const roleByUser = new Map<number, string>();
+  for (const m of members) {
+    if (!roleByUser.has(m.userId)) {
+      roleByUser.set(m.userId, m.roleName ?? FALLBACK_MEMBER_LABEL);
+    }
+  }
+  return {
+    managesProject: canManage,
+    viewerIsClient: relation.isClient,
+    viewerIsMember: relation.isMember,
+    roleByUser,
+    clientIds: new Set(clientIds),
   };
 }
 
@@ -652,7 +786,16 @@ export async function getCardOptions(actor: Actor) {
  */
 export async function getProjectTabs(actor: Actor, projectId: number) {
   const detail = await getProjectDetail(actor, projectId);
-  const canSeeFinance = canViewSection(actor, 'finance');
+
+  /**
+   * ⚠️ دیدنِ پول با «مجوزِ بخشِ مالی» یکی نیست و همین‌جا اشتباه بود:
+   * `canViewSection(actor, 'finance')` نه کارفرما را می‌دید (که باید
+   * صورت‌حسابِ خودش را ببیند) و نه جلوی مدیرِ دفتر را می‌گرفت. قاعدهٔ
+   * نسخهٔ قبلی در `domain/access/project-money` است.
+   */
+  const audience = await moneyAudience(actor, projectId);
+  const canSeePrice = canSeeProjectPrice(audience);
+  const canSeeFinance = canSeeProjectFinance(audience);
 
   const [commentRows, qa, files, bids, hours, finance, payments, statusGroup] = await Promise.all([
     repo.listComments(projectId),
@@ -673,6 +816,23 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     canSeeFinance ? repo.listPayments(projectId) : Promise.resolve([]),
     repo.projectStatusGroup(projectId),
   ]);
+
+  /**
+   * ⚠️ همان ماسکِ نامِ `getProjectDetail`، اینجا روی کامنت‌ها و چک‌لیستِ QA
+   * هم اعمال می‌شود: کارفرمایی که رشتهٔ کامنت‌ها را می‌خواند نباید نامِ
+   * نویسنده را ببیند، و عضو نباید نامِ کارفرما را — همان قاعده، همان جا.
+   * ساعت‌های کاری فقط برای مدیر خوانده می‌شوند، پس ماسک نمی‌خواهند.
+   */
+  const mask = (id: number | null, name: string | null) =>
+    (id === null || name === null ? name : nameForViewer(id, name, detail.viewer));
+
+  const comments = commentRows.map((c) => ({
+    ...c,
+    userName: mask(c.userId, c.userName),
+    closedByName: mask(c.closedBy, c.closedByName),
+  }));
+  const maskedQa = qa.map((q) => ({ ...q, doneByName: mask(q.doneBy, q.doneByName) }));
+  const maskedPayments = payments.map((p) => ({ ...p, userName: mask(p.userId, p.userName) }));
 
   /**
    * سه‌حالتیِ حذف فقط برای مدیر خوانده می‌شود — کوئریِ سنگینی است و کاربرِ
@@ -700,14 +860,20 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     ...detail,
     roleHolders,
     currentUserId: actor.id,
-    comments: commentRows,
-    qa,
+    comments,
+    qa: maskedQa,
     files,
     bids,
     hours,
     finance,
-    payments,
+    payments: maskedPayments,
     canSeeFinance,
+    /**
+     * ⚠️ به کلاینت **پاس داده می‌شود تا رندر گارد شود**، ولی خودِ عدد هم
+     * فقط وقتی می‌رود که حق دیدنش باشد: پنهان‌کردن با CSS یعنی قیمت در
+     * payload ِ صفحه بماند و با View Source خوانده شود.
+     */
+    canSeePrice,
     tenderIsOpen: tenderIsOpen(detail.project.isTender, statusGroup),
     deleteState,
   };
@@ -882,13 +1048,29 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
 
   const clientNames = await repo.userNames([...clientIds]);
 
+  /**
+   * ⚠️ کارفرمای خالص تسک را فقط به **نقش** می‌دهد، نه به شخص — پورتِ
+   * `if (! $client_view)` در `assign_options_html()`. نامِ اعضا اصلاً به او
+   * نمی‌رسد، پس فهرستِ اشخاص هم نباید ساخته شود.
+   */
+  const viewer = await viewerContext(
+    actor,
+    projectId,
+    await canManageProject(actor, projectId),
+    members,
+  );
+
   return {
-    assignees: assigneeOptions(
-      members.map((m) => ({ userId: m.userId, name: m.userName, roleName: m.roleName })),
-      [...clientIds].map((id) => ({ userId: id, name: clientNames.get(id) ?? String(id), isClient: true })),
-      { inactiveUserIds: inactive, currentAssignee },
-      await getT(),
-    ),
+    assignees: assignableToPeople(viewer)
+      ? assigneeOptions(
+        members.map((m) => ({ userId: m.userId, name: m.userName, roleName: m.roleName })),
+        [...clientIds].map((id) => ({
+          userId: id, name: clientNames.get(id) ?? String(id), isClient: true,
+        })),
+        { inactiveUserIds: inactive, currentAssignee },
+        await getT(),
+      )
+      : [],
     statuses,
     priorities,
   };
@@ -1592,6 +1774,14 @@ export interface ProjectBootstrap {
   /** نقش‌هایی که چک‌لیستِ QAشان اعمال شود (`client` هم مجاز است). */
   qaAudiences: QaAudience[];
   links: Array<{ url: string; label: string }>;
+  /**
+   * فایل‌های محلی که همان فرمِ ساخت آورده — پیش از این فقط لینکِ بیرونی
+   * ممکن بود و کاربر باید پروژه را می‌ساخت، بازش می‌کرد و از تبِ فایل‌ها
+   * دوباره آپلود می‌کرد.
+   */
+  attachments: Array<{ name: string; mime: string; bytes: Uint8Array }>;
+  /** تصویرِ شاخص، از همان فرم. */
+  thumbnail: { name: string; mime: string; bytes: Uint8Array } | null;
 }
 
 /**
@@ -1656,6 +1846,22 @@ export async function bootstrapProject(
       for (const link of input.links!) {
         if (link.url.trim()) await addLink(actor, projectId, link.url, link.label);
       }
+    });
+  }
+
+  if (input.attachments?.length) {
+    await step('attachments', async () => {
+      const { addAttachment } = await import('@/server/files/service');
+      for (const blob of input.attachments!) {
+        await addAttachment(actor, projectId, blob, '');
+      }
+    });
+  }
+
+  if (input.thumbnail) {
+    await step('thumbnail', async () => {
+      const { setProjectThumbnail } = await import('@/server/files/service');
+      await setProjectThumbnail(actor, projectId, input.thumbnail!);
     });
   }
 }

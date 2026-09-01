@@ -2,6 +2,64 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.19.0]
+
+### Security
+
+- **Everyone could see a project's price.** The amount was rendered with no
+  guard at all — on the project card and on the project page — so any team
+  member saw the client's contract value. The previous system has three
+  separate audiences and only one of them is "can manage the project":
+
+  | Who | Sees |
+  |---|---|
+  | Owner / global project manager / finance manager | the project price |
+  | The project's client | the project price — it is their bill |
+  | A plain team member | only their own agreed pay |
+  | A project or office manager without a global capability | nothing; no finance tab |
+
+  `domain/access/project-money.ts` now holds that rule with tests, and the
+  price is **removed from the payload** rather than hidden in the UI —
+  hiding it client-side left the number readable in the page source.
+
+- **Members' agreed pay was shown to everyone** in the project members
+  table. It is money, and the previous system limits it to the same two
+  global capabilities (`$hide_amounts`) — not even the client sees it.
+
+- **A client could see team members' real names, and a member could see the
+  client's.** The previous system masks both (`name_for_viewer`): a client
+  sees a member's *role*, a member sees only "Client". The masking is
+  applied on the server, across members, tasks, comments and QA, and a
+  client composing a task is offered roles only — never people.
+
+### Added
+
+- **Cut a person's access to a single project** without removing them.
+  Removal is blocked when there is money owed or the person is a former
+  member — both correct, and both left no way to actually revoke access.
+  A per-membership flag now does it: the row and its money stay, the
+  project disappears from their list, and opening it by URL returns 404
+  rather than "forbidden".
+
+- **A dashboard for members and clients.** `getDashboard` opens with a
+  global capability check, so both roles landed on "you do not have
+  access". They now get the cards the previous system gives them —
+  projects, open tasks, comments needing review, unread messages — and a
+  project table with their role, their hours and progress. **No price**,
+  matching the note in the original: "minimal columns, no price".
+
+- **Local file upload and a featured image in the create-project form.**
+  Only external links were possible; a file meant creating the project,
+  reopening it and uploading from the files tab.
+
+- **A profile image when creating a person.** The picker existed only in
+  edit mode, so the same two-step dance applied.
+
+- **The counters on a project card now open the tab they count** — tasks,
+  comments, and the review counter lands on the "needs review" sub-tab.
+
+---
+
 ## [1.18.0]
 
 ### Fixed

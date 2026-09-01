@@ -2477,5 +2477,12 @@
   "کمی صبر کنید — تا ارسالِ بعدی {n} ثانیه مانده.": "Aguarde — faltam {n} segundos para o próximo envio.",
   "عوض‌کردنش یعنی نامِ کاربریِ قبلی دیگر برای ورود کار نمی‌کند.": "Alterá-lo significa que o nome de utilizador antigo deixa de servir para entrar.",
   "{names} حذف نشد چون روی این پروژه تسویه‌نشده دارد. اول تسویه کنید.": "{names} não foi removido — há um saldo por liquidar neste projeto. Liquide-o primeiro.",
-  "{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.": "{names} é um antigo membro; o histórico no projeto é mantido."
+  "{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.": "{names} é um antigo membro; o histórico no projeto é mantido.",
+  "دسترسی قطع": "Acesso cortado",
+  "بازگرداندنِ دسترسی": "Restaurar o acesso",
+  "قطعِ دسترسی به این پروژه": "Cortar o acesso a este projeto",
+  "سلام، {name}": "Olá, {name}",
+  "پس از ساختِ پروژه آپلود می‌شوند.": "Carregados depois de o projeto ser criado.",
+  "فایل‌های پروژه": "Ficheiros do projeto",
+  "تصویرِ شاخص": "Imagem em destaque"
 }

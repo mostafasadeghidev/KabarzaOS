@@ -55,7 +55,7 @@ export async function createProjectAction(_prev: FormState, formData: FormData):
     id = await createProject(actor, parsed.data);
     // ⚠️ **بعد از** ساخت — همه به شناسهٔ پروژه نیاز دارند. خطای هر بخش
     // داخلِ خودِ سرویس بلعیده می‌شود تا پروژهٔ ساخته‌شده بی‌صاحب نماند.
-    await bootstrapProject(actor, id, readBootstrap(formData));
+    await bootstrapProject(actor, id, await readBootstrap(formData));
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ساختِ پروژه ندارید.', values };
     throw error;
@@ -162,7 +162,23 @@ function money(value: FormDataEntryValue | undefined): string {
  * می‌شوند؛ برای همین فرم حتی مقدارِ خالی را هم می‌فرستد. ردیفی که شناسهٔ
  * فرد یا عنوان ندارد اینجا حذف می‌شود، نه اینکه ردیفِ ناقص به سرویس برود.
  */
-function readBootstrap(formData: FormData) {
+/**
+ * فایلِ فرم را به شکلی که سرویس می‌خواهد درمی‌آورد.
+ *
+ * ⚠️ `File` ِ خالی هم فرستاده می‌شود وقتی کاربر چیزی انتخاب نکرده باشد؛
+ * `size === 0` تنها راهِ تشخیص است و بدونِ آن یک پیوستِ صفربایتی ساخته
+ * می‌شد.
+ */
+async function readBlob(value: FormDataEntryValue | null) {
+  if (!(value instanceof File) || value.size === 0) return null;
+  return {
+    name: value.name,
+    mime: value.type || 'application/octet-stream',
+    bytes: new Uint8Array(await value.arrayBuffer()),
+  };
+}
+
+async function readBootstrap(formData: FormData) {
   const users = formData.getAll('memberUser');
   const roles = formData.getAll('memberRole');
   const agreed = formData.getAll('memberAgreed');
@@ -215,5 +231,15 @@ function readBootstrap(formData: FormData) {
     .map((u, i) => ({ url: String(u ?? '').trim(), label: String(labels[i] ?? '').trim() }))
     .filter((l) => l.url !== '');
 
-  return { members, clientIds, tasks, qaAudiences, links };
+  /**
+   * ⚠️ فایل‌های محلی — همان فرمِ ساخت. `bootstrapProject` پس از ساختِ
+   * پروژه آپلودشان می‌کند، چون هر پیوست به شناسهٔ پروژه نیاز دارد.
+   */
+  const attachments = (await Promise.all(
+    formData.getAll('attachmentFile').map(readBlob),
+  )).filter((b): b is NonNullable<typeof b> => b !== null);
+
+  const thumbnail = await readBlob(formData.get('thumbnailFile'));
+
+  return { members, clientIds, tasks, qaAudiences, links, attachments, thumbnail };
 }

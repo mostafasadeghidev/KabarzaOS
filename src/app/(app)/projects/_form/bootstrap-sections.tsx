@@ -364,6 +364,28 @@ export function BootstrapSections({
       </div>
 
       <div className={only === "files" ? "grid gap-5" : "hidden"}>
+      {/* ------------------------------------------------ فایل‌های محلی */}
+      <section className="grid gap-2">
+        <SectionTitle hint={tr("پس از ساختِ پروژه آپلود می‌شوند.")}>
+          {tr("فایل‌های پروژه")}
+        </SectionTitle>
+        {/*
+          ⚠️ `multiple` و نامِ یکسان: `formData.getAll('attachmentFile')` همهٔ
+          فایل‌ها را با هم می‌گیرد. پیش از این فقط لینکِ بیرونی ممکن بود و
+          کاربر باید پروژه را می‌ساخت، بازش می‌کرد و از تبِ فایل‌ها دوباره
+          آپلود می‌کرد.
+        */}
+        <Input name="attachmentFile" type="file" multiple />
+      </section>
+
+      {/* ------------------------------------------------ تصویرِ شاخص */}
+      <section className="grid gap-2">
+        <SectionTitle hint={tr("بدونِ تصویر، تک‌نگارِ رنگی نشان داده می‌شود.")}>
+          {tr("تصویرِ شاخص")}
+        </SectionTitle>
+        <Input name="thumbnailFile" type="file" accept="image/*" />
+      </section>
+
       {/* ------------------------------------------------ لینک‌ها */}
       <section className="grid gap-2">
         <SectionTitle hint={tr("فایل روی سرور آورده نمی‌شود؛ فقط نشانی ذخیره می‌شود.")}>

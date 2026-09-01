@@ -2477,5 +2477,12 @@
   "کمی صبر کنید — تا ارسالِ بعدی {n} ثانیه مانده.": "Biraz bekleyin — sonraki gönderime {n} saniye kaldı.",
   "عوض‌کردنش یعنی نامِ کاربریِ قبلی دیگر برای ورود کار نمی‌کند.": "Değiştirilirse eski kullanıcı adı artık girişte çalışmaz.",
   "{names} حذف نشد چون روی این پروژه تسویه‌نشده دارد. اول تسویه کنید.": "{names} kaldırılmadı — bu projede kapanmamış bir bakiye var. Önce kapatın.",
-  "{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.": "{names} eski bir üye; projedeki geçmişi korunur."
+  "{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.": "{names} eski bir üye; projedeki geçmişi korunur.",
+  "دسترسی قطع": "Erişim kesildi",
+  "بازگرداندنِ دسترسی": "Erişimi geri ver",
+  "قطعِ دسترسی به این پروژه": "Bu projeye erişimi kes",
+  "سلام، {name}": "Merhaba, {name}",
+  "پس از ساختِ پروژه آپلود می‌شوند.": "Proje oluşturulduktan sonra yüklenir.",
+  "فایل‌های پروژه": "Proje dosyaları",
+  "تصویرِ شاخص": "Öne çıkan görsel"
 }

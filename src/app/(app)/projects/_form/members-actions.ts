@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
-import { setMembers } from '@/server/projects/service';
+import { setMembers, setProjectAccess } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { memberRowSchema, type MembersFormState } from './members-schema';
 
@@ -76,5 +76,28 @@ export async function setMembersAction(
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ تغییرِ اعضا ندارید.' };
     throw error;
+  }
+}
+
+/**
+ * قطع/وصلِ دسترسیِ یک نفر به این پروژه.
+ *
+ * ⚠️ جدا از `setMembersAction` است و عمداً: آن یک ویرایشِ گروهی است که
+ * ردیف‌های پول‌دار را نگه می‌دارد؛ این یک تصمیمِ صریح دربارهٔ **یک نفر**
+ * است و ردیف را دست نمی‌زند.
+ */
+export async function setProjectAccessAction(
+  projectId: number,
+  userId: number,
+  blocked: boolean,
+): Promise<{ error?: string; ok?: boolean }> {
+  try {
+    const actor = await requireActor();
+    await setProjectAccess(actor, projectId, userId, blocked);
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof ForbiddenError) return { error: 'اجازهٔ تغییرِ اعضا ندارید.' };
+    return { error: 'انجام نشد.' };
   }
 }

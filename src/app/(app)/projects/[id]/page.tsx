@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MembersDialog } from '../_form/members-dialog';
+import { MemberAccessToggle } from '../_form/member-access';
+import { canManageSection } from '@/domain/access/permissions';
 import { ProjectDialog } from '../_form/project-dialog';
 import { ProjectTabs } from './project-tabs';
 import { BidderView } from './bidder-view';
@@ -24,7 +26,19 @@ import {
 import { ProjectStatus } from '../project-status';
 import { primeTranslations, t } from '@/i18n/server';
 
-export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProjectDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  /**
+   * ⚠️ `?tab=` و `?view=` لینکِ عمیق‌اند — شمارنده‌های کارتِ پروژه به تبِ
+   * خودشان می‌روند («تسک‌ها»، «کامنت‌ها»، و زیرتبِ «نیازمند ریویو»). نسخهٔ
+   * قبلی هم همین را سمتِ سرور حل می‌کند تا صفحه از فریمِ اول روی تبِ درست
+   * بنشیند و تبِ پیش‌فرض یک‌لحظه چشمک نزند.
+   */
+  searchParams: Promise<{ tab?: string; view?: string }>;
+}) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
    * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
@@ -37,6 +51,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const actor = await currentActor();
   if (!actor) redirect('/login');
 
+  const query = await searchParams;
   const id = Number((await params).id);
   if (!Number.isInteger(id) || id <= 0) notFound();
 
@@ -128,6 +143,9 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       ])
     : [null, null];
   const openTasks = tasks.filter((t) => t.statusGroup !== 'complete');
+  /** `$hide_amounts` ِ نسخهٔ قبلی — فقط دو مجوزِ سراسری. */
+  const canSeeAgreedAmounts =
+    canManageSection(actor, 'projects') || canManageSection(actor, 'finance');
 
   return (
     <main className="p-6">
@@ -178,10 +196,17 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       </header>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-normal text-muted-foreground">{t("مبلغ")}</CardTitle></CardHeader>
-          <CardContent><p className="num text-xl font-semibold">{format(project.price)}</p></CardContent>
-        </Card>
+        {/*
+          ⚠️ قیمتِ پروژه فقط برای مالک/مدیرِ مالی و **کارفرمای همین پروژه**.
+          عضو دستمزدِ خودش را در تبِ مالی می‌بیند، نه مبلغِ قرارداد را —
+          `domain/access/project-money`. پیش از این این کارت بی‌محافظ بود.
+        */}
+        {detail.canSeePrice && (
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-normal text-muted-foreground">{t("مبلغ")}</CardTitle></CardHeader>
+            <CardContent><p className="num text-xl font-semibold">{format(project.price)}</p></CardContent>
+          </Card>
+        )}
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-normal text-muted-foreground">{t("اعضا")}</CardTitle></CardHeader>
           <CardContent><p className="num text-xl font-semibold">{members.length}</p></CardContent>
@@ -193,6 +218,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <ProjectTabs
+        initialTab={query.tab ?? null}
+        initialView={query.view ?? null}
         data={{
           projectId: project.id,
           title: project.title,
@@ -203,7 +230,13 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           currentUserId: detail.currentUserId,
           myMoney,
           myBid,
-          price: project.price,
+          /**
+           * ⚠️ صفر، نه پنهان‌کردن با CSS: تبِ مالی برای عضوِ خالص هم ساخته
+           * می‌شود (دستمزدِ خودش)، پس اگر قیمت را می‌فرستادیم در payload ِ
+           * همان صفحه می‌ماند و با View Source خوانده می‌شد.
+           */
+          price: detail.canSeePrice ? project.price : '0',
+          canSeePrice: detail.canSeePrice,
           canManage,
           canSeeFinance: detail.canSeeFinance,
           tasks,
@@ -242,15 +275,43 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
                       <TableRow>
                         <TableHead>{t("عضو")}</TableHead>
                         <TableHead>{t("نقش")}</TableHead>
-                        <TableHead className="text-end">{t("مبلغ توافقی")}</TableHead>
+                        {/*
+                          ⚠️ دستمزدِ توافقیِ اعضا پول است و فقط مالک/مدیرِ
+                          سراسریِ پروژه‌ها و مدیرِ مالی می‌بینندش —
+                          `$hide_amounts` ِ نسخهٔ قبلی. حتی کارفرما هم نه:
+                          او قیمتِ پروژه را می‌بیند، نه تقسیمِ داخلیِ تیم.
+                          پیش از این ستون برای همه رندر می‌شد.
+                        */}
+                        {canSeeAgreedAmounts && (
+                          <TableHead className="text-end">{t("مبلغ توافقی")}</TableHead>
+                        )}
+                        {canManage && <TableHead />}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {members.map((m) => (
                         <TableRow key={m.id}>
-                          <TableCell className="font-medium">{m.userName}</TableCell>
+                          <TableCell className="font-medium">
+                            {m.userName}
+                            {m.accessBlocked && (
+                              <Badge variant="outline" className="ms-1.5 text-[10px]">
+                                {t("دسترسی قطع")}
+                              </Badge>
+                            )}
+                          </TableCell>
                           <TableCell>{m.roleName ?? '—'}</TableCell>
-                          <TableNumericCell>{format(m.agreedAmount)}</TableNumericCell>
+                          {canSeeAgreedAmounts && (
+                            <TableNumericCell>{format(m.agreedAmount)}</TableNumericCell>
+                          )}
+                          {canManage && (
+                            <TableCell>
+                              <MemberAccessToggle
+                                projectId={project.id}
+                                userId={m.userId}
+                                blocked={m.accessBlocked}
+                              />
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>

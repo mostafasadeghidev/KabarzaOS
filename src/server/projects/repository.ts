@@ -268,6 +268,8 @@ export async function listMembers(projectId: number) {
       currencyId: projectMembers.currencyId,
       userName: users.name,
       roleName: tagName(await currentLocale()),
+      /** دسترسیِ این نفر به این پروژه قطع است؟ (`setProjectAccess`) */
+      accessBlocked: projectMembers.accessBlocked,
     })
     .from(projectMembers)
     .innerJoin(users, eq(users.id, projectMembers.userId))
@@ -470,6 +472,55 @@ export async function owedUserIds(projectId: number): Promise<Set<number>> {
   return new Set((rows as unknown as Array<{ user_id: number }>).map((r) => Number(r.user_id)));
 }
 
+/**
+ * نقش‌های خودِ کاربر روی هر پروژه — `projectId → نامِ نقش‌ها`.
+ * ستونِ «نقشِ شما» ِ داشبوردِ عضو (`Projects::user_role_names`).
+ */
+export async function myRolesOn(
+  userId: number,
+  projectIds: number[],
+): Promise<Map<number, string[]>> {
+  if (projectIds.length === 0) return new Map();
+  const rows = await db
+    .select({ projectId: projectMembers.projectId, roleName: tagName(await currentLocale()) })
+    .from(projectMembers)
+    .leftJoin(tags, eq(tags.id, projectMembers.roleTagId))
+    .where(and(
+      eq(projectMembers.userId, userId),
+      inArray(projectMembers.projectId, projectIds),
+    ));
+
+  const out = new Map<number, string[]>();
+  for (const r of rows) {
+    if (!r.roleName) continue;
+    const list = out.get(r.projectId) ?? [];
+    if (!list.includes(r.roleName)) list.push(r.roleName);
+    out.set(r.projectId, list);
+  }
+  return out;
+}
+
+/**
+ * از میانِ این پروژه‌ها، کدام‌ها را این کاربر **کارفرماست**.
+ *
+ * ⚠️ محدود به فهرستِ داده‌شده، تا برای کارفرمای صد پروژه هم کوئری کوچک
+ * بماند. پایهٔ ماسکِ قیمت در `listProjects`.
+ */
+export async function clientProjectIds(
+  userId: number,
+  projectIds: number[],
+): Promise<Set<number>> {
+  if (projectIds.length === 0) return new Set();
+  const rows = await db
+    .select({ projectId: projectClients.projectId })
+    .from(projectClients)
+    .where(and(
+      eq(projectClients.userId, userId),
+      inArray(projectClients.projectId, projectIds),
+    ));
+  return new Set(rows.map((r) => r.projectId));
+}
+
 /** کاربرانی که می‌توانند عضوِ پروژه شوند — فعال و با نقشِ `member`. */
 export async function memberCandidates() {
   return db
@@ -567,8 +618,11 @@ export async function listComments(projectId: number) {
       type: comments.type,
       status: comments.status,
       createdAt: comments.createdAt,
+      // ⚠️ شناسه لازم است تا نام سمتِ سرور ماسک شود (viewer-names).
+      userId: comments.userId,
       userName: users.name,
       closedAt: comments.closedAt,
+      closedBy: comments.closedBy,
       closedByName: closer.name,
       taskId: comments.taskId,
     })
@@ -616,6 +670,7 @@ export async function listPayments(projectId: number) {
       currencyId: projectPayments.currencyId,
       paidAt: projectPayments.paidAt,
       note: projectPayments.note,
+      userId: projectPayments.userId,
       userName: users.name,
       receiptIds: ledger.receiptIds,
     })
@@ -681,6 +736,7 @@ export async function listProjectQa(projectId: number) {
       roleName: tagName(await currentLocale()),
       isDone: projectQa.isDone,
       doneAt: projectQa.doneAt,
+      doneBy: projectQa.doneBy,
       doneByName: users.name,
     })
     .from(projectQa)

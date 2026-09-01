@@ -4,6 +4,7 @@ import { projectClients, projectMembers, projects, tagRelations, tags, userOffic
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { ForbiddenError } from '@/domain/access/guard';
 import { canManageProject as decide, PM_CAP } from '@/domain/access/project-scope';
+import type { MoneyAudience } from '@/domain/access/project-money';
 import { isFrozenProject } from '@/domain/projects/lifecycle';
 
 /**
@@ -92,19 +93,52 @@ export async function assertNotFrozen(projectId: number): Promise<void> {
 export async function projectRelation(
   userId: number,
   projectId: number,
-): Promise<{ isMember: boolean; isClient: boolean; roleTagIds: number[] }> {
+): Promise<{
+  isMember: boolean;
+  isClient: boolean;
+  roleTagIds: number[];
+  /**
+   * ⚠️ «رابطه دارد» و «اجازهٔ دیدن دارد» دو چیزند. عضوی که دسترسی‌اش به این
+   * پروژه قطع شده هنوز عضو است — پولش و سابقه‌اش سرِ جاست و ماسکِ نام هم
+   * باید همان‌طور رفتار کند — ولی صفحهٔ پروژه را نمی‌بیند. اگر یکی‌شان
+   * می‌کردیم، قطعِ دسترسی نامِ او را هم از دیدِ بقیه عوض می‌کرد.
+   */
+  accessBlocked: boolean;
+}> {
   const [memberRows, clientRows] = await Promise.all([
-    db.select({ roleTagId: projectMembers.roleTagId })
+    db.select({ roleTagId: projectMembers.roleTagId, blocked: projectMembers.accessBlocked })
       .from(projectMembers)
       .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId))),
-    db.select({ userId: projectClients.userId })
+    db.select({ userId: projectClients.userId, blocked: projectClients.accessBlocked })
       .from(projectClients)
       .where(and(eq(projectClients.projectId, projectId), eq(projectClients.userId, userId))),
   ]);
+  const rows = [...memberRows, ...clientRows];
   return {
     isMember: memberRows.length > 0,
     isClient: clientRows.length > 0,
     roleTagIds: memberRows.map((r) => r.roleTagId).filter((id): id is number => id !== null),
+    /**
+     * ⚠️ «هر رابطه‌ای مسدود است» — نه «یکی مسدود است». عضوی که با دو نقش
+     * امضا شده و فقط یکی مسدود شده، هنوز از راهِ نقشِ دیگر دسترسی دارد.
+     */
+    accessBlocked: rows.length > 0 && rows.every((r) => r.blocked),
+  };
+}
+
+/**
+ * مخاطبِ پولِ این پروژه — ورودیِ `domain/access/project-money`.
+ *
+ * ⚠️ یک کوئری (`projectRelation`) و دو چکِ مجوز. تصمیم اینجا گرفته نمی‌شود؛
+ * قاعده در دامنه است و تست دارد.
+ */
+export async function moneyAudience(actor: Actor, projectId: number): Promise<MoneyAudience> {
+  const relation = await projectRelation(actor.id, projectId);
+  return {
+    hasGlobalProjectManage: canManageSection(actor, 'projects'),
+    hasGlobalFinanceManage: canManageSection(actor, 'finance'),
+    isClientOfProject: relation.isClient,
+    isMemberOfProject: relation.isMember,
   };
 }
 
@@ -124,7 +158,8 @@ export async function canViewProject(actor: Actor, projectId: number): Promise<b
   if (canViewSection(actor, 'projects')) return true;
 
   const relation = await projectRelation(actor.id, projectId);
-  if (relation.isMember || relation.isClient) return true;
+  // ⚠️ عضویت دسترسی می‌دهد، مگر آنکه صریحاً قطع شده باشد.
+  if ((relation.isMember || relation.isClient) && !relation.accessBlocked) return true;
 
   // مدیرِ دفترِ مالک — بدونِ امضا هم می‌بیند.
   return canManageProject(actor, projectId);
@@ -150,10 +185,21 @@ export async function assertCanViewProject(actor: Actor, projectId: number): Pro
  */
 export async function membershipProjectIds(userId: number): Promise<number[]> {
   const [memberRows, clientRows, myTags] = await Promise.all([
+    /**
+     * ⚠️ عضویتِ مسدود پروژه را در فهرست هم نمی‌آورد. بدونِ این، کاربر
+     * پروژه‌اش را در «پروژه‌های من» می‌دید و کلیک روی آن به «یافت نشد»
+     * می‌خورد — همان الگوی گیج‌کننده‌ای که پیش‌تر با خطای دسترسی داشتیم.
+     */
     db.select({ id: projectMembers.projectId })
-      .from(projectMembers).where(eq(projectMembers.userId, userId)),
+      .from(projectMembers).where(and(
+        eq(projectMembers.userId, userId),
+        eq(projectMembers.accessBlocked, false),
+      )),
     db.select({ id: projectClients.projectId })
-      .from(projectClients).where(eq(projectClients.userId, userId)),
+      .from(projectClients).where(and(
+        eq(projectClients.userId, userId),
+        eq(projectClients.accessBlocked, false),
+      )),
     db.select({ tagId: tagRelations.tagId }).from(tagRelations)
       .where(and(eq(tagRelations.objectType, 'user'), eq(tagRelations.objectId, userId))),
   ]);

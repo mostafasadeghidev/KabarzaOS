@@ -32,6 +32,8 @@ export interface ProjectTabsData {
   isArchived: boolean;
   thumbnailFileId: number | null;
   price: string;
+  /** حقِ دیدنِ قیمتِ پروژه — `domain/access/project-money`. */
+  canSeePrice: boolean;
   canManage: boolean;
   canSeeFinance: boolean;
   tasks: TaskItem[];
@@ -64,10 +66,20 @@ export interface ProjectTabsData {
 export function ProjectTabs({
   data,
   info,
+  initialTab,
+  initialView,
 }: {
   data: ProjectTabsData;
   /** پنلِ «اطلاعات» روی سرور ساخته می‌شود و اینجا فقط جاسازی می‌شود. */
   info: React.ReactNode;
+  /**
+   * ⚠️ لینکِ عمیق از `?tab=` — شمارنده‌های کارتِ پروژه به تبِ خودشان
+   * می‌روند. پیش از این همه فقط به `/projects/{id}` می‌رفتند و کاربر روی
+   * تبِ «اطلاعات» می‌افتاد و باید دوباره دنبالِ همان عدد می‌گشت.
+   */
+  initialTab?: string | null;
+  /** زیرتب — فعلاً فقط `review` برای تبِ تسک‌ها. */
+  initialView?: string | null;
 }) {
   const tr = useT();
   const tabs: Array<{ key: string; label: string; badge?: number }> = [
@@ -75,7 +87,13 @@ export function ProjectTabs({
     { key: 'tasks', label: 'تسک‌ها', badge: data.tasks.length },
     { key: 'files', label: 'فایل‌ها', badge: data.files.length },
     { key: 'comments', label: 'کامنت‌ها', badge: data.comments.length },
-    { key: 'finance', label: 'بخش مالی' },
+    /**
+     * ⚠️ «بخشِ مالی» پولِ **پروژه** است (قیمت، دریافتی، بدهیِ کارفرما)، پس
+     * فقط برای کسی که حقِ دیدنِ قیمت دارد. پیش از این همیشه ساخته می‌شد و
+     * عضوِ عادی مبلغِ قراردادِ کارفرما را می‌دید. پولِ خودِ عضو تبِ جداگانه
+     * دارد («پرداخت») — `domain/access/project-money`.
+     */
+    ...(data.canSeePrice ? [{ key: 'finance', label: 'بخش مالی' }] : []),
     /**
      * ⚠️ «پولِ من» مجوزِ مالی نمی‌خواهد — پولِ خودِ عضو است.
      * نامش با نوعِ پروژه عوض می‌شود: «کارکرد» فقط وقتی معنا دارد که پروژه
@@ -92,7 +110,10 @@ export function ProjectTabs({
     ...(data.myBid ? [{ key: 'my-bid', label: 'پیشنهادِ من' }] : []),
   ];
 
-  const [tab, setTab] = useState('info');
+  /** تبِ خواسته‌شده فقط وقتی پذیرفته می‌شود که واقعاً ساخته شده باشد. */
+  const [tab, setTab] = useState(
+    initialTab && tabs.some((t) => t.key === initialTab) ? initialTab : 'info',
+  );
 
   return (
     <div className="mt-6 grid gap-4">
@@ -127,6 +148,7 @@ export function ProjectTabs({
           roleHolders={data.roleHolders}
           currentUserId={data.currentUserId}
           formOptions={data.taskFormOptions}
+          initialGroup={initialView}
         />
       )}
 

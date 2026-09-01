@@ -226,6 +226,7 @@ export function TasksTab({
   formOptions,
   roleHolders,
   currentUserId,
+  initialGroup,
 }: {
   projectId: number;
   tasks: TaskItem[];
@@ -236,6 +237,11 @@ export function TasksTab({
   currentUserId: number;
   /** حاضر بودنش یعنی کاربر می‌تواند تسک بسازد. */
   formOptions: TaskFormOptions | null;
+  /**
+   * زیرتبِ آغازین از `?view=` — تا شمارندهٔ «نیازمند ریویو» ِ کارتِ پروژه
+   * مستقیم به همان‌جا برسد، نه فقط به صفحهٔ پروژه.
+   */
+  initialGroup?: string | null;
 }) {
   const tr = useT();
   const [openTask, setOpenTask] = useState<number | null>(null);
@@ -250,7 +256,9 @@ export function TasksTab({
   }, [tasks]);
 
   const groupKeys = GROUP_ORDER.filter((k) => (buckets.get(k)?.length ?? 0) > 0);
-  const [tab, setTab] = useState<string>(groupKeys[0] ?? 'other');
+  const [tab, setTab] = useState<string>(
+    initialGroup === 'review' && review.length > 0 ? 'review' : (groupKeys[0] ?? 'other'),
+  );
   const [view, setView] = useState<'list' | 'board'>('list');
 
   const holdersMap = useMemo(

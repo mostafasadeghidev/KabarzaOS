@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation';
-import { currentActor } from '@/server/auth';
+import { currentActor, currentSession } from '@/server/auth';
 import { getDashboard } from '@/server/dashboard';
 import { ForbiddenError } from '@/domain/access/guard';
+import { getMemberDashboard } from '@/server/dashboard-member';
+import { MemberDashboardView } from './member-dashboard';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   CardGroup, CompactCard, DashHeading, DashPanel, MetricCard, RiskList,
@@ -58,6 +60,28 @@ export default async function DashboardPage() {
     data = await getDashboard(actor);
   } catch (error) {
     if (error instanceof ForbiddenError) {
+      /**
+       * ⚠️ عضو و کارفرما «دسترسی ندارند» نیست — داشبوردِ **خودشان** را
+       * دارند. در نسخهٔ قبلی این دو نقش اصلاً وارد پنلِ ادمین نمی‌شوند و
+       * `member_overview()` / `client_overview()` را می‌بینند. اینجا تنها
+       * چیزی که نداشتند مجوزِ سراسری بود، نه کار.
+       */
+      const isClient = actor.roles.includes('client');
+      const isMember = actor.roles.includes('member');
+      if (isClient || isMember) {
+        const [own, session] = await Promise.all([
+          getMemberDashboard(actor, isClient && !isMember ? 'client' : 'member'),
+          currentSession(),
+        ]);
+        return (
+          <main className="p-6">
+            <h1 className="mb-4 text-2xl font-bold">
+              {t("سلام، {name}", { name: session?.name ?? '' })}
+            </h1>
+            <MemberDashboardView data={own} />
+          </main>
+        );
+      }
       return (
         <main className="p-6">
           <EmptyState title={t("دسترسی ندارید")} description={t("برای دیدنِ داشبورد از مدیر دسترسی بگیرید.")} />

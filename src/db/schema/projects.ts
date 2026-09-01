@@ -66,6 +66,12 @@ export const projectMembers = pgTable('project_members', {
   unitRate: money('unit_rate').notNull().default('0'),
   currencyId: fk('currency_id').references(() => currencies.id),
   assignedAt: ts('assigned_at').notNull().defaultNow(),
+  /**
+   * دسترسیِ این نفر به **همین** پروژه قطع است؟
+   * ⚠️ ردیف می‌ماند (پول و سابقه)، فقط دیدن قطع می‌شود — راهِ میانیِ
+   * «نه حذف، نه دسترسی».
+   */
+  accessBlocked: boolean('access_blocked').notNull().default(false),
   ...stamps,
 }, (t) => [
   uniqueIndex('project_members_uq').on(t.projectId, t.userId, t.roleTagId),
@@ -76,6 +82,8 @@ export const projectClients = pgTable('project_clients', {
   id: pk(),
   projectId: fk('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   userId: fk('user_id').notNull().references(() => users.id),
+  /** همان قاعدهٔ `projectMembers.accessBlocked` برای کارفرما. */
+  accessBlocked: boolean('access_blocked').notNull().default(false),
   ...stamps,
 }, (t) => [uniqueIndex('project_clients_uq').on(t.projectId, t.userId)]);
 
