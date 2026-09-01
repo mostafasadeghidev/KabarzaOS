@@ -71,8 +71,14 @@ export function AppSidebar({
   onLogout,
   canManageSettings,
   onLocaleChange,
+  brand,
 }: {
   items: NavItem[];
+  /**
+   * نام و لوگوی شرکت — سربرگِ سایدبار.
+   * ⚠️ برای هر نقشی، چون یک سایدبار برای همه رندر می‌شود.
+   */
+  brand: { name: string; logoFileId: number | null };
   userName: string;
   userRole: string;
   locale: Locale;
@@ -108,11 +114,26 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/" prefetch={false}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                  <span className="text-sm font-bold">K</span>
-                </div>
+                {/*
+                  ⚠️ لوگوی شرکت، اگر ثبت شده باشد — برای همهٔ نقش‌ها، چون
+                  یک سایدبار برای همه رندر می‌شود. `object-contain` لازم
+                  است: در حالتِ جمع‌شده همین مربعِ ۸ تنها چیزِ دیدنی است و
+                  لوگوی کشیده‌شده بد می‌نشیند.
+                */}
+                {brand.logoFileId ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`/api/files/${brand.logoFileId}?thumb`}
+                    alt=""
+                    className="aspect-square size-8 rounded-md object-contain"
+                  />
+                ) : (
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
+                    <span className="text-sm font-bold">{brand.name.trim().slice(0, 1) || 'K'}</span>
+                  </div>
+                )}
                 <div className="grid flex-1 text-start leading-tight">
-                  <span className="truncate font-semibold">KabarzaOS</span>
+                  <span className="truncate font-semibold">{brand.name}</span>
                 </div>
               </Link>
             </SidebarMenuButton>

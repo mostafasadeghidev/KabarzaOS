@@ -13,6 +13,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface MeetingFormOptions {
@@ -72,6 +73,7 @@ export function MeetingForm({
   const tr = useT();
   const t = useT();
   const [state, formAction] = useActionState<MeetingFormState, FormData>(saveMeetingAction, {});
+  useActionToast(state, { success: 'ذخیره شد.' });
   const isEdit = meeting !== null;
 
   // ⚠️ جلسهٔ نو پیش‌فرض «مرتبط با پروژه» است (اولین گزینهٔ نسخهٔ قبلی)، تا کاربر
@@ -115,7 +117,7 @@ export function MeetingForm({
 
   useEffect(() => {
     if (state.ok) onOpenChange(false);
-  }, [state.ok, onOpenChange]);
+  }, [state, onOpenChange]);
 
   const toggle = (userId: number) =>
     setChecked((cur) => {

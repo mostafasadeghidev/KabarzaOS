@@ -137,7 +137,7 @@ export function MessagesView({
       .then((t) => { if (alive) setThread(t); })
       .catch(() => setNotice('این گفتگو در دسترس نیست.'));
     return () => { alive = false; };
-  }, [openId, replyState.ok]);
+  }, [openId, replyState]);
 
   /**
    * گفت‌وگوی زنده — پورتِ پولِ `admin-messages.js`.
@@ -197,14 +197,14 @@ export function MessagesView({
           : 'پیام ارسال شد.',
       );
     }
-  }, [composeState.ok, composeState.created]);
+  }, [composeState]);
 
   useEffect(() => {
     if (mgmtState.ok) {
       setMgmtOpen(false);
       setNotice('پیامِ شما به مدیریت فرستاده شد.');
     }
-  }, [mgmtState.ok]);
+  }, [mgmtState]);
 
   const togglePick = (id: number) =>
     setPicked((cur) => {

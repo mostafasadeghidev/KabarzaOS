@@ -160,6 +160,20 @@ describe('نرخِ تبدیلِ دوطرفه', () => {
     expect(rateFromAmounts(80, 0)).toBeNull();
     expect(rateFromAmounts(Number.NaN, 5)).toBeNull();
   });
+
+  /**
+   * ⚠️ فیلدِ خالی `Number('') === 0` می‌شود. پیش از این `amountFromSettled`
+   * فقط نرخ را می‌سنجید، پس معادلِ خالی یک صفرِ **معتبر** برمی‌گرداند و
+   * مبلغی که کاربر تازه نوشته بود با اولین رقمِ «نرخ» صفر می‌شد — از بیرون
+   * شبیهِ «فیلدِ مبلغ چیزی نمی‌پذیرد».
+   */
+  it('معادلِ خالی مبلغ را صفر نمی‌کند', () => {
+    expect(amountFromSettled(0, 3)).toBeNull();
+  });
+
+  it('معادلِ منفی هم رد می‌شود', () => {
+    expect(amountFromSettled(-5, 3)).toBeNull();
+  });
 });
 
 describe('R-FORM-06 و R-FORM-07', () => {

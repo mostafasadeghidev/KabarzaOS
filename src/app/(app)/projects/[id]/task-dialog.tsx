@@ -79,7 +79,7 @@ export function TaskDialog({
     if (!taskId || (!saveState.ok && !noteState.ok)) return;
     loadTaskAction(taskId).then(setData).catch(() => {});
     if (saveState.ok) setEditing(false);
-  }, [saveState.ok, noteState.ok, taskId]);
+  }, [saveState, noteState, taskId]);
 
   const task = data?.detail.task;
   const canManage = data?.detail.canManage ?? false;

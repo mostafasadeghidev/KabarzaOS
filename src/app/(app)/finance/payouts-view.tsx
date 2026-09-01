@@ -122,8 +122,8 @@ export function PayoutsView({
   const [payState, payAction] = useActionState<PayoutState, FormData>(payRequestAction, {});
   const [expenseState, expenseAction] = useActionState<PayoutState, FormData>(saveRecurringAction, {});
 
-  useEffect(() => { if (payState.ok) setPayTarget(null); }, [payState.ok]);
-  useEffect(() => { if (expenseState.ok) { setExpenseOpen(false); setEditing(null); } }, [expenseState.ok]);
+  useEffect(() => { if (payState.ok) setPayTarget(null); }, [payState]);
+  useEffect(() => { if (expenseState.ok) { setExpenseOpen(false); setEditing(null); } }, [expenseState]);
 
   const act = (fn: () => Promise<PayoutState>) =>
     startTransition(async () => {

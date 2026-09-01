@@ -1,4 +1,5 @@
 import { unreadMessageCount } from '@/server/messaging/service';
+import { getCompany } from '@/server/people/profile-service';
 import { redirect } from 'next/navigation';
 import { currentSession } from '@/server/auth';
 import { can, canViewSection, type Permission, type Role, type Section } from '@/domain/access/permissions';
@@ -107,11 +108,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const primaryRole = actor.roles[0];
-  const [bell, system, unreadMessages, showTgNudge] = await Promise.all([
+  const [bell, system, unreadMessages, showTgNudge, brand] = await Promise.all([
     listNotifications(actor),
     getSystemConfig(),
     unreadMessageCount(actor),
     shouldShowTelegramNudge(actor),
+    /**
+     * ⚠️ `getCompany()` بازیگر نمی‌خواهد و گاردی ندارد — نام و لوگو
+     * اطلاعاتِ عمومیِ شرکت‌اند و همان چیزی که روی سربرگِ فاکتور هم می‌آید.
+     */
+    getCompany(),
   ]);
 
   return (
@@ -129,6 +135,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         onLogout={logout}
         canManageSettings={can(actor, 'settings.manage')}
         onLocaleChange={setLocale}
+        brand={{ name: brand.name?.trim() || 'KabarzaOS', logoFileId: brand.logoFileId }}
       />
       <SidebarInset>
         <header className="flex h-12 items-center gap-2 border-b px-4">

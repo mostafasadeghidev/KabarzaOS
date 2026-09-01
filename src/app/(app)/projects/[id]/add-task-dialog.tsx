@@ -14,6 +14,7 @@ import {
   DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import { MultiSelect } from '@/components/ui/multi-select';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 /** گزینه‌های فرمِ تسک — از سرور می‌آیند (همان `getTaskFormOptions`). */
@@ -57,11 +58,12 @@ export function AddTaskDialog({
   const t = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState<TaskFormState, FormData>(createTaskAction, {});
+  useActionToast(state, { success: 'تسک ثبت شد.' });
 
   // ثبتِ موفق → مودال بسته می‌شود و فهرست تازه‌شده است.
   useEffect(() => {
     if (state.ok) setOpen(false);
-  }, [state.ok]);
+  }, [state]);
 
   const keep = (name: string) => state.values?.[name] ?? '';
 

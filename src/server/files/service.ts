@@ -108,6 +108,18 @@ export async function canViewFile(actor: Actor, fileId: number): Promise<boolean
   // مالک و کاربرانِ مالی همیشه.
   if (actor.roles.includes('owner') || can(actor, 'finance.view')) return true;
 
+  /**
+   * لوگوی شرکت — برای **هر کاربرِ واردشده**.
+   *
+   * ⚠️ این شاخه نبود و دو جا را می‌شکست: فاکتورِ پروژه (که کارفرما حق
+   * دیدنش را دارد) لوگو را با ۴۰۳ خالی نشان می‌داد، و سایدبار هم نمی‌توانست
+   * لوگو را برای عضو و کارفرما بیاورد. لوگو نشانِ عمومیِ شرکت است؛ همان
+   * کسی که وارد شده، روی سربرگِ فاکتورش هم می‌بیندش.
+   */
+  const logo = await db.select({ fileId: company.logoFileId })
+    .from(company).where(eq(company.id, 1));
+  if (logo[0]?.fileId === fileId) return true;
+
   // بارگذارندهٔ خودِ فایل.
   const own = await db.select({ id: files.id }).from(files)
     .where(and(eq(files.id, fileId), eq(files.uploadedBy, actor.id)));

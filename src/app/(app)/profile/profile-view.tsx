@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, useTransition } from 'react';
+import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Bell, Building2, CreditCard, Clock, Send, Lock } from 'lucide-react';
 import {
@@ -9,7 +9,7 @@ import {
   saveCompanyAction, saveNotifyAction, saveTimezoneAction, type ProfileState,
 } from './_form/actions';
 import { EMAIL_CATEGORIES } from '@/domain/notifications/gateway';
-import { COMMON_TIMEZONES, type TelegramState } from '@/domain/people/profile';
+import { allTimezones, type TelegramState } from '@/domain/people/profile';
 import { BankCard } from './bank-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,6 +67,8 @@ function Submit({ children }: { children: React.ReactNode }) {
 /** پروفایلِ من — حساب بانکی، ترجیحات، تلگرام، و (برای مالک) مشخصاتِ شرکت. */
 export function ProfileView({ data }: { data: ProfileData }) {
   const tr = useT();
+  // ⚠️ یک بار محاسبه می‌شود؛ چهارصد رشته است و هر رندر ساختنش بیهوده است.
+  const timezones = useMemo(() => allTimezones(), []);
   const visible = TABS;
   const [tab, setTab] = useState<string>(visible[0]!.key);
 
@@ -109,13 +111,19 @@ export function ProfileView({ data }: { data: ProfileData }) {
         <form action={saveTz} className="grid max-w-md gap-3">
           <div className="grid gap-1.5">
             <Label htmlFor="p-tz">{tr("منطقهٔ زمانی")}</Label>
-            {/* فهرست پیشنهادی است؛ مقدارِ دلخواه هم پذیرفته می‌شود. */}
+            {/*
+              ⚠️ `datalist` خودش جستجوی زنده است: مرورگر با هر حرفی که تایپ
+              شود فهرست را فیلتر می‌کند — بدونِ جاوااسکریپتِ ما و بدونِ
+              کامپوننتِ اضافه. فهرست حالا **همهٔ** مناطقِ دنیاست، با
+              پرکاربردها در بالا؛ پیش از این فقط هفت‌تا بود و کاربرِ توکیو
+              باید نامِ منطقه‌اش را از حفظ می‌نوشت.
+            */}
             <Input
               id="p-tz" name="timezone" list="tz-list"
               placeholder={tr("پیش‌فرضِ سامانه")} defaultValue={data.timezone}
             />
             <datalist id="tz-list">
-              {COMMON_TIMEZONES.map((tz) => <option key={tz} value={tz} />)}
+              {timezones.map((tz) => <option key={tz} value={tz} />)}
             </datalist>
             <p className="text-xs text-muted-foreground">
               {tr("ساعت‌ها بر مبنای ساعتِ دیواریِ شما نشان داده می‌شوند. خالی یعنی پیش‌فرضِ سامانه.")}
@@ -270,36 +278,43 @@ export function ProfileView({ data }: { data: ProfileData }) {
                 {tr("برای دریافتِ اعلان در تلگرام، بات را باز کنید و Start را بزنید.")}
               </p>
               <div>
+                {/*
+                  ⚠️ یک دکمه، نه دو. پیش از این «ساختِ پیوند» را می‌زدی، بعد
+                  یک لینکِ آبیِ بی‌استایل ظاهر می‌شد که باید آن را هم
+                  می‌زدی — سه کلیک برای کاری که یکی است. حالا همان دکمه
+                  پیوند را می‌گیرد و تلگرام را باز می‌کند.
+                */}
                 <Button
                   type="button" size="sm" disabled={pending}
-                  onClick={() => startTransition(async () => setTgState(await connectTelegramAction()))}
+                  onClick={() => startTransition(async () => {
+                    const next = await connectTelegramAction();
+                    setTgState(next);
+                    /**
+                     * ⚠️ `window.open` بعد از await یعنی بیرون از رویدادِ
+                     * کلیک؛ بعضی مرورگرها آن را پاپ‌آپ می‌شمرند. برای همین
+                     * پیوند در همین تب باز می‌شود — تلگرام خودش اپ را
+                     * بالا می‌آورد و کاربر با Back برمی‌گردد.
+                     */
+                    if (next.link) window.location.href = next.link;
+                  })}
                 >
-                  {tr("ساختِ پیوندِ اتصال")}
+                  <Send className="size-3.5" />
+                  {tr("اتصال به تلگرام")}
                 </Button>
               </div>
               {tgState.link && (
-                <div className="grid gap-2">
-                  <a
-                    href={tgState.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary underline"
+                /*
+                  ⚠️ مرحلهٔ دوم می‌ماند: سرور وب‌هوک ندارد، پس تا کاربر
+                  نگوید «Start را زدم» راهی نیست بفهمد پیام رسیده. نسخهٔ
+                  قبلی هم همین دو مرحله را دارد.
+                */
+                <div>
+                  <Button
+                    type="button" size="sm" variant="outline" disabled={pending}
+                    onClick={() => startTransition(async () => setTgState(await completeTelegramAction()))}
                   >
-                    {tr("باز کردن بات و زدن Start ↗")}
-                  </a>
-                  {/*
-                    ⚠️ مرحلهٔ دوم — بدونِ آن اتصال هیچ‌وقت کامل نمی‌شد.
-                    سرور وب‌هوک ندارد، پس تا کاربر نگوید «زدم»، راهی نیست
-                    بفهمد پیام رسیده. نسخهٔ قبلی هم همین دو مرحله را دارد.
-                  */}
-                  <div>
-                    <Button
-                      type="button" size="sm" variant="outline" disabled={pending}
-                      onClick={() => startTransition(async () => setTgState(await completeTelegramAction()))}
-                    >
-                      {tr("Start را زدم — اتصال را کامل کن")}
-                    </Button>
-                  </div>
+                    {tr("Start را زدم — اتصال را کامل کن")}
+                  </Button>
                 </div>
               )}
               <Notice state={tgState} />

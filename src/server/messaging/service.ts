@@ -35,6 +35,20 @@ export class RateLimitedError extends Error {
 }
 
 /** شناسهٔ مدیران — هم‌مالکیِ رشتهٔ همکار (R-MSG-N3). */
+/**
+ * شناسهٔ **مالکان** — جدا از مدیران.
+ * ⚠️ «مدیر» همکارِ ادمین را هم می‌گیرد؛ برای هم‌مالکیِ رشته فقط مالک لازم
+ * است، وگرنه رشتهٔ همکارِ ادمین از دیدِ مالک پنهان می‌ماند.
+ */
+async function ownerIds(): Promise<number[]> {
+  const rows = await db
+    .selectDistinct({ id: users.id })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .where(and(eq(userRoles.role, 'owner'), isNull(users.deletedAt)));
+  return rows.map((r) => r.id);
+}
+
 async function managerIds(): Promise<number[]> {
   const rows = await db
     .selectDistinct({ id: users.id })
@@ -284,10 +298,12 @@ export async function compose(
 
   await assertNotRateLimited(actor);
 
+  const [managers, owners] = await Promise.all([managerIds(), ownerIds()]);
   const plan = planCompose(input.recipientIds, {
     senderId: actor.id,
     senderIsManager: isManager(actor),
-    managerIds: await managerIds(),
+    managerIds: managers,
+    ownerIds: owners,
   });
   if (plan.threads.length === 0) throw new ForbiddenError('message.no_recipients');
 

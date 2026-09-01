@@ -85,6 +85,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'person.create': 'فردِ جدید',
   'person.update': 'ویرایشِ فرد',
   'person.attach': 'افزودنِ نقش',
+  'person.staff.grant': 'افزودن به همکارانِ ادمین',
+  'person.staff.revoke': 'برداشتن از همکارانِ ادمین',
   'person.state': 'تغییرِ حالتِ عضو',
   'person.permissions': 'تغییرِ دسترسی‌ها',
   'person.remove.detached': 'جداسازی از این بخش',

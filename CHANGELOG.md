@@ -2,6 +2,66 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.21.0]
+
+### Fixed
+
+- **A dialog closed on the first save and never again.** The close handler was
+  a `useEffect` keyed on `[state.ok, state.error]` — constants. The first save
+  flips `undefined → true` and the effect runs; the second returns `true`
+  again, both dependencies are unchanged, and React skips the effect. So the
+  dialog closed exactly once per mount, which is why it read as intermittent
+  (switching tabs remounts and resets the latch). The QA library was where it
+  was noticed, but the same latch was in **thirteen** places: the six settings
+  catalogues, ledger entry and transfer, payout and expense, meetings, both
+  message composers, the reply-reload, add-task, task edit, and the person
+  dialog.
+
+- **Typing in the ledger's rate field silently zeroed the amount.**
+  `amountFromSettled` guarded `rate <= 0` but not `settled <= 0`, and an empty
+  field is `Number('') === 0`, so the product was a *valid* zero. Enter an
+  amount, then touch the rate, and the amount became "0". From outside this
+  looked like "the amount field will not accept input".
+
+- **The company logo 403'd for anyone but the owner or finance.**
+  `canViewFile` had no branch for it, so the logo was already broken on the
+  invoice — a page a client is allowed to open.
+
+### Added
+
+- **Toasts.** Success and failure were shown inline, inside the form — which
+  vanishes with the form when a dialog closes. There is now a toast, built
+  with no new dependency, mounted at the root so it also covers login, setup
+  and the off-boarded shell.
+
+- **The company logo and name in the sidebar**, for every role.
+
+- **Staff admins can be created from the UI.** The role was not reachable at
+  all: the person form whitelists `member|client`, and Settings → staff access
+  only configures people who already hold it — so the only way in was the seed
+  script or manual SQL. Settings → staff access now has an add control and a
+  remove button, and removing also clears the per-user permissions.
+
+- **The owner co-owns every message thread they did not send.** "Manager"
+  includes staff admins, so the existing co-ownership rule exempted them and a
+  staff admin's thread held exactly two people. The owner could not see it.
+
+### Changed
+
+- **The tag colour picker is just a colour picker.** Twenty preset swatches
+  took more room than the field and hid the control that actually gets used.
+
+- **Telegram connects with one button.** It used to mint a link, then render
+  an unstyled anchor you had to click as well.
+
+- **Every world time zone**, with the browser's own live filtering. The list
+  was seven entries; anyone outside them had to type the name from memory.
+
+- **The ledger dialog shows which account the row lands on.** It always
+  followed the page's account, but the modal covered the table that said so.
+
+---
+
 ## [1.20.0]
 
 ### Added

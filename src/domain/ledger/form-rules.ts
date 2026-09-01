@@ -170,8 +170,18 @@ export function fxRound(value: number): number {
   return Math.round(value * 1e6) / 1e6;
 }
 
+/**
+ * ⚠️ `settled <= 0` هم رد می‌شود، نه فقط `rate <= 0` — قرینهٔ
+ * `rateFromAmounts`، که این گارد را از اول داشت.
+ *
+ * بدونِ آن «معادلِ» خالی `Number('') === 0` می‌شد و حاصل‌ضرب یک صفرِ
+ * **معتبر** برمی‌گرداند؛ یعنی کاربر مبلغ را می‌نوشت، بعد در «نرخ» یک رقم
+ * می‌زد و مبلغش بی‌صدا «۰» می‌شد. از بیرون شبیهِ «فیلدِ مبلغ چیزی
+ * نمی‌پذیرد» دیده می‌شد.
+ */
 export function amountFromSettled(settled: number, rate: number): number | null {
-  if (!Number.isFinite(settled) || !Number.isFinite(rate) || rate <= 0) return null;
+  if (!Number.isFinite(settled) || !Number.isFinite(rate)) return null;
+  if (settled <= 0 || rate <= 0) return null;
   return fxRound(settled * rate);
 }
 

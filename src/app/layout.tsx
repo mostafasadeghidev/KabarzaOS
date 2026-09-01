@@ -3,6 +3,7 @@ import { direction } from '@/i18n/config';
 import { primeTranslations } from '@/i18n/server';
 import { TranslationProvider } from '@/i18n/client';
 import { ThemeProvider, themeScript } from '@/components/theme-provider';
+import { ToastProvider } from '@/components/ui/toast';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -35,7 +36,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen antialiased">
         <ThemeProvider>
           <TranslationProvider locale={locale} messages={messages}>
-            {children}
+            {/*
+              ⚠️ توست در **ریشه** سوار می‌شود، نه در چیدمانِ اپ: صفحهٔ ورود،
+              نصبِ اولیه و پوستهٔ عضوِ سابق (که چیدمانِ اپ را کنار می‌گذارد)
+              هم فرم دارند و بازخوردشان نباید بی‌صدا بماند.
+            */}
+            <ToastProvider>
+              {children}
+            </ToastProvider>
           </TranslationProvider>
         </ThemeProvider>
       </body>

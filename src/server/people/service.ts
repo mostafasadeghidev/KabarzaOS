@@ -424,6 +424,63 @@ export async function visibleReportTabs(actor: Actor): Promise<string[]> {
  * وجود ندارد، پس به تنظیمات (که خودش مالک‌محور است) منتقل شده تا این
  * قابلیت بی‌خانه و دست‌نیافتنی نماند.
  */
+/**
+ * اعطا و پس‌گرفتنِ نقشِ «همکارِ ادمین».
+ *
+ * ⚠️ چرا لازم شد: این نقش **هیچ راهی از رابط نداشت**. فرمِ افزودنِ فرد نقش
+ * را از خودِ بخش می‌گیرد و به `member|client` محدود است، و تبِ «دسترسی
+ * همکاران» فقط کسانی را پیکربندی می‌کند که از قبل نقش را دارند — یعنی تا
+ * امروز تنها راهِ ساختنِ همکارِ ادمین، اسکریپتِ seed یا SQL ِ دستی بود.
+ *
+ * ⚠️ فقط مالک. و خودِ نقش هیچ دسترسی‌ای نمی‌دهد (`ROLE_PERMISSIONS.admin`
+ * عمداً خالی است) — فقط در را باز می‌کند تا مالک بتواند بخش‌به‌بخش
+ * دسترسی بدهد.
+ */
+export async function grantStaffRole(actor: Actor, userId: number): Promise<void> {
+  assertOwner(actor);
+  const person = await repo.getPerson(userId);
+  if (!person) throw new PersonNotFoundError();
+
+  await db.insert(userRoles).values({ userId, role: 'admin' }).onConflictDoNothing();
+  await audit(actor, 'person.staff.grant', userId, null, { userId });
+}
+
+export async function revokeStaffRole(actor: Actor, userId: number): Promise<void> {
+  assertOwner(actor);
+
+  await db.transaction(async (tx) => {
+    await tx.delete(userRoles)
+      .where(and(eq(userRoles.userId, userId), eq(userRoles.role, 'admin')));
+    /**
+     * ⚠️ دسترسی‌های per-user هم می‌روند: ماندنشان یعنی اگر روزی دوباره
+     * همکار شود، بی‌خبر همان دسترسی‌های قبلی را پس بگیرد.
+     */
+    await tx.delete(userPermissions).where(eq(userPermissions.userId, userId));
+  });
+  await audit(actor, 'person.staff.revoke', userId, null, { userId });
+}
+
+/**
+ * کسانی که می‌توانند همکارِ ادمین شوند — کاربرِ فعالی که هنوز نیست.
+ * ⚠️ مالک خودش در فهرست نمی‌آید؛ او از قبل همه‌چیز را دارد.
+ */
+export async function listStaffCandidates(actor: Actor) {
+  assertOwner(actor);
+  const rows = await db
+    .selectDistinct({ id: users.id, name: users.name, email: users.email })
+    .from(users)
+    .where(and(isNull(users.deletedAt), eq(users.memberState, 'active')))
+    .orderBy(users.name);
+
+  const taken = await db
+    .select({ userId: userRoles.userId })
+    .from(userRoles)
+    .where(inArray(userRoles.role, ['owner', 'admin']));
+  const skip = new Set(taken.map((r) => r.userId));
+
+  return rows.filter((r) => !skip.has(r.id));
+}
+
 export async function listStaff(actor: Actor) {
   assertOwner(actor);
 

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { getSettings } from '@/server/settings/service';
-import { listStaff } from '@/server/people/service';
+import { listStaff, listStaffCandidates } from '@/server/people/service';
 import { getReportConfig } from '@/server/scheduler/daily-report';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { getTelegramSettings } from '@/server/settings/telegram-service';
@@ -34,9 +34,13 @@ export default async function SettingsPage() {
   let data;
   try {
     // فهرستِ همکاران فقط برای مالک است؛ برای بقیه تبِ «دسترسی همکاران» خالی می‌ماند.
-    const [settings, staff, reportConfig, systemConfig, lockDate, tick, telegram, company] = await Promise.all([
+    const [
+      settings, staff, staffCandidates, reportConfig, systemConfig, lockDate, tick, telegram, company,
+    ] = await Promise.all([
       getSettings(actor),
       listStaff(actor).catch(() => []),
+      // ⚠️ فقط مالک — برای غیرمالک `assertOwner` پرتاب می‌کند و فهرست خالی می‌ماند.
+      listStaffCandidates(actor).catch(() => []),
       getReportConfig(),
       getSystemConfig(),
       currentLockDate(),
@@ -47,7 +51,7 @@ export default async function SettingsPage() {
       getCompany(),
     ]);
     data = {
-      ...settings, staff, reportConfig, systemConfig, lockDate, telegram,
+      ...settings, staff, staffCandidates, reportConfig, systemConfig, lockDate, telegram,
       company: company ?? {
         name: '', address: '', taxId: '', email: '',
         phone: '', website: '', bank: '', invoiceFooter: '', logoFileId: null,

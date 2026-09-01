@@ -44,6 +44,8 @@ export interface SettingsData {
     website: string; bank: string; invoiceFooter: string; logoFileId: number | null;
   };
   staff: StaffRow[];
+  /** کاربرانی که می‌توانند همکارِ ادمین شوند — برای مالک، وگرنه خالی. */
+  staffCandidates: Array<{ id: number; name: string; email: string }>;
   reportConfig: ReportConfig;
   systemConfig: SystemConfig;
   health: SchedulerHealth;
@@ -603,7 +605,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
         />
       )}
 
-      {tab === 'staff' && <StaffSection staff={data.staff} />}
+      {tab === 'staff' && <StaffSection staff={data.staff} candidates={data.staffCandidates} />}
 
 
       {tab === 'company' && data.company && <CompanySection company={data.company} />}

@@ -2486,5 +2486,13 @@
   "فایل‌های پروژه": "Project files",
   "تصویرِ شاخص": "Featured image",
   "تخصیص به نقش": "Assign to a role",
-  "این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.": "This project is archived or closed and cannot be changed."
+  "این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.": "This project is archived or closed and cannot be changed.",
+  "اتصال به تلگرام": "Connect Telegram",
+  "افزودنِ همکارِ ادمین": "Add a staff admin",
+  "— انتخابِ کاربر —": "— Choose a user —",
+  "به همکارانِ ادمین اضافه شد.": "Added to the staff admins.",
+  "از همکارانِ ادمین برداشته شد.": "Removed from the staff admins.",
+  "افزودن به همکارانِ ادمین": "Added to staff admins",
+  "برداشتن از همکارانِ ادمین": "Removed from staff admins",
+  "انجام شد.": "Done."
 }

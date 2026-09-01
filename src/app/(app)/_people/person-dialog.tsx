@@ -16,6 +16,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 export interface PersonFormOptions {
@@ -107,6 +108,7 @@ export function PersonDialog({
 }) {
   const tr = useT();
   const [state, formAction] = useActionState<PersonFormState, FormData>(savePersonAction, {});
+  useActionToast(state, { success: 'ذخیره شد.' });
   const isEdit = person !== null;
   /** کاربرِ موجودِ انتخاب‌شده — null یعنی «کاربرِ نو بساز». */
   const [picked, setPicked] = useState<PersonFormOptions['candidates'][number] | null>(null);
@@ -116,7 +118,7 @@ export function PersonDialog({
 
   useEffect(() => {
     if (state.ok) onOpenChange(false);
-  }, [state.ok, onOpenChange]);
+  }, [state, onOpenChange]);
 
   const keep = (name: string, fallback = '') => state.values?.[name] ?? fallback;
   const tagIds = new Set(person?.tags.map((t) => t.id) ?? []);

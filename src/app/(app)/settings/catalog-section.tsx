@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 
 /**
@@ -72,11 +73,12 @@ export function CatalogSection<T extends { id: number }>({
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [state, formAction] = useActionState<SettingsState, FormData>(saveAction, {});
+  useActionToast(state, { success: 'ذخیره شد.' });
 
   useEffect(() => {
     if (state.ok) { setOpen(false); setEditing(null); setNotice(null); }
     else if (state.error) setNotice(state.error);
-  }, [state.ok, state.error]);
+  }, [state]);
 
   return (
     <section className="grid gap-3">

@@ -5,16 +5,18 @@ import {
 } from './threads';
 
 const ctx = (over = {}) => ({
-  senderId: 1, senderIsManager: false, managerIds: [10, 11], ...over,
+  senderId: 1, senderIsManager: false, managerIds: [10, 11], ownerIds: [10], ...over,
 });
 
 describe('R-MSG-N1 — ارسال به چند نفر، چند رشتهٔ دونفره می‌سازد', () => {
   it('⚠️ هر گیرنده رشتهٔ خودش را دارد، نه یک گروهِ مشترک', () => {
     // وگرنه گیرنده‌ها همدیگر و پاسخ‌های هم را می‌دیدند.
-    const plan = planCompose([2, 3, 4], ctx({ senderIsManager: true }));
+    // فرستنده خودش مالک است تا این تست فقط دربارهٔ «یک رشته به‌ازای هر
+    // گیرنده» بماند و درگیرِ قاعدهٔ هم‌مالکی نشود.
+    const plan = planCompose([2, 3, 4], ctx({ senderId: 10, senderIsManager: true }));
     expect(plan.threads).toHaveLength(3);
-    expect(plan.threads[0]!.participantIds).toEqual([1, 2]);
-    expect(plan.threads[1]!.participantIds).toEqual([1, 3]);
+    expect(plan.threads[0]!.participantIds).toEqual([10, 2]);
+    expect(plan.threads[1]!.participantIds).toEqual([10, 3]);
     expect(plan.isBroadcast).toBe(true);
   });
 
@@ -45,9 +47,14 @@ describe('⚠️ R-MSG-N3 — پیامِ همکار هم‌مالکِ مدیری
     expect(plan.threads[0]!.participantIds).toEqual([1, 10, 11, 2]);
   });
 
-  it('رشتهٔ خودِ مدیر دست‌نخورده می‌ماند', () => {
-    const plan = planCompose([2], ctx({ senderIsManager: true }));
-    expect(plan.threads[0]!.participantIds).toEqual([1, 2]);
+  /**
+   * ⚠️ «دست‌نخورده» حالا فقط برای **مالک** صادق است. همکارِ ادمین هم مدیر
+   * شمرده می‌شد و از قاعدهٔ ۳ معاف بود، پس رشته‌اش دو نفره می‌ماند و مالک
+   * نمی‌دیدش — قاعدهٔ ۴ همان را می‌بندد.
+   */
+  it('رشتهٔ خودِ مالک دست‌نخورده می‌ماند', () => {
+    const plan = planCompose([2], ctx({ senderId: 10, senderIsManager: true }));
+    expect(plan.threads[0]!.participantIds).toEqual([10, 2]);
   });
 
   it('مدیری که خودش گیرنده است دو بار نمی‌آید', () => {
@@ -146,5 +153,27 @@ describe('اثرانگشتِ گفت‌وگو', () => {
       maxMessageId: 2, viewerId: 1,
       readStates: [{ userId: 2, lastReadMessageId: null }],
     })).toBe('2:0');
+  });
+});
+
+/**
+ * ⚠️ رخنهٔ سرپرستی: «مدیر» همکارِ ادمین را هم می‌گیرد، پس قاعدهٔ «اگر
+ * فرستنده مدیر نباشد مدیران را اضافه کن» او را هم معاف می‌کرد — و رشته‌ای
+ * که همکارِ ادمین به یک عضو می‌فرستاد دقیقاً دو نفر داشت.
+ */
+describe('هم‌مالکیِ مالک', () => {
+  it('رشتهٔ همکارِ ادمین را مالک هم می‌بیند', () => {
+    const plan = planCompose([2], ctx({ senderId: 11, senderIsManager: true }));
+    expect(plan.threads[0]!.participantIds).toContain(10);
+  });
+
+  it('مالک در رشتهٔ خودش دو بار نمی‌آید', () => {
+    const plan = planCompose([2], ctx({ senderId: 10, senderIsManager: true }));
+    expect(plan.threads[0]!.participantIds).toEqual([10, 2]);
+  });
+
+  it('رشتهٔ عضوِ عادی هم مدیران را دارد هم مالک را', () => {
+    const plan = planCompose([2], ctx({ senderId: 5, senderIsManager: false }));
+    expect(plan.threads[0]!.participantIds).toEqual([5, 10, 11, 2]);
   });
 });

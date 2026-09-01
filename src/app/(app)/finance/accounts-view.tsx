@@ -66,7 +66,7 @@ export function AccountsView({
   useEffect(() => {
     if (state.ok) { setOpen(false); setEditing(null); setNotice(null); }
     else if (state.error) setNotice(state.error);
-  }, [state.ok, state.error]);
+  }, [state]);
 
   const assigned = new Set(editing ? (options.accountantsByAccount[editing.id] ?? []) : []);
 

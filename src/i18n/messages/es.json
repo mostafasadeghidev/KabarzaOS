@@ -2486,5 +2486,13 @@
   "فایل‌های پروژه": "Archivos del proyecto",
   "تصویرِ شاخص": "Imagen destacada",
   "تخصیص به نقش": "Asignar a un rol",
-  "این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.": "Este proyecto está archivado o cerrado y no admite cambios."
+  "این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.": "Este proyecto está archivado o cerrado y no admite cambios.",
+  "اتصال به تلگرام": "Conectar Telegram",
+  "افزودنِ همکارِ ادمین": "Añadir un administrador colaborador",
+  "— انتخابِ کاربر —": "— Elige un usuario —",
+  "به همکارانِ ادمین اضافه شد.": "Añadido a los administradores colaboradores.",
+  "از همکارانِ ادمین برداشته شد.": "Eliminado de los administradores colaboradores.",
+  "افزودن به همکارانِ ادمین": "Añadido a administradores colaboradores",
+  "برداشتن از همکارانِ ادمین": "Eliminado de administradores colaboradores",
+  "انجام شد.": "Hecho."
 }

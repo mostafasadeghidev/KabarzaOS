@@ -21,6 +21,15 @@ export interface ComposeContext {
   senderIsManager: boolean;
   /** شناسهٔ مدیران — برای هم‌مالکیِ رشته. */
   managerIds: readonly number[];
+  /**
+   * شناسهٔ **مالکان**.
+   *
+   * ⚠️ جدا از `managerIds` است و باید باشد: «مدیر» شاملِ همکارِ ادمین هم
+   * هست، پس با قاعدهٔ قبلی رشته‌ای که همکارِ ادمین می‌ساخت فقط دو نفر
+   * داشت — خودش و گیرنده — و مالک هرگز نمی‌دیدش. حالا مالک همیشه
+   * هم‌مالکِ رشته است، مگر خودش فرستنده باشد.
+   */
+  ownerIds: readonly number[];
 }
 
 /**
@@ -33,18 +42,25 @@ export interface ComposeContext {
  *
  * ۳. ⚠️ اگر فرستنده **مدیر نباشد**، مدیران به رشته اضافه می‌شوند: پیامی که
  * همکار «از طرفِ مدیریت» می‌فرستد هم‌مالکِ مدیریت است تا مدیر گفتگو و
- * پاسخ‌ها را ببیند. رشتهٔ خودِ مدیر دست‌نخورده می‌ماند.
+ * پاسخ‌ها را ببیند.
+ *
+ * ۴. ⚠️ **مالک همیشه اضافه می‌شود**، مگر خودش فرستنده باشد. قاعدهٔ ۳
+ * به‌تنهایی همکارِ ادمین را هم «مدیر» می‌شمرد و از آن معاف می‌کرد، پس
+ * رشته‌ای که همکارِ ادمین به یک عضو می‌فرستاد دقیقاً دو نفر داشت و
+ * مالک — که پاسخ‌گوی همان تیم است — هیچ راهی برای دیدنش نداشت.
  */
 export function planCompose(recipientIds: number[], ctx: ComposeContext): ComposePlan {
   const recipients = [...new Set(recipientIds.filter((id) => id > 0 && id !== ctx.senderId))];
   if (recipients.length === 0) return { threads: [], isBroadcast: false };
 
   const management = ctx.senderIsManager ? [] : ctx.managerIds;
+  // قاعدهٔ ۴ — مالک هم‌مالکِ هر رشته‌ای است که خودش نساخته.
+  const owners = ctx.ownerIds.filter((id) => id !== ctx.senderId);
 
   return {
     threads: recipients.map((recipientId) => ({
       recipientId,
-      participantIds: [...new Set([ctx.senderId, ...management, recipientId])],
+      participantIds: [...new Set([ctx.senderId, ...management, ...owners, recipientId])],
     })),
     isBroadcast: recipients.length > 1,
   };

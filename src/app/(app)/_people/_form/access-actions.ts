@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
-import { getAccessForm, setUserAccess } from '@/server/people/service';
+import {
+  getAccessForm, grantStaffRole, revokeStaffRole, setUserAccess,
+} from '@/server/people/service';
 import { setAvatar } from '@/server/files/service';
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -68,4 +70,29 @@ export async function setAvatarAction(userId: number, formData: FormData) {
   revalidatePath('/members');
   revalidatePath('/clients');
   return { message: 'تصویر ثبت شد.' };
+}
+
+/**
+ * اعطا و پس‌گرفتنِ نقشِ «همکارِ ادمین».
+ *
+ * ⚠️ تا امروز هیچ راهی از رابط نداشت و فقط با SQL ِ دستی ممکن بود — تبِ
+ * «دسترسی همکاران» تنها کسانی را پیکربندی می‌کرد که نقش را از قبل داشتند.
+ */
+export async function setStaffRoleAction(
+  userId: number,
+  staff: boolean,
+): Promise<{ error?: string; ok?: boolean; message?: string }> {
+  try {
+    const actor = await requireActor();
+    if (staff) await grantStaffRole(actor, userId);
+    else await revokeStaffRole(actor, userId);
+    revalidatePath('/settings');
+    revalidatePath('/members');
+    return {
+      ok: true,
+      message: staff ? 'به همکارانِ ادمین اضافه شد.' : 'از همکارانِ ادمین برداشته شد.',
+    };
+  } catch (error) {
+    return { error: message(error) };
+  }
 }

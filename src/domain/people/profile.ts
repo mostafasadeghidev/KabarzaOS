@@ -53,10 +53,40 @@ export function maskCard(card: string): string {
  * ⚠️ فهرست کوتاه است ولی مقدارِ دلخواه هم پذیرفته می‌شود؛ رشتهٔ نامعتبر به
  * «پیش‌فرضِ سامانه» برمی‌گردد، نه اینکه ساعت را خراب کند.
  */
+/**
+ * مناطقی که بیشتر لازم می‌شوند — سرِ فهرست می‌آیند تا کاربرِ ایرانی
+ * «Asia/Tehran» را در سطرِ اول ببیند، نه بینِ چهارصد منطقهٔ الفبایی.
+ */
 export const COMMON_TIMEZONES = [
   'Asia/Tehran', 'Europe/Berlin', 'Europe/Istanbul', 'Europe/London',
   'Asia/Dubai', 'America/New_York', 'UTC',
 ] as const;
+
+/**
+ * **همهٔ** مناطقِ زمانیِ دنیا، با پرکاربردها در بالا.
+ *
+ * ⚠️ چرا فهرستِ کوتاه کافی نبود: `isValidTimezone` هر منطقهٔ معتبری را
+ * می‌پذیرد، پس محدودیت فقط در **پیشنهاد** بود — کاربری در توکیو یا سائوپائولو
+ * باید نامِ منطقه‌اش را از حفظ تایپ می‌کرد.
+ *
+ * ⚠️ `supportedValuesOf` در نودِ قدیمی‌تر نیست؛ نبودش نباید صفحه را بشکند،
+ * پس به همان فهرستِ کوتاه برمی‌گردیم.
+ */
+export function allTimezones(): string[] {
+  let all: string[] = [];
+  try {
+    const supported = (Intl as unknown as {
+      supportedValuesOf?: (key: string) => string[];
+    }).supportedValuesOf;
+    if (typeof supported === 'function') all = supported('timeZone');
+  } catch {
+    all = [];
+  }
+  if (all.length === 0) return [...COMMON_TIMEZONES];
+
+  const common = new Set<string>(COMMON_TIMEZONES);
+  return [...COMMON_TIMEZONES, ...all.filter((tz) => !common.has(tz))];
+}
 
 export function isValidTimezone(value: string): boolean {
   if (!value) return true; // خالی = پیش‌فرضِ سامانه

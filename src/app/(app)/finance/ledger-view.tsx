@@ -23,6 +23,7 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { LedgerFilter, type LedgerPaging } from './ledger-filter';
 import { TableSearch, useTableView } from '@/components/ui/table-search';
@@ -146,12 +147,17 @@ export function LedgerView({
 
   const [entryState, entryAction] = useActionState<FinanceState, FormData>(saveEntryAction, {});
   const [transferState, transferFormAction] = useActionState<FinanceState, FormData>(transferAction, {});
+  useActionToast(entryState, { success: 'ردیف ثبت شد.' });
+  useActionToast(transferState, { success: 'انتقال ثبت شد.' });
 
-  useEffect(() => { if (entryState.ok) { setFormOpen(false); setEditing(null); } }, [entryState.ok]);
-  useEffect(() => { if (transferState.ok) setTransferOpen(false); }, [transferState.ok]);
+  useEffect(() => { if (entryState.ok) { setFormOpen(false); setEditing(null); } }, [entryState]);
+  useEffect(() => { if (transferState.ok) setTransferOpen(false); }, [transferState]);
 
   const keep = (name: string, fallback = '') => entryState.values?.[name] ?? fallback;
   const today = new Date().toISOString().slice(0, 10);
+
+  /** حسابی که صفحه رویش ایستاده — برای نشان‌دادنش داخلِ مودال. */
+  const currentAccount = accounts.find((a) => a.id === accountId) ?? null;
 
   const cards: Array<{ label: string; value: string; strong?: boolean }> = [
     { label: 'ارز حساب', value: currencyCode ?? '—' },
@@ -322,7 +328,20 @@ export function LedgerView({
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editing ? tr('ویرایش ردیف') : tr('ثبت ردیف جدید')}</DialogTitle>
+            <DialogTitle className="flex flex-wrap items-center gap-2">
+              {editing ? tr('ویرایش ردیف') : tr('ثبت ردیف جدید')}
+              {/*
+                ⚠️ نامِ حساب داخلِ مودال: ردیف همیشه روی حسابی می‌نشیند که
+                صفحه نشان می‌دهد، ولی مودال که باز می‌شود جدول پشتش می‌رود و
+                کاربر دیگر نمی‌بیند برای کدام حساب دارد واریز می‌زند.
+              */}
+              {currentAccount && (
+                <Badge variant="secondary" className="font-normal">
+                  {currentAccount.name}
+                  {currentAccount.currencyCode ? ` · ${currentAccount.currencyCode}` : ''}
+                </Badge>
+              )}
+            </DialogTitle>
             <DialogDescription>
               {tr("مبلغ در ارزِ دلخواه وارد می‌شود؛ معادلِ حساب و یورو خودکار محاسبه می‌شوند.")}
             </DialogDescription>
