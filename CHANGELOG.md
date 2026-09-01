@@ -2,6 +2,71 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.16.0]
+
+### Fixed
+
+- **The interface is fully translated.** Earlier sweeps searched the source
+  for Persian text, and each one missed a different way of writing it. This
+  release stops guessing from the source: every page, tab, dialog and menu
+  was loaded in English and every Persian text node still on screen was
+  collected from the rendered DOM. Whatever the code looks like, the reader
+  is the judge.
+
+  What that turned up, by shape:
+
+  - **Submit buttons.** `{pending ? 'Saving…' : 'Save'}` inside tiny
+    `useFormStatus` components. Twenty-six of them, in almost every form in
+    the app. They are small components with no translator in scope, so the
+    string had nowhere to go.
+  - **Labels passed as props.** A constant such as `editLabel: 'Edit member'`
+    is a *translation key*, not final text — the receiving component is
+    supposed to translate it. Two receivers did not: the member card's
+    menu and the profile page's tab bar. The identical arrays elsewhere
+    were fine, which is why source-level search kept clearing them.
+  - **Strings built with a value in them.** `` `${daysLeft} days left` ``
+    can never be a key, so no amount of wrapping at the display site would
+    help. These are now parameterised keys — `'{n} days left'` — resolved
+    where the value is known.
+  - **Server-side messages.** Every action's error text was already
+    translatable, but sixteen render sites printed it raw. One wrapper each
+    fixed several hundred messages at once.
+
+- **Tag names follow the language in reports and the team page.** Two
+  queries selected `tags.name` directly instead of going through
+  `tagName(locale)`, so project statuses stayed in the source language on
+  those two screens while the same statuses were translated everywhere
+  else.
+
+- **The command palette (Ctrl+K) lists pages in the reader's language.**
+  The sidebar translates the navigation labels it is given; the palette,
+  fed the same array, printed them as-is. Search now matches the
+  translated label too, so what you type matches what you see.
+
+- **Dashboard badges and the project-status chart** are translated. They
+  are built during data fetching, where the layout's translation container
+  is not filled yet — the badges now resolve the locale directly rather
+  than depending on render order.
+
+### Changed
+
+- **Display helpers in `domain/` take an optional translator.**
+  `deadlineLabel`, `humanSize`, `leadLabel`, `formatSlots` and
+  `assigneeOptions` return text meant for a reader, so they now accept the
+  translator instead of hard-coding one language. The parameter is
+  optional and defaults to the source language, so existing callers and
+  tests are unaffected.
+
+  ⚠️ They take a translator rather than calling one. These are pure
+  functions; reaching for a per-request container or a React context from
+  inside them would tie the domain layer to a rendering environment.
+
+### Added
+
+- 30 new translation keys across all nine languages.
+
+---
+
 ## [1.11.0]
 
 ### Added

@@ -67,6 +67,7 @@ export function MeetingsView({
 
   const run = (fn: () => Promise<SimpleState>) =>
     startTransition(async () => {
+  const tr = useT();
       const result = await fn();
       setNotice(result.error ?? null);
     });
@@ -97,7 +98,7 @@ export function MeetingsView({
         )}
       </div>
 
-      {notice && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{notice}</p>}
+      {notice && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{tr(notice)}</p>}
 
       {tab === 'meetings' ? (
         meetings.length === 0 ? (
@@ -116,7 +117,7 @@ export function MeetingsView({
                       </p>
                     </div>
                     <Badge variant={m.meetingScope === 'project' ? 'secondary' : 'outline'}>
-                      {m.meetingScope === 'project' ? (m.projectTitle ?? 'پروژه') : (m.officeName ?? 'عمومی')}
+                      {m.meetingScope === 'project' ? (m.projectTitle ?? tr('پروژه')) : (m.officeName ?? tr('عمومی'))}
                     </Badge>
                   </div>
 
@@ -130,7 +131,7 @@ export function MeetingsView({
                   {m.attendees.length > 0 && (
                     <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                       <Users className="size-3" />
-                      {m.attendees.map((a) => a.name).join('، ')}
+                      {m.attendees.map((a) => a.name).join(tr('، '))}
                     </p>
                   )}
 
@@ -204,7 +205,7 @@ export function MeetingsView({
                       defaultChecked={o.minutes === 0}
                       className="size-4 accent-primary"
                     />
-                    {o.label}
+                    {tr(o.label)}
                   </label>
                 ))}
               </div>
@@ -230,10 +231,10 @@ export function MeetingsView({
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">
-                      {(r.leadMinutes ?? [0]).map(leadLabel).join('، ')}
+                      {(r.leadMinutes ?? [0]).map((m) => leadLabel(m, tr)).join(tr('، '))}
                     </span>
                     <Badge variant={r.isSent ? 'success' : 'secondary'}>
-                      {r.isSent ? 'ارسال‌شده' : 'در انتظار'}
+                      {r.isSent ? tr('ارسال‌شده') : tr('در انتظار')}
                     </Badge>
                     <Button
                       size="icon"

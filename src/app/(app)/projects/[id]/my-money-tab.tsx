@@ -73,7 +73,8 @@ function Notice({ state }: { state: MoneyState }) {
 
 function Submit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? 'صبر کنید…' : children}</Button>;
+  const tr = useT();
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? tr('صبر کنید…') : children}</Button>;
 }
 
 /**

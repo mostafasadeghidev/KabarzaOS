@@ -27,9 +27,10 @@ const cellSelect =
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const tr = useT();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? 'در حالِ ثبت…' : 'افزودن تسک'}
+      {pending ? tr('در حالِ ثبت…') : tr('افزودن تسک')}
     </Button>
   );
 }

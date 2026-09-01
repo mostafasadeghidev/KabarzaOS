@@ -7,6 +7,7 @@ import {
 import { type Actor } from '@/domain/access/permissions';
 import { assertCanView, visibleScopes } from '@/domain/access/guard';
 import { overallSummary, sumReportable } from '@/domain/reports/summary';
+import { currentLocale } from '@/i18n/server';
 
 /**
  * فهرستِ scope برای SQL ِ خام.
@@ -255,11 +256,18 @@ export { currencies, users, isNull };
 export async function getProjectsReport(actor: Actor) {
   assertCanView(actor, 'reports');
   const scopes = scopeList(visibleScopes(actor));
+  const locale = await currentLocale();
 
   const rows = await db.execute(sql`
     select
       p.id, p.title, p.price::text as price,
-      t.name as status_name, t.color as status_color,
+      /* ⚠️ نامِ تگ باید به زبانِ بیننده بیاید — مثلِ tagName()؛ اینجا SQL
+         خام است، پس همان coalesce دستی نوشته می‌شود (انگلیسی پلِ میانی). */
+      coalesce(
+        nullif(t.name_i18n->>${locale}, ''),
+        nullif(t.name_i18n->>'en', ''),
+        t.name
+      ) as status_name, t.color as status_color,
       coalesce(pay.incoming, 0)::text        as client_paid,
       coalesce(pay.billable, 0)::text        as billable_expenses,
       coalesce(pay.absorbed, 0)::text        as absorbed_costs,

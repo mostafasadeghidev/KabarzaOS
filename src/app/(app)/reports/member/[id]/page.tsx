@@ -133,7 +133,7 @@ export default async function MemberReportPage({
                 <TableNumericCell className="font-semibold">{format(p.remaining)}</TableNumericCell>
                 <TableCell>
                   <Badge variant={p.status === 'paid' ? 'secondary' : 'outline'}>
-                    {STATUS_LABEL[p.status]}
+                    {t(STATUS_LABEL[p.status] ?? p.status)}
                   </Badge>
                 </TableCell>
                 <TableNumericCell>{hoursLabel(p.minutes)}</TableNumericCell>

@@ -141,7 +141,7 @@ export function FinanceTab({
               {payments.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>{p.note || p.userName || '—'}</TableCell>
-                  <TableCell>{DIRECTION_LABEL[p.direction] ?? p.direction}</TableCell>
+                  <TableCell>{t(DIRECTION_LABEL[p.direction] ?? p.direction)}</TableCell>
                   <TableNumericCell>{day(p.paidAt)}</TableNumericCell>
                   <TableNumericCell>{format(settled(p))}</TableNumericCell>
                   <TableCell>
@@ -227,7 +227,7 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
 
       <div>
         <Button type="submit" size="sm" disabled={pending}>
-          {pending ? 'در حالِ اعمال…' : 'اعمالِ چک‌لیست'}
+          {pending ? t('در حالِ اعمال…') : t('اعمالِ چک‌لیست')}
         </Button>
       </div>
     </form>
@@ -289,6 +289,7 @@ function QaRoleRemove({
 }
 
 function QaTick({ row, canManage }: { row: QaRow; canManage: boolean }) {
+  const t = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -303,7 +304,7 @@ function QaTick({ row, canManage }: { row: QaRow; canManage: boolean }) {
         size="icon"
         variant="ghost"
         className="size-7"
-        title={row.isDone ? 'برداشتنِ تیک' : 'انجام شد'}
+        title={row.isDone ? t('برداشتنِ تیک') : t('انجام شد')}
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
@@ -314,7 +315,7 @@ function QaTick({ row, canManage }: { row: QaRow; canManage: boolean }) {
       >
         {row.isDone ? <Check className="size-3.5 text-emerald-600" /> : <Square className="size-3.5" />}
       </Button>
-      {error && <span className="text-[11px] text-destructive">{error}</span>}
+      {error && <span className="text-[11px] text-destructive">{t(error)}</span>}
     </span>
   );
 }
@@ -344,14 +345,14 @@ export function QaTab({
   const roleGroups = [...new Map(
     qa.map((q) => [
       String(q.roleTagId ?? 'client'),
-      { key: String(q.roleTagId ?? 'client'), roleTagId: q.roleTagId ?? null, name: q.roleName ?? 'کارفرما' },
+      { key: String(q.roleTagId ?? 'client'), roleTagId: q.roleTagId ?? null, name: q.roleName ?? t('کارفرما') },
     ]),
   ).values()];
 
   const section = (title: string, rows: QaRow[]) =>
     rows.length > 0 && (
       <section className="grid gap-2">
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h3 className="text-sm font-semibold">{t(title)}</h3>
         <ul className="grid gap-1">
           {rows.map((q) => (
             <li key={q.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
@@ -433,6 +434,7 @@ function BidActions({
 
   const run = (fn: () => Promise<QaActionState>) =>
     startTransition(async () => {
+  const tr = useT();
       setError(null);
       const result = await fn();
       if (result.error) setError(result.error);
@@ -462,7 +464,7 @@ function BidActions({
           {tr("پس‌گرفتن")}
         </Button>
       )}
-      {error && <span className="text-[11px] text-destructive">{error}</span>}
+      {error && <span className="text-[11px] text-destructive">{tr(error)}</span>}
     </div>
   );
 }

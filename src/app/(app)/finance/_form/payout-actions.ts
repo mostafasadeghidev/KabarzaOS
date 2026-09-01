@@ -10,6 +10,7 @@ import { FiscalPeriodLockedError } from '@/domain/ledger/fiscal';
 import { LedgerValidationError } from '@/domain/ledger/amounts';
 import { AccountError, accountMessage } from '@/domain/finance/accounts';
 import { RecurringPayError, type ExpenseKind } from '@/domain/finance/recurring';
+import { getT } from '@/i18n/server';
 
 /** اقدام‌های پرداخت‌ها و هزینه‌های دوره‌ای. */
 
@@ -18,9 +19,10 @@ export interface PayoutState {
   ok?: boolean;
 }
 
-function explain(error: unknown, fallback: string): string {
+async function explain(error: unknown, fallback: string): Promise<string> {
+  const t = await getT();
   if (error instanceof FiscalPeriodLockedError) {
-    return `این دوره تا تاریخ ${error.lockDate} قفل (بسته) شده و قابل تغییر نیست.`;
+    return t('این دوره تا تاریخ {date} قفل (بسته) شده و قابل تغییر نیست.', { date: error.lockDate });
   }
   if (error instanceof RecurringPayError) {
     return error.code === 'already_paid'
@@ -43,7 +45,7 @@ async function run(fn: (actor: Awaited<ReturnType<typeof requireActor>>) => Prom
   try {
     await fn(await requireActor());
   } catch (error) {
-    return { error: explain(error, fallback) };
+    return { error: await explain(error, fallback) };
   }
   revalidatePath('/finance');
   return { ok: true };

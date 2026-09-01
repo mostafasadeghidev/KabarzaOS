@@ -40,3 +40,6 @@ docs/rules/
 docs/REQUIREMENTS.md
 scripts/extract-translations.py
 scripts/i18n-merge.mjs
+
+# فایلِ موقتِ پیامِ کامیت — یک بار اشتباهی کامیت شد.
+.m.tmp

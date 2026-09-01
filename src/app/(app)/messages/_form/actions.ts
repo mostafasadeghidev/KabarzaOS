@@ -8,6 +8,7 @@ import {
 } from '@/server/messaging/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import type { Audience } from '@/domain/messaging/threads';
+import { getT } from '@/i18n/server';
 
 /** اقدام‌های پیام‌ها. گاردها همه در سرویس‌اند (R-ARCH-01). */
 
@@ -19,9 +20,10 @@ export interface MessageState {
 }
 
 /** خطاهای سرویس را به پیامِ فارسیِ روشن تبدیل می‌کند. */
-function explain(error: unknown, fallback: string): string {
+async function explain(error: unknown, fallback: string): Promise<string> {
+  const t = await getT();
   if (error instanceof RateLimitedError) {
-    return `کمی صبر کنید — تا ارسالِ بعدی ${error.secondsLeft} ثانیه مانده.`;
+    return t('کمی صبر کنید — تا ارسالِ بعدی {n} ثانیه مانده.', { n: error.secondsLeft });
   }
   if (error instanceof ThreadNotFoundError) return 'این گفتگو در دسترس نیست.';
   if (error instanceof ForbiddenError) {
@@ -56,7 +58,7 @@ export async function composeAction(_prev: MessageState, formData: FormData): Pr
     revalidatePath('/messages');
     return { ok: true, created: created.length };
   } catch (error) {
-    return { error: explain(error, 'پیام ارسال نشد.') };
+    return { error: await explain(error, 'پیام ارسال نشد.') };
   }
 }
 
@@ -74,7 +76,7 @@ export async function contactManagementAction(
     revalidatePath('/messages');
     return { ok: true, created: 1 };
   } catch (error) {
-    return { error: explain(error, 'پیام ارسال نشد.') };
+    return { error: await explain(error, 'پیام ارسال نشد.') };
   }
 }
 
@@ -89,7 +91,7 @@ export async function replyAction(_prev: MessageState, formData: FormData): Prom
     revalidatePath('/messages');
     return { ok: true };
   } catch (error) {
-    return { error: explain(error, 'پاسخ ارسال نشد.') };
+    return { error: await explain(error, 'پاسخ ارسال نشد.') };
   }
 }
 
@@ -105,6 +107,6 @@ export async function leaveThreadAction(threadId: number): Promise<MessageState>
     revalidatePath('/messages');
     return { ok: true };
   } catch (error) {
-    return { error: explain(error, 'گفتگو حذف نشد.') };
+    return { error: await explain(error, 'گفتگو حذف نشد.') };
   }
 }

@@ -88,7 +88,8 @@ const cellSelect =
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
-  return <Button type="submit" disabled={pending}>{pending ? 'در حالِ ثبت…' : label}</Button>;
+  const tr = useT();
+  return <Button type="submit" disabled={pending}>{pending ? tr('در حالِ ثبت…') : label}</Button>;
 }
 
 /**
@@ -206,7 +207,7 @@ export function LedgerView({
       )}
 
       {notice && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{notice}</p>
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{tr(notice)}</p>
       )}
 
       <div className="grid gap-3 @2xl/main:grid-cols-5 @xl/main:grid-cols-3">
@@ -321,7 +322,7 @@ export function LedgerView({
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editing ? 'ویرایش ردیف' : 'ثبت ردیف جدید'}</DialogTitle>
+            <DialogTitle>{editing ? tr('ویرایش ردیف') : tr('ثبت ردیف جدید')}</DialogTitle>
             <DialogDescription>
               {tr("مبلغ در ارزِ دلخواه وارد می‌شود؛ معادلِ حساب و یورو خودکار محاسبه می‌شوند.")}
             </DialogDescription>

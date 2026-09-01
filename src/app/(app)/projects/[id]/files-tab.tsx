@@ -44,9 +44,10 @@ function Notice({ state }: { state: FileFormState }) {
 
 function SubmitButton({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
+  const tr = useT();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? 'در حال ارسال…' : children}
+      {pending ? tr('در حال ارسال…') : children}
     </Button>
   );
 }
@@ -116,7 +117,7 @@ export function FilesTab({
               <Input id="att-label" name="label" placeholder={t("مثلاً: قرارداد امضاشده")} />
             </div>
             <p className="text-xs text-muted-foreground">
-              {tr('تصویر، ویدیو، PDF و سند — تا {size} برای هر فایل.', { size: humanSize(MAX_SIZE.attachment) })}
+              {tr('تصویر، ویدیو، PDF و سند — تا {size} برای هر فایل.', { size: humanSize(MAX_SIZE.attachment, tr) })}
             </p>
             <Notice state={uploadState} />
           </form>
@@ -155,7 +156,7 @@ export function FilesTab({
                     </a>
                     <p className="text-xs text-muted-foreground">
                       {f.uploaderName ?? '—'}
-                      {f.size ? ` · ${humanSize(f.size)}` : ''}
+                      {f.size ? ` · ${humanSize(f.size, tr)}` : ''}
                     </p>
                   </div>
 

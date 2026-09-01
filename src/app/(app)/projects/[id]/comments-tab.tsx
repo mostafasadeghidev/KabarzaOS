@@ -32,9 +32,10 @@ function when(value: Date | string): string {
 
 function SendButton() {
   const { pending } = useFormStatus();
+  const tr = useT();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? 'در حال ارسال…' : 'ارسال'}
+      {pending ? tr('در حال ارسال…') : tr('ارسال')}
     </Button>
   );
 }
@@ -61,6 +62,7 @@ function CommentDelete({ commentId }: { commentId: number }) {
 }
 
 function StatusToggle({ comment, canManage }: { comment: CommentItem; canManage: boolean }) {
+  const t = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const open = isOpen(comment.status);
@@ -77,7 +79,7 @@ function StatusToggle({ comment, canManage }: { comment: CommentItem; canManage:
         size="icon"
         variant="ghost"
         className="size-7"
-        title={open ? 'علامت‌زدن به‌عنوانِ انجام‌شده' : 'بازکردنِ دوباره'}
+        title={open ? t('علامت‌زدن به‌عنوانِ انجام‌شده') : t('بازکردنِ دوباره')}
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
@@ -88,7 +90,7 @@ function StatusToggle({ comment, canManage }: { comment: CommentItem; canManage:
       >
         {open ? <Check className="size-3.5" /> : <RotateCcw className="size-3.5" />}
       </Button>
-      {error && <span className="text-[11px] text-destructive">{error}</span>}
+      {error && <span className="text-[11px] text-destructive">{t(error)}</span>}
     </div>
   );
 }
@@ -126,7 +128,10 @@ export function CommentsTab({
                   {/* «انجام شد توسط X» — فقط وقتی واقعاً بسته شده باشد. */}
                   {c.closedByName && c.closedAt && (
                     <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-400">
-                      {statusLabel(c.type as CommentType, c.status)} توسط {c.closedByName} ·{' '}
+                      {t('{label} توسط {name}', {
+                        label: statusLabel(c.type as CommentType, c.status),
+                        name: c.closedByName,
+                      })} ·{' '}
                       <span className="num">{when(c.closedAt)}</span>
                     </p>
                   )}

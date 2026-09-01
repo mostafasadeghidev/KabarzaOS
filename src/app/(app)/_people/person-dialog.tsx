@@ -52,7 +52,7 @@ function AvatarPicker({ person }: { person: PersonView }) {
 
   const upload = () => {
     const file = inputRef.current?.files?.[0];
-    if (!file) return setNotice({ text: 'تصویری انتخاب نشده است.', isError: true });
+    if (!file) return setNotice({ text: tr('تصویری انتخاب نشده است.'), isError: true });
 
     const data = new FormData();
     data.set('avatar', file);
@@ -76,7 +76,7 @@ function AvatarPicker({ person }: { person: PersonView }) {
         <Label htmlFor="p-avatar">{tr("تصویر پروفایل")}</Label>
         <Input id="p-avatar" ref={inputRef} type="file" accept="image/*" />
         <p className="text-xs text-muted-foreground">
-          JPEG، PNG، GIF یا WebP — تا {humanSize(MAX_SIZE.avatar)}.
+          {tr('JPEG، PNG، GIF یا WebP — تا {size}.', { size: humanSize(MAX_SIZE.avatar, tr) })}
         </p>
         {notice && (
           <p className={`text-xs ${notice.isError ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
@@ -85,7 +85,7 @@ function AvatarPicker({ person }: { person: PersonView }) {
         )}
       </div>
       <Button type="button" size="sm" variant="outline" disabled={pending} onClick={upload}>
-        {pending ? 'در حالِ ارسال…' : 'ذخیره تصویر'}
+        {pending ? tr('در حالِ ارسال…') : tr('ذخیره تصویر')}
       </Button>
     </div>
   );

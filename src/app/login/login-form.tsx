@@ -48,7 +48,7 @@ export function LoginForm() {
             )}
 
             <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? 'در حال ورود…' : 'ورود'}
+              {pending ? t('در حال ورود…') : t('ورود')}
             </Button>
           </form>
         </CardContent>

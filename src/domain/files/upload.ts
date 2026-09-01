@@ -5,6 +5,11 @@
  * `docs/rules/FILES.md` می‌آیند و هر کدام تستِ خودش را دارد.
  */
 
+import { createTranslator, type Translator } from '@/i18n/translate';
+
+/** بدونِ مترجم همان فارسیِ مبدأ برمی‌گردد — کلید خودِ متنِ فارسی است. */
+const SOURCE: Translator = createTranslator({});
+
 export class FileRejected extends Error {
   constructor(public readonly reason: RejectReason) {
     super(reason);
@@ -265,10 +270,10 @@ export function normalizeExternalUrl(raw: string): string | null {
 }
 
 /** حجمِ خوانا. */
-export function humanSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} بایت`;
-  if (bytes < MB) return `${(bytes / 1024).toFixed(0)} کیلوبایت`;
-  return `${(bytes / MB).toFixed(1)} مگابایت`;
+export function humanSize(bytes: number, t: Translator = SOURCE): string {
+  if (bytes < 1024) return t('{n} بایت', { n: bytes });
+  if (bytes < MB) return t('{n} کیلوبایت', { n: (bytes / 1024).toFixed(0) });
+  return t('{n} مگابایت', { n: (bytes / MB).toFixed(1) });
 }
 
 /* ------------------------------------------------------------------ *

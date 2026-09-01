@@ -96,7 +96,7 @@ export function ProjectGrid({
 
       {visible.length === 0 ? (
         <EmptyState
-          title={query ? 'نتیجه‌ای نیست' : 'پروژه‌ای در این دسته نیست'}
+          title={query ? tr('نتیجه‌ای نیست') : tr('پروژه‌ای در این دسته نیست')}
           description={
             otherHits > 0
               ? tr('{n} نتیجه در تب‌های دیگر پیدا شد.', { n: otherHits })

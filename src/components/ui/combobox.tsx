@@ -44,7 +44,7 @@ export function Combobox({
   options,
   value,
   onChange,
-  placeholder = 'جستجو…',
+  placeholder,
   allowFreeText = false,
   name,
   id,
@@ -114,7 +114,7 @@ export function Combobox({
           autoComplete="off"
           disabled={disabled}
           className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
-          placeholder={placeholder}
+          placeholder={placeholder ?? t('جستجو…')}
           value={value.label}
           role="combobox"
           aria-expanded={open}
@@ -149,7 +149,7 @@ export function Combobox({
         >
           {visible.length === 0 ? (
             <li className="px-2 py-1.5 text-xs text-muted-foreground">
-              {allowFreeText ? 'در فهرست نیست — همین نام ثبت می‌شود.' : 'موردی پیدا نشد.'}
+              {allowFreeText ? t('در فهرست نیست — همین نام ثبت می‌شود.') : t('موردی پیدا نشد.')}
             </li>
           ) : visible.map((o, i) => (
             <li key={o.value}>
@@ -186,7 +186,7 @@ export function MultiSelect({
   options,
   selected,
   onChange,
-  placeholder = 'افزودن…',
+  placeholder,
   name,
   id,
 }: {
@@ -245,7 +245,7 @@ export function MultiSelect({
           type="text"
           autoComplete="off"
           className="min-w-24 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
-          placeholder={selected.length === 0 ? placeholder : ''}
+          placeholder={selected.length === 0 ? (placeholder ?? t('افزودن…')) : ''}
           value={query}
           onFocus={() => setOpen(true)}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}

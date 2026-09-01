@@ -65,15 +65,16 @@ function Field({
   hint?: string;
   children: (id: string) => React.ReactNode;
 }) {
+  const tr = useT();
   const id = useId();
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id}>{tr(label)}</Label>
       {children(id)}
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       {error && (
         <p className="text-xs text-destructive" data-field-error={name}>
-          {error}
+          {tr(error)}
         </p>
       )}
     </div>

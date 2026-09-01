@@ -78,7 +78,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             <p className="text-xs whitespace-pre-line text-muted-foreground">{data.issuer.address}</p>
           )}
           {data.issuer.taxId && (
-            <p className="num text-xs text-muted-foreground">شناسهٔ مالیاتی: {data.issuer.taxId}</p>
+            <p className="num text-xs text-muted-foreground">{t('شناسهٔ مالیاتی: {id}', { id: data.issuer.taxId })}</p>
           )}
           {(data.issuer.phone || data.issuer.email) && (
             <p className="text-xs text-muted-foreground">
@@ -107,9 +107,9 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       <section className="grid gap-0.5">
         <p className="text-xs text-muted-foreground">{t("صورت‌حساب برای")}</p>
         {data.clients.length > 0 && (
-          <p className="font-medium">{data.clients.join('، ')}</p>
+          <p className="font-medium">{data.clients.join(t('، '))}</p>
         )}
-        <p className="text-sm text-muted-foreground">پروژه: {data.project.title}</p>
+        <p className="text-sm text-muted-foreground">{t('پروژه: {title}', { title: data.project.title })}</p>
       </section>
 
       <section>
@@ -124,7 +124,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
           <tbody>
             {data.charges.map((line, i) => (
               <tr key={i} className="border-b last:border-0">
-                <td className="py-2">{line.description}</td>
+                <td className="py-2">{t(line.description)}</td>
                 <td className="num py-2" dir="ltr">{line.date ?? '—'}</td>
                 <td className="num py-2 text-end">{format(line.amount)} {cur}</td>
               </tr>
@@ -146,7 +146,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             <tbody>
               {data.receipts.map((line, i) => (
                 <tr key={i} className="border-b last:border-0">
-                  <td className="py-2">{line.description}</td>
+                  <td className="py-2">{t(line.description)}</td>
                   <td className="num py-2" dir="ltr">{line.date ?? '—'}</td>
                   <td className="num py-2 text-end">{format(line.amount)} {cur}</td>
                 </tr>

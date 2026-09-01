@@ -79,7 +79,7 @@ export default async function TeamMemberPage({
             <TableBody>
               {data.logs.map((l) => (
                 <TableRow key={l.projectId ?? 'general'}>
-                  <TableCell>{l.projectTitle ?? 'کارِ عمومی'}</TableCell>
+                  <TableCell>{l.projectTitle ?? t('کارِ عمومی')}</TableCell>
                   <TableNumericCell>{hoursLabel(l.minutes)}</TableNumericCell>
                 </TableRow>
               ))}

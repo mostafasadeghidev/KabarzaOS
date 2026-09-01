@@ -26,7 +26,8 @@ export interface MyBidData {
 
 function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? 'صبر کنید…' : label}</Button>;
+  const tr = useT();
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? tr('صبر کنید…') : label}</Button>;
 }
 
 function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['openRoles'][number] }) {
@@ -65,7 +66,7 @@ function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['open
           <Label htmlFor={`note-${role.roleTagId}`}>{t("توضیحات")}</Label>
           <Input id={`note-${role.roleTagId}`} name="note" defaultValue={role.myNote} />
         </div>
-        <Submit label={role.hasBid ? 'به‌روزرسانی' : 'ثبت'} />
+        <Submit label={role.hasBid ? t('به‌روزرسانی') : t('ثبت')} />
       </div>
 
       {(state.error || state.message) && (
@@ -96,7 +97,7 @@ export function MyBidTab({ data }: { data: MyBidData }) {
           key={role}
           className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400"
         >
-          پیشنهادِ شما برای نقش «{role}» تأیید شد. 🎉
+          {tr('پیشنهادِ شما برای نقش «{role}» تأیید شد. 🎉', { role })}
         </p>
       ))}
 

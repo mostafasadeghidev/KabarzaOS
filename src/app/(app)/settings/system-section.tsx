@@ -22,9 +22,10 @@ import { Activity } from 'lucide-react';
 
 function Submit() {
   const { pending } = useFormStatus();
+  const tr = useT();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? 'در حالِ ذخیره…' : 'ذخیره تنظیمات'}
+      {pending ? tr('در حالِ ذخیره…') : tr('ذخیره تنظیمات')}
     </Button>
   );
 }

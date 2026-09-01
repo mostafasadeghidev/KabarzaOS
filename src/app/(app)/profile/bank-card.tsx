@@ -11,9 +11,10 @@ import { useT } from '@/i18n/client';
 
 function Submit() {
   const { pending } = useFormStatus();
+  const tr = useT();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? 'در حالِ ذخیره…' : 'ذخیره اطلاعات حساب'}
+      {pending ? tr('در حالِ ذخیره…') : tr('ذخیره اطلاعات حساب')}
     </Button>
   );
 }

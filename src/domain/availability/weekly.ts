@@ -7,6 +7,11 @@
  * صفر می‌داند، پس هر تبدیلی باید صریح باشد وگرنه یک روز جابه‌جا می‌شود.
  */
 
+import { createTranslator, type Translator } from '@/i18n/translate';
+
+/** بدونِ مترجم همان فارسیِ مبدأ برمی‌گردد — کلید خودِ متنِ فارسی است. */
+const SOURCE: Translator = createTranslator({});
+
 export const WEEKDAYS = [
   'شنبه', 'یک‌شنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه',
 ] as const;
@@ -57,9 +62,9 @@ export function cleanSlots(raw: ReadonlyArray<{ from: string; to: string }>): Sl
  * ⚠️ فهرستِ **خالی** یعنی «تمام روز»، نه «در دسترس نیست» — روزی که تیک خورده
  * ولی ساعت ندارد، یعنی تمامِ روز آزاد است.
  */
-export function formatSlots(slots: readonly Slot[]): string {
-  if (slots.length === 0) return 'تمام روز';
-  return slots.map((s) => `${s.from}–${s.to}`).join('، ');
+export function formatSlots(slots: readonly Slot[], t: Translator = SOURCE): string {
+  if (slots.length === 0) return t('تمام روز');
+  return slots.map((s) => `${s.from}–${s.to}`).join(t('، '));
 }
 
 /**

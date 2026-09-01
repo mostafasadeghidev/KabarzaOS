@@ -46,7 +46,7 @@ function SubmitButton({ isEdit }: { isEdit: boolean }) {
   const t = useT();
   const { pending } = useFormStatus();
   if (pending) return <Button type="submit" disabled>{t("در حالِ ذخیره…")}</Button>;
-  return <Button type="submit">{isEdit ? 'ذخیرهٔ جلسه' : 'ایجاد جلسه'}</Button>;
+  return <Button type="submit">{isEdit ? t('ذخیرهٔ جلسه') : t('ایجاد جلسه')}</Button>;
 }
 
 /**
@@ -129,7 +129,7 @@ export function MeetingForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'ویرایشِ جلسه' : 'جلسهٔ جدید'}</DialogTitle>
+          <DialogTitle>{isEdit ? tr('ویرایشِ جلسه') : tr('جلسهٔ جدید')}</DialogTitle>
           <DialogDescription>
             {tr("دعوت‌شدگان با نوعِ جلسه و پروژه/دفترِ انتخابی تعیین می‌شوند.")}
           </DialogDescription>

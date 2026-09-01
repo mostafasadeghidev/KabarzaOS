@@ -11,6 +11,7 @@ import { FiscalPeriodLockedError } from '@/domain/ledger/fiscal';
 import { LedgerValidationError, TransferValidationError } from '@/domain/ledger/amounts';
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { removeFiles, storeReceipt } from '@/server/files/service';
+import { getT } from '@/i18n/server';
 
 /** اقدام‌های حسابداری. گاردها همه در سرویس‌اند (R-ARCH-01). */
 
@@ -64,11 +65,12 @@ export interface FinanceState {
 }
 
 /** خطاهای دامنه را به پیامِ فارسیِ روشن تبدیل می‌کند. */
-function explain(error: unknown, fallback: string): string {
+async function explain(error: unknown, fallback: string): Promise<string> {
+  const t = await getT();
   // دلیلِ ردِ فایل به کاربر گفته می‌شود، نه یک پیامِ کلی.
   if (error instanceof FileRejected) return rejectMessage(error.reason);
   if (error instanceof FiscalPeriodLockedError) {
-    return `این دوره تا تاریخ ${error.lockDate} قفل (بسته) شده و قابل تغییر نیست.`;
+    return t('این دوره تا تاریخ {date} قفل (بسته) شده و قابل تغییر نیست.', { date: error.lockDate });
   }
   if (error instanceof LedgerValidationError) {
     if (error.code === 'note_required') {
@@ -161,7 +163,7 @@ export async function saveEntryAction(
       }));
     }
   } catch (error) {
-    return { error: explain(error, 'رسید بارگذاری نشد.'), values };
+    return { error: await explain(error, 'رسید بارگذاری نشد.'), values };
   }
 
   const removedReceiptIds = formData.getAll('removeReceipt')
@@ -199,7 +201,7 @@ export async function saveEntryAction(
     // خورد (مثلاً دورهٔ قفل)، آن فایل‌ها به هیچ ردیفی وصل نیستند و باید بروند،
     // وگرنه با هر تلاشِ ناموفق یک فایلِ بی‌صاحب در باکت می‌ماند.
     await removeFiles(addedReceiptIds).catch(() => {});
-    return { error: explain(error, 'ردیف ذخیره نشد.'), values };
+    return { error: await explain(error, 'ردیف ذخیره نشد.'), values };
   }
 
   revalidatePath('/finance');
@@ -211,7 +213,7 @@ export async function deleteEntryAction(entryId: number): Promise<FinanceState> 
     const actor = await requireActor();
     await deleteEntry(actor, entryId);
   } catch (error) {
-    return { error: explain(error, 'ردیف حذف نشد.') };
+    return { error: await explain(error, 'ردیف حذف نشد.') };
   }
   revalidatePath('/finance');
   return { ok: true };
@@ -231,7 +233,7 @@ export async function transferAction(
     const actor = await requireActor();
     await transfer(actor, { fromAccountId, toAccountId, fromAmount, toAmount, entryDate });
   } catch (error) {
-    return { error: explain(error, 'انتقال ثبت نشد.') };
+    return { error: await explain(error, 'انتقال ثبت نشد.') };
   }
   revalidatePath('/finance');
   return { ok: true };

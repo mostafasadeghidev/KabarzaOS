@@ -360,7 +360,7 @@ export function ReportsView({
                     <TableNumericCell>{r.entryDate}</TableNumericCell>
                     <TableCell>{r.description || '—'}</TableCell>
                     <TableCell>{r.accountName ?? '—'}</TableCell>
-                    <TableCell>{r.direction === 'in' ? 'درآمد' : 'هزینه'}</TableCell>
+                    <TableCell>{tr(r.direction === 'in' ? 'درآمد' : 'هزینه')}</TableCell>
                     <TableNumericCell>{format(r.amountEur)}</TableNumericCell>
                   </TableRow>
                 ))}

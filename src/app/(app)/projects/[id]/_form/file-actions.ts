@@ -7,6 +7,7 @@ import {
 } from '@/server/files/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
+import { getT } from '@/i18n/server';
 
 /**
  * اکشن‌های فایل.
@@ -61,7 +62,12 @@ export async function uploadAttachmentAction(
   }
 
   revalidatePath(`/projects/${projectId}`);
-  return { message: picked.length > 1 ? `${picked.length} فایل بارگذاری شد.` : 'فایل بارگذاری شد.' };
+  const t = await getT();
+  return {
+    message: picked.length > 1
+      ? t('{n} فایل بارگذاری شد.', { n: picked.length })
+      : t('فایل بارگذاری شد.'),
+  };
 }
 
 export async function addLinkAction(

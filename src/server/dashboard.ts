@@ -7,6 +7,7 @@ import {
 import { assertCanView, visibleScopes } from '@/domain/access/guard';
 import { canViewSection, type Actor } from '@/domain/access/permissions';
 import { weekdayIndex } from '@/domain/availability/weekly';
+import { getT } from '@/i18n/server';
 
 /**
  * دادهٔ داشبورد — ساختار عیناً از نسخهٔ قبلی گرفته شده:
@@ -42,6 +43,13 @@ function weekRanges() {
 
 export async function getDashboard(actor: Actor) {
   assertCanView(actor, 'projects');
+  /**
+   * ⚠️ getT() و نه t() ِ همگام: اینجا **واکشیِ داده** است، نه رندر. در
+   * App Router چیدمان و صفحه موازی اجرا می‌شوند، پس ظرفِ ترجمهٔ چیدمان
+   * هنوز پر نشده و t() فارسیِ مبدأ می‌داد — همان باگی که برچسب‌های
+   * «۳۹ روز مانده» را در پنلِ انگلیسی فارسی نگه می‌داشت.
+   */
+  const t = await getT();
   const scopes = visibleScopes(actor);
   const week = weekRanges();
   const today = new Date().toISOString().slice(0, 10);
@@ -215,20 +223,20 @@ export async function getDashboard(actor: Actor) {
 
   const overdue: RiskItem[] = active
     .filter((p) => p.deadline && p.deadline < today && p.statusGroup !== 'completed')
-    .map((p) => ({ id: p.id, title: p.title, badge: `${dayDiff(today, p.deadline!)} روز تأخیر` }));
+    .map((p) => ({ id: p.id, title: p.title, badge: t('{n} روز تأخیر', { n: dayDiff(today, p.deadline!) }) }));
 
   const soon: RiskItem[] = active
     .filter((p) => p.deadline && p.deadline >= today
       && dayDiff(p.deadline!, today) <= 7 && p.statusGroup !== 'completed')
     .map((p) => {
       const d = dayDiff(p.deadline!, today);
-      return { id: p.id, title: p.title, badge: d === 0 ? 'امروز' : `${d} روز مانده` };
+      return { id: p.id, title: p.title, badge: d === 0 ? t('امروز') : t('{n} روز مانده', { n: d }) };
     });
 
   /** پروژهٔ راکد: در حال انجام ولی بدونِ تسکِ باز. */
   const stalled: RiskItem[] = active
     .filter((p) => p.statusGroup === 'in_progress' && (openByProject.get(p.id) ?? 0) === 0)
-    .map((p) => ({ id: p.id, title: p.title, badge: 'بدونِ تسکِ باز' }));
+    .map((p) => ({ id: p.id, title: p.title, badge: t('بدونِ تسکِ باز') }));
 
   const openTenders: RiskItem[] = active
     .filter((p) => p.isTender && p.statusGroup === 'lead')
@@ -252,7 +260,7 @@ export async function getDashboard(actor: Actor) {
     unknown: 'بدونِ وضعیت',
   };
   const statusDistribution: StatusSlice[] = [...statusCounts.entries()]
-    .map(([key, count]) => ({ status: STATUS_LABELS[key] ?? key, count }))
+    .map(([key, count]) => ({ status: t(STATUS_LABELS[key] ?? key), count }))
     .sort((a, b) => b.count - a.count);
 
   /** ساعتِ کاریِ اعضا در ۳۰ روزِ گذشته — یک کوئریِ گروهی (R-PERF-01). */
@@ -293,7 +301,7 @@ export async function getDashboard(actor: Actor) {
       minutes += byDay.get(day) ?? 0;
     }
     weeklyTrend.push({
-      label: w === 0 ? 'این هفته' : `${w} هفته قبل`,
+      label: w === 0 ? t('این هفته') : t('{n} هفته قبل', { n: w }),
       hours: Math.round((minutes / 60) * 10) / 10,
     });
   }

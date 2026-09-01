@@ -36,7 +36,8 @@ const field = 'h-9 w-full rounded-md border border-input bg-transparent px-3 tex
 
 function Save() {
   const { pending } = useFormStatus();
-  return <Button type="submit" disabled={pending}>{pending ? 'در حالِ ذخیره…' : 'ذخیره'}</Button>;
+  const tr = useT();
+  return <Button type="submit" disabled={pending}>{pending ? tr('در حالِ ذخیره…') : tr('ذخیره')}</Button>;
 }
 
 /**
@@ -82,7 +83,7 @@ export function AccountsView({
       </div>
 
       {notice && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{notice}</p>
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{t(notice)}</p>
       )}
 
       {accounts.length === 0 ? (
@@ -153,7 +154,7 @@ export function AccountsView({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editing ? 'ویرایش حساب' : 'افزودن حساب'}</DialogTitle>
+            <DialogTitle>{editing ? tr('ویرایش حساب') : tr('افزودن حساب')}</DialogTitle>
             <DialogDescription>
               {tr("«مانده اولیه» نقطهٔ شروعِ محاسبهٔ مانده است و در دفتر ردیف نمی‌سازد.")}
             </DialogDescription>

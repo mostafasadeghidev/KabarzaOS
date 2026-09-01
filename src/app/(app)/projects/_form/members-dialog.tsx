@@ -39,9 +39,10 @@ const cellSelect =
 
 function SaveButton() {
   const { pending } = useFormStatus();
+  const tr = useT();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? 'در حالِ ذخیره…' : 'ذخیرهٔ اعضا'}
+      {pending ? tr('در حالِ ذخیره…') : tr('ذخیرهٔ اعضا')}
     </Button>
   );
 }
@@ -86,8 +87,8 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
           <DialogTitle>{t("اعضای پروژه")}</DialogTitle>
           <DialogDescription>
             {data.isUnitBased
-              ? 'پروژهٔ تعدادی است: دستمزدِ هر عضو = نرخِ هر واحد × تعدادِ ثبت‌شده.'
-              : 'مبلغِ توافقیِ هر عضو برای این پروژه.'}
+              ? tr('پروژهٔ تعدادی است: دستمزدِ هر عضو = نرخِ هر واحد × تعدادِ ثبت‌شده.')
+              : tr('مبلغِ توافقیِ هر عضو برای این پروژه.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -116,7 +117,7 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                   <th className="py-2 text-start font-normal">{t("عضو")}</th>
                   <th className="py-2 text-start font-normal">{t("نقش")}</th>
                   <th className="py-2 text-start font-normal">
-                    {data.isUnitBased ? 'نرخِ هر واحد' : 'مبلغ توافقی'}
+                    {data.isUnitBased ? tr('نرخِ هر واحد') : tr('مبلغ توافقی')}
                   </th>
                   <th className="py-2 text-start font-normal">{t("ارز")}</th>
                   <th className="w-8" />

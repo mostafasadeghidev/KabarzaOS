@@ -218,7 +218,7 @@ function LightenBox({
           {tr("برای سبک‌سازی، ابتدا پروژه را از همین صفحه بایگانی کنید.")}
         </p>
       )}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-xs text-destructive">{t(error)}</p>}
     </section>
   );
 }
@@ -249,8 +249,11 @@ function ThumbnailForm({
         <Label htmlFor="thumb-file">{t("تصویر تازه")}</Label>
         <Input id="thumb-file" name="file" type="file" accept="image/*" required />
         <p className="text-xs text-muted-foreground">
-          JPEG، PNG، GIF یا WebP — تا {humanSize(MAX_SIZE.avatar)}.
-          {fileId ? ' تصویرِ قبلی پس از ذخیره حذف می‌شود.' : ' بدونِ تصویر، تک‌نگارِ رنگی نشان داده می‌شود.'}
+          {t('JPEG، PNG، GIF یا WebP — تا {size}.', { size: humanSize(MAX_SIZE.avatar, t) })}
+          {' '}
+          {fileId
+            ? t('تصویرِ قبلی پس از ذخیره حذف می‌شود.')
+            : t('بدونِ تصویر، تک‌نگارِ رنگی نشان داده می‌شود.')}
         </p>
         {(state.error || state.message) && (
           <p className={`text-xs ${state.error ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-500'}`}>
@@ -266,10 +269,11 @@ function ThumbnailForm({
 
 function ThumbnailSubmit() {
   const { pending } = useFormStatus();
+  const tr = useT();
   return (
     <Button type="submit" size="sm" variant="outline" disabled={pending}>
       <ImageIcon className="size-3.5" />
-      {pending ? 'در حالِ ارسال…' : 'ذخیره تصویر'}
+      {pending ? tr('در حالِ ارسال…') : tr('ذخیره تصویر')}
     </Button>
   );
 }
@@ -357,10 +361,10 @@ export function ManageTab({
                 }
               >
                 {isArchived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
-                {isArchived ? 'خارج کردن از بایگانی' : 'بایگانی کردن پروژه'}
+                {isArchived ? t('خارج کردن از بایگانی') : t('بایگانی کردن پروژه')}
               </Button>
             </div>
-            {error && <p className="text-xs text-destructive">{error}</p>}
+            {error && <p className="text-xs text-destructive">{t(error)}</p>}
           </section>
 
           <LightenBox projectId={projectId} isArchived={isArchived} summary={lightenSummary} />

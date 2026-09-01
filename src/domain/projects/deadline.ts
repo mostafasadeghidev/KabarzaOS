@@ -5,6 +5,11 @@
  * می‌نشیند. رنگ با فوریت عوض می‌شود.
  */
 
+import { createTranslator, type Translator } from '@/i18n/translate';
+
+/** بدونِ مترجم همان فارسیِ مبدأ برمی‌گردد — کلید خودِ متنِ فارسی است. */
+const SOURCE: Translator = createTranslator({});
+
 export type DeadlineUrgency = 'normal' | 'warn' | 'soon' | 'over';
 
 export interface DeadlineBar {
@@ -62,10 +67,10 @@ export function deadlineBar(
 }
 
 /** برچسبِ روزها — «۵ روز مانده» / «امروز» / «۳ روز گذشته». */
-export function deadlineLabel(daysLeft: number): string {
-  if (daysLeft > 0) return `${daysLeft} روز مانده`;
-  if (daysLeft === 0) return 'امروز';
-  return `${Math.abs(daysLeft)} روز گذشته`;
+export function deadlineLabel(daysLeft: number, t: Translator = SOURCE): string {
+  if (daysLeft > 0) return t('{n} روز مانده', { n: daysLeft });
+  if (daysLeft === 0) return t('امروز');
+  return t('{n} روز گذشته', { n: Math.abs(daysLeft) });
 }
 
 /** درصدِ پیشرفتِ تسک‌ها — `Tasks::progress()`. */

@@ -93,15 +93,21 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
 
   const items: Item[] = useMemo(() => {
     const q = query.trim().toLowerCase();
+    /**
+     * ⚠️ برچسبِ صفحه‌ها **کلید** است، نه متنِ نهایی: چیدمان آنها را در سطحِ
+     * ماژول می‌سازد، یعنی پیش از آنکه زبانِ کاربر معلوم باشد. سایدبار هم
+     * همین‌جا ترجمه‌شان می‌کند؛ اینجا هم باید — وگرنه پالت فارسی می‌ماند.
+     * جستجو نیز روی متنِ ترجمه‌شده انجام می‌شود تا با آنچه کاربر می‌بیند بخواند.
+     */
     const pageItems: Item[] = pages
-      .filter((p) => !q || p.label.toLowerCase().includes(q))
-      .map((p) => ({ key: `page-${p.href}`, label: p.label, href: p.href, icon: '↗' }));
+      .map((p) => ({ key: `page-${p.href}`, label: tr(p.label), href: p.href, icon: '↗' }))
+      .filter((p) => !q || p.label.toLowerCase().includes(q));
 
     const hitItems: Item[] = hits.map((h) => ({
       key: `${h.kind}-${h.id}`,
       label: h.label,
       href: h.href,
-      sub: KIND_LABEL[h.kind],
+      sub: tr(KIND_LABEL[h.kind]),
       icon: KIND_ICON[h.kind],
     }));
 
@@ -178,8 +184,8 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
           {!searching && items.length === 0 && (
             <p className="p-3 text-xs text-muted-foreground">
               {query.trim().length < MIN_QUERY
-                ? 'برای جستجوی رکوردها دستِ‌کم سه حرف بنویسید.'
-                : 'چیزی پیدا نشد.'}
+                ? t('برای جستجوی رکوردها دستِ‌کم سه حرف بنویسید.')
+                : t('چیزی پیدا نشد.')}
             </p>
           )}
         </div>

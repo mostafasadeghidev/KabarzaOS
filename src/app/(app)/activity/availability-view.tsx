@@ -39,9 +39,10 @@ export interface AvailabilityData {
 
 function Submit() {
   const { pending } = useFormStatus();
+  const tr = useT();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? 'در حالِ ذخیره…' : 'ذخیرهٔ برنامه'}
+      {pending ? tr('در حالِ ذخیره…') : tr('ذخیرهٔ برنامه')}
     </Button>
   );
 }
@@ -206,7 +207,7 @@ export function AvailabilityView({ data }: { data: AvailabilityData }) {
                             {slots === undefined ? (
                               <span className="text-muted-foreground">—</span>
                             ) : (
-                              <span title={formatSlots(slots)}>{slotsSpan(slots)}</span>
+                              <span title={formatSlots(slots, tr)}>{slotsSpan(slots)}</span>
                             )}
                           </TableCell>
                         );

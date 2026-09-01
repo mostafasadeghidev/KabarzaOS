@@ -80,14 +80,14 @@ export function ProjectCard({
       <div className="absolute top-0 end-0 flex">
         {project.isArchived && (
           <span className="bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-            بایگانی
+            {t('بایگانی')}
             {/* R-PROJ-07 — «سبک» یعنی جزئیاتش پاک و خلاصه‌اش منجمد شده. */}
-            {project.isLightened && ' · سبک'}
+            {project.isLightened && ` · ${t('سبک')}`}
           </span>
         )}
         {project.isTender && (
           <span className="bg-violet-600 px-2 py-0.5 text-[10px] text-white">
-            مناقصه
+            {t('مناقصه')}
             {project.bidCount > 0 && <> · <span className="num">{project.bidCount}</span></>}
           </span>
         )}
@@ -127,13 +127,13 @@ export function ProjectCard({
         ) : project.children.length > 0 ? (
           <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
             <ChevronDown className="size-3" />
-            زیرپروژه‌ها:
+            {t('زیرپروژه‌ها:')}
             {project.children.map((c, i) => (
               <span key={c.id}>
                 <Link href={`/projects/${c.id}`} className="text-foreground hover:underline">
                   {c.title}
                 </Link>
-                {i < project.children.length - 1 && '، '}
+                {i < project.children.length - 1 && t('، ')}
               </span>
             ))}
           </div>
@@ -159,7 +159,7 @@ export function ProjectCard({
           <div className="grid gap-1">
             <div className="flex items-center justify-between text-[11px]">
               <span className="text-muted-foreground">{t("ددلاین")}</span>
-              <span className={urgency.text}>{deadlineLabel(bar.daysLeft)}</span>
+              <span className={urgency.text}>{deadlineLabel(bar.daysLeft, t)}</span>
               <span className="num text-muted-foreground">{project.deadline}</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-muted">

@@ -23,7 +23,8 @@ const selectClass =
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
-  return <Button type="submit" disabled={pending}>{pending ? 'در حالِ ثبت…' : label}</Button>;
+  const tr = useT();
+  return <Button type="submit" disabled={pending}>{pending ? tr('در حالِ ثبت…') : label}</Button>;
 }
 
 /**
@@ -128,6 +129,7 @@ export function EntryForm({
     if (next !== null) setAmount(String(next));
   };
   const onAmountChange = (value: string) => {
+  const tr = useT();
     setAmount(value);
     const next = rateFromAmounts(Number(value), Number(settled));
     if (next !== null) setRate(String(next));
@@ -254,7 +256,8 @@ export function EntryForm({
             placeholder={tr("افزودنِ دسته…")}
           />
           <p className="text-xs text-muted-foreground">
-            فقط دسته‌های متناسب با «{direction === 'out' ? 'برداشت' : 'واریز'}» پیشنهاد می‌شوند.
+            {tr('فقط دسته‌های متناسب با «{kind}» پیشنهاد می‌شوند.',
+              { kind: direction === 'out' ? tr('برداشت') : tr('واریز') })}
           </p>
         </div>
       </div>
@@ -348,14 +351,14 @@ export function EntryForm({
                 <a href={r.href} target="_blank" rel="noopener noreferrer" className="flex-1 truncate hover:underline">
                   {r.originalName || `#${r.id}`}
                 </a>
-                <span className="num shrink-0 text-xs text-muted-foreground">{humanSize(r.size)}</span>
+                <span className="num shrink-0 text-xs text-muted-foreground">{humanSize(r.size, tr)}</span>
               </li>
             ))}
           </ul>
         )}
         <Input id="l-receipt" name="receipt" type="file" accept="image/*,application/pdf" multiple />
         <p className="text-xs text-muted-foreground">
-          تصویر یا PDF — تا {humanSize(MAX_SIZE.receipt)} برای هر رسید.
+          {tr('تصویر یا PDF — تا {size} برای هر رسید.', { size: humanSize(MAX_SIZE.receipt, tr) })}
         </p>
       </div>
 
@@ -373,12 +376,12 @@ export function EntryForm({
       )}
 
       {error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{tr(error)}</p>
       )}
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>{tr("انصراف")}</Button>
-        <SubmitButton label={editing ? 'به‌روزرسانی ردیف' : 'ثبت ردیف'} />
+        <SubmitButton label={editing ? tr('به‌روزرسانی ردیف') : tr('ثبت ردیف')} />
       </DialogFooter>
     </>
   );

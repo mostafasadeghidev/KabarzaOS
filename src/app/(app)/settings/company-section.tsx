@@ -119,5 +119,6 @@ function Notice({ state }: { state: ProfileState }) {
 
 function Submit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? 'در حالِ ذخیره…' : children}</Button>;
+  const tr = useT();
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? tr('در حالِ ذخیره…') : children}</Button>;
 }

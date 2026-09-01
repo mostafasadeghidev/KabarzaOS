@@ -5,6 +5,7 @@ import {
   ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig,
 } from '@/components/ui/chart';
 import type { MemberHours, StatusSlice, WeeklyPoint } from '@/server/dashboard';
+import { useT } from '@/i18n/client';
 
 /**
  * نمودارهای داشبورد — سه نمودارِ نسخهٔ قبلی با کامپوننتِ رسمیِ shadcn/recharts.
@@ -24,16 +25,24 @@ import type { MemberHours, StatusSlice, WeeklyPoint } from '@/server/dashboard';
 const TICK = { fill: 'var(--color-muted-foreground)', fontSize: 11 };
 const GRID = 'var(--color-border)';
 
-const hoursConfig = {
-  hours: { label: 'ساعت', color: 'var(--color-primary)' },
-} satisfies ChartConfig;
+/**
+ * ⚠️ برچسب داخلِ کامپوننت ساخته می‌شود، نه در سطحِ ماژول: ثابتِ ماژولی یک بار
+ * و پیش از معلوم‌شدنِ زبانِ کاربر ارزیابی می‌شود، پس در راهنمای نمودار برای
+ * همه فارسی می‌ماند.
+ */
+function useHoursConfig(): ChartConfig {
+  const t = useT();
+  return { hours: { label: t('ساعت'), color: 'var(--color-primary)' } };
+}
 
-const countConfig = {
-  count: { label: 'پروژه', color: 'var(--color-primary)' },
-} satisfies ChartConfig;
+function useCountConfig(): ChartConfig {
+  const t = useT();
+  return { count: { label: t('پروژه'), color: 'var(--color-primary)' } };
+}
 
 /** روندِ هفتگیِ ساعتِ تیم — شش پنجرهٔ ۷روزه. */
 export function WeeklyTrendChart({ data }: { data: WeeklyPoint[] }) {
+  const hoursConfig = useHoursConfig();
   return (
     <ChartContainer config={hoursConfig} className="aspect-auto h-56 w-full">
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
@@ -61,6 +70,7 @@ export function WeeklyTrendChart({ data }: { data: WeeklyPoint[] }) {
 
 /** ساعتِ کاریِ اعضا در ۳۰ روزِ گذشته — میلهٔ افقی. */
 export function MemberHoursChart({ data }: { data: MemberHours[] }) {
+  const hoursConfig = useHoursConfig();
   return (
     <ChartContainer config={hoursConfig} className="aspect-auto h-56 w-full">
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
@@ -84,6 +94,7 @@ export function MemberHoursChart({ data }: { data: MemberHours[] }) {
 
 /** توزیعِ وضعیتِ پروژه‌ها. */
 export function StatusChart({ data }: { data: StatusSlice[] }) {
+  const countConfig = useCountConfig();
   return (
     <ChartContainer config={countConfig} className="aspect-auto h-56 w-full">
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>

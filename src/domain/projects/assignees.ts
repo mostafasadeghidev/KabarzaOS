@@ -5,6 +5,11 @@
  * مالِ کارفرما هم باشد، چون تخصیصِ شخصی است نه نقشی).
  */
 
+import { createTranslator, type Translator } from '@/i18n/translate';
+
+/** بدونِ مترجم همان فارسیِ مبدأ برمی‌گردد — کلید خودِ متنِ فارسی است. */
+const SOURCE: Translator = createTranslator({});
+
 export interface AssigneeCandidate {
   userId: number;
   name: string;
@@ -32,6 +37,7 @@ export function assigneeOptions(
   members: AssigneeCandidate[],
   clients: AssigneeCandidate[],
   options: { inactiveUserIds?: ReadonlySet<number>; currentAssignee?: number | null } = {},
+  t: Translator = SOURCE,
 ): AssigneeOption[] {
   const inactive = options.inactiveUserIds ?? new Set<number>();
   const current = options.currentAssignee ?? null;
@@ -50,7 +56,7 @@ export function assigneeOptions(
     if (seen.has(c.userId)) continue; // قبلاً به‌عنوانِ عضو آمده است.
     if (inactive.has(c.userId) && c.userId !== current) continue;
     seen.add(c.userId);
-    out.push({ userId: c.userId, label: `${c.name} · کارفرما` });
+    out.push({ userId: c.userId, label: t('{name} · کارفرما', { name: c.name }) });
   }
 
   return out;

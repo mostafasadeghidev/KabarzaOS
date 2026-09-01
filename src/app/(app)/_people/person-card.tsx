@@ -148,7 +148,7 @@ export function PersonCard({
                 <MoreVertical className="size-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => onEdit(person)}>{section.editLabel}</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onEdit(person)}>{tr(section.editLabel)}</DropdownMenuItem>
                 {isOwner && person.isStaff && (
                   <DropdownMenuItem onSelect={() => onAccess(person)}>
                     <KeyRound className="size-3.5" />
@@ -211,9 +211,9 @@ export function PersonCard({
           {section.supportsOffices && person.offices.length > 0 && (
             <div className="flex items-center gap-1.5">
               <Building2 className="size-3" />
-              <dt>{person.offices.length > 1 ? 'دفاتر' : 'دفتر'}</dt>
+              <dt>{person.offices.length > 1 ? tr('دفاتر') : tr('دفتر')}</dt>
               <dd>
-                {person.offices.map((o) => o.name + (o.manages ? ' ★' : '')).join('، ')}
+                {person.offices.map((o) => o.name + (o.manages ? ' ★' : '')).join(tr('، '))}
               </dd>
             </div>
           )}

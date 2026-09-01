@@ -91,14 +91,14 @@ export function TaskDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {task?.isPrivate && <Lock className="size-4 text-muted-foreground" />}
-            {task?.title ?? 'تسک'}
+            {task?.title ?? tr('تسک')}
           </DialogTitle>
           <DialogDescription>
-            {task ? 'جزئیات، ویرایش و گفتگوی این تسک.' : 'در حالِ بارگذاری…'}
+            {task ? tr('جزئیات، ویرایش و گفتگوی این تسک.') : tr('در حالِ بارگذاری…')}
           </DialogDescription>
         </DialogHeader>
 
-        {loadError && <p className="text-sm text-destructive">{loadError}</p>}
+        {loadError && <p className="text-sm text-destructive">{tr(loadError)}</p>}
 
         {task && (
           <div className="grid gap-4">
@@ -238,7 +238,7 @@ export function TaskDialog({
 
                 {saveState.error && <p className="text-xs text-destructive">{tr(saveState.error)}</p>}
                 <div className="flex justify-end">
-                  <SubmitButton label={t("ذخیرهٔ تغییرات")} busy="در حالِ ذخیره…" />
+                  <SubmitButton label={t("ذخیرهٔ تغییرات")} busy={t('در حالِ ذخیره…')} />
                 </div>
               </form>
             )}
@@ -265,7 +265,7 @@ export function TaskDialog({
                 <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} required />
                 {noteState.error && <p className="text-xs text-destructive">{tr(noteState.error)}</p>}
                 <div className="flex justify-end">
-                  <SubmitButton label={t("ارسال")} busy="در حال ارسال…" />
+                  <SubmitButton label={t("ارسال")} busy={t('در حال ارسال…')} />
                 </div>
               </form>
             </section>

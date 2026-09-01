@@ -5,6 +5,11 @@
  * «سرِ موقع» با هم.
  */
 
+import { createTranslator, type Translator } from '@/i18n/translate';
+
+/** بدونِ مترجم همان فارسیِ مبدأ برمی‌گردد — کلید خودِ متنِ فارسی است. */
+const SOURCE: Translator = createTranslator({});
+
 /** گزینه‌های پیش‌آگاهی برحسبِ دقیقه — دقیقاً همان چهار گزینهٔ نسخهٔ قبلی. */
 export const LEAD_OPTIONS: ReadonlyArray<{ minutes: number; label: string }> = [
   { minutes: 0, label: 'سرِ موقع' },
@@ -15,8 +20,9 @@ export const LEAD_OPTIONS: ReadonlyArray<{ minutes: number; label: string }> = [
 
 const VALID_LEADS = new Set(LEAD_OPTIONS.map((o) => o.minutes));
 
-export function leadLabel(minutes: number): string {
-  return LEAD_OPTIONS.find((o) => o.minutes === minutes)?.label ?? `${minutes} دقیقه قبل`;
+export function leadLabel(minutes: number, t: Translator = SOURCE): string {
+  const found = LEAD_OPTIONS.find((o) => o.minutes === minutes);
+  return found ? t(found.label) : t('{n} دقیقه قبل', { n: minutes });
 }
 
 /**

@@ -75,7 +75,7 @@ export function NotificationBell({
 
       <DropdownMenuContent align="end" className="max-h-96 w-80 overflow-y-auto">
         <DropdownMenuLabel className="flex items-center justify-between">
-          اعلان‌ها
+          {t('اعلان‌ها')}
           {unread > 0 && (
             <button
               type="button"

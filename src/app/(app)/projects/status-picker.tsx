@@ -58,6 +58,7 @@ export function StatusPicker({
   }
 
   const pick = (statusTagId: number | null) => {
+  const tr = useT();
     setError(null);
     startTransition(async () => {
       const result = await setStatusAction(projectId, statusTagId);
@@ -93,7 +94,7 @@ export function StatusPicker({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {error && <span className="text-[11px] text-destructive">{error}</span>}
+      {error && <span className="text-[11px] text-destructive">{t(error)}</span>}
     </div>
   );
 }

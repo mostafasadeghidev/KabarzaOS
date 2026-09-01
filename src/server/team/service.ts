@@ -117,7 +117,7 @@ export async function teamProjects(actor: Actor) {
       title: projects.title,
       deadline: projects.deadline,
       isArchived: projects.isArchived,
-      statusName: tags.name,
+      statusName: tagName(await currentLocale()),
       statusGroup: tags.statusGroup,
     })
     .from(projects)
@@ -168,7 +168,7 @@ export async function teamTasks(actor: Actor, filter: TeamTaskFilter = {}) {
       projectTitle: projects.title,
       dueDate: tasks.dueDate,
       assigneeName: assignee.name,
-      statusName: tags.name,
+      statusName: tagName(await currentLocale()),
       statusGroup: tags.statusGroup,
       isReview: tags.isReview,
     })

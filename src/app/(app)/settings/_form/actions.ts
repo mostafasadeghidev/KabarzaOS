@@ -15,6 +15,7 @@ import { CatalogError, catalogMessage } from '@/domain/settings/catalogs';
 import { saveSystemConfig } from '@/server/settings/system-service';
 import { closePeriod, reopenPeriod } from '@/server/finance/service';
 import { saveTelegramSettings, telegramCredentials, telegramEnabled } from '@/server/settings/telegram-service';
+import { getT } from '@/i18n/server';
 
 /** اقدام‌های تنظیمات. گاردها در سرویس‌اند (R-ARCH-01). */
 
@@ -292,7 +293,7 @@ export async function closePeriodAction(
     const n = await closePeriod(actor, String(formData.get('lockDate') ?? ''));
     revalidatePath('/settings');
     revalidatePath('/reports');
-    return { message: `دوره بسته شد؛ خلاصهٔ ${n} حساب ذخیره و دوره قفل شد.` };
+    return { message: (await getT())('دوره بسته شد؛ خلاصهٔ {n} حساب ذخیره و دوره قفل شد.', { n }) };
   } catch (error) {
     if (error instanceof ForbiddenError) {
       if (error.message === 'fiscal.bad_date') return { error: 'تاریخ معتبر نیست.' };
@@ -336,7 +337,7 @@ export async function testTelegramAction(): Promise<SystemState> {
     const data = await res.json() as { ok?: boolean; result?: { username?: string } };
 
     if (!data.ok) return { error: 'توکن پذیرفته نشد؛ تلگرام آن را نشناخت.' };
-    return { message: `بات متصل است: @${data.result?.username ?? '—'}` };
+    return { message: (await getT())('بات متصل است: @{name}', { name: data.result?.username ?? '—' }) };
   } catch {
     // ⚠️ شکستِ شبکه با توکنِ غلط فرق دارد و کاربر باید بداند کدام است.
     return { error: 'ارتباط با تلگرام برقرار نشد.' };

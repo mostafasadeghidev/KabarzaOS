@@ -60,7 +60,8 @@ function Notice({ state }: { state: ProfileState }) {
 
 function Submit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? 'در حالِ ذخیره…' : children}</Button>;
+  const tr = useT();
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? tr('در حالِ ذخیره…') : children}</Button>;
 }
 
 /** پروفایلِ من — حساب بانکی، ترجیحات، تلگرام، و (برای مالک) مشخصاتِ شرکت. */
@@ -93,7 +94,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
             }`}
           >
             <t.icon className="size-3.5" />
-            {t.label}
+            {tr(t.label)}
           </button>
         ))}
       </nav>
@@ -212,7 +213,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
                       defaultChecked={data.notify.muted.includes(c.key)}
                       className="size-3.5 accent-primary"
                     />
-                    {c.label}
+                    {tr(c.label)}
                   </label>
                 ))}
               </div>
@@ -231,8 +232,8 @@ export function ProfileView({ data }: { data: ProfileData }) {
             {/* ⚠️ خاموش‌کردنِ دسته فقط ایمیل را ساکت می‌کند (R-NOTIF-04). */}
             <p className="text-xs text-muted-foreground">
               {data.telegram === 'connected'
-                ? 'تلگرام همهٔ رویدادها را می‌گیرد؛ دسته‌بندیِ بالا فقط ایمیل را ساکت می‌کند.'
-                : 'برای این گزینه، ابتدا از تبِ «تلگرام» حساب را وصل کنید.'}
+                ? tr('تلگرام همهٔ رویدادها را می‌گیرد؛ دسته‌بندیِ بالا فقط ایمیل را ساکت می‌کند.')
+                : tr('برای این گزینه، ابتدا از تبِ «تلگرام» حساب را وصل کنید.')}
             </p>
           </fieldset>
 

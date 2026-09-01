@@ -540,7 +540,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
             { header: 'عنوان', cell: (q) => q.title },
             {
               header: 'نقش',
-              cell: (q) => data.tags.find((t) => t.id === q.roleTagId)?.name ?? 'کارفرما',
+              cell: (q) => data.tags.find((t) => t.id === q.roleTagId)?.name ?? tr('کارفرما'),
             },
             {
               header: 'نوع',

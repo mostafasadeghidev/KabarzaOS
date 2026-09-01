@@ -70,7 +70,7 @@ export function AccessDialog({
           <DialogTitle>{tr("دسترسی‌های همکار ادمین")}</DialogTitle>
           <DialogDescription>
             {tr('{name} — برای هر بخش تعیین کنید دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند.', { name: person?.name ?? '' })}
-            کارهای حساس (تنظیمات، حذف، بستنِ مالی) همیشه فقط برای مدیرِ کل است.
+            {' '}{tr('کارهای حساس (تنظیمات، حذف، بستنِ مالی) همیشه فقط برای مدیرِ کل است.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -141,7 +141,7 @@ export function AccessDialog({
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{tr("انصراف")}</Button>
           <Button type="button" onClick={save} disabled={pending || loading}>
-            {pending ? 'در حالِ ذخیره…' : 'ذخیره دسترسی‌ها'}
+            {pending ? tr('در حالِ ذخیره…') : tr('ذخیره دسترسی‌ها')}
           </Button>
         </DialogFooter>
       </DialogContent>

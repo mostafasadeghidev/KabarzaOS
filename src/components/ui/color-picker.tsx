@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { useT } from '@/i18n/client';
 
 /**
  * انتخابگرِ رنگِ تگ — سواچ‌های آماده به‌علاوهٔ رنگِ دلخواه.
@@ -31,6 +32,7 @@ export function ColorPicker({
   defaultValue?: string;
   id?: string;
 }) {
+  const t = useT();
   const [color, setColor] = useState(defaultValue || '#6c5ce7');
 
   return (
@@ -63,13 +65,13 @@ export function ColorPicker({
           type="color"
           value={color}
           onChange={(event) => setColor(event.target.value)}
-          aria-label="رنگِ دلخواه"
+          aria-label={t('رنگِ دلخواه')}
           className="size-8 cursor-pointer rounded-md border border-input bg-transparent p-0.5"
         />
         <Input
           value={color}
           onChange={(event) => setColor(event.target.value)}
-          aria-label="کدِ رنگ"
+          aria-label={t('کدِ رنگ')}
           className="h-8 w-28 font-mono text-xs"
           dir="ltr"
         />

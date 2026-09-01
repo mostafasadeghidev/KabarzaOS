@@ -1,5 +1,5 @@
 import { tagName } from '@/db/tag-name';
-import { currentLocale } from '@/i18n/server';
+import { currentLocale, getT } from '@/i18n/server';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
@@ -872,6 +872,7 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
       members.map((m) => ({ userId: m.userId, name: m.userName, roleName: m.roleName })),
       [...clientIds].map((id) => ({ userId: id, name: clientNames.get(id) ?? String(id), isClient: true })),
       { inactiveUserIds: inactive, currentAssignee },
+      await getT(),
     ),
     statuses,
     priorities,

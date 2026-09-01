@@ -21,10 +21,11 @@ function Notice({ state }: { state: FiscalState }) {
 
 function Submit() {
   const { pending } = useFormStatus();
+  const tr = useT();
   return (
     <Button type="submit" size="sm" disabled={pending}>
       <Lock className="size-3.5" />
-      {pending ? 'در حالِ بستن…' : 'بستنِ دوره'}
+      {pending ? tr('در حالِ بستن…') : tr('بستنِ دوره')}
     </Button>
   );
 }

@@ -187,8 +187,8 @@ export default async function DashboardPage() {
             {today.available.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {today.away.length > 0
-                  ? 'کسی خارج از مرخصی برنامه ندارد.'
-                  : 'هنوز کسی برنامهٔ هفتگی نداده.'}
+                  ? t('کسی خارج از مرخصی برنامه ندارد.')
+                  : t('هنوز کسی برنامهٔ هفتگی نداده.')}
               </p>
             ) : (
               <ul className="space-y-1.5 text-sm">

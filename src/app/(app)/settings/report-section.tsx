@@ -24,7 +24,8 @@ function Notice({ state }: { state: ReportState }) {
 
 function Submit() {
   const { pending } = useFormStatus();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? 'در حالِ ذخیره…' : 'ذخیره'}</Button>;
+  const tr = useT();
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? tr('در حالِ ذخیره…') : tr('ذخیره')}</Button>;
 }
 
 /**

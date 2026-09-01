@@ -63,6 +63,7 @@ const GROUP_ORDER = ['todo', 'in_progress', 'complete', 'other'];
  * و اگر کسی ساین نکرده باشد صریحاً می‌گوید.
  */
 function Assignee({ task }: { task: TaskItem }) {
+  const t = useT();
   if (task.assignedTo && task.assigneeName) {
     return (
       <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -79,7 +80,7 @@ function Assignee({ task }: { task: TaskItem }) {
           {r.roleName ?? '—'}
           {r.claimedBy
             ? ` (${r.claimedByName ?? `#${r.claimedBy}`})`
-            : ' — هنوز ساین نشده'}
+            : ` — ${t('هنوز ساین نشده')}`}
         </span>
       ))}
     </div>
@@ -114,6 +115,7 @@ function TaskStatusPicker({
   }
 
   const pick = (statusTagId: number | null) => {
+  const tr = useT();
     setError(null);
     startTransition(async () => {
       const result = await setTaskStatusAction(task.id, statusTagId);
@@ -147,7 +149,7 @@ function TaskStatusPicker({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      {error && <span className="text-[11px] text-destructive">{error}</span>}
+      {error && <span className="text-[11px] text-destructive">{tr(error)}</span>}
     </div>
   );
 }
@@ -167,6 +169,7 @@ function ClaimButton({
   holders: Map<number, number[]>;
   userId: number;
 }) {
+  const tr = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -194,9 +197,9 @@ function ClaimButton({
         })}
       >
         <Hand className="size-3.5" />
-        {pending ? 'صبر کنید…' : 'برمی‌دارم'}
+        {pending ? tr('صبر کنید…') : tr('برمی‌دارم')}
       </Button>
-      {error && <span className="text-xs text-destructive">{error}</span>}
+      {error && <span className="text-xs text-destructive">{tr(error)}</span>}
     </span>
   );
 }

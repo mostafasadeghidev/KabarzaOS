@@ -147,7 +147,7 @@ export function PeopleGrid({
       {visible.length === 0 ? (
         <EmptyState
           title={!section.supportsOffboarding || tab === 'active' ? t('کسی پیدا نشد') : t('موردِ سابقی نیست')}
-          description={query || officeIds.length > 0 ? 'فیلترها را بردارید.' : undefined}
+          description={query || officeIds.length > 0 ? t('فیلترها را بردارید.') : undefined}
         />
       ) : (
         <div className="grid gap-3 @3xl/main:grid-cols-3 @xl/main:grid-cols-2">

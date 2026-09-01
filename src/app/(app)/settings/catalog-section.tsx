@@ -95,7 +95,7 @@ export function CatalogSection<T extends { id: number }>({
       </div>
 
       {notice && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{notice}</p>
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{t(notice)}</p>
       )}
 
       <Dialog open={open} onOpenChange={(next) => { setOpen(next); if (!next) setNotice(null); }}>
@@ -177,5 +177,6 @@ export function CatalogSection<T extends { id: number }>({
 
 function SaveButton() {
   const { pending } = useFormStatus();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? 'در حالِ ذخیره…' : 'ذخیره'}</Button>;
+  const tr = useT();
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? tr('در حالِ ذخیره…') : tr('ذخیره')}</Button>;
 }

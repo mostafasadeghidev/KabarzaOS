@@ -73,7 +73,8 @@ const field = 'h-9 w-full rounded-md border border-input bg-transparent px-3 tex
 
 function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
-  return <Button type="submit" disabled={pending}>{pending ? 'در حالِ ثبت…' : label}</Button>;
+  const tr = useT();
+  return <Button type="submit" disabled={pending}>{pending ? tr('در حالِ ثبت…') : label}</Button>;
 }
 
 /**
@@ -126,6 +127,7 @@ export function PayoutsView({
 
   const act = (fn: () => Promise<PayoutState>) =>
     startTransition(async () => {
+  const tr = useT();
       const result = await fn();
       setNotice(result.error ?? null);
     });
@@ -162,7 +164,7 @@ export function PayoutsView({
   return (
     <div className="grid gap-6">
       {notice && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{notice}</p>
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{tr(notice)}</p>
       )}
 
       {/* ---- درخواست‌های پرداخت ---- */}
@@ -323,7 +325,7 @@ export function PayoutsView({
                                 size="sm"
                                 variant="outline"
                                 disabled={pending || r.accountId === null}
-                                title={r.accountId === null ? 'ابتدا حسابِ پرداخت را انتخاب کنید' : undefined}
+                                title={r.accountId === null ? tr('ابتدا حسابِ پرداخت را انتخاب کنید') : undefined}
                                 onClick={() => act(() => payRecurringAction(r.id, r.nextDueDate))}
                               >
                                 <Banknote className="size-3.5" />
@@ -409,7 +411,7 @@ export function PayoutsView({
       <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editing ? 'ویرایش هزینه' : 'افزودن هزینه'}</DialogTitle>
+            <DialogTitle>{editing ? tr('ویرایش هزینه') : tr('افزودن هزینه')}</DialogTitle>
             <DialogDescription>
               {tr("هزینهٔ «یک‌بار» پس از پرداخت بسته می‌شود؛ «دوره‌ای» سررسیدش جلو می‌رود.")}
             </DialogDescription>

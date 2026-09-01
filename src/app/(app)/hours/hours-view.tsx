@@ -54,9 +54,10 @@ function Notice({ state }: { state: HoursState }) {
 
 function Submit({ children, variant }: { children: React.ReactNode; variant?: 'outline' | 'default' }) {
   const { pending } = useFormStatus();
+  const tr = useT();
   return (
     <Button type="submit" size="sm" variant={variant} disabled={pending}>
-      {pending ? 'صبر کنید…' : children}
+      {pending ? tr('صبر کنید…') : children}
     </Button>
   );
 }
@@ -135,10 +136,12 @@ export function HoursView({ data }: { data: HoursData }) {
           </CardHeader>
           <CardContent className="grid gap-3">
             <p className="text-sm text-muted-foreground">
-              {hoursLabel(data.pending.minutes)} روی{' '}
-              <span className="font-medium">{data.pending.projectTitle ?? 'کارِ عمومی'}</span> شمرده شد
-              ({data.pending.logDate}).
-              {' '}چون بیش از ۵ ساعت است خودکار ثبت نشده — شاید یادتان رفته متوقفش کنید.
+              {t('{hours} روی «{project}» شمرده شد ({date}).', {
+                hours: hoursLabel(data.pending.minutes),
+                project: data.pending.projectTitle ?? t('کارِ عمومی'),
+                date: data.pending.logDate,
+              })}
+              {' '}{t('چون بیش از ۵ ساعت است خودکار ثبت نشده — شاید یادتان رفته متوقفش کنید.')}
             </p>
 
             <form action={confirm} className="flex flex-wrap items-end gap-2">
@@ -186,7 +189,7 @@ export function HoursView({ data }: { data: HoursData }) {
               <form action={stop} className="grid gap-3">
                 <div className="flex items-center gap-3">
                   <LiveMinutes from={data.running.minutes} />
-                  <Badge variant="secondary">{data.running.projectTitle ?? 'کارِ عمومی'}</Badge>
+                  <Badge variant="secondary">{data.running.projectTitle ?? t('کارِ عمومی')}</Badge>
                 </div>
                 <div className="flex flex-wrap items-end gap-2">
                   <div className="grid flex-1 gap-1.5">
