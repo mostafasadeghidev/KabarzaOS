@@ -199,3 +199,115 @@
     unicode-bidi: isolate;
   }
 }
+
+/* ==========================================================================
+ * پالت‌ها — محورِ **دوم** کنارِ روشن/تیره.
+ *
+ * ⚠️ فقط دو چیز عوض می‌شود: زاویهٔ رنگِ خنثی‌ها و رنگِ اصلی. اشباعِ خنثی‌ها
+ * زیرِ ۰٫۰۲ می‌ماند، وگرنه «تمِ گرم» می‌شود «تمِ بژ». پالت با روشن/تیره
+ * ضرب می‌شود، نه اینکه جایش را بگیرد.
+ *
+ * ⚠️ هر پالت باید **هر دو** بلوک را داشته باشد: خنثی‌ها در حالتِ تیره
+ * روشناییِ دیگری می‌خواهند و کپیِ حالتِ روشن، پنلِ تیره را بی‌کنتراست
+ * می‌کند.
+ * ========================================================================== */
+
+/* ── سنگ (پیش‌فرض): خنثیِ گرم، آبیِ آرام ─────────────────────────────── */
+[data-palette='stone'] { --color-primary: oklch(0.55 0.18 264); --color-ring: oklch(0.55 0.18 264); --color-sidebar-primary: oklch(0.55 0.18 264); }
+.dark[data-palette='stone'] { --color-primary: oklch(0.62 0.17 264); --color-ring: oklch(0.62 0.17 264); --color-sidebar-primary: oklch(0.62 0.17 264); }
+
+/* ── دریا: خنثیِ سرد، فیروزه‌ای ───────────────────────────────────────── */
+[data-palette='ocean'] {
+  --color-foreground: oklch(0.21 0.011 240); --color-muted: oklch(0.968 0.006 240);
+  --color-muted-foreground: oklch(0.55 0.016 240); --color-border: oklch(0.922 0.007 240);
+  --color-background: oklch(0.985 0.005 240); --color-sidebar: oklch(0.965 0.008 240);
+  --color-sidebar-accent: oklch(0.93 0.012 240); --color-accent: oklch(0.95 0.01 240);
+  --color-primary: oklch(0.55 0.13 220); --color-ring: oklch(0.55 0.13 220);
+  --color-sidebar-primary: oklch(0.55 0.13 220);
+}
+.dark[data-palette='ocean'] {
+  --color-background: oklch(0.145 0.012 240); --color-foreground: oklch(0.97 0.005 240);
+  --color-muted: oklch(0.24 0.013 240); --color-muted-foreground: oklch(0.68 0.016 240);
+  --color-border: oklch(0.29 0.013 240); --color-card: oklch(0.205 0.014 240);
+  --color-popover: oklch(0.215 0.014 240); --color-sidebar: oklch(0.185 0.013 240);
+  --color-sidebar-accent: oklch(0.27 0.016 240); --color-accent: oklch(0.27 0.016 240);
+  --color-primary: oklch(0.68 0.12 220); --color-ring: oklch(0.68 0.12 220);
+  --color-sidebar-primary: oklch(0.68 0.12 220);
+}
+
+/* ── جنگل: خنثیِ سبزفام، سبزِ خاموش ──────────────────────────────────── */
+[data-palette='forest'] {
+  --color-foreground: oklch(0.21 0.011 150); --color-muted: oklch(0.968 0.006 150);
+  --color-muted-foreground: oklch(0.55 0.016 150); --color-border: oklch(0.922 0.007 150);
+  --color-background: oklch(0.985 0.005 150); --color-sidebar: oklch(0.965 0.008 150);
+  --color-sidebar-accent: oklch(0.93 0.012 150); --color-accent: oklch(0.95 0.01 150);
+  --color-primary: oklch(0.52 0.12 155); --color-ring: oklch(0.52 0.12 155);
+  --color-sidebar-primary: oklch(0.52 0.12 155);
+}
+.dark[data-palette='forest'] {
+  --color-background: oklch(0.145 0.012 150); --color-foreground: oklch(0.97 0.005 150);
+  --color-muted: oklch(0.24 0.013 150); --color-muted-foreground: oklch(0.68 0.016 150);
+  --color-border: oklch(0.29 0.013 150); --color-card: oklch(0.205 0.014 150);
+  --color-popover: oklch(0.215 0.014 150); --color-sidebar: oklch(0.185 0.013 150);
+  --color-sidebar-accent: oklch(0.27 0.016 150); --color-accent: oklch(0.27 0.016 150);
+  --color-primary: oklch(0.66 0.13 155); --color-ring: oklch(0.66 0.13 155);
+  --color-sidebar-primary: oklch(0.66 0.13 155);
+}
+
+/* ── غروب: خنثیِ گرم‌تر، نارنجیِ سوخته ────────────────────────────────── */
+[data-palette='sunset'] {
+  --color-foreground: oklch(0.21 0.013 40); --color-muted: oklch(0.968 0.008 40);
+  --color-muted-foreground: oklch(0.55 0.018 40); --color-border: oklch(0.922 0.009 40);
+  --color-background: oklch(0.985 0.007 40); --color-sidebar: oklch(0.963 0.011 40);
+  --color-sidebar-accent: oklch(0.93 0.015 40); --color-accent: oklch(0.95 0.012 40);
+  --color-primary: oklch(0.58 0.16 40); --color-ring: oklch(0.58 0.16 40);
+  --color-sidebar-primary: oklch(0.58 0.16 40);
+}
+.dark[data-palette='sunset'] {
+  --color-background: oklch(0.15 0.013 40); --color-foreground: oklch(0.97 0.006 40);
+  --color-muted: oklch(0.245 0.014 40); --color-muted-foreground: oklch(0.68 0.018 40);
+  --color-border: oklch(0.295 0.014 40); --color-card: oklch(0.21 0.015 40);
+  --color-popover: oklch(0.22 0.015 40); --color-sidebar: oklch(0.19 0.014 40);
+  --color-sidebar-accent: oklch(0.275 0.018 40); --color-accent: oklch(0.275 0.018 40);
+  --color-primary: oklch(0.7 0.15 45); --color-ring: oklch(0.7 0.15 45);
+  --color-sidebar-primary: oklch(0.7 0.15 45);
+}
+
+/* ── ارغوان: خنثیِ بنفش‌فام، بنفش ────────────────────────────────────── */
+[data-palette='violet'] {
+  --color-foreground: oklch(0.21 0.012 300); --color-muted: oklch(0.968 0.007 300);
+  --color-muted-foreground: oklch(0.55 0.017 300); --color-border: oklch(0.922 0.008 300);
+  --color-background: oklch(0.985 0.006 300); --color-sidebar: oklch(0.964 0.01 300);
+  --color-sidebar-accent: oklch(0.93 0.014 300); --color-accent: oklch(0.95 0.011 300);
+  --color-primary: oklch(0.55 0.19 300); --color-ring: oklch(0.55 0.19 300);
+  --color-sidebar-primary: oklch(0.55 0.19 300);
+}
+.dark[data-palette='violet'] {
+  --color-background: oklch(0.145 0.013 300); --color-foreground: oklch(0.97 0.006 300);
+  --color-muted: oklch(0.24 0.014 300); --color-muted-foreground: oklch(0.68 0.017 300);
+  --color-border: oklch(0.29 0.014 300); --color-card: oklch(0.205 0.015 300);
+  --color-popover: oklch(0.215 0.015 300); --color-sidebar: oklch(0.185 0.014 300);
+  --color-sidebar-accent: oklch(0.27 0.018 300); --color-accent: oklch(0.27 0.018 300);
+  --color-primary: oklch(0.68 0.17 300); --color-ring: oklch(0.68 0.17 300);
+  --color-sidebar-primary: oklch(0.68 0.17 300);
+}
+
+/* ── خاکستری: بی‌طرفِ کامل، بدونِ هیچ زاویهٔ رنگی ────────────────────── */
+[data-palette='slate'] {
+  --color-foreground: oklch(0.21 0 0); --color-muted: oklch(0.968 0 0);
+  --color-muted-foreground: oklch(0.55 0 0); --color-border: oklch(0.922 0 0);
+  --color-background: oklch(0.985 0 0); --color-sidebar: oklch(0.965 0 0);
+  --color-sidebar-accent: oklch(0.93 0 0); --color-accent: oklch(0.95 0 0);
+  --color-primary: oklch(0.35 0 0); --color-ring: oklch(0.35 0 0);
+  --color-sidebar-primary: oklch(0.35 0 0);
+}
+.dark[data-palette='slate'] {
+  --color-background: oklch(0.145 0 0); --color-foreground: oklch(0.97 0 0);
+  --color-muted: oklch(0.24 0 0); --color-muted-foreground: oklch(0.68 0 0);
+  --color-border: oklch(0.29 0 0); --color-card: oklch(0.205 0 0);
+  --color-popover: oklch(0.215 0 0); --color-sidebar: oklch(0.185 0 0);
+  --color-sidebar-accent: oklch(0.27 0 0); --color-accent: oklch(0.27 0 0);
+  --color-primary: oklch(0.87 0 0); --color-primary-foreground: oklch(0.16 0 0);
+  --color-ring: oklch(0.87 0 0); --color-sidebar-primary: oklch(0.87 0 0);
+  --color-sidebar-primary-foreground: oklch(0.16 0 0);
+}

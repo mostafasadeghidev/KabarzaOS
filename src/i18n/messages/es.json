@@ -2124,5 +2124,12 @@
   "تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.": "Tareas, archivos y QA son opcionales y se aplican justo después de crear.",
   "دسترسیِ ویژه": "Acceso especial",
   "دیدنِ پروژه‌های خصوصی": "Puede ver los proyectos privados",
-  "جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.": "Es independiente de su rol, así que retirarlo no es una degradación."
+  "جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.": "Es independiente de su rol, así que retirarlo no es una degradación.",
+  "پالت": "Paleta",
+  "سنگ": "Piedra",
+  "دریا": "Océano",
+  "جنگل": "Bosque",
+  "غروب": "Atardecer",
+  "ارغوان": "Violeta",
+  "خاکستری": "Gris"
 }

@@ -2124,5 +2124,12 @@
   "تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.": "Aufgaben, Dateien und QA sind optional und werden direkt nach dem Anlegen übernommen.",
   "دسترسیِ ویژه": "Sonderzugriff",
   "دیدنِ پروژه‌های خصوصی": "Darf private Projekte sehen",
-  "جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.": "Unabhängig von der Rolle — ein Entzug ist also keine Herabstufung."
+  "جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.": "Unabhängig von der Rolle — ein Entzug ist also keine Herabstufung.",
+  "پالت": "Palette",
+  "سنگ": "Stein",
+  "دریا": "Ozean",
+  "جنگل": "Wald",
+  "غروب": "Sonnenuntergang",
+  "ارغوان": "Violett",
+  "خاکستری": "Grau"
 }

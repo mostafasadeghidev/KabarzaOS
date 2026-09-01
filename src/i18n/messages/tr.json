@@ -2124,5 +2124,12 @@
   "تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.": "Görevler, dosyalar ve QA isteğe bağlıdır ve oluşturmadan hemen sonra uygulanır.",
   "دسترسیِ ویژه": "Özel erişim",
   "دیدنِ پروژه‌های خصوصی": "Özel projeleri görebilir",
-  "جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.": "Rolünden ayrıdır; geri alınması bir rütbe düşürme değildir."
+  "جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.": "Rolünden ayrıdır; geri alınması bir rütbe düşürme değildir.",
+  "پالت": "Palet",
+  "سنگ": "Taş",
+  "دریا": "Okyanus",
+  "جنگل": "Orman",
+  "غروب": "Gün batımı",
+  "ارغوان": "Menekşe",
+  "خاکستری": "Gri"
 }

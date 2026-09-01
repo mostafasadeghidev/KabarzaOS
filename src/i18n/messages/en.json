@@ -2124,5 +2124,12 @@
   "تسک‌ها، فایل‌ها و QA اختیاری‌اند و بلافاصله پس از ساخت اعمال می‌شوند.": "Tasks, files and QA are optional and are applied right after creation.",
   "دسترسیِ ویژه": "Special access",
   "دیدنِ پروژه‌های خصوصی": "Can see private projects",
-  "جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.": "Separate from their role, so revoking it is not a demotion."
+  "جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.": "Separate from their role, so revoking it is not a demotion.",
+  "پالت": "Palette",
+  "سنگ": "Stone",
+  "دریا": "Ocean",
+  "جنگل": "Forest",
+  "غروب": "Sunset",
+  "ارغوان": "Violet",
+  "خاکستری": "Grey"
 }

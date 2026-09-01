@@ -1,17 +1,18 @@
-Warm the neutrals and give surfaces depth (1.12.0)
+Six palettes, on their own axis (1.13.0)
 
-Every grey sat on hue 265 — blue — with almost no chroma, which reads as
-clinical rather than calm. The neutrals move to hue 55 with the same tiny
-chroma: still grey, no longer cold. Primary, destructive, success and
-warning keep their own hues; this is not a recolouring.
+Stone, Ocean, Forest, Sunset, Violet, Grey — picked as coloured dots in the
+account menu, stored per browser like the light/dark choice.
 
-The flatness was a separate problem. In light mode the page and the cards
-were both pure white, so a card was nothing but a hairline and the screen
-had no depth at all. The page is warm paper now and the card is the white
-one, so it lifts. Dark mode gets the same treatment through wider spacing
-between background, sidebar and card.
+The palette is a second axis, not a replacement: each one is defined for
+both light and dark, so "Ocean + dark" is dark Ocean rather than one
+setting overriding the other.
 
-Project cards carry a real shadow instead of shadow-xs, and lift further
-on hover — feedback without adding colour.
+Each palette moves only the neutral hue and the primary. Neutral chroma
+stays under 0.02 — past that a "warm theme" becomes a beige theme.
+Destructive, success and warning keep their own hues everywhere, because a
+palette should not change what red means.
+
+The pre-paint script sets the palette too, not just light/dark. Without
+that the page flashes the default palette before swapping.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

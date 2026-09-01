@@ -9,7 +9,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarMenuButton } from '@/components/ui/sidebar';
 import { LOCALES, LOCALE_NAMES, type Locale } from '@/i18n/config';
-import { useTheme, type ThemePreference } from '@/components/theme-provider';
+import {
+  PALETTE_LABEL, PALETTE_SWATCH, PALETTES, useTheme, type ThemePreference,
+} from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n/client';
 
@@ -62,7 +64,7 @@ export function UserMenu({
   onLocaleChange: (locale: Locale) => void | Promise<void>;
 }) {
   const t = useT();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, palette, setPalette } = useTheme();
   const ThemeIcon = THEME_ICON[theme];
 
   return (
@@ -145,6 +147,35 @@ export function UserMenu({
               <ThemeIcon className="size-3.5" />
               <span>{t(THEME_LABEL[theme])}</span>
             </button>
+          </div>
+        </div>
+
+        {/*
+          پالت — نقطه‌های رنگی، نه فهرستِ متنی.
+          ⚠️ محورِ جدا از روشن/تیره است: انتخابِ «دریا» هر دو حالتِ آن را
+          می‌گیرد، نه اینکه جای تیره/روشن بنشیند.
+        */}
+        <div className="px-2 py-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm text-muted-foreground">{t("پالت")}</span>
+            <div className="flex gap-1">
+              {PALETTES.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPalette(p)}
+                  title={t(PALETTE_LABEL[p])}
+                  aria-label={t(PALETTE_LABEL[p])}
+                  aria-pressed={palette === p}
+                  className={`size-4 rounded-full border transition ${
+                    palette === p
+                      ? 'border-foreground/60 ring-2 ring-foreground/20'
+                      : 'border-border hover:scale-110'
+                  }`}
+                  style={{ backgroundColor: PALETTE_SWATCH[p] }}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
