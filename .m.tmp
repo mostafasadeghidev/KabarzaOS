@@ -1,18 +1,17 @@
-Six palettes, on their own axis (1.13.0)
+Readable chart labels (1.13.1)
 
-Stone, Ocean, Forest, Sunset, Violet, Grey — picked as coloured dots in the
-account menu, stored per browser like the light/dark choice.
+Reported as: the project-status box on the dashboard is unreadable.
 
-The palette is a second axis, not a replacement: each one is defined for
-both light and dark, so "Ocean + dark" is dark Ocean rather than one
-setting overriding the other.
+recharts draws axis labels with a hardcoded rgb(102,102,102). Against the
+dark panel that is roughly 3:1 — below the 4.5:1 minimum for 11px text,
+and it only got worse on the darker palettes. Ticks and grid lines use
+--color-muted-foreground and --color-border now, so they follow whichever
+theme and palette is active instead of assuming a light background.
 
-Each palette moves only the neutral hue and the primary. Neutral chroma
-stays under 0.02 — past that a "warm theme" becomes a beige theme.
-Destructive, success and warning keep their own hues everywhere, because a
-palette should not change what red means.
+Six axes across all three dashboard charts had it, not just the one that
+was reported.
 
-The pre-paint script sets the palette too, not just light/dark. Without
-that the page flashes the default palette before swapping.
+Category labels also gained a tick margin: they sat 8px from the end of
+the bar and would touch it on fuller data.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

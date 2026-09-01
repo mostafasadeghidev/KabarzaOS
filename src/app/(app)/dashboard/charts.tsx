@@ -13,6 +13,17 @@ import type { MemberHours, StatusSlice, WeeklyPoint } from '@/server/dashboard';
  * `reversed` روی محورِ X و `orientation="right"` روی محورِ Y گذاشته می‌شود.
  */
 
+/**
+ * ⚠️ برچسبِ محورها با توکنِ تم، نه پیش‌فرضِ کتابخانه.
+ *
+ * recharts برچسب‌ها را با `rgb(102,102,102)` ِ ثابت می‌کشد. روی پنلِ تیره
+ * نسبتِ کنتراستش حدودِ ۳:۱ است — زیرِ حداقلِ ۴٫۵:۱ برای متنِ ۱۱ پیکسلی، و
+ * عملاً ناخوانا. `--color-muted-foreground` در هر دو حالت و هر شش پالت
+ * درست است، چون خودش با تم عوض می‌شود.
+ */
+const TICK = { fill: 'var(--color-muted-foreground)', fontSize: 11 };
+const GRID = 'var(--color-border)';
+
 const hoursConfig = {
   hours: { label: 'ساعت', color: 'var(--color-primary)' },
 } satisfies ChartConfig;
@@ -32,9 +43,9 @@ export function WeeklyTrendChart({ data }: { data: WeeklyPoint[] }) {
             <stop offset="95%" stopColor="var(--color-hours)" stopOpacity={0.05} />
           </linearGradient>
         </defs>
-        <CartesianGrid vertical={false} strokeDasharray="3 3" />
-        <XAxis dataKey="label" reversed tickLine={false} axisLine={false} tickMargin={8} fontSize={11} />
-        <YAxis orientation="right" tickLine={false} axisLine={false} width={34} fontSize={11} />
+        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={GRID} />
+        <XAxis dataKey="label" reversed tickLine={false} axisLine={false} tickMargin={8} tick={TICK} />
+        <YAxis orientation="right" tickLine={false} axisLine={false} width={34} tick={TICK} />
         <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
         <Area
           dataKey="hours"
@@ -53,8 +64,8 @@ export function MemberHoursChart({ data }: { data: MemberHours[] }) {
   return (
     <ChartContainer config={hoursConfig} className="aspect-auto h-56 w-full">
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
-        <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-        <XAxis type="number" reversed tickLine={false} axisLine={false} fontSize={11} />
+        <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={GRID} />
+        <XAxis type="number" reversed tickLine={false} axisLine={false} tick={TICK} />
         <YAxis
           type="category"
           dataKey="name"
@@ -62,7 +73,7 @@ export function MemberHoursChart({ data }: { data: MemberHours[] }) {
           tickLine={false}
           axisLine={false}
           width={90}
-          fontSize={11}
+          tick={TICK}
         />
         <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
         <Bar dataKey="hours" fill="var(--color-hours)" radius={4} />
@@ -76,16 +87,19 @@ export function StatusChart({ data }: { data: StatusSlice[] }) {
   return (
     <ChartContainer config={countConfig} className="aspect-auto h-56 w-full">
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
-        <CartesianGrid horizontal={false} strokeDasharray="3 3" />
-        <XAxis type="number" reversed tickLine={false} axisLine={false} allowDecimals={false} fontSize={11} />
+        <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={GRID} />
+        <XAxis type="number" reversed tickLine={false} axisLine={false} allowDecimals={false} tick={TICK} />
         <YAxis
           type="category"
           dataKey="status"
           orientation="right"
           tickLine={false}
           axisLine={false}
-          width={100}
-          fontSize={11}
+          width={110}
+          // ⚠️ فاصله از میله: بدونِ آن برچسب ۸ پیکسل با انتهای میله فاصله
+          // داشت و روی داده‌های پرتر عملاً به آن می‌چسبید.
+          tickMargin={8}
+          tick={TICK}
         />
         <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
         <Bar dataKey="count" fill="var(--color-count)" radius={4} />
