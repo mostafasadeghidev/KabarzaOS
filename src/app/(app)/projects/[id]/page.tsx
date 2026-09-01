@@ -77,6 +77,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       projectId: id,
       canManage,
       isFrozen: project.isArchived,
+      isUnitBased: project.isUnitBased,
       units,
       myUnpaidUnits: unpaid,
       requests: requests.requests,
@@ -104,8 +105,17 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       myBid = { projectId: id, ...tender };
     }
   }
+  /**
+   * ⚠️ فقط برای مدیر خوانده می‌شود. `getTaskStatusOptions` مجوزِ **سراسریِ**
+   * `projects.view` می‌خواهد، ولی عضوِ همین پروژه از مسیرِ عضویت وارد شده و
+   * آن مجوز را ندارد — صدازدنِ بی‌قیدش صفحه را با ForbiddenError می‌انداخت،
+   * یعنی عضو پروژه‌اش را در فهرست می‌دید ولی نمی‌توانست بازش کند.
+   *
+   * نبودنش چیزی از او نمی‌گیرد: `TaskStatusPicker` برای غیرمدیر همان چیپِ
+   * خواندنی را برمی‌گرداند، مثلِ `task_status_dropdown_html()` نسخهٔ قبلی.
+   */
   const [taskStatuses, taskFormOptions, qaForm] = await Promise.all([
-    getTaskStatusOptions(actor),
+    canManage ? getTaskStatusOptions(actor) : Promise.resolve([]),
     canManage ? getTaskFormOptions(actor, project.id) : Promise.resolve(null),
     canManage ? getQaForm(actor, project.id) : Promise.resolve(null),
   ]);

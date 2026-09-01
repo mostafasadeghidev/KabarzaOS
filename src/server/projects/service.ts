@@ -178,7 +178,16 @@ export async function setMembers(actor: Actor, projectId: number, desired: Membe
     });
   }
 
-  return diff;
+  /**
+   * ⚠️ نامِ کسانی که به‌خاطرِ طلب ماندند، برای گفتن به کاربر. شناسه به‌تنهایی
+   * در پیام بی‌فایده است و این تنها جایی است که نامشان در دسترس است.
+   */
+  const nameOf = (id: number) => existing.find((m) => m.userId === id)?.userName ?? `#${id}`;
+  return {
+    ...diff,
+    keptOwedNames: diff.keptOwed.map(nameOf),
+    keptFormerNames: diff.keptFormer.map(nameOf),
+  };
 }
 
 export interface DeleteInput {
@@ -621,12 +630,18 @@ export async function getStatusOptions(actor: Actor) {
 /** گزینه‌های افزودنِ سریعِ کارت — عضو، نقش، کارفرما. */
 export async function getCardOptions(actor: Actor) {
   assertCanManage(actor, 'projects');
-  const [team, roles, clients] = await Promise.all([
+  const [team, roles, clients, roleMap] = await Promise.all([
     repo.memberCandidates(),
     repo.memberRoleTags(),
     repo.clientCandidates(),
+    /**
+     * ⚠️ افزودنِ سریعِ کارت هم مثلِ فرمِ کاملِ اعضا باید فقط نقش‌های **خودِ
+     * آن فرد** را پیشنهاد دهد. بدونِ این، فهرست همهٔ نقش‌های سامانه را
+     * می‌داد و می‌شد کسی را با نقشی روی پروژه نشاند که اصلاً ندارد.
+     */
+    repo.memberRoleMap(),
   ]);
-  return { team, roles, clients };
+  return { team, roles, clients, roleMap };
 }
 
 /**

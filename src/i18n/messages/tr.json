@@ -2474,5 +2474,8 @@
   "بات متصل است: @{name}": "Bot bağlandı: @{name}",
   "به‌روز شد: {ledger} ردیفِ دفتر و {payments} پرداخت.": "Güncellendi: {ledger} defter satırı ve {payments} ödeme.",
   "دوره بسته شد؛ خلاصهٔ {n} حساب ذخیره و دوره قفل شد.": "Dönem kapatıldı; {n} hesabın özeti kaydedildi ve dönem kilitlendi.",
-  "کمی صبر کنید — تا ارسالِ بعدی {n} ثانیه مانده.": "Biraz bekleyin — sonraki gönderime {n} saniye kaldı."
+  "کمی صبر کنید — تا ارسالِ بعدی {n} ثانیه مانده.": "Biraz bekleyin — sonraki gönderime {n} saniye kaldı.",
+  "عوض‌کردنش یعنی نامِ کاربریِ قبلی دیگر برای ورود کار نمی‌کند.": "Değiştirilirse eski kullanıcı adı artık girişte çalışmaz.",
+  "{names} حذف نشد چون روی این پروژه تسویه‌نشده دارد. اول تسویه کنید.": "{names} kaldırılmadı — bu projede kapanmamış bir bakiye var. Önce kapatın.",
+  "{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.": "{names} eski bir üye; projedeki geçmişi korunur."
 }

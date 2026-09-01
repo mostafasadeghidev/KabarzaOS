@@ -2474,5 +2474,8 @@
   "بات متصل است: @{name}": "Bot connected: @{name}",
   "به‌روز شد: {ledger} ردیفِ دفتر و {payments} پرداخت.": "Updated: {ledger} ledger rows and {payments} payments.",
   "دوره بسته شد؛ خلاصهٔ {n} حساب ذخیره و دوره قفل شد.": "Period closed; summaries for {n} accounts saved and the period locked.",
-  "کمی صبر کنید — تا ارسالِ بعدی {n} ثانیه مانده.": "Please wait — {n} seconds until you can send again."
+  "کمی صبر کنید — تا ارسالِ بعدی {n} ثانیه مانده.": "Please wait — {n} seconds until you can send again.",
+  "عوض‌کردنش یعنی نامِ کاربریِ قبلی دیگر برای ورود کار نمی‌کند.": "Changing it means the old username no longer works for signing in.",
+  "{names} حذف نشد چون روی این پروژه تسویه‌نشده دارد. اول تسویه کنید.": "{names} was not removed — there is an unsettled balance on this project. Settle it first.",
+  "{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.": "{names} is a former member; their history on this project is kept."
 }

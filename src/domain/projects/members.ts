@@ -38,6 +38,14 @@ export interface MemberDiff {
   toUpdate: Array<{ id: number; input: MemberInput }>;
   /** ردیف‌هایی که از فهرست حذف شده‌اند. */
   toDelete: number[];
+  /**
+   * کاربرانی که از فهرست برداشته شدند ولی به‌خاطرِ طلبِ تسویه‌نشده ماندند
+   * (R-PROJ-23). فراخوان باید نامشان را به کاربر بگوید — وگرنه حذف بی‌صدا
+   * شکست می‌خورد و به نظر می‌رسد دکمه کار نمی‌کند.
+   */
+  keptOwed: number[];
+  /** همان، ولی به‌خاطرِ عضوِ سابق بودن (R-PROJ-08 §۲). */
+  keptFormer: number[];
   /** کاربرانی که **تازه** روی پروژه آمده‌اند (برای اعلان). */
   newlyAdded: number[];
 }
@@ -144,18 +152,39 @@ export function diffMembers(
    * تعویضِ عمدیِ نقش هنوز ردیفِ قبلی را جابه‌جا می‌کند.
    */
   const pickedUsers = new Set([...wanted.values()].map((r) => r.userId));
+
+  /**
+   * ⚠️ نگه‌داشتن باید **گزارش** شود. پیش از این ردیف فقط بی‌صدا می‌ماند:
+   * کاربر عضو را از فهرست برمی‌داشت، «ذخیره شد» می‌دید، و عضو سرِ جایش
+   * برمی‌گشت — بارها، بدونِ اینکه بفهمد چرا. قاعده درست است؛ سکوت نبود.
+   */
+  const keptOwed: number[] = [];
+  const keptFormer: number[] = [];
   const toDelete = existing
     .filter((e) => {
       if (wanted.has(key(e.userId, e.roleTagId))) return false;
-      if (inactive.has(e.userId)) return false;
-      if (!pickedUsers.has(e.userId) && owed.has(e.userId)) return false;
+      if (inactive.has(e.userId)) {
+        keptFormer.push(e.userId);
+        return false;
+      }
+      if (!pickedUsers.has(e.userId) && owed.has(e.userId)) {
+        keptOwed.push(e.userId);
+        return false;
+      }
       return true;
     })
     .map((e) => e.id);
 
   const newlyAdded = [...new Set(toInsert.map((r) => r.userId))].filter((id) => !usersBefore.has(id));
 
-  return { toInsert, toUpdate, toDelete, newlyAdded };
+  return {
+    toInsert,
+    toUpdate,
+    toDelete,
+    newlyAdded,
+    keptOwed: [...new Set(keptOwed)],
+    keptFormer: [...new Set(keptFormer)],
+  };
 }
 
 export interface AddMemberPlan {

@@ -48,6 +48,13 @@ export interface MyMoneyData {
   projectId: number;
   canManage: boolean;
   isFrozen: boolean;
+  /**
+   * ⚠️ بخشِ «کارکردِ تعدادی» فقط برای پروژهٔ تعدادی است — همان شرطِ
+   * `Projects::is_unit_based()` ِ نسخهٔ قبلی. روی پروژهٔ توافقی، ثبتِ تعداد
+   * معنایی ندارد (نرخِ هر واحدی وجود ندارد) و فرمش گمراه‌کننده بود.
+   * «درخواستِ پرداخت» اما همیشه می‌ماند؛ به تعدادی‌بودن ربطی ندارد.
+   */
+  isUnitBased: boolean;
   units: UnitRow[];
   myUnpaidUnits: string;
   requests: RequestRow[];
@@ -96,6 +103,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
 
   return (
     <div className="grid gap-5">
+      {data.isUnitBased && (
       <section className="grid gap-2">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold">
           <Package className="size-4" />
@@ -217,6 +225,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
         )}
         {rowError && <p className="text-xs text-destructive">{rowError}</p>}
       </section>
+      )}
 
       {/* ── درخواستِ پرداخت — فقط برای عضو ── */}
       {!data.canManage && (

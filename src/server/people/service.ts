@@ -221,8 +221,21 @@ export async function updatePerson(actor: Actor, userId: number, input: PersonIn
   const before = await repo.getPerson(userId);
   if (!before) throw new PersonNotFoundError();
 
-  const clash = await db.select({ id: users.id }).from(users)
-    .where(and(eq(users.email, input.email)));
+  /**
+   * ⚠️ ایمیل و نامِ کاربری با هم و بی‌اعتنا به حروف بررسی می‌شوند — همان
+   * قاعدهٔ `createPerson`. مقایسهٔ حساس‌به‌حروفِ قبلی «Ali@x.com» را تکراریِ
+   * «ali@x.com» نمی‌دید، و نامِ کاربری اصلاً بررسی نمی‌شد چون این مسیر
+   * هرگز نمی‌نوشتش — یعنی نامِ کاربری پس از ساخت غیرقابلِ تغییر بود.
+   */
+  const email = normalizeIdentifier(input.email);
+  const username = normalizeIdentifier(input.username ?? '');
+  if (username !== '' && !isValidUsername(username)) throw new ForbiddenError('username.invalid');
+
+  const clash = await db.select({ id: users.id }).from(users).where(
+    username === ''
+      ? raw`lower(${users.email}) = ${email}`
+      : or(raw`lower(${users.email}) = ${email}`, raw`lower(${users.username}) = ${username}`),
+  );
   if (clash.some((c) => c.id !== userId)) throw new ForbiddenError('email.taken');
 
   await db.transaction(async (tx) => {
@@ -230,6 +243,8 @@ export async function updatePerson(actor: Actor, userId: number, input: PersonIn
       name: input.name,
       email: input.email,
       phone: input.phone,
+      // خالی یعنی «نامِ کاربری ندارد» — `null`، نه رشتهٔ خالی (شاخصِ یکتا).
+      username: username || null,
       privateAccess: resolvePrivateAccess(actor, input.privateAccess, before.privateAccess),
       updatedAt: new Date(),
     }).where(eq(users.id, userId));

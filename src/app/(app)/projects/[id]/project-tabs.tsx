@@ -76,8 +76,15 @@ export function ProjectTabs({
     { key: 'files', label: 'فایل‌ها', badge: data.files.length },
     { key: 'comments', label: 'کامنت‌ها', badge: data.comments.length },
     { key: 'finance', label: 'بخش مالی' },
-    // ⚠️ «پولِ من» مجوزِ مالی نمی‌خواهد — پولِ خودِ عضو است.
-    ...(data.myMoney ? [{ key: 'my-money', label: 'کارکرد و پرداخت' }] : []),
+    /**
+     * ⚠️ «پولِ من» مجوزِ مالی نمی‌خواهد — پولِ خودِ عضو است.
+     * نامش با نوعِ پروژه عوض می‌شود: «کارکرد» فقط وقتی معنا دارد که پروژه
+     * تعدادی باشد (`Projects::is_unit_based()`)؛ وگرنه تب فقط درخواستِ
+     * پرداخت را دارد و نامیدنش «کارکرد» وعدهٔ چیزی است که داخلش نیست.
+     */
+    ...(data.myMoney
+      ? [{ key: 'my-money', label: data.myMoney.isUnitBased ? 'کارکرد و پرداخت' : 'پرداخت' }]
+      : []),
     { key: 'qa', label: 'QA', badge: data.qa.length },
     ...(data.canManage ? [{ key: 'manage', label: 'مدیریت' }] : []),
     ...(data.isTender && data.canManage

@@ -2,6 +2,51 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.18.0]
+
+### Fixed
+
+- **A member could open their project from the list, then got an error page.**
+  The detail page fetched task-status options through a function that asserts
+  the *global* `projects.view` capability — but a member reaches the page
+  through project membership and holds no global capability, so every load
+  threw. The options are now read only for someone who can manage the
+  project, which is also the only person the picker is interactive for; a
+  member sees the read-only chip, exactly as the previous system did.
+
+- **Removing a project member did nothing and said nothing.** Two rules keep
+  a row even after it is taken off the list — a former member, and a member
+  with an unsettled balance — and neither was reported. The dialog said
+  "0 removed" and the person reappeared. Both now name the person and the
+  reason.
+
+- **The role next to each name in the meeting invitee list** was printed raw.
+  It is a translation key — either a tag name or one of three fixed words —
+  so it stayed in the source language everywhere.
+
+- **The comment status chip** ("Needs review", "Done") was printed raw for
+  the same reason.
+
+- **A username could not be changed, or even seen, after the person was
+  created.** The field was shown only on the create form, and the update path
+  never wrote the column. Someone created without one stayed without one
+  permanently — and could not sign in by username. The field is now on the
+  edit form, filled in, with the same validation and clash check as create.
+
+### Changed
+
+- **The piecework tab only appears on piecework projects.** Logging a
+  quantity has no meaning without a per-unit rate; the tab is now named
+  "Payment" on an agreed-amount project and keeps its payment-request
+  section, matching `Projects::is_unit_based()`.
+
+- **Adding a member from a project card offers only that person's own roles**,
+  the way the full members form already did. The list previously offered
+  every role in the system, so a person could be signed onto a project under
+  a role they do not hold.
+
+---
+
 ## [1.17.0]
 
 ### Fixed

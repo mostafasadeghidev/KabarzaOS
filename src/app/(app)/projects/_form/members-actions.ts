@@ -70,6 +70,8 @@ export async function setMembersAction(
         updated: diff.toUpdate.length,
         removed: diff.toDelete.length,
       },
+      keptOwed: diff.keptOwedNames,
+      keptFormer: diff.keptFormerNames,
     };
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ تغییرِ اعضا ندارید.' };

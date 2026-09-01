@@ -68,7 +68,7 @@ function StatusToggle({ comment, canManage }: { comment: CommentItem; canManage:
   const open = isOpen(comment.status);
   const label = statusLabel(comment.type as CommentType, comment.status);
 
-  const chip = <Badge variant={open ? 'warning' : 'success'}>{label}</Badge>;
+  const chip = <Badge variant={open ? 'warning' : 'success'}>{t(label)}</Badge>;
   if (!canManage) return chip;
 
   return (

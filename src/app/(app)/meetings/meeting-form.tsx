@@ -278,7 +278,11 @@ export function MeetingForm({
                         className="size-4 accent-primary"
                       />
                       {c.name}
-                      <span className="text-xs text-muted-foreground">({c.sub})</span>
+                      {/* ⚠️ `sub` کلیدِ ترجمه است: یا نامِ تگ (که خودش
+                          ترجمه‌شده می‌آید) یا یکی از سه واژهٔ ثابتِ
+                          `meetingCandidates`. خام چاپ‌کردنش همان سه واژه را
+                          در هر زبانی فارسی نگه می‌داشت. */}
+                      <span className="text-xs text-muted-foreground">({tr(c.sub)})</span>
                     </label>
                   ))}
                 </div>

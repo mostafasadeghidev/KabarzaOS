@@ -33,6 +33,8 @@ export interface PersonRow {
   avatarFileId: number | null;
   /** رمز دارد؟ بدونِ آن، فرد ساخته شده ولی نمی‌تواند وارد شود. */
   hasPassword: boolean;
+  /** راهِ دومِ ورود؛ null یعنی ندارد. فرمِ ویرایش نشانش می‌دهد. */
+  username: string | null;
   /** گرنتِ دیدنِ پروژه‌های خصوصی — نقش نیست، گرنتِ per-user است. */
   privateAccess: boolean;
   /** حضورِ زنده. */
@@ -55,6 +57,7 @@ export async function listByRole(role: Role): Promise<PersonRow[]> {
       lastSeenAt: users.lastSeenAt,
       lastActiveAt: users.lastActiveAt,
       passwordHash: users.passwordHash,
+      username: users.username,
     })
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))

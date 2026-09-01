@@ -109,6 +109,24 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
               })}
             </p>
           )}
+          {/*
+            ⚠️ نگه‌داشتن باید دیده شود. حذفِ کسی که هنوز طلب دارد بی‌صدا رد
+            می‌شد و کاربر بارها دکمه را می‌زد بی‌آنکه بفهمد چرا برنمی‌گردد.
+          */}
+          {state.keptOwed && state.keptOwed.length > 0 && (
+            <p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-500">
+              {tr('{names} حذف نشد چون روی این پروژه تسویه‌نشده دارد. اول تسویه کنید.', {
+                names: state.keptOwed.join('، '),
+              })}
+            </p>
+          )}
+          {state.keptFormer && state.keptFormer.length > 0 && (
+            <p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-500">
+              {tr('{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.', {
+                names: state.keptFormer.join('، '),
+              })}
+            </p>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

@@ -226,28 +226,33 @@ export function PersonDialog({
           */}
           {/*
             نامِ کاربری — راهِ دومِ ورود، کنارِ ایمیل.
-            ⚠️ فقط هنگامِ ساخت: عوض‌کردنش بعداً یعنی کسی که با آن وارد
-            می‌شده ناگهان نمی‌تواند، و آن باید تصمیمِ آگاهانه باشد نه
-            عارضهٔ یک ذخیرهٔ فرم.
+
+            ⚠️ در ویرایش هم می‌آید و پر شده. پیش از این فقط هنگامِ ساخت
+            نشان داده می‌شد تا کسی با یک ذخیرهٔ اتفاقی نامِ کاربریِ دیگری را
+            عوض نکند — ولی نتیجه‌اش این بود که نامِ کاربریِ موجود **هیچ‌جا
+            دیده نمی‌شد**: نه می‌شد فهمید چیست، نه اصلاحش کرد، و فردی که
+            بدونِ نامِ کاربری ساخته شده بود برای همیشه بی‌نام می‌ماند.
+            دیدنِ مقدارِ فعلی خودش همان هشدار است.
           */}
-          {!person && (
-            <div className="grid gap-1.5">
-              <Label htmlFor="p-username">{tr("نامِ کاربری (اختیاری)")}</Label>
-              <Input
-                id="p-username"
-                name="username"
-                autoComplete="off"
-                dir="ltr"
-                placeholder="ali_ahmadi"
-              />
-              <p className="text-xs text-muted-foreground">
-                {tr("با ایمیل هم می‌تواند وارد شود؛ این فقط راهِ دوم است.")}
-              </p>
-              {state.fieldErrors?.username && (
-                <p className="text-xs text-destructive">{tr(state.fieldErrors.username)}</p>
-              )}
-            </div>
-          )}
+          <div className="grid gap-1.5">
+            <Label htmlFor="p-username">{tr("نامِ کاربری (اختیاری)")}</Label>
+            <Input
+              id="p-username"
+              name="username"
+              defaultValue={person?.username ?? ''}
+              autoComplete="off"
+              dir="ltr"
+              placeholder="ali_ahmadi"
+            />
+            <p className="text-xs text-muted-foreground">
+              {person
+                ? tr("عوض‌کردنش یعنی نامِ کاربریِ قبلی دیگر برای ورود کار نمی‌کند.")
+                : tr("با ایمیل هم می‌تواند وارد شود؛ این فقط راهِ دوم است.")}
+            </p>
+            {state.fieldErrors?.username && (
+              <p className="text-xs text-destructive">{tr(state.fieldErrors.username)}</p>
+            )}
+          </div>
 
           {!person && (
             <div className="grid gap-1.5">

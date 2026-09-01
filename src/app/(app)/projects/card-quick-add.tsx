@@ -17,6 +17,12 @@ export interface CardOptions {
   team: Array<{ id: number; name: string }>;
   roles: Array<{ id: number; name: string }>;
   clients: Array<{ id: number; name: string }>;
+  /**
+   * نقش‌های امضاشده روی هر عضو — `{ userId: tagId[] }`.
+   * ⚠️ فهرستِ نقش به انتخابِ عضو گره می‌خورد: پیش از این همهٔ نقش‌های سامانه
+   * را می‌داد و می‌شد کسی را با نقشی روی پروژه نشاند که ندارد.
+   */
+  roleMap: Record<number, number[]>;
 }
 
 const cell =
@@ -35,6 +41,7 @@ export function CardQuickAdd({ projectId, options }: { projectId: number; option
   const tr = useT();
   const t = useT();
   const [openForm, setOpenForm] = useState<'member' | 'client' | null>(null);
+  const [pickedUser, setPickedUser] = useState('');
   const [memberState, memberAction] = useActionState<CardActionState, FormData>(addMemberAction, {});
   const [clientState, clientAction] = useActionState<CardActionState, FormData>(addClientAction, {});
 
@@ -66,17 +73,34 @@ export function CardQuickAdd({ projectId, options }: { projectId: number; option
         <form action={memberAction} className="grid gap-1">
           <input type="hidden" name="projectId" value={projectId} />
           <div className="flex flex-wrap items-center gap-1">
-            <select name="userId" className={cell} defaultValue="">
+            <select
+              name="userId"
+              className={cell}
+              value={pickedUser}
+              onChange={(e) => setPickedUser(e.target.value)}
+            >
               <option value="">{t("— عضو —")}</option>
               {options.team.map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
-            <select name="roleTagId" className={cell} defaultValue="">
+            {/*
+              ⚠️ تا عضوی انتخاب نشده، نقشی هم پیشنهاد نمی‌شود: نقشِ معتبر به
+              خودِ فرد بستگی دارد. پس از انتخاب، فقط نقش‌های همان فرد می‌مانند.
+            */}
+            <select
+              name="roleTagId"
+              className={cell}
+              defaultValue=""
+              key={pickedUser}
+              disabled={pickedUser === ''}
+            >
               <option value="">{t("— نقشِ خودش —")}</option>
-              {options.roles.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
+              {options.roles
+                .filter((r) => (options.roleMap[Number(pickedUser)] ?? []).includes(r.id))
+                .map((r) => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
             </select>
             <Input name="amount" inputMode="decimal" placeholder={t("مبلغ")} className="num h-7 w-20 text-xs" />
             <Submit label={t("افزودن")} />
