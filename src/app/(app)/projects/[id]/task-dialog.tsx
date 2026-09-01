@@ -110,10 +110,10 @@ export function TaskDialog({
                 <Badge variant="outline">{t("بدون وضعیت")}</Badge>
               )}
               {task.assigneeName && (
-                <span className="text-xs text-muted-foreground">مسئول: {task.assigneeName}</span>
+                <span className="text-xs text-muted-foreground">{tr('مسئول: {name}', { name: task.assigneeName })}</span>
               )}
               {task.dueDate && (
-                <span className="num text-xs text-muted-foreground">ددلاین {task.dueDate}</span>
+                <span className="num text-xs text-muted-foreground">{tr('ددلاین {date}', { date: task.dueDate })}</span>
               )}
             </div>
 

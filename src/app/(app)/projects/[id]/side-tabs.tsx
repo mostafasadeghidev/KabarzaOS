@@ -359,7 +359,7 @@ export function QaTab({
               <span className="flex items-center gap-2">
                 {q.roleName && <Badge variant="secondary">{q.roleName}</Badge>}
                 {q.isDone && q.doneByName && (
-                  <span className="text-xs text-muted-foreground">توسط {q.doneByName}</span>
+                  <span className="text-xs text-muted-foreground">{t('توسط {name}', { name: q.doneByName })}</span>
                 )}
                 <QaTick row={q} canManage={canManage} />
                 {canManage && <QaDelete itemId={q.id} />}

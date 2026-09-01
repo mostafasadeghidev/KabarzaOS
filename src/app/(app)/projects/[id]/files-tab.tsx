@@ -116,7 +116,7 @@ export function FilesTab({
               <Input id="att-label" name="label" placeholder={t("مثلاً: قرارداد امضاشده")} />
             </div>
             <p className="text-xs text-muted-foreground">
-              تصویر، ویدیو، PDF و سند — تا {humanSize(MAX_SIZE.attachment)} برای هر فایل.
+              {tr('تصویر، ویدیو، PDF و سند — تا {size} برای هر فایل.', { size: humanSize(MAX_SIZE.attachment) })}
             </p>
             <Notice state={uploadState} />
           </form>

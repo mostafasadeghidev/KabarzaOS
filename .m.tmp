@@ -1,23 +1,23 @@
-Translate the 271 strings nothing could reach (1.15.0)
+Translate Persian that sits beside a value in JSX (1.15.1)
 
-A systematic sweep, not the reported items one at a time: every
-user-visible Persian literal that never passes through t(). It found 271,
-of which 266 were not wrapped at all — no amount of translation would have
-reached them.
+The first sweep matched `>text<`, which misses the shape
 
-Almost all were error and confirmation messages returned from server
-actions as { error: '…' }. Wrapping 266 call sites would have been
-invasive and easy to get wrong, so they are translated where they are
-displayed instead: ~30 client components, one point each. The translator
-falls back to the key, so an untranslated message still reads exactly as
-it does today.
+    {project.doneTaskCount}/{project.totalTaskCount} تسک
+    ددلاین {task.dueDate}
 
-All 271 now have translations in the eight non-source languages.
+where the words sit next to an expression rather than between two tags.
+That is where every remaining report came from. A second sweep found 22
+of them across 46 files; the rest of its hits were JSX comments.
 
-Also fixed on the way:
-- The settings tag table no longer prints the base name under the
-  translated one. It was meant as a hint and read as "not translated".
-- Meeting tabs and the conversation counter were passed as data, the same
-  shape as `header` and `addLabel` before them.
+Each became a parameterised key — tr('{done}/{total} tasks', …) — which
+also lets a translator put the number where their language wants it,
+rather than assuming it comes first.
+
+The dialog subtitles for adding a member and a client were plain literals
+too, and `editLabel`, `placeholder` and `emptyText` are now recognised by
+the extractor alongside `header` and `addLabel`.
+
+Checked the reported duplicate statuses on the server: the database holds
+exactly 32 tags with no duplicates, so nothing to fix there.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

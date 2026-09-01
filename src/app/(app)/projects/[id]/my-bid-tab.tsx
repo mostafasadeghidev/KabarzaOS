@@ -43,7 +43,7 @@ function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['open
         {role.roleName}
         {/* ⚠️ سقفِ صفر یعنی «بدونِ سقف»، نه سقفِ صفر. */}
         <span className="ms-2 text-xs font-normal text-muted-foreground">
-          سقف: {cap > 0 ? format(role.cap!) : 'بدون سقف'}
+          {t('سقف: {cap}', { cap: cap > 0 ? format(role.cap!) : t('بدون سقف') })}
         </span>
       </h4>
 

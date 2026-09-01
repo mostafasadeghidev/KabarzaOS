@@ -69,7 +69,7 @@ export function AccessDialog({
         <DialogHeader>
           <DialogTitle>{tr("دسترسی‌های همکار ادمین")}</DialogTitle>
           <DialogDescription>
-            {person?.name} — برای هر بخش تعیین کنید دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند.
+            {tr('{name} — برای هر بخش تعیین کنید دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند.', { name: person?.name ?? '' })}
             کارهای حساس (تنظیمات، حذف، بستنِ مالی) همیشه فقط برای مدیرِ کل است.
           </DialogDescription>
         </DialogHeader>

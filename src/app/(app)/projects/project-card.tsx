@@ -199,7 +199,7 @@ export function ProjectCard({
             </b>
           </div>
           <small className="num text-[11px] text-muted-foreground">
-            {project.doneTaskCount}/{project.totalTaskCount} تسک
+            {tr('{done}/{total} تسک', { done: project.doneTaskCount, total: project.totalTaskCount })}
           </small>
         </Link>
 

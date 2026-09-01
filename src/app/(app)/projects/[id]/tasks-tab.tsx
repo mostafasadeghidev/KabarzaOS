@@ -355,7 +355,7 @@ export function TasksTab({
             <div className="mt-1.5 flex flex-wrap items-center gap-3">
               <Assignee task={t} />
               {t.dueDate && (
-                <span className="num text-xs text-muted-foreground">ددلاین {t.dueDate}</span>
+                <span className="num text-xs text-muted-foreground">{tr('ددلاین {date}', { date: t.dueDate })}</span>
               )}
               <ClaimButton
                 task={t}

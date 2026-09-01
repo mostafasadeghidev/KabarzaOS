@@ -2435,5 +2435,14 @@
   "• موردی ثبت نشده.": "• Nada registado.",
   "دریافت از کارفرما (یورو)": "Recebido do cliente (EUR)",
   "فیلترها را بردارید.": "Remova os filtros.",
-  "· سبک": "· aligeirado"
+  "· سبک": "· aligeirado",
+  "ویرایشِ ثبتِ {date}": "Editar o registo de {date}",
+  "کارتِ ثبت‌شده: {card}": "Cartão guardado: {card}",
+  "{done}/{total} تسک": "{done}/{total} tarefas",
+  "تصویر، ویدیو، PDF و سند — تا {size} برای هر فایل.": "Imagens, vídeo, PDF e documentos — até {size} por ficheiro.",
+  "سقف: {cap}": "Limite: {cap}",
+  "توسط {name}": "por {name}",
+  "مسئول: {name}": "Responsável: {name}",
+  "ددلاین {date}": "prazo {date}",
+  "{name} — برای هر بخش تعیین کنید دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند.": "{name} — para cada secção, escolha: sem acesso, apenas ver, ou gerir."
 }

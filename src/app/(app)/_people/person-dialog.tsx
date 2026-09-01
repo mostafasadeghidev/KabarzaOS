@@ -130,8 +130,8 @@ export function PersonDialog({
           <DialogTitle>{tr(isEdit ? section.editLabel : section.addLabel)}</DialogTitle>
           <DialogDescription>
             {section.supportsOffices
-              ? 'نقش‌ها و دفاترِ عضو، دسترسی و گزارش‌هایش را تعیین می‌کنند.'
-              : 'کارفرما به پروژه‌هایی که به او وصل شده‌اند دسترسی دارد.'}
+              ? tr('نقش‌ها و دفاترِ عضو، دسترسی و گزارش‌هایش را تعیین می‌کنند.')
+              : tr('کارفرما به پروژه‌هایی که به او وصل شده‌اند دسترسی دارد.')}
           </DialogDescription>
         </DialogHeader>
 

@@ -63,7 +63,7 @@ export function BankCard({
       </div>
 
       {card && (
-        <p className="num text-xs text-muted-foreground">کارتِ ثبت‌شده: {maskCard(card)}</p>
+        <p className="num text-xs text-muted-foreground">{tr('کارتِ ثبت‌شده: {card}', { card: maskCard(card) })}</p>
       )}
 
       <div className="flex items-center gap-3">

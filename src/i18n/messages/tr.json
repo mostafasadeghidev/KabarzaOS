@@ -2435,5 +2435,14 @@
   "• موردی ثبت نشده.": "• Kayıt yok.",
   "دریافت از کارفرما (یورو)": "Müşteriden alınan (EUR)",
   "فیلترها را بردارید.": "Filtreleri temizleyin.",
-  "· سبک": "· sadeleştirilmiş"
+  "· سبک": "· sadeleştirilmiş",
+  "ویرایشِ ثبتِ {date}": "{date} kaydını düzenle",
+  "کارتِ ثبت‌شده: {card}": "Kayıtlı kart: {card}",
+  "{done}/{total} تسک": "{done}/{total} görev",
+  "تصویر، ویدیو، PDF و سند — تا {size} برای هر فایل.": "Görsel, video, PDF ve belge — dosya başına {size} kadar.",
+  "سقف: {cap}": "Üst sınır: {cap}",
+  "توسط {name}": "{name} tarafından",
+  "مسئول: {name}": "Sorumlu: {name}",
+  "ددلاین {date}": "son tarih {date}",
+  "{name} — برای هر بخش تعیین کنید دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند.": "{name} — her bölüm için seçin: erişim yok, yalnızca görüntüleme veya yönetme."
 }

@@ -2435,5 +2435,14 @@
   "• موردی ثبت نشده.": "• Nichts erfasst.",
   "دریافت از کارفرما (یورو)": "Vom Kunden erhalten (EUR)",
   "فیلترها را بردارید.": "Filter zurücksetzen.",
-  "· سبک": "· verschlankt"
+  "· سبک": "· verschlankt",
+  "ویرایشِ ثبتِ {date}": "Eintrag vom {date} bearbeiten",
+  "کارتِ ثبت‌شده: {card}": "Gespeicherte Karte: {card}",
+  "{done}/{total} تسک": "{done}/{total} Aufgaben",
+  "تصویر، ویدیو، PDF و سند — تا {size} برای هر فایل.": "Bilder, Video, PDF und Dokumente — bis {size} je Datei.",
+  "سقف: {cap}": "Obergrenze: {cap}",
+  "توسط {name}": "von {name}",
+  "مسئول: {name}": "Zuständig: {name}",
+  "ددلاین {date}": "fällig {date}",
+  "{name} — برای هر بخش تعیین کنید دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند.": "{name} — lege je Bereich fest: kein Zugriff, nur ansehen oder verwalten."
 }

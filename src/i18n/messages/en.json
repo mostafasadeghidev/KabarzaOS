@@ -2435,5 +2435,14 @@
   "• موردی ثبت نشده.": "• Nothing recorded.",
   "دریافت از کارفرما (یورو)": "Received from client (EUR)",
   "فیلترها را بردارید.": "Clear the filters.",
-  "· سبک": "· slimmed"
+  "· سبک": "· slimmed",
+  "ویرایشِ ثبتِ {date}": "Edit the {date} entry",
+  "کارتِ ثبت‌شده: {card}": "Saved card: {card}",
+  "{done}/{total} تسک": "{done}/{total} tasks",
+  "تصویر، ویدیو، PDF و سند — تا {size} برای هر فایل.": "Images, video, PDF and documents — up to {size} per file.",
+  "سقف: {cap}": "Cap: {cap}",
+  "توسط {name}": "by {name}",
+  "مسئول: {name}": "Assignee: {name}",
+  "ددلاین {date}": "due {date}",
+  "{name} — برای هر بخش تعیین کنید دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند.": "{name} — for each section, decide between no access, view only, or manage."
 }

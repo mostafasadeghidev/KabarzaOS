@@ -21,6 +21,7 @@ const PERSIAN = /[؀-ۿ]/;
 // فارسی می‌ماندند.
 const LABEL_KEYS = new Set([
   'label', 'title', 'description', 'hint', 'empty', 'header', 'addLabel',
+  'editLabel', 'placeholder', 'emptyText',
 ]);
 
 export function walk(dir, out = []) {

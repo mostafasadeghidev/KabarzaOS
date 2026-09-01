@@ -307,7 +307,7 @@ export function HoursView({ data }: { data: HoursData }) {
       {editing && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">ویرایشِ ثبتِ {editing.logDate}</CardTitle>
+            <CardTitle className="text-sm">{tr('ویرایشِ ثبتِ {date}', { date: editing.logDate })}</CardTitle>
           </CardHeader>
           <CardContent>
             <form action={edit} className="flex flex-wrap items-end gap-2">
