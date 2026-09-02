@@ -14,7 +14,8 @@ import {
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { useActionToast } from '@/components/ui/toast';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
+import { formatForDateTimeInput } from '@/i18n/datetime';
 
 export interface MeetingFormOptions {
   projects: Array<{ id: number; title: string }>;
@@ -35,12 +36,9 @@ export interface MeetingView {
 const cellSelect =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
-/** `datetime-local` مقدارِ محلی می‌خواهد، نه ISO ِ UTC. */
-function toLocalInput(value: Date | string | null): string {
-  if (!value) return '';
-  const d = typeof value === 'string' ? new Date(value) : value;
-  const offset = d.getTimezoneOffset() * 60_000;
-  return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+/** `datetime-local` مقدارِ محلیِ **کاربر** می‌خواهد، نه ISO ِ UTC و نه منطقهٔ مرورگرِ اتفاقی. */
+function toLocalInput(value: Date | string | null, tz: string): string {
+  return formatForDateTimeInput(value, tz);
 }
 
 function SubmitButton({ isEdit }: { isEdit: boolean }) {
@@ -72,6 +70,7 @@ export function MeetingForm({
 }) {
   const tr = useT();
   const t = useT();
+  const tz = useTimeZone();
   const [state, formAction] = useActionState<MeetingFormState, FormData>(saveMeetingAction, {});
   useActionToast(state, { success: 'ذخیره شد.' });
   const isEdit = meeting !== null;
@@ -213,7 +212,7 @@ export function MeetingForm({
                 type="datetime-local"
                 name="meetAt"
                 className="num"
-                defaultValue={state.values?.meetAt ?? toLocalInput(meeting?.meetAt ?? null)}
+                defaultValue={state.values?.meetAt ?? toLocalInput(meeting?.meetAt ?? null, tz)}
                 required
               />
               {state.fieldErrors?.meetAt && (

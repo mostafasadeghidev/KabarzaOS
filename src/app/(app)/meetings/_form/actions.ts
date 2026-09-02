@@ -2,7 +2,8 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { requireActor } from '@/server/auth';
+import { currentSession, requireActor } from '@/server/auth';
+import { parseInZone } from '@/i18n/datetime';
 import {
   createMeeting, createReminder, deleteMeeting, deleteReminder,
   getCandidates, MeetingNotFoundError, updateMeeting,
@@ -71,10 +72,16 @@ export async function saveMeetingAction(
     return { error: 'لطفاً خطاهای فرم را برطرف کنید.', fieldErrors, values };
   }
 
+  /**
+   * ⚠️ رشتهٔ `datetime-local` ساعتِ **دیواریِ کاربر** است، نه لحظهٔ مطلق.
+   * `new Date(str)` آن را در منطقهٔ سرور می‌خواند و جلسهٔ ۱۴:۰۰ تهران چند ساعت
+   * جابه‌جا می‌شد. در منطقهٔ زمانیِ خودِ کاربر خوانده می‌شود.
+   */
+  const tz = (await currentSession())?.timezone ?? '';
   const input = {
     title: parsed.data.title,
     description: parsed.data.description,
-    meetAt: new Date(parsed.data.meetAt),
+    meetAt: parseInZone(parsed.data.meetAt, tz) ?? new Date(parsed.data.meetAt),
     location: parsed.data.location,
     projectId: parsed.data.projectId,
     officeId: parsed.data.officeId,
@@ -135,7 +142,8 @@ export async function saveReminderAction(
 
   try {
     const actor = await requireActor();
-    await createReminder(actor, { remindAt: new Date(remindAt), body, leads });
+    const tz = (await currentSession())?.timezone ?? '';
+    await createReminder(actor, { remindAt: parseInZone(remindAt, tz) ?? new Date(remindAt), body, leads });
   } catch {
     return { error: 'یادآور ثبت نشد.' };
   }

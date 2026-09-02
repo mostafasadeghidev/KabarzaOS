@@ -31,7 +31,7 @@ import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/projec
 import { visiblePayments } from '@/domain/access/project-payments';
 import { canManageProject as decideManage, PM_CAP } from '@/domain/access/project-scope';
 import {
-  assignableToPeople, FALLBACK_MEMBER_LABEL, nameForViewer, type ViewerContext,
+  assignableToPeople, FALLBACK_MEMBER_LABEL, nameForViewer, type ViewerContext, CLIENT_LABEL,
 } from '@/domain/access/viewer-names';
 import { resolveAssignment } from '@/domain/projects/assignment';
 import {
@@ -492,10 +492,13 @@ async function viewerContext(
     projectRelation(actor.id, projectId),
     repo.listClientIds(projectId),
   ]);
+  // برچسب‌های ماسک به زبانِ بیننده — نامِ نقش از tagName() از قبل ترجمه‌شده است.
+  const t = await getT();
+  const labels = { member: t(FALLBACK_MEMBER_LABEL), client: t(CLIENT_LABEL) };
   const roleByUser = new Map<number, string>();
   for (const m of members) {
     if (!roleByUser.has(m.userId)) {
-      roleByUser.set(m.userId, m.roleName ?? FALLBACK_MEMBER_LABEL);
+      roleByUser.set(m.userId, m.roleName ?? labels.member);
     }
   }
   return {
@@ -504,6 +507,7 @@ async function viewerContext(
     viewerIsMember: relation.isMember,
     roleByUser,
     clientIds: new Set(clientIds),
+    labels,
   };
 }
 

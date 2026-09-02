@@ -64,3 +64,11 @@ describe('تخصیصِ تسک به شخص', () => {
     expect(assignableToPeople({ ...base, viewerIsClient: true, managesProject: true })).toBe(true);
   });
 });
+
+describe('labels به زبانِ بیننده', () => {
+  it('برچسبِ کارفرما از ctx.labels می‌آید، وگرنه فارسیِ مبدأ', () => {
+    const base = { managesProject: false, viewerIsClient: false, viewerIsMember: true, roleByUser: new Map<number, string>(), clientIds: new Set([9]) };
+    expect(nameForViewer(9, 'Real Client', base)).toBe(CLIENT_LABEL);
+    expect(nameForViewer(9, 'Real Client', { ...base, labels: { member: 'Team member', client: 'Client' } })).toBe('Client');
+  });
+});

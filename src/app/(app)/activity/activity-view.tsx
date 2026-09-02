@@ -10,7 +10,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { useSearchParams } from 'next/navigation';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
+import { formatDateTime } from '@/i18n/datetime';
 
 export interface EventRow {
   id: number;
@@ -36,9 +37,9 @@ const TABS = [
   { key: 'availability', label: 'در دسترس بودن' },
 ] as const;
 
-function when(value: Date | string): string {
-  const d = typeof value === 'string' ? new Date(value) : value;
-  return d.toISOString().slice(0, 16).replace('T', ' ');
+/** تاریخ/ساعت به وقتِ بیننده — نه UTC ِ خام (`useDateTime`). */
+function when(value: Date | string | null | undefined, tz: string): string {
+  return formatDateTime(value, tz);
 }
 
 export interface Paging {
@@ -67,6 +68,7 @@ export function ActivityView({
   canSeeFeed: boolean;
 }) {
   const tr = useT();
+  const tz = useTimeZone();
   const visible = TABS.filter((t) => t.key !== 'events' || canSeeFeed);
 
   /**
@@ -121,7 +123,7 @@ export function ActivityView({
                     {e.objectId ? ` #${e.objectId}` : ''}
                   </TableCell>
                   <TableCell>{e.actorName ?? '—'}</TableCell>
-                  <TableNumericCell>{when(e.createdAt)}</TableNumericCell>
+                  <TableNumericCell>{when(e.createdAt, tz)}</TableNumericCell>
                 </TableRow>
               ))}
             </TableBody>

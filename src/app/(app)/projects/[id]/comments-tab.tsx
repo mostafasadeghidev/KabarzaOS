@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useActionToast } from '@/components/ui/toast';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
+import { formatDateTime } from '@/i18n/datetime';
 
 export interface CommentItem {
   id: number;
@@ -26,14 +27,15 @@ export interface CommentItem {
 }
 
 /** تاریخِ کوتاه — همیشه چپ‌به‌راست تا در متنِ فارسی نشکند. */
-function when(value: Date | string): string {
-  const d = typeof value === 'string' ? new Date(value) : value;
-  return d.toISOString().slice(0, 16).replace('T', ' ');
+/** تاریخ/ساعت به وقتِ بیننده — نه UTC ِ خام (`useDateTime`). */
+function when(value: Date | string | null | undefined, tz: string): string {
+  return formatDateTime(value, tz);
 }
 
 function SendButton() {
   const { pending } = useFormStatus();
   const tr = useT();
+  const tz = useTimeZone();
   return (
     <Button type="submit" size="sm" disabled={pending}>
       {pending ? tr('در حال ارسال…') : tr('ارسال')}
@@ -110,6 +112,7 @@ export function CommentsTab({
   canManage: boolean;
 }) {
   const t = useT();
+  const tz = useTimeZone();
   const [state, formAction] = useActionState<TabActionState, FormData>(addCommentAction, {});
   useActionToast(state, { success: 'ثبت شد.' });
 
@@ -125,7 +128,7 @@ export function CommentsTab({
                 <div className="min-w-0">
                   <p className="text-sm whitespace-pre-wrap">{c.body}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {c.userName ?? '—'} · <span className="num">{when(c.createdAt)}</span>
+                    {c.userName ?? '—'} · <span className="num">{when(c.createdAt, tz)}</span>
                   </p>
                   {/* «انجام شد توسط X» — فقط وقتی واقعاً بسته شده باشد. */}
                   {c.closedByName && c.closedAt && (
@@ -134,7 +137,7 @@ export function CommentsTab({
                         label: statusLabel(c.type as CommentType, c.status),
                         name: c.closedByName,
                       })} ·{' '}
-                      <span className="num">{when(c.closedAt)}</span>
+                      <span className="num">{when(c.closedAt, tz)}</span>
                     </p>
                   )}
                 </div>

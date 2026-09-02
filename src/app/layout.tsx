@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { currentSession } from '@/server/auth';
 import { direction } from '@/i18n/config';
 import { primeTranslations } from '@/i18n/server';
 import { TranslationProvider } from '@/i18n/client';
@@ -26,6 +27,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // ⚠️ باید **اینجا** انجام شود: چیدمانِ ریشه پیش از هر فرزندی رندر می‌شود،
   // پس ترجمه برای کلِ درخت آماده است بی‌آنکه چیزی پاس داده شود.
   const { locale, messages } = await primeTranslations();
+  // منطقهٔ زمانیِ کاربرِ واردشده — تاریخ‌ها به وقتِ او نشان داده می‌شوند، نه UTC.
+  const timeZone = (await currentSession())?.timezone ?? '';
 
   return (
     <html lang={locale} dir={direction(locale)} suppressHydrationWarning>
@@ -35,7 +38,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-screen antialiased">
         <ThemeProvider>
-          <TranslationProvider locale={locale} messages={messages}>
+          <TranslationProvider locale={locale} messages={messages} timeZone={timeZone}>
             {/*
               ⚠️ توست در **ریشه** سوار می‌شود، نه در چیدمانِ اپ: صفحهٔ ورود،
               نصبِ اولیه و پوستهٔ عضوِ سابق (که چیدمانِ اپ را کنار می‌گذارد)

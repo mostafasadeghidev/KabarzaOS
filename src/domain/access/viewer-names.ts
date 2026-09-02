@@ -29,6 +29,11 @@ export interface ViewerContext {
   roleByUser: ReadonlyMap<number, string>;
   /** شناسهٔ کارفرمایانِ این پروژه. */
   clientIds: ReadonlySet<number>;
+  /**
+   * برچسب‌های ماسک به زبانِ بیننده. ⚠️ بدونِ این، «عضو تیم» و «کارفرما» به
+   * کارفرمای انگلیسی‌زبان فارسی می‌رسید — ماسک درست بود، زبانش نه.
+   */
+  labels?: { member: string; client: string };
 }
 
 /** برچسبِ جایگزینِ عضوی که نقشش ثبت نشده. */
@@ -57,7 +62,7 @@ export function nameForViewer(
 
   // ۳ — عضوِ خالص: کارفرماها را فقط «کارفرما» می‌بیند.
   if (ctx.viewerIsMember && !ctx.viewerIsClient && ctx.clientIds.has(userId)) {
-    return CLIENT_LABEL;
+    return ctx.labels?.client ?? CLIENT_LABEL;
   }
 
   return realName;

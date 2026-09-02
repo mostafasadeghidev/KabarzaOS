@@ -33,7 +33,7 @@ function sessionSecret(): string {
  * چیزهای نمایشی جدا برمی‌گردند، بدونِ کوئریِ دوم.
  */
 export async function currentSession(): Promise<
-  { actor: Actor; name: string; locale: Locale | null; memberState: MemberState } | null
+  { actor: Actor; name: string; locale: Locale | null; timezone: string; memberState: MemberState } | null
 > {
   const store = await cookies();
   const session = await readSessionToken(store.get(SESSION_COOKIE)?.value, sessionSecret());
@@ -60,6 +60,8 @@ export async function currentSession(): Promise<
     // ⚠️ خالی می‌ماند اگر کاربر انتخابی نکرده باشد؛ حل‌کردنش کارِ
     // `currentLocale()` است که تنظیمِ سامانه را هم می‌بیند (R-I18N-14).
     locale: (user.locale as Locale | null) ?? null,
+    /** منطقهٔ زمانیِ کاربر — برای نمایشِ تاریخ‌ها؛ خالی یعنی مرورگر. */
+    timezone: user.timezone ?? '',
     /** برای تشخیصِ عضوِ سابقِ «فقط مالی» در چیدمان (R-PEOPLE-01). */
     memberState: user.memberState as MemberState,
   };

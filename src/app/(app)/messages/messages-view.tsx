@@ -21,7 +21,8 @@ import {
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
+import { formatDateTime } from '@/i18n/datetime';
 
 export interface InboxRow {
   id: number;
@@ -53,10 +54,9 @@ export interface FilterData {
 
 type Thread = Awaited<ReturnType<typeof openThreadAction>>;
 
-function when(value: Date | string | null): string {
-  if (!value) return '';
-  const d = typeof value === 'string' ? new Date(value) : value;
-  return d.toISOString().slice(0, 16).replace('T', ' ');
+/** تاریخ/ساعت به وقتِ بیننده — نه UTC ِ خام (`useDateTime`). */
+function when(value: Date | string | null | undefined, tz: string): string {
+  return formatDateTime(value, tz);
 }
 
 function SubmitButton({ label }: { label: string }) {
@@ -99,6 +99,7 @@ export function MessagesView({
   initialThreadId?: number | null;
 }) {
   const tr = useT();
+  const tz = useTimeZone();
   const { show } = useToast();
   const [openId, setOpenId] = useState<number | null>(initialThreadId);
   const [thread, setThread] = useState<Thread | null>(null);
@@ -280,7 +281,7 @@ export function MessagesView({
                     </span>
                   </div>
                   <p className="mt-1 truncate text-xs text-muted-foreground">{t.lastBody}</p>
-                  <p className="num mt-0.5 text-[11px] text-muted-foreground">{when(t.lastAt)}</p>
+                  <p className="num mt-0.5 text-[11px] text-muted-foreground">{when(t.lastAt, tz)}</p>
                 </button>
               </li>
             ))}
@@ -319,7 +320,7 @@ export function MessagesView({
                 <li key={m.id} className="rounded-md border p-3">
                   <p className="text-sm whitespace-pre-wrap">{m.body}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {m.fromName ?? '—'} · <span className="num">{when(m.createdAt)}</span>
+                    {m.fromName ?? '—'} · <span className="num">{when(m.createdAt, tz)}</span>
                   </p>
                 </li>
               ))}

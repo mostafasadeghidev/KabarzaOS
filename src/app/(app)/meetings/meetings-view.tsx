@@ -15,7 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
+import { formatDateTime } from '@/i18n/datetime';
 
 export interface MeetingRow extends MeetingView {
   projectTitle: string | null;
@@ -32,9 +33,9 @@ export interface ReminderRow {
 }
 
 /** تاریخ و ساعتِ خوانا — همیشه چپ‌به‌راست تا در متنِ فارسی نشکند. */
-function when(value: Date | string): string {
-  const d = typeof value === 'string' ? new Date(value) : value;
-  return d.toISOString().slice(0, 16).replace('T', ' ');
+/** تاریخ/ساعت به وقتِ بیننده — نه UTC ِ خام (`useDateTime`). */
+function when(value: Date | string | null | undefined, tz: string): string {
+  return formatDateTime(value, tz);
 }
 
 function SubmitButton({ label }: { label: string }) {
@@ -58,6 +59,7 @@ export function MeetingsView({
   canManage: boolean;
 }) {
   const tr = useT();
+  const tz = useTimeZone();
   const { show } = useToast();
   const t = useT();
   const [tab, setTab] = useState<'meetings' | 'reminders'>('meetings');
@@ -113,7 +115,7 @@ export function MeetingsView({
                       <p className="text-sm font-semibold">{m.title}</p>
                       <p className="num mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                         <CalendarDays className="size-3" />
-                        {when(m.meetAt)}
+                        {when(m.meetAt, tz)}
                       </p>
                     </div>
                     <Badge variant={m.meetingScope === 'project' ? 'secondary' : 'outline'}>
@@ -227,7 +229,7 @@ export function MeetingsView({
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
                   <div className="min-w-0">
                     <p className="text-sm">{r.body}</p>
-                    <p className="num mt-0.5 text-xs text-muted-foreground">{when(r.remindAt)}</p>
+                    <p className="num mt-0.5 text-xs text-muted-foreground">{when(r.remindAt, tz)}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">

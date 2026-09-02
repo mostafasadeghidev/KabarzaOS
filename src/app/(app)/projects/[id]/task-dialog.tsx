@@ -18,7 +18,8 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { useActionToast } from '@/components/ui/toast';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
+import { formatDateTime } from '@/i18n/datetime';
 
 /**
  * مودالِ تسک — بازسازیِ `task_admin_html()`:
@@ -31,10 +32,9 @@ type Loaded = Awaited<ReturnType<typeof loadTaskAction>>;
 const cellSelect =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
-function when(value: Date | string | null): string {
-  if (!value) return '';
-  const d = typeof value === 'string' ? new Date(value) : value;
-  return d.toISOString().slice(0, 16).replace('T', ' ');
+/** تاریخ/ساعت به وقتِ بیننده — نه UTC ِ خام (`useDateTime`). */
+function when(value: Date | string | null | undefined, tz: string): string {
+  return formatDateTime(value, tz);
 }
 
 function SubmitButton({ label, busy }: { label: string; busy: string }) {
@@ -56,6 +56,7 @@ export function TaskDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const tr = useT();
+  const tz = useTimeZone();
   const t = useT();
   const [data, setData] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -125,7 +126,7 @@ export function TaskDialog({
               <p className="text-xs text-muted-foreground">
                 {tr('آخرین ویرایش توسط {name} · {at}', {
                   name: task.updatedByName ?? '',
-                  at: when(task.updatedAt),
+                  at: when(task.updatedAt, tz),
                 })}
               </p>
             )}
@@ -273,7 +274,7 @@ export function TaskDialog({
                     <li key={n.id} className="rounded-md border p-2.5">
                       <p className="text-sm whitespace-pre-wrap">{n.body}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {n.userName ?? '—'} · <span className="num">{when(n.createdAt)}</span>
+                        {n.userName ?? '—'} · <span className="num">{when(n.createdAt, tz)}</span>
                       </p>
                     </li>
                   ))}

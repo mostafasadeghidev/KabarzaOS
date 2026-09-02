@@ -14,7 +14,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
+import { formatDateTime } from '@/i18n/datetime';
 
 export interface NotificationItem {
   id: number;
@@ -26,9 +27,9 @@ export interface NotificationItem {
   createdAt: Date | string;
 }
 
-function when(value: Date | string): string {
-  const d = typeof value === 'string' ? new Date(value) : value;
-  return d.toISOString().slice(0, 16).replace('T', ' ');
+/** تاریخ/ساعت به وقتِ بیننده — نه UTC ِ خام (`useDateTime`). */
+function when(value: Date | string | null | undefined, tz: string): string {
+  return formatDateTime(value, tz);
 }
 
 /**
@@ -62,6 +63,7 @@ export function NotificationBell({
   pulse: { enabled: boolean; interval: number };
 }) {
   const tr = useT();
+  const tz = useTimeZone();
   const t = useT();
   const [open, setOpen] = useState(false);
   const live = usePulse(pulse.interval, pulse.enabled);
@@ -164,7 +166,7 @@ export function NotificationBell({
                   {n.body && (
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">{n.body}</p>
                   )}
-                  <p className="num mt-0.5 text-[11px] text-muted-foreground">{when(n.createdAt)}</p>
+                  <p className="num mt-0.5 text-[11px] text-muted-foreground">{when(n.createdAt, tz)}</p>
                 </button>
               </li>
             ))}
@@ -178,7 +180,7 @@ export function NotificationBell({
         <DialogHeader>
           <DialogTitle>{reading ? tr(reading.title) : ''}</DialogTitle>
           <DialogDescription className="num">
-            {reading ? when(reading.createdAt) : ''}
+            {reading ? when(reading.createdAt, tz) : ''}
           </DialogDescription>
         </DialogHeader>
 
