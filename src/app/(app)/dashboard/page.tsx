@@ -26,12 +26,15 @@ import { intlTag } from '@/i18n/config';
 function todayLabel(): string {
   return new Intl.DateTimeFormat(intlTag(activeLocale()), {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    // ⚠️ ارقامِ لاتین — همان قراردادِ `.num` در بقیهٔ اپ؛ دو نظامِ رقم در یک صفحه نه.
+    numberingSystem: 'latn',
   }).format(new Date());
 }
 
 function timeLabel(date: Date): string {
   return new Intl.DateTimeFormat(intlTag(activeLocale()), {
     weekday: 'short', hour: '2-digit', minute: '2-digit',
+    numberingSystem: 'latn',
   }).format(date);
 }
 

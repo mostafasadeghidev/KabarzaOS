@@ -22,11 +22,12 @@ export interface StaffRow {
 }
 
 /** برچسبِ سطحِ یک بخش، برای نمایشِ خلاصه در ردیف. */
-function levelLabel(sectionKey: string, level: Level): string | null {
+function levelLabel(sectionKey: string, level: Level, t: (k: string) => string): string | null {
   if (level === 'none') return null;
   const section = SECTION_ACCESS.find((s) => s.key === sectionKey);
   const option = section?.levels.find((l) => l.value === level);
-  return option ? `${section!.label.split(' (')[0]}: ${option.label}` : null;
+  // ⚠️ هر دو نیمه برچسبِ ثابت‌اند و باید ترجمه شوند — «پروژه‌ها: مدیریت» در رابطِ انگلیسی فارسی می‌ماند.
+  return option ? `${t(section!.label.split(' (')[0] ?? '')}: ${t(option.label)}` : null;
 }
 
 /**
@@ -120,7 +121,7 @@ export function StaffSection({
         <TableBody>
           {staff.map((s) => {
             const granted = SECTION_ACCESS
-              .map((section) => levelLabel(section.key, s.levels[section.key] ?? 'none'))
+              .map((section) => levelLabel(section.key, s.levels[section.key] ?? 'none', t))
               .filter((x): x is string => x !== null);
 
             return (

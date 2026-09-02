@@ -323,7 +323,7 @@ export function PayoutsView({
                           {r.title}
                           <span className="ms-2 text-xs text-muted-foreground">
                             {t(KIND_LABELS[r.kind as 'recurring'] ?? r.kind)}
-                            {r.kind === 'recurring' && ` · ${UNIT_LABELS[r.intervalUnit as IntervalUnit]}`}
+                            {r.kind === 'recurring' && ` · ${t(UNIT_LABELS[r.intervalUnit as IntervalUnit] ?? r.intervalUnit)}`}
                           </span>
                           {r.vendorName && (
                             <Badge variant="secondary" className="ms-2">{r.vendorName}</Badge>

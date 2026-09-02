@@ -80,12 +80,12 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
   useEffect(() => {
     if (state.keptOwed?.length) {
       show(tr('{names} حذف نشد چون روی این پروژه تسویه‌نشده دارد. اول تسویه کنید.', {
-        names: state.keptOwed.join('، '),
+        names: state.keptOwed.join(tr('، ')),
       }), 'info');
     }
     if (state.keptFormer?.length) {
       show(tr('{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.', {
-        names: state.keptFormer.join('، '),
+        names: state.keptFormer.join(tr('، ')),
       }), 'info');
     }
   }, [state, show, tr]);

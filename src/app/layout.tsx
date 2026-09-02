@@ -1,18 +1,21 @@
 import type { Metadata } from 'next';
 import { currentSession } from '@/server/auth';
 import { direction } from '@/i18n/config';
-import { primeTranslations } from '@/i18n/server';
+import { primeTranslations, getT } from '@/i18n/server';
 import { TranslationProvider } from '@/i18n/client';
 import { ThemeProvider, themeScript } from '@/components/theme-provider';
 import { ToastProvider } from '@/components/ui/toast';
 import './globals.css';
 
-export const metadata: Metadata = {
-  title: 'KabarzaOS',
-  // ⚠️ فراداده سطحِ ماژول است و بیرون از درخواست ساخته می‌شود، پس مترجمِ
-  // per-request اینجا در دسترس نیست. عنوان و توضیح فارسی می‌مانند.
-  description: 'سیستمِ مدیریتِ آژانس',
-};
+/**
+ * ⚠️ `generateMetadata` به‌ازای هر درخواست اجرا می‌شود، پس مترجمِ درخواست در
+ * دسترس است — برخلافِ `export const metadata` که سطحِ ماژول بود و توضیح را
+ * در هر زبانی فارسی می‌گذاشت.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: 'KabarzaOS', description: t('سیستمِ مدیریتِ آژانس') };
+}
 
 /**
  * R-I18N-06 — جهت و زبان از **انتخابِ کاربر** مشتق می‌شوند، نه هاردکد.

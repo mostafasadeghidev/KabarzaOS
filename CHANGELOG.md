@@ -2,6 +2,24 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.29.0]
+
+### Changed — translations
+
+- **Notifications are rendered in each recipient's language.** A notification used to be written once, in the sender's language, and stored as-is for every recipient. The service now takes a message key plus parameters and renders the title and body per recipient (falling back to the system default language). The scheduler, absence and payout emitters pass keys and parameters instead of pre-built Persian strings.
+- **CSV exports carry translated headers.** Report, closing, team and finance exports used Persian column names in every language; the builders take the request's translator now.
+- **The daily report is built in the configured default language** — the same text the settings preview shows. Section titles, the empty-section line and the absence rows are translated.
+- **Dates and times are shown in the viewer's time zone.** Activity, meetings, messages, comments, tasks and the notification bell printed raw UTC. A shared formatter (`YYYY-MM-DD HH:mm`, Latin digits) renders in the profile's time zone; the meeting form reads and writes `datetime-local` values in that zone, so a 14:00 Tehran meeting is stored and shown as 14:00 Tehran.
+- **The viewer-name masks ("member", "client") are translated** instead of always Persian.
+- **Small fixed labels that stayed Persian in the English interface** — staff access badges, broadcast audience options, recurring payout units, the file-removal error, the member list joiner — go through the translator. Tag catalogue cells and the QA role picker fall back to the English name before the raw name.
+- **The dashboard dates use Latin digits** like the rest of the app, and the document description is translated per request.
+
+### Fixed — build
+
+- **`next build` could die with "Zone Allocation failed"** when its fifteen default workers each reserved a heap. The build runs with four workers now.
+
+---
+
 ## [1.28.1]
 
 ### Fixed — data correctness

@@ -394,7 +394,7 @@ export function MessagesView({
                 >
                   <option value="">{tr("— انتخابِ دستی —")}</option>
                   {(Object.keys(AUDIENCE_LABELS) as Audience[]).map((key) => (
-                    <option key={key} value={key}>{AUDIENCE_LABELS[key]}</option>
+                    <option key={key} value={key}>{tr(AUDIENCE_LABELS[key])}</option>
                   ))}
                 </select>
               </div>

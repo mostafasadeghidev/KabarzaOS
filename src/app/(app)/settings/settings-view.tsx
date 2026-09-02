@@ -278,7 +278,8 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 // ⚠️ فقط نامِ زبانِ جاری. نامِ پایه زیرش نمی‌آید: ستون را
                 // شلوغ می‌کرد و کاربر آن را «ترجمه‌نشده» می‌خواند، نه راهنما.
                 // نامِ پایه در فرمِ ویرایش دیده می‌شود، که جای درستش است.
-                cell: (t) => t.nameI18n?.[locale] || t.name,
+                // انگلیسی پلِ میان‌زبانی است (R-I18N-15) — همان قاعدهٔ tagName().
+                cell: (t) => t.nameI18n?.[locale] || t.nameI18n?.en || t.name,
               },
               {
                 header: 'رنگ',
@@ -570,7 +571,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
                     {/* R-QA-02 — نقشِ خالی یعنی مخاطبِ «کارفرما». */}
                     <option value="">{tr("کارفرما")}</option>
                     {data.tags.filter((t) => t.type === 'member_role').map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
+                      <option key={t.id} value={t.id}>{t.nameI18n?.[locale] || t.nameI18n?.en || t.name}</option>
                     ))}
                   </select>
                 </div>

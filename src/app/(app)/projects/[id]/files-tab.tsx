@@ -175,7 +175,7 @@ export function FilesTab({
             })}
           </ul>
         )}
-        {removeError && <p className="text-xs text-destructive">{removeError}</p>}
+        {removeError && <p className="text-xs text-destructive">{tr(removeError)}</p>}
       </section>
 
       <section className="grid gap-2">

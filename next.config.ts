@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
    */
   experimental: {
     staleTimes: { dynamic: 0 },
+    cpus: 4,
   },
 };
 
