@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { useConfirm } from '@/components/ui/confirm';
 
 export interface FileRow {
   id: number;
@@ -68,10 +69,12 @@ export function FilesTab({
   const [linkState, addLink] = useActionState(addLinkAction, {});
   useActionToast(linkState);
   const [removing, startRemove] = useTransition();
+  const confirm = useConfirm();
   const [removeError, setRemoveError] = useState<string | null>(null);
   const uploadForm = useRef<HTMLFormElement>(null);
 
-  const remove = (id: number) => {
+  const remove = async (id: number) => {
+    if (!(await confirm({ title: tr('این پیوست حذف شود؟') }))) return;
     setRemoveError(null);
     startRemove(async () => {
       const result = await deleteAttachmentAction(id, projectId);

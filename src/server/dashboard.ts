@@ -9,6 +9,7 @@ import { assertCanView, visibleScopes } from '@/domain/access/guard';
 import { canViewSection, type Actor } from '@/domain/access/permissions';
 import { weekdayIndex } from '@/domain/availability/weekly';
 import { getT } from '@/i18n/server';
+import { isDeadlineSoon, isOverdueProject } from '@/domain/projects/lifecycle';
 
 /**
  * دادهٔ داشبورد — ساختار عیناً از نسخهٔ قبلی گرفته شده:
@@ -100,7 +101,15 @@ export async function getDashboard(actor: Actor) {
     one(db.select({ n }).from(comments)
       // ⚠️ کامنت با `needs_review` نوشته می‌شود، نه `open` — با `open` این کارت همیشه صفر بود.
       .where(and(inComments, eq(comments.type, 'comment'), eq(comments.status, 'needs_review')))),
-    one(db.select({ n }).from(tenderBids).where(eq(tenderBids.status, 'pending'))),
+    // پورتِ `bids_pending_ids()`: مناقصه‌های **باز** (گروهِ lead) با دستِ‌کم یک پیشنهادِ
+    // در انتظار و بدونِ برنده — نه شمارِ پیشنهادها روی هر مناقصه‌ای.
+    one(db.execute(sql`
+      select count(*)::int as n from projects p
+      join tags s on s.id = p.status_tag_id
+      where p.deleted_at is null and p.is_tender = true and s.status_group = 'lead'
+        and exists (select 1 from tender_bids b where b.project_id = p.id and b.status = 'pending')
+        and not exists (select 1 from tender_bids b where b.project_id = p.id and b.status = 'approved')
+    `) as unknown as Promise<Array<{ n: number }>>),
   ]);
 
   const actionGroups: ActionGroup[] = [
@@ -230,13 +239,13 @@ export async function getDashboard(actor: Actor) {
   const openByProject = new Map(openTaskRows.map((r) => [r.projectId, r.n]));
   const dayDiff = (a: string, b: string) => Math.round((Date.parse(a) - Date.parse(b)) / 86400000);
 
+  // پورتِ `overdue_ids()` / `deadline_soon_ids()`: منجمد (کنسل/نگه‌داشته) بیرون، تکمیل‌شده داخل.
   const overdue: RiskItem[] = active
-    .filter((p) => p.deadline && p.deadline < today && p.statusGroup !== 'completed')
+    .filter((p) => isOverdueProject(p, today))
     .map((p) => ({ id: p.id, title: p.title, badge: t('{n} روز تأخیر', { n: dayDiff(today, p.deadline!) }) }));
 
   const soon: RiskItem[] = active
-    .filter((p) => p.deadline && p.deadline >= today
-      && dayDiff(p.deadline!, today) <= 7 && p.statusGroup !== 'completed')
+    .filter((p) => isDeadlineSoon(p, today))
     .map((p) => {
       const d = dayDiff(p.deadline!, today);
       return { id: p.id, title: p.title, badge: d === 0 ? t('امروز') : t('{n} روز مانده', { n: d }) };

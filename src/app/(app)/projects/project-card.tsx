@@ -85,7 +85,8 @@ export function ProjectCard({
             {project.isLightened && ` · ${t('سبک')}`}
           </span>
         )}
-        {project.isTender && (
+        {/* فقط مناقصهٔ **باز** روبان دارد — مناقصهٔ بسته/کنسل‌شده نه. */}
+        {project.tenderOpen && (
           <span className="bg-violet-600 px-2 py-0.5 text-[10px] text-white">
             {t('مناقصه')}
             {project.bidCount > 0 && <> · <span className="num">{project.bidCount}</span></>}

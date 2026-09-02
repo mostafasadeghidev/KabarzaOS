@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
+import { useConfirm } from '@/components/ui/confirm';
 
 export interface CommentItem {
   id: number;
@@ -50,13 +51,18 @@ function SendButton() {
  */
 function CommentDelete({ commentId }: { commentId: number }) {
   const t = useT();
+  const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
   return (
     <button
       type="button"
       aria-label={t("حذفِ کامنت")}
       disabled={pending}
-      onClick={() => startTransition(async () => { await deleteCommentAction(commentId); })}
+      onClick={async () => {
+        if (await confirm({ title: t('این کامنت حذف شود؟') })) {
+          startTransition(async () => { await deleteCommentAction(commentId); });
+        }
+      }}
       className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-60"
     >
       <Trash2 className="size-3.5" />
@@ -106,10 +112,13 @@ export function CommentsTab({
   projectId,
   comments,
   canManage,
+  canInteract,
 }: {
   projectId: number;
   comments: CommentItem[];
   canManage: boolean;
+  /** هر شرکت‌کننده (عضو/کارفرما) تیکِ «انجام شد» می‌زند — پورتِ `handle_comment_status`. */
+  canInteract: boolean;
 }) {
   const t = useT();
   const tz = useTimeZone();
@@ -141,7 +150,7 @@ export function CommentsTab({
                     </p>
                   )}
                 </div>
-                <StatusToggle comment={c} canManage={canManage} />
+                <StatusToggle comment={c} canManage={canInteract} />
                 {canManage && <CommentDelete commentId={c.id} />}
               </div>
             </li>

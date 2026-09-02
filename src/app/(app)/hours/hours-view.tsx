@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { useConfirm } from '@/components/ui/confirm';
 
 export interface LogRow {
   id: number;
@@ -94,6 +95,7 @@ function LiveMinutes({ from }: { from: number }) {
  */
 export function HoursView({ data }: { data: HoursData }) {
   const tr = useT();
+  const ask = useConfirm();
   const t = useT();
   const [startState, start] = useActionState(startTimerAction, {});
   useActionToast(startState);
@@ -282,7 +284,9 @@ export function HoursView({ data }: { data: HoursData }) {
                       <Button size="sm" variant="ghost" onClick={() => setEditing(l)}>{t("ویرایش")}</Button>
                       <button
                         type="button"
-                        onClick={() => deleteLogAction(l.id)}
+                        onClick={async () => {
+                          if (await ask({ title: t('این ساعت حذف شود؟') })) await deleteLogAction(l.id);
+                        }}
                         className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"
                         aria-label={t("حذف")}
                       >

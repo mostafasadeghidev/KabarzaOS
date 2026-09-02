@@ -273,7 +273,7 @@ export async function addAttachment(
 ) {
   await assertProjectAccess(actor, projectId);
   // ⚠️ پروژهٔ منجمد فایلِ تازه نمی‌گیرد (`handle_add_attachment`).
-  await assertNotFrozen(projectId);
+  await assertNotFrozen(projectId, actor);
 
   const fileId = await storeFile(actor, blob, 'attachment');
   await db.insert(attachments).values({
@@ -289,7 +289,7 @@ export async function addAttachment(
 /** ⚠️ R-FILE-08 — هیچ فایلی گرفته نمی‌شود؛ فقط نشانی. پس SSRF ندارد. */
 export async function addLink(actor: Actor, projectId: number, rawUrl: string, label: string) {
   // ⚠️ پروژهٔ منجمد پیوستِ تازه نمی‌گیرد (`handle_add_link`).
-  await assertNotFrozen(projectId);
+  await assertNotFrozen(projectId, actor);
   await assertProjectAccess(actor, projectId);
 
   const url = normalizeExternalUrl(rawUrl);
@@ -314,6 +314,8 @@ export async function deleteAttachment(actor: Actor, attachmentId: number) {
   if (!row) throw new FileNotFoundError();
 
   if (row.projectId) await assertProjectAccess(actor, row.projectId);
+  // ⚠️ پروژهٔ منجمد پیوستش هم حذف نمی‌شود — همان قفلی که افزودن دارد (`block_if_frozen`).
+  if (row.projectId) await assertNotFrozen(row.projectId, actor);
   if (row.userId !== actor.id && !canManageSection(actor, 'projects')) {
     throw new ForbiddenError('attachment.not_yours');
   }

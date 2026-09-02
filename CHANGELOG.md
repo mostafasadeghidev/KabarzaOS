@@ -2,6 +2,33 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.31.0]
+
+### Added — project and task rules (parity with the plugin)
+
+- **Clients can be edited on the project page.** A "Clients" card lists the project's clients in assignment order (the first is the primary client) and an "Edit clients" dialog adds and removes them. Saving is a diff, so the primary client never reshuffles because the list was edited; newly added clients are notified. Before, a client could only be added from the card and never removed.
+- **Confirmation before destructive actions.** Deleting a task, file, comment, QA item or QA role, lightening a project, withdrawing a winner, deleting a meeting, reminder, time entry, absence or ledger row, and removing a person all ask for confirmation first, through one shared dialog.
+- **Default statuses.** A new project starts in "not started" (a new tender in "lead"), and a new task in the first "to do" status, instead of having no status at all — which used to leave projects out of every pipeline tab and tenders closed to bids.
+- **The project description is shown on the project page** under the title.
+- **A "no category" tab** for projects whose status has no known group; the projects page opens on "in progress" and lists "all" last, like the plugin; projects are listed newest first.
+
+### Changed — guards
+
+- **Frozen projects no longer lock the owner or global project managers** (the plugin's owner "manages from the admin card view"); members, clients, project managers and office managers stay read-only. The lock now also covers deleting an attachment, ticking a comment, and claiming a task.
+- **Deleting a project is owner-only**, as in the plugin. Deleting a parent leaves its sub-projects as standalone projects instead of orphans, and deleting or lightening a project removes the attachment files from storage; lightening also clears the tender roles.
+- **View-only staff can no longer change a task's status or post task notes**; both now require working access to the project, and the note composer is hidden from them. Members and clients may tick a comment as done, as in the plugin.
+- **Project managers and office managers see private tasks on their own projects** (creator, assignee, or a manager of that project).
+- **Claiming a task takes every unclaimed role the member holds** and keeps the task role-assigned instead of turning it into a personal task, so holders of the other roles keep seeing it.
+- **A manager can withdraw only the approved winner** of a tender, not another member's pending bid.
+
+### Fixed
+
+- **"Overdue" and "deadline soon" follow the plugin:** cancelled and on-hold projects are excluded, completed ones are included until archived (the previous rule was the opposite), on the projects page and the dashboard.
+- **The tender ribbon and tab appear only while the tender is open** (status "lead"); the dashboard's "tenders awaiting decision" counts open tenders with a pending bid and no winner, instead of every pending bid.
+- **The delete banner on the manage tab could never say "locked"** because it was fed hard-coded balances; it now uses the real open balances.
+
+---
+
 ## [1.30.0]
 
 ### Added — meetings, messaging and notifications (parity with the plugin)

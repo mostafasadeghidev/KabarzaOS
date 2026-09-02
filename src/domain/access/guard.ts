@@ -66,6 +66,32 @@ export function filterVisible<T extends PrivateRecord>(actor: Actor, records: T[
 }
 
 /**
+ * همان قاعده با **مدیریتِ پروژه‌محور** — پورتِ `can_view_task()`: مدیرِ
+ * پروژهٔ تگ‌دار و مدیرِ دفترِ مالک هم تسکِ خصوصیِ پروژهٔ خودشان را می‌بینند.
+ *
+ * ⚠️ `canSeePrivateRecord` فقط مجوزِ **سراسری** را می‌شناخت؛ مدیرِ پروژه‌ای
+ * که هیچ مجوزِ سراسری ندارد تسکِ خصوصیِ پروژهٔ خودش را نمی‌دید و نمی‌توانست
+ * وضعیتش را عوض کند — در حالی که همان تسک را می‌توانست ویرایش کند.
+ */
+export function canSeePrivateRecordFor(
+  actor: Actor,
+  record: PrivateRecord,
+  managesProject: boolean,
+): boolean {
+  if (!record.isPrivate) return true;
+  if (record.createdBy === actor.id || record.assignedTo === actor.id) return true;
+  return managesProject;
+}
+
+export function filterVisibleFor<T extends PrivateRecord>(
+  actor: Actor,
+  records: T[],
+  managesProject: boolean,
+): T[] {
+  return records.filter((r) => canSeePrivateRecordFor(actor, r, managesProject));
+}
+
+/**
  * درزِ scope — دیدنِ دادهٔ خصوصیِ مالک یک **گرنت** است، نه نقش.
  * این‌طور می‌شود گرفتنش بدونِ تنزلِ نقشِ کاربر.
  */

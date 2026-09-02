@@ -149,7 +149,7 @@ describe('R-PROJ-08/09 — اعضا روی دیتابیسِ واقعی', () => {
 describe('R-PROJ-01 — حذفِ پروژه', () => {
   it('پروژهٔ تمیز حذف می‌شود', async () => {
     const p = await db.insert(projects).values({ title: 'موقت', currencyId: eurId }).returning({ id: projects.id });
-    const plan = await service.deleteProject(manager(), p[0]!.id, {});
+    const plan = await service.deleteProject(owner(), p[0]!.id, {});
     expect(plan.financial).toBe('none');
 
     const list = await service.listProjects(manager());
@@ -164,7 +164,7 @@ describe('R-PROJ-01 — حذفِ پروژه', () => {
     await db.insert(projectPayments).values({
       projectId: p[0]!.id, direction: 'incoming', amount: '10', amountEur: '10', currencyId: eurId,
     });
-    await expect(service.deleteProject(manager(), p[0]!.id, {
+    await expect(service.deleteProject(owner(), p[0]!.id, {
       mode: 'full', confirmTitle: 'پروژهٔ نیمه‌پرداخت',
     })).rejects.toThrow(/locked/);
   });
@@ -591,7 +591,7 @@ describe('R-PROJ-03 — جداسازی در برابر حذفِ کامل', () =>
   it('⚠️ جداسازی تراکنش را نگه می‌دارد و نامِ پروژه را در شرحش می‌نویسد', async () => {
     // بدونِ این، پولِ جداشده بی‌هویت می‌شد.
     const id = await makeProject('پروژهٔ جداشدنی');
-    await service.deleteProject(manager(), id, {
+    await service.deleteProject(owner(), id, {
       mode: 'detach', confirmTitle: 'پروژهٔ جداشدنی',
     });
 
@@ -604,7 +604,7 @@ describe('R-PROJ-03 — جداسازی در برابر حذفِ کامل', () =>
 
   it('حذفِ کامل تراکنش را هم می‌برد', async () => {
     const id = await makeProject('پروژهٔ کاملاً حذفی');
-    await service.deleteProject(manager(), id, {
+    await service.deleteProject(owner(), id, {
       mode: 'full', confirmTitle: 'پروژهٔ کاملاً حذفی',
     });
     expect(await db.select().from(projectPayments).where(eq(projectPayments.projectId, id))).toHaveLength(0);
@@ -612,7 +612,7 @@ describe('R-PROJ-03 — جداسازی در برابر حذفِ کامل', () =>
 
   it('⚠️ نامِ غلط حذف را متوقف می‌کند', async () => {
     const id = await makeProject('پروژهٔ محافظت‌شده');
-    await expect(service.deleteProject(manager(), id, {
+    await expect(service.deleteProject(owner(), id, {
       mode: 'full', confirmTitle: 'نامِ غلط',
     })).rejects.toThrow(ProjectDeleteError);
 
@@ -624,7 +624,7 @@ describe('R-PROJ-03 — جداسازی در برابر حذفِ کامل', () =>
     const id = await makeProject('پروژهٔ قفل‌شده');
     // ۳۰۰۰ دریافت شده از ۵۰۰۰ → ماندهٔ باز → قفل.
     await db.update(projects).set({ price: '5000' }).where(eq(projects.id, id));
-    await expect(service.deleteProject(manager(), id, {
+    await expect(service.deleteProject(owner(), id, {
       mode: 'full', confirmTitle: 'پروژهٔ قفل‌شده',
     })).rejects.toThrow(ProjectDeleteError);
   });

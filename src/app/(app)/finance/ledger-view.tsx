@@ -27,6 +27,7 @@ import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { LedgerFilter, type LedgerPaging } from './ledger-filter';
 import { TableSearch, useTableView } from '@/components/ui/table-search';
+import { useConfirm } from '@/components/ui/confirm';
 
 /** یک حساب — همان شکلی که `listAccounts` برمی‌گرداند. */
 export interface AccountOption {
@@ -133,6 +134,7 @@ export function LedgerView({
   onSelectAccount: (id: number) => void;
 }) {
   const tr = useT();
+  const confirm = useConfirm();
   const t = useT();
 
   /**
@@ -310,13 +312,14 @@ export function LedgerView({
                           className="size-8 text-muted-foreground hover:text-destructive"
                           aria-label={t("حذفِ ردیف")}
                           disabled={pending}
-                          onClick={() =>
+                          onClick={async () => {
+                            if (!(await confirm({ title: t('این ردیفِ دفتر حذف شود؟') }))) return;
                             startTransition(async () => {
                               const result = await deleteEntryAction(e.id);
                               if (result.error) show(tr(result.error), 'error');
                               else show(tr('حذف شد.'), 'success');
-                            })
-                          }
+                            });
+                          }}
                         >
                           <Trash2 className="size-3.5" />
                         </Button>

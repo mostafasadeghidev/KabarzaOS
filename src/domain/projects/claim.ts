@@ -41,6 +41,21 @@ export function canClaimTask(input: ClaimInput): boolean {
   });
 }
 
+/**
+ * همهٔ نقش‌هایی که با برداشتن به این کاربر می‌رسند — پورتِ `Tasks::claim()`:
+ * **هر** نقشِ برداشته‌نشده‌ای که کاربر دارد، نه فقط اولی. تسک نقشی می‌ماند
+ * (`assigned_to` دست نمی‌خورد)؛ دارندگانِ نقش‌های دیگرِ تسک همچنان می‌بینندش.
+ *
+ * ⚠️ پیش از این فقط یک نقش برداشته می‌شد **و** `assignedTo` ست می‌شد: تسکِ
+ * چندنقشه یک‌نفره می‌شد و صاحبانِ نقش‌های دیگر تسک و اعلانش را از دست می‌دادند.
+ */
+export function claimableRoleIds(input: ClaimInput): number[] {
+  if (!canClaimTask(input)) return [];
+  return input.roles
+    .filter((r) => !r.claimedBy && (input.roleHolders.get(r.roleTagId) ?? []).includes(input.userId))
+    .map((r) => r.roleTagId);
+}
+
 /** نقشی که با برداشتن به این کاربر می‌رسد (اولین نقشِ واجدِ شرایط). */
 export function claimableRoleId(input: ClaimInput): number | null {
   if (!canClaimTask(input)) return null;

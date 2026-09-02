@@ -5,6 +5,7 @@ import { primeTranslations, getT } from '@/i18n/server';
 import { TranslationProvider } from '@/i18n/client';
 import { ThemeProvider, themeScript } from '@/components/theme-provider';
 import { ToastProvider } from '@/components/ui/toast';
+import { ConfirmProvider } from '@/components/ui/confirm';
 import './globals.css';
 
 /**
@@ -48,7 +49,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               هم فرم دارند و بازخوردشان نباید بی‌صدا بماند.
             */}
             <ToastProvider>
-              {children}
+              {/* تأییدِ کارِ مخرب — یک دیالوگ برای همهٔ دکمه‌های حذف (پورتِ confirm()). */}
+              <ConfirmProvider>
+                {children}
+              </ConfirmProvider>
             </ToastProvider>
           </TranslationProvider>
         </ThemeProvider>

@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BOARD_COLUMNS, boardColumn, canClaimTask, claimableRoleId,
-  groupIntoColumns, paginate,
-} from '../claim';
+  groupIntoColumns, paginate, claimableRoleIds } from '../claim';
 
 const holders = (map: Record<number, number[]>) =>
   new Map(Object.entries(map).map(([k, v]) => [Number(k), v]));
@@ -115,5 +114,30 @@ describe('صفحه‌بندی', () => {
     const page = paginate([], 1, 25);
     expect(page.pages).toBe(1);
     expect(page.items).toEqual([]);
+  });
+});
+
+describe('claimableRoleIds — همهٔ نقش‌های برداشته‌نشده‌ای که کاربر دارد', () => {
+  it('⚠️ دو نقشِ بازِ کاربر با هم برداشته می‌شوند؛ نقشِ دیگران و نقشِ برداشته‌شده نه', () => {
+    const roleHolders = new Map<number, number[]>([[1, [7, 8]], [2, [7, 9]], [3, [9]], [4, [7, 8]]]);
+    const ids = claimableRoleIds({
+      assignedTo: null,
+      roles: [
+        { roleTagId: 1, claimedBy: null },
+        { roleTagId: 2, claimedBy: null },
+        { roleTagId: 3, claimedBy: null },
+        { roleTagId: 4, claimedBy: 8 },
+      ],
+      roleHolders,
+      userId: 7,
+    });
+    expect(ids).toEqual([1, 2]);
+  });
+
+  it('بدونِ اجازهٔ برداشتن، هیچ', () => {
+    expect(claimableRoleIds({
+      assignedTo: 5, roles: [{ roleTagId: 1, claimedBy: null }],
+      roleHolders: new Map([[1, [7, 8]]]), userId: 7,
+    })).toEqual([]);
   });
 });

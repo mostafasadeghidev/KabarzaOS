@@ -22,6 +22,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useT } from '@/i18n/client';
+import { useConfirm } from '@/components/ui/confirm';
 
 export interface PersonView {
   id: number;
@@ -95,6 +96,7 @@ export function PersonCard({
   onNotice: (message: string, isError: boolean) => void;
 }) {
   const tr = useT();
+  const confirm = useConfirm();
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [passwordState, setPasswordState] = useState<PasswordState>({});
   // ⚠️ ref، نه state: تایپِ رمز نباید هر نویسه کارت را دوباره رندر کند.
@@ -191,7 +193,12 @@ export function PersonCard({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   variant="destructive"
-                  onSelect={() => run(() => removePersonAction(person.id, section.role))}
+                  onSelect={async () => {
+                    if (await confirm({
+                      title: tr('این کاربر حذف شود؟'),
+                      description: tr('اگر سابقهٔ مالی/کاری داشته باشد، به‌جای حذف دسترسی‌اش قطع می‌شود.'),
+                    })) run(() => removePersonAction(person.id, section.role));
+                  }}
                 >
                   <Trash2 className="size-3.5" />
                   {tr("حذف")}

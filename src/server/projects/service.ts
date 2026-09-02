@@ -1,14 +1,14 @@
 import { tagName } from '@/db/tag-name';
 import { currentLocale, getT } from '@/i18n/server';
-import { notInArray, and, eq, inArray, isNull } from 'drizzle-orm';
+import { notInArray, and, eq, inArray, isNull, asc } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   attachments, comments, ledger, paymentRequests, projectClients, projectMembers,
   projectPayments, projectQa, projects, tags, tagRelations, tasks, taskRoles,
-  tenderBids, timelogs, auditLog, userOffices,
+  tenderBids, timelogs, auditLog, userOffices, users,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
-import { assertCanManage, assertCanView, canSeeScope, filterVisible, ForbiddenError, visibleScopes } from '@/domain/access/guard';
+import { assertCanManage, assertCanView, canSeeScope, filterVisible, ForbiddenError, visibleScopes, assertOwner, filterVisibleFor } from '@/domain/access/guard';
 import { diffMembers, planAddMember, type MemberInput } from '@/domain/projects/members';
 import {
   assertCanLighten, canSetParent, impactState, planDelete,
@@ -16,7 +16,7 @@ import {
 } from '@/domain/projects/lifecycle';
 import { OPEN_STATUS, toggleStatus, type CommentType } from '@/domain/projects/comments';
 import { assigneeOptions } from '@/domain/projects/assignees';
-import { claimableRoleId } from '@/domain/projects/claim';
+import { claimableRoleIds } from '@/domain/projects/claim';
 import { planQaApply, qaToggle, type QaAudience } from '@/domain/projects/qa';
 import {
   openRolesForUser, planApproveBid, planTenderRoles, planWithdrawBid, tenderIsOpen,
@@ -25,7 +25,7 @@ import {
 import { notify } from '@/server/notifications/service';
 import {
   assertCanInteractWithProject, assertCanManageProject, assertCanViewProject, assertNotFrozen,
-  canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation,
+  canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation, canInteractWithProject,
 } from './authority';
 import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
 import { visiblePayments } from '@/domain/access/project-payments';
@@ -38,6 +38,8 @@ import {
   assignmentDelta, commentRecipients, reviewRecipients, taskDoerIds,
 } from '@/server/notifications/audience';
 import * as repo from './repository';
+import { defaultProjectStatusId, defaultTaskStatusId } from '@/domain/projects/defaults';
+import { removeFiles } from '@/server/files/service';
 
 /**
  * سرویسِ پروژه — تنها دروازه‌ای که UI و API از آن رد می‌شوند.
@@ -387,7 +389,8 @@ export interface DeleteInput {
  * تصمیم در دامنه گرفته می‌شود؛ اینجا فقط اجرا می‌شود.
  */
 export async function deleteProject(actor: Actor, projectId: number, input: DeleteInput) {
-  assertCanManage(actor, 'projects');
+  // ⚠️ فقط مالک — پورتِ `manage_options` روی بخشِ حذف؛ مدیرِ پروژه‌ها هم نه.
+  assertOwner(actor);
   const project = await getProject(actor, projectId);
 
   // ⚠️ ماندهٔ باز از خودِ داده — نه از فراخوان. با مقدارِ هاردکدِ false، قفل هرگز نمی‌افتاد.
@@ -398,6 +401,7 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
     actualTitle: project.title,
   });
 
+  const orphanFileIds: number[] = [];
   await db.transaction(async (tx) => {
     // ردیف‌های سبک همیشه می‌روند — فایل، تسک، کامنت، QA، پیشنهاد، اعضا، کارفرمایان.
     const taskIds = await tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.projectId, projectId));
@@ -407,9 +411,14 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
     await tx.delete(tasks).where(eq(tasks.projectId, projectId));
     await tx.delete(comments).where(eq(comments.projectId, projectId));
     await tx.delete(projectQa).where(eq(projectQa.projectId, projectId));
+    // فایلِ فیزیکیِ پیوست‌ها هم می‌رود (`Attachments::delete`) — وگرنه در باکت یتیم می‌ماند.
+    orphanFileIds.push(...(await tx.select({ fileId: attachments.fileId }).from(attachments)
+      .where(eq(attachments.projectId, projectId))).map((a) => a.fileId).filter((id): id is number => id !== null));
     await tx.delete(attachments).where(eq(attachments.projectId, projectId));
     await tx.delete(tenderBids).where(eq(tenderBids.projectId, projectId));
     await tx.delete(timelogs).where(eq(timelogs.projectId, projectId));
+    // زیرپروژه‌ها بی‌والد می‌مانند، نه یتیمِ یک ردیفِ حذف‌شده (`purge_subordinate`).
+    await tx.update(projects).set({ parentId: null }).where(eq(projects.parentId, projectId));
     await tx.delete(projectMembers).where(eq(projectMembers.projectId, projectId));
     await tx.delete(projectClients).where(eq(projectClients.projectId, projectId));
 
@@ -449,6 +458,7 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
     await tx.update(projects).set({ deletedAt: new Date() }).where(eq(projects.id, projectId));
   });
 
+  await removeFiles(orphanFileIds);
   await audit(actor, `project.delete.${plan.financial}`, projectId, project, null);
   return plan;
 }
@@ -462,12 +472,20 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
 export async function getProjectDetail(actor: Actor, projectId: number) {
   const project = await getProject(actor, projectId); // گاردِ دسترسی + scope
 
-  const [members, allTasks] = await Promise.all([
+  const [members, allTasks, clientRows] = await Promise.all([
     repo.listMembers(projectId),
     repo.listTasks(projectId),
+    // کارفرمایان به ترتیبِ انتساب — اولی «کارفرمای اصلی» است.
+    db.select({ userId: projectClients.userId, name: users.name })
+      .from(projectClients)
+      .innerJoin(users, eq(users.id, projectClients.userId))
+      .where(eq(projectClients.projectId, projectId))
+      .orderBy(asc(projectClients.id)),
   ]);
 
-  const visibleTasks = filterVisible(actor, allTasks, 'projects');
+  // R-PROJ-14 با مدیریتِ پروژه‌محور: مدیرِ پروژه/دفتر تسکِ خصوصیِ پروژهٔ خودش را می‌بیند.
+  const canManage = await canManageProject(actor, projectId);
+  const visibleTasks = filterVisibleFor(actor, allTasks, canManage);
   const roles = await repo.taskRolesFor(visibleTasks.map((t) => t.id));
 
   const rolesByTask = new Map<number, typeof roles>();
@@ -476,8 +494,6 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
     list.push(r);
     rolesByTask.set(r.taskId, list);
   }
-
-  const canManage = await canManageProject(actor, projectId);
 
   /**
    * ⚠️ ماسکِ نام **اینجا** اعمال می‌شود، نه در UI: کارفرما نباید نامِ اعضا
@@ -507,6 +523,8 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
           : nameForViewer(r.claimedBy, r.claimedByName, viewer),
       })),
     })),
+    // ⚠️ نامِ کارفرما هم ماسک می‌شود: عضوِ خالص «کارفرما» می‌بیند، نه نام.
+    clients: clientRows.map((c) => ({ userId: c.userId, name: nameForViewer(c.userId, c.name, viewer) })),
     canManage,
     viewer,
   };
@@ -638,12 +656,15 @@ export async function createProject(actor: Actor, input: CreateProjectData): Pro
     }
   }
 
+  // وضعیتِ پیش‌فرض — مناقصه «احتمالِ عقد قرارداد»، وگرنه «شروع نشده» (`default_status_id`).
+  // پیش از این پروژهٔ بی‌وضعیت در هیچ تبِ پایپ‌لاین نبود و مناقصه بسته حساب می‌شد.
+  const statusTagId = input.statusTagId ?? defaultProjectStatusId(await repo.statusTags(), input.isTender);
   const rows = await db.insert(projects).values({
     title: input.title,
     description: input.description,
     regDate: input.regDate,
     deadline: input.deadline,
-    statusTagId: input.statusTagId,
+    statusTagId,
     price: input.price,
     currencyId: input.currencyId,
     officeId: input.officeId,
@@ -892,6 +913,59 @@ export async function addProjectClient(actor: Actor, projectId: number, userId: 
   }
 }
 
+/** دادهٔ فرمِ کارفرمایان — کارفرمایانِ فعلی (به ترتیبِ انتساب) + کاندیداها. */
+export async function getClientsForm(actor: Actor, projectId: number) {
+  await getProject(actor, projectId);
+  await assertCanManageProject(actor, projectId);
+  const [current, candidates] = await Promise.all([
+    db.select({ userId: projectClients.userId }).from(projectClients)
+      .where(eq(projectClients.projectId, projectId)).orderBy(asc(projectClients.id)),
+    repo.clientCandidates(),
+  ]);
+  return {
+    clientIds: current.map((c) => c.userId),
+    candidates: candidates.map((c) => ({ id: c.id, label: c.name })),
+  };
+}
+
+/**
+ * جایگزینیِ کارفرمایان — پورتِ `Projects::set_clients()`: diff، نه پاک‌کردن و
+ * نوشتنِ دوباره، تا کارفرمای **اصلی** (قدیمی‌ترین انتساب) با هر ویرایش
+ * جابه‌جا نشود؛ تازه‌واردها `project_signed` می‌گیرند.
+ * ⚠️ پیش از این هیچ راهی برای حذفِ کارفرما از پروژه نبود.
+ */
+export async function setClients(actor: Actor, projectId: number, userIds: number[]) {
+  const project = await getProject(actor, projectId);
+  await assertCanManageProject(actor, projectId);
+
+  const want = [...new Set(userIds.filter((id) => Number.isInteger(id) && id > 0))];
+  const before = await repo.listClientIds(projectId);
+  const toAdd = want.filter((id) => !before.has(id));
+  const toRemove = [...before].filter((id) => !want.includes(id));
+
+  if (toAdd.length > 0) {
+    // فقط کاربرانِ فعالِ با نقشِ کارفرما — همان استخرِ افزودنِ سریع.
+    const allowed = new Set((await repo.clientCandidates()).map((c) => c.id));
+    if (toAdd.some((id) => !allowed.has(id))) throw new ForbiddenError('client.invalid');
+  }
+
+  await db.transaction(async (tx) => {
+    if (toRemove.length > 0) {
+      await tx.delete(projectClients)
+        .where(and(eq(projectClients.projectId, projectId), inArray(projectClients.userId, toRemove)));
+    }
+    if (toAdd.length > 0) {
+      await tx.insert(projectClients).values(toAdd.map((userId) => ({ projectId, userId })));
+    }
+  });
+
+  await audit(actor, 'clients.set', projectId, [...before], want);
+  for (const userId of toAdd) {
+    if (userId !== actor.id) await notify([userId], signedNotice(projectId, project.title, { client: true }));
+  }
+  return { added: toAdd.length, removed: toRemove.length };
+}
+
 /** وضعیت‌های پروژه — چیپِ کارت برای همه لازمش دارد، حتی کاربرِ خواندنی. */
 export async function getStatusOptions(actor: Actor) {
   assertCanView(actor, 'projects');
@@ -980,11 +1054,9 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
    * سه‌حالتیِ حذف فقط برای مدیر خوانده می‌شود — کوئریِ سنگینی است و کاربرِ
    * خواندنی هم دکمه‌اش را نمی‌بیند.
    */
+  // ⚠️ از دادهٔ واقعی — با false ِ هاردکد، بنر هرگز «قفل» نمی‌گفت در حالی که حذف رد می‌شد.
   const deleteState = detail.canManage
-    ? impactState(await repo.projectImpact(projectId, {
-        clientPartiallyPaid: false,
-        memberPartiallyPaid: false,
-      }))
+    ? impactState(await repo.projectImpact(projectId, await repo.openBalances(projectId)))
     : 'clean';
 
   // نقش ← دارندگانش؛ لازمِ قاعدهٔ «برداشتنِ تسک» در UI و سرور.
@@ -1017,6 +1089,8 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
      */
     canSeePrice,
     tenderIsOpen: tenderIsOpen(detail.project.isTender, statusGroup),
+    /** «کار کردن» روی پروژه — تیکِ کامنت و یادداشت برای عضو/کارفرما، نه بینندهٔ فقط‌خواندنی. */
+    canInteract: await canInteractWithProject(actor, projectId),
     deleteState,
   };
 }
@@ -1025,16 +1099,19 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
 export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: number | null) {
   const task = await repo.getTask(taskId);
   if (!task) throw new NotFoundError();
-  await getProject(actor, task.projectId); // گاردِ دسترسی — مجوزی یا عضویتی.
+  await getProject(actor, task.projectId); // گاردِ scope
+  // ⚠️ «کار کردن» نه «دیدن»: همکارِ فقط‌خواندنی (projects.view) وضعیتِ تسک را عوض نمی‌کند.
+  await assertCanInteractWithProject(actor, task.projectId);
+  const managesTask = await canManageProject(actor, task.projectId);
 
   /**
    * ⚠️ پورتِ `ajax_task_status`: هر کسی که به پروژه دسترسی دارد می‌تواند
    * وضعیتِ تسکِ **دیدنی** را عوض کند — عضو تسکش را به ریویو می‌فرستد.
    * پیش از این `assertCanManageProject` بود، یعنی عضو حتی تسکِ خودش را هم
    * نمی‌توانست جابه‌جا کند و کلِ چرخهٔ ریویو فقط برای مدیر کار می‌کرد.
-   * تسکِ خصوصی همان قاعدهٔ R-PROJ-14 را دارد: سازنده/مسئول/مدیر.
+   * تسکِ خصوصی همان قاعدهٔ R-PROJ-14 را دارد: سازنده/مسئول/مدیرِ **همین پروژه**.
    */
-  const [visible] = filterVisible(actor, [task], 'projects');
+  const [visible] = filterVisibleFor(actor, [task], managesTask);
   if (!visible) throw new NotFoundError();
 
   /**
@@ -1042,7 +1119,7 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
    * وضعیتِ تسک از کنارش رد می‌شد — و چون این مسیر عمداً فقط «دیدن» را
    * می‌خواهد، هر عضو یا کارفرمایی می‌توانست روی پروژهٔ بایگانی بنویسد.
    */
-  await assertNotFrozen(task.projectId);
+  await assertNotFrozen(task.projectId, actor);
 
   if (statusTagId !== null) {
     const tag = await repo.getTag(statusTagId);
@@ -1096,7 +1173,9 @@ export async function toggleCommentStatus(actor: Actor, commentId: number) {
   const row = await repo.getComment(commentId);
   if (!row || row.projectId === null) throw new NotFoundError();
   await getProject(actor, row.projectId); // گاردِ scope
-  await assertCanManageProject(actor, row.projectId);
+  // ⚠️ هر شرکت‌کننده (عضو/کارفرما/مدیر) تیک می‌زند — پورتِ `handle_comment_status`؛ و قفلِ انجماد.
+  await assertCanInteractWithProject(actor, row.projectId);
+  await assertNotFrozen(row.projectId, actor);
 
   const next = toggleStatus(row.type as CommentType, row.status);
   await db.update(comments)
@@ -1118,7 +1197,7 @@ export async function addComment(actor: Actor, projectId: number, body: string) 
   await assertCanInteractWithProject(actor, projectId);
   await getProject(actor, projectId); // گاردِ scope
   // ⚠️ پروژهٔ منجمد فقط-خواندنی است (`block_if_frozen`).
-  await assertNotFrozen(projectId);
+  await assertNotFrozen(projectId, actor);
 
   const text = body.trim();
   if (text === '') throw new ForbiddenError('comment.empty');
@@ -1272,10 +1351,12 @@ export async function createTask(
    * وقتی فقط مدیر به فرم می‌رسید این بی‌دقتی بود؛ حالا راهِ سوءاستفاده بود.
    */
   await assertCanInteractWithProject(actor, projectId);
-  await assertNotFrozen(projectId);
+  await assertNotFrozen(projectId, actor);
 
   const canManage = await canManageProject(actor, projectId);
   await assertTaskTags(input);
+  // وضعیتِ پیش‌فرض — اولین تگِ گروهِ `todo` (`default_status_tag_id`)؛ تسکِ بی‌وضعیت چیپِ خالی داشت.
+  const statusTagId = input.statusTagId ?? defaultTaskStatusId(await repo.taskStatusTags());
 
   /**
    * ⚠️ تخصیص از دامنه می‌گذرد: شخص باید روی پروژه باشد، نقش باید تگِ
@@ -1290,7 +1371,7 @@ export async function createTask(
     projectId,
     title: input.title,
     description: input.description,
-    statusTagId: input.statusTagId,
+    statusTagId,
     priorityTagId: input.priorityTagId,
     assignedTo: assignment.assignedTo,
     dueDate: input.dueDate,
@@ -1398,7 +1479,7 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
     throw new ForbiddenError('projects.manage');
   }
   // ⚠️ پروژهٔ منجمد ویرایش نمی‌شود — این گارد اینجا **نبود**، برخلافِ حذف.
-  await assertNotFrozen(before.projectId);
+  await assertNotFrozen(before.projectId, actor);
   await assertTaskTags(input);
 
   const assignment = await resolveTaskAssignment(actor, before.projectId, canManage, input);
@@ -1482,7 +1563,7 @@ export async function deleteTask(actor: Actor, taskId: number): Promise<number> 
   if (!(await canManageProject(actor, task.projectId)) && task.createdBy !== actor.id) {
     throw new ForbiddenError('projects.manage');
   }
-  await assertNotFrozen(task.projectId);
+  await assertNotFrozen(task.projectId, actor);
 
   await db.update(tasks)
     .set({ deletedAt: new Date(), updatedBy: actor.id })
@@ -1497,7 +1578,11 @@ export async function addTaskNote(actor: Actor, taskId: number, body: string): P
   const task = await repo.getTask(taskId);
   if (!task) throw new NotFoundError();
   await getProject(actor, task.projectId);
-  await assertNotFrozen(task.projectId);
+  // ⚠️ پورتِ گاردِ یادداشت: دسترسیِ کاری + دیدنِ تسکِ خصوصی — نه هر بیننده‌ای.
+  await assertCanInteractWithProject(actor, task.projectId);
+  const [noteVisible] = filterVisibleFor(actor, [task], await canManageProject(actor, task.projectId));
+  if (!noteVisible) throw new NotFoundError();
+  await assertNotFrozen(task.projectId, actor);
 
   const text = body.trim();
   if (text === '') throw new ForbiddenError('note.empty');
@@ -1520,11 +1605,12 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
   if (!task) throw new NotFoundError();
   await getProject(actor, task.projectId); // مجوزی یا عضویتی — هر دو راه.
 
-  // R-PROJ-14 — تسکِ خصوصی فقط برای سازنده، مسئول و مدیران.
-  const [visible] = filterVisible(actor, [task], 'projects');
-  if (!visible) throw new NotFoundError();
-
   const canManage = await canManageProject(actor, task.projectId);
+  // R-PROJ-14 — تسکِ خصوصی فقط برای سازنده، مسئول و مدیرانِ **همین پروژه**.
+  const [visible] = filterVisibleFor(actor, [task], canManage);
+  if (!visible) throw new NotFoundError();
+  // یادداشت‌نویسی «کار کردن» است: همکارِ فقط‌خواندنی فرمش را نمی‌بیند.
+  const canInteract = await canInteractWithProject(actor, task.projectId);
   const [notes, roles, members] = await Promise.all([
     repo.taskNotes(taskId),
     repo.taskRolesFor([taskId]),
@@ -1550,6 +1636,7 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
     notes: notes.map((n) => ({ ...n, userName: mask(n.userId, n.userName) })),
     roles: roles.map((r) => ({ ...r, claimedByName: mask(r.claimedBy, r.claimedByName) })),
     canManage,
+    canInteract,
   };
 }
 
@@ -1723,6 +1810,8 @@ export async function withdrawBid(actor: Actor, bidId: number) {
   if (!bid) throw new NotFoundError();
   await getProject(actor, bid.projectId);
   await assertCanManageProject(actor, bid.projectId);
+  // ⚠️ مدیر فقط **برنده** را پس می‌گیرد («حذفِ برنده»)؛ پیشنهادِ در انتظارِ دیگران دستِ خودشان است.
+  if (bid.status !== 'approved') throw new ForbiddenError('bid.not_winner');
 
   const plan = planWithdrawBid(bid);
 
@@ -1768,6 +1857,7 @@ export async function lightenProject(actor: Actor, projectId: number) {
     wasTender: project.isTender,
   };
 
+  const orphanFileIds: number[] = [];
   await db.transaction(async (tx) => {
     const taskIds = await tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.projectId, projectId));
     if (taskIds.length > 0) {
@@ -1776,17 +1866,21 @@ export async function lightenProject(actor: Actor, projectId: number) {
     await tx.delete(tasks).where(eq(tasks.projectId, projectId));
     await tx.delete(comments).where(eq(comments.projectId, projectId));
     await tx.delete(projectQa).where(eq(projectQa.projectId, projectId));
+    // فایلِ فیزیکی هم می‌رود — سبک‌سازی وگرنه فضایی آزاد نمی‌کرد.
+    orphanFileIds.push(...(await tx.select({ fileId: attachments.fileId }).from(attachments)
+      .where(eq(attachments.projectId, projectId))).map((a) => a.fileId).filter((id): id is number => id !== null));
     await tx.delete(attachments).where(eq(attachments.projectId, projectId));
     await tx.delete(timelogs).where(eq(timelogs.projectId, projectId));
     await tx.delete(tenderBids).where(eq(tenderBids.projectId, projectId));
 
-    // پرچمِ مناقصه پاک می‌شود تا پروژهٔ سبک‌شده نشان و تبِ مناقصه نداشته باشد؛
-    // خاطره‌اش در `wasTender` عکس می‌ماند.
+    // پرچمِ مناقصه و نقش‌ها/اعلام‌شده‌ها پاک می‌شوند تا پروژهٔ سبک‌شده نشان و تبِ
+    // مناقصه نداشته باشد و مناقصهٔ دوباره از نو اعلام شود؛ خاطره‌اش در `wasTender` می‌ماند.
     await tx.update(projects)
-      .set({ lightenSummary: summary, isTender: false, updatedAt: new Date() })
+      .set({ lightenSummary: summary, isTender: false, tenderRoles: null, tenderAnnounced: null, updatedAt: new Date() })
       .where(eq(projects.id, projectId));
   });
 
+  await removeFiles(orphanFileIds);
   await audit(actor, 'project.lighten', projectId, null, summary);
   return summary;
 }
@@ -1822,25 +1916,33 @@ export async function claimTask(actor: Actor, taskId: number) {
     roleHolders.set(m.roleTagId, [...(roleHolders.get(m.roleTagId) ?? []), m.userId]);
   }
 
-  const roleTagId = claimableRoleId({
+  // ⚠️ پروژهٔ منجمد برداشتن هم نمی‌پذیرد (`block_if_frozen` روی `ajax_claim_task`).
+  await assertNotFrozen(task.projectId, actor);
+
+  const roleTagIds = claimableRoleIds({
     assignedTo: task.assignedTo ?? null,
     roles: roleRows.map((r) => ({ roleTagId: r.roleTagId, claimedBy: r.claimedBy })),
     roleHolders,
     userId: actor.id,
   });
 
-  if (roleTagId === null) throw new ForbiddenError('task.not_claimable');
+  if (roleTagIds.length === 0) throw new ForbiddenError('task.not_claimable');
 
+  /**
+   * ⚠️ **هر** نقشِ بازی که کاربر دارد برداشته می‌شود و تسک نقشی **می‌ماند**
+   * (`assigned_to` دست نمی‌خورد) — پورتِ `Tasks::claim()`. پیش از این یک نقش
+   * برداشته و `assignedTo` ست می‌شد: تسکِ چندنقشه یک‌نفره می‌شد و صاحبانِ
+   * نقش‌های دیگر تسک و اعلانش را از دست می‌دادند.
+   */
   await db.transaction(async (tx) => {
     await tx.update(taskRoles).set({ claimedBy: actor.id, updatedAt: new Date() })
-      .where(and(eq(taskRoles.taskId, taskId), eq(taskRoles.roleTagId, roleTagId)));
-    // برداشتن یعنی مسئولیت را هم می‌پذیرد.
-    await tx.update(tasks).set({ assignedTo: actor.id, updatedAt: new Date() })
+      .where(and(eq(taskRoles.taskId, taskId), inArray(taskRoles.roleTagId, roleTagIds)));
+    await tx.update(tasks).set({ updatedAt: new Date(), updatedBy: actor.id })
       .where(eq(tasks.id, taskId));
   });
 
-  await audit(actor, 'task.claim', taskId, null, { roleTagId });
-  return roleTagId;
+  await audit(actor, 'task.claim', taskId, null, { roleTagIds });
+  return roleTagIds[0]!;
 }
 
 /* ------------------------------------------------------------------ *

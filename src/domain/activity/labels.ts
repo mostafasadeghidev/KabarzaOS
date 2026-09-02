@@ -31,6 +31,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'members.set': 'تغییرِ اعضای پروژه',
   'member.add': 'افزودنِ عضو به پروژه',
   'client.add': 'افزودنِ کارفرما به پروژه',
+  'clients.set': 'تغییرِ کارفرمایانِ پروژه',
   'tender.announce': 'اعلامِ مناقصه به نقش‌های تازه',
   'bid.submit': 'ثبتِ پیشنهادِ مناقصه',
   'bid.update': 'ویرایشِ پیشنهادِ مناقصه',

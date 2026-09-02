@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
+import { useConfirm } from '@/components/ui/confirm';
 
 export interface MeetingRow extends MeetingView {
   projectTitle: string | null;
@@ -70,6 +71,7 @@ export function MeetingsView({
   const tz = useTimeZone();
   const { show } = useToast();
   const t = useT();
+  const confirm = useConfirm();
   const [tab, setTab] = useState<'meetings' | 'reminders'>(initialTab);
   const [editing, setEditing] = useState<MeetingView | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -173,7 +175,9 @@ export function MeetingsView({
                         variant="ghost"
                         className="text-destructive hover:text-destructive"
                         disabled={pending}
-                        onClick={() => run(() => deleteMeetingAction(m.id))}
+                        onClick={async () => {
+                          if (await confirm({ title: tr('این جلسه حذف شود؟') })) run(() => deleteMeetingAction(m.id));
+                        }}
                       >
                         <Trash2 className="size-3.5" />
                         {tr("حذف")}
@@ -252,7 +256,9 @@ export function MeetingsView({
                       className="size-7 text-muted-foreground hover:text-destructive"
                       aria-label={t("حذفِ یادآور")}
                       disabled={pending}
-                      onClick={() => run(() => deleteReminderAction(r.id))}
+                      onClick={async () => {
+                        if (await confirm({ title: t('این یادآور حذف شود؟') })) run(() => deleteReminderAction(r.id));
+                      }}
                     >
                       <Trash2 className="size-3.5" />
                     </Button>

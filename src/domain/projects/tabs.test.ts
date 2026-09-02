@@ -73,8 +73,27 @@ describe('ساختِ تب‌ها', () => {
     expect(tabs.find((t) => t.key === 'completed')!.hidden).toBe(true);
   });
 
-  it('اولین تبِ غیرمخفی فعال می‌شود', () => {
-    expect(activeTab(buildTabs(projects))).toBe('all');
+  it('اولین تبِ غیرمخفی فعال می‌شود — «در حال انجام»، نه «همه»', () => {
+    expect(activeTab(buildTabs(projects))).toBe('in_progress');
+    // بدونِ پروژهٔ در حال انجام، تبِ کاریِ بعدی.
+    expect(activeTab(buildTabs([project({ statusGroup: 'lead' })]))).toBe('lead');
+  });
+
+  it('«همه» آخر است و هرگز مخفی نمی‌شود', () => {
+    const tabs = buildTabs(projects);
+    expect(tabs.at(-1)!.key).toBe('all');
+    expect(tabs.at(-1)!.hidden).toBe(false);
+  });
+
+  it('⚠️ پروژهٔ بی‌وضعیت در «بدون دسته» است، نه فقط زیرِ «همه»', () => {
+    expect(matchesTab('none', project({ statusGroup: null }))).toBe(true);
+    expect(matchesTab('none', project({ statusGroup: 'weird' }))).toBe(true);
+    expect(matchesTab('none', project({ statusGroup: 'in_progress' }))).toBe(false);
+  });
+
+  it('⚠️ تبِ مناقصه فقط مناقصهٔ باز را می‌گیرد', () => {
+    expect(matchesTab('tender', project({ isTender: true, tenderOpen: false }))).toBe(false);
+    expect(matchesTab('tender', project({ isTender: true, tenderOpen: true }))).toBe(true);
   });
 
   it('⚠️ تبِ deep-link حتی وقتی خالی است نمایش داده می‌شود', () => {
@@ -86,6 +105,6 @@ describe('ساختِ تب‌ها', () => {
   });
 
   it('تبِ نامعتبر نادیده گرفته می‌شود', () => {
-    expect(activeTab(buildTabs(projects, 'nonsense'))).toBe('all');
+    expect(activeTab(buildTabs(projects, 'nonsense'))).toBe('in_progress');
   });
 });

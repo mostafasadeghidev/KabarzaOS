@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { useConfirm } from '@/components/ui/confirm';
 
 export interface MyAbsence {
   id: number;
@@ -52,6 +53,7 @@ function Submit() {
  */
 export function AbsencePanel({ data }: { data: AbsencePanelData }) {
   const tr = useT();
+  const confirm = useConfirm();
   const [state, formAction] = useActionState(saveAbsenceAction, {} as AbsenceState);
   useActionToast(state);
   const [pending, startTransition] = useTransition();
@@ -136,7 +138,11 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
                         className="size-8 text-muted-foreground hover:text-destructive"
                         aria-label={tr('حذف')}
                         disabled={pending}
-                        onClick={() => startTransition(async () => { await deleteAbsenceAction(a.id); })}
+                        onClick={async () => {
+                          if (await confirm({ title: tr('این مرخصی حذف شود؟') })) {
+                            startTransition(async () => { await deleteAbsenceAction(a.id); });
+                          }
+                        }}
                       >
                         <Trash2 className="size-3.5" />
                       </Button>

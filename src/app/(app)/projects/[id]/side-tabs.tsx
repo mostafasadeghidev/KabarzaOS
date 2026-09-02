@@ -18,6 +18,7 @@ import {
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { removeQaRoleAction } from '../_form/tab-actions';
+import { useConfirm } from '@/components/ui/confirm';
 
 /* ------------------------------------------------------------------ *
  * تبِ مالی — `finance` panel ِ مودالِ نسخهٔ قبلی.
@@ -237,13 +238,18 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
 /** حذفِ یک آیتمِ چک‌لیست — فقط مدیر. */
 function QaDelete({ itemId }: { itemId: number }) {
   const t = useT();
+  const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
   return (
     <button
       type="button"
       aria-label={t("حذفِ آیتم")}
       disabled={pending}
-      onClick={() => startTransition(async () => { await deleteQaItemAction(itemId); })}
+      onClick={async () => {
+        if (await confirm({ title: t('این آیتم حذف شود؟') })) {
+          startTransition(async () => { await deleteQaItemAction(itemId); });
+        }
+      }}
       className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-60"
     >
       <X className="size-3.5" />
@@ -269,6 +275,7 @@ function QaRoleRemove({
   roleName: string;
 }) {
   const tr = useT();
+  const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
 
   return (
@@ -278,9 +285,12 @@ function QaRoleRemove({
       variant="ghost"
       className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
       disabled={pending}
-      onClick={() => startTransition(async () => {
-        await removeQaRoleAction(projectId, roleTagId);
-      })}
+      onClick={async () => {
+        if (!(await confirm({ title: tr('همهٔ آیتم‌های این نقش برداشته شود؟') }))) return;
+        startTransition(async () => {
+          await removeQaRoleAction(projectId, roleTagId);
+        });
+      }}
     >
       <X className="size-3" />
       {tr('برداشتنِ آیتم‌های «{role}»', { role: roleName })}
@@ -429,6 +439,7 @@ function BidActions({
   isOpen: boolean;
 }) {
   const tr = useT();
+  const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -450,17 +461,22 @@ function BidActions({
           {tr("تأیید")}
         </Button>
       )}
-      {isOpen && !gone && (
+      {/* «حذفِ برنده» فقط برای پیشنهادِ تأییدشده — پیشنهادِ در انتظارِ دیگران دستِ خودشان است. */}
+      {isOpen && bid.status === 'approved' && (
         <Button
           type="button"
           size="sm"
           variant="ghost"
           className="text-destructive hover:text-destructive"
           disabled={pending}
-          onClick={() => run(() => withdrawBidAction(bid.id, projectId))}
+          onClick={async () => {
+            if (await confirm({ title: tr('برنده پس گرفته شود؟'), description: tr('نقش دوباره برای پیشنهاد باز می‌شود.') })) {
+              run(() => withdrawBidAction(bid.id, projectId));
+            }
+          }}
         >
           <X className="size-3.5" />
-          {tr("پس‌گرفتن")}
+          {tr("حذفِ برنده")}
         </Button>
       )}
       {error && <span className="text-[11px] text-destructive">{tr(error)}</span>}

@@ -35,6 +35,8 @@ export interface ProjectTabsData {
   /** حقِ دیدنِ قیمتِ پروژه — `domain/access/project-money`. */
   canSeePrice: boolean;
   canManage: boolean;
+  /** «کار کردن» روی پروژه — عضو/کارفرما/مدیر؛ نه بینندهٔ فقط‌خواندنی. */
+  canInteract: boolean;
   canSeeFinance: boolean;
   tasks: TaskItem[];
   taskStatuses: TaskStatusOption[];
@@ -165,6 +167,7 @@ export function ProjectTabs({
           projectId={data.projectId}
           comments={data.comments}
           canManage={data.canManage}
+          canInteract={data.canInteract}
         />
       )}
 

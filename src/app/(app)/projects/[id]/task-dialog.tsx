@@ -20,6 +20,7 @@ import {
 import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
+import { useConfirm } from '@/components/ui/confirm';
 
 /**
  * مودالِ تسک — بازسازیِ `task_admin_html()`:
@@ -58,6 +59,7 @@ export function TaskDialog({
   const tr = useT();
   const tz = useTimeZone();
   const t = useT();
+  const confirm = useConfirm();
   const [data, setData] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -147,12 +149,13 @@ export function TaskDialog({
                   variant="ghost"
                   className="text-destructive hover:text-destructive"
                   disabled={deleting}
-                  onClick={() =>
+                  onClick={async () => {
+                    if (!(await confirm({ title: tr('این تسک حذف شود؟') }))) return;
                     startDelete(async () => {
                       const result = await deleteTaskAction(task.id);
                       if (!result.error) onOpenChange(false);
-                    })
-                  }
+                    });
+                  }}
                 >
                   <Trash2 className="size-3.5" />
                   {tr("حذف تسک")}
@@ -281,6 +284,8 @@ export function TaskDialog({
                 </ul>
               )}
 
+              {/* ⚠️ همکارِ فقط‌خواندنی یادداشت نمی‌نویسد (سرور هم رد می‌کند) — فرم را نبیند. */}
+              {(data?.detail.canInteract ?? true) && (
               <form action={noteAction} className="grid gap-2">
                 <input type="hidden" name="taskId" value={task.id} />
                 <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} required />
@@ -289,6 +294,7 @@ export function TaskDialog({
                   <SubmitButton label={t("ارسال")} busy={t('در حال ارسال…')} />
                 </div>
               </form>
+              )}
             </section>
           </div>
         )}

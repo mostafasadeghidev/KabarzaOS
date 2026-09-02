@@ -6,7 +6,7 @@ import {
   getBidderView, getMemberTender, getMembersForm, getProjectFormOptions, getProjectTabs,
   getQaForm,
   getTaskFormOptions,
-  getTaskStatusOptions, NotFoundError,
+  getTaskStatusOptions, NotFoundError, getClientsForm,
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { format } from '@/domain/money/money';
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MembersDialog } from '../_form/members-dialog';
+import { ClientsDialog } from '../_form/clients-dialog';
 import { MemberAccessToggle } from '../_form/member-access';
 import { canManageSection } from '@/domain/access/permissions';
 import { ProjectDialog } from '../_form/project-dialog';
@@ -142,12 +143,13 @@ export default async function ProjectDetailPage({
   ]);
 
   // فرم‌ها فقط وقتی خوانده می‌شوند که دکمه‌شان هم دیده شود.
-  const [membersForm, formOptions] = canManage
+  const [membersForm, formOptions, clientsForm] = canManage
     ? await Promise.all([
         getMembersForm(actor, project.id).then((m) => ({ projectId: project.id, ...m })),
         getProjectFormOptions(actor, project.id),
+        getClientsForm(actor, project.id).then((c) => ({ projectId: project.id, ...c })),
       ])
-    : [null, null];
+    : [null, null, null];
   const openTasks = tasks.filter((t) => t.statusGroup !== 'complete');
   /** `$hide_amounts` ِ نسخهٔ قبلی — فقط دو مجوزِ سراسری. */
   const canSeeAgreedAmounts =
@@ -164,6 +166,12 @@ export default async function ProjectDetailPage({
       <header className="mt-3 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold">{project.title}</h1>
+          {/* توضیحِ پروژه — پیش از این فقط داخلِ فرمِ ویرایش دیده می‌شد. */}
+          {project.description && (
+            <p className="mt-2 max-w-3xl whitespace-pre-wrap text-sm text-muted-foreground">
+              {project.description}
+            </p>
+          )}
           <div className="mt-2 flex items-center gap-2">
             {project.scope === 'private' && <Badge variant="warning">{t("خصوصی")}</Badge>}
             {project.isArchived && <Badge variant="secondary">{t("بایگانی‌شده")}</Badge>}
@@ -244,6 +252,7 @@ export default async function ProjectDetailPage({
           price: detail.canSeePrice ? project.price : '0',
           canSeePrice: detail.canSeePrice,
           canManage,
+          canInteract: detail.canInteract,
           canSeeFinance: detail.canSeeFinance,
           tasks,
           taskStatuses: taskStatuses.map((t) => ({
@@ -326,6 +335,29 @@ export default async function ProjectDetailPage({
               </CardContent>
             </Card>
 
+            {/* کارفرمایان — پورتِ چیپ‌های کارفرما؛ اولی «کارفرمای اصلی» (قدیمی‌ترین انتساب). */}
+            <Card>
+              <CardHeader className="flex-row items-center justify-between">
+                <CardTitle className="text-base">{t("کارفرمایان")}</CardTitle>
+                {clientsForm && <ClientsDialog data={clientsForm} />}
+              </CardHeader>
+              <CardContent>
+                {detail.clients.length === 0 ? (
+                  <EmptyState title={t("کارفرمایی ثبت نشده")} />
+                ) : (
+                  <ul className="grid gap-1 text-sm">
+                    {detail.clients.map((c, i) => (
+                      <li key={c.userId} className="flex items-center gap-2">
+                        {c.name}
+                        {i === 0 && detail.clients.length > 1 && (
+                          <Badge variant="outline" className="text-[10px]">{t("کارفرمای اصلی")}</Badge>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
           </div>
         }
       />

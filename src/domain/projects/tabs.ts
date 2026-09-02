@@ -7,7 +7,10 @@
 
 export type TabKey =
   | 'all' | 'not_started' | 'lead' | 'in_progress' | 'completed'
-  | 'on_hold' | 'cancelled' | 'tender' | 'review' | 'overdue' | 'archived';
+  | 'on_hold' | 'cancelled' | 'none' | 'tender' | 'review' | 'overdue' | 'archived';
+
+/** گروه‌های شناخته‌شدهٔ وضعیت — پروژه‌ای بیرون از این‌ها «بدون دسته» است. */
+const STATUS_GROUPS = ['not_started', 'lead', 'in_progress', 'completed', 'on_hold', 'cancelled'] as const;
 
 export const TAB_LABELS: Record<TabKey, string> = {
   all: 'همه',
@@ -17,21 +20,28 @@ export const TAB_LABELS: Record<TabKey, string> = {
   completed: 'تکمیل‌شده',
   on_hold: 'نگه‌داشته‌شده',
   cancelled: 'کنسل‌شده',
+  none: 'بدون دسته',
   tender: 'مناقصه',
   review: 'نیازمند بررسی',
   overdue: 'گذشته از ددلاین',
   archived: 'بایگانی',
 };
 
-/** ترتیبِ نمایش — «همه» اول، «بایگانی» آخر. */
+/**
+ * ترتیبِ نمایش — همان نسخهٔ قبلی: «در حال انجام» اول (تبِ کاری)، بعد
+ * «احتمالِ عقد قرارداد»، بقیهٔ گروه‌ها، «بدون دسته»، تب‌های عرضی، و «همه» آخر.
+ * ⚠️ پیش از این «همه» اول بود و صفحه همیشه روی «همه» باز می‌شد.
+ */
 export const TAB_ORDER: TabKey[] = [
-  'all', 'not_started', 'lead', 'in_progress', 'completed',
-  'on_hold', 'cancelled', 'tender', 'review', 'overdue', 'archived',
+  'in_progress', 'lead', 'not_started', 'completed', 'on_hold', 'cancelled',
+  'none', 'review', 'tender', 'overdue', 'archived', 'all',
 ];
 
 export interface TabbableProject {
   statusGroup: string | null;
   isTender: boolean;
+  /** مناقصهٔ **باز** (گروهِ «احتمالِ عقد قرارداد») — نبودش یعنی همان `isTender`. */
+  tenderOpen?: boolean;
   isArchived: boolean;
   isOverdue: boolean;
   reviewCount: number;
@@ -48,7 +58,10 @@ export function matchesTab(tab: TabKey, project: TabbableProject): boolean {
 
   switch (tab) {
     case 'all': return true;
-    case 'tender': return project.isTender;
+    // ⚠️ فقط مناقصهٔ باز: مناقصهٔ بسته/کنسل‌شده نه روبان دارد نه در این تب می‌آید.
+    case 'tender': return project.tenderOpen ?? project.isTender;
+    // پروژهٔ بی‌وضعیت یا با گروهِ ناشناخته — وگرنه فقط زیرِ «همه» پیدا می‌شد.
+    case 'none': return !(STATUS_GROUPS as readonly string[]).includes(project.statusGroup ?? '');
     case 'review': return project.reviewCount > 0;
     case 'overdue': return project.isOverdue;
     default: return project.statusGroup === tab;

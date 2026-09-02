@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { useConfirm } from '@/components/ui/confirm';
 
 /**
  * تبِ مدیریت — بازسازیِ `manage_tab_html()`:
@@ -158,6 +159,7 @@ function LightenBox({
   summary: LightenSummaryView | null;
 }) {
   const tr = useT();
+  const confirm = useConfirm();
   const t = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -203,12 +205,16 @@ function LightenBox({
             size="sm"
             variant="outline"
             disabled={pending}
-            onClick={() =>
+            onClick={async () => {
+              if (!(await confirm({
+                title: tr('پروژه سبک شود؟'),
+                description: tr('فایل‌ها، تسک‌ها، کامنت‌ها و جزئیاتِ ساعت پاک می‌شوند. این کار برگشت‌ناپذیر است.'),
+              }))) return;
               startTransition(async () => {
                 const result = await lightenAction(projectId);
                 if (result.error) setError(result.error);
-              })
-            }
+              });
+            }}
           >
             {tr("سبک‌سازی پروژه")}
           </Button>

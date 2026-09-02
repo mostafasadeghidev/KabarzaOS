@@ -173,6 +173,34 @@ export function isFrozenProject(project: {
 }
 
 /**
+ * «گذشته از ددلاین» — پورتِ `Projects::overdue_ids()`: ددلاین گذشته **و**
+ * پروژه منجمد نیست (بایگانی/کنسل/نگه‌داشته). پروژهٔ **تکمیل‌شده** هم شمرده
+ * می‌شود تا وقتی بایگانی شود — همان رفتارِ نسخهٔ قبلی.
+ *
+ * ⚠️ پیش از این وارونه بود: تکمیل‌شده کنار می‌رفت ولی کنسل‌شده و
+ * نگه‌داشته‌شده «گذشته از ددلاین» می‌شدند.
+ */
+export function isOverdueProject(project: {
+  deadline: string | null;
+  isArchived: boolean;
+  statusGroup?: string | null;
+}, today: string): boolean {
+  if (!project.deadline || project.deadline >= today) return false;
+  return !isFrozenProject(project);
+}
+
+/** ددلاین در `days` روزِ آینده (امروز شامل) — همان شرطِ انجماد. */
+export function isDeadlineSoon(project: {
+  deadline: string | null;
+  isArchived: boolean;
+  statusGroup?: string | null;
+}, today: string, days = 7): boolean {
+  if (!project.deadline || project.deadline < today) return false;
+  const diff = Math.round((Date.parse(project.deadline) - Date.parse(today)) / 86400000);
+  return diff <= days && !isFrozenProject(project);
+}
+
+/**
  * پروژهٔ «باز».
  *
  * ⚠️ ملاک `is_closed` ِ تگ است، نه یک گروهِ واحد: هم «تکمیل‌شده» و هم

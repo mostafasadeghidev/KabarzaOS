@@ -85,7 +85,14 @@ export class FrozenProjectError extends Error {
   }
 }
 
-export async function assertNotFrozen(projectId: number): Promise<void> {
+/**
+ * ⚠️ مالک/مدیرِ سراسریِ پروژه‌ها مستثناست — پورتِ کامنتِ `Projects::is_frozen()`:
+ * «The owner is unaffected (they manage from the admin card view)». مدیرِ
+ * پروژهٔ تگ‌دار و مدیرِ دفتر مثلِ عضو قفل می‌مانند (مسیرِ front-end ِ نسخهٔ قبلی).
+ * پیش از این مالک هم نمی‌توانست به پروژهٔ نگه‌داشته/کنسل‌شده تسک یا فایل بدهد.
+ */
+export async function assertNotFrozen(projectId: number, actor?: Actor): Promise<void> {
+  if (actor && canManageSection(actor, 'projects')) return;
   if (await isProjectFrozen(projectId)) throw new FrozenProjectError();
 }
 

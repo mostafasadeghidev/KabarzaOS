@@ -11,6 +11,7 @@ import {
   projectQa, qaItems, attachments, files,
 } from '@/db/schema';
 import type { ProjectImpact } from '@/domain/projects/lifecycle';
+import { isOverdueProject } from '@/domain/projects/lifecycle';
 
 /**
  * لایهٔ داده — فقط خواندن و نوشتن، بدونِ قاعدهٔ کسب‌وکار.
@@ -46,6 +47,8 @@ export interface ProjectListRow {
   reviewCount: number;
   /** ددلاین گذشته و پروژه تمام‌نشده — پایهٔ تبِ «گذشته از ددلاین». */
   isOverdue: boolean;
+  /** مناقصهٔ **باز** (گروهِ «احتمالِ عقد قرارداد») — روبان و تبِ مناقصه فقط برای این. */
+  tenderOpen: boolean;
   /** تاریخِ ثبت — مبدأ نوارِ ددلاین. */
   regDate: string | null;
   /** کامنت‌های نیازمندِ بررسی — شمارندهٔ دومِ کارت. */
@@ -99,7 +102,8 @@ export async function listProjects(
       inArray(projects.scope, scopes),
       ...(onlyIds !== undefined ? [inArray(projects.id, onlyIds)] : []),
     ))
-    .orderBy(projects.id);
+    // تازه‌ترین پروژه اول — همان ترتیبِ نسخهٔ قبلی؛ با صعودی، پروژهٔ نو تهِ صفحهٔ آخر می‌افتاد.
+    .orderBy(desc(projects.id));
 
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
@@ -253,8 +257,9 @@ export async function listProjects(
     children: kidsByParent.get(r.id) ?? [],
     members: chipsByProject.get(r.id) ?? [],
     clients: clientsByProject.get(r.id) ?? [],
-    // همان تعریفِ داشبورد: ددلاینِ گذشته و پروژه تمام‌نشده.
-    isOverdue: Boolean(r.deadline && r.deadline < today && r.statusGroup !== 'completed'),
+    // پورتِ `overdue_ids()`: ددلاینِ گذشته و پروژه منجمد نیست (تکمیل‌شده شمرده می‌شود).
+    isOverdue: isOverdueProject({ deadline: r.deadline, isArchived: r.isArchived, statusGroup: r.statusGroup }, today),
+    tenderOpen: r.isTender && r.statusGroup === 'lead',
   }));
 }
 

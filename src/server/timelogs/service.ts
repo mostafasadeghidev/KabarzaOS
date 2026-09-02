@@ -169,7 +169,7 @@ export async function timerState(actor: Actor, now = new Date()): Promise<TimerS
 export async function startTimer(actor: Actor, projectId: number | null, now = new Date()) {
   if (!await canLogTime(actor, projectId)) throw new ForbiddenError('timelog.forbidden');
   // ⚠️ تایمر هم روی پروژهٔ منجمد شروع نمی‌شود (`handle_timer_start`).
-  if (projectId) await assertNotFrozen(projectId);
+  if (projectId) await assertNotFrozen(projectId, actor);
 
   const state = await timerState(actor, now);
   if (state.running) throw new TimerError('already_running');
@@ -273,7 +273,7 @@ export interface LogInput {
 export async function addOrMerge(actor: Actor, input: LogInput): Promise<number> {
   if (!await canLogTime(actor, input.projectId)) throw new ForbiddenError('timelog.forbidden');
   // ⚠️ پروژهٔ منجمد ساعتِ تازه نمی‌پذیرد (`handle_log_time` → `block_if_frozen`).
-  if (input.projectId) await assertNotFrozen(input.projectId);
+  if (input.projectId) await assertNotFrozen(input.projectId, actor);
 
   const existing = await db
     .select({ id: timelogs.id, minutes: timelogs.minutes, description: timelogs.description })
@@ -360,7 +360,7 @@ export async function updateLog(
   if (row.userId !== actor.id) throw new ForbiddenError('timelog.not_yours');
   if (!isEditable(row.createdAt, now)) throw new ForbiddenError('timelog.window_closed');
   // ⚠️ همان قفلی که ثبت، حذف و تایمر دارند — ویرایش نداشت (`block_if_frozen`).
-  if (row.projectId) await assertNotFrozen(row.projectId);
+  if (row.projectId) await assertNotFrozen(row.projectId, actor);
 
   await db.update(timelogs).set({
     minutes: input.minutes,
@@ -378,7 +378,7 @@ export async function deleteLog(actor: Actor, logId: number, now = new Date()) {
 
   if (row.userId !== actor.id) throw new ForbiddenError('timelog.not_yours');
   if (!isEditable(row.createdAt, now)) throw new ForbiddenError('timelog.window_closed');
-  if (row.projectId) await assertNotFrozen(row.projectId);
+  if (row.projectId) await assertNotFrozen(row.projectId, actor);
 
   await db.delete(timelogs).where(eq(timelogs.id, logId));
   await audit(actor, 'timelog.delete', logId, row);
