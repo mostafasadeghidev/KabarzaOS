@@ -9,7 +9,7 @@ import {
 } from './_form/payout-actions';
 import { format } from '@/domain/money/money';
 import {
-  BUCKET_LABELS, dueBucket, KIND_LABELS, UNIT_LABELS,
+  BUCKET_LABELS, dueBucket, intervalLabel, KIND_LABELS, UNIT_LABELS,
   type DueBucket, type IntervalUnit,
 } from '@/domain/finance/recurring';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,7 @@ import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { TablePager, TableSearch, useTableView } from '@/components/ui/table-search';
 import { BankDirectory, type BankRow } from './bank-directory';
+import { useConfirm } from '@/components/ui/confirm';
 
 export interface RequestRow {
   id: number;
@@ -44,7 +45,11 @@ export interface RecurringRow {
   id: number;
   title: string;
   amount: string;
+  currencyId: number | null;
   currencyCode: string | null;
+  vendorId: number | null;
+  categoryTagId: number | null;
+  note: string;
   kind: string;
   intervalUnit: string;
   intervalCount: number;
@@ -60,6 +65,16 @@ const STATUS: Record<string, { label: string; variant: 'secondary' | 'success' |
   approved: { label: 'تأییدشده', variant: 'secondary' },
   paid: { label: 'پرداخت‌شده', variant: 'success' },
   rejected: { label: 'ردشده', variant: 'outline' },
+};
+
+/** برچسبِ تب‌های وضعیت — همان چهار وضعیت + «همه» و «بایگانی‌شده». */
+const REQUEST_TAB_LABELS: Record<RequestTab, string> = {
+  pending: 'در انتظار',
+  approved: 'تأییدشده',
+  paid: 'پرداخت‌شده',
+  rejected: 'ردشده',
+  all: 'همه',
+  archived: 'بایگانی‌شده',
 };
 
 const BUCKET_STYLE: Record<DueBucket, string> = {
@@ -84,9 +99,15 @@ function Submit({ label }: { label: string }) {
  * ⚠️ هر دو در نهایت ردیفِ دفتر می‌نویسند، پس دکمهٔ پرداخت حسابِ مقصد و تاریخ
  * می‌خواهد و همان گاردهای حسابداری (قفلِ دوره) رویشان اعمال می‌شود.
  */
+type RequestTab = 'pending' | 'approved' | 'paid' | 'rejected' | 'all' | 'archived';
+
 export function PayoutsView({
   section,
   requests,
+  archivedRequests = [],
+  isOwner,
+  lockDate = null,
+  categories = [],
   recurring,
   accounts,
   currencies,
@@ -95,6 +116,11 @@ export function PayoutsView({
   canManage,
   directory,
 }: {
+  archivedRequests?: RequestRow[];
+  /** تأیید/رد فقط مالک (پورتِ `manage_options`)؛ حسابدار فقط پرداخت می‌کند. */
+  isOwner: boolean;
+  lockDate?: string | null;
+  categories?: Array<{ id: number; name: string | null }>;
   /**
    * کدام نیمه رندر شود.
    *
@@ -120,10 +146,27 @@ export function PayoutsView({
    * ⚠️ نام و پروژه هر دو گشته می‌شوند: حسابدار گاهی دنبالِ «چه کسی» است و
    * گاهی دنبالِ «کدام پروژه».
    */
+  /**
+   * تب‌های وضعیت — پورتِ `status_tabs()`: مالک همهٔ وضعیت‌ها (+ بایگانی پس از
+   * قفل)، حسابدار فقط تأییدشده/پرداخت‌شده. سرور همین‌ها را برگردانده؛ تب فقط
+   * فیلترِ نمایش است.
+   */
+  const tabs: RequestTab[] = isOwner
+    ? ['pending', 'approved', 'paid', 'rejected', 'all', ...(lockDate ? ['archived' as const] : [])]
+    : ['approved', 'paid', 'all'];
+  const [status, setStatus] = useState<RequestTab>(tabs[0]!);
+  const tabRows = status === 'archived'
+    ? archivedRequests
+    : requests.filter((r) => status === 'all' || r.status === status);
+  const pendingCount = requests.filter((r) => r.status === 'pending').length;
   const requestsView = useTableView(
-    requests, (r) => `${r.userName ?? ''} ${r.projectTitle ?? ''}`,
+    tabRows, (r) => `${r.userName ?? ''} ${r.projectTitle ?? ''}`,
   );
   const t = useT();
+  const confirm = useConfirm();
+  const [rejectTarget, setRejectTarget] = useState<RequestRow | null>(null);
+  const [rejectNote, setRejectNote] = useState('');
+  const [expenseStatus, setExpenseStatus] = useState<'active' | 'inactive' | 'all'>('active');
   const [pending, startTransition] = useTransition();
   const [payTarget, setPayTarget] = useState<RequestRow | null>(null);
   const [expenseOpen, setExpenseOpen] = useState(false);
@@ -158,7 +201,9 @@ export function PayoutsView({
 
   const needle = expenseQuery.trim().toLowerCase();
   const visibleRecurring = recurring.filter((x) => {
-    if (!x.isActive) return false;
+    // ⚠️ غیرفعال‌ها هم دیدنی‌اند — هزینهٔ یک‌بارِ پرداخت‌شده پیش از این برای همیشه گم می‌شد.
+    if (expenseStatus === 'active' && !x.isActive) return false;
+    if (expenseStatus === 'inactive' && x.isActive) return false;
     // ⚠️ نامِ طرف‌حساب ملاک است، نه شناسه: ردیف فقط نام را حمل می‌کند.
     if (expenseVendor && (x.vendorName ?? '') !== expenseVendor) return false;
     if (expenseKind && x.kind !== expenseKind) return false;
@@ -186,8 +231,25 @@ export function PayoutsView({
             <TableSearch view={requestsView} placeholder={tr('جستجوی عضو یا پروژه…')} />
           )}
         </div>
-        {requests.length === 0 ? (
-          <EmptyState title={t("درخواستی ثبت نشده")} />
+        <nav className="flex flex-wrap gap-1 border-b pb-2">
+          {tabs.map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setStatus(key)}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                status === key ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/60'
+              }`}
+            >
+              {t(REQUEST_TAB_LABELS[key])}
+              {key === 'pending' && pendingCount > 0 && (
+                <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{pendingCount}</Badge>
+              )}
+            </button>
+          ))}
+        </nav>
+        {tabRows.length === 0 ? (
+          <EmptyState title={t("درخواستی در این وضعیت نیست")} />
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -216,32 +278,36 @@ export function PayoutsView({
                       </TableCell>
                       {canManage && (
                         <TableCell>
+                          {/*
+                            پورتِ `request_actions()`: مالک → تأیید (در انتظار)، پرداخت
+                            (در انتظار یا تأییدشده)، رد با دلیل (در انتظار/تأییدشده)؛
+                            حسابدار → فقط پرداختِ تأییدشده.
+                          */}
                           <div className="flex justify-end gap-1">
-                            {r.status === 'pending' && (
-                              <>
-                                <Button
-                                  size="sm" variant="outline" disabled={pending}
-                                  onClick={() => act(() => decideRequestAction(r.id, 'approved'))}
-                                >
-                                  <Check className="size-3.5" />
-                                  {tr("تأیید")}
-                                </Button>
-                                <Button
-                                  size="sm" variant="ghost"
-                                  className="text-destructive hover:text-destructive"
-                                  disabled={pending}
-                                  onClick={() => act(() => decideRequestAction(r.id, 'rejected'))}
-                                >
-                                  <X className="size-3.5" />
-                                  {tr("رد")}
-                                </Button>
-                              </>
+                            {isOwner && r.status === 'pending' && (
+                              <Button
+                                size="sm" variant="outline" disabled={pending}
+                                onClick={() => act(() => decideRequestAction(r.id, 'approved'))}
+                              >
+                                <Check className="size-3.5" />
+                                {tr("تأیید")}
+                              </Button>
                             )}
-                            {/* ⚠️ فقط تأییدشده پرداخت می‌شود؛ ردشده و پرداخت‌شده دکمه ندارند. */}
-                            {r.status === 'approved' && (
+                            {(r.status === 'approved' || (isOwner && r.status === 'pending')) && (
                               <Button size="sm" disabled={pending} onClick={() => setPayTarget(r)}>
                                 <Banknote className="size-3.5" />
                                 {tr("ثبت پرداخت در حسابداری")}
+                              </Button>
+                            )}
+                            {isOwner && (r.status === 'pending' || r.status === 'approved') && (
+                              <Button
+                                size="sm" variant="ghost"
+                                className="text-destructive hover:text-destructive"
+                                disabled={pending}
+                                onClick={() => { setRejectNote(''); setRejectTarget(r); }}
+                              >
+                                <X className="size-3.5" />
+                                {tr("رد")}
                               </Button>
                             )}
                           </div>
@@ -303,6 +369,16 @@ export function PayoutsView({
               <option value="recurring">{tr('دوره‌ای')}</option>
               <option value="once">{tr('یک‌بار')}</option>
             </select>
+            <select
+              className={`${field} sm:w-40`}
+              value={expenseStatus}
+              onChange={(e) => setExpenseStatus(e.target.value as 'active' | 'inactive' | 'all')}
+              aria-label={tr('وضعیت')}
+            >
+              <option value="active">{tr('فعال')}</option>
+              <option value="inactive">{tr('غیرفعال')}</option>
+              <option value="all">{tr('همه')}</option>
+            </select>
           </div>
         )}
 
@@ -323,7 +399,8 @@ export function PayoutsView({
                           {r.title}
                           <span className="ms-2 text-xs text-muted-foreground">
                             {t(KIND_LABELS[r.kind as 'recurring'] ?? r.kind)}
-                            {r.kind === 'recurring' && ` · ${t(UNIT_LABELS[r.intervalUnit as IntervalUnit] ?? r.intervalUnit)}`}
+                            {r.kind === 'recurring' && ` · ${intervalLabel(r.intervalUnit as IntervalUnit, r.intervalCount, t)}`}
+                            {!r.isActive && ` · ${t('غیرفعال')}`}
                           </span>
                           {r.vendorName && (
                             <Badge variant="secondary" className="ms-2">{r.vendorName}</Badge>
@@ -357,7 +434,9 @@ export function PayoutsView({
                                 className="size-8 text-muted-foreground hover:text-destructive"
                                 aria-label={t("حذف")}
                                 disabled={pending}
-                                onClick={() => act(() => deleteRecurringAction(r.id))}
+                                onClick={async () => {
+                                  if (await confirm({ title: t('این هزینه حذف شود؟') })) act(() => deleteRecurringAction(r.id));
+                                }}
                               >
                                 <Trash2 className="size-3.5" />
                               </Button>
@@ -374,6 +453,46 @@ export function PayoutsView({
         )}
       </section>
       )}
+
+      {/* ---- مودالِ ردِ درخواست با دلیل (پورتِ فرمِ inline ِ «رد کردن») ---- */}
+      <Dialog open={rejectTarget !== null} onOpenChange={(o) => !o && setRejectTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("ردِ درخواست")}</DialogTitle>
+            <DialogDescription>
+              {tr("دلیل برای عضو فرستاده می‌شود؛ خالی هم می‌تواند بماند.")}
+            </DialogDescription>
+          </DialogHeader>
+          {rejectTarget && (
+            <div className="grid gap-3">
+              <p className="text-sm">
+                {rejectTarget.userName} — <span className="num">{format(rejectTarget.amount)}</span>
+              </p>
+              <textarea
+                className="min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                placeholder={tr("دلیل رد (اختیاری)")}
+                value={rejectNote}
+                onChange={(e) => setRejectNote(e.target.value)}
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setRejectTarget(null)}>{t("انصراف")}</Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={pending}
+                  onClick={() => {
+                    const target = rejectTarget;
+                    setRejectTarget(null);
+                    act(() => decideRequestAction(target.id, 'rejected', rejectNote));
+                  }}
+                >
+                  {tr("رد کردن")}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ---- مودالِ پرداختِ درخواست ---- */}
       <Dialog open={payTarget !== null} onOpenChange={(o) => !o && setPayTarget(null)}>
@@ -448,7 +567,7 @@ export function PayoutsView({
             <div className="grid gap-3 sm:grid-cols-4">
               <div className="grid gap-1.5">
                 <Label htmlFor="e-cur">{t("ارز")}</Label>
-                <select id="e-cur" name="currencyId" className={field} defaultValue={currencies.find((c) => c.isDefault)?.id ?? ''}>
+                <select id="e-cur" name="currencyId" className={field} defaultValue={editing?.currencyId ?? currencies.find((c) => c.isDefault)?.id ?? ''}>
                   {currencies.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
                 </select>
               </div>
@@ -496,12 +615,31 @@ export function PayoutsView({
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-vendor">{t("طرف‌حساب")}</Label>
-                <select id="e-vendor" name="vendorId" className={field} defaultValue="">
+                <select id="e-vendor" name="vendorId" className={field} defaultValue={editing?.vendorId ? String(editing.vendorId) : ''}>
                   <option value="">{t("بدون طرف‌حساب")}</option>
                   {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
                 </select>
               </div>
             </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="e-cat">{t("دسته")}</Label>
+                <select id="e-cat" name="categoryTagId" className={field} defaultValue={editing?.categoryTagId ? String(editing.categoryTagId) : ''}>
+                  <option value="">{t("— بدونِ دسته —")}</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name ?? ''}</option>)}
+                </select>
+              </div>
+              <div className="grid gap-1.5 sm:col-span-2">
+                <Label htmlFor="e-note">{t("یادداشت")}</Label>
+                <Input id="e-note" name="note" defaultValue={editing?.note ?? ''} />
+              </div>
+            </div>
+            {/* ⚠️ پیش از این ویرایش، طرف‌حساب و ارز را بی‌صدا پاک می‌کرد و دسته/یادداشت/فعال ذخیره نمی‌شدند. */}
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name="isActive" defaultChecked={editing?.isActive ?? true} className="size-4 accent-primary" />
+              {tr("فعال")}
+            </label>
 
             <p className="text-xs text-muted-foreground">
               {tr("بدونِ «حسابِ پرداخت» هزینه ثبت می‌شود ولی پرداختی در دفتر نوشته نمی‌شود.")}

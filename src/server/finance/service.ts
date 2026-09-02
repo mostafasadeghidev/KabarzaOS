@@ -5,7 +5,7 @@ import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from 'driz
 import { db } from '@/db/client';
 import {
   accounts, accountUsers, auditLog, currencies, exchangeRates, fiscalClosings, fiscalLocks,
-  ledger, offices, projectMembers, projectPayments, projects, tagRelations, tags, users, vendors,
+  ledger, offices, projectMembers, projectPayments, projects, tagRelations, tags, users, vendors, userPermissions, userRoles,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, ForbiddenError, visibleScopes } from '@/domain/access/guard';
@@ -18,6 +18,8 @@ import { learnedRate, paymentNote, planPaymentMirror } from '@/domain/ledger/mir
 import { fileSummaries, removeFiles } from '@/server/files/service';
 import { convert, type RateSource } from '@/domain/currency/rates';
 import { AccountError, assertAccountDeletable, canSeeAccount, visibleAccountIds } from '@/domain/finance/accounts';
+import { userIdsWithCaps } from '@/server/people/tag-caps';
+import { FINANCE_SCOPED_CAP, MANAGE_FINANCE_CAP } from '@/domain/access/project-scope';
 
 /**
  * سرویسِ حسابداری.
@@ -101,6 +103,16 @@ export async function listAccounts(actor: Actor) {
       officeId: accounts.officeId,
       officeName: offices.name,
       isActive: accounts.isActive,
+      note: accounts.note,
+      sortOrder: accounts.sortOrder,
+      scope: accounts.scope,
+      /**
+       * ماندهٔ **فعلی** — پورتِ ستونِ `balance_fmt` ِ فهرستِ حساب‌ها. یک زیرپرس‌وجوی
+       * گروهی به‌ازای هر حساب، نه کوئری در حلقه.
+       */
+      balance: sql<string>`(${accounts.openingBalance} + coalesce((
+        select sum(case when l.direction = 'in' then l.amount_account else -l.amount_account end)
+        from ledger l where l.account_id = ${accounts.id}), 0))::text`,
     })
     .from(accounts)
     .leftJoin(currencies, eq(currencies.id, accounts.currencyId))
@@ -113,7 +125,7 @@ export async function listAccounts(actor: Actor) {
     assignedAccountIds: scope.assignedAccountIds,
     allAccountIds: rows.map((r) => r.id),
   }));
-  return rows.filter((r) => allowed.has(r.id));
+  return rows.filter((r) => allowed.has(r.id)).map((r) => ({ ...r, scope: r.scope as 'company' | 'private' }));
 }
 
 /**
@@ -133,6 +145,12 @@ export interface LedgerFilter {
   party?: string | null;
   page?: number;
   perPage?: number;
+  /**
+   * ردیف‌های دورهٔ بسته را هم نشان بده. پیش‌فرض (پورتِ `for_account($since)`):
+   * دفتر از فردای قفل شروع می‌شود و ماندهٔ پیش از آن به‌صورتِ «مانده از سال
+   * قبل» منتقل می‌شود؛ وگرنه سال‌های بسته تا ابد فهرستِ فعال را پر می‌کردند.
+   */
+  includeLocked?: boolean;
 }
 
 /** گزینه‌های تعدادِ ردیف در صفحه — همان مقادیرِ نسخهٔ قبلی. */
@@ -168,7 +186,12 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
   const payer = users;
   const receiver = alias(users, 'receiver');
 
+  const lockDate = await currentLockDate();
+  // نمای دوره: بدونِ بازهٔ صریح و بدونِ «همه»، ردیف‌های ≤ قفل پنهان‌اند.
+  const periodScoped = Boolean(lockDate) && !input.includeLocked && !input.from;
+
   const conditions = [eq(ledger.accountId, input.accountId)];
+  if (periodScoped) conditions.push(gt(ledger.entryDate, lockDate!));
   if (input.from) conditions.push(gte(ledger.entryDate, input.from));
   if (input.to) conditions.push(lte(ledger.entryDate, input.to));
   if (input.projectId) conditions.push(eq(ledger.projectId, input.projectId));
@@ -267,15 +290,34 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
     .where(and(...conditions));
   const total = countRow?.n ?? 0;
 
-  // مانده‌ها — یک کوئریِ گروهی، نه جمع در حافظه روی صفحهٔ فیلترشده.
-  const totals = await db
+  /**
+   * مانده‌ها — یک کوئریِ گروهی، نه جمع در حافظه روی صفحهٔ فیلترشده.
+   * ⚠️ پورتِ `Accounts::balance($since)`: در نمای دوره، «مانده اولیه» = ماندهٔ
+   * منتقل‌شده (اولیه + خالصِ تا قفل) و واریز/برداشت فقط ردیف‌های **بعد از**
+   * قفل؛ ماندهٔ نهایی همان رقمِ همیشگی می‌ماند تا دو نما با هم نخوانَد نداشته باشند.
+   */
+  const totalsQuery = db
     .select({
       direction: ledger.direction,
       total: sql<string>`coalesce(sum(${ledger.amountAccount}), 0)::text`,
     })
-    .from(ledger)
-    .where(eq(ledger.accountId, input.accountId))
-    .groupBy(ledger.direction);
+    .from(ledger);
+  const [totals, carried] = await Promise.all([
+    totalsQuery
+      .where(periodScoped
+        ? and(eq(ledger.accountId, input.accountId), gt(ledger.entryDate, lockDate!))
+        : eq(ledger.accountId, input.accountId))
+      .groupBy(ledger.direction),
+    periodScoped
+      ? db.select({
+        direction: ledger.direction,
+        total: sql<string>`coalesce(sum(${ledger.amountAccount}), 0)::text`,
+      })
+        .from(ledger)
+        .where(and(eq(ledger.accountId, input.accountId), lte(ledger.entryDate, lockDate!)))
+        .groupBy(ledger.direction)
+      : Promise.resolve([] as Array<{ direction: 'in' | 'out'; total: string }>),
+  ]);
 
   // رسیدهای همهٔ ردیف‌ها با **یک** کوئری خوانده می‌شوند، نه یکی به‌ازای هر
   // ردیف (R-PERF-01).
@@ -299,22 +341,24 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
 
   const totalIn = totals.find((t) => t.direction === 'in')?.total ?? '0';
   const totalOut = totals.find((t) => t.direction === 'out')?.total ?? '0';
-  const balance = (
-    Number(account.openingBalance) + Number(totalIn) - Number(totalOut)
-  ).toFixed(4);
+  const carriedIn = carried.find((t) => t.direction === 'in')?.total ?? '0';
+  const carriedOut = carried.find((t) => t.direction === 'out')?.total ?? '0';
+  const opening = (Number(account.openingBalance) + Number(carriedIn) - Number(carriedOut)).toFixed(4);
+  const balance = (Number(opening) + Number(totalIn) - Number(totalOut)).toFixed(4);
 
   return {
     account,
     entries,
     /**
-     * ⚠️ جمع‌ها **همیشه** کلِ حساب‌اند، نه صفحه یا فیلترِ فعال: ماندهٔ حساب
-     * یک واقعیتِ حسابداری است و با فیلترِ نمایش عوض نمی‌شود. نسخهٔ قبلی هم
-     * همین‌طور است.
+     * ⚠️ جمع‌ها **همیشه** کلِ حساب‌اند (یا کلِ دورهٔ باز)، نه صفحه یا فیلترِ
+     * فعال: ماندهٔ حساب یک واقعیتِ حسابداری است و با فیلترِ نمایش عوض نمی‌شود.
      */
-    totals: { in: totalIn, out: totalOut, balance, opening: account.openingBalance },
+    totals: { in: totalIn, out: totalOut, balance, opening, carried: periodScoped },
     paging: { page, perPage, total, totalPages: Math.max(1, Math.ceil(total / perPage)) },
-    lockDate: await currentLockDate(),
-    canManage: canManageSection(actor, 'finance'),
+    lockDate,
+    periodScoped,
+    /** می‌تواند روی همین حساب بنویسد — مدیرِ مالی یا حسابدارِ تخصیص‌یافته. */
+    canManage: await canBookOn(actor, input.accountId),
   };
 }
 
@@ -454,7 +498,7 @@ async function mirrorPayment(
 
 /** ثبتِ ردیفِ دفتر. */
 export async function createEntry(actor: Actor, input: EntryInput): Promise<number> {
-  assertCanManage(actor, 'finance');
+  await assertCanBook(actor);
 
   // گاردِ ۲ — قفلِ دوره، پیش از هر چیزِ دیگر.
   assertWritable(await currentLockDate(), input.entryDate);
@@ -532,7 +576,7 @@ async function writeLedgerTags(entryId: number, tagIds: number[]): Promise<void>
 
 /** ویرایشِ ردیف — با همان سه گارد، و **تاریخِ قدیم هم** باید نوشتنی باشد. */
 export async function updateEntry(actor: Actor, entryId: number, input: EntryInput): Promise<void> {
-  assertCanManage(actor, 'finance');
+  await assertCanBook(actor);
 
   const before = await loadEntry(actor, entryId);
   const lockDate = await currentLockDate();
@@ -549,6 +593,9 @@ export async function updateEntry(actor: Actor, entryId: number, input: EntryInp
     description: input.description,
   });
 
+  // ⚠️ حساب پس از ساخت ثابت است (پورتِ `update()`: «existing wins») — یک
+  // پستِ دست‌کاری‌شده نمی‌تواند ردیف را به حسابِ دیگری منتقل کند.
+  if (input.accountId !== before.accountId) throw new ForbiddenError('ledger.account_fixed');
   const account = await loadAccount(actor, input.accountId);
   const { source, baseCurrencyId } = await rateSource();
   const amounts = computeAmounts(source, {
@@ -607,18 +654,33 @@ export async function updateEntry(actor: Actor, entryId: number, input: EntryInp
 
 /** حذفِ ردیف — قفلِ دوره اینجا هم اعمال می‌شود. */
 export async function deleteEntry(actor: Actor, entryId: number): Promise<void> {
-  assertCanManage(actor, 'finance');
+  await assertCanBook(actor);
   const before = await loadEntry(actor, entryId);
-  assertDeletable(await currentLockDate(), before.entryDate);
+  const lockDate = await currentLockDate();
+  assertDeletable(lockDate, before.entryDate);
 
+  /**
+   * ⚠️ پورتِ `Ledger::delete()`: حذفِ **یک** لِگِ انتقال کلِ انتقال را می‌برد،
+   * وگرنه یک حساب لِگش را از دست می‌داد و دیگری نگهش می‌داشت — نیمه‌مطابقت.
+   * هر لِگ باید بیرونِ دورهٔ قفل باشد و در دامنهٔ کاربر.
+   */
+  const rows = before.transferGroup
+    ? await db.select().from(ledger).where(eq(ledger.transferGroup, before.transferGroup))
+    : [before];
+  for (const row of rows) {
+    assertDeletable(lockDate, row.entryDate);
+    if (row.id !== entryId) await loadAccount(actor, row.accountId);
+  }
+
+  const ids = rows.map((r) => r.id);
   await db.delete(tagRelations).where(and(
     eq(tagRelations.objectType, 'ledger'),
-    eq(tagRelations.objectId, entryId),
+    inArray(tagRelations.objectId, ids),
   ));
-  await db.delete(ledger).where(eq(ledger.id, entryId));
+  await db.delete(ledger).where(inArray(ledger.id, ids));
   // ⚠️ رسیدهای ردیفِ حذف‌شده دیگر صاحبی ندارند؛ در باکت هم نمی‌مانند.
-  await removeFiles(before.receiptIds ?? []);
-  await audit(actor, 'ledger.delete', entryId, before, null);
+  await removeFiles(rows.flatMap((r) => r.receiptIds ?? []));
+  await audit(actor, 'ledger.delete', entryId, before, rows.length > 1 ? { transferGroup: before.transferGroup, ids } : null);
 }
 
 /**
@@ -626,7 +688,7 @@ export async function deleteEntry(actor: Actor, entryId: number): Promise<void> 
  * قواعدش (ممنوعیتِ انتقال به خودِ حساب و …) در `buildTransferLegs` است.
  */
 export async function transfer(actor: Actor, input: TransferInput): Promise<[number, number]> {
-  assertCanManage(actor, 'finance');
+  await assertCanBook(actor);
   assertWritable(await currentLockDate(), input.entryDate);
 
   const [fromAccount, toAccount] = await Promise.all([
@@ -640,6 +702,13 @@ export async function transfer(actor: Actor, input: TransferInput): Promise<[num
     [fromAccount.id, fromAccount.currencyId],
     [toAccount.id, toAccount.currencyId],
   ]);
+  const nameOf = new Map(
+    (await db.select({ id: accounts.id, name: accounts.name })
+      .from(accounts).where(inArray(accounts.id, [fromAccount.id, toAccount.id])))
+      .map((a) => [a.id, a.name]),
+  );
+  const { source, baseCurrencyId } = await rateSource();
+  const description = (input.description ?? '').trim() || 'انتقالِ داخلی';
 
   const ids = await db.transaction(async (tx) => {
     const created: number[] = [];
@@ -647,14 +716,27 @@ export async function transfer(actor: Actor, input: TransferInput): Promise<[num
       // ⚠️ هر لِگ در ارزِ **حسابِ خودش** ثبت می‌شود؛ `amount` و `amountAccount`
       // یکی‌اند چون مبلغِ واقعیِ همان حساب است (R-LEDGER-04).
       const currencyId = currencyOf.get(leg.accountId)!;
+      // معادلِ پایه/نرخ مثلِ هر ردیفِ دیگر (پورتِ `add()` روی لِگ‌ها) — وگرنه
+      // بستنِ دوره و نمای یورو لِگ‌های انتقال را نمی‌دیدند. نرخِ غایب صفر می‌ماند.
+      const amounts = computeAmounts(source, {
+        amount: leg.amount, currencyId, accountCurrencyId: currencyId,
+        officeCurrencyId: currencyId, baseCurrencyId, amountAccountOverride: null,
+      });
+      const counterpart = nameOf.get(leg.counterpartAccountId) ?? '';
       const rows = await tx.insert(ledger).values({
         accountId: leg.accountId,
         entryDate: input.entryDate,
         direction: leg.direction,
-        description: 'انتقالِ داخلی',
+        description,
         amount: leg.amount,
         currencyId,
         amountAccount: leg.amount,
+        amountOffice: amounts.amountOffice,
+        amountEur: amounts.missingRates.length === 0 ? amounts.amountEur : '0',
+        exchangeRate: amounts.missingRates.length === 0 ? amounts.exchangeRate : '1',
+        // لِگ‌ها همدیگر را نام می‌برند تا در جدول و جستجوی طرف‌حساب دیده شوند.
+        receiverLabel: leg.direction === 'out' ? counterpart : '',
+        payerLabel: leg.direction === 'in' ? counterpart : '',
         transferGroup: leg.transferGroup,
         createdBy: actor.id,
       }).returning({ id: ledger.id });
@@ -669,7 +751,7 @@ export async function transfer(actor: Actor, input: TransferInput): Promise<[num
 
 /** گزینه‌های فرم — حساب، ارز، دستهٔ دفتر، پروژه، طرف‌حساب. */
 export async function getEntryFormOptions(actor: Actor) {
-  assertCanManage(actor, 'finance');
+  await assertCanBook(actor);
 
   const [
     accountRows, currencyRows, categoryRows, projectRows, vendorRows, peopleRows, membershipRows,
@@ -726,6 +808,28 @@ export async function getEntryFormOptions(actor: Actor) {
   };
 }
 
+/**
+ * حقِ **نوشتن** در دفتر — پورتِ `kteam_finance_scoped` روی صفحهٔ حسابداری:
+ * مدیرِ مالی همه‌جا؛ «حسابدارِ محدود» (`finance.view` + تخصیصِ حساب) روی
+ * حساب‌های تخصیص‌یافته‌اش می‌نویسد — خودِ حساب در `loadAccount` سنجیده می‌شود.
+ *
+ * ⚠️ پیش از این حسابدارِ محدود فقط‌خواندنی بود: کاربردِ اصلیِ افزونه (حسابداری
+ * که روی «حساب‌های خودش» ردیف می‌زند) وجود نداشت.
+ */
+async function assertCanBook(actor: Actor): Promise<void> {
+  if (canManageSection(actor, 'finance')) return;
+  if (!canViewSection(actor, 'finance')) throw new ForbiddenError('finance.manage');
+  const scope = await accountScope(actor);
+  if (scope.assignedAccountIds.length === 0) throw new ForbiddenError('finance.manage');
+}
+
+/** می‌تواند روی **این** حساب بنویسد؟ — پرچمِ دکمه‌های صفحه. */
+export async function canBookOn(actor: Actor, accountId: number): Promise<boolean> {
+  if (canManageSection(actor, 'finance')) return true;
+  if (!canViewSection(actor, 'finance')) return false;
+  return (await accountScope(actor)).assignedAccountIds.includes(accountId);
+}
+
 async function loadAccount(actor: Actor, accountId: number) {
   const rows = await db
     .select({ id: accounts.id, currencyId: accounts.currencyId, scope: accounts.scope })
@@ -759,7 +863,8 @@ export { asc, canViewSection };
  * فقط حساب‌های تخصیص‌یافته.
  */
 export async function accountScope(actor: Actor) {
-  const seesAll = canManageSection(actor, 'finance');
+  // پورتِ `user_sees_all()`: مدیرِ مالی **یا** مدیرِ سراسریِ پروژه‌ها.
+  const seesAll = canManageSection(actor, 'finance') || canManageSection(actor, 'projects');
   if (seesAll) return { seesAll, assignedAccountIds: [] as number[] };
 
   const rows = await db.select({ accountId: accountUsers.accountId })
@@ -838,6 +943,24 @@ export async function deleteAccount(actor: Actor, id: number) {
   await audit(actor, 'account.delete', id);
 }
 
+/**
+ * کاندیدای «حسابدارِ این حساب» — پورتِ فهرستِ افزونه: کسانی که دسترسیِ مالی
+ * دارند (نقشِ finance، مجوزِ per-user، یا تگِ «حسابدار»/«مدیر حسابداری»).
+ * ⚠️ تخصیصِ کسی که هیچ دسترسیِ مالی ندارد بی‌اثر بود و فهرست را شلوغ می‌کرد.
+ */
+async function financeCandidates(): Promise<Array<{ id: number; name: string }>> {
+  const [byRole, byPerm, byTag] = await Promise.all([
+    db.select({ id: userRoles.userId }).from(userRoles).where(eq(userRoles.role, 'finance')),
+    db.select({ id: userPermissions.userId }).from(userPermissions)
+      .where(inArray(userPermissions.permission, ['finance.view', 'finance.manage'])),
+    userIdsWithCaps([FINANCE_SCOPED_CAP, MANAGE_FINANCE_CAP]),
+  ]);
+  const ids = [...new Set([...byRole.map((r) => r.id), ...byPerm.map((r) => r.id), ...byTag])];
+  if (ids.length === 0) return [];
+  return db.select({ id: users.id, name: users.name })
+    .from(users).where(and(isNull(users.deletedAt), inArray(users.id, ids))).orderBy(users.name);
+}
+
 /** حسابداران و گزینه‌های فرمِ حساب. */
 export async function getAccountFormOptions(actor: Actor) {
   assertCanManage(actor, 'finance');
@@ -846,8 +969,7 @@ export async function getAccountFormOptions(actor: Actor) {
       .from(currencies).where(eq(currencies.isActive, true)).orderBy(currencies.id),
     db.select({ id: offices.id, name: offices.name })
       .from(offices).where(eq(offices.isActive, true)).orderBy(offices.name),
-    db.select({ id: users.id, name: users.name })
-      .from(users).where(isNull(users.deletedAt)).orderBy(users.name),
+    financeCandidates(),
     db.select({ accountId: accountUsers.accountId, userId: accountUsers.userId }).from(accountUsers),
   ]);
 

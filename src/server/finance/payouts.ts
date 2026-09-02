@@ -5,8 +5,8 @@ import {
   accounts, auditLog, currencies, ledger, paymentRequests, projects,
   recurringExpenses, unitEntries, userRoles, users, vendors,
 } from '@/db/schema';
-import { canManageSection, type Actor } from '@/domain/access/permissions';
-import { assertCanManage, assertCanView } from '@/domain/access/guard';
+import { canManageSection, type Actor, isOwner, canViewSection } from '@/domain/access/permissions';
+import { assertCanManage, assertCanView, assertOwner } from '@/domain/access/guard';
 import { markPaid } from '@/domain/team-money/payments';
 import { assertWritable } from '@/domain/ledger/fiscal';
 import {
@@ -23,7 +23,7 @@ import { accountScope, createEntry, currentLockDate } from './service';
  */
 
 export class PayoutError extends Error {
-  constructor(readonly code: 'not_found' | 'rejected' | 'already_paid' | 'no_currency') {
+  constructor(readonly code: 'not_found' | 'rejected' | 'already_paid' | 'no_currency' | 'not_approved') {
     super(`payout refused: ${code}`);
     this.name = 'PayoutError';
   }
@@ -45,12 +45,39 @@ async function audit(actor: Actor, action: string, objectId: number, before?: un
  * درخواست‌های پرداخت
  * ------------------------------------------------------------------ */
 
+/**
+ * سطحِ دسترسیِ صفحهٔ پرداخت‌ها — پورتِ `Payouts_Page::access_level()`:
+ * مالک همه‌چیز؛ حسابدار (مدیرِ مالی یا محدود) فقط **تأییدشده/پرداخت‌شده**.
+ * در انتظار و ردشده تصمیمِ مالک است و به حسابدار نشان داده نمی‌شود.
+ */
+export function payoutLevel(actor: Actor): 'full' | 'accounting' | 'none' {
+  if (isOwner(actor)) return 'full';
+  if (canViewSection(actor, 'finance')) return 'accounting';
+  return 'none';
+}
+
+const ACCOUNTING_STATUSES = ['approved', 'paid'] as const;
+
 export async function listRequests(actor: Actor, status?: string) {
   assertCanView(actor, 'finance');
+  const level = payoutLevel(actor);
+  const lockDate = await currentLockDate();
 
-  const conditions = status && status !== 'all'
-    ? [eq(paymentRequests.status, status as 'pending')]
-    : [];
+  const conditions = [];
+  if (status === 'archived') {
+    // تصمیم‌گرفته‌شده‌های پیش از قفل — بیرون از تب‌های فعال (پورتِ `is_archived`).
+    if (!lockDate) return [];
+    conditions.push(inArray(paymentRequests.status, ['paid', 'rejected']));
+    conditions.push(sql`${paymentRequests.decidedAt} is not null and ${paymentRequests.decidedAt}::date <= ${lockDate}`);
+  } else {
+    if (status && status !== 'all') conditions.push(eq(paymentRequests.status, status as 'pending'));
+    if (lockDate) {
+      conditions.push(sql`not (${paymentRequests.status} in ('paid', 'rejected')
+        and ${paymentRequests.decidedAt} is not null and ${paymentRequests.decidedAt}::date <= ${lockDate})`);
+    }
+  }
+  // حسابدار: «همه» یعنی فقط تأییدشده + پرداخت‌شده — هرگز در انتظار/ردشده.
+  if (level !== 'full') conditions.push(inArray(paymentRequests.status, [...ACCOUNTING_STATUSES]));
 
   return db
     .select({
@@ -73,7 +100,8 @@ export async function listRequests(actor: Actor, status?: string) {
     .leftJoin(projects, eq(projects.id, paymentRequests.projectId))
     .leftJoin(currencies, eq(currencies.id, paymentRequests.currencyId))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(paymentRequests.id));
+    // در انتظارها اول (نیازمندِ اقدام)، بعد تازه‌ترین — پورتِ `all()`.
+    .orderBy(sql`case when ${paymentRequests.status} = 'pending' then 0 else 1 end`, desc(paymentRequests.id));
 }
 
 /** تأیید یا ردِ درخواست. */
@@ -83,7 +111,8 @@ export async function decideRequest(
   decision: 'approved' | 'rejected',
   note: string,
 ) {
-  assertCanManage(actor, 'finance');
+  // ⚠️ تأیید/رد تصمیمِ **مالک** است (`manage_options`)؛ حسابدار فقط پرداخت می‌کند.
+  assertOwner(actor);
 
   const rows = await db.select().from(paymentRequests).where(eq(paymentRequests.id, requestId));
   const request = rows[0];
@@ -141,6 +170,8 @@ export async function payRequest(
    */
   if (request.status === 'rejected') throw new PayoutError('rejected');   // R-TEAM-07
   if (request.status === 'paid') throw new PayoutError('already_paid');   // ضدِ پرداختِ دوباره
+  // حسابدار فقط درخواستِ **تأییدشده** را می‌پردازد؛ مالک می‌تواند در انتظار را هم یک‌جا بپردازد.
+  if (request.status === 'pending' && !isOwner(actor)) throw new PayoutError('not_approved');
   if (request.currencyId === null) throw new PayoutError('no_currency');
 
   const project = (await db.select({ title: projects.title })
@@ -174,6 +205,9 @@ export async function payRequest(
   await db.update(paymentRequests).set({
     status: 'paid',
     ledgerId,
+    // مهرِ تصمیم — بایگانیِ پس از قفل روی همین تاریخ حساب می‌شود.
+    decidedBy: request.decidedBy ?? actor.id,
+    decidedAt: request.decidedAt ?? new Date(),
     updatedAt: new Date(),
   }).where(eq(paymentRequests.id, requestId));
 
@@ -230,6 +264,8 @@ export async function listRecurring(actor: Actor) {
       vendorId: recurringExpenses.vendorId,
       vendorName: vendors.name,
       isActive: recurringExpenses.isActive,
+      categoryTagId: recurringExpenses.categoryTagId,
+      note: recurringExpenses.note,
     })
     .from(recurringExpenses)
     .leftJoin(currencies, eq(currencies.id, recurringExpenses.currencyId))
@@ -250,12 +286,19 @@ export interface RecurringInput {
   nextDueDate: string;
   accountId: number | null;
   vendorId: number | null;
+  /** دستهٔ هزینه، یادداشت و فعال/غیرفعال — پیش از این ذخیره نمی‌شدند. */
+  categoryTagId?: number | null;
+  note?: string;
+  isActive?: boolean;
 }
 
 export async function saveRecurring(actor: Actor, input: RecurringInput) {
   assertCanManage(actor, 'finance');
 
   const values = {
+    categoryTagId: input.categoryTagId ?? null,
+    note: (input.note ?? '').trim(),
+    isActive: input.isActive ?? true,
     title: input.title.trim(),
     amount: input.amount,
     currencyId: input.currencyId,
@@ -373,8 +416,9 @@ export { computeNext, inArray, isNull, ledger, canManageSection };
 export async function bankDirectory(actor: Actor) {
   assertCanView(actor, 'finance');
 
-  const scope = await accountScope(actor);
-  const showPhone = scope.seesAll;
+  // ⚠️ تلفن PII است و برای پرداخت لازم نیست — فقط مالک (پورتِ `ACCESS_FULL`).
+  await accountScope(actor);
+  const showPhone = isOwner(actor);
 
   const [members, debtors, openRequests, unpaidUnits] = await Promise.all([
     db.selectDistinct({

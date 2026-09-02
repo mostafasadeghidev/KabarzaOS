@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/table';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { useConfirm } from '@/components/ui/confirm';
 
 // همان شکلِ `listAccounts` — یک تعریف برای هر دو تب.
 export type { AccountOption as AccountRow } from './ledger-view';
@@ -58,6 +59,7 @@ export function AccountsView({
 }) {
   const tr = useT();
   const t = useT();
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AccountRow | null>(null);
   const { show } = useToast();
@@ -94,6 +96,7 @@ export function AccountsView({
                 <TableHead>{t("ارز")}</TableHead>
                 <TableHead>{t("دفتر")}</TableHead>
                 <TableHead>{t("مانده اولیه")}</TableHead>
+                <TableHead>{t("مانده")}</TableHead>
                 <TableHead>{t("وضعیت")}</TableHead>
                 {canManage && <TableHead />}
               </TableRow>
@@ -110,6 +113,8 @@ export function AccountsView({
                   <TableCell className="num">{a.currencyCode ?? '—'}</TableCell>
                   <TableCell>{a.officeName ?? '—'}</TableCell>
                   <TableNumericCell>{format(a.openingBalance)}</TableNumericCell>
+                  {/* ماندهٔ فعلی — پورتِ `balance_fmt`؛ پیش از این فقط ماندهٔ اولیه دیده می‌شد. */}
+                  <TableNumericCell className="font-medium">{format(a.balance)}</TableNumericCell>
                   <TableCell>
                     {a.isActive ? null : <Badge variant="outline">{t("غیرفعال")}</Badge>}
                   </TableCell>
@@ -129,13 +134,14 @@ export function AccountsView({
                           className="size-8 text-muted-foreground hover:text-destructive"
                           aria-label={t("حذف")}
                           disabled={pending}
-                          onClick={() =>
+                          onClick={async () => {
+                            if (!(await confirm({ title: t('این حساب حذف شود؟') }))) return;
                             startTransition(async () => {
                               const result = await deleteAccountAction(a.id);
                               if (result.error) show(t(result.error), 'error');
                               else show(t('حذف شد.'), 'success');
-                            })
-                          }
+                            });
+                          }}
                         >
                           <Trash2 className="size-3.5" />
                         </Button>
@@ -211,13 +217,14 @@ export function AccountsView({
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="a-sort">{t("ترتیب")}</Label>
-                <Input id="a-sort" name="sortOrder" type="number" className="num" defaultValue={0} />
+                <Input id="a-sort" name="sortOrder" type="number" className="num" defaultValue={editing?.sortOrder ?? 0} />
               </div>
             </div>
 
             <div className="grid gap-1.5">
               <Label htmlFor="a-note">{t("یادداشت")}</Label>
-              <Input id="a-note" name="note" />
+              {/* ⚠️ پیش از این یادداشت و ترتیب در ویرایش پر نمی‌شدند و با هر ذخیره پاک می‌شدند. */}
+              <Input id="a-note" name="note" defaultValue={editing?.note ?? ''} />
             </div>
 
             <fieldset className="grid gap-1.5 rounded-md border p-3">
@@ -252,7 +259,7 @@ export function AccountsView({
                 {tr("فعال")}
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="scope" value="private" className="size-4 accent-primary" />
+                <input type="checkbox" name="scope" value="private" defaultChecked={editing?.scope === 'private'} className="size-4 accent-primary" />
                 {tr("حسابِ خصوصی (فقط با دسترسیِ خصوصی دیده می‌شود)")}
               </label>
             </div>

@@ -1,6 +1,6 @@
 import { isGrantableCap } from '@/domain/access/project-scope';
 import { cleanI18nMap } from '@/domain/settings/tag-label';
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql, desc } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   accounts, auditLog, currencies, exchangeRates, ledger, offices, projects,
@@ -53,12 +53,14 @@ export async function getSettings(actor: Actor) {
 
   const [currencyRows, rateRows, tagRows, officeRows, vendorRows, qaRows] = await Promise.all([
     db.select().from(currencies).orderBy(currencies.id),
-    db.select({
+    // آخرین نرخِ هر جفت — پورتِ `latest_rates()`؛ تاریخچه می‌ماند ولی فهرست یکی‌یکی است.
+    db.selectDistinctOn([exchangeRates.fromCurrencyId, exchangeRates.toCurrencyId], {
       fromCurrencyId: exchangeRates.fromCurrencyId,
       toCurrencyId: exchangeRates.toCurrencyId,
       rate: exchangeRates.rate,
       effectiveDate: exchangeRates.effectiveDate,
-    }).from(exchangeRates).orderBy(exchangeRates.fromCurrencyId, exchangeRates.toCurrencyId),
+    }).from(exchangeRates)
+      .orderBy(exchangeRates.fromCurrencyId, exchangeRates.toCurrencyId, desc(exchangeRates.effectiveDate)),
     db.select().from(tags).orderBy(tags.type, tags.sortOrder, tags.id),
     db.select().from(offices).orderBy(offices.name),
     db.select().from(vendors).orderBy(vendors.name),
@@ -82,22 +84,25 @@ export async function getSettings(actor: Actor) {
 
 export async function saveCurrency(
   actor: Actor,
-  input: { id: number | null; code: string; name: string; symbol: string; decimals: number },
+  input: { id: number | null; code: string; name: string; symbol: string; decimals: number; isActive?: boolean },
 ) {
   assertSettings(actor);
   const name = assertName(input.name);
   const code = assertName(input.code).toUpperCase();
 
   if (input.id) {
+    // ⚠️ ارزِ پیش‌فرض غیرفعال نمی‌شود — پایهٔ گزارش است.
+    const current = (await db.select({ isDefault: currencies.isDefault }).from(currencies).where(eq(currencies.id, input.id)))[0];
+    const isActive = current?.isDefault ? true : (input.isActive ?? true);
     await db.update(currencies)
-      .set({ code, name, symbol: input.symbol, decimals: input.decimals, updatedAt: new Date() })
+      .set({ code, name, symbol: input.symbol, decimals: input.decimals, isActive, updatedAt: new Date() })
       .where(eq(currencies.id, input.id));
     await audit(actor, 'currency.update', input.id, null, input);
     return input.id;
   }
 
   const rows = await db.insert(currencies)
-    .values({ code, name, symbol: input.symbol, decimals: input.decimals })
+    .values({ code, name, symbol: input.symbol, decimals: input.decimals, isActive: input.isActive ?? true })
     .returning({ id: currencies.id });
   await audit(actor, 'currency.create', rows[0]!.id, null, input);
   return rows[0]!.id;
@@ -150,7 +155,11 @@ export async function saveRate(
   assertSettings(actor);
   assertRateValid(input.fromCurrencyId, input.toCurrencyId, input.rate);
 
-  await db.insert(exchangeRates).values(input);
+  // ⚠️ همان جفت در همان روز **به‌روز** می‌شود (پورتِ `set_rate` ِ upsert)، نه خطای یکتایی.
+  await db.insert(exchangeRates).values(input).onConflictDoUpdate({
+    target: [exchangeRates.fromCurrencyId, exchangeRates.toCurrencyId, exchangeRates.effectiveDate],
+    set: { rate: input.rate, updatedAt: new Date() },
+  });
   await audit(actor, 'rate.create', input.fromCurrencyId, null, input);
 }
 

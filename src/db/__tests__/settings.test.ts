@@ -185,19 +185,19 @@ describe('زبانِ پیش‌فرضِ سامانه', () => {
 });
 
 /**
- * ماتریسِ حسابدار — پورتِ capهای نقشِ ACCOUNTANT نسخهٔ قبلی (class-roles.php):
- * + manage_finance + finance_scoped + view_reports.
- * یعنی کاتالوگ‌ها آری، بخش‌های مالکانه نه.
+ * ماتریسِ حسابدار — پورتِ **اثرِ واقعیِ** نقشِ ACCOUNTANT نسخهٔ قبلی:
+ * فهرستِ capهایش (class-roles.php) manage_finance + finance_scoped + view_reports
+ * + kteam_manage است، ولی Lockdown (class-lockdown.php) حسابدار را فقط به دو
+ * صفحهٔ حسابداری و پرداخت‌ها راه می‌دهد؛ تنظیمات (ارز، شرکت) و گزارش‌ها برایش
+ * بسته‌اند. طرف‌حساب کاتالوگِ مالی است و از خودِ صفحهٔ حسابداری ساخته می‌شود.
  */
 describe('ماتریسِ حسابدار (نقشِ finance)', () => {
   const accountant = () => actor({ id: 1, roles: ['finance'] as Actor['roles'] });
 
-  it('حسابدار ارز می‌سازد و حذف می‌کند', async () => {
-    const id = await service.saveCurrency(accountant(), {
+  it('⚠️ حسابدار ارز نمی‌سازد — تنظیمات پشتِ Lockdown است', async () => {
+    await expect(service.saveCurrency(accountant(), {
       id: null, code: 'CHF', name: 'فرانک', symbol: '₣', decimals: 2,
-    });
-    expect(id).toBeGreaterThan(0);
-    await service.deleteCurrency(accountant(), id);
+    })).rejects.toBeInstanceOf(ForbiddenError);
   });
 
   it('حسابدار طرف‌حساب می‌سازد (کاتالوگِ مالی)', async () => {
@@ -219,12 +219,12 @@ describe('ماتریسِ حسابدار (نقشِ finance)', () => {
     })).rejects.toBeInstanceOf(ForbiddenError);
   });
 
-  it('حسابدار مشخصاتِ شرکت را ذخیره می‌کند', async () => {
+  it('⚠️ حسابدار مشخصاتِ شرکت را هم ذخیره نمی‌کند', async () => {
     const { saveCompany } = await import('@/server/people/profile-service');
     await expect(saveCompany(accountant(), {
       name: 'کبرزا', address: '', taxId: '', email: '', phone: '',
       website: '', bank: '', invoiceFooter: '',
-    })).resolves.not.toThrow();
+    })).rejects.toBeInstanceOf(ForbiddenError);
   });
 
   it('⚠️ حسابدار دوره نمی‌بندد و گزارشِ روزانه را نمی‌گرداند — مالکانه‌اند', async () => {

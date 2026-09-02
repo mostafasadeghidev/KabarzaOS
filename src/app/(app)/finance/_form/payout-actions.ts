@@ -90,6 +90,9 @@ export async function saveRecurringAction(_prev: PayoutState, formData: FormData
     nextDueDate: String(formData.get('nextDueDate') ?? ''),
     accountId: num('accountId'),
     vendorId: num('vendorId'),
+    categoryTagId: num('categoryTagId'),
+    note: String(formData.get('note') ?? ''),
+    isActive: formData.get('isActive') !== null,
   }), 'هزینه ذخیره نشد.');
 }
 

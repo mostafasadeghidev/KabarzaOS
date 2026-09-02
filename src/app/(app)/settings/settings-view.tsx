@@ -145,7 +145,12 @@ export function SettingsView({ data }: { data: SettingsData }) {
               { header: 'نماد', cell: (c) => c.symbol || '—' },
               {
                 header: 'وضعیت',
-                cell: (c) => (c.isDefault ? <Badge variant="success">{tr("پیش‌فرض")}</Badge> : null),
+                cell: (c) => (
+                  <span className="flex gap-1">
+                    {c.isDefault && <Badge variant="success">{tr("پیش‌فرض")}</Badge>}
+                    {!c.isActive && <Badge variant="outline">{tr("غیرفعال")}</Badge>}
+                  </span>
+                ),
               },
             ]}
             saveAction={saveCurrencyAction}
@@ -186,6 +191,10 @@ export function SettingsView({ data }: { data: SettingsData }) {
                   <Label htmlFor="c-dec">{tr("اعشار")}</Label>
                   <Input id="c-dec" name="decimals" type="number" className="num" defaultValue={editing?.decimals ?? 2} />
                 </div>
+                <label className="flex items-center gap-2 text-sm sm:col-span-4">
+                  <input type="checkbox" name="isActive" defaultChecked={editing?.isActive ?? true} className="size-4 accent-primary" />
+                  {tr("فعال (در فرم‌ها پیشنهاد می‌شود)")}
+                </label>
               </div>
             )}
           />

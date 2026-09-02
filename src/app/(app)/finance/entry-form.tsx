@@ -54,7 +54,8 @@ export function EntryForm({
 }) {
   const tr = useT();
   const [direction, setDirection] = useState<Direction>(
-    (keep('direction', editing?.direction ?? 'out') as Direction),
+    // ردیفِ تازه واریز است (پیش‌فرضِ نسخهٔ قبلی)؛ ویرایش جهتِ خودش را نگه می‌دارد.
+    (keep('direction', editing?.direction ?? 'in') as Direction),
   );
   /**
    * ⚠️ پیش‌پرشدنِ کاملِ فرمِ ویرایش. پیش از این فقط برچسب‌ها می‌آمدند — نه

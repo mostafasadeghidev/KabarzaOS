@@ -18,6 +18,8 @@ export default async function Finance({
   searchParams: Promise<{
     account?: string; from?: string; to?: string; tag?: string;
     project?: string; party?: string; page?: string; per?: string;
+    /** `all=1` — ردیف‌های دورهٔ بسته هم نشان داده شوند (پورتِ نمایشِ کاملِ دفتر). */
+    all?: string;
   }>;
 }) {
   /**
@@ -107,11 +109,14 @@ export default async function Finance({
     party: query.party || null,
     page: Number(query.page) || 1,
     perPage: Number(query.per) || undefined,
+    // «همهٔ ردیف‌ها» — نمایشِ دورهٔ بسته هم (پیش‌فرض: از فردای قفل).
+    includeLocked: query.all === '1',
   };
 
-  const [data, requests, recurring, directory] = await Promise.all([
+  const [data, requests, archivedRequests, recurring, directory] = await Promise.all([
     getLedger(actor, filter),
     listRequests(actor),
+    listRequests(actor, 'archived'),
     listRecurring(actor),
     bankDirectory(actor),
   ]);
@@ -150,8 +155,12 @@ export default async function Finance({
         }}
         canManage={data.canManage}
         paging={data.paging}
+        periodScoped={data.periodScoped}
         directory={directory}
         requests={requests}
+        archivedRequests={archivedRequests}
+        isOwner={actor.roles.includes('owner')}
+        categories={options.categories}
         recurring={recurring}
         vendors={options.vendors}
         today={new Date().toISOString().slice(0, 10)}

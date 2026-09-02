@@ -18,6 +18,7 @@ const actor = (over: Partial<Actor> = {}): Actor => ({
 });
 const manager = () => actor({ id: 1, permissions: ['finance.manage', 'finance.view'] as Permission[] });
 const viewer = () => actor({ id: 2, permissions: ['finance.view'] as Permission[] });
+const owner = () => actor({ id: 1, roles: ['owner'] });
 
 let eur: number, account: number, project: number, member: number;
 let pending: number, rejected: number, monthly: number, oneOff: number;
@@ -76,8 +77,11 @@ describe('گاردِ دسترسی', () => {
     await expect(payouts.listRequests(actor())).rejects.toThrow(ForbiddenError);
   });
 
-  it('کاربرِ خواندنی می‌بیند ولی تصمیم نمی‌گیرد', async () => {
-    expect(await payouts.listRequests(viewer())).toHaveLength(2);
+  it('حسابدار فقط تأییدشده/پرداخت‌شده را می‌بیند و تصمیم نمی‌گیرد', async () => {
+    // پورتِ `status_tabs()`: ردشده و در انتظار فقط برای مالک است.
+    expect(await payouts.listRequests(viewer())).toHaveLength(1);
+    expect(await payouts.listRequests(manager())).toHaveLength(1);
+    expect(await payouts.listRequests(owner())).toHaveLength(2);
     await expect(payouts.decideRequest(viewer(), pending, 'approved', ''))
       .rejects.toThrow(ForbiddenError);
   });
@@ -193,7 +197,10 @@ describe('R-TEAM-08 — پرداختِ درخواست، ردیفِ کارِ تع
       status: 'pending', unitEntryId: ue!.id,
     }).returning({ id: paymentRequests.id });
 
-    const result = await payouts.payRequest(manager(), req!.id, {
+    // ⚠️ درخواستِ در انتظار را فقط مالک یک‌ضرب پرداخت می‌کند؛ حسابدار «تأییدنشده» می‌گیرد.
+    await expect(payouts.payRequest(manager(), req!.id, { accountId: account, entryDate: '2026-10-05' }))
+      .rejects.toThrow(payouts.PayoutError);
+    const result = await payouts.payRequest(owner(), req!.id, {
       // ⚠️ بعد از قفلِ دورهٔ مالیِ آزمونِ قبلی (تا ۲۰۲۶-۰۹-۳۰).
       accountId: account, entryDate: '2026-10-05',
     });

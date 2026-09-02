@@ -56,6 +56,7 @@ export async function saveCurrencyAction(_prev: SettingsState, formData: FormDat
     name: String(formData.get('name') ?? ''),
     symbol: String(formData.get('symbol') ?? ''),
     decimals: Number(formData.get('decimals') ?? 2) || 2,
+    isActive: formData.get('isActive') !== null,
   }), 'ارز ذخیره نشد.');
 }
 

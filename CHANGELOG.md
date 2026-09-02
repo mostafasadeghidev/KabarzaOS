@@ -2,6 +2,26 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.32.0]
+
+### Added — accounting, payouts and finance access (parity with the plugin)
+
+- **Finance access from member-role tags.** A member whose role tag grants "accountant" or "accounting manager" gets the matching finance permissions at login, like the plugin's capability sync; removing the tag removes the access at once. Tag holders are offered as accountant candidates when assigning accounts.
+- **Scoped accountants can book.** An accountant limited to assigned accounts can now create, edit and delete rows and transfers on those accounts (they used to be read-only); other accounts stay invisible. Global project managers see every account, as in the plugin. Editing can no longer move a row to another account.
+- **The ledger shows the open period only.** After a fiscal close the ledger starts the day after the lock and shows a "balance carried from the previous year" card; a "show rows of the closed period" link reveals everything. Totals stay the whole-account balance.
+- **Payout request tabs and levels.** The owner sees pending / approved / paid / rejected / all tabs (plus "archived" after a close), with pending requests first; accountants see only approved and paid. Approving and rejecting is owner-only, rejecting asks for an optional reason that is sent to the member, the owner can pay a pending request in one step (the decision is recorded), and an accountant can pay approved requests only. Member phone numbers in the bank directory are shown to the owner only.
+- **Recurring expenses keep their category, note and active flag**; the form pre-fills the currency and vendor when editing (they used to be cleared silently), inactive expenses can be listed through a status filter, and intervals read "every N months" when N > 1. An expense row can be turned into a monthly recurring expense from the entry form.
+- **Transfers carry a description** onto both legs, with from/to labels and a EUR equivalent; deleting one leg deletes the whole transfer.
+- **The accounts list shows the current balance**; editing an account pre-fills its note, sort order and private scope (they were wiped on every save); deleting asks for confirmation.
+- **Currencies can be deactivated** (the default currency always stays active); saving a rate for the same pair and day updates it instead of failing, and the rates list shows the latest rate per pair.
+
+### Changed
+
+- **The finance role matches the plugin's lockdown:** an accountant reaches accounting and payouts only; settings, reports and activity need per-user access.
+- A new ledger row defaults to a deposit, as before the rebuild.
+
+---
+
 ## [1.31.0]
 
 ### Added — project and task rules (parity with the plugin)

@@ -35,6 +35,9 @@ const TABS = [
  */
 export function FinancePage({
   requests,
+  archivedRequests,
+  isOwner,
+  categories,
   directory,
   recurring,
   vendors,
@@ -42,15 +45,21 @@ export function FinancePage({
   accountOptions,
   ...props
 }: {
+  /** درخواست‌های بایگانی‌شده (تصمیم‌گرفته پیش از قفل) — تبِ جدا. */
+  archivedRequests: RequestRow[];
+  /** تأیید/رد فقط مالک؛ حسابدار پرداخت می‌کند. */
+  isOwner: boolean;
+  categories: Array<{ id: number; name: string | null }>;
   accountId: number;
   accounts: AccountOption[];
   entries: EntryRow[];
-  totals: { in: string; out: string; balance: string; opening: string };
+  totals: { in: string; out: string; balance: string; opening: string; carried: boolean };
   currencyCode: string | null;
   lockDate: string | null;
   options: FormOptions;
   canManage: boolean;
   paging: LedgerPaging;
+  periodScoped: boolean;
   directory: { showPhone: boolean; rows: BankRow[] };
   requests: RequestRow[];
   recurring: RecurringRow[];
@@ -118,6 +127,10 @@ export function FinancePage({
           section={tab}
           directory={directory}
           requests={requests}
+          archivedRequests={archivedRequests}
+          isOwner={isOwner}
+          lockDate={props.lockDate}
+          categories={categories}
           recurring={recurring}
           accounts={props.accounts}
           currencies={props.options.currencies}

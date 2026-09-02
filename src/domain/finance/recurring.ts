@@ -22,6 +22,27 @@ export const KIND_LABELS: Record<ExpenseKind, string> = {
   once: 'یک‌بار',
 };
 
+/**
+ * برچسبِ دوره — پورتِ `interval_label()`: «ماهانه» برای هر ۱ ماه، «هر ۳ ماه»
+ * برای بیشتر. پیش از این «هر ۳ ماه» هم «ماهانه» نمایش داده می‌شد.
+ */
+export const EVERY_LABELS: Record<IntervalUnit, string> = {
+  day: 'هر {n} روز',
+  week: 'هر {n} هفته',
+  month: 'هر {n} ماه',
+  year: 'هر {n} سال',
+};
+
+export function intervalLabel(
+  unit: IntervalUnit,
+  count: number,
+  t: (key: string, params?: Record<string, string | number>) => string = (k, p) =>
+    k.replace('{n}', String(p?.n ?? '')),
+): string {
+  const n = Math.max(1, Math.trunc(count));
+  return n === 1 ? t(UNIT_LABELS[unit]) : t(EVERY_LABELS[unit], { n });
+}
+
 export function normalizeUnit(raw: string): IntervalUnit {
   return (INTERVAL_UNITS as readonly string[]).includes(raw) ? (raw as IntervalUnit) : 'month';
 }

@@ -34,10 +34,12 @@ describe('نقش‌ها', () => {
     expect(can(a, 'finance.manage')).toBe(true);
   });
 
-  it('حسابدار فقط مالی و گزارش', () => {
+  it('⚠️ حسابدار فقط مالی — همان محدودهٔ Lockdown ِ نسخهٔ قبلی', () => {
     const a = actor({ roles: ['finance'] });
     expect(can(a, 'finance.manage')).toBe(true);
-    expect(can(a, 'reports.view')).toBe(true);
+    expect(can(a, 'finance.view')).toBe(true);
+    expect(can(a, 'reports.view')).toBe(false);
+    expect(can(a, 'settings.manage')).toBe(false);
     expect(can(a, 'projects.manage')).toBe(false);
   });
 

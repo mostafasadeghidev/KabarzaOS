@@ -98,6 +98,8 @@ export interface TransferInput {
   /** مبلغی که واقعاً به مقصد رسید، در ارزِ حسابِ مقصد. */
   toAmount: string;
   entryDate: string;
+  /** شرحِ آزاد — روی هر دو لِگ می‌نشیند (پورتِ فیلدِ توضیحِ فرمِ انتقال). */
+  description?: string;
 }
 
 export class TransferValidationError extends Error {

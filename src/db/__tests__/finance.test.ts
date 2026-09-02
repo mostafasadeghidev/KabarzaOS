@@ -74,10 +74,15 @@ describe('گاردِ ۱ — مجوزِ مالی', () => {
       .rejects.toThrow(ForbiddenError);
   });
 
-  it('کاربرِ خواندنی حسابِ تخصیص‌یافته را می‌بیند ولی نمی‌نویسد', async () => {
+  it('حسابدارِ محدود روی حسابِ تخصیص‌یافته می‌نویسد، روی بقیه نه', async () => {
+    // پورتِ `kteam_finance`: حسابدارِ محدود در حساب‌های خودش ثبت می‌کند (نه فقط می‌خواند).
     const data = await service.getLedger(viewer(), { accountId: eurAccount });
-    expect(data.canManage).toBe(false);
-    await expect(service.createEntry(viewer(), entry())).rejects.toThrow(ForbiddenError);
+    expect(data.canManage).toBe(true);
+    const id = await service.createEntry(viewer(), entry({ description: 'ثبتِ حسابدار' }));
+    expect(id).toBeGreaterThan(0);
+    await expect(service.createEntry(viewer(), entry({ accountId: usdAccount })))
+      .rejects.toThrow(service.LedgerNotFoundError);
+    await service.deleteEntry(viewer(), id);
   });
 
   it('⚠️ R-ACC-02 — حسابدارِ محدود حسابِ تخصیص‌نیافته را اصلاً نمی‌بیند', async () => {

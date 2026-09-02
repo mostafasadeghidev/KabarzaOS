@@ -6,6 +6,7 @@ import type { Locale } from '@/i18n/config';
 import { users, userRoles, userPermissions } from '@/db/schema';
 import { readSessionToken, SESSION_COOKIE } from '@/domain/auth/session';
 import type { Actor, Permission, Role } from '@/domain/access/permissions';
+import { tagPermissionsFor } from '@/server/people/tag-caps';
 
 /**
  * پلِ بینِ دیتابیس و لایهٔ دامنه.
@@ -44,16 +45,18 @@ export async function currentSession(): Promise<
   // R-PEOPLE-03 — «قطع‌شده» و حذف‌شده بازیگر نیستند؛ «فقط مالی» هست.
   if (!user || !canSignIn(user.memberState, user.deletedAt !== null)) return null;
 
-  const [roleRows, permRows] = await Promise.all([
+  const [roleRows, permRows, tagPermissions] = await Promise.all([
     db.select().from(userRoles).where(eq(userRoles.userId, user.id)),
     db.select().from(userPermissions).where(eq(userPermissions.userId, user.id)),
+    // پورتِ `sync_caps_from_tags()`: تگِ «حسابدار»/«مدیر حسابداری» دسترسیِ مالی می‌دهد.
+    tagPermissionsFor(user.id),
   ]);
 
   return {
     actor: {
       id: user.id,
       roles: roleRows.map((r) => r.role as Role),
-      permissions: permRows.map((p) => p.permission as Permission),
+      permissions: [...new Set([...permRows.map((p) => p.permission as Permission), ...tagPermissions])],
       privateAccess: user.privateAccess,
     },
     name: user.name,

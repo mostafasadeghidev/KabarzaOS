@@ -13,6 +13,8 @@ import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { removeFiles, storeReceipt } from '@/server/files/service';
 import { getT } from '@/i18n/server';
 import { MissingRateError } from '@/domain/ledger/amounts';
+import { saveRecurring } from '@/server/finance/payouts';
+import { computeNext } from '@/domain/finance/recurring';
 
 /** اقدام‌های حسابداری. گاردها همه در سرویس‌اند (R-ARCH-01). */
 
@@ -204,7 +206,32 @@ export async function saveEntryAction(
   try {
     const actor = await requireActor();
     if (entryId) await updateEntry(actor, entryId, input);
-    else await createEntry(actor, input);
+    else {
+      await createEntry(actor, input);
+      /**
+       * «این هزینه را به‌عنوان هزینهٔ دوره‌ای هم ثبت کن» — پورتِ `make_recurring`:
+       * قالبِ ماهانه از همین ردیف (طرف‌حساب، حساب، مبلغ، دسته)، سررسیدِ بعدی
+       * یک ماه بعد. پیش از این چک‌باکس هیچ کاری نمی‌کرد.
+       */
+      if (formData.get('makeRecurring') !== null && input.direction === 'out') {
+        await saveRecurring(actor, {
+          id: null,
+          title: input.description || input.receiverLabel || 'هزینه',
+          amount: input.amount,
+          currencyId: input.currencyId,
+          kind: 'recurring',
+          intervalUnit: 'month',
+          intervalCount: 1,
+          startDate: input.entryDate,
+          nextDueDate: computeNext(input.entryDate, 'month', 1),
+          accountId: input.accountId,
+          vendorId: null,
+          categoryTagId: input.tagIds[0] ?? null,
+          note: '',
+          isActive: true,
+        });
+      }
+    }
   } catch (error) {
     // ⚠️ R-FILE-02 — رسیدها پیش از ردیف ذخیره شده‌اند؛ اگر ذخیرهٔ ردیف شکست
     // خورد (مثلاً دورهٔ قفل)، آن فایل‌ها به هیچ ردیفی وصل نیستند و باید بروند،
@@ -237,10 +264,11 @@ export async function transferAction(
   const fromAmount = String(formData.get('fromAmount') ?? '');
   const toAmount = String(formData.get('toAmount') ?? '');
   const entryDate = String(formData.get('entryDate') ?? '');
+  const description = String(formData.get('description') ?? '');
 
   try {
     const actor = await requireActor();
-    await transfer(actor, { fromAccountId, toAccountId, fromAmount, toAmount, entryDate });
+    await transfer(actor, { fromAccountId, toAccountId, fromAmount, toAmount, entryDate, description });
   } catch (error) {
     return { error: await explain(error, 'انتقال ثبت نشد.') };
   }

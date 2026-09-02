@@ -40,6 +40,11 @@ export interface AccountOption {
   officeId: number | null;
   officeName: string | null;
   isActive: boolean;
+  note: string;
+  sortOrder: number;
+  scope: 'company' | 'private';
+  /** ماندهٔ فعلی — اولیه + خالصِ دفتر. */
+  balance: string;
 }
 
 export interface EntryRow {
@@ -120,17 +125,20 @@ export function LedgerView({
   options,
   canManage,
   paging,
+  periodScoped = false,
   onSelectAccount,
 }: {
   accountId: number;
   accounts: AccountOption[];
   entries: EntryRow[];
-  totals: { in: string; out: string; balance: string; opening: string };
+  totals: { in: string; out: string; balance: string; opening: string; carried: boolean };
   currencyCode: string | null;
   lockDate: string | null;
   options: FormOptions;
   canManage: boolean;
   paging: LedgerPaging;
+  /** نمای دوره: ردیف‌های تا قفل پنهان و مانده‌شان منتقل شده. */
+  periodScoped?: boolean;
   onSelectAccount: (id: number) => void;
 }) {
   const tr = useT();
@@ -172,7 +180,8 @@ export function LedgerView({
 
   const cards: Array<{ label: string; value: string; strong?: boolean }> = [
     { label: 'ارز حساب', value: currencyCode ?? '—' },
-    { label: 'مانده اولیه', value: format(totals.opening) },
+    // در نمای دوره «مانده اولیه» ماندهٔ منتقل‌شده از دورهٔ بسته است (پورتِ `balance($since)`).
+    { label: totals.carried ? 'مانده از سال قبل' : 'مانده اولیه', value: format(totals.opening) },
     { label: 'مجموع واریز', value: format(totals.in) },
     { label: 'مجموع برداشت', value: format(totals.out) },
     { label: 'مانده', value: format(totals.balance), strong: true },
@@ -220,6 +229,11 @@ export function LedgerView({
           {tr('دورهٔ مالی تا {date} بسته است؛ ردیف‌های آن بازه تغییر نمی‌کنند.', {
             date: lockDate,
           })}
+          {periodScoped && (
+            <a href={`/finance?account=${accountId}&all=1`} className="ms-auto underline">
+              {tr('نمایشِ ردیف‌های دورهٔ بسته')}
+            </a>
+          )}
         </p>
       )}
 
@@ -410,9 +424,15 @@ export function LedgerView({
               </div>
             </div>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="t-date">{t("تاریخ")}</Label>
-              <Input id="t-date" type="date" name="entryDate" className="num" defaultValue={today} required />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-1.5">
+                <Label htmlFor="t-date">{t("تاریخ")}</Label>
+                <Input id="t-date" type="date" name="entryDate" className="num" defaultValue={today} required />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="t-desc">{t("توضیحات")}</Label>
+                <Input id="t-desc" name="description" placeholder={tr("مثلاً: شارژِ حسابِ دلاری")} />
+              </div>
             </div>
 
             {transferState.error && (
