@@ -221,15 +221,19 @@ export function ProjectCard({
             <span className="text-xs text-muted-foreground">{t("هنوز کسی ساین نشده")}</span>
           ) : (
             <div className="flex flex-wrap gap-1">
-              {project.clients.map((name, i) => (
+              {project.clients.map((c, i) => (
                 <Badge key={`c${i}`} className="bg-sky-600 text-white hover:bg-sky-600">
-                  {name}
+                  {c.name}
                 </Badge>
               ))}
               {project.members.map((m, i) => (
                 <Badge key={`m${i}`} variant="secondary">
                   {m.name}
-                  {m.roleName && <> · {m.roleName}</>}
+                  {/*
+                    ⚠️ برای کارفرما، «نام» خودش همان نقش است (ماسک شده)، پس
+                    بدونِ این شرط چیپ «طراح · طراح» می‌شد.
+                  */}
+                  {m.roleName && m.roleName !== m.name && <> · {m.roleName}</>}
                 </Badge>
               ))}
             </div>

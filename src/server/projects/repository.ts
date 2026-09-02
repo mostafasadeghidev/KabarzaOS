@@ -37,6 +37,8 @@ export interface ProjectListRow {
   isArchived: boolean;
   isTender: boolean;
   scope: 'company' | 'private';
+  /** دفترِ مالک — شاخهٔ «مدیرِ دفتر» در ماسکِ نام به آن نیاز دارد. */
+  officeId: number | null;
   memberCount: number;
   openTaskCount: number;
   /** تسکِ نیازمندِ ریویو — پایهٔ تبِ «نیازمند بررسی». */
@@ -57,8 +59,8 @@ export interface ProjectListRow {
   parentTitle: string | null;
   children: Array<{ id: number; title: string }>;
   /** چیپ‌های تیم و کارفرما. */
-  members: Array<{ name: string; roleName: string | null }>;
-  clients: string[];
+  members: Array<{ userId: number; name: string; roleName: string | null }>;
+  clients: Array<{ userId: number; name: string }>;
 }
 
 /** فهرستِ پروژه‌ها — سه کوئریِ ثابت، مستقل از تعدادِ پروژه. */
@@ -85,6 +87,7 @@ export async function listProjects(
       isArchived: projects.isArchived,
       isTender: projects.isTender,
       scope: projects.scope,
+      officeId: projects.officeId,
       regDate: projects.regDate,
       parentId: projects.parentId,
     })
@@ -162,6 +165,9 @@ export async function listProjects(
   const memberChips = await db
     .select({
       projectId: projectMembers.projectId,
+      // ⚠️ شناسه لازم است: ماسکِ نام در سرویس به «این نفر کیست» نیاز دارد،
+      // نه فقط به نامش. بدونِ آن، بیننده نامِ خودش را هم ماسک‌شده می‌دید.
+      userId: projectMembers.userId,
       name: users.name,
       roleName: tagName(await currentLocale()),
     })
@@ -192,7 +198,7 @@ export async function listProjects(
 
   // ۱۰) چیپ‌های کارفرما.
   const clientChips = await db
-    .select({ projectId: projectClients.projectId, name: users.name })
+    .select({ projectId: projectClients.projectId, userId: projectClients.userId, name: users.name })
     .from(projectClients)
     .innerJoin(users, eq(users.id, projectClients.userId))
     .where(inArray(projectClients.projectId, ids));
@@ -206,16 +212,16 @@ export async function listProjects(
   const expenses = new Map(expenseRows.map((r) => [r.projectId, r.total]));
   const titleOf = new Map(rows.map((r) => [r.id, r.title]));
 
-  const chipsByProject = new Map<number, Array<{ name: string; roleName: string | null }>>();
+  const chipsByProject = new Map<number, Array<{ userId: number; name: string; roleName: string | null }>>();
   for (const c of memberChips) {
     const list = chipsByProject.get(c.projectId) ?? [];
-    list.push({ name: c.name, roleName: c.roleName });
+    list.push({ userId: c.userId, name: c.name, roleName: c.roleName });
     chipsByProject.set(c.projectId, list);
   }
-  const clientsByProject = new Map<number, string[]>();
+  const clientsByProject = new Map<number, Array<{ userId: number; name: string }>>();
   for (const c of clientChips) {
     const list = clientsByProject.get(c.projectId) ?? [];
-    list.push(c.name);
+    list.push({ userId: c.userId, name: c.name });
     clientsByProject.set(c.projectId, list);
   }
   // فرزندان از خودِ همین ردیف‌ها ساخته می‌شوند — بدونِ کوئریِ اضافه.

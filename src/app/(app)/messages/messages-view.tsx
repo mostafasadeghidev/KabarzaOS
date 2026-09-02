@@ -81,6 +81,7 @@ export function MessagesView({
   canSend,
   canBroadcast,
   poll,
+  initialThreadId = null,
 }: {
   inbox: InboxRow[];
   recipients: RecipientOption[];
@@ -90,10 +91,16 @@ export function MessagesView({
   poll: { enabled: boolean; seconds: number };
   /** پخشِ همگانی («همهٔ اعضا») فقط از مدیر. */
   canBroadcast: boolean;
+  /**
+   * گفتگویی که باید همان اولِ کار باز باشد — مسیرِ `/messages/{id}`.
+   * ⚠️ لینکِ اعلانِ پیام دقیقاً همین شکل است و پیش از این به هیچ مسیری
+   * نمی‌خورد؛ نتیجه‌اش ۴۰۴ ِ خامِ Next بود، بیرون از پوستهٔ برنامه.
+   */
+  initialThreadId?: number | null;
 }) {
   const tr = useT();
   const { show } = useToast();
-  const [openId, setOpenId] = useState<number | null>(null);
+  const [openId, setOpenId] = useState<number | null>(initialThreadId);
   const [thread, setThread] = useState<Thread | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [pending, startTransition] = useTransition();

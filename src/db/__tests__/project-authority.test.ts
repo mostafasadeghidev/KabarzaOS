@@ -137,11 +137,37 @@ describe('گاردِ عمل‌های پروژه‌محور', () => {
     })).rejects.toBeInstanceOf(ForbiddenError);
   });
 
-  it('⚠️ عضوِ عادی نمی‌تواند تسک بسازد', async () => {
-    await expect(service.createTask(actor(plainMember), projectA, {
+  /**
+   * ⚠️ این تست وارونه شد و عمدی است. نسخهٔ قبلی ساختِ تسک را با
+   * `user_can_access()` می‌سنجد، نه با مجوزِ مدیریت: هر عضو یا کارفرمای
+   * پروژه تسک می‌سازد. چیزی که برای عضو بسته می‌ماند «خصوصی»کردنِ تسک و
+   * تخصیص به شخصِ دلخواه است، نه خودِ ساختن.
+   */
+  it('عضوِ پروژه تسک می‌سازد — همان `user_can_access` ِ نسخهٔ قبلی', async () => {
+    const id = await service.createTask(actor(plainMember), projectA, {
+      title: 'تسکِ عضو', description: '', statusTagId: null,
+      priorityTagId: null, assignedTo: null, dueDate: null, isPrivate: false,
+    });
+    expect(id).toBeGreaterThan(0);
+  });
+
+  /**
+   * ⚠️ و این شکافی است که همان بازکردن ساخت: گاردِ ساختِ تسک
+   * `assertCanViewProject` بود، که یک شاخهٔ «مجوزِ سراسریِ **دیدن**» دارد.
+   * یعنی همکارِ ادمینی که فقط دسترسیِ دیدنِ پروژه‌ها داشت — بی‌آنکه عضو
+   * باشد — می‌توانست روی هر پروژه‌ای تسک بسازد و کامنت بگذارد. تفکیکِ
+   * «دیدن» از «مدیریت» در RBAC دقیقاً همین‌جا بی‌اثر می‌شد.
+   */
+  it('⚠️ بینندهٔ فقط‌خواندنی (بدونِ عضویت) تسک نمی‌سازد', async () => {
+    await expect(service.createTask(actor(stranger, view), projectA, {
       title: 'نباید', description: '', statusTagId: null,
       priorityTagId: null, assignedTo: null, dueDate: null, isPrivate: false,
     })).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it('⚠️ بینندهٔ فقط‌خواندنی کامنت هم نمی‌گذارد', async () => {
+    await expect(service.addComment(actor(stranger, view), projectA, 'نباید'))
+      .rejects.toBeInstanceOf(ForbiddenError);
   });
 
   it('مدیرِ پروژه وضعیتِ پروژه‌اش را عوض می‌کند', async () => {

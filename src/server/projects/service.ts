@@ -5,7 +5,7 @@ import { db } from '@/db/client';
 import {
   attachments, comments, ledger, paymentRequests, projectClients, projectMembers,
   projectPayments, projectQa, projects, tags, tagRelations, tasks, taskRoles,
-  tenderBids, timelogs, auditLog,
+  tenderBids, timelogs, auditLog, userOffices,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, canSeeScope, filterVisible, ForbiddenError, visibleScopes } from '@/domain/access/guard';
@@ -24,10 +24,11 @@ import {
 } from '@/domain/projects/tender';
 import { notify } from '@/server/notifications/service';
 import {
-  assertCanManageProject, assertCanViewProject, assertNotFrozen, canManageProject,
-  canViewProject, membershipProjectIds, moneyAudience, projectRelation,
+  assertCanInteractWithProject, assertCanManageProject, assertCanViewProject, assertNotFrozen,
+  canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation,
 } from './authority';
 import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
+import { canManageProject as decideManage, PM_CAP } from '@/domain/access/project-scope';
 import {
   assignableToPeople, FALLBACK_MEMBER_LABEL, nameForViewer, type ViewerContext,
 } from '@/domain/access/viewer-names';
@@ -47,7 +48,7 @@ import * as repo from './repository';
 /** فهرستِ پروژه‌ها — فقط scopeهایی که بازیگر اجازه دارد. */
 export async function listProjects(actor: Actor) {
   if (canViewSection(actor, 'projects')) {
-    return maskPrices(actor, await repo.listProjects(visibleScopes(actor)));
+    return maskNames(actor, await maskPrices(actor, await repo.listProjects(visibleScopes(actor))));
   }
   /**
    * مسیرِ عضویتی — پورتِ «پروژه‌های من» ِ نسخهٔ قبلی: عضو/کارفرما فقط
@@ -55,7 +56,72 @@ export async function listProjects(actor: Actor) {
    * مقدم است (کسی که روی پروژهٔ خصوصی امضا شده، می‌بیندش).
    */
   const ids = await membershipProjectIds(actor.id);
-  return maskPrices(actor, await repo.listProjects(['company', 'private'], ids));
+  return maskNames(actor, await maskPrices(actor, await repo.listProjects(['company', 'private'], ids)));
+}
+
+/**
+ * ماسکِ نام روی **فهرست** — همان قاعدهٔ صفحهٔ پروژه، این‌بار روی چیپ‌های کارت.
+ *
+ * ⚠️ چرا نسخهٔ قبلی این را ندارد و ما لازمش داریم: آنجا کارتِ پروژه فقط در
+ * پنلِ ادمین است و کارفرما هرگز نمی‌بیندش. اینجا یک شبکهٔ پروژه برای همه
+ * است، پس بدونِ این ماسک، کارفرما نامِ اعضا را از روی کارت می‌خواند در
+ * حالی که صفحهٔ خودِ پروژه آن را به «طراح» تبدیل می‌کند — یعنی نشتی از
+ * راهِ فهرست، درست همان چیزی که ماسک برای جلوگیری از آن نوشته شد.
+ *
+ * ⚠️ دو کوئریِ ثابت برای کلِ فهرست، نه به‌ازای هر پروژه (R-PERF-01): چیپ‌ها
+ * خودشان می‌گویند بیننده روی هر پروژه عضو است یا کارفرما، و فقط «مدیرِ
+ * این پروژه بودن» است که باید پرسیده شود.
+ */
+async function maskNames<T extends repo.ProjectListRow>(actor: Actor, rows: T[]): Promise<T[]> {
+  // مدیرِ سراسری هر نامی را همان‌طور که هست می‌بیند.
+  if (rows.length === 0 || canManageSection(actor, 'projects')) return rows;
+
+  /**
+   * ⚠️ فقط پروژه‌هایی که بیننده رویشان امضا دارد ماسک می‌خورند: هر دو قاعدهٔ
+   * `nameForViewer` به «بیننده عضو/کارفرمای همین پروژه است» مشروط‌اند، پس
+   * برای بقیه کوئری زدن هم بی‌فایده است.
+   */
+  const involved = rows.some((r) =>
+    r.members.some((m) => m.userId === actor.id) || r.clients.some((c) => c.userId === actor.id));
+  if (!involved) return rows;
+
+  const [pmRows, managedOffices] = await Promise.all([
+    db.select({ projectId: projectMembers.projectId })
+      .from(projectMembers)
+      .innerJoin(tags, eq(tags.id, projectMembers.roleTagId))
+      .where(and(eq(projectMembers.userId, actor.id), eq(tags.grantsCap, PM_CAP))),
+    db.select({ officeId: userOffices.officeId })
+      .from(userOffices)
+      .where(and(eq(userOffices.userId, actor.id), eq(userOffices.manages, true))),
+  ]);
+  const pmOn = new Set(pmRows.map((r) => r.projectId));
+  const managedOfficeIds = managedOffices.map((r) => r.officeId);
+
+  return rows.map((r) => {
+    const viewerIsMember = r.members.some((m) => m.userId === actor.id);
+    const viewerIsClient = r.clients.some((c) => c.userId === actor.id);
+    if (!viewerIsMember && !viewerIsClient) return r;
+
+    const ctx: ViewerContext = {
+      managesProject: decideManage({
+        hasGlobalManage: false,
+        isPmOnProject: pmOn.has(r.id),
+        projectOfficeId: r.officeId,
+        managedOfficeIds,
+        isMemberOfProject: viewerIsMember,
+      }),
+      viewerIsClient,
+      viewerIsMember,
+      roleByUser: new Map(r.members.map((m) => [m.userId, m.roleName ?? FALLBACK_MEMBER_LABEL])),
+      clientIds: new Set(r.clients.map((c) => c.userId)),
+    };
+
+    return {
+      ...r,
+      members: r.members.map((m) => ({ ...m, name: nameForViewer(m.userId, m.name, ctx) })),
+      clients: r.clients.map((c) => ({ ...c, name: nameForViewer(c.userId, c.name, ctx) })),
+    };
+  });
 }
 
 /**
@@ -974,7 +1040,7 @@ export async function toggleCommentStatus(actor: Actor, commentId: number) {
 /** افزودنِ کامنت به پروژه. */
 export async function addComment(actor: Actor, projectId: number, body: string) {
   // عضو و کارفرمای پروژه هم کامنت می‌گذارند (مخاطبِ comment_added ِ نسخهٔ قبلی).
-  await assertCanViewProject(actor, projectId);
+  await assertCanInteractWithProject(actor, projectId);
   await getProject(actor, projectId); // گاردِ scope
   // ⚠️ پروژهٔ منجمد فقط-خواندنی است (`block_if_frozen`).
   await assertNotFrozen(projectId);
@@ -1050,7 +1116,7 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
    * سرور **بیرونِ** try/catch ِ صفحه می‌آمد و کلِ صفحهٔ پروژه ۵۰۰ می‌شد،
    * نه اینکه فقط دکمه پنهان بماند. سه گارد باید با هم حرکت کنند.
    */
-  await assertCanViewProject(actor, projectId);
+  await assertCanInteractWithProject(actor, projectId);
 
   const [members, clientIds, inactive, statuses, priorities] = await Promise.all([
     repo.listMembers(projectId),
@@ -1121,7 +1187,7 @@ export async function createTask(
    * این `assignedTo`، `priorityTagId` و `roleTagIds` خام درج می‌شدند. تا
    * وقتی فقط مدیر به فرم می‌رسید این بی‌دقتی بود؛ حالا راهِ سوءاستفاده بود.
    */
-  await assertCanViewProject(actor, projectId);
+  await assertCanInteractWithProject(actor, projectId);
   await assertNotFrozen(projectId);
 
   const canManage = await canManageProject(actor, projectId);

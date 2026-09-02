@@ -108,6 +108,33 @@ describe('فهرستِ پروژه‌ها', () => {
     expect(rows).toHaveLength(2);
   });
 
+  /**
+   * ⚠️ چیپ‌های کارت هم باید ماسکِ نام بخورند.
+   *
+   * نسخهٔ قبلی کارتِ پروژه را فقط در پنلِ ادمین دارد و کارفرما هرگز نمی‌بیندش،
+   * پس آنجا این نشتی ممکن نبود. اینجا شبکهٔ پروژه برای همه است: صفحهٔ پروژه
+   * نامِ عضو را به «دولوپر» تبدیل می‌کرد ولی کارتِ همان پروژه نامِ واقعی را
+   * چاپ می‌کرد — یعنی ماسک از راهِ فهرست دور می‌خورد.
+   */
+  it('⚠️ کارفرما در چیپ‌های کارت نامِ عضو را نمی‌بیند، نقشش را می‌بیند', async () => {
+    const [row] = await listProjects(actor({ id: goli, roles: ['client'] }));
+    expect(row!.members.map((m) => m.name)).toEqual(['دولوپر']);
+  });
+
+  it('⚠️ عضو در چیپ‌های کارت نامِ کارفرما را نمی‌بیند', async () => {
+    const [row] = await listProjects(actor({ id: sara, roles: ['member'] }));
+    expect(row!.clients.map((c) => c.name)).toEqual(['کارفرما']);
+    // نامِ خودش اما ماسک نمی‌خورد.
+    expect(row!.members.map((m) => m.name)).toEqual(['سارا']);
+  });
+
+  it('مدیرِ سراسری نامِ واقعیِ هر دو طرف را می‌بیند', async () => {
+    const rows = await listProjects(actor({ id: reza, permissions: ['projects.view', 'projects.manage'] }));
+    const row = rows.find((r) => r.title === 'آلفا')!;
+    expect(row.members.map((m) => m.name)).toEqual(['سارا']);
+    expect(row.clients.map((c) => c.name)).toEqual(['گلی (کارفرما)']);
+  });
+
   it('membershipProjectIds عضویت و کارفرمایی را جمع می‌زند', async () => {
     expect(await membershipProjectIds(sara)).toEqual([alpha]);
     expect(await membershipProjectIds(goli)).toEqual([alpha]);

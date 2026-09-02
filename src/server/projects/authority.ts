@@ -173,6 +173,37 @@ export async function assertCanViewProject(actor: Actor, projectId: number): Pro
 }
 
 /**
+ * **کار کردن** روی پروژه — پورتِ دقیقِ `Frontend::user_can_access()`.
+ *
+ * ⚠️ این با `canViewProject` یکی نیست و نباید بشود. آن یکی یک شاخهٔ اضافه
+ * دارد: مجوزِ **سراسریِ دیدن**. برای خواندن درست است، برای نوشتن فاجعه —
+ * «بینندهٔ فقط‌خواندنی» (کسی که `projects.view` دارد و `projects.manage`
+ * ندارد) با آن گارد می‌توانست تسک بسازد و کامنت بنویسد. کلِ فایدهٔ تفکیکِ
+ * دیدن از مدیریت در RBAC ِ همکارِ ادمین همین‌جا از بین می‌رفت.
+ *
+ * نسخهٔ قبلی چهار شاخه دارد و هیچ‌کدام «دیدن» نیست:
+ * مدیریتِ سراسری ∨ عضوِ پروژه ∨ کارفرمای پروژه ∨ مدیرِ دفترِ مالک.
+ */
+export async function canInteractWithProject(actor: Actor, projectId: number): Promise<boolean> {
+  if (canManageSection(actor, 'projects')) return true;
+
+  const relation = await projectRelation(actor.id, projectId);
+  if ((relation.isMember || relation.isClient) && !relation.accessBlocked) return true;
+
+  // مدیرِ پروژه (تگِ pm) و مدیرِ دفترِ مالک — هر دو در همین تصمیم‌اند.
+  return canManageProject(actor, projectId);
+}
+
+export async function assertCanInteractWithProject(
+  actor: Actor,
+  projectId: number,
+): Promise<void> {
+  if (!(await canInteractWithProject(actor, projectId))) {
+    throw new ForbiddenError('projects.access');
+  }
+}
+
+/**
  * شناسهٔ پروژه‌هایی که کاربر رویشان امضا شده یا کارفرمایشان است —
  * پورتِ `ids_for_member` + `ids_for_client` — به‌علاوهٔ مناقصه‌هایی که
  * تگِ نقشِ او در نقش‌های اعلام‌شده است.

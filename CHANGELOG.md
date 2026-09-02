@@ -2,6 +2,53 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.24.0]
+
+### Fixed
+
+- **Clicking a message notification opened a 404.** Message notifications link
+  to `/messages/{threadId}`, and that route had never been built — the messages
+  page is a single view at `/messages`. Every such click landed on the raw
+  Next.js 404: no app shell, no menu, no way back. The route exists now and
+  opens the conversation directly, so the notifications already stored in the
+  database work without a data migration, and so do the same links sent by
+  email and Telegram.
+
+- **A client could read every member's real name off the project cards.** The
+  project page masks a member to their role for a client viewer ("Designer"),
+  but the card grid printed the real name — the mask was applied on the detail
+  page only. The original plugin never had this hole because its project cards
+  live in the admin area, which a client cannot open; this rebuild shows the
+  same grid to everyone, so the mask has to travel with it. Names are now
+  masked in the list service, on the server, so the real name never reaches the
+  page payload.
+
+- **A read-only viewer could create tasks and post comments.** `createTask`,
+  `addComment` and `getTaskFormOptions` were guarded by the *view* gate, which
+  has a branch the original does not: a global view capability. The plugin's
+  `user_can_access()` is manage ∨ member ∨ client ∨ office-manager, with no
+  view branch at all. So a staff admin granted "view projects" — and nothing
+  else — could write to every project in the system, which defeats the whole
+  point of separating view from manage in the staff RBAC. There is now a
+  separate interaction gate that ports the plugin's rule exactly.
+
+- **The payment-request notification opened the wrong tab.** It links to
+  `/finance?tab=…`, but the finance page kept the tab in local state and
+  ignored the URL, so an accountant clicking the notification always landed on
+  the ledger. The tab now comes from the URL, and the link — which still named
+  `requests`, a key that stopped existing when the finance tabs were split in
+  1.23.0 — points at the right tab again.
+
+### Changed
+
+- **Notifications open in a modal instead of navigating.** The body was
+  truncated in the dropdown, so reading a notification in full meant leaving
+  the page; and when its destination was broken there was nothing to read at
+  all. The modal shows the whole message and makes going to the destination
+  optional, which is also why a broken link can no longer strand anyone.
+
+---
+
 ## [1.23.0]
 
 ### Changed

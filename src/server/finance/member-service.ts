@@ -327,7 +327,7 @@ async function notifyPaymentRequested(
     type: 'payment.requested',
     title: 'درخواست پرداخت جدید',
     body: `${member[0]?.name ?? ''} — ${input.amount} — «${project[0]?.title ?? ''}»`,
-    url: '/finance?tab=requests',
+    url: '/finance?tab=members',
   });
 }
 

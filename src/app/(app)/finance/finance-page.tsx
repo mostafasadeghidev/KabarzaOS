@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { LedgerPaging } from './ledger-filter';
 import type { BankRow } from './bank-directory';
 import { LedgerView } from './ledger-view';
@@ -60,7 +60,23 @@ export function FinancePage({
 }) {
   const tr = useT();
   const router = useRouter();
-  const [tab, setTab] = useState<(typeof TABS)[number]['key']>('ledger');
+
+  /**
+   * تبِ آغازین از نشانی خوانده می‌شود.
+   *
+   * ⚠️ چرا لازم شد: اعلانِ «درخواستِ پرداخت» به `/finance?tab=…` لینک می‌دهد.
+   * تا وقتی تب فقط state ِ محلی بود، آن پارامتر بی‌اثر بود و حسابدار پس از
+   * کلیک روی اعلان، دفترکل را می‌دید نه درخواست را — اعلان به مقصد می‌رسید
+   * ولی به **جای** درست نمی‌رسید.
+   *
+   * ⚠️ کلیدِ ناشناخته بی‌صدا به دفترکل برمی‌گردد؛ لینکِ قدیمی نباید صفحهٔ
+   * خالی بدهد.
+   */
+  const params = useSearchParams();
+  const asked = params.get('tab');
+  const [tab, setTab] = useState<(typeof TABS)[number]['key']>(
+    TABS.some((x) => x.key === asked) ? (asked as (typeof TABS)[number]['key']) : 'ledger',
+  );
   const visible = TABS.filter((t) => !t.ownerOnly || accountOptions !== null);
 
   return (
