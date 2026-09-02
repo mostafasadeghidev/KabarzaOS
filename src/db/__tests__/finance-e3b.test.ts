@@ -314,3 +314,23 @@ describe('هزینهٔ دوره‌ای — فروشنده به نام، فروش
     expect(b).toMatchObject({ kind: 'once', nextDueDate: '2026-08-01' });
   });
 });
+
+describe('نمایشِ دفتر — نشانِ انتقال و خانهٔ یورو (پورتِ eur_cell)', () => {
+  it('لِگِ انتقال نشان دارد؛ یورو از تسویه می‌آید نه از تبدیلِ ریالی', async () => {
+    await service.transfer(manager(), {
+      fromAccountId: accA, toAccountId: accC, fromAmount: '10', toAmount: '10',
+      entryDate: '2026-08-16', description: 'شارژ',
+    });
+    const c = await service.getLedger(manager(), { accountId: accC });
+    const leg = c.entries.find((e) => e.isTransfer);
+    expect(leg).toBeDefined();
+    expect(Number(leg!.eurDisplay)).toBe(10);
+
+    const b = await service.getLedger(manager(), { accountId: accB });
+    // ردیفِ پرداختِ درخواست: تسویهٔ ۱۰۰ یورو → همان ۱۰۰، نه تبدیلِ نرخیِ مبلغِ ریالی.
+    const paid = b.entries.find((e) => e.amountSettled !== null);
+    expect(paid).toBeDefined();
+    expect(Number(paid!.eurDisplay)).toBe(100);
+    expect(b.entries.every((e) => e.isTransfer === false)).toBe(true);
+  });
+});

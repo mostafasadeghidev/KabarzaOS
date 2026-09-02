@@ -73,6 +73,10 @@ export interface EntryRow {
   receipts: ReceiptView[];
   /** آخرین ثبت/ویرایش‌کننده — پورتِ ستونِ «توسط» ِ نسخهٔ قبلی. */
   lastActor: string | null;
+  /** لِگِ انتقال — نشانِ «انتقال» (پورتِ `is_transfer`). */
+  isTransfer: boolean;
+  /** خانهٔ «معادل یورو» به قاعدهٔ `eur_cell()`؛ null یعنی «—». */
+  eurDisplay: string | null;
 }
 
 /** رسیدِ پیوستِ ردیف — همیشه از مسیرِ گیت‌شده خوانده می‌شود، نه S3. */
@@ -97,10 +101,16 @@ export interface FormOptions {
   /** «projectId:userId» ← ارزِ قرارداد (R-FORM-05). */
   memberCurrency: Record<string, number>;
   defaultCurrencyId: number | null;
+  /** فروشندگان — کاندیدای گیرندهٔ برداشت (پورتِ کاندیدای طرف‌حساب). */
+  vendors?: Array<{ id: number; name: string }>;
 }
 
 const cellSelect =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
+
+/** برچسبِ حساب «دفتر · حساب (ارز)» — پورتِ `Accounts::label()`. */
+const accountLabel = (a: AccountOption) =>
+  `${a.officeName ? `${a.officeName} · ` : ''}${a.name} (${a.currencyCode ?? ''})`;
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -177,6 +187,13 @@ export function LedgerView({
 
   /** حسابی که صفحه رویش ایستاده — برای نشان‌دادنش داخلِ مودال. */
   const currentAccount = accounts.find((a) => a.id === accountId) ?? null;
+  const baseCode = options.currencies.find((c) => c.isDefault)?.code ?? 'EUR';
+  // پورتِ `$show_eur`: ستونِ یورو فقط وقتی ارزِ حساب خودِ یورو نیست.
+  const showEur = currencyCode !== baseCode;
+  const tagName = new Map(options.categories.map((c) => [c.id, c.name]));
+  // ردیفِ دورهٔ بسته دکمه ندارد — 🔒 (پورتِ `$r->locked`).
+  const isLocked = (date: string) => lockDate !== null && date <= lockDate;
+  const rowNumber = (i: number) => (paging.page - 1) * paging.perPage + i + 1;
 
   const cards: Array<{ label: string; value: string; strong?: boolean }> = [
     { label: 'ارز حساب', value: currencyCode ?? '—' },
@@ -196,9 +213,7 @@ export function LedgerView({
           onChange={(e) => onSelectAccount(Number(e.target.value))}
         >
           {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name} ({a.currencyCode})
-            </option>
+            <option key={a.id} value={a.id}>{accountLabel(a)}</option>
           ))}
         </select>
 
@@ -268,50 +283,68 @@ export function LedgerView({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>#</TableHead>
                 <TableHead>{t("تاریخ")}</TableHead>
-                <TableHead>{t("بابت")}</TableHead>
-                <TableHead>{t("جهت")}</TableHead>
+                <TableHead>{t("تگ‌ها")}</TableHead>
+                <TableHead>{t("توضیحات")}</TableHead>
                 <TableHead>{t("مبلغ")}</TableHead>
-                <TableHead>{t("معادل یورو")}</TableHead>
+                <TableHead>{t("پرداخت‌کننده")}</TableHead>
+                <TableHead>{t("دریافت‌کننده")}</TableHead>
+                <TableHead>{t("بابت")}</TableHead>
                 <TableHead>{t("توسط")}</TableHead>
+                {showEur && <TableHead>{t("معادل یورو")}</TableHead>}
+                <TableHead>{t("رسید")}</TableHead>
                 {canManage && <TableHead />}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {entriesView.rows.map((e) => (
+              {entriesView.rows.map((e, i) => (
                 <TableRow key={e.id}>
+                  <TableNumericCell className="text-muted-foreground">{rowNumber(i)}</TableNumericCell>
                   <TableNumericCell>{e.entryDate}</TableNumericCell>
                   <TableCell>
-                    {e.description || e.receiverLabel || e.payerName || '—'}
-                    {e.projectTitle && (
-                      <Badge variant="secondary" className="ms-2">{e.projectTitle}</Badge>
-                    )}
-                    {/* ردیفِ دارای سند با یک نگاه دیده شود. */}
-                    {e.receipts.length > 0 && (
-                      <a
-                        href={e.receipts[0]!.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title={t('{n} رسید', { n: e.receipts.length })}
-                        className="ms-2 inline-flex items-center gap-0.5 align-middle text-muted-foreground hover:text-foreground"
-                      >
-                        <Paperclip className="size-3.5" />
-                        {e.receipts.length > 1 && (
-                          <span className="num text-xs">{e.receipts.length}</span>
-                        )}
-                      </a>
-                    )}
+                    <span className="flex flex-wrap gap-1">
+                      {e.isTransfer && <Badge variant="secondary">{t("انتقال")}</Badge>}
+                      {e.tagIds.map((id) => tagName.get(id)).filter((n): n is string => Boolean(n)).map((name) => (
+                        <Badge key={name} variant="outline">{name}</Badge>
+                      ))}
+                    </span>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={e.direction === 'in' ? 'success' : 'outline'}>
-                      {e.direction === 'in' ? tr('واریز / درآمد') : tr('برداشت / هزینه')}
-                    </Badge>
-                  </TableCell>
-                  <TableNumericCell>{format(e.amountAccount)}</TableNumericCell>
-                  <TableNumericCell>{format(e.amountEur)}</TableNumericCell>
+                  <TableCell>{e.description || '—'}</TableCell>
+                  {/* پورتِ `amount_html`/`amount_color`: علامت و رنگ جهت را می‌گویند. */}
+                  <TableNumericCell className={e.direction === 'in' ? 'text-emerald-600 dark:text-emerald-500' : 'text-destructive'}>
+                    {e.direction === 'in' ? '+' : '−'}{format(e.amountAccount)}
+                  </TableNumericCell>
+                  <TableCell>{e.payerName || e.payerLabel || '—'}</TableCell>
+                  <TableCell>{e.receiverName || e.receiverLabel || '—'}</TableCell>
+                  <TableCell>{e.projectTitle ? <Badge variant="secondary">{e.projectTitle}</Badge> : '—'}</TableCell>
                   <TableCell className="text-muted-foreground">{e.lastActor ?? '—'}</TableCell>
+                  {showEur && (
+                    <TableNumericCell className="text-muted-foreground">
+                      {e.eurDisplay === null ? '—' : format(e.eurDisplay)}
+                    </TableNumericCell>
+                  )}
+                  <TableCell>
+                    {e.receipts.length === 0 ? '—' : (
+                      <span className="flex flex-wrap gap-1">
+                        {e.receipts.map((r, n) => (
+                          <a
+                            key={r.id} href={r.href} target="_blank" rel="noopener noreferrer" title={r.originalName}
+                            className="inline-flex items-center gap-0.5 text-muted-foreground hover:text-foreground"
+                          >
+                            <Paperclip className="size-3" /><span className="num text-xs">{n + 1}</span>
+                          </a>
+                        ))}
+                      </span>
+                    )}
+                  </TableCell>
                   {canManage && (
                     <TableCell>
+                      {isLocked(e.entryDate) ? (
+                        <span className="flex justify-end text-muted-foreground" title={t('دورهٔ قفل‌شده')}>
+                          <Lock className="size-3.5" />
+                        </span>
+                      ) : (
                       <div className="flex justify-end gap-1">
                         <Button
                           size="sm"
@@ -338,6 +371,7 @@ export function LedgerView({
                           <Trash2 className="size-3.5" />
                         </Button>
                       </div>
+                      )}
                     </TableCell>
                   )}
                 </TableRow>
@@ -401,16 +435,16 @@ export function LedgerView({
                 <Label htmlFor="t-from">{t("از حساب")}</Label>
                 <select id="t-from" name="fromAccountId" className={cellSelect} defaultValue={accountId}>
                   {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name} ({a.currencyCode})</option>
+                    <option key={a.id} value={a.id}>{accountLabel(a)}</option>
                   ))}
                 </select>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="t-to">{t("به حساب")}</Label>
-                <select id="t-to" name="toAccountId" className={cellSelect} defaultValue="">
+                <select id="t-to" name="toAccountId" className={cellSelect} defaultValue={String(accounts.find((a) => a.id !== accountId)?.id ?? '')}>
                   <option value="">{t("— انتخاب —")}</option>
                   {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name} ({a.currencyCode})</option>
+                    <option key={a.id} value={a.id}>{accountLabel(a)}</option>
                   ))}
                 </select>
               </div>

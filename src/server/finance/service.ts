@@ -21,6 +21,7 @@ import { AccountError, assertAccountDeletable, canSeeAccount, visibleAccountIds 
 import { userIdsWithCaps } from '@/server/people/tag-caps';
 import { FINANCE_SCOPED_CAP, MANAGE_FINANCE_CAP } from '@/domain/access/project-scope';
 import { relocateParty } from '@/domain/ledger/form-rules';
+import { eurCell } from '@/domain/ledger/eur-cell';
 
 /**
  * سرویسِ حسابداری.
@@ -119,7 +120,7 @@ export async function listAccounts(actor: Actor) {
     .leftJoin(currencies, eq(currencies.id, accounts.currencyId))
     .leftJoin(offices, eq(offices.id, accounts.officeId))
     .where(inArray(accounts.scope, visibleScopes(actor)))
-    .orderBy(accounts.sortOrder, accounts.name);
+    .orderBy(accounts.officeId, accounts.sortOrder, accounts.name);
 
   const allowed = new Set(visibleAccountIds({
     seesAll: scope.seesAll,
@@ -256,6 +257,7 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
       amountSettled: projectPayments.amountSettled,
       settledCurrencyId: projectPayments.settledCurrencyId,
       mirrorDirection: projectPayments.direction,
+      transferGroup: ledger.transferGroup,
     })
     .from(ledger)
     .leftJoin(payer, eq(payer.id, ledger.payerUserId))
@@ -325,9 +327,17 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
   const allReceiptIds = [...new Set(rows.flatMap((r) => r.receiptIds ?? []))];
   const summaries = await fileSummaries(allReceiptIds);
   const byId = new Map(summaries.map((f) => [f.id, f]));
+  const { source: rates, baseCurrencyId: baseId } = await rateSource();
 
-  const entries = rows.map(({ mirrorDirection, ...r }) => ({
+  const entries = rows.map(({ mirrorDirection, transferGroup, ...r }) => ({
     ...r,
+    /** لِگِ انتقال — نشانِ «انتقال» در ستونِ تگ‌ها (پورتِ `is_transfer`). */
+    isTransfer: transferGroup !== null,
+    /** خانهٔ «معادل یورو» با قاعدهٔ `eur_cell()` — null یعنی «—». */
+    eurDisplay: eurCell(rates, {
+      amountSettled: r.amountSettled, settledCurrencyId: r.settledCurrencyId,
+      amountAccount: r.amountAccount, accountCurrencyId: account.currencyId,
+    }, baseId),
     // ⚠️ درایورِ postgres آرایهٔ bigint را رشته برمی‌گرداند؛ فرم عدد می‌خواهد.
     tagIds: (r.tagIds ?? []).map(Number),
     // `project_expense` = قابلِ صورتحساب؛ `project_cost` = جذب‌شده؛ بدونِ آینه = پیش‌فرضِ بله.

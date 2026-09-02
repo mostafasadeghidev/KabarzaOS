@@ -2,6 +2,23 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.34.0]
+
+### Added — ledger and expense screens (parity with the plugin)
+
+- **The ledger table has the plugin's columns:** row number, date, tag badges (with a "transfer" badge on transfer legs), description, a signed and coloured amount, payer, receiver, project, last editor, the EUR equivalent, and one link per receipt. Rows inside a closed period show a lock instead of the edit and delete buttons.
+- **The EUR column follows the plugin's rule:** the settled equivalent when one was entered, else a rate-based conversion of the account amount, else a dash — never a frozen zero or a fake 1:1 figure. The column is shown only when the account currency is not the base currency.
+- **Account pickers read "Office · Account (currency)"**, accounts are ordered by office, then sort order, then name, and the transfer dialog defaults its destination to the first other account.
+- **Vendors are offered as receivers** of a withdrawal in the entry form, next to members and clients.
+- **Expenses:** filters by category, payment account and due-date range, a "clear filters" button, a EUR equivalent per row with a live total of the filtered list, a per-vendor summary of active expenses (click to filter), and category and account shown on each row.
+- **Rates in Settings** are displayed without trailing zeros and can be edited with the form pre-filled; the bank accounts page warns when no currency is defined yet.
+
+### Fixed
+
+- **The settlement calculator no longer overwrites the amount.** Typing the equivalent derives the rate, typing the rate derives the equivalent, and typing the amount updates whichever of the two is present — as in the plugin, where the bank amount is never touched. The rate field now shows the currency codes on both sides.
+
+---
+
 ## [1.33.0]
 
 ### Added — accounting and payout flows (parity with the plugin)

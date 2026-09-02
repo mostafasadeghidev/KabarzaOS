@@ -85,6 +85,13 @@ export function AccountsView({
         )}
       </div>
 
+      {/* پورتِ اخطارِ «ابتدا ارز تعریف کنید» — پیش از این فقط هنگامِ ذخیره خطا می‌داد. */}
+      {options.currencies.length === 0 && (
+        <p className="rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-500">
+          {tr("ابتدا در تنظیمات یک ارز تعریف کنید؛ حساب بدونِ ارز ساخته نمی‌شود.")}
+        </p>
+      )}
+
       {accounts.length === 0 ? (
         <EmptyState title={t("حسابی تعریف نشده")} />
       ) : (

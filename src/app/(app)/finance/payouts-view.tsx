@@ -88,7 +88,10 @@ export interface RecurringRow {
   currencyCode: string | null;
   vendorId: number | null;
   categoryTagId: number | null;
+  categoryName: string | null;
   note: string;
+  /** معادلِ یورو به نرخِ روز — null یعنی بی‌نرخ. */
+  amountEur: string | null;
   kind: string;
   intervalUnit: string;
   intervalCount: number;
@@ -245,6 +248,15 @@ export function PayoutsView({
   const [expenseQuery, setExpenseQuery] = useState('');
   const [expenseVendor, setExpenseVendor] = useState('');
   const [expenseKind, setExpenseKind] = useState('');
+  // پورتِ فیلترِ زندهٔ صفحهٔ هزینه‌ها: دسته، حساب، بازهٔ سررسید.
+  const [expenseCategory, setExpenseCategory] = useState('');
+  const [expenseAccount, setExpenseAccount] = useState('');
+  const [dueFrom, setDueFrom] = useState('');
+  const [dueTo, setDueTo] = useState('');
+  const clearExpenseFilters = () => {
+    setExpenseQuery(''); setExpenseVendor(''); setExpenseKind('');
+    setExpenseCategory(''); setExpenseAccount(''); setDueFrom(''); setDueTo('');
+  };
 
   const needle = expenseQuery.trim().toLowerCase();
   const visibleRecurring = recurring.filter((x) => {
@@ -254,6 +266,10 @@ export function PayoutsView({
     // ⚠️ نامِ طرف‌حساب ملاک است، نه شناسه: ردیف فقط نام را حمل می‌کند.
     if (expenseVendor && (x.vendorName ?? '') !== expenseVendor) return false;
     if (expenseKind && x.kind !== expenseKind) return false;
+    if (expenseCategory && String(x.categoryTagId ?? '') !== expenseCategory) return false;
+    if (expenseAccount && String(x.accountId ?? '') !== expenseAccount) return false;
+    if (dueFrom && x.nextDueDate < dueFrom) return false;
+    if (dueTo && x.nextDueDate > dueTo) return false;
     if (needle === '') return true;
     return `${x.title} ${x.vendorName ?? ''} ${x.accountName ?? ''}`
       .toLowerCase().includes(needle);
@@ -265,6 +281,22 @@ export function PayoutsView({
     buckets.set(key, [...(buckets.get(key) ?? []), r]);
   }
   const bucketOrder: DueBucket[] = ['overdue', 'week', 'month', 'next_month', 'later'];
+
+  // جمعِ معادلِ یوروی فهرستِ فیلترشده (پورتِ «جمعِ زندهٔ یورو»).
+  const eurTotal = visibleRecurring.reduce((sum, r) => sum + Number(r.amountEur ?? 0), 0);
+  const eurMissing = visibleRecurring.filter((r) => r.amountEur === null).length;
+  // پورتِ `by_vendor`: جمعِ هزینه‌های فعال به‌ازای هر طرف‌حساب و ارز؛ کلیک = فیلتر.
+  const vendorSummary = (() => {
+    const m = new Map<string, { vendor: string; code: string; total: number }>();
+    for (const r of recurring) {
+      if (!r.isActive || !r.vendorName) continue;
+      const key = `${r.vendorName}|${r.currencyCode ?? ''}`;
+      const cur = m.get(key) ?? { vendor: r.vendorName, code: r.currencyCode ?? '', total: 0 };
+      cur.total += Number(r.amount);
+      m.set(key, cur);
+    }
+    return [...m.entries()].map(([key, v]) => ({ key, vendor: v.vendor, code: v.code, total: v.total.toFixed(2) }));
+  })();
 
   return (
     <div className="grid gap-6">
@@ -541,6 +573,47 @@ export function PayoutsView({
               <option value="inactive">{tr('غیرفعال')}</option>
               <option value="all">{tr('همه')}</option>
             </select>
+            <select
+              className={`${field} sm:w-40`}
+              value={expenseCategory}
+              onChange={(e) => setExpenseCategory(e.target.value)}
+              aria-label={tr('دسته')}
+            >
+              <option value="">{tr('همهٔ دسته‌ها')}</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name ?? ''}</option>)}
+            </select>
+            <select
+              className={`${field} sm:w-44`}
+              value={expenseAccount}
+              onChange={(e) => setExpenseAccount(e.target.value)}
+              aria-label={tr('حسابِ پرداخت')}
+            >
+              <option value="">{tr('همهٔ حساب‌ها')}</option>
+              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+            <Input type="date" value={dueFrom} onChange={(e) => setDueFrom(e.target.value)} className="h-9 w-36 num" aria-label={tr('سررسید از')} />
+            <Input type="date" value={dueTo} onChange={(e) => setDueTo(e.target.value)} className="h-9 w-36 num" aria-label={tr('سررسید تا')} />
+            <Button size="sm" variant="ghost" onClick={clearExpenseFilters}>{tr('پاک‌کردنِ فیلترها')}</Button>
+          </div>
+        )}
+
+        {recurring.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="me-2">
+              {tr('جمعِ معادلِ یورو: {sum}', { sum: format(eurTotal.toFixed(2)) })}
+              {eurMissing > 0 && ` (${tr('{n} مورد بی‌نرخ', { n: eurMissing })})`}
+            </span>
+            {vendorSummary.map((v) => (
+              <button
+                key={v.key}
+                type="button"
+                onClick={() => setExpenseVendor(v.vendor)}
+                className="rounded-full border px-2 py-0.5 hover:bg-muted"
+                title={tr('فیلتر بر اساسِ طرف‌حساب')}
+              >
+                {v.vendor}: <span className="num">{format(v.total)} {v.code}</span>
+              </button>
+            ))}
           </div>
         )}
 
@@ -567,8 +640,17 @@ export function PayoutsView({
                           {r.vendorName && (
                             <Badge variant="secondary" className="ms-2">{r.vendorName}</Badge>
                           )}
+                          {r.categoryName && (
+                            <Badge variant="outline" className="ms-1">{r.categoryName}</Badge>
+                          )}
+                          {r.accountName && (
+                            <span className="ms-2 text-xs text-muted-foreground">{r.accountName}</span>
+                          )}
                         </TableCell>
-                        <TableNumericCell>{format(r.amount)}</TableNumericCell>
+                        <TableNumericCell>{format(r.amount)} {r.currencyCode ?? ''}</TableNumericCell>
+                        <TableNumericCell className="text-muted-foreground">
+                          {r.amountEur === null ? '—' : format(r.amountEur)}
+                        </TableNumericCell>
                         <TableNumericCell>{r.nextDueDate}</TableNumericCell>
                         {canManage && (
                           <TableCell>

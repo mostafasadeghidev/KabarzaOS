@@ -185,6 +185,19 @@ export function amountFromSettled(settled: number, rate: number): number | null 
   return fxRound(settled * rate);
 }
 
+/**
+ * معادل از مبلغ و نرخ: `معادل = مبلغ ÷ نرخ` — پورتِ «rate typed → settled = amount ÷ rate».
+ *
+ * ⚠️ فرم هرگز **مبلغ** را بازنویسی نمی‌کند (پورتِ افزونه): مبلغ همان است که
+ * از حساب رفته؛ معادل و نرخ از آن مشتق می‌شوند، نه برعکس. پیش از این تایپِ
+ * معادل یا نرخ، مبلغِ بانکیِ نوشته‌شده را عوض می‌کرد.
+ */
+export function settledFromAmount(amount: number, rate: number): number | null {
+  if (!Number.isFinite(amount) || !Number.isFinite(rate)) return null;
+  if (amount <= 0 || rate <= 0) return null;
+  return fxRound(amount / rate);
+}
+
 export function rateFromAmounts(amount: number, settled: number): number | null {
   if (!Number.isFinite(amount) || !Number.isFinite(settled) || settled <= 0) return null;
   return fxRound(amount / settled);

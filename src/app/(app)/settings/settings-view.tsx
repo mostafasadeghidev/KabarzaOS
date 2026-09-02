@@ -34,6 +34,7 @@ import { useLocale, useT } from '@/i18n/client';
 import { GRANTABLE_CAPS } from '@/domain/access/project-scope';
 import type { SchedulerHealth } from '@/domain/scheduler/health';
 import { DEFAULT_LOCALE, isRtl, LOCALE_NAMES, LOCALES } from '@/i18n/config';
+import { trimRate } from '@/domain/currency/rates';
 
 export interface SettingsData {
   /** برای پنهان‌کردنِ تب‌های مالکانه از دیدِ حسابدار. */
@@ -207,16 +208,16 @@ export function SettingsView({ data }: { data: SettingsData }) {
             columns={[
               { header: 'از', cell: (r) => currencyName(r.fromCurrencyId) },
               { header: 'به', cell: (r) => currencyName(r.toCurrencyId) },
-              { header: 'نرخ', cell: (r) => r.rate, numeric: true },
+              { header: 'نرخ', cell: (r) => trimRate(r.rate), numeric: true },
               { header: 'تاریخ', cell: (r) => r.effectiveDate, numeric: true },
             ]}
             saveAction={saveRateAction}
             deleteAction={(r) => deleteRateAction(r.fromCurrencyId, r.toCurrencyId)}
-            renderForm={() => (
+            renderForm={(editing) => (
               <div className="grid gap-3 sm:grid-cols-4">
                 <div className="grid gap-1.5">
                   <Label htmlFor="r-from">{tr("از ارز")}</Label>
-                  <select id="r-from" name="fromCurrencyId" className={field} defaultValue="">
+                  <select id="r-from" name="fromCurrencyId" className={field} defaultValue={editing ? String(editing.fromCurrencyId) : ''}>
                     <option value="">{tr("— انتخاب —")}</option>
                     {data.currencies.map((c) => (
                       <option key={c.id} value={c.id}>{c.code}</option>
@@ -225,7 +226,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="r-to">{tr("به ارز")}</Label>
-                  <select id="r-to" name="toCurrencyId" className={field} defaultValue="">
+                  <select id="r-to" name="toCurrencyId" className={field} defaultValue={editing ? String(editing.toCurrencyId) : ''}>
                     <option value="">{tr("— انتخاب —")}</option>
                     {data.currencies.map((c) => (
                       <option key={c.id} value={c.id}>{c.code}</option>
@@ -234,7 +235,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="r-rate">{tr("نرخ")}</Label>
-                  <Input id="r-rate" name="rate" inputMode="decimal" className="num" required />
+                  <Input id="r-rate" name="rate" inputMode="decimal" className="num" defaultValue={editing ? trimRate(editing.rate) : ''} required />
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="r-date">{tr("تاریخ")}</Label>
@@ -243,7 +244,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
                     name="effectiveDate"
                     type="date"
                     className="num"
-                    defaultValue={new Date().toISOString().slice(0, 10)}
+                    defaultValue={editing?.effectiveDate ?? new Date().toISOString().slice(0, 10)}
                   />
                 </div>
               </div>

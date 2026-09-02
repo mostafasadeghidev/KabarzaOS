@@ -5,7 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { Paperclip } from 'lucide-react';
 import type { EntryRow, FormOptions } from './ledger-view';
 import {
-  amountFromSettled, rateFromAmounts, relocateParty, requiresDescription,
+  rateFromAmounts, relocateParty, requiresDescription, settledFromAmount,
   selectableTags, settledCurrencyId, showsBillable, showsRecurring, showsSettled,
   showsUnitPicker, visibleParty, type Direction, type PartyState,
 } from '@/domain/ledger/form-rules';
@@ -72,12 +72,27 @@ export function EntryForm({
   const [settled, setSettled] = useState(editing?.amountSettled ?? '');
   const [rate, setRate] = useState('');
   const [amount, setAmount] = useState(keep('amount', editing?.amount ?? ''));
+  const [currencyId, setCurrencyId] = useState(
+    keep('currencyId', String(editing?.currencyId ?? options.defaultCurrencyId ?? '')),
+  );
   const [descTouched, setDescTouched] = useState(false);
   const [description, setDescription] = useState(keep('description', editing?.description ?? ''));
 
   const peopleOptions: Option[] = useMemo(
     () => options.people.map((p) => ({ value: p.id, label: p.name, hint: p.email })),
     [options.people],
+  );
+  /**
+   * گیرندهٔ برداشت: اعضا + فروشندگان (پورتِ کاندیدای طرف‌حساب). فروشنده
+   * برچسبِ آزاد است، نه کاربر — شناسهٔ منفی فقط برای انتخاب در فهرست است و
+   * هرگز به سرور نمی‌رسد (`optionalId` آن را null می‌کند).
+   */
+  const receiverOptions: Option[] = useMemo(
+    () => [
+      ...peopleOptions,
+      ...(options.vendors ?? []).map((v) => ({ value: -v.id, label: v.name, hint: tr('فروشنده') })),
+    ],
+    [peopleOptions, options.vendors, tr],
   );
   const projectOptions: Option[] = useMemo(
     () => options.projects.map((p) => ({ value: p.id, label: p.title })),
@@ -123,22 +138,36 @@ export function EntryForm({
     projectCurrency: new Map(options.projects.map((p) => [p.id, p.currencyId ?? 0])),
     defaultCurrencyId: options.defaultCurrencyId,
   }), [direction, projectId, receiverUserId, options]);
+  const codeOf = (id: number | string | null) =>
+    options.currencies.find((c) => String(c.id) === String(id ?? ''))?.code ?? '';
+  const settledCode = codeOf(settledCurrency ?? null);
+  const entryCode = codeOf(currencyId);
 
-  /* ── نرخِ دوطرفه ── */
+  /**
+   * نرخِ دوطرفه — پورتِ JS ِ افزونه: **مبلغ هرگز بازنویسی نمی‌شود**.
+   * نرخ تایپ شد → معادل = مبلغ ÷ نرخ؛ معادل تایپ شد → نرخ = مبلغ ÷ معادل؛
+   * مبلغ تایپ شد → معادل (اگر نرخ هست) وگرنه نرخ (اگر معادل هست).
+   * پیش از این تایپِ معادل یا نرخ، مبلغِ بانکیِ واردشده را عوض می‌کرد.
+   */
   const onSettledChange = (value: string) => {
     setSettled(value);
-    const next = amountFromSettled(Number(value), Number(rate));
-    if (next !== null) setAmount(String(next));
+    const next = rateFromAmounts(Number(amount), Number(value));
+    if (next !== null) setRate(String(next));
   };
   const onRateChange = (value: string) => {
     setRate(value);
-    const next = amountFromSettled(Number(settled), Number(value));
-    if (next !== null) setAmount(String(next));
+    const next = settledFromAmount(Number(amount), Number(value));
+    if (next !== null) setSettled(String(next));
   };
   const onAmountChange = (value: string) => {
     setAmount(value);
-    const next = rateFromAmounts(Number(value), Number(settled));
-    if (next !== null) setRate(String(next));
+    if (Number(rate) > 0) {
+      const next = settledFromAmount(Number(value), Number(rate));
+      if (next !== null) setSettled(String(next));
+    } else if (Number(settled) > 0) {
+      const next = rateFromAmounts(Number(value), Number(settled));
+      if (next !== null) setRate(String(next));
+    }
   };
 
   /* ── R-FORM-07 — توضیحاتِ اجباریِ ردیفِ پروژه‌دار ── */
@@ -203,8 +232,8 @@ export function EntryForm({
           <Label htmlFor="l-cur">{tr("ارز")}</Label>
           <select
             id="l-cur" name="currencyId" className={selectClass}
-            defaultValue={keep('currencyId',
-              String(editing?.currencyId ?? options.defaultCurrencyId ?? ''))}
+            value={currencyId}
+            onChange={(e) => setCurrencyId(e.target.value)}
           >
             {options.currencies.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
           </select>
@@ -241,9 +270,9 @@ export function EntryForm({
             <Combobox
               id="l-receiver"
               name="receiverUserId"
-              options={peopleOptions}
+              options={receiverOptions}
               value={{ id: party.receiver.userId, label: party.receiver.label }}
-              onChange={(v) => setParty((s) => ({ ...s, receiver: { userId: v.id, label: v.label } }))}
+              onChange={(v) => setParty((s) => ({ ...s, receiver: { userId: v.id !== null && v.id > 0 ? v.id : null, label: v.label } }))}
               placeholder={tr("جستجوی کاربر یا نامِ آزاد…")}
               allowFreeText
             />
@@ -304,12 +333,14 @@ export function EntryForm({
             </select>
 
             <span className="flex items-center gap-1 text-sm" dir="ltr">
-                {tr("۱ =")}
+              {/* پورتِ «۱ EUR = … IRR»: کدهای دو سرِ نرخ. */}
+              <span className="num">1 {settledCode} =</span>
               <Input
                 name="fxRate" inputMode="decimal" className="num w-28"
                 placeholder={tr("نرخ")} value={rate}
                 onChange={(e) => onRateChange(e.target.value)}
               />
+              <span className="num">{entryCode}</span>
             </span>
           </div>
           <p className="text-xs text-muted-foreground">

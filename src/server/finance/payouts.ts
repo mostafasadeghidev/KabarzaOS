@@ -3,7 +3,7 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   accounts, auditLog, currencies, ledger, paymentRequests, projects,
-  recurringExpenses, unitEntries, userRoles, users, vendors, projectMembers, projectPayments,
+  recurringExpenses, unitEntries, userRoles, users, vendors, projectMembers, projectPayments, tags,
 } from '@/db/schema';
 import { canManageSection, type Actor, isOwner, canViewSection } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, assertOwner } from '@/domain/access/guard';
@@ -14,6 +14,7 @@ import {
   type ExpenseKind, type IntervalUnit,
 } from '@/domain/finance/recurring';
 import { accountScope, createEntry, currentLockDate, findOrCreateVendor, rateSource, type EntryInput } from './service';
+import { convert } from '@/domain/currency/rates';
 
 /**
  * پرداخت‌ها و هزینه‌های دوره‌ای.
@@ -478,7 +479,8 @@ export async function payRequest(
 
 export async function listRecurring(actor: Actor) {
   assertCanView(actor, 'finance');
-  return db
+  const { source, baseCurrencyId } = await rateSource();
+  const rows = await db
     .select({
       id: recurringExpenses.id,
       title: recurringExpenses.title,
@@ -495,13 +497,20 @@ export async function listRecurring(actor: Actor) {
       vendorName: vendors.name,
       isActive: recurringExpenses.isActive,
       categoryTagId: recurringExpenses.categoryTagId,
+      categoryName: tags.name,
       note: recurringExpenses.note,
     })
     .from(recurringExpenses)
     .leftJoin(currencies, eq(currencies.id, recurringExpenses.currencyId))
     .leftJoin(accounts, eq(accounts.id, recurringExpenses.accountId))
     .leftJoin(vendors, eq(vendors.id, recurringExpenses.vendorId))
+    .leftJoin(tags, eq(tags.id, recurringExpenses.categoryTagId))
     .orderBy(recurringExpenses.nextDueDate);
+  // معادلِ یورو به نرخِ روز — برای ستون و جمعِ فهرست (پورتِ `eur` ِ صفحهٔ هزینه‌ها)؛ بی‌نرخ = null.
+  return rows.map((r) => ({
+    ...r,
+    amountEur: r.currencyId ? convert(source, r.amount, r.currencyId, baseCurrencyId) : null,
+  }));
 }
 
 export interface RecurringInput {

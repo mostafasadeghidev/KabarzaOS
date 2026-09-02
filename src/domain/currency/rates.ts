@@ -105,4 +105,11 @@ export function effectiveRate(amount: string, amountAccount: string): Rate {
   return divide(amountAccount, amount);
 }
 
+/** نمایشِ نرخ بدونِ صفرهای دنباله — پورتِ `rtrim(rtrim($r, '0'), '.')` ِ افزونه. */
+export function trimRate(rate: string): string {
+  if (!rate.includes('.')) return rate;
+  const trimmed = rate.replace(/0+$/, '').replace(/\.$/, '');
+  return trimmed === '' || trimmed === '-' ? '0' : trimmed;
+}
+
 export const __internal = { divide, multiply };

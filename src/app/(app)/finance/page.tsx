@@ -154,6 +154,7 @@ export default async function Finance({
           projectMemberIds: options.projectMemberIds,
           memberCurrency: options.memberCurrency,
           defaultCurrencyId: options.defaultCurrencyId,
+          vendors: options.vendors,
         }}
         canManage={data.canManage}
         paging={data.paging}
