@@ -110,7 +110,10 @@ describe('ارزهای مخلوط به ارزِ پایه تبدیل می‌شو�
     const row = rows.find((r) => Number(r.id) === member)!;
     expect(row.agreed).toBe('100.00');
     expect(row.paid).toBe('30.00');
-    expect(row.remaining).toBe('70.00');
+    // ⚠️ پورتِ افزونه (member_rows): بدهی به‌ازای هر ارز کف‌بندی می‌شود — پرداختِ یورویی
+    // بدهیِ ریالی را نمی‌کاهد؛ ۵٬۰۰۰٬۰۰۰ ریال بدهی (= ۱۰۰ یورو) می‌ماند و یورو اضافه‌پرداخت است.
+    expect(row.remaining).toBe('100.00');
+    expect(row.byCurrency.map((l) => [l.code, Number(l.debt)])).toEqual([['EUR', 0], ['IRR', 5_000_000]]);
   });
 
   it('کارکردِ تعدادی: ریال به یورو', async () => {

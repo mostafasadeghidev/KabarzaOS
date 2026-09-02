@@ -40,9 +40,11 @@ export const EXPORT_FILENAMES: Record<ExportableTab, string> = {
 };
 
 export interface ReportExportData {
-  members: Array<{ name: string; agreed: string; paid: string; remaining: string; minutes: number }>;
+  members: Array<{ name: string; agreed: string; paid: string; remaining: string; minutes: number; projects?: number }>;
   clients: Array<{
     name: string; projectCount: number; price: string; paid: string; due: string;
+    /** قیمت + هزینه‌های قابلِ صورتحساب — همان چیزی که سرستونِ «ارزشِ کل» ادعا می‌کند. */
+    billed?: string;
   }>;
   expenses: {
     totalIn: string;
@@ -55,6 +57,8 @@ export interface ReportExportData {
   accountsReport: Array<{
     name: string; currencyCode: string | null;
     opening: string; totalIn: string; totalOut: string; balance: string;
+    /** معادلِ یورو؛ null = نرخ ندارد. */
+    balanceEur?: string | null;
   }>;
   hours: Array<{ title: string; minutes: number }>;
   projectRows: Array<{
@@ -76,14 +80,15 @@ export function buildReportCsv(tab: ExportableTab, data: ReportExportData, t: Tr
   switch (tab) {
     case 'members':
       return csvDocument(
-        [t('عضو'), t('تعهد (یورو)'), t('پرداخت‌شده (یورو)'), t('بدهی (یورو)'), t('ساعت کاری')],
-        data.members.map((r) => [r.name, r.agreed, r.paid, r.remaining, hoursLabel(r.minutes)]),
+        [t('عضو'), t('پروژه‌ها'), t('تعهد (یورو)'), t('پرداخت‌شده (یورو)'), t('بدهی (یورو)'), t('ساعت کاری')],
+        data.members.map((r) => [r.name, r.projects ?? '', r.agreed, r.paid, r.remaining, hoursLabel(r.minutes)]),
       );
 
     case 'clients':
       return csvDocument(
         [t('کارفرما'), t('پروژه‌ها'), t('ارزشِ کل (یورو)'), t('دریافتیِ کل (یورو)'), t('مانده (یورو)')],
-        data.clients.map((r) => [r.name, r.projectCount, r.price, r.paid, r.due]),
+        // ⚠️ «ارزشِ کل» = قیمت + هزینه‌ها؛ پیش از این فقط قیمت می‌رفت و با «مانده» نمی‌خواند.
+        data.clients.map((r) => [r.name, r.projectCount, r.billed ?? r.price, r.paid, r.due]),
       );
 
     case 'expenses':
@@ -102,9 +107,9 @@ export function buildReportCsv(tab: ExportableTab, data: ReportExportData, t: Tr
 
     case 'accounts':
       return csvDocument(
-        [t('حساب'), t('ارز'), t('مانده اول دوره'), t('ورودی'), t('خروجی'), t('مانده')],
+        [t('حساب'), t('ارز'), t('مانده اول دوره'), t('ورودی'), t('خروجی'), t('مانده'), t('معادل یورو')],
         data.accountsReport.map((r) => [
-          r.name, r.currencyCode ?? '', r.opening, r.totalIn, r.totalOut, r.balance,
+          r.name, r.currencyCode ?? '', r.opening, r.totalIn, r.totalOut, r.balance, r.balanceEur ?? '',
         ]),
       );
 

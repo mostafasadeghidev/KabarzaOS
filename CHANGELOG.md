@@ -2,6 +2,26 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.39.0]
+
+### Added — reports (parity with the plugin)
+
+- **Rate banner on the overview:** the rates the totals rest on ("1 EUR = 52000 IRR" for every active currency), a warning when a rate is older than seven days, and a warning when an active currency has no rate at all. Rows without a rate are counted as zero, never at 1:1.
+- **Overview cards grouped** into client / members / overall, with a new **estimated profit** card (project value minus commitments to members, red when negative) and its explanatory note.
+- **Members tab:** every member-role user (also those without rows), a projects column, a "former" badge, per-currency debt chips, summary cards (agreed / paid / debt), and a debt-by-currency line. A former member with no remaining debt is hidden from the list.
+- **Clients tab:** billed = price + billable expenses, both in the project currency, per-currency due chips, summary cards (billed / received / due), a due-by-currency line and a "former" badge.
+- **Accounts tab:** EUR-equivalent column and a total-liquidity footer, also in the CSV export.
+- **Closed periods:** lock notice ("the period is locked through …"), a "stale" badge on a closing whose period has since been reopened, and the closing balance in EUR.
+- **Attendance:** leaves list only members and only upcoming ranges, oldest first.
+
+### Fixed
+
+- **Member debt no longer mixes units.** Agreed amounts and payouts are grouped per currency (payouts in their settlement currency), the debt is floored per currency and only then converted to EUR, so an overpayment in one currency can no longer hide a debt in another. The old figure subtracted a frozen-EUR paid total from a raw multi-currency agreed sum.
+- **Client due** is computed the same way; the CSV "total value" column now really is price plus expenses, so it reconciles with the due column.
+- Raw-SQL integer columns are coerced before being compared with the base currency id.
+
+---
+
 ## [1.38.0]
 
 ### Added — project page (parity with the plugin)

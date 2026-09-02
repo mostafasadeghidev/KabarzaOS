@@ -4,7 +4,7 @@ import {
   getAccountsReport, getAttendanceReport, getClientsReport, getExpensesReport,
   getHoursReport, getMembersReport, getOverall, getProjectsReport, getUnitsReport,
 } from '@/server/reports/service';
-import { closingDates, closingRows } from '@/server/finance/service';
+import { closingDates, closingRows, currentLockDate } from '@/server/finance/service';
 import { visibleReportTabs } from '@/server/people/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -56,9 +56,10 @@ export default async function ReportsPage({
      * مستقیم به کوئری نمی‌رود.
      */
     const requested = query.date && dates.includes(query.date) ? query.date : dates[0] ?? null;
+    const lockDate = await currentLockDate();
     const closings = requested
-      ? { dates, active: requested, rows: await closingRows(actor, requested) }
-      : { dates, active: null, rows: [] };
+      ? { dates, active: requested, rows: await closingRows(actor, requested), lockDate }
+      : { dates, active: null, rows: [], lockDate };
 
     return (
       <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">

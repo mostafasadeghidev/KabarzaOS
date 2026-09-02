@@ -39,14 +39,22 @@ export interface ReportsData {
     minutes: number;
     /** ردیف‌هایی که نرخِ تبدیل نداشتند و صفر شمرده شدند. */
     rateMissing: number;
+    /** سودِ ناخالصِ تخمینی = ارزشِ پروژه‌ها − تعهد به اعضا. */
+    profit: string;
+    /** نوارِ نرخ‌ها — پورتِ `rate_banner_html`. */
+    rates: { shown: string[]; stale: string[]; missing: string[]; visible: boolean };
   };
   members: Array<{
     id: number; name: string; agreed: string; paid: string;
     remaining: string; minutes: number;
+    projects: number; isFormer: boolean;
+    byCurrency: Array<{ currencyId: number; code: string; agreed: string; paid: string; debt: string }>;
   }>;
   clients: Array<{
     id: number; name: string; projectCount: number;
     price: string; expenses: string; paid: string; due: string;
+    billed: string; isFormer: boolean;
+    byCurrency: Array<{ currencyId: number; code: string; billed: string; paid: string; due: string }>;
   }>;
   expenses: {
     totalIn: string;
@@ -59,6 +67,7 @@ export interface ReportsData {
   accountsReport: Array<{
     id: number; name: string; currencyCode: string | null;
     opening: string; totalIn: string; totalOut: string; balance: string;
+    balanceEur: string | null;
   }>;
   hours: Array<{ projectId: number; title: string; minutes: number }>;
   projectRows: Array<{
@@ -76,6 +85,8 @@ export interface ReportsData {
   closings: {
     dates: string[];
     active: string | null;
+    /** قفلِ فعلیِ دوره — برای نشانِ «کهنه» روی خلاصه‌ای که دوره‌اش دوباره باز شده. */
+    lockDate: string | null;
     rows: Array<{
       accountName: string; currencyCode: string | null; periodStart: string;
       deposits: string; withdrawals: string; closingBalance: string;
@@ -164,17 +175,34 @@ export function ReportsView({
     return <EmptyState title={tr("تبی برای شما فعال نیست")} description={tr("از مدیر بخواهید دسترسیِ تب‌های گزارش را بدهد.")} />;
   }
 
-  const cards = [
-    { label: 'تعداد پروژه', value: String(data.overall.projectCount), plain: true },
-    { label: 'ارزش پروژه‌ها', value: format(data.overall.totalValue) },
-    { label: 'هزینه‌های قابلِ صورت‌حساب', value: format(data.overall.expenses) },
-    { label: 'دریافتی از کارفرما', value: format(data.overall.clientPaid) },
-    { label: 'مطالبات از کارفرما', value: format(data.overall.clientDue), strong: true },
-    { label: 'توافقیِ اعضا', value: format(data.overall.memberAgreed) },
-    { label: 'پرداختی به اعضا', value: format(data.overall.memberPaid) },
-    { label: 'بدهی به اعضا', value: format(data.overall.memberDebt), strong: true },
-    { label: 'ساعت کاری', value: hoursLabel(data.overall.minutes), plain: true },
+  /** پورتِ سه گروهِ کارتِ `overall()`: کارفرمایان / اعضا / کلی (با سودِ تخمینی). */
+  const negativeProfit = Number(data.overall.profit) < 0;
+  const cardGroups: Array<{ title: string; cards: Array<{ label: string; value: string; strong?: boolean; danger?: boolean }> }> = [
+    { title: 'کارفرمایان', cards: [
+      { label: 'ارزش پروژه‌ها', value: format(data.overall.totalValue) },
+      { label: 'هزینه‌های قابلِ صورت‌حساب', value: format(data.overall.expenses) },
+      { label: 'دریافتی از کارفرما', value: format(data.overall.clientPaid) },
+      { label: 'مطالبات از کارفرما', value: format(data.overall.clientDue), strong: true },
+    ] },
+    { title: 'اعضا', cards: [
+      { label: 'توافقیِ اعضا', value: format(data.overall.memberAgreed) },
+      { label: 'پرداختی به اعضا', value: format(data.overall.memberPaid) },
+      { label: 'بدهی به اعضا', value: format(data.overall.memberDebt), strong: true },
+    ] },
+    { title: 'کلی', cards: [
+      { label: 'تعداد پروژه', value: String(data.overall.projectCount) },
+      { label: 'ساعت کاری', value: hoursLabel(data.overall.minutes) },
+      { label: 'سود تخمینی', value: format(data.overall.profit), strong: true, danger: negativeProfit },
+    ] },
   ];
+  const sum = (rows: Array<Record<string, unknown>>, key: string) =>
+    rows.reduce((acc, r) => acc + Number(r[key] ?? 0), 0).toFixed(2);
+  /** پورتِ خطِ «بدهی/طلب به تفکیکِ ارز»: جمعِ خط‌های ارزیِ همهٔ ردیف‌ها. */
+  const byCurrencyTotals = (rows: Array<{ byCurrency: Array<{ code: string; [k: string]: unknown }> }>, key: string) => {
+    const totals = new Map<string, number>();
+    for (const r of rows) for (const l of r.byCurrency) totals.set(l.code, (totals.get(l.code) ?? 0) + Number(l[key] ?? 0));
+    return [...totals.entries()].map(([code, v]) => `${format(v.toFixed(2))} ${code}`).join(' · ');
+  };
 
   return (
     <div className="grid gap-4">
@@ -229,34 +257,78 @@ export function ReportsView({
         <div className="grid gap-3">
         {data.isOwner && <RecomputeEurButton />}
         {/* ⚠️ نبودِ نرخ بی‌صدا ۱ نمی‌شود (R-MONEY-06) — ولی بی‌صدا هم نمی‌ماند. */}
+        {/* پورتِ `rate_banner_html`: نرخ‌هایی که ارقام بر آن‌ها تکیه دارند + هشدارِ کهنه/غایب. */}
+        {data.overall.rates.visible && (
+          <div className="flex flex-wrap items-center gap-3 rounded-md border px-3 py-2 text-xs">
+            {data.overall.rates.shown.length > 0 && (
+              <span className="num" dir="ltr">{data.overall.rates.shown.join('  ·  ')}</span>
+            )}
+            {data.overall.rates.stale.length > 0 && (
+              <span className="text-amber-600 dark:text-amber-500">
+                ⚠ {tr('نرخِ {codes} مدتی است به‌روزرسانی نشده؛ ارقام شاید قدیمی باشند.', { codes: data.overall.rates.stale.join(tr('، ')) })}
+              </span>
+            )}
+            {data.overall.rates.missing.length > 0 && (
+              <span className="text-destructive">
+                ⚠ {tr('برای {codes} نرخی ثبت نشده؛ ردیف‌های آن ارز صفر شمرده می‌شوند. در تنظیمات ← ارزها ثبت کنید.', { codes: data.overall.rates.missing.join(tr('، ')) })}
+              </span>
+            )}
+          </div>
+        )}
         {data.overall.rateMissing > 0 && (
           <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
             {tr('{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.', { n: data.overall.rateMissing })}
           </p>
         )}
-        <div className="grid gap-3 @3xl/main:grid-cols-3 @xl/main:grid-cols-2">
-          {cards.map((c) => (
-            <Card key={c.label}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-normal text-muted-foreground">{tr(c.label)}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className={`num ${c.strong ? 'text-xl font-semibold' : 'text-lg font-medium'}`}>
-                  {c.value}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {cardGroups.map((group) => (
+          <section key={group.title} className="grid gap-2">
+            <h3 className="text-sm font-semibold">{tr(group.title)}</h3>
+            <div className="grid gap-3 @3xl/main:grid-cols-4 @xl/main:grid-cols-2">
+              {group.cards.map((c) => (
+                <Card key={c.label} className={c.danger ? 'border-destructive/50' : ''}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-normal text-muted-foreground">{tr(c.label)}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className={`num ${c.strong ? 'text-xl font-semibold' : 'text-lg font-medium'} ${c.danger ? 'text-destructive' : ''}`}>
+                      {c.value}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        ))}
+        <p className="text-xs text-muted-foreground">
+          {tr("سودِ تخمینی = ارزشِ پروژه‌ها − تعهد به اعضا؛ پروژه‌محور است و هزینه‌های عمومی (دوره‌ای/بی‌پروژه) در آن نیست.")}
+        </p>
         </div>
       )}
 
       {tab === 'members' && (
         data.members.length === 0 ? <EmptyState title={tr("داده‌ای نیست")} /> : (
+          <div className="grid gap-3">
+          {/* پورتِ کارت‌های جمعِ تبِ اعضا: تعهد / پرداختی / بدهی (یورو). */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { label: 'تعهد به اعضا', value: sum(data.members, 'agreed') },
+              { label: 'پرداختی به اعضا', value: sum(data.members, 'paid') },
+              { label: 'بدهی به اعضا', value: sum(data.members, 'remaining') },
+            ].map((c) => (
+              <Card key={c.label}>
+                <CardHeader className="pb-2"><CardTitle className="text-xs font-normal text-muted-foreground">{tr(c.label)}</CardTitle></CardHeader>
+                <CardContent><p className="num text-lg font-medium">{format(c.value)}</p></CardContent>
+              </Card>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {tr("بدهی به تفکیک ارز:")} <span className="num">{byCurrencyTotals(data.members, 'debt') || '—'}</span>
+          </p>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("عضو")}</TableHead>
+                <TableHead>{tr("پروژه‌ها")}</TableHead>
                 <TableHead>{tr("توافقی")}</TableHead>
                 <TableHead>{tr("پرداختی")}</TableHead>
                 <TableHead>{tr("مانده")}</TableHead>
@@ -271,11 +343,19 @@ export function ReportsView({
                     <Link href={`/reports/member/${m.id}`} className="hover:underline">
                       {m.name}
                     </Link>
+                    {m.isFormer && <Badge variant="outline" className="ms-1.5 text-[10px]">{tr("سابق")}</Badge>}
                   </TableCell>
+                  <TableNumericCell>{m.projects}</TableNumericCell>
                   <TableNumericCell>{format(m.agreed)}</TableNumericCell>
                   <TableNumericCell>{format(m.paid)}</TableNumericCell>
                   <TableNumericCell className={Number(m.remaining) > 0 ? 'text-amber-600 dark:text-amber-500' : ''}>
                     {format(m.remaining)}
+                    {/* پورتِ چیپ‌های بدهی به‌ازای هر ارز — بدهیِ چندارزی پشتِ یک عدد پنهان نمی‌ماند. */}
+                    {m.byCurrency.length > 1 && (
+                      <span className="block text-[11px] font-normal text-muted-foreground">
+                        {m.byCurrency.map((l) => `${format(l.debt)} ${l.code}`).join(' · ')}
+                      </span>
+                    )}
                   </TableNumericCell>
                   {/*
                     ⚠️ خودِ عدد پیوند است، نه یک ستونِ اضافه: ریزِ ساعت
@@ -290,11 +370,28 @@ export function ReportsView({
               ))}
             </TableBody>
           </Table>
+          </div>
         )
       )}
 
       {tab === 'clients' && (
         data.clients.length === 0 ? <EmptyState title={tr("کارفرمایی به پروژه‌ای وصل نیست")} /> : (
+          <div className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { label: 'صورتحساب‌شدهٔ کل', value: sum(data.clients, 'billed') },
+              { label: 'دریافتیِ کل', value: sum(data.clients, 'paid') },
+              { label: 'طلبِ کل', value: sum(data.clients, 'due') },
+            ].map((c) => (
+              <Card key={c.label}>
+                <CardHeader className="pb-2"><CardTitle className="text-xs font-normal text-muted-foreground">{tr(c.label)}</CardTitle></CardHeader>
+                <CardContent><p className="num text-lg font-medium">{format(c.value)}</p></CardContent>
+              </Card>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {tr("طلب به تفکیک ارز:")} <span className="num">{byCurrencyTotals(data.clients, 'due') || '—'}</span>
+          </p>
           <Table>
             <TableHeader>
               <TableRow>
@@ -316,17 +413,24 @@ export function ReportsView({
                     <span className="num ms-1 text-xs text-muted-foreground">
                       ({c.projectCount})
                     </span>
+                    {c.isFormer && <Badge variant="outline" className="ms-1.5 text-[10px]">{tr("سابق")}</Badge>}
                   </TableCell>
                   <TableNumericCell>{format(c.price)}</TableNumericCell>
                   <TableNumericCell>{format(c.expenses)}</TableNumericCell>
                   <TableNumericCell>{format(c.paid)}</TableNumericCell>
                   <TableNumericCell className={Number(c.due) > 0 ? 'text-amber-600 dark:text-amber-500' : ''}>
                     {format(c.due)}
+                    {c.byCurrency.length > 1 && (
+                      <span className="block text-[11px] font-normal text-muted-foreground">
+                        {c.byCurrency.map((l) => `${format(l.due)} ${l.code}`).join(' · ')}
+                      </span>
+                    )}
                   </TableNumericCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          </div>
         )
       )}
 
@@ -389,6 +493,7 @@ export function ReportsView({
                 <TableHead>{tr("واریز")}</TableHead>
                 <TableHead>{tr("برداشت")}</TableHead>
                 <TableHead>{tr("مانده")}</TableHead>
+                <TableHead>{tr("معادل یورو")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -400,8 +505,16 @@ export function ReportsView({
                   <TableNumericCell>{format(a.totalIn)}</TableNumericCell>
                   <TableNumericCell>{format(a.totalOut)}</TableNumericCell>
                   <TableNumericCell className="font-semibold">{format(a.balance)}</TableNumericCell>
+                  <TableNumericCell className="text-muted-foreground">{a.balanceEur === null ? '—' : format(a.balanceEur)}</TableNumericCell>
                 </TableRow>
               ))}
+              {/* پورتِ پاورقیِ «نقدینگیِ کل» — جمعِ همهٔ حساب‌ها در یورو. */}
+              <TableRow>
+                <TableCell colSpan={6} className="font-semibold">{tr("نقدینگیِ کل (یورو)")}</TableCell>
+                <TableNumericCell className="font-semibold">
+                  {format(data.accountsReport.reduce((acc, a) => acc + Number(a.balanceEur ?? 0), 0).toFixed(2))}
+                </TableNumericCell>
+              </TableRow>
             </TableBody>
           </Table>
         )
@@ -581,19 +694,30 @@ export function ReportsView({
               ⚠️ ردیف‌های هر دوره روی **سرور** خوانده می‌شوند، نه همه با هم:
               با ده‌ها دوره و ده‌ها حساب، فرستادنِ همه به مرورگر بی‌جهت است.
             */}
+            {/* پورتِ اعلانِ قفل: «دوره تا تاریخ … قفل است». */}
+            <p className="text-xs text-muted-foreground">
+              {data.closings.lockDate
+                ? tr('دوره تا تاریخ {date} قفل است.', { date: data.closings.lockDate })
+                : tr('در حالِ حاضر هیچ دوره‌ای قفل نیست؛ خلاصه‌های زیر ممکن است با دفترِ فعلی نخوانند.')}
+            </p>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-muted-foreground">{tr("تاریخِ بستن:")}</span>
-              {data.closings.dates.map((d) => (
-                <Link
-                  key={d}
-                  href={`/reports?tab=closings&date=${d}`}
-                  className={`num rounded-md border px-3 py-1 text-xs ${
-                    d === data.closings.active ? 'border-primary font-medium' : 'hover:bg-muted'
-                  }`}
-                >
-                  {d}
-                </Link>
-              ))}
+              {data.closings.dates.map((d) => {
+                // پورتِ نشانِ «کهنه»: قفل خالی یا کوتاه‌تر از تاریخِ بستن — دوره دوباره باز شده.
+                const stale = !data.closings.lockDate || data.closings.lockDate < d;
+                return (
+                  <Link
+                    key={d}
+                    href={`/reports?tab=closings&date=${d}`}
+                    className={`num rounded-md border px-3 py-1 text-xs ${
+                      d === data.closings.active ? 'border-primary font-medium' : 'hover:bg-muted'
+                    }`}
+                  >
+                    {d}
+                    {stale && <span className="ms-1 text-amber-600 dark:text-amber-500">({tr('کهنه')})</span>}
+                  </Link>
+                );
+              })}
             </div>
 
             <Table>
@@ -607,6 +731,7 @@ export function ReportsView({
                   <TableHead>{tr("از کارفرما")}</TableHead>
                   <TableHead>{tr("به اعضا")}</TableHead>
                   <TableHead>{tr("هزینه‌ها")}</TableHead>
+                  <TableHead>{tr("مانده پایان (یورو)")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -629,6 +754,7 @@ export function ReportsView({
                     <TableNumericCell>{format(r.clientReceivedEur)}</TableNumericCell>
                     <TableNumericCell>{format(r.memberPaidEur)}</TableNumericCell>
                     <TableNumericCell>{format(r.expensesEur)}</TableNumericCell>
+                    <TableNumericCell>{format(r.closingBalanceEur)}</TableNumericCell>
                   </TableRow>
                 ))}
               </TableBody>
