@@ -2,6 +2,21 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.25.1]
+
+### Fixed
+
+- **The bell counted new notifications but never showed them.** The badge is
+  driven by the live pulse; the list underneath it is server-rendered in the
+  layout and only refreshed on a full page load. So the number climbed while
+  the menu kept showing the old list, and the new notification appeared only
+  after a manual refresh — exactly as reported. When the live count and the
+  rendered list disagree, the bell now refreshes the server components, which
+  updates the list without disturbing the open menu. Guarded to fire once per
+  count, so a pulse that runs ahead of the page cache cannot loop.
+
+---
+
 ## [1.25.0]
 
 ### Added

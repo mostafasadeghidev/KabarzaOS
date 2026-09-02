@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { LiveCount, usePulse } from '@/components/pulse';
 import { Bell, CheckCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -72,6 +73,30 @@ export function NotificationBell({
    */
   const shown = live?.notif ?? unread;
   const [pending, startTransition] = useTransition();
+
+  /**
+   * ⚠️ عدد زنده بود ولی **فهرست نبود**. `items` در چیدمانِ سمتِ سرور ساخته
+   * می‌شود و فقط با بارگذاریِ صفحه تازه می‌شود، در حالی که نبض هر چند ثانیه
+   * شمارنده را جلو می‌برد. نتیجه دقیقاً همان چیزی بود که گزارش شد: عدد روی
+   * زنگوله می‌افتد، اما بازکردنِ زنگوله فهرستِ قدیمی را نشان می‌دهد و تا
+   * رفرشِ دستی خبری از اعلانِ تازه نیست.
+   *
+   * `router.refresh()` کامپوننت‌های سرور را دوباره می‌گیرد بی‌آنکه وضعیتِ
+   * کلاینت (منوی باز) از دست برود.
+   *
+   * ⚠️ نگهبانِ حلقه: برای هر عدد فقط یک بار. بدونِ آن، اگر نبض از سرور جلو
+   * بزند — که در فاصلهٔ بینِ نوشتنِ اعلان و کشِ صفحه پیش می‌آید — هر رندر
+   * یک refresh ِ تازه می‌ساخت.
+   */
+  const router = useRouter();
+  const refreshedFor = useRef<number | null>(null);
+  useEffect(() => {
+    const n = live?.notif;
+    if (n === undefined || n === null || n === unread) return;
+    if (refreshedFor.current === n) return;
+    refreshedFor.current = n;
+    router.refresh();
+  }, [live?.notif, unread, router]);
 
   /**
    * ⚠️ مودال بیرونِ `DropdownMenuContent` است، نه داخلش: هر دو تلهٔ فوکوس
