@@ -65,7 +65,8 @@ export default async function ActivityPage({
     getWeek(actor.id),
     getSystemConfig(),
     // ⚠️ مرخصیِ **خودِ** کاربر مجوزِ بخش نمی‌خواهد؛ جدولِ تیمیِ بالا می‌خواهد.
-    listMyAbsences(actor, actor.id),
+    // پورتِ `for_user(upcoming_only)`: فهرستِ خودِ عضو فقط بازه‌های امروز به بعد.
+    listMyAbsences(actor, actor.id, { upcomingOnly: true }),
     leaveTargets(actor),
   ]);
 

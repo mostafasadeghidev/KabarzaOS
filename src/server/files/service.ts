@@ -374,6 +374,21 @@ export async function setAvatar(
   return fileId;
 }
 
+/**
+ * حذفِ تصویرِ پروفایل و برگشت به تک‌نگار — پورتِ `kteam_avatar_remove` →
+ * `set_avatar_id(0)`. پیش از این کاربر فقط می‌توانست عکس را **عوض** کند.
+ */
+export async function removeAvatar(actor: Actor, userId: number): Promise<void> {
+  if (userId !== actor.id && !canManageSection(actor, 'members')) {
+    throw new ForbiddenError('members.manage');
+  }
+  const previous = await db.select({ fileId: userAvatars.fileId })
+    .from(userAvatars).where(eq(userAvatars.userId, userId));
+  await db.delete(userAvatars).where(eq(userAvatars.userId, userId));
+  const old = previous[0]?.fileId;
+  if (old) await removeFile(old);
+}
+
 /** شناسهٔ آواتارِ چند کاربر — یک کوئری، نه یکی به‌ازای هر نفر (R-PERF-01). */
 export async function avatarsFor(userIds: number[]): Promise<Map<number, number>> {
   if (userIds.length === 0) return new Map();

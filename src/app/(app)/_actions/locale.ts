@@ -14,7 +14,7 @@ import { isLocale, type Locale } from '@/i18n/config';
  */
 export async function setLocale(locale: Locale): Promise<void> {
   if (!isLocale(locale)) return;
-  const actor = await requireActor();
+  const actor = await requireActor({ allowOffboarded: true });
   await db.update(users).set({ locale }).where(eq(users.id, actor.id));
   revalidatePath('/', 'layout');
 }

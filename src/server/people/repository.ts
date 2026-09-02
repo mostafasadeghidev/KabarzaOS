@@ -196,11 +196,25 @@ export async function usersWithoutRole(role: Role) {
  * یک کوئری با `exists`، نه چند شمارشِ کامل.
  */
 export async function hasFootprint(userId: number): Promise<boolean> {
+  /**
+   * پورتِ `has_footprint()`: هر ردِ پایی — نه فقط پرداخت/ساعت/عضویت. کسی که
+   * فقط کارفرمای پروژه‌ای بوده، کامنت گذاشته، تسک داشته، پیشنهاد داده، کارکردِ
+   * تعدادی ثبت کرده، طرفِ یک ردیفِ دفتر بوده یا QA تیک زده، «سابق» می‌شود، نه حذف.
+   */
   const rows = await db.execute(sql`
     select
       exists(select 1 from project_payments where user_id = ${userId})
       or exists(select 1 from timelogs where user_id = ${userId})
       or exists(select 1 from project_members where user_id = ${userId})
+      or exists(select 1 from project_clients where user_id = ${userId})
+      or exists(select 1 from payment_requests where user_id = ${userId})
+      or exists(select 1 from unit_entries where user_id = ${userId})
+      or exists(select 1 from tender_bids where user_id = ${userId})
+      or exists(select 1 from comments where user_id = ${userId})
+      or exists(select 1 from ledger where payer_user_id = ${userId} or receiver_user_id = ${userId})
+      or exists(select 1 from tasks where assigned_to = ${userId} or created_by = ${userId})
+      or exists(select 1 from task_roles where claimed_by = ${userId})
+      or exists(select 1 from project_qa where done_by = ${userId})
       as found
   `);
   return Boolean((rows as unknown as Array<{ found: boolean }>)[0]?.found);

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { can } from '@/domain/access/permissions';
 import { currentActor } from '@/server/auth';
-import { getCompany, getMyProfile } from '@/server/people/profile-service';
+import { getAccountInfo, getCompany, getMyProfile } from '@/server/people/profile-service';
 import { ProfileView } from './profile-view';
 import { primeTranslations, t } from '@/i18n/server';
 
@@ -24,10 +24,11 @@ export default async function ProfilePage() {
    * حسابدارِ نسخهٔ قبلی هم این تب را داشت (زیرِ).
    */
   const isOwner = can(actor, 'settings.manage');
-  const [me, company] = await Promise.all([
+  const [me, company, account] = await Promise.all([
     getMyProfile(actor),
     // مشخصاتِ شرکت فقط برای مالک خوانده می‌شود.
     isOwner ? getCompany() : Promise.resolve(null),
+    getAccountInfo(actor),
   ]);
 
   return (
@@ -39,8 +40,12 @@ export default async function ProfilePage() {
 
       <ProfileView
         data={{
+          id: actor.id,
           name: me.name,
           email: me.email,
+          phone: account.phone,
+          username: account.username,
+          avatarFileId: account.avatarFileId,
           timezone: me.timezone,
           bank: me.bank,
           hasBank: me.hasBank,

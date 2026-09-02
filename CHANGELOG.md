@@ -2,6 +2,27 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.35.0]
+
+### Added — people (parity with the plugin)
+
+- **Self-service account tab.** Every user can edit their own name, e-mail and phone on the profile page, see their username, and upload or remove their profile picture. The e-mail must be valid and not belong to another account (compared case-insensitively).
+- **Profile pictures can be removed** by the person or by a member manager, falling back to the default monogram; before, a picture could only be replaced.
+- **Usernames are shown on person cards** and included in the live search, and clients can be assigned to offices like everyone else.
+
+### Changed — guards
+
+- **Former members are refused server-side.** A member in the "finance only" state can save their bank details, language and theme, and read notifications; every other action is rejected on the server, not just hidden in the interface, as the plugin does.
+- **Logging out marks the person offline at once** instead of leaving them "online" until the presence stamp expires.
+- **Removing a person keeps history whenever any trace exists:** client assignments, comments, tasks created or assigned, claimed task roles, tender bids, piecework rows, ledger rows as payer or receiver, and QA sign-offs now count as a footprint, so the person is deactivated rather than deleted.
+
+### Fixed
+
+- **A bad profile picture is rejected before the person is created**, with a clear message, instead of creating the person and silently dropping the picture. If storage fails after creation, the form says so.
+- **A member's own absence list shows upcoming ranges only**, as in the plugin.
+
+---
+
 ## [1.34.0]
 
 ### Added — ledger and expense screens (parity with the plugin)

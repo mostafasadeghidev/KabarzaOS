@@ -4,7 +4,9 @@ import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import { disconnectTelegram, saveBankInfo, saveCompany, saveNotifyPrefs, saveTimezone, startTelegramLink,
-  tryConnectTelegram, changeMyPassword, PasswordError } from '@/server/people/profile-service';
+  tryConnectTelegram, changeMyPassword, PasswordError, updateMyProfile, ProfileValidationError,
+} from '@/server/people/profile-service';
+import { removeAvatar, setAvatar } from '@/server/files/service';
 import { ForbiddenError } from '@/domain/access/guard';
 
 export interface ProfileState {
@@ -25,7 +27,8 @@ function message(error: unknown): string {
 
 export async function saveBankAction(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
   try {
-    await saveBankInfo(await requireActor(), {
+    // عضوِ سابقِ «فقط مالی» هم حساب بانکی‌اش را نگه می‌دارد (پورتِ guard_offboarded_actions).
+    await saveBankInfo(await requireActor({ allowOffboarded: true }), {
       account: String(formData.get('account') ?? ''),
       iban: String(formData.get('iban') ?? ''),
       card: String(formData.get('card') ?? ''),
@@ -206,4 +209,53 @@ export async function changePasswordAction(
 
   revalidatePath('/profile');
   return { message: 'رمزِ ورود عوض شد.' };
+}
+
+/** نام، ایمیل و تلفنِ خودم. */
+export async function saveAccountAction(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
+  try {
+    await updateMyProfile(await requireActor(), {
+      name: String(formData.get('name') ?? ''),
+      email: String(formData.get('email') ?? ''),
+      phone: String(formData.get('phone') ?? ''),
+    });
+  } catch (error) {
+    if (error instanceof ProfileValidationError) {
+      if (error.code === 'email_taken') return { error: 'این ایمیل قبلاً ثبت شده است.' };
+      if (error.code === 'email') return { error: 'ایمیل معتبر نیست.' };
+      return { error: 'نام الزامی است.' };
+    }
+    return { error: message(error) };
+  }
+  revalidatePath('/', 'layout');
+  return { message: 'مشخصات ذخیره شد.' };
+}
+
+/** تصویرِ پروفایلِ خودم. */
+export async function setMyAvatarAction(formData: FormData): Promise<ProfileState> {
+  const file = formData.get('avatar');
+  if (!(file instanceof File) || file.size === 0) return { error: 'تصویری انتخاب نشده است.' };
+  try {
+    await setAvatar(await requireActor(), (await requireActor()).id, {
+      name: file.name,
+      mime: file.type || 'application/octet-stream',
+      bytes: new Uint8Array(await file.arrayBuffer()),
+    });
+  } catch (error) {
+    if (error instanceof FileRejected) return { error: rejectMessage(error.reason) };
+    return { error: message(error) };
+  }
+  revalidatePath('/', 'layout');
+  return { message: 'تصویر ذخیره شد.' };
+}
+
+export async function removeMyAvatarAction(): Promise<ProfileState> {
+  try {
+    const actor = await requireActor();
+    await removeAvatar(actor, actor.id);
+  } catch (error) {
+    return { error: message(error) };
+  }
+  revalidatePath('/', 'layout');
+  return { message: 'تصویر حذف شد.' };
 }

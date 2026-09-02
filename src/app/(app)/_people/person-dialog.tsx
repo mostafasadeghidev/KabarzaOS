@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { savePersonAction, type PersonFormState } from './_form/actions';
-import { setAvatarAction } from './_form/access-actions';
+import { removeAvatarAction, setAvatarAction } from './_form/access-actions';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Thumb } from '@/components/thumb';
 import type { PersonView, SectionConfig } from './person-card';
@@ -83,6 +83,17 @@ function AvatarPicker({ person }: { person: PersonView }) {
       <Button type="button" size="sm" variant="outline" disabled={pending} onClick={upload}>
         {pending ? tr('در حالِ ارسال…') : tr('ذخیره تصویر')}
       </Button>
+      {person.avatarFileId && (
+        <Button
+          type="button" size="sm" variant="ghost" disabled={pending}
+          onClick={() => startTransition(async () => {
+            const result = await removeAvatarAction(person.id);
+            show(tr(result.error ?? result.message!), result.error ? 'error' : 'success');
+          })}
+        >
+          {tr('حذفِ تصویر')}
+        </Button>
+      )}
     </div>
   );
 }

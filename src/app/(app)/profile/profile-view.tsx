@@ -2,11 +2,13 @@
 
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Bell, Building2, CreditCard, Clock, Send, Lock } from 'lucide-react';
+import { Bell, Building2, CreditCard, Clock, Send, Lock, UserRound } from 'lucide-react';
+import { Thumb } from '@/components/thumb';
 import {
   changePasswordAction, completeTelegramAction, connectTelegramAction,
   disconnectTelegramAction, setCompanyLogoAction,
   saveCompanyAction, saveNotifyAction, saveTimezoneAction, type ProfileState,
+  removeMyAvatarAction, saveAccountAction, setMyAvatarAction,
 } from './_form/actions';
 import { EMAIL_CATEGORIES } from '@/domain/notifications/gateway';
 import { allTimezones, type TelegramState } from '@/domain/people/profile';
@@ -20,8 +22,13 @@ import { useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/client';
 
 export interface ProfileData {
+  id: number;
   name: string;
   email: string;
+  phone: string;
+  /** راهِ دومِ ورود — فقط نمایش (پورتِ پنلِ حساب). */
+  username: string | null;
+  avatarFileId: number | null;
   timezone: string;
   bank: { account: string; iban: string; card: string };
   hasBank: boolean;
@@ -43,6 +50,7 @@ export interface ProfileData {
 }
 
 const TABS = [
+  { key: 'account', label: 'حساب کاربری', icon: UserRound },
   { key: 'bank', label: 'حساب بانکی', icon: CreditCard },
   { key: 'prefs', label: 'ترجیحات', icon: Clock },
   { key: 'password', label: 'رمزِ ورود', icon: Lock },
@@ -82,6 +90,10 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
   const [tzState, saveTz] = useActionState(saveTimezoneAction, {} as ProfileState);
   useActionToast(tzState);
+  const [accountState, saveAccount] = useActionState(saveAccountAction, {} as ProfileState);
+  useActionToast(accountState);
+  const [avatarState, setAvatarState] = useState<ProfileState>({});
+  useActionToast(avatarState);
   const [pwState, changePw] = useActionState(changePasswordAction, {} as ProfileState);
   useActionToast(pwState);
   const [notifyState, saveNotify] = useActionState(saveNotifyAction, {} as ProfileState);
@@ -112,6 +124,60 @@ export function ProfileView({ data }: { data: ProfileData }) {
           </button>
         ))}
       </nav>
+
+      {/* پورتِ پنلِ «حساب» ِ داشبورد: نام، ایمیل و تلفن به دستِ خودِ کاربر. */}
+      {tab === 'account' && (
+        <div className="grid max-w-xl gap-4">
+          <form action={saveAccount} className="grid gap-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="acc-name">{tr("نام")}</Label>
+              <Input id="acc-name" name="name" defaultValue={data.name} required />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="acc-email">{tr("ایمیل")}</Label>
+              <Input id="acc-email" name="email" type="email" defaultValue={data.email} required />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="acc-phone">{tr("تلفن")}</Label>
+              <Input id="acc-phone" name="phone" defaultValue={data.phone} />
+            </div>
+            {data.username && (
+              <p className="text-xs text-muted-foreground">
+                {tr("نامِ کاربری")}: <span className="num">{data.username}</span>
+              </p>
+            )}
+            <div className="flex items-center gap-3">
+              <Submit>{tr("ذخیره")}</Submit>
+            </div>
+          </form>
+
+          <div className="flex flex-wrap items-end gap-3 rounded-md border p-3">
+            <Thumb id={data.id} title={data.name} fileId={data.avatarFileId} size={56} className="rounded-full" />
+            <form
+              className="grid flex-1 gap-1.5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = new FormData(e.currentTarget);
+                startTransition(async () => setAvatarState(await setMyAvatarAction(form)));
+              }}
+            >
+              <Label htmlFor="acc-avatar">{tr("تصویر پروفایل")}</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input id="acc-avatar" name="avatar" type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="max-w-xs" />
+                <Button type="submit" size="sm" variant="outline" disabled={pending}>{tr("ذخیره تصویر")}</Button>
+                {data.avatarFileId && (
+                  <Button
+                    type="button" size="sm" variant="ghost" disabled={pending}
+                    onClick={() => startTransition(async () => setAvatarState(await removeMyAvatarAction()))}
+                  >
+                    {tr("حذفِ تصویر")}
+                  </Button>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {tab === 'bank' && (
         <div className="max-w-xl">

@@ -139,6 +139,10 @@ export function PersonCard({
                 person.name
               )}
             </p>
+            {/* پورتِ کارتِ افزونه: نامِ کاربری (login) کنارِ نام. */}
+            {person.username && (
+              <p className="num text-xs text-muted-foreground" dir="ltr">@{person.username}</p>
+            )}
             {label && <Badge variant="outline" className="mt-0.5">{tr(label)}</Badge>}
           </div>
 

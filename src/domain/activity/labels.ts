@@ -9,6 +9,7 @@
 export const ACTION_LABELS: Record<string, string> = {
   // پروفایل و شرکت
   'profile.bank': 'ویرایشِ اطلاعاتِ بانکی',
+  'profile.account': 'ویرایشِ مشخصاتِ خود',
   'profile.password': 'تغییرِ رمزِ خود',
   'person.password': 'تعیینِ رمز برای فرد',
   'company.update': 'ویرایشِ مشخصاتِ شرکت',

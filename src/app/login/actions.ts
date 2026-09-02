@@ -8,8 +8,9 @@ import { users } from '@/db/schema';
 import { attemptLogin, type AuthUser } from '@/domain/auth/login';
 import { canSignIn, type MemberState } from '@/domain/people/offboarding';
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from '@/domain/auth/session';
-import { sessionSecret } from '@/server/auth';
+import { sessionSecret, currentActor } from '@/server/auth';
 import { loginSchema, type LoginState } from './schema';
+import { markOffline } from '@/server/people/presence-service';
 
 
 const MESSAGES: Record<string, string> = {
@@ -69,6 +70,10 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 }
 
 export async function logout(): Promise<void> {
+  // پورتِ `on_logout()`: خروج یعنی همین حالا آفلاین — نه تا انقضای مهرِ حضور.
+  // (بیکنِ `pagehide` بعد از حذفِ کوکی بی‌نشست می‌رسد و هیچ کاری نمی‌کند.)
+  const actor = await currentActor();
+  if (actor) await markOffline(actor).catch(() => {});
   (await cookies()).delete(SESSION_COOKIE);
   redirect('/login');
 }

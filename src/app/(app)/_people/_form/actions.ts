@@ -11,6 +11,7 @@ import { ForbiddenError } from '@/domain/access/guard';
 import type { RemoveOutcome } from '@/domain/people/offboarding';
 import type { Role } from '@/domain/access/permissions';
 import { isValidUsername } from '@/domain/auth/login';
+import { assertAcceptable, FileRejected, rejectMessage } from '@/domain/files/upload';
 
 /**
  * اقدام‌های صفحهٔ افراد.و اقدام‌های ردیفِ نسخهٔ قبلی.
@@ -152,26 +153,36 @@ export async function savePersonAction(
     if (userId) {
       await updatePerson(actor, userId, parsed.data);
     } else {
-      const newId = await createPerson(actor, role, parsed.data);
       /**
-       * ⚠️ تصویر **بعد از** ساخت آپلود می‌شود، چون به شناسهٔ کاربر نیاز
-       * دارد. پیش از این فقط در فرمِ ویرایش ممکن بود و کاربر باید فرد را
-       * می‌ساخت، دوباره بازش می‌کرد و آنجا عکس می‌گذاشت.
-       *
-       * ⚠️ خطایش بلعیده می‌شود: فرد ساخته شده و برگرداندنِ خطا به نظر
-       * می‌رساند که ساخت انجام نشده.
+       * پورتِ `validate_avatar_upload()`: فایلِ بد **پیش از** ساخت رد می‌شود،
+       * با یک خطای روشن — نه اینکه فرد ساخته شود و خطای عکس بلعیده شود.
        */
       const avatar = formData.get('avatar');
-      if (avatar instanceof File && avatar.size > 0) {
+      const avatarFile = avatar instanceof File && avatar.size > 0 ? avatar : null;
+      if (avatarFile) {
+        assertAcceptable({
+          name: avatarFile.name,
+          mime: avatarFile.type || 'application/octet-stream',
+          size: avatarFile.size,
+          head: new Uint8Array(await avatarFile.slice(0, 32).arrayBuffer()),
+        }, 'avatar');
+      }
+
+      const newId = await createPerson(actor, role, parsed.data);
+      // تصویر بعد از ساخت ذخیره می‌شود چون به شناسهٔ کاربر نیاز دارد.
+      if (avatarFile) {
         try {
           const { setAvatar } = await import('@/server/files/service');
           await setAvatar(actor, newId, {
-            name: avatar.name,
-            mime: avatar.type || 'application/octet-stream',
-            bytes: new Uint8Array(await avatar.arrayBuffer()),
+            name: avatarFile.name,
+            mime: avatarFile.type || 'application/octet-stream',
+            bytes: new Uint8Array(await avatarFile.arrayBuffer()),
           });
         } catch (uploadError) {
           console.error('[person] avatar', uploadError);
+          revalidatePath(pathOf(role));
+          // ⚠️ صادقانه: فرد ساخته شد ولی تصویر نه — نه «ذخیره شد» ِ بی‌قید.
+          return { error: 'فرد ساخته شد، ولی تصویر ذخیره نشد؛ از فرمِ ویرایش دوباره بارگذاری کنید.' };
         }
       }
     }
@@ -185,6 +196,7 @@ export async function savePersonAction(
       };
     }
     if (error instanceof PersonNotFoundError) return { error: 'کاربر یافت نشد.', values };
+    if (error instanceof FileRejected) return { error: rejectMessage(error.reason), values };
     return { error: 'ذخیره نشد.', values };
   }
 

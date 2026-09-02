@@ -96,3 +96,16 @@ export async function setStaffRoleAction(
     return { error: message(error) };
   }
 }
+
+/** حذفِ تصویرِ پروفایل — پورتِ `kteam_avatar_remove`؛ خودِ فرد یا مدیرِ اعضا. */
+export async function removeAvatarAction(userId: number): Promise<{ error?: string; message?: string }> {
+  try {
+    const { removeAvatar } = await import('@/server/files/service');
+    await removeAvatar(await requireActor(), userId);
+  } catch (error) {
+    return { error: error instanceof ForbiddenError ? 'اجازهٔ تغییرِ اعضا ندارید.' : 'حذف نشد.' };
+  }
+  revalidatePath('/members');
+  revalidatePath('/clients');
+  return { message: 'تصویر حذف شد.' };
+}

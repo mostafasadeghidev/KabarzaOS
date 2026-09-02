@@ -7,6 +7,7 @@ import { users, userRoles, userPermissions } from '@/db/schema';
 import { readSessionToken, SESSION_COOKIE } from '@/domain/auth/session';
 import type { Actor, Permission, Role } from '@/domain/access/permissions';
 import { tagPermissionsFor } from '@/server/people/tag-caps';
+import { ForbiddenError } from '@/domain/access/guard';
 
 /**
  * پلِ بینِ دیتابیس و لایهٔ دامنه.
@@ -75,11 +76,22 @@ export async function currentActor(): Promise<Actor | null> {
   return (await currentSession())?.actor ?? null;
 }
 
-/** بازیگرِ فعلی یا خطا — برای مسیرهایی که ورود اجباری است. */
-export async function requireActor(): Promise<Actor> {
-  const actor = await currentActor();
-  if (!actor) throw new Error('unauthenticated');
-  return actor;
+/**
+ * بازیگرِ فعلی یا خطا — برای مسیرهایی که ورود اجباری است.
+ *
+ * ⚠️ پورتِ `guard_offboarded_actions()`: عضوِ سابقِ «فقط مالی» فقط حساب
+ * بانکی، زبان و تم را ذخیره می‌کند؛ هر اقدامِ دیگری در **سرور** رد می‌شود،
+ * نه فقط در رابط (R-ARCH-01). پیش از این چیدمان پوستهٔ محدود نشان می‌داد
+ * ولی فراخوانیِ مستقیمِ اقدام‌ها (تایمر، برنامهٔ هفتگی، پیام) می‌گذشت.
+ * اقدام‌های مجاز با `allowOffboarded` صریحاً اعلام می‌کنند.
+ */
+export async function requireActor(options: { allowOffboarded?: boolean } = {}): Promise<Actor> {
+  const session = await currentSession();
+  if (!session) throw new Error('unauthenticated');
+  if (session.memberState !== 'active' && !options.allowOffboarded) {
+    throw new ForbiddenError('offboarded');
+  }
+  return session.actor;
 }
 
 export { sessionSecret };

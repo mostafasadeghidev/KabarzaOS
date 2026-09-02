@@ -23,7 +23,8 @@ export default async function ClientsPage() {
         addLabel: 'افزودن کارفرما',
         editLabel: 'ویرایش کارفرما',
         supportsTags: false,
-        supportsOffices: false,
+        // پورتِ افزونه: عضویتِ دفتر برای هر فرد، کارفرما هم.
+        supportsOffices: true,
         supportsOffboarding: false,
       }}
     />

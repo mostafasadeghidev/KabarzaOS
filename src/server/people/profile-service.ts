@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, company, files, users } from '@/db/schema';
 import { can, type Actor } from '@/domain/access/permissions';
@@ -12,6 +12,7 @@ import {
 import { normalizeMuted } from '@/domain/notifications/gateway';
 import { mailEnabled } from '@/server/mail/transport';
 import { telegramCredentials } from '@/server/settings/telegram-service';
+import { avatarsFor } from '@/server/files/service';
 
 /**
  * پروفایلِ خودِ کاربر + مشخصاتِ شرکت.
@@ -382,5 +383,63 @@ export async function changeMyPassword(
     before: null,
     // ⚠️ هرگز خودِ رمز یا هش در لاگ نمی‌رود — فقط اینکه عوض شد.
     after: { changed: true },
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * حسابِ کاربریِ خودم — پورتِ پنلِ «حساب» ِ داشبورد (نام، ایمیل، تلفن، تصویر)
+ * ------------------------------------------------------------------ */
+
+export class ProfileValidationError extends Error {
+  constructor(readonly code: 'name' | 'email' | 'email_taken') {
+    super(`profile invalid: ${code}`);
+    this.name = 'ProfileValidationError';
+  }
+}
+
+/** نامِ کاربری، تلفن و تصویر — برای تبِ «حساب کاربری». */
+export async function getAccountInfo(actor: Actor) {
+  const [row] = await db.select({ username: users.username, phone: users.phone })
+    .from(users).where(eq(users.id, actor.id));
+  const avatars = await avatarsFor([actor.id]);
+  return {
+    username: row?.username ?? null,
+    phone: row?.phone ?? '',
+    avatarFileId: avatars.get(actor.id) ?? null,
+  };
+}
+
+/**
+ * ویرایشِ نام/ایمیل/تلفنِ خود — پیش از این فقط مدیرِ اعضا می‌توانست.
+ *
+ * ⚠️ ایمیل باید معتبر و **مالِ حسابِ دیگری نباشد** (بی‌اعتنا به حروف) —
+ * پورتِ گاردِ نسخهٔ قبلی؛ وگرنه کاربر می‌توانست ایمیلِ همکارش را بردارد.
+ */
+export async function updateMyProfile(
+  actor: Actor,
+  input: { name: string; email: string; phone: string },
+) {
+  const name = input.name.trim();
+  if (name === '') throw new ProfileValidationError('name');
+  const email = input.email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ProfileValidationError('email');
+  const clash = await db.select({ id: users.id }).from(users)
+    .where(sql`lower(${users.email}) = ${email}`);
+  if (clash.some((c) => c.id !== actor.id)) throw new ProfileValidationError('email_taken');
+
+  await db.update(users).set({
+    name,
+    email,
+    phone: input.phone.trim().slice(0, 40),
+    updatedAt: new Date(),
+  }).where(eq(users.id, actor.id));
+
+  await db.insert(auditLog).values({
+    actorType: 'user',
+    actorId: actor.id,
+    action: 'profile.account',
+    objectType: 'user',
+    objectId: actor.id,
+    after: { name, email },
   });
 }
