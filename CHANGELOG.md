@@ -2,6 +2,55 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.27.0]
+
+### Added
+
+- **A standalone team availability page.** `/availability` replaces the tab
+  buried inside Activity, which could not be linked to, did not appear in the
+  command palette, and sat behind a permission its main audience does not hold.
+  It carries the whole of the plugin's page: a summary strip (members / with a
+  schedule / available now), a matrix and a board view, filters by name, office
+  and role plus "available now only", the today column highlighted, presence
+  dots and avatars, and four panels — on leave today, running timers, online
+  now, and members with no schedule.
+
+- **The matrix reads leave.** Someone on leave was previously shown with their
+  normal working hours, which is worse than showing nothing. Leave now replaces
+  **today's cell only** — the rest of the week keeps its schedule, because the
+  matrix is a recurring weekly pattern while leave is a dated range, and the two
+  only intersect on today. Leave also wins over the schedule for the
+  "available now" count, and removes the person from today's board column.
+
+- **"Who is working right now."** `work_timers` had only ever been queried for
+  the current user, so a manager could not see who was on what. The panel shows
+  each running timer with its project and elapsed `H:MM`. A timer with no
+  project is kept, not hidden — untracked hours are still work.
+
+- **An "online now" panel**, active before idle, each group newest first, with a
+  relative last-seen. Offline people get no row, and with presence switched off
+  the panel is empty rather than stale.
+
+- **`isNowWithin()` is finally called.** It was implemented and unit-tested but
+  referenced nowhere, so there was no "available now" count and no filter.
+
+- **The office manager can see their team.** The page is gated on
+  `members.view` **or** managing an office, and someone who only manages an
+  office sees exactly their own offices' members — in the matrix, the filters,
+  the timers, and the presence panel. This role holds no section permission at
+  all, and previously had no route to any availability or presence view.
+
+### Changed
+
+- The Activity page's availability tab is now only the viewer's own weekly
+  editor, matching how the plugin splits it: members record on their own
+  dashboard, managers get the standalone page. One matrix in two places is two
+  behaviours that drift apart.
+- Dropped a `teamMatrix()` query the Activity page still paid for on every
+  load after it stopped rendering the matrix.
+
+---
+
 ## [1.26.0]
 
 ### Fixed

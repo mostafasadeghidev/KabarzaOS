@@ -4,38 +4,17 @@ import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Plus, X } from 'lucide-react';
 import { saveAvailabilityAction, type AvailabilityState } from './_form/availability-actions';
-import { formatSlots, slotsSpan, WEEKDAYS, type Slot } from '@/domain/availability/weekly';
+import { WEEKDAYS, type Slot } from '@/domain/availability/weekly';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { EmptyState } from '@/components/ui/empty-state';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
-import { PresenceDot } from '@/components/presence';
-import type { PresenceState } from '@/domain/people/presence';
-import { Thumb } from '@/components/thumb';
-import { TablePager, TableSearch, useTableView } from '@/components/ui/table-search';
-
-export interface MatrixRow {
-  id: number;
-  name: string;
-  /** نقطهٔ حضورِ زنده؛ null = حضور خاموش است. */
-  presence: PresenceState | null;
-  avatarFileId: number | null;
-  hasSchedule: boolean;
-  /** روز ← بازه‌ها؛ کلیدِ نبوده یعنی آن روز در دسترس نیست. */
-  days: Record<number, Slot[]>;
-}
 
 export interface AvailabilityData {
   /** برنامهٔ خودِ کاربر. */
   mine: Record<number, Slot[]>;
   order: number[];
-  matrix: MatrixRow[];
-  canSeeTeam: boolean;
 }
 
 function Submit() {
@@ -129,9 +108,6 @@ function DayEditor({ weekday, initial }: { weekday: number; initial: Slot[] | un
 export function AvailabilityView({ data }: { data: AvailabilityData }) {
   const tr = useT();
   const t = useT();
-  // ⚠️ ۲۵ ردیف در هر صفحه — ماتریس ستون‌های زیادی دارد و اسکرولِ بلند
-  // خواندنش را سخت می‌کند.
-  const matrixView = useTableView(data.matrix, (m) => m.name, 25);
   const [state, save] = useActionState(saveAvailabilityAction, {} as AvailabilityState);
   useActionToast(state);
 
@@ -156,68 +132,12 @@ export function AvailabilityView({ data }: { data: AvailabilityData }) {
         </form>
       </section>
 
-      {data.canSeeTeam && (
-        <section className="grid gap-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold">{t("ماتریسِ تیم")}</h3>
-            {/* — ماتریس با تیمِ بزرگ طولانی می‌شود. */}
-            {data.matrix.length > 0 && (
-              <TableSearch view={matrixView} placeholder={tr('جستجوی نام عضو…')} />
-            )}
-          </div>
-          {data.matrix.length === 0 ? (
-            <EmptyState title={t("عضوی نیست")} />
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("عضو")}</TableHead>
-                    {data.order.map((d) => <TableHead key={d}>{tr(WEEKDAYS[d] ?? '')}</TableHead>)}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {matrixView.rows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell className="whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5">
-                          {/* ⚠️ حضورِ خاموش ← بی‌نقطه، نه نقطهٔ خاکستریِ گمراه‌کننده. */}
-                          {row.presence && <PresenceDot state={row.presence} />}
-                          <Thumb
-                            id={row.id}
-                            title={row.name}
-                            fileId={row.avatarFileId}
-                            size={22}
-                            className="rounded-full"
-                          />
-                          {row.name}
-                        </span>
-                        {/* ⚠️ «برنامه نداده» با «هیچ روزی آزاد نیست» فرق دارد. */}
-                        {!row.hasSchedule && (
-                          <span className="ms-2 text-xs text-muted-foreground">{t("برنامه نداده")}</span>
-                        )}
-                      </TableCell>
-                      {data.order.map((d) => {
-                        const slots = row.days[d];
-                        return (
-                          <TableCell key={d} className="whitespace-nowrap text-xs">
-                            {slots === undefined ? (
-                              <span className="text-muted-foreground">—</span>
-                            ) : (
-                              <span title={formatSlots(slots, tr)}>{slotsSpan(slots)}</span>
-                            )}
-                          </TableCell>
-                        );
-                      })}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          <TablePager view={matrixView} />
-        </section>
-      )}
+      {/*
+        ⚠️ ماتریسِ تیم از اینجا به صفحهٔ مستقلِ /availability رفت.
+        این تب دادهٔ **خودِ کاربر** است — همان تقسیمی که نسخهٔ قبلی دارد:
+        عضو در داشبوردِ خودش ثبت می‌کند، مدیر صفحهٔ جدا دارد. یک ماتریس در
+        دو جا یعنی دو رفتار که با هم از هم دور می‌شوند.
+      */}
     </div>
   );
 }

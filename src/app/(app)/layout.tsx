@@ -15,6 +15,7 @@ import { listNotifications } from '@/server/notifications/service';
 import { TelegramNudge } from '@/components/telegram-nudge';
 import { shouldShowTelegramNudge } from './_actions/telegram-nudge';
 import { hasTeamScope } from '@/server/team/service';
+import { hasTeamAvailability } from '@/server/availability/service';
 import { NotificationBell } from '@/components/notification-bell';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { t } from '@/i18n/server';
@@ -128,6 +129,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (await hasTeamScope(actor)) {
     items.push({ href: '/team', label: t("تیمِ من"), icon: 'team', group: 'operations' });
+  }
+
+  /**
+   * «در دسترس بودن اعضا» — مثلِ «تیمِ من» مجوزِ ثابت ندارد.
+   *
+   * ⚠️ دو در ورودی دارد: `members.view` (کلِ تیم) یا مدیریتِ دفتر (تیمِ خودش).
+   * با گاردِ مجوزیِ تنها، **مدیرِ دفتر** هرگز این را نمی‌دید — همان نقشی که
+   * بیش از همه به «امروز چه کسی سرِ کار است» نیاز دارد و در نسخهٔ قبلی
+   * مسیرِ اختصاصیِ خودش را داشت.
+   */
+  if (await hasTeamAvailability(actor)) {
+    items.push({
+      href: '/availability', label: t("در دسترس بودن"), icon: 'availability', group: 'data',
+    });
   }
 
   const primaryRole = actor.roles[0];

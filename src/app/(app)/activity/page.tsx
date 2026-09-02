@@ -3,7 +3,7 @@ import { currentActor } from '@/server/auth';
 import { actionLabel, listAbsences, listActivity } from '@/server/activity/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
-import { getWeek, teamMatrix } from '@/server/availability/service';
+import { getWeek } from '@/server/availability/service';
 import {
   leaveTargets, listAbsences as listMyAbsences,
 } from '@/server/availability/absence-service';
@@ -68,8 +68,6 @@ export default async function ActivityPage({
     listMyAbsences(actor, actor.id),
     leaveTargets(actor),
   ]);
-  const canSeeTeam = can(actor, 'members.view');
-  const matrix = canSeeTeam ? await teamMatrix(actor) : [];
 
   // Map به شیء تبدیل می‌شود تا از مرزِ سرور/کلاینت رد شود.
   const toRecord = (m: Map<number, Slot[]>) => Object.fromEntries(m) as Record<number, Slot[]>;
@@ -96,8 +94,6 @@ export default async function ActivityPage({
         availability={{
           mine: toRecord(mineMap),
           order: weekOrder(system.weekStart),
-          matrix: matrix.map((m) => ({ ...m, days: toRecord(m.days) })),
-          canSeeTeam,
         }}
       />
     </main>

@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  FolderKanban, Users, Wallet, BarChart3, CalendarDays, MessageSquare, LayoutDashboard,
-  Building2, Settings, Activity, Clock, UsersRound, UserCircle, ListChecks,
+  FolderKanban, Users, Wallet, BarChart3, CalendarCheck, CalendarDays, MessageSquare,
+  LayoutDashboard, Building2, Settings, Activity, Clock, UsersRound, UserCircle, ListChecks,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge';
 export type NavIcon =
   | 'overview' | 'projects' | 'members' | 'clients'
   | 'finance' | 'reports' | 'meetings' | 'messages' | 'settings' | 'activity' | 'hours' | 'team'
-  | 'profile' | 'tasks';
+  | 'profile' | 'tasks' | 'availability';
 
 export interface NavItem {
   href: string;
@@ -54,6 +54,7 @@ const ICONS: Record<NavIcon, typeof FolderKanban> = {
   reports: BarChart3,
   meetings: CalendarDays,
   messages: MessageSquare,
+  availability: CalendarCheck,
 };
 
 const GROUP_LABELS = {

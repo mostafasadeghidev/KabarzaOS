@@ -70,6 +70,41 @@ export async function markOffline(actor: Actor): Promise<void> {
     .where(eq(users.id, actor.id));
 }
 
+/**
+ * مثلِ `presenceFor`، ولی **زمانِ آخرین دیده‌شدن** را هم برمی‌گرداند.
+ *
+ * ⚠️ پنلِ «آنلاین اکنون» به این زمان نیاز دارد تا «۳ دقیقه پیش» را بنویسد و
+ * داخلِ هر گروه تازه‌ترها را بالا بیاورد. `presenceFor` عمداً فقط حالت
+ * برمی‌گرداند، چون مصرف‌کننده‌اش — نقطهٔ رنگی — زمان نمی‌خواهد.
+ */
+export async function presenceSeenFor(
+  userIds: number[],
+): Promise<Map<number, { state: PresenceState; seen: Date | null }>> {
+  if (userIds.length === 0) return new Map();
+
+  const [rows, config] = await Promise.all([
+    db
+      .select({ id: users.id, lastSeenAt: users.lastSeenAt, lastActiveAt: users.lastActiveAt })
+      .from(users)
+      .where(inArray(users.id, userIds)),
+    presenceConfig(),
+  ]);
+
+  const now = new Date();
+  return new Map(rows.map((r) => [
+    r.id,
+    {
+      state: deriveState({
+        lastSeen: r.lastSeenAt,
+        lastActive: r.lastActiveAt,
+        now,
+        config,
+      }),
+      seen: r.lastSeenAt,
+    },
+  ]));
+}
+
 /** حالتِ حضورِ چند کاربر — یک کوئری، نه یکی به‌ازای هر نفر (R-PERF-01). */
 export async function presenceFor(userIds: number[]): Promise<Map<number, PresenceState>> {
   if (userIds.length === 0) return new Map();
