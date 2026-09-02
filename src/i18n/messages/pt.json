@@ -49,6 +49,7 @@
   "{n} در انتظارِ بررسی": "{n} a aguardar revisão",
   "{n} دقیقه قبل": "{n} minutos antes",
   "{n} دقیقه پیش": "há {n} min",
+  "{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.": "{n} linha(s) não têm taxa para a moeda base e contam como zero aqui. Adicione a taxa em Configurações.",
   "{n} رسید": "{n} recibos",
   "{n} روز تأخیر": "{n} dias de atraso",
   "{n} روز مانده": "faltam {n} dias",

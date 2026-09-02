@@ -2,6 +2,27 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.28.0]
+
+### Fixed — money
+
+- **A project with unsettled client or member money could be deleted.** The delete guard's "locked" state was unreachable because its caller hard-coded both balances to `false`. Balances now come from the data (`repo.openBalances`): the client's paid-vs-due against price plus billable expenses, and each member's paid-vs-agreed, on the settled amount where one exists. "Open" means some paid and some still due; a price-less project with a deposit is not locked, nor is a fully paid one. Two older tests deleted projects carrying a real deposit and only passed because the guard was off; they use fully-paid fixtures now, and two new tests lock from real data.
+- **Paid piecework rows stayed "requested" forever.** Paying a request computed which unit entry it closes and never wrote it, so the row was counted unpaid in reports, the member stayed "payable", and the double-pay guard was moot. The row is marked paid and linked to the ledger entry, with a DB test.
+- **The primary client was the lowest user id, not the oldest assignment**, so QA client tasks and invoices could go to the wrong person. `repo.primaryClientId()` orders by the assignment row.
+- **Ledger tags were never stored.** The form sent them and the filter queried them; nothing in between wrote a row, so the category filter and categorised expense reporting were dead. Tags are many-to-many now — written on create, replaced on edit, removed on delete, returned on the list row.
+- **Editing a ledger row silently changed balances.** The list row never carried the payer/receiver links, the settled amount or the billable flag, so the edit form fell back to blanks and the payment mirror was rebuilt from them. The row carries every field the form needs and the form prefills all of them; a test saves an unchanged absorbed cost and checks the mirror still says absorbed.
+- **A missing exchange rate produced rows with an account amount of zero.** The domain reported `missingRates` and the service ignored it. It is an error now with a clear message — unless the user entered the actual amount received, which needs no rate.
+- **A second same-day settlement of the same currency pair threw** after the ledger row and mirror were written, because the learned-rate insert ran under a unique index with no conflict handling. It upserts.
+- **Reports summed raw amounts across currencies.** Project prices, agreed amounts and unit entries are converted per row into the base currency with the configured rates; rows without a rate count as zero and the overall report says how many were excluded, rather than taking them 1:1.
+- **A multi-client project was billed to every client**, doubling receivables; the plugin bills only the primary (oldest-assigned) client and shows the others the project as shared with nothing due. Both the receivables report and the client page follow that now.
+- **Member payouts were counted as operating expenses.** Their ledger rows are recognised through the payment mirror and excluded from the expenses report, as the plugin does.
+
+### Corrected from 1.27.4
+
+- The client payment filter and the new delete guard used the mirror's direction names backwards: in this codebase `project_expense` is the *billable* expense and `project_cost` the absorbed one. Both now read the right one.
+
+---
+
 ## [1.27.4]
 
 ### Fixed — access

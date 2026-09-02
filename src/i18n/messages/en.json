@@ -49,6 +49,7 @@
   "{n} در انتظارِ بررسی": "{n} awaiting review",
   "{n} دقیقه قبل": "{n} minutes before",
   "{n} دقیقه پیش": "{n} min ago",
+  "{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.": "{n} row(s) have no rate to the base currency and count as zero here. Add the rate in Settings.",
   "{n} رسید": "{n} receipts",
   "{n} روز تأخیر": "{n} days overdue",
   "{n} روز مانده": "{n} days left",

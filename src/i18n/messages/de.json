@@ -49,6 +49,7 @@
   "{n} در انتظارِ بررسی": "{n} zur Prüfung",
   "{n} دقیقه قبل": "{n} Minuten vorher",
   "{n} دقیقه پیش": "vor {n} Min.",
+  "{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.": "{n} Zeile(n) haben keinen Kurs zur Basiswährung und zählen hier als null. Kurs in den Einstellungen eintragen.",
   "{n} رسید": "{n} Belege",
   "{n} روز تأخیر": "{n} Tage überfällig",
   "{n} روز مانده": "noch {n} Tage",

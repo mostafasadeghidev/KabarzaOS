@@ -37,6 +37,8 @@ export interface ReportsData {
     memberPaid: string;
     memberDebt: string;
     minutes: number;
+    /** ردیف‌هایی که نرخِ تبدیل نداشتند و صفر شمرده شدند. */
+    rateMissing: number;
   };
   members: Array<{
     id: number; name: string; agreed: string; paid: string;
@@ -226,6 +228,12 @@ export function ReportsView({
       {tab === 'overall' && (
         <div className="grid gap-3">
         {data.isOwner && <RecomputeEurButton />}
+        {/* ⚠️ نبودِ نرخ بی‌صدا ۱ نمی‌شود (R-MONEY-06) — ولی بی‌صدا هم نمی‌ماند. */}
+        {data.overall.rateMissing > 0 && (
+          <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+            {tr('{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.', { n: data.overall.rateMissing })}
+          </p>
+        )}
         <div className="grid gap-3 @3xl/main:grid-cols-3 @xl/main:grid-cols-2">
           {cards.map((c) => (
             <Card key={c.label}>
