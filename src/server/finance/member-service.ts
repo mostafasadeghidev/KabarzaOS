@@ -19,7 +19,7 @@ import {
  */
 
 export class MemberMoneyError extends Error {
-  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen') {
+  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen' | 'not_member') {
     super(reason);
     this.name = 'MemberMoneyError';
   }
@@ -152,6 +152,12 @@ export async function addUnitEntry(
     .orderBy(projectMembers.id)
     .limit(1);
 
+  /**
+   * ⚠️ فقط برای **عضوِ پروژه** — پورتِ `handle_add_unit` (`class-frontend.php:1174-1185`).
+   * پیش از این شناسهٔ مدیر بدونِ بررسیِ عضویت پذیرفته می‌شد: ردیفی برای
+   * غیرعضو با مبلغِ صفر ثبت می‌شد (نرخی نداشت) و بی‌صدا در گزارش‌ها می‌نشست.
+   */
+  if (membership.length === 0) throw new MemberMoneyError('not_member');
   const rate = membership[0]?.unitRate ?? null;
   const currencyId = membership[0]?.currencyId ?? project.currencyId;
 

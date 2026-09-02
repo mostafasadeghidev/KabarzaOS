@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNotNull, lte } from 'drizzle-orm';
+import { isNull, and, asc, desc, eq, gte, inArray, isNotNull, lte } from 'drizzle-orm';
 import { presenceFor, presenceSeenFor } from '@/server/people/presence-service';
 import { avatarsFor } from '@/server/files/service';
 import { getSystemConfig } from '@/server/settings/system-service';
@@ -85,10 +85,16 @@ async function visiblePeople(actor: Actor): Promise<{
     .selectDistinct({ id: users.id, name: users.name })
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    /**
+     * ⚠️ فقط اعضای **فعال** — پورتِ `active_by_role()`. بدونِ این، عضوِ قطع‌شده،
+     * فقط‌مالی و حذف‌شده در ماتریس، شمارنده‌ها، «بدون برنامه» و تایمرها می‌آمدند.
+     */
     .where(global
-      ? eq(userRoles.role, 'member')
+      ? and(eq(userRoles.role, 'member'), eq(users.memberState, 'active'), isNull(users.deletedAt))
       : and(
         eq(userRoles.role, 'member'),
+        eq(users.memberState, 'active'),
+        isNull(users.deletedAt),
         inArray(
           users.id,
           db.select({ id: userOffices.userId }).from(userOffices)

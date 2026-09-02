@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { MultiSelect } from '@/components/ui/multi-select';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -205,6 +206,23 @@ export function TaskDialog({
                       ))}
                     </select>
                   </div>
+
+                  {/*
+                    ⚠️ نقش‌ها در ویرایش — پیش از این فرمِ ویرایش انتخابگرِ نقش نداشت و
+                    سرور هم نمی‌نوشتشان؛ نقشِ تسک بعد از ساخت غیرقابلِ تغییر بود.
+                    نقش‌های فعلی از detail.roles پیش‌انتخاب می‌شوند.
+                  */}
+                  {options.roles.length > 0 && (
+                    <div className="grid gap-1.5">
+                      <Label>{t("تخصیص به نقش")}</Label>
+                      <MultiSelect
+                        name="roleTagIds"
+                        options={options.roles.map((r) => ({ id: r.id, label: r.name }))}
+                        defaultSelected={data.detail.roles.map((r) => r.roleTagId)}
+                        placeholder={t("نقش‌ها…")}
+                      />
+                    </div>
+                  )}
 
                   <div className="grid gap-1.5">
                     <Label htmlFor="t-priority">{t("اولویت…")}</Label>

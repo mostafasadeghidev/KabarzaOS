@@ -46,10 +46,17 @@ export interface PresenceConfig {
 
 /** پیکربندیِ امن — هر مقدارِ خارج از فهرست به پیش‌فرض برمی‌گردد. */
 export function normalizeConfig(input: Partial<PresenceConfig>): PresenceConfig {
+  const idleAfter = pick(Number(input.idleAfter), IDLE_CHOICES, PRESENCE_DEFAULTS.idleAfter);
+  const offlinePicked = pick(Number(input.offlineAfter), OFFLINE_CHOICES, PRESENCE_DEFAULTS.offlineAfter);
   return {
     ping: pick(Number(input.ping), PING_CHOICES, PRESENCE_DEFAULTS.ping),
-    idleAfter: pick(Number(input.idleAfter), IDLE_CHOICES, PRESENCE_DEFAULTS.idleAfter),
-    offlineAfter: pick(Number(input.offlineAfter), OFFLINE_CHOICES, PRESENCE_DEFAULTS.offlineAfter),
+    idleAfter,
+    /**
+     * ⚠️ آفلاین هرگز از بی‌کاری کوتاه‌تر نیست — پورتِ `offline_after()` ِ افزونه
+     * (`class-presence.php:76-79`). بدونِ این، idle=۳۰۰ با offline=۹۰ ذخیره می‌شد و
+     * تبِ پس‌زمینه پیش از «بی‌کار» شدن «آفلاین» می‌شد: سه حالت ناسازگار.
+     */
+    offlineAfter: Math.max(offlinePicked, idleAfter),
   };
 }
 

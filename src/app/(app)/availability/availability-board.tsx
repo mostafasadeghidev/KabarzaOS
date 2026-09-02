@@ -73,7 +73,8 @@ function PersonName({ row }: { row: BoardRow }) {
       {/* ⚠️ حضورِ خاموش ← بی‌نقطه، نه نقطهٔ خاکستریِ گمراه‌کننده. */}
       {row.presence && <PresenceDot state={row.presence} />}
       <Thumb id={row.id} title={row.name} fileId={row.avatarFileId} size={22} className="rounded-full" />
-      <Link href={`/members/${row.id}`} className="hover:underline">{row.name}</Link>
+      {/* ⚠️ /members/{id} وجود ندارد؛ پروفایلِ عضو در گزارش‌هاست — همان لینکِ کارتِ افراد. */}
+      <Link href={`/reports/member/${row.id}`} className="hover:underline">{row.name}</Link>
     </span>
   );
 }

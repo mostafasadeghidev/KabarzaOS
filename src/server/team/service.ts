@@ -251,10 +251,48 @@ export async function teamComments(actor: Actor) {
     .leftJoin(users, eq(users.id, comments.userId))
     .where(and(
       inArray(comments.projectId, scope.projectIds),
-      eq(comments.status, 'open'),
+      // ⚠️ فقط رشته‌های **کامنت** و فقط بازها — کامنت با `needs_review` نوشته
+      // می‌شود؛ با `open` این فهرست همیشه خالی بود.
+      eq(comments.type, 'comment'),
+      eq(comments.status, 'needs_review'),
     ))
     .orderBy(desc(comments.id))
     .limit(200);
+}
+
+/**
+ * همهٔ تسک‌های **نیازمندِ بررسی** در دفاترِ تحتِ مدیریت — بدونِ صفحه‌بندی و
+ * بدونِ فیلترِ تبِ تسک‌ها.
+ *
+ * ⚠️ پیش از این فهرستِ بازبینی از صفحهٔ فعلیِ فیلترِ فعلیِ تبِ تسک‌ها ساخته
+ * می‌شد: با هر فیلتر یا صفحه عوض می‌شد و هیچ‌وقت کامل نبود.
+ */
+export async function teamReviewTasks(actor: Actor) {
+  const scope = await teamScope(actor);
+  if (scope.projectIds.length === 0) return [];
+  const assignee = users;
+  return db
+    .select({
+      id: tasks.id,
+      title: tasks.title,
+      projectId: tasks.projectId,
+      projectTitle: projects.title,
+      dueDate: tasks.dueDate,
+      assigneeName: assignee.name,
+      statusName: tagName(await currentLocale()),
+      isReview: tags.isReview,
+    })
+    .from(tasks)
+    .innerJoin(projects, eq(projects.id, tasks.projectId))
+    .leftJoin(assignee, eq(assignee.id, tasks.assignedTo))
+    .innerJoin(tags, eq(tags.id, tasks.statusTagId))
+    .where(and(
+      inArray(tasks.projectId, scope.projectIds),
+      isNull(tasks.deletedAt),
+      eq(tasks.isPrivate, false),
+      eq(tags.isReview, true),
+    ))
+    .orderBy(desc(tasks.id));
 }
 
 /** اعضای تیم با جمعِ ساعتِ کاریِ بازه. */

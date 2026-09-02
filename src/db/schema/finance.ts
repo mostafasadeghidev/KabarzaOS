@@ -1,4 +1,4 @@
-import { boolean, index, integer, text, date, pgTable, check, bigint } from 'drizzle-orm/pg-core';
+import { uniqueIndex, boolean, index, integer, text, date, pgTable, check, bigint } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { pk, fk, money, rate, ts, stamps, scope } from './_shared';
 import { currencies, offices, vendors } from './base';
@@ -32,7 +32,10 @@ export const accountUsers = pgTable('account_users', {
   accountId: fk('account_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
   userId: fk('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   ...stamps,
-});
+}, (t) => [
+  // یک تخصیص به‌ازای هر کاربر در هر حساب (مهاجرت ۰۰۲۲).
+  uniqueIndex('account_users_account_user_uq').on(t.accountId, t.userId),
+]);
 
 export const DIRECTIONS = ['in', 'out'] as const;
 export const LEDGER_STATUSES = ['draft', 'confirmed'] as const;

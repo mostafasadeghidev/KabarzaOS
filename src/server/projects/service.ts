@@ -1,6 +1,6 @@
 import { tagName } from '@/db/tag-name';
 import { currentLocale, getT } from '@/i18n/server';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { notInArray, and, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   attachments, comments, ledger, paymentRequests, projectClients, projectMembers,
@@ -462,7 +462,14 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
       assigneeName: t.assigneeName === null || t.assignedTo === null
         ? t.assigneeName
         : nameForViewer(t.assignedTo, t.assigneeName, viewer),
-      roles: rolesByTask.get(t.id) ?? [],
+      // ⚠️ نامِ صاحبِ نقش هم ماسک می‌شود — کارفرما نامِ واقعیِ عضوی که نقش را
+      // ادعا کرده می‌دید، در حالی که نامِ همان عضو در جدولِ اعضا ماسک بود.
+      roles: (rolesByTask.get(t.id) ?? []).map((r) => ({
+        ...r,
+        claimedByName: r.claimedBy === null || r.claimedByName === null
+          ? r.claimedByName
+          : nameForViewer(r.claimedBy, r.claimedByName, viewer),
+      })),
     })),
     canManage,
     viewer,
@@ -1170,9 +1177,11 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
     ).values()],
     assignees: assignableToPeople(viewer)
       ? assigneeOptions(
-        members.map((m) => ({ userId: m.userId, name: m.userName, roleName: m.roleName })),
+        // ⚠️ ماسکِ نام اینجا هم لازم است: عضوِ خالص نامِ واقعیِ کارفرما را در
+        // فهرستِ انتساب می‌دید — همان یک جایی که قاعدهٔ ماسک برایش نوشته شده.
+        members.map((m) => ({ userId: m.userId, name: nameForViewer(m.userId, m.userName, viewer), roleName: m.roleName })),
         [...clientIds].map((id) => ({
-          userId: id, name: clientNames.get(id) ?? String(id), isClient: true,
+          userId: id, name: nameForViewer(id, clientNames.get(id) ?? String(id), viewer), isClient: true,
         })),
         { inactiveUserIds: inactive, currentAssignee },
         await getT(),
@@ -1355,6 +1364,25 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
     updatedAt: new Date(),
   }).where(eq(tasks.id, taskId));
 
+  /**
+   * نقش‌های تسک — پورتِ `Tasks::set_roles()`: مجموعه جایگزین می‌شود ولی
+   * `claimed_by` ِ نقش‌هایی که می‌مانند حفظ می‌شود (فقط تازه‌ها درج و رفته‌ها
+   * حذف می‌شوند). تا پیش از این ویرایش هرگز `task_roles` را نمی‌نوشت: نقشِ
+   * تسک بعد از ساخت غیرقابلِ تغییر بود و هر تیکِ فرمِ ویرایش بی‌صدا می‌افتاد.
+   * ⚠️ فقط مدیر — نقش‌دهی تصمیمِ مدیریتی است، مثلِ مسئولِ مستقیم.
+   */
+  if (canManage) {
+    const next = assignment.roleTagIds;
+    await db.transaction(async (tx) => {
+      if (next.length === 0) {
+        await tx.delete(taskRoles).where(eq(taskRoles.taskId, taskId));
+      } else {
+        await tx.delete(taskRoles).where(and(eq(taskRoles.taskId, taskId), notInArray(taskRoles.roleTagId, next)));
+        await tx.insert(taskRoles).values(next.map((roleTagId) => ({ taskId, roleTagId }))).onConflictDoNothing();
+      }
+    });
+  }
+
   await audit(actor, 'task.update', before.projectId, before, input);
 
   /**
@@ -1464,7 +1492,7 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
       updatedByName: mask(task.updatedBy, task.updatedByName),
     },
     notes: notes.map((n) => ({ ...n, userName: mask(n.userId, n.userName) })),
-    roles,
+    roles: roles.map((r) => ({ ...r, claimedByName: mask(r.claimedBy, r.claimedByName) })),
     canManage,
   };
 }
@@ -1859,8 +1887,14 @@ export async function submitBid(
     ));
 
   if (existing[0]) {
+    /**
+     * ⚠️ ثبتِ دوباره = پیشنهادِ تازه: وضعیت به «در انتظار» برمی‌گردد — پورتِ
+     * `Bids::submit()`. پیش از این فقط مبلغ و توضیح عوض می‌شد و پیشنهاددهنده‌ای
+     * که پس گرفته بود، «پس‌گرفته» می‌ماند: نامرئی برای مدیر، ولی فرم می‌گفت
+     * «ثبت شد».
+     */
     await db.update(tenderBids)
-      .set({ amount: input.amount, note: input.note.slice(0, 500), updatedAt: new Date() })
+      .set({ amount: input.amount, note: input.note.slice(0, 500), status: 'pending', updatedAt: new Date() })
       .where(eq(tenderBids.id, existing[0].id));
     await audit(actor, 'bid.update', existing[0].id, null, input);
     return existing[0].id;

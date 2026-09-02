@@ -343,12 +343,19 @@ async function writeTags(tx: Tx, userId: number, tagIds: number[]) {
   );
 }
 
+/**
+ * ⚠️ مدیریت جداست از عضویت — می‌شود دفتری را گرداند بی‌آنکه عضوش بود (همان
+ * چیزی که فرم قول می‌دهد). نسخهٔ قبلیِ این تابع فقط برای `officeIds` ردیف
+ * می‌ساخت، پس دفترِ تحتِ مدیریتی که عضوش نبودی بی‌صدا می‌افتاد: «مدیرِ تیم»
+ * بعد از ذخیره ناپدید می‌شد.
+ */
 async function writeOffices(tx: Tx, userId: number, officeIds: number[], managedIds: number[]) {
   await tx.delete(userOffices).where(eq(userOffices.userId, userId));
-  if (officeIds.length === 0) return;
   const managed = new Set(managedIds);
+  const all = [...new Set([...officeIds, ...managedIds])];
+  if (all.length === 0) return;
   await tx.insert(userOffices).values(
-    officeIds.map((officeId) => ({ userId, officeId, manages: managed.has(officeId) })),
+    all.map((officeId) => ({ userId, officeId, manages: managed.has(officeId) })),
   );
 }
 

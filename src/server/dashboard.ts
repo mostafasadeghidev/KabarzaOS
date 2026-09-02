@@ -1,4 +1,5 @@
 import { and, between, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { getSystemConfig } from '@/server/settings/system-service';
 import { db } from '@/db/client';
 import {
   projects, tasks, tags, projectMembers, users, timelogs, comments,
@@ -26,11 +27,18 @@ export interface StatusSlice { status: string; count: number }
 export interface MemberHours { name: string; hours: number }
 export interface WeeklyPoint { label: string; hours: number }
 
-/** بازهٔ هفتهٔ جاری و هفتهٔ قبل (شنبه تا جمعه). */
-function weekRanges() {
+/**
+ * بازهٔ هفتهٔ جاری و هفتهٔ قبل — از روزِ شروعِ هفتهٔ **تنظیمات**.
+ * ⚠️ پیش از این شنبه هاردکد بود و با نمای «در دسترس بودن» که تنظیم را
+ * رعایت می‌کند، دو هفتهٔ متفاوت گزارش می‌شد. شاخصِ ایرانی: ۰ = شنبه.
+ */
+async function weekRanges() {
+  const { weekStart } = await getSystemConfig();
+  const start0 = weekStart >= 0 && weekStart <= 6 ? weekStart : 0;
   const now = new Date();
-  const sinceSaturday = (now.getUTCDay() + 1) % 7;
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - sinceSaturday));
+  const todayIdx = (now.getUTCDay() + 1) % 7; // ایرانی: شنبه = ۰
+  const sinceStart = (todayIdx - start0 + 7) % 7;
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - sinceStart));
   const iso = (d: Date) => d.toISOString().slice(0, 10);
   const shift = (d: Date, days: number) => new Date(d.getTime() + days * 86400000);
   return {
@@ -51,7 +59,7 @@ export async function getDashboard(actor: Actor) {
    */
   const t = await getT();
   const scopes = visibleScopes(actor);
-  const week = weekRanges();
+  const week = await weekRanges();
   const today = new Date().toISOString().slice(0, 10);
 
   const projectRows = await db
@@ -90,7 +98,8 @@ export async function getDashboard(actor: Actor) {
     one(db.select({ n }).from(tasks).leftJoin(tags, eq(tags.id, tasks.statusTagId))
       .where(and(inProjects, isNull(tasks.deletedAt), eq(tags.isReview, true)))),
     one(db.select({ n }).from(comments)
-      .where(and(inComments, eq(comments.type, 'comment'), eq(comments.status, 'open')))),
+      // ⚠️ کامنت با `needs_review` نوشته می‌شود، نه `open` — با `open` این کارت همیشه صفر بود.
+      .where(and(inComments, eq(comments.type, 'comment'), eq(comments.status, 'needs_review')))),
     one(db.select({ n }).from(tenderBids).where(eq(tenderBids.status, 'pending'))),
   ]);
 

@@ -1,4 +1,4 @@
-import { boolean, index, integer, text, date, pgTable, check } from 'drizzle-orm/pg-core';
+import { uniqueIndex, boolean, index, integer, text, date, pgTable, check } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { pk, fk, ts, stamps, scope } from './_shared';
 import { offices } from './base';
@@ -31,7 +31,11 @@ export const threadUsers = pgTable('thread_users', {
   /** R-MSG-07 — رسیدِ خواندن. */
   lastReadMessageId: fk('last_read_message_id'),
   ...stamps,
-}, (t) => [index('thread_users_user_ix').on(t.userId)]);
+}, (t) => [
+  index('thread_users_user_ix').on(t.userId),
+  // ⚠️ یک نفر یک بار در گفتگو — تکراری یعنی ردیف و شمارشِ نخواندهٔ دوبل (مهاجرت ۰۰۲۲).
+  uniqueIndex('thread_users_thread_user_uq').on(t.threadId, t.userId),
+]);
 
 export const messages = pgTable('messages', {
   id: pk(),
@@ -69,7 +73,10 @@ export const meetingAttendees = pgTable('meeting_attendees', {
   meetingId: fk('meeting_id').notNull().references(() => meetings.id, { onDelete: 'cascade' }),
   userId: fk('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   ...stamps,
-});
+}, (t) => [
+  // یک دعوت به‌ازای هر نفر در هر جلسه (مهاجرت ۰۰۲۲).
+  uniqueIndex('meeting_attendees_meeting_user_uq').on(t.meetingId, t.userId),
+]);
 
 /** R-MEET-05/07 — چند فاصلهٔ زمانی؛ ارسالِ هر کدام یک‌بار. */
 export const reminders = pgTable('reminders', {

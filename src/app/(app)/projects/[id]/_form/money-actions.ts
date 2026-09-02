@@ -22,6 +22,7 @@ export interface MoneyState {
 function message(error: unknown): string {
   if (error instanceof MemberMoneyError) {
     if (error.reason === 'quantity_invalid') return 'تعداد باید عددِ صحیحِ دستِ‌کم ۱ باشد.';
+    if (error.reason === 'not_member') return 'این شخص عضوِ این پروژه نیست.';
     if (error.reason === 'not_yours') return 'این ردیف مالِ شما نیست.';
     if (error.reason === 'frozen') return 'پروژه بایگانی شده و تغییر نمی‌پذیرد.';
     return REQUEST_MESSAGES[error.reason] ?? 'انجام نشد.';

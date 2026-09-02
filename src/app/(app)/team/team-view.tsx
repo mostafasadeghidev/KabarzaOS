@@ -23,6 +23,11 @@ export interface TeamData {
     dueDate: string | null; assigneeName: string | null;
     statusName: string | null; isReview: boolean | null;
   }>;
+  /** همهٔ تسک‌های نیازمندِ بررسی — مستقل از فیلتر و صفحهٔ تبِ تسک‌ها. */
+  reviewTasks: Array<{
+    id: number; title: string; projectId: number; projectTitle: string | null;
+    dueDate: string | null; assigneeName: string | null; statusName: string | null;
+  }>;
   taskOptions: TaskFilterOptions;
   taskPaging: TaskPaging;
   comments: Array<{
@@ -48,7 +53,7 @@ export function TeamView({ data }: { data: TeamData }) {
   const tr = useT();
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('members');
 
-  const review = data.tasks.filter((t) => t.isReview);
+  const review = data.reviewTasks;
 
   return (
     <div className="grid gap-4">

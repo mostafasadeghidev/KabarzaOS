@@ -359,6 +359,8 @@ export async function updateLog(
   // ⚠️ مدیر هم ثبتِ دیگری را ویرایش نمی‌کند — این عددِ حقوقِ اوست.
   if (row.userId !== actor.id) throw new ForbiddenError('timelog.not_yours');
   if (!isEditable(row.createdAt, now)) throw new ForbiddenError('timelog.window_closed');
+  // ⚠️ همان قفلی که ثبت، حذف و تایمر دارند — ویرایش نداشت (`block_if_frozen`).
+  if (row.projectId) await assertNotFrozen(row.projectId);
 
   await db.update(timelogs).set({
     minutes: input.minutes,

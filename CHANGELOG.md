@@ -2,6 +2,29 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.28.1]
+
+### Fixed — data correctness
+
+- **The owner's "comments needing review" card was always 0**, and the team page's comments list always empty: both counted status `open`, while comments are written as `needs_review`. Both read the real status now, and the team list is limited to comment threads.
+- **The dashboard week started on Saturday regardless of the setting.** It now follows the configured start of week, like the availability views.
+- **The team page's "needs review" list came from the current page of the current task filter** — it changed with filters and paging and was never complete. It is its own query now, across every office project.
+- **A task's roles could never change after creation.** Editing resolved roles and then updated only the `tasks` row; the edit form had no role picker at all. Edit now replaces the role set the way the plugin does — keeping `claimed_by` on roles that survive — and the form shows the picker with the current roles preselected.
+- **Re-submitting a withdrawn tender bid left it withdrawn.** The bidder saw "your bid was recorded" while staying invisible to the manager. Re-submitting returns the bid to pending.
+- **A manager could record piecework for someone who is not on the project**, producing a row with amount 0. It is refused with a clear message.
+- **Editing logged hours skipped the frozen-project lock** that add, delete and the timer already enforce.
+- **A managed office was dropped on save unless the person was also a member of it** — the form promised the opposite, and "team manager" access vanished after an edit. Managed offices are kept independently of membership.
+- **The availability page listed locked, finance-only and deleted members** in the matrix, counts, timers and the "no schedule" list; it now shows active members only. Member names linked to a route that does not exist; they link to the member's report page.
+- **The presence "offline" threshold could be shorter than "idle"**, making the three states inconsistent; offline is clamped to at least idle.
+- **Clients saw real member names in role chips, and members saw the client's real name in the task assignment list.** Both go through the viewer-name mask now.
+
+### Migration 0022
+
+- **"Cancelled" (and "Completed") were seeded as open on databases that predate 0019.** 0019 adopts a pre-existing status row instead of inserting its own, and the adopted row kept `is_closed = false` — so cancelled projects counted as open everywhere `isOpenProject()` is used. 0022 sets `is_closed` for those groups where it is still wrong, and restores the plugin's colours where the seed colour was never changed.
+- **Three unique keys the plugin has were missing:** thread participants, meeting attendees and account users. Duplicates meant double inbox rows and unread counts, and double invites. 0022 removes duplicates (keeping the oldest) and adds the indexes; the schema declares them.
+
+---
+
 ## [1.28.0]
 
 ### Fixed — money

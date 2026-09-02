@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import {
-  teamComments, teamMembers, teamProjects, teamTasks, teamTaskCount,
-  taskFilterOptions, TEAM_PER_PAGE,
+  teamComments, teamMembers, teamProjects, teamTasks, teamTaskCount, taskFilterOptions, TEAM_PER_PAGE, teamReviewTasks,
 } from '@/server/team/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import type { RangeKey } from '@/domain/access/office-scope';
@@ -51,13 +50,14 @@ export default async function TeamPage({
   };
 
   try {
-    const [projects, tasks, taskTotal, taskOptions, comments, members] = await Promise.all([
+    const [projects, tasks, taskTotal, taskOptions, comments, members, reviewTasks] = await Promise.all([
       teamProjects(actor),
       teamTasks(actor, taskFilter),
       teamTaskCount(actor, taskFilter),
       taskFilterOptions(actor),
       teamComments(actor),
       teamMembers(actor, params),
+      teamReviewTasks(actor),
     ]);
 
     return (
@@ -73,6 +73,7 @@ export default async function TeamPage({
           data={{
             projects,
             tasks,
+            reviewTasks,
             comments,
             taskOptions,
             taskPaging: {
