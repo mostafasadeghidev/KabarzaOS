@@ -19,6 +19,8 @@ import { hasTeamAvailability } from '@/server/availability/service';
 import { NotificationBell } from '@/components/notification-bell';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { t } from '@/i18n/server';
+import { canUseTimesheet, timerState } from '@/server/timelogs/service';
+import { TimerBanner } from '@/components/timer-banner';
 
 /**
  * چیدمانِ اپ — سایدبار + محتوا.
@@ -107,9 +109,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ...(isClient ? ['/projects', '/tasks', '/messages'] : []),
   ]);
 
+  // پورتِ افزونه: «ساعت کاری» برای هر که می‌تواند ساعت بزند (عضو، مالک، مالی، مدیرِ دفتر).
+  const showHours = await canUseTimesheet(actor);
   const items: NavItem[] = NAV
     .filter((item) => {
-      if (item.memberOnly) return isMember;
+      if (item.memberOnly) return showHours;
       if (item.permission) {
         return can(actor, item.permission)
           || (item.orPermissions ?? []).some((p) => can(actor, p))
@@ -146,11 +150,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const primaryRole = actor.roles[0];
-  const [bell, system, unreadMessages, showTgNudge, brand] = await Promise.all([
+  const [bell, system, unreadMessages, showTgNudge, timer, brand] = await Promise.all([
     listNotifications(actor),
     getSystemConfig(),
     unreadMessageCount(actor),
     shouldShowTelegramNudge(actor),
+    // پورتِ `timer_banner()`: تایمرِ روشن/پارک‌شده روی **هر** صفحه دیده می‌شود.
+    showHours ? timerState(actor) : Promise.resolve(null),
     /**
      * ⚠️ `getCompany()` بازیگر نمی‌خواهد و گاردی ندارد — نام و لوگو
      * اطلاعاتِ عمومیِ شرکت‌اند و همان چیزی که روی سربرگِ فاکتور هم می‌آید.
@@ -195,6 +201,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
         {showTgNudge && <TelegramNudge />}
+        {timer && (timer.running || timer.pending) && (
+          <TimerBanner
+            running={timer.running ? { projectTitle: timer.running.projectTitle, minutes: timer.running.minutes } : null}
+            pending={timer.pending ? { projectTitle: timer.pending.projectTitle, minutes: timer.pending.minutes } : null}
+          />
+        )}
         {children}
         {/* صفحه‌ها همان فهرستِ منو است — یعنی همان فیلترِ مجوزِ سمتِ سرور. */}
         <CommandPalette pages={items.map(({ href, label }) => ({ href, label }))} />

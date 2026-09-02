@@ -93,7 +93,7 @@ describe('چرخهٔ تایمر', () => {
     const out = await stopTimer(member, 'طراحیِ صفحه', at('2026-05-01T12:00:00'));
 
     expect(out).toEqual({ parked: false, minutes: 180 });
-    const logs = await myLogs(member);
+    const logs = (await myLogs(member)).rows;
     expect(logs[0]!.minutes).toBe(180);
     expect(logs[0]!.description).toBe('طراحیِ صفحه');
 
@@ -106,7 +106,7 @@ describe('چرخهٔ تایمر', () => {
     const out = await stopTimer(member, '', at('2026-05-01T18:00:00'));
 
     expect(out).toEqual({ parked: true, minutes: 540 });
-    expect(await myLogs(member)).toHaveLength(0);
+    expect((await myLogs(member)).rows).toHaveLength(0);
 
     const state = await timerState(member);
     expect(state.running).toBeNull();
@@ -118,7 +118,7 @@ describe('چرخهٔ تایمر', () => {
     await stopTimer(member, '', at('2026-05-01T18:00:00'));
 
     await confirmPending(member, 240);
-    const logs = await myLogs(member);
+    const logs = (await myLogs(member)).rows;
     expect(logs[0]!.minutes).toBe(240); // نه ۵۴۰
     expect((await timerState(member)).pending).toBeNull();
   });
@@ -137,7 +137,7 @@ describe('چرخهٔ تایمر', () => {
     await stopTimer(member, '', at('2026-05-01T18:00:00'));
 
     await discardPending(member);
-    expect(await myLogs(member)).toHaveLength(0);
+    expect((await myLogs(member)).rows).toHaveLength(0);
     expect((await timerState(member)).pending).toBeNull();
   });
 
@@ -161,7 +161,7 @@ describe('⚠️ ادغامِ ثبتِ یک روز', () => {
     await startTimer(member, projectId, at('2026-05-01T13:00:00'));
     await stopTimer(member, 'بعدازظهر', at('2026-05-01T15:00:00'));
 
-    const logs = await myLogs(member);
+    const logs = (await myLogs(member)).rows;
     expect(logs).toHaveLength(1);
     expect(logs[0]!.minutes).toBe(240);
     expect(logs[0]!.description).toBe('صبح · بعدازظهر');
@@ -170,14 +170,14 @@ describe('⚠️ ادغامِ ثبتِ یک روز', () => {
   it('روزِ دیگر ردیفِ جدا می‌سازد', async () => {
     await addOrMerge(member, { projectId, logDate: '2026-05-01', minutes: 60, description: '' });
     await addOrMerge(member, { projectId, logDate: '2026-05-02', minutes: 60, description: '' });
-    expect(await myLogs(member)).toHaveLength(2);
+    expect((await myLogs(member)).rows).toHaveLength(2);
   });
 
   it('ساعتِ عمومی با ساعتِ پروژه ادغام نمی‌شود', async () => {
     await addOrMerge(member, { projectId, logDate: '2026-05-01', minutes: 60, description: '' });
     await addOrMerge(member, { projectId: null, logDate: '2026-05-01', minutes: 30, description: '' });
 
-    const logs = await myLogs(member);
+    const logs = (await myLogs(member)).rows;
     expect(logs).toHaveLength(2);
     expect(logs.find((l) => l.projectId === null)!.minutes).toBe(30);
   });
@@ -217,25 +217,30 @@ describe('پنجرهٔ ویرایش', () => {
 });
 
 /**
- * ساعت فقط برای اعضای تیم — تصمیمِ محصولی، و واگراییِ آگاهانه از نسخهٔ قبلی
- * (آنجا مالک و حسابدار هم می‌توانستند ساعتِ عمومی بزنند).
+ * پورتِ `can_log_time` / `can_log_general`: مالک و مالی ساعتِ **عمومی** می‌زنند و مالک
+ * روی هر پروژه‌ای؛ عضو روی پروژهٔ خودش. (پیش از این واگراییِ آگاهانه بود؛ به قاعدهٔ افزونه برگشت.)
  */
-describe('ثبتِ ساعت فقط برای عضوِ تیم', () => {
-  it('⚠️ مدیرِ کل ساعت ثبت نمی‌کند — نه عمومی نه پروژه‌ای', async () => {
+describe('حقوقِ ثبتِ ساعت', () => {
+  it('مدیرِ کل ساعتِ عمومی و پروژه‌ای می‌زند', async () => {
     const owner = actorOf(ownerId, ['owner']);
-    expect(canUseTimesheet(owner)).toBe(false);
-    expect(await canLogTime(owner, null)).toBe(false);
-    expect(await canLogTime(owner, projectId)).toBe(false);
+    expect(await canUseTimesheet(owner)).toBe(true);
+    expect(await canLogTime(owner, null)).toBe(true);
+    expect(await canLogTime(owner, projectId)).toBe(true);
+    // بایگانی منجمد است.
+    expect(await canLogTime(owner, archivedId)).toBe(false);
   });
 
-  it('عضوِ تیم هم ساعتِ عمومی می‌زند هم روی پروژهٔ خودش', async () => {
+  it('عضوِ تیم هم ساعتِ عمومی می‌زند هم روی پروژهٔ خودش؛ روی پروژهٔ غریبه نه', async () => {
     const member = actorOf(memberId, ['member']);
-    expect(canUseTimesheet(member)).toBe(true);
+    expect(await canUseTimesheet(member)).toBe(true);
     expect(await canLogTime(member, null)).toBe(true);
+    expect(await canLogTime(actorOf(outsiderId, ['member']), projectId)).toBe(false);
   });
 
-  it('حسابدار هم ساعت ثبت نمی‌کند', async () => {
-    expect(await canLogTime(actorOf(ownerId, ['finance']), null)).toBe(false);
+  it('مالی ساعتِ عمومی می‌زند، روی پروژه نه', async () => {
+    const finance = actorOf(ownerId, ['finance'], ['finance.view']);
+    expect(await canLogTime(finance, null)).toBe(true);
+    expect(await canLogTime(finance, projectId)).toBe(false);
   });
 });
 

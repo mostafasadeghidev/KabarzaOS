@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
+import Link from 'next/link';
 import { Clock, Pause, Play, Trash2 } from 'lucide-react';
 import {
   confirmPendingAction, deleteLogAction, discardPendingAction, logHoursAction,
@@ -9,6 +10,7 @@ import {
   type HoursState,
 } from './_form/actions';
 import { hoursLabel } from '@/domain/timelogs/timer';
+import { hoursQuery } from '@/domain/timelogs/hours-filter';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +39,16 @@ export interface HoursData {
   pending: { projectTitle: string | null; minutes: number; logDate: string } | null;
   projects: Array<{ id: number; title: string }>;
   logs: LogRow[];
-  totals: { week: number; total: number };
+  /** صفحه‌بندیِ ۱۵تایی با حفظِ فیلتر (پورتِ افزونه). */
+  pager: { page: number; pages: number; total: number };
+  /** جمعِ بازه — فقط وقتی فیلتری فعال است. */
+  rangeMinutes: number | null;
+  filter: { from: string; to: string; project: string };
+  /** عنوانِ پروژه‌هایی که رویشان ساعت زده — پیشنهادِ فیلترِ نام. */
+  projectTitles: string[];
+  totals: { week: number; month: number };
+  /** «بدون پروژه (کارِ عمومی)» فقط برای کسی که مجازش است (پورتِ `can_log_general`). */
+  canLogGeneral: boolean;
   today: string;
 }
 
@@ -54,19 +65,23 @@ function Submit({ children, variant }: { children: React.ReactNode; variant?: 'o
   );
 }
 
-/** انتخابگرِ پروژه — مقدارِ خالی یعنی «کارِ عمومی». */
+/** انتخابگرِ پروژه — مقدارِ خالی یعنی «کارِ عمومی» (فقط وقتی مجاز است). */
 function ProjectSelect({
   projects,
   id,
+  allowGeneral,
+  defaultValue = '',
 }: {
   projects: HoursData['projects'];
   id: string;
+  allowGeneral: boolean;
+  defaultValue?: string;
 }) {
   const t = useT();
   return (
-    <select id={id} name="projectId" className={field} defaultValue="">
-      {/* ⚠️ ساعتِ عمومی یک گزینهٔ واقعی است، نه «انتخاب نشده». */}
-      <option value="">{t("کارِ عمومی (بدونِ پروژه)")}</option>
+    <select id={id} name="projectId" className={field} defaultValue={defaultValue} required={!allowGeneral}>
+      {/* ⚠️ ساعتِ عمومی یک گزینهٔ واقعی است، نه «انتخاب نشده» — ولی فقط برای کسی که مجازش است. */}
+      {allowGeneral && <option value="">{t("بدون پروژه (کارِ عمومی)")}</option>}
       {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
     </select>
   );
@@ -105,12 +120,21 @@ export function HoursView({ data }: { data: HoursData }) {
   useActionToast(confirmState);
   const [logState, log] = useActionState(logHoursAction, {});
   useActionToast(logState);
-  const [editState, edit] = useActionState(updateLogAction, {});
-  useActionToast(editState);
   const [editing, setEditing] = useState<LogRow | null>(null);
+  const [editState, edit] = useActionState<HoursState, FormData>(async (prev, form) => {
+    const result = await updateLogAction(prev, form);
+    if (result.message) setEditing(null);
+    return result;
+  }, {});
+  useActionToast(editState);
+
+  const canLogSomething = data.canLogGeneral || data.projects.length > 0;
+  const pageHref = (page: number) => `/hours?${hoursQuery(data.filter, page)}`;
+  const filtered = data.rangeMinutes !== null;
 
   return (
     <div className="grid gap-4">
+      {/* پورتِ آمارِ افزونه: هفتهٔ تقویمی از روزِ شروعِ تنظیمات + این ماه. */}
       <div className="grid gap-3 @2xl/main:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
@@ -120,9 +144,9 @@ export function HoursView({ data }: { data: HoursData }) {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-normal text-muted-foreground">{t("مجموع")}</CardTitle>
+            <CardTitle className="text-xs font-normal text-muted-foreground">{t("این ماه")}</CardTitle>
           </CardHeader>
-          <CardContent><p className="num text-xl font-semibold">{hoursLabel(data.totals.total)}</p></CardContent>
+          <CardContent><p className="num text-xl font-semibold">{hoursLabel(data.totals.month)}</p></CardContent>
         </Card>
       </div>
 
@@ -173,7 +197,7 @@ export function HoursView({ data }: { data: HoursData }) {
       )}
 
       {/* ── تایمرِ در حالِ اجرا / شروعِ تایمر ── */}
-      {!data.pending && (
+      {!data.pending && canLogSomething && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-1.5 text-sm">
@@ -203,7 +227,7 @@ export function HoursView({ data }: { data: HoursData }) {
               <form action={start} className="flex flex-wrap items-end gap-2">
                 <div className="grid flex-1 gap-1.5">
                   <Label htmlFor="start-project">{t("پروژه")}</Label>
-                  <ProjectSelect projects={data.projects} id="start-project" />
+                  <ProjectSelect projects={data.projects} id="start-project" allowGeneral={data.canLogGeneral} />
                 </div>
                 <Submit>
                   <Play className="size-3.5" />
@@ -216,49 +240,96 @@ export function HoursView({ data }: { data: HoursData }) {
       )}
 
       {/* ── ثبتِ دستی ── */}
+      {canLogSomething ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">{t("ثبتِ دستی")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form action={log} className="grid gap-3">
+              <div className="grid gap-2 @xl/main:grid-cols-4">
+                <div className="grid gap-1.5 @xl/main:col-span-2">
+                  <Label htmlFor="log-project">{t("پروژه")}</Label>
+                  <ProjectSelect projects={data.projects} id="log-project" allowGeneral={data.canLogGeneral} />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="log-date">{t("تاریخ")}</Label>
+                  <Input id="log-date" name="logDate" type="date" defaultValue={data.today} required />
+                </div>
+                <div className="flex items-end gap-2">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="log-h">{t("ساعت")}</Label>
+                    <Input id="log-h" name="hours" type="number" min={0} className="num w-16" defaultValue={0} />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="log-m">{t("دقیقه")}</Label>
+                    <Input id="log-m" name="minutes" type="number" min={0} max={59} className="num w-16" defaultValue={0} />
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="grid flex-1 gap-1.5">
+                  <Label htmlFor="log-desc">{t("توضیح")}</Label>
+                  <Input id="log-desc" name="description" />
+                </div>
+                <Submit>{t("ثبت")}</Submit>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {tr("ثبتِ همان روز و همان پروژه با ثبتِ قبلی ادغام می‌شود، نه ردیفِ تازه.")}
+              </p>
+            </form>
+          </CardContent>
+        </Card>
+      ) : (
+        // پورتِ افزونه: بدونِ پروژهٔ باز و بدونِ مجوزِ ساعتِ عمومی، فرمی نیست.
+        <p className="text-sm text-muted-foreground">{t("پروژهٔ بازی برای ثبتِ ساعت ندارید.")}</p>
+      )}
+
+      {/* ── فیلترها (پورتِ view_hours): بازه و نامِ پروژه؛ فرمِ GET تا لینک قابلِ اشتراک بماند ── */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">{t("ثبتِ دستی")}</CardTitle>
+          <CardTitle className="text-sm">{t("فیلترها")}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <form action={log} className="grid gap-3">
-            <div className="grid gap-2 @xl/main:grid-cols-4">
-              <div className="grid gap-1.5 @xl/main:col-span-2">
-                <Label htmlFor="log-project">{t("پروژه")}</Label>
-                <ProjectSelect projects={data.projects} id="log-project" />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="log-date">{t("تاریخ")}</Label>
-                <Input id="log-date" name="logDate" type="date" defaultValue={data.today} required />
-              </div>
-              <div className="flex items-end gap-2">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="log-h">{t("ساعت")}</Label>
-                  <Input id="log-h" name="hours" type="number" min={0} className="num w-16" defaultValue={0} />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="log-m">{t("دقیقه")}</Label>
-                  <Input id="log-m" name="minutes" type="number" min={0} max={59} className="num w-16" defaultValue={0} />
-                </div>
-              </div>
+        <CardContent className="grid gap-2">
+          <form method="get" action="/hours" className="flex flex-wrap items-end gap-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="f-from">{t("از تاریخ")}</Label>
+              <Input id="f-from" name="from" type="date" className="num w-[9.5rem]" defaultValue={data.filter.from} />
             </div>
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="grid flex-1 gap-1.5">
-                <Label htmlFor="log-desc">{t("توضیح")}</Label>
-                <Input id="log-desc" name="description" />
-              </div>
-              <Submit>{t("ثبت")}</Submit>
+            <div className="grid gap-1.5">
+              <Label htmlFor="f-to">{t("تا تاریخ")}</Label>
+              <Input id="f-to" name="to" type="date" className="num w-[9.5rem]" defaultValue={data.filter.to} />
             </div>
-            <p className="text-xs text-muted-foreground">
-              {tr("ثبتِ همان روز و همان پروژه با ثبتِ قبلی ادغام می‌شود، نه ردیفِ تازه.")}
-            </p>
+            <div className="grid flex-1 gap-1.5">
+              <Label htmlFor="f-project">{t("پروژه")}</Label>
+              <Input
+                id="f-project" name="project" list="hours-project-list" autoComplete="off"
+                placeholder={t("نام پروژه…")} defaultValue={data.filter.project}
+              />
+              <datalist id="hours-project-list">
+                {data.projectTitles.map((title) => <option key={title} value={title} />)}
+              </datalist>
+            </div>
+            <Button type="submit" size="sm" variant="outline">{t("فیلتر")}</Button>
+            {filtered && (
+              <Link href="/hours" className="text-xs text-muted-foreground underline">{t("پاک‌کردن")}</Link>
+            )}
           </form>
+          {/* پورتِ افزونه: جمع فقط وقتی فیلتری فعال است. */}
+          {filtered && (
+            <p className="text-sm">
+              {t("مجموع در این بازه")}: <b className="num">{hoursLabel(data.rangeMinutes ?? 0)}</b>
+            </p>
+          )}
         </CardContent>
       </Card>
 
       {/* ── فهرستِ ثبت‌ها ── */}
       {data.logs.length === 0 ? (
-        <EmptyState title={t("ساعتی ثبت نشده")} description={t("با تایمر یا ثبتِ دستی شروع کنید.")} />
+        <EmptyState
+          title={filtered ? t("رکوردی در این بازه نیست.") : t("ساعتی ثبت نشده")}
+          description={filtered ? undefined : t("با تایمر یا ثبتِ دستی شروع کنید.")}
+        />
       ) : (
         <Table>
           <TableHeader>
@@ -294,7 +365,7 @@ export function HoursView({ data }: { data: HoursData }) {
                       </button>
                     </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground">{t("قفل")}</span>
+                    <span className="text-xs text-muted-foreground">🔒 {t("قفل‌شده")}</span>
                   )}
                 </TableCell>
               </TableRow>
@@ -303,14 +374,44 @@ export function HoursView({ data }: { data: HoursData }) {
         </Table>
       )}
 
+      {/* پورتِ pager ِ افزونه: ۱۵تایی با حفظِ فیلترها. */}
+      {data.pager.pages > 1 && (
+        <nav className="flex flex-wrap items-center gap-1 text-sm">
+          {Array.from({ length: data.pager.pages }, (_, i) => i + 1).map((p) => (
+            <Link
+              key={p}
+              href={pageHref(p)}
+              className={`num rounded-md border px-2.5 py-1 ${p === data.pager.page ? 'border-primary font-medium' : 'text-muted-foreground hover:bg-muted'}`}
+            >
+              {p}
+            </Link>
+          ))}
+          <span className="ms-2 text-xs text-muted-foreground">{t('{n} ثبت', { n: data.pager.total })}</span>
+        </nav>
+      )}
+
       {editing && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">{tr('ویرایشِ ثبتِ {date}', { date: editing.logDate })}</CardTitle>
           </CardHeader>
           <CardContent>
+            {/* پورتِ ویرایشِ درون‌خطیِ افزونه: تاریخ، پروژه، ساعت، دقیقه، توضیح. */}
             <form action={edit} className="flex flex-wrap items-end gap-2">
               <input type="hidden" name="logId" value={editing.id} />
+              <div className="grid gap-1.5">
+                <Label htmlFor="e-date">{t("تاریخ")}</Label>
+                <Input id="e-date" name="logDate" type="date" className="num w-[9.5rem]" defaultValue={editing.logDate} />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="e-project">{t("پروژه")}</Label>
+                <ProjectSelect
+                  projects={data.projects}
+                  id="e-project"
+                  allowGeneral={data.canLogGeneral}
+                  defaultValue={editing.projectId === null ? '' : String(editing.projectId)}
+                />
+              </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-h">{t("ساعت")}</Label>
                 <Input id="e-h" name="hours" type="number" min={0} className="num w-16"

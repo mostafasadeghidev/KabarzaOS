@@ -123,6 +123,8 @@ export async function updateLogAction(_prev: HoursState, formData: FormData): Pr
     await updateLog(await requireActor(), Number(formData.get('logId')), {
       minutes,
       description: String(formData.get('description') ?? ''),
+      logDate: formData.has('logDate') ? String(formData.get('logDate') ?? '') : undefined,
+      projectId: formData.has('projectId') ? readProjectId(formData.get('projectId')) : undefined,
     });
   } catch (error) {
     return { error: message(error) };

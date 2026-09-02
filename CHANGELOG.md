@@ -2,6 +2,21 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.45.0]
+
+### Added — work hours (parity with the plugin)
+
+- **Global timer banner** on every page: a running timer shows a live clock with a stop-and-log field; a parked timer (over five hours) asks to confirm or adjust the amount, or to resume.
+- **Hours page filters:** date range and project name (contains, with suggestions from the projects you logged on), a range total shown only while a filter is active, and fifteen-per-page pagination that keeps the filters.
+- **Editing a log** can now change its date and project, not only the duration and description.
+- The weekly figure is the calendar week from the configured week start, and "this month" replaces the all-time total.
+
+### Changed
+
+- **Who may log hours** now follows the plugin: the owner, project managers and finance users may log general (non-project) hours; an office manager may log on any project of their office without being signed onto it; members log on their own projects. The project picker lists only open, non-frozen projects, and the "no project" option appears only for those allowed to use it.
+
+---
+
 ## [1.44.0]
 
 ### Added — project management tab (parity with the plugin)

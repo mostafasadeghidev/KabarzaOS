@@ -1,8 +1,8 @@
-import { and, desc, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, sql, ilike, lte, or, SQL } from 'drizzle-orm';
 import { assertNotFrozen } from '@/server/projects/authority';
 import { db } from '@/db/client';
 import {
-  auditLog, projectMembers, projects, timelogs, users, workTimers,
+  auditLog, projectMembers, projects, timelogs, users, workTimers, tags, userOffices,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { ForbiddenError, visibleScopes } from '@/domain/access/guard';
@@ -10,6 +10,9 @@ import {
   elapsedMinutes, isEditable, mergeDescriptions, planStop, resumeStartedAt,
   toDateString, type PendingTimer, type RunningTimer,
 } from '@/domain/timelogs/timer';
+import { isFrozenProject } from '@/domain/projects/lifecycle';
+import { monthRange, weekRange } from '@/domain/reports/filters';
+import { clampPage, HOURS_PER_PAGE } from '@/domain/timelogs/hours-filter';
 
 /**
  * تایمرِ کار و ثبتِ ساعت.
@@ -39,79 +42,81 @@ async function audit(actor: Actor, action: string, objectId: number, after?: unk
  * ------------------------------------------------------------------ */
 
 /**
- * ⚠️ پورتِ `can_log_time()` — عضویت در پروژه، یا مدیریتِ پروژه‌ها.
- * پروژهٔ خصوصی همچنان پشتِ گاردِ scope است.
+ * پورتِ `can_log_general()`: ساعتِ **عمومی** (بی‌پروژه) را عضوِ تیم، مالک/مدیرِ
+ * پروژه‌ها و مالی می‌زنند — کارِ اداری/حسابداری که به پروژه‌ای نمی‌خورد.
+ * ⚠️ پیش از این فقط نقشِ `member` بود و مالک/حسابدار اصلاً صفحهٔ ساعت نداشتند.
+ */
+export function canLogGeneral(actor: Actor): boolean {
+  return actor.roles.includes('member') || actor.roles.includes('owner')
+    || canManageSection(actor, 'projects') || canViewSection(actor, 'finance');
+}
+
+/** دفترهای تحتِ مدیریتِ کاربر — همان `managed_office_ids`. */
+async function managedOffices(userId: number): Promise<number[]> {
+  const rows = await db.select({ officeId: userOffices.officeId }).from(userOffices)
+    .where(and(eq(userOffices.userId, userId), eq(userOffices.manages, true)));
+  return rows.map((r) => r.officeId);
+}
+
+/**
+ * پورتِ `can_log_time()`: روی پروژه → عضوِ امضاشده، **مدیرِ دفترِ پروژه** (بی‌نیاز از
+ * امضا)، یا مالک/مدیرِ پروژه‌ها؛ بی‌پروژه → `canLogGeneral`. پروژهٔ منجمد
+ * (بایگانی/لغو/توقف) ساعتِ تازه نمی‌پذیرد. پروژهٔ خصوصی پشتِ گاردِ scope می‌ماند.
  */
 export async function canLogTime(actor: Actor, projectId: number | null): Promise<boolean> {
-  // ⚠️ شرطِ نخست و مشترک — چه ساعتِ عمومی چه پروژه‌ای.
-  if (!isTeamMember(actor)) return false;
+  if (projectId === null) return canLogGeneral(actor);
 
-  // ساعتِ عمومی: کارِ اداری که به پروژه‌ای نمی‌خورد.
-  if (projectId === null) return true;
-
-  const rows = await db.select({ scope: projects.scope, isArchived: projects.isArchived })
+  const rows = await db
+    .select({ scope: projects.scope, isArchived: projects.isArchived, officeId: projects.officeId, statusGroup: tags.statusGroup })
     .from(projects)
+    .leftJoin(tags, eq(tags.id, projects.statusTagId))
     .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)));
   const project = rows[0];
   if (!project) return false;
   if (!visibleScopes(actor).includes(project.scope)) return false;
-  // ⚠️ پروژهٔ بایگانی‌شده «منجمد» است — ساعتِ تازه رویش ثبت نمی‌شود.
-  if (project.isArchived) return false;
+  if (isFrozenProject(project)) return false;
 
-  // مدیرِ پروژه‌ها که عضوِ تیم هم هست، روی هر پروژه‌ای ثبت می‌کند.
-  if (canManageSection(actor, 'projects')) return true;
+  if (actor.roles.includes('owner') || canManageSection(actor, 'projects')) return true;
 
   const member = await db.select({ id: projectMembers.id }).from(projectMembers)
     .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, actor.id)));
-  return member.length > 0;
+  if (member.length > 0) return true;
+
+  return project.officeId !== null && (await managedOffices(actor.id)).includes(project.officeId);
 }
 
-/** آیا این کاربر اصلاً بخشِ «ساعت کاری» را دارد؟ */
-export function canUseTimesheet(actor: Actor): boolean {
-  return isTeamMember(actor);
+/** آیا این کاربر بخشِ «ساعت کاری» را دارد؟ پورتِ افزونه: هر که ساعتِ عمومی یا پروژه‌ای می‌تواند بزند. */
+export async function canUseTimesheet(actor: Actor): Promise<boolean> {
+  if (canLogGeneral(actor)) return true;
+  return (await loggableProjects(actor)).length > 0;
 }
 
 /**
- * ساعت را **فقط اعضای تیم** ثبت می‌کنند.
- *
- * ⚠️ واگراییِ آگاهانه از نسخهٔ قبلی: آنجا مالک و حسابدار هم می‌توانستند ساعتِ
- * عمومی بزنند. اینجا نه — مدیرِ کل کارش را ساعتی نمی‌فروشد و آن ردیف‌ها
- * فقط گزارشِ «ساعتِ کاریِ تیم» را آلوده می‌کردند. مدیر همچنان **می‌بیند**
- * و مدیریت می‌کند؛ فقط برای خودش ثبت نمی‌کند.
- *
- * ⚠️ مالکی که واقعاً عضوِ تیم هم هست (نقشِ `member` را هم دارد) استثنا
- * نیست: نقش را دارد، پس ثبت هم می‌کند.
+ * پروژه‌هایی که این کاربر می‌تواند رویشان ساعت ثبت کند — پورتِ افزونه:
+ * پروژه‌های عضویت ∪ پروژه‌های دفترهای تحتِ مدیریت (مالک/مدیرِ پروژه‌ها: همه)،
+ * فقط **باز** و **غیرمنجمد** — پیش از این بسته/لغو/توقف در فهرست بود و ثبت
+ * با خطای عمومی می‌شکست.
  */
-function isTeamMember(actor: Actor): boolean {
-  return actor.roles.includes('member');
-}
-
-/** پروژه‌هایی که این کاربر می‌تواند رویشان ساعت ثبت کند. */
 export async function loggableProjects(actor: Actor) {
   const scopes = visibleScopes(actor);
-  const base = db
-    .select({ id: projects.id, title: projects.title })
-    .from(projects);
-
-  if (canManageSection(actor, 'projects')) {
-    return base
-      .where(and(
-        isNull(projects.deletedAt),
-        eq(projects.isArchived, false),
-        inArray(projects.scope, scopes),
-      ))
-      .orderBy(projects.title);
-  }
+  const global = actor.roles.includes('owner') || canManageSection(actor, 'projects');
+  const offices = global ? [] : await managedOffices(actor.id);
 
   return db
     .selectDistinct({ id: projects.id, title: projects.title })
     .from(projects)
-    .innerJoin(projectMembers, eq(projectMembers.projectId, projects.id))
+    .leftJoin(tags, eq(tags.id, projects.statusTagId))
+    .leftJoin(projectMembers, and(eq(projectMembers.projectId, projects.id), eq(projectMembers.userId, actor.id)))
     .where(and(
       isNull(projects.deletedAt),
       eq(projects.isArchived, false),
       inArray(projects.scope, scopes),
-      eq(projectMembers.userId, actor.id),
+      sql`coalesce(${tags.isClosed}, false) = false`,
+      sql`coalesce(${tags.statusGroup}, '') not in ('cancelled', 'on_hold')`,
+      global ? sql`true` : or(
+        sql`${projectMembers.id} is not null`,
+        offices.length > 0 ? inArray(projects.officeId, offices) : sql`false`,
+      ),
     ))
     .orderBy(projects.title);
 }
@@ -310,8 +315,35 @@ export async function addOrMerge(actor: Actor, input: LogInput): Promise<number>
   return row.id;
 }
 
-/** ساعت‌های خودِ کاربر — تازه‌ترین اول. */
-export async function myLogs(actor: Actor, limit = 60, now = new Date()) {
+export interface HoursListFilter {
+  from?: string | null;
+  to?: string | null;
+  /** نامِ پروژه (شامل) — ساعتِ عمومی عنوان ندارد، پس با فیلترِ نام بیرون می‌ماند. */
+  project?: string | null;
+  page?: number;
+  perPage?: number;
+}
+
+/**
+ * ساعت‌های خودِ کاربر — پورتِ `view_hours()`: بازه/نامِ پروژه، صفحه‌بندیِ ۱۵تایی،
+ * جمعِ دقیقه‌های بازه. تازه‌ترین اول.
+ */
+export async function myLogs(actor: Actor, filter: HoursListFilter = {}, now = new Date()) {
+  const perPage = filter.perPage ?? HOURS_PER_PAGE;
+  const conds: SQL[] = [eq(timelogs.userId, actor.id)];
+  if (filter.from) conds.push(gte(timelogs.logDate, filter.from));
+  if (filter.to) conds.push(lte(timelogs.logDate, filter.to));
+  if (filter.project) conds.push(ilike(projects.title, `%${filter.project.replace(/[%_\\]/g, '')}%`));
+  const where = and(...conds);
+
+  const [summary] = await db
+    .select({ n: sql<number>`count(*)::int`, minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int` })
+    .from(timelogs)
+    .leftJoin(projects, eq(projects.id, timelogs.projectId))
+    .where(where);
+  const total = summary?.n ?? 0;
+  const { page, pages } = clampPage(filter.page ?? 1, total, perPage);
+
   const rows = await db
     .select({
       id: timelogs.id,
@@ -324,32 +356,56 @@ export async function myLogs(actor: Actor, limit = 60, now = new Date()) {
     })
     .from(timelogs)
     .leftJoin(projects, eq(projects.id, timelogs.projectId))
-    .where(eq(timelogs.userId, actor.id))
+    .where(where)
     .orderBy(desc(timelogs.logDate), desc(timelogs.id))
-    .limit(limit);
+    .limit(perPage)
+    .offset((page - 1) * perPage);
 
-  return rows.map((r) => ({ ...r, editable: isEditable(r.createdAt, now) }));
+  return {
+    rows: rows.map((r) => ({ ...r, editable: isEditable(r.createdAt, now) })),
+    total,
+    page,
+    pages,
+    rangeMinutes: summary?.minutes ?? 0,
+  };
 }
 
-/** جمعِ ساعتِ این هفته و این ماهِ کاربر — دو عدد، یک کوئری. */
-export async function myTotals(actor: Actor, now = new Date()) {
-  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+/** عنوانِ پروژه‌هایی که کاربر رویشان ساعت زده — پیشنهادِ فیلترِ نام (پورتِ `project_ids_for_user`). */
+export async function loggedProjectTitles(actor: Actor): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ title: projects.title })
+    .from(timelogs)
+    .innerJoin(projects, eq(projects.id, timelogs.projectId))
+    .where(eq(timelogs.userId, actor.id))
+    .orderBy(projects.title);
+  return rows.map((r) => r.title);
+}
+
+/**
+ * جمعِ ساعتِ «این هفته» (هفتهٔ تقویمی از روزِ شروعِ تنظیمات) و «این ماه» — پورتِ
+ * افزونه. ⚠️ پیش از این «هفته» هفت روزِ گذشته بود و با گزارش‌ها نمی‌خواند.
+ */
+export async function myTotals(actor: Actor, now = new Date(), weekStart = 0) {
+  const today = toDateString(now);
+  const week = weekRange(today, weekStart);
+  const month = monthRange(today);
   const rows = await db
     .select({
-      week: sql<number>`coalesce(sum(case when ${timelogs.logDate} >= ${toDateString(weekAgo)} then ${timelogs.minutes} else 0 end), 0)::int`,
+      week: sql<number>`coalesce(sum(case when ${timelogs.logDate} >= ${week.from} and ${timelogs.logDate} <= ${week.to} then ${timelogs.minutes} else 0 end), 0)::int`,
+      month: sql<number>`coalesce(sum(case when ${timelogs.logDate} >= ${month.from} and ${timelogs.logDate} <= ${month.to} then ${timelogs.minutes} else 0 end), 0)::int`,
       total: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int`,
     })
     .from(timelogs)
     .where(eq(timelogs.userId, actor.id));
 
-  return { week: rows[0]?.week ?? 0, total: rows[0]?.total ?? 0 };
+  return { week: rows[0]?.week ?? 0, month: rows[0]?.month ?? 0, total: rows[0]?.total ?? 0 };
 }
 
 /** ویرایشِ یک ثبت — فقط صاحبش و فقط داخلِ پنجرهٔ ویرایش. */
 export async function updateLog(
   actor: Actor,
   logId: number,
-  input: { minutes: number; description: string },
+  input: { minutes: number; description: string; logDate?: string; projectId?: number | null },
   now = new Date(),
 ) {
   const rows = await db.select().from(timelogs).where(eq(timelogs.id, logId));
@@ -362,9 +418,18 @@ export async function updateLog(
   // ⚠️ همان قفلی که ثبت، حذف و تایمر دارند — ویرایش نداشت (`block_if_frozen`).
   if (row.projectId) await assertNotFrozen(row.projectId, actor);
 
+  // پورتِ افزونه: تاریخ و پروژه هم ویرایش‌پذیرند (ثبتِ روزِ اشتباه را نباید حذف و دوباره ساخت).
+  const nextProject = input.projectId === undefined ? row.projectId : input.projectId;
+  if (input.projectId !== undefined && input.projectId !== row.projectId) {
+    if (!await canLogTime(actor, input.projectId)) throw new ForbiddenError('timelog.forbidden');
+  }
+  const nextDate = input.logDate && /^\d{4}-\d{2}-\d{2}$/.test(input.logDate) ? input.logDate : row.logDate;
+
   await db.update(timelogs).set({
     minutes: input.minutes,
     description: input.description.trim(),
+    logDate: nextDate,
+    projectId: nextProject,
     updatedAt: now,
   }).where(eq(timelogs.id, logId));
 
