@@ -3,7 +3,7 @@ import { currentLocale } from '@/i18n/server';
 import { and, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
-  comments, projectMembers, projects, tags, tasks, timelogs, userOffices, users, userRoles,
+  comments, projectMembers, projects, tags, tasks, timelogs, userOffices, users, userRoles, tagRelations, absences,
 } from '@/db/schema';
 import { type Actor } from '@/domain/access/permissions';
 import { ForbiddenError, visibleScopes } from '@/domain/access/guard';
@@ -11,6 +11,12 @@ import {
   canMonitor, isOfficeManager, monitorableUserIds, resolveRange,
   type DateRange,
 } from '@/domain/access/office-scope';
+import { avatarsFor } from '@/server/files/service';
+import { matrixForIds, rowCells } from '@/server/availability/service';
+import { weekOrder, weekdayIndex, WEEKDAYS } from '@/domain/availability/weekly';
+import { getSystemConfig } from '@/server/settings/system-service';
+import { canManageLeave, listAbsences } from '@/server/availability/absence-service';
+import { alias } from 'drizzle-orm/pg-core';
 
 /**
  * «تیمِ من» — دامنهٔ مدیرِ دفتر.
@@ -308,7 +314,9 @@ export async function teamMembers(actor: Actor, input: { range?: string; from?: 
   if (period.from) conditions.push(gte(timelogs.logDate, period.from));
   if (period.to) conditions.push(lte(timelogs.logDate, period.to));
 
-  const [people, hours] = await Promise.all([
+  const today = new Date().toISOString().slice(0, 10);
+  const locale = await currentLocale();
+  const [people, hours, roleRows, leaveRows, openRows, avatars] = await Promise.all([
     db.select({ id: users.id, name: users.name, email: users.email })
       .from(users)
       .where(and(inArray(users.id, scope.monitorable), isNull(users.deletedAt)))
@@ -321,11 +329,44 @@ export async function teamMembers(actor: Actor, input: { range?: string; from?: 
       .from(timelogs)
       .where(and(...conditions))
       .groupBy(timelogs.userId),
+
+    // پورتِ کارتِ افزونه: نقش‌ها، 🌴 مرخصیِ امروز، شمارِ تسکِ باز (نه بسته، نه در ریویو)، آواتار.
+    db.select({ userId: tagRelations.objectId, name: tagName(locale) })
+      .from(tagRelations)
+      .innerJoin(tags, eq(tags.id, tagRelations.tagId))
+      .where(and(eq(tagRelations.objectType, 'user'), inArray(tagRelations.objectId, scope.monitorable), eq(tags.type, 'member_role')))
+      .orderBy(tags.sortOrder, tags.id),
+    db.select({ userId: absences.userId }).from(absences)
+      .where(and(inArray(absences.userId, scope.monitorable), lte(absences.fromDate, today), gte(absences.toDate, today))),
+    scope.projectIds.length === 0 ? Promise.resolve([]) : db
+      .select({ userId: tasks.assignedTo, n: sql<number>`count(*)::int` })
+      .from(tasks)
+      .leftJoin(tags, eq(tags.id, tasks.statusTagId))
+      .where(and(
+        inArray(tasks.projectId, scope.projectIds),
+        isNull(tasks.deletedAt),
+        inArray(tasks.assignedTo, scope.monitorable),
+        sql`coalesce(${tags.isClosed}, false) = false`,
+        sql`coalesce(${tags.isReview}, false) = false`,
+      ))
+      .groupBy(tasks.assignedTo),
+    avatarsFor(scope.monitorable),
   ]);
 
   const byUser = new Map(hours.map((h) => [h.userId, h.minutes]));
+  const rolesOf = new Map<number, string[]>();
+  for (const r of roleRows) rolesOf.set(r.userId, [...(rolesOf.get(r.userId) ?? []), r.name]);
+  const onLeave = new Set(leaveRows.map((r) => r.userId));
+  const openOf = new Map(openRows.map((r) => [r.userId, r.n]));
   return {
-    members: people.map((p) => ({ ...p, minutes: byUser.get(p.id) ?? 0 })),
+    members: people.map((p) => ({
+      ...p,
+      minutes: byUser.get(p.id) ?? 0,
+      roleNames: rolesOf.get(p.id) ?? [],
+      onLeave: onLeave.has(p.id),
+      openTasks: openOf.get(p.id) ?? 0,
+      avatarFileId: avatars.get(p.id) ?? null,
+    })),
     period,
   };
 }
@@ -377,7 +418,94 @@ export async function teamMember(
       .limit(100),
   ]);
 
-  return { person: person[0] ?? null, logs, openTasks, period };
+  const me = person[0] ?? null;
+  const locale = await currentLocale();
+  const roleTag = alias(tags, 'role_tag');
+  const notClosed = and(
+    isNull(tasks.deletedAt),
+    sql`coalesce(${tags.isClosed}, false) = false`,
+    sql`coalesce(${tags.isReview}, false) = false`,
+  );
+  const [roleRows, memberships, hoursAll, matrixRows, system, absenceRows, canLeave, openByProject] = await Promise.all([
+    db.select({ name: tagName(locale) }).from(tagRelations)
+      .innerJoin(tags, eq(tags.id, tagRelations.tagId))
+      .where(and(eq(tagRelations.objectType, 'user'), eq(tagRelations.objectId, userId), eq(tags.type, 'member_role')))
+      .orderBy(tags.sortOrder, tags.id),
+    // عضویت‌های این نفر در پروژه‌های دامنه (بایگانی بیرون)، با نقش و بسته/باز.
+    scope.projectIds.length === 0 ? Promise.resolve([]) : db
+      .select({ id: projects.id, title: projects.title, isClosed: tags.isClosed, roleName: tagName(locale, roleTag) })
+      .from(projectMembers)
+      .innerJoin(projects, eq(projects.id, projectMembers.projectId))
+      .leftJoin(tags, eq(tags.id, projects.statusTagId))
+      .leftJoin(roleTag, eq(roleTag.id, projectMembers.roleTagId))
+      .where(and(eq(projectMembers.userId, userId), inArray(projectMembers.projectId, scope.projectIds), isNull(projects.deletedAt), eq(projects.isArchived, false)))
+      .orderBy(projects.title),
+    // کارکرد به تفکیکِ پروژه — همهٔ زمان، در دامنهٔ دفترها (پورتِ member_project_hours).
+    db.select({ projectId: timelogs.projectId, projectTitle: projects.title, minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int` })
+      .from(timelogs)
+      .leftJoin(projects, eq(projects.id, timelogs.projectId))
+      .where(and(eq(timelogs.userId, userId), scope.projectIds.length > 0 ? inArray(timelogs.projectId, scope.projectIds) : sql`false`))
+      .groupBy(timelogs.projectId, projects.title)
+      .orderBy(sql`sum(${timelogs.minutes}) desc`),
+    me ? matrixForIds([{ id: me.id, name: me.name }]) : Promise.resolve([]),
+    getSystemConfig(),
+    listAbsences(actor, userId, { upcomingOnly: true }).catch(() => []),
+    canManageLeave(actor, userId),
+    scope.projectIds.length === 0 ? Promise.resolve([]) : db
+      .select({ projectId: tasks.projectId, n: sql<number>`count(*)::int` })
+      .from(tasks)
+      .leftJoin(tags, eq(tags.id, tasks.statusTagId))
+      .where(and(eq(tasks.assignedTo, userId), inArray(tasks.projectId, scope.projectIds), notClosed))
+      .groupBy(tasks.projectId),
+  ]);
+
+  const projectIds = [...new Set(memberships.map((m) => m.id))];
+  const openIds = [...new Set(memberships.filter((m) => m.isClosed !== true).map((m) => m.id))];
+  const progressRows = openIds.length === 0 ? [] : await db
+    .select({
+      projectId: tasks.projectId,
+      total: sql<number>`count(*)::int`,
+      done: sql<number>`count(*) filter (where coalesce(${tags.statusGroup}, '') = 'complete')::int`,
+    })
+    .from(tasks)
+    .leftJoin(tags, eq(tags.id, tasks.statusTagId))
+    .where(and(inArray(tasks.projectId, openIds), isNull(tasks.deletedAt)))
+    .groupBy(tasks.projectId);
+  const progressOf = new Map(progressRows.map((r) => [r.projectId, r.total > 0 ? Math.round((r.done / r.total) * 100) : 0]));
+  const minutesOf = new Map(hoursAll.map((h) => [h.projectId, h.minutes]));
+  const openTasksOf = new Map(openByProject.map((r) => [r.projectId, r.n]));
+  const rolesByProject = new Map<number, string[]>();
+  for (const m of memberships) if (m.roleName) rolesByProject.set(m.id, [...(rolesByProject.get(m.id) ?? []), m.roleName]);
+
+  const order = weekOrder(system.weekStart);
+  const todayIdx = weekdayIndex(new Date());
+
+  return {
+    person: me ? { ...me, roleNames: roleRows.map((r) => r.name) } : null,
+    logs,
+    openTasks,
+    period,
+    // پورتِ کارت‌های آمارِ افزونه.
+    stats: {
+      projects: projectIds.length,
+      openProjects: openIds.length,
+      minutes: hoursAll.reduce((sum, h) => sum + h.minutes, 0),
+      openTasks: openByProject.reduce((sum, r) => sum + r.n, 0),
+    },
+    openProjects: openIds.map((id) => ({
+      id,
+      title: memberships.find((m) => m.id === id)?.title ?? `#${id}`,
+      roles: rolesByProject.get(id) ?? [],
+      progress: progressOf.get(id) ?? 0,
+      minutes: minutesOf.get(id) ?? 0,
+      openTasks: openTasksOf.get(id) ?? 0,
+    })),
+    hoursAllTime: hoursAll,
+    matrix: matrixRows.map((r) => ({ id: r.id, name: r.name, roles: r.roleNames, cells: rowCells(r, order, todayIdx) })),
+    dayLabels: order.map((d) => WEEKDAYS[d]!),
+    absences: absenceRows,
+    canLeave,
+  };
 }
 
 export type { DateRange };

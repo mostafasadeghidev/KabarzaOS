@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
 import { TaskFilter, type TaskFilterOptions, type TaskPaging } from './task-filter';
+import { Thumb } from '@/components/thumb';
+import { Input } from '@/components/ui/input';
 
 export interface TeamData {
   projects: Array<{
@@ -34,7 +36,10 @@ export interface TeamData {
     id: number; body: string; type: string; projectId: number | null;
     projectTitle: string | null; authorName: string | null;
   }>;
-  members: Array<{ id: number; name: string; email: string; minutes: number }>;
+  members: Array<{
+    id: number; name: string; email: string; minutes: number;
+    roleNames: string[]; onLeave: boolean; openTasks: number; avatarFileId: number | null;
+  }>;
   range: RangeKey;
 }
 
@@ -49,6 +54,50 @@ const TABS = [
  * «تیمِ من» — نمای مدیرِ دفتر.
  * ⚠️ عملیاتی است، نه مالی: هیچ مبلغی اینجا نیست.
  */
+/** پورتِ کارت‌های «کارکنان تحت مدیریت»: آواتار، نام + 🌴، نقش‌ها، ⏱ ساعت · 📋 تسکِ باز، جستجوی زنده. */
+function MemberCards({ members, range }: { members: TeamData['members']; range: RangeKey }) {
+  const tr = useT();
+  const [q, setQ] = useState('');
+  const needle = q.trim().toLowerCase();
+  const list = needle === '' ? members : members.filter((m) => m.name.toLowerCase().includes(needle));
+  return (
+    <div className="grid gap-3">
+      <Input
+        type="search"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder={tr("جستجوی کارمند…")}
+        className="max-w-xs"
+      />
+      {list.length === 0 ? <p className="text-sm text-muted-foreground">{tr("موردی پیدا نشد.")}</p> : (
+        <div className="grid gap-2 @xl/main:grid-cols-2 @4xl/main:grid-cols-3">
+          {list.map((m) => (
+            <Link
+              key={m.id}
+              href={`/team/${m.id}?range=${range}`}
+              className="flex items-center gap-3 rounded-md border p-3 transition-colors hover:bg-muted"
+            >
+              <Thumb id={m.id} title={m.name} fileId={m.avatarFileId} size={44} />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="truncate">{m.name}</span>
+                  {m.onLeave && <Badge variant="outline" className="text-[10px]">🌴 {tr("مرخصی")}</Badge>}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {m.roleNames.length > 0 ? m.roleNames.join('، ') : tr("عضو")}
+                </span>
+                <span className="num block text-xs text-muted-foreground">
+                  ⏱ {hoursLabel(m.minutes)} · 📋 {tr('{n} تسک باز', { n: m.openTasks })}
+                </span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TeamView({ data }: { data: TeamData }) {
   const tr = useT();
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>('members');
@@ -101,39 +150,12 @@ export function TeamView({ data }: { data: TeamData }) {
           {data.members.length === 0 ? (
             <EmptyState title={tr("عضوی در دامنهٔ شما نیست")} />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{tr("عضو")}</TableHead>
-                  <TableHead>{tr("ساعت کاری")}</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.members.map((m) => (
-                  <TableRow key={m.id}>
-                    <TableCell>
-                      {m.name}
-                      <span className="block text-xs text-muted-foreground">{m.email}</span>
-                    </TableCell>
-                    <TableNumericCell>{hoursLabel(m.minutes)}</TableNumericCell>
-                    <TableCell className="text-end">
-                      <Link
-                        href={`/team/${m.id}?range=${data.range}`}
-                        className="text-xs text-muted-foreground hover:underline"
-                      >
-                        {tr("جزئیات →")}
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <MemberCards members={data.members} range={data.range} />
           )}
         </div>
       )}
 
-      {tab === 'projects' && (
+            {tab === 'projects' && (
         data.projects.length === 0 ? <EmptyState title={tr("پروژه‌ای در دفاترِ شما نیست")} /> : (
           <Table>
             <TableHeader>

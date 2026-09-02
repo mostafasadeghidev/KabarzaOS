@@ -51,7 +51,7 @@ export interface MatrixRowView {
 }
 
 /** پورتِ `availability_matrix_html`: اعضا در سطرها، روزهای هفته (از روزِ آغازِ تنظیمات) در ستون‌ها. */
-function TeamMatrix({ rows, dayLabels }: { rows: MatrixRowView[]; dayLabels: string[] }) {
+export function TeamMatrix({ rows, dayLabels }: { rows: MatrixRowView[]; dayLabels: string[] }) {
   const t = useT();
   if (rows.length === 0) return <p className="text-xs text-muted-foreground">{t("عضوی برای نمایش نیست.")}</p>;
   return (

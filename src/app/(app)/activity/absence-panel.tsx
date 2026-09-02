@@ -31,6 +31,8 @@ export interface AbsencePanelData {
   targets: Array<{ id: number; name: string }>;
   meId: number;
   today: string;
+  /** عنوانِ فهرست — روی پروفایلِ عضو «مرخصی‌های عضو» است، نه «مرخصی‌های من». */
+  listTitle?: string;
 }
 
 function Submit() {
@@ -111,7 +113,7 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
       </form>
 
       <div className="grid gap-2">
-        <p className="text-sm font-medium">{tr('مرخصی‌های من')}</p>
+        <p className="text-sm font-medium">{tr(data.listTitle ?? 'مرخصی‌های من')}</p>
         {data.mine.length === 0 ? (
           <EmptyState title={tr('مرخصی‌ای ثبت نکرده‌اید')} />
         ) : (

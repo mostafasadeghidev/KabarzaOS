@@ -2,6 +2,15 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.46.0]
+
+### Added — "My team" (parity with the plugin)
+
+- **Member cards** instead of a bare table: avatar, name with a leave badge for anyone away today, role names, hours in the selected range and the number of open tasks, with a live name search.
+- **Member profile:** role names under the name, four stat cards (projects, in progress, total hours, open tasks — the last one opens the team task board filtered to that member), an in-progress projects table with role, progress bar, the member's hours and open tasks, all-time hours per project with a total, the member's weekly availability matrix, and a leave card where the office manager records or removes leave for that member.
+
+---
+
 ## [1.45.0]
 
 ### Added — work hours (parity with the plugin)
