@@ -12,6 +12,8 @@ import { getT } from '@/i18n/server';
 import { isDeadlineSoon, isOverdueProject } from '@/domain/projects/lifecycle';
 import { activeProjectIdsSince } from '@/server/projects/repository';
 import { countOpenThreads } from '@/domain/projects/threads';
+import { runningTimers } from '@/server/availability/service';
+import { actionLabel, listActivity } from '@/server/activity/service';
 
 /**
  * دادهٔ داشبورد — ساختار عیناً از نسخهٔ قبلی گرفته شده:
@@ -333,12 +335,20 @@ export async function getDashboard(actor: Actor) {
     });
   }
 
+  // پورتِ پنلِ «زنده»ی داشبوردِ مالک: تایمرهای روشن + آخرین رویدادها (هر کدام جدا؛ نبودِ مجوز = خالی).
+  const [liveTimers, liveActivity] = await Promise.all([
+    runningTimers(actor).catch(() => []),
+    listActivity(actor, { perPage: 6 }).then((r) => r.rows).catch(() => []),
+  ]);
+
   return {
     actionGroups,
     progress,
     today: {
       meetings: weekMeetings, away: awayToday, available: availableToday,
       activeTeam, assignedMembers,
+      timers: liveTimers,
+      activity: liveActivity.map((a) => ({ id: a.id, label: actionLabel(a.action), actorName: a.actorName, at: a.createdAt })),
     },
     risk: { overdue, soon, stalled, openTenders },
     charts: { statusDistribution, memberHours, weeklyTrend },

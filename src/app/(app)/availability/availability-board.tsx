@@ -89,7 +89,8 @@ export function AvailabilityBoard(props: BoardProps) {
   const t = useT();
   const tr = useT();
   const [name, setName] = useState('');
-  const [office, setOffice] = useState('');
+  // پورتِ افزونه: فیلترِ دفتر **چندتایی** است.
+  const [offices, setOffices] = useState<number[]>([]);
   const [role, setRole] = useState('');
   const [nowOnly, setNowOnly] = useState(false);
 
@@ -97,12 +98,12 @@ export function AvailabilityBoard(props: BoardProps) {
     const needle = name.trim().toLowerCase();
     return props.rows.filter((r) => {
       if (needle && !r.name.toLowerCase().includes(needle)) return false;
-      if (office && !r.officeIds.includes(Number(office))) return false;
+      if (offices.length > 0 && !r.officeIds.some((id) => offices.includes(id))) return false;
       if (role && !r.roleTagIds.includes(Number(role))) return false;
       if (nowOnly && !r.availableNow) return false;
       return true;
     });
-  }, [props.rows, name, office, role, nowOnly]);
+  }, [props.rows, name, offices, role, nowOnly]);
 
   return (
     <div className="grid gap-4">
@@ -132,10 +133,22 @@ export function AvailabilityBoard(props: BoardProps) {
               className="h-8 w-48"
             />
             {props.offices.length > 0 && (
-              <select className={selectClass} value={office} onChange={(e) => setOffice(e.target.value)}>
-                <option value="">{t("همهٔ دفترها")}</option>
-                {props.offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-              </select>
+              <div className="flex flex-wrap items-center gap-1">
+                <span className="text-xs text-muted-foreground">{t("دفتر:")}</span>
+                {props.offices.map((o) => {
+                  const on = offices.includes(o.id);
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => setOffices((prev) => (on ? prev.filter((x) => x !== o.id) : [...prev, o.id]))}
+                      className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${on ? 'border-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {o.name}
+                    </button>
+                  );
+                })}
+              </div>
             )}
             {props.roles.length > 0 && (
               <select className={selectClass} value={role} onChange={(e) => setRole(e.target.value)}>

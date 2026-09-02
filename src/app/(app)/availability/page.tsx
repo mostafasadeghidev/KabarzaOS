@@ -9,6 +9,8 @@ import { formatElapsed } from '@/domain/availability/team';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AvailabilityBoard } from './availability-board';
 import { primeTranslations, t } from '@/i18n/server';
+import { leaveTargets, listAbsences } from '@/server/availability/absence-service';
+import { AbsencePanel } from '../activity/absence-panel';
 
 /**
  * «در دسترس بودن اعضا» — پورتِ صفحهٔ مستقلِ `Admin\Availability_Page`.
@@ -45,6 +47,12 @@ export default async function AvailabilityPage({
 
   const order = weekOrder(system.weekStart);
   const todayIdx = weekdayIndex(now);
+  // پورتِ فرمِ «ثبت مرخصی برای عضو» ِ صفحهٔ دسترس‌پذیری — فقط برای کسی که بیش از خودش را مدیریت می‌کند.
+  const today = now.toISOString().slice(0, 10);
+  const [targets, mine] = await Promise.all([
+    leaveTargets(actor),
+    listAbsences(actor, actor.id, { upcomingOnly: true, today }).catch(() => []),
+  ]);
 
   return (
     <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
@@ -82,6 +90,12 @@ export default async function AvailabilityPage({
           offices={options.offices}
           roles={options.roles}
         />
+      )}
+      {targets.length > 1 && (
+        <section className="grid gap-2">
+          <h2 className="text-sm font-semibold">🌴 {t("ثبت مرخصی برای عضو")}</h2>
+          <AbsencePanel data={{ mine, targets, meId: actor.id, today }} />
+        </section>
       )}
     </main>
   );

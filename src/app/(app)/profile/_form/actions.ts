@@ -259,3 +259,18 @@ export async function removeMyAvatarAction(): Promise<ProfileState> {
   revalidatePath('/', 'layout');
   return { message: 'تصویر حذف شد.' };
 }
+
+/** حذفِ لوگوی شرکت — قرینهٔ `setCompanyLogoAction`. */
+export async function removeCompanyLogoAction(): Promise<ProfileState> {
+  try {
+    const { removeCompanyLogo } = await import('@/server/files/service');
+    await removeCompanyLogo(await requireActor());
+  } catch (error) {
+    if (error instanceof ForbiddenError) return { error: 'دسترسی ندارید.' };
+    return { error: 'حذف نشد.' };
+  }
+  revalidatePath('/profile');
+  revalidatePath('/settings');
+  revalidatePath('/projects', 'layout');
+  return { message: 'لوگو حذف شد.' };
+}

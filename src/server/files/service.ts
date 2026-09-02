@@ -472,6 +472,17 @@ export async function fileSummaries(fileIds: readonly number[]) {
  * ⚠️ فایلِ قبلی پاک می‌شود، مثلِ آواتار: لوگوی جایگزین‌شده به هیچ ردیفی وصل
  * نیست و فقط فضا می‌گیرد.
  */
+/** حذفِ لوگوی شرکت — پورتِ «حذفِ لوگو» ِ تبِ اطلاعاتِ شرکت: فقط مالک؛ فایل هم آزاد می‌شود. */
+export async function removeCompanyLogo(actor: Actor): Promise<void> {
+  if (!actor.roles.includes('owner')) throw new ForbiddenError('company.owner_only');
+  const previous = await db.select({ fileId: company.logoFileId })
+    .from(company).where(eq(company.id, 1));
+  await db.insert(company).values({ id: 1, logoFileId: null })
+    .onConflictDoUpdate({ target: company.id, set: { logoFileId: null, updatedAt: new Date() } });
+  const old = previous[0]?.fileId;
+  if (old) await removeFile(old);
+}
+
 export async function setCompanyLogo(
   actor: Actor,
   blob: { name: string; mime: string; bytes: Uint8Array },

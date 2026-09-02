@@ -293,3 +293,9 @@ export async function runDailyReport(now: Date): Promise<boolean> {
 }
 
 export { hasDestination, inArray };
+
+/** پورتِ دکمهٔ «تستِ اتصال»: یک پیامِ آزمایشی به وب‌هوک؛ true فقط با پاسخِ 2xx. */
+export async function testDiscordWebhook(webhook: string): Promise<boolean> {
+  const t = await reportTranslator();
+  return postToDiscord(webhook, t('✅ اتصالِ دیسکوردِ کبرزا برقرار است.'));
+}

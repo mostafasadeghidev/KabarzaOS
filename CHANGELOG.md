@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.48.0]
+
+### Added — remaining parity gaps
+
+- **Owner dashboard "live" panel:** who is working right now (running timers with project and elapsed time) and the latest activity events.
+- **Availability page:** office managers can record leave for a member straight from the board, and the office filter accepts several offices at once.
+- **Daily report settings:** a "test Discord connection" button posts a test message to the configured webhook and reports whether it was accepted.
+- **Company logo** can be removed from the company settings, not only replaced.
+
+---
+
 ## [1.47.0]
 
 ### Added — report drill-downs and invoice (parity with the plugin)

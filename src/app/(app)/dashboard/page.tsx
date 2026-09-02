@@ -225,6 +225,37 @@ export default async function DashboardPage() {
             )}
           </DashPanel>
 
+          {/* پورتِ پنلِ «زنده»: چه کسی الان کار می‌کند + آخرین رویدادها. */}
+          <DashPanel title={t("در حالِ کار")}>
+            {today.timers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("تایمری روشن نیست.")}</p>
+            ) : (
+              <ul className="space-y-1.5 text-sm">
+                {today.timers.map((w) => (
+                  <li key={w.userId} className="flex items-center justify-between gap-3">
+                    <span className="truncate">{w.name}{w.project ? <span className="text-muted-foreground"> · {w.project}</span> : null}</span>
+                    <span className="num shrink-0 text-xs text-muted-foreground">{Math.floor(w.minutes / 60)}:{String(w.minutes % 60).padStart(2, '0')}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </DashPanel>
+
+          <DashPanel title={t("آخرین رویدادها")} action={{ href: '/activity', label: t("فعالیت") }}>
+            {today.activity.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("رویدادی ثبت نشده.")}</p>
+            ) : (
+              <ul className="space-y-1.5 text-sm">
+                {today.activity.map((a) => (
+                  <li key={a.id} className="flex items-center justify-between gap-3">
+                    <span className="truncate">{t(a.label)}{a.actorName ? <span className="text-muted-foreground"> · {a.actorName}</span> : null}</span>
+                    <span className="num shrink-0 text-xs text-muted-foreground">{timeLabel(a.at)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </DashPanel>
+
           <DashPanel title={t("تیم")}>
             <div className="flex gap-2">
               <CompactCard value={today.activeTeam} label={t("عضوِ فعال")} />

@@ -8,7 +8,7 @@ import { requireActor } from '@/server/auth';
 import * as settings from '@/server/settings/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import {
-  dispatchReport, getReportConfig, previewReport, saveReportConfig,
+  dispatchReport, getReportConfig, previewReport, saveReportConfig, testDiscordWebhook,
 } from '@/server/scheduler/daily-report';
 import { hasDestination, reportDate, normalizeReportConfig } from '@/domain/scheduler/daily-report';
 import { CatalogError, catalogMessage } from '@/domain/settings/catalogs';
@@ -212,6 +212,20 @@ export async function previewReportAction(): Promise<ReportState> {
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'فقط مدیرِ کل.' };
     return { error: 'پیش‌نمایش ساخته نشد.' };
+  }
+}
+
+/** تستِ اتصالِ دیسکورد — پورتِ دکمهٔ افزونه: پیامِ آزمایشی به وب‌هوکِ **ذخیره‌شده**. */
+export async function testDiscordAction(): Promise<ReportState> {
+  try {
+    await assertOwner();
+    const config = await getReportConfig();
+    if (!config.webhook) return { error: 'وب‌هوکی ذخیره نشده است.' };
+    const ok = await testDiscordWebhook(config.webhook);
+    return ok ? { message: 'پیامِ آزمایشی فرستاده شد.' } : { error: 'دیسکورد پیام را نپذیرفت.' };
+  } catch (error) {
+    if (error instanceof ForbiddenError) return { error: 'فقط مدیرِ کل.' };
+    return { error: 'ارسال نشد.' };
   }
 }
 

@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { saveCompanyAction, setCompanyLogoAction, type ProfileState } from '../profile/_form/actions';
+import { removeCompanyLogoAction, saveCompanyAction, setCompanyLogoAction, type ProfileState } from '../profile/_form/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,6 +55,14 @@ export function CompanySection({ company }: {
             className="text-xs file:me-2 file:rounded-md file:border file:bg-background file:px-2 file:py-1 file:text-xs"
           />
           <Button type="submit" size="sm" variant="outline">{tr('بارگذاری لوگو')}</Button>
+          {data.company.logoFileId && (
+            <Button
+              type="button" size="sm" variant="ghost"
+              onClick={async () => { setLogoState(await removeCompanyLogoAction()); }}
+            >
+              {tr('حذفِ لوگو')}
+            </Button>
+          )}
           {logoState.error && <span className="text-sm text-destructive">{t(logoState.error)}</span>}
           {logoState.message && (
             <span className="text-sm text-muted-foreground">{t(logoState.message)}</span>

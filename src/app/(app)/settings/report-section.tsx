@@ -4,7 +4,7 @@ import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Send } from 'lucide-react';
 import {
-  previewReportAction, saveReportAction, sendReportNowAction, type ReportState,
+  previewReportAction, saveReportAction, sendReportNowAction, testDiscordAction, type ReportState,
 } from './_form/actions';
 import { REPORT_SECTIONS, type ReportConfig } from '@/domain/scheduler/daily-report';
 import { Button } from '@/components/ui/button';
@@ -115,6 +115,12 @@ export function ReportSection({ config }: { config: ReportConfig }) {
           >
             <Send className="size-3.5" />
             {tr("ارسالِ فوری")}
+          </Button>
+          <Button
+            type="button" size="sm" variant="outline" disabled={pending}
+            onClick={() => startTransition(async () => setAux(await testDiscordAction()))}
+          >
+            {tr("تستِ اتصالِ دیسکورد")}
           </Button>
         </div>
       </form>
