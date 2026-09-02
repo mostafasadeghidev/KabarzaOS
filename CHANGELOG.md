@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.27.4]
+
+### Fixed — access
+
+- **An office manager or PM-by-tag got the error page on every project they manage.** The project page called two loaders that required the *global* `projects.view` / `projects.manage` whenever project-scoped `canManage` was true. Both loaders now take the project id and use the project-scoped guard, the same one the members and QA forms already used. Reproduced live before, verified live after.
+- **A client could see member payouts.** The finance tab loaded every payment row for anyone allowed to see finance — which includes the project's client — and printed the per-member amounts. Rows are now filtered by audience before masking: a client sees incoming payments and billable expenses; a plain member sees only their own payouts; global managers see all. Rule in `domain/access/project-payments`, with tests.
+- **Editing a meeting could leak a private project, and accepted any attendee id.** Create derived the meeting's private/company scope from its project; edit did not, so a meeting moved onto a private project stayed company-visible. Both paths now share one scope resolver, and attendee ids are intersected with the candidate pool (as the plugin does) instead of being inserted raw.
+- **A staff admin with only members/meetings/messages/finance access was bounced to the login form after signing in.** The root page knew only projects, reports and the member/client roles. It now routes to the first allowed section (`domain/access/first-page`, tested), and never sends a live session back to `/login`.
+- **The file gate re-implemented project access and got it wrong twice.** It read membership directly, ignoring `access_blocked` (a member whose access was cut could still download every file) and office/PM scope (an office manager got 403 on their own office's files). It now delegates to the project authority: members and clients unless blocked, otherwise manage-level authority (global, office manager, PM-by-tag) — global *viewers* still do not get files, as before. Two new DB tests pin both cases.
+
+---
+
 ## [1.27.3]
 
 ### Fixed

@@ -196,21 +196,51 @@ export interface MeetingInput {
   attendeeIds: number[];
 }
 
+/**
+ * scope ِ جلسه = scope ِ پروژه‌اش.
+ *
+ * ⚠️ جلسه scope ِ پروژه‌اش را ارث می‌برد — وگرنه جلسهٔ یک پروژهٔ خصوصی در
+ * فهرستِ عمومی دیده می‌شد (همان تلهٔ R-PROJ-30). این تابع را **هم ساخت هم
+ * ویرایش** صدا می‌زنند: پیش از این فقط ساخت داشتش، پس جلسه‌ای که با ویرایش
+ * روی پروژهٔ خصوصی می‌رفت، عمومی می‌ماند.
+ */
+async function resolveMeetingScope(
+  actor: Actor,
+  projectId: number | null,
+): Promise<'company' | 'private'> {
+  if (projectId === null) return 'company';
+  const rows = await db.select({ scope: projects.scope })
+    .from(projects).where(eq(projects.id, projectId));
+  const project = rows[0];
+  if (!project) throw new MeetingNotFoundError();
+  const scope = project.scope as 'company' | 'private';
+  if (!visibleScopes(actor).includes(scope)) throw new ForbiddenError('meeting.scope');
+  return scope;
+}
+
+/**
+ * دعوت‌شدگان ∩ استخرِ کاندیداها.
+ *
+ * ⚠️ فرم هر شناسه‌ای را می‌تواند بفرستد؛ افزونه (`class-meetings.php:378-385`)
+ * فهرستِ ارسالی را با `candidates()` اشتراک می‌گیرد و بقیه را بی‌صدا
+ * می‌اندازد. بدونِ این، با ویرایشِ فرم می‌شد هر کاربری را — از جمله
+ * غیرفعال‌ها و بیرونِ پروژه — به جلسه دعوت کرد.
+ */
+async function allowedAttendees(actor: Actor, input: MeetingInput): Promise<number[]> {
+  const pool = new Set(
+    (await getCandidates(actor, {
+      projectId: input.projectId,
+      officeIds: input.officeId === null ? [] : [input.officeId],
+    })).map((c) => c.userId),
+  );
+  return [...new Set(input.attendeeIds)].filter((id) => pool.has(id));
+}
+
 /** ساختِ جلسه + ثبتِ دعوت‌شدگان. */
 export async function createMeeting(actor: Actor, input: MeetingInput): Promise<number> {
   assertCanManage(actor, 'meetings');
-
-  // ⚠️ جلسه scope ِ پروژه‌اش را ارث می‌برد — وگرنه جلسهٔ یک پروژهٔ خصوصی در
-  // فهرستِ عمومی دیده می‌شد (همان تلهٔ R-PROJ-30).
-  let scope: 'company' | 'private' = 'company';
-  if (input.projectId !== null) {
-    const rows = await db.select({ scope: projects.scope })
-      .from(projects).where(eq(projects.id, input.projectId));
-    const project = rows[0];
-    if (!project) throw new MeetingNotFoundError();
-    scope = project.scope as 'company' | 'private';
-    if (!visibleScopes(actor).includes(scope)) throw new ForbiddenError('meeting.scope');
-  }
+  const scope = await resolveMeetingScope(actor, input.projectId);
+  const attendeeIds = await allowedAttendees(actor, input);
 
   const id = await db.transaction(async (tx) => {
     const rows = await tx.insert(meetings).values({
@@ -226,10 +256,8 @@ export async function createMeeting(actor: Actor, input: MeetingInput): Promise<
     }).returning({ id: meetings.id });
 
     const meetingId = rows[0]!.id;
-    if (input.attendeeIds.length > 0) {
-      await tx.insert(meetingAttendees).values(
-        [...new Set(input.attendeeIds)].map((userId) => ({ meetingId, userId })),
-      );
+    if (attendeeIds.length > 0) {
+      await tx.insert(meetingAttendees).values(attendeeIds.map((userId) => ({ meetingId, userId })));
     }
     return meetingId;
   });
@@ -237,7 +265,7 @@ export async function createMeeting(actor: Actor, input: MeetingInput): Promise<
   await audit(actor, 'meeting.create', id, null, input);
 
   // R-NOTIF-01 — دعوت‌شدگان (جز خودِ سازنده) خبردار می‌شوند.
-  await notify(input.attendeeIds.filter((uid) => uid !== actor.id), {
+  await notify(attendeeIds.filter((uid) => uid !== actor.id), {
     type: 'meeting.invited',
     title: 'دعوت به جلسه',
     body: input.title,
@@ -250,6 +278,8 @@ export async function createMeeting(actor: Actor, input: MeetingInput): Promise<
 export async function updateMeeting(actor: Actor, meetingId: number, input: MeetingInput) {
   assertCanManage(actor, 'meetings');
   const before = await getMeeting(actor, meetingId);
+  const scope = await resolveMeetingScope(actor, input.projectId);
+  const attendeeIds = await allowedAttendees(actor, input);
 
   await db.transaction(async (tx) => {
     await tx.update(meetings).set({
@@ -260,14 +290,13 @@ export async function updateMeeting(actor: Actor, meetingId: number, input: Meet
       projectId: input.projectId,
       officeId: input.officeId,
       meetingScope: input.projectId !== null ? 'project' : 'general',
+      scope,
       updatedAt: new Date(),
     }).where(eq(meetings.id, meetingId));
 
     await tx.delete(meetingAttendees).where(eq(meetingAttendees.meetingId, meetingId));
-    if (input.attendeeIds.length > 0) {
-      await tx.insert(meetingAttendees).values(
-        [...new Set(input.attendeeIds)].map((userId) => ({ meetingId, userId })),
-      );
+    if (attendeeIds.length > 0) {
+      await tx.insert(meetingAttendees).values(attendeeIds.map((userId) => ({ meetingId, userId })));
     }
   });
 

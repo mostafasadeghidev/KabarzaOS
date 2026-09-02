@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import sharp from 'sharp';
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
-import { attachments, files, projects, projectMembers, users, userRoles } from '../schema';
+import { attachments, files, offices, projects, projectMembers, userOffices, users, userRoles } from '../schema';
 import {
   addAttachment, addLink, canViewFile, deleteAttachment, listAttachments, serveFile,
 } from '@/server/files/service';
@@ -269,5 +269,38 @@ describe('R-FILE-16 — پیش‌نمایشِ کوچک', () => {
     const served = await serveFile(owner, fileId, false, true);
     expect(served.mime).toBe('image/png');
     expect(Array.from(served.bytes)).toEqual(Array.from(PNG));
+  });
+});
+
+describe('گیتِ فایل = همان تصمیمِ دسترسیِ پروژه، نه یک نسخهٔ دوباره‌نویسی‌شده', () => {
+  it('⚠️ عضوی که دسترسی‌اش قطع شده، فایل را نمی‌بیند', async () => {
+    // ⚠️ نسخهٔ قبلیِ گیت عضویت را مستقیم می‌خواند و access_blocked را نمی‌دید.
+    const fileId = await addAttachment(owner, projectId, blob(), 'برای عضوِ قطع‌شده');
+    await db.update(projectMembers).set({ accessBlocked: true })
+      .where(eq(projectMembers.userId, memberId));
+    try {
+      expect(await canViewFile(member, fileId)).toBe(false);
+      await expect(serveFile(member, fileId)).rejects.toBeInstanceOf(ForbiddenError);
+    } finally {
+      await db.update(projectMembers).set({ accessBlocked: false })
+        .where(eq(projectMembers.userId, memberId));
+    }
+    expect(await canViewFile(member, fileId)).toBe(true);
+  });
+
+  it('مدیرِ دفترِ مالکِ پروژه بدونِ امضا و بدونِ مجوزِ سراسری می‌بیند', async () => {
+    // ⚠️ همان مدیرِ دفتری که پیش از این روی فایل‌های دفترِ خودش ۴۰۳ می‌گرفت.
+    const [office] = await db.insert(offices).values({ name: 'دفترِ فایل' }).returning({ id: offices.id });
+    await db.update(projects).set({ officeId: office!.id }).where(eq(projects.id, projectId));
+    await db.insert(userOffices).values({ userId: outsiderId, officeId: office!.id, manages: true });
+    const fileId = await addAttachment(owner, projectId, blob(), 'برای مدیرِ دفتر');
+    try {
+      expect(await canViewFile(actorOf(outsiderId, ['member']), fileId)).toBe(true);
+    } finally {
+      await db.delete(userOffices).where(eq(userOffices.userId, outsiderId));
+      await db.update(projects).set({ officeId: null }).where(eq(projects.id, projectId));
+    }
+    // بدونِ مدیریتِ دفتر، همان بیگانه است.
+    expect(await canViewFile(actorOf(outsiderId, ['member']), fileId)).toBe(false);
   });
 });

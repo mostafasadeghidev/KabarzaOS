@@ -28,6 +28,7 @@ import {
   canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation,
 } from './authority';
 import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
+import { visiblePayments } from '@/domain/access/project-payments';
 import { canManageProject as decideManage, PM_CAP } from '@/domain/access/project-scope';
 import {
   assignableToPeople, FALLBACK_MEMBER_LABEL, nameForViewer, type ViewerContext,
@@ -618,8 +619,14 @@ export async function createProject(actor: Actor, input: CreateProjectData): Pro
  * گزینه‌های فرم — وضعیت، ارز، دفتر، پروژهٔ والد.
  * با `excludeId` (حالتِ ویرایش) خودِ پروژه و فرزندانش از فهرستِ والد حذف می‌شوند.
  */
+/**
+ * ⚠️ بدونِ `projectId` فرمِ **ساخت** است و مجوزِ سراسری می‌خواهد (پروژه‌ای
+ * نیست که کسی مدیرش باشد)؛ با `projectId` فرمِ ویرایش است و گاردِ پروژه‌ای
+ * کافی است — همان قاعدهٔ `getMembersForm` و `getQaForm`.
+ */
 export async function getProjectFormOptions(actor: Actor, excludeId?: number) {
-  assertCanManage(actor, 'projects');
+  if (excludeId === undefined) assertCanManage(actor, 'projects');
+  else await assertCanManageProject(actor, excludeId);
   const [
     statuses, currencyRows, officeRows, parents, roleTagRows,
     people, clientPeople, priorities, qaRows, memberRoles,
@@ -899,7 +906,12 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     closedByName: mask(c.closedBy, c.closedByName),
   }));
   const maskedQa = qa.map((q) => ({ ...q, doneByName: mask(q.doneBy, q.doneByName) }));
-  const maskedPayments = payments.map((p) => ({ ...p, userName: mask(p.userId, p.userName) }));
+  /**
+   * ⚠️ اول فیلترِ مخاطب، بعد ماسکِ نام: کارفرما «پرداخت به عضو» را اصلاً
+   * نباید ببیند — نه با نامِ ماسک‌شده. قاعده در `domain/access/project-payments`.
+   */
+  const maskedPayments = visiblePayments(audience, actor.id, payments)
+    .map((p) => ({ ...p, userName: mask(p.userId, p.userName) }));
 
   /**
    * سه‌حالتیِ حذف فقط برای مدیر خوانده می‌شود — کوئریِ سنگینی است و کاربرِ
@@ -1087,8 +1099,15 @@ export async function setArchived(actor: Actor, projectId: number, archived: boo
 }
 
 /** وضعیت‌های تسک — انتخابگرِ تبِ تسک‌ها. */
-export async function getTaskStatusOptions(actor: Actor) {
-  assertCanView(actor, 'projects');
+/**
+ * ⚠️ با `projectId` گاردِ **پروژه‌ای** است، نه سراسری: مدیرِ دفتر و مدیرِ پروژهٔ
+ * تگ‌دار مجوزِ سراسریِ `projects.view` ندارند ولی صفحهٔ پروژه برایشان
+ * گزینه‌های وضعیت را می‌خواند. با گاردِ سراسری، بازکردنِ هر پروژه‌ای که
+ * مدیریتش می‌کردند صفحهٔ خطا می‌داد.
+ */
+export async function getTaskStatusOptions(actor: Actor, projectId?: number) {
+  if (projectId === undefined) assertCanView(actor, 'projects');
+  else await assertCanViewProject(actor, projectId);
   return repo.taskStatusTags();
 }
 

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { assertNotFrozen } from '@/server/projects/authority';
+import { assertNotFrozen, canManageProject, projectRelation } from '@/server/projects/authority';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
@@ -188,7 +188,23 @@ async function receiptVisible(actor: Actor, fileId: number): Promise<boolean> {
   return false;
 }
 
-/** آیا این کاربر به این پروژه دسترسی دارد؟ */
+/**
+ * آیا این کاربر به این پروژه دسترسی دارد؟
+ *
+ * ⚠️ همان تصمیمِ `canViewProject` — نه یک نسخهٔ دوباره‌نویسی‌شده. نسخهٔ
+ * قبلیِ این تابع عضویت را مستقیم می‌خواند و دو چیز را نمی‌دید: قطعِ دسترسی
+ * (`access_blocked`) و دامنهٔ مدیرِ دفتر/مدیرِ پروژهٔ تگ‌دار. نتیجه: عضوی که
+ * دسترسی‌اش قطع شده بود هنوز هر فایلِ پروژه را دانلود می‌کرد، و مدیرِ دفتر
+ * روی فایل‌های دفترِ خودش ۴۰۳ می‌گرفت.
+ *
+ * ⚠️ برای غیرعضو، معیار **مدیریت** است نه دیدن: مجوزِ سراسریِ `projects.view`
+ * کارتِ پروژه را باز می‌کند، فایل‌هایش را نه (R-FILE-03 — «گیت یعنی این
+ * فایل، این کاربر»). `canManageProject` مدیرِ سراسری، مدیرِ دفترِ مالک و
+ * مدیرِ پروژهٔ تگ‌دار را پوشش می‌دهد.
+ *
+ * ⚠️ scope ِ خصوصی فقط برای بینندهٔ **مجوزی** سنجیده می‌شود — عضو و کارفرمای
+ * امضاشده پروژهٔ خصوصی‌شان را می‌بینند.
+ */
 async function canAccessProject(actor: Actor, projectId: number): Promise<boolean> {
   const rows = await db.select({ id: projects.id, scope: projects.scope })
     .from(projects)
@@ -196,18 +212,11 @@ async function canAccessProject(actor: Actor, projectId: number): Promise<boolea
   const project = rows[0];
   if (!project) return false;
 
-  // پروژهٔ خصوصی فقط با گرنتِ دسترسیِ خصوصی.
+  const relation = await projectRelation(actor.id, projectId);
+  if (relation.isMember || relation.isClient) return !relation.accessBlocked;
+
   if (!visibleScopes(actor).includes(project.scope)) return false;
-
-  if (canManageSection(actor, 'projects')) return true;
-
-  const [member, client] = await Promise.all([
-    db.select({ id: projectMembers.id }).from(projectMembers)
-      .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, actor.id))),
-    db.select({ id: projectClients.id }).from(projectClients)
-      .where(and(eq(projectClients.projectId, projectId), eq(projectClients.userId, actor.id))),
-  ]);
-  return member.length > 0 || client.length > 0;
+  return canManageProject(actor, projectId);
 }
 
 /** فایل را برای سرو کردن آماده می‌کند — یا ۴۰۳ می‌دهد. */

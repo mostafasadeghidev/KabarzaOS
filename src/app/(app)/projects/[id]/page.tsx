@@ -130,7 +130,7 @@ export default async function ProjectDetailPage({
    * خواندنی را برمی‌گرداند، مثلِ `task_status_dropdown_html()` نسخهٔ قبلی.
    */
   const [taskStatuses, taskFormOptions, qaForm] = await Promise.all([
-    canManage ? getTaskStatusOptions(actor) : Promise.resolve([]),
+    canManage ? getTaskStatusOptions(actor, project.id) : Promise.resolve([]),
     /**
      * ⚠️ فرمِ تسک برای **هر کسی که پروژه را می‌بیند** — عضو و کارفرما هم.
      * سرویس همان گارد را دارد، پس این شرط و آن گارد یکی‌اند و از هم جدا
