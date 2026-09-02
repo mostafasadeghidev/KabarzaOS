@@ -2,6 +2,25 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.40.0]
+
+### Added — report filters (parity with the plugin)
+
+- **Office filter** on the overview, members, clients, projects and hours tabs, multi-select. Client and project figures follow the project's office; member figures follow the member's office across all of their projects. The CSV export carries the same filter.
+- **Expenses tab:** date range with "this month" / "this year" presets (default: current month), cards for the period total (red when positive), row count and monthly average over months with data, a by-vendor breakdown with a live vendor filter, and a by-month trend with bars. The CSV is now the by-vendor summary with a total row for the selected range.
+- **Hours tab** answers the plugin's question: one row per member with project hours, general hours and the total, sorted by total, with "this week" (from the configured week start) / "this month" presets and a manual range. The CSV follows the same columns.
+- **Member hours drill-down:** defaults to the current week from the configured week start, "all time" is an explicit preset, the range is shown under the name, the project picker lists every project the member ever logged on, and entries are capped at 500 rows.
+- **Per-unit work tab:** rows sorted by total, a totals footer, and entries of a deleted user kept as "#id".
+- **Projects tab:** the title links straight to the project's finance tab, and only for users who manage projects.
+
+### Changed
+
+- The closed-periods tab and its CSV need only the reports permission, as in the plugin; finance rights are no longer required to read a closing summary.
+- Recomputing EUR equivalents is allowed for the owner and finance managers.
+- The accounts report lists active accounts only.
+
+---
+
 ## [1.39.0]
 
 ### Added — reports (parity with the plugin)

@@ -1,17 +1,18 @@
-import { and, desc, eq, gte, inArray, isNull, lte, sql, or } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lte, sql, or, SQL } from 'drizzle-orm';
 import { convert } from '@/domain/currency/rates';
-import { rateSource } from '@/server/finance/service';
+import { rateSource, closingDatesQuery, closingRowsQuery } from '@/server/finance/service';
 import { db } from '@/db/client';
 import {
   absences, accounts, availabilitySlots, currencies, ledger, projectMembers,
-  projectClients, projectPayments, projects, timelogs, unitEntries, userRoles, users,
+  projectClients, projectPayments, projects, timelogs, unitEntries, userRoles, users, offices, userOffices, vendors,
 } from '@/db/schema';
 import { type Actor } from '@/domain/access/permissions';
 import { assertCanView, visibleScopes } from '@/domain/access/guard';
-import { overallSummary, sumReportable } from '@/domain/reports/summary';
+import { overallSummary, sumReportable, isReportableExpense } from '@/domain/reports/summary';
 import { currentLocale } from '@/i18n/server';
 import { isSettledFormer, perCurrencyLines, rateBanner, sumInBase } from '@/domain/reports/money';
 import { rowValueIn } from '@/domain/team-money/payments';
+import { monthlyAverage, withBars } from '@/domain/reports/filters';
 
 /**
  * فهرستِ scope برای SQL ِ خام.
@@ -22,6 +23,50 @@ import { rowValueIn } from '@/domain/team-money/payments';
 function scopeList(scopes: Array<'company' | 'private'>) {
   const safe = scopes.filter((s) => s === 'company' || s === 'private');
   return sql.raw(safe.map((s) => `'${s}'`).join(',') || `'company'`);
+}
+
+/**
+ * فیلترِ دفترِ صفحهٔ گزارش‌ها — پورتِ `office_scope()` ِ افزونه.
+ * ⚠️ دو معنا (R ِ افزونه): ارقامِ کارفرما/پروژه با دفترِ **پروژه**، ارقامِ
+ * اعضا با دفترِ **عضو** (همهٔ پروژه‌هایش). خالی یعنی همهٔ دفاتر.
+ */
+export interface ReportFilters { officeIds?: readonly number[] }
+export interface HoursQuery extends ReportFilters { from?: string; to?: string }
+
+/** پورتِ `Projects::ids_for_offices` — null یعنی بی‌فیلتر. */
+async function officeProjectIds(officeIds?: readonly number[]): Promise<number[] | null> {
+  if (!officeIds || officeIds.length === 0) return null;
+  const rows = await db.select({ id: projects.id }).from(projects)
+    .where(inArray(projects.officeId, [...officeIds]));
+  return rows.map((r) => r.id);
+}
+
+/** پورتِ `People::members_in_offices` — عضوِ هر یک از دفترهای انتخابی. */
+async function officeMemberIds(officeIds?: readonly number[]): Promise<number[] | null> {
+  if (!officeIds || officeIds.length === 0) return null;
+  const rows = await db.selectDistinct({ userId: userOffices.userId }).from(userOffices)
+    .where(inArray(userOffices.officeId, [...officeIds]));
+  return rows.map((r) => r.userId);
+}
+
+/** «شناسه در فهرست» — بی‌فیلتر همیشه درست، فهرستِ خالی هیچ (drizzle با آرایهٔ خالی خطا می‌دهد). */
+function idIn(column: Parameters<typeof inArray>[0], ids: number[] | null): SQL {
+  if (ids === null) return sql`true`;
+  if (ids.length === 0) return sql`false`;
+  return inArray(column, ids) as SQL;
+}
+
+/** همان برای SQL ِ خام (`p` = projects). */
+function projectInRaw(pids: number[] | null): SQL {
+  if (pids === null) return sql``;
+  if (pids.length === 0) return sql` and false`;
+  return sql` and p.id in (${sql.raw(pids.map((n) => String(Math.trunc(n))).join(','))})`;
+}
+
+/** دفترهای فعال برای فیلترِ صفحه. */
+export async function filterOffices() {
+  return db.select({ id: offices.id, name: offices.name }).from(offices)
+    .where(eq(offices.isActive, true)).orderBy(offices.name);
 }
 
 /**
@@ -57,16 +102,18 @@ async function baseConverter() {
   };
 }
 
-export async function getOverall(actor: Actor) {
+export async function getOverall(actor: Actor, filters: ReportFilters = {}) {
   assertCanView(actor, 'reports');
   const scopes = visibleScopes(actor);
+  // فیلترِ دفتر: پروژه‌محور برای ارزش/پرداخت‌ها/ساعت، عضومحور برای سمتِ اعضا (memberRows).
+  const pids = await officeProjectIds(filters.officeIds);
 
   const fx = await baseConverter();
-  const [values, payments, agreed, minutes] = await Promise.all([
+  const [values, payments, minutes] = await Promise.all([
     // ارزشِ پروژه‌ها — از ستونِ منجمدِ پرداخت‌ها نمی‌آید، پس ردیف‌به‌ردیف تبدیل می‌شود.
     db.select({ price: projects.price, currencyId: projects.currencyId })
       .from(projects)
-      .where(and(isNull(projects.deletedAt), inArray(projects.scope, scopes))),
+      .where(and(isNull(projects.deletedAt), inArray(projects.scope, scopes), idIn(projects.id, pids))),
 
     db.select({
       direction: projectPayments.direction,
@@ -74,27 +121,23 @@ export async function getOverall(actor: Actor) {
     })
       .from(projectPayments)
       .innerJoin(projects, eq(projects.id, projectPayments.projectId))
-      .where(inArray(projects.scope, scopes))
+      .where(and(inArray(projects.scope, scopes), idIn(projects.id, pids)))
       .groupBy(projectPayments.direction),
 
-    db.select({ agreed: projectMembers.agreedAmount, currencyId: projectMembers.currencyId })
-      .from(projectMembers)
-      .innerJoin(projects, eq(projects.id, projectMembers.projectId))
-      .where(inArray(projects.scope, scopes)),
-
-    // ساعتِ عمومی (بی‌پروژه) هم شمرده می‌شود — مثلِ افزونه.
+    // ساعتِ عمومی (بی‌پروژه) هم شمرده می‌شود — مثلِ افزونه؛ با فیلترِ دفتر فقط ساعتِ پروژه‌های همان دفتر.
     db.select({ total: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int` })
       .from(timelogs)
       .leftJoin(projects, eq(projects.id, timelogs.projectId))
-      .where(or(isNull(timelogs.projectId), inArray(projects.scope, scopes))),
+      .where(pids === null
+        ? or(isNull(timelogs.projectId), inArray(projects.scope, scopes))
+        : and(inArray(projects.scope, scopes), idIn(projects.id, pids))),
   ]);
 
   const by = new Map(payments.map((p) => [p.direction, p.total]));
 
   const totalValue = values.reduce((sum, r) => sum + fx.toBase(r.price, r.currencyId), 0);
-  void agreed;
   // پورتِ `overall()`: سمتِ اعضا از `member_rows` می‌آید — بدهیِ کف‌بندی‌شده به‌ازای هر ارز.
-  const members = await memberRows(actor);
+  const members = await memberRows(actor, filters);
   const summary = overallSummary({
     totalValue: totalValue.toFixed(2),
     billableExpenses: by.get('project_expense') ?? '0',
@@ -139,14 +182,16 @@ async function baseFx() {
  * (پرداختی در ارزِ تسویه)، بدهیِ کف‌بندی‌شدهٔ خطی، جمعِ یورو از خط‌ها، شمارِ
  * پروژه، ساعت (عمومی هم)، نشانِ «سابق»؛ سابقِ تسویه‌شده فقط از **نمایش** می‌رود.
  */
-async function memberRows(actor: Actor) {
+async function memberRows(actor: Actor, filters: ReportFilters = {}) {
   const scopes = visibleScopes(actor);
   const fx = await baseFx();
+  // عضومحور: عضوِ دفترهای انتخابی با **همهٔ** پروژه‌هایش (پورتِ `members_in_offices`).
+  const mids = await officeMemberIds(filters.officeIds);
   const [people, agreedRows, paidRows, minuteRows, countRows, codeRows] = await Promise.all([
     db.selectDistinct({ id: users.id, name: users.name, memberState: users.memberState })
       .from(users)
       .innerJoin(userRoles, eq(userRoles.userId, users.id))
-      .where(and(eq(userRoles.role, 'member'), isNull(users.deletedAt)))
+      .where(and(eq(userRoles.role, 'member'), isNull(users.deletedAt), idIn(users.id, mids)))
       .orderBy(users.name),
     // ارزِ توافقی: ارزِ ردیفِ عضویت، وگرنه ارزِ پروژه، وگرنه پایه (گروه‌بندی روی ستون‌های خام؛ coalesce در JS).
     db.select({
@@ -228,9 +273,9 @@ async function memberRows(actor: Actor) {
 }
 
 /** گزارشِ اعضا — توافقی، پرداختی، بدهی (به‌ازای هر ارز و یورو)، ساعتِ کاری. */
-export async function getMembersReport(actor: Actor) {
+export async function getMembersReport(actor: Actor, filters: ReportFilters = {}) {
   assertCanView(actor, 'reports');
-  return (await memberRows(actor)).rows;
+  return (await memberRows(actor, filters)).rows;
 }
 
 /** داده‌های نوارِ نرخ‌ها — پورتِ `rate_banner_html`. */
@@ -257,9 +302,9 @@ async function rateBannerData() {
  * صورتحساب می‌شود؛ بقیه صفر — پورتِ `class-reports.php:571-593`. کامنتِ قبلیِ
  * همین‌جا عکسش را ادعا می‌کرد و مطالبات را برای هر کارفرما دوباره می‌شمرد.
  */
-export async function getClientsReport(actor: Actor) {
+export async function getClientsReport(actor: Actor, filters: ReportFilters = {}) {
   assertCanView(actor, 'reports');
-  return (await clientRows(actor)).rows;
+  return (await clientRows(actor, filters)).rows;
 }
 
 /**
@@ -268,9 +313,11 @@ export async function getClientsReport(actor: Actor) {
  * قیمت + هزینه‌های قابلِ صورتحساب و دریافتی، هر دو در **ارزِ پروژه** (ردیف‌ها با
  * `rowValueIn` به همان ارز می‌روند)؛ طلب به‌ازای هر ارز کف‌بندی و بعد جمعِ یورو.
  */
-async function clientRows(actor: Actor) {
+async function clientRows(actor: Actor, filters: ReportFilters = {}) {
   const scopes = visibleScopes(actor);
   const fx = await baseFx();
+  // پروژه‌محور: فقط پروژه‌های دفترهای انتخابی؛ کارفرمای بی‌پروژه در این دامنه نمی‌آید.
+  const pids = await officeProjectIds(filters.officeIds);
   const [people, memberships, projectRows, paymentRows, codeRows] = await Promise.all([
     db.selectDistinct({ id: users.id, name: users.name, memberState: users.memberState })
       .from(users)
@@ -280,10 +327,10 @@ async function clientRows(actor: Actor) {
     db.select({ id: projectClients.id, userId: projectClients.userId, projectId: projectClients.projectId })
       .from(projectClients)
       .innerJoin(projects, eq(projects.id, projectClients.projectId))
-      .where(and(isNull(projects.deletedAt), inArray(projects.scope, scopes))),
+      .where(and(isNull(projects.deletedAt), inArray(projects.scope, scopes), idIn(projects.id, pids))),
     db.select({ id: projects.id, price: projects.price, currencyId: projects.currencyId })
       .from(projects)
-      .where(and(isNull(projects.deletedAt), inArray(projects.scope, scopes))),
+      .where(and(isNull(projects.deletedAt), inArray(projects.scope, scopes), idIn(projects.id, pids))),
     db.select({
       projectId: projectPayments.projectId, direction: projectPayments.direction,
       amount: projectPayments.amount, currencyId: projectPayments.currencyId,
@@ -295,6 +342,7 @@ async function clientRows(actor: Actor) {
         inArray(projectPayments.direction, ['incoming', 'project_expense']),
         isNull(projects.deletedAt),
         inArray(projects.scope, scopes),
+        idIn(projects.id, pids),
       )),
     db.select({ id: currencies.id, code: currencies.code }).from(currencies),
   ]);
@@ -368,37 +416,79 @@ async function clientRows(actor: Actor) {
  * هزینه‌ها از دفترکل.
  * ⚠️ R-LEDGER-06 — ردیف‌های انتقالِ داخلی کنار گذاشته می‌شوند.
  */
-export async function getExpensesReport(actor: Actor) {
+export async function getExpensesReport(
+  actor: Actor,
+  range: { from: string; to: string } = { from: '', to: '' },
+) {
   assertCanView(actor, 'reports');
+
+  const conds: SQL[] = [
+    inArray(accounts.scope, visibleScopes(actor)),
+    /**
+     * ⚠️ پرداخت به عضو هزینهٔ عملیاتی نیست — جای آن تبِ «بدهی به اعضا» است.
+     * ردیفِ دفترِ پرداخت در `project_payments` آینه دارد؛ همان‌جا شناخته
+     * می‌شود. بدونِ این، حقوق دو بار شمرده می‌شد (`class-reports.php:795-800`).
+     */
+    sql`not exists (select 1 from project_payments pp
+      where pp.ledger_id = ${ledger.id} and pp.direction = 'member_payout')`,
+  ];
+  // پورتِ افزونه: بازه روی تاریخِ سند؛ هر سر می‌تواند باز باشد.
+  if (range.from) conds.push(gte(ledger.entryDate, range.from));
+  if (range.to) conds.push(lte(ledger.entryDate, range.to));
 
   const rows = await db
     .select({
+      id: ledger.id,
       direction: ledger.direction,
       transferGroup: ledger.transferGroup,
       amountEur: ledger.amountEur,
       entryDate: ledger.entryDate,
       description: ledger.description,
       accountName: accounts.name,
+      vendorId: ledger.vendorId,
+      vendorName: vendors.name,
     })
     .from(ledger)
     .leftJoin(accounts, eq(accounts.id, ledger.accountId))
-    .where(and(
-      inArray(accounts.scope, visibleScopes(actor)),
-      /**
-       * ⚠️ پرداخت به عضو هزینهٔ عملیاتی نیست — جای آن تبِ «بدهی به اعضا» است.
-       * ردیفِ دفترِ پرداخت در `project_payments` آینه دارد؛ همان‌جا شناخته
-       * می‌شود. بدونِ این، حقوق دو بار شمرده می‌شد (`class-reports.php:795-800`).
-       */
-      sql`not exists (select 1 from project_payments pp
-        where pp.ledger_id = ${ledger.id} and pp.direction = 'member_payout')`,
-    ))
+    .leftJoin(vendors, eq(vendors.id, ledger.vendorId))
+    .where(and(...conds))
     .orderBy(ledger.entryDate);
 
+  // پورتِ `expenses_summary`: هزینهٔ واقعی = برداشتِ غیرِانتقال (پرداختِ عضو بالا حذف شد).
+  const expenseRows = rows.filter((r) => isReportableExpense(r));
+  const total = expenseRows.reduce((sum, r) => sum + Number(r.amountEur), 0);
+
+  const monthMap = new Map<string, number>();
+  const vendorMap = new Map<number, { id: number; label: string; count: number; amount: number }>();
+  for (const r of expenseRows) {
+    const ym = r.entryDate.slice(0, 7);
+    monthMap.set(ym, (monthMap.get(ym) ?? 0) + Number(r.amountEur));
+    const vid = r.vendorId ?? 0;
+    const v = vendorMap.get(vid) ?? { id: vid, label: vid ? (r.vendorName ?? '') : '', count: 0, amount: 0 };
+    v.count += 1;
+    v.amount += Number(r.amountEur);
+    vendorMap.set(vid, v);
+  }
+  // ماه‌ها نزولی با نوارِ روند نسبت به پرترین ماه؛ طرف‌حساب‌ها پرمبلغ‌اول.
+  const byMonth = withBars([...monthMap].map(([ym, amount]) => ({ ym, amount }))
+    .sort((a, b) => b.ym.localeCompare(a.ym)));
+  const byVendor = [...vendorMap.values()].sort((a, b) => b.amount - a.amount);
+
   return {
+    range,
+    total: total.toFixed(2),
+    count: expenseRows.length,
+    months: byMonth.length,
+    avg: monthlyAverage(total, byMonth.length).toFixed(2),
+    byVendor: byVendor.map((v) => ({ ...v, amount: v.amount.toFixed(2) })),
+    byMonth: byMonth.map((m) => ({ ym: m.ym, amount: m.amount.toFixed(2), pct: m.pct })),
     totalIn: sumReportable(rows, 'in'),
     totalOut: sumReportable(rows, 'out'),
     // فقط ردیف‌های گزارش‌پذیر به UI می‌روند تا جدول با جمع نخواند.
-    rows: rows.filter((r) => !r.transferGroup),
+    rows: rows.filter((r) => !r.transferGroup).map((r) => ({
+      id: r.id, entryDate: r.entryDate, description: r.description, direction: r.direction,
+      amountEur: r.amountEur, accountName: r.accountName, vendorId: r.vendorId ?? 0,
+    })),
   };
 }
 
@@ -415,7 +505,7 @@ export async function getAccountsReport(actor: Actor) {
     from accounts a
     left join currencies c on c.id = a.currency_id
     left join ledger l on l.account_id = a.id
-    where a.scope in (${scopeList(visibleScopes(actor))})
+    where a.is_active and a.scope in (${scopeList(visibleScopes(actor))})
     group by a.id, a.name, a.currency_id, c.code, a.opening_balance
     order by a.sort_order, a.name
   `);
@@ -444,20 +534,39 @@ export async function getAccountsReport(actor: Actor) {
 }
 
 /** ساعتِ کاری به تفکیکِ پروژه. */
-export async function getHoursReport(actor: Actor) {
+export async function getHoursReport(actor: Actor, input: HoursQuery = {}) {
   assertCanView(actor, 'reports');
+  const pids = await officeProjectIds(input.officeIds);
+  const window: SQL[] = [];
+  if (input.from) window.push(gte(timelogs.logDate, input.from));
+  if (input.to) window.push(lte(timelogs.logDate, input.to));
+  const minutes = sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int`;
 
-  return db
-    .select({
-      projectId: projects.id,
-      title: projects.title,
-      minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int`,
-    })
-    .from(timelogs)
-    .innerJoin(projects, eq(projects.id, timelogs.projectId))
-    .where(inArray(projects.scope, visibleScopes(actor)))
-    .groupBy(projects.id, projects.title)
-    .orderBy(projects.title);
+  const [proj, gen] = await Promise.all([
+    db.select({ userId: timelogs.userId, name: users.name, minutes })
+      .from(timelogs)
+      .innerJoin(projects, eq(projects.id, timelogs.projectId))
+      .innerJoin(users, eq(users.id, timelogs.userId))
+      .where(and(inArray(projects.scope, visibleScopes(actor)), idIn(projects.id, pids), ...window))
+      .groupBy(timelogs.userId, users.name),
+    // ساعتِ عمومی (بی‌پروژه) دفتر ندارد — مثلِ افزونه بی‌فیلترِ دفتر.
+    db.select({ userId: timelogs.userId, name: users.name, minutes })
+      .from(timelogs)
+      .innerJoin(users, eq(users.id, timelogs.userId))
+      .where(and(isNull(timelogs.projectId), ...window))
+      .groupBy(timelogs.userId, users.name),
+  ]);
+
+  const byUser = new Map<number, { userId: number; name: string; project: number; general: number }>();
+  for (const r of proj) byUser.set(r.userId, { userId: r.userId, name: r.name, project: r.minutes, general: 0 });
+  for (const r of gen) {
+    const row = byUser.get(r.userId) ?? { userId: r.userId, name: r.name, project: 0, general: 0 };
+    row.general = r.minutes;
+    byUser.set(r.userId, row);
+  }
+  return [...byUser.values()]
+    .map((r) => ({ ...r, total: r.project + r.general }))
+    .sort((a, b) => b.total - a.total);
 }
 
 export { currencies, users, isNull };
@@ -469,9 +578,10 @@ export { currencies, users, isNull };
  * **جذب‌شده** (`project_cost`) از سود کم می‌شود ولی به مطالبات اضافه نمی‌شود؛
  * تفاوتشان دقیقاً همان چیزی است که جهتِ چهارم برایش وجود دارد.
  */
-export async function getProjectsReport(actor: Actor) {
+export async function getProjectsReport(actor: Actor, filters: ReportFilters = {}) {
   assertCanView(actor, 'reports');
   const scopes = scopeList(visibleScopes(actor));
+  const pids = await officeProjectIds(filters.officeIds);
   const locale = await currentLocale();
 
   const fx = await baseConverter();
@@ -503,7 +613,7 @@ export async function getProjectsReport(actor: Actor) {
     left join (
       select project_id, sum(minutes) as total from timelogs group by project_id
     ) mins on mins.project_id = p.id
-    where p.deleted_at is null and p.scope in (${scopes})
+    where p.deleted_at is null and p.scope in (${scopes})${projectInRaw(pids)}
     order by p.title
   `);
 
@@ -520,7 +630,8 @@ export async function getProjectsReport(actor: Actor) {
       - Number(r.absorbed_costs);
 
     return {
-      id: r.id,
+      // ⚠️ `db.execute` اعداد را رشته می‌دهد — شناسه و دقیقه عددی می‌شوند.
+      id: Number(r.id),
       title: r.title,
       statusName: r.status_name,
       statusColor: r.status_color,
@@ -529,7 +640,7 @@ export async function getProjectsReport(actor: Actor) {
       clientDue: Math.max(0, billed - Number(r.client_paid)).toFixed(2),
       memberPaid: r.member_paid,
       profit: profit.toFixed(2),
-      minutes: r.minutes,
+      minutes: Number(r.minutes),
     };
   });
 }
@@ -552,17 +663,18 @@ export async function getUnitsReport(actor: Actor) {
       status: unitEntries.status,
     })
     .from(unitEntries)
-    .innerJoin(users, eq(users.id, unitEntries.userId))
-    .orderBy(users.name);
+    // ⚠️ leftJoin: ردیفِ کاربرِ حذف‌شده از جمع نمی‌افتد؛ نامش «#id» می‌شود (پورتِ افزونه).
+    .leftJoin(users, eq(users.id, unitEntries.userId));
 
   const byUser = new Map<number, { userId: number; name: string; paid: number; unpaid: number }>();
   for (const r of rows) {
-    const acc = byUser.get(r.userId) ?? { userId: r.userId, name: r.name, paid: 0, unpaid: 0 };
+    const acc = byUser.get(r.userId) ?? { userId: r.userId, name: r.name ?? `#${r.userId}`, paid: 0, unpaid: 0 };
     const v = fx.toBase(r.amount, r.currencyId);
     if (r.status === 'paid') acc.paid += v; else acc.unpaid += v;
     byUser.set(r.userId, acc);
   }
-  return [...byUser.values()].map((r) => ({
+  // پورتِ افزونه: بزرگ‌ترین جمع اول.
+  return [...byUser.values()].sort((a, b) => (b.paid + b.unpaid) - (a.paid + a.unpaid)).map((r) => ({
     userId: r.userId,
     name: r.name,
     paid: r.paid.toFixed(2),
@@ -782,7 +894,7 @@ export async function getMemberHours(
 
   const scoped = inArray(projects.scope, visibleScopes(actor));
 
-  const [byProject, generalRow, entries] = await Promise.all([
+  const [byProject, generalRow, entries, projectOptions] = await Promise.all([
     db.select({
       projectId: projects.id,
       title: projects.title,
@@ -810,7 +922,17 @@ export async function getMemberHours(
         .innerJoin(projects, eq(projects.id, timelogs.projectId))
         .where(and(...window, scoped, eq(timelogs.projectId, input.projectId)))
         .orderBy(desc(timelogs.logDate), desc(timelogs.id))
+        // پورتِ افزونه: سقفِ ۵۰۰ ردیف.
+        .limit(500)
       : Promise.resolve([]),
+
+    // پورتِ `Timelogs::project_ids_for_user`: گزینه‌های فیلتر از **همهٔ زمان**، نه بازهٔ فعلی —
+    // وگرنه عوض‌کردنِ بازه پروژهٔ انتخاب‌شده را از فهرست می‌انداخت.
+    db.selectDistinct({ id: projects.id, title: projects.title })
+      .from(timelogs)
+      .innerJoin(projects, eq(projects.id, timelogs.projectId))
+      .where(and(eq(timelogs.userId, userId), scoped))
+      .orderBy(projects.title),
   ]);
 
   const general = generalRow[0]?.minutes ?? 0;
@@ -820,9 +942,24 @@ export async function getMemberHours(
     member,
     byProject,
     entries,
+    projectOptions,
     totals: { project: projectTotal, general, all: projectTotal + general },
     selectedProject: input.projectId
       ? byProject.find((p) => p.projectId === input.projectId)?.title ?? null
       : null,
   };
+}
+
+/**
+ * دوره‌های بستهٔ مالی از صفحهٔ گزارش‌ها — با مجوزِ **گزارش**، نه مالی (پورتِ
+ * افزونه: تب و CSV ِ دوره‌ها فقط cap ِ گزارش می‌خواهند؛ ردیفِ ۱۲۱ ِ ممیزی).
+ */
+export async function reportClosingDates(actor: Actor): Promise<string[]> {
+  assertCanView(actor, 'reports');
+  return closingDatesQuery();
+}
+
+export async function reportClosingRows(actor: Actor, closeDate: string) {
+  assertCanView(actor, 'reports');
+  return closingRowsQuery(closeDate);
 }

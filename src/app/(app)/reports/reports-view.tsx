@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,8 @@ import {
 import { useT } from '@/i18n/client';
 import { Download } from 'lucide-react';
 import { isExportableTab } from '@/domain/reports/export';
+import { monthlyAverage, reportQuery, withBars, type RangePreset } from '@/domain/reports/filters';
+import { OfficeFilter, RangeBar, type OfficeOption } from './report-filters';
 import {
   TablePager, TableSearch, useTableView, type TableView,
 } from '@/components/ui/table-search';
@@ -24,9 +26,22 @@ function isExportable(tab: string): boolean {
   return isExportableTab(tab) || tab === 'closings';
 }
 
+/** فیلترهای صفحه — از نشانی (پورتِ `office_ids_req` و بازه‌های افزونه). */
+export interface ReportFilterState {
+  officeIds: number[];
+  offices: OfficeOption[];
+  expenses: { range: { from: string; to: string }; presets: RangePreset[] };
+  hours: { range: { from: string; to: string }; allTime: boolean; presets: RangePreset[] };
+}
+
+/** تب‌هایی که فیلترِ دفتر دارند — پورتِ افزونه (کلی/اعضا/کارفرمایان/پروژه‌ها/ساعت). */
+const OFFICE_TABS = ['overall', 'members', 'clients', 'projects', 'hours'];
+
 export interface ReportsData {
-  /** دکمهٔ ترمیمِ یورو فقط برای مالک. */
-  isOwner: boolean;
+  /** دکمهٔ ترمیمِ یورو — مالک یا مدیرِ مالی. */
+  canRecompute: boolean;
+  /** پیوندِ پروژه در تبِ پروژه‌ها فقط برای مدیرِ پروژه‌ها (پورتِ افزونه). */
+  canManageProjects: boolean;
   overall: {
     projectCount: number;
     totalValue: string;
@@ -57,11 +72,18 @@ export interface ReportsData {
     byCurrency: Array<{ currencyId: number; code: string; billed: string; paid: string; due: string }>;
   }>;
   expenses: {
+    range: { from: string; to: string };
+    total: string;
+    count: number;
+    months: number;
+    avg: string;
+    byVendor: Array<{ id: number; label: string; count: number; amount: string }>;
+    byMonth: Array<{ ym: string; amount: string; pct: number }>;
     totalIn: string;
     totalOut: string;
     rows: Array<{
-      entryDate: string; description: string; direction: string;
-      amountEur: string; accountName: string | null;
+      id: number; entryDate: string; description: string; direction: string;
+      amountEur: string; accountName: string | null; vendorId: number;
     }>;
   };
   accountsReport: Array<{
@@ -69,7 +91,7 @@ export interface ReportsData {
     opening: string; totalIn: string; totalOut: string; balance: string;
     balanceEur: string | null;
   }>;
-  hours: Array<{ projectId: number; title: string; minutes: number }>;
+  hours: Array<{ userId: number; name: string; project: number; general: number; total: number }>;
   projectRows: Array<{
     id: number; title: string; statusName: string | null; statusColor: string | null;
     price: string; clientPaid: string; clientDue: string; memberPaid: string;
@@ -109,13 +131,52 @@ export function ReportsView({
   data,
   tabs,
   initialTab,
+  filters,
 }: {
   data: ReportsData;
   tabs: string[];
   /** تبِ آمده از نشانی — برای پیوندِ مستقیم به «دوره‌های بسته‌شده». */
   initialTab?: string | null;
+  filters: ReportFilterState;
 }) {
   const tr = useT();
+  /**
+   * فیلترِ زندهٔ طرف‌حساب (پورتِ `kteam-expven-filter`): انتخابِ چند طرف‌حساب،
+   * کارت‌ها و جدول‌های تبِ هزینه‌ها همان‌جا دوباره جمع می‌شوند؛ null = همه.
+   */
+  const [vendorSel, setVendorSel] = useState<number[] | null>(null);
+  const expenseStats = useMemo(() => {
+    if (vendorSel === null) return data.expenses;
+    const on = new Set(vendorSel);
+    const rows = data.expenses.rows.filter((r) => r.direction === 'out' && on.has(r.vendorId));
+    const total = rows.reduce((sum, r) => sum + Number(r.amountEur), 0);
+    const months = new Map<string, number>();
+    for (const r of rows) months.set(r.entryDate.slice(0, 7), (months.get(r.entryDate.slice(0, 7)) ?? 0) + Number(r.amountEur));
+    const byMonth = withBars([...months].map(([ym, amount]) => ({ ym, amount })).sort((a, b) => b.ym.localeCompare(a.ym)));
+    return {
+      ...data.expenses,
+      total: total.toFixed(2),
+      count: rows.length,
+      months: byMonth.length,
+      avg: monthlyAverage(total, byMonth.length).toFixed(2),
+      byVendor: data.expenses.byVendor.filter((v) => on.has(v.id)),
+      byMonth: byMonth.map((m) => ({ ym: m.ym, amount: m.amount.toFixed(2), pct: m.pct })),
+      rows: data.expenses.rows.filter((r) => r.direction !== 'out' || on.has(r.vendorId)),
+    };
+  }, [data.expenses, vendorSel]);
+  const toggleVendor = (id: number) => setVendorSel((prev) => {
+    const base = prev ?? [];
+    return base.includes(id) ? (base.length === 1 ? null : base.filter((x) => x !== id)) : [...base, id];
+  });
+  /** پارامترهای بازهٔ ساعت که فیلترِ دفتر باید حفظ کند. */
+  const hoursExtra = filters.hours.allTime
+    ? { hfrom: '', hto: '' }
+    : { hfrom: filters.hours.range.from, hto: filters.hours.range.to };
+  const exportQuery = reportQuery({
+    office: filters.officeIds,
+    from: filters.expenses.range.from, to: filters.expenses.range.to,
+    hfrom: filters.hours.range.from, hto: filters.hours.range.to, hoursAllTime: filters.hours.allTime,
+  });
   // مالک می‌تواند تبی را از یک همکار پنهان کند؛ پس فهرست فیلتر می‌شود و
   // تبِ فعالِ اولیه هم باید از همان فهرستِ مجاز بیاید، نه ثابت 'overall'.
   const visible = TABS.filter((t) => tabs.includes(t.key));
@@ -137,12 +198,12 @@ export function ReportsView({
   const membersView = useTableView(data.members, (m) => m.name);
   const clientsView = useTableView(data.clients, (c) => c.name);
   const expensesView = useTableView(
-    data.expenses.rows, (r) => `${r.description} ${r.accountName ?? ''} ${r.entryDate}`,
+    expenseStats.rows, (r) => `${r.description} ${r.accountName ?? ''} ${r.entryDate}`,
   );
   const accountsView = useTableView(
     data.accountsReport, (a) => `${a.name} ${a.currencyCode ?? ''}`,
   );
-  const hoursView = useTableView(data.hours, (h) => h.title);
+  const hoursView = useTableView(data.hours, (h) => h.name);
   const projectsView = useTableView(
     data.projectRows, (p) => `${p.title} ${p.statusName ?? ''}`,
   );
@@ -163,7 +224,7 @@ export function ReportsView({
     clients: { view: clientsView, hint: 'جستجوی نام کارفرما…' },
     expenses: { view: expensesView, hint: 'جستجوی شرح یا حساب…' },
     accounts: { view: accountsView, hint: 'جستجوی نام حساب…' },
-    hours: { view: hoursView, hint: 'جستجوی نام پروژه…' },
+    hours: { view: hoursView, hint: 'جستجوی نام عضو…' },
     projects: { view: projectsView, hint: 'جستجوی نام پروژه…' },
     units: { view: unitsView, hint: 'جستجوی نام عضو…' },
     attendance: { view: attendanceView, hint: 'جستجوی نام عضو…' },
@@ -243,7 +304,7 @@ export function ReportsView({
 
           {isExportable(tab) && (
             <a
-              href={`/reports/export?tab=${tab}${tab === 'closings' && data.closings.active ? `&date=${data.closings.active}` : ''}`}
+              href={`/reports/export?tab=${tab}&${exportQuery}${tab === 'closings' && data.closings.active ? `&date=${data.closings.active}` : ''}`}
               className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <Download className="size-3.5" />
@@ -253,9 +314,19 @@ export function ReportsView({
         </div>
       )}
 
+      {/* پورتِ `office_filter_html`: فیلترِ چنددفتری روی تب‌های کلی/اعضا/کارفرمایان/پروژه‌ها/ساعت. */}
+      {OFFICE_TABS.includes(tab) && filters.offices.length > 0 && (
+        <OfficeFilter
+          tab={tab}
+          offices={filters.offices}
+          selected={filters.officeIds}
+          extra={tab === 'hours' ? hoursExtra : {}}
+        />
+      )}
+
       {tab === 'overall' && (
         <div className="grid gap-3">
-        {data.isOwner && <RecomputeEurButton />}
+        {data.canRecompute && <RecomputeEurButton />}
         {/* ⚠️ نبودِ نرخ بی‌صدا ۱ نمی‌شود (R-MONEY-06) — ولی بی‌صدا هم نمی‌ماند. */}
         {/* پورتِ `rate_banner_html`: نرخ‌هایی که ارقام بر آن‌ها تکیه دارند + هشدارِ کهنه/غایب. */}
         {data.overall.rates.visible && (
@@ -436,49 +507,134 @@ export function ReportsView({
 
       {tab === 'expenses' && (
         <div className="grid gap-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-normal text-muted-foreground">{tr("مجموع درآمد")}</CardTitle>
-              </CardHeader>
-              <CardContent><p className="num text-lg font-semibold">{format(data.expenses.totalIn)}</p></CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-normal text-muted-foreground">{tr("مجموع هزینه")}</CardTitle>
-              </CardHeader>
-              <CardContent><p className="num text-lg font-semibold">{format(data.expenses.totalOut)}</p></CardContent>
-            </Card>
+          <RangeBar tab="expenses" presets={filters.expenses.presets} range={filters.expenses.range} officeIds={filters.officeIds} />
+
+          {/* پورتِ کارت‌های افزونه: جمع (قرمز اگر مثبت)، تعداد، میانگینِ ماهانه از ماه‌های دارای داده. */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { label: 'مجموع هزینه‌ها (یورو)', value: format(expenseStats.total), danger: Number(expenseStats.total) > 0 },
+              { label: 'تعداد ردیف', value: String(expenseStats.count), danger: false },
+              { label: 'میانگین ماهانه (یورو)', value: format(expenseStats.avg), danger: false },
+            ].map((c) => (
+              <Card key={c.label}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-normal text-muted-foreground">{tr(c.label)}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className={`num text-lg font-semibold ${c.danger ? 'text-destructive' : ''}`}>{c.value}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           <p className="text-xs text-muted-foreground">
-            {tr("⚠️ انتقال‌های داخلی بینِ حساب‌ها در این جمع شمرده نمی‌شوند — پول از شرکت خارج نشده.")}
+            {tr("مجموعِ خروجی‌های واقعی (برداشت‌های دفترکل، بدونِ انتقال‌های داخلی و پرداخت به اعضا)، نرمال‌شده به یورو.")}
           </p>
 
-          {data.expenses.rows.length === 0 ? <EmptyState title={tr("ردیفی نیست")} /> : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{tr("تاریخ")}</TableHead>
-                  <TableHead>{tr("شرح")}</TableHead>
-                  <TableHead>{tr("حساب")}</TableHead>
-                  <TableHead>{tr("جهت")}</TableHead>
-                  <TableHead>{tr("معادل یورو")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {expensesView.rows.map((r, i) => (
-                  <TableRow key={i}>
-                    <TableNumericCell>{r.entryDate}</TableNumericCell>
-                    <TableCell>{r.description || '—'}</TableCell>
-                    <TableCell>{r.accountName ?? '—'}</TableCell>
-                    <TableCell>{tr(r.direction === 'in' ? 'درآمد' : 'هزینه')}</TableCell>
-                    <TableNumericCell>{format(r.amountEur)}</TableNumericCell>
+          <section className="grid gap-2">
+            <h3 className="text-sm font-semibold">{tr("به تفکیک طرف‌حساب")}</h3>
+            {data.expenses.byVendor.length >= 2 && (
+              <div className="flex flex-wrap items-center gap-1">
+                {data.expenses.byVendor.map((v) => {
+                  const on = vendorSel === null || vendorSel.includes(v.id);
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => toggleVendor(v.id)}
+                      className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                        vendorSel !== null && on ? 'border-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {v.label || tr('بدون طرف‌حساب')}
+                    </button>
+                  );
+                })}
+                {vendorSel !== null && (
+                  <button type="button" onClick={() => setVendorSel(null)} className="text-xs text-muted-foreground underline">
+                    {tr('همه')}
+                  </button>
+                )}
+              </div>
+            )}
+            {expenseStats.byVendor.length === 0 ? <p className="text-sm text-muted-foreground">{tr("موردی پیدا نشد.")}</p> : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{tr("طرف‌حساب")}</TableHead>
+                    <TableHead>{tr("تعداد")}</TableHead>
+                    <TableHead>{tr("مبلغ (یورو)")}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                </TableHeader>
+                <TableBody>
+                  {expenseStats.byVendor.map((v) => (
+                    <TableRow key={v.id}>
+                      <TableCell>{v.label || <span className="text-muted-foreground">{tr('بدون طرف‌حساب')}</span>}</TableCell>
+                      <TableNumericCell>{v.count}</TableNumericCell>
+                      <TableNumericCell>{format(v.amount)}</TableNumericCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </section>
+
+          <section className="grid gap-2">
+            <h3 className="text-sm font-semibold">{tr("به تفکیک ماه")}</h3>
+            {expenseStats.byMonth.length === 0 ? <p className="text-sm text-muted-foreground">{tr("موردی پیدا نشد.")}</p> : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{tr("ماه")}</TableHead>
+                    <TableHead className="w-1/2">{tr("روند")}</TableHead>
+                    <TableHead>{tr("مبلغ (یورو)")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {expenseStats.byMonth.map((m) => (
+                    <TableRow key={m.ym}>
+                      <TableNumericCell>{m.ym}</TableNumericCell>
+                      <TableCell>
+                        {/* پورتِ نوارِ روند: درصدِ هر ماه نسبت به پرترین ماه. */}
+                        <span className="block h-2 w-full rounded bg-muted">
+                          <span className="block h-2 rounded bg-primary" style={{ width: `${m.pct}%` }} />
+                        </span>
+                      </TableCell>
+                      <TableNumericCell>{format(m.amount)}</TableNumericCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </section>
+
+          <section className="grid gap-2">
+            <h3 className="text-sm font-semibold">{tr("ردیف‌های دفتر")}</h3>
+            {expenseStats.rows.length === 0 ? <EmptyState title={tr("ردیفی نیست")} /> : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{tr("تاریخ")}</TableHead>
+                    <TableHead>{tr("شرح")}</TableHead>
+                    <TableHead>{tr("حساب")}</TableHead>
+                    <TableHead>{tr("جهت")}</TableHead>
+                    <TableHead>{tr("معادل یورو")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {expensesView.rows.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableNumericCell>{r.entryDate}</TableNumericCell>
+                      <TableCell>{r.description || '—'}</TableCell>
+                      <TableCell>{r.accountName ?? '—'}</TableCell>
+                      <TableCell>{tr(r.direction === 'in' ? 'درآمد' : 'هزینه')}</TableCell>
+                      <TableNumericCell>{format(r.amountEur)}</TableNumericCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </section>
         </div>
       )}
 
@@ -521,24 +677,41 @@ export function ReportsView({
       )}
 
       {tab === 'hours' && (
-        data.hours.length === 0 ? <EmptyState title={tr("ساعتِ کاری ثبت نشده")} /> : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tr("پروژه")}</TableHead>
-                <TableHead>{tr("ساعت کاری")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {hoursView.rows.map((h) => (
-                <TableRow key={h.projectId}>
-                  <TableCell>{h.title}</TableCell>
-                  <TableNumericCell>{hoursLabel(h.minutes)}</TableNumericCell>
+        <div className="grid gap-3">
+          <RangeBar tab="hours" presets={filters.hours.presets} range={filters.hours.range} officeIds={filters.officeIds} hours />
+          {data.hours.length === 0 ? <EmptyState title={tr("در این بازه ساعتی ثبت نشده")} /> : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tr("عضو")}</TableHead>
+                  <TableHead>{tr("ساعتِ پروژه")}</TableHead>
+                  <TableHead>{tr("ساعتِ عمومی")}</TableHead>
+                  <TableHead>{tr("مجموع")}</TableHead>
+                  <TableHead />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )
+              </TableHeader>
+              <TableBody>
+                {hoursView.rows.map((h) => (
+                  <TableRow key={h.userId}>
+                    <TableCell className="font-medium">{h.name}</TableCell>
+                    <TableNumericCell>{hoursLabel(h.project)}</TableNumericCell>
+                    <TableNumericCell>{hoursLabel(h.general)}</TableNumericCell>
+                    <TableNumericCell className="font-semibold">{hoursLabel(h.total)}</TableNumericCell>
+                    <TableCell>
+                      {/* ریزِ عضو با همان بازه — پورتِ `detail_url`. */}
+                      <Link
+                        href={`/reports/hours/${h.userId}?${filters.hours.allTime ? 'from=&to=' : reportQuery({ from: filters.hours.range.from, to: filters.hours.range.to })}`}
+                        className="text-xs text-muted-foreground hover:underline"
+                      >
+                        {tr("جزئیات")}
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
       )}
 
       {tab === 'projects' && (
@@ -560,7 +733,10 @@ export function ReportsView({
               {projectsView.rows.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
-                    <Link href={`/projects/${p.id}`} className="hover:underline">{p.title}</Link>
+                    {/* پورتِ افزونه: عنوان فقط برای مدیرِ پروژه‌ها پیوند است و به تبِ مالی می‌رود. */}
+                    {data.canManageProjects
+                      ? <Link href={`/projects/${p.id}?tab=finance`} className="hover:underline">{p.title}</Link>
+                      : p.title}
                   </TableCell>
                   <TableCell>
                     {p.statusName ? (
@@ -619,6 +795,13 @@ export function ReportsView({
                   <TableNumericCell className="font-semibold">{format(u.total)}</TableNumericCell>
                 </TableRow>
               ))}
+              {/* پورتِ پاورقیِ افزونه: جمعِ پرداخت‌شده / پرداخت‌نشده / کل. */}
+              <TableRow>
+                <TableCell className="font-semibold">{tr("جمع")}</TableCell>
+                <TableNumericCell className="font-semibold">{format(sum(data.units, 'paid'))}</TableNumericCell>
+                <TableNumericCell className="font-semibold">{format(sum(data.units, 'unpaid'))}</TableNumericCell>
+                <TableNumericCell className="font-semibold">{format(sum(data.units, 'total'))}</TableNumericCell>
+              </TableRow>
             </TableBody>
           </Table>
         )

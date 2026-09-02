@@ -1,10 +1,16 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import {
-  getAccountsReport, getAttendanceReport, getClientsReport, getExpensesReport,
+  filterOffices, getAccountsReport, getAttendanceReport, getClientsReport, getExpensesReport,
   getHoursReport, getMembersReport, getOverall, getProjectsReport, getUnitsReport,
+  reportClosingDates, reportClosingRows,
 } from '@/server/reports/service';
-import { closingDates, closingRows, currentLockDate } from '@/server/finance/service';
+import { currentLockDate } from '@/server/finance/service';
+import { getSystemConfig } from '@/server/settings/system-service';
+import { can } from '@/domain/access/permissions';
+import {
+  expensePresets, expenseRange, hoursPresets, hoursRange, parseIds,
+} from '@/domain/reports/filters';
 import { visibleReportTabs } from '@/server/people/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -15,7 +21,15 @@ import { primeTranslations, t } from '@/i18n/server';
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; date?: string }>;
+  searchParams: Promise<{
+    tab?: string; date?: string;
+    /** فیلترِ دفتر — تکراری (`office=1&office=2`). */
+    office?: string | string[];
+    /** بازهٔ تبِ هزینه‌ها. */
+    from?: string; to?: string;
+    /** بازهٔ تبِ ساعت — جدا تا با هزینه‌ها قاطی نشود. */
+    hfrom?: string; hto?: string;
+  }>;
 }) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
@@ -31,23 +45,37 @@ export default async function ReportsPage({
 
   const query = await searchParams;
 
+  // پورتِ فیلترهای افزونه: دفتر (چندتایی)، بازهٔ هزینه‌ها (پیش‌فرض این ماه)،
+  // بازهٔ ساعت (پیش‌فرض این هفته از روزِ شروعِ تنظیمات).
+  const today = new Date().toISOString().slice(0, 10);
+  const { weekStart } = await getSystemConfig();
+  const officeIds = parseIds(query.office);
+  const expenses = expenseRange({ from: query.from, to: query.to }, today);
+  const hours = hoursRange({ from: query.hfrom, to: query.hto }, today, weekStart);
+  const filters = {
+    officeIds,
+    offices: await filterOffices(),
+    expenses: { range: expenses, presets: expensePresets(today) },
+    hours: { range: { from: hours.from, to: hours.to }, allTime: hours.allTime, presets: hoursPresets(today, weekStart) },
+  };
+
   try {
     const [
-      tabs, overall, members, clients, expenses, accountsReport, hours,
+      tabs, overall, members, clients, expensesReport, accountsReport, hoursReport,
       projectRows, units, attendance, dates,
     ] = await Promise.all([
       visibleReportTabs(actor),
-      getOverall(actor),
-      getMembersReport(actor),
-      getClientsReport(actor),
-      getExpensesReport(actor),
+      getOverall(actor, { officeIds }),
+      getMembersReport(actor, { officeIds }),
+      getClientsReport(actor, { officeIds }),
+      getExpensesReport(actor, expenses),
       getAccountsReport(actor),
-      getHoursReport(actor),
-      getProjectsReport(actor),
+      getHoursReport(actor, { officeIds, from: hours.from, to: hours.to }),
+      getProjectsReport(actor, { officeIds }),
       getUnitsReport(actor),
       getAttendanceReport(actor),
       // ⚠️ فقط تاریخ‌ها؛ ردیف‌های هر دوره پس از انتخابِ کاربر خوانده می‌شوند.
-      closingDates(actor).catch(() => [] as string[]),
+      reportClosingDates(actor),
     ]);
 
     /**
@@ -58,7 +86,7 @@ export default async function ReportsPage({
     const requested = query.date && dates.includes(query.date) ? query.date : dates[0] ?? null;
     const lockDate = await currentLockDate();
     const closings = requested
-      ? { dates, active: requested, rows: await closingRows(actor, requested), lockDate }
+      ? { dates, active: requested, rows: await reportClosingRows(actor, requested), lockDate }
       : { dates, active: null, rows: [], lockDate };
 
     return (
@@ -73,9 +101,12 @@ export default async function ReportsPage({
         <ReportsView
           tabs={tabs}
           initialTab={query.tab ?? null}
+          filters={filters}
           data={{
-          isOwner: actor.roles.includes('owner'),
-            overall, members, clients, expenses, accountsReport, hours,
+            // ترمیمِ یورو: مالک یا مدیرِ مالی؛ پیوندِ پروژه فقط برای مدیرِ پروژه‌ها (پورتِ افزونه).
+            canRecompute: actor.roles.includes('owner') || can(actor, 'finance.manage'),
+            canManageProjects: actor.roles.includes('owner') || can(actor, 'projects.manage'),
+            overall, members, clients, expenses: expensesReport, accountsReport, hours: hoursReport,
             projectRows, units, attendance, closings,
           }}
         />

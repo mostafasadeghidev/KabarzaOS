@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/table';
 import { primeTranslations, t } from '@/i18n/server';
 import { HoursFilter } from './hours-filter';
+import { getSystemConfig } from '@/server/settings/system-service';
+import { hoursRange, rangeLabel, reportQuery } from '@/domain/reports/filters';
 
 /**
  * ریزِ ساعتِ کاریِ یک عضو — پورتِ نمای drill-down نسخهٔ قبلی.
@@ -42,11 +44,17 @@ export default async function MemberHoursPage({
   const userId = Number((await params).id);
   const query = await searchParams;
 
+  // پورتِ افزونه: بی‌پارامتر «این هفته» از روزِ شروعِ تنظیمات؛ حاضر ولی خالی «کل دوره».
+  const today = new Date().toISOString().slice(0, 10);
+  const { weekStart } = await getSystemConfig();
+  const range = hoursRange({ from: query.from, to: query.to }, today, weekStart);
+  const rangeParams = range.allTime ? 'from=&to=' : reportQuery({ from: range.from, to: range.to });
+
   let data;
   try {
     data = await getMemberHours(actor, userId, {
-      from: query.from || null,
-      to: query.to || null,
+      from: range.from || null,
+      to: range.to || null,
       projectId: Number(query.project) || null,
     });
   } catch (error) {
@@ -74,19 +82,24 @@ export default async function MemberHoursPage({
     <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
       <div>
         <Link
-          href="/reports?tab=hours"
+          href={`/reports?tab=hours&${range.allTime ? 'hfrom=&hto=' : reportQuery({ hfrom: range.from, hto: range.to })}`}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowRight className="size-3.5 rtl:rotate-0 ltr:rotate-180" />
           {t('بازگشت به گزارش‌ها')}
         </Link>
         <h1 className="mt-1 text-xl font-semibold">{data.member.name}</h1>
-        <p className="text-sm text-muted-foreground">{data.member.email}</p>
+        <p className="text-sm text-muted-foreground">
+          {data.member.email}
+          {/* پورتِ برچسبِ بازه زیرِ نام: «از … تا …» / «کل دوره». */}
+          <span className="num ms-2">· {rangeLabel(range, t)}</span>
+        </p>
       </div>
 
       <HoursFilter
         userId={userId}
-        projects={data.byProject.map((p) => ({ id: p.projectId, title: p.title }))}
+        projects={data.projectOptions.map((p) => ({ id: p.id, title: p.title }))}
+        weekStart={weekStart}
       />
 
       <div className="grid gap-3 @xl/main:grid-cols-3">
@@ -120,7 +133,7 @@ export default async function MemberHoursPage({
                 <TableRow key={r.projectId}>
                   <TableCell>
                     <Link
-                      href={`/reports/hours/${userId}?project=${r.projectId}${query.from ? `&from=${query.from}` : ''}${query.to ? `&to=${query.to}` : ''}`}
+                      href={`/reports/hours/${userId}?project=${r.projectId}&${rangeParams}`}
                       className="hover:underline"
                     >
                       {r.title}

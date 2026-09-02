@@ -14,6 +14,9 @@ const data: ReportExportData = {
   members: [{ name: 'سارا', agreed: '1000.00', paid: '400.00', remaining: '600.00', minutes: 150 }],
   clients: [{ name: 'آلفا', projectCount: 2, price: '5000.00', paid: '1200.00', due: '3800.00' }],
   expenses: {
+    total: '250.00',
+    count: 1,
+    byVendor: [{ label: 'هاست', count: 1, amount: '250.00' }],
     totalIn: '900.00',
     totalOut: '250.00',
     rows: [{
@@ -25,7 +28,7 @@ const data: ReportExportData = {
     name: 'بانکِ اصلی', currencyCode: 'EUR',
     opening: '0.00', totalIn: '900.00', totalOut: '250.00', balance: '650.00',
   }],
-  hours: [{ title: 'وب‌سایت', minutes: 150 }],
+  hours: [{ name: 'سارا', project: 120, general: 30, total: 150 }],
   projectRows: [{
     title: 'وب‌سایت', statusName: 'در حالِ انجام', price: '5000.00',
     clientPaid: '1200.00', clientDue: '3800.00', memberPaid: '400.00',
@@ -71,8 +74,9 @@ describe('خروجیِ CSV گزارش‌ها', () => {
 
   it('خروجیِ هزینه‌ها سطرِ جمع دارد', () => {
     const text = buildReportCsv('expenses', data);
-    expect(text).toContain('مجموعِ ورودی');
-    expect(text).toContain('900.00');
+    expect(text).toContain('هاست');
+    expect(text).toContain('مجموع');
+    expect(text).toContain('250.00');
   });
 
   it('خروجیِ دورهٔ بسته ده ستون دارد', () => {

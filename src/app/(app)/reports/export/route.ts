@@ -4,7 +4,9 @@ import {
   getAccountsReport, getAttendanceReport, getClientsReport, getExpensesReport,
   getHoursReport, getMembersReport, getProjectsReport, getUnitsReport,
 } from '@/server/reports/service';
-import { closingRows } from '@/server/finance/service';
+import { reportClosingRows } from '@/server/reports/service';
+import { getSystemConfig } from '@/server/settings/system-service';
+import { expenseRange, hoursRange, parseIds } from '@/domain/reports/filters';
 import { visibleReportTabs } from '@/server/people/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import {
@@ -25,6 +27,15 @@ export async function GET(request: Request) {
 
   const params = new URL(request.url).searchParams;
   const tab = params.get('tab') ?? '';
+  // همان فیلترهای صفحه (پورتِ افزونه: خروجی دفتر و بازه را با خود می‌برد).
+  const today = new Date().toISOString().slice(0, 10);
+  const officeIds = parseIds(params.getAll('office'));
+  const expenses = expenseRange({ from: params.get('from') ?? undefined, to: params.get('to') ?? undefined }, today);
+  const { weekStart } = await getSystemConfig();
+  const hours = hoursRange({
+    from: params.has('hfrom') ? params.get('hfrom') ?? '' : undefined,
+    to: params.has('hto') ? params.get('hto') ?? '' : undefined,
+  }, today, weekStart);
 
   try {
     const visible = await visibleReportTabs(actor);
@@ -36,7 +47,7 @@ export async function GET(request: Request) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return new Response(null, { status: 400 });
 
       return csvResponse(
-        buildClosingCsv(await closingRows(actor, date), await getT()),
+        buildClosingCsv(await reportClosingRows(actor, date), await getT()),
         `kabarza-closing-${date}.csv`,
         `بستنِ-دوره-${date}.csv`,
       );
@@ -50,14 +61,14 @@ export async function GET(request: Request) {
      * نباید دَه کوئریِ مالی بزند.
      */
     const data = {
-      members: tab === 'members' ? await getMembersReport(actor) : [],
-      clients: tab === 'clients' ? await getClientsReport(actor) : [],
+      members: tab === 'members' ? await getMembersReport(actor, { officeIds }) : [],
+      clients: tab === 'clients' ? await getClientsReport(actor, { officeIds }) : [],
       expenses: tab === 'expenses'
-        ? await getExpensesReport(actor)
-        : { totalIn: '0', totalOut: '0', rows: [] },
+        ? await getExpensesReport(actor, expenses)
+        : { total: '0', count: 0, byVendor: [], totalIn: '0', totalOut: '0', rows: [] },
       accountsReport: tab === 'accounts' ? await getAccountsReport(actor) : [],
-      hours: tab === 'hours' ? await getHoursReport(actor) : [],
-      projectRows: tab === 'projects' ? await getProjectsReport(actor) : [],
+      hours: tab === 'hours' ? await getHoursReport(actor, { officeIds, from: hours.from, to: hours.to }) : [],
+      projectRows: tab === 'projects' ? await getProjectsReport(actor, { officeIds }) : [],
       units: tab === 'units' ? await getUnitsReport(actor) : [],
       attendance: tab === 'attendance'
         ? await getAttendanceReport(actor)

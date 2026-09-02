@@ -1234,6 +1234,11 @@ export async function reopenPeriod(actor: Actor): Promise<void> {
 /** تاریخ‌های بستن، تازه‌ترین اول — پورتِ `closing_dates()`. */
 export async function closingDates(actor: Actor): Promise<string[]> {
   assertCanView(actor, 'finance');
+  return closingDatesQuery();
+}
+
+/** بی‌گارد — فراخوانِ گزارش‌ها با مجوزِ گزارش نگهبانی می‌کند (پورتِ افزونه: تبِ دوره‌ها با cap ِ گزارش). */
+export async function closingDatesQuery(): Promise<string[]> {
   const rows = await db.selectDistinct({ closeDate: fiscalClosings.closeDate })
     .from(fiscalClosings)
     .orderBy(desc(fiscalClosings.closeDate));
@@ -1243,6 +1248,11 @@ export async function closingDates(actor: Actor): Promise<string[]> {
 /** ردیف‌های خلاصهٔ یک تاریخِ بستن، همراهِ نامِ حساب. */
 export async function closingRows(actor: Actor, closeDate: string) {
   assertCanView(actor, 'finance');
+  return closingRowsQuery(closeDate);
+}
+
+/** بی‌گارد — نگاه کن به `closingDatesQuery`. */
+export async function closingRowsQuery(closeDate: string) {
   return db
     .select({
       accountName: accounts.name,
@@ -1280,7 +1290,8 @@ export async function closingRows(actor: Actor, closeDate: string) {
  * · هیچ یادگیریِ نرخی رخ نمی‌دهد
  */
 export async function recomputeEur(actor: Actor): Promise<{ ledger: number; payments: number }> {
-  if (!actor.roles.includes('owner')) throw new ForbiddenError('fiscal.recompute');
+  // مالک یا مدیرِ مالی — بازنویسیِ ارقامِ منجمد کارِ مالی است، نه فقط مالک (ردیفِ ۲۲ ِ ممیزی).
+  if (!actor.roles.includes('owner') && !canManageSection(actor, 'finance')) throw new ForbiddenError('fiscal.recompute');
 
   const { source, baseCurrencyId } = await rateSource();
   const changed = { ledger: 0, payments: 0 };

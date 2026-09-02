@@ -11,7 +11,7 @@ export interface RecomputeState {
   message?: string;
 }
 
-/** پورتِ دکمهٔ «بازمحاسبهٔ معادلِ یورو» ِ تبِ گزارشِ کلی — فقط مالک. */
+/** پورتِ دکمهٔ «بازمحاسبهٔ معادلِ یورو» ِ تبِ گزارشِ کلی — مالک یا مدیرِ مالی. */
 export async function recomputeEurAction(): Promise<RecomputeState> {
   try {
     const actor = await requireActor();
@@ -24,7 +24,7 @@ export async function recomputeEurAction(): Promise<RecomputeState> {
           { ledger: n.ledger, payments: n.payments }),
     };
   } catch (error) {
-    if (error instanceof ForbiddenError) return { error: 'فقط مدیرِ کل.' };
+    if (error instanceof ForbiddenError) return { error: 'فقط مالک یا مدیرِ مالی.' };
     return { error: 'بازمحاسبه ناتمام ماند.' };
   }
 }

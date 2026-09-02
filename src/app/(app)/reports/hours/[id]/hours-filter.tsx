@@ -5,19 +5,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useT } from '@/i18n/client';
+import { monthRange, weekRange, yearRange } from '@/domain/reports/filters';
 
 /**
  * نوارِ فیلترِ ریزِ ساعت — پورتِ `hours-filters.php`.
  *
  * ⚠️ پیش‌فرض‌ها **در کلاینت** ساخته می‌شوند چون به «امروزِ» کاربر بستگی
- * دارند، نه به ساعتِ سرور. تاریخِ سرور می‌توانست یک روز جلو یا عقب باشد.
+ * دارند، نه به ساعتِ سرور؛ ولی روزِ شروعِ هفته از **تنظیمات** می‌آید
+ * (پیش از این «هفته» = هفت روزِ گذشته بود و با تبِ ساعت نمی‌خواند).
+ *
+ * ⚠️ «کل دوره» پارامترِ حاضر ولی خالی می‌فرستد (`from=&to=`): نبودِ پارامتر
+ * یعنی «این هفته» (پورتِ افزونه)، پس پاک‌کردنِ پارامتر کافی نیست.
  */
 export function HoursFilter({
   userId,
   projects,
+  weekStart,
 }: {
   userId: number;
   projects: Array<{ id: number; title: string }>;
+  weekStart: number;
 }) {
   const tr = useT();
   const router = useRouter();
@@ -25,10 +32,10 @@ export function HoursFilter({
 
   const value = (key: string) => params.get(key) ?? '';
 
-  const go = (changes: Record<string, string>) => {
+  const go = (changes: Record<string, string>, keepEmpty = false) => {
     const next = new URLSearchParams(params.toString());
     for (const [k, v] of Object.entries(changes)) {
-      if (v === '') next.delete(k);
+      if (v === '' && !(keepEmpty && (k === 'from' || k === 'to'))) next.delete(k);
       else next.set(k, v);
     }
     router.push(`/reports/hours/${userId}?${next.toString()}`);
@@ -36,11 +43,14 @@ export function HoursFilter({
 
   const today = new Date().toISOString().slice(0, 10);
   const presets = [
-    { key: 'week', label: tr('این هفته'), from: shift(today, -7) },
-    { key: 'month', label: tr('این ماه'), from: `${today.slice(0, 7)}-01` },
-    { key: 'year', label: tr('امسال'), from: `${today.slice(0, 4)}-01-01` },
-    { key: 'all', label: tr('همهٔ زمان'), from: '' },
+    { key: 'week', label: tr('این هفته'), ...weekRange(today, weekStart) },
+    { key: 'month', label: tr('این ماه'), ...monthRange(today) },
+    { key: 'year', label: tr('امسال'), ...yearRange(today) },
+    { key: 'all', label: tr('کل دوره'), from: '', to: '' },
   ];
+  const allTime = (params.has('from') || params.has('to')) && value('from') === '' && value('to') === '';
+  const active = (p: { from: string; to: string }) =>
+    p.from === '' ? allTime : value('from') === p.from && value('to') === p.to;
 
   const cell = 'h-9 rounded-md border bg-background px-2 text-sm';
 
@@ -49,11 +59,9 @@ export function HoursFilter({
       onSubmit={(e) => {
         e.preventDefault();
         const data = new FormData(e.currentTarget);
-        go({
-          from: String(data.get('from') ?? ''),
-          to: String(data.get('to') ?? ''),
-          project: String(data.get('project') ?? ''),
-        });
+        const from = String(data.get('from') ?? '');
+        const to = String(data.get('to') ?? '');
+        go({ from, to, project: String(data.get('project') ?? '') }, from === '' && to === '');
       }}
       className="flex flex-wrap items-end gap-2 rounded-md border p-3"
     >
@@ -63,9 +71,9 @@ export function HoursFilter({
             key={p.key}
             type="button"
             size="sm"
-            variant={value('from') === p.from ? 'default' : 'outline'}
+            variant={active(p) ? 'default' : 'outline'}
             className="h-8"
-            onClick={() => go({ from: p.from, to: p.from === '' ? '' : today })}
+            onClick={() => go({ from: p.from, to: p.to }, p.from === '')}
           >
             {p.label}
           </Button>
@@ -92,10 +100,4 @@ export function HoursFilter({
       <Button type="submit" size="sm">{tr('اعمال')}</Button>
     </form>
   );
-}
-
-function shift(date: string, days: number): string {
-  const at = new Date(`${date}T12:00:00Z`);
-  at.setUTCDate(at.getUTCDate() + days);
-  return at.toISOString().slice(0, 10);
 }

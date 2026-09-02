@@ -47,6 +47,10 @@ export interface ReportExportData {
     billed?: string;
   }>;
   expenses: {
+    /** پورتِ CSV ِ افزونه: به تفکیکِ طرف‌حساب + سطرِ جمع، در بازهٔ انتخابی. */
+    total: string;
+    count: number;
+    byVendor: Array<{ label: string; count: number; amount: string }>;
     totalIn: string;
     totalOut: string;
     rows: Array<{
@@ -60,7 +64,8 @@ export interface ReportExportData {
     /** معادلِ یورو؛ null = نرخ ندارد. */
     balanceEur?: string | null;
   }>;
-  hours: Array<{ title: string; minutes: number }>;
+  /** پورتِ CSV ِ افزونه: عضو، دقیقهٔ پروژه، دقیقهٔ عمومی، مجموع. */
+  hours: Array<{ name: string; project: number; general: number; total: number }>;
   projectRows: Array<{
     title: string; statusName: string | null; price: string;
     clientPaid: string; clientDue: string; memberPaid: string; profit: string; minutes: number;
@@ -93,15 +98,11 @@ export function buildReportCsv(tab: ExportableTab, data: ReportExportData, t: Tr
 
     case 'expenses':
       return csvDocument(
-        [t('تاریخ'), t('شرح'), t('حساب'), t('جهت'), t('مبلغ (یورو)')],
+        [t('طرف‌حساب'), t('تعداد'), t('مبلغ (یورو)')],
         [
-          ...data.expenses.rows.map((r) => [
-            r.entryDate, r.description, r.accountName ?? '',
-            r.direction === 'in' ? t('ورودی') : t('خروجی'), r.amountEur,
-          ]),
+          ...data.expenses.byVendor.map((v) => [v.label || t('بدون طرف‌حساب'), v.count, v.amount]),
           // ⚠️ سطرِ جمع مثلِ نسخهٔ قبلی ته فایل می‌آید، نه در سربرگ.
-          [t('مجموعِ ورودی'), '', '', '', data.expenses.totalIn],
-          [t('مجموعِ خروجی'), '', '', '', data.expenses.totalOut],
+          [t('مجموع'), data.expenses.count, data.expenses.total],
         ],
       );
 
@@ -115,8 +116,8 @@ export function buildReportCsv(tab: ExportableTab, data: ReportExportData, t: Tr
 
     case 'hours':
       return csvDocument(
-        [t('پروژه'), t('دقیقه'), t('ساعت کاری')],
-        data.hours.map((r) => [r.title, r.minutes, hoursLabel(r.minutes)]),
+        [t('عضو'), t('ساعتِ پروژه'), t('ساعتِ عمومی'), t('مجموع')],
+        data.hours.map((r) => [r.name, hoursLabel(r.project), hoursLabel(r.general), hoursLabel(r.total)]),
       );
 
     case 'projects':
