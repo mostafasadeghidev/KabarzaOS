@@ -1,4 +1,5 @@
 import { csvDocument } from '@/domain/access/office-scope';
+import { createTranslator, type Translator } from '@/i18n/translate';
 import { hoursLabel } from '@/domain/reports/summary';
 
 /**
@@ -12,6 +13,9 @@ import { hoursLabel } from '@/domain/reports/summary';
  * ⚠️ عددها **رشته** می‌مانند (R-MONEY-01): تبدیل به `number` گِردکردنِ
  * ممیزِ شناور می‌آورد و مبلغِ روی فایل با مبلغِ روی صفحه یکی نمی‌ماند.
  */
+
+/** بدونِ مترجم همان فارسیِ مبدأ برمی‌گردد — کلید خودِ متنِ فارسی است. */
+const SOURCE: Translator = createTranslator({});
 
 export const EXPORTABLE_TABS = [
   'members', 'clients', 'expenses', 'accounts', 'hours', 'projects', 'units', 'attendance',
@@ -63,37 +67,42 @@ export interface ReportExportData {
   };
 }
 
-export function buildReportCsv(tab: ExportableTab, data: ReportExportData): string {
+/**
+ * ⚠️ سرستون‌ها **ترجمه می‌شوند** — با مترجمِ درخواست (`getT()` در route). پیش از
+ * این در هر زبانی فارسی می‌رفتند. بدونِ مترجم همان فارسیِ مبدأ برمی‌گردد،
+ * پس تستِ شکلِ فایل دست‌نخورده می‌ماند.
+ */
+export function buildReportCsv(tab: ExportableTab, data: ReportExportData, t: Translator = SOURCE): string {
   switch (tab) {
     case 'members':
       return csvDocument(
-        ['عضو', 'تعهد (یورو)', 'پرداخت‌شده (یورو)', 'بدهی (یورو)', 'ساعت کاری'],
+        [t('عضو'), t('تعهد (یورو)'), t('پرداخت‌شده (یورو)'), t('بدهی (یورو)'), t('ساعت کاری')],
         data.members.map((r) => [r.name, r.agreed, r.paid, r.remaining, hoursLabel(r.minutes)]),
       );
 
     case 'clients':
       return csvDocument(
-        ['کارفرما', 'پروژه‌ها', 'ارزشِ کل (یورو)', 'دریافتیِ کل (یورو)', 'مانده (یورو)'],
+        [t('کارفرما'), t('پروژه‌ها'), t('ارزشِ کل (یورو)'), t('دریافتیِ کل (یورو)'), t('مانده (یورو)')],
         data.clients.map((r) => [r.name, r.projectCount, r.price, r.paid, r.due]),
       );
 
     case 'expenses':
       return csvDocument(
-        ['تاریخ', 'شرح', 'حساب', 'جهت', 'مبلغ (یورو)'],
+        [t('تاریخ'), t('شرح'), t('حساب'), t('جهت'), t('مبلغ (یورو)')],
         [
           ...data.expenses.rows.map((r) => [
             r.entryDate, r.description, r.accountName ?? '',
-            r.direction === 'in' ? 'ورودی' : 'خروجی', r.amountEur,
+            r.direction === 'in' ? t('ورودی') : t('خروجی'), r.amountEur,
           ]),
           // ⚠️ سطرِ جمع مثلِ نسخهٔ قبلی ته فایل می‌آید، نه در سربرگ.
-          ['مجموعِ ورودی', '', '', '', data.expenses.totalIn],
-          ['مجموعِ خروجی', '', '', '', data.expenses.totalOut],
+          [t('مجموعِ ورودی'), '', '', '', data.expenses.totalIn],
+          [t('مجموعِ خروجی'), '', '', '', data.expenses.totalOut],
         ],
       );
 
     case 'accounts':
       return csvDocument(
-        ['حساب', 'ارز', 'مانده اول دوره', 'ورودی', 'خروجی', 'مانده'],
+        [t('حساب'), t('ارز'), t('مانده اول دوره'), t('ورودی'), t('خروجی'), t('مانده')],
         data.accountsReport.map((r) => [
           r.name, r.currencyCode ?? '', r.opening, r.totalIn, r.totalOut, r.balance,
         ]),
@@ -101,15 +110,15 @@ export function buildReportCsv(tab: ExportableTab, data: ReportExportData): stri
 
     case 'hours':
       return csvDocument(
-        ['پروژه', 'دقیقه', 'ساعت کاری'],
+        [t('پروژه'), t('دقیقه'), t('ساعت کاری')],
         data.hours.map((r) => [r.title, r.minutes, hoursLabel(r.minutes)]),
       );
 
     case 'projects':
       return csvDocument(
         [
-          'پروژه', 'وضعیت', 'قیمت (یورو)', 'دریافتی (یورو)', 'طلب (یورو)',
-          'هزینهٔ تیم (یورو)', 'سود تخمینی (یورو)', 'ساعت کاری',
+          t('پروژه'), t('وضعیت'), t('قیمت (یورو)'), t('دریافتی (یورو)'), t('طلب (یورو)'),
+          t('هزینهٔ تیم (یورو)'), t('سود تخمینی (یورو)'), t('ساعت کاری'),
         ],
         data.projectRows.map((r) => [
           r.title, r.statusName ?? '', r.price, r.clientPaid, r.clientDue,
@@ -119,13 +128,13 @@ export function buildReportCsv(tab: ExportableTab, data: ReportExportData): stri
 
     case 'units':
       return csvDocument(
-        ['عضو', 'پرداخت‌شده (یورو)', 'پرداخت‌نشده (یورو)', 'مجموع (یورو)'],
+        [t('عضو'), t('پرداخت‌شده (یورو)'), t('پرداخت‌نشده (یورو)'), t('مجموع (یورو)')],
         data.units.map((r) => [r.name, r.paid, r.unpaid, r.total]),
       );
 
     case 'attendance':
       return csvDocument(
-        ['عضو', 'از', 'تا', 'دلیل'],
+        [t('عضو'), t('از'), t('تا'), t('دلیل')],
         data.attendance.leaves.map((r) => [r.name, r.fromDate, r.toDate, r.note]),
       );
   }
@@ -137,11 +146,11 @@ export function buildClosingCsv(rows: Array<{
   deposits: string; withdrawals: string; closingBalance: string;
   clientReceivedEur: string; memberPaidEur: string; expensesEur: string;
   closingBalanceEur: string;
-}>): string {
+}>, t: Translator = SOURCE): string {
   return csvDocument(
     [
-      'حساب', 'ارز', 'شروعِ دوره', 'واریز', 'برداشت', 'ماندهٔ پایان',
-      'دریافت از کارفرما (یورو)', 'پرداخت به تیم (یورو)', 'هزینه (یورو)', 'ماندهٔ پایان (یورو)',
+      t('حساب'), t('ارز'), t('شروعِ دوره'), t('واریز'), t('برداشت'), t('ماندهٔ پایان'),
+      t('دریافت از کارفرما (یورو)'), t('پرداخت به تیم (یورو)'), t('هزینه (یورو)'), t('ماندهٔ پایان (یورو)'),
     ],
     rows.map((r) => [
       r.accountName, r.currencyCode ?? '', r.periodStart, r.deposits, r.withdrawals,

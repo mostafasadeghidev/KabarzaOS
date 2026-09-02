@@ -109,7 +109,8 @@ export async function decideRequest(
     await notify([request.userId], {
       type: 'payment.decided',
       title: decision === 'approved' ? 'درخواست پرداخت شما تأیید شد' : 'درخواست پرداخت شما رد شد',
-      body: note.trim() === '' ? '' : `توضیح: ${note.trim()}`,
+      body: note.trim() === '' ? '' : 'توضیح: {note}',
+      params: { note: note.trim() },
       url: '/finance',
     });
   }
@@ -198,7 +199,8 @@ export async function payRequest(
     await notify([request.userId], {
       type: 'payment.decided',
       title: 'پرداختِ شما ثبت شد',
-      body: `${request.amount} — «${project?.title ?? ''}»`,
+      body: '{amount} — «{project}»',
+      params: { amount: request.amount, project: project?.title ?? '' },
       url: '/finance',
     });
   }

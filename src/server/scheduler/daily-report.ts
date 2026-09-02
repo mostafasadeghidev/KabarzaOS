@@ -1,4 +1,8 @@
 import { and, eq, gte, inArray, isNotNull, lte, sql } from 'drizzle-orm';
+import { getSystemConfig } from '@/server/settings/system-service';
+import type { Locale } from '@/i18n/config';
+import { loadMessages } from '@/i18n/server';
+import { createTranslator, type Translator } from '@/i18n/translate';
 import type { Actor } from '@/domain/access/permissions';
 import { ForbiddenError } from '@/domain/access/guard';
 import { db } from '@/db/client';
@@ -55,7 +59,16 @@ export async function saveReportConfig(actor: Actor, config: ReportConfig): Prom
  * جمع‌آوریِ خطوط
  * ------------------------------------------------------------------ */
 
-async function collect(date: string): Promise<ReportSections> {
+/**
+ * مترجمِ گزارش — زبانِ پیش‌فرضِ سامانه، چون کرون درخواستی ندارد که زبانش را
+ * بخواند. پیش‌نمایش و «ارسالِ آزمایشی» هم همین را می‌گیرند تا یک متن باشد.
+ */
+async function reportTranslator(): Promise<Translator> {
+  const locale = (await getSystemConfig()).defaultLocale as Locale;
+  return createTranslator(await loadMessages(locale), locale);
+}
+
+async function collect(date: string, t: Translator): Promise<ReportSections> {
   const dayStart = new Date(`${date}T00:00:00Z`);
   const dayEnd = new Date(`${date}T23:59:59Z`);
 
@@ -125,7 +138,7 @@ async function collect(date: string): Promise<ReportSections> {
     tasks_done: doneTasks.map((t) => `• ${t.title}${t.projectTitle ? ` (${t.projectTitle})` : ''}`),
     tasks_new: newTasks.map((t) => `• ${t.title}${t.projectTitle ? ` (${t.projectTitle})` : ''}`),
     meetings: dayMeetings.map((m) => `• ${m.title}`),
-    absences: onLeave.map((a) => `• ${a.name ?? '—'}: ${a.from} تا ${a.to}${a.note ? ` — ${a.note}` : ''}`),
+    absences: onLeave.map((a) => `• ${a.name ?? '—'}: ${t('{from} تا {to}', { from: a.from, to: a.to })}${a.note ? ` — ${a.note}` : ''}`),
   };
 }
 
@@ -161,7 +174,8 @@ async function sendToOwners(text: string): Promise<void> {
 /** ساختِ متنِ گزارشِ یک روز — برای پیش‌نمایش و «ارسالِ آزمایشی». */
 export async function previewReport(date: string): Promise<string> {
   const config = await getReportConfig();
-  return buildReport({ date, sections: config.sections, data: await collect(date) });
+  const t = await reportTranslator();
+  return buildReport({ date, sections: config.sections, data: await collect(date, t) }, t);
 }
 
 /** فرستادنِ گزارشِ یک روز به همهٔ مقصدهای فعال. */

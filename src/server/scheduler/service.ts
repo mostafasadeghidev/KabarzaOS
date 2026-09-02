@@ -74,7 +74,9 @@ async function runReminders(now: Date): Promise<number> {
       await notify([row.userId], {
         type: 'reminder',
         title: 'یادآور',
-        body: lead > 0 ? `${row.body} — ${lead} دقیقه مانده` : row.body,
+        // ⚠️ کلید + پارامتر، نه متنِ آماده — هر گیرنده به زبانِ خودش می‌گیرد.
+        body: lead > 0 ? '{body} — {n} دقیقه مانده' : row.body,
+        params: { body: row.body, n: lead },
         url: '/meetings',
       });
       sent += 1;
@@ -156,7 +158,8 @@ async function runTimerWatch(now: Date): Promise<number> {
     await notify([timer.userId], {
       type: 'timer_running',
       title: 'تایمرِ کار روشن مانده',
-      body: `${Math.floor(minutes / 60)} ساعت است تایمرتان روشن است.`,
+      body: '{n} ساعت است تایمرتان روشن است.',
+      params: { n: Math.floor(minutes / 60) },
       url: '/hours',
     });
     await db.update(workTimers).set({ remindedAt: now })
@@ -228,7 +231,8 @@ async function runTimelogNudges(now: Date): Promise<number> {
       await notify([member.id], {
         type: 'no_timelog',
         title: kind === 'today' ? 'ساعتِ امروز را ثبت نکرده‌اید' : 'ساعتِ دیروز ثبت نشد',
-        body: `برای ${date} ساعتی ثبت نشده است.`,
+        body: 'برای {date} ساعتی ثبت نشده است.',
+        params: { date },
         url: '/hours',
       });
       await writeStamp(`nudge:${kind}:${member.id}`, date);

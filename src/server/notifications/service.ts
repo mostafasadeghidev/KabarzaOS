@@ -1,4 +1,8 @@
 import { and, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
+import { isLocale, type Locale } from '@/i18n/config';
+import { createTranslator, type Translator } from '@/i18n/translate';
+import { loadMessages } from '@/i18n/server';
+import { getSystemConfig } from '@/server/settings/system-service';
 import { db } from '@/db/client';
 import { notifications, users } from '@/db/schema';
 import type { Actor } from '@/domain/access/permissions';
@@ -13,7 +17,16 @@ import { telegramCredentials } from '@/server/settings/telegram-service';
  * می‌شود و خودبه‌خود همهٔ رویدادها را می‌گیرد.
  */
 
+/**
+ * ⚠️ `title` و `body` **کلیدِ ترجمه‌اند** (رشتهٔ فارسیِ مبدأ، با جای‌نگهدارِ
+ * `{name}`)، نه متنِ آماده: هر گیرنده اعلان را به زبانِ خودش می‌گیرد — در
+ * زنگوله، ایمیل و تلگرام. پیش از این متنِ خام ذخیره و عیناً فرستاده می‌شد،
+ * پس بدنه‌های قالب‌دار (`${title} — ${n}`) هرگز ترجمه نمی‌شدند و ایمیل و
+ * تلگرام همیشه فارسی می‌رفتند. داده (نامِ پروژه، مبلغ) از راهِ `params` می‌آید.
+ */
 export interface NotifyInput {
+  /** مقادیرِ جای‌نگهدارها — `{project}`, `{n}` … */
+  params?: Record<string, string | number>;
   type: string;
   title: string;
   body?: string;
@@ -42,9 +55,27 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
       notifyEmailMuted: users.notifyEmailMuted,
       telegramChatId: users.telegramChatId,
       telegramOff: users.telegramOff,
+      locale: users.locale,
     })
     .from(users)
     .where(inArray(users.id, ids));
+
+  // ترجمهٔ به‌ازای زبانِ هر گیرنده — یک مترجم برای هر زبان، نه هر نفر.
+  const fallbackLocale = (await getSystemConfig()).defaultLocale as Locale;
+  const translators = new Map<Locale, Translator>();
+  const render = async (locale: Locale): Promise<{ title: string; body: string }> => {
+    let tr = translators.get(locale);
+    if (!tr) {
+      tr = createTranslator(await loadMessages(locale), locale);
+      translators.set(locale, tr);
+    }
+    return {
+      title: tr(input.title, input.params),
+      body: input.body ? tr(input.body, input.params) : '',
+    };
+  };
+  const localeOf = (r: { locale: string | null }): Locale =>
+    (r.locale && isLocale(r.locale) ? r.locale : fallbackLocale);
 
   /** نشانیِ اعلان: ایمیلِ اختصاصی، وگرنه ایمیلِ ورود. */
   const addressOf = (r: (typeof rows)[number]) => (r.notifyEmail.trim() || r.email).trim();
@@ -65,15 +96,16 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
   const plan = planDelivery(input.type, recipients);
   if (plan.length === 0) return 0;
 
-  await db.insert(notifications).values(
-    plan.filter((p) => p.inApp).map((p) => ({
-      userId: p.userId,
-      type: input.type,
-      title: input.title,
-      body: input.body ?? '',
-      url: input.url ?? '',
-    })),
-  );
+  const inApp = plan.filter((p) => p.inApp);
+  if (inApp.length > 0) {
+    const values = [];
+    for (const p of inApp) {
+      const row = byId.get(p.userId);
+      const text = await render(localeOf(row ?? { locale: null }));
+      values.push({ userId: p.userId, type: input.type, title: text.title, body: text.body, url: input.url ?? '' });
+    }
+    await db.insert(notifications).values(values);
+  }
 
   // ⚠️ کانال‌های بیرونی اینجا وصل می‌شوند — و شکستشان بی‌صدا است.
   for (const p of plan) {
@@ -81,7 +113,8 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
     const row = byId.get(p.userId);
     if (!row) continue;
     try {
-      await deliverExternal(p, input, {
+      const text = await render(localeOf(row));
+      await deliverExternal(p, { ...input, ...text }, {
         email: addressOf(row),
         chatId: row.telegramChatId,
       });

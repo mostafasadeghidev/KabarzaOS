@@ -165,7 +165,8 @@ export async function saveAbsence(actor: Actor, input: AbsenceInput): Promise<nu
     await notify([input.userId], {
       type: 'absence_set',
       title: 'مرخصی برای شما ثبت شد',
-      body: `از ${range.from} تا ${range.to}${byUser ? ` (توسط ${byUser.name})` : ''}.`,
+      body: byUser ? 'از {from} تا {to} (توسط {by}).' : 'از {from} تا {to}.',
+      params: { from: range.from, to: range.to, by: byUser?.name ?? '' },
       url: '/activity',
     });
   }

@@ -1,4 +1,5 @@
 import { currentActor } from '@/server/auth';
+import { getT } from '@/i18n/server';
 import {
   getAccountsReport, getAttendanceReport, getClientsReport, getExpensesReport,
   getHoursReport, getMembersReport, getProjectsReport, getUnitsReport,
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return new Response(null, { status: 400 });
 
       return csvResponse(
-        buildClosingCsv(await closingRows(actor, date)),
+        buildClosingCsv(await closingRows(actor, date), await getT()),
         `kabarza-closing-${date}.csv`,
         `بستنِ-دوره-${date}.csv`,
       );
@@ -63,7 +64,7 @@ export async function GET(request: Request) {
         : { leaves: [], withoutSchedule: [] },
     };
 
-    return csvResponse(buildReportCsv(tab, data), EXPORT_FILENAMES[tab], EXPORT_FILENAMES[tab]);
+    return csvResponse(buildReportCsv(tab, data, await getT()), EXPORT_FILENAMES[tab], EXPORT_FILENAMES[tab]);
   } catch (error) {
     if (error instanceof ForbiddenError) return new Response(null, { status: 403 });
     throw error;

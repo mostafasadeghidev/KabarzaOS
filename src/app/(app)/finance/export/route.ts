@@ -1,4 +1,5 @@
 import { currentActor } from '@/server/auth';
+import { getT } from '@/i18n/server';
 import { getLedger } from '@/server/finance/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { csvDocument } from '@/domain/access/office-scope';
@@ -15,6 +16,7 @@ import { csvDocument } from '@/domain/access/office-scope';
  */
 export async function GET(request: Request) {
   const actor = await currentActor();
+  const t = await getT();
   if (!actor) return new Response(null, { status: 403 });
 
   const params = new URL(request.url).searchParams;
@@ -36,10 +38,10 @@ export async function GET(request: Request) {
     });
 
     const csv = csvDocument(
-      ['تاریخ', 'جهت', 'شرح', 'پروژه', 'پرداخت‌کننده', 'گیرنده', 'مبلغ', 'مبلغِ حساب', 'معادل یورو'],
+      [t('تاریخ'), t('جهت'), t('شرح'), t('پروژه'), t('پرداخت‌کننده'), t('گیرنده'), t('مبلغ'), t('مبلغِ حساب'), t('معادل یورو')],
       data.entries.map((e) => [
         e.entryDate,
-        e.direction === 'in' ? 'ورودی' : 'خروجی',
+        e.direction === 'in' ? t('ورودی') : t('خروجی'),
         e.description,
         e.projectTitle ?? '',
         e.payerName ?? e.payerLabel ?? '',

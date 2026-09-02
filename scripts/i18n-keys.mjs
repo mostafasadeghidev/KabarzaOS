@@ -26,6 +26,8 @@ const LABEL_KEYS = new Set([
   // (`useActionToast(state, { success: '…' })`) و هرگز داخلِ `t()` نمی‌آید؛
   // چهار کلید در شش جا از هر زبانی جا مانده بود و ابزار «صفر» می‌گفت.
   'success',
+  // ⚠️ `body`/`title` ِ اعلان‌ها کلیدند و در notify() ترجمه می‌شوند.
+  'body',
 ]);
 
 export function walk(dir, out = []) {

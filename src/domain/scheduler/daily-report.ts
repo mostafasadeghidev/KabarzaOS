@@ -1,3 +1,4 @@
+import { createTranslator, type Translator } from '@/i18n/translate';
 /**
  * گزارشِ روزانه — خلاصهٔ یک‌روزهٔ فعالیت برای کانالِ تیم.
  *
@@ -45,6 +46,9 @@ export const DEFAULT_CONFIG: ReportConfig = {
  * ⚠️ بدونِ مقصد، ساختنِ گزارش کارِ بیهوده است — و بدتر، مهرِ «فرستاده شد»
  * می‌خورد و روزِ واقعیِ راه‌اندازی از دست می‌رود.
  */
+/** بدونِ مترجم همان فارسیِ مبدأ — کلید خودِ متنِ فارسی است. */
+const SOURCE: Translator = createTranslator({});
+
 export function hasDestination(config: ReportConfig, botConfigured: boolean): boolean {
   return (config.discord && config.webhook.trim() !== '')
     || (config.telegram && botConfigured);
@@ -96,20 +100,25 @@ export interface ReportSections {
  * شود. سکوت دو معنا دارد (نبودِ داده یا خاموش‌بودنِ بخش) و خواننده باید
  * بداند کدام است.
  */
+/**
+ * ⚠️ `t` مترجمِ مقصد است: پیش از این گزارش فقط فارسی ساخته می‌شد، در حالی که
+ * پیش‌نمایشش در تنظیمات ترجمه می‌شد — دو متن برای یک گزارش. بدونِ مترجم همان
+ * فارسیِ مبدأ برمی‌گردد.
+ */
 export function buildReport(input: {
   date: string;
   sections: string[];
   data: ReportSections;
-}): string {
+}, t: Translator = SOURCE): string {
   if (input.sections.length === 0) return '';
 
-  const lines: string[] = [`📊 گزارش روزانهٔ کبرزا — ${input.date}`];
+  const lines: string[] = [t('📊 گزارش روزانهٔ کبرزا — {date}', { date: input.date })];
 
   for (const section of REPORT_SECTIONS) {
     if (!input.sections.includes(section.key)) continue;
     const rows = input.data[section.key];
-    lines.push('', `${section.icon} ${section.label}:`);
-    lines.push(...(rows.length > 0 ? rows : ['• موردی ثبت نشده.']));
+    lines.push('', `${section.icon} ${t(section.label)}:`);
+    lines.push(...(rows.length > 0 ? rows : [t('• موردی ثبت نشده.')]));
   }
 
   return lines.join('\n');
