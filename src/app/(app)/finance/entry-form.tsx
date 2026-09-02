@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Paperclip } from 'lucide-react';
 import type { EntryRow, FormOptions } from './ledger-view';
+import { ReceiptPicker } from './receipt-picker';
 import {
   rateFromAmounts, relocateParty, requiresDescription, settledFromAmount,
   selectableTags, settledCurrencyId, showsBillable, showsRecurring, showsSettled,
@@ -371,11 +371,11 @@ export function EntryForm({
         )}
       </div>
 
-      <div className="grid gap-2 rounded-md border p-3">
-        <Label htmlFor="l-receipt" className="flex items-center gap-1.5">
-          <Paperclip className="size-3.5" />
-          {tr("رسیدها")}
-        </Label>
+      <ReceiptPicker
+        name="receipt"
+        inputId="l-receipt"
+        hint={tr('تصویر یا PDF — تا {size} برای هر رسید.', { size: humanSize(MAX_SIZE.receipt, tr) })}
+      >
         {editing && editing.receipts.length > 0 && (
           <ul className="grid gap-1">
             {editing.receipts.map((r) => (
@@ -393,11 +393,7 @@ export function EntryForm({
             ))}
           </ul>
         )}
-        <Input id="l-receipt" name="receipt" type="file" accept="image/*,application/pdf" multiple />
-        <p className="text-xs text-muted-foreground">
-          {tr('تصویر یا PDF — تا {size} برای هر رسید.', { size: humanSize(MAX_SIZE.receipt, tr) })}
-        </p>
-      </div>
+      </ReceiptPicker>
 
       {/* ── R-FORM-03 — هزینهٔ دوره‌ای فقط برای برداشت ── */}
       {recurringVisible && (

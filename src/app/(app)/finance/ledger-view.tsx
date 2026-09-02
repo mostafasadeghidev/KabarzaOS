@@ -7,6 +7,9 @@ import {
   deleteEntryAction, saveEntryAction, transferAction, type FinanceState,
 } from './_form/actions';
 import { EntryForm } from './entry-form';
+import { LedgerDetail, ReceiptThumb } from './ledger-detail';
+import { Lightbox } from '@/components/lightbox';
+import type { LedgerEvent } from '@/domain/ledger/timeline';
 import { format } from '@/domain/money/money';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +80,8 @@ export interface EntryRow {
   isTransfer: boolean;
   /** خانهٔ «معادل یورو» به قاعدهٔ `eur_cell()`؛ null یعنی «—». */
   eurDisplay: string | null;
+  /** تاریخچهٔ که/کِی — پورتِ `edit_log`؛ در مودالِ جزئیات نشان داده می‌شود. */
+  timeline: LedgerEvent[];
 }
 
 /** رسیدِ پیوستِ ردیف — همیشه از مسیرِ گیت‌شده خوانده می‌شود، نه S3. */
@@ -171,6 +176,9 @@ export function LedgerView({
   const [formOpen, setFormOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [editing, setEditing] = useState<EntryRow | null>(null);
+  /** ردیفی که مودالِ جزئیاتش باز است (پورتِ `.kteam-ledger-open`). */
+  const [detail, setDetail] = useState<EntryRow | null>(null);
+  const [zoom, setZoom] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const [entryState, entryAction] = useActionState<FinanceState, FormData>(saveEntryAction, {});
@@ -300,8 +308,17 @@ export function LedgerView({
             <TableBody>
               {entriesView.rows.map((e, i) => (
                 <TableRow key={e.id}>
-                  <TableNumericCell className="text-muted-foreground">{rowNumber(i)}</TableNumericCell>
-                  <TableNumericCell>{e.entryDate}</TableNumericCell>
+                  {/* # و تاریخ جزئیاتِ ردیف را باز می‌کنند (پورتِ کلیک روی #/تاریخ). */}
+                  <TableNumericCell className="text-muted-foreground">
+                    <button type="button" className="underline-offset-2 hover:underline" onClick={() => setDetail(e)}>
+                      {rowNumber(i)}
+                    </button>
+                  </TableNumericCell>
+                  <TableNumericCell>
+                    <button type="button" className="underline-offset-2 hover:underline" onClick={() => setDetail(e)}>
+                      {e.entryDate}
+                    </button>
+                  </TableNumericCell>
                   <TableCell>
                     <span className="flex flex-wrap gap-1">
                       {e.isTransfer && <Badge variant="secondary">{t("انتقال")}</Badge>}
@@ -328,12 +345,7 @@ export function LedgerView({
                     {e.receipts.length === 0 ? '—' : (
                       <span className="flex flex-wrap gap-1">
                         {e.receipts.map((r, n) => (
-                          <a
-                            key={r.id} href={r.href} target="_blank" rel="noopener noreferrer" title={r.originalName}
-                            className="inline-flex items-center gap-0.5 text-muted-foreground hover:text-foreground"
-                          >
-                            <Paperclip className="size-3" /><span className="num text-xs">{n + 1}</span>
-                          </a>
+                          <ReceiptThumb key={r.id} receipt={r} index={n + 1} size={28} onZoom={setZoom} />
                         ))}
                       </span>
                     )}
@@ -380,6 +392,17 @@ export function LedgerView({
           </Table>
         </div>
       )}
+
+      {/* ---- جزئیاتِ ردیف ---- */}
+      <LedgerDetail
+        entry={detail}
+        onClose={() => setDetail(null)}
+        currencyCode={currencyCode}
+        showEur={showEur}
+        tagName={tagName}
+        currencyCodeOf={(id) => options.currencies.find((c) => c.id === id)?.code ?? ''}
+      />
+      <Lightbox src={zoom} onClose={() => setZoom(null)} />
 
       {/* ---- فرمِ ردیف ---- */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
@@ -467,6 +490,18 @@ export function LedgerView({
                 <Label htmlFor="t-desc">{t("توضیحات")}</Label>
                 <Input id="t-desc" name="description" placeholder={tr("مثلاً: شارژِ حسابِ دلاری")} />
               </div>
+            </div>
+
+            {/* رسیدِ انتقال (یک فایل) — روی هر دو لِگ می‌نشیند (پورتِ فیلدِ رسیدِ فرمِ انتقال). */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="t-receipt" className="flex items-center gap-1.5">
+                <Paperclip className="size-3.5" />
+                {t("رسید")}
+              </Label>
+              <Input id="t-receipt" name="receipt" type="file" accept="image/*,application/pdf" />
+              <p className="text-xs text-muted-foreground">
+                {tr('روی هر دو لِگِ انتقال می‌نشیند — تصویر یا PDF تا {size}.', { size: humanSize(MAX_SIZE.receipt, tr) })}
+              </p>
             </div>
 
             {transferState.error && (

@@ -254,10 +254,28 @@ export async function transferAction(
   const entryDate = String(formData.get('entryDate') ?? '');
   const description = String(formData.get('description') ?? '');
 
+  // رسیدِ انتقال (یک فایل، روی هر دو لِگ) — پیش از ثبت بارگذاری می‌شود؛ اگر
+  // ثبت شکست خورد، فایل هم می‌رود تا بی‌صاحب در باکت نماند (R-FILE-02).
+  let receiptIds: number[] = [];
   try {
     const actor = await requireActor();
-    await transfer(actor, { fromAccountId, toAccountId, fromAmount, toAmount, entryDate, description });
+    const file = formData.get('receipt');
+    if (file instanceof File && file.size > 0) {
+      receiptIds = [await storeReceipt(actor, {
+        name: file.name,
+        mime: file.type,
+        bytes: new Uint8Array(await file.arrayBuffer()),
+      })];
+    }
   } catch (error) {
+    return { error: await explain(error, 'رسید بارگذاری نشد.') };
+  }
+
+  try {
+    const actor = await requireActor();
+    await transfer(actor, { fromAccountId, toAccountId, fromAmount, toAmount, entryDate, description, receiptIds });
+  } catch (error) {
+    await removeFiles(receiptIds).catch(() => {});
     return { error: await explain(error, 'انتقال ثبت نشد.') };
   }
   revalidatePath('/finance');

@@ -23,7 +23,7 @@ import { StaffSection, type StaffRow } from './staff-section';
 import { ReportSection } from './report-section';
 import { SystemSection } from './system-section';
 import type { TelegramSettingsView } from '@/server/settings/telegram-service';
-import { FiscalSection } from './fiscal-section';
+import { FiscalSection, type ClosingPreview } from './fiscal-section';
 import type { SystemConfig } from '@/domain/settings/system';
 import type { ReportConfig } from '@/domain/scheduler/daily-report';
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +51,8 @@ export interface SettingsData {
   systemConfig: SystemConfig;
   health: SchedulerHealth;
   lockDate: string | null;
+  /** پیش‌نمایشِ بستنِ دوره — فقط مالک؛ برای بقیه null. */
+  closing: ClosingPreview | null;
   today: string;
   currencies: Array<{
     id: number; code: string; name: string; symbol: string;
@@ -638,7 +640,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
         </div>
       )}
 
-      {tab === 'fiscal' && <FiscalSection lockDate={data.lockDate} today={data.today} />}
+      {tab === 'fiscal' && <FiscalSection lockDate={data.lockDate} today={data.today} closing={data.closing} />}
     </div>
   );
 }

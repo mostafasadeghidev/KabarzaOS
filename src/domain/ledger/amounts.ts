@@ -100,6 +100,8 @@ export interface TransferInput {
   entryDate: string;
   /** شرحِ آزاد — روی هر دو لِگ می‌نشیند (پورتِ فیلدِ توضیحِ فرمِ انتقال). */
   description?: string;
+  /** رسیدِ انتقال — روی هر دو لِگ می‌نشیند (پورتِ `receipt_attachment_id`). */
+  receiptIds?: number[];
 }
 
 export class TransferValidationError extends Error {

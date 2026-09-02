@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.49.0]
+
+### Added — ledger details and receipts (parity with the plugin)
+
+- **Ledger row details.** Clicking the row number or the date opens the row: date, direction, signed amount, EUR equivalent, settlement equivalent, payer, receiver, project, tags, description, the receipts as thumbnails, and a who/when history of the row's creation and edits, read from the shared audit log.
+- **Receipt thumbnails and zoom.** Image receipts show as thumbnails in the ledger table and in the row details; clicking one opens it full-screen (click, the close button or Escape closes it). PDFs keep their link.
+- **Receipt picker.** Newly chosen receipts are previewed before saving, each can be removed again, and an image can be pasted straight from the clipboard (Ctrl+V).
+- **Transfer receipt.** The transfer dialog accepts one receipt, attached to both legs as in the plugin. Removing a shared receipt from one leg no longer deletes the file the other leg still references, and both legs now record who made the transfer.
+- **Closing preview.** The fiscal-period tab shows the current balance of every account (the figures that closing will freeze), a link to the ledger, and when and by whom the lock was last changed.
+
+---
+
 ## [1.48.0]
 
 ### Added — remaining parity gaps

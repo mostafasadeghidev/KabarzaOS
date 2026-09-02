@@ -1,3 +1,4 @@
+import { closingPreview } from '@/server/finance/service';
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { getSettings } from '@/server/settings/service';
@@ -35,7 +36,7 @@ export default async function SettingsPage() {
   try {
     // فهرستِ همکاران فقط برای مالک است؛ برای بقیه تبِ «دسترسی همکاران» خالی می‌ماند.
     const [
-      settings, staff, staffCandidates, reportConfig, systemConfig, lockDate, tick, telegram, company,
+      settings, staff, staffCandidates, reportConfig, systemConfig, lockDate, tick, telegram, company, closing,
     ] = await Promise.all([
       getSettings(actor),
       listStaff(actor).catch(() => []),
@@ -49,9 +50,11 @@ export default async function SettingsPage() {
       getTelegramSettings(actor).catch(() => ({ hasToken: false, username: '', fromEnv: false })),
       // مشخصاتِ شرکت — روی فاکتور و سربرگ می‌نشیند.
       getCompany(),
+      // پیش‌نمایشِ بستنِ دوره — فقط مالک؛ برای بقیه null.
+      closingPreview(actor).catch(() => null),
     ]);
     data = {
-      ...settings, staff, staffCandidates, reportConfig, systemConfig, lockDate, telegram,
+      ...settings, staff, staffCandidates, reportConfig, systemConfig, lockDate, telegram, closing,
       company: company ?? {
         name: '', address: '', taxId: '', email: '',
         phone: '', website: '', bank: '', invoiceFooter: '', logoFileId: null,

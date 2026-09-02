@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
+import { formatDateTime } from '@/i18n/datetime';
+import { format } from '@/domain/money/money';
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -28,9 +30,25 @@ function Submit() {
  * پس از بستن، هیچ ردیفی با تاریخِ آن دوره ثبت، ویرایش یا حذف نمی‌شود.
  * برای همین فقط مدیرِ کل، و با هشدارِ صریح.
  */
-export function FiscalSection({ lockDate, today }: { lockDate: string | null; today: string }) {
+/** پیش‌نمایشِ بستن — خروجیِ `closingPreview`. */
+export interface ClosingPreview {
+  accounts: Array<{ id: number; label: string; balance: string; currencyCode: string | null }>;
+  lastChange: { at: string; by: string; lockDate: string | null } | null;
+}
+
+export function FiscalSection({
+  lockDate,
+  today,
+  closing,
+}: {
+  lockDate: string | null;
+  today: string;
+  /** null وقتی بیننده مالک نیست. */
+  closing: ClosingPreview | null;
+}) {
   const tr = useT();
   const t = useT();
+  const tz = useTimeZone();
   const [state, close] = useActionState(closePeriodAction, {} as FiscalState);
   useActionToast(state);
   const [aux, setAux] = useState<FiscalState>({});
@@ -54,6 +72,31 @@ export function FiscalSection({ lockDate, today }: { lockDate: string | null; to
           </p>
         )}
       </div>
+
+      {/* ماندهٔ فعلیِ حساب‌ها — همان ارقامی که با بستن منجمد می‌شوند (پورتِ جدولِ تبِ بستن). */}
+      {closing && (
+        <div className="rounded-md border p-3">
+          <h3 className="text-sm font-medium">{t("ماندهٔ فعلیِ حساب‌ها")}</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {tr("با بستنِ دوره، همین ارقام برای هر حساب منجمد و در «گزارش‌ها» نگه داشته می‌شوند.")}
+          </p>
+          {closing.accounts.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">{t("حسابی تعریف نشده.")}</p>
+          ) : (
+            <table className="mt-2 w-full max-w-md text-sm">
+              <tbody>
+                {closing.accounts.map((a) => (
+                  <tr key={a.id} className="border-t">
+                    <td className="py-1">{a.label}</td>
+                    <td className="num py-1 text-end">{format(a.balance)} {a.currencyCode ?? ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <a href="/finance" className="mt-2 inline-block text-xs underline">{t("مرور کامل در حسابداری")}</a>
+        </div>
+      )}
 
       <form action={close} className="grid gap-3 rounded-md border p-3">
         <h3 className="text-sm font-medium">{t("بستنِ دوره")}</h3>
@@ -81,6 +124,14 @@ export function FiscalSection({ lockDate, today }: { lockDate: string | null; to
         <div className="flex items-center gap-3">
           <Submit />
         </div>
+        {closing?.lastChange && (
+          <p className="num text-xs text-muted-foreground">
+            {tr('آخرین تغییر: {date} — {who}', {
+              date: formatDateTime(closing.lastChange.at, tz),
+              who: closing.lastChange.by || '—',
+            })}
+          </p>
+        )}
       </form>
 
       <div className="grid gap-2 rounded-md border border-dashed p-3">

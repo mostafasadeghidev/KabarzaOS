@@ -1,3 +1,4 @@
+import { buildTimelines, lastActorOf } from '@/domain/ledger/timeline';
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
 import { alias } from 'drizzle-orm/pg-core';
@@ -270,20 +271,21 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
     .offset((page - 1) * perPage);
 
   /**
-   * «توسط» — پورتِ `edit_log` / `last_actor_name` ِ نسخهٔ قبلی، ولی از همان
-   * audit_log ِ مشترک، نه یک ستونِ JSON ِ موازی: آخرین رویدادِ ثبت/ویرایشِ
-   * هر ردیف، در یک کوئریِ گروهی (DISTINCT ON)، نه یکی به‌ازای هر ردیف.
+   * تاریخچهٔ که/کِی — پورتِ `edit_log` ِ نسخهٔ قبلی، ولی از همان audit_log ِ
+   * مشترک، نه یک ستونِ JSON ِ موازی: همهٔ رویدادهای ثبت/ویرایشِ ردیف‌های این
+   * صفحه در **یک** کوئری؛ «توسط» = آخرین رویداد (پیش از این فقط همان یکی
+   * خوانده می‌شد و مودالِ جزئیات تاریخچه‌ای نداشت).
    */
-  const actorRows = rows.length === 0 ? [] : await db.execute(sql`
-    select distinct on (a.object_id) a.object_id as id, u.name
+  const eventRows = rows.length === 0 ? [] : await db.execute(sql`
+    select a.object_id as id, a.action, a.created_at as at, u.name
     from audit_log a
-    join users u on u.id = a.actor_id
+    left join users u on u.id = a.actor_id
     where a.object_type = 'ledger'
       and a.action in ('ledger.create', 'ledger.update', 'ledger.transfer')
       and a.object_id in ${sql.raw(`(${rows.map((r) => r.id).join(',')})`)}
-    order by a.object_id, a.id desc
-  `) as unknown as Array<{ id: number; name: string }>;
-  const lastActor = new Map(actorRows.map((r) => [Number(r.id), r.name]));
+    order by a.object_id, a.id
+  `) as unknown as Array<{ id: number | string; action: string; at: Date | string; name: string | null }>;
+  const timelines = buildTimelines(eventRows);
 
   const [countRow] = await db
     .select({ n: sql<number>`count(*)::int` })
@@ -344,7 +346,8 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
     billable: mirrorDirection !== 'project_cost',
     // مبلغِ حساب وقتی با مبلغِ اسمی فرق دارد، یا تبدیل است یا رقمِ دستی — هر دو باید بمانند.
     amountAccountOverride: r.amountAccount !== r.amount ? r.amountAccount : null,
-    lastActor: lastActor.get(r.id) ?? null,
+    lastActor: lastActorOf(timelines.get(r.id)),
+    timeline: timelines.get(r.id) ?? [],
     receipts: (r.receiptIds ?? [])
       .map((id) => byId.get(id))
       .filter((f): f is NonNullable<typeof f> => Boolean(f)),
@@ -742,8 +745,9 @@ export async function updateEntry(actor: Actor, entryId: number, rawInput: Entry
     updatedAt: new Date(),
   }).where(eq(ledger.id, entryId));
 
-  // ⚠️ فایلِ رسیدی که از ردیف برداشته شد نباید در باکت بماند (R-FILE-10).
-  await removeFiles(receipts.orphaned);
+  // ⚠️ فایلِ رسیدی که از ردیف برداشته شد نباید در باکت بماند (R-FILE-10) —
+  // مگر لِگِ دیگرِ انتقال هنوز به آن اشاره کند.
+  await removeFiles(await unreferencedReceipts([entryId], receipts.orphaned));
 
   /**
    * آینه از نو ساخته می‌شود، نه وصله‌کاری.
@@ -785,7 +789,7 @@ export async function deleteEntry(actor: Actor, entryId: number): Promise<void> 
   ));
   await db.delete(ledger).where(inArray(ledger.id, ids));
   // ⚠️ رسیدهای ردیفِ حذف‌شده دیگر صاحبی ندارند؛ در باکت هم نمی‌مانند.
-  await removeFiles(rows.flatMap((r) => r.receiptIds ?? []));
+  await removeFiles(await unreferencedReceipts(ids, [...new Set(rows.flatMap((r) => r.receiptIds ?? []))]));
   await audit(actor, 'ledger.delete', entryId, before, rows.length > 1 ? { transferGroup: before.transferGroup, ids } : null);
 }
 
@@ -844,6 +848,8 @@ export async function transfer(actor: Actor, input: TransferInput): Promise<[num
         receiverLabel: leg.direction === 'out' ? counterpart : '',
         payerLabel: leg.direction === 'in' ? counterpart : '',
         transferGroup: leg.transferGroup,
+        // رسیدِ انتقال روی هر دو لِگ می‌نشیند (پورتِ `receipt_attachment_id`).
+        receiptIds: input.receiptIds && input.receiptIds.length > 0 ? input.receiptIds : null,
         createdBy: actor.id,
       }).returning({ id: ledger.id });
       created.push(rows[0]!.id);
@@ -851,8 +857,26 @@ export async function transfer(actor: Actor, input: TransferInput): Promise<[num
     return created as [number, number];
   });
 
+  // هر دو لِگ رویداد می‌گیرند تا «توسط» و تاریخچه روی حسابِ مقصد هم پر باشد.
   await audit(actor, 'ledger.transfer', ids[0], null, { ...input, group });
+  await audit(actor, 'ledger.transfer', ids[1], null, { ...input, group });
   return ids;
+}
+
+/**
+ * رسیدهایی که هیچ ردیفِ دیگری (جز ردیف‌های داده‌شده) به آن‌ها اشاره نمی‌کند.
+ * ⚠️ رسیدِ انتقال بینِ دو لِگ مشترک است؛ حذفِ رسید از یک لِگ نباید فایلِ
+ * لِگِ دیگر را از باکت ببرد.
+ */
+async function unreferencedReceipts(exceptIds: readonly number[], fileIds: readonly number[]): Promise<number[]> {
+  if (fileIds.length === 0 || exceptIds.length === 0) return [...fileIds];
+  const rows = await db.execute(sql`
+    select distinct unnest(receipt_ids) as id from ledger
+    where id not in ${sql.raw(`(${exceptIds.join(',')})`)}
+      and receipt_ids && ${sql.raw(`array[${fileIds.join(',')}]::bigint[]`)}
+  `) as unknown as Array<{ id: number | string }>;
+  const used = new Set(rows.map((r) => Number(r.id)));
+  return fileIds.filter((id) => !used.has(id));
 }
 
 /** گزینه‌های فرم — حساب، ارز، دستهٔ دفتر، پروژه، طرف‌حساب. */
@@ -1329,4 +1353,33 @@ export async function recomputeEur(actor: Actor): Promise<{ ledger: number; paym
 
   await audit(actor, 'fiscal.recompute', 0, null, changed);
   return changed;
+}
+
+/**
+ * پیش‌نمایشِ بستنِ دوره — پورتِ تبِ «بستن دورهٔ مالی» ِ نسخهٔ قبلی: ماندهٔ
+ * فعلیِ هر حساب (همان چیزی که با بستن منجمد می‌شود) و آخرین تغییرِ قفل
+ * (کِی، توسطِ که). فقط مالک — همان گاردِ `closePeriod`.
+ */
+export async function closingPreview(actor: Actor) {
+  if (!actor.roles.includes('owner')) throw new ForbiddenError('fiscal.close');
+  const [accountRows, lockRows] = await Promise.all([
+    listAccounts(actor),
+    db.select({ lockDate: fiscalLocks.lockDate, at: fiscalLocks.createdAt, by: users.name })
+      .from(fiscalLocks)
+      .leftJoin(users, eq(users.id, fiscalLocks.setBy))
+      .orderBy(desc(fiscalLocks.id))
+      .limit(1),
+  ]);
+  const last = lockRows[0];
+  return {
+    accounts: accountRows.map((a) => ({
+      id: a.id,
+      label: `${a.officeName ? `${a.officeName} · ` : ''}${a.name}`,
+      balance: a.balance,
+      currencyCode: a.currencyCode,
+    })),
+    lastChange: last
+      ? { at: new Date(last.at).toISOString(), by: last.by ?? '', lockDate: last.lockDate }
+      : null,
+  };
 }
