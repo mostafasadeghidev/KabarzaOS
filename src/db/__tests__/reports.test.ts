@@ -138,10 +138,12 @@ describe('پروژهٔ چندکارفرمایی فقط به کارفرمای ا�
   it('صفحهٔ کارفرمای دوم پروژه را «مشترک» و با صفر نشان می‌دهد', async () => {
     const detail = await reports.getClientDetail(owner(), clientB);
     expect(detail!.projects[0]!.shared).toBe(true);
-    expect(detail!.projects[0]!.due).toBe('0.00');
+    expect(detail!.projects[0]!.remaining).toBe('0.00');
     const primary = await reports.getClientDetail(owner(), clientA);
     expect(primary!.projects[0]!.shared).toBe(false);
-    expect(primary!.projects[0]!.price).toBe('20.00');
+    // پورتِ افزونه: ردیفِ ریزِ کارفرما در ارزِ **خودِ پروژه** است (ریال)، نه یورو.
+    expect(primary!.projects[0]!.price).toBe('1000000.00');
+    expect(primary!.projects[0]!.currencyCode).toBe('IRR');
   });
 });
 

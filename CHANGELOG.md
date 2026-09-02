@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.47.0]
+
+### Added — report drill-downs and invoice (parity with the plugin)
+
+- **Member report:** avatar and role names, EUR cards (total commitment, paid, debt), operational cards (projects, hours this week from the configured week start, remaining tasks, finished tasks, weekly availability days), this week's work per project, a searchable projects table in each project's own currency with the payout lines (amount with currency and receipt link) under the project, tasks in three buckets grouped by project with priority, and the weekly availability rows.
+- **Client report:** EUR cards (total value, received, due), a searchable projects table in each project's own currency with the status pill, a "partner" badge on shared projects the client does not owe for, and the expense lines with note and receipt under each project. Project links are shown only to project managers.
+- **Daily report settings** are sanitised on save as in the plugin: an invalid time falls back to 09:00, the day offset is clamped to 0–7, unknown sections are dropped and a webhook that is not an http(s) URL is cleared.
+- **Invoice:** expense and payment rows are converted into the project currency at the recorded rate, amounts print with the currency's own decimals, a print / save-as-PDF button, a "project not found" message for an unknown id, and no invented issuer name when neither company nor brand name is set.
+
+---
+
 ## [1.46.0]
 
 ### Added — "My team" (parity with the plugin)

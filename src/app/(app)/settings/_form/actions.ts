@@ -10,7 +10,7 @@ import { ForbiddenError } from '@/domain/access/guard';
 import {
   dispatchReport, getReportConfig, previewReport, saveReportConfig,
 } from '@/server/scheduler/daily-report';
-import { hasDestination, reportDate } from '@/domain/scheduler/daily-report';
+import { hasDestination, reportDate, normalizeReportConfig } from '@/domain/scheduler/daily-report';
 import { CatalogError, catalogMessage } from '@/domain/settings/catalogs';
 import { saveSystemConfig } from '@/server/settings/system-service';
 import { closePeriod, reopenPeriod } from '@/server/finance/service';
@@ -184,14 +184,15 @@ export async function saveReportAction(
   formData: FormData,
 ): Promise<ReportState> {
   try {
-    await saveReportConfig(await assertOwner(), {
+    // پورتِ `Daily_Report::save`: ساعتِ نامعتبر ← ۰۹:۰۰، آفست ۰..۷، بخش‌های شناخته، وب‌هوکِ URL.
+    await saveReportConfig(await assertOwner(), normalizeReportConfig({
       sections: formData.getAll('sections').map(String),
       time: String(formData.get('time') ?? '09:00'),
       offset: Number(formData.get('offset') ?? 1),
       discord: formData.get('discord') !== null,
       webhook: String(formData.get('webhook') ?? '').trim(),
       telegram: formData.get('telegram') !== null,
-    });
+    }));
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'فقط مدیرِ کل.' };
     return { error: 'ذخیره نشد.' };

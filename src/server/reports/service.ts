@@ -4,7 +4,7 @@ import { rateSource, closingDatesQuery, closingRowsQuery } from '@/server/financ
 import { db } from '@/db/client';
 import {
   absences, accounts, availabilitySlots, currencies, ledger, projectMembers,
-  projectClients, projectPayments, projects, timelogs, unitEntries, userRoles, users, offices, userOffices, vendors,
+  projectClients, projectPayments, projects, timelogs, unitEntries, userRoles, users, offices, userOffices, vendors, tags, tagRelations, tasks,
 } from '@/db/schema';
 import { type Actor } from '@/domain/access/permissions';
 import { assertCanView, visibleScopes } from '@/domain/access/guard';
@@ -12,7 +12,12 @@ import { overallSummary, sumReportable, isReportableExpense } from '@/domain/rep
 import { currentLocale } from '@/i18n/server';
 import { isSettledFormer, perCurrencyLines, rateBanner, sumInBase } from '@/domain/reports/money';
 import { rowValueIn } from '@/domain/team-money/payments';
-import { monthlyAverage, withBars } from '@/domain/reports/filters';
+import { monthlyAverage, withBars, weekRange } from '@/domain/reports/filters';
+import { tagName } from '@/db/tag-name';
+import { alias } from 'drizzle-orm/pg-core';
+import { avatarsFor } from '@/server/files/service';
+import { getSystemConfig } from '@/server/settings/system-service';
+import { weekOrder, WEEKDAYS, slotsByWeekday, type Slot } from '@/domain/availability/weekly';
 
 /**
  * فهرستِ scope برای SQL ِ خام.
@@ -753,7 +758,6 @@ export async function getMemberDetail(actor: Actor, userId: number) {
       c.code as currency_code,
       coalesce(mem.agreed, 0)::text     as agreed,
       coalesce(paid.total, 0)::text     as paid,
-      coalesce(paid.total_eur, 0)::text as paid_eur,
       coalesce(mins.total, 0)::int      as minutes
     from (
       select project_id, sum(agreed_amount) as agreed
@@ -764,9 +768,7 @@ export async function getMemberDetail(actor: Actor, userId: number) {
     join projects p on p.id = mem.project_id
     left join currencies c on c.id = p.currency_id
     left join (
-      select project_id,
-        sum(coalesce(amount_settled, amount)) as total,
-        sum(amount_eur) as total_eur
+      select project_id, sum(coalesce(amount_settled, amount)) as total
       from project_payments
       where direction = 'member_payout' and user_id = ${userId}
       group by project_id
@@ -780,41 +782,124 @@ export async function getMemberDetail(actor: Actor, userId: number) {
     order by p.title
   `);
 
+  // پورتِ کارت‌های یورو: هر پروژه در ارزِ خودش، جمع‌ها پس از تبدیل (نبودِ نرخ صفر و شمرده).
+  const fx = await baseConverter();
+  let agreedEur = 0;
+  let paidEur = 0;
   const projectRows = (rows as unknown as Array<{
-    project_id: number; title: string; currency_code: string | null;
-    agreed: string; paid: string; paid_eur: string; minutes: number;
+    project_id: number | string; title: string; currency_id: number | string | null; currency_code: string | null;
+    agreed: string; paid: string; minutes: number | string;
   }>).map((r) => {
     const agreed = Number(r.agreed);
     const paid = Number(r.paid);
+    const currencyId = r.currency_id === null ? null : Number(r.currency_id);
+    agreedEur += fx.toBase(r.agreed, currencyId);
+    paidEur += fx.toBase(r.paid, currencyId);
     return {
-      projectId: r.project_id,
+      projectId: Number(r.project_id),
       title: r.title,
+      currencyId,
       currencyCode: r.currency_code,
       agreed: r.agreed,
       paid: r.paid,
       remaining: Math.max(0, agreed - paid).toFixed(2),
       // ⚠️ همان سه‌حالتی نسخهٔ قبلی؛ «تسویه» یعنی پرداختی به توافقی رسیده.
       status: paid <= 0 ? 'unpaid' : (agreed > 0 && paid + 0.001 >= agreed ? 'paid' : 'partial'),
-      minutes: r.minutes,
+      minutes: Number(r.minutes),
     };
   });
 
-  const lines = await db
-    .select({
+  const today = new Date().toISOString().slice(0, 10);
+  const locale = await currentLocale();
+  const priority = alias(tags, 'priority_tag');
+  const [lineRows, roleRows, avatars, system, slotRows, taskRows] = await Promise.all([
+    // ردیف‌های پرداخت با ارز و رسید — پورتِ `payment_lines_html`.
+    db.select({
       projectId: projectPayments.projectId,
       amount: projectPayments.amount,
       amountSettled: projectPayments.amountSettled,
       paidAt: projectPayments.paidAt,
       note: projectPayments.note,
+      currencyCode: currencies.code,
+      receiptIds: ledger.receiptIds,
     })
-    .from(projectPayments)
-    .where(and(
-      eq(projectPayments.userId, userId),
-      eq(projectPayments.direction, 'member_payout'),
-    ))
-    .orderBy(projectPayments.paidAt);
+      .from(projectPayments)
+      .leftJoin(currencies, eq(currencies.id, projectPayments.currencyId))
+      .leftJoin(ledger, eq(ledger.id, projectPayments.ledgerId))
+      .where(and(eq(projectPayments.userId, userId), eq(projectPayments.direction, 'member_payout')))
+      .orderBy(projectPayments.paidAt),
+    db.select({ name: tagName(locale) }).from(tagRelations)
+      .innerJoin(tags, eq(tags.id, tagRelations.tagId))
+      .where(and(eq(tagRelations.objectType, 'user'), eq(tagRelations.objectId, userId), eq(tags.type, 'member_role')))
+      .orderBy(tags.sortOrder, tags.id),
+    avatarsFor([userId]),
+    getSystemConfig(),
+    db.select({ weekday: availabilitySlots.weekday, from: availabilitySlots.fromTime, to: availabilitySlots.toTime })
+      .from(availabilitySlots).where(eq(availabilitySlots.userId, userId))
+      .orderBy(availabilitySlots.weekday, availabilitySlots.fromTime),
+    // پورتِ `for_user_full`: همهٔ تسک‌های این عضو با پرچمِ بسته/ریویو، به ترتیبِ اولویت.
+    db.select({
+      projectId: tasks.projectId, projectTitle: projects.title, title: tasks.title,
+      isClosed: tags.isClosed, isReview: tags.isReview, statusGroup: tags.statusGroup,
+      priority: tagName(locale, priority),
+    })
+      .from(tasks)
+      .innerJoin(projects, eq(projects.id, tasks.projectId))
+      .leftJoin(tags, eq(tags.id, tasks.statusTagId))
+      .leftJoin(priority, eq(priority.id, tasks.priorityTagId))
+      .where(and(eq(tasks.assignedTo, userId), isNull(tasks.deletedAt), isNull(projects.deletedAt)))
+      .orderBy(sql`(${priority.sortOrder} is null)`, priority.sortOrder, desc(tasks.id)),
+  ]);
 
-  return { person, projects: projectRows, lines };
+  // پورتِ «ساعتِ این هفته»: هفتهٔ تقویمی از روزِ شروعِ تنظیمات.
+  const week = weekRange(today, system.weekStart);
+  const worked = await db
+    .select({ projectId: timelogs.projectId, title: projects.title, minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int` })
+    .from(timelogs)
+    .innerJoin(projects, eq(projects.id, timelogs.projectId))
+    .where(and(eq(timelogs.userId, userId), gte(timelogs.logDate, week.from), lte(timelogs.logDate, week.to)))
+    .groupBy(timelogs.projectId, projects.title)
+    .orderBy(desc(sql`sum(${timelogs.minutes})`));
+
+  // تسک‌ها در سه سطل (در حال انجام / نیازمند بررسی / انجام‌شده)، گروه‌بندی به‌ازای پروژه.
+  type Group = { projectId: number; title: string; tasks: Array<{ title: string; priority: string | null }> };
+  const buckets: Record<'open' | 'review' | 'done', Map<number, Group>> = { open: new Map(), review: new Map(), done: new Map() };
+  for (const tk of taskRows) {
+    const key = tk.isClosed || tk.statusGroup === 'complete' ? 'done' : tk.isReview ? 'review' : 'open';
+    const g = buckets[key].get(tk.projectId) ?? { projectId: tk.projectId, title: tk.projectTitle, tasks: [] };
+    g.tasks.push({ title: tk.title, priority: tk.priority });
+    buckets[key].set(tk.projectId, g);
+  }
+
+  // برنامهٔ هفتگی به ترتیبِ نمایشِ هفته — فقط روزهای دارای برنامه.
+  const byDay = slotsByWeekday(slotRows);
+  const availability = weekOrder(system.weekStart)
+    .filter((d) => byDay.has(d))
+    .map((d) => ({ day: WEEKDAYS[d]!, slots: byDay.get(d) as Slot[] }));
+
+  const day = (at: Date | string | null) =>
+    at ? (typeof at === 'string' ? at.slice(0, 10) : at.toISOString().slice(0, 10)) : null;
+
+  return {
+    person: { ...person, roleNames: roleRows.map((r) => r.name), avatarFileId: avatars.get(userId) ?? null },
+    totals: { agreed: agreedEur.toFixed(2), paid: paidEur.toFixed(2), debt: Math.max(0, agreedEur - paidEur).toFixed(2) },
+    rateMissing: fx.missing,
+    projects: projectRows,
+    lines: lineRows.map((l) => ({
+      projectId: l.projectId ?? 0,
+      date: day(l.paidAt),
+      amount: l.amountSettled ?? l.amount,
+      currencyCode: l.currencyCode,
+      note: l.note,
+      receiptIds: l.receiptIds,
+    })),
+    ops: {
+      weekMinutes: worked.reduce((sum, w) => sum + w.minutes, 0),
+      workedOn: worked.map((w) => ({ projectId: w.projectId!, title: w.title, minutes: w.minutes })),
+      tasks: { open: [...buckets.open.values()], review: [...buckets.review.values()], done: [...buckets.done.values()] },
+      availability,
+    },
+  };
 }
 
 /** ریزِ مطالباتِ یک کارفرما — پروژه‌به‌پروژه با دریافتی و مانده. */
@@ -825,46 +910,102 @@ export async function getClientDetail(actor: Actor, userId: number) {
     .from(users).where(eq(users.id, userId));
   if (!person) return null;
 
-  const fx = await baseConverter();
+  const locale = await currentLocale();
+  const fx = await baseFx();
+  const { source: rates } = await rateSource();
+
+  // پروژه‌های این کارفرما با کارفرمای اصلی (قدیمی‌ترین انتساب) — پورتِ `client_projects`.
   const rows = await db.execute(sql`
     select
-      p.id as project_id, p.title, p.price::text as price, p.currency_id,
+      p.id as project_id, p.title, p.price::text as price, p.currency_id, c.code as currency_code,
       (pc.id = (select min(pc2.id) from project_clients pc2 where pc2.project_id = p.id)) as is_primary,
-      coalesce(pay.incoming, 0)::text as paid,
-      coalesce(pay.billable, 0)::text as expenses
+      coalesce(nullif(t.name_i18n->>${locale}, ''), nullif(t.name_i18n->>'en', ''), t.name) as status_name
     from project_clients pc
     join projects p on p.id = pc.project_id
-    left join (
-      select project_id,
-        sum(amount_eur) filter (where direction = 'incoming')        as incoming,
-        sum(amount_eur) filter (where direction = 'project_expense') as billable
-      from project_payments group by project_id
-    ) pay on pay.project_id = p.id
+    left join currencies c on c.id = p.currency_id
+    left join tags t on t.id = p.status_tag_id
     where pc.user_id = ${userId} and p.deleted_at is null
     order by p.title
-  `);
+  `) as unknown as Array<{
+    project_id: number | string; title: string; price: string; currency_id: number | string | null;
+    currency_code: string | null; is_primary: boolean; status_name: string | null;
+  }>;
+  const projectIds = rows.map((r) => Number(r.project_id));
 
-  const projectRows = (rows as unknown as Array<{
-    project_id: number; title: string; price: string; currency_id: number | null;
-    is_primary: boolean; paid: string; expenses: string;
-  }>).map((r) => {
-    // پروژهٔ مشترک: فقط کارفرمای اصلی بدهکار است؛ بقیه آن را با صفر می‌بینند.
-    const price = r.is_primary ? fx.toBase(r.price, r.currency_id) : 0;
-    const expenses = r.is_primary ? Number(r.expenses) : 0;
-    const paid = r.is_primary ? Number(r.paid) : 0;
+  // ردیف‌های دریافتی/هزینه در ارزِ **پروژه** (پورتِ `row_value_in`) با رسید.
+  const payments = projectIds.length === 0 ? [] : await db
+    .select({
+      projectId: projectPayments.projectId, direction: projectPayments.direction,
+      amount: projectPayments.amount, currencyId: projectPayments.currencyId,
+      amountSettled: projectPayments.amountSettled, settledCurrencyId: projectPayments.settledCurrencyId,
+      paidAt: projectPayments.paidAt, note: projectPayments.note,
+      currencyCode: currencies.code, receiptIds: ledger.receiptIds,
+    })
+    .from(projectPayments)
+    .leftJoin(currencies, eq(currencies.id, projectPayments.currencyId))
+    .leftJoin(ledger, eq(ledger.id, projectPayments.ledgerId))
+    .where(and(inArray(projectPayments.projectId, projectIds), inArray(projectPayments.direction, ['incoming', 'project_expense'])))
+    .orderBy(projectPayments.paidAt);
+
+  const currencyOf = new Map(rows.map((r) => [Number(r.project_id), r.currency_id === null ? null : Number(r.currency_id)]));
+  const inProject = (p: (typeof payments)[number]) => {
+    const target = currencyOf.get(p.projectId!) ?? fx.baseCurrencyId;
+    if (!p.currencyId) return Number(p.amountSettled ?? p.amount);
+    const v = rowValueIn(rates, { amount: p.amount, currencyId: p.currencyId, amountSettled: p.amountSettled, settledCurrencyId: p.settledCurrencyId }, target);
+    return v === null ? 0 : Number(v);
+  };
+  const paidOf = new Map<number, number>();
+  const expenseOf = new Map<number, number>();
+  for (const p of payments) {
+    const bucket = p.direction === 'incoming' ? paidOf : expenseOf;
+    bucket.set(p.projectId!, (bucket.get(p.projectId!) ?? 0) + inProject(p));
+  }
+
+  let billedEur = 0;
+  let receivedEur = 0;
+  const projectRows = rows.map((r) => {
+    const id = Number(r.project_id);
+    const cid = r.currency_id === null ? null : Number(r.currency_id);
+    // پروژهٔ مشترک: فقط کارفرمای اصلی بدهکار است؛ بقیه آن را با صفر می‌بینند («شریک»).
+    const price = r.is_primary ? Number(r.price) : 0;
+    const expenses = r.is_primary ? (expenseOf.get(id) ?? 0) : 0;
+    const paid = r.is_primary ? (paidOf.get(id) ?? 0) : 0;
+    const billed = price + expenses;
+    billedEur += fx.toBase(billed, cid ?? fx.baseCurrencyId);
+    receivedEur += fx.toBase(paid, cid ?? fx.baseCurrencyId);
     return {
-      projectId: r.project_id,
+      projectId: id,
       title: r.title,
+      currencyCode: r.currency_code,
+      statusName: r.status_name,
       price: price.toFixed(2),
       expenses: expenses.toFixed(2),
       paid: paid.toFixed(2),
       // R-TEAM-04 — بدهی = قیمت + هزینهٔ قابلِ‌صورتحساب − دریافتی.
-      due: Math.max(0, price + expenses - paid).toFixed(2),
+      remaining: Math.max(0, billed - paid).toFixed(2),
+      status: paid <= 0 ? 'unpaid' : (billed > 0 && paid + 0.001 >= billed ? 'paid' : 'partial'),
       shared: !r.is_primary,
     };
   });
 
-  return { person, projects: projectRows };
+  const day = (at: Date | string | null) =>
+    at ? (typeof at === 'string' ? at.slice(0, 10) : at.toISOString().slice(0, 10)) : null;
+
+  return {
+    person,
+    totals: { billed: billedEur.toFixed(2), received: receivedEur.toFixed(2), due: Math.max(0, billedEur - receivedEur).toFixed(2) },
+    rateMissing: fx.missing,
+    projects: projectRows,
+    // پورتِ ردیف‌های قابلِ بازشدنِ هزینه‌ها: تاریخ، مبلغ با ارز، شرح، رسید.
+    lines: payments.filter((p) => p.direction === 'project_expense').map((p) => ({
+      projectId: p.projectId ?? 0,
+      date: day(p.paidAt),
+      amount: p.amountSettled ?? p.amount,
+      currencyCode: p.currencyCode,
+      note: p.note,
+      receiptIds: p.receiptIds,
+    })),
+  };
 }
 
 /**

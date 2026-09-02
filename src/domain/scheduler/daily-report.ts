@@ -196,3 +196,27 @@ export function meetingLine(input: { time: string; title: string; project?: stri
 
 /** پورتِ `post_to_webhook`: دیسکورد تکه‌های ≤۱۹۰۰ نویسه می‌گیرد (زیرِ سقفِ ۲۰۰۰). */
 export const DISCORD_CHUNK = 1900;
+
+/**
+ * پاک‌سازیِ پیکربندی هنگامِ ذخیره — پورتِ `Daily_Report::save`: ساعت باید `HH:MM`
+ * باشد وگرنه ۰۹:۰۰؛ آفست در بازهٔ ۰..۷؛ بخش‌ها فقط کلیدهای شناخته؛ وب‌هوک فقط
+ * نشانیِ http(s) — وگرنه خالی. پیش از این مقدارِ خراب ذخیره و فقط هنگامِ ارسال ترمیم می‌شد.
+ */
+export function normalizeReportConfig(input: Partial<ReportConfig>): ReportConfig {
+  const known = new Set<string>(REPORT_SECTIONS.map((s) => s.key));
+  const time = typeof input.time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(input.time.trim())
+    ? input.time.trim()
+    : DEFAULT_CONFIG.time;
+  const offsetRaw = Number(input.offset);
+  const offset = Number.isInteger(offsetRaw) ? Math.min(7, Math.max(0, offsetRaw)) : DEFAULT_CONFIG.offset;
+  const webhookRaw = typeof input.webhook === 'string' ? input.webhook.trim() : '';
+  const webhook = /^https?:\/\/\S+$/i.test(webhookRaw) ? webhookRaw : '';
+  return {
+    sections: (input.sections ?? []).filter((k) => known.has(k)),
+    time,
+    offset,
+    discord: Boolean(input.discord),
+    webhook,
+    telegram: Boolean(input.telegram),
+  };
+}

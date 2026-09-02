@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { currentActor } from '@/server/auth';
 import { getInvoice } from '@/server/finance/invoice-service';
 import { ForbiddenError } from '@/domain/access/guard';
-import { format } from '@/domain/money/money';
+import { format, type Currency } from '@/domain/money/money';
 import { EmptyState } from '@/components/ui/empty-state';
 import { primeTranslations, t } from '@/i18n/server';
+import { PrintButton } from '@/components/print-button';
 
 /**
  * فاکتورِ پروژه — سندِ قابلِ چاپ.
@@ -34,6 +35,10 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     data = await getInvoice(actor, id);
   } catch (error) {
     if (error instanceof ForbiddenError) {
+      // پورتِ افزونه: شناسهٔ ناموجود «پروژه یافت نشد» می‌گوید، نه «دسترسی ندارید».
+      if (error.message === 'project.not_found') {
+        return <main className="p-6"><EmptyState title={t("پروژه یافت نشد")} /></main>;
+      }
       return (
         <main className="p-6">
           <EmptyState title={t("دسترسی ندارید")} description={t("دیدنِ فاکتور مجوزِ مالی می‌خواهد.")} />
@@ -44,6 +49,9 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   }
 
   const cur = data.currencyCode ?? '';
+  // پورتِ `Money::format`: اعشار از خودِ ارز (تومان = ۰).
+  const currency = { id: 0, code: cur, symbol: '', decimals: data.currencyDecimals } as Currency;
+  const money = (v: string) => `${format(v, currency)} ${cur}`.trim();
 
   return (
     <main className="mx-auto grid max-w-3xl gap-6 p-6 print:max-w-none print:p-0">
@@ -51,11 +59,19 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         <Link href={`/projects/${id}`} className="text-xs text-muted-foreground hover:underline">
           {t("← بازگشت به پروژه")}
         </Link>
-        {!data.issuable && (
-          <span className="text-xs text-amber-600 dark:text-amber-500">
-            {t("این پروژه کارفرما یا مبلغی ندارد؛ فاکتور صرفاً پیش‌نمایش است.")}
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {!data.issuable && (
+            <span className="text-xs text-amber-600 dark:text-amber-500">
+              {t("این پروژه کارفرما یا مبلغی ندارد؛ فاکتور صرفاً پیش‌نمایش است.")}
+            </span>
+          )}
+          {data.rateMissing > 0 && (
+            <span className="text-xs text-destructive">
+              {t('{n} ردیف نرخِ تبدیل به ارزِ پروژه ندارد و صفر شمرده شده.', { n: data.rateMissing })}
+            </span>
+          )}
+          <PrintButton />
+        </div>
       </div>
 
       <header className="flex flex-wrap items-start justify-between gap-4 border-b pb-4">
@@ -73,7 +89,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
               className="mb-2 h-14 w-auto max-w-[12rem] object-contain"
             />
           )}
-          <h1 className="text-lg font-bold">{data.issuer.name}</h1>
+          {data.issuer.name && <h1 className="text-lg font-bold">{data.issuer.name}</h1>}
           {data.issuer.address && (
             <p className="text-xs whitespace-pre-line text-muted-foreground">{data.issuer.address}</p>
           )}
@@ -126,14 +142,14 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
               <tr key={i} className="border-b last:border-0">
                 <td className="py-2">{t(line.description)}</td>
                 <td className="num py-2" dir="ltr">{line.date ?? '—'}</td>
-                <td className="num py-2 text-end">{format(line.amount)} {cur}</td>
+                <td className="num py-2 text-end">{money(line.amount)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr className="border-t-2">
               <th colSpan={2} className="py-2 text-start">{t("مجموع صورت‌حساب")}</th>
-              <th className="num py-2 text-end">{format(data.totals.totalDue)} {cur}</th>
+              <th className="num py-2 text-end">{money(data.totals.totalDue)}</th>
             </tr>
           </tfoot>
         </table>
@@ -148,7 +164,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                 <tr key={i} className="border-b last:border-0">
                   <td className="py-2">{t(line.description)}</td>
                   <td className="num py-2" dir="ltr">{line.date ?? '—'}</td>
-                  <td className="num py-2 text-end">{format(line.amount)} {cur}</td>
+                  <td className="num py-2 text-end">{money(line.amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -161,16 +177,16 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
           <tbody>
             <tr>
               <td className="py-1.5 text-muted-foreground">{t("مجموع صورت‌حساب")}</td>
-              <td className="num py-1.5 text-end">{format(data.totals.totalDue)} {cur}</td>
+              <td className="num py-1.5 text-end">{money(data.totals.totalDue)}</td>
             </tr>
             <tr>
               <td className="py-1.5 text-muted-foreground">{t("پرداخت‌شده")}</td>
-              <td className="num py-1.5 text-end">{format(data.totals.paid)} {cur}</td>
+              <td className="num py-1.5 text-end">{money(data.totals.paid)}</td>
             </tr>
             <tr className="border-t-2">
               <td className="py-2 font-bold text-destructive">{t("ماندهٔ قابل پرداخت")}</td>
               <td className="num py-2 text-end text-base font-bold text-destructive">
-                {format(data.totals.remaining)} {cur}
+                {money(data.totals.remaining)}
               </td>
             </tr>
           </tbody>

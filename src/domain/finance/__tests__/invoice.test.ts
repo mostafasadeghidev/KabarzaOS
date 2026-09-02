@@ -46,6 +46,6 @@ describe('صادرشدن', () => {
   it('نامِ صادرکننده هرگز خالی نمی‌ماند', () => {
     expect(issuerName('کبرزا', 'برند')).toBe('کبرزا');
     expect(issuerName('  ', 'برند')).toBe('برند');
-    expect(issuerName('', '')).toBe('KabarzaOS');
+    expect(issuerName('', '')).toBe('');
   });
 });

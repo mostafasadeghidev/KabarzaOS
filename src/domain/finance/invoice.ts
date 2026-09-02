@@ -60,6 +60,7 @@ export function isIssuable(input: { hasClient: boolean; totalDue: string }): boo
  * نامِ صادرکننده — اگر مشخصاتِ شرکت خالی باشد، به نامِ برندِ سامانه
  * برمی‌گردد، نه رشتهٔ خالی روی سندِ رسمی.
  */
+/** پورتِ افزونه: نامِ شرکت، وگرنه نامِ برند، وگرنه **خالی** (سرصفحه بدونِ نام، نه نامِ ساختگی). */
 export function issuerName(companyName: string, brandName: string): string {
-  return companyName.trim() || brandName.trim() || 'KabarzaOS';
+  return companyName.trim() || brandName.trim();
 }

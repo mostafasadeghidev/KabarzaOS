@@ -4,31 +4,19 @@ import { ArrowRight } from 'lucide-react';
 import { currentActor } from '@/server/auth';
 import { getClientDetail } from '@/server/reports/service';
 import { ForbiddenError } from '@/domain/access/guard';
+import { can } from '@/domain/access/permissions';
 import { format } from '@/domain/money/money';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
-} from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ClientProjectsTable } from '../../detail-tables';
 import { primeTranslations, t } from '@/i18n/server';
 
 /**
- * ریزِ مطالباتِ یک کارفرما — پورتِ `client_detail()`.
- *
- * ⚠️ «بدهی» جمعِ قیمت و هزینه‌های **قابلِ‌صورتحساب** منهای دریافتی است
- * (R-TEAM-04)؛ هزینهٔ جذب‌شده اینجا نمی‌آید چون کارفرما بابتش بدهکار نیست.
+ * ریزِ مطالباتِ یک کارفرما — پورتِ `client_detail` ِ افزونه: کارت‌های یورو،
+ * پروژه‌ها در ارزِ خودشان (قیمت / هزینه / دریافتی / مانده / وضعیت)، نشانِ
+ * «شریک»، ردیف‌های هزینه با رسید، جستجو؛ پیوندِ پروژه فقط برای مدیرِ پروژه‌ها.
  */
-export default async function ClientReportPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  /**
-   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
-   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
-   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
-   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
-   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
-   */
+export default async function ClientReportPage({ params }: { params: Promise<{ id: string }> }) {
   await primeTranslations();
 
   const actor = await currentActor();
@@ -58,53 +46,46 @@ export default async function ClientReportPage({
     );
   }
 
-  const totalDue = data.projects.reduce((sum, p) => sum + Number(p.due), 0);
+  const canOpen = actor.roles.includes('owner') || can(actor, 'projects.manage');
+  const cards = [
+    { label: 'ارزشِ کل (یورو)', value: format(data.totals.billed), warn: false },
+    { label: 'دریافتیِ کل (یورو)', value: format(data.totals.received), warn: false },
+    { label: 'مانده کل (یورو)', value: format(data.totals.due), warn: Number(data.totals.due) > 0 },
+  ];
 
   return (
     <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
       <header className="grid gap-1">
         <Link
-          href="/reports"
+          href="/reports?tab=clients"
           className="flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowRight className="size-3.5" />
           {t("بازگشت به گزارش‌ها")}
         </Link>
         <h1 className="text-xl font-semibold">{data.person.name}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t('مجموعِ مطالبات: {amount}', { amount: format(totalDue.toFixed(2)) })}
-        </p>
+        <p className="text-sm text-muted-foreground">{data.person.email}</p>
       </header>
+
+      {data.rateMissing > 0 && (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+          {t('{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.', { n: data.rateMissing })}
+        </p>
+      )}
+
+      <div className="grid gap-3 @xl/main:grid-cols-3">
+        {cards.map((c) => (
+          <Card key={c.label}>
+            <CardHeader className="pb-2"><CardTitle className="text-xs font-normal text-muted-foreground">{t(c.label)}</CardTitle></CardHeader>
+            <CardContent><p className={`num text-xl font-semibold ${c.warn ? 'text-amber-600 dark:text-amber-500' : ''}`}>{c.value}</p></CardContent>
+          </Card>
+        ))}
+      </div>
 
       {data.projects.length === 0 ? (
         <EmptyState title={t("این کارفرما به پروژه‌ای وصل نیست")} />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("پروژه")}</TableHead>
-              <TableHead>{t("قیمت")}</TableHead>
-              <TableHead>{t("هزینه‌های قابلِ صورت‌حساب")}</TableHead>
-              <TableHead>{t("دریافت‌شده")}</TableHead>
-              <TableHead>{t("مانده")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.projects.map((p) => (
-              <TableRow key={p.projectId}>
-                <TableCell>
-                  <Link href={`/projects/${p.projectId}`} className="hover:underline">
-                    {p.title}
-                  </Link>
-                </TableCell>
-                <TableNumericCell>{format(p.price)}</TableNumericCell>
-                <TableNumericCell>{format(p.expenses)}</TableNumericCell>
-                <TableNumericCell>{format(p.paid)}</TableNumericCell>
-                <TableNumericCell className="font-semibold">{format(p.due)}</TableNumericCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ClientProjectsTable rows={data.projects} lines={data.lines} canOpen={canOpen} />
       )}
     </main>
   );

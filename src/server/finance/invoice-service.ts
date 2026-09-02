@@ -10,6 +10,8 @@ import {
   type InvoiceLine,
 } from '@/domain/finance/invoice';
 import { getSystemConfig } from '@/server/settings/system-service';
+import { rowValueIn } from '@/domain/team-money/payments';
+import { rateSource } from '@/server/finance/service';
 
 /**
  * دادهٔ فاکتورِ یک پروژه.
@@ -25,7 +27,9 @@ export async function getInvoice(actor: Actor, projectId: number) {
       price: projects.price,
       scope: projects.scope,
       regDate: projects.regDate,
+      currencyId: projects.currencyId,
       currencyCode: currencies.code,
+      currencyDecimals: currencies.decimals,
     })
     .from(projects)
     .leftJoin(currencies, eq(currencies.id, projects.currencyId))
@@ -50,7 +54,9 @@ export async function getInvoice(actor: Actor, projectId: number) {
     .select({
       direction: projectPayments.direction,
       amount: projectPayments.amount,
+      currencyId: projectPayments.currencyId,
       amountSettled: projectPayments.amountSettled,
+      settledCurrencyId: projectPayments.settledCurrencyId,
       paidAt: projectPayments.paidAt,
       note: projectPayments.note,
     })
@@ -58,8 +64,19 @@ export async function getInvoice(actor: Actor, projectId: number) {
     .where(eq(projectPayments.projectId, projectId))
     .orderBy(asc(projectPayments.paidAt));
 
-  // ⚠️ مبلغِ «تسویه‌شده» بر مبلغِ خام مقدم است — همان قاعدهٔ بقیهٔ جمع‌ها.
-  const value = (p: (typeof payments)[number]) => Number(p.amountSettled ?? p.amount);
+  /**
+   * پورتِ `row_value_in`: هر ردیف به ارزِ **پروژه** می‌رود — ردیفی که با ارزِ
+   * دیگری ثبت شده پیش از این خام جمع می‌شد و جمعِ فاکتور غلط بود.
+   * نبودِ نرخ صفر شمرده و گزارش می‌شود (R-MONEY-06)، نه ۱:۱.
+   */
+  const { source: rates } = await rateSource();
+  let rateMissing = 0;
+  const value = (p: (typeof payments)[number]) => {
+    if (!project.currencyId || !p.currencyId) return Number(p.amountSettled ?? p.amount);
+    const v = rowValueIn(rates, { amount: p.amount, currencyId: p.currencyId, amountSettled: p.amountSettled, settledCurrencyId: p.settledCurrencyId }, project.currencyId);
+    if (v === null) { rateMissing += 1; return 0; }
+    return Number(v);
+  };
   /** تاریخِ پرداخت به رشتهٔ YYYY-MM-DD — روی سند ساعت معنا ندارد. */
   const day = (at: Date | string | null) =>
     at ? (typeof at === 'string' ? at.slice(0, 10) : at.toISOString().slice(0, 10)) : null;
@@ -101,6 +118,9 @@ export async function getInvoice(actor: Actor, projectId: number) {
     issuedOn: new Date().toISOString().slice(0, 10),
     project: { id: project.id, title: project.title },
     currencyCode: project.currencyCode,
+    /** اعشارِ ارزِ پروژه — تومان بی‌اعشار چاپ می‌شود (پورتِ `Money::format`). */
+    currencyDecimals: project.currencyDecimals ?? 2,
+    rateMissing,
     clients: clientRows.map((c) => c.name).filter((n): n is string => Boolean(n)),
     charges,
     receipts: incoming.map((p) => ({
