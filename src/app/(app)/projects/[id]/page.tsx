@@ -322,6 +322,9 @@ export default async function ProjectDetailPage({
           canInteract: detail.canInteract,
           canSeeFinance: detail.canSeeFinance,
           currencyCode: detail.currencyCode,
+            logs: detail.logs,
+            matrix: detail.matrix,
+            dayLabels: detail.dayLabels,
           tasks,
           taskStatuses: taskStatuses.map((t) => ({
             id: t.id, name: t.name, group: t.group, color: t.color,
@@ -382,7 +385,17 @@ export default async function ProjectDetailPage({
                               </Badge>
                             )}
                           </TableCell>
-                          <TableCell>{m.roleName ?? '—'}</TableCell>
+                          <TableCell>
+                            {/* پورتِ `role_color`: چیپِ نقش به رنگِ تگ. */}
+                            {m.roleName ? (
+                              <Badge
+                                variant="outline"
+                                style={m.roleColor ? { borderColor: m.roleColor, color: m.roleColor } : undefined}
+                              >
+                                {m.roleName}
+                              </Badge>
+                            ) : '—'}
+                          </TableCell>
                           {canSeeAgreedAmounts && (
                             <TableNumericCell>{format(m.agreedAmount)}</TableNumericCell>
                           )}

@@ -143,6 +143,17 @@ export interface MatrixRow {
  */
 export async function teamMatrix(actor: Actor, at: Date = new Date()): Promise<MatrixRow[]> {
   const { people } = await visiblePeople(actor);
+  return matrixForIds(people, at);
+}
+
+/**
+ * همان ماتریس برای فهرستی از افراد — پورتِ `availability_matrix_html($user_ids)`:
+ * تبِ تیمِ پروژه و پروفایلِ عضو همین را می‌خواهند. گاردِ دسترسی با فراخوان است.
+ */
+export async function matrixForIds(
+  people: ReadonlyArray<{ id: number; name: string }>,
+  at: Date = new Date(),
+): Promise<MatrixRow[]> {
   if (people.length === 0) return [];
 
   const ids = people.map((p) => p.id);

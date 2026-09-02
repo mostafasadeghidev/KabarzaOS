@@ -20,6 +20,7 @@ import {
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
+import { TablePager, useTableView } from '@/components/ui/table-search';
 
 /**
  * تبِ مدیریت — بازسازیِ `manage_tab_html()`:
@@ -30,6 +31,93 @@ export interface HourRow {
   userId: number;
   userName: string | null;
   minutes: number;
+}
+
+/** یک ثبتِ ساعت — پورتِ «جزئیاتِ ثبت‌ها» (`Timelogs::for_project`). */
+export interface LogRow {
+  id: number;
+  logDate: string;
+  userName: string | null;
+  minutes: number;
+  description: string;
+}
+
+/** یک سطرِ ماتریسِ دسترس‌پذیری — خانه‌ها به ترتیبِ نمایشِ هفته. */
+export interface MatrixRowView {
+  id: number;
+  name: string;
+  roles: string[];
+  cells: Array<{ state: 'avail' | 'leave' | 'empty'; isToday: boolean; span: string; tip: string }>;
+}
+
+/** پورتِ `availability_matrix_html`: اعضا در سطرها، روزهای هفته (از روزِ آغازِ تنظیمات) در ستون‌ها. */
+function TeamMatrix({ rows, dayLabels }: { rows: MatrixRowView[]; dayLabels: string[] }) {
+  const t = useT();
+  if (rows.length === 0) return <p className="text-xs text-muted-foreground">{t("عضوی برای نمایش نیست.")}</p>;
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("عضو")}</TableHead>
+            {dayLabels.map((d, i) => (
+              <TableHead key={d} className={rows[0]?.cells[i]?.isToday ? 'text-primary' : ''}>
+                {t(d)}{rows[0]?.cells[i]?.isToday ? <span className="ms-1 text-[10px]">{t("امروز")}</span> : null}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((r) => (
+            <TableRow key={r.id}>
+              <TableCell>
+                <span className="font-medium">{r.name}</span>
+                {r.roles.length > 0 && <span className="block text-[11px] text-muted-foreground">{r.roles.join('، ')}</span>}
+              </TableCell>
+              {r.cells.map((c, i) => (
+                <TableCell key={i} title={c.tip} className={`num text-xs ${c.isToday ? 'bg-primary/5' : ''}`}>
+                  {c.state === 'leave' ? `🌴 ${t("مرخصی")}${c.span ? ` ${t("تا")} ${c.span}` : ''}` : c.state === 'avail' ? (c.span || t("تمام روز")) : '·'}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+/** پورتِ «جزئیاتِ ثبت‌ها»: تاریخ، عضو، مدت، توضیح — ۱۵تایی. */
+function LogDetail({ logs }: { logs: LogRow[] }) {
+  const t = useT();
+  const view = useTableView(logs, (r) => `${r.userName ?? ''} ${r.description} ${r.logDate}`, 15);
+  if (logs.length === 0) return null;
+  return (
+    <section className="grid gap-2">
+      <h3 className="text-sm font-semibold">{t("جزئیاتِ ثبت‌ها")}</h3>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("تاریخ")}</TableHead>
+            <TableHead>{t("عضو")}</TableHead>
+            <TableHead>{t("مدت")}</TableHead>
+            <TableHead>{t("توضیحات")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {view.rows.map((r) => (
+            <TableRow key={r.id}>
+              <TableNumericCell>{r.logDate}</TableNumericCell>
+              <TableCell>{r.userName ?? '—'}</TableCell>
+              <TableNumericCell>{hhmm(r.minutes)}</TableNumericCell>
+              <TableCell>{r.description || '—'}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <TablePager view={view} />
+    </section>
+  );
 }
 
 export interface LightenSummaryView {
@@ -290,6 +378,9 @@ export function ManageTab({
   deleteState,
   lightenSummary,
   thumbnailFileId,
+  logs = [],
+  matrix = [],
+  dayLabels = [],
 }: {
   projectId: number;
   title: string;
@@ -299,6 +390,9 @@ export function ManageTab({
   thumbnailFileId: number | null;
   deleteState: 'clean' | 'confirm' | 'locked';
   lightenSummary: LightenSummaryView | null;
+  logs?: LogRow[];
+  matrix?: MatrixRowView[];
+  dayLabels?: string[];
 }) {
   const tr = useT();
   const t = useT();
@@ -342,6 +436,15 @@ export function ManageTab({
           </Table>
         )}
       </section>
+
+      {canManage && <LogDetail logs={logs} />}
+
+      {canManage && (
+        <section className="grid gap-2">
+          <h3 className="text-sm font-semibold">{t("در دسترس بودنِ اعضای پروژه")}</h3>
+          <TeamMatrix rows={matrix} dayLabels={dayLabels} />
+        </section>
+      )}
 
       {canManage && (
         <>

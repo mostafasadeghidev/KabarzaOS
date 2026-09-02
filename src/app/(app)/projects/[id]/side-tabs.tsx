@@ -192,6 +192,10 @@ export interface QaRow {
   roleName: string | null;
   isDone: boolean;
   doneByName: string | null;
+  /** تسکِ ساخته‌شده از این آیتم (پورتِ `QA::project_tasks`) — با عنوان پیدا می‌شود. */
+  taskId?: number | null;
+  taskStatusName?: string | null;
+  taskStatusColor?: string | null;
 }
 
 export interface QaFormData {
@@ -379,6 +383,15 @@ export function QaTab({
               <span className={q.isDone ? 'text-muted-foreground line-through' : ''}>{q.title}</span>
               <span className="flex items-center gap-2">
                 {q.roleName && <Badge variant="secondary">{q.roleName}</Badge>}
+                {q.taskId && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px]"
+                    style={q.taskStatusColor ? { borderColor: q.taskStatusColor, color: q.taskStatusColor } : undefined}
+                  >
+                    {t('تسک')}{q.taskStatusName ? `: ${q.taskStatusName}` : ''}
+                  </Badge>
+                )}
                 {q.isDone && q.doneByName && (
                   <span className="text-xs text-muted-foreground">{t('توسط {name}', { name: q.doneByName })}</span>
                 )}
@@ -433,10 +446,11 @@ export interface BidRow {
 }
 
 const BID_STATUS: Record<string, { label: string; variant: 'secondary' | 'success' | 'outline' }> = {
+  // پورتِ `Bids::status_label`.
   pending: { label: 'در انتظار', variant: 'secondary' },
-  approved: { label: 'تأییدشده', variant: 'success' },
-  archived: { label: 'بایگانی', variant: 'outline' },
-  withdrawn: { label: 'پس‌گرفته‌شده', variant: 'outline' },
+  approved: { label: 'برنده', variant: 'success' },
+  archived: { label: 'انتخاب‌نشده', variant: 'outline' },
+  withdrawn: { label: 'انصراف', variant: 'outline' },
 };
 
 function BidActions({

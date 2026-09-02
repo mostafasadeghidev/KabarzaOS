@@ -284,6 +284,8 @@ export async function listMembers(projectId: number) {
       currencyId: projectMembers.currencyId,
       userName: users.name,
       roleName: tagName(await currentLocale()),
+      /** رنگِ تگِ نقش — چیپِ نقش (پورتِ `role_color`). */
+      roleColor: tags.color,
       /** دسترسیِ این نفر به این پروژه قطع است؟ (`setProjectAccess`) */
       accessBlocked: projectMembers.accessBlocked,
     })
@@ -1454,4 +1456,22 @@ export async function activeProjectIdsSince(since: string): Promise<Set<number>>
   const out = new Set<number>();
   for (const r of [...logs, ...taskRows, ...commentRows, ...edited]) if (r.id !== null) out.add(r.id);
   return out;
+}
+
+/** ریزِ ثبت‌های ساعتِ پروژه — پورتِ `Timelogs::for_project` (تازه‌تر اول، سقفِ ۵۰۰). */
+export async function projectLogs(projectId: number, limit = 500) {
+  return db
+    .select({
+      id: timelogs.id,
+      logDate: timelogs.logDate,
+      userId: timelogs.userId,
+      userName: users.name,
+      minutes: timelogs.minutes,
+      description: timelogs.description,
+    })
+    .from(timelogs)
+    .leftJoin(users, eq(users.id, timelogs.userId))
+    .where(eq(timelogs.projectId, projectId))
+    .orderBy(desc(timelogs.logDate), desc(timelogs.id))
+    .limit(limit);
 }

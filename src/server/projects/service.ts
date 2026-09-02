@@ -42,6 +42,9 @@ import { defaultProjectStatusId, defaultTaskStatusId } from '@/domain/projects/d
 import { removeFiles } from '@/server/files/service';
 import { rowValueIn } from '@/domain/team-money/payments';
 import { rateSource } from '@/server/finance/service';
+import { matrixForIds, rowCells } from '@/server/availability/service';
+import { weekOrder, weekdayIndex, WEEKDAYS } from '@/domain/availability/weekly';
+import { getSystemConfig } from '@/server/settings/system-service';
 
 /**
  * سرویسِ پروژه — تنها دروازه‌ای که UI و API از آن رد می‌شوند.
@@ -1154,6 +1157,27 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
       : null,
   }));
 
+  // پورتِ تبِ تیم/مدیریت: ریزِ ثبت‌های ساعت (تازه‌تر اول، سقفِ ۵۰۰) و ماتریسِ دسترس‌پذیریِ اعضا — فقط مدیر.
+  const memberPeople = [...new Map(
+    detail.members.map((m) => [m.userId, { id: m.userId, name: m.userName ?? `#${m.userId}` }]),
+  ).values()];
+  const [logs, matrixRows, systemForMatrix] = await Promise.all([
+    detail.canManage ? repo.projectLogs(projectId) : Promise.resolve([]),
+    detail.canManage ? matrixForIds(memberPeople) : Promise.resolve([]),
+    getSystemConfig(),
+  ]);
+  const order = weekOrder(systemForMatrix.weekStart);
+  const todayIdx = weekdayIndex(new Date());
+  const matrix = matrixRows.map((r) => ({ id: r.id, name: r.name, roles: r.roleNames, cells: rowCells(r, order, todayIdx) }));
+  const dayLabels = order.map((d) => WEEKDAYS[d]!);
+
+  // پورتِ `QA::project_tasks`: تسکِ ساخته‌شده از آیتمِ تسک‌ساز با عنوان پیدا می‌شود (مثلِ `find_task_item`).
+  const qaWithTasks = visibleQa.map((q) => {
+    if (q.isTask !== true) return { ...q, taskId: null, taskStatusName: null, taskStatusColor: null };
+    const task = detail.tasks.find((t) => t.title === q.title);
+    return { ...q, taskId: task?.id ?? null, taskStatusName: task?.statusName ?? null, taskStatusColor: task?.statusColor ?? null };
+  });
+
   // کدِ ارزِ پروژه — تبِ مالی مبالغ را با واحد نشان می‌دهد (پورتِ `Money::format`).
   const currencyCode = detail.project.currencyId
     ? (await db.select({ code: currencies.code }).from(currencies).where(eq(currencies.id, detail.project.currencyId)))[0]?.code ?? null
@@ -1167,6 +1191,9 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
   return {
     ...detail,
     currencyCode,
+    logs,
+    matrix,
+    dayLabels,
     isFrozen,
     statusGroup,
     statusName,
@@ -1174,7 +1201,7 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     roleHolders,
     currentUserId: actor.id,
     comments,
-    qa: visibleQa,
+    qa: qaWithTasks,
     files,
     bids,
     hours,

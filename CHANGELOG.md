@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.44.0]
+
+### Added — project management tab (parity with the plugin)
+
+- **Log details:** the management tab lists every hour entry on the project (date, member, duration, description), newest first, fifteen per page, next to the per-member totals.
+- **Members' availability matrix** on the management tab: one row per project member with their roles, one column per weekday from the configured week start, compact time spans per day, "today" highlighted, and a leave marker with the end date for anyone on leave today.
+- **QA checklist** shows, for each task-spawning item, the task it created and that task's status in the status colour.
+- Member roles on the project page are shown as chips in the role's colour, and bid statuses use the plugin's labels (winner / not selected / withdrawn).
+
+---
+
 ## [1.43.0]
 
 ### Added — project page (parity with the plugin)

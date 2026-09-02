@@ -10,7 +10,7 @@ import {
   type QaFormData, type QaRow,
 } from './side-tabs';
 import {
-  ManageTab, type HourRow, type LightenSummaryView,
+  ManageTab, type HourRow, type LightenSummaryView, type LogRow, type MatrixRowView,
 } from './manage-tab';
 import { FilesTab, type FileRow } from './files-tab';
 import { MyMoneyTab, type MyMoneyData } from './my-money-tab';
@@ -42,6 +42,10 @@ export interface ProjectTabsData {
   canSeeFinance: boolean;
   /** کدِ ارزِ پروژه برای تبِ مالی. */
   currencyCode: string | null;
+  /** ریزِ ثبت‌های ساعت و ماتریسِ دسترس‌پذیریِ اعضا — فقط برای مدیر پر می‌شوند. */
+  logs: LogRow[];
+  matrix: MatrixRowView[];
+  dayLabels: string[];
   tasks: TaskItem[];
   taskStatuses: TaskStatusOption[];
   /** نقش ← اعضایی که آن نقش را دارند (قاعدهٔ «برداشتنِ تسک»). */
@@ -211,6 +215,9 @@ export function ProjectTabs({
           title={data.title}
           isArchived={data.isArchived}
           hours={data.hours}
+          logs={data.logs}
+          matrix={data.matrix}
+          dayLabels={data.dayLabels}
           canManage={data.canManage}
           deleteState={data.deleteState}
           lightenSummary={data.lightenSummary}
