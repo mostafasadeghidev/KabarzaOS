@@ -294,3 +294,28 @@ describe('رمزِ ورود', () => {
   });
 });
 
+
+describe('چه کسی از صفحهٔ افراد ویرایش می‌شود — بستنِ حفرهٔ تصاحبِ حساب', () => {
+  const input = { name: 'x', email: 'owner@t', phone: '', tagIds: [], officeIds: [], managedOfficeIds: [] };
+
+  it('همکارِ ادمین با «اعضا → مدیریت» نمی‌تواند مالک را ویرایش کند', async () => {
+    // ⚠️ پیش از این فقط مجوزِ بخش چک می‌شد، نه اینکه هدف کیست — شناسهٔ مالک را
+    // می‌شد فرستاد و نام/ایمیل/رمزش را عوض کرد.
+    await expect(service.updatePerson(manager(), ownerUser, input)).rejects.toThrow(ForbiddenError);
+    await expect(service.setMemberState(manager(), ownerUser, 'locked')).rejects.toThrow(ForbiddenError);
+    await expect(service.setPersonPassword(manager(), ownerUser, 'takeover-99999')).rejects.toThrow(ForbiddenError);
+  });
+
+  it('مالک هم مالک را از این صفحه ویرایش نمی‌کند — پروفایل جای آن است', async () => {
+    const owner = actor({ id: 99, roles: ['owner'], permissions: ['members.manage'] as Permission[] });
+    await expect(service.updatePerson(owner, ownerUser, input)).rejects.toThrow(ForbiddenError);
+  });
+
+  it('عضوِ عادی همچنان ویرایش می‌شود', async () => {
+    // ⚠️ عضوِ تازه: آزمون‌های حذفِ بالاتر، کاربرانِ اولیه را برداشته‌اند.
+    const id = await service.createPerson(manager(), 'member' as Role, { ...input, name: 'تازه', email: 'fresh@t' });
+    await service.updatePerson(manager(), id, { ...input, name: 'تازهٔ ویرایش‌شده', email: 'fresh@t' });
+    const row = await db.select({ name: users.name }).from(users).where(eq(users.id, id));
+    expect(row[0]!.name).toBe('تازهٔ ویرایش‌شده');
+  });
+});

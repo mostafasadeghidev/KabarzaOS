@@ -8,6 +8,7 @@ import {
   hiddenTabsFrom, hideRowsFor, isStorablePermission, levelsOf, permissionsFor, REPORT_TABS,
 } from '@/domain/access/staff-levels';
 import { assertCanManage, assertCanView, canSeeScope, ForbiddenError } from '@/domain/access/guard';
+import { canEditPerson } from '@/domain/access/people-edit';
 import {
   normalizeState, planRemovePerson, removeMessage,
   type MemberState, type RemoveOutcome,
@@ -215,11 +216,25 @@ export async function attachCandidates(actor: Actor, role: Role) {
   return repo.usersWithoutRole(role);
 }
 
+/**
+ * چه کسی از این صفحه ویرایش می‌شود — قاعده در `domain/access/people-edit`.
+ *
+ * ⚠️ بدونِ این، همکارِ ادمینی که «اعضا → مدیریت» دارد می‌توانست شناسهٔ مالک
+ * را بفرستد و نام/ایمیل/نامِ کاربری/رمزِ او را عوض کند. مسیرِ حذف این چک را
+ * داشت؛ ویرایش، وضعیت و رمز نداشتند.
+ */
+async function assertEditableTarget(actor: Actor, userId: number): Promise<void> {
+  const verdict = canEditPerson({ actorRoles: actor.roles, targetRoles: await repo.rolesOf(userId) });
+  if (verdict === 'owner_protected') throw new ForbiddenError('people.owner_protected');
+  if (verdict === 'owner_only') throw new ForbiddenError('rbac.owner_only');
+}
+
 /** ویرایشِ فرد. */
 export async function updatePerson(actor: Actor, userId: number, input: PersonInput) {
   assertCanManage(actor, 'members');
   const before = await repo.getPerson(userId);
   if (!before) throw new PersonNotFoundError();
+  await assertEditableTarget(actor, userId);
 
   /**
    * ⚠️ ایمیل و نامِ کاربری با هم و بی‌اعتنا به حروف بررسی می‌شوند — همان
@@ -261,6 +276,7 @@ export async function setMemberState(actor: Actor, userId: number, raw: string) 
   assertCanManage(actor, 'members');
   const person = await repo.getPerson(userId);
   if (!person) throw new PersonNotFoundError();
+  await assertEditableTarget(actor, userId);
 
   const state: MemberState = normalizeState(raw);
   await db.update(users)
@@ -525,6 +541,7 @@ export async function setPersonPassword(
 
   const person = await repo.getPerson(userId);
   if (!person) throw new PersonNotFoundError();
+  await assertEditableTarget(actor, userId);
 
   await db.update(users)
     .set({ passwordHash: await hashPassword(password), updatedAt: new Date() })

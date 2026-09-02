@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.27.2]
+
+### Security
+
+- **A staff admin with "members → manage" could take over the owner's account.** `updatePerson`, `setMemberState` and `setPersonPassword` checked only the section permission and never looked at who the *target* was, so posting the owner's id renamed, re-emailed, re-usernamed or re-passworded the owner. The removal path already refused system admins; the other three did not. The people page now refuses to touch anyone holding `owner` (the owner edits themself from the profile) and lets only the owner edit a staff admin. Rule in `domain/access/people-edit`, pinned by unit and integration tests.
+
+---
+
 ## [1.27.1]
 
 ### Changed
