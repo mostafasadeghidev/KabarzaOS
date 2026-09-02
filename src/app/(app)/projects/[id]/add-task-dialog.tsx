@@ -48,10 +48,13 @@ function SubmitButton() {
 /** افزودنِ تسک — همان ستون‌های ردیفِ تسکِ نسخهٔ قبلی: عنوان · نقش/مسئول · ددلاین · اولویت. */
 export function AddTaskDialog({
   projectId,
+  currentUserId,
   options,
   canManage,
 }: {
   projectId: number;
+  /** پورتِ افزونه: مسئولِ پیش‌فرض خودِ عضو است (نه در نمای کارفرما). */
+  currentUserId?: number;
   options: TaskFormOptions;
   /** فقط مدیر «خصوصی» می‌بیند — سرور هم برای بقیه نادیده‌اش می‌گیرد. */
   canManage: boolean;
@@ -119,7 +122,10 @@ export function AddTaskDialog({
             {options.assignees.length > 0 && (
               <div className="grid gap-1.5">
                 <Label htmlFor="nt-assignee">{t("تخصیص به…")}</Label>
-                <select id="nt-assignee" name="assignedTo" className={cellSelect} defaultValue={keep('assignedTo')}>
+                <select
+                  id="nt-assignee" name="assignedTo" className={cellSelect}
+                  defaultValue={keep('assignedTo') || (currentUserId && options.assignees.some((a) => a.userId === currentUserId) ? String(currentUserId) : '')}
+                >
                   <option value="">{t("— هیچ‌کدام —")}</option>
                   {options.assignees.map((a) => (
                     <option key={a.userId} value={a.userId}>{a.label}</option>

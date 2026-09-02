@@ -335,12 +335,15 @@ export function QaTab({
   qa,
   form,
   canManage,
+  canInteract = false,
 }: {
   projectId: number;
   qa: QaRow[];
   /** حاضر بودنش یعنی کاربر می‌تواند چک‌لیست اعمال کند. */
   form: QaFormData | null;
   canManage: boolean;
+  /** عضو/کارفرما آیتم‌های **خودشان** را تیک می‌زنند — فهرست از سرور به‌ازای بیننده فیلتر شده. */
+  canInteract?: boolean;
 }) {
   const t = useT();
   // R-PROJ-18 — آیتمِ «تسک‌ساز» از آیتمِ چک‌لیستِ ساده جداست.
@@ -372,7 +375,7 @@ export function QaTab({
                 {q.isDone && q.doneByName && (
                   <span className="text-xs text-muted-foreground">{t('توسط {name}', { name: q.doneByName })}</span>
                 )}
-                <QaTick row={q} canManage={canManage} />
+                <QaTick row={q} canManage={canManage || canInteract} />
                 {canManage && <QaDelete itemId={q.id} />}
               </span>
             </li>

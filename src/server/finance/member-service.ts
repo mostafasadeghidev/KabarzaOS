@@ -12,6 +12,8 @@ import {
   availableToRequest, canCancelRequest, canDeleteUnit, isValidQuantity,
   OPEN_STATUSES, unitAmount, validateRequest, type RequestRejection,
 } from '@/domain/finance/member-money';
+import { paymentStatus } from '@/domain/team-money/payments';
+import { myPayoutsOn } from '@/server/projects/repository';
 
 /**
  * پولِ عضو از نگاهِ خودش — کارکردِ تعدادی و درخواستِ پرداخت.
@@ -212,6 +214,11 @@ async function outstandingTotal(userId: number, projectId: number): Promise<stri
  * دستکاریِ یک فیلدِ مخفی سقفِ درخواستش را بالا می‌برد.
  */
 export async function contractRemaining(userId: number, projectId: number): Promise<string> {
+  return (await contractSummary(userId, projectId)).remaining;
+}
+
+/** توافقی / پرداخت‌شده / مانده — پورتِ `Payments::member_summary`. */
+export async function contractSummary(userId: number, projectId: number): Promise<{ agreed: string; paid: string; remaining: string }> {
   const [agreedRows, paidRows] = await Promise.all([
     db.select({ total: sql<string>`coalesce(sum(${projectMembers.agreedAmount}), 0)::text` })
       .from(projectMembers)
@@ -226,14 +233,17 @@ export async function contractRemaining(userId: number, projectId: number): Prom
       )),
   ]);
 
-  const value = Number(agreedRows[0]?.total ?? 0) - Number(paidRows[0]?.total ?? 0);
-  return (value > 0 ? value : 0).toFixed(4);
+  const agreed = Number(agreedRows[0]?.total ?? 0);
+  const paid = Number(paidRows[0]?.total ?? 0);
+  const value = agreed - paid;
+  return { agreed: agreed.toFixed(4), paid: paid.toFixed(4), remaining: (value > 0 ? value : 0).toFixed(4) };
 }
 
 /** درخواست‌های خودِ کاربر روی یک پروژه + مبلغِ قابلِ درخواست. */
 export async function myRequests(actor: Actor, projectId: number) {
   // ⚠️ رسیدِ ردیفِ paid از دفترِ آینه می‌آید (fin_receipt_link ِ نسخهٔ قبلی).
-  const remaining = await contractRemaining(actor.id, projectId);
+  const summary = await contractSummary(actor.id, projectId);
+  const remaining = summary.remaining;
   const rows = await db
     .select({
       id: paymentRequests.id,
@@ -251,10 +261,18 @@ export async function myRequests(actor: Actor, projectId: number) {
     .where(and(eq(paymentRequests.userId, actor.id), eq(paymentRequests.projectId, projectId)))
     .orderBy(desc(paymentRequests.id));
 
-  const outstanding = await outstandingTotal(actor.id, projectId);
+  const [outstanding, payouts] = await Promise.all([
+    outstandingTotal(actor.id, projectId),
+    // پورتِ فهرستِ «پرداختی‌های شما» — ردیف‌های واقعیِ حسابداری، نه فقط درخواست‌ها.
+    myPayoutsOn(actor.id, projectId),
+  ]);
   return {
     requests: rows.map((r) => ({ ...r, cancellable: canCancelRequest(r.status) })),
     remaining,
+    agreed: summary.agreed,
+    paid: summary.paid,
+    status: paymentStatus(summary.paid, summary.agreed),
+    payouts: payouts.map((p) => ({ ...p, paidAt: p.paidAt ? p.paidAt.toISOString().slice(0, 10) : null })),
     available: availableToRequest(remaining, outstanding),
     outstanding,
   };

@@ -30,6 +30,8 @@ export interface ProjectTabsData {
   title: string;
   isTender: boolean;
   isArchived: boolean;
+  /** منجمد = بایگانی یا لغو/توقف — فرم‌ها پنهان می‌شوند (پورتِ `is_frozen`). */
+  isFrozen: boolean;
   thumbnailFileId: number | null;
   price: string;
   /** حقِ دیدنِ قیمتِ پروژه — `domain/access/project-money`. */
@@ -147,6 +149,8 @@ export function ProjectTabs({
           tasks={data.tasks}
           statuses={data.taskStatuses}
           canManage={data.canManage}
+          canInteract={data.canInteract}
+          isFrozen={data.isFrozen}
           roleHolders={data.roleHolders}
           currentUserId={data.currentUserId}
           formOptions={data.taskFormOptions}
@@ -159,7 +163,13 @@ export function ProjectTabs({
       {tab === 'my-bid' && data.myBid && <MyBidTab data={data.myBid} />}
 
       {tab === 'files' && (
-        <FilesTab files={data.files} projectId={data.projectId} canUpload={!data.isArchived} />
+        <FilesTab
+          files={data.files}
+          projectId={data.projectId}
+          canUpload={!data.isFrozen}
+          canManage={data.canManage}
+          currentUserId={data.currentUserId}
+        />
       )}
 
       {tab === 'comments' && (
@@ -168,6 +178,7 @@ export function ProjectTabs({
           comments={data.comments}
           canManage={data.canManage}
           canInteract={data.canInteract}
+          isFrozen={data.isFrozen}
         />
       )}
 
@@ -187,6 +198,7 @@ export function ProjectTabs({
           qa={data.qa}
           form={data.qaForm}
           canManage={data.canManage}
+          canInteract={data.canInteract && !data.isFrozen}
         />
       )}
 

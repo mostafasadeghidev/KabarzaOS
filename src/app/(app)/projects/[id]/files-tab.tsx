@@ -26,6 +26,7 @@ export interface FileRow {
   mime: string | null;
   size: number | null;
   uploaderName: string | null;
+  uploaderId?: number | null;
 }
 
 const KIND_ICON = {
@@ -54,15 +55,21 @@ export function FilesTab({
   files,
   projectId,
   canUpload,
+  canManage = false,
+  currentUserId = null,
 }: {
   files: FileRow[];
   projectId: number;
   canUpload: boolean;
+  canManage?: boolean;
+  currentUserId?: number | null;
 }) {
   const tr = useT();
   const t = useT();
   const attachments = files.filter((f) => !f.isLink);
   const links = files.filter((f) => f.isLink);
+  // R-FILE-09: دکمهٔ حذف فقط برای بارگذارنده یا مدیر — قبلاً به همه نشان داده می‌شد و بعد خطا می‌گرفتند.
+  const canDelete = (f: FileRow) => canUpload && (canManage || (currentUserId !== null && f.uploaderId === currentUserId));
 
   const [uploadState, upload] = useActionState(uploadAttachmentAction, {});
   useActionToast(uploadState);
@@ -162,7 +169,7 @@ export function FilesTab({
                   >
                     <Download className="size-4" />
                   </a>
-                  {canUpload && (
+                  {canDelete(f) && (
                     <button
                       type="button"
                       onClick={() => remove(f.id)}
@@ -226,7 +233,7 @@ export function FilesTab({
                   <ExternalLink className="size-3 shrink-0" />
                 </a>
                 <span className="shrink-0 text-xs text-muted-foreground">{f.uploaderName ?? '—'}</span>
-                {canUpload && (
+                {canDelete(f) && (
                   <button
                     type="button"
                     onClick={() => remove(f.id)}

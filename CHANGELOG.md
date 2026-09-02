@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.38.0]
+
+### Added — project page (parity with the plugin)
+
+- **Frozen projects are read-only everywhere on the page.** Cancelled and on-hold projects, not only archived ones, show a read-only banner, and the task, file, comment and piecework forms, the claim button and status pickers are hidden instead of failing after the fact.
+- **Detail meta under the title:** registration date, deadline with a countdown ("N days left" / "today" / "N days ago"), progress as a percentage with done/total tasks, "your hours" for a member or "team hours" for a manager, the parent project link and the sub-project links. The status is a picker for managers and a chip for everyone else.
+- **QA checklist per viewer:** a member sees only the items of their own roles, the client only the client items, managers everything; members and clients can tick their own items.
+- **Comment and review threads are separate**, each with "needs review" / "done" sub-tabs and its own composer; newest first. Any participant can change a status; the composer is hidden on frozen projects.
+- **Members' money tab shows the agreed amount, what has been paid, the balance with its status, the actual payout rows with receipts, the paid total of piecework rows and the request date.**
+- **The finance tab carries a computed equivalent** of each payment in the project currency; clients still never see member payouts.
+- Members and clients can change a task's status from the task list (sending their own work to review), the assignee of a new task defaults to the member creating it, and the delete button on files is shown only to the uploader or a manager.
+
+---
+
 ## [1.37.0]
 
 ### Added — member and client dashboards, task inbox (parity with the plugin)

@@ -177,11 +177,14 @@ function ClaimButton({
   projectId,
   holders,
   userId,
+  frozen = false,
 }: {
   task: TaskItem;
   projectId: number;
   holders: Map<number, number[]>;
   userId: number;
+  /** پروژهٔ منجمد: دکمه اصلاً نیست (`block_if_frozen`). */
+  frozen?: boolean;
 }) {
   const tr = useT();
   const [pending, startTransition] = useTransition();
@@ -196,7 +199,7 @@ function ClaimButton({
     userId,
   });
 
-  if (!claimable) return null;
+  if (!claimable || frozen) return null;
 
   return (
     <span className="flex items-center gap-2">
@@ -223,6 +226,8 @@ export function TasksTab({
   tasks,
   statuses,
   canManage,
+  canInteract = false,
+  isFrozen = false,
   formOptions,
   roleHolders,
   currentUserId,
@@ -232,6 +237,9 @@ export function TasksTab({
   tasks: TaskItem[];
   statuses: TaskStatusOption[];
   canManage: boolean;
+  /** هر شرکت‌کننده وضعیتِ تسک را عوض می‌کند (پورتِ dropdown ِ همهٔ بینندگان). */
+  canInteract?: boolean;
+  isFrozen?: boolean;
   /** نقش ← اعضایی که آن نقش را دارند؛ لازمِ قاعدهٔ «برداشتن». */
   roleHolders: Record<number, number[]>;
   currentUserId: number;
@@ -294,7 +302,7 @@ export function TasksTab({
           </button>
         </div>
         {formOptions && (
-          <AddTaskDialog projectId={projectId} options={formOptions} canManage={canManage} />
+          <AddTaskDialog projectId={projectId} options={formOptions} canManage={canManage} currentUserId={currentUserId} />
         )}
       </div>
 
@@ -350,6 +358,7 @@ export function TasksTab({
                     {t.dueDate && <span className="num text-xs text-muted-foreground">{t.dueDate}</span>}
                   </div>
                   <ClaimButton
+                    frozen={isFrozen}
                     task={t}
                     projectId={projectId}
                     holders={holdersMap}
@@ -377,7 +386,7 @@ export function TasksTab({
                 {t.isPrivate && <Lock className="size-3.5 text-muted-foreground" />}
                 {t.title}
               </button>
-              <TaskStatusPicker task={t} options={statuses} canManage={canManage} />
+              <TaskStatusPicker task={t} options={statuses} canManage={(canManage || canInteract) && !isFrozen && statuses.length > 0} />
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-3">
               <Assignee task={t} />
@@ -385,6 +394,7 @@ export function TasksTab({
                 <span className="num text-xs text-muted-foreground">{tr('ددلاین {date}', { date: t.dueDate })}</span>
               )}
               <ClaimButton
+                    frozen={isFrozen}
                 task={t}
                 projectId={projectId}
                 holders={holdersMap}

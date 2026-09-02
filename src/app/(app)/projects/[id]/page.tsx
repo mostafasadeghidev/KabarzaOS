@@ -6,7 +6,7 @@ import {
   getBidderView, getMemberTender, getMembersForm, getProjectFormOptions, getProjectTabs,
   getQaForm,
   getTaskFormOptions,
-  getTaskStatusOptions, NotFoundError, getClientsForm,
+  getTaskStatusOptions, NotFoundError, getClientsForm, taskStatusOptionsFor,
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { format } from '@/domain/money/money';
@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/table';
 import { ProjectStatus } from '../project-status';
 import { primeTranslations, t } from '@/i18n/server';
+import { deadlineLabel, taskProgress } from '@/domain/projects/deadline';
+import { StatusPicker } from '../status-picker';
 
 export default async function ProjectDetailPage({
   params,
@@ -92,12 +94,16 @@ export default async function ProjectDetailPage({
     myMoney = {
       projectId: id,
       canManage,
-      isFrozen: project.isArchived,
+      isFrozen: detail.isFrozen,
       isUnitBased: project.isUnitBased,
       units,
       myUnpaidUnits: unpaid,
       requests: requests.requests,
       remaining: requests.remaining,
+      agreed: requests.agreed,
+      paid: requests.paid,
+      status: requests.status,
+      payouts: requests.payouts,
       available: requests.available,
       outstanding: requests.outstanding,
       // ⚠️ عضوِ دو-نقشه دو ردیفِ عضویت دارد؛ در انتخابگر باید یک‌بار بیاید
@@ -131,14 +137,15 @@ export default async function ProjectDetailPage({
    * خواندنی را برمی‌گرداند، مثلِ `task_status_dropdown_html()` نسخهٔ قبلی.
    */
   const [taskStatuses, taskFormOptions, qaForm] = await Promise.all([
-    canManage ? getTaskStatusOptions(actor, project.id) : Promise.resolve([]),
+    // پورتِ افزونه: هر شرکت‌کننده وضعیتِ تسک را عوض می‌کند (عضو تسکش را به ریویو می‌فرستد) — نه روی منجمد.
+    detail.canInteract && !detail.isFrozen ? taskStatusOptionsFor(actor, project.id) : Promise.resolve([]),
     /**
      * ⚠️ فرمِ تسک برای **هر کسی که پروژه را می‌بیند** — عضو و کارفرما هم.
      * سرویس همان گارد را دارد، پس این شرط و آن گارد یکی‌اند و از هم جدا
      * نمی‌افتند. پروژهٔ منجمد فرم نمی‌گیرد (نوشتن رد می‌شود، پس دکمه هم
      * نباید باشد).
      */
-    project.isArchived ? Promise.resolve(null) : getTaskFormOptions(actor, project.id),
+    detail.isFrozen ? Promise.resolve(null) : getTaskFormOptions(actor, project.id),
     canManage ? getQaForm(actor, project.id) : Promise.resolve(null),
   ]);
 
@@ -151,6 +158,14 @@ export default async function ProjectDetailPage({
       ])
     : [null, null, null];
   const openTasks = tasks.filter((t) => t.statusGroup !== 'complete');
+  // متای جزئیات — پورتِ `kteam-detail-meta`.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const daysLeft = project.deadline
+    ? Math.floor((Date.parse(project.deadline) - Date.parse(todayIso)) / 86_400_000)
+    : null;
+  const deadlineHint = daysLeft === null ? '' : deadlineLabel(daysLeft, t);
+  const percent = taskProgress(detail.meta.doneTasks, detail.meta.totalTasks);
+  const hoursLabel = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
   /** `$hide_amounts` ِ نسخهٔ قبلی — فقط دو مجوزِ سراسری. */
   const canSeeAgreedAmounts =
     canManageSection(actor, 'projects') || canManageSection(actor, 'finance');
@@ -172,7 +187,20 @@ export default async function ProjectDetailPage({
               {project.description}
             </p>
           )}
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {/* پورتِ `project_status_control`: مدیر انتخابگر، بقیه چیپ. */}
+            {formOptions ? (
+              <StatusPicker
+                projectId={project.id}
+                name={detail.statusName}
+                group={detail.statusGroup}
+                statusId={project.statusTagId ?? null}
+                options={formOptions.statuses.map((s) => ({ id: s.id, name: s.name, group: s.group ?? null, color: s.color ?? null }))}
+                canManage
+              />
+            ) : (
+              <ProjectStatus name={detail.statusName} group={detail.statusGroup} />
+            )}
             {project.scope === 'private' && <Badge variant="warning">{t("خصوصی")}</Badge>}
             {project.isArchived && <Badge variant="secondary">{t("بایگانی‌شده")}</Badge>}
           </div>
@@ -209,6 +237,43 @@ export default async function ProjectDetailPage({
         )}
       </header>
 
+      {/* پورتِ نوارِ فقط‌خواندنیِ پروژهٔ منجمد (بایگانی / لغو / توقف). */}
+      {detail.isFrozen && (
+        <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {t("این پروژه بسته یا بایگانی شده است و فقط‌خواندنی است: افزودن یا تغییرِ تسک، ساعت کاری و کامنت غیرفعال است.")}
+        </p>
+      )}
+
+      {/* پورتِ `kteam-detail-meta`: تاریخِ ثبت، ددلاین با شمارش، پیشرفت، ساعت، والد/زیرپروژه‌ها. */}
+      <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+        <li>{t("تاریخ ثبت")}: <b className="num text-foreground">{project.regDate ?? '—'}</b></li>
+        <li>
+          {t("ددلاین")}: <b className="num text-foreground">{project.deadline ?? '—'}</b>
+          {deadlineHint && <span className="ms-1">({deadlineHint})</span>}
+        </li>
+        <li>
+          {t("درصد پیشرفت")}: <b className="num text-foreground">{percent}%</b>
+          <span className="ms-1 num">({detail.meta.doneTasks}/{detail.meta.totalTasks} {t("تسک")})</span>
+        </li>
+        {detail.meta.myMinutes !== null && (
+          <li>{t("ساعت کاری شما")}: <b className="num text-foreground">{hoursLabel(detail.meta.myMinutes)}</b></li>
+        )}
+        {detail.meta.teamMinutes !== null && (
+          <li>{t("ساعت کاری تیم")}: <b className="num text-foreground">{hoursLabel(detail.meta.teamMinutes)}</b></li>
+        )}
+        {detail.meta.parent && (
+          <li>↳ {t("پیروِ پروژهٔ")}: <Link href={`/projects/${detail.meta.parent.id}`} className="underline">{detail.meta.parent.title}</Link></li>
+        )}
+        {detail.meta.children.length > 0 && (
+          <li>
+            {t("زیرپروژه‌ها (تغییر/نگهداری)")}:{' '}
+            {detail.meta.children.map((c, i) => (
+              <span key={c.id}>{i > 0 && t('، ')}<Link href={`/projects/${c.id}`} className="underline">{c.title}</Link></span>
+            ))}
+          </li>
+        )}
+      </ul>
+
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         {/*
           ⚠️ قیمتِ پروژه فقط برای مالک/مدیرِ مالی و **کارفرمای همین پروژه**.
@@ -239,6 +304,7 @@ export default async function ProjectDetailPage({
           title: project.title,
           isTender: project.isTender,
           isArchived: project.isArchived,
+          isFrozen: detail.isFrozen,
           thumbnailFileId: project.thumbnailFileId,
           roleHolders: detail.roleHolders,
           currentUserId: detail.currentUserId,

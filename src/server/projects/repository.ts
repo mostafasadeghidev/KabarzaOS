@@ -777,6 +777,7 @@ export async function listPayments(projectId: number) {
       type: projectPayments.type,
       amount: projectPayments.amount,
       amountSettled: projectPayments.amountSettled,
+      settledCurrencyId: projectPayments.settledCurrencyId,
       currencyId: projectPayments.currencyId,
       paidAt: projectPayments.paidAt,
       note: projectPayments.note,
@@ -874,6 +875,7 @@ export async function listAttachments(projectId: number) {
       kind: attachments.kind,
       createdAt: attachments.createdAt,
       uploaderName: users.name,
+      uploaderId: attachments.userId,
       mime: files.mime,
       size: files.size,
       originalName: files.originalName,
@@ -891,6 +893,8 @@ export async function listAttachments(projectId: number) {
     mime: r.mime,
     size: r.size,
     uploaderName: r.uploaderName,
+    /** برای دکمهٔ حذف: فقط بارگذارنده یا مدیر (R-FILE-09). */
+    uploaderId: r.uploaderId,
     isLink: r.kind === 'link',
     // فقط مسیرِ گیت‌شده — هرگز آدرسِ مستقیمِ شیء.
     href: r.kind === 'link' ? r.externalUrl! : `/api/files/${r.fileId}`,
@@ -1341,4 +1345,66 @@ export async function upcomingMeetingsForUser(userId: number, days: number, limi
     .orderBy(meetings.meetAt)
     .limit(limit);
   return rows;
+}
+
+/* ------------------------------------------------------------------ *
+ * متای صفحهٔ پروژه و پولِ عضو
+ * ------------------------------------------------------------------ */
+
+/** دقیقه‌های کاریِ یک کاربر روی پروژه — «ساعت کاری شما». */
+export async function userMinutesOn(userId: number, projectId: number): Promise<number> {
+  const rows = await db
+    .select({ minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int` })
+    .from(timelogs)
+    .where(and(eq(timelogs.userId, userId), eq(timelogs.projectId, projectId)));
+  return rows[0]?.minutes ?? 0;
+}
+
+export async function projectTitles(ids: number[]): Promise<Map<number, string>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db.select({ id: projects.id, title: projects.title }).from(projects).where(inArray(projects.id, ids));
+  return new Map(rows.map((r) => [r.id, r.title]));
+}
+
+/** زیرپروژه‌ها (تغییر/نگهداری) — پورتِ `Projects::children`. */
+export async function childProjects(projectId: number) {
+  return db.select({ id: projects.id, title: projects.title }).from(projects)
+    .where(and(eq(projects.parentId, projectId), isNull(projects.deletedAt)))
+    .orderBy(projects.id);
+}
+
+/** پیشرفتِ پروژه روی **همهٔ** تسک‌ها — پورتِ `Tasks::progress` (نه فقط دیدنی‌های بیننده). */
+export async function taskProgressFor(projectId: number): Promise<{ done: number; total: number }> {
+  const rows = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      done: sql<number>`count(*) filter (where coalesce(${tags.statusGroup}, '') = 'complete')::int`,
+    })
+    .from(tasks)
+    .leftJoin(tags, eq(tags.id, tasks.statusTagId))
+    .where(and(eq(tasks.projectId, projectId), isNull(tasks.deletedAt)));
+  return { done: rows[0]?.done ?? 0, total: rows[0]?.total ?? 0 };
+}
+
+/** ردیف‌های پرداخت به یک عضو روی پروژه — پورتِ فهرستِ `member_payout` ِ تبِ مالیِ عضو. */
+export async function myPayoutsOn(userId: number, projectId: number) {
+  return db
+    .select({
+      id: projectPayments.id,
+      paidAt: projectPayments.paidAt,
+      amount: projectPayments.amount,
+      amountSettled: projectPayments.amountSettled,
+      currencyCode: currencies.code,
+      note: projectPayments.note,
+      receiptIds: ledger.receiptIds,
+    })
+    .from(projectPayments)
+    .leftJoin(currencies, eq(currencies.id, projectPayments.currencyId))
+    .leftJoin(ledger, eq(ledger.id, projectPayments.ledgerId))
+    .where(and(
+      eq(projectPayments.projectId, projectId),
+      eq(projectPayments.userId, userId),
+      eq(projectPayments.direction, 'member_payout'),
+    ))
+    .orderBy(desc(projectPayments.id));
 }

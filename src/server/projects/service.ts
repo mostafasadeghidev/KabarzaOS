@@ -12,7 +12,7 @@ import { assertCanManage, assertCanView, canSeeScope, filterVisible, ForbiddenEr
 import { diffMembers, planAddMember, type MemberInput } from '@/domain/projects/members';
 import {
   assertCanLighten, canSetParent, impactState, planDelete,
-  type LightenSummary, type ProjectImpact,
+  type LightenSummary, type ProjectImpact, isFrozenProject,
 } from '@/domain/projects/lifecycle';
 import { OPEN_STATUS, toggleStatus, type CommentType } from '@/domain/projects/comments';
 import { assigneeOptions } from '@/domain/projects/assignees';
@@ -40,6 +40,8 @@ import {
 import * as repo from './repository';
 import { defaultProjectStatusId, defaultTaskStatusId } from '@/domain/projects/defaults';
 import { removeFiles } from '@/server/files/service';
+import { rowValueIn } from '@/domain/team-money/payments';
+import { rateSource } from '@/server/finance/service';
 
 /**
  * سرویسِ پروژه — تنها دروازه‌ای که UI و API از آن رد می‌شوند.
@@ -1074,17 +1076,71 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     (roleHolders[m.roleTagId] ??= []).push(m.userId);
   }
 
+  // پورتِ نوارِ «فقط‌خواندنی»: منجمد = بایگانی **یا** لغو/توقف — نه فقط بایگانی.
+  const isFrozen = isFrozenProject({ isArchived: detail.project.isArchived, statusGroup });
+
+  /**
+   * پورتِ `qa_visible_items`: مدیر همه، عضو فقط آیتم‌های نقش‌های خودش، کارفرما
+   * فقط آیتم‌های کارفرمایی (بی‌نقش). پیش از این کلِ چک‌لیست به هر بیننده می‌رفت.
+   */
+  const myRoleIds = new Set(
+    detail.members.filter((m) => m.userId === actor.id && m.roleTagId !== null).map((m) => m.roleTagId!),
+  );
+  const visibleQa = detail.canManage
+    ? maskedQa
+    : maskedQa.filter((q) => (q.roleTagId === null ? audience.isClientOfProject : myRoleIds.has(q.roleTagId)));
+
+  // متای جزئیات — پورتِ `kteam-detail-meta`: پیشرفت، ساعتِ من/تیم، والد، زیرپروژه‌ها.
+  const [parentTitles, children, progress, myMinutes, teamMinutes] = await Promise.all([
+    detail.project.parentId ? repo.projectTitles([detail.project.parentId]) : Promise.resolve(new Map<number, string>()),
+    repo.childProjects(projectId),
+    repo.taskProgressFor(projectId),
+    audience.isMemberOfProject ? repo.userMinutesOn(actor.id, projectId) : Promise.resolve(0),
+    detail.canManage ? repo.teamMinutesFor([projectId]) : Promise.resolve(new Map<number, number>()),
+  ]);
+  const meta = {
+    doneTasks: progress.done,
+    totalTasks: progress.total,
+    /** «ساعت کاری شما» برای عضو؛ وگرنه «ساعت کاری تیم» برای مدیر (عضو مقدم است). */
+    myMinutes: audience.isMemberOfProject ? myMinutes : null,
+    teamMinutes: !audience.isMemberOfProject && detail.canManage ? (teamMinutes.get(projectId) ?? 0) : null,
+    parent: detail.project.parentId
+      ? { id: detail.project.parentId, title: parentTitles.get(detail.project.parentId) ?? '' }
+      : null,
+    children,
+  };
+
+  // «معادل (محاسبه)» — ارزشِ هر پرداخت در ارزِ پروژه (پورتِ `Payments::row_value_in`).
+  const { source: rates } = await rateSource();
+  const countedPayments = maskedPayments.map((p) => ({
+    ...p,
+    countedValue: detail.project.currencyId && p.currencyId
+      ? rowValueIn(rates, {
+        amount: p.amount, currencyId: p.currencyId, amountSettled: p.amountSettled, settledCurrencyId: p.settledCurrencyId,
+      }, detail.project.currencyId)
+      : null,
+  }));
+
+  // نام و گروهِ وضعیتِ پروژه برای کنترلِ وضعیتِ هدر (پورتِ `project_status_control`).
+  const statusName = detail.project.statusTagId
+    ? (await repo.statusTags()).find((tag) => tag.id === detail.project.statusTagId)?.name ?? null
+    : null;
+
   return {
     ...detail,
+    isFrozen,
+    statusGroup,
+    statusName,
+    meta,
     roleHolders,
     currentUserId: actor.id,
     comments,
-    qa: maskedQa,
+    qa: visibleQa,
     files,
     bids,
     hours,
     finance,
-    payments: maskedPayments,
+    payments: countedPayments,
     canSeeFinance,
     /**
      * ⚠️ به کلاینت **پاس داده می‌شود تا رندر گارد شود**، ولی خودِ عدد هم
@@ -1097,6 +1153,16 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     canInteract: await canInteractWithProject(actor, projectId),
     deleteState,
   };
+}
+
+/**
+ * گزینه‌های وضعیتِ تسک برای هر کسی که روی پروژه «کار می‌کند» — پورتِ dropdown ِ
+ * همهٔ بینندگان (عضو تسکش را به «نیاز به ریویو» می‌فرستد). بدونِ مجوزِ سراسری.
+ */
+export async function taskStatusOptionsFor(actor: Actor, projectId: number) {
+  await getProject(actor, projectId);
+  await assertCanInteractWithProject(actor, projectId);
+  return repo.taskStatusTags();
 }
 
 /** تغییرِ وضعیتِ تسک از تبِ تسک‌ها — قرینهٔ `setProjectStatus`. */
@@ -1196,7 +1262,7 @@ export async function toggleCommentStatus(actor: Actor, commentId: number) {
 }
 
 /** افزودنِ کامنت به پروژه. */
-export async function addComment(actor: Actor, projectId: number, body: string) {
+export async function addComment(actor: Actor, projectId: number, body: string, type: 'comment' | 'review' = 'comment') {
   // عضو و کارفرمای پروژه هم کامنت می‌گذارند (مخاطبِ comment_added ِ نسخهٔ قبلی).
   await assertCanInteractWithProject(actor, projectId);
   await getProject(actor, projectId); // گاردِ scope
@@ -1209,7 +1275,8 @@ export async function addComment(actor: Actor, projectId: number, body: string) 
   await db.insert(comments).values({
     projectId,
     userId: actor.id,
-    type: 'comment',
+    // پورتِ `render_thread($type)`: رشتهٔ «بازبینی» جدا از «کامنت» است.
+    type,
     status: OPEN_STATUS,
     body: text,
   });
@@ -1226,7 +1293,7 @@ export async function addComment(actor: Actor, projectId: number, body: string) 
     type: 'comment',
     // ⚠️ عنوان **ثابت** است تا کلیدِ ترجمه بماند؛ دادهٔ متغیر در بدنه
     // می‌نشیند (R-NOTIF-06). همین الگو در بقیهٔ اعلان‌ها هم هست.
-    title: 'کامنت جدید در پروژه',
+    title: type === 'review' ? 'بازبینیِ جدید در پروژه' : 'کامنت جدید در پروژه',
     body: `«${project?.title ?? ''}» — ${text.slice(0, 140)}`,
     url: `/projects/${projectId}`,
   });

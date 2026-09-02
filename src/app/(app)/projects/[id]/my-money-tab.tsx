@@ -43,6 +43,18 @@ export interface RequestRow {
   cancellable: boolean;
   /** رسیدِ ردیفِ دفترِ آینه — فقط پس از پرداخت پر است. */
   receiptIds: number[] | null;
+  createdAt: Date | string;
+}
+
+/** ردیفِ واقعیِ پرداخت به من — پورتِ فهرستِ `member_payout`. */
+export interface PayoutRow {
+  id: number;
+  paidAt: string | null;
+  amount: string;
+  amountSettled: string | null;
+  currencyCode: string | null;
+  note: string;
+  receiptIds: number[] | null;
 }
 
 export interface MyMoneyData {
@@ -60,6 +72,11 @@ export interface MyMoneyData {
   myUnpaidUnits: string;
   requests: RequestRow[];
   remaining: string;
+  /** پورتِ «مبلغ توافقی شما» · «به شما پرداخت‌شده» · «مانده (وضعیت)». */
+  agreed: string;
+  paid: string;
+  status: string;
+  payouts: PayoutRow[];
   available: string;
   outstanding: string;
   members: Array<{ id: number; name: string }>;
@@ -68,6 +85,13 @@ export interface MyMoneyData {
 
 const selectClass =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none';
+
+/** برچسبِ وضعیتِ تسویه — پورتِ `Payments::status_label`. */
+const PAY_STATUS_LABELS: Record<string, string> = {
+  unpaid: 'پرداخت‌نشده',
+  partial: 'پرداختِ جزئی',
+  paid: 'تسویه‌شده',
+};
 
 function Submit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
@@ -211,8 +235,12 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
         )}
 
         {!data.canManage && (
-          <p className="text-sm">
-            <b>{t("جمعِ پرداخت‌نشده:")}</b> <span className="num">{format(data.myUnpaidUnits)}</span>
+          <p className="flex flex-wrap gap-4 text-sm">
+            <span><b>{t("جمعِ پرداخت‌نشده:")}</b> <span className="num">{format(data.myUnpaidUnits)}</span></span>
+            {/* پورتِ جمعِ «پرداخت‌شده» ِ ردیف‌های تعدادی. */}
+            <span><b>{t("جمعِ پرداخت‌شده:")}</b> <span className="num">{format(
+              data.units.filter((u) => u.isMine && u.status === 'paid').reduce((sum, u) => sum + Number(u.amount), 0).toFixed(4),
+            )}</span></span>
           </p>
         )}
         {rowError && <p className="text-xs text-destructive">{rowError}</p>}
@@ -225,7 +253,14 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
           <h3 className="text-sm font-semibold">{t("درخواستِ پرداخت")}</h3>
 
           <div className="flex flex-wrap gap-4 text-sm">
-            <span>{t("ماندهٔ قرارداد:")} <b className="num">{format(data.remaining)}</b></span>
+            <span>{t("مبلغ توافقی شما:")} <b className="num">{format(data.agreed)}</b></span>
+            <span>{t("به شما پرداخت‌شده:")} <b className="num">{format(data.paid)}</b></span>
+            <span>
+              {t("ماندهٔ قرارداد:")} <b className="num">{format(data.remaining)}</b>
+              <Badge variant={data.status === 'paid' ? 'success' : data.status === 'partial' ? 'warning' : 'outline'} className="ms-1">
+                {t(PAY_STATUS_LABELS[data.status] ?? data.status)}
+              </Badge>
+            </span>
             <span>{t("درخواست‌های باز:")} <b className="num">{format(data.outstanding)}</b></span>
             <span>{t("قابلِ درخواست:")} <b className="num">{format(data.available)}</b></span>
           </div>
@@ -235,6 +270,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
               {data.requests.map((r) => (
                 <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
                   <b className="num">{format(r.amount)}</b>
+                  <span className="num text-xs text-muted-foreground">{String(r.createdAt).slice(0, 10)}</span>
                   <Badge variant={r.status === 'paid' ? 'success' : 'outline'}>
                     {t(REQUEST_STATUS_LABELS[r.status] ?? r.status)}
                   </Badge>
@@ -266,6 +302,29 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
               ))}
             </ul>
           )}
+
+          {/* پورتِ «پرداختی‌های شما»: ردیف‌های واقعیِ حسابداری با رسید. */}
+          <div className="grid gap-1">
+            <h4 className="text-xs font-semibold text-muted-foreground">{t("پرداختی‌های شما")}</h4>
+            {data.payouts.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{t("هنوز پرداختی برای شما ثبت نشده.")}</p>
+            ) : (
+              <ul className="grid gap-1">
+                {data.payouts.map((p) => (
+                  <li key={p.id} className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    <span className="num text-xs text-muted-foreground">{p.paidAt ?? '—'}</span>
+                    <b className="num">{format(p.amountSettled ?? p.amount)} {p.currencyCode ?? ''}</b>
+                    {p.note && <span className="text-xs text-muted-foreground">{p.note}</span>}
+                    {(p.receiptIds?.length ?? 0) > 0 && (
+                      <a href={`/api/files/${p.receiptIds![0]}`} target="_blank" rel="noopener" className="text-xs text-primary hover:underline">
+                        {t('رسید')}
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           {Number(data.available) > 0 ? (
             <form action={requestPayment} className="flex flex-wrap items-end gap-2 rounded-md border p-3">

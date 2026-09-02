@@ -27,8 +27,6 @@ export interface CommentItem {
   closedByName: string | null;
 }
 
-/** تاریخِ کوتاه — همیشه چپ‌به‌راست تا در متنِ فارسی نشکند. */
-/** تاریخ/ساعت به وقتِ بیننده — نه UTC ِ خام (`useDateTime`). */
 function when(value: Date | string | null | undefined, tz: string): string {
   return formatDateTime(value, tz);
 }
@@ -36,7 +34,6 @@ function when(value: Date | string | null | undefined, tz: string): string {
 function SendButton() {
   const { pending } = useFormStatus();
   const tr = useT();
-  const tz = useTimeZone();
   return (
     <Button type="submit" size="sm" disabled={pending}>
       {pending ? tr('در حال ارسال…') : tr('ارسال')}
@@ -44,11 +41,6 @@ function SendButton() {
   );
 }
 
-/**
- * حذفِ کامنت — فقط مدیر.
- * ⚠️ نویسندهٔ کامنت هم نمی‌تواند پاکش کند: کامنت بخشی از تاریخچهٔ گفتگوی
- * پروژه است و پاک‌کردنش تصمیمِ مدیریتی است، نه شخصی.
- */
 function CommentDelete({ commentId }: { commentId: number }) {
   const t = useT();
   const confirm = useConfirm();
@@ -70,7 +62,7 @@ function CommentDelete({ commentId }: { commentId: number }) {
   );
 }
 
-function StatusToggle({ comment, canManage }: { comment: CommentItem; canManage: boolean }) {
+function StatusToggle({ comment, canToggle }: { comment: CommentItem; canToggle: boolean }) {
   const t = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +70,7 @@ function StatusToggle({ comment, canManage }: { comment: CommentItem; canManage:
   const label = statusLabel(comment.type as CommentType, comment.status);
 
   const chip = <Badge variant={open ? 'warning' : 'success'}>{t(label)}</Badge>;
-  if (!canManage) return chip;
+  if (!canToggle) return chip;
 
   return (
     <div className="flex items-center gap-1">
@@ -104,34 +96,58 @@ function StatusToggle({ comment, canManage }: { comment: CommentItem; canManage:
   );
 }
 
-/**
- * تبِ کامنت‌ها — فهرست + تیکِ وضعیت + سطرِ «انجام شد توسط X».
- * ⚠️ نامِ حالتِ بسته با نوعِ رشته فرق می‌کند (R-PROJ-27) — برچسب از دامنه می‌آید.
- */
-export function CommentsTab({
+/** یک رشته (کامنت یا بازبینی) — فهرست با زیرتب‌های وضعیت و فرمِ خودش. */
+function Thread({
   projectId,
+  type,
   comments,
   canManage,
   canInteract,
+  isFrozen,
 }: {
   projectId: number;
+  type: 'comment' | 'review';
   comments: CommentItem[];
   canManage: boolean;
-  /** هر شرکت‌کننده (عضو/کارفرما) تیکِ «انجام شد» می‌زند — پورتِ `handle_comment_status`. */
   canInteract: boolean;
+  isFrozen: boolean;
 }) {
   const t = useT();
   const tz = useTimeZone();
   const [state, formAction] = useActionState<TabActionState, FormData>(addCommentAction, {});
   useActionToast(state, { success: 'ثبت شد.' });
 
+  /**
+   * پورتِ زیرتب‌های رشته: «نیازمند بررسی (n)» / «انجام‌شده ∕ حل‌شده (n)»؛
+   * تازه‌ترین اول (پیش از این کهنه‌ترین اول بود).
+   */
+  const openOnes = comments.filter((c) => isOpen(c.status));
+  const closedOnes = comments.filter((c) => !isOpen(c.status));
+  const [bucket, setBucket] = useState<'open' | 'closed'>(openOnes.length > 0 || closedOnes.length === 0 ? 'open' : 'closed');
+  const list = (bucket === 'open' ? openOnes : closedOnes).slice().sort((a, b) => b.id - a.id);
+  const closedLabel = type === 'review' ? 'حل‌شده' : 'انجام‌شده';
+
   return (
-    <div className="grid gap-4">
-      {comments.length === 0 ? (
-        <EmptyState title={t("هنوز گفتگویی نیست")} />
+    <div className="grid gap-3">
+      <nav className="flex flex-wrap gap-1 border-b pb-2">
+        {(['open', 'closed'] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setBucket(key)}
+            className={`rounded-md px-3 py-1 text-sm ${bucket === key ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/60'}`}
+          >
+            {key === 'open' ? t('نیازمند بررسی') : t(closedLabel)}
+            <span className="num ms-1 text-xs text-muted-foreground">{key === 'open' ? openOnes.length : closedOnes.length}</span>
+          </button>
+        ))}
+      </nav>
+
+      {list.length === 0 ? (
+        <EmptyState title={type === 'review' ? t("بازبینی‌ای در این وضعیت نیست") : t("کامنتی در این وضعیت نیست")} />
       ) : (
         <ul className="grid gap-2">
-          {comments.map((c) => (
+          {list.map((c) => (
             <li key={c.id} className="rounded-md border p-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -150,21 +166,77 @@ export function CommentsTab({
                     </p>
                   )}
                 </div>
-                <StatusToggle comment={c} canManage={canInteract} />
-                {canManage && <CommentDelete commentId={c.id} />}
+                {/* تغییرِ وضعیت روی پروژهٔ منجمد بسته است (`block_if_frozen`). */}
+                <StatusToggle comment={c} canToggle={canInteract && !isFrozen} />
+                {canManage && !isFrozen && <CommentDelete commentId={c.id} />}
               </div>
             </li>
           ))}
         </ul>
       )}
 
-      <form action={formAction} className="grid gap-2">
-        <input type="hidden" name="projectId" value={projectId} />
-        <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} required />
-        <div className="flex justify-end">
-          <SendButton />
-        </div>
-      </form>
+      {/* پورتِ افزونه: روی پروژهٔ منجمد فرمِ نوشتن اصلاً نیست. */}
+      {canInteract && !isFrozen && (
+        <form action={formAction} className="grid gap-2">
+          <input type="hidden" name="projectId" value={projectId} />
+          <input type="hidden" name="type" value={type} />
+          <Textarea
+            name="body" rows={2} required
+            placeholder={type === 'review' ? t("درخواستِ بازبینی یا نتیجهٔ بازبینی را بنویسید…") : t("یادداشت/توضیح بنویسید…")}
+          />
+          <div className="flex justify-end"><SendButton /></div>
+        </form>
+      )}
+    </div>
+  );
+}
+
+/**
+ * تبِ کامنت‌ها — پورتِ `render_thread($type)`: دو رشتهٔ جدا («کامنت‌ها» و
+ * «بازبینی‌ها») با برچسب‌ها و فرمِ خودشان؛ هر شرکت‌کننده وضعیت را عوض می‌کند.
+ */
+export function CommentsTab({
+  projectId,
+  comments,
+  canManage,
+  canInteract,
+  isFrozen = false,
+}: {
+  projectId: number;
+  comments: CommentItem[];
+  canManage: boolean;
+  /** هر شرکت‌کننده (عضو/کارفرما) تیکِ «انجام شد» می‌زند — پورتِ `handle_comment_status`. */
+  canInteract: boolean;
+  isFrozen?: boolean;
+}) {
+  const t = useT();
+  const [thread, setThread] = useState<'comment' | 'review'>('comment');
+  const ofType = (type: string) => comments.filter((c) => c.type === type);
+
+  return (
+    <div className="grid gap-4">
+      <nav className="flex flex-wrap gap-1">
+        {(['comment', 'review'] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setThread(key)}
+            className={`rounded-full border px-3 py-1 text-sm ${thread === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+          >
+            {key === 'comment' ? t('کامنت‌ها') : t('بازبینی‌ها')}
+            <span className="num ms-1 text-xs">{ofType(key).length}</span>
+          </button>
+        ))}
+      </nav>
+      <Thread
+        key={thread}
+        projectId={projectId}
+        type={thread}
+        comments={ofType(thread)}
+        canManage={canManage}
+        canInteract={canInteract}
+        isFrozen={isFrozen}
+      />
     </div>
   );
 }

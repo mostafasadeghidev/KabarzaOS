@@ -52,13 +52,14 @@ export async function toggleCommentAction(commentId: number): Promise<TabActionS
 export async function addCommentAction(_prev: TabActionState, formData: FormData): Promise<TabActionState> {
   const projectId = Number(formData.get('projectId'));
   const body = String(formData.get('body') ?? '');
+  const type = formData.get('type') === 'review' ? 'review' : 'comment';
 
   if (!Number.isInteger(projectId) || projectId <= 0) return { error: 'پروژه معتبر نیست.' };
   if (body.trim() === '') return { error: 'متنِ کامنت خالی است.' };
 
   try {
     const actor = await requireActor();
-    await addComment(actor, projectId, body);
+    await addComment(actor, projectId, body, type);
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ثبتِ کامنت ندارید.' };
     return { error: 'کامنت ثبت نشد.' };
