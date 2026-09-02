@@ -12,6 +12,7 @@ import type { RemoveOutcome } from '@/domain/people/offboarding';
 import type { Role } from '@/domain/access/permissions';
 import { isValidUsername } from '@/domain/auth/login';
 import { assertAcceptable, FileRejected, rejectMessage } from '@/domain/files/upload';
+import { sendInvite, type InviteResult } from '@/server/auth/reset-service';
 
 /**
  * اقدام‌های صفحهٔ افراد.و اقدام‌های ردیفِ نسخهٔ قبلی.
@@ -71,6 +72,15 @@ export interface PersonFormState {
   fieldErrors?: Partial<Record<'name' | 'email' | 'phone' | 'password' | 'username', string>>;
   values?: Record<string, string>;
   ok?: boolean;
+  /** سرانجامِ دعوت‌نامه — به‌جای «ذخیره شد» ِ بی‌قید. */
+  message?: string;
+}
+
+/** پیامِ سرانجامِ دعوت‌نامه (پورتِ فلشِ افزونه). */
+function inviteMessage(sent: InviteResult): string | undefined {
+  if (sent === 'sent') return 'ذخیره شد و دعوت‌نامه فرستاده شد.';
+  if (sent === 'no_mail') return 'ذخیره شد؛ ایمیل پیکربندی نشده و دعوت‌نامه فرستاده نشد.';
+  return undefined;
 }
 
 function parse(formData: FormData) {
@@ -139,8 +149,14 @@ export async function savePersonAction(
       if (error instanceof PersonNotFoundError) return { error: 'کاربر یافت نشد.' };
       return { error: 'ذخیره نشد.' };
     }
+    // پورتِ چک‌باکسِ «ارسالِ دعوت‌نامه»: کاربرِ موجود فقط آدرسِ داشبورد می‌گیرد.
+    let message: string | undefined;
+    if (formData.get('sendInvite') !== null) {
+      const sent = await sendInvite(await requireActor(), existingId, role, false).catch((): InviteResult => 'no_mail');
+      message = inviteMessage(sent);
+    }
     revalidatePath(pathOf(role));
-    return { ok: true };
+    return { ok: true, message };
   }
 
   const { parsed, values } = parse(formData);
@@ -148,6 +164,8 @@ export async function savePersonAction(
     return { error: 'لطفاً خطاهای فرم را برطرف کنید.', fieldErrors: fieldErrorsOf(parsed.error.issues), values };
   }
 
+  let savedId: number | null = userId;
+  let isNew = false;
   try {
     const actor = await requireActor();
     if (userId) {
@@ -169,6 +187,8 @@ export async function savePersonAction(
       }
 
       const newId = await createPerson(actor, role, parsed.data);
+      savedId = newId;
+      isNew = true;
       // تصویر بعد از ساخت ذخیره می‌شود چون به شناسهٔ کاربر نیاز دارد.
       if (avatarFile) {
         try {
@@ -200,8 +220,17 @@ export async function savePersonAction(
     return { error: 'ذخیره نشد.', values };
   }
 
+  /**
+   * پورتِ `send_invite()`: کاربرِ تازه لینکِ تعیینِ رمزِ ۳روزه می‌گیرد (پیش از
+   * این هیچ ایمیلی نمی‌رفت و نمی‌توانست رمزِ خودش را انتخاب کند)؛ موجود آدرسِ داشبورد.
+   */
+  let message: string | undefined;
+  if (formData.get('sendInvite') !== null && savedId) {
+    const sent = await sendInvite(await requireActor(), savedId, role, isNew).catch((): InviteResult => 'no_mail');
+    message = inviteMessage(sent);
+  }
   revalidatePath(pathOf(role));
-  return { ok: true };
+  return { ok: true, message };
 }
 
 /** مسیرِ صفحهٔ هر نقش — برای تازه‌سازیِ همان صفحه. */

@@ -162,6 +162,13 @@
       "when": 1788661200005,
       "tag": "0022_closed_statuses_and_unique_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1788661200006,
+      "tag": "0023_password_reset_tokens",
+      "breakpoints": true
     }
   ]
 }

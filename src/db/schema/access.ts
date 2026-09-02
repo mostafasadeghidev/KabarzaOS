@@ -38,6 +38,10 @@ export const users = pgTable('users', {
    */
   privateAccess: boolean('private_access').notNull().default(false),
   twoFactorSecret: text('two_factor_secret'),
+  /** توکنِ تعیین/بازنشانیِ رمز — فقط هش؛ `invite_pending` = پنجرهٔ سه‌روزهٔ دعوت (مهاجرتِ 0023). */
+  resetTokenHash: text('reset_token_hash'),
+  resetExpiresAt: ts('reset_expires_at'),
+  invitePending: boolean('invite_pending').notNull().default(false),
   /** مهرِ آخرین ارسالِ پیام — پایهٔ محدودیتِ ۳۰ ثانیه‌ای (R-MSG-N4). */
   lastMessageSentAt: ts('last_message_sent_at'),
 

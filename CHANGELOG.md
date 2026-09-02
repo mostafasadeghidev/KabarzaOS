@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.36.0]
+
+### Added — invitations and password recovery (parity with the plugin)
+
+- **Invitation e-mail on save.** The person form has a "send an invitation by e-mail" checkbox (on by default when adding). A new person receives a link to set their own password, valid for three days, plus the dashboard address; an existing user receives the dashboard address. The message is written in the manager's panel language, and the form reports whether the e-mail went out or e-mail is not configured.
+- **"I forgot my password."** The sign-in page links to a self-service reset: the person enters their e-mail or username and receives a one-day link; the response never reveals whether an account exists. The link opens a set-password page, and signing in afterwards shows a confirmation. Locked and deleted accounts never receive a link.
+- Only a hash of the token is stored; a token is single-use and any new request invalidates the previous one. Migration 0023 adds the three columns.
+
+---
+
 ## [1.35.0]
 
 ### Added — people (parity with the plugin)

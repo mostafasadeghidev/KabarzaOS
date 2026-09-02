@@ -1,13 +1,14 @@
 'use client';
 
 import { useActionState } from 'react';
+import Link from 'next/link';
 import { login } from './actions';
 import type { LoginState } from './schema';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useT } from '@/i18n/client';
 
-export function LoginForm() {
+export function LoginForm({ notice }: { notice?: string } = {}) {
   const t = useT();
   const [state, formAction, pending] = useActionState<LoginState, FormData>(login, {});
 
@@ -20,6 +21,9 @@ export function LoginForm() {
         </CardHeader>
         <CardContent>
           <form action={formAction} className="space-y-4">
+            {notice && (
+              <p className="rounded-[--radius] bg-emerald-500/10 px-3 py-2 text-sm">{t(notice)}</p>
+            )}
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-sm font-medium">
                 {t("ایمیل یا نام کاربری")}
@@ -50,6 +54,10 @@ export function LoginForm() {
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? t('در حال ورود…') : t('ورود')}
             </Button>
+            {/* پورتِ `wp_lostpassword_url`: راهِ خودخدمتِ بازنشانی. */}
+            <Link href="/forgot" className="block text-center text-sm text-muted-foreground underline">
+              {t("رمزم را فراموش کرده‌ام")}
+            </Link>
           </form>
         </CardContent>
       </Card>

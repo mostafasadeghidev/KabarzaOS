@@ -90,7 +90,7 @@ Everything required is generated. This table is for manual setups.
 
 | Variable | Required | Notes |
 |---|---|---|
-| `APP_URL` | recommended | Public address; used in notification links |
+| `APP_URL` | recommended | Public address; used in notification, invitation and password-reset links |
 | `SESSION_SECRET` | — | Generated on first boot, kept in `app_data` |
 | `CRON_SECRET` | — | Same; the `cron` service reads the same file |
 | `DB_PASSWORD` | — | Has an internal default. Changing it after the first boot does not work — Postgres fixes the password at initdb |

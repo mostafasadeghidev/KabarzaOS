@@ -359,6 +359,11 @@ export function PersonDialog({
           </fieldset>
           )}
 
+          {/* پورتِ چک‌باکسِ «ارسالِ دعوت‌نامه»: تازه → لینکِ تعیینِ رمزِ ۳روزه؛ موجود → آدرسِ داشبورد. */}
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="sendInvite" defaultChecked={!isEdit} className="size-4 accent-primary" />
+            {tr("ارسالِ دعوت‌نامه با ایمیل")}
+          </label>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
