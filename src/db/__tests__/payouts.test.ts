@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
   currencies, users, accounts, projects, ledger, paymentRequests,
-  recurringExpenses, fiscalLocks, vendors,
+  recurringExpenses, fiscalLocks, vendors, unitEntries,
 } from '../schema';
 import * as payouts from '@/server/finance/payouts';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -177,5 +177,30 @@ describe('ساخت و ویرایشِ هزینه', () => {
     const row = (await db.select().from(recurringExpenses).where(eq(recurringExpenses.id, id)))[0]!;
     expect(row.intervalUnit).toBe('month');
     expect(row.intervalCount).toBe(1);
+  });
+});
+
+describe('R-TEAM-08 — پرداختِ درخواست، ردیفِ کارِ تعدادی‌اش را هم می‌بندد', () => {
+  it('ردیفِ تعدادی بعد از پرداخت «پرداخت‌شده» و به ردیفِ دفتر وصل می‌شود', async () => {
+    // ⚠️ پیش از این شناسهٔ ردیف محاسبه می‌شد ولی هرگز نوشته نمی‌شد — ردیف تا ابد
+    // «درخواست‌شده» می‌ماند و در گزارش‌ها پرداخت‌نشده حساب می‌شد.
+    const [ue] = await db.insert(unitEntries).values({
+      projectId: project, userId: member, entryDate: '2026-08-01',
+      quantity: '2', amount: '300', currencyId: eur, status: 'requested',
+    }).returning({ id: unitEntries.id });
+    const [req] = await db.insert(paymentRequests).values({
+      projectId: project, userId: member, amount: '300', currencyId: eur,
+      status: 'pending', unitEntryId: ue!.id,
+    }).returning({ id: paymentRequests.id });
+
+    const result = await payouts.payRequest(manager(), req!.id, {
+      // ⚠️ بعد از قفلِ دورهٔ مالیِ آزمونِ قبلی (تا ۲۰۲۶-۰۹-۳۰).
+      accountId: account, entryDate: '2026-10-05',
+    });
+    expect(result.closedUnitEntryId).toBe(ue!.id);
+
+    const row = (await db.select().from(unitEntries).where(eq(unitEntries.id, ue!.id)))[0]!;
+    expect(row.status).toBe('paid');
+    expect(row.ledgerId).toBe(result.ledgerId);
   });
 });

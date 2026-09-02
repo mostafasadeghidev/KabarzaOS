@@ -344,7 +344,6 @@ export async function setProjectAccess(
 export interface DeleteInput {
   mode?: 'full' | 'detach';
   confirmTitle?: string;
-  balances: { clientPartiallyPaid: boolean; memberPartiallyPaid: boolean };
 }
 
 /**
@@ -355,7 +354,8 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
   assertCanManage(actor, 'projects');
   const project = await getProject(actor, projectId);
 
-  const impact: ProjectImpact = await repo.projectImpact(projectId, input.balances);
+  // ⚠️ ماندهٔ باز از خودِ داده — نه از فراخوان. با مقدارِ هاردکدِ false، قفل هرگز نمی‌افتاد.
+  const impact: ProjectImpact = await repo.projectImpact(projectId, await repo.openBalances(projectId));
   const plan = planDelete(impact, {
     mode: input.mode,
     confirmTitle: input.confirmTitle,
@@ -1491,16 +1491,16 @@ export async function applyQa(actor: Actor, projectId: number, audiences: QaAudi
   const project = await getProject(actor, projectId);
   await assertCanManageProject(actor, projectId);
 
-  const [library, applied, clientIds] = await Promise.all([
+  const [library, applied, primaryClientId] = await Promise.all([
     repo.qaLibrary(),
     repo.appliedQaItemIds(projectId),
-    repo.listClientIds(projectId),
+    // کارفرمای اصلی = قدیمی‌ترین انتساب — نه کوچک‌ترین شناسهٔ کاربر.
+    repo.primaryClientId(projectId),
   ]);
 
   const plan = planQaApply(library, audiences, {
     appliedItemIds: applied,
-    // کارفرمای اصلی = کوچک‌ترین شناسه، همان ترتیبی که نسخهٔ قبلی می‌گیرد.
-    primaryClientId: clientIds.size > 0 ? Math.min(...clientIds) : null,
+    primaryClientId,
   });
   if (plan.entries.length === 0) return { added: 0 };
 

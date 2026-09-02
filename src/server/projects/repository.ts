@@ -1,6 +1,7 @@
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { asc, and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { summarizeProject } from '@/domain/team-money/payments';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '@/db/client';
 import {
@@ -621,6 +622,74 @@ export async function listClientIds(projectId: number): Promise<Set<number>> {
   const rows = await db.select({ userId: projectClients.userId })
     .from(projectClients).where(eq(projectClients.projectId, projectId));
   return new Set(rows.map((r) => r.userId));
+}
+
+/**
+ * کارفرمای **اصلی** = قدیمی‌ترین انتساب (کوچک‌ترین شناسهٔ ردیفِ
+ * `project_clients`) — پورتِ `Projects::primary_client_id()`.
+ *
+ * ⚠️ نه کوچک‌ترین شناسهٔ **کاربر**: کارفرمایی که دیرتر به پروژه اضافه شده
+ * ولی حسابِ قدیمی‌تری دارد، اصلی نیست. با `Math.min(userIds)` تسکِ QA و
+ * فاکتور به کارفرمای اشتباه می‌رفت.
+ */
+export async function primaryClientId(projectId: number): Promise<number | null> {
+  const rows = await db.select({ userId: projectClients.userId })
+    .from(projectClients)
+    .where(eq(projectClients.projectId, projectId))
+    .orderBy(asc(projectClients.id))
+    .limit(1);
+  return rows[0]?.userId ?? null;
+}
+
+/**
+ * ماندهٔ باز — ورودیِ گاردِ حذف (R-PROJ-04): پروژه‌ای که کارفرما یا عضوش
+ * پرداختِ **ناتمام** دارد، هرگز حذف نمی‌شود.
+ *
+ * ⚠️ این تابع نبود؛ فراخوان هر دو مانده را `false` هاردکد کرده بود، پس
+ * حالتِ «قفل» هیچ‌وقت رخ نمی‌داد و پروژه با پولِ تسویه‌نشده حذف می‌شد.
+ * پورتِ `Projects::impact()`: کارفرما = `Payments::summary()` در حالتِ
+ * PARTIAL؛ عضو = هر پرداختِ عضوی که PARTIAL باشد. مبلغِ تسویه‌شده بر مبلغِ
+ * اسمی مقدم است (R-TEAM-01).
+ */
+export async function openBalances(
+  projectId: number,
+): Promise<{ clientPartiallyPaid: boolean; memberPartiallyPaid: boolean }> {
+  const settled = sql<string>`coalesce(sum(coalesce(${projectPayments.amountSettled}, ${projectPayments.amount})), 0)::text`;
+  const [projectRow, byDirection, members, paidByUser] = await Promise.all([
+    db.select({ price: projects.price }).from(projects).where(eq(projects.id, projectId)),
+    db.select({ direction: projectPayments.direction, total: settled })
+      .from(projectPayments)
+      .where(eq(projectPayments.projectId, projectId))
+      .groupBy(projectPayments.direction),
+    db.select({ userId: projectMembers.userId, agreed: projectMembers.agreedAmount })
+      .from(projectMembers).where(eq(projectMembers.projectId, projectId)),
+    db.select({ userId: projectPayments.userId, total: settled })
+      .from(projectPayments)
+      .where(and(eq(projectPayments.projectId, projectId), eq(projectPayments.direction, 'member_payout')))
+      .groupBy(projectPayments.userId),
+  ]);
+  const by = new Map(byDirection.map((r) => [r.direction, r.total]));
+  const client = summarizeProject(
+    projectRow[0]?.price ?? '0',
+    by.get('project_cost') ?? '0',
+    by.get('incoming') ?? '0',
+  );
+  const paid = new Map(paidByUser.map((r) => [r.userId, r.total]));
+  /**
+   * ⚠️ «ماندهٔ باز» یعنی چیزی پرداخت شده **و** چیزی هنوز مانده — 0 < paid < due.
+   * پروژهٔ بی‌قیمت با یک دریافتی مانده ندارد؛ پرداختِ کامل هم مانده ندارد.
+   * `paymentStatus` برای due=0 «ناتمام» می‌گوید و اینجا گمراه‌کننده بود.
+   */
+  const open = (paidAmount: string, due: number) => {
+    const p = Number(paidAmount);
+    return Number.isFinite(p) && p > 0 && due > 0 && p < due - 0.005;
+  };
+  return {
+    clientPartiallyPaid: open(client.paid, client.totalDue),
+    memberPartiallyPaid: members.some(
+      (m) => open(paid.get(m.userId) ?? '0', Number(m.agreed)),
+    ),
+  };
 }
 
 /** کاربرانِ فعالی که نقشِ `client` دارند — فهرستِ افزودنِ سریعِ کارفرما. */

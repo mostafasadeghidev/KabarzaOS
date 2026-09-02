@@ -149,9 +149,7 @@ describe('R-PROJ-08/09 — اعضا روی دیتابیسِ واقعی', () => {
 describe('R-PROJ-01 — حذفِ پروژه', () => {
   it('پروژهٔ تمیز حذف می‌شود', async () => {
     const p = await db.insert(projects).values({ title: 'موقت', currencyId: eurId }).returning({ id: projects.id });
-    const plan = await service.deleteProject(manager(), p[0]!.id, {
-      balances: { clientPartiallyPaid: false, memberPartiallyPaid: false },
-    });
+    const plan = await service.deleteProject(manager(), p[0]!.id, {});
     expect(plan.financial).toBe('none');
 
     const list = await service.listProjects(manager());
@@ -159,9 +157,15 @@ describe('R-PROJ-01 — حذفِ پروژه', () => {
   });
 
   it('پروژه با ماندهٔ باز هرگز حذف نمی‌شود', async () => {
-    await expect(service.deleteProject(manager(), companyProject, {
-      mode: 'full', confirmTitle: 'پروژهٔ شرکتی',
-      balances: { clientPartiallyPaid: true, memberPartiallyPaid: false },
+    // ⚠️ ماندهٔ باز از خودِ داده: قیمت ۱۰۰، فقط ۱۰ دریافت شده → PARTIAL → قفل.
+    // پیش از این فراخوان false هاردکد می‌کرد و این حالت هرگز رخ نمی‌داد.
+    const p = await db.insert(projects).values({ title: 'پروژهٔ نیمه‌پرداخت', currencyId: eurId, price: '100' })
+      .returning({ id: projects.id });
+    await db.insert(projectPayments).values({
+      projectId: p[0]!.id, direction: 'incoming', amount: '10', amountEur: '10', currencyId: eurId,
+    });
+    await expect(service.deleteProject(manager(), p[0]!.id, {
+      mode: 'full', confirmTitle: 'پروژهٔ نیمه‌پرداخت',
     })).rejects.toThrow(/locked/);
   });
 });
@@ -577,7 +581,9 @@ describe('R-PROJ-03 — جداسازی در برابر حذفِ کامل', () =>
     const id = p[0]!.id;
     await db.insert(projectPayments).values({
       projectId: id, userId: alice, direction: 'incoming',
-      amount: '800', amountEur: '800', currencyId: eurId, note: 'پیش‌پرداخت',
+      // ⚠️ تمام‌پرداخت: R-PROJ-03 دربارهٔ سرنوشتِ تراکنش است، نه ماندهٔ باز.
+      // با ۸۰۰ از ۳۰۰۰، گاردِ R-PROJ-04 (که حالا واقعاً کار می‌کند) حذف را قفل می‌کرد.
+      amount: '3000', amountEur: '3000', currencyId: eurId, note: 'پیش‌پرداخت',
     });
     return id;
   }
@@ -587,7 +593,6 @@ describe('R-PROJ-03 — جداسازی در برابر حذفِ کامل', () =>
     const id = await makeProject('پروژهٔ جداشدنی');
     await service.deleteProject(manager(), id, {
       mode: 'detach', confirmTitle: 'پروژهٔ جداشدنی',
-      balances: { clientPartiallyPaid: false, memberPartiallyPaid: false },
     });
 
     const rows = await sql`select project_id, note from project_payments where note like '%جداشدنی%'`;
@@ -601,7 +606,6 @@ describe('R-PROJ-03 — جداسازی در برابر حذفِ کامل', () =>
     const id = await makeProject('پروژهٔ کاملاً حذفی');
     await service.deleteProject(manager(), id, {
       mode: 'full', confirmTitle: 'پروژهٔ کاملاً حذفی',
-      balances: { clientPartiallyPaid: false, memberPartiallyPaid: false },
     });
     expect(await db.select().from(projectPayments).where(eq(projectPayments.projectId, id))).toHaveLength(0);
   });
@@ -610,18 +614,18 @@ describe('R-PROJ-03 — جداسازی در برابر حذفِ کامل', () =>
     const id = await makeProject('پروژهٔ محافظت‌شده');
     await expect(service.deleteProject(manager(), id, {
       mode: 'full', confirmTitle: 'نامِ غلط',
-      balances: { clientPartiallyPaid: false, memberPartiallyPaid: false },
     })).rejects.toThrow(ProjectDeleteError);
 
     const rows = await db.select().from(projects).where(eq(projects.id, id));
     expect(rows[0]!.deletedAt).toBeNull();
   });
 
-  it('⚠️ ماندهٔ باز حذف را قفل می‌کند', async () => {
+  it('⚠️ ماندهٔ باز حذف را قفل می‌کند — از خودِ داده، نه از فراخوان', async () => {
     const id = await makeProject('پروژهٔ قفل‌شده');
+    // ۳۰۰۰ دریافت شده از ۵۰۰۰ → ماندهٔ باز → قفل.
+    await db.update(projects).set({ price: '5000' }).where(eq(projects.id, id));
     await expect(service.deleteProject(manager(), id, {
       mode: 'full', confirmTitle: 'پروژهٔ قفل‌شده',
-      balances: { clientPartiallyPaid: true, memberPartiallyPaid: false },
     })).rejects.toThrow(ProjectDeleteError);
   });
 });

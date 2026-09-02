@@ -121,12 +121,7 @@ export async function deleteProjectAction(
 
   try {
     const actor = await requireActor();
-    await deleteProject(actor, projectId, {
-      mode,
-      confirmTitle,
-      // ماندهٔ باز از خودِ داده خوانده می‌شود؛ فعلاً تا فازِ مالی صفر است.
-      balances: { clientPartiallyPaid: false, memberPartiallyPaid: false },
-    });
+    await deleteProject(actor, projectId, { mode, confirmTitle });
   } catch (error) {
     if (error instanceof ProjectDeleteError) {
       const messages = {

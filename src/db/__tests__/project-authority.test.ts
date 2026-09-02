@@ -210,7 +210,7 @@ describe('گاردِ عمل‌های پروژه‌محور', () => {
 describe('⚠️ عمل‌های ویرانگر پروژه‌محور نمی‌شوند', () => {
   it('حذفِ پروژه فقط با مجوزِ سراسری — نسخهٔ قبلی manage_options می‌خواهد', async () => {
     await expect(service.deleteProject(actor(pm), projectA, {
-      mode: 'detach', balances: { clientPartiallyPaid: false, memberPartiallyPaid: false },
+      mode: 'detach',
     })).rejects.toBeInstanceOf(ForbiddenError);
   });
 

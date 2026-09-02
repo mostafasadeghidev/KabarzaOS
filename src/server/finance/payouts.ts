@@ -176,6 +176,21 @@ export async function payRequest(
     updatedAt: new Date(),
   }).where(eq(paymentRequests.id, requestId));
 
+  /**
+   * ⚠️ ردیفِ کارِ تعدادی که این درخواست می‌بندد، باید **واقعاً** بسته شود —
+   * پورتِ `Unit_Entries::mark_paid()`. `markPaid` شناسه‌اش را برمی‌گرداند ولی
+   * تا پیش از این هیچ‌کس آن را نمی‌نوشت: ردیف تا ابد «درخواست‌شده» می‌ماند،
+   * گزارش‌ها پرداخت‌نشده حسابش می‌کردند، عضو «قابلِ درخواست» می‌ماند و
+   * گاردِ پرداختِ دوباره (R-TEAM-08) عملاً از کار افتاده بود.
+   */
+  if (result?.closesUnitEntryId) {
+    await db.update(unitEntries).set({
+      status: 'paid',
+      ledgerId,
+      updatedAt: new Date(),
+    }).where(eq(unitEntries.id, result.closesUnitEntryId));
+  }
+
   await audit(actor, 'request.paid', requestId, request.status, { ledgerId, result });
 
   // پورتِ شاخهٔ `paid` ِ `payment_decided` — عضو باید بداند پولش رفته.
