@@ -4,10 +4,11 @@ import { useActionState, useEffect, useRef, useState, useTransition } from 'reac
 import { useFormStatus } from 'react-dom';
 import { Megaphone, Plus, Send, ShieldQuestion, Trash2 } from 'lucide-react';
 import {
-  composeAction, contactManagementAction, leaveThreadAction, openThreadAction, replyAction,
-  type MessageState,
+  composeAction, contactManagementAction, deleteThreadAction, leaveThreadAction, openThreadAction,
+  replyAction, type MessageState,
 } from './_form/actions';
 import { AUDIENCE_LABELS, type Audience } from '@/domain/messaging/threads';
+import { groupInbox } from '@/domain/messaging/labels';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -30,6 +31,8 @@ export interface InboxRow {
   broadcastId: number | null;
   isMine: boolean;
   counterparts: Array<{ userId: number; name: string }>;
+  /** برچسبِ طرفِ مقابل — ماسک‌شده سمتِ سرور (R-MSG-03). */
+  label: string;
   lastBody: string;
   lastAt: Date | string | null;
   lastFromName: string | null;
@@ -59,6 +62,36 @@ function when(value: Date | string | null | undefined, tz: string): string {
   return formatDateTime(value, tz);
 }
 
+/** یک ردیفِ صندوق — هم تک‌گفتگو هم فرزندِ آکاردئونِ ارسالِ همگانی. */
+function InboxRowButton({
+  row, open, onOpen, tz,
+}: {
+  row: InboxRow; open: boolean; onOpen: (id: number) => void; tz: string;
+}) {
+  const tr = useT();
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(row.id)}
+      className={`w-full rounded-md border p-3 text-start transition-colors hover:bg-muted/50 ${
+        open ? 'border-primary bg-muted/40' : ''
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate text-sm font-medium">{row.label || '—'}</span>
+        <span className="flex items-center gap-1">
+          {!row.allowReply && (
+            <Megaphone className="size-3.5 text-muted-foreground" aria-label={tr("اعلان یک‌طرفه")} />
+          )}
+          {row.unread > 0 && <Badge className="num">{row.unread}</Badge>}
+        </span>
+      </div>
+      <p className="mt-1 truncate text-xs text-muted-foreground">{row.lastBody}</p>
+      <p className="num mt-0.5 text-[11px] text-muted-foreground">{when(row.lastAt, tz)}</p>
+    </button>
+  );
+}
+
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
@@ -82,6 +115,7 @@ export function MessagesView({
   canBroadcast,
   poll,
   initialThreadId = null,
+  viewerId,
 }: {
   inbox: InboxRow[];
   recipients: RecipientOption[];
@@ -97,6 +131,8 @@ export function MessagesView({
    * نمی‌خورد؛ نتیجه‌اش ۴۰۴ ِ خامِ Next بود، بیرون از پوستهٔ برنامه.
    */
   initialThreadId?: number | null;
+  /** خودِ بیننده — پیام‌های او سمتِ دیگر می‌نشینند و تیکِ خواندن می‌گیرند. */
+  viewerId: number;
 }) {
   const tr = useT();
   const tz = useTimeZone();
@@ -173,12 +209,14 @@ export function MessagesView({
         );
         if (!res.ok) return;
         const data = await res.json() as {
-          changed: boolean; fingerprint?: string; messages?: Thread['messages'];
+          changed: boolean; fingerprint?: string; messages?: Thread['messages']; readUpTo?: number;
         };
         if (!alive) return;
         if (data.fingerprint) fpRef.current = data.fingerprint;
         if (data.changed && data.messages) {
-          setThread((cur) => (cur ? { ...cur, messages: data.messages! } : cur));
+          setThread((cur) => (cur
+            ? { ...cur, messages: data.messages!, readUpTo: data.readUpTo ?? cur.readUpTo }
+            : cur));
         }
       } catch { /* شبکهٔ قطع نباید چیزی را بشکند؛ تیکِ بعدی دوباره تلاش می‌کند. */ }
     };
@@ -260,31 +298,35 @@ export function MessagesView({
           <EmptyState title={tr("هنوز پیامی ندارید.")} />
         ) : (
           <ul className="grid gap-1">
-            {inbox.map((t) => (
-              <li key={t.id}>
-                <button
-                  type="button"
-                  onClick={() => setOpenId(t.id)}
-                  className={`w-full rounded-md border p-3 text-start transition-colors hover:bg-muted/50 ${
-                    openId === t.id ? 'border-primary bg-muted/40' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium">
-                      {t.counterparts.map((c) => c.name).join('، ') || '—'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      {!t.allowReply && (
-                        <Megaphone className="size-3.5 text-muted-foreground" aria-label={tr("اعلان یک‌طرفه")} />
-                      )}
-                      {t.unread > 0 && <Badge className="num">{t.unread}</Badge>}
-                    </span>
-                  </div>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{t.lastBody}</p>
-                  <p className="num mt-0.5 text-[11px] text-muted-foreground">{when(t.lastAt, tz)}</p>
-                </button>
+            {/*
+              ⚠️ R-MSG-01 — گفتگوهای یک ارسالِ همگانی در صندوقِ **فرستنده** یک
+              آکاردئون‌اند (شمار، جمعِ خوانده‌نشده، ردیف‌های فرزند)؛ گیرنده هر
+              کدام را جدا و بی‌خبر از بقیه می‌بیند. قاعده در `groupInbox`.
+            */}
+            {groupInbox(inbox).map((entry) => (entry.kind === 'single' ? (
+              <li key={entry.thread.id}>
+                <InboxRowButton row={entry.thread} open={openId === entry.thread.id} onOpen={setOpenId} tz={tz} />
               </li>
-            ))}
+            ) : (
+              <li key={`g${entry.broadcastId}`}>
+                <details className="rounded-md border" open={entry.threads.some((t) => t.id === openId)}>
+                  <summary className="flex cursor-pointer items-center justify-between gap-2 p-3 text-sm font-medium">
+                    <span className="flex items-center gap-1.5">
+                      <Megaphone className="size-3.5 text-muted-foreground" />
+                      {tr('ارسالِ همگانی به {n} نفر', { n: entry.threads.length })}
+                    </span>
+                    {entry.unread > 0 && <Badge className="num">{entry.unread}</Badge>}
+                  </summary>
+                  <ul className="grid gap-1 border-t p-1">
+                    {entry.threads.map((t) => (
+                      <li key={t.id}>
+                        <InboxRowButton row={t} open={openId === t.id} onOpen={setOpenId} tz={tz} />
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </li>
+            )))}
           </ul>
         )}
       </section>
@@ -295,35 +337,68 @@ export function MessagesView({
           <EmptyState title={tr("گفتگویی انتخاب نشده")} description={tr("از فهرستِ کنار یکی را باز کنید.")} />
         ) : (
           <>
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">{tr("گفتگو")}</h2>
+            <div className="flex items-center justify-between gap-2">
+              {/* سربرگ: طرفِ مقابل (ماسک‌شده) + نشانِ اعلانِ یک‌طرفه — پورتِ `chat.php`. */}
+              <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+                <span className="truncate">{thread.thread.label || tr("گفتگو")}</span>
+                {!thread.thread.allowReply && (
+                  <Badge variant="outline" className="shrink-0 font-normal">{tr("اعلان یک‌طرفه")}</Badge>
+                )}
+              </h2>
+              {/*
+                ⚠️ دو معنا، دو دکمه (R-MSG-11): سازنده/مدیر گفتگو را برای **همه**
+                حذف می‌کند؛ گیرندهٔ عادی فقط از صندوقِ **خودش** کنار می‌گذارد و
+                رشته برای بقیه می‌ماند.
+              */}
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-destructive hover:text-destructive"
+                className="shrink-0 text-destructive hover:text-destructive"
                 disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
-                    const result = await leaveThreadAction(thread.thread.id);
+                    const result = thread.thread.canDelete
+                      ? await deleteThreadAction(thread.thread.id)
+                      : await leaveThreadAction(thread.thread.id);
                     if (result.error) show(tr(result.error), 'error');
                     else { setOpenId(null); show(tr('گفتگو حذف شد.'), 'success'); }
                   })
                 }
               >
                 <Trash2 className="size-3.5" />
-                {tr("حذف گفتگو")}
+                {thread.thread.canDelete ? tr("حذف گفتگو") : tr("حذف از صندوق")}
               </Button>
             </div>
 
             <ul className="grid gap-2">
-              {thread.messages.map((m) => (
-                <li key={m.id} className="rounded-md border p-3">
-                  <p className="text-sm whitespace-pre-wrap">{m.body}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {m.fromName ?? '—'} · <span className="num">{when(m.createdAt, tz)}</span>
-                  </p>
-                </li>
-              ))}
+              {/*
+                پیام‌های خودم سمتِ دیگر و پررنگ؛ نامِ نویسنده فقط روی پیامِ دیگران.
+                تیکِ ✓/✓✓ (R-MSG-07): ✓✓ وقتی **همهٔ** طرف‌های دیگر به آن رسیده‌اند —
+                و مثلِ نسخهٔ قبلی فقط برای مدیران نمایش داده می‌شود.
+              */}
+              {thread.messages.map((m) => {
+                const mine = m.fromUserId === viewerId;
+                return (
+                  <li
+                    key={m.id}
+                    className={`rounded-md border p-3 ${mine ? 'ms-8 bg-primary/5' : 'me-8'}`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{m.body}</p>
+                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                      {!mine && <>{m.fromName ?? '—'} · </>}
+                      <span className="num">{when(m.createdAt, tz)}</span>
+                      {mine && thread.thread.showReceipts && (
+                        <span
+                          className="num"
+                          title={m.id <= thread.readUpTo ? tr('خوانده شد') : tr('تحویل شد')}
+                        >
+                          {m.id <= thread.readUpTo ? '✓✓' : '✓'}
+                        </span>
+                      )}
+                    </p>
+                  </li>
+                );
+              })}
             </ul>
 
             {thread.canReply ? (
@@ -445,13 +520,16 @@ export function MessagesView({
                         className="size-4 accent-primary"
                       />
                       {r.name}
+                      <span className="text-xs text-muted-foreground">
+                        ({r.role === 'client' ? tr('کارفرما') : tr('عضو')})
+                      </span>
                     </label>
                   ))}
                   {shownRecipients.length === 0 && (
                     <p className="text-xs text-muted-foreground">
                       {recipients.length === 0
-                        ? 'مخاطبی برای ارسال نیست.'
-                        : 'با این فیلتر کسی پیدا نشد.'}
+                        ? tr('مخاطبی برای ارسال نیست.')
+                        : tr('با این فیلتر کسی پیدا نشد.')}
                     </p>
                   )}
                 </div>

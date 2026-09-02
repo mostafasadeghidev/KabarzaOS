@@ -87,6 +87,14 @@ export interface Recipient {
   userId: number;
   /** عضوِ off-board شده — R-NOTIF-02. */
   isInactive: boolean;
+  /**
+   * عضوِ سابقِ «فقط مالی» — فقط رویدادهای **مالی** را می‌گیرد.
+   *
+   * ⚠️ نسخهٔ قبلی هر حالتِ غیرِ فعال را در همان دروازه می‌انداخت. اینجا
+   * تسویه‌نشده‌اش را هنوز می‌بیند، پس خبرِ پرداختش باید برسد؛ ولی تسک،
+   * کامنت، جلسه و پیامِ تیم دیگر مالِ او نیست — پیش از این همه را می‌گرفت.
+   */
+  financeOnly?: boolean;
   /** دسته‌هایی که کاربر ایمیلشان را خاموش کرده. */
   mutedEmailCategories?: readonly NotifyCategory[];
   hasEmail: boolean;
@@ -114,6 +122,7 @@ export function planDelivery(type: string, recipients: Recipient[]): DeliveryPla
 
   return recipients
     .filter((r) => !r.isInactive)
+    .filter((r) => !r.financeOnly || category === 'money')
     .map((r) => ({
       userId: r.userId,
       inApp: true,

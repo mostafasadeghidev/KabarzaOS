@@ -2,6 +2,36 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.30.0]
+
+### Added — meetings, messaging and notifications (parity with the plugin)
+
+- **Project managers and office managers can create meetings.** Creating a meeting required the staff-only `meetings.manage` permission, which no member has. A project meeting now needs management of that project (global, project manager by role tag, or manager of its office); a general meeting is open to owners/meeting staff for any office and to office managers for their own offices only, with the invitee pool scoped accordingly. Editing and deleting are allowed to the creator, a manager of the meeting's project, or global staff. The form lists only the projects and offices the person may use, and a creator who did not invite themself still sees their own meeting.
+- **Attendee names are masked on meeting cards** the way they are on project pages: a client sees team members by role only, a member sees the client as "client", the owner sees everyone.
+- **A meeting keeps its kind and project after creation.** Editing changes title, time, location, description and attendees only; the form shows the locked fields.
+- **Manager identities are masked in messaging.** Members and clients see "Management" instead of a manager's real name in the inbox, the conversation header, message authors and notification titles; every manager in a conversation folds into one label. Anyone who can send on behalf of the organisation (owner, admin, staff with the send permission) counts as management.
+- **Broadcast conversations are grouped in the sender's inbox** (count, unread total, child rows); recipients still see their own private conversation only.
+- **Read receipts** (✓ delivered / ✓✓ read by every other participant) are shown to managers on their own messages, and stay live through the chat poll.
+- **Deleting a conversation** is now two things, like the plugin: the creator or a manager deletes it for everyone; a recipient only removes it from their own inbox. Both also remove the bell notification of that conversation.
+- **Recipient pickers list active members and clients only**, with their role; owners, admins and former members (including "finance only") are not offered, and broadcasts skip former members.
+- **Clients added to a project are notified**, and the card's quick-add sends the same "added to project" notice as the members form. The member notice names the role ("as a member with role (Developer)").
+- **Tender announcements are sent per role**, naming the role, so a member holding two opened roles gets two clear notices.
+- **The daily report goes to every owner and admin with Telegram on**, chunked at 3,900 characters on line boundaries; long reports no longer fail silently. Telegram and Discord calls time out after 15 seconds.
+- **A system time zone setting** (Settings → System) drives the daily report send time and the meeting reminders; it falls back to the `APP_TIMEZONE` environment variable.
+
+### Fixed
+
+- **Reading a conversation now clears its bell notification**; "new message" stayed unread after the conversation had been read.
+- **Replies are no longer rate-limited.** The 30-second cooldown applies to new sends only, as in the plugin.
+- **The inbox orders by latest activity**, so a conversation with a fresh reply rises to the top.
+- **The daily-report gate compared the local hour with UTC minutes**, firing up to 30 minutes early or late in half-hour zones.
+- **"Meeting soon" reminders reach the creator too, carry time and location, and tolerate a missed tick** (30-minute grace), instead of never firing once the start slipped past.
+- **Personal reminders show the due time and the lead label** and link to the reminders tab; the timer reminder shows hours and minutes.
+- **Former members in the "finance only" state receive money notifications only** — no task, comment, meeting or message alerts — and are never nudged to log hours.
+- **Reconnecting Telegram turns the channel back on** for a user who had switched it off.
+
+---
+
 ## [1.29.0]
 
 ### Changed — translations

@@ -83,9 +83,11 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
 
   const recipients: Recipient[] = rows.map((r) => ({
     userId: r.userId,
-    // R-NOTIF-02 — «قطع‌شده» و حذف‌شده هیچ اعلانی نمی‌گیرند. «فقط مالی» می‌گیرد،
-    // چون هنوز به صورت‌حسابِ خودش دسترسی دارد.
+    // R-NOTIF-02 — «قطع‌شده» و حذف‌شده هیچ اعلانی نمی‌گیرند. «فقط مالی» تنها
+    // رویدادهای مالی را می‌گیرد — هنوز صورت‌حسابِ خودش را می‌بیند، ولی تسک و
+    // کامنت و پیامِ تیم دیگر مالِ او نیست (نسخهٔ قبلی هیچ‌کدام را نمی‌داد).
     isInactive: r.memberState === 'locked' || r.deletedAt !== null,
+    financeOnly: r.memberState === 'finance',
     // ⚠️ خاموش‌کردنِ کانال **پیش از** فیلترِ دسته می‌آید؛ کاربری که کلِ ایمیل
     // را خاموش کرده نباید با دستهٔ `other` دوباره ایمیل بگیرد.
     hasEmail: !r.notifyEmailOff && addressOf(r) !== '',
@@ -174,6 +176,8 @@ async function sendTelegram(chatId: string, text: string): Promise<void> {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+    // ⚠️ تلگرامِ گیرکرده نباید درخواستی را که اعلان را راه انداخته نگه دارد (نسخهٔ قبلی: ۱۵ ثانیه).
+    signal: AbortSignal.timeout(15_000),
   });
 }
 

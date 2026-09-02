@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
-  compose, contactManagement, leaveThread, openThread, RateLimitedError, reply,
+  compose, contactManagement, deleteThread, leaveThread, openThread, RateLimitedError, reply,
   resolveAudience, ThreadNotFoundError,
 } from '@/server/messaging/service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -31,6 +31,7 @@ async function explain(error: unknown, fallback: string): Promise<string> {
     if (error.message === 'message.no_recipients') return 'مخاطبی برای ارسال نیست.';
     if (error.message === 'thread.no_reply') return 'این یک اعلانِ یک‌طرفه است و امکان پاسخ ندارد.';
     if (error.message === 'messages.broadcast') return 'ارسالِ همگانی فقط از مدیر ممکن است.';
+    if (error.message === 'thread.delete') return 'فقط سازندهٔ گفتگو یا مدیر می‌تواند آن را حذف کند.';
     return 'اجازهٔ ارسالِ پیام ندارید.';
   }
   return fallback;
@@ -104,6 +105,18 @@ export async function leaveThreadAction(threadId: number): Promise<MessageState>
   try {
     const actor = await requireActor();
     await leaveThread(actor, threadId);
+    revalidatePath('/messages');
+    return { ok: true };
+  } catch (error) {
+    return { error: await explain(error, 'گفتگو حذف نشد.') };
+  }
+}
+
+/** حذفِ کلِ گفتگو برای همه — سازنده یا مدیر (R-MSG-11). */
+export async function deleteThreadAction(threadId: number): Promise<MessageState> {
+  try {
+    const actor = await requireActor();
+    await deleteThread(actor, threadId);
     revalidatePath('/messages');
     return { ok: true };
   } catch (error) {

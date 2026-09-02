@@ -178,7 +178,9 @@ export async function completeTelegramLink(token: string, chatId: string): Promi
   if (!user) return false;
 
   await db.update(users)
-    .set({ telegramChatId: chatId, telegramLinkToken: null, updatedAt: new Date() })
+    // ⚠️ اتصالِ دوباره کانال را روشن می‌کند: کسی که خاموش کرده، قطع کرده و دوباره
+    // وصل می‌کند انتظار دارد پیام بگیرد — نسخهٔ قبلی هم `telegram_off` را پاک می‌کرد.
+    .set({ telegramChatId: chatId, telegramLinkToken: null, telegramOff: false, updatedAt: new Date() })
     .where(eq(users.id, user.id));
   return true;
 }

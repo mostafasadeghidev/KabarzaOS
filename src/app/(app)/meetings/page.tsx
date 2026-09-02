@@ -7,7 +7,11 @@ import { MeetingsView } from './meetings-view';
 import { primeTranslations, t } from '@/i18n/server';
 
 /** جلسات — دو تبِ `Meetings_Page`: «جلسات» و «یادآورهای من». */
-export default async function MeetingsPage() {
+export default async function MeetingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
    * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
@@ -19,6 +23,8 @@ export default async function MeetingsPage() {
 
   const actor = await currentActor();
   if (!actor) redirect('/login');
+  // لینکِ اعلانِ یادآور به `/meetings?tab=reminders` می‌رسد — تبِ یادآورها باز شود.
+  const { tab } = await searchParams;
 
   let data;
   try {
@@ -54,6 +60,8 @@ export default async function MeetingsPage() {
         reminders={reminders}
         options={options}
         canManage={data.canManage}
+        canCreateGeneral={data.canCreateGeneral}
+        initialTab={tab === 'reminders' ? 'reminders' : 'meetings'}
       />
     </main>
   );

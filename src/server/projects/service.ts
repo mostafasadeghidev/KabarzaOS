@@ -215,6 +215,38 @@ async function audit(actor: Actor, action: string, objectId: number, before?: un
  * به‌روزرسانیِ اعضا — diff-محور (R-PROJ-08/09/11).
  * فهرستِ `newlyAdded` برمی‌گردد تا لایهٔ بالاتر فقط به آن‌ها اعلان بدهد.
  */
+/** نامِ تگ‌ها به زبانِ درخواست — برای بدنهٔ اعلان. */
+async function roleNamesOf(ids: number[]): Promise<Map<number, string>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db.select({ id: tags.id, name: tagName(await currentLocale()) })
+    .from(tags).where(inArray(tags.id, ids));
+  return new Map(rows.map((r) => [r.id, r.name ?? '']));
+}
+
+/**
+ * اعلانِ «به پروژه اضافه شدید» — عضو با/بی نقش، یا کارفرما (پورتِ
+ * `Notifications::project_signed()`). پیش از این بدنه فقط نامِ پروژه بود و
+ * کارفرما اصلاً خبردار نمی‌شد.
+ */
+function signedNotice(
+  projectId: number,
+  projectTitle: string,
+  who: { client: true } | { client: false; role: string },
+) {
+  const body = who.client
+    ? 'شما به‌عنوان کارفرما به پروژهٔ «{project}» اضافه شدید.'
+    : who.role
+      ? 'شما به‌عنوان عضو با نقش ({role}) به پروژهٔ «{project}» اضافه شدید.'
+      : 'شما به‌عنوان عضو به پروژهٔ «{project}» اضافه شدید.';
+  return {
+    type: 'project.signed',
+    title: 'به پروژه اضافه شدید: {project}',
+    body,
+    params: { project: projectTitle, role: who.client ? '' : who.role },
+    url: `/projects/${projectId}`,
+  };
+}
+
 export async function setMembers(actor: Actor, projectId: number, desired: MemberInput[]) {
   await getProject(actor, projectId); // گاردِ scope
   await assertCanManageProject(actor, projectId);
@@ -277,12 +309,16 @@ export async function setMembers(actor: Actor, projectId: number, desired: Membe
   )];
   if (freshIds.length > 0) {
     const project = await repo.getProject(projectId);
-    await notify(freshIds, {
-      type: 'project.signed',
-      title: 'به یک پروژه اضافه شدید',
-      body: `«${project?.title ?? ''}»`,
-      url: `/projects/${projectId}`,
-    });
+    // نقشِ هر تازه‌وارد در بدنه می‌آید — «با نقش (دولوپر)».
+    const roleOfFresh = new Map<number, number | null>();
+    for (const m of diff.toInsert) if (!roleOfFresh.has(m.userId)) roleOfFresh.set(m.userId, m.roleTagId);
+    const roleNames = await roleNamesOf(
+      [...new Set([...roleOfFresh.values()].filter((id): id is number => id !== null))],
+    );
+    for (const userId of freshIds) {
+      const role = roleNames.get(roleOfFresh.get(userId) ?? -1) ?? '';
+      await notify([userId], signedNotice(projectId, project?.title ?? '', { client: false, role }));
+    }
   }
 
   /**
@@ -549,22 +585,26 @@ async function saveTenderRoles(
   }).where(eq(projects.id, projectId));
 
   if (plan.newlyAnnounced.length > 0) {
-    // فقط دارندگانِ نقش‌های تازه خبر می‌شوند.
-    const holders = await db
-      .selectDistinct({ userId: tagRelations.objectId })
-      .from(tagRelations)
-      .where(and(
-        eq(tagRelations.objectType, 'user'),
-        inArray(tagRelations.tagId, plan.newlyAnnounced),
-      ));
-
-    if (holders.length > 0) {
-      const project = await db.select({ title: projects.title })
-        .from(projects).where(eq(projects.id, projectId));
-      await notify(holders.map((h) => h.userId), {
+    // فقط دارندگانِ نقش‌های تازه خبر می‌شوند — **یک پیام به‌ازای هر نقش** با نامِ
+    // همان نقش (پورتِ `tender_new()`): کسی که دو نقشِ بازشده دارد دو خبرِ روشن می‌گیرد.
+    const [holders, project, roleNames] = await Promise.all([
+      db.selectDistinct({ userId: tagRelations.objectId, tagId: tagRelations.tagId })
+        .from(tagRelations)
+        .where(and(
+          eq(tagRelations.objectType, 'user'),
+          inArray(tagRelations.tagId, plan.newlyAnnounced),
+        )),
+      db.select({ title: projects.title }).from(projects).where(eq(projects.id, projectId)),
+      roleNamesOf(plan.newlyAnnounced),
+    ]);
+    for (const tagId of plan.newlyAnnounced) {
+      const userIds = holders.filter((h) => h.tagId === tagId).map((h) => h.userId);
+      if (userIds.length === 0) continue;
+      await notify(userIds, {
         type: 'tender_opened',
-        title: 'مناقصهٔ باز برای نقشِ شما',
-        body: project[0]?.title ?? '',
+        title: 'مناقصهٔ باز برای نقشِ شما: {role}',
+        body: 'نقشِ «{role}» در پروژهٔ «{project}» به مناقصه گذاشته شد.',
+        params: { role: roleNames.get(tagId) ?? '', project: project[0]?.title ?? '' },
         url: `/projects/${projectId}`,
       });
     }
@@ -821,6 +861,13 @@ export async function addProjectMember(
   }
 
   await audit(actor, 'member.add', projectId, null, { ...input, plan: plan.action });
+
+  // تازه‌وارد (پیش از این در هیچ نقشی نبود) خبردار می‌شود — همان قاعدهٔ `setMembers`.
+  if (plan.action !== 'raise' && input.userId !== actor.id
+    && !existing.some((m) => m.userId === input.userId)) {
+    const role = plan.roleTagId ? ((await roleNamesOf([plan.roleTagId])).get(plan.roleTagId) ?? '') : '';
+    await notify([input.userId], signedNotice(projectId, project.title, { client: false, role }));
+  }
   return plan;
 }
 
@@ -830,7 +877,7 @@ export async function addProjectMember(
  * می‌شود تا کاربر خطای دیتابیس نبیند.
  */
 export async function addProjectClient(actor: Actor, projectId: number, userId: number) {
-  await getProject(actor, projectId); // گاردِ scope
+  const project = await getProject(actor, projectId); // گاردِ scope
   await assertCanManageProject(actor, projectId);
 
   const existing = await repo.listClientIds(projectId);
@@ -838,6 +885,11 @@ export async function addProjectClient(actor: Actor, projectId: number, userId: 
 
   await db.insert(projectClients).values({ projectId, userId });
   await audit(actor, 'client.add', projectId, null, { userId });
+
+  // «شما به‌عنوان کارفرما به پروژهٔ … اضافه شدید» — پیش از این کارفرما هیچ خبری نمی‌گرفت.
+  if (userId !== actor.id) {
+    await notify([userId], signedNotice(projectId, project.title, { client: true }));
+  }
 }
 
 /** وضعیت‌های پروژه — چیپِ کارت برای همه لازمش دارد، حتی کاربرِ خواندنی. */

@@ -10,14 +10,14 @@ describe('ساعتِ محلی', () => {
 
   it('⚠️ ساعت و تاریخ در منطقهٔ خودِ کاربر حساب می‌شوند', () => {
     // «ساعتِ ۲۲» برای برلین و تهران یکی نیست.
-    expect(localParts(at, 'Europe/Berlin')).toEqual({ date: '2026-05-15', hour: 22 });
+    expect(localParts(at, 'Europe/Berlin')).toMatchObject({ date: '2026-05-15', hour: 22 });
     expect(localParts(at, 'Asia/Tehran').date).toBe('2026-05-16');
   });
 
   it('منطقهٔ نامعتبر به UTC برمی‌گردد، نه استثنا', () => {
     // یک منطقهٔ خراب نباید کلِ تیک را بخواباند.
-    expect(localParts(at, 'Mars/Olympus')).toEqual({ date: '2026-05-15', hour: 20 });
-    expect(localParts(at, '')).toEqual({ date: '2026-05-15', hour: 20 });
+    expect(localParts(at, 'Mars/Olympus')).toMatchObject({ date: '2026-05-15', hour: 20 });
+    expect(localParts(at, '')).toMatchObject({ date: '2026-05-15', hour: 20 });
   });
 
   it('نیمه‌شب ساعتِ صفر است، نه ۲۴', () => {

@@ -131,6 +131,38 @@ export function buildReport(input: {
  */
 export const DISCORD_LIMIT = 2000;
 
+/** سقفِ تلگرام ۴۰۹۶ نویسه است؛ همان حاشیهٔ نسخهٔ قبلی. */
+export const TELEGRAM_CHUNK = 3900;
+
+/**
+ * بریدنِ متن به تکه‌های حداکثر `max` نویسه‌ای روی مرزِ خط — پورتِ
+ * `Daily_Report::chunk()`.
+ *
+ * ⚠️ بدونِ این، گزارشِ بلند به تلگرام **بی‌صدا** نمی‌رسید: API با ۴۰۰ رد
+ * می‌کند و کرون خطا را می‌بلعد. خطِ تکیِ بلندتر از سقف هم سخت بریده می‌شود
+ * تا هیچ حالتی حلقهٔ بی‌پایان یا تکهٔ بزرگ نسازد.
+ */
+export function chunkText(text: string, max = TELEGRAM_CHUNK): string[] {
+  if (text.length <= max) return [text];
+  const out: string[] = [];
+  let buf = '';
+  for (const rawLine of text.split('\n')) {
+    let line = rawLine;
+    while (line.length > max) {
+      if (buf !== '') { out.push(buf); buf = ''; }
+      out.push(line.slice(0, max));
+      line = line.slice(max);
+    }
+    if (buf !== '' && buf.length + line.length + 1 > max) {
+      out.push(buf);
+      buf = '';
+    }
+    buf += (buf === '' ? '' : '\n') + line;
+  }
+  if (buf !== '') out.push(buf);
+  return out;
+}
+
 export function fitForDiscord(text: string): string {
   if (text.length <= DISCORD_LIMIT) return text;
   const suffix = '\n… (بریده شد)';

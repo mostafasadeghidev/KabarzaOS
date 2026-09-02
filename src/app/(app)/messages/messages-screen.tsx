@@ -72,6 +72,7 @@ export async function MessagesScreen({ threadId = null }: { threadId?: number | 
         poll={{ enabled: system.chatPollEnabled, seconds: system.chatPollInterval }}
         canBroadcast={canBroadcast}
         initialThreadId={threadId}
+        viewerId={actor.id}
       />
     </main>
   );

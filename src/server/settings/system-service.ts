@@ -22,13 +22,18 @@ export async function getSystemConfig(): Promise<SystemConfig> {
   const rows = await db.select({ value: schedulerStamps.value })
     .from(schedulerStamps).where(eq(schedulerStamps.key, KEY));
 
-  if (!rows[0]) return DEFAULT_SYSTEM;
+  if (!rows[0]) return withEnvZone(DEFAULT_SYSTEM);
   try {
-    return normalizeSystem(JSON.parse(rows[0].value) as Record<string, unknown>);
+    return withEnvZone(normalizeSystem(JSON.parse(rows[0].value) as Record<string, unknown>));
   } catch {
     // ⚠️ پیکربندیِ خراب نباید اپ را بخواباند.
-    return DEFAULT_SYSTEM;
+    return withEnvZone(DEFAULT_SYSTEM);
   }
+}
+
+/** منطقهٔ زمانیِ خالی → مقدارِ محیط (`APP_TIMEZONE`)؛ در نبودش خالی می‌ماند (= UTC). */
+function withEnvZone(config: SystemConfig): SystemConfig {
+  return config.timezone ? config : { ...config, timezone: process.env.APP_TIMEZONE ?? '' };
 }
 
 export async function saveSystemConfig(

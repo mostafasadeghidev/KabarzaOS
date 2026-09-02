@@ -22,6 +22,8 @@ export interface MeetingRow extends MeetingView {
   projectTitle: string | null;
   officeName: string | null;
   meetingScope: 'project' | 'general';
+  /** سازنده، مدیرِ پروژه‌اش، یا مدیرِ سراسری — از سرور. */
+  canEdit: boolean;
 }
 
 export interface ReminderRow {
@@ -52,17 +54,23 @@ export function MeetingsView({
   reminders,
   options,
   canManage,
+  canCreateGeneral,
+  initialTab = 'meetings',
 }: {
   meetings: MeetingRow[];
   reminders: ReminderRow[];
   options: MeetingFormOptions;
+  /** می‌تواند جلسه‌ای بسازد (سراسری، مدیرِ پروژه یا مدیرِ دفتر). */
   canManage: boolean;
+  /** جلسهٔ عمومی (بدونِ پروژه) — فقط مالک/مدیرِ بخش و مدیرِ دفتر. */
+  canCreateGeneral: boolean;
+  initialTab?: 'meetings' | 'reminders';
 }) {
   const tr = useT();
   const tz = useTimeZone();
   const { show } = useToast();
   const t = useT();
-  const [tab, setTab] = useState<'meetings' | 'reminders'>('meetings');
+  const [tab, setTab] = useState<'meetings' | 'reminders'>(initialTab);
   const [editing, setEditing] = useState<MeetingView | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -151,7 +159,7 @@ export function MeetingsView({
                     </Button>
                   </div>
 
-                  {canManage && (
+                  {m.canEdit && (
                     <div className="flex justify-end gap-1">
                       <Button
                         size="sm"
@@ -262,6 +270,7 @@ export function MeetingsView({
           onOpenChange={setFormOpen}
           meeting={editing}
           options={options}
+        canCreateGeneral={canCreateGeneral}
         />
       )}
     </div>

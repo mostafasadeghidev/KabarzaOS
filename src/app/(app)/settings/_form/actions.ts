@@ -255,6 +255,7 @@ export async function saveSystemAction(
       brandName: formData.get('brandName'),
       defaultLocale: formData.get('defaultLocale'),
       weekStart: formData.get('weekStart'),
+      timezone: formData.get('timezone'),
       presenceEnabled: formData.get('presenceEnabled') !== null,
       presencePing: formData.get('presencePing'),
       presenceIdle: formData.get('presenceIdle'),

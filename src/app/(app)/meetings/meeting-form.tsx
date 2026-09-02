@@ -61,12 +61,15 @@ export function MeetingForm({
   onOpenChange,
   meeting,
   options,
+  canCreateGeneral = true,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** null یعنی جلسهٔ نو. */
   meeting: MeetingView | null;
   options: MeetingFormOptions;
+  /** جلسهٔ عمومی فقط برای مالک/مدیرِ بخش و مدیرِ دفتر. */
+  canCreateGeneral?: boolean;
 }) {
   const tr = useT();
   const t = useT();
@@ -141,15 +144,25 @@ export function MeetingForm({
 
           <div className="grid gap-1.5">
             <Label htmlFor="m-kind">{t("نوع جلسه")}</Label>
+            {/* ⚠️ نوع و پروژه/دفتر پس از ساخت عوض نمی‌شوند (پورتِ `Meetings::update()`) —
+                سرور هم آن‌ها را نادیده می‌گیرد؛ اینجا فقط قفل نشان داده می‌شود. */}
             <select
               id="m-kind"
               className={cellSelect}
               value={kind}
+              disabled={isEdit}
               onChange={(e) => setKind(e.target.value as 'project' | 'general')}
             >
               <option value="project">{t("مرتبط با پروژه")}</option>
-              <option value="general">{t("عمومی / تیمی (بدون پروژه)")}</option>
+              {(canCreateGeneral || kind === 'general') && (
+                <option value="general">{t("عمومی / تیمی (بدون پروژه)")}</option>
+              )}
             </select>
+            {isEdit && (
+              <p className="text-xs text-muted-foreground">
+                {tr("نوعِ جلسه و پروژه/دفترِ آن پس از ساخت تغییر نمی‌کند.")}
+              </p>
+            )}
           </div>
 
           {kind === 'project' ? (
@@ -170,6 +183,7 @@ export function MeetingForm({
                 }}
                 onChange={(next) => setProjectId(next.id ? String(next.id) : '')}
                 placeholder={t("نامِ پروژه را تایپ کنید…")}
+                disabled={isEdit}
               />
             </div>
           ) : (
@@ -180,6 +194,7 @@ export function MeetingForm({
                 name="officeId"
                 className={cellSelect}
                 value={officeId}
+                disabled={isEdit}
                 onChange={(e) => setOfficeId(e.target.value)}
               >
                 <option value="">{t("همهٔ دفاتر")}</option>

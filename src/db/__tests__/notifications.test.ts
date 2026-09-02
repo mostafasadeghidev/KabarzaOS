@@ -39,9 +39,14 @@ describe('R-NOTIF-02 — عضوِ قطع‌شده هیچ اعلانی نمی‌�
       .toHaveLength(1);
   });
 
-  it('⚠️ ولی «فقط مالی» اعلان می‌گیرد', async () => {
-    // هنوز به صورت‌حسابِ خودش دسترسی دارد، پس باید خبردار شود.
-    await service.notify([financeOnly], { type: 'payment.paid', title: 'پرداخت' });
+  it('⚠️ «فقط مالی» فقط رویدادِ مالی می‌گیرد — نه تسک و پیامِ تیم', async () => {
+    // هنوز به صورت‌حسابِ خودش دسترسی دارد، پس خبرِ پرداخت باید برسد؛ ولی کارِ
+    // تیم دیگر مالِ او نیست (نسخهٔ قبلی هیچ‌کدام را نمی‌داد).
+    await service.notify([financeOnly], { type: 'task.assigned', title: 'تسک' });
+    await service.notify([financeOnly], { type: 'message.received', title: 'پیام' });
+    expect(await db.select().from(notifications).where(eq(notifications.userId, financeOnly)))
+      .toHaveLength(0);
+    await service.notify([financeOnly], { type: 'payment.decided', title: 'پرداخت' });
     expect(await db.select().from(notifications).where(eq(notifications.userId, financeOnly)))
       .toHaveLength(1);
   });

@@ -44,14 +44,14 @@ export const RETENTION_DAYS = {
  * کسی که در برلین است با تهران یکی نیست. منطقهٔ نامعتبر به UTC برمی‌گردد،
  * نه اینکه استثنا بیندازد و کلِ تیک را بخواباند.
  */
-export function localParts(now: Date, timezone: string): { date: string; hour: number } {
+export function localParts(now: Date, timezone: string): { date: string; hour: number; minute: number } {
   const zone = timezone || 'UTC';
   let parts: Intl.DateTimeFormatPart[];
   try {
     parts = new Intl.DateTimeFormat('en-CA', {
       timeZone: zone,
       year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', hour12: false,
+      hour: '2-digit', minute: '2-digit', hour12: false,
     }).formatToParts(now);
   } catch {
     return localParts(now, 'UTC');
@@ -60,7 +60,10 @@ export function localParts(now: Date, timezone: string): { date: string; hour: n
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
   // ساعتِ ۲۴ در برخی محیط‌ها یعنی نیمه‌شب.
   const hour = Number(get('hour')) % 24;
-  return { date: `${get('year')}-${get('month')}-${get('day')}`, hour };
+  // ⚠️ دقیقه هم محلی است: گزارشِ روزانه پیش از این ساعتِ محلی را با دقیقهٔ
+  // UTC می‌چسباند و در منطقهٔ ‎+03:30 نیم ساعت جابه‌جا شلیک می‌کرد.
+  const minute = Number(get('minute')) % 60;
+  return { date: `${get('year')}-${get('month')}-${get('day')}`, hour, minute };
 }
 
 /** روزِ قبلِ یک تاریخِ `YYYY-MM-DD`. */

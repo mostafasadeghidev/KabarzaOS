@@ -38,6 +38,12 @@ export interface SystemConfig {
   defaultLocale: Locale;
   /** ۰ = شنبه … ۶ = جمعه. */
   weekStart: number;
+  /**
+   * منطقهٔ زمانیِ **سامانه** (IANA) — پورتِ منطقهٔ سایتِ نسخهٔ قبلی: ساعتِ
+   * ارسالِ گزارشِ روزانه و «امروز» ِ آن با همین سنجیده می‌شود. خالی یعنی
+   * مقدارِ محیط (`APP_TIMEZONE`) و در نبودش UTC.
+   */
+  timezone: string;
   /** حضورِ زنده روشن است؟ */
   presenceEnabled: boolean;
   presencePing: number;
@@ -55,6 +61,7 @@ export const DEFAULT_SYSTEM: SystemConfig = {
   brandName: '',
   defaultLocale: DEFAULT_LOCALE,
   weekStart: 0,
+  timezone: '',
   presenceEnabled: true,
   presencePing: PRESENCE_DEFAULTS.ping,
   presenceIdle: PRESENCE_DEFAULTS.idleAfter,
@@ -69,6 +76,13 @@ export const DEFAULT_SYSTEM: SystemConfig = {
 function fromChoices(value: unknown, choices: readonly number[], fallback: number): number {
   const n = Number(value);
   return choices.includes(n) ? n : fallback;
+}
+
+/** منطقهٔ نامعتبر ذخیره نمی‌شود — گزارشِ روزانه با منطقهٔ خراب هرگز شلیک نمی‌کرد. */
+function zone(value: unknown): string {
+  const v = String(value ?? '').trim();
+  if (v === '') return '';
+  try { new Intl.DateTimeFormat('en', { timeZone: v }); return v; } catch { return ''; }
 }
 
 function bool(value: unknown, fallback: boolean): boolean {
@@ -91,6 +105,7 @@ export function normalizeSystem(input: Partial<Record<keyof SystemConfig, unknow
       ? (String(input.defaultLocale) as Locale)
       : DEFAULT_SYSTEM.defaultLocale,
     weekStart: Number.isInteger(week) && week >= 0 && week <= 6 ? week : DEFAULT_SYSTEM.weekStart,
+    timezone: zone(input.timezone),
     presenceEnabled: bool(input.presenceEnabled, DEFAULT_SYSTEM.presenceEnabled),
     presencePing: fromChoices(input.presencePing, PING_CHOICES, DEFAULT_SYSTEM.presencePing),
     presenceIdle: fromChoices(input.presenceIdle, IDLE_CHOICES, DEFAULT_SYSTEM.presenceIdle),

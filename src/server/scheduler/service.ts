@@ -10,8 +10,8 @@ import {
   dueNudges, dueOffsets, elapsedFor, localParts, needsTimerReminder,
   previousDay, RETENTION_DAYS, retentionCutoff, shouldRunCleanup,
 } from '@/domain/scheduler/tick';
-import { canSignIn } from '@/domain/people/offboarding';
 import { runDailyReport } from './daily-report';
+import { formatDateTime } from '@/i18n/datetime';
 
 /**
  * تیکِ زمان‌بند — پورتِ `Core\.
@@ -52,6 +52,16 @@ export interface TickReport {
  * یادآورهای شخصی
  * ------------------------------------------------------------------ */
 
+/** کلیدِ بدنهٔ یادآور به‌ازای پیش‌آگاهی — هر گزینه کلیدِ خودش را دارد تا ترجمه‌پذیر بماند. */
+function reminderBody(lead: number): string {
+  // ⚠️ بدونِ شکستِ خط در کلید — استخراج‌گرِ ترجمه «\n» ِ کد را با خطِ واقعی جور نمی‌کند.
+  if (lead === 0) return '{body} — موعد: {when}';
+  if (lead === 10) return '{body} — موعد: {when} (۱۰ دقیقه قبل)';
+  if (lead === 60) return '{body} — موعد: {when} (۱ ساعت قبل)';
+  if (lead === 1440) return '{body} — موعد: {when} (۱ روز قبل)';
+  return '{body} — موعد: {when} ({n} دقیقه قبل)';
+}
+
 async function runReminders(now: Date): Promise<number> {
   const rows = await db
     .select({
@@ -61,8 +71,10 @@ async function runReminders(now: Date): Promise<number> {
       remindAt: reminders.remindAt,
       leadMinutes: reminders.leadMinutes,
       sentOffsets: reminders.sentOffsets,
+      timezone: users.timezone,
     })
     .from(reminders)
+    .leftJoin(users, eq(users.id, reminders.userId))
     .where(eq(reminders.isSent, false));
 
   let sent = 0;
@@ -75,9 +87,10 @@ async function runReminders(now: Date): Promise<number> {
         type: 'reminder',
         title: 'یادآور',
         // ⚠️ کلید + پارامتر، نه متنِ آماده — هر گیرنده به زبانِ خودش می‌گیرد.
-        body: lead > 0 ? '{body} — {n} دقیقه مانده' : row.body,
-        params: { body: row.body, n: lead },
-        url: '/meetings',
+        // بدنه: متن + «موعد: …» به وقتِ خودِ کاربر + برچسبِ پیش‌آگاهی (پورتِ `reminder_due()`).
+        body: reminderBody(lead),
+        params: { body: row.body, when: formatDateTime(row.remindAt, row.timezone || undefined), n: lead },
+        url: '/meetings?tab=reminders',
       });
       sent += 1;
     }
@@ -103,13 +116,21 @@ async function runReminders(now: Date): Promise<number> {
 
 async function runMeetingSoon(now: Date): Promise<number> {
   const soon = new Date(now.getTime() + 60 * 60_000);
+  // ⚠️ ۳۰ دقیقه مهلت زیرِ «اکنون» (پورتِ `due_soon()`): اگر تیکی از دست رفت و
+  // شروع کمی گذشت، دعوت‌شده باز هم — کمی دیر — خبردار می‌شود، نه هیچ‌وقت.
+  // `reminded` یک‌بار‌بودن را تضمین می‌کند.
+  const grace = new Date(now.getTime() - 30 * 60_000);
+  const timeZone = (await getSystemConfig()).timezone || undefined;
 
   const rows = await db
-    .select({ id: meetings.id, title: meetings.title, meetAt: meetings.meetAt })
+    .select({
+      id: meetings.id, title: meetings.title, meetAt: meetings.meetAt,
+      location: meetings.location, createdBy: meetings.createdBy,
+    })
     .from(meetings)
     .where(and(
       eq(meetings.reminded, false),
-      gte(meetings.meetAt, now),
+      gte(meetings.meetAt, grace),
       lte(meetings.meetAt, soon),
     ));
 
@@ -117,12 +138,16 @@ async function runMeetingSoon(now: Date): Promise<number> {
   for (const meeting of rows) {
     const attendees = await db.select({ userId: meetingAttendees.userId })
       .from(meetingAttendees).where(eq(meetingAttendees.meetingId, meeting.id));
+    // R-MEET-04 — سازنده هم یادآوری می‌گیرد؛ او هم باید حاضر شود.
+    const recipients = [...new Set([...attendees.map((a) => a.userId), meeting.createdBy])];
 
-    if (attendees.length > 0) {
-      await notify(attendees.map((a) => a.userId), {
+    if (recipients.length > 0) {
+      const location = meeting.location.trim();
+      await notify(recipients, {
         type: 'meeting_soon',
-        title: 'جلسه تا یک ساعتِ دیگر',
-        body: meeting.title,
+        title: 'یادآوری جلسه: {title}',
+        body: location ? 'زمان: {when} · مکان: {location}' : 'زمان: {when}',
+        params: { title: meeting.title, when: formatDateTime(meeting.meetAt, timeZone), location },
         url: '/meetings',
       });
       sent += 1;
@@ -158,8 +183,9 @@ async function runTimerWatch(now: Date): Promise<number> {
     await notify([timer.userId], {
       type: 'timer_running',
       title: 'تایمرِ کار روشن مانده',
-      body: '{n} ساعت است تایمرتان روشن است.',
-      params: { n: Math.floor(minutes / 60) },
+      // ساعت **و** دقیقه — پیش از این دقیقه‌ها دور ریخته می‌شد (`hس mد` ِ نسخهٔ قبلی).
+      body: 'تایمرتان {h} ساعت و {m} دقیقه است که روشن مانده.',
+      params: { h: Math.floor(minutes / 60), m: Math.floor(minutes % 60) },
       url: '/hours',
     });
     await db.update(workTimers).set({ remindedAt: now })
@@ -188,7 +214,9 @@ async function runTimelogNudges(now: Date): Promise<number> {
 
   let sent = 0;
   for (const member of members) {
-    if (!canSignIn(member.memberState, member.deletedAt !== null)) continue;
+    // ⚠️ «فعال» — نه «می‌تواند وارد شود»: عضوِ «فقط مالی» وارد می‌شود ولی دیگر
+    // ساعت نمی‌زند، پس «ساعتِ امروز را ثبت نکرده‌اید» برای او بی‌معناست.
+    if (member.memberState !== 'active' || member.deletedAt !== null) continue;
 
     const slots = await db.selectDistinct({ weekday: availabilitySlots.weekday })
       .from(availabilitySlots).where(eq(availabilitySlots.userId, member.id));

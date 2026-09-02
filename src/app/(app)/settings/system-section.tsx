@@ -10,6 +10,7 @@ import {
   CHATPOLL_CHOICES, MAX_PURGE_DAYS, PULSE_CHOICES, type SystemConfig,
 } from '@/domain/settings/system';
 import { IDLE_CHOICES, OFFLINE_CHOICES, PING_CHOICES } from '@/domain/people/presence';
+import { allTimezones } from '@/domain/people/profile';
 import { WEEKDAYS } from '@/domain/availability/weekly';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -165,6 +166,23 @@ export function SystemSection({ config, health, isOwner, telegram }: {
           </select>
           <p className="text-xs text-muted-foreground">
             {tr("جدولِ در دسترس‌بودن و نمای هفتگی از همین روز شروع می‌شوند.")}
+          </p>
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor="s-tz">{t("منطقهٔ زمانیِ سامانه")}</Label>
+          <select
+            id="s-tz"
+            name="timezone"
+            defaultValue={config.timezone}
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+          >
+            <option value="">{tr("پیش‌فرضِ سرور")}</option>
+            {allTimezones().map((zone) => (
+              <option key={zone} value={zone}>{zone}</option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            {tr("ساعتِ ارسالِ گزارشِ روزانه و یادآوریِ جلسات با همین منطقه سنجیده می‌شود.")}
           </p>
         </div>
       </div>

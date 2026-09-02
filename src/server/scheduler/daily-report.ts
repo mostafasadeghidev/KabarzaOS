@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, isNotNull, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
 import { getSystemConfig } from '@/server/settings/system-service';
 import type { Locale } from '@/i18n/config';
 import { loadMessages } from '@/i18n/server';
@@ -11,7 +11,7 @@ import {
   tags, tasks, timelogs, userRoles, users,
 } from '@/db/schema';
 import {
-  buildReport, DEFAULT_CONFIG, fitForDiscord, hasDestination, reportDate,
+  buildReport, chunkText, DEFAULT_CONFIG, fitForDiscord, hasDestination, reportDate,
   shouldSendNow, type ReportConfig, type ReportSections,
 } from '@/domain/scheduler/daily-report';
 import { hoursLabel } from '@/domain/timelogs/timer';
@@ -151,23 +151,40 @@ async function postToDiscord(webhook: string, text: string): Promise<void> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content: fitForDiscord(text) }),
+    signal: AbortSignal.timeout(15_000),
   });
 }
 
-async function sendToOwners(text: string): Promise<void> {
-  const owners = await db
+/**
+ * تلگرام → هر مدیری (مالک یا همکارِ ادمین) که چتی وصل کرده **و** کانالش روشن
+ * است — پورتِ `send_telegram_admins()`. متن روی مرزِ خط تکه می‌شود، وگرنه
+ * گزارشِ بلندتر از ۴۰۹۶ نویسه بی‌صدا رد می‌شد.
+ */
+async function sendToAdmins(text: string): Promise<void> {
+  const admins = await db
     .selectDistinct({ chatId: users.telegramChatId })
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
-    .where(and(eq(userRoles.role, 'owner'), isNotNull(users.telegramChatId)));
+    .where(and(
+      inArray(userRoles.role, ['owner', 'admin']),
+      isNull(users.deletedAt),
+      eq(users.telegramOff, false),
+      sql`${users.telegramChatId} <> ''`,
+    ));
 
-  for (const owner of owners) {
-    if (!owner.chatId) continue;
-    await fetch(`https://api.telegram.org/bot${await botToken()}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: owner.chatId, text }),
-    });
+  const token = await botToken();
+  const parts = chunkText(text);
+  for (const admin of admins) {
+    if (!admin.chatId) continue;
+    for (const part of parts) {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: admin.chatId, text: part }),
+        // ⚠️ تلگرامِ گیرکرده نباید تیک را نگه دارد (نسخهٔ قبلی: ۱۵ ثانیه).
+        signal: AbortSignal.timeout(15_000),
+      });
+    }
   }
 }
 
@@ -194,7 +211,7 @@ export async function dispatchReport(date: string): Promise<boolean> {
   }
   if (config.telegram && await botToken()) {
     try {
-      await sendToOwners(text);
+      await sendToAdmins(text);
     } catch (error) {
       console.error('[daily-report] telegram', error);
     }
@@ -209,8 +226,10 @@ export async function dispatchReport(date: string): Promise<boolean> {
  */
 export async function runDailyReport(now: Date): Promise<boolean> {
   const config = await getReportConfig();
-  const local = localParts(now, process.env.APP_TIMEZONE ?? 'UTC');
-  const localTime = `${String(local.hour).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`;
+  // ⚠️ منطقهٔ زمانیِ **سامانه** (تنظیمات؛ در نبودش APP_TIMEZONE) و دقیقهٔ **محلی**:
+  // پیش از این ساعتِ محلی با دقیقهٔ UTC می‌چسبید و در ‎+03:30 نیم ساعت خطا داشت.
+  const local = localParts(now, (await getSystemConfig()).timezone || 'UTC');
+  const localTime = `${String(local.hour).padStart(2, '0')}:${String(local.minute).padStart(2, '0')}`;
 
   const rows = await db.select({ value: schedulerStamps.value })
     .from(schedulerStamps).where(eq(schedulerStamps.key, SENT_KEY));

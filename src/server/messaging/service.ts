@@ -1,9 +1,10 @@
 import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { getSystemConfig } from '@/server/settings/system-service';
+import { getT } from '@/i18n/server';
 import { db } from '@/db/client';
 import {
   messages, notifications, offices, projectClients, projectMembers, projects, threads,
-  threadUsers, userOffices, userRoles, users,
+  threadUsers, userOffices, userPermissions, userRoles, users,
 } from '@/db/schema';
 import { can, type Actor, type Role } from '@/domain/access/permissions';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -11,13 +12,21 @@ import {
   canRead, canReply, cooldownRemaining, isRateLimited, planCompose,
   streamFingerprint, type Audience,
 } from '@/domain/messaging/threads';
-import { notify } from '@/server/notifications/service';
+import {
+  counterpartLabel, personLabel, readUpTo, type LabelContext,
+} from '@/domain/messaging/labels';
+import { markReadForTarget, notify } from '@/server/notifications/service';
 
 /**
  * سرویسِ پیام‌ها.
  *
  * ⚠️ صندوقِ پیام کاملاً شخصی است: هیچ کوئری‌ای «همهٔ گفتگوها» را نمی‌خواند؛
  * همیشه از `thread_users` ِ خودِ کاربر شروع می‌شود (R-MSG-02).
+ *
+ * ⚠️ R-MSG-03 — نامِ مدیران برای عضو/کارفرما **سمتِ سرور** به «مدیریت» ماسک
+ * می‌شود (صندوق، سربرگ، نامِ نویسندهٔ پیام، عنوانِ اعلان). «مدیر» یعنی هر
+ * کسی که به نامِ سازمان می‌فرستد: مالک، همکارِ ادمین، و کارمندی که مجوزِ
+ * ارسال دارد — همان `can_broadcast()` ِ نسخهٔ قبلی.
  */
 
 export class ThreadNotFoundError extends Error {
@@ -34,7 +43,6 @@ export class RateLimitedError extends Error {
   }
 }
 
-/** شناسهٔ مدیران — هم‌مالکیِ رشتهٔ همکار (R-MSG-N3). */
 /**
  * شناسهٔ **مالکان** — جدا از مدیران.
  * ⚠️ «مدیر» همکارِ ادمین را هم می‌گیرد؛ برای هم‌مالکیِ رشته فقط مالک لازم
@@ -49,6 +57,7 @@ async function ownerIds(): Promise<number[]> {
   return rows.map((r) => r.id);
 }
 
+/** مالک و ادمین — هم‌مالکیِ رشتهٔ همکار (R-MSG-N3). */
 async function managerIds(): Promise<number[]> {
   const rows = await db
     .selectDistinct({ id: users.id })
@@ -58,8 +67,43 @@ async function managerIds(): Promise<number[]> {
   return rows.map((r) => r.id);
 }
 
+/**
+ * «مدیریت» از دیدِ پیام‌رسان — مالک/ادمین **و** هر کسی که مجوزِ ارسال دارد:
+ * نامِ همهٔ این‌ها برای عضو/کارفرما ماسک می‌شود.
+ */
+async function managementIds(): Promise<Set<number>> {
+  const [roles, perms] = await Promise.all([
+    managerIds(),
+    db.select({ id: userPermissions.userId })
+      .from(userPermissions)
+      .where(eq(userPermissions.permission, 'messages.send')),
+  ]);
+  return new Set([...roles, ...perms.map((r) => r.id)]);
+}
+
 function isManager(actor: Actor): boolean {
   return actor.roles.includes('owner') || actor.roles.includes('admin');
+}
+
+/** بیننده خودش «مدیریت» است؟ — نامِ واقعیِ همه را می‌بیند. */
+function isManagement(actor: Actor): boolean {
+  return isManager(actor) || can(actor, 'messages.send');
+}
+
+async function labelContext(actor: Actor, userIds: Iterable<number>): Promise<LabelContext> {
+  const ids = [...new Set(userIds)];
+  const [names, mgmt] = await Promise.all([
+    ids.length > 0
+      ? db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, ids))
+      : [],
+    managementIds(),
+  ]);
+  return {
+    viewerId: actor.id,
+    viewerIsManager: isManagement(actor),
+    managerIds: mgmt,
+    names: new Map(names.map((n) => [n.id, n.name])),
+  };
 }
 
 /**
@@ -67,6 +111,9 @@ function isManager(actor: Actor): boolean {
  *
  * ⚠️ R-PERF-01 — سه کوئریِ ثابت، نه یکی به‌ازای هر رشته. در نسخهٔ قبلی همین
  * صفحه یک بار به‌خاطرِ کوئری‌های داخلِ حلقه بازنویسی شد.
+ *
+ * ⚠️ ترتیب: آخرین فعالیت (`updated_at` که با هر پاسخ جلو می‌رود)، نه شناسه —
+ * گفتگویی که جوابِ تازه گرفته باید بالا بیاید.
  */
 export async function listInbox(actor: Actor) {
   const myThreads = await db
@@ -80,7 +127,7 @@ export async function listInbox(actor: Actor) {
     .from(threadUsers)
     .innerJoin(threads, eq(threads.id, threadUsers.threadId))
     .where(eq(threadUsers.userId, actor.id))
-    .orderBy(desc(threads.id));
+    .orderBy(desc(threads.updatedAt), desc(threads.id));
 
   if (myThreads.length === 0) return { threads: [], canSend: can(actor, 'messages.send') };
   const ids = myThreads.map((t) => t.threadId);
@@ -89,9 +136,8 @@ export async function listInbox(actor: Actor) {
     // آخرین پیامِ هر رشته — یک کوئری با distinct on.
     db.execute(sql`
       select distinct on (m.thread_id)
-        m.thread_id, m.id, m.body, m.created_at, m.from_user_id, u.name as from_name
+        m.thread_id, m.id, m.body, m.created_at, m.from_user_id
       from messages m
-      left join users u on u.id = m.from_user_id
       where m.thread_id in ${sql.raw(`(${ids.join(',')})`)}
       order by m.thread_id, m.id desc
     `),
@@ -105,16 +151,14 @@ export async function listInbox(actor: Actor) {
       group by tu.thread_id
     `),
     db
-      .select({ threadId: threadUsers.threadId, userId: users.id, name: users.name })
+      .select({ threadId: threadUsers.threadId, userId: threadUsers.userId })
       .from(threadUsers)
-      .innerJoin(users, eq(users.id, threadUsers.userId))
       .where(inArray(threadUsers.threadId, ids)),
   ]);
 
   const last = new Map(
     (lastMessages as unknown as Array<{
-      thread_id: number; id: number; body: string; created_at: Date;
-      from_user_id: number; from_name: string | null;
+      thread_id: number; id: number; body: string; created_at: Date; from_user_id: number;
     }>).map((r) => [Number(r.thread_id), r]),
   );
   const unread = new Map(
@@ -122,47 +166,65 @@ export async function listInbox(actor: Actor) {
       .map((r) => [Number(r.thread_id), Number(r.unread)]),
   );
 
-  const others = new Map<number, Array<{ userId: number; name: string }>>();
+  const byThread = new Map<number, number[]>();
   for (const p of participants) {
-    if (p.userId === actor.id) continue; // «مخاطب» یعنی بقیه، نه خودم.
-    const list = others.get(p.threadId) ?? [];
-    list.push({ userId: p.userId, name: p.name });
-    others.set(p.threadId, list);
+    const list = byThread.get(p.threadId) ?? [];
+    list.push(p.userId);
+    byThread.set(p.threadId, list);
   }
 
+  const t = await getT();
+  const ctx = await labelContext(actor, [
+    ...participants.map((p) => p.userId),
+    ...[...last.values()].map((r) => Number(r.from_user_id)),
+  ]);
+
   return {
-    threads: myThreads.map((t) => ({
-      id: t.threadId,
-      allowReply: t.allowReply,
-      broadcastId: t.broadcastId,
-      isMine: t.creatorId === actor.id,
-      counterparts: others.get(t.threadId) ?? [],
-      lastBody: last.get(t.threadId)?.body ?? '',
-      lastAt: last.get(t.threadId)?.created_at ?? null,
-      lastFromName: last.get(t.threadId)?.from_name ?? null,
-      unread: unread.get(t.threadId) ?? 0,
-    })),
+    threads: myThreads.map((row) => {
+      const ids = byThread.get(row.threadId) ?? [];
+      const lastRow = last.get(row.threadId);
+      return {
+        id: row.threadId,
+        allowReply: row.allowReply,
+        broadcastId: row.broadcastId,
+        isMine: row.creatorId === actor.id,
+        // «مخاطب» یعنی بقیه، نه خودم — با نامِ ماسک‌شده.
+        counterparts: ids.filter((id) => id !== actor.id)
+          .map((userId) => ({ userId, name: personLabel(userId, ctx, t) })),
+        label: counterpartLabel(ids, ctx, t),
+        lastBody: lastRow?.body ?? '',
+        lastAt: lastRow?.created_at ?? null,
+        lastFromName: lastRow ? personLabel(Number(lastRow.from_user_id), ctx, t) : null,
+        unread: unread.get(row.threadId) ?? 0,
+      };
+    }),
     canSend: can(actor, 'messages.send'),
   };
 }
 
-/** یک گفتگو با پیام‌هایش — و علامت‌زدنِ خوانده‌شده. */
+/**
+ * یک گفتگو با پیام‌هایش — و علامت‌زدنِ خوانده‌شده.
+ *
+ * ⚠️ خواندنِ گفتگو اعلانِ زنگولهٔ همان گفتگو را هم خوانده می‌کند (R-NOTIF-08)؛
+ * پیش از این «پیامِ تازه» بعد از خواندنِ گفتگو هم روشن می‌ماند.
+ */
 export async function openThread(actor: Actor, threadId: number) {
   const thread = await loadThread(threadId);
   if (!canRead(thread, actor.id)) throw new ThreadNotFoundError();
 
-  const rows = await db
-    .select({
+  const [rows, states] = await Promise.all([
+    db.select({
       id: messages.id,
       body: messages.body,
       createdAt: messages.createdAt,
       fromUserId: messages.fromUserId,
-      fromName: users.name,
     })
-    .from(messages)
-    .leftJoin(users, eq(users.id, messages.fromUserId))
-    .where(eq(messages.threadId, threadId))
-    .orderBy(asc(messages.id));
+      .from(messages)
+      .where(eq(messages.threadId, threadId))
+      .orderBy(asc(messages.id)),
+    db.select({ userId: threadUsers.userId, lastReadMessageId: threadUsers.lastReadMessageId })
+      .from(threadUsers).where(eq(threadUsers.threadId, threadId)),
+  ]);
 
   // رسیدِ خواندن تا آخرین پیام جلو می‌رود.
   const lastId = rows.at(-1)?.id;
@@ -171,11 +233,26 @@ export async function openThread(actor: Actor, threadId: number) {
       .set({ lastReadMessageId: lastId, updatedAt: new Date() })
       .where(and(eq(threadUsers.threadId, threadId), eq(threadUsers.userId, actor.id)));
   }
+  await markReadForTarget(actor, '/messages', threadId);
+
+  const t = await getT();
+  const ctx = await labelContext(actor, [...thread.participantIds, ...rows.map((r) => r.fromUserId)]);
 
   return {
-    thread: { id: thread.id, allowReply: thread.allowReply, creatorId: thread.creatorId },
-    messages: rows,
+    thread: {
+      id: thread.id,
+      allowReply: thread.allowReply,
+      creatorId: thread.creatorId,
+      label: counterpartLabel(thread.participantIds, ctx, t),
+      /** حذفِ کلِ گفتگو: سازنده یا مدیر (R-MSG-11). */
+      canDelete: thread.creatorId === actor.id || isManager(actor),
+      /** تیکِ ✓✓ فقط برای مدیران — همان نمایشِ نسخهٔ قبلی. */
+      showReceipts: isManagement(actor),
+    },
+    messages: rows.map((m) => ({ ...m, fromName: personLabel(m.fromUserId, ctx, t) })),
     canReply: canReply(thread, actor.id),
+    /** تا این شناسه، همهٔ طرف‌های دیگر خوانده‌اند (R-MSG-07). */
+    readUpTo: readUpTo(states, actor.id),
   };
 }
 
@@ -195,7 +272,11 @@ async function loadThread(threadId: number) {
   };
 }
 
-/** گیرندگانِ ممکن — با مجوزِ ارسال، هر کاربرِ فعالِ دیگری. */
+/**
+ * گیرندگانِ ممکن — اعضا و کارفرمایانِ **فعال**، با نقش (پورتِ
+ * `pickable_recipients()`). عضوِ سابق (حتی «فقط مالی»)، مالک و همکاران در
+ * فهرست نیستند؛ راهِ رسیدن به مدیریت «پیام به مدیریت» است.
+ */
 export async function getRecipients(actor: Actor) {
   if (!can(actor, 'messages.send')) throw new ForbiddenError('messages.send');
   return db
@@ -203,8 +284,9 @@ export async function getRecipients(actor: Actor) {
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
     .where(and(
+      inArray(userRoles.role, ['member', 'client']),
       isNull(users.deletedAt),
-      sql`${users.memberState} <> 'locked'`,
+      eq(users.memberState, 'active'),
       sql`${users.id} <> ${actor.id}`,
     ))
     .orderBy(users.name);
@@ -271,6 +353,7 @@ export async function resolveAudience(actor: Actor, audience: Audience): Promise
     ? ['member']
     : audience === 'clients' ? ['client'] : ['member', 'client'];
 
+  // عضوِ سابق — «فقط مالی» هم — هرگز پخشِ همگانی نمی‌گیرد.
   const rows = await db
     .selectDistinct({ id: users.id })
     .from(users)
@@ -278,9 +361,44 @@ export async function resolveAudience(actor: Actor, audience: Audience): Promise
     .where(and(
       inArray(userRoles.role, roles),
       isNull(users.deletedAt),
-      sql`${users.memberState} <> 'locked'`,
+      eq(users.memberState, 'active'),
     ));
   return rows.map((r) => r.id);
+}
+
+/**
+ * اعلانِ پیامِ تازه با نامِ فرستنده — و ماسکِ آن (R-NOTIF-13).
+ *
+ * ⚠️ اگر فرستنده «مدیریت» است، گیرندگانِ عادی «پیام جدید از مدیریت» می‌بینند
+ * و فقط مدیرانِ هم‌رشته (مثلاً مالک روی رشتهٔ همکار) نامِ واقعی را.
+ */
+async function notifyMessage(
+  actor: Actor,
+  recipientIds: number[],
+  input: { kind: 'new' | 'reply'; body: string; url: string },
+): Promise<void> {
+  const ids = [...new Set(recipientIds.filter((id) => id !== actor.id))];
+  if (ids.length === 0) return;
+
+  const [nameRow, mgmt] = await Promise.all([
+    db.select({ name: users.name }).from(users).where(eq(users.id, actor.id)),
+    managementIds(),
+  ]);
+  const name = nameRow[0]?.name ?? '';
+  const snippet = input.body.slice(0, 120);
+  const named = input.kind === 'new' ? 'پیام جدید از {name}' : 'پاسخِ تازه از {name}';
+  const masked = input.kind === 'new' ? 'پیام جدید از مدیریت' : 'پاسخِ تازه از مدیریت';
+
+  const plain = mgmt.has(actor.id) ? ids.filter((id) => !mgmt.has(id)) : [];
+  const withName = ids.filter((id) => !plain.includes(id));
+  if (plain.length > 0) {
+    await notify(plain, { type: 'message.received', title: masked, body: snippet, url: input.url });
+  }
+  if (withName.length > 0) {
+    await notify(withName, {
+      type: 'message.received', title: named, params: { name }, body: snippet, url: input.url,
+    });
+  }
 }
 
 /**
@@ -336,11 +454,8 @@ export async function compose(
 
   // R-NOTIF-01 — از همان دروازه؛ شکستش ارسالِ پیام را نمی‌شکند.
   for (let i = 0; i < plan.threads.length; i += 1) {
-    await notify([plan.threads[i]!.recipientId], {
-      type: 'message.received',
-      title: 'پیامِ تازه',
-      body: body.slice(0, 120),
-      url: `/messages/${created[i]}`,
+    await notifyMessage(actor, [plan.threads[i]!.recipientId], {
+      kind: 'new', body, url: `/messages/${created[i]}`,
     });
   }
   return created;
@@ -393,7 +508,13 @@ export async function contactManagement(actor: Actor, body: string): Promise<num
   return threadId;
 }
 
-/** پاسخ در یک گفتگو. */
+/**
+ * پاسخ در یک گفتگو.
+ *
+ * ⚠️ R-MSG-09 — پاسخ **محدودیتِ زمانی ندارد**؛ فقط ارسالِ نو دارد. پیش از این
+ * کاربری که همین حالا چیزی فرستاده بود تا ۳۰ ثانیه نمی‌توانست جواب بدهد و
+ * گفتگوی روان می‌شکست.
+ */
 export async function reply(actor: Actor, threadId: number, body: string): Promise<number> {
   const thread = await loadThread(threadId);
   if (!canRead(thread, actor.id)) throw new ThreadNotFoundError();
@@ -403,20 +524,17 @@ export async function reply(actor: Actor, threadId: number, body: string): Promi
   const text = body.trim();
   if (text === '') throw new ForbiddenError('message.empty');
 
-  await assertNotRateLimited(actor);
-
   const rows = await db.insert(messages)
     .values({ threadId, fromUserId: actor.id, body: text })
     .returning({ id: messages.id });
 
-  await touchSent(actor);
+  // گفتگو با هر پیام بالا می‌آید (ترتیبِ صندوق). ⚠️ ساعتِ **دیتابیس**، نه Node:
+  // ساختِ رشته با now() ِ دیتابیس مهر می‌خورد و دو ساعتِ متفاوت ترتیب را به‌هم می‌زد.
+  await db.update(threads).set({ updatedAt: sql`now()` }).where(eq(threads.id, threadId));
 
   // همهٔ شرکت‌کنندگان جز خودِ نویسنده.
-  await notify(thread.participantIds.filter((id) => id !== actor.id), {
-    type: 'message.received',
-    title: 'پاسخِ تازه',
-    body: text.slice(0, 120),
-    url: `/messages/${threadId}`,
+  await notifyMessage(actor, thread.participantIds, {
+    kind: 'reply', body: text, url: `/messages/${threadId}`,
   });
   return rows[0]!.id;
 }
@@ -424,12 +542,34 @@ export async function reply(actor: Actor, threadId: number, body: string): Promi
 /**
  * حذفِ گفتگو — فقط از **صندوقِ خودم**.
  * ⚠️ رشته و پیام‌ها می‌مانند تا طرفِ مقابل گفتگویش را از دست ندهد.
+ * اعلانِ همان گفتگو هم می‌رود، وگرنه در زنگوله می‌ماند و به رشته‌ای اشاره
+ * می‌کند که دیگر در صندوق نیست.
  */
 export async function leaveThread(actor: Actor, threadId: number) {
   const thread = await loadThread(threadId);
   if (!canRead(thread, actor.id)) throw new ThreadNotFoundError();
   await db.delete(threadUsers)
     .where(and(eq(threadUsers.threadId, threadId), eq(threadUsers.userId, actor.id)));
+  await db.delete(notifications)
+    .where(and(eq(notifications.userId, actor.id), eq(notifications.url, `/messages/${threadId}`)));
+}
+
+/**
+ * حذفِ **کلِ** گفتگو برای همه — سازنده یا مدیر (R-MSG-11، پورتِ
+ * `Messages::delete()`). گیرندهٔ عادی این را ندارد؛ او فقط از صندوقِ خودش
+ * کنار می‌گذارد (`leaveThread`).
+ */
+export async function deleteThread(actor: Actor, threadId: number) {
+  const thread = await loadThread(threadId);
+  if (!canRead(thread, actor.id)) throw new ThreadNotFoundError();
+  if (thread.creatorId !== actor.id && !isManager(actor)) throw new ForbiddenError('thread.delete');
+
+  await db.transaction(async (tx) => {
+    await tx.delete(messages).where(eq(messages.threadId, threadId));
+    await tx.delete(threadUsers).where(eq(threadUsers.threadId, threadId));
+    await tx.delete(threads).where(eq(threads.id, threadId));
+    await tx.delete(notifications).where(eq(notifications.url, `/messages/${threadId}`));
+  });
 }
 
 async function assertNotRateLimited(actor: Actor) {
@@ -509,7 +649,7 @@ export async function purgeMessages(days: number): Promise<number> {
  *
  * ⚠️ رسیدِ خواندن فقط در حالتِ **تغییر** جلو می‌رود — گفت‌وگویی که روی صفحه
  * باز است و پیامِ تازه گرفته، واقعاً خوانده شده. نسخهٔ قبلی هم همین کار را
- * می‌کند.
+ * می‌کند — و اعلانِ زنگوله‌اش هم همان‌جا خوانده می‌شود.
  */
 export async function pollThread(actor: Actor, threadId: number, fingerprint: string) {
   const config = await getSystemConfig();
@@ -540,10 +680,8 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
       body: messages.body,
       createdAt: messages.createdAt,
       fromUserId: messages.fromUserId,
-      fromName: users.name,
     })
     .from(messages)
-    .leftJoin(users, eq(users.id, messages.fromUserId))
     .where(eq(messages.threadId, threadId))
     .orderBy(asc(messages.id));
 
@@ -553,8 +691,18 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
       .set({ lastReadMessageId: lastId, updatedAt: new Date() })
       .where(and(eq(threadUsers.threadId, threadId), eq(threadUsers.userId, actor.id)));
   }
+  await markReadForTarget(actor, '/messages', threadId);
 
-  return { off: false as const, changed: true as const, fingerprint: fp, messages: rows };
+  const t = await getT();
+  const ctx = await labelContext(actor, rows.map((r) => r.fromUserId));
+
+  return {
+    off: false as const,
+    changed: true as const,
+    fingerprint: fp,
+    messages: rows.map((m) => ({ ...m, fromName: personLabel(m.fromUserId, ctx, t) })),
+    readUpTo: readUpTo(states, actor.id),
+  };
 }
 
 /**
@@ -574,3 +722,4 @@ export async function unreadMessageCount(actor: Actor): Promise<number> {
   `);
   return Number((rows as unknown as Array<{ n: number }>)[0]?.n ?? 0);
 }
+
