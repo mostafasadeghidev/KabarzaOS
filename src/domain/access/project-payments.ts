@@ -18,7 +18,12 @@ import { type MoneyAudience, isPlainMember } from './project-money';
  */
 export type PaymentDirection = 'incoming' | 'member_payout' | 'project_expense' | 'project_cost';
 
-export const CLIENT_VISIBLE_DIRECTIONS: readonly PaymentDirection[] = ['incoming', 'project_cost'];
+/**
+ * ⚠️ نام‌ها گمراه‌کننده‌اند و از آینه می‌آیند (`domain/ledger/mirror.ts`):
+ * `project_expense` = هزینهٔ **قابلِ صورتحساب** به کارفرما، `project_cost` =
+ * هزینهٔ جذب‌شدهٔ داخلی. اولین نسخهٔ این فهرست برعکس گرفته بودشان.
+ */
+export const CLIENT_VISIBLE_DIRECTIONS: readonly PaymentDirection[] = ['incoming', 'project_expense'];
 
 export function visiblePayments<T extends { direction: string; userId: number | null }>(
   audience: MoneyAudience,

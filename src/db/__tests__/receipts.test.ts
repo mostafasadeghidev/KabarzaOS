@@ -43,7 +43,7 @@ const entry = () => ({
   currencyId: 1,
   description: 'خریدِ آزمایشی',
   projectId: null,
-  categoryTagId: null,
+  tagIds: [],
   officeId: null,
   payerUserId: null,
   payerLabel: '',

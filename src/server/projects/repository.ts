@@ -671,7 +671,8 @@ export async function openBalances(
   const by = new Map(byDirection.map((r) => [r.direction, r.total]));
   const client = summarizeProject(
     projectRow[0]?.price ?? '0',
-    by.get('project_cost') ?? '0',
+    // ⚠️ `project_expense` = قابلِ صورتحساب (نامِ آینه گمراه‌کننده است).
+    by.get('project_expense') ?? '0',
     by.get('incoming') ?? '0',
   );
   const paid = new Map(paidByUser.map((r) => [r.userId, r.total]));

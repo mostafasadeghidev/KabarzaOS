@@ -2,11 +2,12 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
-  currencies, exchangeRates, users, accounts, accountUsers, ledger, fiscalLocks, projects,
+  currencies, exchangeRates, users, accounts, accountUsers, ledger, fiscalLocks, projects, tags, tagRelations,
   projectMembers, projectPayments,
 } from '../schema';
 import * as service from '@/server/finance/service';
 import { ForbiddenError } from '@/domain/access/guard';
+import { MissingRateError } from '@/domain/ledger/amounts';
 import { FiscalPeriodLockedError } from '@/domain/ledger/fiscal';
 import { LedgerValidationError, TransferValidationError } from '@/domain/ledger/amounts';
 import type { Actor, Permission } from '@/domain/access/permissions';
@@ -62,7 +63,7 @@ afterAll(async () => { await sql.end(); });
 
 const entry = (over: Partial<service.EntryInput> = {}): service.EntryInput => ({
   accountId: eurAccount, entryDate: '2026-06-15', direction: 'in', amount: '500',
-  currencyId: eur, description: '', projectId: null, categoryTagId: null,
+  currencyId: eur, description: '', projectId: null, tagIds: [],
   officeId: null, payerUserId: null, payerLabel: '', receiverUserId: null,
   receiverLabel: '', ...over,
 });
@@ -240,7 +241,7 @@ describe('آینهٔ پرداختِ پروژه', () => {
     amountAccountOverride: null,
     description: 'پرداختِ آزمون',
     projectId,
-    categoryTagId: null,
+    tagIds: [],
     officeId: null,
     payerUserId: null,
     payerLabel: '',
@@ -343,5 +344,76 @@ describe('آینهٔ پرداختِ پروژه', () => {
     const id = await service.createEntry(manager(), entry({ receiverUserId: memberUser }));
     await service.deleteEntry(manager(), id);
     expect(await mirrorOf(id)).toBeUndefined();
+  });
+});
+
+describe('دسته‌ها، نرخِ غایب و ویرایشِ بی‌تلفات', () => {
+  let tagA: number, tagB: number, irr: number;
+
+  beforeAll(async () => {
+    const t = await db.insert(tags).values([
+      { name: 'هاستینگ', type: 'ledger_category' },
+      { name: 'ابزار', type: 'ledger_category' },
+    ]).returning({ id: tags.id });
+    [tagA, tagB] = t.map((r) => r.id) as [number, number];
+    const c = await db.insert(currencies).values({ code: 'IRR', name: 'ریال', symbol: 'ریال' })
+      .returning({ id: currencies.id });
+    irr = c[0]!.id;
+  });
+
+  it('⚠️ دسته‌های ردیف ذخیره می‌شوند و فیلترِ تگ آنها را می‌یابد', async () => {
+    // پیش از این هیچ‌جا نوشته نمی‌شدند — فیلترِ تگ همیشه خالی برمی‌گشت.
+    const id = await service.createEntry(manager(), entry({ tagIds: [tagA, tagB], description: 'با دسته' }));
+    const rel = await db.select({ tagId: tagRelations.tagId }).from(tagRelations)
+      .where(eq(tagRelations.objectId, id));
+    expect(rel.map((r) => r.tagId).sort()).toEqual([tagA, tagB].sort());
+
+    const filtered = await service.getLedger(manager(), { accountId: eurAccount, tagId: tagB });
+    expect(filtered.entries.map((e) => e.id)).toContain(id);
+    expect(filtered.entries.find((e) => e.id === id)!.tagIds.sort()).toEqual([tagA, tagB].sort());
+
+    // ویرایش، جایگزینیِ کامل است.
+    await service.updateEntry(manager(), id, entry({ tagIds: [tagB], description: 'با دسته' }));
+    const after = await db.select({ tagId: tagRelations.tagId }).from(tagRelations)
+      .where(eq(tagRelations.objectId, id));
+    expect(after.map((r) => r.tagId)).toEqual([tagB]);
+  });
+
+  it('⚠️ نرخِ غایب ثبت را متوقف می‌کند — مگر مبلغِ واقعیِ حساب داده شود', async () => {
+    // پیش از این ردیف با مبلغِ حسابِ صفر ثبت می‌شد.
+    await expect(service.createEntry(manager(), entry({ currencyId: irr, amount: '5000000' })))
+      .rejects.toBeInstanceOf(MissingRateError);
+    const id = await service.createEntry(manager(), entry({
+      currencyId: irr, amount: '5000000', amountAccountOverride: '80',
+    }));
+    const row = (await db.select().from(ledger).where(eq(ledger.id, id)))[0]!;
+    expect(Number(row.amountAccount)).toBe(80);
+  });
+
+  it('⚠️ ذخیرهٔ بدونِ تغییر، «قابلِ بازپرداخت» و پیوندِ آینه را نمی‌اندازد', async () => {
+    const id = await service.createEntry(manager(), entry({
+      direction: 'out', projectId, receiverLabel: 'فروشنده', billable: false, description: 'هزینهٔ جذب‌شده',
+    }));
+    const before = (await db.select().from(projectPayments).where(eq(projectPayments.ledgerId, id)))[0]!;
+    expect(before.direction).toBe('project_cost');
+
+    // فرمِ ویرایش حالا از ردیفِ فهرست پر می‌شود — همان مقدار را برمی‌گرداند.
+    const listed = (await service.getLedger(manager(), { accountId: eurAccount })).entries.find((e) => e.id === id)!;
+    expect(listed.billable).toBe(false);
+    await service.updateEntry(manager(), id, entry({
+      direction: 'out', projectId, receiverLabel: 'فروشنده', billable: listed.billable, description: 'هزینهٔ جذب‌شده',
+    }));
+    const after = (await db.select().from(projectPayments).where(eq(projectPayments.ledgerId, id)))[0]!;
+    expect(after.direction).toBe('project_cost');
+  });
+
+  it('⚠️ دو تسویهٔ هم‌روزِ یک جفتِ ارز، نرخِ آموخته را به‌روز می‌کند و خطا نمی‌دهد', async () => {
+    const make = () => entry({
+      direction: 'out', projectId, receiverLabel: 'فروشنده', billable: false,
+      amount: '100', currencyId: eur, amountSettled: '110', settledCurrencyId: usd, entryDate: '2026-06-20',
+      description: 'تسویهٔ هم‌روز',
+    });
+    await service.createEntry(manager(), make());
+    await expect(service.createEntry(manager(), make())).resolves.toBeGreaterThan(0);
   });
 });

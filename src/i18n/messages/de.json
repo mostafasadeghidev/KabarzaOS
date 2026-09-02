@@ -1932,6 +1932,7 @@
   "نرخ حذف نشد.": "Der Kurs wurde nicht gelöscht.",
   "نرخ نامعتبر است: ارز مبدأ و مقصد باید متفاوت و نرخ بزرگ‌تر از صفر باشد.": "Ungültiger Kurs: Ausgangs- und Zielwährung müssen sich unterscheiden und der Kurs muss größer als null sein.",
   "نرخِ %s مدتی است به‌روزرسانی نشده؛ ارقام شاید قدیمی باشند.": "Der %s-Kurs wurde länger nicht aktualisiert; die Zahlen könnten veraltet sein.",
+  "نرخِ ارز برای این تبدیل ثبت نشده است. نرخ را در تنظیمات اضافه کنید یا «مبلغِ واقعی رسیده به حساب» را وارد کنید.": "Für diese Umrechnung ist kein Wechselkurs hinterlegt. Tragen Sie den Kurs in den Einstellungen ein oder geben Sie den tatsächlich auf dem Konto eingegangenen Betrag an.",
   "نرخِ جدید": "Neuer Satz",
   "نرخِ هر واحد": "Satz pro Einheit",
   "نرخ‌های تبدیل": "Wechselkurse",

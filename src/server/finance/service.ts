@@ -5,11 +5,11 @@ import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from 'driz
 import { db } from '@/db/client';
 import {
   accounts, accountUsers, auditLog, currencies, exchangeRates, fiscalClosings, fiscalLocks,
-  ledger, offices, projectMembers, projectPayments, projects, tags, users, vendors,
+  ledger, offices, projectMembers, projectPayments, projects, tagRelations, tags, users, vendors,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, ForbiddenError, visibleScopes } from '@/domain/access/guard';
-import { buildTransferLegs, computeAmounts, validateEntry, type TransferInput } from '@/domain/ledger/amounts';
+import { buildTransferLegs, computeAmounts, validateEntry, type TransferInput, MissingRateError } from '@/domain/ledger/amounts';
 import {
   assertDeletable, assertWritable, closingBalance, isValidCloseDate, nextLockDate, periodStart,
 } from '@/domain/ledger/fiscal';
@@ -59,7 +59,7 @@ export async function currentLockDate(): Promise<string | null> {
  * نرخ‌های ارز — یک بار خوانده و به‌صورتِ `RateSource` به دامنه داده می‌شود.
  * ⚠️ جدیدترین نرخِ هر جفت برنده است؛ دامنه به دیتابیس وابسته نیست.
  */
-async function rateSource(): Promise<{ source: RateSource; baseCurrencyId: number }> {
+export async function rateSource(): Promise<{ source: RateSource; baseCurrencyId: number }> {
   const [rows, base] = await Promise.all([
     db.select({
       fromCurrencyId: exchangeRates.fromCurrencyId,
@@ -220,11 +220,24 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
       projectId: ledger.projectId,
       projectTitle: projects.title,
       receiptIds: ledger.receiptIds,
+      /**
+       * ⚠️ فیلدهایی که فرمِ ویرایش لازم دارد و پیش از این نمی‌رسیدند — پس
+       * ذخیرهٔ بدونِ تغییر، پیوندِ کاربر، تسویه و «قابلِ بازپرداخت» را می‌انداخت.
+       */
+      payerUserId: ledger.payerUserId,
+      receiverUserId: ledger.receiverUserId,
+      officeId: ledger.officeId,
+      tagIds: sql<number[]>`coalesce((select array_agg(tr.tag_id order by tr.tag_id)
+        from tag_relations tr where tr.object_type = 'ledger' and tr.object_id = ${ledger.id}), '{}')`,
+      amountSettled: projectPayments.amountSettled,
+      settledCurrencyId: projectPayments.settledCurrencyId,
+      mirrorDirection: projectPayments.direction,
     })
     .from(ledger)
     .leftJoin(payer, eq(payer.id, ledger.payerUserId))
     .leftJoin(receiver, eq(receiver.id, ledger.receiverUserId))
     .leftJoin(projects, eq(projects.id, ledger.projectId))
+    .leftJoin(projectPayments, eq(projectPayments.ledgerId, ledger.id))
     .where(and(...conditions))
     .orderBy(desc(ledger.entryDate), desc(ledger.id))
     .limit(perPage)
@@ -270,8 +283,14 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
   const summaries = await fileSummaries(allReceiptIds);
   const byId = new Map(summaries.map((f) => [f.id, f]));
 
-  const entries = rows.map((r) => ({
+  const entries = rows.map(({ mirrorDirection, ...r }) => ({
     ...r,
+    // ⚠️ درایورِ postgres آرایهٔ bigint را رشته برمی‌گرداند؛ فرم عدد می‌خواهد.
+    tagIds: (r.tagIds ?? []).map(Number),
+    // `project_expense` = قابلِ صورتحساب؛ `project_cost` = جذب‌شده؛ بدونِ آینه = پیش‌فرضِ بله.
+    billable: mirrorDirection !== 'project_cost',
+    // مبلغِ حساب وقتی با مبلغِ اسمی فرق دارد، یا تبدیل است یا رقمِ دستی — هر دو باید بمانند.
+    amountAccountOverride: r.amountAccount !== r.amount ? r.amountAccount : null,
     lastActor: lastActor.get(r.id) ?? null,
     receipts: (r.receiptIds ?? [])
       .map((id) => byId.get(id))
@@ -309,8 +328,12 @@ export interface EntryInput {
   amountAccountOverride?: string | null;
   description: string;
   projectId: number | null;
-  /** دستهٔ دفتر — از راهِ `tag_relations` ذخیره می‌شود، نه ستونِ مستقیم. */
-  categoryTagId: number | null;
+  /**
+   * دسته‌های دفتر — چند‌به‌چند، از راهِ `tag_relations`.
+   * ⚠️ پیش از این یک شناسه بود که هیچ‌جا نوشته نمی‌شد: فیلترِ تگ و گزارشِ
+   * دسته‌بندیِ هزینه‌ها مرده بودند.
+   */
+  tagIds: number[];
   officeId: number | null;
   payerUserId: number | null;
   payerLabel: string;
@@ -413,11 +436,18 @@ async function mirrorPayment(
     typedRate: input.fxRate,
   });
   if (learned) {
+    /**
+     * ⚠️ upsert، نه insert: جفت+تاریخ یکتاست. دومین تسویهٔ هم‌روزِ همان جفت
+     * پیش از این خطا می‌داد — بعد از آنکه ردیفِ دفتر و آینه نوشته شده بودند.
+     */
     await db.insert(exchangeRates).values({
       fromCurrencyId: learned.from,
       toCurrencyId: learned.to,
       rate: learned.rate,
       effectiveDate: input.entryDate,
+    }).onConflictDoUpdate({
+      target: [exchangeRates.fromCurrencyId, exchangeRates.toCurrencyId, exchangeRates.effectiveDate],
+      set: { rate: learned.rate },
     });
   }
 }
@@ -447,6 +477,7 @@ export async function createEntry(actor: Actor, input: EntryInput): Promise<numb
     baseCurrencyId,
     amountAccountOverride: input.amountAccountOverride ?? null,
   });
+  assertRatesKnown(amounts, input);
 
   const rows = await db.insert(ledger).values({
     accountId: input.accountId,
@@ -470,9 +501,33 @@ export async function createEntry(actor: Actor, input: EntryInput): Promise<numb
   }).returning({ id: ledger.id });
 
   const id = rows[0]!.id;
+  await writeLedgerTags(id, input.tagIds);
   await mirrorPayment(id, input, amounts);
   await audit(actor, 'ledger.create', id, null, { ...input, computed: amounts });
   return id;
+}
+
+/**
+ * نرخِ غایب → خطا، مگر کاربر مبلغِ واقعیِ رسیده به حساب را نوشته باشد
+ * (R-LEDGER-03: مبلغِ واقعی بر تبدیل مقدم است و نرخ لازم ندارد).
+ */
+function assertRatesKnown(amounts: { missingRates: number[] }, input: EntryInput): void {
+  if (amounts.missingRates.length === 0) return;
+  if (input.amountAccountOverride && input.amountAccountOverride.trim() !== '') return;
+  throw new MissingRateError(amounts.missingRates);
+}
+
+/** دسته‌های ردیف — جایگزینیِ کامل، مثلِ تگ‌های افراد. */
+async function writeLedgerTags(entryId: number, tagIds: number[]): Promise<void> {
+  await db.delete(tagRelations).where(and(
+    eq(tagRelations.objectType, 'ledger'),
+    eq(tagRelations.objectId, entryId),
+  ));
+  const ids = [...new Set(tagIds)].filter((id) => Number.isInteger(id) && id > 0);
+  if (ids.length === 0) return;
+  await db.insert(tagRelations).values(
+    ids.map((tagId) => ({ tagId, objectId: entryId, objectType: 'ledger' as const })),
+  );
 }
 
 /** ویرایشِ ردیف — با همان سه گارد، و **تاریخِ قدیم هم** باید نوشتنی باشد. */
@@ -504,6 +559,7 @@ export async function updateEntry(actor: Actor, entryId: number, input: EntryInp
     baseCurrencyId,
     amountAccountOverride: input.amountAccountOverride ?? null,
   });
+  assertRatesKnown(amounts, input);
 
   // «موجودها منهای حذف‌شده‌ها، به‌علاوهٔ تازه‌ها» — نه جایگزینیِ کامل.
   const receipts = planReceipts({
@@ -544,6 +600,7 @@ export async function updateEntry(actor: Actor, entryId: number, input: EntryInp
    */
   await db.delete(projectPayments).where(eq(projectPayments.ledgerId, entryId));
   await mirrorPayment(entryId, input, amounts);
+  await writeLedgerTags(entryId, input.tagIds);
 
   await audit(actor, 'ledger.update', entryId, before, input);
 }
@@ -554,6 +611,10 @@ export async function deleteEntry(actor: Actor, entryId: number): Promise<void> 
   const before = await loadEntry(actor, entryId);
   assertDeletable(await currentLockDate(), before.entryDate);
 
+  await db.delete(tagRelations).where(and(
+    eq(tagRelations.objectType, 'ledger'),
+    eq(tagRelations.objectId, entryId),
+  ));
   await db.delete(ledger).where(eq(ledger.id, entryId));
   // ⚠️ رسیدهای ردیفِ حذف‌شده دیگر صاحبی ندارند؛ در باکت هم نمی‌مانند.
   await removeFiles(before.receiptIds ?? []);

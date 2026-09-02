@@ -6,8 +6,8 @@ const rows = [
   { id: 1, direction: 'incoming', userId: 9 },
   { id: 2, direction: 'member_payout', userId: 5 },
   { id: 3, direction: 'member_payout', userId: 7 },
-  { id: 4, direction: 'project_expense', userId: null },
-  { id: 5, direction: 'project_cost', userId: null },
+  { id: 4, direction: 'project_cost', userId: null },      // جذب‌شده — داخلی
+  { id: 5, direction: 'project_expense', userId: null },   // قابلِ صورتحساب
 ];
 const base: MoneyAudience = {
   hasGlobalProjectManage: false, hasGlobalFinanceManage: false,

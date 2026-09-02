@@ -1932,6 +1932,7 @@
   "نرخ حذف نشد.": "Kur silinmedi.",
   "نرخ نامعتبر است: ارز مبدأ و مقصد باید متفاوت و نرخ بزرگ‌تر از صفر باشد.": "Geçersiz kur: kaynak ve hedef para birimleri farklı olmalı ve kur sıfırdan büyük olmalıdır.",
   "نرخِ %s مدتی است به‌روزرسانی نشده؛ ارقام شاید قدیمی باشند.": "%s kuru bir süredir güncellenmedi; rakamlar eski olabilir.",
+  "نرخِ ارز برای این تبدیل ثبت نشده است. نرخ را در تنظیمات اضافه کنید یا «مبلغِ واقعی رسیده به حساب» را وارد کنید.": "Bu dönüşüm için kayıtlı döviz kuru yok. Kuru Ayarlar’dan ekleyin veya hesaba gerçekten ulaşan tutarı girin.",
   "نرخِ جدید": "Yeni oran",
   "نرخِ هر واحد": "Birim ücreti",
   "نرخ‌های تبدیل": "Döviz kurları",

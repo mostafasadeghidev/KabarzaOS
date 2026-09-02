@@ -1932,6 +1932,7 @@
   "نرخ حذف نشد.": "The rate was not deleted.",
   "نرخ نامعتبر است: ارز مبدأ و مقصد باید متفاوت و نرخ بزرگ‌تر از صفر باشد.": "Invalid rate: source and target currencies must differ and the rate must be greater than zero.",
   "نرخِ %s مدتی است به‌روزرسانی نشده؛ ارقام شاید قدیمی باشند.": "The %s rate hasn't been updated in a while; the figures may be outdated.",
+  "نرخِ ارز برای این تبدیل ثبت نشده است. نرخ را در تنظیمات اضافه کنید یا «مبلغِ واقعی رسیده به حساب» را وارد کنید.": "No exchange rate is recorded for this conversion. Add the rate in Settings, or enter the actual amount received into the account.",
   "نرخِ جدید": "New rate",
   "نرخِ هر واحد": "Per-unit rate",
   "نرخ‌های تبدیل": "Exchange rates",

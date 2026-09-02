@@ -1932,6 +1932,7 @@
   "نرخ حذف نشد.": "A taxa não foi eliminada.",
   "نرخ نامعتبر است: ارز مبدأ و مقصد باید متفاوت و نرخ بزرگ‌تر از صفر باشد.": "Taxa inválida: as moedas de origem e destino devem ser diferentes e a taxa superior a zero.",
   "نرخِ %s مدتی است به‌روزرسانی نشده؛ ارقام شاید قدیمی باشند.": "A taxa %s não é atualizada há algum tempo; os valores podem estar desatualizados.",
+  "نرخِ ارز برای این تبدیل ثبت نشده است. نرخ را در تنظیمات اضافه کنید یا «مبلغِ واقعی رسیده به حساب» را وارد کنید.": "Não há taxa de câmbio registrada para esta conversão. Adicione a taxa em Configurações ou informe o valor realmente recebido na conta.",
   "نرخِ جدید": "Nova taxa",
   "نرخِ هر واحد": "Tarifa por unidade",
   "نرخ‌های تبدیل": "Taxas de câmbio",

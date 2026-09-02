@@ -53,6 +53,15 @@ export interface EntryRow {
   payerLabel: string;
   payerName: string | null;
   receiverLabel: string;
+  receiverName: string | null;
+  payerUserId: number | null;
+  receiverUserId: number | null;
+  officeId: number | null;
+  tagIds: number[];
+  amountSettled: string | null;
+  settledCurrencyId: number | null;
+  billable: boolean;
+  amountAccountOverride: string | null;
   projectId: number | null;
   projectTitle: string | null;
   receipts: ReceiptView[];

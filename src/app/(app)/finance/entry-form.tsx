@@ -56,14 +56,19 @@ export function EntryForm({
   const [direction, setDirection] = useState<Direction>(
     (keep('direction', editing?.direction ?? 'out') as Direction),
   );
+  /**
+   * ⚠️ پیش‌پرشدنِ کاملِ فرمِ ویرایش. پیش از این فقط برچسب‌ها می‌آمدند — نه
+   * پیوندِ کاربر، نه دسته‌ها، نه تسویه، نه «قابلِ بازپرداخت» — و ذخیرهٔ بدونِ
+   * تغییر همهٔ اینها را می‌انداخت و آینهٔ پرداخت را از خالی می‌ساخت.
+   */
   const [party, setParty] = useState<PartyState>({
-    payer: { userId: null, label: editing?.payerName ?? '' },
-    receiver: { userId: null, label: editing?.receiverLabel ?? '' },
+    payer: { userId: editing?.payerUserId ?? null, label: editing?.payerName ?? editing?.payerLabel ?? '' },
+    receiver: { userId: editing?.receiverUserId ?? null, label: editing?.receiverName ?? editing?.receiverLabel ?? '' },
   });
   const [projectId, setProjectId] = useState<number | null>(editing?.projectId ?? null);
   const [projectLabel, setProjectLabel] = useState(editing?.projectTitle ?? '');
-  const [tagIds, setTagIds] = useState<number[]>([]);
-  const [settled, setSettled] = useState('');
+  const [tagIds, setTagIds] = useState<number[]>(editing?.tagIds ?? []);
+  const [settled, setSettled] = useState(editing?.amountSettled ?? '');
   const [rate, setRate] = useState('');
   const [amount, setAmount] = useState(keep('amount', editing?.amount ?? ''));
   const [descTouched, setDescTouched] = useState(false);
@@ -207,7 +212,7 @@ export function EntryForm({
           <Label htmlFor="l-real">{tr("مبلغِ واقعیِ رسیده (اختیاری)")}</Label>
           <Input
             id="l-real" name="amountAccountOverride" inputMode="decimal" className="num"
-            placeholder={tr("با کارمزد")} defaultValue={keep('amountAccountOverride')}
+            placeholder={tr("با کارمزد")} defaultValue={keep('amountAccountOverride', editing?.amountAccountOverride ?? '')}
           />
         </div>
       </div>
@@ -266,7 +271,7 @@ export function EntryForm({
         <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
           {/* ⚠️ پیش‌فرض تیک‌خورده — هزینهٔ پروژه معمولاً به کارفرما می‌خورد. */}
           <input
-            type="checkbox" name="billable" value="1" defaultChecked
+            type="checkbox" name="billable" value="1" defaultChecked={editing ? editing.billable : true}
             className="mt-0.5 size-4 accent-primary"
           />
           <span>

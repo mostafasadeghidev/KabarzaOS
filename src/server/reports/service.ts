@@ -1,4 +1,6 @@
 import { and, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { convert } from '@/domain/currency/rates';
+import { rateSource } from '@/server/finance/service';
 import { db } from '@/db/client';
 import {
   absences, accounts, availabilitySlots, currencies, ledger, projectMembers,
@@ -27,16 +29,40 @@ function scopeList(scopes: Array<'company' | 'private'>) {
  * تبدیلِ دوبارهٔ نرخ (R-FISCAL-08): گزارشِ پارسال نباید با نرخِ امروز عوض شود.
  */
 
+/**
+ * تبدیلِ مبلغِ ثبت‌شده به ارزِ پایه — با همان نرخ‌های تنظیمات (`rateSource`).
+ *
+ * ⚠️ قیمتِ پروژه و مبلغِ توافقیِ عضو ستونِ منجمدِ `amount_eur` ندارند (فقط
+ * پرداخت‌ها دارند)، پس مثلِ نسخهٔ قبلی با نرخِ جاری تبدیل می‌شوند. پیش از این
+ * خام جمع زده می‌شدند: ۵۰ میلیون تومان کنارِ یورو.
+ *
+ * ⚠️ نبودِ نرخ **بی‌صدا ۱ نمی‌شود** (R-MONEY-06): آن ردیف صفر شمرده و در
+ * `rateMissing` گزارش می‌شود تا صفحه بگوید چند ردیف بیرون مانده.
+ */
+async function baseConverter() {
+  const { source, baseCurrencyId } = await rateSource();
+  let missing = 0;
+  return {
+    toBase(amount: string | null, currencyId: number | null): number {
+      const v = Number(amount ?? 0);
+      if (!Number.isFinite(v) || v === 0) return 0;
+      if (currencyId === null || currencyId === baseCurrencyId) return v;
+      const converted = convert(source, String(v), currencyId, baseCurrencyId);
+      if (converted === null) { missing += 1; return 0; }
+      return Number(converted);
+    },
+    get missing() { return missing; },
+  };
+}
+
 export async function getOverall(actor: Actor) {
   assertCanView(actor, 'reports');
   const scopes = visibleScopes(actor);
 
+  const fx = await baseConverter();
   const [values, payments, agreed, minutes] = await Promise.all([
-    // ارزشِ پروژه‌ها — از ستونِ منجمدِ پرداخت‌ها نمی‌آید، پس اینجا تبدیل لازم است.
-    db.select({
-      n: sql<number>`count(*)::int`,
-      total: sql<string>`coalesce(sum(${projects.price}), 0)::text`,
-    })
+    // ارزشِ پروژه‌ها — از ستونِ منجمدِ پرداخت‌ها نمی‌آید، پس ردیف‌به‌ردیف تبدیل می‌شود.
+    db.select({ price: projects.price, currencyId: projects.currencyId })
       .from(projects)
       .where(and(isNull(projects.deletedAt), inArray(projects.scope, scopes))),
 
@@ -49,7 +75,7 @@ export async function getOverall(actor: Actor) {
       .where(inArray(projects.scope, scopes))
       .groupBy(projectPayments.direction),
 
-    db.select({ total: sql<string>`coalesce(sum(${projectMembers.agreedAmount}), 0)::text` })
+    db.select({ agreed: projectMembers.agreedAmount, currencyId: projectMembers.currencyId })
       .from(projectMembers)
       .innerJoin(projects, eq(projects.id, projectMembers.projectId))
       .where(inArray(projects.scope, scopes)),
@@ -62,15 +88,22 @@ export async function getOverall(actor: Actor) {
 
   const by = new Map(payments.map((p) => [p.direction, p.total]));
 
-  return overallSummary({
-    totalValue: values[0]?.total ?? '0',
-    billableExpenses: by.get('project_expense') ?? '0',
-    clientPaid: by.get('incoming') ?? '0',
-    memberAgreed: agreed[0]?.total ?? '0',
-    memberPaid: by.get('member_payout') ?? '0',
-    projectCount: values[0]?.n ?? 0,
-    minutes: minutes[0]?.total ?? 0,
-  });
+  const totalValue = values.reduce((sum, r) => sum + fx.toBase(r.price, r.currencyId), 0);
+  const memberAgreed = agreed.reduce((sum, r) => sum + fx.toBase(r.agreed, r.currencyId), 0);
+
+  return {
+    ...overallSummary({
+      totalValue: totalValue.toFixed(2),
+      billableExpenses: by.get('project_expense') ?? '0',
+      clientPaid: by.get('incoming') ?? '0',
+      memberAgreed: memberAgreed.toFixed(2),
+      memberPaid: by.get('member_payout') ?? '0',
+      projectCount: values.length,
+      minutes: minutes[0]?.total ?? 0,
+    }),
+    /** ردیف‌هایی که نرخِ تبدیل نداشتند و صفر شمرده شدند. */
+    rateMissing: fx.missing,
+  };
 }
 
 /** گزارشِ اعضا — توافقی، پرداختی، مانده و ساعتِ کاری. */
@@ -78,19 +111,22 @@ export async function getMembersReport(actor: Actor) {
   assertCanView(actor, 'reports');
   const scopes = scopeList(visibleScopes(actor));
 
+  const fx = await baseConverter();
+  // مبلغِ توافقی ردیف‌به‌ردیف تبدیل می‌شود — جمعِ خامِ چندارزی معنا ندارد.
+  const agreedRows = await db
+    .select({ userId: projectMembers.userId, agreed: projectMembers.agreedAmount, currencyId: projectMembers.currencyId })
+    .from(projectMembers)
+    .innerJoin(projects, eq(projects.id, projectMembers.projectId))
+    .where(inArray(projects.scope, visibleScopes(actor)));
+  const agreedBy = new Map<number, number>();
+  for (const r of agreedRows) agreedBy.set(r.userId, (agreedBy.get(r.userId) ?? 0) + fx.toBase(r.agreed, r.currencyId));
+
   const rows = await db.execute(sql`
     select
       u.id, u.name,
-      coalesce(agreed.total, 0)::text as agreed,
       coalesce(paid.total, 0)::text   as paid,
       coalesce(hours.minutes, 0)::int as minutes
     from users u
-    left join (
-      select pm.user_id, sum(pm.agreed_amount) as total
-      from project_members pm
-      join projects p on p.id = pm.project_id and p.scope in (${scopes})
-      group by pm.user_id
-    ) agreed on agreed.user_id = u.id
     left join (
       select pp.user_id, sum(pp.amount_eur) as total
       from project_payments pp
@@ -105,17 +141,23 @@ export async function getMembersReport(actor: Actor) {
       group by t.user_id
     ) hours on hours.user_id = u.id
     where u.deleted_at is null
-      and (agreed.total is not null or paid.total is not null or hours.minutes is not null)
+      and (paid.total is not null or hours.minutes is not null or u.id in (${agreedBy.size > 0 ? sql.join([...agreedBy.keys()].map((id) => sql`${id}`), sql`, `) : sql`-1`}))
     order by u.name
   `);
 
   return (rows as unknown as Array<{
-    id: number; name: string; agreed: string; paid: string; minutes: number;
-  }>).map((r) => ({
-    ...r,
-    minutes: Number(r.minutes),
-    remaining: Math.max(0, Number(r.agreed) - Number(r.paid)).toFixed(2),
-  }));
+    id: number; name: string; paid: string; minutes: number;
+  }>).map((r) => {
+    const agreed = agreedBy.get(Number(r.id)) ?? 0;
+    return {
+      ...r,
+      // یک شکلِ عددی برای همهٔ ستون‌ها — SQL ِ money چهار رقمِ اعشار می‌دهد.
+      paid: Number(r.paid).toFixed(2),
+      agreed: agreed.toFixed(2),
+      minutes: Number(r.minutes),
+      remaining: Math.max(0, agreed - Number(r.paid)).toFixed(2),
+    };
+  });
 }
 
 /** مطالباتِ کارفرما — به‌ازای هر پروژه. */
@@ -125,20 +167,21 @@ export async function getMembersReport(actor: Actor) {
  * ⚠️ واحدِ این گزارش شخص است، چون سؤالش «از چه کسی چقدر طلب داریم؟» است.
  * ریزِ پروژه‌به‌پروژه در صفحهٔ خودِ کارفرما می‌آید (`getClientDetail`).
  *
- * ⚠️ پروژه‌ای که **چند کارفرما** دارد، بدهی‌اش برای هرکدام کامل شمرده
- * می‌شود — همان کاری که نسخهٔ قبلی می‌کند. مسئولیت مشترک است، نه تقسیم‌شده.
+ * ⚠️ پروژهٔ **چندکارفرمایی** فقط به کارفرمای **اصلی** (قدیمی‌ترین انتساب)
+ * صورتحساب می‌شود؛ بقیه صفر — پورتِ `class-reports.php:571-593`. کامنتِ قبلیِ
+ * همین‌جا عکسش را ادعا می‌کرد و مطالبات را برای هر کارفرما دوباره می‌شمرد.
  */
 export async function getClientsReport(actor: Actor) {
   assertCanView(actor, 'reports');
   const scopes = scopeList(visibleScopes(actor));
 
+  const fx = await baseConverter();
   const rows = await db.execute(sql`
     select
-      u.id, u.name,
-      count(distinct p.id)::int             as project_count,
-      coalesce(sum(p.price), 0)::text       as price,
-      coalesce(sum(pay.billable), 0)::text  as expenses,
-      coalesce(sum(pay.incoming), 0)::text  as paid
+      u.id, u.name, p.id as project_id, p.price::text as price, p.currency_id,
+      (pc.id = (select min(pc2.id) from project_clients pc2 where pc2.project_id = p.id)) as is_primary,
+      coalesce(pay.billable, 0)::text  as expenses,
+      coalesce(pay.incoming, 0)::text  as paid
     from project_clients pc
     join users u on u.id = pc.user_id
     join projects p on p.id = pc.project_id
@@ -149,21 +192,33 @@ export async function getClientsReport(actor: Actor) {
       from project_payments group by project_id
     ) pay on pay.project_id = p.id
     where p.deleted_at is null and p.scope in (${scopes}) and u.deleted_at is null
-    group by u.id, u.name
     order by u.name
   `);
 
-  return (rows as unknown as Array<{
-    id: number; name: string; project_count: number;
-    price: string; expenses: string; paid: string;
-  }>).map((r) => ({
-    id: r.id,
-    name: r.name,
-    projectCount: r.project_count,
-    price: r.price,
-    expenses: r.expenses,
-    paid: r.paid,
-    due: Math.max(0, Number(r.price) + Number(r.expenses) - Number(r.paid)).toFixed(2),
+  const byClient = new Map<number, { id: number; name: string; projectCount: number; price: number; expenses: number; paid: number }>();
+  for (const r of rows as unknown as Array<{
+    id: number; name: string; project_id: number; price: string; currency_id: number | null;
+    is_primary: boolean; expenses: string; paid: string;
+  }>) {
+    const id = Number(r.id);
+    const acc = byClient.get(id) ?? { id, name: r.name, projectCount: 0, price: 0, expenses: 0, paid: 0 };
+    acc.projectCount += 1;
+    // کارفرمای غیرِاصلی پروژه را در فهرست می‌بیند ولی چیزی بدهکار نیست.
+    if (r.is_primary) {
+      acc.price += fx.toBase(r.price, r.currency_id);
+      acc.expenses += Number(r.expenses);
+      acc.paid += Number(r.paid);
+    }
+    byClient.set(id, acc);
+  }
+  return [...byClient.values()].map((c) => ({
+    id: c.id,
+    name: c.name,
+    projectCount: c.projectCount,
+    price: c.price.toFixed(2),
+    expenses: c.expenses.toFixed(2),
+    paid: c.paid.toFixed(2),
+    due: Math.max(0, c.price + c.expenses - c.paid).toFixed(2),
   }));
 }
 
@@ -185,7 +240,16 @@ export async function getExpensesReport(actor: Actor) {
     })
     .from(ledger)
     .leftJoin(accounts, eq(accounts.id, ledger.accountId))
-    .where(inArray(accounts.scope, visibleScopes(actor)))
+    .where(and(
+      inArray(accounts.scope, visibleScopes(actor)),
+      /**
+       * ⚠️ پرداخت به عضو هزینهٔ عملیاتی نیست — جای آن تبِ «بدهی به اعضا» است.
+       * ردیفِ دفترِ پرداخت در `project_payments` آینه دارد؛ همان‌جا شناخته
+       * می‌شود. بدونِ این، حقوق دو بار شمرده می‌شد (`class-reports.php:795-800`).
+       */
+      sql`not exists (select 1 from project_payments pp
+        where pp.ledger_id = ${ledger.id} and pp.direction = 'member_payout')`,
+    ))
     .orderBy(ledger.entryDate);
 
   return {
@@ -258,9 +322,10 @@ export async function getProjectsReport(actor: Actor) {
   const scopes = scopeList(visibleScopes(actor));
   const locale = await currentLocale();
 
+  const fx = await baseConverter();
   const rows = await db.execute(sql`
     select
-      p.id, p.title, p.price::text as price,
+      p.id, p.title, p.price::text as price, p.currency_id,
       /* ⚠️ نامِ تگ باید به زبانِ بیننده بیاید — مثلِ tagName()؛ اینجا SQL
          خام است، پس همان coalesce دستی نوشته می‌شود (انگلیسی پلِ میانی). */
       coalesce(
@@ -295,7 +360,9 @@ export async function getProjectsReport(actor: Actor) {
     status_name: string | null; status_color: string | null;
     client_paid: string; billable_expenses: string; absorbed_costs: string;
     member_paid: string; minutes: number;
-  }>).map((r) => {
+  }>).map((raw) => {
+    // قیمت به ارزِ پایه — بقیهٔ ارقام از ستونِ منجمد می‌آیند و از قبل پایه‌اند.
+    const r = { ...raw, price: fx.toBase(raw.price, (raw as unknown as { currency_id: number | null }).currency_id).toFixed(2) };
     const billed = Number(r.price) + Number(r.billable_expenses);
     const profit = billed - Number(r.member_paid) - Number(r.billable_expenses)
       - Number(r.absorbed_costs);
@@ -322,21 +389,33 @@ export async function getProjectsReport(actor: Actor) {
 export async function getUnitsReport(actor: Actor) {
   assertCanView(actor, 'reports');
 
+  // ⚠️ ردیف‌ها ارزِ خودشان را دارند؛ جمعِ خامِ چندارزی معنا ندارد — ردیف‌به‌ردیف تبدیل می‌شود.
+  const fx = await baseConverter();
   const rows = await db
     .select({
       userId: unitEntries.userId,
       name: users.name,
-      paid: sql<string>`coalesce(sum(${unitEntries.amount}) filter (where ${unitEntries.status} = 'paid'), 0)::text`,
-      unpaid: sql<string>`coalesce(sum(${unitEntries.amount}) filter (where ${unitEntries.status} <> 'paid'), 0)::text`,
+      amount: unitEntries.amount,
+      currencyId: unitEntries.currencyId,
+      status: unitEntries.status,
     })
     .from(unitEntries)
     .innerJoin(users, eq(users.id, unitEntries.userId))
-    .groupBy(unitEntries.userId, users.name)
     .orderBy(users.name);
 
-  return rows.map((r) => ({
-    ...r,
-    total: (Number(r.paid) + Number(r.unpaid)).toFixed(2),
+  const byUser = new Map<number, { userId: number; name: string; paid: number; unpaid: number }>();
+  for (const r of rows) {
+    const acc = byUser.get(r.userId) ?? { userId: r.userId, name: r.name, paid: 0, unpaid: 0 };
+    const v = fx.toBase(r.amount, r.currencyId);
+    if (r.status === 'paid') acc.paid += v; else acc.unpaid += v;
+    byUser.set(r.userId, acc);
+  }
+  return [...byUser.values()].map((r) => ({
+    userId: r.userId,
+    name: r.name,
+    paid: r.paid.toFixed(2),
+    unpaid: r.unpaid.toFixed(2),
+    total: (r.paid + r.unpaid).toFixed(2),
   }));
 }
 
@@ -478,9 +557,11 @@ export async function getClientDetail(actor: Actor, userId: number) {
     .from(users).where(eq(users.id, userId));
   if (!person) return null;
 
+  const fx = await baseConverter();
   const rows = await db.execute(sql`
     select
-      p.id as project_id, p.title, p.price::text as price,
+      p.id as project_id, p.title, p.price::text as price, p.currency_id,
+      (pc.id = (select min(pc2.id) from project_clients pc2 where pc2.project_id = p.id)) as is_primary,
       coalesce(pay.incoming, 0)::text as paid,
       coalesce(pay.billable, 0)::text as expenses
     from project_clients pc
@@ -496,16 +577,24 @@ export async function getClientDetail(actor: Actor, userId: number) {
   `);
 
   const projectRows = (rows as unknown as Array<{
-    project_id: number; title: string; price: string; paid: string; expenses: string;
-  }>).map((r) => ({
-    projectId: r.project_id,
-    title: r.title,
-    price: r.price,
-    expenses: r.expenses,
-    paid: r.paid,
-    // R-TEAM-04 — بدهی = قیمت + هزینهٔ قابلِ‌صورتحساب − دریافتی.
-    due: Math.max(0, Number(r.price) + Number(r.expenses) - Number(r.paid)).toFixed(2),
-  }));
+    project_id: number; title: string; price: string; currency_id: number | null;
+    is_primary: boolean; paid: string; expenses: string;
+  }>).map((r) => {
+    // پروژهٔ مشترک: فقط کارفرمای اصلی بدهکار است؛ بقیه آن را با صفر می‌بینند.
+    const price = r.is_primary ? fx.toBase(r.price, r.currency_id) : 0;
+    const expenses = r.is_primary ? Number(r.expenses) : 0;
+    const paid = r.is_primary ? Number(r.paid) : 0;
+    return {
+      projectId: r.project_id,
+      title: r.title,
+      price: price.toFixed(2),
+      expenses: expenses.toFixed(2),
+      paid: paid.toFixed(2),
+      // R-TEAM-04 — بدهی = قیمت + هزینهٔ قابلِ‌صورتحساب − دریافتی.
+      due: Math.max(0, price + expenses - paid).toFixed(2),
+      shared: !r.is_primary,
+    };
+  });
 
   return { person, projects: projectRows };
 }

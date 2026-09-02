@@ -26,6 +26,21 @@ export interface AmountInput {
   amountAccountOverride?: string | null;
 }
 
+/**
+ * نرخِ ارز برای این تبدیل ثبت نشده.
+ *
+ * ⚠️ دامنه `missingRates` را از اول برمی‌گرداند (R-MONEY-06: نبودِ نرخ
+ * بی‌صدا ۱ نمی‌شود)، ولی هیچ فراخوانی نمی‌خواندش — ردیف با مبلغِ حسابِ صفر
+ * ثبت می‌شد. حالا سرویس روی آن خطا می‌دهد، مگر کاربر مبلغِ واقعاً رسیده
+ * به حساب را خودش نوشته باشد.
+ */
+export class MissingRateError extends Error {
+  constructor(readonly currencyIds: number[]) {
+    super('exchange rate missing');
+    this.name = 'MissingRateError';
+  }
+}
+
 export interface ComputedAmounts {
   amountAccount: string;
   amountOffice: string;

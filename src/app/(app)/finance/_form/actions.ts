@@ -12,6 +12,7 @@ import { LedgerValidationError, TransferValidationError } from '@/domain/ledger/
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { removeFiles, storeReceipt } from '@/server/files/service';
 import { getT } from '@/i18n/server';
+import { MissingRateError } from '@/domain/ledger/amounts';
 
 /** اقدام‌های حسابداری. گاردها همه در سرویس‌اند (R-ARCH-01). */
 
@@ -39,7 +40,7 @@ const entrySchema = z.object({
   amountAccountOverride: z.string().trim(),
   description: z.string().trim().max(2000).default(''),
   projectId: optionalId,
-  categoryTagId: optionalId,
+  tagIds: z.array(z.coerce.number().int().positive()),
   officeId: optionalId,
   payerUserId: optionalId,
   payerLabel: z.string().trim().max(160).default(''),
@@ -85,6 +86,9 @@ async function explain(error: unknown, fallback: string): Promise<string> {
     return 'حساب‌های انتقال معتبر نیستند.';
   }
   if (error instanceof LedgerNotFoundError) return 'ردیف یا حساب پیدا نشد.';
+  if (error instanceof MissingRateError) {
+    return 'نرخِ ارز برای این تبدیل ثبت نشده است. نرخ را در تنظیمات اضافه کنید یا «مبلغِ واقعی رسیده به حساب» را وارد کنید.';
+  }
   if (error instanceof ForbiddenError) return 'دسترسی کافی ندارید.';
   return fallback;
 }
@@ -99,7 +103,8 @@ function parse(formData: FormData) {
     amountAccountOverride: String(formData.get('amountAccountOverride') ?? ''),
     description: String(formData.get('description') ?? ''),
     projectId: String(formData.get('projectId') ?? ''),
-    categoryTagId: String(formData.get('categoryTagId') ?? ''),
+    // ⚠️ چند دسته: فرم چند مقدار می‌فرستد؛ `get()` فقط اولی را می‌دید.
+    tagIds: formData.getAll('categoryTagId').map(String).filter((v) => v !== '').join(','),
     officeId: String(formData.get('officeId') ?? ''),
     payerUserId: String(formData.get('payerUserId') ?? ''),
     payerLabel: String(formData.get('payerLabel') ?? ''),
@@ -118,7 +123,11 @@ function parse(formData: FormData) {
    * می‌شود که چک‌باکس واقعاً نمایش داده شده باشد (`showsBillable`).
    */
   return {
-    parsed: entrySchema.safeParse({ ...raw, billable: formData.get('billable') !== null }),
+    parsed: entrySchema.safeParse({
+      ...raw,
+      tagIds: raw.tagIds.split(',').filter(Boolean),
+      billable: formData.get('billable') !== null,
+    }),
     values: raw,
   };
 }
@@ -180,7 +189,7 @@ export async function saveEntryAction(
     amountAccountOverride: data.amountAccountOverride || null,
     description: data.description,
     projectId: data.projectId,
-    categoryTagId: data.categoryTagId,
+    tagIds: data.tagIds,
     officeId: data.officeId,
     payerUserId: data.payerUserId,
     payerLabel: data.payerLabel,
