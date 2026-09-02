@@ -2,6 +2,28 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.25.2]
+
+### Changed
+
+- **The Telegram connect button opens in a new tab.** It used to navigate the
+  current page away to `t.me`, because `window.open` called after the `await`
+  that mints the link is outside the click event and browsers treat it as a
+  popup. The tab is now opened synchronously during the click — while it is
+  still a user gesture — and pointed at the link once it arrives. If a popup
+  blocker refuses it anyway, it falls back to the old same-tab behaviour rather
+  than doing nothing, and if no link comes back the blank tab is closed instead
+  of being left open.
+
+### Fixed
+
+- **The Telegram reminder banner dropped you on the wrong tab.** It links to
+  `/profile?tab=telegram`, but the profile page kept its tab in local state and
+  ignored the URL, so the button landed on "Bank account" — the one jump that
+  banner exists to make. The profile page reads the tab from the URL now.
+
+---
+
 ## [1.25.1]
 
 ### Fixed

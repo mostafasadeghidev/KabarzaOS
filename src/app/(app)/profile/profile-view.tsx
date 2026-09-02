@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useActionToast } from '@/components/ui/toast';
+import { useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/client';
 
 export interface ProfileData {
@@ -61,7 +62,23 @@ export function ProfileView({ data }: { data: ProfileData }) {
   // ⚠️ یک بار محاسبه می‌شود؛ چهارصد رشته است و هر رندر ساختنش بیهوده است.
   const timezones = useMemo(() => allTimezones(), []);
   const visible = TABS;
-  const [tab, setTab] = useState<string>(visible[0]!.key);
+
+  /**
+   * تبِ آغازین از نشانی خوانده می‌شود.
+   *
+   * ⚠️ نوارِ یادآورِ تلگرام به `/profile?tab=telegram` لینک می‌دهد، ولی تب
+   * فقط state ِ محلی بود و آن پارامتر را نادیده می‌گرفت — یعنی کاربر روی
+   * «اتصال تلگرام» می‌زد و روی تبِ «حساب بانکی» می‌افتاد. کلِ کارِ آن نوار
+   * همین یک پرش بود.
+   *
+   * ⚠️ کلیدِ ناشناخته بی‌صدا به تبِ اول برمی‌گردد؛ لینکِ قدیمی نباید صفحهٔ
+   * خالی بدهد.
+   */
+  const params = useSearchParams();
+  const asked = params.get('tab');
+  const [tab, setTab] = useState<string>(
+    visible.some((x) => x.key === asked) ? asked! : visible[0]!.key,
+  );
 
   const [tzState, saveTz] = useActionState(saveTimezoneAction, {} as ProfileState);
   useActionToast(tzState);
@@ -277,17 +294,35 @@ export function ProfileView({ data }: { data: ProfileData }) {
                 */}
                 <Button
                   type="button" size="sm" disabled={pending}
-                  onClick={() => startTransition(async () => {
-                    const next = await connectTelegramAction();
-                    setTgState(next);
+                  onClick={() => {
                     /**
-                     * ⚠️ `window.open` بعد از await یعنی بیرون از رویدادِ
-                     * کلیک؛ بعضی مرورگرها آن را پاپ‌آپ می‌شمرند. برای همین
-                     * پیوند در همین تب باز می‌شود — تلگرام خودش اپ را
-                     * بالا می‌آورد و کاربر با Back برمی‌گردد.
+                     * ⚠️ تب **همین‌جا و همگام** باز می‌شود، پیش از هر await.
+                     * پیش از این پیوند در همان تب باز می‌شد چون
+                     * `window.open` بعد از await بیرون از رویدادِ کلیک است و
+                     * مرورگر پاپ‌آپ حسابش می‌کند. راهش این است: اول یک تبِ
+                     * خالی — که هنوز داخلِ کلیک است و اجازه دارد — بعد
+                     * نشانی‌اش را می‌گذاریم.
+                     *
+                     * ⚠️ `opener = null` برای reverse tabnabbing: بدونِ آن
+                     * صفحهٔ باز‌شده می‌تواند تبِ ما را جای دیگری ببرد.
                      */
-                    if (next.link) window.location.href = next.link;
-                  })}
+                    const tab = window.open('', '_blank');
+                    // ⚠️ در try: قطعِ opener جایی مجاز نباشد نباید کلِ اتصال را بشکند.
+                    try { if (tab) tab.opener = null; } catch { /* مهم نیست */ }
+
+                    startTransition(async () => {
+                      const next = await connectTelegramAction();
+                      setTgState(next);
+                      if (!next.link) {
+                        // پیوندی ساخته نشد — تبِ خالی را باز نگه نمی‌داریم.
+                        tab?.close();
+                        return;
+                      }
+                      // ⚠️ پاپ‌آپ‌بلاکر که جلویش را گرفت، همان تب؛ از هیچ بهتر است.
+                      if (tab) tab.location.href = next.link;
+                      else window.location.href = next.link;
+                    });
+                  }}
                 >
                   <Send className="size-3.5" />
                   {tr("اتصال به تلگرام")}
