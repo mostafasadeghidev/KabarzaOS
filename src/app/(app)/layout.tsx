@@ -159,7 +159,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]);
 
   return (
-    <SidebarProvider>
+    // ⚠️ سقفِ پهنا روی همین پوسته، نه روی هر صفحه: ۱۹۲۰ پیکسل و وسط‌چین
+    // (`--shell-max` در globals.css). سایدبارِ fixed هم با `--shell-inset`
+    // همان‌قدر جابه‌جا می‌شود — وگرنه محتوا وسط می‌رفت و سایدبار به لبهٔ
+    // پنجره می‌چسبید.
+    <SidebarProvider className="mx-auto max-w-(--shell-max)">
       {/* R-I18N-14 — زبانِ **مؤثر** پاس می‌شود: انتخابِ خودِ کاربر، وگرنه
           پیش‌فرضِ سامانه. `system` همین بالا لود شده، پس پرس‌وجوی تازه‌ای
           لازم نیست. */}

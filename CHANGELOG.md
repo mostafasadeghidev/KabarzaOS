@@ -2,6 +2,40 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.27.1]
+
+### Changed
+
+- **The app shell is capped at 1920px and centred on wider monitors.** The
+  sidebar is `position: fixed` and anchors to the viewport, not the shell, so a
+  plain `max-width` would have centred the content while the sidebar stayed
+  glued to the screen edge with a gap between them. The shell now exposes
+  `--shell-inset` — the same margin that centres it — and the fixed sidebar is
+  offset by it. On any window narrower than the cap the inset is `0px` and
+  nothing changes.
+
+### Note on signing in with a username
+
+If a member still cannot sign in with a username, the login form is not the
+cause. The form has accepted usernames since 1.6.0; what was missing until
+1.18.0 was **saving** one: the person-edit path never wrote the `username`
+column, so anything typed into that field on a server older than 1.18.0 was
+silently discarded and the column stayed `NULL`. There is no username to match.
+
+To check, on the server's database:
+
+```sql
+select id, name, username from users where username is null;
+```
+
+Every row listed needs the username re-entered and saved once, on 1.18.0 or
+later. Usernames are 3–32 characters of lowercase letters, digits, `.`, `_`
+and `-`, starting and ending with a letter or digit; anything else — Persian
+letters, spaces, `@` — is rejected at save time with "username invalid" rather
+than stored.
+
+---
+
 ## [1.27.0]
 
 ### Added
