@@ -9,6 +9,7 @@ import Link from 'next/link';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import { useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/client';
 
 export interface EventRow {
@@ -52,20 +53,39 @@ export function ActivityView({
   absences,
   leave,
   availability,
+  canSeeFeed,
 }: {
   events: EventRow[];
   paging: Paging;
   absences: AbsenceRow[];
   leave: AbsencePanelData;
   availability: AvailabilityData;
+  /**
+   * خوراکِ رویدادها مجوزِ `activity.view` می‌خواهد. نداشتنش تبِ رویدادها را
+   * برمی‌دارد، ولی مرخصی و برنامهٔ هفتگی — که مالِ خودِ کاربرند — می‌مانند.
+   */
+  canSeeFeed: boolean;
 }) {
   const tr = useT();
-  const [tab, setTab] = useState<(typeof TABS)[number]['key']>('events');
+  const visible = TABS.filter((t) => t.key !== 'events' || canSeeFeed);
+
+  /**
+   * تب از نشانی خوانده می‌شود تا «در دسترس بودن» **لینک‌شدنی** باشد.
+   * ⚠️ پیش از این فقط state ِ محلی بود: هیچ راهی نبود کسی را مستقیم به
+   * ماتریسِ تیم بفرستی، و رفرش هم به تبِ اول برمی‌گشت.
+   */
+  const params = useSearchParams();
+  const asked = params.get('tab');
+  const [tab, setTab] = useState<(typeof TABS)[number]['key']>(
+    visible.some((x) => x.key === asked)
+      ? (asked as (typeof TABS)[number]['key'])
+      : visible[0]!.key,
+  );
 
   return (
     <div className="grid gap-4">
       <nav className="flex flex-wrap gap-1 border-b">
-        {TABS.map((t) => (
+        {visible.map((t) => (
           <button
             key={t.key}
             type="button"

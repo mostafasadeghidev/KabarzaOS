@@ -30,6 +30,13 @@ const NAV: Array<NavItem & {
   permission?: Permission;
   /** فقط برای نقشِ «عضوِ تیم» — بی‌ربط به مجوزِ بخش. */
   memberOnly?: boolean;
+  /**
+   * مجوزهای **جایگزین**: یکی‌شان کافی است. برای صفحه‌ای که چند مخاطبِ
+   * متفاوت دارد و هر کدام بخشِ خودشان را می‌بینند.
+   */
+  orPermissions?: Permission[];
+  /** علاوه بر مجوزها، عضوِ تیم هم می‌بیند (چون دادهٔ خودش آنجاست). */
+  orMember?: boolean;
 }> = [
   { href: '/dashboard', label: t("نمای کلی"), icon: 'overview', group: 'operations', section: 'projects' },
   { href: '/projects', label: t("پروژه‌ها"), icon: 'projects', group: 'operations', section: 'projects' },
@@ -48,7 +55,20 @@ const NAV: Array<NavItem & {
   { href: '/clients', label: t("کارفرمایان"), icon: 'clients', group: 'data', section: 'members' },
   { href: '/finance', label: t("مالی"), icon: 'finance', group: 'data', section: 'finance' },
   { href: '/reports', label: t("گزارش‌ها"), icon: 'reports', group: 'data', section: 'reports' },
-  { href: '/activity', label: t("فعالیت"), icon: 'activity', group: 'data', permission: 'activity.view' },
+  /**
+   * ⚠️ این صفحه سه مخاطبِ متفاوت دارد و هر کدام تکهٔ خودشان را می‌بینند:
+   * خوراکِ رویدادها (`activity.view`)، ماتریسِ در دسترس بودنِ تیم
+   * (`members.view`)، و برنامهٔ هفتگی و مرخصیِ **خودِ** کاربر (هر عضوی).
+   *
+   * پیش از این فقط با `activity.view` باز می‌شد — که جز مالک و مالی کسی
+   * ندارد. یعنی نه عضو می‌توانست ساعتِ کاری‌اش را ثبت کند، نه مدیرِ اعضا
+   * ماتریسِ تیم را ببیند؛ و چون داده‌ای وارد نمی‌شد، ماتریس برای همیشه
+   * خالی می‌ماند.
+   */
+  {
+    href: '/activity', label: t("فعالیت"), icon: 'activity', group: 'data',
+    permission: 'activity.view', orPermissions: ['members.view'], orMember: true,
+  },
   // ⚠️ تنظیمات بخشِ دیدنی ندارد؛ با مجوزِ مدیریتش گارد می‌شود.
 ];
 
@@ -89,9 +109,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const items: NavItem[] = NAV
     .filter((item) => {
       if (item.memberOnly) return isMember;
-      return item.permission
-        ? can(actor, item.permission)
-        : canViewSection(actor, item.section!) || membershipHrefs.has(item.href);
+      if (item.permission) {
+        return can(actor, item.permission)
+          || (item.orPermissions ?? []).some((p) => can(actor, p))
+          || Boolean(item.orMember && isMember);
+      }
+      return canViewSection(actor, item.section!) || membershipHrefs.has(item.href);
     })
     .map(({ href, label, icon, group }) => ({ href, label, icon, group }));
 

@@ -36,18 +36,21 @@ export default async function ActivityPage({
 
   const page = Math.max(1, Number((await searchParams).page ?? 1) || 1);
 
-  let feed;
+  /**
+   * ⚠️ نبودنِ مجوزِ «فعالیت» فقط **خوراکِ رویدادها** را خالی می‌کند، نه کلِ صفحه.
+   *
+   * پیش از این اینجا `return` بود و صفحه با «دسترسی ندارید» تمام می‌شد — که
+   * یعنی برنامهٔ هفتگی و فرمِ مرخصیِ **خودِ کاربر** هم هرگز رندر نمی‌شد.
+   * `activity.view` را فقط owner و finance دارند (`member: []`)، پس هیچ عضوی
+   * نمی‌توانست ساعتِ کاری‌اش را ثبت کند و ماتریسِ تیم برای همیشه خالی می‌ماند.
+   * بقیهٔ همین تابع از اول همین را می‌گفت — «برنامهٔ هفتگیِ خودِ کاربر همیشه» —
+   * و آن `return` حرفش را نقض می‌کرد.
+   */
+  let feed: Awaited<ReturnType<typeof listActivity>> | null = null;
   try {
     feed = await listActivity(actor, { page });
   } catch (error) {
-    if (error instanceof ForbiddenError) {
-      return (
-        <main className="p-6">
-          <EmptyState title={t("دسترسی ندارید")} description={t("دیدنِ فعالیت مجوزِ جداگانه دارد.")} />
-        </main>
-      );
-    }
-    throw error;
+    if (!(error instanceof ForbiddenError)) throw error;
   }
 
   // مرخصی مجوزِ دیگری دارد؛ نبودنش نباید کلِ صفحه را از کار بیندازد.
@@ -81,8 +84,13 @@ export default async function ActivityPage({
       </header>
 
       <ActivityView
-        events={feed.rows.map((r) => ({ ...r, label: actionLabel(r.action) }))}
-        paging={{ page: feed.page, totalPages: feed.totalPages, total: feed.total }}
+        events={(feed?.rows ?? []).map((r) => ({ ...r, label: actionLabel(r.action) }))}
+        paging={{
+          page: feed?.page ?? 1,
+          totalPages: feed?.totalPages ?? 1,
+          total: feed?.total ?? 0,
+        }}
+        canSeeFeed={feed !== null}
         absences={absences}
         leave={{ mine: myAbsences, targets, meId: actor.id, today }}
         availability={{

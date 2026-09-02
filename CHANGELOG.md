@@ -2,6 +2,50 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.26.0]
+
+### Fixed
+
+- **Nobody could record their working hours, so the team availability matrix
+  was permanently empty.** The activity page called `listActivity()` first and
+  returned an "access denied" page on `ForbiddenError` — before rendering the
+  weekly schedule editor and the leave form, both of which are the user's *own*
+  data and need no permission. Only `owner` and `finance` hold `activity.view`
+  (`member: []`, `admin: []`), so no member ever reached the form. The rest of
+  that same function already said as much in its comments — "the user's own
+  weekly schedule always" — and the early return contradicted it. A missing
+  permission now empties the events feed and hides its tab, nothing more.
+
+- **The page was unreachable for the people who need it.** Its sidebar entry
+  was gated on `activity.view` alone, but the page serves three audiences: the
+  events feed (`activity.view`), the team availability matrix (`members.view`),
+  and the viewer's own schedule and leave (any member). It is now shown to any
+  of the three, and each sees only their part.
+
+- **The availability view could not be linked to.** The tab lived in local
+  state, so `/activity?tab=availability` was impossible and a refresh always
+  bounced back to the first tab. The tab now comes from the URL.
+
+### Known gaps (audited, not yet built)
+
+An audit against the original plugin found more missing here. Not fixed yet,
+recorded so they are not lost:
+
+- The team matrix does not read `absences`, so someone on leave is still shown
+  with their normal hours (`src/server/availability/service.ts` never imports
+  the table).
+- There is no "who is working right now" panel. `work_timers` is only ever
+  queried for the current user; the plugin shows the whole team's running
+  timers. The string "Running timers" is already translated into all nine
+  locales and used by no component.
+- `isNowWithin()` is implemented and unit-tested but called from nowhere, so
+  there is no "available now" count or filter.
+- No summary bar, board view, office/role filter, today-column highlight, or
+  "no schedule" list — all of which the plugin's availability page has.
+- An office manager still has no availability or presence view at all.
+
+---
+
 ## [1.25.2]
 
 ### Changed
