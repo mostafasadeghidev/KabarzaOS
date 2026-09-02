@@ -2,6 +2,45 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.25.0]
+
+### Added
+
+- **The app has error boundaries now.** There were none anywhere under
+  `src/app` — no `not-found`, no `error`, no `global-error` — so any wrong
+  address or server error dropped the user onto Next's bare screen: white
+  background, English sentence, no shell, no menu, and no link back. That is
+  why a broken link read as "it 404s" rather than "that address is wrong":
+  there was no way out of it. All three boundaries exist now, themed and
+  translated, each with a way home. The error page also shows the error digest,
+  which is the only string that ties what the user saw to a line in the server
+  log.
+
+### Fixed
+
+- **Purging old messages left their notifications behind.** The scheduled
+  purge deletes the messages, the thread members and the thread, but never the
+  `message.received` notifications pointing at them — so the bell kept offering
+  conversations that no longer existed. The purge removes them now.
+
+### Note on deployments
+
+A member who cannot see their project, on a database that is behind on
+migrations, is not a permissions bug: `0021_project_access_block` adds the
+`access_blocked` column that the project queries filter on, and without it the
+query fails outright. Migrations run at boot from `src/instrumentation.ts`, but
+`register()` runs **once per process** — a server that was not restarted after
+the upgrade keeps serving new code against the old schema. Check with:
+
+```sql
+select table_name from information_schema.columns where column_name = 'access_blocked';
+```
+
+Two rows is correct. Zero means the deployment needs `pnpm db:migrate`, or a
+full restart.
+
+---
+
 ## [1.24.0]
 
 ### Fixed

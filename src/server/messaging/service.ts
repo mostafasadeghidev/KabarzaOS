@@ -2,8 +2,8 @@ import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { db } from '@/db/client';
 import {
-  messages, offices, projectClients, projectMembers, projects, threads, threadUsers,
-  userOffices, userRoles, users,
+  messages, notifications, offices, projectClients, projectMembers, projects, threads,
+  threadUsers, userOffices, userRoles, users,
 } from '@/db/schema';
 import { can, type Actor, type Role } from '@/domain/access/permissions';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -482,6 +482,15 @@ export async function purgeMessages(days: number): Promise<number> {
     await db.delete(messages).where(inArray(messages.threadId, staleIds));
     await db.delete(threadUsers).where(inArray(threadUsers.threadId, staleIds));
     await db.delete(threads).where(inArray(threads.id, staleIds));
+    /**
+     * ⚠️ اعلانِ گفتگوی پاک‌شده هم باید برود، وگرنه در زنگوله می‌ماند و به
+     * رشته‌ای اشاره می‌کند که دیگر نیست: کلیک، صندوقِ خالی باز می‌کند.
+     * پاک‌سازیِ خودکار سه ردیف از همین شکل در دیتابیس جا گذاشته بود.
+     */
+    await db.delete(notifications).where(inArray(
+      notifications.url,
+      staleIds.map((id) => `/messages/${id}`),
+    ));
   }
 
   const trimmed = await db.delete(messages)
