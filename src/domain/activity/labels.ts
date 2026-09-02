@@ -34,6 +34,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'project.delete.purge': 'حذفِ کاملِ پروژه با ردیف‌های مالی',
   'members.set': 'تغییرِ اعضای پروژه',
   'member.add': 'افزودنِ عضو به پروژه',
+  'member.remove': 'حذفِ عضو از پروژه',
   'client.add': 'افزودنِ کارفرما به پروژه',
   'clients.set': 'تغییرِ کارفرمایانِ پروژه',
   'tender.announce': 'اعلامِ مناقصه به نقش‌های تازه',

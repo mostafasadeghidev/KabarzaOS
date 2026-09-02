@@ -10,6 +10,7 @@ import { canViewSection, type Actor } from '@/domain/access/permissions';
 import { weekdayIndex } from '@/domain/availability/weekly';
 import { getT } from '@/i18n/server';
 import { isDeadlineSoon, isOverdueProject } from '@/domain/projects/lifecycle';
+import { activeProjectIdsSince } from '@/server/projects/repository';
 
 /**
  * دادهٔ داشبورد — ساختار عیناً از نسخهٔ قبلی گرفته شده:
@@ -230,13 +231,17 @@ export async function getDashboard(actor: Actor) {
   const availableToday = scheduledToday.filter((u) => !awayIds.has(u.userId));
 
   /* ---------------- ریسک و نیازمندِ توجه ---------------- */
+  // پورتِ داشبوردِ افزونه: پروژهٔ راکد = در حال انجام، بدونِ ساعت/تسک/کامنت/ویرایش در ۱۴ روز.
+  const STALL_DAYS = 14;
+  const since = new Date(Date.parse(`${today}T00:00:00Z`) - STALL_DAYS * 86400000).toISOString().slice(0, 10);
+  const recentlyActive = await activeProjectIdsSince(since);
+  // شمارِ تسک‌های باز به‌ازای پروژه — برای آمارِ «تسکِ باز روی همهٔ پروژه‌ها».
   const openTaskRows = ids.length
     ? await db.select({ projectId: tasks.projectId, n })
         .from(tasks).leftJoin(tags, eq(tags.id, tasks.statusTagId))
         .where(and(inProjects, isNull(tasks.deletedAt), sql`coalesce(${tags.statusGroup},'') <> 'complete'`))
         .groupBy(tasks.projectId)
     : [];
-  const openByProject = new Map(openTaskRows.map((r) => [r.projectId, r.n]));
   const dayDiff = (a: string, b: string) => Math.round((Date.parse(a) - Date.parse(b)) / 86400000);
 
   // پورتِ `overdue_ids()` / `deadline_soon_ids()`: منجمد (کنسل/نگه‌داشته) بیرون، تکمیل‌شده داخل.
@@ -251,10 +256,10 @@ export async function getDashboard(actor: Actor) {
       return { id: p.id, title: p.title, badge: d === 0 ? t('امروز') : t('{n} روز مانده', { n: d }) };
     });
 
-  /** پروژهٔ راکد: در حال انجام ولی بدونِ تسکِ باز. */
+  /** پروژهٔ راکد: در حال انجام ولی بدونِ هیچ فعالیتی در ۱۴ روزِ گذشته (پورتِ افزونه). */
   const stalled: RiskItem[] = active
-    .filter((p) => p.statusGroup === 'in_progress' && (openByProject.get(p.id) ?? 0) === 0)
-    .map((p) => ({ id: p.id, title: p.title, badge: t('بدونِ تسکِ باز') }));
+    .filter((p) => p.statusGroup === 'in_progress' && !recentlyActive.has(p.id))
+    .map((p) => ({ id: p.id, title: p.title, badge: t('{n} روز بدونِ فعالیت', { n: STALL_DAYS }) }));
 
   const openTenders: RiskItem[] = active
     .filter((p) => p.isTender && p.statusGroup === 'lead')

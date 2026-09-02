@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { MembersDialog } from '../_form/members-dialog';
 import { ClientsDialog } from '../_form/clients-dialog';
 import { MemberAccessToggle } from '../_form/member-access';
+import { MemberRemoveButton } from '../_form/member-remove';
 import { canManageSection } from '@/domain/access/permissions';
 import { ProjectDialog } from '../_form/project-dialog';
 import { ProjectTabs } from './project-tabs';
@@ -386,11 +387,19 @@ export default async function ProjectDetailPage({
                           )}
                           {canManage && (
                             <TableCell>
-                              <MemberAccessToggle
-                                projectId={project.id}
-                                userId={m.userId}
-                                blocked={m.accessBlocked}
-                              />
+                              <span className="flex items-center justify-end gap-1">
+                                <MemberAccessToggle
+                                  projectId={project.id}
+                                  userId={m.userId}
+                                  blocked={m.accessBlocked}
+                                />
+                                {/* پورتِ `remove_member`: حذفِ صریحِ ردیف، حتی برای عضوِ طلبکار/سابق. */}
+                                <MemberRemoveButton
+                                  projectId={project.id}
+                                  memberRowId={m.id}
+                                  name={m.userName ?? `#${m.userId}`}
+                                />
+                              </span>
                             </TableCell>
                           )}
                         </TableRow>

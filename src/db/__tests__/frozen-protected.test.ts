@@ -47,10 +47,10 @@ beforeAll(async () => {
   protectedTag = t[0]!.id; plainTag = t[3]!.id;
 
   const p = await db.insert(projects).values([
-    { title: 'در جریان', scope: 'company', currencyId: eur, statusTagId: t[0]!.id },
-    { title: 'لغوشده', scope: 'company', currencyId: eur, statusTagId: t[1]!.id },
-    { title: 'متوقف', scope: 'company', currencyId: eur, statusTagId: t[2]!.id },
-    { title: 'بایگانی', scope: 'company', currencyId: eur, statusTagId: t[0]!.id, isArchived: true },
+    { title: 'در جریان', scope: 'company', currencyId: eur, statusTagId: t[0]!.id, isUnitBased: true },
+    { title: 'لغوشده', scope: 'company', currencyId: eur, statusTagId: t[1]!.id, isUnitBased: true },
+    { title: 'متوقف', scope: 'company', currencyId: eur, statusTagId: t[2]!.id, isUnitBased: true },
+    { title: 'بایگانی', scope: 'company', currencyId: eur, statusTagId: t[0]!.id, isArchived: true, isUnitBased: true },
   ]).returning({ id: projects.id });
   [running, cancelled, onHold, archived] = p.map((r) => r.id) as [number, number, number, number];
 

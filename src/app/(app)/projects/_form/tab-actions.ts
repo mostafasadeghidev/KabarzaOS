@@ -6,11 +6,13 @@ import { redirect } from 'next/navigation';
 import {
   addComment, BidError, claimTask, deleteComment, deleteProject, deleteQaItem,
   lightenProject, removeQaRole, setArchived, setTaskStatus, submitBid,
-  toggleCommentStatus,
+  toggleCommentStatus, removeProjectMember,
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { LightenError, ProjectDeleteError } from '@/domain/projects/lifecycle';
 import { BID_MESSAGES } from '@/domain/projects/tender';
+import { getT } from '@/i18n/server';
+import { format } from '@/domain/money/money';
 
 /**
  * اقدام‌های تب‌های صفحهٔ پروژه — معادلِ AJAXهای مودالِ نسخهٔ قبلی:
@@ -182,7 +184,13 @@ export async function submitBidAction(_prev: BidState, formData: FormData): Prom
       note: String(formData.get('note') ?? ''),
     });
   } catch (error) {
-    if (error instanceof BidError) return { error: BID_MESSAGES[error.reason] };
+    if (error instanceof BidError) {
+      // پورتِ افزونه: خطای سقف، خودِ سقف را می‌گوید.
+      if (error.detail) {
+        return { error: (await getT())('حداکثر قیمت مجاز {cap} است.', { cap: `${format(error.detail.cap)} ${error.detail.currencyCode}`.trim() }) };
+      }
+      return { error: BID_MESSAGES[error.reason] };
+    }
     if (error instanceof ForbiddenError) return { error: 'دسترسی ندارید.' };
     return { error: 'پیشنهاد ثبت نشد.' };
   }
@@ -225,4 +233,18 @@ export async function removeQaRoleAction(projectId: number, roleTagId: number | 
     return { error: 'حذف نشد.' };
   }
   return { message: 'آیتم‌های این نقش برداشته شد.' };
+}
+
+/** حذفِ صریحِ یک ردیفِ عضویت — پورتِ `remove_member` (مدیرِ پروژه). */
+export async function removeMemberAction(projectId: number, memberRowId: number): Promise<TabActionState> {
+  try {
+    const actor = await requireActor();
+    await removeProjectMember(actor, projectId, memberRowId);
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath('/projects');
+  } catch (error) {
+    if (error instanceof ForbiddenError) return { error: 'اجازهٔ حذفِ عضو ندارید.' };
+    return { error: 'حذف نشد.' };
+  }
+  return { ok: true };
 }

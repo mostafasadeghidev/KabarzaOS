@@ -611,7 +611,11 @@ export async function childCount(projectId: number): Promise<number> {
 
 /** یک تگ با شناسه — برای اعتبارسنجیِ نوع پیش از نوشتن. */
 export async function getTag(id: number) {
-  const rows = await db.select({ id: tags.id, type: tags.type, name: tagName(await currentLocale()) })
+  const rows = await db.select({
+    id: tags.id, type: tags.type, name: tagName(await currentLocale()),
+    // برای قاعدهٔ «انجام‌شده» ِ تسک (پورتِ `is_done` = پرچمِ بسته / گروهِ complete).
+    isClosed: tags.isClosed, statusGroup: tags.statusGroup,
+  })
     .from(tags).where(eq(tags.id, id));
   return rows[0] ?? null;
 }
@@ -828,7 +832,13 @@ export async function listBids(projectId: number) {
     .leftJoin(users, eq(users.id, tenderBids.userId))
     .leftJoin(tags, eq(tags.id, tenderBids.roleTagId))
     .where(eq(tenderBids.projectId, projectId))
-    .orderBy(tenderBids.id);
+    // پورتِ `Bids::for_project`: نقش → برنده اول → ارزان‌تر اول → شناسه.
+    .orderBy(
+      tenderBids.roleTagId,
+      sql`(${tenderBids.status} = 'approved') desc`,
+      sql`${tenderBids.amount}::numeric asc`,
+      tenderBids.id,
+    );
 }
 
 /** آیتم‌های چک‌لیستِ QA ِ پروژه. */
@@ -855,7 +865,8 @@ export async function listProjectQa(projectId: number) {
     .leftJoin(tags, eq(tags.id, projectQa.roleTagId))
     .leftJoin(users, eq(users.id, projectQa.doneBy))
     .where(eq(projectQa.projectId, projectId))
-    .orderBy(projectQa.id);
+    // پورتِ `QA::items`: نقش، بعد ترتیبِ کتابخانه، بعد شناسه — فهرست به‌ازای نقش گروه می‌شود.
+    .orderBy(sql`(${projectQa.roleTagId} is null)`, projectQa.roleTagId, qaItems.sortOrder, projectQa.id);
 }
 
 /**
@@ -1407,4 +1418,23 @@ export async function myPayoutsOn(userId: number, projectId: number) {
       eq(projectPayments.direction, 'member_payout'),
     ))
     .orderBy(desc(projectPayments.id));
+}
+
+/**
+ * پروژه‌هایی که از `since` به بعد فعالیت داشته‌اند — پورتِ
+ * `Timelogs::project_ids_with_logs_since` + `Tasks/Comments::project_ids_with_activity_since`
+ * + `post_modified`: ساعتِ ثبت‌شده، تسکِ ساخته/ویرایش‌شده، کامنتِ تازه، یا ویرایشِ خودِ پروژه.
+ */
+export async function activeProjectIdsSince(since: string): Promise<Set<number>> {
+  const sinceAt = new Date(`${since}T00:00:00Z`);
+  const [logs, taskRows, commentRows, edited] = await Promise.all([
+    db.selectDistinct({ id: timelogs.projectId }).from(timelogs).where(gte(timelogs.logDate, since)),
+    db.selectDistinct({ id: tasks.projectId }).from(tasks)
+      .where(or(gte(tasks.updatedAt, sinceAt), gte(tasks.createdAt, sinceAt))),
+    db.selectDistinct({ id: comments.projectId }).from(comments).where(gte(comments.createdAt, sinceAt)),
+    db.select({ id: projects.id }).from(projects).where(gte(projects.updatedAt, sinceAt)),
+  ]);
+  const out = new Set<number>();
+  for (const r of [...logs, ...taskRows, ...commentRows, ...edited]) if (r.id !== null) out.add(r.id);
+  return out;
 }

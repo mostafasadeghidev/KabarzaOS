@@ -2,6 +2,26 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.42.0]
+
+### Added — project rules (parity with the plugin)
+
+- **Explicit member removal.** A project manager can remove a single membership row from the project page, even for a member who is still owed money or has left; payments stay on record. Bulk member editing still refuses to drop an owed member.
+- **Bid approval signs the winner like the plugin:** an inactive member cannot be signed, an existing (member, role) row keeps the larger amount, and a newly signed winner gets the "signed onto project" notification.
+- **Quick-add member** accepts a unit rate and currency; raising an amount rewrites both.
+- Bid lists are ordered by role, then the winner first, then the cheapest bid; QA checklists are grouped by role in the library order.
+- The over-cap bid error now names the cap in the project currency.
+
+### Fixed
+
+- A project saved without a currency now gets the company default currency instead of null.
+- Task status changes stamp the editor, and approving a task from review to done no longer sends the "sent back" notification.
+- Deleting a comment removes its whole reply subtree.
+- Piecework rows are accepted only on unit-based projects; a malformed date falls back to today instead of failing.
+- "Stalled" on the dashboard now means an in-progress project with no hours, tasks, comments or edits in the last 14 days, as in the plugin.
+
+---
+
 ## [1.41.0]
 
 ### Added — dashboard review queues and daily report details (parity with the plugin)

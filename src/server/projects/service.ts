@@ -1,11 +1,11 @@
 import { tagName } from '@/db/tag-name';
 import { currentLocale, getT } from '@/i18n/server';
-import { notInArray, and, eq, inArray, isNull, asc } from 'drizzle-orm';
+import { notInArray, and, eq, inArray, isNull, asc, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   attachments, comments, ledger, paymentRequests, projectClients, projectMembers,
   projectPayments, projectQa, projects, tags, tagRelations, tasks, taskRoles,
-  tenderBids, timelogs, auditLog, userOffices, users,
+  tenderBids, timelogs, auditLog, userOffices, users, currencies,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, canSeeScope, filterVisible, ForbiddenError, visibleScopes, assertOwner, filterVisibleFor } from '@/domain/access/guard';
@@ -647,6 +647,13 @@ async function saveTenderRoles(
  *    پروژه‌ای بسازد که خودش هم نبیندش
  *  - R-PROJ-20: والد باید معتبر و خودش زیرپروژه نباشد
  */
+/** پورتِ `Projects::currency_id()`: پروژهٔ بی‌ارز ارزِ پیش‌فرضِ شرکت را می‌گیرد، نه null. */
+async function currencyOrDefault(currencyId: number | null): Promise<number | null> {
+  if (currencyId !== null) return currencyId;
+  const rows = await db.select({ id: currencies.id }).from(currencies).where(eq(currencies.isDefault, true)).limit(1);
+  return rows[0]?.id ?? null;
+}
+
 export async function createProject(actor: Actor, input: CreateProjectData): Promise<number> {
   assertCanManage(actor, 'projects');
 
@@ -672,7 +679,7 @@ export async function createProject(actor: Actor, input: CreateProjectData): Pro
     deadline: input.deadline,
     statusTagId,
     price: input.price,
-    currencyId: input.currencyId,
+    currencyId: await currencyOrDefault(input.currencyId),
     officeId: input.officeId,
     parentId: input.parentId,
     isUnitBased: input.isUnitBased,
@@ -812,7 +819,7 @@ export async function updateProject(actor: Actor, id: number, input: CreateProje
     deadline: input.deadline,
     statusTagId: input.statusTagId,
     price: input.price,
-    currencyId: input.currencyId,
+    currencyId: await currencyOrDefault(input.currencyId),
     officeId: input.officeId,
     parentId,
     isUnitBased: input.isUnitBased,
@@ -857,7 +864,7 @@ export async function setProjectStatus(actor: Actor, projectId: number, statusTa
 export async function addProjectMember(
   actor: Actor,
   projectId: number,
-  input: { userId: number; roleTagId: number | null; agreedAmount: string },
+  input: { userId: number; roleTagId: number | null; agreedAmount: string; unitRate?: string | null; currencyId?: number | null },
 ) {
   const project = await getProject(actor, projectId); // گاردِ scope
   await assertCanManageProject(actor, projectId);
@@ -872,9 +879,12 @@ export async function addProjectMember(
   if (!plan) throw new ForbiddenError('member.inactive');
   if (plan.action === 'keep') return plan;
 
+  // پورتِ `add_member`: نرخِ واحد و ارزِ فراخوان؛ بی‌ارز = ارزِ پروژه. افزایش هم همین دو را می‌نویسد.
+  const unitRate = input.unitRate ?? '0';
+  const currencyId = input.currencyId ?? project.currencyId;
   if (plan.action === 'raise') {
     await db.update(projectMembers)
-      .set({ agreedAmount: input.agreedAmount, updatedAt: new Date() })
+      .set({ agreedAmount: input.agreedAmount, unitRate, currencyId, updatedAt: new Date() })
       .where(eq(projectMembers.id, plan.existingId!));
   } else {
     await db.insert(projectMembers).values({
@@ -882,8 +892,8 @@ export async function addProjectMember(
       userId: input.userId,
       roleTagId: plan.roleTagId,
       agreedAmount: input.agreedAmount,
-      unitRate: '0',
-      currencyId: project.currencyId,
+      unitRate,
+      currencyId,
     });
   }
 
@@ -896,6 +906,29 @@ export async function addProjectMember(
     await notify([input.userId], signedNotice(projectId, project.title, { client: false, role }));
   }
   return plan;
+}
+
+/**
+ * حذفِ صریحِ **یک ردیفِ** عضویت — پورتِ `remove_member()`: راهِ فرارِ مستندِ افزونه
+ * برای عضوِ طلبکار یا سابق که ویرایشِ دسته‌جمعی (R-PROJ-23) حذفش نمی‌کند.
+ * ⚠️ فقط مدیرِ پروژه، با ممیزی؛ طلبِ عضو با حذف از بین نمی‌رود (پرداخت‌ها می‌مانند).
+ */
+export async function removeProjectMember(actor: Actor, projectId: number, memberRowId: number) {
+  await getProject(actor, projectId); // گاردِ scope
+  await assertCanManageProject(actor, projectId);
+
+  const rows = await db.select({
+    id: projectMembers.id, userId: projectMembers.userId, roleTagId: projectMembers.roleTagId,
+    agreedAmount: projectMembers.agreedAmount,
+  })
+    .from(projectMembers)
+    .where(and(eq(projectMembers.id, memberRowId), eq(projectMembers.projectId, projectId)));
+  const row = rows[0];
+  if (!row) throw new NotFoundError();
+
+  await db.delete(projectMembers).where(eq(projectMembers.id, row.id));
+  await audit(actor, 'member.remove', projectId, row, null);
+  return row.userId;
 }
 
 /**
@@ -1191,14 +1224,17 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
    */
   await assertNotFrozen(task.projectId, actor);
 
+  const nextTag = statusTagId === null ? null : await repo.getTag(statusTagId);
   if (statusTagId !== null) {
-    const tag = await repo.getTag(statusTagId);
     // R-PROJ-25 (قرینه) — تگ باید از نوعِ وضعیتِ **تسک** باشد.
-    if (!tag || tag.type !== 'task_status') throw new NotFoundError();
+    if (!nextTag || nextTag.type !== 'task_status') throw new NotFoundError();
   }
+  // پورتِ `is_done`: پرچمِ بسته یا گروهِ complete.
+  const nextDone = nextTag !== null && (nextTag.isClosed || nextTag.statusGroup === 'complete');
 
+  // پورتِ `set_status_tag`: `updated_by` هم مهر می‌خورد («آخرین ویرایش توسط» کهنه نماند).
   await db.update(tasks)
-    .set({ statusTagId, updatedAt: new Date() })
+    .set({ statusTagId, updatedAt: new Date(), updatedBy: actor.id })
     .where(eq(tasks.id, taskId));
 
   await audit(actor, 'task.status', task.projectId, task.statusTagId, statusTagId);
@@ -1221,7 +1257,8 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
       body: task.title,
       url: `/projects/${task.projectId}`,
     });
-  } else if (wasReview && !isReview) {
+  } else if (wasReview && !isReview && !nextDone) {
+    // ⚠️ فقط وقتی کار **برمی‌گردد**؛ تأیید (ریویو → انجام‌شده) اعلانِ «برگشت» ندارد (پورتِ افزونه).
     // ⚠️ گیرنده «انجام‌دهنده» است، نه مدیر: کارِ برگشتی دستِ اوست.
     const doers = (await taskDoerIds(taskId)).filter((id) => id !== actor.id);
     await notify(doers, {
@@ -1874,6 +1911,11 @@ export async function approveBid(actor: Actor, bidId: number) {
   if (plan.action === 'locked') throw new ForbiddenError('tender.closed');
   if (plan.action === 'noop') return { changed: false };
 
+  // پورتِ `approve` → `add_member`: عضوِ غیرفعال امضا نمی‌شود؛ تازه‌وارد خبردار می‌شود.
+  const [inactive, membersBefore] = await Promise.all([repo.inactiveUserIds(), repo.listMembers(bid.projectId)]);
+  if (inactive.has(plan.sign.userId)) throw new ForbiddenError('member.inactive');
+  const wasMember = membersBefore.some((m) => m.userId === plan.sign.userId);
+
   await db.transaction(async (tx) => {
     if (plan.unseat) {
       await tx.delete(projectMembers).where(and(
@@ -1895,7 +1937,12 @@ export async function approveBid(actor: Actor, bidId: number) {
       currencyId: plan.sign.currencyId,
     }).onConflictDoUpdate({
       target: [projectMembers.projectId, projectMembers.userId, projectMembers.roleTagId],
-      set: { agreedAmount: plan.sign.amount, currencyId: plan.sign.currencyId, updatedAt: new Date() },
+      // پورتِ `add_member`: همان (کاربر، نقش) ادغام می‌شود و فقط مبلغِ **بزرگ‌تر** می‌نشیند.
+      set: {
+        agreedAmount: sql`greatest(${projectMembers.agreedAmount}::numeric, excluded.agreed_amount::numeric)`,
+        currencyId: plan.sign.currencyId,
+        updatedAt: new Date(),
+      },
     });
 
     await tx.update(tenderBids)
@@ -1904,6 +1951,12 @@ export async function approveBid(actor: Actor, bidId: number) {
   });
 
   await audit(actor, 'bid.approve', bid.projectId, plan.unseat, plan.sign);
+
+  // پورتِ `project_signed` در `add_member`: برندهٔ تازه‌وارد خبردار می‌شود.
+  if (!wasMember && plan.sign.userId !== actor.id) {
+    const role = (await roleNamesOf([plan.sign.roleTagId])).get(plan.sign.roleTagId) ?? '';
+    await notify([plan.sign.userId], signedNotice(bid.projectId, project.title, { client: false, role }));
+  }
   return { changed: true };
 }
 
@@ -2135,10 +2188,14 @@ export async function submitBid(
     roleIsAwarded: false,
     tenderIsOpen: view.isOpen,
   });
-  if (rejection) throw new BidError(rejection);
-
-  const currencyRows = await db.select({ currencyId: projects.currencyId })
-    .from(projects).where(eq(projects.id, input.projectId));
+  const currencyRows = await db.select({ currencyId: projects.currencyId, code: currencies.code })
+    .from(projects)
+    .leftJoin(currencies, eq(currencies.id, projects.currencyId))
+    .where(eq(projects.id, input.projectId));
+  // پورتِ افزونه: خطای سقف، خودِ سقف را می‌گوید («حداکثر قیمت مجاز … است»).
+  if (rejection) throw new BidError(rejection, rejection === 'over_cap'
+    ? { cap: String(role.cap), currencyCode: currencyRows[0]?.code ?? '' }
+    : undefined);
 
   const existing = await db.select({ id: tenderBids.id }).from(tenderBids)
     .where(and(
@@ -2175,7 +2232,11 @@ export async function submitBid(
 }
 
 export class BidError extends Error {
-  constructor(public readonly reason: BidRejection) {
+  constructor(
+    public readonly reason: BidRejection,
+    /** سقفِ نقش برای پیامِ «حداکثر قیمت مجاز …». */
+    public readonly detail?: { cap: string; currencyCode: string },
+  ) {
     super(reason);
     this.name = 'BidError';
   }
@@ -2402,7 +2463,12 @@ export async function deleteComment(actor: Actor, commentId: number): Promise<nu
   await getProject(actor, row.projectId); // گاردِ scope
   await assertCanManageProject(actor, row.projectId);
 
-  await db.delete(comments).where(eq(comments.id, commentId));
+  // پورتِ `Comments::delete`: گره و **همهٔ** پاسخ‌های زیرِ آن می‌روند، نه فقط یک ردیف.
+  await db.execute(sql`with recursive sub as (
+      select id from comments where id = ${commentId}
+      union all
+      select c.id from comments c join sub on c.parent_id = sub.id
+    ) delete from comments where id in (select id from sub)`);
   await audit(actor, 'comment.delete', row.projectId, row, null);
   return row.projectId;
 }

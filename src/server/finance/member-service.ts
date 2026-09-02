@@ -21,7 +21,7 @@ import { myPayoutsOn } from '@/server/projects/repository';
  */
 
 export class MemberMoneyError extends Error {
-  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen' | 'not_member') {
+  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen' | 'not_member' | 'not_unit_based') {
     super(reason);
     this.name = 'MemberMoneyError';
   }
@@ -46,6 +46,7 @@ async function projectContext(actor: Actor, projectId: number) {
       scope: projects.scope,
       isArchived: projects.isArchived,
       currencyId: projects.currencyId,
+      isUnitBased: projects.isUnitBased,
       // ⚠️ گروهِ وضعیت لازم است، نه فقط بایگانی: پروژهٔ لغوشده هم منجمد است.
       statusGroup: tags.statusGroup,
     })
@@ -142,7 +143,13 @@ export async function addUnitEntry(
 ) {
   const { canManage, isFrozen, project } = await projectContext(actor, input.projectId);
   if (isFrozen) throw new MemberMoneyError('frozen');
+  // پورتِ `handle_add_unit`: فقط پروژهٔ **تعدادی** ردیفِ کارکرد می‌پذیرد.
+  if (!project.isUnitBased) throw new MemberMoneyError('not_unit_based');
   if (!isValidQuantity(input.quantity)) throw new MemberMoneyError('quantity_invalid');
+  // پورتِ `clean_date`: تاریخِ نامعتبر/خالی → امروز، نه خطای دیتابیس.
+  const entryDate = /^\d{4}-\d{2}-\d{2}$/.test(input.entryDate) && Number.isFinite(Date.parse(`${input.entryDate}T00:00:00Z`))
+    ? input.entryDate
+    : new Date().toISOString().slice(0, 10);
 
   // عضو فقط برای خودش ثبت می‌کند؛ مدیر برای هر عضوی.
   const targetId = canManage ? input.userId : actor.id;
@@ -166,7 +173,7 @@ export async function addUnitEntry(
   const rows = await db.insert(unitEntries).values({
     projectId: input.projectId,
     userId: targetId,
-    entryDate: input.entryDate,
+    entryDate,
     quantity: String(input.quantity),
     amount: unitAmount(input.quantity, rate),
     currencyId,
