@@ -19,6 +19,8 @@ import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { removeQaRoleAction } from '../_form/tab-actions';
 import { useConfirm } from '@/components/ui/confirm';
+import { summarizeProject } from '@/domain/team-money/payments';
+import { PAY_STATUS_LABELS } from './my-money-tab';
 
 /* ------------------------------------------------------------------ *
  * تبِ مالی — `finance` panel ِ مودالِ نسخهٔ قبلی.
@@ -40,6 +42,8 @@ export interface PaymentRow {
   note: string;
   userName: string | null;
   receiptIds: number[] | null;
+  /** «معادل (محاسبه)» — ارزشِ ردیف در ارزِ پروژه (پورتِ `row_value_in`). */
+  countedValue?: string | null;
 }
 
 const DIRECTION_LABEL: Record<string, string> = {
@@ -65,12 +69,14 @@ export function FinanceTab({
   payments,
   canSee,
   projectId,
+  currencyCode = null,
 }: {
   price: string;
   finance: FinanceSummary | null;
   payments: PaymentRow[];
   canSee: boolean;
   projectId: number;
+  currencyCode?: string | null;
 }) {
   const tr = useT();
   const t = useT();
@@ -78,9 +84,17 @@ export function FinanceTab({
     return <EmptyState title={t("دسترسیِ مالی ندارید")} description={t("برای دیدنِ این بخش از مدیر دسترسی بگیرید.")} />;
   }
 
-  // بدهیِ کارفرما = قیمتِ پروژه − دریافتی. هزینه‌ها اینجا شمرده نمی‌شوند تا با
-  // «قیمتِ ثبت‌شدهٔ پروژه» ِ نسخهٔ قبلی یکی بماند.
-  const due = (Number(price) - Number(finance.incoming)).toFixed(2);
+  // پورتِ `Payments::summary` (R-TEAM-04): بدهیِ کل = قیمت + هزینه‌های قابلِ صورتحساب؛ مانده کف‌بندی؛ وضعیتِ سه‌حالته.
+  const summary = summarizeProject(price, finance.projectExpense, finance.incoming);
+  const money = (v: string | number) => `${format(String(v))}${currencyCode ? ` ${currencyCode}` : ''}`;
+  const cards = [
+    { label: 'قیمت', value: money(summary.price) },
+    { label: 'هزینه‌های قابلِ صورت‌حساب', value: money(summary.billableExpenses) },
+    { label: 'جمعِ بدهی', value: money(summary.totalDue), strong: true },
+    { label: 'پرداختی', value: money(summary.paid) },
+    { label: 'مانده', value: money(summary.remaining), warn: summary.remaining > 0 },
+    { label: 'وضعیت', value: t(PAY_STATUS_LABELS[summary.status] ?? summary.status), plain: true },
+  ];
 
   return (
     <div className="grid gap-4">
@@ -98,28 +112,18 @@ export function FinanceTab({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-normal text-muted-foreground">{t("قیمت ثبت‌شدهٔ پروژه")}</CardTitle>
-          </CardHeader>
-          <CardContent><p className="num text-lg font-semibold">{format(price)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-normal text-muted-foreground">{t("مقدار پرداختی")}</CardTitle>
-          </CardHeader>
-          <CardContent><p className="num text-lg font-semibold">{format(finance.incoming)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-normal text-muted-foreground">{t("مقدار بدهی")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={`num text-lg font-semibold ${Number(due) > 0 ? 'text-amber-600 dark:text-amber-500' : ''}`}>
-              {format(due)}
-            </p>
-          </CardContent>
-        </Card>
+        {cards.map((c) => (
+          <Card key={c.label}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-normal text-muted-foreground">{t(c.label)}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className={`${c.plain ? '' : 'num'} text-lg font-semibold ${c.warn ? 'text-amber-600 dark:text-amber-500' : ''}`}>
+                {c.value}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {payments.length === 0 ? (
@@ -136,6 +140,7 @@ export function FinanceTab({
                 <TableHead>{t("نوع")}</TableHead>
                 <TableHead>{t("تاریخ")}</TableHead>
                 <TableHead>{t("مبلغ")}</TableHead>
+                <TableHead>{t("معادل (محاسبه)")}</TableHead>
                 <TableHead>{t("رسید")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -146,6 +151,8 @@ export function FinanceTab({
                   <TableCell>{t(DIRECTION_LABEL[p.direction] ?? p.direction)}</TableCell>
                   <TableNumericCell>{day(p.paidAt)}</TableNumericCell>
                   <TableNumericCell>{format(settled(p))}</TableNumericCell>
+                  {/* پورتِ ستونِ «معادل (محاسبه)»: ارزشِ ردیف در ارزِ پروژه، نه مبلغِ خام. */}
+                  <TableNumericCell className="text-muted-foreground">{p.countedValue ? money(p.countedValue) : '—'}</TableNumericCell>
                   <TableCell>
                     {(p.receiptIds?.length ?? 0) > 0 ? (
                       <a

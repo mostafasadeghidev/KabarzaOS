@@ -11,6 +11,7 @@ import { weekdayIndex } from '@/domain/availability/weekly';
 import { getT } from '@/i18n/server';
 import { isDeadlineSoon, isOverdueProject } from '@/domain/projects/lifecycle';
 import { activeProjectIdsSince } from '@/server/projects/repository';
+import { countOpenThreads } from '@/domain/projects/threads';
 
 /**
  * دادهٔ داشبورد — ساختار عیناً از نسخهٔ قبلی گرفته شده:
@@ -99,9 +100,12 @@ export async function getDashboard(actor: Actor) {
       : Promise.resolve(0),
     one(db.select({ n }).from(tasks).leftJoin(tags, eq(tags.id, tasks.statusTagId))
       .where(and(inProjects, isNull(tasks.deletedAt), eq(tags.isReview, true)))),
-    one(db.select({ n }).from(comments)
-      // ⚠️ کامنت با `needs_review` نوشته می‌شود، نه `open` — با `open` این کارت همیشه صفر بود.
-      .where(and(inComments, eq(comments.type, 'comment'), eq(comments.status, 'needs_review')))),
+    // پورتِ `count_needs_review`: **رشته**‌هایی که تازه‌ترین پیامشان بررسی می‌خواهد، نه هر ردیف.
+    ids.length
+      ? db.select({ id: comments.id, parentId: comments.parentId, status: comments.status }).from(comments)
+          .where(and(inComments, eq(comments.type, 'comment')))
+          .then((rows) => countOpenThreads(rows))
+      : Promise.resolve(0),
     // پورتِ `bids_pending_ids()`: مناقصه‌های **باز** (گروهِ lead) با دستِ‌کم یک پیشنهادِ
     // در انتظار و بدونِ برنده — نه شمارِ پیشنهادها روی هر مناقصه‌ای.
     one(db.execute(sql`

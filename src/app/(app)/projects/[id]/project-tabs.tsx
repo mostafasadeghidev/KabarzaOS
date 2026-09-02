@@ -40,6 +40,8 @@ export interface ProjectTabsData {
   /** «کار کردن» روی پروژه — عضو/کارفرما/مدیر؛ نه بینندهٔ فقط‌خواندنی. */
   canInteract: boolean;
   canSeeFinance: boolean;
+  /** کدِ ارزِ پروژه برای تبِ مالی. */
+  currencyCode: string | null;
   tasks: TaskItem[];
   taskStatuses: TaskStatusOption[];
   /** نقش ← اعضایی که آن نقش را دارند (قاعدهٔ «برداشتنِ تسک»). */
@@ -189,6 +191,7 @@ export function ProjectTabs({
           payments={data.payments}
           canSee={data.canSeeFinance}
           projectId={data.projectId}
+          currencyCode={data.currencyCode}
         />
       )}
 

@@ -321,6 +321,7 @@ export default async function ProjectDetailPage({
           canManage,
           canInteract: detail.canInteract,
           canSeeFinance: detail.canSeeFinance,
+          currencyCode: detail.currencyCode,
           tasks,
           taskStatuses: taskStatuses.map((t) => ({
             id: t.id, name: t.name, group: t.group, color: t.color,

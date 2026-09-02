@@ -340,17 +340,25 @@ export interface TaskRow {
   createdBy: number | null;
   assignedTo: number | null;
   assigneeName: string | null;
+  /** کارتِ تسک — پورتِ چیپِ اولویت و `task_notes_summary`. */
+  priorityName: string | null;
+  priorityColor: string | null;
+  description: string;
+  notesCount: number;
+  lastNote: string | null;
 }
 
 /** تسک‌های یک پروژه — دو کوئریِ ثابت (R-PERF-01). */
 export async function listTasks(projectId: number): Promise<TaskRow[]> {
   const assignee = alias(users, 'assignee');
+  const priority = alias(tags, 'priority_tag');
+  const locale = await currentLocale();
   return db
     .select({
       id: tasks.id,
       title: tasks.title,
       statusTagId: tasks.statusTagId,
-      statusName: tagName(await currentLocale()),
+      statusName: tagName(locale),
       statusGroup: tags.statusGroup,
       statusColor: tags.color,
       /** R-PROJ-13 — «نیاز به ریویو» پرچمِ خودِ تگ است، نه نامش. */
@@ -362,9 +370,16 @@ export async function listTasks(projectId: number): Promise<TaskRow[]> {
       assigneeName: assignee.name,
       /** «وابسته به» — پیش از این ستونی مرده بود. */
       dependsOn: tasks.dependsOn,
+      priorityName: tagName(locale, priority),
+      priorityColor: priority.color,
+      description: tasks.description,
+      // پورتِ `task_notes_summary`: شمار و آخرین یادداشتِ گفتگو روی کارت.
+      notesCount: sql<number>`(select count(*) from comments c where c.task_id = ${tasks.id})::int`,
+      lastNote: sql<string | null>`(select c.body from comments c where c.task_id = ${tasks.id} order by c.id desc limit 1)`,
     })
     .from(tasks)
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))
+    .leftJoin(priority, eq(priority.id, tasks.priorityTagId))
     .leftJoin(assignee, eq(assignee.id, tasks.assignedTo))
     .where(and(eq(tasks.projectId, projectId), isNull(tasks.deletedAt)))
     .orderBy(tasks.id);
@@ -739,6 +754,8 @@ export async function listComments(projectId: number) {
       closedBy: comments.closedBy,
       closedByName: closer.name,
       taskId: comments.taskId,
+      /** رشته‌بندی — پاسخ زیرِ والدش می‌نشیند (پورتِ `parent_id`). */
+      parentId: comments.parentId,
     })
     .from(comments)
     .leftJoin(users, eq(users.id, comments.userId))

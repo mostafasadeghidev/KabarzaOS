@@ -26,17 +26,17 @@ describe('فهرستِ متمرکزِ داشبورد — پورتِ Focus_Page',
     expect(excerptWords('   ')).toBe('');
   });
 
-  it('⚠️ رشتهٔ باز = ریشهٔ needs_review؛ تازه‌ترین پیام از زیردرخت (بزرگ‌ترین شناسه)', () => {
+  it('⚠️ رشتهٔ باز = تازه‌ترین پیامش needs_review است (بزرگ‌ترین شناسهٔ زیردرخت)، نه ریشه', () => {
     const rows = [
       { id: 1, parentId: null, status: 'needs_review' },
       { id: 2, parentId: 1, status: 'needs_review' },
-      { id: 3, parentId: 2, status: 'needs_review' },
+      { id: 3, parentId: 2, status: 'done' }, // تازه‌ترین پیام بسته است → رشته بسته
       { id: 4, parentId: null, status: 'done' },
-      { id: 5, parentId: 4, status: 'needs_review' }, // پاسخِ رشتهٔ بسته، ریشه نیست.
+      { id: 5, parentId: 4, status: 'needs_review' }, // پاسخِ تازه رشتهٔ بسته را باز می‌کند
       { id: 6, parentId: null, status: 'needs_review' },
     ];
     const threads = openThreads(rows);
-    expect(threads.map((x) => [x.root.id, x.latest.id])).toEqual([[1, 3], [6, 6]]);
+    expect(threads.map((x) => [x.root.id, x.latest.id])).toEqual([[4, 5], [6, 6]]);
   });
 
   it('پیوندِ هر نما به تبِ درست', () => {

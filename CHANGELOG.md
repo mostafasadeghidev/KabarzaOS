@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.43.0]
+
+### Added — project page (parity with the plugin)
+
+- **Threaded comments and reviews.** Replies nest under their parent, a thread's status is the status of its latest message (a new reply reopens a closed thread), the status chip and toggle sit on the latest message only, and deleting a message removes its replies. The dashboard "comments needing review" card now counts threads, not rows.
+- **Kanban board from task-status tags:** one column per status tag in tag order and colour, tasks with no status in the first column, drag-and-drop to change status, and a status picker on each card for touch screens.
+- **Task cards** show the priority chip in the tag colour, a description excerpt, and the number and last line of the task's discussion notes, in both the list and the board.
+- **Client finance tab** follows the plugin's summary: price, billable expenses, total due, paid, remaining and status in the project currency, plus a "counted equivalent" column that expresses each payment in the project currency.
+
+---
+
 ## [1.42.0]
 
 ### Added — project rules (parity with the plugin)

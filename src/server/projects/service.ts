@@ -1154,6 +1154,11 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
       : null,
   }));
 
+  // کدِ ارزِ پروژه — تبِ مالی مبالغ را با واحد نشان می‌دهد (پورتِ `Money::format`).
+  const currencyCode = detail.project.currencyId
+    ? (await db.select({ code: currencies.code }).from(currencies).where(eq(currencies.id, detail.project.currencyId)))[0]?.code ?? null
+    : null;
+
   // نام و گروهِ وضعیتِ پروژه برای کنترلِ وضعیتِ هدر (پورتِ `project_status_control`).
   const statusName = detail.project.statusTagId
     ? (await repo.statusTags()).find((tag) => tag.id === detail.project.statusTagId)?.name ?? null
@@ -1161,6 +1166,7 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
 
   return {
     ...detail,
+    currencyCode,
     isFrozen,
     statusGroup,
     statusName,
@@ -1299,7 +1305,13 @@ export async function toggleCommentStatus(actor: Actor, commentId: number) {
 }
 
 /** افزودنِ کامنت به پروژه. */
-export async function addComment(actor: Actor, projectId: number, body: string, type: 'comment' | 'review' = 'comment') {
+export async function addComment(
+  actor: Actor,
+  projectId: number,
+  body: string,
+  type: 'comment' | 'review' = 'comment',
+  parentId: number | null = null,
+) {
   // عضو و کارفرمای پروژه هم کامنت می‌گذارند (مخاطبِ comment_added ِ نسخهٔ قبلی).
   await assertCanInteractWithProject(actor, projectId);
   await getProject(actor, projectId); // گاردِ scope
@@ -1309,11 +1321,19 @@ export async function addComment(actor: Actor, projectId: number, body: string, 
   const text = body.trim();
   if (text === '') throw new ForbiddenError('comment.empty');
 
+  // پاسخ (پورتِ `parent_id`): والد باید از همین پروژه و همین رشته باشد.
+  if (parentId !== null) {
+    const parent = await repo.getComment(parentId);
+    if (!parent || parent.projectId !== projectId || parent.type !== type) throw new NotFoundError();
+  }
+
   await db.insert(comments).values({
     projectId,
     userId: actor.id,
+    parentId,
     // پورتِ `render_thread($type)`: رشتهٔ «بازبینی» جدا از «کامنت» است.
     type,
+    // ⚠️ پاسخِ تازه با «نیازمند بررسی» می‌آید — وضعیتِ رشته از تازه‌ترین پیام است، پس رشتهٔ بسته باز می‌شود.
     status: OPEN_STATUS,
     body: text,
   });

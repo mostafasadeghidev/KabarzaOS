@@ -87,7 +87,7 @@ const selectClass =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none';
 
 /** برچسبِ وضعیتِ تسویه — پورتِ `Payments::status_label`. */
-const PAY_STATUS_LABELS: Record<string, string> = {
+export const PAY_STATUS_LABELS: Record<string, string> = {
   unpaid: 'پرداخت‌نشده',
   partial: 'پرداختِ جزئی',
   paid: 'تسویه‌شده',

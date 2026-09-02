@@ -53,9 +53,11 @@ export function openThreads<T extends ThreadRow>(rows: readonly T[]): Array<{ ro
   const subtreeMax = (id: number): number =>
     (children.get(id) ?? []).reduce((max, child) => Math.max(max, subtreeMax(child)), id);
 
+  // ⚠️ وضعیتِ رشته از **تازه‌ترین** پیام می‌آید، نه ریشه — پاسخِ تازه رشتهٔ بسته را باز می‌کند.
   return rows
-    .filter((r) => r.parentId === null && r.status === 'needs_review')
-    .map((root) => ({ root, latest: byId.get(subtreeMax(root.id)) ?? root }));
+    .filter((r) => r.parentId === null)
+    .map((root) => ({ root, latest: byId.get(subtreeMax(root.id)) ?? root }))
+    .filter((t) => t.latest.status === 'needs_review');
 }
 
 /** پیوندِ هر ردیف: پروژه روی تبِ درست (تسک‌ها → زیرتبِ «نیازمند بررسی»). */
