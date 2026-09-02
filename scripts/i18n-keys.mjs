@@ -22,6 +22,10 @@ const PERSIAN = /[؀-ۿ]/;
 const LABEL_KEYS = new Set([
   'label', 'title', 'description', 'hint', 'empty', 'header', 'addLabel',
   'editLabel', 'placeholder', 'emptyText',
+  // ⚠️ `success` بعداً اضافه شد: پیامِ موفقیتِ توست از راهِ پراپ پاس می‌شود
+  // (`useActionToast(state, { success: '…' })`) و هرگز داخلِ `t()` نمی‌آید؛
+  // چهار کلید در شش جا از هر زبانی جا مانده بود و ابزار «صفر» می‌گفت.
+  'success',
 ]);
 
 export function walk(dir, out = []) {

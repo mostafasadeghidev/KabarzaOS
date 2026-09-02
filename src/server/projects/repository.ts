@@ -904,7 +904,7 @@ export async function getTaskFull(id: number) {
       statusGroup: tags.statusGroup,
       isReview: tags.isReview,
       priorityTagId: tasks.priorityTagId,
-      priorityName: priority.name,
+      priorityName: tagName(await currentLocale(), priority),
       dueDate: tasks.dueDate,
       isPrivate: tasks.isPrivate,
       createdBy: tasks.createdBy,
@@ -1061,7 +1061,7 @@ export async function openTasksForUser(userId: number, scopes: Array<'company' |
       statusName: tagName(await currentLocale()),
       statusColor: tags.color,
       isReview: tags.isReview,
-      priorityName: priority.name,
+      priorityName: tagName(await currentLocale(), priority),
       priorityColor: priority.color,
       prioritySort: priority.sortOrder,
     })

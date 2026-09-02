@@ -248,7 +248,7 @@ export function HoursView({ data }: { data: HoursData }) {
               <Submit>{t("ثبت")}</Submit>
             </div>
             <p className="text-xs text-muted-foreground">
-              {tr("ثبتِ همان روز و همان پروژه با ثبتِ قبلی **ادغام** می‌شود، نه ردیفِ تازه.")}
+              {tr("ثبتِ همان روز و همان پروژه با ثبتِ قبلی ادغام می‌شود، نه ردیفِ تازه.")}
             </p>
           </form>
         </CardContent>

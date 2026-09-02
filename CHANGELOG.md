@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.27.3]
+
+### Fixed
+
+- **Success toasts were Persian in every other language.** Ten `success:` strings passed to `useActionToast` — "Saved.", "Recorded.", "Task created.", "Entry recorded.", "Account saved.", "Payment recorded.", "Expense saved.", "Member added.", "Client added.", "Transfer recorded." — existed in no locale, because the key extractor only scanned `t()` calls and a fixed set of prop names that did not include `success`. So the coverage tool and its test both reported "nothing missing" while every save in an English UI said "ذخیره شد.". The extractor now scans `success` too, and the coverage test fails on exactly these the moment one is added without translations.
+- **Task priority names showed raw Persian in every language.** `tagName()` always read the base `tags` table's `name_i18n`, so on the priority join — which is an alias — it returned the *status* tag's translation. It now takes the (possibly aliased) table; the two priority sites pass it.
+- **Project deletion rendered a raw key in the activity feed.** Deletion writes `project.delete.none|detach|purge`; the label map only knew `soft|hard`, so every real variant showed as its identifier. The map now carries the three values the code writes, and the test that pinned the wrong pair was corrected.
+- The work-hours hint rendered literal markdown asterisks (`**merged**`); the Kurdish locale was missing one key.
+
+---
+
 ## [1.27.2]
 
 ### Security

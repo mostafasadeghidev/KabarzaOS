@@ -59,7 +59,8 @@ describe('برچسبِ رویدادها', () => {
     for (const key of [
       'person.remove.detached', 'person.remove.deactivated',
       'person.remove.deleted', 'person.remove.noop',
-      'project.delete.soft', 'project.delete.hard',
+      // ⚠️ همان مقادیری که lifecycle.ts واقعاً می‌نویسد — نه soft/hard که هرگز نوشته نمی‌شد.
+      'project.delete.none', 'project.delete.detach', 'project.delete.purge',
       'request.approved', 'request.rejected',
     ]) {
       expect(ACTION_LABELS[key], key).toBeDefined();

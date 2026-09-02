@@ -1,4 +1,5 @@
 import { sql, type SQL } from 'drizzle-orm';
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { tags } from '@/db/schema';
 import { DEFAULT_LOCALE, type Locale } from '@/i18n/config';
 
@@ -13,15 +14,24 @@ import { DEFAULT_LOCALE, type Locale } from '@/i18n/config';
  * ⚠️ `nullif(…, '')` لازم است: کلیدِ موجود با مقدارِ خالی نباید جلوی پلهٔ
  * بعدی را بگیرد.
  */
-export function tagName(locale: Locale, column = tags.name): SQL<string> {
+/**
+ * ⚠️ `table` برای جوینِ **نام‌مستعار** است (`alias(tags, 'my_priority_tag')`):
+ * تا پیش از این تابع همیشه `tags.nameI18n` ِ جدولِ اصلی را می‌خواند، پس روی
+ * تگِ اولویت که با alias جوین می‌شود، ترجمهٔ تگِ **وضعیت** را برمی‌گرداند —
+ * و دو صفحه نامِ خامِ فارسیِ اولویت را در هر زبانی نشان می‌دادند.
+ */
+export function tagName(
+  locale: Locale,
+  table: { name: AnyPgColumn; nameI18n: AnyPgColumn } = tags,
+): SQL<string> {
   if (locale === DEFAULT_LOCALE) {
     // بینندهٔ زبانِ پایه: ترجمه اگر بود، وگرنه خودِ نام.
-    return sql<string>`coalesce(nullif(${tags.nameI18n}->>${locale}, ''), ${column})`;
+    return sql<string>`coalesce(nullif(${table.nameI18n}->>${locale}, ''), ${table.name})`;
   }
   // انگلیسی پلِ میان‌زبانی است (R-I18N-15).
   return sql<string>`coalesce(
-    nullif(${tags.nameI18n}->>${locale}, ''),
-    nullif(${tags.nameI18n}->>'en', ''),
-    ${column}
+    nullif(${table.nameI18n}->>${locale}, ''),
+    nullif(${table.nameI18n}->>'en', ''),
+    ${table.name}
   )`;
 }

@@ -23,8 +23,11 @@ export const ACTION_LABELS: Record<string, string> = {
   'project.status': 'تغییرِ وضعیتِ پروژه',
   'project.archive': 'بایگانی',
   'project.lighten': 'سبک‌سازیِ پروژه',
-  'project.delete.soft': 'حذفِ نرمِ پروژه',
-  'project.delete.hard': 'حذفِ کاملِ پروژه',
+  // ⚠️ حذف `project.delete.${plan.financial}` می‌نویسد — none/detach/purge —
+  // نه soft/hard. با دو کلیدِ قبلی، هر سه گونهٔ واقعی خام رندر می‌شدند.
+  'project.delete.none': 'حذفِ پروژه',
+  'project.delete.detach': 'حذفِ پروژه (ردیف‌های مالی جدا ماند)',
+  'project.delete.purge': 'حذفِ کاملِ پروژه با ردیف‌های مالی',
   'members.set': 'تغییرِ اعضای پروژه',
   'member.add': 'افزودنِ عضو به پروژه',
   'client.add': 'افزودنِ کارفرما به پروژه',
