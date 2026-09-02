@@ -16,7 +16,7 @@ import {
 } from '@/domain/projects/lifecycle';
 import { OPEN_STATUS, toggleStatus, type CommentType } from '@/domain/projects/comments';
 import { assigneeOptions } from '@/domain/projects/assignees';
-import { claimableRoleIds } from '@/domain/projects/claim';
+import { claimableRoleIds, canClaimTask } from '@/domain/projects/claim';
 import { planQaApply, qaToggle, type QaAudience } from '@/domain/projects/qa';
 import {
   openRolesForUser, planApproveBid, planTenderRoles, planWithdrawBid, tenderIsOpen,
@@ -25,7 +25,7 @@ import {
 import { notify } from '@/server/notifications/service';
 import {
   assertCanInteractWithProject, assertCanManageProject, assertCanViewProject, assertNotFrozen,
-  canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation, canInteractWithProject,
+  canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation, canInteractWithProject, managedOfficeProjectIds,
 } from './authority';
 import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
 import { visiblePayments } from '@/domain/access/project-payments';
@@ -58,7 +58,11 @@ export async function listProjects(actor: Actor) {
    * پروژه‌های خودش را می‌بیند. scope اینجا هر دو است، چون عضویت بر آن
    * مقدم است (کسی که روی پروژهٔ خصوصی امضا شده، می‌بیندش).
    */
-  const ids = await membershipProjectIds(actor.id);
+  // عضویت‌ها + پروژه‌های دفاترِ تحتِ مدیریت (پورتِ سه بخشِ «همهٔ پروژه‌ها»).
+  const ids = [...new Set([
+    ...(await membershipProjectIds(actor.id)),
+    ...(await managedOfficeProjectIds(actor.id)),
+  ])];
   return maskNames(actor, await maskPrices(actor, await repo.listProjects(['company', 'private'], ids)));
 }
 
@@ -1261,11 +1265,20 @@ export interface TaskInput {
   assignedTo: number | null;
   dueDate: string | null;
   isPrivate: boolean;
+  /** «وابسته به» — تسکِ دیگری از همین پروژه (پورتِ `depends_on`). */
+  dependsOn?: number | null;
   /**
    * تسکِ **نقشی** — هر کس آن نقش را روی پروژه داشته باشد آن را می‌بیند.
    * ⚠️ مسئولِ مشخص ندارد تا کسی بتواند «برش دارد» (R-CLAIM).
    */
   roleTagIds?: number[];
+}
+
+/** «وابسته به» — فقط تسکِ همین پروژه و نه خودش (پورتِ انتخابگرِ `depends_on`). */
+async function validDependency(projectId: number, dependsOn: number | null, selfId: number | null): Promise<number | null> {
+  if (!dependsOn || dependsOn === selfId) return null;
+  const dep = await repo.getTask(dependsOn);
+  return dep && dep.projectId === projectId ? dep.id : null;
 }
 
 /** گزینه‌های فرمِ تسک — مسئول، وضعیت، اولویت. */
@@ -1279,13 +1292,17 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
    */
   await assertCanInteractWithProject(actor, projectId);
 
-  const [members, clientIds, inactive, statuses, priorities] = await Promise.all([
+  const [members, clientIds, inactive, statuses, priorities, allTasks] = await Promise.all([
     repo.listMembers(projectId),
     repo.listClientIds(projectId),
     repo.inactiveUserIds(),
     repo.taskStatusTags(),
     repo.taskPriorityTags(),
+    repo.listTasks(projectId),
   ]);
+  // گزینه‌های «وابسته به» — فقط تسک‌هایی که خودِ بیننده می‌بیند.
+  const dependencyOptions = filterVisibleFor(actor, allTasks, await canManageProject(actor, projectId))
+    .map((t) => ({ id: t.id, title: t.title }));
 
   const clientNames = await repo.userNames([...clientIds]);
 
@@ -1324,6 +1341,7 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
       : [],
     statuses,
     priorities,
+    tasks: dependencyOptions,
   };
 }
 
@@ -1375,6 +1393,7 @@ export async function createTask(
     priorityTagId: input.priorityTagId,
     assignedTo: assignment.assignedTo,
     dueDate: input.dueDate,
+    dependsOn: await validDependency(projectId, input.dependsOn ?? null, null),
     /**
      * ⚠️ «خصوصی» فقط از مدیر پذیرفته می‌شود. `canSeePrivateRecord` به مجوزِ
      * **سراسری** برمی‌گردد، پس تسکی که کارفرما خصوصی کند حتی مدیرِ خودِ
@@ -1496,6 +1515,7 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
      */
     assignedTo: canManage ? assignment.assignedTo : before.assignedTo,
     dueDate: input.dueDate,
+    dependsOn: await validDependency(before.projectId, input.dependsOn ?? null, taskId),
     isPrivate: canManage ? input.isPrivate : before.isPrivate,
     updatedBy: actor.id,
     updatedAt: new Date(),
@@ -1611,11 +1631,24 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
   if (!visible) throw new NotFoundError();
   // یادداشت‌نویسی «کار کردن» است: همکارِ فقط‌خواندنی فرمش را نمی‌بیند.
   const canInteract = await canInteractWithProject(actor, task.projectId);
-  const [notes, roles, members] = await Promise.all([
+  const [notes, roles, members, dependency] = await Promise.all([
     repo.taskNotes(taskId),
     repo.taskRolesFor([taskId]),
     repo.listMembers(task.projectId),
+    task.dependsOn ? repo.getTask(task.dependsOn) : Promise.resolve(null),
   ]);
+  // «برمی‌دارم» در مودال (پورتِ `can_claim`): دارندگانِ هر نقش از اعضای پروژه.
+  const holders = new Map<number, number[]>();
+  for (const m of members) {
+    if (m.roleTagId === null) continue;
+    holders.set(m.roleTagId, [...(holders.get(m.roleTagId) ?? []), m.userId]);
+  }
+  const claimable = canClaimTask({
+    assignedTo: task.assignedTo,
+    roles: roles.filter((r) => r.roleTagId !== null).map((r) => ({ roleTagId: r.roleTagId!, claimedBy: r.claimedBy })),
+    roleHolders: holders,
+    userId: actor.id,
+  });
 
   /**
    * ⚠️ این تنها مسیرِ خواندن بود که ماسکِ نام را **نداشت** — یعنی کارفرما
@@ -1635,6 +1668,9 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
     },
     notes: notes.map((n) => ({ ...n, userName: mask(n.userId, n.userName) })),
     roles: roles.map((r) => ({ ...r, claimedByName: mask(r.claimedBy, r.claimedByName) })),
+    /** عنوانِ تسکِ وابسته — فقط اگر خودِ بیننده آن را می‌بیند. */
+    dependsOnTitle: dependency && filterVisibleFor(actor, [dependency], canManage).length > 0 ? dependency.title : null,
+    claimable: claimable && canInteract,
     canManage,
     canInteract,
   };
@@ -2357,10 +2393,75 @@ export async function removeQaRole(
  * همان جایی اعمال می‌شود که بقیهٔ کوئری‌ها (R-PROJ-17).
  */
 export async function myTasks(actor: Actor) {
-  const rows = await repo.openTasksForUser(actor.id, visibleScopes(actor));
+  const scopes = visibleScopes(actor);
+  const isPureClient = actor.roles.includes('client') && !actor.roles.includes('member');
+
+  /**
+   * پورتِ صفحهٔ تسک‌های **کارفرما**: تسک‌های در انتظارِ بررسی روی پروژه‌های
+   * (غیرِمنجمدِ) او — فراخوانِ اصلیِ کارفرما. پیش از این همان کوئریِ
+   * «سپرده‌شده به من» را می‌دید که برای کارفرما همیشه خالی است.
+   */
+  if (isPureClient) {
+    const ids = await repo.nonFrozenProjectIds(await membershipProjectIds(actor.id, ['client']));
+    const review = await repo.reviewTasksForProjects(ids, scopes);
+    return {
+      kind: 'client' as const,
+      active: [] as InboxTask[],
+      waiting: [] as InboxTask[],
+      review: review.map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false })),
+    };
+  }
+
+  const rows = await repo.openTasksForUser(actor.id, scopes);
+  const [roles, holderRows] = await Promise.all([
+    repo.taskRolesFor(rows.map((r) => r.id)),
+    repo.roleHoldersFor([...new Set(rows.map((r) => r.projectId))]),
+  ]);
+  const rolesByTask = new Map<number, typeof roles>();
+  for (const r of roles) rolesByTask.set(r.taskId, [...(rolesByTask.get(r.taskId) ?? []), r]);
+  const holdersByProject = new Map<number, Map<number, number[]>>();
+  for (const h of holderRows) {
+    if (h.roleTagId === null) continue;
+    const m = holdersByProject.get(h.projectId) ?? new Map<number, number[]>();
+    m.set(h.roleTagId, [...(m.get(h.roleTagId) ?? []), h.userId]);
+    holdersByProject.set(h.projectId, m);
+  }
+
+  const decorated: InboxTask[] = rows.map((t) => {
+    const taskRolesList = rolesByTask.get(t.id) ?? [];
+    return {
+      ...t,
+      roles: taskRolesList.map((r) => ({
+        roleName: r.roleName,
+        claimedBy: r.claimedBy,
+        claimedByName: r.claimedBy === actor.id ? null : r.claimedByName,
+      })),
+      // پورتِ دکمهٔ «برمی‌دارم» روی ردیفِ صندوق.
+      claimable: canClaimTask({
+        assignedTo: t.assignedTo,
+        roles: taskRolesList.filter((r) => r.roleTagId !== null).map((r) => ({ roleTagId: r.roleTagId!, claimedBy: r.claimedBy })),
+        roleHolders: holdersByProject.get(t.projectId) ?? new Map(),
+        userId: actor.id,
+      }),
+    };
+  });
 
   return {
-    active: rows.filter((t) => !t.isReview),
-    waiting: rows.filter((t) => t.isReview),
+    kind: 'member' as const,
+    active: decorated.filter((t) => !t.isReview),
+    waiting: decorated.filter((t) => t.isReview),
+    review: [] as InboxTask[],
   };
 }
+
+export interface InboxRole {
+  roleName: string | null;
+  claimedBy: number | null;
+  /** null یعنی ادعانشده یا ادعای خودِ بیننده. */
+  claimedByName: string | null;
+}
+
+export type InboxTask = Awaited<ReturnType<typeof repo.openTasksForUser>>[number] & {
+  roles: InboxRole[];
+  claimable: boolean;
+};

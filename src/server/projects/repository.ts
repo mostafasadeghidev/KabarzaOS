@@ -1,6 +1,6 @@
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
-import { asc, and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { asc, and, desc, eq, inArray, isNull, sql, or, gte, lte } from 'drizzle-orm';
 import { summarizeProject } from '@/domain/team-money/payments';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '@/db/client';
@@ -8,10 +8,10 @@ import {
   projects, projectMembers, projectClients, tasks, taskRoles,
   timelogs, ledger, projectPayments, paymentRequests, users, tags,
   currencies, offices, tagRelations, userRoles, comments, tenderBids,
-  projectQa, qaItems, attachments, files,
+  projectQa, qaItems, attachments, files, meetings, meetingAttendees,
 } from '@/db/schema';
 import type { ProjectImpact } from '@/domain/projects/lifecycle';
-import { isOverdueProject } from '@/domain/projects/lifecycle';
+import { isOverdueProject, isFrozenProject } from '@/domain/projects/lifecycle';
 
 /**
  * لایهٔ داده — فقط خواندن و نوشتن، بدونِ قاعدهٔ کسب‌وکار.
@@ -21,6 +21,8 @@ import { isOverdueProject } from '@/domain/projects/lifecycle';
  */
 
 export interface ProjectListRow {
+  /** بسته‌بودنِ وضعیت — برای `isOpenProject`. */
+  isClosed: boolean | null;
   id: number;
   title: string;
   price: string;
@@ -85,6 +87,8 @@ export async function listProjects(
       statusName: tagName(await currentLocale()),
       statusGroup: tags.statusGroup,
       statusColor: tags.color,
+      /** بسته‌بودنِ وضعیت — برای `isOpenProject` (داشبوردِ عضو فقط بازها را می‌آورد). */
+      isClosed: tags.isClosed,
       deadline: projects.deadline,
       thumbnailFileId: projects.thumbnailFileId,
       lightenSummary: projects.lightenSummary,
@@ -356,6 +360,8 @@ export async function listTasks(projectId: number): Promise<TaskRow[]> {
       createdBy: tasks.createdBy,
       assignedTo: tasks.assignedTo,
       assigneeName: assignee.name,
+      /** «وابسته به» — پیش از این ستونی مرده بود. */
+      dependsOn: tasks.dependsOn,
     })
     .from(tasks)
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))
@@ -989,6 +995,7 @@ export async function getTaskFull(id: number) {
       // ⚠️ شناسه لازم است تا نام سمتِ سرور ماسک شود (viewer-names).
       updatedBy: tasks.updatedBy,
       updatedByName: editor.name,
+      dependsOn: tasks.dependsOn,
     })
     .from(tasks)
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))
@@ -1136,6 +1143,10 @@ export async function openTasksForUser(userId: number, scopes: Array<'company' |
       statusName: tagName(await currentLocale()),
       statusColor: tags.color,
       isReview: tags.isReview,
+      statusGroup: tags.statusGroup,
+      isPrivate: tasks.isPrivate,
+      assignedTo: tasks.assignedTo,
+      createdBy: tasks.createdBy,
       priorityName: tagName(await currentLocale(), priority),
       priorityColor: priority.color,
       prioritySort: priority.sortOrder,
@@ -1145,10 +1156,189 @@ export async function openTasksForUser(userId: number, scopes: Array<'company' |
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))
     .leftJoin(priority, eq(priority.id, tasks.priorityTagId))
     .where(and(
-      eq(tasks.assignedTo, userId),
+      // پورتِ `visible_to_user_sql`: مالِ من، خصوصیِ خودم، یا تسکِ نقشیِ بی‌مسئول با نقشِ من (ادعانشده/ادعای خودم).
+      visibleToUserSql(userId),
       isNull(tasks.deletedAt),
       inArray(projects.scope, scopes),
       sql`coalesce(${tags.statusGroup}, '') <> 'complete'`,
     ))
     .orderBy(priority.sortOrder, desc(tasks.id));
+}
+
+/* ------------------------------------------------------------------ *
+ * دیدِ عضو، صندوقِ کارفرما، مناقصه‌ها — پورتِ داشبوردِ عضو/کارفرما
+ * ------------------------------------------------------------------ */
+
+/**
+ * پورتِ `Tasks::visible_to_user_sql()` — همان قاعدهٔ `domain/projects/visibility`
+ * در SQL: مسئولِ مستقیم؛ سازندهٔ تسکِ خصوصی؛ یا تسکِ نقشیِ **بی‌مسئولِ** غیرِخصوصی
+ * که یکی از نقش‌های کاربر روی همان پروژه است و ادعانشده یا ادعای خودِ اوست.
+ * ⚠️ پیش از این فقط `assigned_to = me` بود: تسکِ نقشیِ ادعانشده هرگز در صندوق نمی‌آمد.
+ */
+export function visibleToUserSql(userId: number) {
+  return sql`(
+    ${tasks.assignedTo} = ${userId}
+    or (${tasks.isPrivate} = true and ${tasks.createdBy} = ${userId})
+    or (${tasks.isPrivate} = false and ${tasks.assignedTo} is null and exists (
+      select 1 from task_roles tr
+      join project_members pm
+        on pm.project_id = ${tasks.projectId} and pm.user_id = ${userId} and pm.role_tag_id = tr.role_tag_id
+      where tr.task_id = ${tasks.id} and (tr.claimed_by is null or tr.claimed_by = ${userId})
+    ))
+  )`;
+}
+
+/** تسک‌های در انتظارِ بررسی روی پروژه‌ها — صندوقِ کارفرما (پورتِ `review_for_projects`). */
+export async function reviewTasksForProjects(projectIds: number[], scopes: Array<'company' | 'private'>) {
+  if (projectIds.length === 0) return [];
+  const priority = alias(tags, 'review_priority_tag');
+  return db
+    .select({
+      id: tasks.id,
+      title: tasks.title,
+      projectId: tasks.projectId,
+      projectTitle: projects.title,
+      dueDate: tasks.dueDate,
+      statusName: tagName(await currentLocale()),
+      statusColor: tags.color,
+      isReview: tags.isReview,
+      statusGroup: tags.statusGroup,
+      isPrivate: tasks.isPrivate,
+      assignedTo: tasks.assignedTo,
+      createdBy: tasks.createdBy,
+      priorityName: tagName(await currentLocale(), priority),
+      priorityColor: priority.color,
+      prioritySort: priority.sortOrder,
+    })
+    .from(tasks)
+    .innerJoin(projects, eq(projects.id, tasks.projectId))
+    .leftJoin(tags, eq(tags.id, tasks.statusTagId))
+    .leftJoin(priority, eq(priority.id, tasks.priorityTagId))
+    .where(and(
+      inArray(tasks.projectId, projectIds),
+      isNull(tasks.deletedAt),
+      eq(tasks.isPrivate, false),
+      eq(tags.isReview, true),
+      inArray(projects.scope, scopes),
+    ))
+    .orderBy(priority.sortOrder, desc(tasks.id));
+}
+
+/** دارندگانِ هر نقش روی پروژه‌ها — برای قاعدهٔ «برمی‌دارم» در صندوق و مودال. */
+export async function roleHoldersFor(projectIds: number[]) {
+  if (projectIds.length === 0) return [];
+  return db
+    .select({ projectId: projectMembers.projectId, userId: projectMembers.userId, roleTagId: projectMembers.roleTagId })
+    .from(projectMembers)
+    .where(inArray(projectMembers.projectId, projectIds));
+}
+
+/** پروژه‌های غیرِمنجمد از میانِ شناسه‌ها — جعبه‌های «نیازمندِ توجه» فقط این‌ها را می‌شمارند. */
+export async function nonFrozenProjectIds(ids: number[]): Promise<number[]> {
+  if (ids.length === 0) return [];
+  const rows = await db
+    .select({ id: projects.id, isArchived: projects.isArchived, statusGroup: tags.statusGroup })
+    .from(projects)
+    .leftJoin(tags, eq(tags.id, projects.statusTagId))
+    .where(and(inArray(projects.id, ids), isNull(projects.deletedAt)));
+  return rows.filter((r) => !isFrozenProject(r)).map((r) => r.id);
+}
+
+/** شمارِ تسک‌های در انتظارِ بررسی به‌ازای پروژه. */
+export async function reviewTaskCounts(projectIds: number[]): Promise<Map<number, number>> {
+  if (projectIds.length === 0) return new Map();
+  const rows = await db
+    .select({ projectId: tasks.projectId, n: sql<number>`count(*)::int` })
+    .from(tasks)
+    .leftJoin(tags, eq(tags.id, tasks.statusTagId))
+    .where(and(inArray(tasks.projectId, projectIds), isNull(tasks.deletedAt), eq(tags.isReview, true)))
+    .groupBy(tasks.projectId);
+  return new Map(rows.map((r) => [r.projectId, r.n]));
+}
+
+/** جمعِ دقیقه‌های کلِ تیم روی هر پروژه — ستونِ «ساعتِ تیم» ِ جدولِ کارفرما. */
+export async function teamMinutesFor(projectIds: number[]): Promise<Map<number, number>> {
+  if (projectIds.length === 0) return new Map();
+  const rows = await db
+    .select({ projectId: timelogs.projectId, minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int` })
+    .from(timelogs)
+    .where(inArray(timelogs.projectId, projectIds))
+    .groupBy(timelogs.projectId);
+  return new Map(rows.map((r) => [r.projectId!, r.minutes]));
+}
+
+/** مناقصه‌های موجود با نقش‌های اعلام‌شده و گروهِ وضعیت. */
+export async function tenderProjectsWithRoles() {
+  return db
+    .select({
+      id: projects.id,
+      title: projects.title,
+      tenderRoles: projects.tenderRoles,
+      statusGroup: tags.statusGroup,
+      scope: projects.scope,
+    })
+    .from(projects)
+    .leftJoin(tags, eq(tags.id, projects.statusTagId))
+    .where(and(eq(projects.isTender, true), isNull(projects.deletedAt)));
+}
+
+/** نقش‌هایی که برنده دارند — `Bids::has_approved_for_role`. */
+export async function approvedBidRoles(projectIds: number[]): Promise<Set<string>> {
+  if (projectIds.length === 0) return new Set();
+  const rows = await db
+    .select({ projectId: tenderBids.projectId, roleTagId: tenderBids.roleTagId })
+    .from(tenderBids)
+    .where(and(inArray(tenderBids.projectId, projectIds), eq(tenderBids.status, 'approved')));
+  return new Set(rows.map((r) => `${r.projectId}:${r.roleTagId}`));
+}
+
+/** شمارِ پیشنهادهای زندهٔ کاربر روی هر پروژه — `Bids::count_for_user`. */
+export async function myBidCounts(userId: number, projectIds: number[]): Promise<Map<number, number>> {
+  if (projectIds.length === 0) return new Map();
+  const rows = await db
+    .select({ projectId: tenderBids.projectId, n: sql<number>`count(*)::int` })
+    .from(tenderBids)
+    .where(and(
+      inArray(tenderBids.projectId, projectIds),
+      eq(tenderBids.userId, userId),
+      inArray(tenderBids.status, ['pending', 'approved']),
+    ))
+    .groupBy(tenderBids.projectId);
+  return new Map(rows.map((r) => [r.projectId, r.n]));
+}
+
+/** تگ‌های نقشِ کاربر. */
+export async function userTagIds(userId: number): Promise<Set<number>> {
+  const rows = await db.select({ tagId: tagRelations.tagId }).from(tagRelations)
+    .where(and(eq(tagRelations.objectType, 'user'), eq(tagRelations.objectId, userId)));
+  return new Set(rows.map((r) => r.tagId));
+}
+
+/**
+ * جلساتِ پیشِ‌روی کاربر — پورتِ `Meetings::upcoming_for_user(uid, limit, days)`:
+ * دعوت‌شده **یا** سازنده، از اکنون تا N روزِ بعد.
+ */
+export async function upcomingMeetingsForUser(userId: number, days: number, limit: number) {
+  const now = new Date();
+  const until = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+  const rows = await db
+    .selectDistinct({
+      id: meetings.id,
+      title: meetings.title,
+      meetAt: meetings.meetAt,
+      location: meetings.location,
+      projectTitle: projects.title,
+    })
+    .from(meetings)
+    .leftJoin(projects, eq(projects.id, meetings.projectId))
+    .leftJoin(meetingAttendees, eq(meetingAttendees.meetingId, meetings.id))
+    .where(and(
+      or(eq(meetingAttendees.userId, userId), eq(meetings.createdBy, userId)),
+      // ⚠️ عملگرهای drizzle، نه sql خام: تاریخ در sql خام به درایور می‌رسد و «Received an instance of Date» می‌دهد.
+      gte(meetings.meetAt, now),
+      lte(meetings.meetAt, until),
+    ))
+    .orderBy(meetings.meetAt)
+    .limit(limit);
+  return rows;
 }

@@ -28,6 +28,8 @@ export interface TaskFormOptions {
   assignees: Array<{ userId: number; label: string }>;
   statuses: Array<{ id: number; name: string }>;
   priorities: Array<{ id: number; name: string }>;
+  /** تسک‌های همین پروژه — گزینه‌های «وابسته به». */
+  tasks?: Array<{ id: number; title: string }>;
 }
 
 const cellSelect =
@@ -154,6 +156,17 @@ export function AddTaskDialog({
                 <p className="text-xs text-destructive">{tr(state.fieldErrors.dueDate)}</p>
               )}
             </div>
+
+            {/* پورتِ انتخابگرِ «وابسته به» — تسک‌های همین پروژه. */}
+            {(options.tasks?.length ?? 0) > 0 && (
+              <div className="grid gap-1.5">
+                <Label htmlFor="nt-depends">{t("وابسته به")}</Label>
+                <select id="nt-depends" name="dependsOn" className={cellSelect} defaultValue={keep('dependsOn')}>
+                  <option value="">—</option>
+                  {options.tasks!.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
+                </select>
+              </div>
+            )}
           </div>
 
           {/*

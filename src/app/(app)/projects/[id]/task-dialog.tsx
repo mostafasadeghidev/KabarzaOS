@@ -21,6 +21,7 @@ import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { useConfirm } from '@/components/ui/confirm';
+import { ClaimTaskButton } from '@/app/(app)/tasks/inbox-claim';
 
 /**
  * مودالِ تسک — بازسازیِ `task_admin_html()`:
@@ -123,6 +124,24 @@ export function TaskDialog({
               )}
             </div>
 
+            {/* پورتِ سطرِ نقش‌ها + «وابسته به» + «این تسک را برمی‌دارم» ِ مودال. */}
+            {(data?.detail.roles.length ?? 0) > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {tr("نقش‌ها")}: {data!.detail.roles.map((r) =>
+                  r.claimedByName ? `${r.roleName ?? ''} (${r.claimedByName})` : (r.roleName ?? '')).join(tr('، '))}
+              </p>
+            )}
+            {data?.detail.dependsOnTitle && (
+              <p className="text-xs text-muted-foreground">{tr('وابسته به: {title}', { title: data.detail.dependsOnTitle })}</p>
+            )}
+            {data?.detail.claimable && (
+              <ClaimTaskButton
+                taskId={task.id}
+                projectId={task.projectId}
+                onDone={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
+              />
+            )}
+
             {/* «آخرین ویرایش توسط X» — همان سطرِ نسخهٔ قبلی. */}
             {task.updatedByName && (
               <p className="text-xs text-muted-foreground">
@@ -179,6 +198,18 @@ export function TaskDialog({
                   <Label htmlFor="t-desc">{t("توضیحات")}</Label>
                   <Textarea id="t-desc" name="description" rows={3} defaultValue={task.description} />
                 </div>
+
+                {(options.tasks?.filter((x) => x.id !== task.id).length ?? 0) > 0 && (
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="t-depends">{t("وابسته به")}</Label>
+                    <select id="t-depends" name="dependsOn" className={cellSelect} defaultValue={task.dependsOn ? String(task.dependsOn) : ''}>
+                      <option value="">—</option>
+                      {options.tasks!.filter((x) => x.id !== task.id).map((x) => (
+                        <option key={x.id} value={x.id}>{x.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="grid gap-1.5">

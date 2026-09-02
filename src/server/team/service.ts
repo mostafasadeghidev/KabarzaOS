@@ -3,7 +3,7 @@ import { currentLocale } from '@/i18n/server';
 import { and, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
-  comments, projectMembers, projects, tags, tasks, timelogs, userOffices, users,
+  comments, projectMembers, projects, tags, tasks, timelogs, userOffices, users, userRoles,
 } from '@/db/schema';
 import { type Actor } from '@/domain/access/permissions';
 import { ForbiddenError, visibleScopes } from '@/domain/access/guard';
@@ -62,9 +62,11 @@ async function officeProjectIds(actor: Actor, offices: number[]): Promise<number
 /** اعضای دفاترِ تحتِ مدیریت. */
 async function officeMemberIds(offices: number[]): Promise<number[]> {
   if (offices.length === 0) return [];
+  // پورتِ `office_member_ids`: فقط دارندگانِ نقشِ **عضو** — نه کارفرما/حسابدار/خودِ مدیر که به دفتر وصل‌اند.
   const rows = await db
     .selectDistinct({ userId: userOffices.userId })
     .from(userOffices)
+    .innerJoin(userRoles, and(eq(userRoles.userId, userOffices.userId), eq(userRoles.role, 'member')))
     .where(inArray(userOffices.officeId, offices));
   return rows.map((r) => r.userId);
 }
@@ -179,8 +181,7 @@ export async function teamTasks(actor: Actor, filter: TeamTaskFilter = {}) {
     .where(and(
       inArray(tasks.projectId, scope.projectIds),
       isNull(tasks.deletedAt),
-      // ⚠️ تسکِ خصوصی حتی برای مدیرِ دفتر هم خصوصی است (R-PROJ-17).
-      eq(tasks.isPrivate, false),
+      // پورتِ افزونه: مدیرِ دفتر مدیرِ پروژه است و تسکِ خصوصیِ پروژه‌های دفترش را هم می‌بیند.
       ...conditions,
     ))
     .orderBy(desc(tasks.id))
@@ -199,7 +200,7 @@ export async function teamTaskCount(actor: Actor, filter: TeamTaskFilter = {}) {
     .where(and(
       inArray(tasks.projectId, scope.projectIds),
       isNull(tasks.deletedAt),
-      eq(tasks.isPrivate, false),
+      // پورتِ افزونه: مدیرِ دفتر مدیرِ پروژه است و تسکِ خصوصیِ پروژه‌های دفترش را هم می‌بیند.
       ...taskFilterConditions(filter, new Date().toISOString().slice(0, 10)),
     ));
   return rows[0]?.n ?? 0;
@@ -289,7 +290,7 @@ export async function teamReviewTasks(actor: Actor) {
     .where(and(
       inArray(tasks.projectId, scope.projectIds),
       isNull(tasks.deletedAt),
-      eq(tasks.isPrivate, false),
+      // پورتِ افزونه: مدیرِ دفتر مدیرِ پروژه است و تسکِ خصوصیِ پروژه‌های دفترش را هم می‌بیند.
       eq(tags.isReview, true),
     ))
     .orderBy(desc(tasks.id));
@@ -371,7 +372,7 @@ export async function teamMember(
         eq(tasks.assignedTo, userId),
         inArray(tasks.projectId, scope.projectIds),
         isNull(tasks.deletedAt),
-        eq(tasks.isPrivate, false),
+        // پورتِ افزونه: مدیرِ دفتر مدیرِ پروژه است و تسکِ خصوصیِ پروژه‌های دفترش را هم می‌بیند.
       ))
       .limit(100),
   ]);

@@ -32,6 +32,7 @@ const taskSchema = z.object({
   priorityTagId: optionalId,
   assignedTo: optionalId,
   dueDate: day,
+  dependsOn: optionalId,
   isPrivate: z.boolean().default(false),
   /**
    * ⚠️ نقش‌ها تا امروز اصلاً خوانده نمی‌شدند — Zod دورشان می‌ریخت و
@@ -48,7 +49,7 @@ export interface TaskFormState {
   ok?: boolean;
 }
 
-const RAW_FIELDS = ['title', 'description', 'statusTagId', 'priorityTagId', 'assignedTo', 'dueDate'] as const;
+const RAW_FIELDS = ['title', 'description', 'statusTagId', 'priorityTagId', 'assignedTo', 'dueDate', 'dependsOn'] as const;
 
 function parse(formData: FormData) {
   const checked = (name: string) => formData.get(name) !== null;
@@ -63,6 +64,7 @@ function parse(formData: FormData) {
     priorityTagId: formData.get('priorityTagId') ?? '',
     assignedTo: formData.get('assignedTo') ?? '',
     dueDate: formData.get('dueDate') ?? '',
+    dependsOn: formData.get('dependsOn') ?? '',
     isPrivate: checked('isPrivate'),
     roleTagIds: formData.getAll('roleTagIds')
       .map((v) => Number(v))

@@ -72,8 +72,9 @@ export default async function DashboardPage() {
       const isClient = actor.roles.includes('client');
       const isMember = actor.roles.includes('member');
       if (isClient || isMember) {
+        // پورتِ داشبوردِ نسخهٔ قبلی: عضو **و** کارفرما هر دو بخش را می‌بینند اگر هر دو نقش را دارند.
         const [own, session] = await Promise.all([
-          getMemberDashboard(actor, isClient && !isMember ? 'client' : 'member'),
+          getMemberDashboard(actor),
           currentSession(),
         ]);
         return (

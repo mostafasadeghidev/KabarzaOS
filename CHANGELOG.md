@@ -2,6 +2,21 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.37.0]
+
+### Added — member and client dashboards, task inbox (parity with the plugin)
+
+- **The task inbox follows the plugin's visibility rule.** A member sees tasks assigned to them, private tasks they created, and role tasks that nobody has claimed yet (or that they claimed) for a role they hold on the project; a role task claimed by a colleague disappears. Each row shows the private lock, the roles with their claimer, and a "claim" button when the task can be taken; the link opens the project on the right tasks sub-tab.
+- **Clients get a review inbox:** the tasks awaiting their review across their non-frozen projects, and a matching "tasks awaiting review" card on the dashboard instead of a count that was always zero.
+- **Member dashboard:** "open projects" lists only open, non-frozen projects (with the start date), open-task counts use the visibility rule and exclude tasks awaiting review, tenders the member qualifies for are listed in their own section with the roles and the member's bid state, and no longer inflate the project list or counts.
+- **Client dashboard:** the projects table shows the registration date, price, payment status, remaining amount, total task count, progress and the team's logged hours, as in the plugin; a member who is also a client sees both sections.
+- **"Meetings this week"** card for every role: the person's meetings (invited or created) in the next seven days.
+- **Task dependencies.** A task can depend on another task of the same project; the dependency is shown in the task dialog and is editable in the task forms.
+- **The task dialog shows the role assignees with their claimer** and offers the "claim" button.
+- **Office managers see their offices' projects** in the projects list without a global permission, and the team's staff list counts only people with the member role. Office managers see private tasks on their offices' projects, as in the plugin.
+
+---
+
 ## [1.36.0]
 
 ### Added — invitations and password recovery (parity with the plugin)

@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, inArray } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { projectClients, projectMembers, projects, tagRelations, tags, userOffices } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
@@ -221,7 +221,13 @@ export async function assertCanInteractWithProject(
  * `tender_opened` بود و اگر کسی اعلانش را پاک می‌کرد راهی نمی‌ماند.
  * باز/بسته‌بودنِ هر نقش را خودِ صفحهٔ پروژه (نمای پیشنهاددهنده) می‌سنجد.
  */
-export async function membershipProjectIds(userId: number): Promise<number[]> {
+export type MembershipKind = 'member' | 'client' | 'tender';
+
+export async function membershipProjectIds(
+  userId: number,
+  /** کدام رابطه‌ها — داشبورد عضو/کارفرما و مناقصه را جدا می‌خواهد (پورتِ `current_projects(role)`). */
+  kinds: readonly MembershipKind[] = ['member', 'client', 'tender'],
+): Promise<number[]> {
   const [memberRows, clientRows, myTags] = await Promise.all([
     /**
      * ⚠️ عضویتِ مسدود پروژه را در فهرست هم نمی‌آورد. بدونِ این، کاربر
@@ -242,7 +248,7 @@ export async function membershipProjectIds(userId: number): Promise<number[]> {
       .where(and(eq(tagRelations.objectType, 'user'), eq(tagRelations.objectId, userId))),
   ]);
 
-  const tenderRows = myTags.length === 0 ? [] : await db
+  const tenderRows = myTags.length === 0 || !kinds.includes('tender') ? [] : await db
     .select({ id: projects.id, tenderRoles: projects.tenderRoles })
     .from(projects)
     .where(and(eq(projects.isTender, true), isNull(projects.deletedAt)));
@@ -253,6 +259,25 @@ export async function membershipProjectIds(userId: number): Promise<number[]> {
       .map(Number).some((roleId) => mine.has(roleId)))
     .map((p) => p.id);
 
-  return [...new Set([...memberRows.map((r) => r.id), ...clientRows.map((r) => r.id), ...tenderIds])];
+  return [...new Set([
+    ...(kinds.includes('member') ? memberRows.map((r) => r.id) : []),
+    ...(kinds.includes('client') ? clientRows.map((r) => r.id) : []),
+    ...tenderIds,
+  ])];
+}
+
+/**
+ * پروژه‌های دفاترِ تحتِ مدیریتِ کاربر — پورتِ بخشِ «دفاترِ من» ِ فهرستِ پروژه‌ها.
+ * ⚠️ `canViewProject` این‌ها را باز می‌کرد ولی فهرست نشانشان نمی‌داد: مدیرِ دفترِ
+ * بی‌مجوزِ سراسری پروژه‌های دفترش را فقط با آدرسِ مستقیم می‌دید.
+ */
+export async function managedOfficeProjectIds(userId: number): Promise<number[]> {
+  const managed = await db.select({ officeId: userOffices.officeId })
+    .from(userOffices)
+    .where(and(eq(userOffices.userId, userId), eq(userOffices.manages, true)));
+  if (managed.length === 0) return [];
+  const rows = await db.select({ id: projects.id }).from(projects)
+    .where(and(inArray(projects.officeId, managed.map((m) => m.officeId)), isNull(projects.deletedAt)));
+  return rows.map((r) => r.id);
 }
 
