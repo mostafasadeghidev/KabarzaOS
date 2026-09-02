@@ -116,11 +116,11 @@ export async function getDashboard(actor: Actor) {
     {
       title: 'نیازمند بررسی',
       cards: [
-        // معادلِ `class-focus-page.php` — هر کارت به تبِ متناظرِ پروژه‌ها می‌رود،
-        // نه به فهرستِ کامل.
-        { value: tasksInReview, label: 'تسک‌های نیاز به ریویو', href: '/tasks' },
-        { value: commentsOpen, label: 'کامنت‌های نیازمند بررسی', href: '/projects?tab=review' },
-        { value: pendingBids, label: 'مناقصه‌های منتظرِ تصمیم', href: '/projects?tab=tender' },
+        // پورتِ `class-focus-page.php` — هر کارت فهرستِ متمرکزِ همان مورد را باز می‌کند
+        // (گروه‌بندی به‌ازای پروژه، با مسئول/نویسنده)، نه صفحهٔ عمومی.
+        { value: tasksInReview, label: 'تسک‌های نیاز به ریویو', href: '/dashboard/focus?view=tasks_review' },
+        { value: commentsOpen, label: 'کامنت‌های نیازمند بررسی', href: '/dashboard/focus?view=comments_review' },
+        { value: pendingBids, label: 'مناقصه‌های منتظرِ تصمیم', href: '/dashboard/focus?view=bids_pending' },
       ],
     },
   ];

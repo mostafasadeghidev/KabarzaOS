@@ -206,3 +206,18 @@ export function retentionCutoff(now: Date, days: number): string {
 export function elapsedFor(startedAt: Date, now: Date): number {
   return Math.max(0, Math.floor((now.getTime() - startedAt.getTime()) / 60_000));
 }
+
+/**
+ * پنجرهٔ UTC ِ یک روزِ **محلی** — پورتِ `paid_at = date` ِ افزونه با تاریخِ محلی.
+ * ⚠️ پیش از این روزِ گزارش با `T00:00Z` بریده می‌شد و پرداختِ نزدیکِ نیمه‌شب
+ * در منطقهٔ ‎+03:30 به روزِ اشتباه می‌افتاد.
+ */
+export function dayWindow(date: string, timezone: string): { start: Date; end: Date } {
+  const utcMidnight = Date.parse(`${date}T00:00:00Z`);
+  const local = localParts(new Date(utcMidnight), timezone);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const localAsUtc = Date.parse(`${local.date}T${pad(local.hour)}:${pad(local.minute)}:00Z`);
+  const offsetMs = localAsUtc - utcMidnight;
+  const start = new Date(utcMidnight - offsetMs);
+  return { start, end: new Date(start.getTime() + 86_400_000 - 1) };
+}

@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.41.0]
+
+### Added — dashboard review queues and daily report details (parity with the plugin)
+
+- **Focused lists behind the "needs action" cards.** Tasks awaiting review are grouped by project in priority order with their assignee; open comment threads show a twelve-word excerpt and the last author; tenders awaiting a decision carry their bid count; deadlines within seven days show "today" or "N days left". Each row opens the project on the matching tab (tasks land on the review sub-tab).
+- **Daily report lines match the plugin:** hours list every member's minutes per project, payment lines show the member, the project and the amount in its own currency, and meeting lines carry the time and project. The report day is the system-timezone day, so a payment near midnight lands on the right date.
+- **Discord delivery** splits long reports into chunks of at most 1900 characters on line boundaries, posts each with a 15-second timeout and logs any non-2xx response instead of silently truncating.
+
+---
+
 ## [1.40.0]
 
 ### Added — report filters (parity with the plugin)

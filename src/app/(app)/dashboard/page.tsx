@@ -246,7 +246,7 @@ export default async function DashboardPage() {
             <DashPanel title={t("ددلاینِ گذشته")} action={{ href: '/projects', label: t("پروژه‌ها") }}>
               <RiskList items={risk.overdue} empty={t("موردی نیست.")} tone="danger" />
             </DashPanel>
-            <DashPanel title={t("ددلاینِ نزدیک")}>
+            <DashPanel title={t("ددلاینِ نزدیک")} action={{ href: '/dashboard/focus?view=deadline_soon', label: t("فهرست") }}>
               <RiskList items={risk.soon} empty={t("موردی نیست.")} tone="warning" />
             </DashPanel>
             <DashPanel title={t("پروژه‌های راکد")}>

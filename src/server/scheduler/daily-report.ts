@@ -7,15 +7,16 @@ import type { Actor } from '@/domain/access/permissions';
 import { ForbiddenError } from '@/domain/access/guard';
 import { db } from '@/db/client';
 import {
-  absences, meetings, projectPayments, projects, schedulerStamps,
+  absences, currencies, meetings, projectPayments, projects, schedulerStamps,
   tags, tasks, timelogs, userRoles, users,
 } from '@/db/schema';
 import {
-  buildReport, chunkText, DEFAULT_CONFIG, fitForDiscord, hasDestination, reportDate,
-  shouldSendNow, type ReportConfig, type ReportSections,
+  buildReport, chunkText, DEFAULT_CONFIG, DISCORD_CHUNK, hasDestination, hoursLine, meetingLine,
+  paymentLine, projectLabel, reportDate, shouldSendNow, type ReportConfig, type ReportSections,
 } from '@/domain/scheduler/daily-report';
 import { hoursLabel } from '@/domain/timelogs/timer';
-import { localParts } from '@/domain/scheduler/tick';
+import { dayWindow, localParts } from '@/domain/scheduler/tick';
+import { format, type Currency } from '@/domain/money/money';
 import { telegramCredentials } from '@/server/settings/telegram-service';
 
 /**
@@ -69,31 +70,41 @@ async function reportTranslator(): Promise<Translator> {
 }
 
 async function collect(date: string, t: Translator): Promise<ReportSections> {
-  const dayStart = new Date(`${date}T00:00:00Z`);
-  const dayEnd = new Date(`${date}T23:59:59Z`);
+  // پورتِ افزونه: «همان روز» به وقتِ **سامانه**، نه UTC — پرداختِ نزدیکِ نیمه‌شب به روزِ درست می‌افتد.
+  const timezone = (await getSystemConfig()).timezone || 'UTC';
+  const { start: dayStart, end: dayEnd } = dayWindow(date, timezone);
+  const pad = (n: number) => String(n).padStart(2, '0');
 
   const [hours, payments, doneTasks, newTasks, dayMeetings, onLeave] = await Promise.all([
+    // ریزِ هر پروژه به‌ازای هر نفر (پورتِ `Timelogs::for_date`).
     db.select({
+      userId: timelogs.userId,
       name: users.name,
+      projectTitle: projects.title,
       minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int`,
     })
       .from(timelogs)
       .leftJoin(users, eq(users.id, timelogs.userId))
+      .leftJoin(projects, eq(projects.id, timelogs.projectId))
       .where(eq(timelogs.logDate, date))
-      .groupBy(users.name),
+      .groupBy(timelogs.userId, users.name, projects.title)
+      .orderBy(timelogs.userId),
 
     db.select({
       direction: projectPayments.direction,
       amount: projectPayments.amount,
-      note: projectPayments.note,
+      currencyCode: currencies.code,
+      currencyDecimals: currencies.decimals,
       userName: users.name,
       projectTitle: projects.title,
     })
       .from(projectPayments)
       .leftJoin(users, eq(users.id, projectPayments.userId))
       .leftJoin(projects, eq(projects.id, projectPayments.projectId))
-      // paidAt مهرِ زمانی است، نه تاریخ — پس بازهٔ همان روز.
-      .where(and(gte(projectPayments.paidAt, dayStart), lte(projectPayments.paidAt, dayEnd))),
+      .leftJoin(currencies, eq(currencies.id, projectPayments.currencyId))
+      // paidAt مهرِ زمانی است، نه تاریخ — پس بازهٔ همان روزِ محلی.
+      .where(and(gte(projectPayments.paidAt, dayStart), lte(projectPayments.paidAt, dayEnd)))
+      .orderBy(projectPayments.id),
 
     db.select({ title: tasks.title, projectTitle: projects.title })
       .from(tasks)
@@ -110,9 +121,11 @@ async function collect(date: string, t: Translator): Promise<ReportSections> {
       .leftJoin(projects, eq(projects.id, tasks.projectId))
       .where(and(gte(tasks.createdAt, dayStart), lte(tasks.createdAt, dayEnd))),
 
-    db.select({ title: meetings.title, meetAt: meetings.meetAt })
+    db.select({ title: meetings.title, meetAt: meetings.meetAt, projectTitle: projects.title })
       .from(meetings)
-      .where(and(gte(meetings.meetAt, dayStart), lte(meetings.meetAt, dayEnd))),
+      .leftJoin(projects, eq(projects.id, meetings.projectId))
+      .where(and(gte(meetings.meetAt, dayStart), lte(meetings.meetAt, dayEnd)))
+      .orderBy(meetings.meetAt),
 
     db.select({ name: users.name, from: absences.fromDate, to: absences.toDate, note: absences.note })
       .from(absences)
@@ -120,24 +133,39 @@ async function collect(date: string, t: Translator): Promise<ReportSections> {
       .where(and(lte(absences.fromDate, date), gte(absences.toDate, date))),
   ]);
 
+  const byUser = new Map<number, { name: string; parts: Array<{ minutes: number; project: string }> }>();
+  for (const h of hours) {
+    if (h.minutes <= 0) continue;
+    const row = byUser.get(h.userId) ?? { name: h.name ?? `#${h.userId}`, parts: [] };
+    row.parts.push({ minutes: h.minutes, project: projectLabel(h.projectTitle, t) });
+    byUser.set(h.userId, row);
+  }
+
+  // پورتِ `payment_lines`: مبلغ در ارزِ خودِ ردیف با اعشارِ همان ارز، نه یوروی بی‌واحد.
   const money = (direction: string, withMember: boolean) =>
     payments
       .filter((p) => p.direction === direction)
-      .map((p) => {
-        const who = withMember && p.userName ? ` — ${p.userName}` : '';
-        const what = p.note || p.projectTitle || '';
-        return `• ${Number(p.amount).toFixed(2)}${who}${what ? ` (${what})` : ''}`;
-      });
+      .map((p) => paymentLine({
+        member: withMember ? (p.userName ?? t('عضو')) : null,
+        project: projectLabel(p.projectTitle, t),
+        amount: format(p.amount, p.currencyCode
+          ? { id: 0, code: p.currencyCode, symbol: '', decimals: p.currencyDecimals ?? 2 } as Currency
+          : undefined),
+        code: p.currencyCode ?? '',
+      }));
 
   return {
-    hours: hours.filter((h) => h.minutes > 0)
-      .map((h) => `• ${h.name ?? '—'}: ${hoursLabel(h.minutes)}`),
+    hours: [...byUser.values()].map((u) => hoursLine(u.name, u.parts, hoursLabel)),
     incoming: money('incoming', false),
     payouts: money('member_payout', true),
     expenses: money('project_expense', false),
-    tasks_done: doneTasks.map((t) => `• ${t.title}${t.projectTitle ? ` (${t.projectTitle})` : ''}`),
-    tasks_new: newTasks.map((t) => `• ${t.title}${t.projectTitle ? ` (${t.projectTitle})` : ''}`),
-    meetings: dayMeetings.map((m) => `• ${m.title}`),
+    tasks_done: doneTasks.map((r) => `• ${r.title}${r.projectTitle ? ` (${r.projectTitle})` : ''}`),
+    tasks_new: newTasks.map((r) => `• ${r.title}${r.projectTitle ? ` (${r.projectTitle})` : ''}`),
+    // پورتِ `meeting_lines`: ساعتِ محلی + پروژه.
+    meetings: dayMeetings.map((m) => {
+      const lp = localParts(m.meetAt, timezone);
+      return meetingLine({ time: `${pad(lp.hour)}:${pad(lp.minute)}`, title: m.title, project: m.projectTitle });
+    }),
     absences: onLeave.map((a) => `• ${a.name ?? '—'}: ${t('{from} تا {to}', { from: a.from, to: a.to })}${a.note ? ` — ${a.note}` : ''}`),
   };
 }
@@ -146,13 +174,24 @@ async function collect(date: string, t: Translator): Promise<ReportSections> {
  * ارسال
  * ------------------------------------------------------------------ */
 
-async function postToDiscord(webhook: string, text: string): Promise<void> {
-  await fetch(webhook, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: fitForDiscord(text) }),
-    signal: AbortSignal.timeout(15_000),
-  });
+/**
+ * پورتِ `post_to_webhook`: متن روی مرزِ خط به تکه‌های ≤۱۹۰۰ نویسه می‌شکند و
+ * هر تکه یک POST با ۱۵ ثانیه مهلت است؛ فقط وقتی همه 2xx بودند true.
+ * ⚠️ پیش از این یک POST ِ بریده در ۲۰۰۰ نویسه می‌رفت و دنبالهٔ گزارشِ بلند
+ * گم می‌شد؛ وضعیتِ پاسخ هم خوانده نمی‌شد و شکست بی‌صدا بود.
+ */
+async function postToDiscord(webhook: string, text: string): Promise<boolean> {
+  let ok = true;
+  for (const part of chunkText(text, DISCORD_CHUNK)) {
+    const res = await fetch(webhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: part }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) ok = false;
+  }
+  return ok;
 }
 
 /**
@@ -204,7 +243,7 @@ export async function dispatchReport(date: string): Promise<boolean> {
   // ⚠️ هر مقصد جداگانه try می‌شود: قطعیِ دیسکورد نباید تلگرام را هم ببرد.
   if (config.discord && config.webhook) {
     try {
-      await postToDiscord(config.webhook, text);
+      if (!await postToDiscord(config.webhook, text)) console.error('[daily-report] discord: non-2xx response');
     } catch (error) {
       console.error('[daily-report] discord', error);
     }

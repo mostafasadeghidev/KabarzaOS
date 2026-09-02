@@ -168,3 +168,31 @@ export function fitForDiscord(text: string): string {
   const suffix = '\n… (بریده شد)';
   return `${text.slice(0, DISCORD_LIMIT - suffix.length)}${suffix}`;
 }
+
+/** پورتِ `project_name`: بی‌پروژه → «بدون پروژه». */
+export function projectLabel(title: string | null | undefined, t: Translator = SOURCE): string {
+  return title && title !== '' ? title : t('بدون پروژه');
+}
+
+/** پورتِ `hours_lines`: «• نام: 0:30 وب‌سایت، 2:00 لوگو» — ریزِ هر پروژه، نه فقط جمع. */
+export function hoursLine(
+  name: string,
+  parts: ReadonlyArray<{ minutes: number; project: string }>,
+  label: (minutes: number) => string,
+): string {
+  return `• ${name}: ${parts.map((p) => `${label(p.minutes)} ${p.project}`).join('، ')}`;
+}
+
+/** پورتِ `payment_lines`: «• [عضو — ]پروژه: مبلغ ارز» — مبلغ در ارزِ خودِ ردیف. */
+export function paymentLine(input: { member?: string | null; project: string; amount: string; code: string }): string {
+  const who = input.member ? `${input.member} — ` : '';
+  return `• ${who}${input.project}: ${input.amount}${input.code ? ` ${input.code}` : ''}`;
+}
+
+/** پورتِ `meeting_lines`: «• HH:MM — عنوان (پروژه)». */
+export function meetingLine(input: { time: string; title: string; project?: string | null }): string {
+  return `• ${input.time} — ${input.title}${input.project ? ` (${input.project})` : ''}`;
+}
+
+/** پورتِ `post_to_webhook`: دیسکورد تکه‌های ≤۱۹۰۰ نویسه می‌گیرد (زیرِ سقفِ ۲۰۰۰). */
+export const DISCORD_CHUNK = 1900;
