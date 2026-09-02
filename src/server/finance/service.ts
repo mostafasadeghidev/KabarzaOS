@@ -20,6 +20,7 @@ import { convert, type RateSource } from '@/domain/currency/rates';
 import { AccountError, assertAccountDeletable, canSeeAccount, visibleAccountIds } from '@/domain/finance/accounts';
 import { userIdsWithCaps } from '@/server/people/tag-caps';
 import { FINANCE_SCOPED_CAP, MANAGE_FINANCE_CAP } from '@/domain/access/project-scope';
+import { relocateParty } from '@/domain/ledger/form-rules';
 
 /**
  * سرویسِ حسابداری.
@@ -384,6 +385,11 @@ export interface EntryInput {
   receiverUserId: number | null;
   receiverLabel: string;
   /**
+   * فروشندهٔ ردیف — پورتِ `vendor_id`. معمولاً سرور خودش از گیرندهٔ آزادِ
+   * برداشت می‌سازد (`Vendors::find_or_create`)؛ هزینهٔ دوره‌ای صریح می‌فرستد.
+   */
+  vendorId?: number | null;
+  /**
    * رسیدهای تازه‌بارگذاری‌شده (شناسهٔ فایل) و آن‌هایی که تیکِ حذف خورده‌اند.
    * ⚠️ فهرستِ کامل فرستاده **نمی‌شود** — ادغام در سرور انجام می‌گیرد تا فرمِ
    * کهنه رسیدی را که همین حالا کسِ دیگری اضافه کرده نیندازد.
@@ -442,7 +448,12 @@ async function mirrorPayment(
     : null;
 
   const settled = input.amountSettled?.trim() ? input.amountSettled.trim() : null;
-  const settledCurrencyId = settled ? (input.settledCurrencyId ?? null) : null;
+  /**
+   * پورتِ `maybe_link_payment`: ارزِ تسویه اگر نیامده باشد، ارزِ **تعهد** است
+   * (قراردادِ عضو، وگرنه ارزِ پروژه). پیش از این با ارزِ خالی ذخیره می‌شد و هر
+   * مصرف‌کننده‌ای `coalesce(amount_settled, amount)` را خام جمع می‌زد.
+   */
+  const settledCurrencyId = settled ? (input.settledCurrencyId ?? await obligationCurrency(plan)) : null;
 
   /**
    * ⚠️ رقمِ ارزِ پایه از **قصدِ دستیِ** کاربر پیروی می‌کند: اگر گفته این
@@ -496,9 +507,74 @@ async function mirrorPayment(
   }
 }
 
+/**
+ * ارزِ تعهدی که یک آینهٔ پرداخت به آن سنجیده می‌شود: قراردادِ عضو روی همان
+ * پروژه، وگرنه ارزِ پروژه.
+ */
+async function obligationCurrency(plan: { direction: string; projectId: number | null; userId: number | null }): Promise<number | null> {
+  if (!plan.projectId) return null;
+  if (plan.direction === 'member_payout' && plan.userId) {
+    const rows = await db.select({ currencyId: projectMembers.currencyId }).from(projectMembers)
+      .where(and(eq(projectMembers.projectId, plan.projectId), eq(projectMembers.userId, plan.userId)));
+    const own = rows.find((r) => r.currencyId !== null)?.currencyId;
+    if (own) return own;
+  }
+  return (await db.select({ currencyId: projects.currencyId }).from(projects)
+    .where(eq(projects.id, plan.projectId)))[0]?.currencyId ?? null;
+}
+
+/** ارزِ پیش‌فرضِ دفترِ حساب — برای `amount_office` (پورتِ `Offices::currency`). */
+async function officeCurrencyFor(officeId: number | null, fallback: number): Promise<number> {
+  if (!officeId) return fallback;
+  const row = (await db.select({ currencyId: offices.defaultCurrencyId }).from(offices)
+    .where(eq(offices.id, officeId)))[0];
+  return row?.currencyId ?? fallback;
+}
+
+/** پورتِ `Vendors::find_or_create` — نام، بدونِ حساسیت به بزرگی حروف. */
+export async function findOrCreateVendor(name: string): Promise<number | null> {
+  const clean = name.trim();
+  if (clean === '') return null;
+  const found = await db.select({ id: vendors.id }).from(vendors)
+    .where(sql`lower(${vendors.name}) = lower(${clean})`).limit(1);
+  if (found[0]) return found[0].id;
+  const rows = await db.insert(vendors).values({ name: clean }).returning({ id: vendors.id });
+  return rows[0]!.id;
+}
+
+/**
+ * پورتِ گاردهای `handle()` ِ صفحهٔ حسابداری، این بار در **سرور**:
+ * - طرفِ حساب از جهت پیروی می‌کند — واریز فقط پرداخت‌کننده، برداشت فقط گیرنده؛
+ *   اگر خانهٔ هدف خالی باشد طرفِ موجود به آن منتقل می‌شود و خانهٔ دیگر پاک.
+ *   پیش از این فرمِ کهنه/دست‌کاری‌شده می‌توانست پرداخت‌کننده روی برداشت ذخیره کند.
+ * - گیرندهٔ آزادِ برداشت (بی‌شناسهٔ کاربر) فروشنده است و `vendor_id` می‌گیرد.
+ */
+async function normalizeParty(input: EntryInput): Promise<EntryInput> {
+  const party = relocateParty(
+    {
+      payer: { userId: input.payerUserId, label: input.payerLabel },
+      receiver: { userId: input.receiverUserId, label: input.receiverLabel },
+    },
+    input.direction,
+  );
+  const receiverLabel = party.receiver.label.trim();
+  const vendorId = input.direction === 'out' && !party.receiver.userId && receiverLabel !== ''
+    ? await findOrCreateVendor(receiverLabel)
+    : (input.vendorId ?? null);
+  return {
+    ...input,
+    payerUserId: party.payer.userId,
+    payerLabel: party.payer.label.trim(),
+    receiverUserId: party.receiver.userId,
+    receiverLabel,
+    vendorId,
+  };
+}
+
 /** ثبتِ ردیفِ دفتر. */
-export async function createEntry(actor: Actor, input: EntryInput): Promise<number> {
+export async function createEntry(actor: Actor, rawInput: EntryInput): Promise<number> {
   await assertCanBook(actor);
+  const input = await normalizeParty(rawInput);
 
   // گاردِ ۲ — قفلِ دوره، پیش از هر چیزِ دیگر.
   assertWritable(await currentLockDate(), input.entryDate);
@@ -512,20 +588,24 @@ export async function createEntry(actor: Actor, input: EntryInput): Promise<numb
 
   const account = await loadAccount(actor, input.accountId);
   const { source, baseCurrencyId } = await rateSource();
+  // پورتِ `add()`/`compute_amounts`: دفترِ ردیف از حساب می‌آید و `amount_office`
+  // در ارزِ **دفتر** حساب می‌شود، نه ارزِ حساب (وگرنه گزارشِ منطقه‌ای بی‌معنا بود).
+  const officeId = account.officeId ?? input.officeId;
+  const officeCurrencyId = await officeCurrencyFor(officeId, baseCurrencyId);
 
   const amounts = computeAmounts(source, {
     amount: input.amount,
     currencyId: input.currencyId,
     accountCurrencyId: account.currencyId,
-    officeCurrencyId: account.currencyId,
+    officeCurrencyId,
     baseCurrencyId,
     amountAccountOverride: input.amountAccountOverride ?? null,
   });
-  assertRatesKnown(amounts, input);
+  assertRatesKnown(amounts, input, { officeCurrencyId, baseCurrencyId });
 
   const rows = await db.insert(ledger).values({
     accountId: input.accountId,
-    officeId: input.officeId,
+    officeId,
     entryDate: input.entryDate,
     direction: input.direction,
     description: input.description,
@@ -540,6 +620,7 @@ export async function createEntry(actor: Actor, input: EntryInput): Promise<numb
     receiverUserId: input.receiverUserId,
     receiverLabel: input.receiverLabel,
     projectId: input.projectId,
+    vendorId: input.vendorId ?? null,
     receiptIds: input.addedReceiptIds?.length ? input.addedReceiptIds : null,
     createdBy: actor.id,
   }).returning({ id: ledger.id });
@@ -555,10 +636,19 @@ export async function createEntry(actor: Actor, input: EntryInput): Promise<numb
  * نرخِ غایب → خطا، مگر کاربر مبلغِ واقعیِ رسیده به حساب را نوشته باشد
  * (R-LEDGER-03: مبلغِ واقعی بر تبدیل مقدم است و نرخ لازم ندارد).
  */
-function assertRatesKnown(amounts: { missingRates: number[] }, input: EntryInput): void {
-  if (amounts.missingRates.length === 0) return;
+function assertRatesKnown(
+  amounts: { missingRates: number[] },
+  input: EntryInput,
+  scope: { officeCurrencyId: number; baseCurrencyId: number },
+): void {
+  // ارزِ دفتر فقط گزارشِ منطقه‌ای را می‌سازد؛ نبودِ نرخش ثبت را نمی‌ایستاند
+  // (پورتِ افزونه که آنجا هم بی‌صدا بود) — مگر همان ارزِ پایه باشد.
+  const critical = amounts.missingRates.filter(
+    (id) => id !== scope.officeCurrencyId || id === scope.baseCurrencyId,
+  );
+  if (critical.length === 0) return;
   if (input.amountAccountOverride && input.amountAccountOverride.trim() !== '') return;
-  throw new MissingRateError(amounts.missingRates);
+  throw new MissingRateError(critical);
 }
 
 /** دسته‌های ردیف — جایگزینیِ کامل، مثلِ تگ‌های افراد. */
@@ -575,8 +665,9 @@ async function writeLedgerTags(entryId: number, tagIds: number[]): Promise<void>
 }
 
 /** ویرایشِ ردیف — با همان سه گارد، و **تاریخِ قدیم هم** باید نوشتنی باشد. */
-export async function updateEntry(actor: Actor, entryId: number, input: EntryInput): Promise<void> {
+export async function updateEntry(actor: Actor, entryId: number, rawInput: EntryInput): Promise<void> {
   await assertCanBook(actor);
+  const input = await normalizeParty(rawInput);
 
   const before = await loadEntry(actor, entryId);
   const lockDate = await currentLockDate();
@@ -598,15 +689,19 @@ export async function updateEntry(actor: Actor, entryId: number, input: EntryInp
   if (input.accountId !== before.accountId) throw new ForbiddenError('ledger.account_fixed');
   const account = await loadAccount(actor, input.accountId);
   const { source, baseCurrencyId } = await rateSource();
+  // پورتِ `add()`/`compute_amounts`: دفترِ ردیف از حساب می‌آید و `amount_office`
+  // در ارزِ **دفتر** حساب می‌شود، نه ارزِ حساب (وگرنه گزارشِ منطقه‌ای بی‌معنا بود).
+  const officeId = account.officeId ?? input.officeId;
+  const officeCurrencyId = await officeCurrencyFor(officeId, baseCurrencyId);
   const amounts = computeAmounts(source, {
     amount: input.amount,
     currencyId: input.currencyId,
     accountCurrencyId: account.currencyId,
-    officeCurrencyId: account.currencyId,
+    officeCurrencyId,
     baseCurrencyId,
     amountAccountOverride: input.amountAccountOverride ?? null,
   });
-  assertRatesKnown(amounts, input);
+  assertRatesKnown(amounts, input, { officeCurrencyId, baseCurrencyId });
 
   // «موجودها منهای حذف‌شده‌ها، به‌علاوهٔ تازه‌ها» — نه جایگزینیِ کامل.
   const receipts = planReceipts({
@@ -617,7 +712,7 @@ export async function updateEntry(actor: Actor, entryId: number, input: EntryInp
 
   await db.update(ledger).set({
     accountId: input.accountId,
-    officeId: input.officeId,
+    officeId,
     entryDate: input.entryDate,
     direction: input.direction,
     description: input.description,
@@ -632,6 +727,7 @@ export async function updateEntry(actor: Actor, entryId: number, input: EntryInp
     receiverUserId: input.receiverUserId,
     receiverLabel: input.receiverLabel,
     projectId: input.projectId,
+    vendorId: input.vendorId ?? null,
     receiptIds: receipts.keep.length > 0 ? receipts.keep : null,
     updatedAt: new Date(),
   }).where(eq(ledger.id, entryId));
@@ -832,7 +928,7 @@ export async function canBookOn(actor: Actor, accountId: number): Promise<boolea
 
 async function loadAccount(actor: Actor, accountId: number) {
   const rows = await db
-    .select({ id: accounts.id, currencyId: accounts.currencyId, scope: accounts.scope })
+    .select({ id: accounts.id, currencyId: accounts.currencyId, scope: accounts.scope, officeId: accounts.officeId })
     .from(accounts).where(eq(accounts.id, accountId));
   const account = rows[0];
   if (!account) throw new LedgerNotFoundError();

@@ -6,7 +6,7 @@ import type { LedgerPaging } from './ledger-filter';
 import type { BankRow } from './bank-directory';
 import { LedgerView } from './ledger-view';
 import type { AccountOption, EntryRow, FormOptions } from './ledger-view';
-import { PayoutsView, type RecurringRow, type RequestRow } from './payouts-view';
+import { PayoutsView, type RecurringRow, type RequestRow , type UnitRow, type DetachedRow } from './payouts-view';
 import { AccountsView, type AccountFormOptions } from './accounts-view';
 import { useT } from '@/i18n/client';
 
@@ -36,6 +36,8 @@ const TABS = [
 export function FinancePage({
   requests,
   archivedRequests,
+  unpaidUnits,
+  detachedPayments,
   isOwner,
   categories,
   directory,
@@ -47,6 +49,8 @@ export function FinancePage({
 }: {
   /** درخواست‌های بایگانی‌شده (تصمیم‌گرفته پیش از قفل) — تبِ جدا. */
   archivedRequests: RequestRow[];
+  unpaidUnits: UnitRow[];
+  detachedPayments: DetachedRow[];
   /** تأیید/رد فقط مالک؛ حسابدار پرداخت می‌کند. */
   isOwner: boolean;
   categories: Array<{ id: number; name: string | null }>;
@@ -128,6 +132,8 @@ export function FinancePage({
           directory={directory}
           requests={requests}
           archivedRequests={archivedRequests}
+          unpaidUnits={unpaidUnits}
+          detachedPayments={detachedPayments}
           isOwner={isOwner}
           lockDate={props.lockDate}
           categories={categories}

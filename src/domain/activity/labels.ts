@@ -66,6 +66,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'account.save': 'ذخیرهٔ حساب',
   'account.delete': 'حذفِ حساب',
   'request.paid': 'پرداختِ درخواست',
+  'unit.paid': 'پرداختِ مستقیمِ کارکرد',
   'request.approved': 'تأییدِ درخواست',
   'request.rejected': 'ردِ درخواست',
   'recurring.create': 'هزینهٔ دوره‌ایِ جدید',

@@ -5,7 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { Banknote, Check, Plus, Trash2, X } from 'lucide-react';
 import {
   decideRequestAction, deleteRecurringAction, payRecurringAction,
-  payRequestAction, saveRecurringAction, type PayoutState,
+  payRequestAction, payUnitAction, saveRecurringAction, type PayoutState,
 } from './_form/payout-actions';
 import { format } from '@/domain/money/money';
 import {
@@ -37,9 +37,48 @@ export interface RequestRow {
   status: string;
   decisionNote: string;
   ledgerId: number | null;
+  createdAt: Date;
+  userName: string | null;
+  projectTitle: string | null;
+  /** ماندهٔ قراردادِ عضو در همان پروژه — پورتِ ستونِ `member_summary`. */
+  remaining: string | null;
+  remainingCurrencyCode: string | null;
+  /** خانهٔ بانکی — کارت/شبا/حساب (پورتِ `bank_cell`). */
+  bankCard: string | null;
+  bankIban: string | null;
+  bankAccount: string | null;
+}
+
+/** کارکردِ تعدادیِ پرداخت‌نشده (Flow 1 ِ افزونه). */
+export interface UnitRow {
+  id: number;
+  entryDate: string;
+  quantity: string;
+  amount: string;
+  currencyCode: string | null;
   userName: string | null;
   projectTitle: string | null;
 }
+
+/** پرداختِ بی‌پروژه — مانده از «جداسازی». */
+export interface DetachedRow {
+  id: number;
+  paidAt: string | null;
+  direction: string;
+  amount: string;
+  currencyCode: string | null;
+  note: string;
+  userName: string | null;
+  receiptId: number | null;
+}
+
+/** برچسبِ جهتِ پرداخت — پورتِ `payment_dir_label()`. */
+const PAY_DIRECTION_LABELS: Record<string, string> = {
+  incoming: 'دریافت از کارفرما',
+  member_payout: 'پرداخت به عضو',
+  project_expense: 'هزینهٔ پروژه',
+  project_cost: 'هزینهٔ پروژه',
+};
 
 export interface RecurringRow {
   id: number;
@@ -104,6 +143,8 @@ type RequestTab = 'pending' | 'approved' | 'paid' | 'rejected' | 'all' | 'archiv
 export function PayoutsView({
   section,
   requests,
+  unpaidUnits = [],
+  detachedPayments = [],
   archivedRequests = [],
   isOwner,
   lockDate = null,
@@ -117,6 +158,8 @@ export function PayoutsView({
   directory,
 }: {
   archivedRequests?: RequestRow[];
+  unpaidUnits?: UnitRow[];
+  detachedPayments?: DetachedRow[];
   /** تأیید/رد فقط مالک (پورتِ `manage_options`)؛ حسابدار فقط پرداخت می‌کند. */
   isOwner: boolean;
   lockDate?: string | null;
@@ -179,6 +222,10 @@ export function PayoutsView({
   useActionToast(expenseState, { success: 'هزینه ذخیره شد.' });
 
   useEffect(() => { if (payState.ok) setPayTarget(null); }, [payState]);
+  const [unitTarget, setUnitTarget] = useState<UnitRow | null>(null);
+  const [unitState, unitAction] = useActionState<PayoutState, FormData>(payUnitAction, {});
+  useActionToast(unitState, { success: 'پرداخت ثبت شد.' });
+  useEffect(() => { if (unitState.ok) setUnitTarget(null); }, [unitState]);
   useEffect(() => { if (expenseState.ok) { setExpenseOpen(false); setEditing(null); } }, [expenseState]);
 
   const act = (fn: () => Promise<PayoutState>) =>
@@ -258,7 +305,10 @@ export function PayoutsView({
                   <TableHead>{t("عضو")}</TableHead>
                   <TableHead>{t("پروژه")}</TableHead>
                   <TableHead>{t("مبلغ")}</TableHead>
+                  <TableHead>{t("ماندهٔ قرارداد")}</TableHead>
+                  <TableHead>{t("تاریخ")}</TableHead>
                   <TableHead>{t("وضعیت")}</TableHead>
+                  <TableHead>{t("اطلاعات بانکی")}</TableHead>
                   {canManage && <TableHead />}
                 </TableRow>
               </TableHeader>
@@ -267,14 +317,31 @@ export function PayoutsView({
                   const s = STATUS[r.status] ?? { label: r.status, variant: 'secondary' as const };
                   return (
                     <TableRow key={r.id}>
-                      <TableCell>{r.userName ?? '—'}</TableCell>
+                      <TableCell>
+                        {r.userName ?? '—'}
+                        {/* یادداشتِ خودِ عضو روی درخواست — پورتِ ستونِ «توضیح». */}
+                        {r.note && <span className="block text-xs text-muted-foreground">{r.note}</span>}
+                      </TableCell>
                       <TableCell>{r.projectTitle ?? '—'}</TableCell>
-                      <TableNumericCell>{format(r.amount)}</TableNumericCell>
+                      <TableNumericCell>{format(r.amount)} {r.currencyCode ?? ''}</TableNumericCell>
+                      <TableNumericCell className="text-muted-foreground">
+                        {r.remaining === null ? '—' : `${format(r.remaining)} ${r.remainingCurrencyCode ?? ''}`}
+                      </TableNumericCell>
+                      <TableNumericCell className="text-muted-foreground">{String(r.createdAt).slice(0, 10)}</TableNumericCell>
                       <TableCell>
                         <Badge variant={s.variant}>{t(s.label)}</Badge>
                         {r.decisionNote && (
                           <span className="ms-2 text-xs text-muted-foreground">{r.decisionNote}</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {r.bankCard || r.bankIban || r.bankAccount ? (
+                          <span className="grid">
+                            {r.bankCard && <span className="num">{t("کارت")}: {r.bankCard}</span>}
+                            {r.bankIban && <span className="num">{t("شبا")}: {r.bankIban}</span>}
+                            {r.bankAccount && <span className="num">{t("حساب")}: {r.bankAccount}</span>}
+                          </span>
+                        ) : '—'}
                       </TableCell>
                       {canManage && (
                         <TableCell>
@@ -325,6 +392,101 @@ export function PayoutsView({
 
       {/* ⚠️ صفحه‌بند به جدولِ درخواست‌ها تعلق دارد، نه به هزینه‌ها. */}
       {section === 'members' && <TablePager view={requestsView} />}
+
+      {/* ---- کارکردهای پرداخت‌نشده — Flow 1: حسابدار ردیف را مستقیم می‌پردازد ---- */}
+      {section === 'members' && (
+      <section className="grid gap-3">
+        <div>
+          <h2 className="text-base font-semibold">{t("کارکردهای پرداخت‌نشده")}</h2>
+          <p className="text-xs text-muted-foreground">
+            {tr("ردیف‌های کارکردِ تعدادی که هنوز پرداخت نشده‌اند و درخواستِ بازی ندارند؛ «ثبت در حسابداری» ردیفِ برداشت را می‌نویسد و کارکرد «پرداخت‌شده» می‌شود.")}
+          </p>
+        </div>
+        {unpaidUnits.length === 0 ? (
+          <EmptyState title={t("موردی نیست.")} />
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("تاریخ")}</TableHead>
+                  <TableHead>{t("عضو")}</TableHead>
+                  <TableHead>{t("پروژه")}</TableHead>
+                  <TableHead>{t("تعداد")}</TableHead>
+                  <TableHead>{t("مبلغ")}</TableHead>
+                  {canManage && <TableHead />}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {unpaidUnits.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableNumericCell>{u.entryDate}</TableNumericCell>
+                    <TableCell>{u.userName ?? '—'}</TableCell>
+                    <TableCell>{u.projectTitle ?? '—'}</TableCell>
+                    <TableNumericCell>{format(u.quantity)}</TableNumericCell>
+                    <TableNumericCell>{format(u.amount)} {u.currencyCode ?? ''}</TableNumericCell>
+                    {canManage && (
+                      <TableCell>
+                        <div className="flex justify-end">
+                          <Button size="sm" disabled={pending} onClick={() => setUnitTarget(u)}>
+                            <Banknote className="size-3.5" />
+                            {tr("ثبت در حسابداری")}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
+      )}
+
+      {/* ---- پرداخت‌های بی‌پروژه — مانده از «جداسازی» ---- */}
+      {section === 'members' && detachedPayments.length > 0 && (
+      <section className="grid gap-3">
+        <div>
+          <h2 className="text-base font-semibold">{t("پرداخت‌های بی‌پروژه")}</h2>
+          <p className="text-xs text-muted-foreground">
+            {tr("ردیف‌هایی که با «جداسازی» از پروژهٔ حذف‌شده مانده‌اند؛ پول در دفتر هست و نامِ پروژه در توضیحات.")}
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("تاریخ")}</TableHead>
+                <TableHead>{t("طرف")}</TableHead>
+                <TableHead>{t("نوع")}</TableHead>
+                <TableHead>{t("مبلغ")}</TableHead>
+                <TableHead>{t("توضیحات")}</TableHead>
+                <TableHead>{t("رسید")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {detachedPayments.map((p) => (
+                <TableRow key={p.id}>
+                  <TableNumericCell>{p.paidAt ?? '—'}</TableNumericCell>
+                  <TableCell>{p.userName ?? '—'}</TableCell>
+                  <TableCell>{t(PAY_DIRECTION_LABELS[p.direction] ?? p.direction)}</TableCell>
+                  <TableNumericCell>{format(p.amount)} {p.currencyCode ?? ''}</TableNumericCell>
+                  <TableCell className="text-muted-foreground">{p.note || '—'}</TableCell>
+                  <TableCell>
+                    {p.receiptId ? (
+                      <a href={`/api/files/${p.receiptId}`} target="_blank" rel="noopener noreferrer" className="underline">
+                        {t("رسید")}
+                      </a>
+                    ) : '—'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </section>
+      )}
 
       {/* ---- هزینه‌های دوره‌ای ---- */}
       {section === 'expenses' && (
@@ -414,9 +576,16 @@ export function PayoutsView({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                disabled={pending || r.accountId === null}
-                                title={r.accountId === null ? tr('ابتدا حسابِ پرداخت را انتخاب کنید') : undefined}
-                                onClick={() => act(() => payRecurringAction(r.id, r.nextDueDate))}
+                                disabled={pending}
+                                title={r.accountId === null ? tr('بدونِ حساب فقط سررسید جلو می‌رود') : undefined}
+                                onClick={async () => {
+                                  // پورتِ `pay()`: بدونِ حساب هیچ ردیفی نوشته نمی‌شود، فقط نوبت می‌گذرد.
+                                  if (r.accountId === null && !(await confirm({
+                                    title: t('پرداخت بدونِ ثبت در دفتر؟'),
+                                    description: t('این هزینه حسابِ پرداخت ندارد؛ فقط سررسیدش جلو می‌رود و ردیفی در دفتر نوشته نمی‌شود.'),
+                                  }))) return;
+                                  act(() => payRecurringAction(r.id, r.nextDueDate));
+                                }}
                               >
                                 <Banknote className="size-3.5" />
                                 {tr("ثبت پرداخت")}
@@ -525,6 +694,15 @@ export function PayoutsView({
                 <Input id="pay-date" type="date" name="entryDate" className="num" defaultValue={today} required />
               </div>
 
+              {/* پورتِ `record_payment_url`: مبلغِ درخواست معادلِ تعهد است؛ مبلغِ واقعی از حساب اختیاری. */}
+              <div className="grid gap-1.5">
+                <Label htmlFor="pay-amount">{t("مبلغِ واقعی از حساب (اختیاری)")}</Label>
+                <Input id="pay-amount" name="amount" inputMode="decimal" className="num" placeholder={payTarget.amount} />
+                <p className="text-xs text-muted-foreground">
+                  {tr("در ارزِ حساب؛ خالی یعنی همان مبلغِ درخواست. مبلغِ درخواست به‌عنوانِ معادلِ تعهدِ عضو ثبت می‌شود.")}
+                </p>
+              </div>
+
               {payState.error && (
                 <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {tr(payState.error)}
@@ -533,6 +711,51 @@ export function PayoutsView({
 
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setPayTarget(null)}>{t("انصراف")}</Button>
+                <Submit label={t("ثبت پرداخت")} />
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ---- مودالِ پرداختِ مستقیمِ کارکرد (پورتِ from_unit) ---- */}
+      <Dialog open={unitTarget !== null} onOpenChange={(o) => !o && setUnitTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("ثبت در حسابداری")}</DialogTitle>
+            <DialogDescription>
+              {tr("یک ردیفِ برداشت به عضو نوشته می‌شود و کارکرد «پرداخت‌شده» می‌گردد.")}
+            </DialogDescription>
+          </DialogHeader>
+          {unitTarget && (
+            <form action={unitAction} className="grid gap-3">
+              <input type="hidden" name="unitEntryId" value={unitTarget.id} />
+              <p className="text-sm">
+                {unitTarget.userName} — {unitTarget.projectTitle} — <span className="num">{format(unitTarget.amount)} {unitTarget.currencyCode ?? ''}</span>
+              </p>
+              <div className="grid gap-1.5">
+                <Label htmlFor="unit-account">{t("حساب")}</Label>
+                <select id="unit-account" name="accountId" className={field} defaultValue={accounts[0]?.id ?? ''}>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name} ({a.currencyCode})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="unit-date">{t("تاریخ")}</Label>
+                <Input id="unit-date" type="date" name="entryDate" className="num" defaultValue={today} required />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="unit-amount">{t("مبلغِ واقعی از حساب (اختیاری)")}</Label>
+                <Input id="unit-amount" name="amount" inputMode="decimal" className="num" placeholder={unitTarget.amount} />
+              </div>
+              {unitState.error && (
+                <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {tr(unitState.error)}
+                </p>
+              )}
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setUnitTarget(null)}>{t("انصراف")}</Button>
                 <Submit label={t("ثبت پرداخت")} />
               </DialogFooter>
             </form>
@@ -619,6 +842,8 @@ export function PayoutsView({
                   <option value="">{t("بدون طرف‌حساب")}</option>
                   {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
                 </select>
+                {/* پورتِ `find_or_create`: طرف‌حسابِ تازه همین‌جا ساخته می‌شود. */}
+                <Input name="vendorName" placeholder={tr('یا طرف‌حسابِ تازه…')} className="h-8 text-xs" />
               </div>
             </div>
 
@@ -640,6 +865,13 @@ export function PayoutsView({
               <input type="checkbox" name="isActive" defaultChecked={editing?.isActive ?? true} className="size-4 accent-primary" />
               {tr("فعال")}
             </label>
+            {!editing && (
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="payNow" className="size-4 accent-primary" />
+                {tr("نوبتِ اول همین حالا پرداخت شود")}
+                <span className="text-xs text-muted-foreground">{tr("(با حساب، ردیفِ دفتر نوشته می‌شود)")}</span>
+              </label>
+            )}
 
             <p className="text-xs text-muted-foreground">
               {tr("بدونِ «حسابِ پرداخت» هزینه ثبت می‌شود ولی پرداختی در دفتر نوشته نمی‌شود.")}

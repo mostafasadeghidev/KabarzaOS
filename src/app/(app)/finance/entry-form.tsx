@@ -111,7 +111,8 @@ export function EntryForm({
     projectMemberIds: projectId ? (options.projectMemberIds[projectId] ?? []) : [],
   });
   const settledVisible = showsSettled(projectId);
-  const recurringVisible = showsRecurring(direction);
+  // پورتِ افزونه: فقط برای برداشت و فقط هنگامِ **افزودن** — ردیفِ موجود قالب نمی‌سازد.
+  const recurringVisible = showsRecurring(direction) && !editing;
   const unitPickerVisible = showsUnitPicker({ direction, projectId, receiverUserId });
 
   const settledCurrency = useMemo(() => settledCurrencyId({
@@ -369,15 +370,32 @@ export function EntryForm({
 
       {/* ── R-FORM-03 — هزینهٔ دوره‌ای فقط برای برداشت ── */}
       {recurringVisible && (
-        <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
-          <input type="checkbox" name="makeRecurring" value="1" className="mt-0.5 size-4 accent-primary" />
-          <span>
-              {tr("این هزینه را به‌عنوان هزینهٔ دوره‌ای هم ثبت کن")}
-            <span className="block text-xs text-muted-foreground">
-              {tr("طرف‌حساب، حساب، مبلغ و دسته از همین فرم گرفته می‌شود.")}
+        <div className="grid gap-2 rounded-md border p-3 text-sm">
+          <label className="flex items-start gap-2">
+            <input type="checkbox" name="makeRecurring" value="1" className="mt-0.5 size-4 accent-primary" />
+            <span>
+                {tr("این هزینه را به‌عنوان هزینهٔ دوره‌ای هم ثبت کن")}
+              <span className="block text-xs text-muted-foreground">
+                {tr("طرف‌حساب، حساب، مبلغ و دسته از همین فرم گرفته می‌شود.")}
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+          {/* پورتِ re_kind / re_count / re_unit: نوبتِ بعدی یک دوره بعد از این ردیف. */}
+          <div className="flex flex-wrap items-center gap-2 ps-6 text-xs">
+            <select name="reKind" className="h-8 rounded-md border bg-background px-2" defaultValue="recurring" aria-label={tr('نوع')}>
+              <option value="recurring">{tr('دوره‌ای')}</option>
+              <option value="once">{tr('یک‌بار')}</option>
+            </select>
+            <span>{tr('هر')}</span>
+            <Input name="reCount" type="number" min={1} defaultValue={1} className="h-8 w-16 num" aria-label={tr('هر چند دوره')} />
+            <select name="reUnit" className="h-8 rounded-md border bg-background px-2" defaultValue="month" aria-label={tr('دوره')}>
+              <option value="day">{tr('روز')}</option>
+              <option value="week">{tr('هفته')}</option>
+              <option value="month">{tr('ماه')}</option>
+              <option value="year">{tr('سال')}</option>
+            </select>
+          </div>
+        </div>
       )}
 
       {error && (

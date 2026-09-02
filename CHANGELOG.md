@@ -2,6 +2,26 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.33.0]
+
+### Added — accounting and payout flows (parity with the plugin)
+
+- **Piecework rows can be paid directly from the payouts page.** An "unpaid work" list shows unit rows that have no open request; "Record in accounting" writes the withdrawal to the member, with the row amount as the settled equivalent, and marks the row paid. Rows with an open request are paid through the request, so nothing is paid twice.
+- **Project-less payments are listed** on the payouts page: rows left behind when a project was deleted with "detach", with party, type, note and receipt.
+- **The requests table shows the member's remaining contract balance, the request date, the member's note and their bank details** (card, IBAN, account), as in the plugin.
+- **Paying a request or a unit row accepts the real bank amount** in the account currency; the requested amount is recorded as the settled equivalent of the member's obligation, and the resulting rate is learned for later conversions. Without it, the obligation amount converts through the stored rate, or refuses with a clear message when no rate exists.
+- **Recurring expenses:** a new vendor can be typed by name, "pay the first occurrence now" on creation, and paying an expense that has no account advances the schedule after confirmation (as the plugin does) instead of being blocked. Paying puts the vendor and the category on the ledger row.
+- **"Also register as a recurring expense"** on a new withdrawal takes a kind (recurring or one-off) and an interval, uses the receiver as the vendor, and is hidden when editing an existing row.
+
+### Fixed
+
+- **The party follows the direction server-side:** a deposit keeps only the payer and a withdrawal only the receiver, moving the existing party when the target is empty; a stale or crafted form can no longer store a payer on a withdrawal.
+- **A free-text receiver of a withdrawal becomes a vendor** (created on first use, matched case-insensitively) and the row carries its vendor id, so per-vendor attribution works.
+- **Ledger rows carry their account's office**, and the office amount is converted to the office's default currency instead of the account currency; a missing rate for the office currency no longer blocks booking.
+- **A settled amount without a currency falls back to the obligation currency** (the member's contract currency, else the project currency) instead of being stored with no currency.
+
+---
+
 ## [1.32.0]
 
 ### Added — accounting, payouts and finance access (parity with the plugin)

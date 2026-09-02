@@ -13,8 +13,7 @@ import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { removeFiles, storeReceipt } from '@/server/files/service';
 import { getT } from '@/i18n/server';
 import { MissingRateError } from '@/domain/ledger/amounts';
-import { saveRecurring } from '@/server/finance/payouts';
-import { computeNext } from '@/domain/finance/recurring';
+import { makeRecurringFromEntry } from '@/server/finance/payouts';
 
 /** اقدام‌های حسابداری. گاردها همه در سرویس‌اند (R-ARCH-01). */
 
@@ -214,21 +213,10 @@ export async function saveEntryAction(
        * یک ماه بعد. پیش از این چک‌باکس هیچ کاری نمی‌کرد.
        */
       if (formData.get('makeRecurring') !== null && input.direction === 'out') {
-        await saveRecurring(actor, {
-          id: null,
-          title: input.description || input.receiverLabel || 'هزینه',
-          amount: input.amount,
-          currencyId: input.currencyId,
-          kind: 'recurring',
-          intervalUnit: 'month',
-          intervalCount: 1,
-          startDate: input.entryDate,
-          nextDueDate: computeNext(input.entryDate, 'month', 1),
-          accountId: input.accountId,
-          vendorId: null,
-          categoryTagId: input.tagIds[0] ?? null,
-          note: '',
-          isActive: true,
+        await makeRecurringFromEntry(actor, input, {
+          kind: formData.get('reKind') === 'once' ? 'once' : 'recurring',
+          unit: String(formData.get('reUnit') ?? 'month'),
+          count: Number(formData.get('reCount') ?? 1) || 1,
         });
       }
     }
