@@ -103,7 +103,7 @@ describe('ریویو و برگشت از ریویو', () => {
   beforeEach(async () => {
     await sql`truncate table task_roles, tasks restart identity cascade`;
     const t = await db.insert(tasks).values({
-      projectId, title: 'تسکِ آزمون', assignedTo: dev, scope: 'company', statusTagId: doingTag,
+      projectId, title: 'تسکِ آزمون', assignedTo: dev, createdBy: dev, scope: 'company', statusTagId: doingTag,
     }).returning({ id: tasks.id });
     taskId = t[0]!.id;
   });
@@ -129,7 +129,7 @@ describe('ریویو و برگشت از ریویو', () => {
 
   it('تسکِ نقشیِ برگشتی به صاحبانِ نقش می‌رود', async () => {
     const t = await db.insert(tasks).values({
-      projectId, title: 'تسکِ نقشی', assignedTo: null, scope: 'company', statusTagId: reviewTag,
+      projectId, createdBy: dev, title: 'تسکِ نقشی', assignedTo: null, scope: 'company', statusTagId: reviewTag,
     }).returning({ id: tasks.id });
     await db.insert(taskRoles).values({ taskId: t[0]!.id, roleTagId: devRole });
 
@@ -141,7 +141,7 @@ describe('ریویو و برگشت از ریویو', () => {
 describe('تغییرِ تخصیصِ تسک', () => {
   it('مسئولِ تازه اعلان می‌گیرد، مسئولِ قبلی نه', async () => {
     const t = await db.insert(tasks).values({
-      projectId, title: 'تسک', assignedTo: dev, scope: 'company',
+      projectId, createdBy: dev, title: 'تسک', assignedTo: dev, scope: 'company',
     }).returning({ id: tasks.id });
 
     await projectService.updateTask(actor(owner), t[0]!.id, {
@@ -153,7 +153,7 @@ describe('تغییرِ تخصیصِ تسک', () => {
 
   it('⚠️ کسی که تسک را به خودش می‌دهد اعلان نمی‌گیرد', async () => {
     const t = await db.insert(tasks).values({
-      projectId, title: 'تسک', assignedTo: null, scope: 'company',
+      projectId, createdBy: dev, title: 'تسک', assignedTo: null, scope: 'company',
     }).returning({ id: tasks.id });
 
     await projectService.updateTask(actor(owner), t[0]!.id, {
@@ -165,7 +165,7 @@ describe('تغییرِ تخصیصِ تسک', () => {
 
   it('بدونِ تغییرِ مسئول اعلانی نیست', async () => {
     const t = await db.insert(tasks).values({
-      projectId, title: 'تسک', assignedTo: dev, scope: 'company',
+      projectId, createdBy: dev, title: 'تسک', assignedTo: dev, scope: 'company',
     }).returning({ id: tasks.id });
 
     await projectService.updateTask(actor(owner), t[0]!.id, {

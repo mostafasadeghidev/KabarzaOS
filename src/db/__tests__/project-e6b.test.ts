@@ -63,12 +63,12 @@ beforeAll(async () => {
 
   const a = await db.insert(accounts).values({ name: 'حساب', currencyId: eur, openingBalance: '1000' }).returning({ id: accounts.id });
   const l = await db.insert(ledger).values({
-    accountId: a[0]!.id, entryDate: '2026-08-20', direction: 'out', amount: '200', currencyId: eur, amountAccount: '200',
+    accountId: a[0]!.id, createdBy: 1, entryDate: '2026-08-20', direction: 'out', amount: '200', currencyId: eur, amountAccount: '200',
     receiverUserId: DEV, projectId: project, description: 'پرداختِ دستمزد',
   }).returning({ id: ledger.id });
   await db.insert(projectPayments).values({
     projectId: project, userId: DEV, ledgerId: l[0]!.id, direction: 'member_payout', amount: '200', currencyId: eur,
-    paidAt: new Date('2026-08-20T00:00:00Z'), note: 'قسطِ اول',
+    paidAt: '2026-08-20', note: 'قسطِ اول',
   });
 });
 

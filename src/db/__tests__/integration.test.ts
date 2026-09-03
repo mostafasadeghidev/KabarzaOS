@@ -88,7 +88,7 @@ describe('R-PROJ-09 — کلید (پروژه، کاربر، نقش) است', () 
 describe('R-TEAM-10 — «پرداخت‌شده» بدونِ تراکنشِ بانکی معنا ندارد', () => {
   it('درخواستِ paid بدونِ ledgerId رد می‌شود', async () => {
     await expectDbError(
-      () => db.insert(paymentRequests).values({ projectId, userId, amount: '100', status: 'paid' }),
+      () => db.insert(paymentRequests).values({ projectId, userId, amount: '100', currencyId: eurId, status: 'paid' }),
       /paid_needs_ledger/i,
     );
   });
@@ -96,11 +96,11 @@ describe('R-TEAM-10 — «پرداخت‌شده» بدونِ تراکنشِ با
   it('با تراکنشِ واقعی پذیرفته می‌شود', async () => {
     const [row] = await db.insert(ledger).values({
       accountId, entryDate: '2026-05-01', direction: 'out',
-      amount: '100', currencyId: eurId, amountAccount: '100',
+      amount: '100', currencyId: eurId, amountAccount: '100', createdBy: userId,
     }).returning({ id: ledger.id });
 
     const inserted = await db.insert(paymentRequests)
-      .values({ projectId, userId, amount: '100', status: 'paid', ledgerId: row!.id })
+      .values({ projectId, userId, amount: '100', currencyId: eurId, status: 'paid', ledgerId: row!.id })
       .returning({ id: paymentRequests.id });
     expect(inserted).toHaveLength(1);
   });
@@ -125,7 +125,7 @@ describe('درزهای باز — پیش‌فرضِ امن', () => {
   it('تراکنشِ جدید پیش‌فرض confirmed و company است', async () => {
     const [row] = await db.insert(ledger).values({
       accountId, entryDate: '2026-06-01', direction: 'in',
-      amount: '50', currencyId: eurId, amountAccount: '50',
+      amount: '50', currencyId: eurId, amountAccount: '50', createdBy: userId,
     }).returning();
     expect(row!.status).toBe('confirmed');
     expect(row!.scope).toBe('company');
@@ -139,7 +139,7 @@ describe('G2 — پول با دقتِ decimal ذخیره می‌شود', () => {
   it('مقدار بدونِ خطای شناور برمی‌گردد', async () => {
     const [row] = await db.insert(ledger).values({
       accountId, entryDate: '2026-06-02', direction: 'in',
-      amount: '0.1', currencyId: eurId, amountAccount: '0.2',
+      amount: '0.1', currencyId: eurId, amountAccount: '0.2', createdBy: userId,
     }).returning({ amount: ledger.amount, amountAccount: ledger.amountAccount });
     // 0.1 + 0.2 در JS می‌شود 0.30000000000000004 — اینجا رشته است، دست‌نخورده
     expect(row!.amount).toBe('0.1000');

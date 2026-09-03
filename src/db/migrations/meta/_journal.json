@@ -169,6 +169,13 @@
       "when": 1788661200006,
       "tag": "0023_password_reset_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788661200007,
+      "tag": "0024_schema_hardening",
+      "breakpoints": true
     }
   ]
 }

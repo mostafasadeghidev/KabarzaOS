@@ -1,3 +1,4 @@
+import { rateSource } from '@/server/finance/service';
 import { isFrozenProject } from '@/domain/projects/lifecycle';
 import { notify } from '@/server/notifications/service';
 import { managerIds } from '@/server/notifications/audience';
@@ -168,7 +169,8 @@ export async function addUnitEntry(
    */
   if (membership.length === 0) throw new MemberMoneyError('not_member');
   const rate = membership[0]?.unitRate ?? null;
-  const currencyId = membership[0]?.currencyId ?? project.currencyId;
+  // ارزِ کارکرد: قرارداد → پروژه → ارزِ پیش‌فرض (ستون از مهاجرتِ ۰۰۲۴ اجباری است).
+  const currencyId = membership[0]?.currencyId ?? project.currencyId ?? (await rateSource()).baseCurrencyId;
 
   const rows = await db.insert(unitEntries).values({
     projectId: input.projectId,
@@ -279,7 +281,7 @@ export async function myRequests(actor: Actor, projectId: number) {
     agreed: summary.agreed,
     paid: summary.paid,
     status: paymentStatus(summary.paid, summary.agreed),
-    payouts: payouts.map((p) => ({ ...p, paidAt: p.paidAt ? p.paidAt.toISOString().slice(0, 10) : null })),
+    payouts: payouts.map((p) => ({ ...p, paidAt: p.paidAt ?? null })),
     available: availableToRequest(remaining, outstanding),
     outstanding,
   };
@@ -320,7 +322,7 @@ export async function createRequest(
     projectId: input.projectId,
     userId: actor.id,
     amount: input.amount,
-    currencyId: project.currencyId,
+    currencyId: project.currencyId ?? (await rateSource()).baseCurrencyId,
     note: input.note.trim().slice(0, 500),
     unitEntryId: input.unitEntryId ?? null,
   }).returning({ id: paymentRequests.id });

@@ -48,7 +48,7 @@ beforeAll(async () => {
   const a = await db.insert(accounts).values({ name: 'حساب', currencyId: c[0]!.id, openingBalance: '0' })
     .returning({ id: accounts.id });
   await db.insert(ledger).values({
-    accountId: a[0]!.id, entryDate: '2026-08-01', direction: 'out', amount: '10', currencyId: c[0]!.id,
+    accountId: a[0]!.id, createdBy: 1, entryDate: '2026-08-01', direction: 'out', amount: '10', currencyId: c[0]!.id,
     amountAccount: '10', receiverUserId: LEDGER_ONLY,
   });
 });

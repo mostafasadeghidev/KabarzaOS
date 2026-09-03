@@ -239,8 +239,8 @@ await db.insert(projectQa).values([
 
 // تراکنش‌های مالیِ پروژه — تبِ مالی.
 await db.insert(projectPayments).values([
-  { projectId: created[0]!.id, userId: client, direction: 'incoming', amount: '5000', currencyId: eur!.id, paidAt: new Date(), note: 'پیش‌پرداخت' },
-  { projectId: created[0]!.id, userId: dev, direction: 'member_payout', amount: '1200', currencyId: eur!.id, paidAt: new Date(), note: 'قسط اول' },
+  { projectId: created[0]!.id, userId: client, direction: 'incoming', amount: '5000', currencyId: eur!.id, paidAt: new Date().toISOString().slice(0, 10), note: 'پیش‌پرداخت' },
+  { projectId: created[0]!.id, userId: dev, direction: 'member_payout', amount: '1200', currencyId: eur!.id, paidAt: new Date().toISOString().slice(0, 10), note: 'قسط اول' },
 ]);
 
 // تگِ نقشِ اعضا — چیپِ رنگیِ کارتِ عضو.

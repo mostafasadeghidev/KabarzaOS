@@ -272,7 +272,7 @@ describe('پرداخت‌های بی‌پروژه (پورتِ no_project_html)',
   it('ردیف‌های بی‌پروژه با طرف، نوع و یادداشت فهرست می‌شوند', async () => {
     await db.insert(projectPayments).values({
       projectId: null, userId: MEMBER, direction: 'member_payout', amount: '50', currencyId: eur,
-      note: 'پروژهٔ حذف‌شده: لندینگ', paidAt: new Date('2026-07-01T00:00:00Z'),
+      note: 'پروژهٔ حذف‌شده: لندینگ', paidAt: '2026-07-01',
     });
     // ردیف‌های بی‌پروژهٔ آزمون‌های قبلی (پرداخت به عضو بدونِ پروژه) هم اینجا می‌آیند — مثلِ `project_id = 0` ِ افزونه.
     const rows = await payouts.listDetachedPayments(manager());

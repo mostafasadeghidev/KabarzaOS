@@ -126,7 +126,7 @@ export default async function Finance({
     ? await getEntryFormOptions(actor)
     : {
       accounts: [], currencies: [], categories: [], projects: [], vendors: [], people: [],
-      projectMemberIds: {}, memberCurrency: {}, defaultCurrencyId: null, lockDate: null,
+      projectMemberIds: {}, projectClientIds: {}, unitUnpaid: {}, memberCurrency: {}, defaultCurrencyId: null, lockDate: null,
     };
 
   const accountOptions = data.canManage ? await getAccountFormOptions(actor) : null;
@@ -152,6 +152,8 @@ export default async function Finance({
           projects: options.projects,
           people: options.people,
           projectMemberIds: options.projectMemberIds,
+          projectClientIds: options.projectClientIds,
+          unitUnpaid: options.unitUnpaid,
           memberCurrency: options.memberCurrency,
           defaultCurrencyId: options.defaultCurrencyId,
           vendors: options.vendors,
@@ -159,6 +161,7 @@ export default async function Finance({
         canManage={data.canManage}
         paging={data.paging}
         periodScoped={data.periodScoped}
+        accountProjectIds={data.accountProjectIds}
         directory={directory}
         requests={requests}
         archivedRequests={archivedRequests}

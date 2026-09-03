@@ -54,11 +54,11 @@ beforeAll(async () => {
   ]);
   await db.insert(projectPayments).values([
     // ⚠️ اضافه‌پرداختِ یورویی — نباید بدهیِ ریالی را بخورد.
-    { projectId: p1, userId: M1, direction: 'member_payout', amount: '1200', currencyId: eur, amountEur: '1200' },
-    { projectId: p1, userId: M2, direction: 'member_payout', amount: '100', currencyId: eur, amountEur: '100' },
-    { projectId: p1, direction: 'incoming', amount: '300', currencyId: eur, amountEur: '300' },
-    { projectId: p2, direction: 'project_expense', amount: '1000000', currencyId: irr, amountEur: '20' },
-    { projectId: p2, direction: 'incoming', amount: '2000000', currencyId: irr, amountEur: '40' },
+    { projectId: p1, userId: M1, direction: 'member_payout', paidAt: '2026-08-01', amount: '1200', currencyId: eur, amountEur: '1200' },
+    { projectId: p1, userId: M2, direction: 'member_payout', paidAt: '2026-08-01', amount: '100', currencyId: eur, amountEur: '100' },
+    { projectId: p1, direction: 'incoming', paidAt: '2026-08-01', amount: '300', currencyId: eur, amountEur: '300' },
+    { projectId: p2, direction: 'project_expense', paidAt: '2026-08-01', amount: '1000000', currencyId: irr, amountEur: '20' },
+    { projectId: p2, direction: 'incoming', paidAt: '2026-08-01', amount: '2000000', currencyId: irr, amountEur: '40' },
   ]);
   await db.insert(accounts).values([
     { name: 'یورو', currencyId: eur, openingBalance: '100' },

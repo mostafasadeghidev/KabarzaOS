@@ -18,7 +18,12 @@ export const threads = pgTable('threads', {
   allowReply: boolean('allow_reply').notNull().default(true),
   broadcastId: fk('broadcast_id'),
   ...stamps,
-}, (t) => [index('threads_broadcast_ix').on(t.broadcastId)]);
+}, (t) => [
+  index('threads_broadcast_ix').on(t.broadcastId),
+  index('threads_creator_ix').on(t.creatorId),
+  // صندوق به تازه‌ترین فعالیت مرتب می‌شود (۱.۳۰.۰).
+  index('threads_updated_ix').on(t.updatedAt),
+]);
 
 /**
  * R-MSG-02 — صندوق کاملاً شخصی: کاربر فقط گفتگوهایی را می‌بیند که اینجا ردیف دارد.
@@ -66,6 +71,7 @@ export const meetings = pgTable('meetings', {
   check('meetings_scope_ck', sql`${t.meetingScope} in ('project','general')`),
   check('meetings_data_scope_ck', sql`${t.scope} in ('company','private')`),
   index('meetings_meet_at_ix').on(t.meetAt),
+  index('meetings_project_ix').on(t.projectId),
 ]);
 
 export const meetingAttendees = pgTable('meeting_attendees', {
@@ -76,6 +82,7 @@ export const meetingAttendees = pgTable('meeting_attendees', {
 }, (t) => [
   // یک دعوت به‌ازای هر نفر در هر جلسه (مهاجرت ۰۰۲۲).
   uniqueIndex('meeting_attendees_meeting_user_uq').on(t.meetingId, t.userId),
+  index('meeting_attendees_user_ix').on(t.userId),
 ]);
 
 /** R-MEET-05/07 — چند فاصلهٔ زمانی؛ ارسالِ هر کدام یک‌بار. */
@@ -89,7 +96,10 @@ export const reminders = pgTable('reminders', {
   sentOffsets: integer('sent_offsets').array(),
   isSent: boolean('is_sent').notNull().default(false),
   ...stamps,
-}, (t) => [index('reminders_due_ix').on(t.remindAt, t.isSent)]);
+}, (t) => [
+  index('reminders_due_ix').on(t.remindAt, t.isSent),
+  index('reminders_user_ix').on(t.userId),
+]);
 
 /** R-NOTIF-06 — اعلانِ خوانده‌نشده هرگز پاک نمی‌شود. */
 export const notifications = pgTable('notifications', {
@@ -101,7 +111,11 @@ export const notifications = pgTable('notifications', {
   url: text('url').notNull().default(''),
   isRead: boolean('is_read').notNull().default(false),
   createdAt: ts('created_at').notNull().defaultNow(),
-}, (t) => [index('notifications_user_ix').on(t.userId, t.isRead, t.id)]);
+}, (t) => [
+  index('notifications_user_ix').on(t.userId, t.isRead, t.id),
+  // پاک‌سازیِ سن‌محور (مهاجرت ۰۰۲۴).
+  index('notifications_created_ix').on(t.createdAt),
+]);
 
 export const absences = pgTable('absences', {
   id: pk(),
@@ -110,4 +124,8 @@ export const absences = pgTable('absences', {
   toDate: date('to_date', { mode: 'string' }).notNull(),
   note: text('note').notNull().default(''),
   ...stamps,
-}, (t) => [index('absences_user_ix').on(t.userId, t.fromDate)]);
+}, (t) => [
+  index('absences_user_ix').on(t.userId, t.fromDate),
+  // «چه کسی امروز مرخصی است» — بازهٔ تاریخ.
+  index('absences_range_ix').on(t.fromDate, t.toDate),
+]);

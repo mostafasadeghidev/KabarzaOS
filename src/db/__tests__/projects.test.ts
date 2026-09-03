@@ -162,7 +162,7 @@ describe('R-PROJ-01 — حذفِ پروژه', () => {
     const p = await db.insert(projects).values({ title: 'پروژهٔ نیمه‌پرداخت', currencyId: eurId, price: '100' })
       .returning({ id: projects.id });
     await db.insert(projectPayments).values({
-      projectId: p[0]!.id, direction: 'incoming', amount: '10', amountEur: '10', currencyId: eurId,
+      projectId: p[0]!.id, direction: 'incoming', amount: '10', amountEur: '10', currencyId: eurId, paidAt: '2026-08-01',
     });
     await expect(service.deleteProject(owner(), p[0]!.id, {
       mode: 'full', confirmTitle: 'پروژهٔ نیمه‌پرداخت',
@@ -310,8 +310,8 @@ describe('R-PROJ-23 — طلبِ عضو با ویرایشِ اعضا گم نمی
 
     // باب کاملاً تسویه شده؛ آلیس هنوز ۲۰۰ طلب دارد.
     await db.insert(projectPayments).values([
-      { projectId: proj, userId: alice, direction: 'member_payout', amount: '400', currencyId: eurId },
-      { projectId: proj, userId: bob, direction: 'member_payout', amount: '400', currencyId: eurId },
+      { projectId: proj, userId: alice, direction: 'member_payout', amount: '400', currencyId: eurId, paidAt: '2026-08-01' },
+      { projectId: proj, userId: bob, direction: 'member_payout', amount: '400', currencyId: eurId, paidAt: '2026-08-01' },
     ]);
   });
 
@@ -542,7 +542,7 @@ describe('سبک‌سازی و حذف', () => {
     await db.insert(timelogs).values({ projectId: proj, userId: alice, logDate: '2026-08-01', minutes: 120 });
     await db.insert(projectMembers).values({ projectId: proj, userId: alice, roleTagId: devRole, agreedAmount: '500' });
     await db.insert(projectPayments).values({
-      projectId: proj, userId: alice, direction: 'incoming',
+      projectId: proj, userId: alice, direction: 'incoming', paidAt: '2026-08-01',
       amount: '1000', amountEur: '1000', currencyId: eurId,
     });
   });
@@ -580,7 +580,7 @@ describe('R-PROJ-03 — جداسازی در برابر حذفِ کامل', () =>
       .returning({ id: projects.id });
     const id = p[0]!.id;
     await db.insert(projectPayments).values({
-      projectId: id, userId: alice, direction: 'incoming',
+      projectId: id, userId: alice, direction: 'incoming', paidAt: '2026-08-01',
       // ⚠️ تمام‌پرداخت: R-PROJ-03 دربارهٔ سرنوشتِ تراکنش است، نه ماندهٔ باز.
       // با ۸۰۰ از ۳۰۰۰، گاردِ R-PROJ-04 (که حالا واقعاً کار می‌کند) حذف را قفل می‌کرد.
       amount: '3000', amountEur: '3000', currencyId: eurId, note: 'پیش‌پرداخت',

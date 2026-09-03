@@ -94,10 +94,6 @@ export function EntryForm({
     ],
     [peopleOptions, options.vendors, tr],
   );
-  const projectOptions: Option[] = useMemo(
-    () => options.projects.map((p) => ({ value: p.id, label: p.title })),
-    [options.projects],
-  );
 
   /* ── R-FORM-01 — تغییرِ جهت، طرفِ حساب را جابه‌جا می‌کند ── */
   const changeDirection = (next: Direction) => {
@@ -107,6 +103,26 @@ export function EntryForm({
 
   const shown = visibleParty(direction);
   const receiverUserId = party.receiver.userId;
+
+  /**
+   * پورتِ باریک‌سازیِ پروژه به طرفِ حساب: وقتی عضو/کارفرمایی انتخاب شده، فقط
+   * پروژه‌های او (عضویت یا کارفرمایی) پیشنهاد می‌شوند؛ بی‌طرف یا بی‌پروژه = همه.
+   * طرفِ مؤثر همان طرفی است که با جهت دیده می‌شود (R-FORM-01).
+   */
+  const partyUserId = direction === 'in' ? party.payer.userId : party.receiver.userId;
+  const projectOptions: Option[] = useMemo(() => {
+    const all = options.projects.map((p) => ({ value: p.id, label: p.title }));
+    if (!partyUserId) return all;
+    const mine = new Set<number>();
+    for (const [pid, ids] of Object.entries(options.projectMemberIds)) {
+      if (ids.includes(partyUserId)) mine.add(Number(pid));
+    }
+    for (const [pid, ids] of Object.entries(options.projectClientIds ?? {})) {
+      if (ids.includes(partyUserId)) mine.add(Number(pid));
+    }
+    const narrowed = all.filter((o) => mine.has(Number(o.value)));
+    return narrowed.length > 0 ? narrowed : all;
+  }, [options.projects, options.projectMemberIds, options.projectClientIds, partyUserId]);
 
   /* ── R-FORM-04 — تگ‌ها با جهت فیلتر می‌شوند ── */
   const tagOptions: Option[] = useMemo(
@@ -129,6 +145,21 @@ export function EntryForm({
   // پورتِ افزونه: فقط برای برداشت و فقط هنگامِ **افزودن** — ردیفِ موجود قالب نمی‌سازد.
   const recurringVisible = showsRecurring(direction) && !editing;
   const unitPickerVisible = showsUnitPicker({ direction, projectId, receiverUserId });
+  /**
+   * انتخابگرِ کارکرد — پورتِ `unitPicker`/`from_unit`: برداشت به عضوِ پروژه،
+   * کارکردهای پرداخت‌نشدهٔ همان «پروژه:عضو»؛ انتخاب معادل و ارز را پر می‌کند و
+   * شناسه در فیلدِ پنهان می‌رود تا ذخیره همان کارکرد را «پرداخت‌شده» کند.
+   * فقط برای ردیفِ تازه — ویرایشِ ردیفِ موجود کارکردی نمی‌بندد.
+   */
+  const unitRows = unitPickerVisible && !editing && projectId && receiverUserId
+    ? (options.unitUnpaid?.[`${projectId}:${receiverUserId}`] ?? [])
+    : [];
+  const [fromUnit, setFromUnit] = useState<number | null>(null);
+  const pickedUnit = fromUnit !== null && unitRows.some((u) => u.id === fromUnit) ? fromUnit : null;
+  /** ارزِ معادل: قاعده پیش‌فرض را می‌دهد؛ انتخابِ کارکرد یا تغییرِ دستی روی آن می‌نشیند. */
+  const [settledOverride, setSettledOverride] = useState<number | null>(
+    editing?.settledCurrencyId ?? null,
+  );
 
   const settledCurrency = useMemo(() => settledCurrencyId({
     direction,
@@ -326,8 +357,9 @@ export function EntryForm({
             />
             <select
               name="settledCurrencyId" className={`${selectClass} w-28`}
-              value={String(settledCurrency ?? '')}
-              onChange={() => { /* ارز از قاعده می‌آید؛ تغییرِ دستی هم مجاز است */ }}
+              value={String(settledOverride ?? settledCurrency ?? '')}
+              // ⚠️ پیش از این کنترل‌شده بود ولی state نداشت: تغییرِ دستی همان لحظه برمی‌گشت.
+              onChange={(e) => setSettledOverride(Number(e.target.value) || null)}
             >
               {options.currencies.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
             </select>
@@ -349,11 +381,31 @@ export function EntryForm({
         </div>
       )}
 
-      {/* ── R-FORM-06 — انتخابگرِ کارکرد ── */}
-      {unitPickerVisible && (
-        <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-          {tr("کارکردهای پرداخت‌نشدهٔ این عضو روی این پروژه، پس از ذخیره در بخشِ مالیِ پروژه قابلِ تسویه‌اند.")}
-        </p>
+      {/* ── R-FORM-06 — انتخابگرِ کارکرد (پورتِ unitPicker / from_unit) ── */}
+      {unitRows.length > 0 && (
+        <div className="grid gap-2 rounded-md border border-dashed p-3">
+          <p className="text-xs text-muted-foreground">
+            {tr("کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، معادل و ارز پر می‌شود و پس از ذخیره «پرداخت‌شده» می‌گردد.")}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {unitRows.map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                onClick={() => {
+                  onSettledChange(String(Number(u.amount)));
+                  if (u.currencyId) setSettledOverride(u.currencyId);
+                  setFromUnit(pickedUnit === u.id ? null : u.id);
+                }}
+                className={`num rounded-md border px-2 py-1 text-xs ${pickedUnit === u.id ? 'border-primary bg-primary/10' : 'hover:bg-muted'}`}
+                aria-pressed={pickedUnit === u.id}
+              >
+                {u.text}
+              </button>
+            ))}
+          </div>
+          <input type="hidden" name="fromUnit" value={pickedUnit ?? ''} />
+        </div>
       )}
 
       <div className="grid gap-1.5">

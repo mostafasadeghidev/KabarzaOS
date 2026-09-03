@@ -25,7 +25,7 @@ import { convert } from '@/domain/currency/rates';
 
 export class PayoutError extends Error {
   constructor(
-    readonly code: 'not_found' | 'rejected' | 'already_paid' | 'no_currency' | 'not_approved' | 'has_request',
+    readonly code: 'not_found' | 'rejected' | 'already_paid' | 'no_currency' | 'not_approved' | 'has_request' | 'mismatch',
   ) {
     super(`payout refused: ${code}`);
     this.name = 'PayoutError';
@@ -267,6 +267,40 @@ export async function payUnit(
 }
 
 /**
+ * کارکردی که از داخلِ فرمِ دفتر انتخاب شده (پورتِ `from_unit`) باید پرداخت‌نشده،
+ * بی‌درخواستِ باز، و متعلق به همان پروژه/گیرندهٔ ردیف باشد — **پیش از** ثبتِ
+ * ردیف بررسی می‌شود تا ردیفِ مالی با کارکردِ اشتباه ساخته نشود. حقِ ثبتِ خودِ
+ * ردیف را `createEntry` می‌سنجد؛ اینجا فقط خواندن و اعتبارسنجی است.
+ */
+export async function assertUnitPayable(
+  actor: Actor,
+  unitEntryId: number,
+  target: { projectId: number | null; receiverUserId: number | null },
+) {
+  assertCanView(actor, 'finance');
+  const unit = (await db.select().from(unitEntries).where(eq(unitEntries.id, unitEntryId)))[0];
+  if (!unit) throw new PayoutError('not_found');
+  if (unit.status === 'paid') throw new PayoutError('already_paid');
+  if (unit.status === 'requested') throw new PayoutError('has_request');
+  const open = await db.select({ id: paymentRequests.id }).from(paymentRequests)
+    .where(and(eq(paymentRequests.unitEntryId, unitEntryId), inArray(paymentRequests.status, ['pending', 'approved'])))
+    .limit(1);
+  if (open.length > 0) throw new PayoutError('has_request');
+  if (unit.projectId !== target.projectId || unit.userId !== target.receiverUserId) throw new PayoutError('mismatch');
+  return unit;
+}
+
+/** کارکرد «پرداخت‌شده» و به ردیفِ دفتر وصل می‌شود — پورتِ `Unit_Entries::mark_paid`. */
+export async function markUnitPaid(actor: Actor, unitEntryId: number, ledgerId: number): Promise<void> {
+  assertCanView(actor, 'finance');
+  const [before] = await db.select({ status: unitEntries.status }).from(unitEntries).where(eq(unitEntries.id, unitEntryId));
+  if (!before) throw new PayoutError('not_found');
+  await db.update(unitEntries).set({ status: 'paid', ledgerId, updatedAt: new Date() })
+    .where(eq(unitEntries.id, unitEntryId));
+  await audit(actor, 'unit.paid', unitEntryId, before.status, { ledgerId });
+}
+
+/**
  * پرداخت‌های بی‌پروژه — پورتِ `no_project_html`: ردیف‌هایی که با «جداسازی»
  * از پروژهٔ حذف‌شده مانده‌اند. پول در دفتر هست؛ نامِ پروژه در یادداشت.
  */
@@ -291,7 +325,7 @@ export async function listDetachedPayments(actor: Actor) {
     .orderBy(desc(projectPayments.id));
   return rows.map(({ receiptIds, paidAt, ...r }) => ({
     ...r,
-    paidAt: paidAt ? paidAt.toISOString().slice(0, 10) : null,
+    paidAt: paidAt ?? null,
     receiptId: receiptIds?.[0] ?? null,
   }));
 }

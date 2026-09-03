@@ -414,11 +414,23 @@ export async function sendReportTestAction(): Promise<SystemState> {
      * وارد می‌کند (اکشن‌ها از آنجا صدا زده می‌شوند)، پس ایمپورتِ ایستا کلِ
      * آن زنجیره را به باندلِ کلاینت می‌کشید و ساخت را می‌شکست.
      */
-    const { dispatchReport } = await import('@/server/scheduler/daily-report');
-    const sent = await dispatchReport(new Date().toISOString().slice(0, 10));
+    /**
+     * پورتِ افزونه: گزارشِ واقعی به چتِ **خودِ** مالک می‌رود، نه به همهٔ
+     * مقصدها — «تست» نباید تیم را با یک گزارشِ آزمایشی بمباران کند.
+     * ارسالِ واقعی به همه، دکمهٔ «ارسالِ همین حالا» در بخشِ گزارشِ روزانه است.
+     */
+    const [me] = await db.select({ chatId: users.telegramChatId })
+      .from(users).where(eq(users.id, actor.id));
+    if (!me?.chatId) {
+      return { error: 'ابتدا از تبِ «تلگرام» در پروفایلِ خود، حساب را وصل کنید.' };
+    }
+    const { sendReportToChat, getReportConfig } = await import('@/server/scheduler/daily-report');
+    const config = await getReportConfig();
+    const today = new Date().toISOString().slice(0, 10);
+    const sent = await sendReportToChat(me.chatId, reportDate(today, config.offset));
     return sent
-      ? { message: 'گزارش به مقصدهای پیکربندی‌شده فرستاده شد.' }
-      : { error: 'مقصدی پیکربندی نشده، یا گزارش خاموش است.' };
+      ? { message: 'گزارش در تلگرامِ شما فرستاده شد.' }
+      : { error: 'ارسالِ گزارش ناموفق بود؛ مطمئن شوید بات را Start کرده‌اید و گزارش بخشی فعال دارد.' };
   } catch {
     return { error: 'ارسالِ گزارش شکست خورد.' };
   }

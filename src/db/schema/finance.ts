@@ -24,6 +24,8 @@ export const accounts = pgTable('accounts', {
 }, (t) => [
   check('accounts_type_ck', sql`${t.type} in ('business','personal')`),
   check('accounts_scope_ck', sql`${t.scope} in ('company','private')`),
+  index('accounts_office_ix').on(t.officeId),
+  index('accounts_currency_ix').on(t.currencyId),
 ]);
 
 /** حسابدارِ محدود فقط حساب‌های تخصیص‌یافته را می‌بیند. */
@@ -35,6 +37,7 @@ export const accountUsers = pgTable('account_users', {
 }, (t) => [
   // یک تخصیص به‌ازای هر کاربر در هر حساب (مهاجرت ۰۰۲۲).
   uniqueIndex('account_users_account_user_uq').on(t.accountId, t.userId),
+  index('account_users_user_ix').on(t.userId),
 ]);
 
 export const DIRECTIONS = ['in', 'out'] as const;
@@ -92,7 +95,7 @@ export const ledger = pgTable('ledger', {
   sourceFile: text('source_file'),
   confidence: integer('confidence'),
 
-  createdBy: fk('created_by').references(() => users.id),
+  createdBy: fk('created_by').notNull().references(() => users.id),
   ...stamps,
 }, (t) => [
   check('ledger_direction_ck', sql`${t.direction} in ('in','out')`),
@@ -106,6 +109,11 @@ export const ledger = pgTable('ledger', {
   index('ledger_status_ix').on(t.status),
   index('ledger_scope_ix').on(t.scope),
   index('ledger_source_hash_ix').on(t.sourceHash),
+  // ایندکس‌های نسخهٔ قبلی (مهاجرت ۰۰۲۴): دفتر، تاریخِ خام، گیرنده، رسیدها.
+  index('ledger_office_ix').on(t.officeId),
+  index('ledger_date_ix').on(t.entryDate),
+  index('ledger_receiver_ix').on(t.receiverUserId),
+  index('ledger_receipts_gin').using('gin', t.receiptIds),
 ]);
 
 /**
@@ -138,4 +146,7 @@ export const fiscalClosings = pgTable('fiscal_closings', {
   closingBalanceEur: money('closing_balance_eur').notNull().default('0'),
   createdBy: fk('created_by').references(() => users.id),
   ...stamps,
-}, (t) => [index('fiscal_closings_date_ix').on(t.closeDate, t.accountId)]);
+}, (t) => [
+  index('fiscal_closings_date_ix').on(t.closeDate, t.accountId),
+  index('fiscal_closings_account_ix').on(t.accountId),
+]);

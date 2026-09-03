@@ -85,7 +85,10 @@ export const projectClients = pgTable('project_clients', {
   /** همان قاعدهٔ `projectMembers.accessBlocked` برای کارفرما. */
   accessBlocked: boolean('access_blocked').notNull().default(false),
   ...stamps,
-}, (t) => [uniqueIndex('project_clients_uq').on(t.projectId, t.userId)]);
+}, (t) => [
+  uniqueIndex('project_clients_uq').on(t.projectId, t.userId),
+  index('project_clients_user_ix').on(t.userId),
+]);
 
 export const tasks = pgTable('tasks', {
   id: pk(),
@@ -93,7 +96,7 @@ export const tasks = pgTable('tasks', {
   title: text('title').notNull(),
   description: text('description').notNull().default(''),
   assignedTo: fk('assigned_to').references(() => users.id),
-  createdBy: fk('created_by').references(() => users.id),
+  createdBy: fk('created_by').notNull().references(() => users.id),
   /** R-PROJ-14 — فقط سازنده و مسئول (و مدیران). */
   isPrivate: boolean('is_private').notNull().default(false),
   statusTagId: fk('status_tag_id').references(() => tags.id),
@@ -130,12 +133,13 @@ export const COMMENT_TYPES = ['comment', 'review', 'task_note'] as const;
 
 export const comments = pgTable('comments', {
   id: pk(),
-  projectId: fk('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  projectId: fk('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   taskId: fk('task_id').references(() => tasks.id, { onDelete: 'cascade' }),
   parentId: fk('parent_id'),
-  userId: fk('user_id').references(() => users.id),
+  userId: fk('user_id').notNull().references(() => users.id),
   type: text('type').notNull().default('comment').$type<'comment' | 'review' | 'task_note'>(),
-  status: text('status').notNull().default('open'),
+  /** واژگانِ واقعی: needs_review | done (مهاجرت ۰۰۲۴؛ پیش از آن 'open' که هیچ‌جا نوشته نمی‌شد). */
+  status: text('status').notNull().default('needs_review'),
   body: text('body').notNull(),
   /** «انجام شد توسط X» — کیِ بست و کِی. */
   closedBy: fk('closed_by').references(() => users.id),
@@ -145,6 +149,7 @@ export const comments = pgTable('comments', {
   check('comments_type_ck', sql`${t.type} in ('comment','review','task_note')`),
   index('comments_project_ix').on(t.projectId),
   index('comments_task_ix').on(t.taskId),
+  index('comments_user_ix').on(t.userId),
 ]);
 
 export const attachments = pgTable('attachments', {
@@ -155,7 +160,7 @@ export const attachments = pgTable('attachments', {
   externalUrl: text('external_url'),
   label: text('label').notNull().default(''),
   kind: text('kind').notNull().default('file'),
-  userId: fk('user_id').references(() => users.id),
+  userId: fk('user_id').notNull().references(() => users.id),
   ...stamps,
 }, (t) => [index('attachments_project_ix').on(t.projectId)]);
 
@@ -168,7 +173,11 @@ export const timelogs = pgTable('timelogs', {
   minutes: integer('minutes').notNull().default(0),
   description: text('description').notNull().default(''),
   ...stamps,
-}, (t) => [index('timelogs_project_user_ix').on(t.projectId, t.userId, t.logDate)]);
+}, (t) => [
+  index('timelogs_project_user_ix').on(t.projectId, t.userId, t.logDate),
+  index('timelogs_user_ix').on(t.userId),
+  index('timelogs_date_ix').on(t.logDate),
+]);
 
 export const UNIT_STATUSES = ['unpaid', 'requested', 'paid'] as const;
 
@@ -181,7 +190,7 @@ export const unitEntries = pgTable('unit_entries', {
   note: text('note').notNull().default(''),
   /** R-TEAM-13 — ارزش با نرخِ همان زمان منجمد می‌شود. */
   amount: money('amount').notNull().default('0'),
-  currencyId: fk('currency_id').references(() => currencies.id),
+  currencyId: fk('currency_id').notNull().references(() => currencies.id),
   status: text('status').notNull().default('unpaid').$type<'unpaid' | 'requested' | 'paid'>(),
   /** R-TEAM-08 — پرداخت به تراکنشِ واقعی وصل می‌شود. */
   ledgerId: fk('ledger_id'),
@@ -189,6 +198,7 @@ export const unitEntries = pgTable('unit_entries', {
 }, (t) => [
   check('unit_entries_status_ck', sql`${t.status} in ('unpaid','requested','paid')`),
   index('unit_entries_project_user_ix').on(t.projectId, t.userId),
+  index('unit_entries_status_ix').on(t.status),
 ]);
 
 export const qaItems = pgTable('qa_items', {
@@ -200,7 +210,7 @@ export const qaItems = pgTable('qa_items', {
   isTask: boolean('is_task').notNull().default(false),
   sortOrder: integer('sort_order').notNull().default(0),
   ...stamps,
-});
+}, (t) => [index('qa_items_role_ix').on(t.roleTagId)]);
 
 export const projectQa = pgTable('project_qa', {
   id: pk(),

@@ -50,11 +50,11 @@ beforeAll(async () => {
     { projectId: P2, userId: M1, agreedAmount: '300', currencyId: EUR },
   ]);
   await db.insert(projectPayments).values([
-    { projectId: P1, userId: M1, direction: 'member_payout', amount: '1000000', currencyId: IRR, amountEur: '20' },
+    { projectId: P1, userId: M1, direction: 'member_payout', paidAt: '2026-08-01', amount: '1000000', currencyId: IRR, amountEur: '20' },
     // هزینهٔ یورویی روی پروژهٔ ریالی → در ارزِ پروژه ۵٬۰۰۰٬۰۰۰ ریال.
-    { projectId: P1, direction: 'project_expense', amount: '100', currencyId: EUR, amountEur: '100', note: 'هاست' },
-    { projectId: P1, direction: 'incoming', amount: '2000000', currencyId: IRR, amountEur: '40' },
-    { projectId: P2, direction: 'incoming', amount: '1000', currencyId: EUR, amountEur: '1000' },
+    { projectId: P1, direction: 'project_expense', paidAt: '2026-08-01', amount: '100', currencyId: EUR, amountEur: '100', note: 'هاست' },
+    { projectId: P1, direction: 'incoming', paidAt: '2026-08-01', amount: '2000000', currencyId: IRR, amountEur: '40' },
+    { projectId: P2, direction: 'incoming', paidAt: '2026-08-01', amount: '1000', currencyId: EUR, amountEur: '1000' },
   ]);
   await db.insert(tasks).values({ projectId: P1, title: 'ریویویی', statusTagId: tg[1]!.id, priorityTagId: tg[2]!.id, assignedTo: M1, createdBy: OWNER });
   await db.insert(timelogs).values({ projectId: P1, userId: M1, logDate: '2020-01-01', minutes: 60 });

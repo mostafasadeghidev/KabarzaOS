@@ -64,6 +64,7 @@ export function FinancePage({
   canManage: boolean;
   paging: LedgerPaging;
   periodScoped: boolean;
+  accountProjectIds: number[];
   directory: { showPhone: boolean; rows: BankRow[] };
   requests: RequestRow[];
   recurring: RecurringRow[];

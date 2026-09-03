@@ -329,7 +329,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
               type="button" size="sm" variant="outline" disabled={pending}
               onClick={() => startTransition(async () => setBotState(await sendReportTestAction()))}
             >
-              {tr("تستِ ارسالِ گزارش")}
+              {tr("ارسالِ گزارش به چتِ من")}
             </Button>
           </div>
         </fieldset>

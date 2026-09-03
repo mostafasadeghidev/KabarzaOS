@@ -83,7 +83,7 @@ export async function getSettlement(actor: Actor) {
     noProjectPayouts: noProject.map((p) => ({
       id: p.id,
       amount: Number(p.amount).toFixed(2),
-      paidAt: p.paidAt ? p.paidAt.toISOString().slice(0, 10) : null,
+      paidAt: p.paidAt ?? null,
       note: p.note,
     })),
   };

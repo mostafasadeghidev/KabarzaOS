@@ -237,6 +237,8 @@ export async function saveTag(
   }
 
   const rows = await db.insert(tags).values(values).returning({ id: tags.id });
+  // اسلاگِ پایدار و تغییرناپذیر — پورتِ `type-N` ِ نسخهٔ قبلی (ردیف‌های کاشته‌شده اسلاگِ خودشان را دارند).
+  await db.update(tags).set({ slug: `${values.type}-${rows[0]!.id}` }).where(eq(tags.id, rows[0]!.id));
   await audit(actor, 'tag.create', rows[0]!.id, null, input);
   return rows[0]!.id;
 }

@@ -13,7 +13,7 @@ import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { removeFiles, storeReceipt } from '@/server/files/service';
 import { getT } from '@/i18n/server';
 import { MissingRateError } from '@/domain/ledger/amounts';
-import { makeRecurringFromEntry } from '@/server/finance/payouts';
+import { assertUnitPayable, markUnitPaid, makeRecurringFromEntry, PayoutError } from '@/server/finance/payouts';
 
 /** اقدام‌های حسابداری. گاردها همه در سرویس‌اند (R-ARCH-01). */
 
@@ -89,6 +89,12 @@ async function explain(error: unknown, fallback: string): Promise<string> {
   if (error instanceof LedgerNotFoundError) return 'ردیف یا حساب پیدا نشد.';
   if (error instanceof MissingRateError) {
     return 'نرخِ ارز برای این تبدیل ثبت نشده است. نرخ را در تنظیمات اضافه کنید یا «مبلغِ واقعی رسیده به حساب» را وارد کنید.';
+  }
+  if (error instanceof PayoutError) {
+    if (error.code === 'has_request') return 'برای این کارکرد درخواستِ بازی هست؛ از مسیرِ درخواست پرداخت کنید.';
+    if (error.code === 'already_paid') return 'این کارکرد قبلاً پرداخت شده است.';
+    if (error.code === 'mismatch') return 'کارکردِ انتخاب‌شده با پروژه یا گیرندهٔ این ردیف نمی‌خواند.';
+    return 'کارکرد پیدا نشد.';
   }
   if (error instanceof ForbiddenError) return 'دسترسی کافی ندارید.';
   return fallback;
@@ -202,11 +208,20 @@ export async function saveEntryAction(
     fxRate: data.fxRate || null,
   };
 
+  // پورتِ `from_unit`: کارکردِ انتخاب‌شده در فرم — فقط برای ردیفِ تازه.
+  const fromUnitRaw = Number(formData.get('fromUnit'));
+  const fromUnit = !entryId && Number.isInteger(fromUnitRaw) && fromUnitRaw > 0 ? fromUnitRaw : null;
+
   try {
     const actor = await requireActor();
     if (entryId) await updateEntry(actor, entryId, input);
     else {
-      await createEntry(actor, input);
+      // ⚠️ اعتبارسنجیِ کارکرد **پیش از** ساختِ ردیف — وگرنه ردیفِ مالی می‌ماند و کارکرد نه.
+      if (fromUnit) {
+        await assertUnitPayable(actor, fromUnit, { projectId: input.projectId, receiverUserId: input.receiverUserId });
+      }
+      const newId = await createEntry(actor, input);
+      if (fromUnit) await markUnitPaid(actor, fromUnit, newId);
       /**
        * «این هزینه را به‌عنوان هزینهٔ دوره‌ای هم ثبت کن» — پورتِ `make_recurring`:
        * قالبِ ماهانه از همین ردیف (طرف‌حساب، حساب، مبلغ، دسته)، سررسیدِ بعدی

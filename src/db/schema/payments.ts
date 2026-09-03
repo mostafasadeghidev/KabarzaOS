@@ -31,14 +31,15 @@ export const projectPayments = pgTable('project_payments', {
    */
   direction: text('direction').notNull()
     .$type<'incoming' | 'member_payout' | 'project_expense' | 'project_cost'>(),
-  type: text('type').notNull().default(''),
+  type: text('type').notNull().default('payment'),
   amount: money('amount').notNull().default('0'),
-  currencyId: fk('currency_id').references(() => currencies.id),
+  currencyId: fk('currency_id').notNull().references(() => currencies.id),
   /** R-TEAM-01 — آنچه واقعاً تسویه شد؛ بر amount مقدم است. */
   amountSettled: money('amount_settled'),
   settledCurrencyId: fk('settled_currency_id').references(() => currencies.id),
   amountEur: money('amount_eur').notNull().default('0'),
-  paidAt: ts('paid_at'),
+  /** روزِ پرداخت — تاریخ، نه مهرِ زمانی (R-DATA-02؛ مهاجرت ۰۰۲۴). */
+  paidAt: date('paid_at', { mode: 'string' }).notNull(),
   note: text('note').notNull().default(''),
   ...stamps,
 }, (t) => [
@@ -63,7 +64,7 @@ export const paymentRequests = pgTable('payment_requests', {
   projectId: fk('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   userId: fk('user_id').notNull().references(() => users.id),
   amount: money('amount').notNull(),
-  currencyId: fk('currency_id').references(() => currencies.id),
+  currencyId: fk('currency_id').notNull().references(() => currencies.id),
   note: text('note').notNull().default(''),
   status: text('status').notNull().default('pending').$type<'pending' | 'approved' | 'rejected' | 'paid'>(),
   decisionNote: text('decision_note').notNull().default(''),
@@ -79,6 +80,7 @@ export const paymentRequests = pgTable('payment_requests', {
   check('payment_requests_paid_needs_ledger_ck', sql`${t.status} <> 'paid' or ${t.ledgerId} is not null`),
   index('payment_requests_status_ix').on(t.status),
   index('payment_requests_user_project_ix').on(t.userId, t.projectId, t.status),
+  index('payment_requests_project_ix').on(t.projectId),
 ]);
 
 export const INTERVAL_UNITS = ['day', 'week', 'month', 'year'] as const;
@@ -87,7 +89,7 @@ export const recurringExpenses = pgTable('recurring_expenses', {
   id: pk(),
   title: text('title').notNull(),
   amount: money('amount').notNull().default('0'),
-  currencyId: fk('currency_id').references(() => currencies.id),
+  currencyId: fk('currency_id').notNull().references(() => currencies.id),
   accountId: fk('account_id').references(() => accounts.id),
   vendorId: fk('vendor_id').references(() => vendors.id),
   categoryTagId: fk('category_tag_id').references(() => tags.id),

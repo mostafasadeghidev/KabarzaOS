@@ -103,11 +103,15 @@ export interface FormOptions {
   people: Array<{ id: number; name: string; email?: string }>;
   /** پروژه ← شناسهٔ اعضایش (R-FORM-02). */
   projectMemberIds: Record<number, number[]>;
+  /** پروژه ← کارفرمایانش — باریک‌سازیِ پروژه به طرفِ حساب (پورتِ `projectUsers`). */
+  projectClientIds?: Record<number, number[]>;
   /** «projectId:userId» ← ارزِ قرارداد (R-FORM-05). */
   memberCurrency: Record<string, number>;
   defaultCurrencyId: number | null;
   /** فروشندگان — کاندیدای گیرندهٔ برداشت (پورتِ کاندیدای طرف‌حساب). */
   vendors?: Array<{ id: number; name: string }>;
+  /** «projectId:userId» ← کارکردهای پرداخت‌نشده (پورتِ `unitUnpaid`) — انتخابگرِ داخلِ فرم. */
+  unitUnpaid?: Record<string, Array<{ id: number; amount: string; currencyId: number | null; text: string }>>;
 }
 
 const cellSelect =
@@ -141,6 +145,7 @@ export function LedgerView({
   canManage,
   paging,
   periodScoped = false,
+  accountProjectIds,
   onSelectAccount,
 }: {
   accountId: number;
@@ -154,6 +159,8 @@ export function LedgerView({
   paging: LedgerPaging;
   /** نمای دوره: ردیف‌های تا قفل پنهان و مانده‌شان منتقل شده. */
   periodScoped?: boolean;
+  /** پروژه‌هایی که در این حساب ردیف دارند — فیلتر فقط این‌ها را پیشنهاد می‌کند (پورتِ `projects_in_account`). */
+  accountProjectIds?: number[];
   onSelectAccount: (id: number) => void;
 }) {
   const tr = useT();
@@ -241,7 +248,12 @@ export function LedgerView({
 
       <LedgerFilter
         accountId={accountId}
-        options={{ categories: options.categories, projects: options.projects }}
+        options={{
+          categories: options.categories,
+          projects: accountProjectIds
+            ? options.projects.filter((p) => accountProjectIds.includes(p.id))
+            : options.projects,
+        }}
         paging={paging}
       />
 

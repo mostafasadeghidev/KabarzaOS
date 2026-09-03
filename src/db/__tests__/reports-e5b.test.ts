@@ -65,10 +65,10 @@ beforeAll(async () => {
   ]).returning({ id: accounts.id });
   const [v] = await db.insert(vendors).values({ name: 'هاست' }).returning({ id: vendors.id });
   await db.insert(ledger).values([
-    { accountId: a[0]!.id, direction: 'out', amount: '100', amountAccount: '100', currencyId: eur!.id, amountEur: '100', entryDate: '2026-09-01', description: 'سرور', vendorId: v!.id },
-    { accountId: a[0]!.id, direction: 'out', amount: '50', amountAccount: '50', currencyId: eur!.id, amountEur: '50', entryDate: '2026-08-15', description: 'متفرقه' },
-    { accountId: a[0]!.id, direction: 'out', amount: '25', amountAccount: '25', currencyId: eur!.id, amountEur: '25', entryDate: '2026-07-01', description: 'قدیمی', vendorId: v!.id },
-    { accountId: a[0]!.id, direction: 'in', amount: '500', amountAccount: '500', currencyId: eur!.id, amountEur: '500', entryDate: '2026-09-01', description: 'دریافتی' },
+    { accountId: a[0]!.id, createdBy: 1, direction: 'out', amount: '100', amountAccount: '100', currencyId: eur!.id, amountEur: '100', entryDate: '2026-09-01', description: 'سرور', vendorId: v!.id },
+    { accountId: a[0]!.id, createdBy: 1, direction: 'out', amount: '50', amountAccount: '50', currencyId: eur!.id, amountEur: '50', entryDate: '2026-08-15', description: 'متفرقه' },
+    { accountId: a[0]!.id, createdBy: 1, direction: 'out', amount: '25', amountAccount: '25', currencyId: eur!.id, amountEur: '25', entryDate: '2026-07-01', description: 'قدیمی', vendorId: v!.id },
+    { accountId: a[0]!.id, createdBy: 1, direction: 'in', amount: '500', amountAccount: '500', currencyId: eur!.id, amountEur: '500', entryDate: '2026-09-01', description: 'دریافتی' },
   ]);
   await db.insert(unitEntries).values([
     { projectId: P1, userId: M1, entryDate: '2026-06-01', quantity: '1', amount: '10', currencyId: eur!.id, status: 'paid' },

@@ -1,3 +1,4 @@
+import { format as formatMoney } from '@/domain/money/money';
 import { buildTimelines, lastActorOf } from '@/domain/ledger/timeline';
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
@@ -6,7 +7,7 @@ import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from 'driz
 import { db } from '@/db/client';
 import {
   accounts, accountUsers, auditLog, currencies, exchangeRates, fiscalClosings, fiscalLocks,
-  ledger, offices, projectMembers, projectPayments, projects, tagRelations, tags, users, vendors, userPermissions, userRoles,
+  ledger, offices, projectMembers, projectPayments, projects, tagRelations, tags, users, vendors, userPermissions, userRoles, unitEntries, projectClients,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, ForbiddenError, visibleScopes } from '@/domain/access/guard';
@@ -360,9 +361,18 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
   const opening = (Number(account.openingBalance) + Number(carriedIn) - Number(carriedOut)).toFixed(4);
   const balance = (Number(opening) + Number(totalIn) - Number(totalOut)).toFixed(4);
 
+  /**
+   * پروژه‌هایی که در **همین حساب** ردیف دارند — پورتِ `projects_in_account()`:
+   * فیلترِ پروژه فقط این‌ها را پیشنهاد می‌کند، نه همهٔ پروژه‌های سامانه.
+   */
+  const accountProjectRows = await db.selectDistinct({ id: ledger.projectId }).from(ledger)
+    .where(and(eq(ledger.accountId, input.accountId), sql`${ledger.projectId} is not null`));
+  const accountProjectIds = accountProjectRows.map((r) => r.id).filter((id): id is number => id !== null);
+
   return {
     account,
     entries,
+    accountProjectIds,
     /**
      * ⚠️ جمع‌ها **همیشه** کلِ حساب‌اند (یا کلِ دورهٔ باز)، نه صفحه یا فیلترِ
      * فعال: ماندهٔ حساب یک واقعیتِ حسابداری است و با فیلترِ نمایش عوض نمی‌شود.
@@ -491,7 +501,7 @@ async function mirrorPayment(
     settledCurrencyId,
     amountEur: payEur,
     // ⚠️ ستون تایم‌استمپ است؛ روزِ ردیف در نیمه‌شبِ UTC تثبیت می‌شود.
-    paidAt: new Date(`${input.entryDate}T00:00:00Z`),
+    paidAt: input.entryDate,
     note: paymentNote(input.description, title),
   });
 
@@ -884,7 +894,8 @@ export async function getEntryFormOptions(actor: Actor) {
   await assertCanBook(actor);
 
   const [
-    accountRows, currencyRows, categoryRows, projectRows, vendorRows, peopleRows, membershipRows,
+    accountRows, currencyRows, categoryRows, projectRows, vendorRows, peopleRows, membershipRows, unitRows,
+    clientRows,
   ] = await Promise.all([
       listAccounts(actor),
       db.select({ id: currencies.id, code: currencies.code, isDefault: currencies.isDefault })
@@ -913,6 +924,25 @@ export async function getEntryFormOptions(actor: Actor) {
         userId: projectMembers.userId,
         currencyId: projectMembers.currencyId,
       }).from(projectMembers),
+
+      /**
+       * کارکردهای پرداخت‌نشده به تفکیکِ «پروژه:عضو» — برای انتخابگرِ داخلِ فرم
+       * (پورتِ `unitUnpaid` ِ `js_data`): برداشت به عضوِ پروژهٔ تعدادی، انتخاب
+       * معادل/ارز را پر می‌کند و پس از ذخیره همان کارکرد «پرداخت‌شده» می‌شود.
+       * ردیفِ «درخواست‌شده» نمی‌آید — مسیرش درخواستِ پرداخت است.
+       */
+      db.select({
+        id: unitEntries.id, projectId: unitEntries.projectId, userId: unitEntries.userId,
+        entryDate: unitEntries.entryDate, quantity: unitEntries.quantity, amount: unitEntries.amount,
+        currencyId: unitEntries.currencyId, code: currencies.code, symbol: currencies.symbol,
+        decimals: currencies.decimals,
+      }).from(unitEntries)
+        .leftJoin(currencies, eq(currencies.id, unitEntries.currencyId))
+        .where(eq(unitEntries.status, 'unpaid'))
+        .orderBy(unitEntries.entryDate, unitEntries.id),
+
+      // کارفرمایانِ پروژه — برای باریک‌سازیِ پروژه به طرفِ حساب (پورتِ `projectUsers`).
+      db.select({ projectId: projectClients.projectId, userId: projectClients.userId }).from(projectClients),
     ]);
 
   const memberships = membershipRows;
@@ -931,6 +961,22 @@ export async function getEntryFormOptions(actor: Actor) {
     }, {}),
     memberCurrency: memberships.reduce<Record<string, number>>((acc, m) => {
       if (m.currencyId) acc[`${m.projectId}:${m.userId}`] = m.currencyId;
+      return acc;
+    }, {}),
+    projectClientIds: clientRows.reduce<Record<number, number[]>>((acc, c) => {
+      (acc[c.projectId] ??= []).push(c.userId);
+      return acc;
+    }, {}),
+    unitUnpaid: unitRows.reduce<Record<string, Array<{ id: number; amount: string; currencyId: number | null; text: string }>>>((acc, u) => {
+      const cur = u.currencyId !== null && u.code !== null
+        ? { id: u.currencyId, code: u.code, symbol: u.symbol ?? '', decimals: u.decimals ?? 2 }
+        : undefined;
+      (acc[`${u.projectId}:${u.userId}`] ??= []).push({
+        id: u.id,
+        amount: u.amount,
+        currencyId: u.currencyId,
+        text: `${u.entryDate} · ${Number(u.quantity)}× · ${formatMoney(u.amount, cur)}`,
+      });
       return acc;
     }, {}),
     defaultCurrencyId: currencyRows.find((c) => c.isDefault)?.id ?? null,

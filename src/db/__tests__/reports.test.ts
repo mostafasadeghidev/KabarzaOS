@@ -67,23 +67,23 @@ beforeAll(async () => {
 
   // دریافتی از کارفرما: ۵ یورو (ستونِ منجمدِ amount_eur).
   await db.insert(projectPayments).values({
-    projectId: project, userId: clientA, direction: 'incoming',
+    projectId: project, userId: clientA, direction: 'incoming', paidAt: '2026-08-01',
     amount: '5', currencyId: eur, amountEur: '5',
   });
 
   // یک پرداخت به عضو (۳۰) و یک هزینهٔ واقعی (۱۲) — هر دو ردیفِ دفتر.
   const l = await db.insert(ledger).values([
     {
-      accountId: account, entryDate: '2026-06-01', direction: 'out', description: 'حقوق',
+      accountId: account, createdBy: 1, entryDate: '2026-06-01', direction: 'out', description: 'حقوق',
       amount: '30', currencyId: eur, amountAccount: '30', amountOffice: '30', amountEur: '30', exchangeRate: '1',
     },
     {
-      accountId: account, entryDate: '2026-06-02', direction: 'out', description: 'هاستینگ',
+      accountId: account, createdBy: 1, entryDate: '2026-06-02', direction: 'out', description: 'هاستینگ',
       amount: '12', currencyId: eur, amountAccount: '12', amountOffice: '12', amountEur: '12', exchangeRate: '1',
     },
   ]).returning({ id: ledger.id });
   await db.insert(projectPayments).values({
-    projectId: project, userId: member, ledgerId: l[0]!.id, direction: 'member_payout',
+    projectId: project, userId: member, ledgerId: l[0]!.id, direction: 'member_payout', paidAt: '2026-08-01',
     amount: '30', currencyId: eur, amountEur: '30',
   });
 

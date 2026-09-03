@@ -69,7 +69,7 @@ beforeAll(async () => {
   await db.insert(projectClients).values({ projectId: alpha, userId: goli });
 
   const tk = await db.insert(tasks).values([
-    { projectId: alpha, title: 'تسکِ سارا', assignedTo: sara, scope: 'company' },
+    { projectId: alpha, title: 'تسکِ سارا', assignedTo: sara, createdBy: sara, scope: 'company' },
     { projectId: alpha, title: 'تسکِ خصوصیِ دیگری', assignedTo: reza, isPrivate: true, createdBy: reza, scope: 'company' },
   ]).returning({ id: tasks.id });
   alphaTask = tk[0]!.id; alphaPrivateTask = tk[1]!.id;

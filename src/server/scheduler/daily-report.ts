@@ -102,8 +102,8 @@ async function collect(date: string, t: Translator): Promise<ReportSections> {
       .leftJoin(users, eq(users.id, projectPayments.userId))
       .leftJoin(projects, eq(projects.id, projectPayments.projectId))
       .leftJoin(currencies, eq(currencies.id, projectPayments.currencyId))
-      // paidAt مهرِ زمانی است، نه تاریخ — پس بازهٔ همان روزِ محلی.
-      .where(and(gte(projectPayments.paidAt, dayStart), lte(projectPayments.paidAt, dayEnd)))
+      // paidAt روزِ پرداخت است (مهاجرت ۰۰۲۴) — همان روزِ گزارش.
+      .where(eq(projectPayments.paidAt, date))
       .orderBy(projectPayments.id),
 
     db.select({ title: tasks.title, projectTitle: projects.title })
@@ -199,6 +199,29 @@ async function postToDiscord(webhook: string, text: string): Promise<boolean> {
  * است — پورتِ `send_telegram_admins()`. متن روی مرزِ خط تکه می‌شود، وگرنه
  * گزارشِ بلندتر از ۴۰۹۶ نویسه بی‌صدا رد می‌شد.
  */
+/**
+ * ارسالِ گزارشِ یک روز به **یک** چتِ تلگرام — پورتِ «ارسالِ گزارش به چتِ من»:
+ * مالک پیش از روشن‌کردنِ ارسالِ روزانه، خودش خروجی را می‌بیند. تکه‌تکه مثلِ
+ * ارسالِ عادی. false = باتی نیست، گزارش خالی است، یا تلگرام نپذیرفت.
+ */
+export async function sendReportToChat(chatId: string, date: string): Promise<boolean> {
+  const token = await botToken();
+  if (!token || chatId === '') return false;
+  const text = await previewReport(date);
+  if (text === '') return false;
+  for (const part of chunkText(text)) {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: part }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    const data = await res.json().catch(() => ({})) as { ok?: boolean };
+    if (!data.ok) return false;
+  }
+  return true;
+}
+
 async function sendToAdmins(text: string): Promise<void> {
   const admins = await db
     .selectDistinct({ chatId: users.telegramChatId })

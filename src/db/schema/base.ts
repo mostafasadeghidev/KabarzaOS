@@ -36,7 +36,7 @@ export const offices = pgTable('offices', {
   defaultCurrencyId: fk('default_currency_id').references(() => currencies.id),
   isActive: boolean('is_active').notNull().default(true),
   ...stamps,
-});
+}, (t) => [index('offices_currency_ix').on(t.defaultCurrencyId)]);
 
 export const vendors = pgTable('vendors', {
   id: pk(),
@@ -44,7 +44,10 @@ export const vendors = pgTable('vendors', {
   note: text('note').notNull().default(''),
   isActive: boolean('is_active').notNull().default(true),
   ...stamps,
-});
+}, (t) => [
+  // find-or-create روی نامِ بی‌حروفِ‌بزرگ (مهاجرت ۰۰۲۴).
+  index('vendors_name_lower_ix').on(sql`lower(${t.name})`),
+]);
 
 /**
  * تگ‌ها — چندریختی (D-014 §۳).
