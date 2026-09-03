@@ -17,6 +17,16 @@ import { markOffline } from '@/server/people/presence-service';
 /** شمارندهٔ شکست‌های ورود — یک نمونه برای عمرِ فرایند (R-AUTH: پنجرهٔ ۱۵ دقیقه، سقفِ ۱۰). */
 const failures = createFailureStore();
 
+/** IP ِ درخواست؛ بیرونِ درخواست (تست/اسکریپت) `headers()` همان‌جا پرتاب می‌کند → null. */
+async function clientIp(): Promise<string | null> {
+  try {
+    const h = await headers();
+    return h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const MESSAGES: Record<string, string> = {
   invalid_credentials: 'ایمیل یا رمز عبور نادرست است.',
   inactive: 'این حساب غیرفعال است.',
@@ -64,7 +74,8 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   };
 
   // ⚠️ محدودکننده پیش از این در دامنه بود ولی هیچ شمارنده‌ای نمی‌گرفت — عملاً خاموش.
-  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
+  // ⚠️ بیرونِ درخواست (تست/اسکریپت) headers() پرتاب می‌کند؛ آنجا IP نداریم — فقط شناسه شمرده می‌شود.
+  const ip = await clientIp();
   const keys = throttleKeys(parsed.data.email, ip);
   const result = await attemptLogin(lookup, parsed.data.email, parsed.data.password, {
     recentFailures: worstFailures(failures, keys),

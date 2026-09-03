@@ -109,8 +109,8 @@ describe('R-TEAM-10 — «پرداخت‌شده» بدونِ تراکنشِ با
 describe('G9 — enumها با check محدود می‌شوند', () => {
   it('وضعیتِ نامعتبرِ دفترکل رد می‌شود', async () => {
     await expect(
-      sql`insert into ledger (account_id, entry_date, direction, amount, currency_id, amount_account, status)
-          values (${accountId}, '2026-05-01', 'in', '10', ${eurId}, '10', 'posted')`,
+      sql`insert into ledger (account_id, entry_date, direction, amount, currency_id, amount_account, status, created_by)
+          values (${accountId}, '2026-05-01', 'in', '10', ${eurId}, '10', 'posted', ${userId})`,
     ).rejects.toThrow(/ledger_status_ck/i);
   });
 

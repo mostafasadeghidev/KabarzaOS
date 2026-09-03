@@ -2,6 +2,15 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.52.1]
+
+### Fixed
+
+- The sign-in action no longer fails outside a request context (tests, scripts): the client address is optional for the login throttle.
+- Test suite aligned with the NOT NULL ledger creator constraint.
+
+---
+
 ## [1.52.0]
 
 ### Added — second-pass audit fixes (parity with the plugin)
