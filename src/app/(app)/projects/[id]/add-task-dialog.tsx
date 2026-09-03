@@ -16,6 +16,7 @@ import {
 import { MultiSelect } from '@/components/ui/multi-select';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { defaultTaskStatusId } from '@/domain/projects/defaults';
 
 /** گزینه‌های فرمِ تسک — از سرور می‌آیند (همان `getTaskFormOptions`). */
 export interface TaskFormOptions {
@@ -26,7 +27,8 @@ export interface TaskFormOptions {
   roles: Array<{ id: number; name: string }>;
   /** خالی یعنی بیننده حق ندارد به **شخص** تخصیص دهد (کارفرمای خالص). */
   assignees: Array<{ userId: number; label: string }>;
-  statuses: Array<{ id: number; name: string }>;
+  /** `group` برای پیش‌فرضِ «شروع نشده» لازم است. */
+  statuses: Array<{ id: number; name: string; group?: string | null }>;
   priorities: Array<{ id: number; name: string }>;
   /** تسک‌های همین پروژه — گزینه‌های «وابسته به». */
   tasks?: Array<{ id: number; title: string }>;
@@ -106,7 +108,15 @@ export function AddTaskDialog({
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="nt-status">{t("وضعیت")}</Label>
-              <select id="nt-status" name="statusTagId" className={cellSelect} defaultValue={keep('statusTagId')}>
+              {/*
+                ⚠️ تسکِ تازه پیش‌فرض «شروع نشده» است، نه بی‌وضعیت: سرور هم
+                همین را می‌گذارد (`defaultTaskStatusId`) و نشان‌دادنِ
+                «بدون وضعیت» در فرم یعنی کاربر چیزی می‌بیند که ذخیره نمی‌شود.
+              */}
+              <select
+                id="nt-status" name="statusTagId" className={cellSelect}
+                defaultValue={keep('statusTagId') || String(defaultTaskStatusId(options.statuses.map((s) => ({ id: s.id, group: s.group ?? null }))) ?? '')}
+              >
                 <option value="">{t("— بدون وضعیت —")}</option>
                 {options.statuses.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
@@ -124,7 +134,12 @@ export function AddTaskDialog({
                 <Label htmlFor="nt-assignee">{t("تخصیص به…")}</Label>
                 <select
                   id="nt-assignee" name="assignedTo" className={cellSelect}
-                  defaultValue={keep('assignedTo') || (currentUserId && options.assignees.some((a) => a.userId === currentUserId) ? String(currentUserId) : '')}
+                  /**
+                   * ⚠️ پیش‌فرض **بی‌مسئول**: تسک را اغلب به یک **نقش** می‌دهند
+                   * («یکی از دولوپرها برش می‌دارد»). پیش از این خودِ سازنده
+                   * از پیش انتخاب می‌شد و تسکِ نقشی هم صاحبِ شخصی پیدا می‌کرد.
+                   */
+                  defaultValue={keep('assignedTo')}
                 >
                   <option value="">{t("— هیچ‌کدام —")}</option>
                   {options.assignees.map((a) => (

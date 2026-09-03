@@ -17,6 +17,9 @@ import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
@@ -135,14 +138,15 @@ function hhmm(minutes: number): string {
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
-function DeleteSubmit({ label, variant, onPick }: {
+function DeleteSubmit({ label, variant, onPick, disabled = false }: {
   label: string;
   variant: 'default' | 'destructive';
   onPick: () => void;
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="sm" variant={variant} disabled={pending} onClick={onPick}>
+    <Button type="submit" size="sm" variant={variant} disabled={pending || disabled} onClick={onPick}>
       {label}
     </Button>
   );
@@ -167,6 +171,8 @@ function DeleteBox({
   const t = useT();
   const [result, formAction] = useActionState<DeleteActionState, FormData>(deleteProjectAction, {});
   const [mode, setMode] = useState<'detach' | 'full'>('detach');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [typed, setTyped] = useState('');
 
   if (state === 'locked') {
     return (
@@ -184,16 +190,67 @@ function DeleteBox({
       <h3 className="text-sm font-semibold text-destructive">{t("حذف پروژه")}</h3>
 
       {state === 'clean' ? (
-        <form action={formAction} className="grid gap-2">
-          <input type="hidden" name="projectId" value={projectId} />
+        <>
           <p className="text-xs text-muted-foreground">
             {tr("این پروژه داده‌ی مالی یا ساعت کاری ندارد و آزادانه حذف می‌شود.")}
           </p>
           <div>
-            <DeleteSubmit label={t("حذف پروژه")} variant="destructive" onPick={() => {}} />
+            {/*
+              ⚠️ حتی پروژهٔ «تمیز» هم با یک کلیک نمی‌رود: حذف برگشت‌ناپذیر است و
+              دکمه‌ای که همان‌جا کار را تمام کند، خطای دستِ لغزیده را به فاجعه
+              تبدیل می‌کند. تأیید در مودالِ جدا و با تایپِ نامِ پروژه —
+              همان محافظی که مسیرِ «دادهٔ مالی دارد» از اول داشت.
+            */}
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              onClick={() => { setConfirmOpen(true); setTyped(''); }}
+            >
+              {t("حذف پروژه")}
+            </Button>
           </div>
           {result.error && <p className="text-xs text-destructive">{tr(result.error)}</p>}
-        </form>
+
+          <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-destructive">{t("حذفِ همیشگیِ پروژه")}</DialogTitle>
+                <DialogDescription>
+                  {tr('پروژهٔ «{title}» و تسک‌ها، فایل‌ها و کامنت‌هایش برای همیشه حذف می‌شوند. این کار برگشت ندارد.', { title })}
+                </DialogDescription>
+              </DialogHeader>
+
+              <form action={formAction} className="grid gap-3">
+                <input type="hidden" name="projectId" value={projectId} />
+                <div className="grid gap-1.5">
+                  <Label htmlFor="del-confirm">
+                    {tr('برای تأیید، نامِ پروژه را تایپ کنید:')}
+                  </Label>
+                  <Input
+                    id="del-confirm"
+                    autoComplete="off"
+                    value={typed}
+                    onChange={(e) => setTyped(e.target.value)}
+                    placeholder={title}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>
+                    {t("انصراف")}
+                  </Button>
+                  {/* دکمه تا وقتی نام دقیقاً تایپ نشده خاموش است. */}
+                  <DeleteSubmit
+                    label={t("بله، حذف کن")}
+                    variant="destructive"
+                    onPick={() => {}}
+                    disabled={typed.trim() !== title.trim()}
+                  />
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </>
       ) : (
         <form action={formAction} className="grid gap-2">
           <input type="hidden" name="projectId" value={projectId} />

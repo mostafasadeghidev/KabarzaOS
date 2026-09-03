@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.56.0]
+
+### Changed
+
+- **Deleting a project asks twice.** A project with no financial or work data used to go with a single click. It now opens a confirmation dialog that names the project, says the deletion cannot be undone, and keeps the destructive button disabled until the project name is typed exactly — the same guard the "has financial data" path already had.
+- **A new task starts as "not started" and with nobody assigned.** The status field is pre-filled with the first "to do" status (what the server already stored), and the assignee no longer defaults to the person creating the task, so handing a task to a **role** — "one of the designers will pick it up" — is the natural path.
+- **The count next to a project tab is spaced with a layout gap** instead of a logical margin, which in right-to-left languages landed on the same side as the label and glued the number to the last letter.
+
+---
+
 ## [1.55.0]
 
 ### Added

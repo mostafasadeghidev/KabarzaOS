@@ -133,17 +133,20 @@ export function ProjectTabs({
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm transition-colors ${
+            className={`-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors ${
               tab === t.key
                 ? 'border-primary font-medium text-foreground'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {tr(t.label)}
-            {/* ⚠️ عدد یک نشانِ جداست، نه ادامهٔ کلمه: در راست‌به‌چپ با `ms-1`
-                به حرفِ آخر می‌چسبید و «تسک‌ها۴» خوانده می‌شد. */}
+            {/*
+              ⚠️ فاصله با `gap` روی خودِ دکمه، نه با حاشیهٔ منطقیِ نشان:
+              حاشیه در راست‌به‌چپ به همان سمتی می‌افتاد که متن است و عدد
+              عملاً به حرفِ آخر می‌چسبید («تسک‌ها۴»). `gap` جهت‌مستقل است.
+            */}
             {t.badge !== undefined && t.badge > 0 && (
-              <span className="num ms-2 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+              <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
                 {t.badge}
               </span>
             )}
