@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Paperclip, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Combobox, MultiSelect, type Option as ComboOption } from '@/components/ui/combobox';
@@ -49,6 +49,101 @@ function SectionTitle({ children, hint }: { children: React.ReactNode; hint?: st
     <div>
       <h3 className="text-sm font-medium">{children}</h3>
       {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+/**
+ * انتخابگرِ فایل با دکمهٔ «افزودن» — پورتِ ردیف‌های فایلِ نسخهٔ قبلی.
+ *
+ * ⚠️ چرا نه `<input type="file" multiple>` ِ خالی: هر بار که کاربر دکمه را
+ * می‌زد، انتخابِ قبلی **جایگزین** می‌شد؛ یعنی فایل‌ها را باید یک‌جا و از یک
+ * پوشه برمی‌داشت. اینجا انتخاب‌ها روی هم انباشته می‌شوند، هر کدام قابلِ
+ * حذف‌اند، و مقدارِ نهایی با `DataTransfer` داخلِ همان ورودیِ نام‌دار
+ * می‌نشیند تا `FormData` بدونِ تغییرِ سمتِ سرور همان‌طور بخوانَدش.
+ */
+export function FilePicker({
+  name,
+  accept,
+  multiple = true,
+  addLabel,
+  emptyLabel,
+  preview = false,
+}: {
+  name: string;
+  accept?: string;
+  multiple?: boolean;
+  addLabel: string;
+  emptyLabel: string;
+  /** تصویرِ انتخاب‌شده پیش از ذخیره نشان داده شود (تصویرِ شاخص). */
+  preview?: boolean;
+}) {
+  const tr = useT();
+  const [files, setFiles] = useState<File[]>([]);
+  const holderRef = useRef<HTMLInputElement>(null);
+  const pickerRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const sync = (next: File[]) => {
+    const data = new DataTransfer();
+    for (const f of next) data.items.add(f);
+    if (holderRef.current) holderRef.current.files = data.files;
+    setFiles(next);
+  };
+
+  useEffect(() => {
+    const first = preview ? files[0] : undefined;
+    if (!first || !first.type.startsWith('image/')) { setPreviewUrl(null); return; }
+    const url = URL.createObjectURL(first);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [files, preview]);
+
+  return (
+    <div className="grid gap-2">
+      {/* ورودیِ نام‌دار: دیده نمی‌شود ولی فایل‌ها را برای فرم نگه می‌دارد. */}
+      <input ref={holderRef} type="file" name={name} multiple={multiple} className="hidden" tabIndex={-1} />
+      {/* ورودیِ انتخاب: بی‌نام است تا خودش در FormData نیفتد. */}
+      <input
+        ref={pickerRef}
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        className="hidden"
+        onChange={(e) => {
+          const picked = [...(e.target.files ?? [])];
+          if (picked.length === 0) return;
+          sync(multiple ? [...files, ...picked] : picked.slice(0, 1));
+          // ⚠️ خالی‌کردن، وگرنه انتخابِ دوبارهٔ همان فایل رویداد نمی‌دهد.
+          e.target.value = '';
+        }}
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" size="sm" variant="outline" onClick={() => pickerRef.current?.click()}>
+          <Plus className="size-3.5" />
+          {addLabel}
+        </Button>
+        {files.length === 0 && <span className="text-xs text-muted-foreground">{emptyLabel}</span>}
+      </div>
+
+      {previewUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={previewUrl} alt="" className="size-20 rounded-md object-cover" />
+      )}
+
+      {files.length > 0 && (
+        <ul className="grid gap-1">
+          {files.map((f, i) => (
+            <li key={`${f.name}-${i}`} className="flex items-center gap-2 text-xs">
+              <Paperclip className="size-3 shrink-0 text-muted-foreground" />
+              <span className="flex-1 truncate">{f.name}</span>
+              <span className="num shrink-0 text-muted-foreground">{Math.ceil(f.size / 1024)} {tr('کیلوبایت')}</span>
+              <RemoveButton onClick={() => sync(files.filter((_, j) => j !== i))} />
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -266,13 +361,25 @@ export function BootstrapSections({
             </div>
 
             <div className="grid gap-2 sm:grid-cols-3">
-              <MultiSelect
-                options={roleOptions}
-                selected={row.roleTagIds}
-                onChange={(next) => setTasks((rows) => rows.map((r, j) =>
-                  (j === i ? { ...r, roleTagIds: next } : r)))}
-                placeholder={tr("نقش‌ها…")}
-              />
+              {/*
+                ⚠️ تسکِ کارفرما نقشِ تیمی ندارد: در نسخهٔ قبلی هم «سپردن به
+                کارفرما» یعنی صاحبِ کار کارفرماست. پس وقتی تیک خورد، فیلد
+                جای خود را به یادداشت می‌دهد و نقش‌های انتخاب‌شده پاک
+                می‌شوند — وگرنه تسک هم‌زمان به تیم و کارفرما سپرده می‌شد.
+              */}
+              {row.toClient ? (
+                <div className="flex h-9 items-center rounded-md border border-dashed px-3 text-xs text-muted-foreground">
+                  {tr("سپرده‌شده به کارفرما")}
+                </div>
+              ) : (
+                <MultiSelect
+                  options={roleOptions}
+                  selected={row.roleTagIds}
+                  onChange={(next) => setTasks((rows) => rows.map((r, j) =>
+                    (j === i ? { ...r, roleTagIds: next } : r)))}
+                  placeholder={tr("نقش‌ها…")}
+                />
+              )}
               <Input
                 name="taskDue"
                 type="date"
@@ -312,7 +419,10 @@ export function BootstrapSections({
                 type="checkbox"
                 checked={row.toClient}
                 onChange={(e) => setTasks((rows) => rows.map((r, j) =>
-                  (j === i ? { ...r, toClient: e.target.checked } : r)))}
+                  // تیکِ کارفرما نقش‌های تیمی را پاک می‌کند.
+                  (j === i
+                    ? { ...r, toClient: e.target.checked, roleTagIds: e.target.checked ? [] : r.roleTagIds }
+                    : r)))}
                 className="size-3.5 accent-primary"
               />
               {tr("سپردن به کارفرما")}
@@ -348,6 +458,24 @@ export function BootstrapSections({
             placeholder={tr("نقش‌های چک‌لیست…")}
             name="qaRole"
           />
+          {/* ⚠️ چک‌لیستِ QA معمولاً برای **همهٔ** نقش‌ها لازم است؛ انتخابِ
+              یکی‌یکیِ ده نقش کارِ تکراری بود. */}
+          <div className="flex gap-2">
+            <Button
+              type="button" size="sm" variant="outline"
+              disabled={qaRoles.length === roleOptions.length}
+              onClick={() => setQaRoles(roleOptions.map((o) => o.value))}
+            >
+              {tr("انتخابِ همه")}
+            </Button>
+            <Button
+              type="button" size="sm" variant="ghost"
+              disabled={qaRoles.length === 0}
+              onClick={() => setQaRoles([])}
+            >
+              {tr("پاک‌کردنِ همه")}
+            </Button>
+          </div>
           <label className="flex items-center gap-1.5 text-xs">
             <input
               type="checkbox"
@@ -375,15 +503,11 @@ export function BootstrapSections({
           کاربر باید پروژه را می‌ساخت، بازش می‌کرد و از تبِ فایل‌ها دوباره
           آپلود می‌کرد.
         */}
-        <Input name="attachmentFile" type="file" multiple />
-      </section>
-
-      {/* ------------------------------------------------ تصویرِ شاخص */}
-      <section className="grid gap-2">
-        <SectionTitle hint={tr("بدونِ تصویر، تک‌نگارِ رنگی نشان داده می‌شود.")}>
-          {tr("تصویرِ شاخص")}
-        </SectionTitle>
-        <Input name="thumbnailFile" type="file" accept="image/*" />
+        <FilePicker
+          name="attachmentFile"
+          addLabel={tr("افزودنِ فایل")}
+          emptyLabel={tr("فایلی انتخاب نشده")}
+        />
       </section>
 
       {/* ------------------------------------------------ لینک‌ها */}

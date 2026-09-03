@@ -5,7 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { X } from 'lucide-react';
 import { createProjectAction, updateProjectAction } from './actions';
 import type { FormState } from './schema';
-import { BootstrapSections, type BootstrapOptions } from './bootstrap-sections';
+import { BootstrapSections, FilePicker, type BootstrapOptions } from './bootstrap-sections';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -235,6 +235,28 @@ export function ProjectDialog({
           <Field label={tr("توضیحات")} name="description" error={fe.description}>
             {(id) => <Textarea id={id} name="description" defaultValue={keep('description')} rows={2} />}
           </Field>
+
+          {/*
+            ⚠️ تصویرِ شاخص کنارِ عنوان و توضیحات می‌نشیند، نه در تبِ فایل‌ها:
+            در نسخهٔ قبلی هم جعبه‌اش کنارِ همین دو فیلد بود و کاربر انتظار
+            دارد «هویتِ پروژه» یک‌جا پر شود.
+          */}
+          {options.bootstrap && (
+            <div className="grid gap-1.5">
+              <span className="text-sm font-medium">{tr("تصویرِ شاخص")}</span>
+              <p className="text-xs text-muted-foreground">
+                {tr("بدونِ تصویر، تک‌نگارِ رنگی نشان داده می‌شود.")}
+              </p>
+              <FilePicker
+                name="thumbnailFile"
+                accept="image/*"
+                multiple={false}
+                preview
+                addLabel={tr("انتخابِ تصویر")}
+                emptyLabel={tr("تصویری انتخاب نشده")}
+              />
+            </div>
+          )}
 
           {/* فیلدهای فشرده — در نسخهٔ قبلی سه‌تا در هر ردیف. */}
           <div className="grid gap-4 sm:grid-cols-3">

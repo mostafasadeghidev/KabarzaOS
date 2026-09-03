@@ -2,6 +2,22 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.54.0]
+
+### Fixed — right-to-left charts and the new-project dialog
+
+- **Dashboard bar charts are readable in right-to-left languages.** The axis labels of "Project status" and "Member hours" were drawn on top of the bars: inheriting the RTL text direction makes an SVG `text-anchor="start"` run leftwards, so each label left its own column and covered the bar. The chart surface is now explicitly left-to-right, while the tooltip stays right-to-left.
+
+### Changed — new-project dialog
+
+- **Dropdowns open above the dialog.** The role pickers (initial tasks and the QA checklist) rendered inside the dialog's scroll area, so the option list was clipped at its edge and had to be scrolled into view. Both lists are now rendered outside the dialog and float over it, flipping above the field when there is no room below.
+- **A task handed to the client no longer keeps team roles.** Ticking "assign to the client" clears the roles that were picked and replaces the field with a note, instead of sending the task to both the team and the client.
+- **"Select all" and "Clear all" for the QA checklist roles**, so a checklist meant for the whole team is not picked one role at a time.
+- **The featured image moved next to the title and description**, as in the plugin, and shows a preview of the chosen picture before saving.
+- **Project files can be added in several rounds.** "Add file" keeps the previous picks instead of replacing them, lists every chosen file with its size, and lets any single one be removed before saving.
+
+---
+
 ## [1.53.0]
 
 ### Added — personal finance page

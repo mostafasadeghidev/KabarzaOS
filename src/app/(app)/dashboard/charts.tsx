@@ -12,7 +12,15 @@ import { useT } from '@/i18n/client';
  *
  * ⚠️ RTL: recharts محورها را چپ‌به‌راست می‌چیند. برای فارسی
  * `reversed` روی محورِ X و `orientation="right"` روی محورِ Y گذاشته می‌شود.
+ *
+ * ⚠️ و سطحِ نمودار (`.recharts-surface`) صریحاً LTR می‌ماند: recharts مختصاتِ متنِ محور را با
+ * `textAnchor="start"` می‌دهد و در جریانِ RTL این یعنی «از این نقطه به
+ * **چپ** بنویس» — یعنی برچسبِ محور از ستونِ خودش بیرون می‌زد و روی میله‌ها
+ * می‌افتاد (نامِ عضو و وضعیتِ پروژه ناخوانا می‌شدند). با dir=ltr لنگرها
+ * درست تفسیر می‌شوند و خودِ متنِ فارسی همچنان راست‌به‌چپ رندر می‌شود. فقط
+ * سطحِ SVG، نه کلِ ظرف — تولتیپ باید RTL بماند.
  */
+
 
 /**
  * ⚠️ برچسبِ محورها با توکنِ تم، نه پیش‌فرضِ کتابخانه.
@@ -72,7 +80,7 @@ export function WeeklyTrendChart({ data }: { data: WeeklyPoint[] }) {
 export function MemberHoursChart({ data }: { data: MemberHours[] }) {
   const hoursConfig = useHoursConfig();
   return (
-    <ChartContainer config={hoursConfig} className="aspect-auto h-56 w-full">
+    <ChartContainer config={hoursConfig} className="aspect-auto h-56 w-full [&_.recharts-surface]:[direction:ltr]">
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
         <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={GRID} />
         <XAxis type="number" reversed tickLine={false} axisLine={false} tick={TICK} />
@@ -96,7 +104,7 @@ export function MemberHoursChart({ data }: { data: MemberHours[] }) {
 export function StatusChart({ data }: { data: StatusSlice[] }) {
   const countConfig = useCountConfig();
   return (
-    <ChartContainer config={countConfig} className="aspect-auto h-56 w-full">
+    <ChartContainer config={countConfig} className="aspect-auto h-56 w-full [&_.recharts-surface]:[direction:ltr]">
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
         <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={GRID} />
         <XAxis type="number" reversed tickLine={false} axisLine={false} allowDecimals={false} tick={TICK} />

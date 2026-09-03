@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { useT } from '@/i18n/client';
 
@@ -31,6 +32,46 @@ export function matches(option: Option, query: string): boolean {
 
 const boxClass =
   'flex h-9 w-full items-center gap-1 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
+
+/**
+ * جای‌گیریِ فهرستِ بازشو **بیرونِ** جریانِ صفحه.
+ *
+ * ⚠️ چرا portal و نه `absolute`: این فیلد داخلِ مودالی است که خودش
+ * `overflow-y-auto` دارد — فهرستِ absolute زیرِ لبهٔ مودال بریده می‌شد و
+ * کاربر باید مودال را اسکرول می‌کرد تا گزینه‌ها را ببیند. با portal روی
+ * `body` و مختصاتِ fixed، فهرست **روی** مودال می‌نشیند.
+ */
+function useFloatingList(open: boolean, anchorRef: React.RefObject<HTMLElement | null>) {
+  const [box, setBox] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  const measure = useCallback(() => {
+    const el = anchorRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const below = window.innerHeight - r.bottom;
+    // اگر پایین جا نبود، فهرست بالای فیلد باز می‌شود.
+    const height = Math.min(224, Math.max(120, below - 12));
+    const openUp = below < 160 && r.top > below;
+    setBox({
+      top: openUp ? Math.max(8, r.top - height - 4) : r.bottom + 4,
+      left: r.left,
+      width: r.width,
+    });
+  }, [anchorRef]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    measure();
+    window.addEventListener('scroll', measure, true);
+    window.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('scroll', measure, true);
+      window.removeEventListener('resize', measure);
+    };
+  }, [open, measure]);
+
+  return box;
+}
 
 /**
  * انتخابگرِ **تک‌مقداریِ** جستجوی زنده.
@@ -82,6 +123,9 @@ export function Combobox({
 
   useEffect(() => { setActive(0); }, [value.label]);
 
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const listBox = useFloatingList(open, fieldRef);
+
   const pick = (option: Option) => {
     onChange({ id: option.value, label: option.label });
     setOpen(false);
@@ -107,7 +151,7 @@ export function Combobox({
     <div ref={boxRef} className="relative">
       {name && <input type="hidden" name={name} value={value.id ?? ''} />}
 
-      <div className={boxClass}>
+      <div ref={fieldRef} className={boxClass}>
         <input
           id={id}
           type="text"
@@ -141,11 +185,13 @@ export function Combobox({
         <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
       </div>
 
-      {open && (
+      {open && listBox && createPortal(
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-md border bg-popover p-1 shadow-md"
+          // ⚠️ همان دلیلِ MultiSelect: فهرست باید **روی** مودال بنشیند.
+          className="fixed z-[100] max-h-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-md"
+          style={{ top: listBox.top, left: listBox.left, width: listBox.width }}
         >
           {visible.length === 0 ? (
             <li className="px-2 py-1.5 text-xs text-muted-foreground">
@@ -170,7 +216,8 @@ export function Combobox({
               </button>
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body,
       )}
     </div>
   );
@@ -217,12 +264,15 @@ export function MultiSelect({
     return () => document.removeEventListener('mousedown', onOutside);
   }, []);
 
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const listBox = useFloatingList(open, fieldRef);
+
   return (
     <div ref={boxRef} className="relative">
       {/* هر انتخاب یک ورودیِ جدا، تا FormData آرایه بگیرد. */}
       {name && selected.map((v) => <input key={v} type="hidden" name={name} value={v} />)}
 
-      <div className={`${boxClass} h-auto min-h-9 flex-wrap py-1`}>
+      <div ref={fieldRef} className={`${boxClass} h-auto min-h-9 flex-wrap py-1`}>
         {selected.map((v) => (
           <span
             key={v}
@@ -258,10 +308,12 @@ export function MultiSelect({
         />
       </div>
 
-      {open && available.length > 0 && (
+      {open && available.length > 0 && listBox && createPortal(
         <ul
           role="listbox"
-          className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-md border bg-popover p-1 shadow-md"
+          // ⚠️ z بالاتر از مودال (z-50) تا فهرست رویش بنشیند، نه زیرش.
+          className="fixed z-[100] max-h-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-md"
+          style={{ top: listBox.top, left: listBox.left, width: listBox.width }}
         >
           {available.map((o) => (
             <li key={o.value}>
@@ -279,7 +331,8 @@ export function MultiSelect({
               </button>
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body,
       )}
     </div>
   );
