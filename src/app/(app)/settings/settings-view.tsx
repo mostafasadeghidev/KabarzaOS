@@ -64,7 +64,7 @@ export interface SettingsData {
   tags: Array<{
     id: number; name: string; type: TagType; color: string;
     statusGroup: string; isReview: boolean; isClosed: boolean;
-    sortOrder: number; grantsCap: string;
+    sortOrder: number; grantsCap: string; isProtected: boolean;
     nameI18n: Record<string, string> | null;
   }>;
   offices: Array<{
@@ -98,7 +98,7 @@ const TABS = [
    * را باز می‌کرد و `manage_options` این‌ها را. حسابدار نباید حتی ببیندشان؛
    * دکمه‌ای که همیشه «فقط مدیرِ کل» جواب بدهد فقط اعتماد را می‌خورد.
    */
-  { key: 'company', label: 'مشخصاتِ شرکت', ownerOnly: true },
+  { key: 'company', label: 'مشخصاتِ شرکت', ownerOnly: false },
   { key: 'staff', label: 'دسترسی همکاران', ownerOnly: true },
   { key: 'system', label: 'سامانه', ownerOnly: false },
   { key: 'fiscal', label: 'دورهٔ مالی', ownerOnly: true },
@@ -291,7 +291,13 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 // شلوغ می‌کرد و کاربر آن را «ترجمه‌نشده» می‌خواند، نه راهنما.
                 // نامِ پایه در فرمِ ویرایش دیده می‌شود، که جای درستش است.
                 // انگلیسی پلِ میان‌زبانی است (R-I18N-15) — همان قاعدهٔ tagName().
-                cell: (t) => t.nameI18n?.[locale] || t.nameI18n?.en || t.name,
+                cell: (t) => (
+                  <span className="inline-flex items-center gap-1.5">
+                    {t.nameI18n?.[locale] || t.nameI18n?.en || t.name}
+                    {/* پورتِ نشانِ «سیستمی»: تگِ محافظت‌شده حذف نمی‌شود. */}
+                    {t.isProtected && <Badge variant="outline" className="font-normal">{tr("سیستمی")}</Badge>}
+                  </span>
+                ),
               },
               {
                 header: 'رنگ',
@@ -338,12 +344,14 @@ export function SettingsView({ data }: { data: SettingsData }) {
             ]}
             saveAction={saveTagAction}
             deleteAction={(t) => deleteTagAction(t.id)}
+            canDelete={(t) => !t.isProtected}
             renderForm={(editing) => (
               <>
                 <input type="hidden" name="type" value={tagType} />
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="grid gap-1.5">
-                    <Label htmlFor="t-name">{tr("نام")}</Label>
+                    {/* پورتِ «نام (پایه — فارسی)»: زبانِ نامِ پایه همان زبانِ پیش‌فرضِ سامانه است. */}
+                    <Label htmlFor="t-name">{tr('نام (پایه — {lang})', { lang: LOCALE_NAMES[DEFAULT_LOCALE] })}</Label>
                     <Input id="t-name" name="name" defaultValue={editing?.name ?? ''} required />
                   </div>
                   <div className="grid gap-1.5">
@@ -413,18 +421,25 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 <details className="rounded-md border p-2">
                   <summary className="cursor-pointer text-sm">
                     {tr("ترجمهٔ نام به زبان‌های دیگر")}
+                    <span className="num ms-2 text-xs text-muted-foreground">
+                      {tr('{done} از {total} ترجمه شده', {
+                        done: LOCALES.filter((l) => l !== DEFAULT_LOCALE && Boolean(editing?.nameI18n?.[l])).length,
+                        total: LOCALES.filter((l) => l !== DEFAULT_LOCALE).length,
+                      })}
+                    </span>
                   </summary>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
                     {LOCALES.filter((l) => l !== DEFAULT_LOCALE).map((code) => (
                       <div key={code} className="grid gap-1">
+                        {/* «✓» یعنی ترجمه دارد — پورتِ نشانه‌گذاریِ ویرایشگرِ ترجمه. */}
                         <Label htmlFor={`t-name-${code}`} className="text-xs">
-                          {LOCALE_NAMES[code]}
+                          {LOCALE_NAMES[code]}{editing?.nameI18n?.[code] ? ' ✓' : ''}
                         </Label>
                         <Input
                           id={`t-name-${code}`}
                           name={`name-${code}`}
                           defaultValue={editing?.nameI18n?.[code] ?? ''}
-                          placeholder={editing?.name ?? ''}
+                          placeholder={tr('نام به {lang}', { lang: LOCALE_NAMES[code] })}
                           dir={isRtl(code) ? 'rtl' : 'ltr'}
                         />
                       </div>
@@ -621,7 +636,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
       {tab === 'staff' && <StaffSection staff={data.staff} candidates={data.staffCandidates} />}
 
 
-      {tab === 'company' && data.company && <CompanySection company={data.company} />}
+      {tab === 'company' && data.company && <CompanySection company={data.company} isOwner={data.isOwner} />}
 
       {/*
         ⚠️ گزارشِ روزانه زیرِ «سامانه» است، نه تبِ جدا: هر دو تنظیمِ خودِ

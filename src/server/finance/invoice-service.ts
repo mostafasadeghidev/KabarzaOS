@@ -3,7 +3,7 @@ import { db } from '@/db/client';
 import {
   company, currencies, projectClients, projectPayments, projects, users,
 } from '@/db/schema';
-import { canViewSection, type Actor } from '@/domain/access/permissions';
+import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { ForbiddenError, visibleScopes } from '@/domain/access/guard';
 import {
   invoiceNumber, invoiceTotals, isIssuable, issuerName,
@@ -48,7 +48,10 @@ export async function getInvoice(actor: Actor, projectId: number) {
     .orderBy(asc(projectClients.id));
 
   const isClient = clientRows.some((c) => c.userId === actor.id);
-  if (!canViewSection(actor, 'finance') && !isClient) throw new ForbiddenError('finance.view');
+  // پورتِ گاردِ افزونه: `manage_projects` **یا** `manage_finance` — به‌علاوهٔ کارفرمای همین پروژه.
+  if (!canViewSection(actor, 'finance') && !canManageSection(actor, 'projects') && !isClient) {
+    throw new ForbiddenError('finance.view');
+  }
 
   const payments = await db
     .select({

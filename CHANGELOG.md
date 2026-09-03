@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.51.0]
+
+### Added — settings polish (parity with the plugin)
+
+- **Tags:** protected tags carry a "system" badge and no delete button; the base-name field is labelled with the base language ("Name (base — Persian)"); the translation editor marks translated languages with a check, shows "N of 8 translated" and uses "Name in <language>" placeholders.
+- **Catalog rows ask before deleting** (tags, currencies, rates, offices, vendors, QA items), as the plugin does.
+- **Company details** are available to every settings manager, not only the owner; removing the logo stays owner-only.
+- **Scheduler health** is shown to the owner only, matching the plugin's owner-only health tab.
+- **Invoice access** follows the plugin: project managers can open a project's invoice even without finance access (finance viewers and the project's client keep theirs).
+
+---
+
 ## [1.50.0]
 
 ### Added — dashboard panels (parity with the plugin)

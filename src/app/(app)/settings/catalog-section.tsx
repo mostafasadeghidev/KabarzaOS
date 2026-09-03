@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { useConfirm } from '@/components/ui/confirm';
 
 /**
  * الگوی مشترکِ هر فهرستِ پایه: جدول + فرم در دیالوگ + حذف.
@@ -53,6 +54,7 @@ export function CatalogSection<T extends { id: number }>({
   renderForm,
   addLabel,
   rowActions,
+  canDelete,
 }: {
   title: string;
   description?: string;
@@ -65,9 +67,12 @@ export function CatalogSection<T extends { id: number }>({
   addLabel: string;
   /** دکمه‌های اضافیِ هر ردیف (مثلاً «پیش‌فرض کن»). */
   rowActions?: (row: T) => React.ReactNode;
+  /** ردیفی که حذف ندارد (مثلاً تگِ سیستمی) — دکمه اصلاً کشیده نمی‌شود (پورتِ «delete link hidden for protected»). */
+  canDelete?: (row: T) => boolean;
 }) {
   const tr = useT();
   const { show } = useToast();
+  const confirm = useConfirm();
   const t = useT();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<T | null>(null);
@@ -145,22 +150,26 @@ export function CatalogSection<T extends { id: number }>({
                       >
                         <Pencil className="size-3.5" />
                       </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-8 text-muted-foreground hover:text-destructive"
-                        aria-label={t("حذف")}
-                        disabled={pending}
-                        onClick={() =>
-                          startTransition(async () => {
-                            const result = await deleteAction(row);
-                            if (result.error) show(t(result.error), 'error');
-                            else show(t('حذف شد.'), 'success');
-                          })
-                        }
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
+                      {(canDelete?.(row) ?? true) && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 text-muted-foreground hover:text-destructive"
+                          aria-label={t("حذف")}
+                          disabled={pending}
+                          onClick={async () => {
+                            // پورتِ `confirm('حذف شود؟')` ِ هر ردیفِ کاتالوگ — حذفِ یک‌کلیکی نه.
+                            if (!(await confirm({ title: t('حذف شود؟') }))) return;
+                            startTransition(async () => {
+                              const result = await deleteAction(row);
+                              if (result.error) show(t(result.error), 'error');
+                              else show(t('حذف شد.'), 'success');
+                            });
+                          }}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

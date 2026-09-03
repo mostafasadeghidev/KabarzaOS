@@ -125,8 +125,8 @@ export function SystemSection({ config, health, isOwner, telegram }: {
   return (
     <>
     <form action={save} className="grid max-w-2xl gap-5">
-      {/* ⚠️ بالای صفحه، پیش از تنظیمات: خرابیِ زمان‌بند باید اول دیده شود. */}
-      <HealthCard health={health} />
+      {/* ⚠️ بالای صفحه، پیش از تنظیمات: خرابیِ زمان‌بند باید اول دیده شود. فقط مالک (پورتِ تبِ Health). */}
+      {isOwner && <HealthCard health={health} />}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="grid gap-1.5">

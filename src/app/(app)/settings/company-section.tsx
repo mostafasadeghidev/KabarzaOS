@@ -16,7 +16,9 @@ import { useT } from '@/i18n/client';
  * ⚠️ اینجا و نه در پروفایل: پروفایل دربارهٔ **خودِ کاربر** است و مشخصاتِ
  * شرکت دادهٔ سازمان است، نه شخصی. جای درستش تنظیماتِ سامانه است.
  */
-export function CompanySection({ company }: {
+export function CompanySection({ company, isOwner }: {
+  /** حذفِ لوگو فقط برای مالک (همان گاردِ سرور). */
+  isOwner: boolean;
   company: {
     name: string; address: string; taxId: string; email: string; phone: string;
     website: string; bank: string; invoiceFooter: string; logoFileId: number | null;
@@ -55,7 +57,8 @@ export function CompanySection({ company }: {
             className="text-xs file:me-2 file:rounded-md file:border file:bg-background file:px-2 file:py-1 file:text-xs"
           />
           <Button type="submit" size="sm" variant="outline">{tr('بارگذاری لوگو')}</Button>
-          {data.company.logoFileId && (
+          {/* حذفِ لوگو فقط برای مالک — همان گاردِ سرور. */}
+          {data.company.logoFileId && isOwner && (
             <Button
               type="button" size="sm" variant="ghost"
               onClick={async () => { setLogoState(await removeCompanyLogoAction()); }}
