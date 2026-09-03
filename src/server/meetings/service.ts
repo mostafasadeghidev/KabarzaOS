@@ -296,6 +296,7 @@ export async function getMeetingFormOptions(actor: Actor) {
 async function candidatePool(
   projectId: number | null,
   officeIds: number[] | null,
+  currentUserId: number | null = null,
 ): Promise<Candidate[]> {
   const inactive = await db
     .select({ id: users.id }).from(users)
@@ -327,6 +328,7 @@ async function candidatePool(
       projectClients: clientRows,
       admins,
       inactiveUserIds,
+      currentUserId,
     });
   }
 
@@ -351,7 +353,7 @@ async function candidatePool(
       .where(and(eq(userRoles.role, 'member'), isNull(users.deletedAt)))
       .orderBy(users.name);
 
-  return meetingCandidates('general', { officeMembers, admins, inactiveUserIds });
+  return meetingCandidates('general', { officeMembers, admins, inactiveUserIds, currentUserId });
 }
 
 /**
@@ -365,11 +367,11 @@ export async function getCandidates(
 ): Promise<Candidate[]> {
   if (input.projectId !== null) {
     await assertProjectMeeting(actor, input.projectId);
-    return candidatePool(input.projectId, null);
+    return candidatePool(input.projectId, null, actor.id);
   }
   const scope = generalOfficeScope(await actorContext(actor), input.officeIds[0] ?? null);
   if (!scope) throw new ForbiddenError('meeting.general');
-  return candidatePool(null, scope.officeIds);
+  return candidatePool(null, scope.officeIds, actor.id);
 }
 
 export interface MeetingInput {

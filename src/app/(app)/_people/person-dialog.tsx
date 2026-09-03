@@ -18,9 +18,11 @@ import {
 } from '@/components/ui/dialog';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { OFFICE_MANAGER_CAP } from '@/domain/access/project-scope';
 
 export interface PersonFormOptions {
-  roleTags: Array<{ id: number; name: string }>;
+  /** `grantsCap` تعیین می‌کند کدام نقش «مدیرِ تیم» است. */
+  roleTags: Array<{ id: number; name: string; grantsCap?: string }>;
   offices: Array<{ id: number; name: string }>;
   /** کاربرانی که این نقش را ندارند — انتخابگرِ «کاربرِ موجود» در حالتِ افزودن. */
   candidates: Array<{ id: number; name: string; email: string; phone: string }>;
@@ -130,6 +132,19 @@ export function PersonDialog({
   const tagIds = new Set(person?.tags.map((t) => t.id) ?? []);
   const officeIds = new Set(person?.offices.map((o) => o.id) ?? []);
   const managedIds = new Set(person?.offices.filter((o) => o.manages).map((o) => o.id) ?? []);
+
+  /**
+   * «مدیرِ این دفاتر» فقط وقتی معنا دارد که فرد نقشِ **مدیرِ تیم** داشته باشد
+   * (تگی که `office_manager` می‌دهد). کارفرما اصلاً این فیلد را نمی‌بیند.
+   * ⚠️ اگر کسی از قبل دفترِ تحتِ مدیریت دارد، فیلد می‌ماند تا برداشتنش ممکن
+   * باشد — پنهان‌کردنِ داده‌ای که وجود دارد یعنی نشود پسش گرفت.
+   */
+  const managerTagIds = new Set(
+    options.roleTags.filter((t) => t.grantsCap === OFFICE_MANAGER_CAP).map((t) => t.id),
+  );
+  const [pickedTags, setPickedTags] = useState<number[]>([...tagIds]);
+  const showsManagedOffices = section.supportsTags
+    && (managedIds.size > 0 || pickedTags.some((id) => managerTagIds.has(id)));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -324,6 +339,7 @@ export function PersonDialog({
               name="tagIds"
               options={options.roleTags.map((t) => ({ id: t.id, label: t.name }))}
               defaultSelected={[...tagIds]}
+              onChange={setPickedTags}
               placeholder={tr("انتخابِ نقش‌ها…")}
               emptyText={tr("هنوز نقشی تعریف نشده.")}
             />
@@ -343,6 +359,13 @@ export function PersonDialog({
                 emptyText={tr("هنوز دفتری تعریف نشده.")}
               />
             </div>
+            {/*
+              ⚠️ «مدیرِ این دفاتر» فقط برای کسی که نقشِ **مدیرِ تیم** دارد:
+              کارفرما اصلاً دفتری را نمی‌گرداند، و عضوِ معمولی هم نه. پیش از
+              این فیلد همیشه بود و می‌شد ناخواسته به هرکس مدیریتِ دفتر داد —
+              دسترسی‌ای که پروژه‌ها و ساعتِ کلِ آن دفتر را باز می‌کند.
+            */}
+            {showsManagedOffices && (
             <div className="grid gap-1.5">
               <Label className="text-xs text-muted-foreground">{tr("مدیرِ این دفاتر")}</Label>
               <MultiSelect
@@ -356,6 +379,7 @@ export function PersonDialog({
                 {tr("مدیریت جداست از عضویت — می‌تواند دفتری را بگرداند بی‌آنکه عضوش باشد.")}
               </p>
             </div>
+            )}
           </fieldset>
           )}
 

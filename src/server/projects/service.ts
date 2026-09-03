@@ -1433,6 +1433,25 @@ async function validDependency(projectId: number, dependsOn: number | null, self
 }
 
 /** گزینه‌های فرمِ تسک — مسئول، وضعیت، اولویت. */
+/**
+ * پروژه‌هایی که این کاربر می‌تواند سریع رویشان تسک بزند — همان دامنهٔ
+ * `loggableProjects` ِ ساعتِ کاری: عضویت ∪ دفترهای تحتِ مدیریت (مالک و
+ * مدیرِ پروژه‌ها: همه)، فقط **باز** و **غیرمنجمد**.
+ *
+ * ⚠️ این فهرست فقط برای پر کردنِ انتخابگر است؛ گاردِ واقعی در `createTask`
+ * می‌ماند (R-ARCH-01) — پروژه‌ای که اینجا نیامده هم اگر دستی پست شود، همان‌جا
+ * رد می‌شود.
+ */
+export async function taskableProjects(actor: Actor): Promise<Array<{ id: number; title: string }>> {
+  const global = actor.roles.includes('owner') || canManageSection(actor, 'projects');
+  const ids = global ? null : [...new Set([
+    ...(await membershipProjectIds(actor.id, ['member', 'client'])),
+    ...(await managedOfficeProjectIds(actor.id)),
+  ])];
+  if (ids !== null && ids.length === 0) return [];
+  return repo.openProjects(visibleScopes(actor), ids);
+}
+
 export async function getTaskFormOptions(actor: Actor, projectId: number, currentAssignee?: number | null) {
   await getProject(actor, projectId);
   /**

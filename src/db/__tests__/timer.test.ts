@@ -217,17 +217,26 @@ describe('پنجرهٔ ویرایش', () => {
 });
 
 /**
- * پورتِ `can_log_time` / `can_log_general`: مالک و مالی ساعتِ **عمومی** می‌زنند و مالک
- * روی هر پروژه‌ای؛ عضو روی پروژهٔ خودش. (پیش از این واگراییِ آگاهانه بود؛ به قاعدهٔ افزونه برگشت.)
+ * حقوقِ ثبتِ ساعت: عضو روی پروژهٔ خودش و ساعتِ عمومی؛ مالی و همکارِ ادمین
+ * ساعتِ عمومی.
+ *
+ * ⚠️ واگراییِ آگاهانه از افزونه: **مدیرِ کل برای خودش ساعت ثبت نمی‌کند**.
+ * ساعتِ کاری سنجشِ کارِ تیم و مبنای پرداخت است و مالک نه قرارداد دارد نه
+ * کارکردش جایی حساب می‌شود؛ اگر واقعاً عضوِ تیم هم باشد، نقشِ `member` را
+ * می‌گیرد و از همان راه ثبت می‌کند.
  */
 describe('حقوقِ ثبتِ ساعت', () => {
-  it('مدیرِ کل ساعتِ عمومی و پروژه‌ای می‌زند', async () => {
+  it('مدیرِ کلِ غیرعضو ساعت ثبت نمی‌کند؛ با نقشِ عضو می‌کند', async () => {
     const owner = actorOf(ownerId, ['owner']);
-    expect(await canUseTimesheet(owner)).toBe(true);
-    expect(await canLogTime(owner, null)).toBe(true);
-    expect(await canLogTime(owner, projectId)).toBe(true);
-    // بایگانی منجمد است.
-    expect(await canLogTime(owner, archivedId)).toBe(false);
+    expect(await canUseTimesheet(owner)).toBe(false);
+    expect(await canLogTime(owner, null)).toBe(false);
+    expect(await canLogTime(owner, projectId)).toBe(false);
+
+    const ownerMember = actorOf(ownerId, ['owner', 'member']);
+    expect(await canLogTime(ownerMember, null)).toBe(true);
+    expect(await canLogTime(ownerMember, projectId)).toBe(true);
+    // بایگانی برای او هم منجمد است.
+    expect(await canLogTime(ownerMember, archivedId)).toBe(false);
   });
 
   it('عضوِ تیم هم ساعتِ عمومی می‌زند هم روی پروژهٔ خودش؛ روی پروژهٔ غریبه نه', async () => {

@@ -341,7 +341,7 @@ export function CommentsTab({
   const ofType = (type: string) => comments.filter((c) => c.type === type);
 
   return (
-    <div className="grid gap-4">
+    <div className="grid max-w-4xl gap-4">
       <nav className="flex flex-wrap gap-1">
         {(['comment', 'review'] as const).map((key) => (
           <button

@@ -2,12 +2,14 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Lock } from 'lucide-react';
 import { currentActor } from '@/server/auth';
-import { myTasks, type InboxTask } from '@/server/projects/service';
+import { myTasks, taskableProjects, type InboxTask } from '@/server/projects/service';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { primeTranslations, t } from '@/i18n/server';
 import { ClaimTaskButton } from './inbox-claim';
+import { TasksTabs } from './tasks-tabs';
+import { chipStyle } from '@/domain/ui/contrast';
 
 /**
  * «تسک‌های شما» — پورتِ `view_tasks()` ِ داشبوردِ نسخهٔ قبلی.
@@ -39,12 +41,12 @@ function TaskList({ rows, empty }: { rows: InboxTask[]; empty: string }) {
           </Link>
 
           {task.priorityName && (
-            <Badge variant="outline" style={task.priorityColor ? { borderColor: task.priorityColor } : undefined}>
+            <Badge variant="outline" style={chipStyle(task.priorityColor)}>
               {task.priorityName}
             </Badge>
           )}
           {task.statusName && (
-            <Badge variant="secondary" style={task.statusColor ? { borderColor: task.statusColor } : undefined}>
+            <Badge variant="secondary" style={chipStyle(task.statusColor)}>
               {task.statusName}
             </Badge>
           )}
@@ -100,16 +102,11 @@ export default async function MyTasksPage() {
   }
 
   const { active, waiting } = inbox;
-  return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("تسک‌های شما")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {t('{n} تسکِ جاری', { n: active.length })}
-          {waiting.length > 0 && <> · {t('{n} در انتظارِ بررسی', { n: waiting.length })}</>}
-        </p>
-      </header>
+  // پروژه‌هایی که همین کاربر می‌تواند رویشان تسک بزند — تبِ «افزودنِ سریع».
+  const projects = await taskableProjects(actor);
 
+  const inboxPanel = (
+    <>
       {active.length === 0 && waiting.length === 0 ? (
         <EmptyState
           title={t("تسکی به شما سپرده نشده")}
@@ -127,6 +124,25 @@ export default async function MyTasksPage() {
           </Card>
         </div>
       )}
+    </>
+  );
+
+  return (
+    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+      <header>
+        <h1 className="text-xl font-semibold">{t("تسک‌ها")}</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          {t('{n} تسکِ جاری', { n: active.length })}
+          {waiting.length > 0 && <> · {t('{n} در انتظارِ بررسی', { n: waiting.length })}</>}
+        </p>
+      </header>
+
+      <TasksTabs
+        inbox={inboxPanel}
+        inboxCount={active.length + waiting.length}
+        projects={projects}
+        today={new Date().toISOString().slice(0, 10)}
+      />
     </main>
   );
 }

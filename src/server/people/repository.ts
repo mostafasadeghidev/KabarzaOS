@@ -228,7 +228,11 @@ export async function officeOptions() {
 
 /** تگ‌های نقشِ عضو — گزینه‌های فرم. */
 export async function roleTagOptions() {
-  return db.select({ id: tags.id, name: tagName(await currentLocale()), color: tags.color })
+  // ⚠️ `grantsCap` هم می‌آید: فرمِ افراد با آن تصمیم می‌گیرد فیلدِ «مدیرِ این
+  // دفاتر» را نشان بدهد یا نه — مدیریتِ دفتر فقط برای نقشِ «مدیرِ تیم» است.
+  return db.select({
+    id: tags.id, name: tagName(await currentLocale()), color: tags.color, grantsCap: tags.grantsCap,
+  })
     .from(tags).where(eq(tags.type, 'member_role')).orderBy(tags.sortOrder, tags.id);
 }
 

@@ -86,17 +86,29 @@ export function MeetingForm({
   const [projectId, setProjectId] = useState<string>(meeting?.projectId ? String(meeting.projectId) : '');
   const [officeId, setOfficeId] = useState<string>(meeting?.officeId ? String(meeting.officeId) : '');
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
+  /** با هر بار باز شدن یکی بالا می‌رود — کلیدِ ریستِ فرم. */
+  const [formKey, setFormKey] = useState(0);
   const [checked, setChecked] = useState<Set<number>>(
     new Set(meeting?.attendees.map((a) => a.userId) ?? []),
   );
 
-  // هر بار که جلسهٔ دیگری باز می‌شود، فرم از نو مقدار می‌گیرد.
+  /**
+   * هر بار که مودال **باز می‌شود** فرم از نو مقدار می‌گیرد.
+   *
+   * ⚠️ `open` هم در وابستگی‌هاست، نه فقط `meeting`: برای جلسهٔ نو مقدارِ
+   * `meeting` همیشه `null` است و افکت دوباره اجرا نمی‌شد — پس پروژه و
+   * دعوت‌شدگانِ جلسهٔ **قبلی** در فرمِ «جلسهٔ جدید» باقی می‌ماندند و کاربر
+   * ناخواسته همان را دوباره ثبت می‌کرد.
+   */
   useEffect(() => {
+    if (!open) return;
+    setFormKey((n) => n + 1);
     setKind(meeting === null || meeting.projectId ? 'project' : 'general');
     setProjectId(meeting?.projectId ? String(meeting.projectId) : '');
     setOfficeId(meeting?.officeId ? String(meeting.officeId) : '');
     setChecked(new Set(meeting?.attendees.map((a) => a.userId) ?? []));
-  }, [meeting]);
+    setCandidates(null);
+  }, [meeting, open]);
 
   // فهرستِ دعوت‌شدگان با نوع/پروژه/دفتر عوض می‌شود.
   useEffect(() => {
@@ -139,7 +151,9 @@ export function MeetingForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form key={meeting?.id ?? 'new'} action={formAction} className="grid gap-3">
+        {/* ⚠️ کلید شاملِ شمارندهٔ باز‌شدن است تا فیلدهای غیرکنترل‌شده (عنوان،
+            تاریخ، مکان، توضیحات) هم در «جلسهٔ جدیدِ» بعدی خالی باشند. */}
+        <form key={`${meeting?.id ?? 'new'}-${formKey}`} action={formAction} className="grid gap-3">
           {isEdit && <input type="hidden" name="meetingId" value={meeting.id} />}
 
           <div className="grid gap-1.5">

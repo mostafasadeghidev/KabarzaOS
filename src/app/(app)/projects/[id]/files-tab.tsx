@@ -90,7 +90,7 @@ export function FilesTab({
   };
 
   return (
-    <div className="grid gap-5">
+    <div className="grid max-w-4xl gap-5">
       <section className="grid gap-2">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold">
           <Paperclip className="size-4" />

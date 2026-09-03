@@ -42,13 +42,18 @@ async function audit(actor: Actor, action: string, objectId: number, after?: unk
  * ------------------------------------------------------------------ */
 
 /**
- * پورتِ `can_log_general()`: ساعتِ **عمومی** (بی‌پروژه) را عضوِ تیم، مالک/مدیرِ
- * پروژه‌ها و مالی می‌زنند — کارِ اداری/حسابداری که به پروژه‌ای نمی‌خورد.
- * ⚠️ پیش از این فقط نقشِ `member` بود و مالک/حسابدار اصلاً صفحهٔ ساعت نداشتند.
+ * ساعتِ **عمومی** (بی‌پروژه) را چه کسی می‌زند.
+ *
+ * ⚠️ مدیرِ کل **خودش** ساعت ثبت نمی‌کند: ساعتِ کاری ابزارِ سنجشِ کارِ تیم و
+ * مبنای پرداخت است، و مالک نه عضوِ قراردادی است نه کسی که کارکردش جایی
+ * حساب شود. اگر مالک واقعاً عضوِ تیم هم باشد، نقشِ `member` را دارد و از
+ * همان راه ساعت می‌زند. همکارِ ادمین و مالی هم چون کارِ اداریِ بی‌پروژه
+ * دارند، این بخش را نگه می‌دارند.
  */
 export function canLogGeneral(actor: Actor): boolean {
-  return actor.roles.includes('member') || actor.roles.includes('owner')
-    || canManageSection(actor, 'projects') || canViewSection(actor, 'finance');
+  if (actor.roles.includes('member')) return true;
+  if (actor.roles.includes('owner')) return false;
+  return canManageSection(actor, 'projects') || canViewSection(actor, 'finance');
 }
 
 /** دفترهای تحتِ مدیریتِ کاربر — همان `managed_office_ids`. */
@@ -76,6 +81,8 @@ export async function canLogTime(actor: Actor, projectId: number | null): Promis
   if (!visibleScopes(actor).includes(project.scope)) return false;
   if (isFrozenProject(project)) return false;
 
+  // ⚠️ همان قاعده روی پروژه: مالک ساعتِ خودش را ثبت نمی‌کند مگر عضوِ تیم باشد.
+  if (actor.roles.includes('owner') && !actor.roles.includes('member')) return false;
   if (actor.roles.includes('owner') || canManageSection(actor, 'projects')) return true;
 
   const member = await db.select({ id: projectMembers.id }).from(projectMembers)
@@ -99,6 +106,7 @@ export async function canUseTimesheet(actor: Actor): Promise<boolean> {
  */
 export async function loggableProjects(actor: Actor) {
   const scopes = visibleScopes(actor);
+  if (actor.roles.includes('owner') && !actor.roles.includes('member')) return [];
   const global = actor.roles.includes('owner') || canManageSection(actor, 'projects');
   const offices = global ? [] : await managedOffices(actor.id);
 

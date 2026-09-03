@@ -30,12 +30,15 @@ export function MultiSelect({
   defaultSelected = [],
   placeholder,
   emptyText,
+  onChange,
 }: {
   name: string;
   options: MultiOption[];
   defaultSelected?: number[];
   placeholder: string;
   emptyText?: string;
+  /** برای فیلدهایی که به انتخابِ این یکی وابسته‌اند (مثلِ «مدیرِ این دفاتر»). */
+  onChange?: (selected: number[]) => void;
 }) {
   const t = useT();
   const [selected, setSelected] = useState<number[]>(defaultSelected);
@@ -53,7 +56,11 @@ export function MultiSelect({
   }, [open]);
 
   const toggle = (id: number) => {
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSelected((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      onChange?.(next);
+      return next;
+    });
   };
 
   const chosen = options.filter((o) => selected.includes(o.id));

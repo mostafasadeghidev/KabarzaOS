@@ -45,7 +45,7 @@ const NAV: Array<NavItem & {
   { href: '/dashboard', label: t("نمای کلی"), icon: 'overview', group: 'operations', section: 'projects' },
   { href: '/projects', label: t("پروژه‌ها"), icon: 'projects', group: 'operations', section: 'projects' },
   // ⚠️ تسک‌های **خودِ** کاربر — دادهٔ شخصی است، پس همان گاردِ پروژه‌ها کافی است.
-  { href: '/tasks', label: t("تسک‌های من"), icon: 'tasks', group: 'operations', section: 'projects' },
+  { href: '/tasks', label: t("تسک‌ها"), icon: 'tasks', group: 'operations', section: 'projects' },
   { href: '/meetings', label: t("جلسات"), icon: 'meetings', group: 'operations', section: 'meetings' },
   { href: '/messages', label: t("پیام‌ها"), icon: 'messages', group: 'operations', section: 'messages' },
   /**

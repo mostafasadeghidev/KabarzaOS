@@ -140,8 +140,12 @@ export function ProjectTabs({
             }`}
           >
             {tr(t.label)}
+            {/* ⚠️ عدد یک نشانِ جداست، نه ادامهٔ کلمه: در راست‌به‌چپ با `ms-1`
+                به حرفِ آخر می‌چسبید و «تسک‌ها۴» خوانده می‌شد. */}
             {t.badge !== undefined && t.badge > 0 && (
-              <span className="num ms-1 text-xs text-muted-foreground">{t.badge}</span>
+              <span className="num ms-2 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                {t.badge}
+              </span>
             )}
           </button>
         ))}

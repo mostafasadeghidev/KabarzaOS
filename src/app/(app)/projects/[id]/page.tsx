@@ -29,6 +29,7 @@ import { ProjectStatus } from '../project-status';
 import { primeTranslations, t } from '@/i18n/server';
 import { deadlineLabel, taskProgress } from '@/domain/projects/deadline';
 import { StatusPicker } from '../status-picker';
+import { chipStyle } from '@/domain/ui/contrast';
 
 export default async function ProjectDetailPage({
   params,
@@ -390,7 +391,7 @@ export default async function ProjectDetailPage({
                             {m.roleName ? (
                               <Badge
                                 variant="outline"
-                                style={m.roleColor ? { borderColor: m.roleColor, color: m.roleColor } : undefined}
+                                style={chipStyle(m.roleColor)}
                               >
                                 {m.roleName}
                               </Badge>

@@ -58,7 +58,10 @@ export function StatusPicker({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  if (!canManage) return <ProjectStatus name={name} group={group} />;
+  // رنگِ وضعیتِ جاری از میانِ گزینه‌ها — کارت خودش رنگ را نمی‌فرستد.
+  const color = options.find((o) => o.id === statusId)?.color ?? null;
+
+  if (!canManage) return <ProjectStatus name={name} group={group} color={color} />;
 
   const grouped = new Map<string, StatusOption[]>();
   for (const o of options) {
@@ -82,7 +85,7 @@ export function StatusPicker({
           title={t('تغییر وضعیت')}
           disabled={pending}
         >
-          <ProjectStatus name={name} group={group} />
+          <ProjectStatus name={name} group={group} color={color} />
           <ChevronDown className="size-3 text-muted-foreground" />
         </DropdownMenuTrigger>
 
@@ -95,7 +98,12 @@ export function StatusPicker({
           {[...grouped].map(([key, list]) => (
             <div key={key}>
               <DropdownMenuSeparator />
-              {GROUP_LABEL[key] && <DropdownMenuLabel>{t(GROUP_LABEL[key])}</DropdownMenuLabel>}
+              {/* نامِ گروه فقط یک سرفصل است، نه گزینه: ریزتر و کم‌رنگ‌تر از خودِ وضعیت‌ها. */}
+              {GROUP_LABEL[key] && (
+                <DropdownMenuLabel className="px-2 py-1 text-[11px] font-normal text-muted-foreground/80">
+                  {t(GROUP_LABEL[key])}
+                </DropdownMenuLabel>
+              )}
               {list.map((o) => (
                 <DropdownMenuItem key={o.id} onSelect={() => pick(o.id)}>
                   <span

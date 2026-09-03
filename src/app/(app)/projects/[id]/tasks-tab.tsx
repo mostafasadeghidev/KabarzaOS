@@ -15,6 +15,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useT } from '@/i18n/client';
+import { chipStyle } from '@/domain/ui/contrast';
 
 /**
  * تبِ تسک‌ها — بازسازیِ `edit_tasks_subtabs()` + `edit_task_li()`.
@@ -238,7 +239,7 @@ function TaskExtras({ task }: { task: TaskItem }) {
             <Badge
               variant="outline"
               className="text-[10px]"
-              style={task.priorityColor ? { borderColor: task.priorityColor, color: task.priorityColor } : undefined}
+              style={chipStyle(task.priorityColor)}
             >
               {task.priorityName}
             </Badge>
@@ -303,7 +304,9 @@ function KanbanBoard({
   return (
     <div className="grid gap-2">
       {error && <p className="text-xs text-destructive">{tr(error)}</p>}
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      {/* ⚠️ اسکرولِ افقی فقط داخلِ تخته است، نه کلِ صفحه؛ ستون‌ها هم‌عرض
+          می‌مانند تا با زیادشدنِ وضعیت‌ها باریک و ناخوانا نشوند. */}
+      <div className="flex gap-3 overflow-x-auto overscroll-x-contain pb-2">
         {statuses.map((s) => (
           <section
             key={s.id}
@@ -315,7 +318,7 @@ function KanbanBoard({
               const id = Number(e.dataTransfer.getData('text/plain'));
               if (id) move(id, s.id);
             }}
-            className={`grid min-w-[14rem] flex-1 content-start gap-2 rounded-md border-t-4 bg-muted/40 p-2 ${over === s.id ? 'ring-2 ring-primary/40' : ''}`}
+            className={`grid w-72 shrink-0 content-start gap-2 rounded-md border-t-4 bg-muted/40 p-2 ${over === s.id ? 'ring-2 ring-primary/40' : ''}`}
             style={{ borderTopColor: s.color || 'var(--color-primary)' }}
           >
             <h4 className="flex items-center justify-between px-1 text-xs font-medium">
@@ -489,7 +492,8 @@ export function TasksTab({
           )}
         />
       ) : (
-      <ul className="grid gap-2">
+      // ⚠️ کارتِ تسک تا لبهٔ صفحه کش نمی‌آید: روی نمایشگرِ پهن تا چهار ستون.
+      <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {list.map((t) => (
           <li key={t.id} className="rounded-md border p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">

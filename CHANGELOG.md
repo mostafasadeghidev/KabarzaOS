@@ -2,6 +2,27 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.55.0]
+
+### Added
+
+- **"Tasks" page with two tabs.** The sidebar item "My tasks" is now "Tasks". The first tab is the inbox — what is assigned to you and what waits for your review. The second is **quick add**: pick a project, type a title and file the task without opening the project. Assignee, roles, priority, deadline and the private flag load for the chosen project, the project stays selected for the next one, and everything added in the session is listed with a link to its project.
+- **"Add to calendar" is now a menu**: Google Calendar, Outlook (personal and work), Yahoo, and the calendar file that covers Apple, phones and desktop apps.
+
+### Changed
+
+- **Bar-chart labels are readable in right-to-left languages** — see 1.54.0 — and the status chips now take **the colour of the status tag itself**, with black or white text chosen by WCAG contrast instead of always-white, which was unreadable on light tags. The same rule applies to task priority, task status, member role and QA chips.
+- The status group headings in the status picker are smaller and dimmer than the statuses themselves.
+- The count next to a project tab ("Tasks 4") is a separate small badge, so it no longer sticks to the last letter in right-to-left languages.
+- **Task list view shows up to four cards per row** on wide screens instead of one full-width card; the kanban board keeps fixed-width columns and scrolls inside itself, never widening the page.
+- Attachments, external links, comments and the reminder form no longer stretch to the full window width.
+- **The meeting creator is invited by default.** An owner opening "new meeting" is pre-checked; other admins stay unchecked as before.
+- **The new-meeting form resets every time it opens** — the project, attendees and fields of the previous meeting no longer carry over.
+- **The owner does not log working hours for themselves** unless they also hold the member role; the "Working hours" item disappears for them. Admin staff and finance keep it.
+- **"Manager of these offices" appears only for a person holding the "team manager" role**, and never for clients. It stays visible for someone who already manages an office, so the assignment can be taken back.
+
+---
+
 ## [1.54.0]
 
 ### Fixed — right-to-left charts and the new-project dialog

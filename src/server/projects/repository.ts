@@ -1267,6 +1267,29 @@ export async function roleHoldersFor(projectIds: number[]) {
     .where(inArray(projectMembers.projectId, projectIds));
 }
 
+/**
+ * پروژه‌های **باز** (نه بایگانی، نه بسته/لغو/متوقف) برای انتخابگرها.
+ * `ids = null` یعنی بدونِ محدودیتِ عضویت (مالک/مدیرِ پروژه‌ها).
+ */
+export async function openProjects(
+  scopes: Array<'company' | 'private'>,
+  ids: number[] | null,
+): Promise<Array<{ id: number; title: string }>> {
+  return db
+    .select({ id: projects.id, title: projects.title })
+    .from(projects)
+    .leftJoin(tags, eq(tags.id, projects.statusTagId))
+    .where(and(
+      isNull(projects.deletedAt),
+      eq(projects.isArchived, false),
+      inArray(projects.scope, scopes),
+      sql`coalesce(${tags.isClosed}, false) = false`,
+      sql`coalesce(${tags.statusGroup}, '') not in ('cancelled', 'on_hold')`,
+      ids === null ? sql`true` : inArray(projects.id, ids),
+    ))
+    .orderBy(projects.title);
+}
+
 /** پروژه‌های غیرِمنجمد از میانِ شناسه‌ها — جعبه‌های «نیازمندِ توجه» فقط این‌ها را می‌شمارند. */
 export async function nonFrozenProjectIds(ids: number[]): Promise<number[]> {
   if (ids.length === 0) return [];

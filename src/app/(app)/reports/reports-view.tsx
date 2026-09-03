@@ -20,6 +20,7 @@ import { OfficeFilter, RangeBar, type OfficeOption } from './report-filters';
 import {
   TablePager, TableSearch, useTableView, type TableView,
 } from '@/components/ui/table-search';
+import { chipStyle } from '@/domain/ui/contrast';
 
 /** «دورهٔ بسته» هم خروجی دارد ولی تبِ صادرشدنی نیست — تاریخ لازم دارد. */
 function isExportable(tab: string): boolean {
@@ -742,7 +743,7 @@ export function ReportsView({
                     {p.statusName ? (
                       <Badge
                         variant="outline"
-                        style={p.statusColor ? { borderColor: p.statusColor } : undefined}
+                        style={chipStyle(p.statusColor)}
                       >
                         {p.statusName}
                       </Badge>

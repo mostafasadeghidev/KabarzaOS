@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { CalendarDays, CalendarPlus, MapPin, Plus, Trash2, Users } from 'lucide-react';
+import { CalendarDays, MapPin, Plus, Trash2, Users } from 'lucide-react';
 import {
   deleteMeetingAction, deleteReminderAction, saveReminderAction, type SimpleState,
 } from './_form/actions';
@@ -18,6 +18,7 @@ import { useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { useConfirm } from '@/components/ui/confirm';
+import { CalendarMenu } from './calendar-menu';
 
 export interface MeetingRow extends MeetingView {
   projectTitle: string | null;
@@ -153,12 +154,13 @@ export function MeetingsView({
                       دعوت‌شده باید بتواند جلسه را در تقویمِ خودش بگذارد.
                       گاردِ واقعی در مسیرِ سرور است (R-ARCH-01).
                     */}
-                    <Button size="sm" variant="ghost" asChild>
-                      <a href={`/api/meetings/${m.id}/ics`} download>
-                        <CalendarPlus className="size-3.5" />
-                        {tr("افزودن به تقویم")}
-                      </a>
-                    </Button>
+                    <CalendarMenu
+                      meetingId={m.id}
+                      title={m.title}
+                      description={m.description ?? ''}
+                      location={m.location ?? ''}
+                      meetAt={m.meetAt}
+                    />
                   </div>
 
                   {m.canEdit && (
@@ -190,7 +192,7 @@ export function MeetingsView({
           </div>
         )
       ) : (
-        <div className="grid gap-4">
+        <div className="grid max-w-3xl gap-4">
           <form action={reminderAction} className="grid gap-3 rounded-md border p-3">
             <p className="text-xs text-muted-foreground">
               {tr("یک یادداشت برای زمانی در آینده تنظیم کنید؛ سرِ موعد به شما یادآوری می‌شود.")}

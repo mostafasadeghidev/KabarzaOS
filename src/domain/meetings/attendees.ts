@@ -25,6 +25,14 @@ export interface CandidateSources {
   admins?: Array<{ userId: number; name: string }>;
   /** کاربرانی که off-board شده‌اند. */
   inactiveUserIds?: ReadonlySet<number>;
+  /**
+   * سازندهٔ جلسه — همیشه پیش‌فرض تیک می‌خورد.
+   * ⚠️ بدونِ این، مدیرِ کل که جلسه را می‌سازد خودش دعوت‌نشده می‌ماند (قاعدهٔ ۲
+   * مدیران را تیک‌نخورده می‌گذارد) و باید یادش باشد خودش را هم تیک بزند.
+   * سازنده‌ای که عضوِ پروژه است هم که خودبه‌خود تیک دارد، پس این فقط همان
+   * موردِ مدیر را درست می‌کند.
+   */
+  currentUserId?: number | null;
 }
 
 /**
@@ -63,6 +71,13 @@ export function meetingCandidates(
   // قاعدهٔ ۲ — مدیران آخر می‌آیند و تیک‌نخورده.
   for (const a of sources.admins ?? []) {
     add(a.userId, a.name, 'مدیر کل', false);
+  }
+
+  // قاعدهٔ ۴ — سازنده همیشه تیک‌خورده است، هر جای فهرست که باشد.
+  const me = sources.currentUserId ?? null;
+  if (me !== null) {
+    const mine = out.get(me);
+    if (mine) out.set(me, { ...mine, checked: true });
   }
 
   return [...out.values()];

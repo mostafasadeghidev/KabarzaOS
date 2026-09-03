@@ -21,6 +21,7 @@ import { removeQaRoleAction } from '../_form/tab-actions';
 import { useConfirm } from '@/components/ui/confirm';
 import { summarizeProject } from '@/domain/team-money/payments';
 import { PAY_STATUS_LABELS } from './my-money-tab';
+import { chipStyle } from '@/domain/ui/contrast';
 
 /* ------------------------------------------------------------------ *
  * تبِ مالی — `finance` panel ِ مودالِ نسخهٔ قبلی.
@@ -387,7 +388,7 @@ export function QaTab({
                   <Badge
                     variant="outline"
                     className="text-[10px]"
-                    style={q.taskStatusColor ? { borderColor: q.taskStatusColor, color: q.taskStatusColor } : undefined}
+                    style={chipStyle(q.taskStatusColor)}
                   >
                     {t('تسک')}{q.taskStatusName ? `: ${q.taskStatusName}` : ''}
                   </Badge>

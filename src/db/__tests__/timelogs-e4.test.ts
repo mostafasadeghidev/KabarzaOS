@@ -54,23 +54,37 @@ beforeAll(async () => {
 afterAll(async () => { await sql.end(); });
 
 describe('حقوقِ ثبتِ ساعت (پورتِ can_log_time / can_log_general)', () => {
-  it('مالک و مالی ساعتِ عمومی می‌زنند؛ مدیرِ دفتر بی‌امضا روی پروژهٔ دفترش؛ عضو فقط روی پروژهٔ خودش', async () => {
-    expect(canLogGeneral(actor(OWNER, ['owner']))).toBe(true);
+  it('مالی ساعتِ عمومی می‌زند؛ مدیرِ دفتر بی‌امضا روی پروژهٔ دفترش؛ عضو فقط روی پروژهٔ خودش', async () => {
     expect(canLogGeneral(actor(FIN, ['finance'], ['finance.view']))).toBe(true);
-    expect(await canLogTime(actor(OWNER, ['owner']), OPEN)).toBe(true);
     expect(await canLogTime(actor(MGR, ['member']), OPEN)).toBe(true);
     expect(await canLogTime(actor(MGR, ['member']), OTHER)).toBe(false);
     expect(await canLogTime(actor(M1, ['member']), OPEN)).toBe(true);
     // منجمد (توقف) و بسته ساعتِ تازه نمی‌پذیرند.
-    expect(await canLogTime(actor(OWNER, ['owner']), ONHOLD)).toBe(false);
-    expect(await canUseTimesheet(actor(OWNER, ['owner']))).toBe(true);
+    expect(await canLogTime(actor(M1, ['member']), ONHOLD)).toBe(false);
     expect(await canUseTimesheet(actor(MGR, ['member']))).toBe(true);
+  });
+
+  /**
+   * ⚠️ واگراییِ آگاهانه از افزونه: مدیرِ کل برای **خودش** ساعت ثبت نمی‌کند.
+   * ساعتِ کاری سنجشِ کارِ تیم است، نه گزارشِ مالک؛ اگر مالک عضوِ تیم هم باشد،
+   * با نقشِ `member` مثلِ بقیه ثبت می‌کند.
+   */
+  it('مدیرِ کلِ غیرعضو نه ساعتِ عمومی می‌زند نه پروژه‌ای', async () => {
+    const owner = actor(OWNER, ['owner']);
+    expect(canLogGeneral(owner)).toBe(false);
+    expect(await canLogTime(owner, OPEN)).toBe(false);
+    expect(await canUseTimesheet(owner)).toBe(false);
+    expect(await loggableProjects(owner)).toEqual([]);
+
+    const ownerMember = actor(OWNER, ['owner', 'member']);
+    expect(canLogGeneral(ownerMember)).toBe(true);
+    expect(await canLogTime(ownerMember, OPEN)).toBe(true);
   });
 
   it('پروژه‌های قابلِ ثبت: عضویت ∪ دفترِ مدیریت‌شده؛ فقط باز و غیرمنجمد', async () => {
     expect((await loggableProjects(actor(M1, ['member']))).map((p) => p.id).sort()).toEqual([OPEN, OTHER].sort());
     expect((await loggableProjects(actor(MGR, ['member']))).map((p) => p.id)).toEqual([OPEN]);
-    expect((await loggableProjects(actor(OWNER, ['owner']))).map((p) => p.id).sort()).toEqual([OPEN, OTHER].sort());
+    expect((await loggableProjects(actor(OWNER, ['owner', 'member']))).map((p) => p.id).sort()).toEqual([OPEN, OTHER].sort());
   });
 });
 
