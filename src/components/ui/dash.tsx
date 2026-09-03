@@ -132,7 +132,7 @@ export function RiskList({
   empty,
   tone = 'muted',
 }: {
-  items: Array<{ id: number; title: string; badge: string }>;
+  items: Array<{ id: number; title: string; badge: string; href?: string }>;
   empty: string;
   tone?: 'muted' | 'danger' | 'warning';
 }) {
@@ -141,7 +141,7 @@ export function RiskList({
     <ul className="space-y-1.5">
       {items.map((item) => (
         <li key={item.id} className="flex items-center justify-between gap-3 text-sm">
-          <Link href={`/projects/${item.id}`} className="truncate font-medium hover:underline">
+          <Link href={item.href ?? `/projects/${item.id}`} className="truncate font-medium hover:underline">
             {item.title}
           </Link>
           <span

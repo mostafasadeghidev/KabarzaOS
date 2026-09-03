@@ -45,7 +45,11 @@ function trendLine(delta: number, unit: string): string {
   return t('بدون تغییر نسبت به هفتهٔ قبل');
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ office?: string }>;
+}) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
    * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
@@ -58,9 +62,13 @@ export default async function DashboardPage() {
   const actor = await currentActor();
   if (!actor) redirect('/login');
 
+  // فیلترِ دفتر روی نمودارهای ساعت (پورتِ `kt_office`) — نامعتبر = همه.
+  const { office } = await searchParams;
+  const officeParam = Number(office);
+
   let data;
   try {
-    data = await getDashboard(actor);
+    data = await getDashboard(actor, { officeId: Number.isInteger(officeParam) && officeParam > 0 ? officeParam : null });
   } catch (error) {
     if (error instanceof ForbiddenError) {
       /**
@@ -97,7 +105,8 @@ export default async function DashboardPage() {
 
   const { actionGroups, progress, today, risk, stats, charts } = data;
   const hasRisk =
-    risk.overdue.length + risk.soon.length + risk.stalled.length + risk.openTenders.length > 0;
+    risk.overdue.length + risk.soon.length + risk.stalled.length + risk.openTenders.length
+      + risk.reviewStuck.length + risk.expenseDues.length > 0;
 
   // ⚠️ خودِ واحد هم ترجمه می‌شود، نه فقط جملهٔ دورش — وگرنه در انگلیسی
   // «1 fewer تسک than last week» درمی‌آید.
@@ -151,7 +160,23 @@ export default async function DashboardPage() {
 
       {/* نمودارها */}
       <section className="flex flex-col gap-3">
-        <DashHeading>{t("روند و توزیع")}</DashHeading>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <DashHeading>{t("روند و توزیع")}</DashHeading>
+          {/* فیلترِ دفتر — فقط نمودارهای ساعت را محدود می‌کند (پورتِ `kt_office`). */}
+          {charts.offices.length > 1 && (
+            <form method="get" className="flex items-center gap-2 text-sm">
+              <label htmlFor="d-office" className="text-muted-foreground">{t("دفتر")}</label>
+              <select
+                id="d-office" name="office" defaultValue={charts.officeId ?? ''}
+                className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+              >
+                <option value="">{t("همهٔ دفترها")}</option>
+                {charts.offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+              </select>
+              <button type="submit" className="h-8 rounded-md border px-2 text-xs hover:bg-accent">{t("اعمال")}</button>
+            </form>
+          )}
+        </div>
         <div className="grid gap-3 @5xl/main:grid-cols-2">
           <DashPanel title={t("روندِ ساعتِ کاریِ تیم")}>
             {charts.weeklyTrend.every((w) => w.hours === 0) ? (
@@ -241,6 +266,24 @@ export default async function DashboardPage() {
             )}
           </DashPanel>
 
+          {/* پورتِ پنلِ «آنلاین اکنون» ِ داشبوردِ مالک: فعال‌ها اول، بعد بی‌کارها. */}
+          <DashPanel title={t("آنلاین اکنون")} action={{ href: '/availability', label: t("در دسترس بودن") }}>
+            {today.online.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("کسی آنلاین نیست.")}</p>
+            ) : (
+              <ul className="space-y-1.5 text-sm">
+                {today.online.map((u) => (
+                  <li key={u.id} className="flex items-center justify-between gap-3">
+                    <span className="truncate">{u.name}</span>
+                    <span className={`shrink-0 text-xs ${u.state === 'active' ? 'text-emerald-600 dark:text-emerald-500' : 'text-muted-foreground'}`}>
+                      {u.state === 'active' ? t('فعال') : t('بی‌کار')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </DashPanel>
+
           <DashPanel title={t("آخرین رویدادها")} action={{ href: '/activity', label: t("فعالیت") }}>
             {today.activity.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("رویدادی ثبت نشده.")}</p>
@@ -286,6 +329,29 @@ export default async function DashboardPage() {
             <DashPanel title={t("مناقصه‌های باز")}>
               <RiskList items={risk.openTenders} empty={t("موردی نیست.")} />
             </DashPanel>
+            {/* پورتِ فهرستِ «تسک‌های گیرکرده در ریویو» به تفکیکِ پروژه. */}
+            <DashPanel title={t("تسک‌های گیرکرده در ریویو")} action={{ href: '/dashboard/focus?view=tasks_review', label: t("فهرست") }}>
+              <RiskList items={risk.reviewStuck} empty={t("موردی نیست.")} tone="warning" />
+            </DashPanel>
+            {/* پورتِ فهرستِ سررسیدها (فقط مدیرِ مالی): گذشته‌ها قرمز، ۷ روزِ آینده خاکستری، «+N موردِ دیگر». */}
+            {risk.expenseDues.length > 0 && (
+              <DashPanel title={t("هزینه‌های سررسیدشده/نزدیک")} action={{ href: '/finance?tab=expenses', label: t("هزینه‌ها") }}>
+                <ul className="space-y-1.5 text-sm">
+                  {risk.expenseDues.slice(0, 8).map((e) => (
+                    <li key={e.id} className="flex items-center justify-between gap-3">
+                      <span className="truncate">
+                        {e.title}
+                        <span className="num text-muted-foreground"> · {e.amount}</span>
+                      </span>
+                      <span className={`num shrink-0 text-xs ${e.overdue ? 'text-destructive' : 'text-muted-foreground'}`}>{e.due}</span>
+                    </li>
+                  ))}
+                </ul>
+                {risk.expenseDues.length > 8 && (
+                  <p className="mt-1 text-xs text-muted-foreground">{t('+{n} موردِ دیگر', { n: risk.expenseDues.length - 8 })}</p>
+                )}
+              </DashPanel>
+            )}
           </div>
         )}
       </section>

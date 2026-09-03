@@ -1,18 +1,21 @@
-import { and, between, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, between, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { db } from '@/db/client';
 import {
   projects, tasks, tags, projectMembers, users, timelogs, comments,
-  paymentRequests, unitEntries, tenderBids, meetings, absences, availabilitySlots,
+  paymentRequests, unitEntries, tenderBids, meetings, meetingAttendees, absences, availabilitySlots,
+  recurringExpenses, currencies, offices,
 } from '@/db/schema';
 import { assertCanView, visibleScopes } from '@/domain/access/guard';
-import { canViewSection, type Actor } from '@/domain/access/permissions';
+import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { weekdayIndex } from '@/domain/availability/weekly';
-import { getT } from '@/i18n/server';
+import { activeLocale, getT } from '@/i18n/server';
 import { isDeadlineSoon, isOverdueProject } from '@/domain/projects/lifecycle';
 import { activeProjectIdsSince } from '@/server/projects/repository';
 import { countOpenThreads } from '@/domain/projects/threads';
-import { runningTimers } from '@/server/availability/service';
+import { onlineNow, runningTimers } from '@/server/availability/service';
+import { tagLabel } from '@/domain/settings/tag-label';
+import { format } from '@/domain/money/money';
 import { actionLabel, listActivity } from '@/server/activity/service';
 
 /**
@@ -27,10 +30,12 @@ import { actionLabel, listActivity } from '@/server/activity/service';
 export interface ActionCard { value: number; label: string; href: string | null }
 export interface ActionGroup { title: string; cards: ActionCard[] }
 export interface ProgressCard { value: string; label: string; delta: number; href: string | null }
-export interface RiskItem { id: number; title: string; badge: string }
+export interface RiskItem { id: number; title: string; badge: string; href?: string }
 export interface StatusSlice { status: string; count: number }
 export interface MemberHours { name: string; hours: number }
 export interface WeeklyPoint { label: string; hours: number }
+/** هزینهٔ دوره‌ایِ سررسیدشده/نزدیک — پورتِ `upcoming_expenses()`. */
+export interface ExpenseDue { id: number; title: string; amount: string; due: string; overdue: boolean }
 
 /**
  * بازهٔ هفتهٔ جاری و هفتهٔ قبل — از روزِ شروعِ هفتهٔ **تنظیمات**.
@@ -54,7 +59,7 @@ async function weekRanges() {
   };
 }
 
-export async function getDashboard(actor: Actor) {
+export async function getDashboard(actor: Actor, opts: { officeId?: number | null } = {}) {
   assertCanView(actor, 'projects');
   /**
    * ⚠️ getT() و نه t() ِ همگام: اینجا **واکشیِ داده** است، نه رندر. در
@@ -65,7 +70,8 @@ export async function getDashboard(actor: Actor) {
   const t = await getT();
   const scopes = visibleScopes(actor);
   const week = await weekRanges();
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
 
   const projectRows = await db
     .select({
@@ -75,6 +81,9 @@ export async function getDashboard(actor: Actor) {
       statusGroup: tags.statusGroup,
       isArchived: projects.isArchived,
       isTender: projects.isTender,
+      statusName: tags.name,
+      statusI18n: tags.nameI18n,
+      officeId: projects.officeId,
     })
     .from(projects)
     .leftJoin(tags, eq(tags.id, projects.statusTagId))
@@ -82,6 +91,14 @@ export async function getDashboard(actor: Actor) {
 
   const active = projectRows.filter((p) => !p.isArchived);
   const ids = active.map((p) => p.id);
+  /**
+   * فیلترِ دفتر — فقط نمودارهای **ساعت** را محدود می‌کند (پورتِ `kt_office`)؛
+   * شمارنده‌ها و ریسک‌ها همه‌جا را می‌بینند. دفترِ نامعتبر = همه.
+   */
+  const officeRows = await db.select({ id: offices.id, name: offices.name }).from(offices)
+    .where(eq(offices.isActive, true)).orderBy(offices.name);
+  const officeId = opts.officeId && officeRows.some((o) => o.id === opts.officeId) ? opts.officeId : null;
+  const chartIds = officeId ? active.filter((p) => p.officeId === officeId).map((p) => p.id) : ids;
   const inProjects = ids.length ? inArray(tasks.projectId, ids) : sql`false`;
   const inComments = ids.length ? inArray(comments.projectId, ids) : sql`false`;
   const n = sql<number>`count(*)::int`;
@@ -89,6 +106,34 @@ export async function getDashboard(actor: Actor) {
 
   const canFinance = canViewSection(actor, 'finance');
   const canMessages = canViewSection(actor, 'messages');
+
+  /**
+   * هزینه‌های سررسیدشده/نزدیک — فقط با مجوزِ **مدیریتِ** مالی (پورتِ
+   * `upcoming_expenses()`: سررسیدِ گذشته + ۷ روزِ آینده، فقط قالب‌های فعال).
+   */
+  const canFinanceManage = canManageSection(actor, 'finance');
+  const in7 = new Date(Date.parse(`${today}T00:00:00Z`) + 7 * 86400000).toISOString().slice(0, 10);
+  const dueRows = canFinanceManage
+    ? await db.select({
+        id: recurringExpenses.id, title: recurringExpenses.title, amount: recurringExpenses.amount,
+        due: recurringExpenses.nextDueDate, currencyId: currencies.id, code: currencies.code,
+        symbol: currencies.symbol, decimals: currencies.decimals,
+      })
+      .from(recurringExpenses)
+      .leftJoin(currencies, eq(currencies.id, recurringExpenses.currencyId))
+      .where(and(eq(recurringExpenses.isActive, true), lte(recurringExpenses.nextDueDate, in7)))
+      .orderBy(recurringExpenses.nextDueDate)
+    : [];
+  const expenseDues: ExpenseDue[] = dueRows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    due: r.due,
+    // `format` خودش نمادِ ارز را می‌گذارد (€ ۱۲٫۵۰) — کُد تکرارِ بی‌جاست.
+    amount: format(r.amount, r.currencyId !== null && r.code !== null
+      ? { id: r.currencyId, code: r.code, symbol: r.symbol ?? '', decimals: r.decimals ?? 2 }
+      : undefined),
+    overdue: r.due < today,
+  }));
 
   /* ---------------- منتظرِ اقدام ---------------- */
   const [pendingPayouts, unpaidUnits, tasksInReview, commentsOpen, pendingBids] = await Promise.all([
@@ -132,13 +177,15 @@ export async function getDashboard(actor: Actor) {
     },
   ];
   if (canFinance) {
-    actionGroups.unshift({
-      title: 'مالی',
-      cards: [
-        { value: pendingPayouts, label: 'درخواست‌های پرداختِ در انتظار', href: '/finance' },
-        { value: unpaidUnits, label: 'کارکردهای پرداخت‌نشده', href: '/finance' },
-      ],
-    });
+    const financeCards: ActionCard[] = [
+      { value: pendingPayouts, label: 'درخواست‌های پرداختِ در انتظار', href: '/finance' },
+      { value: unpaidUnits, label: 'کارکردهای پرداخت‌نشده', href: '/finance' },
+    ];
+    // کارتِ سررسیدها فقط برای مدیرِ مالی — پورتِ کارتِ «هزینه‌های سررسیدشده/نزدیک».
+    if (canFinanceManage) {
+      financeCards.push({ value: expenseDues.length, label: 'هزینه‌های سررسیدشده/نزدیک', href: '/finance?tab=expenses' });
+    }
+    actionGroups.unshift({ title: 'مالی', cards: financeCards });
   }
   if (canMessages) {
     /**
@@ -204,12 +251,20 @@ export async function getDashboard(actor: Actor) {
   const todayWeekday = weekdayIndex(new Date());
 
   const [weekMeetings, awayToday, activeTeam, assignedMembers, scheduledToday] = await Promise.all([
-    canViewSection(actor, 'meetings')
-      ? db.select({ id: meetings.id, title: meetings.title, meetAt: meetings.meetAt })
-          .from(meetings)
-          .where(between(sql`${meetings.meetAt}::date`, week.from, week.to))
-          .orderBy(meetings.meetAt).limit(5)
-      : Promise.resolve([]),
+    /**
+     * جلساتِ **خودِ** بیننده در ۷ روزِ آینده (شرکت‌کننده یا سازنده)، تا ۲۰ تا —
+     * پورتِ `upcoming_for_user(uid, 20, 7)`. پیش از این همهٔ جلساتِ هفتهٔ تقویمی
+     * (حتی گذشته‌ها و جلساتِ دیگران) با سقفِ ۵ می‌آمد.
+     */
+    db.selectDistinct({ id: meetings.id, title: meetings.title, meetAt: meetings.meetAt })
+      .from(meetings)
+      .leftJoin(meetingAttendees, eq(meetingAttendees.meetingId, meetings.id))
+      .where(and(
+        gte(meetings.meetAt, now),
+        lte(meetings.meetAt, new Date(now.getTime() + 7 * 86400000)),
+        or(eq(meetingAttendees.userId, actor.id), eq(meetings.createdBy, actor.id)),
+      ))
+      .orderBy(meetings.meetAt).limit(20),
     db.select({ userId: absences.userId, name: users.name })
       .from(absences).innerJoin(users, eq(users.id, absences.userId))
       .where(and(sql`${absences.fromDate} <= ${today}`, sql`${absences.toDate} >= ${today}`)),
@@ -271,35 +326,55 @@ export async function getDashboard(actor: Actor) {
     .filter((p) => p.isTender && p.statusGroup === 'lead')
     .map((p) => ({ id: p.id, title: p.title, badge: 'مناقصهٔ باز' }));
 
+  /**
+   * پروژه‌هایی که تسکِ گیرکرده در ریویو دارند، با شمار (تا ۸، پرشمارتر اول) —
+   * پورتِ `project_ids_in_review()`؛ پیوند به تبِ ریویوِ همان پروژه.
+   */
+  const reviewRows = ids.length
+    ? await db.select({ projectId: tasks.projectId, n })
+        .from(tasks).innerJoin(tags, eq(tags.id, tasks.statusTagId))
+        .where(and(inProjects, isNull(tasks.deletedAt), eq(tags.isReview, true)))
+        .groupBy(tasks.projectId)
+    : [];
+  const titleOf = new Map(active.map((p) => [p.id, p.title]));
+  const reviewStuck: RiskItem[] = reviewRows
+    .filter((r): r is typeof r & { projectId: number } => r.projectId !== null && titleOf.has(r.projectId))
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 8)
+    .map((r) => ({
+      id: r.projectId,
+      title: titleOf.get(r.projectId)!,
+      badge: t('{n} تسک در ریویو', { n: r.n }),
+      href: `/projects/${r.projectId}?tab=tasks&view=review`,
+    }));
+
   /* ---------------- نمودارها ---------------- */
 
-  /** توزیعِ وضعیتِ پروژه‌ها. */
+  /**
+   * توزیع به نامِ **تگِ** وضعیت (به زبانِ بیننده)، نه گروهِ وضعیت — پورتِ
+   * `charts_html()`: دو وضعیتِ هم‌گروه (مثلاً «در حال انجام» و «در حال بررسی»)
+   * دو ستونِ جدا می‌مانند؛ بی‌وضعیت «بدونِ وضعیت».
+   */
+  const locale = activeLocale();
   const statusCounts = new Map<string, number>();
   for (const p of active) {
-    const key = p.statusGroup ?? 'unknown';
+    const key = p.statusName
+      ? tagLabel({ name: p.statusName, nameI18n: p.statusI18n ?? undefined }, locale)
+      : t('بدونِ وضعیت');
     statusCounts.set(key, (statusCounts.get(key) ?? 0) + 1);
   }
-  const STATUS_LABELS: Record<string, string> = {
-    not_started: 'شروع نشده',
-    lead: 'احتمالِ قرارداد',
-    in_progress: 'در حال انجام',
-    completed: 'تکمیل‌شده',
-    on_hold: 'نگه‌داشته',
-    cancelled: 'کنسل',
-    unknown: 'بدونِ وضعیت',
-  };
   const statusDistribution: StatusSlice[] = [...statusCounts.entries()]
-    .map(([key, count]) => ({ status: t(STATUS_LABELS[key] ?? key), count }))
+    .map(([status, count]) => ({ status, count }))
     .sort((a, b) => b.count - a.count);
 
   /** ساعتِ کاریِ اعضا در ۳۰ روزِ گذشته — یک کوئریِ گروهی (R-PERF-01). */
   const from30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-  const memberRows = ids.length
+  const memberRows = chartIds.length
     ? await db
         .select({ name: users.name, minutes: sql<number>`coalesce(sum(${timelogs.minutes}),0)::int` })
         .from(timelogs)
         .innerJoin(users, eq(users.id, timelogs.userId))
-        .where(and(inArray(timelogs.projectId, ids), between(timelogs.logDate, from30, today)))
+        .where(and(inArray(timelogs.projectId, chartIds), between(timelogs.logDate, from30, today)))
         .groupBy(users.name)
     : [];
   const memberHours: MemberHours[] = memberRows
@@ -313,11 +388,11 @@ export async function getDashboard(actor: Actor) {
    * همهٔ بازه‌ها در یک کوئری گرفته می‌شوند، نه شش کوئریِ جدا.
    */
   const from42 = new Date(Date.now() - 41 * 86400000).toISOString().slice(0, 10);
-  const dailyRows = ids.length
+  const dailyRows = chartIds.length
     ? await db
         .select({ day: timelogs.logDate, minutes: sql<number>`coalesce(sum(${timelogs.minutes}),0)::int` })
         .from(timelogs)
-        .where(and(inArray(timelogs.projectId, ids), between(timelogs.logDate, from42, today)))
+        .where(and(inArray(timelogs.projectId, chartIds), between(timelogs.logDate, from42, today)))
         .groupBy(timelogs.logDate)
     : [];
   const byDay = new Map(dailyRows.map((r) => [r.day, r.minutes]));
@@ -336,9 +411,11 @@ export async function getDashboard(actor: Actor) {
   }
 
   // پورتِ پنلِ «زنده»ی داشبوردِ مالک: تایمرهای روشن + آخرین رویدادها (هر کدام جدا؛ نبودِ مجوز = خالی).
-  const [liveTimers, liveActivity] = await Promise.all([
+  const [liveTimers, liveActivity, liveOnline] = await Promise.all([
     runningTimers(actor).catch(() => []),
     listActivity(actor, { perPage: 6 }).then((r) => r.rows).catch(() => []),
+    // پورتِ پنلِ «آنلاین اکنون» ِ داشبوردِ مالک — حضورِ خاموش = خالی.
+    onlineNow(actor).catch(() => []),
   ]);
 
   return {
@@ -348,10 +425,11 @@ export async function getDashboard(actor: Actor) {
       meetings: weekMeetings, away: awayToday, available: availableToday,
       activeTeam, assignedMembers,
       timers: liveTimers,
+      online: liveOnline,
       activity: liveActivity.map((a) => ({ id: a.id, label: actionLabel(a.action), actorName: a.actorName, at: a.createdAt })),
     },
-    risk: { overdue, soon, stalled, openTenders },
-    charts: { statusDistribution, memberHours, weeklyTrend },
+    risk: { overdue, soon, stalled, openTenders, reviewStuck, expenseDues },
+    charts: { statusDistribution, memberHours, weeklyTrend, offices: officeRows, officeId },
     stats: {
       inProgress: active.filter((p) => p.statusGroup === 'in_progress').length,
       lead: active.filter((p) => p.statusGroup === 'lead').length,

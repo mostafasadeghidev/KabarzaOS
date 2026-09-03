@@ -2,6 +2,19 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.50.0]
+
+### Added — dashboard panels (parity with the plugin)
+
+- **Office filter on the hours charts.** A multi-office owner can scope the "team hours trend" and "member hours" charts to one office; counters and risk lists stay global, as in the plugin.
+- **Expense dues for finance managers:** an "overdue / due soon" card in the finance group (active recurring expenses past due or due within 7 days) and a risk panel listing them with amount and due date, overdue rows in red, with "+N more" beyond eight.
+- **Tasks stuck in review, per project:** a risk panel with the count per project, linking to that project's review tab.
+- **Project status chart by status tag.** The chart now shows each status tag by its own (translated) name instead of merging statuses that share a group.
+- **"Online now" panel** on the dashboard (active first, then idle), next to the running timers.
+- **This week's meetings are the viewer's own:** meetings in the next 7 days where the viewer is an attendee or the organiser, up to 20, instead of every meeting of the calendar week.
+
+---
+
 ## [1.49.0]
 
 ### Added — ledger details and receipts (parity with the plugin)
