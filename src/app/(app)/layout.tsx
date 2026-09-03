@@ -18,6 +18,7 @@ import { hasTeamScope } from '@/server/team/service';
 import { hasTeamAvailability } from '@/server/availability/service';
 import { NotificationBell } from '@/components/notification-bell';
 import { getSystemConfig } from '@/server/settings/system-service';
+import { hasPersonalMoney } from '@/server/finance/my-money';
 import { t } from '@/i18n/server';
 import { canUseTimesheet, timerState } from '@/server/timelogs/service';
 import { TimerBanner } from '@/components/timer-banner';
@@ -130,6 +131,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    */
   // ⚠️ پروفایل و تنظیمات عمداً در سایدبار نیستند: جای متعارفشان منوی
   // حسابِ کاربر در پایینِ سایدبار است، و سایدبار برای کارِ روزمره می‌ماند.
+
+  /**
+   * «امور مالی» ِ شخصی — صورت‌حسابِ کارفرما و دریافتی‌های عضو.
+   * ⚠️ این همان `/finance` ِ حسابداری نیست: آن مجوزِ مالی می‌خواهد و این
+   * فقط دادهٔ خودِ کاربر است، پس به نقشِ عضو/کارفرما وابسته است، نه مجوز.
+   */
+  if (hasPersonalMoney(actor)) {
+    items.push({ href: '/my-money', label: t("امور مالی"), icon: 'finance', group: 'operations' });
+  }
 
   if (await hasTeamScope(actor)) {
     items.push({ href: '/team', label: t("تیمِ من"), icon: 'team', group: 'operations' });

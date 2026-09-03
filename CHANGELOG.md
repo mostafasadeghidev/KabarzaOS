@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.53.0]
+
+### Added — personal finance page
+
+- **"Finance" for members and clients.** A cross-project personal statement, as the plugin's dashboard had: a client sees every project with its price, billable expenses, total due, amount paid and outstanding balance; a team member sees each project with the contract amount, what has been paid, the balance and the payment status. Opening a row shows the actual payment lines with their date, amount, equivalent in the project currency, note and receipt, plus the member's own payment requests. Piecework projects show their unit rows with paid and unpaid totals.
+- **Payments without a project** — rows left behind when a project was deleted with "detach" — are listed in their own section for members and clients; previously only off-boarded members ever saw them.
+- **Dashboard card** with the outstanding balance, per currency, linking to the new page.
+- Payment totals are summed **in the contract or project currency** instead of adding raw amounts across currencies.
+
+---
+
 ## [1.52.1]
 
 ### Fixed

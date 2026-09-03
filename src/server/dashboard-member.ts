@@ -1,6 +1,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { comments, currencies } from '@/db/schema';
+import { hasPersonalMoney, myMoneyTotals, type MyMoneyTotals } from '@/server/finance/my-money';
 import type { Actor } from '@/domain/access/permissions';
 import { isFrozenProject, isOpenProject } from '@/domain/projects/lifecycle';
 import { taskProgress } from '@/domain/projects/deadline';
@@ -83,6 +84,8 @@ export interface MemberDashboard {
   tenders: TenderRow[];
   meetings: MeetingRow[];
   unread: number;
+  /** ماندهٔ بازِ کاربر به تفکیکِ ارز؛ null یعنی نه عضو است نه کارفرما. */
+  money: MyMoneyTotals | null;
 }
 
 async function commentsNeedingReview(projectIds: number[]): Promise<number> {
@@ -227,15 +230,17 @@ async function tenderSection(actor: Actor): Promise<TenderRow[]> {
 export async function getMemberDashboard(actor: Actor): Promise<MemberDashboard> {
   const isMember = actor.roles.includes('member');
   const isClient = actor.roles.includes('client');
-  const [member, client, tenders, meetings, unread] = await Promise.all([
+  const [member, client, tenders, meetings, unread, money] = await Promise.all([
     isMember ? memberSection(actor) : Promise.resolve(null),
     isClient ? clientSection(actor) : Promise.resolve(null),
     isMember ? tenderSection(actor) : Promise.resolve([] as TenderRow[]),
     // پورتِ «جلسات این هفته» — برای **همه**، هفت روزِ آینده، حداکثر شش تا.
     repo.upcomingMeetingsForUser(actor.id, 7, 6),
     unreadFor(actor),
+    // ماندهٔ باز — کارتی که به صفحهٔ «امور مالی» می‌برد (پورتِ کارتِ مالیِ داشبورد).
+    hasPersonalMoney(actor) ? myMoneyTotals(actor) : Promise.resolve(null),
   ]);
-  return { member, client, tenders, meetings, unread };
+  return { member, client, tenders, meetings, unread, money };
 }
 
 async function unreadFor(actor: Actor): Promise<number> {

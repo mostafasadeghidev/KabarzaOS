@@ -20,6 +20,8 @@ import { formatDateTime } from '@/i18n/datetime';
  * هر دو: «جلسات این هفته».
  */
 
+type MoneyLines = Array<{ currencyCode: string; total: string }>;
+
 function hours(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
@@ -45,7 +47,38 @@ function Stat({ value, label, href }: { value: number; label: string; href: stri
   );
 }
 
-function MemberBlock({ data, unread }: { data: MemberSection; unread: number }) {
+/**
+ * کارتِ ماندهٔ باز — به «امور مالی» می‌برد.
+ * ⚠️ به تفکیکِ ارز نوشته می‌شود؛ جمعِ چندارزی در یک عدد بی‌معناست.
+ */
+function MoneyStat({
+  lines, label,
+}: { lines: Array<{ currencyCode: string; total: string }>; label: string }) {
+  return (
+    <Link href="/my-money">
+      <Card className="transition-colors hover:border-primary/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-normal text-muted-foreground">{label}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {lines.length === 0 ? (
+            <p className="num text-2xl font-semibold">0</p>
+          ) : (
+            <div className="grid gap-0.5">
+              {lines.map((l) => (
+                <p key={l.currencyCode} className="num text-xl font-semibold">
+                  {format(l.total)} <span className="text-xs font-normal text-muted-foreground">{l.currencyCode}</span>
+                </p>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function MemberBlock({ data, unread, money }: { data: MemberSection; unread: number; money: MoneyLines }) {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -53,6 +86,7 @@ function MemberBlock({ data, unread }: { data: MemberSection; unread: number }) 
         <Stat value={data.stats.openTasks} label={t('تسک‌های باز')} href="/tasks" />
         <Stat value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/projects?tab=review" />
         <Stat value={unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" />
+        <MoneyStat lines={money} label={t('ماندهٔ دریافتیِ شما')} />
       </div>
 
       {/* پورتِ «پروژه‌های باز شما» — فقط بازها؛ بخش وقتی خالی است پنهان می‌ماند. */}
@@ -101,7 +135,7 @@ function MemberBlock({ data, unread }: { data: MemberSection; unread: number }) 
   );
 }
 
-function ClientBlock({ data, unread, showUnread }: { data: ClientSection; unread: number; showUnread: boolean }) {
+function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection; unread: number; showUnread: boolean; money: MoneyLines }) {
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -109,6 +143,7 @@ function ClientBlock({ data, unread, showUnread }: { data: ClientSection; unread
         <Stat value={data.stats.reviewTasks} label={t('تسک‌های نیازمند بررسی')} href="/tasks" />
         <Stat value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/projects?tab=review" />
         {showUnread && <Stat value={unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" />}
+        <MoneyStat lines={money} label={t('ماندهٔ پرداختیِ شما')} />
       </div>
 
       <Card>
@@ -167,8 +202,17 @@ function ClientBlock({ data, unread, showUnread }: { data: ClientSection; unread
 export function MemberDashboardView({ data, timezone = '' }: { data: MemberDashboard; timezone?: string }) {
   return (
     <div className="grid gap-6">
-      {data.member && <MemberBlock data={data.member} unread={data.unread} />}
-      {data.client && <ClientBlock data={data.client} unread={data.unread} showUnread={!data.member} />}
+      {data.member && (
+        <MemberBlock data={data.member} unread={data.unread} money={data.money?.member ?? []} />
+      )}
+      {data.client && (
+        <ClientBlock
+          data={data.client}
+          unread={data.unread}
+          showUnread={!data.member}
+          money={data.money?.client ?? []}
+        />
+      )}
 
       {/* پورتِ «مناقصه‌ها»: پروژه‌هایی که می‌توانید برایشان پیشنهاد قیمت بدهید. */}
       {data.tenders.length > 0 && (
