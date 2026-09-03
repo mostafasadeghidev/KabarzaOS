@@ -22,6 +22,8 @@ const PERSIAN = /[؀-ۿ]/;
 const LABEL_KEYS = new Set([
   'label', 'title', 'description', 'hint', 'empty', 'header', 'addLabel',
   'editLabel', 'placeholder', 'emptyText',
+  // پیام‌های اکشن‌ها (`error:` / `message:` / `text:`) و عنوانِ فهرست‌ها — همه به t() می‌رسند.
+  'error', 'message', 'text', 'listTitle',
   // ⚠️ `success` بعداً اضافه شد: پیامِ موفقیتِ توست از راهِ پراپ پاس می‌شود
   // (`useActionToast(state, { success: '…' })`) و هرگز داخلِ `t()` نمی‌آید؛
   // چهار کلید در شش جا از هر زبانی جا مانده بود و ابزار «صفر» می‌گفت.

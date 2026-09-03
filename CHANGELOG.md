@@ -2,6 +2,25 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.52.0]
+
+### Added — second-pass audit fixes (parity with the plugin)
+
+- **Piecework picker in the ledger form.** A withdrawal to a member of a project lists that member's unpaid piecework rows; picking one fills the settlement amount and currency, and saving marks the row paid (validated before the row is written: unpaid, no open request, same project and receiver). The settlement currency can now be changed by hand.
+- **Ledger project pickers** offer only projects booked on the current account (filter) or involving the chosen party (entry form).
+- **Telegram "send the report to my chat"** sends the real daily report to the owner's own chat instead of every configured destination.
+- **Login throttling is active:** ten failed attempts per identifier or client address within fifteen minutes block further attempts for the window.
+- **Receipts** are no longer visible to a client whose project access is blocked.
+- **Members and clients land on their own dashboard** from the root and after signing in, as in the plugin.
+- **Translations:** the extractor now sees action messages (error/message/text/list titles); 22 previously untranslated notices are translated.
+
+### Changed — schema hardening (migration 0024)
+
+- Indexes the plugin had and the port lacked (offices, accounts, account users, vendors, project clients, timelogs, comments, ledger incl. a GIN index on receipts, QA items, payment requests, fiscal closings, notifications, meetings, attendees, reminders, threads, absences, unit entries).
+- NOT NULL on columns the code always writes (task creator, comment project and author, attachment uploader, ledger creator, currency of payments, requests, recurring expenses and unit rows), real defaults for comment status and payment type, `paid_at` as a date, and stable slugs for hand-made tags. Existing rows are back-filled before the constraints apply.
+
+---
+
 ## [1.51.0]
 
 ### Added — settings polish (parity with the plugin)

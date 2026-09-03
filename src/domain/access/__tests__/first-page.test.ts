@@ -22,8 +22,8 @@ describe('firstPage — اولین صفحهٔ مجاز', () => {
   });
 
   it('عضو و کارفرما به پروژه‌ها', () => {
-    expect(firstPage(actor({ roles: ['member'] }))).toBe('/projects');
-    expect(firstPage(actor({ roles: ['client'] }))).toBe('/projects');
+    expect(firstPage(actor({ roles: ['member'] }))).toBe('/dashboard');
+    expect(firstPage(actor({ roles: ['client'] }))).toBe('/dashboard');
   });
 
   it('بی‌هیچ مجوز و نقشی، پروفایل — هرگز /login', () => {

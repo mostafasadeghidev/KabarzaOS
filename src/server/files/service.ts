@@ -181,7 +181,8 @@ async function receiptVisible(actor: Actor, fileId: number): Promise<boolean> {
     if (pay.direction === 'member_payout' && pay.userId === actor.id) return true;
     if ((pay.direction === 'incoming' || pay.direction === 'project_expense') && pay.projectId) {
       const isClient = await db.select({ id: projectClients.id }).from(projectClients)
-        .where(and(eq(projectClients.projectId, pay.projectId), eq(projectClients.userId, actor.id)));
+        // ⚠️ کارفرمای قطع‌دسترسی (access_blocked) رسید را هم نمی‌بیند — همان قاعدهٔ صفحهٔ پروژه.
+        .where(and(eq(projectClients.projectId, pay.projectId), eq(projectClients.userId, actor.id), eq(projectClients.accessBlocked, false)));
       if (isClient.length > 0) return true;
     }
   }

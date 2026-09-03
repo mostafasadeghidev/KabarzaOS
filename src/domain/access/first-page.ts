@@ -22,7 +22,8 @@ const ORDER: ReadonlyArray<{ href: string; allowed: (a: Actor) => boolean }> = [
   { href: '/activity', allowed: (a) => can(a, 'activity.view') },
   { href: '/settings', allowed: (a) => can(a, 'settings.manage') },
   // عضو و کارفرما هیچ مجوزِ بخشی ندارند — دیدشان عضویت‌محور است.
-  { href: '/projects', allowed: (a) => a.roles.includes('member') || a.roles.includes('client') },
+  // پورتِ `home_for()`: عضو و کارفرما به نمای کلیِ خودشان می‌روند، نه فهرستِ پروژه‌ها.
+  { href: '/dashboard', allowed: (a) => a.roles.includes('member') || a.roles.includes('client') },
 ];
 
 export function firstPage(actor: Actor): string {

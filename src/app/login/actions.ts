@@ -1,17 +1,21 @@
 'use server';
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { users } from '@/db/schema';
 import { attemptLogin, type AuthUser } from '@/domain/auth/login';
+import { createFailureStore, LOGIN_MAX_FAILURES, throttleKeys, worstFailures } from '@/domain/auth/throttle';
 import { canSignIn, type MemberState } from '@/domain/people/offboarding';
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from '@/domain/auth/session';
 import { sessionSecret, currentActor } from '@/server/auth';
 import { loginSchema, type LoginState } from './schema';
 import { markOffline } from '@/server/people/presence-service';
 
+
+/** شمارندهٔ شکست‌های ورود — یک نمونه برای عمرِ فرایند (R-AUTH: پنجرهٔ ۱۵ دقیقه، سقفِ ۱۰). */
+const failures = createFailureStore();
 
 const MESSAGES: Record<string, string> = {
   invalid_credentials: 'ایمیل یا رمز عبور نادرست است.',
@@ -59,10 +63,18 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     },
   };
 
-  const result = await attemptLogin(lookup, parsed.data.email, parsed.data.password);
+  // ⚠️ محدودکننده پیش از این در دامنه بود ولی هیچ شمارنده‌ای نمی‌گرفت — عملاً خاموش.
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
+  const keys = throttleKeys(parsed.data.email, ip);
+  const result = await attemptLogin(lookup, parsed.data.email, parsed.data.password, {
+    recentFailures: worstFailures(failures, keys),
+    maxFailures: LOGIN_MAX_FAILURES,
+  });
   if (!result.ok) {
+    if (result.reason !== 'rate_limited') for (const k of keys) failures.recordFailure(k);
     return { error: MESSAGES[result.reason] ?? MESSAGES['invalid_credentials']! };
   }
+  for (const k of keys) failures.clear(k);
 
   const token = await createSessionToken({ userId: result.userId }, sessionSecret());
   (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions());
