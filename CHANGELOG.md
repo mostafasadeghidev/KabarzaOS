@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.56.1]
+
+### Changed
+
+- **The project "Manage" tab reads as separate cards.** Every section — featured image, member hours, log detail, availability, archive and database slimming — sits in its own dashed-bordered card, so it is clear where one ends and the next begins. The featured image, archive, slimming and delete cards keep a readable width instead of stretching across the window, and the delete card keeps its solid red border so it stands apart from the rest.
+
+---
+
 ## [1.56.0]
 
 ### Changed

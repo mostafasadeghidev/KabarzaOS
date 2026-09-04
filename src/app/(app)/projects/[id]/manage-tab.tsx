@@ -96,7 +96,7 @@ function LogDetail({ logs }: { logs: LogRow[] }) {
   const view = useTableView(logs, (r) => `${r.userName ?? ''} ${r.description} ${r.logDate}`, 15);
   if (logs.length === 0) return null;
   return (
-    <section className="grid gap-2">
+    <section className="grid gap-2 rounded-md border border-dashed p-3">
       <h3 className="text-sm font-semibold">{t("جزئیاتِ ثبت‌ها")}</h3>
       <Table>
         <TableHeader>
@@ -176,7 +176,7 @@ function DeleteBox({
 
   if (state === 'locked') {
     return (
-      <section className="grid gap-2 rounded-md border border-destructive/40 p-3">
+      <section className="grid max-w-2xl gap-2 rounded-md border border-destructive/40 p-3">
         <h3 className="text-sm font-semibold text-destructive">{t("حذف پروژه")}</h3>
         <p className="text-xs text-muted-foreground">
           {tr("این پروژه پرداختِ ناقص (ماندهٔ باز) دارد. تا وقتی ماندهٔ کارفرما/عضو تسویه نشود، حذف تحت هیچ شرایطی ممکن نیست.")}
@@ -186,7 +186,7 @@ function DeleteBox({
   }
 
   return (
-    <section className="grid gap-2 rounded-md border border-destructive/40 p-3">
+    <section className="grid max-w-2xl gap-2 rounded-md border border-destructive/40 p-3">
       <h3 className="text-sm font-semibold text-destructive">{t("حذف پروژه")}</h3>
 
       {state === 'clean' ? (
@@ -311,7 +311,7 @@ function LightenBox({
 
   if (summary) {
     return (
-      <section className="grid gap-2 rounded-md border p-3">
+      <section className="grid max-w-2xl gap-2 rounded-md border border-dashed p-3">
         <h3 className="text-sm font-semibold">{t("سبک‌سازی دیتابیس")}</h3>
         <p className="text-xs text-muted-foreground">{t("این پروژه سبک شده است. خلاصهٔ ثابت‌شده:")}</p>
         <dl className="grid gap-1 text-xs sm:grid-cols-2">
@@ -338,7 +338,7 @@ function LightenBox({
   }
 
   return (
-    <section className="grid gap-2 rounded-md border p-3">
+    <section className="grid max-w-2xl gap-2 rounded-md border border-dashed p-3">
       <h3 className="text-sm font-semibold">{t("سبک‌سازی دیتابیس")}</h3>
       <p className="text-xs text-muted-foreground">
         {tr("فایل‌ها، تسک‌ها، کامنت‌ها، چک‌لیست QA و جزئیات ساعت کاری پاک می‌شوند تا دیتابیس سبک شود. سوابق مالی، اعضا، کارفرمایان و یک خلاصه می‌مانند. این کار برگشت‌ناپذیر است.")}
@@ -393,8 +393,9 @@ function ThumbnailForm({
   const [state, action] = useActionState(setThumbnailAction, {});
   useActionToast(state);
 
+  // ⚠️ کادر از آنِ بخش است، نه فرم — وگرنه دو حاشیهٔ تودرتو می‌شد.
   return (
-    <form action={action} className="flex flex-wrap items-end gap-3 rounded-md border p-3">
+    <form action={action} className="flex flex-wrap items-end gap-3">
       <input type="hidden" name="projectId" value={projectId} />
       <Thumb id={projectId} title={title} fileId={fileId} size={56} />
 
@@ -458,15 +459,22 @@ export function ManageTab({
   const totalMinutes = hours.reduce((sum, h) => sum + h.minutes, 0);
 
   return (
-    <div className="grid gap-4">
+    /**
+     * ⚠️ هر بخش یک **کارتِ خط‌چین** است، نه ردیف‌های چسبیده: تبِ مدیریت شش
+     * کارِ بی‌ربط به هم دارد (تصویر، ساعت، ثبت‌ها، در دسترس بودن، بایگانی،
+     * حذف) و بدونِ مرز، چشم نمی‌فهمید کجا یکی تمام و بعدی شروع می‌شود.
+     * خط‌چین عمدی است: مرزِ نرم، تا از کادرِ **قرمزِ توپرِ** حذف تفکیک شود.
+     */
+    <div className="grid max-w-5xl gap-4">
       {canManage && (
-        <section className="grid gap-2">
+        // کارتِ تصویر باریک می‌ماند؛ محتوایش یک تصویرِ ۵۶ پیکسلی و یک دکمه است.
+        <section className="grid max-w-xl gap-2 rounded-md border border-dashed p-3">
           <h3 className="text-sm font-semibold">{t("تصویر شاخص")}</h3>
           <ThumbnailForm projectId={projectId} title={title} fileId={thumbnailFileId} />
         </section>
       )}
 
-      <section className="grid gap-2">
+      <section className="grid gap-2 rounded-md border border-dashed p-3">
         <h3 className="text-sm font-semibold">{t("ساعت کاری اعضا")}</h3>
         {hours.length === 0 ? (
           <p className="text-xs text-muted-foreground">{t("ساعتِ کاری‌ای ثبت نشده.")}</p>
@@ -497,7 +505,7 @@ export function ManageTab({
       {canManage && <LogDetail logs={logs} />}
 
       {canManage && (
-        <section className="grid gap-2">
+        <section className="grid gap-2 rounded-md border border-dashed p-3">
           <h3 className="text-sm font-semibold">{t("در دسترس بودنِ اعضای پروژه")}</h3>
           <TeamMatrix rows={matrix} dayLabels={dayLabels} />
         </section>
@@ -505,7 +513,7 @@ export function ManageTab({
 
       {canManage && (
         <>
-          <section className="grid gap-2 rounded-md border p-3">
+          <section className="grid max-w-2xl gap-2 rounded-md border border-dashed p-3">
             <h3 className="text-sm font-semibold">{t("بایگانی")}</h3>
             <p className="text-xs text-muted-foreground">
               {tr("بایگانی برگشت‌پذیر است؛ پروژهٔ بایگانی‌شده فقط در تبِ بایگانی دیده می‌شود.")}
