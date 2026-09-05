@@ -98,21 +98,16 @@ export function ProjectTabs({
     { key: 'files', label: 'فایل‌ها', badge: data.files.length },
     { key: 'comments', label: 'کامنت‌ها', badge: data.comments.length },
     /**
-     * ⚠️ «بخشِ مالی» پولِ **پروژه** است (قیمت، دریافتی، بدهیِ کارفرما)، پس
-     * فقط برای کسی که حقِ دیدنِ قیمت دارد. پیش از این همیشه ساخته می‌شد و
-     * عضوِ عادی مبلغِ قراردادِ کارفرما را می‌دید. پولِ خودِ عضو تبِ جداگانه
-     * دارد («پرداخت») — `domain/access/project-money`.
+     * ⚠️ **یک** تبِ مالی، نه دو تا — همان کاری که نسخهٔ قبلی می‌کند
+     * (`finance_section()`: پولِ پروژه برای مدیر/کارفرما، پولِ خودِ عضو برای
+     * عضو، زیرِ یک نام). دو تبِ جدا («بخش مالی» + «پرداخت») برای کسی که هم
+     * مدیر بود هم عضو، دو تبِ هم‌نام می‌ساخت و معلوم نبود کدام کدام است.
+     *
+     * محتوا با اجازهٔ بیننده تعیین می‌شود: قیمت و بدهیِ کارفرما فقط برای
+     * دارندهٔ حقِ دیدنِ قیمت، و «پرداختِ من» برای عضو — بدونِ مجوزِ مالی،
+     * چون پولِ خودش است.
      */
-    ...(data.canSeePrice ? [{ key: 'finance', label: 'بخش مالی' }] : []),
-    /**
-     * ⚠️ «پولِ من» مجوزِ مالی نمی‌خواهد — پولِ خودِ عضو است.
-     * نامش با نوعِ پروژه عوض می‌شود: «کارکرد» فقط وقتی معنا دارد که پروژه
-     * تعدادی باشد (`Projects::is_unit_based()`)؛ وگرنه تب فقط درخواستِ
-     * پرداخت را دارد و نامیدنش «کارکرد» وعدهٔ چیزی است که داخلش نیست.
-     */
-    ...(data.myMoney
-      ? [{ key: 'my-money', label: data.myMoney.isUnitBased ? 'کارکرد و پرداخت' : 'پرداخت' }]
-      : []),
+    ...(data.canSeePrice || data.myMoney ? [{ key: 'finance', label: 'مالی' }] : []),
     { key: 'qa', label: 'QA', badge: data.qa.length },
     ...(data.canManage ? [{ key: 'manage', label: 'مدیریت' }] : []),
     ...(data.isTender && data.canManage
@@ -121,8 +116,10 @@ export function ProjectTabs({
   ];
 
   /** تبِ خواسته‌شده فقط وقتی پذیرفته می‌شود که واقعاً ساخته شده باشد. */
+  // پیوندهای قدیمیِ `?tab=my-money` به همان تبِ یکپارچهٔ مالی می‌روند.
+  const wanted = initialTab === 'my-money' ? 'finance' : initialTab;
   const [tab, setTab] = useState(
-    initialTab && tabs.some((t) => t.key === initialTab) ? initialTab : 'info',
+    wanted && tabs.some((t) => t.key === wanted) ? wanted : 'info',
   );
 
   return (
@@ -171,8 +168,6 @@ export function ProjectTabs({
         />
       )}
 
-      {tab === 'my-money' && data.myMoney && <MyMoneyTab data={data.myMoney} />}
-
       {tab === 'my-bid' && data.myBid && <MyBidTab data={data.myBid} />}
 
       {tab === 'files' && (
@@ -196,14 +191,29 @@ export function ProjectTabs({
       )}
 
       {tab === 'finance' && (
-        <FinanceTab
-          price={data.price}
-          finance={data.finance}
-          payments={data.payments}
-          canSee={data.canSeeFinance}
-          projectId={data.projectId}
-          currencyCode={data.currencyCode}
-        />
+        <div className="grid gap-6">
+          {data.canSeePrice && (
+            <FinanceTab
+              price={data.price}
+              finance={data.finance}
+              payments={data.payments}
+              canSee={data.canSeeFinance}
+              projectId={data.projectId}
+              currencyCode={data.currencyCode}
+            />
+          )}
+          {data.myMoney && (
+            <section className="grid gap-3">
+              {/* وقتی هر دو بخش هست، مرز لازم است: بالا پولِ پروژه، پایین پولِ من. */}
+              {data.canSeePrice && (
+                <h3 className="border-t border-dashed pt-4 text-sm font-semibold">
+                  {tr(data.myMoney.isUnitBased ? 'کارکرد و پرداختِ من' : 'پرداختِ من')}
+                </h3>
+              )}
+              <MyMoneyTab data={data.myMoney} />
+            </section>
+          )}
+        </div>
       )}
 
       {tab === 'qa' && (

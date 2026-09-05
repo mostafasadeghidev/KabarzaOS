@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.57.0]
+
+### Changed
+
+- **One "Finance" tab on the project page instead of two.** The project money (price, billable expenses, amount due, payments) and the viewer's own pay (contract, piecework rows, payout lines, payment requests) used to live in two separate tabs, so a manager who is also a member of the project saw two tabs that both meant "money". They are now a single "Finance" tab, as in the plugin: it shows the project figures to whoever may see the price, the personal section to a member, and both — separated by a heading — when both apply. Old `?tab=my-money` links open the same tab.
+
+---
+
 ## [1.56.1]
 
 ### Changed
