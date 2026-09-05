@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.57.1]
+
+### Changed
+
+- **The project header cards now count open work, not money.** The "Amount" card is gone — the project price has its own place in the Finance tab, and on the header it only put the contract figure in front of every client and member who opened the page. The row is now members / open tasks / **open comments**, the last one counting comment threads whose latest message is still unresolved.
+
+---
+
 ## [1.57.0]
 
 ### Changed

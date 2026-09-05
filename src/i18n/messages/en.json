@@ -2118,6 +2118,7 @@
   "کارهای حساس (تنظیمات، حذف، بستنِ مالی) همیشه فقط برای مدیرِ کل است.": "Sensitive actions (settings, deletion, closing a fiscal period) always stay with the owner.",
   "کاری": "Business",
   "کامنت": "Comments",
+  "کامنتِ باز": "Open comments",
   "کامنت ثبت شد.": "Comment posted.",
   "کامنت ثبت نشد.": "The comment was not saved.",
   "کامنت جدید در «%s»": "New comment on “%s”",

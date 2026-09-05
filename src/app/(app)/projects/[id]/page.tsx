@@ -30,6 +30,7 @@ import { primeTranslations, t } from '@/i18n/server';
 import { deadlineLabel, taskProgress } from '@/domain/projects/deadline';
 import { StatusPicker } from '../status-picker';
 import { chipStyle } from '@/domain/ui/contrast';
+import { countOpenThreads } from '@/domain/projects/threads';
 
 export default async function ProjectDetailPage({
   params,
@@ -160,6 +161,8 @@ export default async function ProjectDetailPage({
       ])
     : [null, null, null];
   const openTasks = tasks.filter((t) => t.statusGroup !== 'complete');
+  // رشته‌های بازِ کامنت — همان شمارشی که داشبورد دارد (`countOpenThreads`).
+  const openComments = countOpenThreads(detail.comments);
   // متای جزئیات — پورتِ `kteam-detail-meta`.
   const todayIso = new Date().toISOString().slice(0, 10);
   const daysLeft = project.deadline
@@ -276,18 +279,14 @@ export default async function ProjectDetailPage({
         )}
       </ul>
 
+      {/*
+        ⚠️ کارت‌های سرِ صفحه «کارِ باز» را می‌گویند، نه پول: قیمتِ پروژه جای
+        خودش را در تبِ مالی دارد و اینجا فقط یک عددِ ایستا بود که هر بار که
+        کارفرما یا عضو صفحه را باز می‌کرد، مبلغِ قرارداد را جلوی چشمش
+        می‌گذاشت. جایش «کامنتِ باز» نشسته — رشته‌هایی که تازه‌ترین پیامشان
+        هنوز بسته نشده و منتظرِ کسی هستند.
+      */}
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        {/*
-          ⚠️ قیمتِ پروژه فقط برای مالک/مدیرِ مالی و **کارفرمای همین پروژه**.
-          عضو دستمزدِ خودش را در تبِ مالی می‌بیند، نه مبلغِ قرارداد را —
-          `domain/access/project-money`. پیش از این این کارت بی‌محافظ بود.
-        */}
-        {detail.canSeePrice && (
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-normal text-muted-foreground">{t("مبلغ")}</CardTitle></CardHeader>
-            <CardContent><p className="num text-xl font-semibold">{format(project.price)}</p></CardContent>
-          </Card>
-        )}
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-normal text-muted-foreground">{t("اعضا")}</CardTitle></CardHeader>
           <CardContent><p className="num text-xl font-semibold">{members.length}</p></CardContent>
@@ -295,6 +294,10 @@ export default async function ProjectDetailPage({
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-normal text-muted-foreground">{t("تسکِ باز")}</CardTitle></CardHeader>
           <CardContent><p className="num text-xl font-semibold">{openTasks.length}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-normal text-muted-foreground">{t("کامنتِ باز")}</CardTitle></CardHeader>
+          <CardContent><p className="num text-xl font-semibold">{openComments}</p></CardContent>
         </Card>
       </div>
 
