@@ -50,6 +50,7 @@ const THEME_ICON = { light: Sun, dark: Moon, system: Monitor } as const;
 export function UserMenu({
   userName,
   userRole,
+  userRoles = [],
   locale,
   onLogout,
   canManageSettings = false,
@@ -57,6 +58,8 @@ export function UserMenu({
 }: {
   userName: string;
   userRole: string;
+  /** همهٔ نقش‌های کاربر — زیرِ نام در منو. */
+  userRoles?: string[];
   locale: Locale;
   onLogout: () => void;
   /** آیتمِ تنظیمات فقط برای کسی که اجازه دارد. */
@@ -89,7 +92,23 @@ export function UserMenu({
         sideOffset={8}
         className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
       >
-        <DropdownMenuLabel className="text-sm font-medium">{userName}</DropdownMenuLabel>
+        {/*
+          ⚠️ نامِ کاربر به‌تنهایی نمی‌گوید «الان با چه اختیاری وارد شده‌ام».
+          کسی که هم مالک است هم عضوِ تیم، دو دستهٔ کاملاً متفاوت از صفحه‌ها
+          را می‌بیند؛ فهرستِ نقش‌ها همان‌جا معلومش می‌کند.
+        */}
+        <DropdownMenuLabel className="grid gap-1 text-sm font-medium">
+          {userName}
+          {userRoles.length > 0 && (
+            <span className="flex flex-wrap gap-1">
+              {userRoles.map((role) => (
+                <span key={role} className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">
+                  {role}
+                </span>
+              ))}
+            </span>
+          )}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         {/*

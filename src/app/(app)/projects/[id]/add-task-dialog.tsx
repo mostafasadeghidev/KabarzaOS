@@ -13,7 +13,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
-import { MultiSelect } from '@/components/ui/multi-select';
+import { Combobox, MultiSelect as SearchableMultiSelect } from '@/components/ui/combobox';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { defaultTaskStatusId } from '@/domain/projects/defaults';
@@ -67,9 +67,17 @@ export function AddTaskDialog({
   const [state, formAction] = useActionState<TaskFormState, FormData>(createTaskAction, {});
   useActionToast(state, { success: 'تسک ثبت شد.' });
 
-  // ثبتِ موفق → مودال بسته می‌شود و فهرست تازه‌شده است.
+  const [assignee, setAssignee] = useState<{ id: number | null; label: string }>({ id: null, label: '' });
+  const [dependsOn, setDependsOn] = useState<{ id: number | null; label: string }>({ id: null, label: '' });
+  const [roleTagIds, setRoleTagIds] = useState<number[]>([]);
+
+  // ثبتِ موفق → مودال بسته می‌شود، فهرست تازه شده و فرم برای تسکِ بعدی خالی است.
   useEffect(() => {
-    if (state.ok) setOpen(false);
+    if (!state.ok) return;
+    setOpen(false);
+    setAssignee({ id: null, label: '' });
+    setDependsOn({ id: null, label: '' });
+    setRoleTagIds([]);
   }, [state]);
 
   const keep = (name: string) => state.values?.[name] ?? '';
@@ -129,34 +137,48 @@ export function AddTaskDialog({
               اعضا را به او نمی‌دهد). نشان‌دادنِ یک انتخابگرِ خالی فقط
               گیج‌کننده بود؛ به‌جایش انتخابگرِ نقش را می‌بیند.
             */}
+            {/*
+              ⚠️ جستجوی زنده، نه فهرستِ کشویی: پروژهٔ واقعی ده‌ها عضو و تسک
+              دارد و پیمایشِ یک select ِ بلند کارِ ساده را کند می‌کند.
+              پیش‌فرض **بی‌مسئول** می‌ماند: تسک را اغلب به یک **نقش** می‌دهند
+              («یکی از دولوپرها برش می‌دارد»).
+            */}
             {options.assignees.length > 0 && (
               <div className="grid gap-1.5">
                 <Label htmlFor="nt-assignee">{t("تخصیص به…")}</Label>
-                <select
-                  id="nt-assignee" name="assignedTo" className={cellSelect}
-                  /**
-                   * ⚠️ پیش‌فرض **بی‌مسئول**: تسک را اغلب به یک **نقش** می‌دهند
-                   * («یکی از دولوپرها برش می‌دارد»). پیش از این خودِ سازنده
-                   * از پیش انتخاب می‌شد و تسکِ نقشی هم صاحبِ شخصی پیدا می‌کرد.
-                   */
-                  defaultValue={keep('assignedTo')}
-                >
-                  <option value="">{t("— هیچ‌کدام —")}</option>
-                  {options.assignees.map((a) => (
-                    <option key={a.userId} value={a.userId}>{a.label}</option>
-                  ))}
-                </select>
+                <Combobox
+                  id="nt-assignee"
+                  name="assignedTo"
+                  options={options.assignees.map((a) => ({ value: a.userId, label: a.label }))}
+                  value={assignee}
+                  onChange={setAssignee}
+                  placeholder={t("نامِ عضو را تایپ کنید…")}
+                />
               </div>
             )}
 
             {options.roles.length > 0 && (
               <div className="grid gap-1.5">
-                <Label>{t("تخصیص به نقش")}</Label>
-                <MultiSelect
-                  name="roleTagIds"
-                  options={options.roles.map((r) => ({ id: r.id, label: r.name }))}
-                  placeholder={t("نقش‌ها…")}
-                />
+                <Label htmlFor="nt-roles">{t("تخصیص به نقش")}</Label>
+                {/*
+                  ⚠️ وقتی تسک به **شخص** سپرده شده، نقش معنا ندارد: صاحبش
+                  معلوم است. فیلد جای خود را به یادداشت می‌دهد تا تسک
+                  هم‌زمان «مالِ سارا» و «مالِ هر دولوپری» نباشد.
+                */}
+                {assignee.id !== null ? (
+                  <div className="flex h-9 items-center rounded-md border border-dashed px-3 text-xs text-muted-foreground">
+                    {tr("به شخص سپرده شده — نقش لازم نیست")}
+                  </div>
+                ) : (
+                  <SearchableMultiSelect
+                    id="nt-roles"
+                    name="roleTagIds"
+                    options={options.roles.map((r) => ({ value: r.id, label: r.name }))}
+                    selected={roleTagIds}
+                    onChange={setRoleTagIds}
+                    placeholder={t("نقش‌ها…")}
+                  />
+                )}
               </div>
             )}
 
@@ -182,10 +204,14 @@ export function AddTaskDialog({
             {(options.tasks?.length ?? 0) > 0 && (
               <div className="grid gap-1.5">
                 <Label htmlFor="nt-depends">{t("وابسته به")}</Label>
-                <select id="nt-depends" name="dependsOn" className={cellSelect} defaultValue={keep('dependsOn')}>
-                  <option value="">—</option>
-                  {options.tasks!.map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}
-                </select>
+                <Combobox
+                  id="nt-depends"
+                  name="dependsOn"
+                  options={options.tasks!.map((x) => ({ value: x.id, label: x.title }))}
+                  value={dependsOn}
+                  onChange={setDependsOn}
+                  placeholder={t("عنوانِ تسک را تایپ کنید…")}
+                />
               </div>
             )}
           </div>

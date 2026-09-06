@@ -472,7 +472,9 @@ export function TasksTab({
               tab === k ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted'
             }`}
           >
-            {tr(GROUP_LABEL[k] ?? k)} <span className="num">{buckets.get(k)!.length}</span>
+            {/* نامِ گروه سرفصل است نه عنوان: ریزتر و کم‌رنگ‌تر، مثلِ وضعیتِ پروژه. */}
+            <span className="text-[11px] font-normal opacity-80">{tr(GROUP_LABEL[k] ?? k)}</span>
+            <span className="num ms-1.5">{buckets.get(k)!.length}</span>
           </button>
         ))}
       </div>
@@ -495,18 +497,29 @@ export function TasksTab({
       // ⚠️ کارتِ تسک تا لبهٔ صفحه کش نمی‌آید: روی نمایشگرِ پهن تا چهار ستون.
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {list.map((t) => (
-          <li key={t.id} className="rounded-md border p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => setOpenTask(t.id)}
-                className="flex items-center gap-1.5 text-start text-sm font-medium hover:underline"
-              >
+          /**
+           * ⚠️ کلِ کارت باز می‌شود، نه فقط عنوان: هدفِ کلیک به اندازهٔ یک
+           * خط بود و کاربر روی فضای خالیِ کارت کلیک می‌کرد و هیچ اتفاقی
+           * نمی‌افتاد. کلیک روی کنترل‌های داخلی (وضعیت، برداشتن) بالا
+           * نمی‌آید تا کارت را باز نکند.
+           */
+          <li
+            key={t.id}
+            onClick={() => setOpenTask(t.id)}
+            className="cursor-pointer rounded-md border p-3 transition-colors hover:border-primary/40 hover:bg-muted/40"
+          >
+            <div
+              className="flex flex-wrap items-center justify-between gap-2"
+              onClick={(e) => { if ((e.target as HTMLElement).closest('[data-stop]')) e.stopPropagation(); }}
+            >
+              <span className="flex items-center gap-1.5 text-start text-sm font-medium">
                 {/* R-PROJ-17 — تسکِ خصوصی نشانِ خودش را دارد. */}
                 {t.isPrivate && <Lock className="size-3.5 text-muted-foreground" />}
                 {t.title}
-              </button>
-              <TaskStatusPicker task={t} options={statuses} canManage={(canManage || canInteract) && !isFrozen && statuses.length > 0} />
+              </span>
+              <span data-stop onClick={(e) => e.stopPropagation()}>
+                <TaskStatusPicker task={t} options={statuses} canManage={(canManage || canInteract) && !isFrozen && statuses.length > 0} />
+              </span>
             </div>
             <TaskExtras task={t} />
             <div className="mt-1.5 flex flex-wrap items-center gap-3">
@@ -514,13 +527,15 @@ export function TasksTab({
               {t.dueDate && (
                 <span className="num text-xs text-muted-foreground">{tr('ددلاین {date}', { date: t.dueDate })}</span>
               )}
-              <ClaimButton
-                    frozen={isFrozen}
-                task={t}
-                projectId={projectId}
-                holders={holdersMap}
-                userId={currentUserId}
-              />
+              <span data-stop onClick={(e) => e.stopPropagation()}>
+                <ClaimButton
+                  frozen={isFrozen}
+                  task={t}
+                  projectId={projectId}
+                  holders={holdersMap}
+                  userId={currentUserId}
+                />
+              </span>
             </div>
           </li>
         ))}

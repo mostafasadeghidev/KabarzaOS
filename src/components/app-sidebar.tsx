@@ -66,6 +66,7 @@ export function AppSidebar({
   items,
   userName,
   userRole,
+  userRoles = [],
   locale,
   pulse,
   unreadMessages,
@@ -82,6 +83,7 @@ export function AppSidebar({
   brand: { name: string; logoFileId: number | null };
   userName: string;
   userRole: string;
+  userRoles?: string[];
   locale: Locale;
   /** نبضِ زنده — همان تنظیمی که زنگِ اعلان می‌گیرد. */
   pulse: { enabled: boolean; interval: number };
@@ -186,6 +188,7 @@ export function AppSidebar({
             <UserMenu
               userName={userName}
               userRole={userRole}
+              userRoles={userRoles}
               locale={locale}
               onLogout={onLogout}
               canManageSettings={canManageSettings}

@@ -187,6 +187,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         items={items}
         userName={session.name}
         userRole={primaryRole ? t(ROLE_LABELS[primaryRole]) : t('کاربر')}
+        userRoles={actor.roles.map((role) => t(ROLE_LABELS[role]))}
         locale={session.locale ?? system.defaultLocale}
         pulse={{ enabled: system.pulseEnabled, interval: system.pulseInterval }}
         unreadMessages={unreadMessages}

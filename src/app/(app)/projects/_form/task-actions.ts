@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
-  addTaskNote, createTask, deleteTask, getTaskDetail, getTaskFormOptions, updateTask,
+  addTaskNote, createTask, deleteTask, getTaskDetail, getTaskFormOptions, referTask, updateTask,
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FrozenProjectError } from '@/server/projects/authority';
@@ -125,6 +125,38 @@ export async function updateTaskAction(_prev: TaskFormState, formData: FormData)
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ویرایشِ تسک ندارید.', values };
     return { error: 'تغییرات ذخیره نشد.', values };
+  }
+  return { ok: true };
+}
+
+/**
+ * ارجاعِ تسک به شخصِ دیگر — فقط مدیر (گارد در سرویس).
+ * ⚠️ همان اکشنِ ویرایش نیست: ارجاع یادداشت و اعلانِ خودش را دارد.
+ */
+export async function referTaskAction(_prev: TaskFormState, formData: FormData): Promise<TaskFormState> {
+  const taskId = Number(formData.get('taskId'));
+  const toUserId = Number(formData.get('toUserId'));
+  const note = String(formData.get('referNote') ?? '');
+  if (!Number.isInteger(taskId) || taskId <= 0) return { error: 'تسک معتبر نیست.' };
+  if (!Number.isInteger(toUserId) || toUserId <= 0) return { error: 'گیرندهٔ ارجاع را انتخاب کنید.' };
+
+  try {
+    const actor = await requireActor();
+    const projectId = await referTask(actor, taskId, toUserId, note);
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath('/tasks');
+  } catch (error) {
+    if (error instanceof FrozenProjectError) {
+      return { error: 'این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.' };
+    }
+    if (error instanceof ForbiddenError) {
+      return {
+        error: error.message === 'task.refer.stranger'
+          ? 'گیرنده عضو یا کارفرمای این پروژه نیست.'
+          : 'اجازهٔ ارجاعِ تسک ندارید.',
+      };
+    }
+    return { error: 'ارجاع ثبت نشد.' };
   }
   return { ok: true };
 }

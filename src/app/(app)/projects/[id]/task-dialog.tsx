@@ -2,9 +2,9 @@
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Lock, Pencil, Trash2 } from 'lucide-react';
+import { Lock, Pencil, Share2, Trash2 } from 'lucide-react';
 import {
-  addTaskNoteAction, deleteTaskAction, loadTaskAction, updateTaskAction,
+  addTaskNoteAction, deleteTaskAction, loadTaskAction, referTaskAction, updateTaskAction,
   type TaskFormState,
 } from '../_form/task-actions';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { MultiSelect } from '@/components/ui/multi-select';
+import { Combobox, MultiSelect as SearchableMultiSelect } from '@/components/ui/combobox';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -92,6 +92,33 @@ export function TaskDialog({
   const canManage = data?.detail.canManage ?? false;
   const options = data?.options ?? null;
 
+  /**
+   * وضعیتِ فیلدهای جستجوی زنده — با هر بار خواندنِ تسک از نو مقدار می‌گیرند.
+   * ⚠️ داخلِ همان effect ِ بارگذاری نمی‌نشیند، چون `options` (که برچسبِ
+   * مسئول از آن می‌آید) در همان لحظه هنوز نیامده است.
+   */
+  const [assignee, setAssignee] = useState<{ id: number | null; label: string }>({ id: null, label: '' });
+  const [roleTagIds, setRoleTagIds] = useState<number[]>([]);
+  const [referring, setReferring] = useState(false);
+  const [referTo, setReferTo] = useState<{ id: number | null; label: string }>({ id: null, label: '' });
+  const [referState, referAction] = useActionState<TaskFormState, FormData>(referTaskAction, {});
+  useActionToast(referState, { success: 'ارجاع شد.' });
+  useEffect(() => {
+    if (!referState.ok || taskId === null) return;
+    setReferring(false);
+    setReferTo({ id: null, label: '' });
+    loadTaskAction(taskId).then(setData).catch(() => {});
+  }, [referState, taskId]);
+  useEffect(() => {
+    if (!data) return;
+    const current = data.detail.task.assignedTo;
+    setAssignee({
+      id: current,
+      label: current ? (data.options?.assignees.find((a) => a.userId === current)?.label ?? '') : '',
+    });
+    setRoleTagIds(data.detail.roles.map((r) => r.roleTagId));
+  }, [data]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
@@ -156,11 +183,47 @@ export function TaskDialog({
               <p className="rounded-md bg-muted/40 p-3 text-sm whitespace-pre-wrap">{task.description}</p>
             )}
 
+            {/*
+              ⚠️ «ارجاع» ویرایشِ ساده نیست: نیت را ثبت می‌کند — چه کسی، به چه
+              کسی، و چرا. یادداشتش در گفتگوی تسک می‌ماند و گیرنده اعلان
+              می‌گیرد (`referTask`).
+            */}
+            {canManage && referring && (
+              <form action={referAction} className="grid gap-2 rounded-md border border-dashed p-3">
+                <input type="hidden" name="taskId" value={task.id} />
+                <input type="hidden" name="toUserId" value={referTo.id ?? ''} />
+                <span className="text-sm font-medium">{tr("ارجاعِ تسک به شخصِ دیگر")}</span>
+                <Combobox
+                  options={(options?.assignees ?? []).map((a) => ({ value: a.userId, label: a.label }))}
+                  value={referTo}
+                  onChange={setReferTo}
+                  placeholder={t("گیرندهٔ ارجاع…")}
+                />
+                <Input name="referNote" placeholder={t("توضیحِ ارجاع (اختیاری)")} />
+                {referState.error && <p className="text-xs text-destructive">{tr(referState.error)}</p>}
+                <div className="flex gap-2">
+                  <Button type="submit" size="sm" disabled={referTo.id === null}>{t("ارجاع بده")}</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setReferring(false)}>
+                    {t("انصراف")}
+                  </Button>
+                </div>
+              </form>
+            )}
+
             {canManage && (
               <div className="flex gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => setEditing((e) => !e)}>
                   <Pencil className="size-3.5" />
                   {tr("ویرایش تسک")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setReferring((v) => !v); setEditing(false); }}
+                >
+                  <Share2 className="size-3.5" />
+                  {tr("ارجاع")}
                 </Button>
                 <Button
                   type="button"
@@ -227,35 +290,41 @@ export function TaskDialog({
                     </select>
                   </div>
 
+                  {/* جستجوی زنده — همان دلیلِ فرمِ افزودن: فهرستِ بلند. */}
                   <div className="grid gap-1.5">
                     <Label htmlFor="t-assignee">{t("تخصیص به…")}</Label>
-                    <select
+                    <Combobox
                       id="t-assignee"
                       name="assignedTo"
-                      className={cellSelect}
-                      defaultValue={task.assignedTo ? String(task.assignedTo) : ''}
-                    >
-                      <option value="">{t("— هیچ‌کدام —")}</option>
-                      {options.assignees.map((a) => (
-                        <option key={a.userId} value={a.userId}>{a.label}</option>
-                      ))}
-                    </select>
+                      options={options.assignees.map((a) => ({ value: a.userId, label: a.label }))}
+                      value={assignee}
+                      onChange={setAssignee}
+                      placeholder={t("نامِ عضو را تایپ کنید…")}
+                    />
                   </div>
 
                   {/*
                     ⚠️ نقش‌ها در ویرایش — پیش از این فرمِ ویرایش انتخابگرِ نقش نداشت و
                     سرور هم نمی‌نوشتشان؛ نقشِ تسک بعد از ساخت غیرقابلِ تغییر بود.
-                    نقش‌های فعلی از detail.roles پیش‌انتخاب می‌شوند.
+                    و وقتی تسک به شخص سپرده شده، نقش کنار می‌رود (همان قاعدهٔ فرمِ افزودن).
                   */}
                   {options.roles.length > 0 && (
                     <div className="grid gap-1.5">
-                      <Label>{t("تخصیص به نقش")}</Label>
-                      <MultiSelect
-                        name="roleTagIds"
-                        options={options.roles.map((r) => ({ id: r.id, label: r.name }))}
-                        defaultSelected={data.detail.roles.map((r) => r.roleTagId)}
-                        placeholder={t("نقش‌ها…")}
-                      />
+                      <Label htmlFor="t-roles">{t("تخصیص به نقش")}</Label>
+                      {assignee.id !== null ? (
+                        <div className="flex h-9 items-center rounded-md border border-dashed px-3 text-xs text-muted-foreground">
+                          {tr("به شخص سپرده شده — نقش لازم نیست")}
+                        </div>
+                      ) : (
+                        <SearchableMultiSelect
+                          id="t-roles"
+                          name="roleTagIds"
+                          options={options.roles.map((r) => ({ value: r.id, label: r.name }))}
+                          selected={roleTagIds}
+                          onChange={setRoleTagIds}
+                          placeholder={t("نقش‌ها…")}
+                        />
+                      )}
                     </div>
                   )}
 

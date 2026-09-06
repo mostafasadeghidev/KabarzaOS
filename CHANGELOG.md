@@ -2,6 +2,27 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.58.0]
+
+### Added — task assignment
+
+- **Refer a task to someone else.** A manager (owner, project manager or office manager) can hand a task to another person with a note: the note is posted into the task's own conversation, the recipient is notified, and the previous owner's role claim is released so a task never has two owners.
+- **Tasks can be written for a role that has no one yet.** A manager now picks from every defined role, not only the roles someone currently holds — so the "designer" work can be written before a designer exists. When a person with that role joins the project, the waiting tasks are assigned to them automatically if they are the only holder of the role; with more than one holder the tasks stay open for whoever claims them first.
+- **A blocked member's unfinished work is handed over.** When a member's access to a project is cut, their open tasks move to the one remaining holder of the same role, or return to the role for anyone to claim. Finished tasks are left untouched.
+- **Managers can assign a task to the owner or an admin**, who are not project members but are often the ones a decision or a sign-off waits on.
+
+### Changed
+
+- **A member sees their own work on the project board.** Tasks assigned to another member are no longer listed for them; role tasks stay visible to every holder of the role until one claims it, and a task that one of their own tasks depends on stays visible so they can see what they are waiting for. Managers and clients still see the whole board.
+- **Assignee, role and dependency fields are searchable** in the add and edit task dialogs, and picking a person hides the role field — a task is either someone's or a role's, never both.
+- **The user menu lists every role of the signed-in user** under their name.
+- **Comment threads are separated** by their own dashed card, and replies are indented by their real depth so a reply to a reply is no longer flush with a reply to the thread.
+- **The whole task card opens the task**, not only its title; status and claim controls inside the card still act on their own.
+- Task status group names are set smaller and dimmer, like the project status list.
+- The "manage members" dialog closes after a successful save.
+
+---
+
 ## [1.57.1]
 
 ### Changed

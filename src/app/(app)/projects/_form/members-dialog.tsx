@@ -77,6 +77,15 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
       : tr('اعضا ذخیره شد.'),
   });
 
+  /**
+   * ⚠️ ذخیرهٔ موفق مودال را می‌بندد. پیش از این باز می‌ماند و کاربر
+   * نمی‌دانست کارش گرفت یا نه — و با زدنِ دوبارهٔ «ذخیره» همان فهرست را
+   * دوباره می‌فرستاد.
+   */
+  useEffect(() => {
+    if (state.ok) setOpen(false);
+  }, [state.ok]);
+
   useEffect(() => {
     if (state.keptOwed?.length) {
       show(tr('{names} حذف نشد چون روی این پروژه تسویه‌نشده دارد. اول تسویه کنید.', {

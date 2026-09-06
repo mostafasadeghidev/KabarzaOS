@@ -169,7 +169,20 @@ function Node({
   const hasReplies = thread.replies.some((r) => r.node.parentId === comment.id);
 
   return (
-    <div className={`rounded-md border p-3 ${depth > 0 ? 'ms-4 border-s-4 border-s-muted' : ''}`}>
+    /**
+     * ⚠️ تودرتوییِ واقعی: پیش از این هر پاسخ — در هر عمقی — همان یک پله
+     * تورفتگی می‌گرفت، پس «پاسخ به پاسخ» از «پاسخ به ریشه» قابلِ تشخیص
+     * نبود. حالا تورفتگی با عمق زیاد می‌شود (تا چهار پله، وگرنه روی
+     * موبایل ستون به صفر می‌رسد) و یک خطِ عمودی رشته را نشان می‌دهد.
+     */
+    <div
+      className={
+        depth > 0
+          ? 'rounded-md border border-s-2 border-s-primary/40 bg-muted/30 p-3'
+          : 'rounded-md border bg-background p-3'
+      }
+      style={depth > 0 ? { marginInlineStart: Math.min(depth, 4) * 14 } : undefined}
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-sm whitespace-pre-wrap">{comment.body}</p>
@@ -283,9 +296,11 @@ function ThreadList({
       {list.length === 0 ? (
         <EmptyState title={bucket === 'open' ? t("موردی برای بررسی نیست.") : t("موردی نیست.")} />
       ) : (
-        <ul className="grid gap-3">
+        // ⚠️ فاصلهٔ بیشتر بینِ رشته‌ها از فاصلهٔ داخلِ یک رشته: مرزِ دو گفتگو
+        // باید از مرزِ دو پیامِ یک گفتگو پررنگ‌تر باشد.
+        <ul className="grid gap-5">
           {list.map((thread) => (
-            <li key={thread.root.id} className="grid gap-2">
+            <li key={thread.root.id} className="grid gap-2 rounded-lg border border-dashed p-3">
               <Node
                 comment={thread.root}
                 thread={thread}

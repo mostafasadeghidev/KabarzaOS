@@ -617,6 +617,20 @@ export async function memberRoleTags() {
     .orderBy(tags.sortOrder, tags.id);
 }
 
+/**
+ * مالک و همکارانِ ادمین — کاندیدای «تخصیص به» برای مدیرِ پروژه.
+ * ⚠️ این‌ها عضوِ پروژه نیستند، ولی مدیرِ پروژه/دفتر باید بتواند کاری را به
+ * مدیرِ کل بسپارد (تأیید، تصمیم، امضا) — پیش از این نامشان در فهرست نبود.
+ */
+export async function adminCandidates() {
+  return db
+    .selectDistinct({ userId: users.id, name: users.name })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .where(and(inArray(userRoles.role, ['owner', 'admin']), isNull(users.deletedAt)))
+    .orderBy(users.name);
+}
+
 /** تعدادِ زیرپروژه‌ها — R-PROJ-20: والد نمی‌تواند خودش فرزند شود. */
 export async function childCount(projectId: number): Promise<number> {
   const rows = await db
@@ -1265,6 +1279,29 @@ export async function roleHoldersFor(projectIds: number[]) {
     .select({ projectId: projectMembers.projectId, userId: projectMembers.userId, roleTagId: projectMembers.roleTagId })
     .from(projectMembers)
     .where(inArray(projectMembers.projectId, projectIds));
+}
+
+/**
+ * تسک‌های **بازِ** یک پروژه با نقش‌هایشان — برای واگذاریِ خودکار.
+ * «باز» یعنی وضعیتش در گروهِ `complete` نیست و حذف نشده.
+ */
+export async function openTasksWithRoles(projectId: number) {
+  const rows = await db
+    .select({
+      taskId: tasks.id,
+      assignedTo: tasks.assignedTo,
+      roleTagId: taskRoles.roleTagId,
+      claimedBy: taskRoles.claimedBy,
+    })
+    .from(tasks)
+    .leftJoin(tags, eq(tags.id, tasks.statusTagId))
+    .leftJoin(taskRoles, eq(taskRoles.taskId, tasks.id))
+    .where(and(
+      eq(tasks.projectId, projectId),
+      isNull(tasks.deletedAt),
+      sql`coalesce(${tags.statusGroup}, '') <> 'complete'`,
+    ));
+  return rows;
 }
 
 /**

@@ -9,6 +9,10 @@ import {
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, canSeeScope, filterVisible, ForbiddenError, visibleScopes, assertOwner, filterVisibleFor } from '@/domain/access/guard';
+import { visibleTasksForMember } from '@/domain/projects/task-visibility';
+/** برچسبِ کنارِ نامِ مدیران در فهرستِ «تخصیص به». */
+const MANAGER_ROLE_LABEL = 'مدیریت';
+import { handoverPlan, tasksToAutoAssign } from '@/domain/projects/role-assignment';
 import { diffMembers, planAddMember, type MemberInput } from '@/domain/projects/members';
 import {
   assertCanLighten, canSetParent, impactState, planDelete,
@@ -308,6 +312,42 @@ export async function setMembers(actor: Actor, projectId: number, desired: Membe
   await audit(actor, 'members.set', projectId, existing, desired);
 
   /**
+   * ⚠️ تسکِ نقشیِ منتظر → به عضوِ تازه.
+   *
+   * تسک را می‌شود پیش از آمدنِ آدمش به یک **نقش** سپرد («دیزاینر»). وقتی
+   * بالاخره کسی با آن نقش اضافه شد، آن کارها باید به او برسند؛ وگرنه در
+   * صف می‌ماندند و کسی هرگز نمی‌دیدشان. اگر بیش از یک نفر آن نقش را دارد،
+   * دست نمی‌خورند تا خودشان برش دارند (`role-assignment`).
+   */
+  if (diff.toInsert.length > 0) {
+    const openRoleTasks = await repo.openTasksWithRoles(projectId);
+    const holders = await repo.roleHoldersFor([projectId]);
+    const holderCount = new Map<number, number>();
+    for (const h of holders) {
+      if (h.roleTagId === null) continue;
+      holderCount.set(h.roleTagId, (holderCount.get(h.roleTagId) ?? 0) + 1);
+    }
+    const roleRows = openRoleTasks
+      .filter((r): r is typeof r & { roleTagId: number } => r.roleTagId !== null)
+      .map((r) => ({ taskId: r.taskId, roleTagId: r.roleTagId, claimedBy: r.claimedBy, assignedTo: r.assignedTo }));
+
+    for (const member of diff.toInsert) {
+      const taskIds = tasksToAutoAssign(roleRows, member, holderCount);
+      if (taskIds.length === 0) continue;
+      await db.update(tasks)
+        .set({ assignedTo: member.userId, updatedAt: new Date() })
+        .where(inArray(tasks.id, taskIds));
+      await db.update(taskRoles)
+        .set({ claimedBy: member.userId, updatedAt: new Date() })
+        .where(and(
+          inArray(taskRoles.taskId, taskIds),
+          eq(taskRoles.roleTagId, member.roleTagId!),
+        ));
+      await audit(actor, 'task.auto_assign', projectId, null, { userId: member.userId, taskIds });
+    }
+  }
+
+  /**
    * پورتِ `project_signed` — به **خودِ** کسی که تازه امضا شده، نه به همه.
    *
    * ⚠️ «تازه» یعنی پیش از این در **هیچ** نقشی روی پروژه نبوده. نسخهٔ قبلی هم
@@ -377,6 +417,53 @@ export async function setProjectAccess(
 
   const touched = memberResult.length + clientResult.length;
   if (touched === 0) throw new NotFoundError();
+
+  /**
+   * ⚠️ کارِ نیمه‌تمامِ کسی که دسترسی‌اش قطع شد نباید بی‌صاحب بماند: اگر
+   * دقیقاً یک هم‌نقشِ دیگر هست، به او منتقل می‌شود؛ وگرنه به همان نقش
+   * برمی‌گردد تا هر که می‌تواند برش دارد. تسکِ تمام‌شده دست نمی‌خورد —
+   * تاریخ است (`handoverPlan`).
+   */
+  if (blocked && memberResult.length > 0) {
+    const [openRows, holders] = await Promise.all([
+      repo.openTasksWithRoles(projectId),
+      repo.roleHoldersFor([projectId]),
+    ]);
+    const mine = openRows.filter((r) => r.assignedTo === userId);
+    if (mine.length > 0) {
+      const rolesOfTask = new Map<number, number[]>();
+      for (const r of openRows) {
+        if (r.roleTagId === null) continue;
+        rolesOfTask.set(r.taskId, [...(rolesOfTask.get(r.taskId) ?? []), r.roleTagId]);
+      }
+      const holdersByRole = new Map<number, number[]>();
+      const leavingRoles: number[] = [];
+      for (const h of holders) {
+        if (h.roleTagId === null) continue;
+        if (h.userId === userId) leavingRoles.push(h.roleTagId);
+        holdersByRole.set(h.roleTagId, [...(holdersByRole.get(h.roleTagId) ?? []), h.userId]);
+      }
+
+      const plan = handoverPlan(
+        [...new Set(mine.map((r) => r.taskId))].map((taskId) => ({
+          taskId, roleTagIds: rolesOfTask.get(taskId) ?? [],
+        })),
+        { userId, roleTagIds: leavingRoles },
+        holdersByRole,
+      );
+
+      for (const step of plan) {
+        await db.update(tasks)
+          .set({ assignedTo: step.toUserId, updatedAt: new Date() })
+          .where(eq(tasks.id, step.taskId));
+        // تسکی که به نقش برمی‌گردد، ادعایش هم آزاد می‌شود.
+        await db.update(taskRoles)
+          .set({ claimedBy: step.toUserId, updatedAt: new Date() })
+          .where(and(eq(taskRoles.taskId, step.taskId), eq(taskRoles.claimedBy, userId)));
+      }
+      await audit(actor, 'task.handover', projectId, { from: userId }, { plan });
+    }
+  }
 
   await audit(
     actor,
@@ -494,8 +581,30 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
 
   // R-PROJ-14 با مدیریتِ پروژه‌محور: مدیرِ پروژه/دفتر تسکِ خصوصیِ پروژهٔ خودش را می‌بیند.
   const canManage = await canManageProject(actor, projectId);
-  const visibleTasks = filterVisibleFor(actor, allTasks, canManage);
-  const roles = await repo.taskRolesFor(visibleTasks.map((t) => t.id));
+  const privateOk = filterVisibleFor(actor, allTasks, canManage);
+  const allRoles = await repo.taskRolesFor(privateOk.map((t) => t.id));
+
+  /**
+   * ⚠️ عضوِ ساده فقط **کارِ خودش** را روی تخته می‌بیند (R-TASK-VIS):
+   * سپرده‌شده به خودش، تسکِ نقشیِ برنداشته‌ای که می‌تواند بردارد، و آنچه
+   * تسکِ خودش به آن وابسته است. کارِ دولوپرِ دیگر نه — کاری از دستش برنمی‌آید
+   * و فقط تخته را شلوغ می‌کند. مدیران (کل/پروژه/دفتر) و کارفرما استثنا
+   * هستند: آن‌ها باید کلِ پروژه را ببینند.
+   */
+  const isPlainMember = !canManage
+    && !actor.roles.includes('owner')
+    && !actor.roles.includes('client')
+    && members.some((m) => m.userId === actor.id);
+  const visibleTasks = isPlainMember
+    ? visibleTasksForMember(privateOk, allRoles, {
+      userId: actor.id,
+      roleTagIds: members
+        .filter((m) => m.userId === actor.id && m.roleTagId !== null)
+        .map((m) => m.roleTagId!),
+    })
+    : privateOk;
+  const keptIds = new Set(visibleTasks.map((t) => t.id));
+  const roles = allRoles.filter((r) => keptIds.has(r.taskId));
 
   const rolesByTask = new Map<number, typeof roles>();
   for (const r of roles) {
@@ -1462,16 +1571,18 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
    */
   await assertCanInteractWithProject(actor, projectId);
 
-  const [members, clientIds, inactive, statuses, priorities, allTasks] = await Promise.all([
+  const [members, clientIds, inactive, statuses, priorities, allTasks, admins] = await Promise.all([
     repo.listMembers(projectId),
     repo.listClientIds(projectId),
     repo.inactiveUserIds(),
     repo.taskStatusTags(),
     repo.taskPriorityTags(),
     repo.listTasks(projectId),
+    repo.adminCandidates(),
   ]);
+  const canManageProjectNow = await canManageProject(actor, projectId);
   // گزینه‌های «وابسته به» — فقط تسک‌هایی که خودِ بیننده می‌بیند.
-  const dependencyOptions = filterVisibleFor(actor, allTasks, await canManageProject(actor, projectId))
+  const dependencyOptions = filterVisibleFor(actor, allTasks, canManageProjectNow)
     .map((t) => ({ id: t.id, title: t.title }));
 
   const clientNames = await repo.userNames([...clientIds]);
@@ -1481,27 +1592,32 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
    * `if (! $client_view)` در `assign_options_html()`. نامِ اعضا اصلاً به او
    * نمی‌رسد، پس فهرستِ اشخاص هم نباید ساخته شود.
    */
-  const viewer = await viewerContext(
-    actor,
-    projectId,
-    await canManageProject(actor, projectId),
-    members,
-  );
+  const viewer = await viewerContext(actor, projectId, canManageProjectNow, members);
 
   return {
     /**
-     * نقش‌های این پروژه — تنها راهِ تخصیصِ کارفرما، و برای بقیه جایگزینِ
-     * «به هرکس که این نقش را دارد».
+     * ⚠️ برای **مدیر** همهٔ نقش‌های تعریف‌شده می‌آیند، نه فقط نقش‌هایی که
+     * همین حالا کسی روی پروژه دارد: کارِ متعارف این است که تسک‌های
+     * «دیزاینر» را پیش از پیداشدنِ دیزاینر بنویسند و بعد که او اضافه شد،
+     * کارها خودکار به نامش بخورند (`setMembers` → `tasksToAutoAssign`).
+     * عضو و کارفرما همان نقش‌های موجود را می‌بینند تا فهرستشان شلوغ نشود.
      */
-    roles: [...new Map(members
-      .filter((m) => m.roleTagId !== null)
-      .map((m) => [m.roleTagId!, { id: m.roleTagId!, name: m.roleName ?? FALLBACK_MEMBER_LABEL }]),
-    ).values()],
+    roles: canManageProjectNow
+      ? await repo.memberRoleTags()
+      : [...new Map(members
+        .filter((m) => m.roleTagId !== null)
+        .map((m) => [m.roleTagId!, { id: m.roleTagId!, name: m.roleName ?? FALLBACK_MEMBER_LABEL }]),
+      ).values()],
     assignees: assignableToPeople(viewer)
       ? assigneeOptions(
         // ⚠️ ماسکِ نام اینجا هم لازم است: عضوِ خالص نامِ واقعیِ کارفرما را در
         // فهرستِ انتساب می‌دید — همان یک جایی که قاعدهٔ ماسک برایش نوشته شده.
-        members.map((m) => ({ userId: m.userId, name: nameForViewer(m.userId, m.userName, viewer), roleName: m.roleName })),
+        // مدیران (مالک/ادمین) هم برای مدیرِ پروژه در فهرست‌اند: سپردنِ یک
+        // تأیید یا تصمیم به مدیرِ کل کارِ روزمره است.
+        [
+          ...members.map((m) => ({ userId: m.userId, name: nameForViewer(m.userId, m.userName, viewer), roleName: m.roleName })),
+          ...(canManageProjectNow ? admins.map((a) => ({ userId: a.userId, name: a.name, roleName: MANAGER_ROLE_LABEL })) : []),
+        ],
         [...clientIds].map((id) => ({
           userId: id, name: nameForViewer(id, clientNames.get(id) ?? String(id), viewer), isClient: true,
         })),
@@ -1611,6 +1727,81 @@ export async function createTask(
 }
 
 /**
+ * **ارجاعِ تسک** به شخصِ دیگر — پورتِ کارِ روزمرهٔ مدیر: «این را بده به سارا
+ * که ببیند» یا «بسپارش به علی».
+ *
+ * ⚠️ فرقش با ویرایشِ ساده: نیت را ثبت می‌کند. ارجاع‌دهنده، گیرنده و دلیل در
+ * یادداشتِ تسک می‌نشیند، گیرنده اعلان می‌گیرد، و ادعای نقشِ صاحبِ قبلی آزاد
+ * می‌شود تا تسک دو صاحب نداشته باشد.
+ *
+ * ⚠️ فقط **مدیر** (کل، پروژه، دفتر): ارجاع یعنی تغییرِ صاحبِ کار؛ اگر هر
+ * عضوی می‌توانست، کار را به هم پاس می‌دادند و هیچ‌کس مسئول نمی‌ماند.
+ */
+export async function referTask(
+  actor: Actor,
+  taskId: number,
+  toUserId: number,
+  note: string,
+): Promise<number> {
+  const task = await repo.getTask(taskId);
+  if (!task) throw new NotFoundError();
+  const project = await getProject(actor, task.projectId);
+  await assertCanManageProject(actor, task.projectId);
+  await assertNotFrozen(task.projectId);
+
+  // گیرنده باید عضو/کارفرمای همین پروژه یا یکی از مدیران باشد.
+  const [members, clientIds, admins] = await Promise.all([
+    repo.listMembers(task.projectId),
+    repo.listClientIds(task.projectId),
+    repo.adminCandidates(),
+  ]);
+  const allowed = new Set<number>([
+    ...members.map((m) => m.userId),
+    ...clientIds,
+    ...admins.map((a) => a.userId),
+  ]);
+  if (!allowed.has(toUserId)) throw new ForbiddenError('task.refer.stranger');
+
+  const before = task.assignedTo;
+  if (before === toUserId) return task.projectId;
+
+  await db.update(tasks)
+    .set({ assignedTo: toUserId, updatedAt: new Date() })
+    .where(eq(tasks.id, taskId));
+  // ادعای نقشِ صاحبِ قبلی آزاد می‌شود؛ صاحبِ تسک حالا شخصِ تازه است.
+  if (before !== null) {
+    await db.update(taskRoles)
+      .set({ claimedBy: null, updatedAt: new Date() })
+      .where(and(eq(taskRoles.taskId, taskId), eq(taskRoles.claimedBy, before)));
+  }
+
+  // ردِ ارجاع در گفتگوی خودِ تسک می‌ماند، نه فقط در لاگِ ادمین.
+  const trimmed = note.trim();
+  await db.insert(comments).values({
+    projectId: task.projectId,
+    taskId,
+    userId: actor.id,
+    type: 'task_note',
+    status: OPEN_STATUS,
+    body: trimmed === '' ? 'ارجاع شد.' : trimmed,
+  });
+
+  await audit(actor, 'task.refer', taskId, { assignedTo: before }, { assignedTo: toUserId, note: trimmed });
+
+  if (toUserId !== actor.id) {
+    await notify([toUserId], {
+      type: 'task.assigned',
+      title: 'تسکی به شما ارجاع شد',
+      body: task.title,
+      url: `/projects/${task.projectId}`,
+    });
+  }
+  void project;
+  return task.projectId;
+}
+
+/**
+ * تگ‌های تسک از نوعِ درست‌اند؟/**
  * تگ‌های تسک از نوعِ درست‌اند؟
  *
  * ⚠️ `priorityTagId` پیش از این **هیچ** بررسی‌ای نداشت (فقط وضعیت داشت)، پس
