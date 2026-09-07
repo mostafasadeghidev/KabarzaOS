@@ -457,15 +457,21 @@ describe('QA و مناقصه روی دیتابیس', () => {
     proj = p[0]!.id;
   });
 
-  it('⚠️ تسکِ کارفرمای QA روی پروژهٔ بی‌کارفرما به چک‌لیست تبدیل می‌شود', async () => {
+  it('⚠️ تسکِ کارفرمای QA روی پروژهٔ بی‌کارفرما به چک‌لیست تبدیل می‌شود — با توضیحش', async () => {
     await db.insert(qaItems).values([
-      { title: 'تأییدِ کارفرما', description: '', roleTagId: null, isTask: true },
+      { title: 'تأییدِ کارفرما', description: 'طرحِ نهایی را باز کن و رنگ‌ها را با برندبوک بسنج.', roleTagId: null, isTask: true },
     ]);
     const result = await service.applyQa(manager(), proj, ['client']);
     expect(result.added).toBe(1);
 
     const rows = await db.select().from(projectQa).where(eq(projectQa.projectId, proj));
     expect(rows).toHaveLength(1);
+    /**
+     * ⚠️ توضیح هم کپی می‌شود. تا امروز ستونش نبود و ردیفِ چک‌لیست فقط عنوان
+     * داشت: دستورالعملِ بررسی در کتابخانه می‌ماند و در تبِ QA دیده نمی‌شد.
+     */
+    expect(rows[0]!.description).toBe('طرحِ نهایی را باز کن و رنگ‌ها را با برندبوک بسنج.');
+
     // به تسک تبدیل نشده، چون کارفرمایی نیست که به او بخورد.
     const taskRows = await db.select().from(tasks).where(eq(tasks.projectId, proj));
     expect(taskRows).toHaveLength(0);

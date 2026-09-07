@@ -218,6 +218,11 @@ export const projectQa = pgTable('project_qa', {
   qaItemId: fk('qa_item_id').references(() => qaItems.id),
   roleTagId: fk('role_tag_id').references(() => tags.id),
   title: text('title').notNull(),
+  /**
+   * ⚠️ عکسِ لحظه‌ای، مثلِ عنوان — نه خواندنِ زندهٔ کتابخانه: ویرایشِ بعدیِ
+   * آیتمِ کتابخانه نباید توضیحِ پروژه‌های گذشته را بازنویسی کند.
+   */
+  description: text('description').notNull().default(''),
   isDone: boolean('is_done').notNull().default(false),
   doneBy: fk('done_by').references(() => users.id),
   doneAt: ts('done_at'),

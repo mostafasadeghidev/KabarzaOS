@@ -902,6 +902,8 @@ export async function listProjectQa(projectId: number) {
        * لحظه‌ای است، پس تغییر یا حذفِ آیتمِ کتابخانه تاریخچهٔ پروژه را بازنویسی نمی‌کند.
        */
       title: projectQa.title,
+      /** «چه‌طور بررسی شود» — همان عکسِ لحظه‌ایِ کتابخانه، کنارِ عنوان. */
+      description: projectQa.description,
       /** R-PROJ-18 — آیتمِ «تسک‌ساز» در برابر آیتمِ چک‌لیستِ ساده. */
       isTask: qaItems.isTask,
       roleTagId: projectQa.roleTagId,

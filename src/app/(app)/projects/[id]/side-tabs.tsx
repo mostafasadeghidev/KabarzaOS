@@ -187,6 +187,8 @@ export function FinanceTab({
 export interface QaRow {
   id: number;
   title: string;
+  /** «چه‌طور بررسی شود» — از آیتمِ کتابخانه کپی شده؛ ممکن است خالی باشد. */
+  description?: string | null;
   /** null یعنی آیتمِ کتابخانه‌اش حذف شده — چک‌لیستِ ساده در نظر گرفته می‌شود. */
   isTask: boolean | null;
   /** ⚠️ null یعنی «کارفرما»، نه «بدونِ نقش» (R-QA-02). */
@@ -403,9 +405,19 @@ export function QaTab({
         <h3 className="text-sm font-semibold">{t(title)}</h3>
         <ul className="grid gap-1">
           {rows.map((q) => (
-            <li key={q.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-              <span className={q.isDone ? 'text-muted-foreground line-through' : ''}>{q.title}</span>
-              <span className="flex items-center gap-2">
+            <li key={q.id} className="flex items-start justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+              {/*
+                ⚠️ توضیح زیرِ عنوان می‌آید. آیتمِ کتابخانه دو بخش دارد — «چه
+                چیزی» و «چه‌طور بررسی شود» — و تا امروز فقط اولی دیده می‌شد؛
+                دستورالعملِ واقعی در پایگاه‌داده می‌ماند و کسی نمی‌دیدش.
+              */}
+              <span className="grid gap-0.5">
+                <span className={q.isDone ? 'text-muted-foreground line-through' : ''}>{q.title}</span>
+                {q.description && (
+                  <span className="text-xs whitespace-pre-wrap text-muted-foreground">{q.description}</span>
+                )}
+              </span>
+              <span className="flex shrink-0 items-center gap-2">
                 {q.roleName && <Badge variant="secondary">{q.roleName}</Badge>}
                 {q.taskId && (
                   <Badge

@@ -2241,6 +2241,8 @@ export async function applyQa(actor: Actor, projectId: number, audiences: QaAudi
           qaItemId: entry.item.id,
           roleTagId: entry.item.roleTagId > 0 ? entry.item.roleTagId : null,
           title: entry.item.title,
+          // ⚠️ توضیح هم کپی می‌شود — مسیرِ تسک‌ساز همیشه می‌کرد، این یکی نه.
+          description: entry.item.description,
           isDone: false,
         });
         continue;

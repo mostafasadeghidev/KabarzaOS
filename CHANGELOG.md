@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.69.0]
+
+### Fixed
+
+- **The QA tab shows each item's description, not just its title.** A QA library item has two halves — what to check and how to check it — and only the title ever reached the project. The task-creating path had always copied the description onto the task; the checklist path had nowhere to put it, so the instructions stayed in the library and nobody saw them. Applied items now carry their own copy of the description (a snapshot, like the title, so editing the library later does not rewrite a past project's checklist), and existing rows are backfilled from the library.
+
+### Changed
+
+- **The description field in the QA library is multi-line.** A check is often a few steps; one line could not hold them. Line breaks are kept when the checklist is displayed.
+
+---
+
 ## [1.68.1]
 
 ### Fixed

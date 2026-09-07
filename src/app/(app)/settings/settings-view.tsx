@@ -29,6 +29,7 @@ import type { ReportConfig } from '@/domain/scheduler/daily-report';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useLocale, useT } from '@/i18n/client';
 import { GRANTABLE_CAPS } from '@/domain/access/project-scope';
@@ -605,7 +606,12 @@ export function SettingsView({ data }: { data: SettingsData }) {
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="q-desc">{tr("توضیحات")}</Label>
-                <Input id="q-desc" name="description" defaultValue={editing?.description ?? ''} />
+                {/*
+                  ⚠️ چندخطی: توضیحِ آیتمِ QA یک دستورالعملِ بررسی است («این را
+                  باز کن، آن را بزن…») و در یک خط جا نمی‌شد. حالا در تبِ QA
+                  هم با حفظِ شکستِ خط نشان داده می‌شود.
+                */}
+                <Textarea id="q-desc" name="description" rows={3} defaultValue={editing?.description ?? ''} />
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <label className="flex items-center gap-2 text-sm">
