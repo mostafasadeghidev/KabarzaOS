@@ -35,7 +35,7 @@ import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/projec
 import { visiblePayments } from '@/domain/access/project-payments';
 import { canManageProject as decideManage, PM_CAP } from '@/domain/access/project-scope';
 import {
-  assignableToPeople, FALLBACK_MEMBER_LABEL, nameForViewer, type ViewerContext, CLIENT_LABEL,
+  assignableToPeople, ASSISTANT_LABEL, FALLBACK_MEMBER_LABEL, nameForViewer, type ViewerContext, CLIENT_LABEL,
 } from '@/domain/access/viewer-names';
 import { resolveAssignment } from '@/domain/projects/assignment';
 import {
@@ -101,7 +101,7 @@ async function maskNames<T extends repo.ProjectListRow>(actor: Actor, rows: T[])
     r.members.some((m) => m.userId === actor.id) || r.clients.some((c) => c.userId === actor.id));
   if (!involved) return rows;
 
-  const [pmRows, managedOffices] = await Promise.all([
+  const [pmRows, managedOffices, assistants] = await Promise.all([
     db.select({ projectId: projectMembers.projectId })
       .from(projectMembers)
       .innerJoin(tags, eq(tags.id, projectMembers.roleTagId))
@@ -109,9 +109,11 @@ async function maskNames<T extends repo.ProjectListRow>(actor: Actor, rows: T[])
     db.select({ officeId: userOffices.officeId })
       .from(userOffices)
       .where(and(eq(userOffices.userId, actor.id), eq(userOffices.manages, true))),
+    repo.assistantUserIds(),
   ]);
   const pmOn = new Set(pmRows.map((r) => r.projectId));
   const managedOfficeIds = managedOffices.map((r) => r.officeId);
+  const assistantIds = new Set(assistants);
 
   return rows.map((r) => {
     const viewerIsMember = r.members.some((m) => m.userId === actor.id);
@@ -130,6 +132,8 @@ async function maskNames<T extends repo.ProjectListRow>(actor: Actor, rows: T[])
       viewerIsMember,
       roleByUser: new Map(r.members.map((m) => [m.userId, m.roleName ?? FALLBACK_MEMBER_LABEL])),
       clientIds: new Set(r.clients.map((c) => c.userId)),
+      assistantIds,
+      viewerId: actor.id,
     };
 
     return {
@@ -660,13 +664,19 @@ async function viewerContext(
   canManage: boolean,
   members: Array<{ userId: number; roleName: string | null }>,
 ): Promise<ViewerContext> {
-  const [relation, clientIds] = await Promise.all([
+  const [relation, clientIds, assistantIds] = await Promise.all([
     projectRelation(actor.id, projectId),
     repo.listClientIds(projectId),
+    // همکارِ ادمین — نامش برای عضو/کارفرما «دستیارِ مدیر» می‌شود.
+    repo.assistantUserIds(),
   ]);
   // برچسب‌های ماسک به زبانِ بیننده — نامِ نقش از tagName() از قبل ترجمه‌شده است.
   const t = await getT();
-  const labels = { member: t(FALLBACK_MEMBER_LABEL), client: t(CLIENT_LABEL) };
+  const labels = {
+    member: t(FALLBACK_MEMBER_LABEL),
+    client: t(CLIENT_LABEL),
+    assistant: t(ASSISTANT_LABEL),
+  };
   const roleByUser = new Map<number, string>();
   for (const m of members) {
     if (!roleByUser.has(m.userId)) {
@@ -679,6 +689,8 @@ async function viewerContext(
     viewerIsMember: relation.isMember,
     roleByUser,
     clientIds: new Set(clientIds),
+    assistantIds: new Set(assistantIds),
+    viewerId: actor.id,
     labels,
   };
 }

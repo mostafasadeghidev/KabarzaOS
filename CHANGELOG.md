@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.60.0]
+
+### Changed
+
+- **An admin assistant's name is not shown to members and clients.** Someone the owner adds as an admin colleague now appears as "Manager's assistant" wherever their name would otherwise be printed — comments, tasks, the member list — while the owner's own name stays visible as before. The mask is applied on the server, so the real name never reaches the page; it takes precedence over the project role, so an assistant who is also a project member is still shown as the assistant; the assistant sees their own name, and managers of the project see the real name. Messages already grouped every manager under "Management" and are unchanged.
+
+---
+
 ## [1.59.0]
 
 ### Added

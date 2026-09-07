@@ -618,6 +618,18 @@ export async function memberRoleTags() {
 }
 
 /**
+ * همکارانِ ادمین — نقشِ `admin` و **نه** مالک.
+ * نامِ این‌ها برای عضو و کارفرما «دستیارِ مدیر» می‌شود (R-MASK-04).
+ */
+export async function assistantUserIds(): Promise<number[]> {
+  const rows = await db
+    .selectDistinct({ userId: userRoles.userId })
+    .from(userRoles)
+    .where(eq(userRoles.role, 'admin'));
+  return rows.map((r) => r.userId);
+}
+
+/**
  * مالک و همکارانِ ادمین — کاندیدای «تخصیص به» برای مدیرِ پروژه.
  * ⚠️ این‌ها عضوِ پروژه نیستند، ولی مدیرِ پروژه/دفتر باید بتواند کاری را به
  * مدیرِ کل بسپارد (تأیید، تصمیم، امضا) — پیش از این نامشان در فهرست نبود.

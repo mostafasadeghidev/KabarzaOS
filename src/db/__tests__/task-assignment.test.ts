@@ -186,3 +186,21 @@ describe('گزینه‌های فرمِ تسک', () => {
 /** فقط برای اینکه ایمپورتِ and استفاده شود (کوئری‌های ترکیبی بالا). */
 void and;
 void projects;
+
+describe('نامِ همکارِ ادمین برای عضو', () => {
+  it('عضو به‌جای نامِ دستیار «دستیارِ مدیر» می‌بیند، ولی نامِ مالک را می‌بیند', async () => {
+    const [assistant] = await db.insert(users).values({ email: 'as@t', name: 'سارا دستیار' })
+      .returning({ id: users.id });
+    await db.insert(userRoles).values({ userId: assistant!.id, role: 'admin' });
+    await db.insert(projectMembers).values({ projectId: project, userId: assistant!.id, roleTagId: designRole });
+
+    const view = await getProjectTabs(member(DEV2), project);
+    const names = view.members.map((m) => m.userName);
+    expect(names).toContain('دستیارِ مدیر');
+    expect(names).not.toContain('سارا دستیار');
+
+    // مدیرِ کل نامِ واقعی را می‌بیند.
+    const asOwner = await getProjectTabs(owner(), project);
+    expect(asOwner.members.map((m) => m.userName)).toContain('سارا دستیار');
+  });
+});
