@@ -242,3 +242,46 @@ describe('صندوقِ تسک‌ها', () => {
     expect(asDev1.review).toEqual([]);
   });
 });
+
+describe('وابستگیِ تسک — صف و آزادشدن', () => {
+  it('تسکِ وابسته «در نوبت» می‌شود و با تمام‌شدنِ وابستگی آزاد می‌شود', async () => {
+    const { createTask, setTaskStatus, getProjectTabs: tabs } = await import('@/server/projects/service');
+    // وضعیت‌های لازم: «شروع نشده» (آمادهٔ شروع)، «در نوبت» (صف)، «انجام شد».
+    const [ready] = await db.insert(tags)
+      .values({ slug: 'not-started', name: 'شروع نشده', type: 'task_status', statusGroup: 'todo' })
+      .returning({ id: tags.id });
+    const [queued] = await db.insert(tags)
+      .values({ slug: 'next-up', name: 'در نوبت', type: 'task_status', statusGroup: 'todo' })
+      .returning({ id: tags.id });
+    const [finished] = await db.insert(tags)
+      .values({ slug: 'done-dep', name: 'انجام شد', type: 'task_status', statusGroup: 'complete', isClosed: true })
+      .returning({ id: tags.id });
+
+    const first = await createTask(owner(), project, {
+      title: 'قدمِ اول', description: '', statusTagId: ready!.id, priorityTagId: null,
+      assignedTo: DEV1, roleTagIds: [], dueDate: null, isPrivate: false,
+    });
+    const second = await createTask(owner(), project, {
+      title: 'قدمِ دوم', description: '', statusTagId: ready!.id, priorityTagId: null,
+      assignedTo: DEV2, roleTagIds: [], dueDate: null, isPrivate: false, dependsOn: first,
+    });
+
+    // ⚠️ با وجودِ اینکه «شروع نشده» انتخاب شد، چون وابستگی باز است «در نوبت» می‌نشیند.
+    const [afterCreate] = await db.select({ statusTagId: tasks.statusTagId })
+      .from(tasks).where(eq(tasks.id, second));
+    expect(afterCreate!.statusTagId).toBe(queued!.id);
+
+    // نشانِ «منتظرِ…» روی کارت.
+    const view = await tabs(owner(), project);
+    expect(view.tasks.find((t) => t.id === second)!.blockedBy).toBe('قدمِ اول');
+
+    // تمام‌شدنِ وابستگی → آزادشدن از صف.
+    await setTaskStatus(owner(), first, finished!.id);
+    const [afterDone] = await db.select({ statusTagId: tasks.statusTagId })
+      .from(tasks).where(eq(tasks.id, second));
+    expect(afterDone!.statusTagId).toBe(ready!.id);
+
+    const after = await tabs(owner(), project);
+    expect(after.tasks.find((t) => t.id === second)!.blockedBy).toBeNull();
+  });
+});

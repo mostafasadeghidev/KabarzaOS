@@ -52,6 +52,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'task.claim': 'برداشتنِ تسک',
   'task.auto_assign': 'واگذاریِ خودکارِ تسکِ نقش',
   'task.refer': 'ارجاعِ تسک',
+  'task.released': 'آزادشدنِ تسک از صف',
   'task.handover': 'انتقالِ تسک‌های عضوِ قطع‌دسترسی',
   'comment.add': 'نظر',
   'comment.status': 'ریویو',

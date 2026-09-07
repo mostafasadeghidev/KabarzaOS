@@ -13,6 +13,7 @@ import { visibleTasksForMember } from '@/domain/projects/task-visibility';
 /** برچسبِ کنارِ نامِ مدیران در فهرستِ «تخصیص به». */
 const MANAGER_ROLE_LABEL = 'مدیریت';
 import { handoverPlan, tasksToAutoAssign } from '@/domain/projects/role-assignment';
+import { isDoneStatus, statusForDependency, tasksToRelease } from '@/domain/projects/dependency';
 import { diffMembers, planAddMember, type MemberInput } from '@/domain/projects/members';
 import {
   assertCanLighten, canSetParent, impactState, planDelete,
@@ -633,6 +634,17 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
     })),
     tasks: visibleTasks.map((t) => ({
       ...t,
+      /**
+       * ⚠️ «منتظرِ …» — تسکی که وابستگی‌اش هنوز تمام نشده. بدونِ این نشان،
+       * کارتِ «در نوبت» می‌گفت کاری نکن ولی نمی‌گفت **منتظرِ چه**.
+       */
+      blockedBy: (() => {
+        if (!t.dependsOn) return null;
+        const dep = allTasks.find((x) => x.id === t.dependsOn);
+        if (!dep) return null;
+        const done = dep.statusIsClosed === true || dep.statusGroup === 'complete';
+        return done ? null : dep.title;
+      })(),
       assigneeName: t.assigneeName === null || t.assignedTo === null
         ? t.assigneeName
         : nameForViewer(t.assignedTo, t.assigneeName, viewer),
@@ -1404,6 +1416,13 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
     statusTagId === null ? Promise.resolve(false) : repo.isReviewTag(statusTagId),
   ]);
 
+  /**
+   * ⚠️ با **تمام‌شدنِ** این تسک، صفِ پشتش باز می‌شود: هر تسکِ وابسته‌ای که
+   * «در نوبت» بود به «شروع نشده» می‌رود و صاحبش خبر می‌گیرد. بدونِ این،
+   * پیوندِ «وابسته به» فقط یک یادداشت بود و کسی نمی‌فهمید نوبتش رسیده.
+   */
+  if (nextDone) await releaseDependents(actor, taskId, task.projectId);
+
   if (!wasReview && isReview) {
     await notify(await reviewRecipients(task.projectId, actor.id), {
       type: 'task.review',
@@ -1424,6 +1443,40 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
   }
 
   return task.projectId;
+}
+
+/**
+ * صفِ پشتِ یک تسکِ تمام‌شده را باز می‌کند.
+ *
+ * ⚠️ فقط تسک‌هایی که واقعاً «در نوبت»‌اند: اگر کسی خودش کارِ وابسته را
+ * زودتر شروع کرده، وضعیتش دست نمی‌خورد (`tasksToRelease`).
+ */
+async function releaseDependents(actor: Actor, taskId: number, projectId: number): Promise<void> {
+  const [dependents, statusTags] = await Promise.all([
+    repo.dependentsOf(taskId),
+    repo.taskStatusTags(),
+  ]);
+  if (dependents.length === 0) return;
+
+  const plan = tasksToRelease(dependents, statusTags);
+  if (plan.taskIds.length === 0) return;
+
+  await db.update(tasks)
+    .set({ statusTagId: plan.statusTagId, updatedAt: new Date(), updatedBy: actor.id })
+    .where(inArray(tasks.id, plan.taskIds));
+  await audit(actor, 'task.released', projectId, null, { taskIds: plan.taskIds });
+
+  // خبر به کسی که کار دستِ اوست — مسئول یا دارندگانِ نقشِ تسک.
+  for (const released of dependents.filter((d) => plan.taskIds.includes(d.id))) {
+    const doers = (await taskDoerIds(released.id)).filter((id) => id !== actor.id);
+    if (doers.length === 0) continue;
+    await notify(doers, {
+      type: 'task.assigned',
+      title: 'نوبتِ این تسک رسید',
+      body: released.title,
+      url: `/projects/${projectId}`,
+    });
+  }
 }
 
 /**
@@ -1547,6 +1600,18 @@ export interface TaskInput {
 }
 
 /** «وابسته به» — فقط تسکِ همین پروژه و نه خودش (پورتِ انتخابگرِ `depends_on`). */
+/**
+ * وابستگی تمام شده؟ `null` یعنی وابستگی ندارد.
+ * ⚠️ همان قاعدهٔ `is_done`: پرچمِ بسته یا گروهِ `complete`.
+ */
+async function dependencyDone(dependsOn: number | null): Promise<boolean | null> {
+  if (!dependsOn) return null;
+  const dep = await repo.getTask(dependsOn);
+  if (!dep) return null;
+  const tag = dep.statusTagId === null ? null : await repo.getTag(dep.statusTagId);
+  return isDoneStatus(tag === null ? null : { id: tag.id, group: tag.statusGroup, isClosed: tag.isClosed });
+}
+
 async function validDependency(projectId: number, dependsOn: number | null, selfId: number | null): Promise<number | null> {
   if (!dependsOn || dependsOn === selfId) return null;
   const dep = await repo.getTask(dependsOn);
@@ -1671,8 +1736,19 @@ export async function createTask(
 
   const canManage = await canManageProject(actor, projectId);
   await assertTaskTags(input);
+  const statusTags = await repo.taskStatusTags();
   // وضعیتِ پیش‌فرض — اولین تگِ گروهِ `todo` (`default_status_tag_id`)؛ تسکِ بی‌وضعیت چیپِ خالی داشت.
-  const statusTagId = input.statusTagId ?? defaultTaskStatusId(await repo.taskStatusTags());
+  const chosenStatus = input.statusTagId ?? defaultTaskStatusId(statusTags);
+  /**
+   * ⚠️ تسکی که وابستگیِ **باز** دارد «در نوبت» است، نه «شروع نشده»: هنوز
+   * نوبتش نرسیده و صاحبش نباید سراغش برود (`domain/projects/dependency`).
+   */
+  const dependsOn = await validDependency(projectId, input.dependsOn ?? null, null);
+  const statusTagId = statusForDependency(
+    chosenStatus,
+    await dependencyDone(dependsOn),
+    statusTags,
+  );
 
   /**
    * ⚠️ تخصیص از دامنه می‌گذرد: شخص باید روی پروژه باشد، نقش باید تگِ
@@ -1691,7 +1767,7 @@ export async function createTask(
     priorityTagId: input.priorityTagId,
     assignedTo: assignment.assignedTo,
     dueDate: input.dueDate,
-    dependsOn: await validDependency(projectId, input.dependsOn ?? null, null),
+    dependsOn,
     /**
      * ⚠️ «خصوصی» فقط از مدیر پذیرفته می‌شود. `canSeePrivateRecord` به مجوزِ
      * **سراسری** برمی‌گردد، پس تسکی که کارفرما خصوصی کند حتی مدیرِ خودِ
@@ -1876,10 +1952,18 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
 
   const assignment = await resolveTaskAssignment(actor, before.projectId, canManage, input);
 
+  // همان قاعدهٔ ساخت: وابستگیِ باز، تسکِ نشروع را به صف می‌برد.
+  const nextDependsOn = await validDependency(before.projectId, input.dependsOn ?? null, taskId);
+  const nextStatus = statusForDependency(
+    input.statusTagId,
+    await dependencyDone(nextDependsOn),
+    await repo.taskStatusTags(),
+  );
+
   await db.update(tasks).set({
     title: input.title,
     description: input.description,
-    statusTagId: input.statusTagId,
+    statusTagId: nextStatus,
     priorityTagId: input.priorityTagId,
     /**
      * ⚠️ سازنده‌ای که مدیر نیست، مسئول و «خصوصی» را دست نمی‌زند: اینها
@@ -1888,7 +1972,7 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
      */
     assignedTo: canManage ? assignment.assignedTo : before.assignedTo,
     dueDate: input.dueDate,
-    dependsOn: await validDependency(before.projectId, input.dependsOn ?? null, taskId),
+    dependsOn: nextDependsOn,
     isPrivate: canManage ? input.isPrivate : before.isPrivate,
     updatedBy: actor.id,
     updatedAt: new Date(),

@@ -335,8 +335,12 @@ export interface TaskRow {
   statusName: string | null;
   statusGroup: string | null;
   statusColor: string | null;
+  /** برای نشانِ «منتظرِ…» — وضعیتِ وابستگی بسته است یا نه. */
+  statusIsClosed: boolean | null;
   /** R-PROJ-13 — «نیاز به ریویو» پرچمِ خودِ تگ است، نه نامش. */
   isReview: boolean | null;
+  /** پیوندِ «وابسته به» — شناسهٔ تسکی که این یکی پشتش در صف است. */
+  dependsOn: number | null;
   dueDate: string | null;
   isPrivate: boolean;
   createdBy: number | null;
@@ -363,6 +367,8 @@ export async function listTasks(projectId: number): Promise<TaskRow[]> {
       statusName: tagName(locale),
       statusGroup: tags.statusGroup,
       statusColor: tags.color,
+      /** برای نشانِ «منتظرِ…»: تسکِ وابستگی تمام شده یا نه. */
+      statusIsClosed: tags.isClosed,
       /** R-PROJ-13 — «نیاز به ریویو» پرچمِ خودِ تگ است، نه نامش. */
       isReview: tags.isReview,
       dueDate: tasks.dueDate,
@@ -990,6 +996,9 @@ export async function taskStatusTags() {
       group: tags.statusGroup,
       isReview: tags.isReview,
       color: tags.color,
+      // اسلاگ برای قاعدهٔ وابستگی لازم است: «در نوبت» با `next-up` شناخته می‌شود.
+      slug: tags.slug,
+      isClosed: tags.isClosed,
     })
     .from(tags)
     .where(eq(tags.type, 'task_status'))
@@ -1351,6 +1360,14 @@ export async function nonFrozenProjectIds(ids: number[]): Promise<number[]> {
     .leftJoin(tags, eq(tags.id, projects.statusTagId))
     .where(and(inArray(projects.id, ids), isNull(projects.deletedAt)));
   return rows.filter((r) => !isFrozenProject(r)).map((r) => r.id);
+}
+
+/** تسک‌هایی که به این تسک وابسته‌اند — برای آزادکردنِ صف. */
+export async function dependentsOf(taskId: number) {
+  return db
+    .select({ id: tasks.id, statusTagId: tasks.statusTagId, title: tasks.title, projectId: tasks.projectId })
+    .from(tasks)
+    .where(and(eq(tasks.dependsOn, taskId), isNull(tasks.deletedAt)));
 }
 
 /** شمارِ تسک‌های در انتظارِ بررسی به‌ازای پروژه. */

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { Check, ChevronDown, Columns3, Hand, List as ListIcon, Lock, User, MessageSquare } from 'lucide-react';
+import { Check, ChevronDown, Columns3, Hand, Link2, List as ListIcon, Lock, User, MessageSquare } from 'lucide-react';
 import { claimTaskAction, setTaskStatusAction } from '../_form/tab-actions';
 import { canClaimTask } from '@/domain/projects/claim';
 import { TASK_STATUS_GROUPS, groupLabels } from '@/domain/tags/groups';
@@ -51,6 +51,8 @@ export interface TaskItem {
   description?: string;
   notesCount?: number;
   lastNote?: string | null;
+  /** عنوانِ تسکی که این یکی منتظرش است؛ null یعنی راه باز است. */
+  blockedBy?: string | null;
 }
 
 export interface TaskStatusOption {
@@ -248,9 +250,20 @@ function ClaimButton({
 
 /** پورتِ کارتِ تسک: چیپِ اولویت به رنگِ تگ، توضیح، شمار و آخرین یادداشتِ گفتگو (`task_notes_summary`). */
 function TaskExtras({ task }: { task: TaskItem }) {
-  if (!task.priorityName && !task.description && !task.notesCount) return null;
+  const tr = useT();
+  if (!task.priorityName && !task.description && !task.notesCount && !task.blockedBy) return null;
   return (
     <div className="mt-1 grid gap-1">
+      {/*
+        ⚠️ «منتظرِ …» — تا وابستگی تمام نشده، نوبتِ این کار نرسیده. بدونِ
+        این خط، کارتِ «در نوبت» می‌گفت دست نگه دار ولی نمی‌گفت منتظرِ چه.
+      */}
+      {task.blockedBy && (
+        <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-500">
+          <Link2 className="size-3" />
+          {tr('منتظرِ: {title}', { title: task.blockedBy })}
+        </span>
+      )}
       {(task.priorityName || (task.notesCount ?? 0) > 0) && (
         <div className="flex flex-wrap items-center gap-1.5">
           {task.priorityName && (

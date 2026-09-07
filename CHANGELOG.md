@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.63.0]
+
+### Added — task dependencies actually mean something
+
+"Depends on" used to be a decorative line on the card: nothing followed from it, and nobody learned when their turn came. It is now a rule, and it gives the "Next Up" status a real job — a task in the queue behind another one.
+
+- **A task with an open dependency is queued.** Setting "depends on" puts the task in "Next Up" automatically, on create and on edit. Work that has actually started or finished is left alone — that is a person's decision, not the rule's.
+- **Finishing a task releases what waited on it.** Its dependents move from "Next Up" to "Not started" and whoever holds them — the assignee or the holders of its role — is notified that their turn has come. A task somebody already started on their own is not touched.
+- **The card says what it is waiting for**: a "Waiting on: <task>" line while the dependency is still open, so a queued task no longer looks abandoned.
+
+---
+
 ## [1.62.0]
 
 ### Added
