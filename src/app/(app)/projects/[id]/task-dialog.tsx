@@ -22,6 +22,7 @@ import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { useConfirm } from '@/components/ui/confirm';
 import { ClaimTaskButton } from '@/app/(app)/tasks/inbox-claim';
+import { chipStyle } from '@/domain/ui/contrast';
 
 /**
  * مودالِ تسک — بازسازیِ `task_admin_html()`:
@@ -137,9 +138,16 @@ export function TaskDialog({
         {task && (
           <div className="grid gap-4">
             <div className="flex flex-wrap items-center gap-2">
-              {task.priorityName && <Badge variant="outline">{task.priorityName}</Badge>}
+              {task.priorityName && (
+                <Badge variant="outline" style={chipStyle(task.priorityColor)}>{task.priorityName}</Badge>
+              )}
               {task.statusName ? (
-                <Badge variant={task.isReview ? 'warning' : 'secondary'}>{task.statusName}</Badge>
+                <Badge
+                  variant={chipStyle(task.statusColor) ? 'outline' : (task.isReview ? 'warning' : 'secondary')}
+                  style={chipStyle(task.statusColor)}
+                >
+                  {task.statusName}
+                </Badge>
               ) : (
                 <Badge variant="outline">{t("بدون وضعیت")}</Badge>
               )}

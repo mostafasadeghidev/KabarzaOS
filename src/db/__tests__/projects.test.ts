@@ -662,6 +662,22 @@ describe('QA — آیتمِ تسک‌ساز و رهاکردنش', () => {
     expect(rows[0]!.title).toBe('بازبینیِ نهاییِ کد');
   });
 
+  it('⚠️ تسکِ ساخته‌شده از QA وضعیتِ «شروع نشده» می‌گیرد، نه بی‌وضعیت', async () => {
+    // وضعیتِ «شروع نشده» (گروهِ todo) — همان چیزی که `createTask` هم پیش‌فرض می‌گیرد.
+    const [todo] = await db.insert(tags)
+      .values({ name: 'شروع نشده', type: 'task_status', statusGroup: 'todo' })
+      .returning({ id: tags.id });
+    const [fresh] = await db.insert(qaItems).values({
+      title: 'تستِ نهایی', description: '', roleTagId: devRole, isTask: true,
+    }).returning({ id: qaItems.id });
+
+    await service.applyQa(manager(), proj, [devRole]);
+
+    const [row] = await db.select().from(tasks)
+      .where(and(eq(tasks.projectId, proj), eq(tasks.qaItemId, fresh!.id)));
+    expect(row!.statusTagId).toBe(todo!.id);
+  });
+
   it('⚠️ اعمالِ دوباره تسکِ تکراری نمی‌سازد', async () => {
     const result = await service.applyQa(manager(), proj, [devRole]);
     expect(result.added).toBe(0);

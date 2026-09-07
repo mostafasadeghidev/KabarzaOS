@@ -1042,10 +1042,13 @@ export async function getTaskFull(id: number) {
       description: tasks.description,
       statusTagId: tasks.statusTagId,
       statusName: tagName(await currentLocale()),
+      // رنگِ تگِ وضعیت — چیپِ مودالِ تسک با همین رنگ کشیده می‌شود.
+      statusColor: tags.color,
       statusGroup: tags.statusGroup,
       isReview: tags.isReview,
       priorityTagId: tasks.priorityTagId,
       priorityName: tagName(await currentLocale(), priority),
+      priorityColor: priority.color,
       dueDate: tasks.dueDate,
       isPrivate: tasks.isPrivate,
       createdBy: tasks.createdBy,

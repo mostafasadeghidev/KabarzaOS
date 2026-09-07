@@ -2,6 +2,19 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.61.0]
+
+### Changed
+
+- **Task status chips take the colour of their own tag**, with black or white text chosen for contrast, on the task cards, the kanban board and the task dialog. The task dialog now also colours the priority chip — neither colour was being read from the database there.
+- **Group headings in the task status list are smaller and dimmer**, matching the project status list: "To do" and "In progress" read as section headings, not as options.
+
+### Fixed
+
+- **A task created from a QA checklist item starts as "Not started".** It was inserted with no status at all, so it had no column on the kanban board and showed an empty chip in the list.
+
+---
+
 ## [1.60.0]
 
 ### Changed

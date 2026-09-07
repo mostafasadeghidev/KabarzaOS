@@ -37,6 +37,8 @@ export interface TaskItem {
   statusTagId: number | null;
   statusName: string | null;
   statusGroup: string | null;
+  /** رنگِ تگِ وضعیت — چیپ با همین رنگ کشیده می‌شود. */
+  statusColor?: string | null;
   isReview: boolean | null;
   dueDate: string | null;
   isPrivate: boolean;
@@ -113,8 +115,19 @@ function TaskStatusPicker({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * ⚠️ رنگ از **خودِ تگِ وضعیت** می‌آید — همان رنگی که مدیر در تنظیمات
+   * انتخاب کرده — و متن با قاعدهٔ کنتراست سیاه یا سفید می‌شود. تگِ بی‌رنگ
+   * به ظاهرِ پیش‌فرض برمی‌گردد (و «نیاز به ریویو» زردِ خودش را می‌گیرد).
+   */
+  const statusStyle = chipStyle(task.statusColor);
   const chip = task.statusName ? (
-    <Badge variant={task.isReview ? 'warning' : 'secondary'}>{task.statusName}</Badge>
+    <Badge
+      variant={statusStyle ? 'outline' : (task.isReview ? 'warning' : 'secondary')}
+      style={statusStyle}
+    >
+      {task.statusName}
+    </Badge>
   ) : (
     <Badge variant="outline">{tr("بدون وضعیت")}</Badge>
   );
@@ -155,7 +168,12 @@ function TaskStatusPicker({
           {[...grouped].map(([key, list]) => (
             <div key={key}>
               <DropdownMenuSeparator />
-              {GROUP_LABEL[key] && <DropdownMenuLabel>{tr(GROUP_LABEL[key])}</DropdownMenuLabel>}
+              {/* نامِ گروه سرفصل است نه گزینه — ریزتر و کم‌رنگ‌تر، مثلِ وضعیتِ پروژه. */}
+              {GROUP_LABEL[key] && (
+                <DropdownMenuLabel className="px-2 py-1 text-[11px] font-normal text-muted-foreground/80">
+                  {tr(GROUP_LABEL[key])}
+                </DropdownMenuLabel>
+              )}
               {list.map((o) => (
                 <DropdownMenuItem key={o.id} onSelect={() => pick(o.id)}>
                   <span

@@ -2071,12 +2071,19 @@ export async function applyQa(actor: Actor, projectId: number, audiences: QaAudi
   const project = await getProject(actor, projectId);
   await assertCanManageProject(actor, projectId);
 
-  const [library, applied, primaryClientId] = await Promise.all([
+  const [library, applied, primaryClientId, statusTags] = await Promise.all([
     repo.qaLibrary(),
     repo.appliedQaItemIds(projectId),
     // کارفرمای اصلی = قدیمی‌ترین انتساب — نه کوچک‌ترین شناسهٔ کاربر.
     repo.primaryClientId(projectId),
+    repo.taskStatusTags(),
   ]);
+  /**
+   * ⚠️ تسکی که از آیتمِ QA ساخته می‌شود هم مثلِ هر تسکِ دیگر با «شروع نشده»
+   * شروع می‌شود. پیش از این بی‌وضعیت درج می‌شد: در تختهٔ کانبان هیچ ستونی
+   * نداشت و در فهرست چیپِ «بدون وضعیت» می‌گرفت.
+   */
+  const defaultStatus = defaultTaskStatusId(statusTags);
 
   const plan = planQaApply(library, audiences, {
     appliedItemIds: applied,
@@ -2103,6 +2110,7 @@ export async function applyQa(actor: Actor, projectId: number, audiences: QaAudi
         description: entry.item.description,
         createdBy: actor.id,
         assignedTo: entry.kind === 'client_task' ? entry.assignUserId : null,
+        statusTagId: defaultStatus,
         scope: project.scope,
         // ⚠️ ردِ آیتمِ مبدأ — بدونِ آن، اعمالِ دوبارهٔ همین نقش تسکِ تکراری
         // می‌سازد، چون آیتمِ تسک‌ساز در «قبلاً اعمال‌شده» دیده نمی‌شود.
