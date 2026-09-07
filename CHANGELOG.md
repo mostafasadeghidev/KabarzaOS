@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.68.1]
+
+### Fixed
+
+- **Changing a task's status from the edit form now notifies, like the status menu does.** Sending a task back with "needs more work" from the edit dialog changed the row and told nobody — the person doing the work only found out by looking. The status menu had always sent that notification; the edit form wrote the column directly and skipped every consequence. Both paths now run the same rule, so a task sent for review notifies the reviewers, a task sent back notifies whoever is doing it, and a task finished from the edit form releases the tasks queued behind it. An edit that leaves the status alone still sends nothing.
+
+---
+
 ## [1.68.0]
 
 ### Removed

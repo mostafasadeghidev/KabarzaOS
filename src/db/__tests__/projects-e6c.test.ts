@@ -7,6 +7,7 @@ import {
 } from '../schema';
 import {
   addProjectMember, approveBid, createProject, deleteComment, removeProjectMember, setTaskStatus,
+  updateTask,
 } from '@/server/projects/service';
 import { activeProjectIdsSince, listBids } from '@/server/projects/repository';
 import { addUnitEntry, MemberMoneyError } from '@/server/finance/member-service';
@@ -108,6 +109,42 @@ describe('وضعیتِ تسک (پورتِ set_status_tag)', () => {
     await db.update(tasks).set({ statusTagId: REVIEW }).where(eq(tasks.id, task!.id));
     await setTaskStatus(owner(), task!.id, TODO);
     expect((await db.select().from(notifications).where(eq(notifications.userId, M2))).map((n) => n.type)).toEqual(['task.back']);
+  });
+
+  /**
+   * ⚠️ همان قاعده از **فرمِ ویرایش** هم باید کار کند. تا امروز نمی‌کرد:
+   * `updateTask` وضعیت را مستقیم می‌نوشت و انجام‌دهنده هیچ خبری نمی‌گرفت —
+   * مدیر تسک را روی «نیاز به کار بیشتر» می‌گذاشت و کار بی‌صدا برمی‌گشت.
+   */
+  it('⚠️ ویرایشِ تسک هم اعلانِ «برگشت» و «نیاز به بررسی» می‌فرستد', async () => {
+    const [p] = await db.select({ id: projects.id }).from(projects).where(eq(projects.title, 'بی‌ارز'));
+    // ⚠️ مسئول باید عضوِ پروژه باشد، وگرنه ویرایش خودش تخصیص را پاک می‌کند.
+    await db.insert(projectMembers).values({ projectId: p!.id, userId: M2, agreedAmount: '0' });
+    const [task] = await db.insert(tasks)
+      .values({ projectId: p!.id, title: 'تسکِ ویرایشی', statusTagId: REVIEW, assignedTo: M2, createdBy: OWNER })
+      .returning({ id: tasks.id });
+    await db.delete(notifications);
+
+    const edit = (statusTagId: number | null, title = 'تسکِ ویرایشی') => updateTask(owner(), task!.id, {
+      title, description: '', statusTagId, priorityTagId: null,
+      assignedTo: M2, dueDate: null, isPrivate: false,
+    });
+
+    // ریویو → «نیاز به کار بیشتر» (گروهِ in_progress، بسته نیست) = برگشت.
+    await edit(TODO);
+    const back = await db.select().from(notifications).where(eq(notifications.userId, M2));
+    expect(back.map((n) => n.type)).toEqual(['task.back']);
+
+    // ویرایشی که وضعیت را دست نزده، اعلانِ تازه نمی‌سازد.
+    await db.delete(notifications);
+    await edit(TODO, 'عنوانِ تازه');
+    expect(await db.select().from(notifications).where(eq(notifications.userId, M2))).toHaveLength(0);
+
+    // ⚠️ تأیید (ریویو → انجام‌شده) اعلانِ «برگشت» ندارد — همان قاعدهٔ منوی وضعیت.
+    await db.update(tasks).set({ statusTagId: REVIEW }).where(eq(tasks.id, task!.id));
+    await db.delete(notifications);
+    await edit(DONE, 'عنوانِ تازه');
+    expect(await db.select().from(notifications).where(eq(notifications.userId, M2))).toHaveLength(0);
   });
 });
 

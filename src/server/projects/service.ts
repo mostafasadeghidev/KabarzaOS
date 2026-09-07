@@ -1416,15 +1416,44 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
 
   await audit(actor, 'task.status', task.projectId, task.statusTagId, statusTagId);
 
-  /**
-   * دو اعلانِ قرینه — پورتِ `task_review` و `task_back`.
-   *
-   * ⚠️ ملاک **ورود به** و **خروج از** حالتِ ریویو است، نه خودِ تگ: تغییر بینِ
-   * دو وضعیتِ ریویو اعلانِ تکراری نمی‌فرستد.
-   */
+  await applyStatusEffects(actor, {
+    id: taskId,
+    projectId: task.projectId,
+    title: task.title,
+    before: task.statusTagId,
+    after: statusTagId,
+  });
+
+  return task.projectId;
+}
+
+/**
+ * پیامدهای عوض‌شدنِ وضعیتِ یک تسک — اعلانِ «برای بررسی» و «برگشت»، و
+ * بازکردنِ صفِ وابسته‌ها.
+ *
+ * ⚠️ چرا تابعِ جدا: این قواعد فقط در `setTaskStatus` بودند، یعنی وقتی مدیر
+ * از **فرمِ ویرایشِ تسک** وضعیت را روی «نیاز به کار بیشتر» می‌گذاشت، ردیف
+ * عوض می‌شد و انجام‌دهنده هیچ خبری نمی‌گرفت. تسکِ برگشتی بی‌صدا سرِ جایش
+ * می‌ماند تا وقتی خودش سر بزند. همان اتفاق برای تسکی که از فرمِ ویرایش
+ * «انجام شد» می‌شد: صفِ پشتش باز نمی‌شد.
+ *
+ * ⚠️ ملاک **ورود به** و **خروج از** حالتِ ریویو است، نه خودِ تگ: تغییر بینِ
+ * دو وضعیتِ ریویو اعلانِ تکراری نمی‌فرستد.
+ */
+async function applyStatusEffects(
+  actor: Actor,
+  task: { id: number; projectId: number; title: string; before: number | null; after: number | null },
+): Promise<void> {
+  // ویرایشی که وضعیت را دست نزده، هیچ پیامدی ندارد.
+  if (task.before === task.after) return;
+
+  const nextTag = task.after === null ? null : await repo.getTag(task.after);
+  // پورتِ `is_done`: پرچمِ بسته یا گروهِ complete.
+  const nextDone = nextTag !== null && (nextTag.isClosed || nextTag.statusGroup === 'complete');
+
   const [wasReview, isReview] = await Promise.all([
-    task.statusTagId === null ? Promise.resolve(false) : repo.isReviewTag(task.statusTagId),
-    statusTagId === null ? Promise.resolve(false) : repo.isReviewTag(statusTagId),
+    task.before === null ? Promise.resolve(false) : repo.isReviewTag(task.before),
+    task.after === null ? Promise.resolve(false) : repo.isReviewTag(task.after),
   ]);
 
   /**
@@ -1432,7 +1461,7 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
    * «در نوبت» بود به «شروع نشده» می‌رود و صاحبش خبر می‌گیرد. بدونِ این،
    * پیوندِ «وابسته به» فقط یک یادداشت بود و کسی نمی‌فهمید نوبتش رسیده.
    */
-  if (nextDone) await releaseDependents(actor, taskId, task.projectId);
+  if (nextDone) await releaseDependents(actor, task.id, task.projectId);
 
   if (!wasReview && isReview) {
     await notify(await reviewRecipients(task.projectId, actor.id), {
@@ -1449,7 +1478,7 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
   } else if (wasReview && !isReview && !nextDone) {
     // ⚠️ فقط وقتی کار **برمی‌گردد**؛ تأیید (ریویو → انجام‌شده) اعلانِ «برگشت» ندارد (پورتِ افزونه).
     // ⚠️ گیرنده «انجام‌دهنده» است، نه مدیر: کارِ برگشتی دستِ اوست.
-    const doers = (await taskDoerIds(taskId)).filter((id) => id !== actor.id);
+    const doers = (await taskDoerIds(task.id)).filter((id) => id !== actor.id);
     await notify(doers, {
       type: 'task.back',
       title: 'تسکِ شما برای ادامهٔ کار برگشت',
@@ -1457,8 +1486,6 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
       url: `/projects/${task.projectId}?tab=tasks`,
     });
   }
-
-  return task.projectId;
 }
 
 /**
@@ -2037,6 +2064,20 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
       url: `/projects/${before.projectId}?tab=tasks`,
     });
   }
+
+  /**
+   * ⚠️ ویرایش هم یک **تغییرِ وضعیت** است. تا امروز این خط نبود: مدیری که در
+   * فرمِ ویرایش وضعیت را روی «نیاز به کار بیشتر» می‌گذاشت، تسک را برمی‌گرداند
+   * ولی انجام‌دهنده هیچ اعلانی نمی‌گرفت — همان کار از منوی وضعیت اعلان داشت.
+   * عنوان **جدید** در بدنه می‌رود، چون ممکن است همین‌جا عوض شده باشد.
+   */
+  await applyStatusEffects(actor, {
+    id: taskId,
+    projectId: before.projectId,
+    title: input.title,
+    before: before.statusTagId,
+    after: nextStatus,
+  });
 
   return before.projectId;
 }
