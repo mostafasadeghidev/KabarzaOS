@@ -16,6 +16,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { KIND_LABEL, kindOf, structuredBody } from '@/domain/notifications/display';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 
@@ -35,27 +36,6 @@ function when(value: Date | string | null | undefined, tz: string): string {
 }
 
 
-/** نوعِ اعلان → خانوادهٔ آن (برای نشان و برچسب). */
-function kindOf(type: string): 'task' | 'comment' | 'meeting' | 'money' | 'message' | 'project' | 'other' {
-  if (type.startsWith('task')) return 'task';
-  if (type === 'comment' || type === 'review') return 'comment';
-  if (type.startsWith('meeting')) return 'meeting';
-  if (type.startsWith('payment')) return 'money';
-  if (type.startsWith('message')) return 'message';
-  if (type.startsWith('project') || type === 'tender_opened' || type === 'business') return 'project';
-  return 'other';
-}
-
-const KIND_LABEL: Record<ReturnType<typeof kindOf>, string> = {
-  task: 'تسک',
-  comment: 'کامنت',
-  meeting: 'جلسه',
-  money: 'مالی',
-  message: 'پیام',
-  project: 'پروژه',
-  other: 'اعلان',
-};
-
 function KindIcon({ type }: { type: string }) {
   const kind = kindOf(type);
   if (kind === 'task') return <ListChecks className="size-3" />;
@@ -64,22 +44,6 @@ function KindIcon({ type }: { type: string }) {
   if (kind === 'money') return <Wallet className="size-3" />;
   if (kind === 'message') return <Mail className="size-3" />;
   return <FolderKanban className="size-3" />;
-}
-
-/**
- * مقصدِ اعلان به زبانِ آدمیزاد — «تبِ تسک‌های پروژه»، نه `/projects/5?tab=tasks`.
- * ⚠️ فقط از روی خودِ آدرس خوانده می‌شود؛ هیچ کوئریِ اضافه‌ای نمی‌زند.
- */
-function destinationLabel(url: string): string {
-  if (url.startsWith('/projects/')) {
-    if (url.includes('tab=tasks')) return 'تبِ تسک‌های پروژه';
-    if (url.includes('tab=comments')) return 'تبِ کامنت‌های پروژه';
-    return 'صفحهٔ پروژه';
-  }
-  if (url.startsWith('/meetings')) return url.includes('tab=reminders') ? 'یادآورهای من' : 'صفحهٔ جلسات';
-  if (url.startsWith('/messages')) return 'پیام‌ها';
-  if (url.startsWith('/finance') || url.startsWith('/my-money')) return 'امور مالی';
-  return 'باز کردنِ مقصد';
 }
 
 /**
@@ -216,7 +180,18 @@ export function NotificationBell({
                   {n.body && (
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">{n.body}</p>
                   )}
-                  <p className="num mt-0.5 text-[11px] text-muted-foreground">{when(n.createdAt, tz)}</p>
+                  {/*
+                    ⚠️ دسته در خودِ فهرست: عنوانِ ذخیره‌شده برای یک رویداد چند
+                    شکل دارد — «پیام جدید از سارا» و «پاسخِ تازه از سارا» هر دو
+                    پیام‌اند — و کاربر از روی عنوان نمی‌فهمید با چه چیزی طرف
+                    است. دسته از `type` می‌آید، پس هر دو «پیام» را نشان می‌دهند.
+                  */}
+                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <KindIcon type={n.type} />
+                    {tr(KIND_LABEL[kindOf(n.type)])}
+                    <span aria-hidden>·</span>
+                    <span className="num">{when(n.createdAt, tz)}</span>
+                  </p>
                 </button>
               </li>
             ))}
@@ -229,15 +204,17 @@ export function NotificationBell({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{reading ? tr(reading.title) : ''}</DialogTitle>
-          <DialogDescription className="num">
+          {/* زمانِ ثبت **فقط همین‌جا** — پیش‌تر یک بار هم سطرِ «زمان» بود و مودال دو بار یک عدد را می‌گفت. */}
+          <DialogDescription className="num text-xs">
             {reading ? when(reading.createdAt, tz) : ''}
           </DialogDescription>
         </DialogHeader>
 
         {/*
-          خط به خط، مثلِ جزئیاتِ جلسه: نوع، زمان، متن و مقصد هرکدام سطرِ
-          خودشان را دارند. پیش از این همه‌چیز یک پاراگرافِ خاکستری بود و
-          معلوم نبود اعلان دربارهٔ چیست تا وقتی کاربر می‌رفت و می‌دید.
+          خط به خط: هر داده سطرِ خودش را دارد. پیش از این همه‌چیز یک پاراگرافِ
+          خاکستری بود و معلوم نبود اعلان دربارهٔ چیست تا وقتی کاربر می‌رفت و
+          می‌دید. سطرِ «مقصد» برداشته شد — دکمهٔ «مشاهده» همان را می‌گوید و
+          تکرارش فقط جا می‌گرفت.
         */}
         {reading && (
           <dl className="grid gap-3 text-sm">
@@ -251,24 +228,19 @@ export function NotificationBell({
               </dd>
             </div>
 
-            <div className="grid gap-1">
-              <dt className="text-xs text-muted-foreground">{t('زمان')}</dt>
-              <dd className="num">{when(reading.createdAt, tz)}</dd>
-            </div>
-
             {/* ⚠️ بدنه اینجا کامل است — همان چیزی که در فهرست بریده می‌شد. */}
             {reading.body && (
-              <div className="grid gap-1">
-                <dt className="text-xs text-muted-foreground">{t('متن')}</dt>
-                <dd className="whitespace-pre-wrap">{reading.body}</dd>
-              </div>
-            )}
-
-            {reading.url && (
-              <div className="grid gap-1">
-                <dt className="text-xs text-muted-foreground">{t('مقصد')}</dt>
-                <dd className="text-muted-foreground">{tr(destinationLabel(reading.url))}</dd>
-              </div>
+              structuredBody(reading.type, reading.body)?.map((row) => (
+                <div key={row.label} className="grid gap-1">
+                  <dt className="text-xs text-muted-foreground">{tr(row.label)}</dt>
+                  <dd className="whitespace-pre-wrap">{row.value}</dd>
+                </div>
+              )) ?? (
+                <div className="grid gap-1">
+                  <dt className="text-xs text-muted-foreground">{t('متن')}</dt>
+                  <dd className="whitespace-pre-wrap">{reading.body}</dd>
+                </div>
+              )
             )}
           </dl>
         )}

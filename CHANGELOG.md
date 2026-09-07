@@ -2,6 +2,23 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.67.0]
+
+### Added
+
+- **Every notification shows its category** — message, meeting, task, comment, financial, project — in the list as well as the dialog. One event can be titled several ways ("New message from Sara", "New reply from Sara") and the title alone left you guessing; the category comes from the event type, so both now read as **message**.
+
+### Changed
+
+- **The notification dialog gives each fact its own line.** A meeting invitation arrived as one run-on grey line — "Time: … · Location: … · Project: …" — which is right for e-mail and Telegram but unreadable in a dialog. Time, location and project now each get their own row. Free text — a message, a comment, a task title — is never split, so a colon inside someone's sentence cannot turn into a label.
+- **The received time is written once**, small, under the title, instead of appearing again as a "Time" row that repeated the same value.
+
+### Removed
+
+- **The "Goes to" row in the notification dialog.** The "View" button already says where it leads.
+
+---
+
 ## [1.66.0]
 
 ### Added
