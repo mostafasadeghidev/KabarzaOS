@@ -29,7 +29,7 @@ import {
 import { notify } from '@/server/notifications/service';
 import {
   assertCanInteractWithProject, assertCanManageProject, assertCanViewProject, assertNotFrozen,
-  canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation, canInteractWithProject, managedOfficeProjectIds,
+  canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation, canInteractWithProject, managedOfficeProjectIds, pmProjectIds,
 } from './authority';
 import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
 import { visiblePayments } from '@/domain/access/project-payments';
@@ -2813,10 +2813,23 @@ export async function myTasks(actor: Actor) {
    */
   if (isPureClient) {
     const ids = await repo.nonFrozenProjectIds(await membershipProjectIds(actor.id, ['client']));
-    const review = await repo.reviewTasksForProjects(ids, scopes);
+    /**
+     * ⚠️ کارفرما دو دسته تسک دارد و تا امروز فقط یکی را می‌دید:
+     *  · **در انتظارِ بررسیِ او** — کاری که تیم تمام کرده و منتظرِ تأییدِ اوست.
+     *  · **سپرده‌شده به خودش** — تسکی که مدیر با «سپردن به کارفرما» به نامش
+     *    زده (تأییدِ متن، فرستادنِ محتوا، امضای قرارداد). این‌ها در فهرستِ
+     *    ریویو نمی‌آمدند و کارفرما هیچ‌جا نمی‌دیدشان.
+     */
+    const [review, own] = await Promise.all([
+      repo.reviewTasksForProjects(ids, scopes),
+      repo.openTasksForUser(actor.id, scopes),
+    ]);
+    const reviewIds = new Set(review.map((t) => t.id));
     return {
       kind: 'client' as const,
-      active: [] as InboxTask[],
+      active: own
+        .filter((t) => !reviewIds.has(t.id))
+        .map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false })),
       waiting: [] as InboxTask[],
       review: review.map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false })),
     };
@@ -2856,11 +2869,35 @@ export async function myTasks(actor: Actor) {
     };
   });
 
+  /**
+   * ⚠️ **مدیر** سومین دسته را هم دارد: کارهایی که تیم روی پروژه‌های تحتِ
+   * مدیریتش «برای بررسی» فرستاده. این‌ها به خودِ او سپرده نشده‌اند، پس در
+   * دو دستهٔ بالا نمی‌آمدند و تنها راهِ دیدنشان بازکردنِ تک‌تکِ پروژه‌ها بود.
+   * عضوِ ساده این دسته را نمی‌گیرد — کارِ بررسی دستِ او نیست.
+   */
+  const globalManager = actor.roles.includes('owner') || canManageSection(actor, 'projects');
+  const managedIds = globalManager
+    ? null
+    : [...new Set([
+      ...(await pmProjectIds(actor.id)),
+      ...(await managedOfficeProjectIds(actor.id)),
+    ])];
+  const reviewIds = globalManager
+    ? (await repo.openProjects(scopes, null)).map((p) => p.id)
+    : managedIds!;
+  const managerReview = reviewIds.length === 0
+    ? []
+    : await repo.reviewTasksForProjects(await repo.nonFrozenProjectIds(reviewIds), scopes);
+  // آنچه خودش مسئولش است در «در انتظارِ بررسی»ِ خودش می‌ماند، نه اینجا.
+  const ownIds = new Set(decorated.map((t) => t.id));
+
   return {
     kind: 'member' as const,
     active: decorated.filter((t) => !t.isReview),
     waiting: decorated.filter((t) => t.isReview),
-    review: [] as InboxTask[],
+    review: managerReview
+      .filter((t) => !ownIds.has(t.id))
+      .map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false })),
   };
 }
 

@@ -1,15 +1,11 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { Lock } from 'lucide-react';
 import { currentActor } from '@/server/auth';
-import { myTasks, taskableProjects, type InboxTask } from '@/server/projects/service';
+import { myTasks, taskableProjects } from '@/server/projects/service';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { primeTranslations, t } from '@/i18n/server';
-import { ClaimTaskButton } from './inbox-claim';
+import { TaskTable } from './task-table';
 import { TasksTabs } from './tasks-tabs';
-import { chipStyle } from '@/domain/ui/contrast';
 
 /**
  * «تسک‌های شما» — پورتِ `view_tasks()` ِ داشبوردِ نسخهٔ قبلی.
@@ -21,54 +17,6 @@ import { chipStyle } from '@/domain/ui/contrast';
  * ⚠️ گاردِ خاصی ندارد چون دادهٔ **خودِ کاربر** است — کوئری فقط دیدنی‌های او
  * را می‌آورد (و دامنهٔ خصوصی هم در همان‌جا فیلتر می‌شود).
  */
-function TaskList({ rows, empty }: { rows: InboxTask[]; empty: string }) {
-  if (rows.length === 0) {
-    return <p className="px-4 pb-4 text-sm text-muted-foreground">{empty}</p>;
-  }
-
-  return (
-    <ul className="grid gap-1 px-4 pb-4">
-      {rows.map((task) => (
-        <li key={task.id} className="flex flex-wrap items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors hover:bg-muted/50">
-          {/* پورتِ چیپِ 🔒 «خصوصی». */}
-          {task.isPrivate && <Lock className="size-3.5 shrink-0 text-muted-foreground" aria-label={t('خصوصی')} />}
-          <Link
-            // پورتِ «باز کردن در پروژه» — با تبِ تسک‌ها و زیرتبِ درست.
-            href={`/projects/${task.projectId}?tab=tasks&view=${task.isReview ? 'review' : 'cur'}`}
-            className="min-w-0 flex-1 truncate hover:underline"
-          >
-            {task.title}
-          </Link>
-
-          {task.priorityName && (
-            <Badge variant="outline" style={chipStyle(task.priorityColor)}>
-              {task.priorityName}
-            </Badge>
-          )}
-          {task.statusName && (
-            <Badge variant="secondary" style={chipStyle(task.statusColor)}>
-              {task.statusName}
-            </Badge>
-          )}
-
-          {/* پورتِ اقلامِ مسئول: 🏷 نقش (ادعاکننده). */}
-          {task.roles.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {task.roles.map((r) => (r.claimedByName ? `${r.roleName ?? ''} (${r.claimedByName})` : (r.roleName ?? ''))).join(t('، '))}
-            </span>
-          )}
-
-          {/* ⚠️ نامِ پروژه لازم است — تسک بدونِ آن بی‌زمینه است. */}
-          <span className="shrink-0 text-xs text-muted-foreground">{task.projectTitle}</span>
-          {task.dueDate && <span className="num shrink-0 text-xs text-muted-foreground">{task.dueDate}</span>}
-
-          {task.claimable && <ClaimTaskButton taskId={task.id} projectId={task.projectId} />}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 export default async function MyTasksPage() {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
@@ -83,31 +31,59 @@ export default async function MyTasksPage() {
   const inbox = await myTasks(actor);
 
   if (inbox.kind === 'client') {
+    /**
+     * ⚠️ کارفرما دو دسته دارد و هر دو کارِ **اوست**: آنچه به خودش سپرده شده
+     * (تأیید، فرستادنِ محتوا، امضا) و آنچه تیم برای بررسیِ او فرستاده.
+     * پیش از این فقط دستهٔ دوم را می‌دید.
+     */
+    const total = inbox.active.length + inbox.review.length;
     return (
-      <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+      // ⚠️ پهنای خواندنی: جدولِ تسک تا لبهٔ نمایشگر کش نمی‌آید.
+      <main className="@container/main flex max-w-5xl flex-col gap-4 p-4 lg:p-6">
         <header>
-          <h1 className="text-xl font-semibold">{t("تسک‌های نیازمند بررسی شما")}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">{t('{n} تسک در انتظارِ بررسیِ شما', { n: inbox.review.length })}</p>
+          <h1 className="text-xl font-semibold">{t("تسک‌های شما")}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {t('{n} تسکِ سپرده‌شده به شما', { n: inbox.active.length })}
+            {inbox.review.length > 0 && <> · {t('{n} در انتظارِ بررسیِ شما', { n: inbox.review.length })}</>}
+          </p>
         </header>
-        {inbox.review.length === 0 ? (
-          <EmptyState title={t("تسکی منتظرِ بررسیِ شما نیست")} description={t("وقتی تیم کاری را برای بررسی بفرستد، اینجا می‌آید.")} />
+
+        {total === 0 ? (
+          <EmptyState
+            title={t("تسکی برای شما نیست")}
+            description={t("وقتی کاری به شما سپرده شود یا تیم چیزی را برای بررسی بفرستد، اینجا می‌آید.")}
+          />
         ) : (
-          <Card className="gap-2 py-4">
-            <CardHeader className="px-4 pb-0"><CardTitle className="text-sm">{t("در انتظارِ بررسی")}</CardTitle></CardHeader>
-            <CardContent className="px-0 pb-0"><TaskList rows={inbox.review} empty="" /></CardContent>
-          </Card>
+          <div className="grid gap-4">
+            {inbox.active.length > 0 && (
+              <Card className="gap-2 py-4">
+                <CardHeader className="px-4 pb-0">
+                  <CardTitle className="text-sm">{t("سپرده‌شده به شما")}</CardTitle>
+                </CardHeader>
+                <CardContent className="px-0 pb-0"><TaskTable rows={inbox.active} empty="" /></CardContent>
+              </Card>
+            )}
+            {inbox.review.length > 0 && (
+              <Card className="gap-2 py-4">
+                <CardHeader className="px-4 pb-0">
+                  <CardTitle className="text-sm">{t("در انتظارِ بررسی")}</CardTitle>
+                </CardHeader>
+                <CardContent className="px-0 pb-0"><TaskTable rows={inbox.review} empty="" /></CardContent>
+              </Card>
+            )}
+          </div>
         )}
       </main>
     );
   }
 
-  const { active, waiting } = inbox;
+  const { active, waiting, review } = inbox;
   // پروژه‌هایی که همین کاربر می‌تواند رویشان تسک بزند — تبِ «افزودنِ سریع».
   const projects = await taskableProjects(actor);
 
   const inboxPanel = (
     <>
-      {active.length === 0 && waiting.length === 0 ? (
+      {active.length === 0 && waiting.length === 0 && review.length === 0 ? (
         <EmptyState
           title={t("تسکی به شما سپرده نشده")}
           description={t("تسک‌هایی که به شما یا نقشتان سپرده شوند اینجا می‌آیند.")}
@@ -116,19 +92,32 @@ export default async function MyTasksPage() {
         <div className="grid gap-4 @3xl/main:grid-cols-2">
           <Card className="gap-2 py-4">
             <CardHeader className="px-4 pb-0"><CardTitle className="text-sm">{t("تسک‌های جاری شما")}</CardTitle></CardHeader>
-            <CardContent className="px-0 pb-0"><TaskList rows={active} empty={t("تسکِ جاری ندارید.")} /></CardContent>
+            <CardContent className="px-0 pb-0"><TaskTable rows={active} empty={t("تسکِ جاری ندارید.")} /></CardContent>
           </Card>
           <Card className="gap-2 py-4">
             <CardHeader className="px-4 pb-0"><CardTitle className="text-sm">{t("در انتظارِ بررسی")}</CardTitle></CardHeader>
-            <CardContent className="px-0 pb-0"><TaskList rows={waiting} empty={t("موردی در انتظارِ بررسی نیست.")} /></CardContent>
+            <CardContent className="px-0 pb-0"><TaskTable rows={waiting} empty={t("موردی در انتظارِ بررسی نیست.")} /></CardContent>
           </Card>
+          {/*
+            ⚠️ فقط برای مدیر پر می‌شود (سرور تصمیم می‌گیرد): کارهایی که تیم
+            روی پروژه‌های تحتِ مدیریتِ او برای بررسی فرستاده. تا امروز تنها
+            راهِ دیدنشان بازکردنِ تک‌تکِ پروژه‌ها بود.
+          */}
+          {review.length > 0 && (
+            <Card className="gap-2 py-4 @3xl/main:col-span-2">
+              <CardHeader className="px-4 pb-0">
+                <CardTitle className="text-sm">{t("فرستاده‌شده برای بررسیِ شما")}</CardTitle>
+              </CardHeader>
+              <CardContent className="px-0 pb-0"><TaskTable rows={review} empty="" /></CardContent>
+            </Card>
+          )}
         </div>
       )}
     </>
   );
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+    <main className="@container/main flex max-w-6xl flex-col gap-4 p-4 lg:p-6">
       <header>
         <h1 className="text-xl font-semibold">{t("تسک‌ها")}</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">

@@ -474,11 +474,14 @@ export function TasksTab({
           <button
             type="button"
             onClick={() => setTab('review')}
-            className={`rounded-md px-2.5 py-1 text-xs ${
+            className={`flex items-center gap-2 rounded-md px-2.5 py-1 text-xs ${
               tab === 'review' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'text-muted-foreground hover:bg-muted'
             }`}
           >
-            {tr('نیاز به ریویو {n}', { n: review.length })}
+            {tr('نیاز به ریویو')}
+            <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none">
+              {review.length}
+            </span>
           </button>
         )}
         {groupKeys.map((k) => (
@@ -486,13 +489,17 @@ export function TasksTab({
             key={k}
             type="button"
             onClick={() => setTab(k)}
-            className={`rounded-md px-2.5 py-1 text-xs ${
+            // ⚠️ فاصله با `gap`، نه حاشیهٔ منطقی: در راست‌به‌چپ عدد به حرفِ
+            // آخر می‌چسبید و «برای انجام۲» خوانده می‌شد.
+            className={`flex items-center gap-2 rounded-md px-2.5 py-1 text-xs ${
               tab === k ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted'
             }`}
           >
             {/* نامِ گروه سرفصل است نه عنوان: ریزتر و کم‌رنگ‌تر، مثلِ وضعیتِ پروژه. */}
             <span className="text-[11px] font-normal opacity-80">{tr(GROUP_LABEL[k] ?? k)}</span>
-            <span className="num ms-1.5">{buckets.get(k)!.length}</span>
+            <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none">
+              {buckets.get(k)!.length}
+            </span>
           </button>
         ))}
       </div>

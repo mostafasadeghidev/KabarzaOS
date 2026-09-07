@@ -285,10 +285,13 @@ function ThreadList({
             key={key}
             type="button"
             onClick={() => setBucket(key)}
-            className={`rounded-md px-3 py-1 text-sm ${bucket === key ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/60'}`}
+            className={`flex items-center gap-2 rounded-md px-3 py-1 text-sm ${bucket === key ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/60'}`}
           >
             {key === 'open' ? t('نیازمند بررسی') : t(closedLabel)}
-            <span className="num ms-1 text-xs text-muted-foreground">{key === 'open' ? open.length : closed.length}</span>
+            {/* عدد نشانِ جداست، نه ادامهٔ کلمه — در راست‌به‌چپ می‌چسبید. */}
+            <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
+              {key === 'open' ? open.length : closed.length}
+            </span>
           </button>
         ))}
       </nav>
@@ -363,10 +366,12 @@ export function CommentsTab({
             key={key}
             type="button"
             onClick={() => setThread(key)}
-            className={`rounded-full border px-3 py-1 text-sm ${thread === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+            className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${thread === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
           >
             {key === 'comment' ? t('کامنت‌ها') : t('بازبینی‌ها')}
-            <span className="num ms-1 text-xs">{ofType(key).filter((c) => !c.parentId).length}</span>
+            <span className="num rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] leading-none dark:bg-white/15">
+              {ofType(key).filter((c) => !c.parentId).length}
+            </span>
           </button>
         ))}
       </nav>

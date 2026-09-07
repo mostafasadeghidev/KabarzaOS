@@ -271,6 +271,23 @@ export async function membershipProjectIds(
  * ⚠️ `canViewProject` این‌ها را باز می‌کرد ولی فهرست نشانشان نمی‌داد: مدیرِ دفترِ
  * بی‌مجوزِ سراسری پروژه‌های دفترش را فقط با آدرسِ مستقیم می‌دید.
  */
+/**
+ * پروژه‌هایی که این کاربر **مدیرشان** است — عضویتی که نقشش تگِ مدیرِ پروژه
+ * دارد. صندوقِ «در انتظارِ بررسی»ِ مدیر از همین می‌آید.
+ */
+export async function pmProjectIds(userId: number): Promise<number[]> {
+  const rows = await db
+    .select({ projectId: projectMembers.projectId })
+    .from(projectMembers)
+    .innerJoin(tags, eq(tags.id, projectMembers.roleTagId))
+    .where(and(
+      eq(projectMembers.userId, userId),
+      eq(projectMembers.accessBlocked, false),
+      eq(tags.grantsCap, PM_CAP),
+    ));
+  return [...new Set(rows.map((r) => r.projectId))];
+}
+
 export async function managedOfficeProjectIds(userId: number): Promise<number[]> {
   const managed = await db.select({ officeId: userOffices.officeId })
     .from(userOffices)

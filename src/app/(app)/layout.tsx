@@ -18,6 +18,7 @@ import { hasTeamScope } from '@/server/team/service';
 import { hasTeamAvailability } from '@/server/availability/service';
 import { NotificationBell } from '@/components/notification-bell';
 import { getSystemConfig } from '@/server/settings/system-service';
+import { roleTagNamesOf } from '@/server/people/repository';
 import { hasPersonalMoney } from '@/server/finance/my-money';
 import { t } from '@/i18n/server';
 import { canUseTimesheet, timerState } from '@/server/timelogs/service';
@@ -167,6 +168,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const primaryRole = actor.roles[0];
+  // نقش‌های تگیِ خودِ کاربر — «دولوپر»، «مدیرِ تیم»… (نه نقشِ سامانه‌ای).
+  const roleTagNames = await roleTagNamesOf(actor.id);
   const [bell, system, unreadMessages, showTgNudge, timer, brand] = await Promise.all([
     listNotifications(actor),
     getSystemConfig(),
@@ -194,7 +197,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         items={items}
         userName={session.name}
         userRole={primaryRole ? t(ROLE_LABELS[primaryRole]) : t('کاربر')}
-        userRoles={actor.roles.map((role) => t(ROLE_LABELS[role]))}
+        /**
+         * ⚠️ هم نقشِ سامانه‌ای و هم نقشِ **کاری**: «عضو تیم» می‌گوید کاربر
+         * چه اختیاری دارد، ولی «دولوپر / مدیرِ پروژه» می‌گوید چه‌کاره است.
+         * کاربر انتظار دارد نقشی را ببیند که خودش برای او انتخاب شده.
+         */
+        userRoles={[
+          ...actor.roles.map((role) => t(ROLE_LABELS[role])),
+          ...roleTagNames,
+        ]}
         locale={session.locale ?? system.defaultLocale}
         pulse={{ enabled: system.pulseEnabled, interval: system.pulseInterval }}
         unreadMessages={unreadMessages}

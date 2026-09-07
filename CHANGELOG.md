@@ -2,6 +2,22 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.62.0]
+
+### Added
+
+- **Clients see the tasks assigned to them.** A task handed to the client (approve a text, send material, sign a contract) never appeared anywhere for them; their Tasks page now has "Assigned to you" next to "Awaiting review".
+- **Managers see what was sent for review.** The owner, a project manager and an office manager get a "Sent for your review" card on their Tasks page, listing the work their team pushed to review across the projects they manage — until now the only way to find it was opening each project.
+
+### Changed
+
+- **The tasks page is a table with fixed columns** — task, priority, status, project, deadline — instead of chips wrapping wherever they fit, and its width is capped so rows stay readable.
+- **The user menu lists the person's work roles** (developer, project manager, team manager) under their name, not only their system role.
+- **Counters in the task and comment sub-tabs are separated from their label** with a rounded badge, as on the project tabs.
+- **The "On Hold" task status is renamed "Stopped" in Persian** (migration 0025). "در انتظار" sat next to "آماده برای بررسی" and both read as "waiting", so nobody could tell the blocked task from the one awaiting approval. Only the default name is changed — a status the team renamed itself is left alone, and tasks keep their status.
+
+---
+
 ## [1.61.0]
 
 ### Changed

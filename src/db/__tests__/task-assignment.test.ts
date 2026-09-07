@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
-  projectMembers, projects, tags, taskRoles, tasks, userRoles, users,
+  projectClients, projectMembers, projects, tags, taskRoles, tasks, userRoles, users,
 } from '../schema';
 import {
   getProjectTabs, referTask, setMembers, setProjectAccess,
@@ -202,5 +202,43 @@ describe('نامِ همکارِ ادمین برای عضو', () => {
     // مدیرِ کل نامِ واقعی را می‌بیند.
     const asOwner = await getProjectTabs(owner(), project);
     expect(asOwner.members.map((m) => m.userName)).toContain('سارا دستیار');
+  });
+});
+
+describe('صندوقِ تسک‌ها', () => {
+  it('کارفرما تسکِ سپرده‌شده به خودش را می‌بیند', async () => {
+    const { myTasks } = await import('@/server/projects/service');
+    const [clientUser] = await db.insert(users).values({ email: 'cl@t', name: 'کارفرما' })
+      .returning({ id: users.id });
+    await db.insert(userRoles).values({ userId: clientUser!.id, role: 'client' });
+    await db.insert(projectClients).values({ projectId: project, userId: clientUser!.id });
+    await db.insert(tasks).values({
+      projectId: project, title: 'تأییدِ متنِ قرارداد', assignedTo: clientUser!.id,
+      statusTagId: todo, createdBy: OWNER,
+    });
+
+    const inbox = await myTasks({
+      id: clientUser!.id, roles: ['client'], permissions: [], privateAccess: false,
+    });
+    expect(inbox.kind).toBe('client');
+    expect(inbox.active.map((t) => t.title)).toContain('تأییدِ متنِ قرارداد');
+  });
+
+  it('مدیر تسک‌های فرستاده‌شده برای بررسی را در صندوقش می‌بیند، عضو نه', async () => {
+    const { myTasks } = await import('@/server/projects/service');
+    const [reviewTag] = await db.insert(tags)
+      .values({ name: 'آماده برای بررسی', type: 'task_status', statusGroup: 'in_progress', isReview: true })
+      .returning({ id: tags.id });
+    await db.insert(tasks).values({
+      projectId: project, title: 'کارِ آمادهٔ بررسی', assignedTo: DEV2,
+      statusTagId: reviewTag!.id, createdBy: OWNER,
+    });
+
+    const asOwner = await myTasks(owner());
+    expect(asOwner.review.map((t) => t.title)).toContain('کارِ آمادهٔ بررسی');
+
+    // عضوِ ساده این دسته را ندارد (کارِ خودش در «در انتظارِ بررسی»ِ خودش است).
+    const asDev1 = await myTasks(member(DEV1));
+    expect(asDev1.review).toEqual([]);
   });
 });

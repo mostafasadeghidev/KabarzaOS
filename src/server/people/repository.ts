@@ -237,3 +237,24 @@ export async function roleTagOptions() {
 }
 
 export { users, userRoles, userOffices, tagRelations, projectMembers, projectPayments, timelogs };
+
+/**
+ * نقش‌های تگیِ **یک** کاربر — «دولوپر»، «مدیرِ پروژه»، «مدیرِ تیم»…
+ *
+ * ⚠️ این‌ها با نقشِ سامانه‌ای (`user_roles`) فرق دارند: آن یکی می‌گوید کاربر
+ * مالک/عضو/کارفرماست، این یکی می‌گوید **چه‌کاره** است. منوی کاربر هر دو را
+ * نشان می‌دهد، چون «عضو تیم» به‌تنهایی چیزی از کارِ او نمی‌گوید.
+ */
+export async function roleTagNamesOf(userId: number): Promise<string[]> {
+  const rows = await db
+    .select({ name: tagName(await currentLocale()) })
+    .from(tagRelations)
+    .innerJoin(tags, eq(tags.id, tagRelations.tagId))
+    .where(and(
+      eq(tagRelations.objectType, 'user'),
+      eq(tagRelations.objectId, userId),
+      eq(tags.type, 'member_role'),
+    ))
+    .orderBy(tags.sortOrder, tags.id);
+  return rows.map((r) => r.name).filter((n): n is string => Boolean(n));
+}
