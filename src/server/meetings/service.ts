@@ -465,7 +465,8 @@ export async function createMeeting(actor: Actor, input: MeetingInput): Promise<
       type: 'meeting.invited',
       title: 'جلسهٔ جدید: {title}',
       ...(await meetingBody(actor, input)),
-      url: '/meetings',
+      // ⚠️ مقصد **همان جلسه** است، نه فهرست: با `?meeting=` مودالِ جزئیاتش باز می‌شود.
+      url: `/meetings?meeting=${id}`,
     });
   }
   return id;

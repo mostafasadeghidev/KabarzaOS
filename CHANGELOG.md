@@ -2,6 +2,21 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.65.0]
+
+### Added
+
+- **A task opens in place from the Tasks page.** Clicking a task in your inbox opens the full task — status, roles, description, conversation, and the manager's edit and refer controls — in a dialog, with a "Go to the project" button inside it. Looking through your tasks no longer means leaving the page and finding your way back for each one. The project name in its column still links straight to the project.
+- **Filter your current tasks**: a live search over title, project, status, priority and role, plus a project picker when the list spans more than one project, and a count of what is shown.
+
+### Changed
+
+- **The notification dialog reads line by line**, like the meeting detail: kind (task, comment, meeting, money, message, project) with an icon, time, the full text, and where the "View" button leads — "the project's Tasks tab" rather than a raw path.
+- **"View" lands on the right tab.** Task notifications open the project's Tasks tab, comment and review notifications its Comments tab, and a meeting notification opens that meeting's detail dialog instead of the meetings list.
+- **The task inbox cards are stacked full width** instead of two columns: the six-column table no longer scrolls sideways inside a half-width card.
+
+---
+
 ## [1.64.0]
 
 ### Added

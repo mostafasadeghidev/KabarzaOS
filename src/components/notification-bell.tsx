@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { LiveCount, usePulse } from '@/components/pulse';
-import { Bell, CheckCheck } from 'lucide-react';
+import {
+  Bell, CalendarDays, CheckCheck, FolderKanban, ListChecks, Mail, MessageSquare, Wallet,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,6 +32,54 @@ export interface NotificationItem {
 /** تاریخ/ساعت به وقتِ بیننده — نه UTC ِ خام (`useDateTime`). */
 function when(value: Date | string | null | undefined, tz: string): string {
   return formatDateTime(value, tz);
+}
+
+
+/** نوعِ اعلان → خانوادهٔ آن (برای نشان و برچسب). */
+function kindOf(type: string): 'task' | 'comment' | 'meeting' | 'money' | 'message' | 'project' | 'other' {
+  if (type.startsWith('task')) return 'task';
+  if (type === 'comment' || type === 'review') return 'comment';
+  if (type.startsWith('meeting')) return 'meeting';
+  if (type.startsWith('payment')) return 'money';
+  if (type.startsWith('message')) return 'message';
+  if (type.startsWith('project') || type === 'tender_opened' || type === 'business') return 'project';
+  return 'other';
+}
+
+const KIND_LABEL: Record<ReturnType<typeof kindOf>, string> = {
+  task: 'تسک',
+  comment: 'کامنت',
+  meeting: 'جلسه',
+  money: 'مالی',
+  message: 'پیام',
+  project: 'پروژه',
+  other: 'اعلان',
+};
+
+function KindIcon({ type }: { type: string }) {
+  const kind = kindOf(type);
+  if (kind === 'task') return <ListChecks className="size-3" />;
+  if (kind === 'comment') return <MessageSquare className="size-3" />;
+  if (kind === 'meeting') return <CalendarDays className="size-3" />;
+  if (kind === 'money') return <Wallet className="size-3" />;
+  if (kind === 'message') return <Mail className="size-3" />;
+  return <FolderKanban className="size-3" />;
+}
+
+/**
+ * مقصدِ اعلان به زبانِ آدمیزاد — «تبِ تسک‌های پروژه»، نه `/projects/5?tab=tasks`.
+ * ⚠️ فقط از روی خودِ آدرس خوانده می‌شود؛ هیچ کوئریِ اضافه‌ای نمی‌زند.
+ */
+function destinationLabel(url: string): string {
+  if (url.startsWith('/projects/')) {
+    if (url.includes('tab=tasks')) return 'تبِ تسک‌های پروژه';
+    if (url.includes('tab=comments')) return 'تبِ کامنت‌های پروژه';
+    return 'صفحهٔ پروژه';
+  }
+  if (url.startsWith('/meetings')) return url.includes('tab=reminders') ? 'یادآورهای من' : 'صفحهٔ جلسات';
+  if (url.startsWith('/messages')) return 'پیام‌ها';
+  if (url.startsWith('/finance') || url.startsWith('/my-money')) return 'امور مالی';
+  return 'باز کردنِ مقصد';
 }
 
 /**
@@ -184,9 +234,43 @@ export function NotificationBell({
           </DialogDescription>
         </DialogHeader>
 
-        {/* ⚠️ بدنه اینجا کامل است — همان چیزی که در فهرست بریده می‌شد. */}
-        {reading?.body && (
-          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{reading.body}</p>
+        {/*
+          خط به خط، مثلِ جزئیاتِ جلسه: نوع، زمان، متن و مقصد هرکدام سطرِ
+          خودشان را دارند. پیش از این همه‌چیز یک پاراگرافِ خاکستری بود و
+          معلوم نبود اعلان دربارهٔ چیست تا وقتی کاربر می‌رفت و می‌دید.
+        */}
+        {reading && (
+          <dl className="grid gap-3 text-sm">
+            <div className="grid gap-1">
+              <dt className="text-xs text-muted-foreground">{t('نوع')}</dt>
+              <dd>
+                <Badge variant="outline" className="gap-1">
+                  <KindIcon type={reading.type} />
+                  {tr(KIND_LABEL[kindOf(reading.type)])}
+                </Badge>
+              </dd>
+            </div>
+
+            <div className="grid gap-1">
+              <dt className="text-xs text-muted-foreground">{t('زمان')}</dt>
+              <dd className="num">{when(reading.createdAt, tz)}</dd>
+            </div>
+
+            {/* ⚠️ بدنه اینجا کامل است — همان چیزی که در فهرست بریده می‌شد. */}
+            {reading.body && (
+              <div className="grid gap-1">
+                <dt className="text-xs text-muted-foreground">{t('متن')}</dt>
+                <dd className="whitespace-pre-wrap">{reading.body}</dd>
+              </div>
+            )}
+
+            {reading.url && (
+              <div className="grid gap-1">
+                <dt className="text-xs text-muted-foreground">{t('مقصد')}</dt>
+                <dd className="text-muted-foreground">{tr(destinationLabel(reading.url))}</dd>
+              </div>
+            )}
+          </dl>
         )}
 
         <DialogFooter>

@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Lock, Pencil, Share2, Trash2 } from 'lucide-react';
@@ -190,6 +192,19 @@ export function TaskDialog({
             {task.description && (
               <p className="rounded-md bg-muted/40 p-3 text-sm whitespace-pre-wrap">{task.description}</p>
             )}
+
+            {/*
+              ⚠️ این مودال از دو جا باز می‌شود: صفحهٔ پروژه و صندوقِ تسک‌ها.
+              در حالتِ دوم کاربر بیرونِ پروژه است و باید راهی به آن داشته
+              باشد — بدونِ این دکمه، «نگاهِ سریع» بن‌بست بود.
+            */}
+            <div>
+              <Button asChild size="sm" variant="ghost" className="px-0 text-primary hover:bg-transparent">
+                <Link href={`/projects/${task.projectId}?tab=tasks`}>
+                  {tr('رفتن به پروژه')} →
+                </Link>
+              </Button>
+            </div>
 
             {/*
               ⚠️ «ارجاع» ویرایشِ ساده نیست: نیت را ثبت می‌کند — چه کسی، به چه

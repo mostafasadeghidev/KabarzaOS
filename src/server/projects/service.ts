@@ -1428,7 +1428,7 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
       type: 'task.review',
       title: 'تسکی نیاز به بررسی دارد',
       body: task.title,
-      url: `/projects/${task.projectId}`,
+      url: `/projects/${task.projectId}?tab=tasks`,
     });
   } else if (wasReview && !isReview && !nextDone) {
     // ⚠️ فقط وقتی کار **برمی‌گردد**؛ تأیید (ریویو → انجام‌شده) اعلانِ «برگشت» ندارد (پورتِ افزونه).
@@ -1438,7 +1438,7 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
       type: 'task.back',
       title: 'تسکِ شما برای ادامهٔ کار برگشت',
       body: task.title,
-      url: `/projects/${task.projectId}`,
+      url: `/projects/${task.projectId}?tab=tasks`,
     });
   }
 
@@ -1474,7 +1474,7 @@ async function releaseDependents(actor: Actor, taskId: number, projectId: number
       type: 'task.assigned',
       title: 'نوبتِ این تسک رسید',
       body: released.title,
-      url: `/projects/${projectId}`,
+      url: `/projects/${projectId}?tab=tasks`,
     });
   }
 }
@@ -1553,7 +1553,7 @@ export async function addComment(
     // می‌نشیند (R-NOTIF-06). همین الگو در بقیهٔ اعلان‌ها هم هست.
     title: type === 'review' ? 'بازبینیِ جدید در پروژه' : 'کامنت جدید در پروژه',
     body: `«${project?.title ?? ''}» — ${text.slice(0, 140)}`,
-    url: `/projects/${projectId}`,
+    url: `/projects/${projectId}?tab=comments`,
   });
 }
 
@@ -1807,7 +1807,7 @@ export async function createTask(
         type: 'task.assigned',
         title: 'تسکِ تازه به شما تخصیص یافت',
         body: input.title,
-        url: `/projects/${projectId}`,
+        url: `/projects/${projectId}?tab=tasks`,
       });
     }
   }
@@ -1881,7 +1881,7 @@ export async function referTask(
       type: 'task.assigned',
       title: 'تسکی به شما ارجاع شد',
       body: task.title,
-      url: `/projects/${task.projectId}`,
+      url: `/projects/${task.projectId}?tab=tasks`,
     });
   }
   void project;
@@ -2017,7 +2017,7 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
       type: 'task.assigned',
       title: 'تسک به شما محول شد',
       body: input.title,
-      url: `/projects/${before.projectId}`,
+      url: `/projects/${before.projectId}?tab=tasks`,
     });
   }
 

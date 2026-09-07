@@ -89,10 +89,15 @@ export default async function MyTasksPage() {
           description={t("تسک‌هایی که به شما یا نقشتان سپرده شوند اینجا می‌آیند.")}
         />
       ) : (
-        <div className="grid gap-4 @3xl/main:grid-cols-2">
+        /**
+         * ⚠️ یک ستون، نه دو: جدولِ تسک شش ستون دارد (تسک، اولویت، وضعیت،
+         * پروژه، ددلاین، کنش) و در نیمهٔ صفحه اسکرولِ افقی می‌خورد. کارت‌ها
+         * زیرِ هم و تمام‌عرض‌اند تا هر ستون جای خودش را داشته باشد.
+         */
+        <div className="grid gap-4">
           <Card className="gap-2 py-4">
             <CardHeader className="px-4 pb-0"><CardTitle className="text-sm">{t("تسک‌های جاری شما")}</CardTitle></CardHeader>
-            <CardContent className="px-0 pb-0"><TaskTable rows={active} empty={t("تسکِ جاری ندارید.")} /></CardContent>
+            <CardContent className="px-0 pb-0"><TaskTable rows={active} empty={t("تسکِ جاری ندارید.")} filterable /></CardContent>
           </Card>
           <Card className="gap-2 py-4">
             <CardHeader className="px-4 pb-0"><CardTitle className="text-sm">{t("در انتظارِ بررسی")}</CardTitle></CardHeader>
@@ -104,7 +109,7 @@ export default async function MyTasksPage() {
             راهِ دیدنشان بازکردنِ تک‌تکِ پروژه‌ها بود.
           */}
           {review.length > 0 && (
-            <Card className="gap-2 py-4 @3xl/main:col-span-2">
+            <Card className="gap-2 py-4">
               <CardHeader className="px-4 pb-0">
                 <CardTitle className="text-sm">{t("فرستاده‌شده برای بررسیِ شما")}</CardTitle>
               </CardHeader>

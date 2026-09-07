@@ -148,7 +148,7 @@ async function runMeetingSoon(now: Date): Promise<number> {
         title: 'یادآوری جلسه: {title}',
         body: location ? 'زمان: {when} · مکان: {location}' : 'زمان: {when}',
         params: { title: meeting.title, when: formatDateTime(meeting.meetAt, timeZone), location },
-        url: '/meetings',
+        url: `/meetings?meeting=${meeting.id}`,
       });
       sent += 1;
     }

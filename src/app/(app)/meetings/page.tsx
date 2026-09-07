@@ -10,7 +10,7 @@ import { primeTranslations, t } from '@/i18n/server';
 export default async function MeetingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; meeting?: string }>;
 }) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
@@ -24,7 +24,7 @@ export default async function MeetingsPage({
   const actor = await currentActor();
   if (!actor) redirect('/login');
   // لینکِ اعلانِ یادآور به `/meetings?tab=reminders` می‌رسد — تبِ یادآورها باز شود.
-  const { tab } = await searchParams;
+  const { tab, meeting } = await searchParams;
 
   let data;
   try {
@@ -62,6 +62,8 @@ export default async function MeetingsPage({
         canManage={data.canManage}
         canCreateGeneral={data.canCreateGeneral}
         initialTab={tab === 'reminders' ? 'reminders' : 'meetings'}
+        // اعلانِ جلسه با `?meeting=` می‌آید — همان جلسه باز شود، نه فهرست.
+        openMeetingId={Number(meeting) > 0 ? Number(meeting) : null}
       />
     </main>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, useTransition } from 'react';
+import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { CalendarDays, MapPin, Plus, Trash2, Users } from 'lucide-react';
 import {
@@ -61,6 +61,7 @@ export function MeetingsView({
   canManage,
   canCreateGeneral,
   initialTab = 'meetings',
+  openMeetingId = null,
 }: {
   meetings: MeetingRow[];
   reminders: ReminderRow[];
@@ -70,6 +71,8 @@ export function MeetingsView({
   /** جلسهٔ عمومی (بدونِ پروژه) — فقط مالک/مدیرِ بخش و مدیرِ دفتر. */
   canCreateGeneral: boolean;
   initialTab?: 'meetings' | 'reminders';
+  /** جلسه‌ای که باید با بازشدنِ صفحه باز شود (از اعلان). */
+  openMeetingId?: number | null;
 }) {
   const tr = useT();
   const tz = useTimeZone();
@@ -81,6 +84,17 @@ export function MeetingsView({
   const [formOpen, setFormOpen] = useState(false);
   /** جلسه‌ای که جزئیاتش باز است. */
   const [detail, setDetail] = useState<MeetingRow | null>(null);
+
+  /**
+   * ⚠️ اعلانِ جلسه مستقیم به **همان** جلسه می‌رسد (`?meeting=`): با بازشدنِ
+   * صفحه مودالِ جزئیاتش باز می‌شود. اگر جلسه گذشته یا حذف شده باشد، فهرست
+   * عادی می‌ماند — نه خطا.
+   */
+  useEffect(() => {
+    if (openMeetingId === null) return;
+    const target = meetings.find((m) => m.id === openMeetingId);
+    if (target) setDetail(target);
+  }, [openMeetingId, meetings]);
   const [pending, startTransition] = useTransition();
   const [reminderState, reminderAction] = useActionState<SimpleState, FormData>(saveReminderAction, {});
 
