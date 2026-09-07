@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.59.0]
+
+### Added
+
+- **Clients get the Meetings menu.** A client could be invited to a meeting but had no page to see it on. The menu now appears for them and shows the meetings they were invited to, plus their own reminders. Creating a meeting and inviting people stays out of their hands: the "New meeting" button is not rendered for them and the server refuses the call even if the form is bypassed.
+
+---
+
 ## [1.58.1]
 
 ### Fixed
