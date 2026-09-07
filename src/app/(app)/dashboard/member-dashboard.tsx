@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ClientSection, MemberDashboard, MemberSection } from '@/server/dashboard-member';
 import { format } from '@/domain/money/money';
+import { SecretAmount } from '@/components/secret-amount';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -55,26 +56,29 @@ function MoneyStat({
   lines, label,
 }: { lines: Array<{ currencyCode: string; total: string }>; label: string }) {
   return (
-    <Link href="/my-money">
-      <Card className="transition-colors hover:border-primary/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-normal text-muted-foreground">{label}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {lines.length === 0 ? (
-            <p className="num text-2xl font-semibold">0</p>
-          ) : (
-            <div className="grid gap-0.5">
-              {lines.map((l) => (
-                <p key={l.currencyCode} className="num text-xl font-semibold">
-                  {format(l.total)} <span className="text-xs font-normal text-muted-foreground">{l.currencyCode}</span>
-                </p>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
+    <Card className="transition-colors hover:border-primary/50">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center justify-between gap-2 text-sm font-normal text-muted-foreground">
+          {label}
+          {/* رفتن به صفحهٔ مالی، جدا از کلیکِ «نمایشِ مبلغ». */}
+          <Link href="/my-money" className="text-xs text-primary hover:underline">{t('جزئیات')}</Link>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {lines.length === 0 ? (
+          <p className="num text-2xl font-semibold">0</p>
+        ) : (
+          <div className="grid gap-0.5">
+            {lines.map((l) => (
+              <p key={l.currencyCode} className="num text-xl font-semibold">
+                {/* رقم پیش‌فرض پوشیده است؛ با کلیک باز می‌شود. */}
+                <SecretAmount value={`${format(l.total)} ${l.currencyCode}`} />
+              </p>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -102,9 +106,9 @@ function MemberBlock({ data, unread, money }: { data: MemberSection; unread: num
                   <TableRow>
                     <TableHead>{t('نام')}</TableHead>
                     <TableHead>{t('نقش شما')}</TableHead>
-                    <TableHead>{t('تاریخ شروع')}</TableHead>
+                    <TableHead className="text-end">{t('تاریخ شروع')}</TableHead>
                     <TableHead>{t('وضعیت پروژه')}</TableHead>
-                    <TableHead>{t('ددلاین')}</TableHead>
+                    <TableHead className="text-end">{t('ددلاین')}</TableHead>
                     <TableHead className="text-end">{t('ساعت کاری شما')}</TableHead>
                     <TableHead className="text-end">{t('تسک‌های باقی‌مانده')}</TableHead>
                     <TableHead className="text-end">{t('درصد پیشرفت')}</TableHead>
@@ -159,7 +163,10 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('نام')}</TableHead>
-                    <TableHead>{t('تاریخ ثبت')}</TableHead>
+                    {/* ⚠️ سرستون و مقدار باید یک‌جور تراز شوند؛ ستونِ عددی
+                        مقدارش `text-end` بود و سرستونش نه — در راست‌به‌چپ
+                        عدد زیرِ سرستونِ خودش دیده نمی‌شد. */}
+                    <TableHead className="text-end">{t('تاریخ ثبت')}</TableHead>
                     <TableHead className="text-end">{t('قیمت')}</TableHead>
                     <TableHead>{t('وضعیت پروژه')}</TableHead>
                     <TableHead>{t('وضعیت پرداخت')}</TableHead>
@@ -176,14 +183,18 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
                         <Link href={`/projects/${p.id}`} className="hover:underline">{p.title}</Link>
                       </TableCell>
                       <TableNumericCell>{p.regDate ?? '—'}</TableNumericCell>
-                      <TableNumericCell>{format(p.price)} {p.currencyCode ?? ''}</TableNumericCell>
+                      <TableNumericCell>
+                        <SecretAmount value={`${format(p.price)} ${p.currencyCode ?? ''}`} />
+                      </TableNumericCell>
                       <TableCell><ProjectStatus name={p.statusName} group={p.statusGroup} /></TableCell>
                       <TableCell>
                         <Badge variant={p.paymentStatus === 'paid' ? 'success' : p.paymentStatus === 'partial' ? 'warning' : 'outline'}>
                           {t(PAY_LABELS[p.paymentStatus] ?? p.paymentStatus)}
                         </Badge>
                       </TableCell>
-                      <TableNumericCell>{format(String(p.remaining))} {p.currencyCode ?? ''}</TableNumericCell>
+                      <TableNumericCell>
+                        <SecretAmount value={`${format(String(p.remaining))} ${p.currencyCode ?? ''}`} />
+                      </TableNumericCell>
                       <TableNumericCell>{p.taskCount}</TableNumericCell>
                       <TableNumericCell>{p.percent}%</TableNumericCell>
                       <TableNumericCell>{hours(p.teamMinutes)}</TableNumericCell>

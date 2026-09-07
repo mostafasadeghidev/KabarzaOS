@@ -106,8 +106,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    */
   const isMember = actor.roles.includes('member');
   const isClient = actor.roles.includes('client');
+  /**
+   * ⚠️ «نمای کلی» هم در فهرست است: عضو و کارفرما پس از ورود **روی همین
+   * صفحه** می‌نشینند، ولی آیتمش در منو نبود — یعنی با رفتن به هر صفحهٔ
+   * دیگری، راهِ برگشتی به داشبوردِ خودشان نداشتند.
+   */
   const membershipHrefs = new Set<string>([
-    ...(isMember ? ['/projects', '/tasks', '/meetings', '/messages'] : []),
+    ...(isMember ? ['/dashboard', '/projects', '/tasks', '/meetings', '/messages'] : []),
     /**
      * ⚠️ کارفرما هم «جلسات» را می‌بیند: جلسه‌ای که به آن **دعوت شده** و
      * یادآورهای شخصیِ خودش. ساختنِ جلسه و دعوت‌کردن دستِ او نیست — دکمهٔ
@@ -115,7 +120,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
      * (نه مدیرِ دفتر است، نه مدیرِ پروژه). پیش از این کلِ منو نبود و
      * کارفرما جلسه‌ای را که دعوتش کرده بودند هیچ‌جا نمی‌دید.
      */
-    ...(isClient ? ['/projects', '/tasks', '/messages', '/meetings'] : []),
+    ...(isClient ? ['/dashboard', '/projects', '/tasks', '/messages', '/meetings'] : []),
   ]);
 
   // پورتِ افزونه: «ساعت کاری» برای هر که می‌تواند ساعت بزند (عضو، مالک، مالی، مدیرِ دفتر).

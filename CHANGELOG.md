@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.64.0]
+
+### Added
+
+- **A meeting opens into a detail view.** Clicking a meeting card shows the meeting line by line — kind (project or general), date and time, location (a video-call link is clickable, not raw text), the description, and every invitee on their own row with their role and a count. The description was stored but printed nowhere. "Add to calendar" is available inside the view too.
+- **Members and clients get the "Overview" menu item.** They land on the dashboard after signing in but had no way back to it from any other page.
+
+### Changed
+
+- **Amounts on the dashboard are hidden until clicked.** The outstanding balance card and the price and remaining columns of the projects table show "•••" and reveal on click (and hide again on a second click) — the dashboard is what people open in meetings and on shared screens. This is a display cover, not an access rule: who may see a figure at all is still decided on the server.
+- **Table headers line up with their values.** The registration date, start date and deadline columns had start-aligned headers over end-aligned values, so in right-to-left the number did not sit under its own heading.
+
+---
+
 ## [1.63.0]
 
 ### Added — task dependencies actually mean something

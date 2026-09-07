@@ -11,6 +11,9 @@ import { LEAD_OPTIONS, leadLabel } from '@/domain/meetings/reminders';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -76,6 +79,8 @@ export function MeetingsView({
   const [tab, setTab] = useState<'meetings' | 'reminders'>(initialTab);
   const [editing, setEditing] = useState<MeetingView | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  /** جلسه‌ای که جزئیاتش باز است. */
+  const [detail, setDetail] = useState<MeetingRow | null>(null);
   const [pending, startTransition] = useTransition();
   const [reminderState, reminderAction] = useActionState<SimpleState, FormData>(saveReminderAction, {});
 
@@ -119,7 +124,17 @@ export function MeetingsView({
         ) : (
           <div className="grid gap-3 @3xl/main:grid-cols-2">
             {meetings.map((m) => (
-              <Card key={m.id} className="gap-2 py-4">
+              /**
+               * ⚠️ کلِ کارت جزئیات را باز می‌کند: توضیحاتِ جلسه روی کارت جا
+               * نمی‌شد (و اصلاً چاپ نمی‌شد)، و فهرستِ دعوت‌شدگان در یک خطِ
+               * درهم می‌رفت. کارت خلاصه است، مودال کاملِ ماجرا. کلیک روی
+               * دکمه‌های داخلِ کارت بالا نمی‌آید (`data-stop`).
+               */
+              <Card
+                key={m.id}
+                onClick={() => setDetail(m)}
+                className="cursor-pointer gap-2 py-4 transition-colors hover:border-primary/40 hover:bg-muted/30"
+              >
                 <CardContent className="grid gap-2 px-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -148,7 +163,7 @@ export function MeetingsView({
                     </p>
                   )}
 
-                  <div className="flex justify-end gap-1">
+                  <div className="flex justify-end gap-1" data-stop onClick={(e) => e.stopPropagation()}>
                     {/*
                       ⚠️ «افزودن به تقویم» برای **همه** است، نه فقط مدیر —
                       دعوت‌شده باید بتواند جلسه را در تقویمِ خودش بگذارد.
@@ -164,7 +179,7 @@ export function MeetingsView({
                   </div>
 
                   {m.canEdit && (
-                    <div className="flex justify-end gap-1">
+                    <div className="flex justify-end gap-1" data-stop onClick={(e) => e.stopPropagation()}>
                       <Button
                         size="sm"
                         variant="outline"
@@ -281,6 +296,96 @@ export function MeetingsView({
         canCreateGeneral={canCreateGeneral}
         />
       )}
+
+      {/* جزئیاتِ جلسه — خط به خط، نه فشرده در یک کارت. */}
+      <Dialog open={detail !== null} onOpenChange={(open) => { if (!open) setDetail(null); }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{detail?.title ?? ''}</DialogTitle>
+            <DialogDescription>
+              {detail?.meetingScope === 'project'
+                ? tr('جلسهٔ پروژه: {name}', { name: detail?.projectTitle ?? tr('بدونِ نام') })
+                : tr('جلسهٔ عمومی: {name}', { name: detail?.officeName ?? tr('همهٔ دفاتر') })}
+            </DialogDescription>
+          </DialogHeader>
+
+          {detail && (
+            <dl className="grid gap-3 text-sm">
+              <div className="grid gap-1">
+                <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <CalendarDays className="size-3.5" />
+                  {t('تاریخ و ساعت')}
+                </dt>
+                <dd className="num">{when(detail.meetAt, tz)}</dd>
+              </div>
+
+              <div className="grid gap-1">
+                <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <MapPin className="size-3.5" />
+                  {t('مکان')}
+                </dt>
+                {/* لینکِ جلسهٔ آنلاین قابلِ کلیک باشد، نه متنِ خام. */}
+                <dd className="break-all">
+                  {detail.location
+                    ? (/^https?:\/\//.test(detail.location)
+                      ? (
+                        <a
+                          href={detail.location}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          {detail.location}
+                        </a>
+                      )
+                      : detail.location)
+                    : <span className="text-muted-foreground">—</span>}
+                </dd>
+              </div>
+
+              <div className="grid gap-1">
+                <dt className="text-xs text-muted-foreground">{t('توضیحات')}</dt>
+                <dd className="whitespace-pre-wrap">
+                  {detail.description
+                    ? detail.description
+                    : <span className="text-muted-foreground">{t('توضیحی ثبت نشده.')}</span>}
+                </dd>
+              </div>
+
+              <div className="grid gap-1">
+                <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Users className="size-3.5" />
+                  {tr('دعوت‌شدگان ({n})', { n: detail.attendees.length })}
+                </dt>
+                <dd>
+                  {detail.attendees.length === 0 ? (
+                    <span className="text-muted-foreground">{t('کسی دعوت نشده.')}</span>
+                  ) : (
+                    <ul className="grid gap-1">
+                      {detail.attendees.map((a) => (
+                        <li key={a.userId} className="rounded-md bg-muted/50 px-2 py-1 text-xs">{a.name}</li>
+                      ))}
+                    </ul>
+                  )}
+                </dd>
+              </div>
+            </dl>
+          )}
+
+          <DialogFooter>
+            {detail && (
+              <CalendarMenu
+                meetingId={detail.id}
+                title={detail.title}
+                description={detail.description ?? ''}
+                location={detail.location ?? ''}
+                meetAt={detail.meetAt}
+              />
+            )}
+            <Button type="button" variant="outline" onClick={() => setDetail(null)}>{t('بستن')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
