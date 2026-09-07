@@ -119,7 +119,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
     startTransition(async () => setRowError((await fn()).error ?? null));
 
   return (
-    <div className="grid gap-5">
+    <div className="grid max-w-4xl gap-5">
       {data.isUnitBased && (
       <section className="grid gap-2">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold">
@@ -247,8 +247,14 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
       </section>
       )}
 
-      {/* ── درخواستِ پرداخت — فقط برای عضو ── */}
-      {!data.canManage && (
+      {/*
+        ── پولِ من روی این پروژه ──
+        ⚠️ خلاصه (توافقی/پرداختی/مانده) و ردیف‌های پرداخت برای **مدیری که
+        خودش هم عضو است** هم نشان داده می‌شود؛ پیش از این کلِ بخش با
+        `!canManage` بسته می‌شد و تبِ مالیِ چنین کاربری خالی بود. فقط فرمِ
+        «درخواستِ پرداخت» برای مدیر نمی‌آید — او پرداخت را خودش ثبت می‌کند.
+      */}
+      {(
         <section className="grid gap-2">
           <h3 className="text-sm font-semibold">{t("درخواستِ پرداخت")}</h3>
 
@@ -326,8 +332,11 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
             )}
           </div>
 
-          {Number(data.available) > 0 ? (
-            <form action={requestPayment} className="flex flex-wrap items-end gap-2 rounded-md border p-3">
+          {/* فرمِ درخواست فقط برای عضو — مدیر پرداخت را خودش در حسابداری ثبت می‌کند. */}
+          {data.canManage ? null : Number(data.available) > 0 ? (
+            // ⚠️ پهنای محدود: فرم دو فیلد و یک دکمه دارد و کش‌آمدنش تا لبهٔ
+            // نمایشگر، فاصلهٔ برچسب تا ورودی را بی‌معنا می‌کرد.
+            <form action={requestPayment} className="flex max-w-2xl flex-wrap items-end gap-2 rounded-md border p-3">
               <input type="hidden" name="projectId" value={data.projectId} />
               <div className="grid gap-1.5">
                 <Label htmlFor="r-amount">{t("مبلغ")}</Label>

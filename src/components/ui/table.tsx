@@ -41,7 +41,19 @@ export function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTa
   return <td className={cn('px-3 py-2 align-middle', className)} {...props} />;
 }
 
-/** سلولِ عددی — اعداد همیشه LTR و هم‌عرض (R-I18N-07). */
-export function TableNumericCell({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn('px-3 py-2 align-middle text-end num', className)} {...props} />;
+/**
+ * سلولِ عددی — اعداد همیشه LTR و هم‌عرض (R-I18N-07).
+ *
+ * ⚠️ `num` روی یک `<span>` ِ درونی می‌نشیند، نه روی خودِ سلول. چون `num`
+ * جهت را به LTR می‌برد، اگر روی سلول باشد `text-end` ِ سلول یعنی **راست**
+ * در حالی که `text-end` ِ سرستون (که جهتِ جدول را دارد) در فارسی یعنی
+ * **چپ** — عدد و سرستونش به دو سمتِ مخالف می‌رفتند. با span، ترازِ سلول و
+ * سرستون هر دو از جهتِ جدول می‌آید و در هر زبانی زیرِ هم می‌مانند.
+ */
+export function TableNumericCell({ className, children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <td className={cn('px-3 py-2 align-middle text-end', className)} {...props}>
+      <span className="num">{children}</span>
+    </td>
+  );
 }

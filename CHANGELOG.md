@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.65.1]
+
+### Fixed
+
+- **Numeric columns line up with their headers in every language.** The `num` class forces digits to left-to-right, and when it sat on the table cell itself, "align to the end" meant the right edge for the value and the left edge for the header in a right-to-left page — the two pointed opposite ways. The class now sits on an inner span, so cell and header take their alignment from the table's own direction. Measured in both Persian and English: header and value share the same edge, to the pixel.
+- **Amounts on the dashboard stay covered even when they are zero.** A zero was printed plainly, so "•••" on the other cards announced "there is something here".
+- **The Finance tab is no longer empty for someone who both manages a project and works on it.** The personal block was hidden from anyone who manages the project and the project price is not theirs to see, so the tab opened blank. They now see their own contract, payments and requests; only the "request a payment" form stays out, since they record payments themselves. A manager who is not a member of the project gets no Finance tab at all instead of an empty one.
+- **The payment-request form has a readable width** instead of stretching across the window.
+
+---
+
 ## [1.65.0]
 
 ### Added

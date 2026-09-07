@@ -119,6 +119,19 @@ export default async function ProjectDetailPage({
   } catch { /* نه عضو است نه مدیر — تب دیده نمی‌شود. */ }
 
   /**
+   * ⚠️ مدیری که خودش عضوِ پروژه نیست، «پولِ من» ندارد: نه قراردادی، نه
+   * پرداختی، نه درخواستی. پیش از این تبِ مالی برایش ساخته می‌شد و **خالی**
+   * باز می‌شد — کاربر روی تبی کلیک می‌کرد که هیچ‌چیز در آن نبود.
+   */
+  if (myMoney && canManage) {
+    const hasPersonal = myMoney.isUnitBased
+      || Number(myMoney.agreed) > 0
+      || myMoney.payouts.length > 0
+      || myMoney.requests.length > 0;
+    if (!hasPersonal) myMoney = null;
+  }
+
+  /**
    * «پیشنهادِ من» — فقط وقتی پروژه مناقصه باشد و کاربر نقشِ بازی داشته باشد.
    * ⚠️ برای مدیر ساخته نمی‌شود: او تبِ «پیشنهادهای مناقصه» را دارد و آنجا
    * همهٔ پیشنهادها را می‌بیند.

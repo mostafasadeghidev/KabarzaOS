@@ -65,8 +65,12 @@ function MoneyStat({
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {/* ⚠️ صفر هم پوشیده است: اگر فقط رقمِ غیرِصفر پوشیده باشد، «•••» خودش
+            می‌گوید «چیزی هست» و پوشش بی‌معنا می‌شود. */}
         {lines.length === 0 ? (
-          <p className="num text-2xl font-semibold">0</p>
+          <p className="text-2xl font-semibold">
+            <SecretAmount value="0" />
+          </p>
         ) : (
           <div className="grid gap-0.5">
             {lines.map((l) => (
