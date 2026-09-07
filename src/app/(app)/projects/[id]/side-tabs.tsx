@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useState, useTransition } from 'react';
+import { useActionState, useRef, useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
 import { Check, ExternalLink, FileText, Link2, Paperclip, Square, X } from 'lucide-react';
 import {
@@ -210,20 +211,33 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
   /**
    * ⚠️ عدد در پیام می‌ماند: «۷ آیتم اعمال شد.» چیزی می‌گوید که «اعمال شد»
    * نمی‌گوید — کاربر می‌خواهد بداند چند آیتم واقعاً نشست، چون تکراری‌ها
-   * دوباره اعمال نمی‌شوند.
+   * دوباره اعمال نمی‌شوند. و تسک‌ها جدا شمرده می‌شوند: آیتمِ تسک‌ساز کارِ واقعی روی تختهٔ پروژه
+   * می‌سازد و پیامِ «۳ آیتم اعمال شد» این را نمی‌گفت — تسک‌ها بی‌صدا ظاهر
+   * می‌شدند و کاربر تا بازکردنِ تبِ تسک‌ها خبر نداشت.
    */
-  useActionToast(state, { success: tr('{n} آیتم اعمال شد.', { n: state.added ?? 0 }) });
+  useActionToast(state, {
+    success: (state.tasks ?? 0) > 0
+      ? tr('{n} آیتم اعمال شد — {t} تسک روی پروژه ساخته شد.', { n: state.added ?? 0, t: state.tasks ?? 0 })
+      : tr('{n} آیتم اعمال شد.', { n: state.added ?? 0 }),
+  });
   const { pending } = useFormStatus();
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  /** همهٔ مخاطب‌ها را با هم تیک می‌زند یا برمی‌دارد. */
+  const setAll = (checked: boolean) => {
+    boxRef.current?.querySelectorAll<HTMLInputElement>('input[name="audience"]')
+      .forEach((box) => { box.checked = checked; });
+  };
 
   return (
-    <form action={formAction} className="grid gap-2 rounded-md border p-3">
+    <form action={formAction} className="grid max-w-3xl gap-2 rounded-md border p-3">
       <input type="hidden" name="projectId" value={projectId} />
       <h3 className="text-sm font-semibold">{t("افزودن چک‌لیست QA")}</h3>
       <p className="text-xs text-muted-foreground">
         {tr("آیتم‌های کتابخانهٔ QA برای نقش‌های انتخاب‌شده روی این پروژه می‌نشینند. آیتمِ تکراری دوباره اعمال نمی‌شود.")}
       </p>
 
-      <div className="flex flex-wrap gap-3">
+      <div ref={boxRef} className="flex flex-wrap gap-3">
         {roles.map((r) => (
           <label key={r.id} className="flex items-center gap-1.5 text-sm">
             <input type="checkbox" name="audience" value={r.id} className="size-4 accent-primary" />
@@ -237,10 +251,16 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
         </label>
       </div>
 
-
-      <div>
+      <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" size="sm" disabled={pending}>
           {pending ? t('در حالِ اعمال…') : t('اعمالِ چک‌لیست')}
+        </Button>
+        {/* چک‌لیستِ QA اغلب برای **همهٔ** نقش‌ها لازم است؛ تیک‌زدنِ ده‌تایی کارِ تکراری بود. */}
+        <Button type="button" size="sm" variant="outline" onClick={() => setAll(true)}>
+          {t('انتخابِ همه')}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={() => setAll(false)}>
+          {t('پاک‌کردنِ همه')}
         </Button>
       </div>
     </form>
@@ -347,6 +367,7 @@ export function QaTab({
   qa,
   form,
   canManage,
+  taskCount = 0,
   canInteract = false,
 }: {
   projectId: number;
@@ -354,6 +375,8 @@ export function QaTab({
   /** حاضر بودنش یعنی کاربر می‌تواند چک‌لیست اعمال کند. */
   form: QaFormData | null;
   canManage: boolean;
+  /** چند تسکِ پروژه از همین چک‌لیست ساخته شده. */
+  taskCount?: number;
   /** عضو/کارفرما آیتم‌های **خودشان** را تیک می‌زنند — فهرست از سرور به‌ازای بیننده فیلتر شده. */
   canInteract?: boolean;
 }) {
@@ -406,8 +429,23 @@ export function QaTab({
     );
 
   return (
-    <div className="grid gap-4">
+    // ⚠️ پهنای خواندنی: ردیفِ چک‌لیست یک عنوان و چند چیپ است و کش‌آمدنش تا
+    // لبهٔ نمایشگر، تیک و عنوان را ده‌ها سانتی‌متر از هم دور می‌کرد.
+    <div className="grid max-w-4xl gap-4">
       {form && <ApplyQaForm projectId={projectId} roles={form.roles} />}
+      {/*
+        ⚠️ آیتمِ «تسک‌ساز» در جدولِ چک‌لیست **نمی‌نشیند** — مستقیم تسک می‌شود.
+        پس تبِ QA هیچ ردی از آن نداشت و مدیر بعدِ اعمال نمی‌فهمید کارِ واقعی
+        روی تخته ساخته شده. این خط تنها جای ماندگارِ آن خبر است.
+      */}
+      {taskCount > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {t('{n} تسکِ این پروژه از همین چک‌لیست ساخته شده است.', { n: taskCount })}{' '}
+          <Link href={`/projects/${projectId}?tab=tasks`} className="underline hover:text-foreground">
+            {t('دیدنِ تسک‌ها')}
+          </Link>
+        </p>
+      )}
       {qa.length === 0 ? (
         <EmptyState title={t("هنوز آیتم چک‌لیستی روی این پروژه نیست.")} />
       ) : (

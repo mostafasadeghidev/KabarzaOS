@@ -461,17 +461,19 @@ export function BootstrapSections({
           {/* ⚠️ چک‌لیستِ QA معمولاً برای **همهٔ** نقش‌ها لازم است؛ انتخابِ
               یکی‌یکیِ ده نقش کارِ تکراری بود. */}
           <div className="flex gap-2">
+            {/* «همه» یعنی کارفرما هم — وگرنه دکمه نیمی از کار را می‌کرد و
+                کاربر بعدش هم باید تیکِ کارفرما را جدا می‌زد. */}
             <Button
               type="button" size="sm" variant="outline"
-              disabled={qaRoles.length === roleOptions.length}
-              onClick={() => setQaRoles(roleOptions.map((o) => o.value))}
+              disabled={qaRoles.length === roleOptions.length && qaClient}
+              onClick={() => { setQaRoles(roleOptions.map((o) => o.value)); setQaClient(true); }}
             >
               {tr("انتخابِ همه")}
             </Button>
             <Button
               type="button" size="sm" variant="ghost"
-              disabled={qaRoles.length === 0}
-              onClick={() => setQaRoles([])}
+              disabled={qaRoles.length === 0 && !qaClient}
+              onClick={() => { setQaRoles([]); setQaClient(false); }}
             >
               {tr("پاک‌کردنِ همه")}
             </Button>

@@ -15,6 +15,8 @@ export interface QaActionState {
   error?: string;
   ok?: boolean;
   added?: number;
+  /** از این تعداد، چندتا **تسک** روی تختهٔ پروژه ساخته شد. */
+  tasks?: number;
 }
 
 export async function applyQaAction(_prev: QaActionState, formData: FormData): Promise<QaActionState> {
@@ -36,7 +38,7 @@ export async function applyQaAction(_prev: QaActionState, formData: FormData): P
     const result = await applyQa(actor, projectId, audiences);
     revalidatePath(`/projects/${projectId}`);
     revalidatePath('/projects');
-    return { ok: true, added: result.added };
+    return { ok: true, added: result.added, tasks: result.tasks };
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ اعمالِ چک‌لیست ندارید.' };
     return { error: 'چک‌لیست اعمال نشد.' };

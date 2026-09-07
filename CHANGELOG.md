@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.66.0]
+
+### Added
+
+- **The QA tab says when the checklist created real tasks.** A QA item marked "task" is not stored as a checklist row at all — it becomes work on the project board — so until now applying the checklist produced tasks with nothing anywhere to say so. Applying now reports "5 items applied — 2 tasks created on the project", and the tab keeps a standing line, "2 of this project's tasks came from this checklist", with a link to the Tasks tab.
+- **Select every QA audience at once** on the project page, the same pair of buttons the new-project dialog already had. A quality checklist is usually wanted for every role, and ticking nine boxes by hand was busywork.
+
+### Changed
+
+- **"Select all" in the new-project dialog now includes the client's items**, and "Clear all" clears them; before, it filled the roles and left the client checkbox behind, so "all" was only half the audiences.
+- **The QA tab has a readable width.** A checklist row is a title and a couple of chips; stretched to the edge of a wide screen it put tens of centimetres between the tick box and the text it belongs to.
+
+---
+
 ## [1.65.1]
 
 ### Fixed

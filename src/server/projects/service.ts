@@ -2173,7 +2173,7 @@ export async function applyQa(actor: Actor, projectId: number, audiences: QaAudi
     appliedItemIds: applied,
     primaryClientId,
   });
-  if (plan.entries.length === 0) return { added: 0 };
+  if (plan.entries.length === 0) return { added: 0, tasks: 0 };
 
   await db.transaction(async (tx) => {
     for (const entry of plan.entries) {
@@ -2208,8 +2208,14 @@ export async function applyQa(actor: Actor, projectId: number, audiences: QaAudi
     }
   });
 
-  await audit(actor, 'qa.apply', projectId, null, { audiences, added: plan.entries.length });
-  return { added: plan.entries.length };
+  /**
+   * ⚠️ شمارِ **تسک‌ها** جدا برمی‌گردد: آیتمِ تسک‌ساز کارِ واقعی روی تختهٔ
+   * پروژه می‌سازد و کاربر باید بداند چند تا. پیامِ «۳ آیتم اعمال شد» این را
+   * نمی‌گفت و تسک‌ها بی‌صدا ظاهر می‌شدند.
+   */
+  const taskCount = plan.entries.filter((e) => e.kind !== 'checklist').length;
+  await audit(actor, 'qa.apply', projectId, null, { audiences, added: plan.entries.length, tasks: taskCount });
+  return { added: plan.entries.length, tasks: taskCount };
 }
 
 /** تیکِ آیتمِ چک‌لیست — «انجام‌شده توسط X» فقط هنگامِ تیک‌زدن مهر می‌خورد. */
