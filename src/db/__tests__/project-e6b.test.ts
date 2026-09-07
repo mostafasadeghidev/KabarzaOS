@@ -105,12 +105,16 @@ describe('QA به‌ازای بیننده — پورتِ qa_visible_items', () =
   });
 });
 
-describe('رشتهٔ بازبینی و پولِ عضو', () => {
-  it('کامنتِ نوعِ بازبینی جدا ذخیره می‌شود', async () => {
-    await addComment(actor(DEV, ['member']), project, 'لطفاً بازبینی کنید', 'review');
+describe('رشتهٔ کامنت و پولِ عضو', () => {
+  it('⚠️ هر کامنتِ پروژه نوعِ «comment» می‌گیرد — رشتهٔ دومِ «بازبینی» برداشته شد (0026)', () => {
+    // پیش‌تر نوعِ دوم از فرم می‌آمد و رشتهٔ جدایی می‌ساخت که هیچ شمارنده‌ای نمی‌دیدش.
+  });
+
+  it('کامنت با نوعِ ثابت ذخیره می‌شود', async () => {
+    await addComment(actor(DEV, ['member']), project, 'لطفاً بازبینی کنید');
     await addComment(actor(DEV, ['member']), project, 'یک یادداشت');
     const rows = await db.select().from(comments).where(eq(comments.projectId, project));
-    expect(rows.map((r) => r.type).sort()).toEqual(['comment', 'review']);
+    expect(rows.map((r) => r.type)).toEqual(['comment', 'comment']);
   });
 
   it('توافقی / پرداخت‌شده / وضعیت / ردیف‌های پرداخت برای عضو', async () => {

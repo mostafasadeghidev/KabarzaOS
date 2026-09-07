@@ -25,6 +25,7 @@ import { formatDateTime } from '@/i18n/datetime';
 import { useConfirm } from '@/components/ui/confirm';
 import { ClaimTaskButton } from '@/app/(app)/tasks/inbox-claim';
 import { chipStyle } from '@/domain/ui/contrast';
+import { TaskStatusPicker } from './task-status-picker';
 
 /**
  * مودالِ تسک — بازسازیِ `task_admin_html()`:
@@ -143,16 +144,18 @@ export function TaskDialog({
               {task.priorityName && (
                 <Badge variant="outline" style={chipStyle(task.priorityColor)}>{task.priorityName}</Badge>
               )}
-              {task.statusName ? (
-                <Badge
-                  variant={chipStyle(task.statusColor) ? 'outline' : (task.isReview ? 'warning' : 'secondary')}
-                  style={chipStyle(task.statusColor)}
-                >
-                  {task.statusName}
-                </Badge>
-              ) : (
-                <Badge variant="outline">{t("بدون وضعیت")}</Badge>
-              )}
+              {/*
+                ⚠️ وضعیت اینجا **عوض می‌شود**، نه فقط دیده. مودال از صندوقِ
+                تسک‌ها هم باز می‌شود و کاربری که کارتِ «در انتظارِ بررسی» را
+                می‌خواند باید همان‌جا تأیید یا برگرداند؛ پیش از این باید به
+                صفحهٔ پروژه می‌رفت و تسک را دوباره پیدا می‌کرد.
+              */}
+              <TaskStatusPicker
+                task={task}
+                options={data?.statuses ?? []}
+                canManage={(data?.detail.canInteract ?? false) && (data?.statuses.length ?? 0) > 0}
+                onChanged={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
+              />
               {task.assigneeName && (
                 <span className="text-xs text-muted-foreground">{tr('مسئول: {name}', { name: task.assigneeName })}</span>
               )}

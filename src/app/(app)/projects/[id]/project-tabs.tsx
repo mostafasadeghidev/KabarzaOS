@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { TasksTab, type TaskItem, type TaskStatusOption } from './tasks-tab';
 import type { TaskFormOptions } from './add-task-dialog';
 import { CommentsTab, type CommentItem } from './comments-tab';
@@ -94,6 +95,9 @@ export function ProjectTabs({
   initialView?: string | null;
 }) {
   const tr = useT();
+  const router = useRouter();
+  const pathname = usePathname();
+  const search = useSearchParams();
   const tabs: Array<{ key: string; label: string; badge?: number }> = [
     { key: 'info', label: 'اطلاعات' },
     { key: 'tasks', label: 'تسک‌ها', badge: data.tasks.length },
@@ -124,6 +128,42 @@ export function ProjectTabs({
     wanted && tabs.some((t) => t.key === wanted) ? wanted : 'info',
   );
 
+  /**
+   * ⚠️ `useState` فقط **یک بار** مقدار می‌گیرد. کاربری که همین صفحه باز بود
+   * و روی اعلانِ «کامنت جدید» می‌زد، به `?tab=comments` می‌رفت ولی کامپوننت
+   * دوباره سوار نمی‌شد و تب همان‌جا می‌ماند — گزارشِ «هنوز به تبِ کامنت‌ها
+   * نمی‌رود». این اثر آدرس را دنبال می‌کند.
+   */
+  useEffect(() => {
+    if (wanted && tabs.some((t) => t.key === wanted)) setTab(wanted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wanted]);
+
+  /**
+   * انتخابِ تب آدرس را هم به‌روز می‌کند.
+   *
+   * ⚠️ بدونِ این، آدرس و آنچه دیده می‌شود از هم جدا می‌افتادند: کاربری که با
+   * `?tab=comments` آمده و بعد دستی روی «تسک‌ها» زده، آدرسش هنوز
+   * `?tab=comments` بود — و کلیک روی اعلانِ کامنت به **همان** آدرس، برای
+   * مسیریاب «هیچ تغییری» بود و هیچ‌جا نمی‌رفت. گزارشِ «هنوز به تبِ کامنت‌ها
+   * نمی‌رود» دقیقاً همین بود.
+   *
+   * ⚠️ `router.replace` و نه `history.replaceState`: دومی فقط نوارِ آدرس را
+   * عوض می‌کند و حالتِ داخلیِ مسیریابِ Next سرِ جایش می‌ماند — یعنی همان
+   * ناهماهنگی، این بار نامرئی. آزموده شد و نگرفت.
+   *
+   * ⚠️ `setTab` **قبل** از مسیریابی: تب فوری عوض می‌شود و رفت‌وبرگشتِ سرور
+   * در پس‌زمینه می‌ماند؛ پاسخش همان چیزی است که کاربر می‌بیند، پس پرشی نیست.
+   */
+  const selectTab = (key: string) => {
+    setTab(key);
+    const next = new URLSearchParams(search?.toString() ?? '');
+    next.set('tab', key);
+    // زیرتب مالِ تبِ قبلی بود؛ با عوض شدنِ تب معنایش را از دست می‌دهد.
+    next.delete('view');
+    router.replace(`${pathname}?${next}`, { scroll: false });
+  };
+
   return (
     <div className="mt-6 grid gap-4">
       <nav className="flex flex-wrap gap-1 border-b">
@@ -131,7 +171,7 @@ export function ProjectTabs({
           <button
             key={t.key}
             type="button"
-            onClick={() => setTab(t.key)}
+            onClick={() => selectTab(t.key)}
             className={`-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors ${
               tab === t.key
                 ? 'border-primary font-medium text-foreground'

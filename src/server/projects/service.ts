@@ -1,9 +1,9 @@
 import { tagName } from '@/db/tag-name';
 import { currentLocale, getT } from '@/i18n/server';
-import { notInArray, and, eq, inArray, isNull, asc, sql } from 'drizzle-orm';
+import { notInArray, and, eq, inArray, isNull, asc, like, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
-  attachments, comments, ledger, paymentRequests, projectClients, projectMembers,
+  attachments, comments, ledger, notifications, paymentRequests, projectClients, projectMembers,
   projectPayments, projectQa, projects, tags, tagRelations, tasks, taskRoles,
   tenderBids, timelogs, auditLog, userOffices, users, currencies,
 } from '@/db/schema';
@@ -554,6 +554,17 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
       // ردیف‌های دفترکل فقط پیوندشان قطع می‌شود؛ برچسبِ طرف و شرحشان می‌ماند.
       await tx.update(ledger).set({ projectId: null }).where(eq(ledger.projectId, projectId));
     }
+
+    /**
+     * ⚠️ اعلان‌های همین پروژه هم می‌روند. بدونِ این، «شما به پروژه اضافه
+     * شدید» و «تسکی نیاز به بررسی دارد» در زنگولهٔ کاربر می‌ماندند و
+     * دکمهٔ «مشاهده»‌شان به ۴۰۴ می‌خورد — پروژه دیگر نبود. همان کاری که
+     * حذفِ رشتهٔ پیام می‌کند.
+     */
+    await tx.delete(notifications).where(or(
+      eq(notifications.url, `/projects/${projectId}`),
+      like(notifications.url, `/projects/${projectId}?%`),
+    ));
 
     // حذفِ نرم — سوابق برای ممیزی می‌مانند (G6).
     await tx.update(projects).set({ deletedAt: new Date() }).where(eq(projects.id, projectId));
@@ -1428,7 +1439,12 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
       type: 'task.review',
       title: 'تسکی نیاز به بررسی دارد',
       body: task.title,
-      url: `/projects/${task.projectId}?tab=tasks`,
+      /**
+       * ⚠️ مقصد **صندوقِ تسک‌ها**ست، نه صفحهٔ پروژه: مدیر معمولاً چند پروژه
+       * دارد و کارِ «بررسی» را یک‌جا انجام می‌دهد. کارتِ «در انتظارِ بررسی»
+       * همان فهرست است؛ فرستادنش به یک پروژهٔ خاص کار را تکه‌تکه می‌کرد.
+       */
+      url: '/tasks',
     });
   } else if (wasReview && !isReview && !nextDone) {
     // ⚠️ فقط وقتی کار **برمی‌گردد**؛ تأیید (ریویو → انجام‌شده) اعلانِ «برگشت» ندارد (پورتِ افزونه).
@@ -1505,12 +1521,14 @@ export async function toggleCommentStatus(actor: Actor, commentId: number) {
   return row.projectId;
 }
 
-/** افزودنِ کامنت به پروژه. */
+/**
+ * افزودنِ کامنت به پروژه.
+ * ⚠️ نوعِ دومِ «بازبینی» برداشته شد (مهاجرتِ 0026) — یک رشتهٔ گفت‌وگو، و تسک برای کار.
+ */
 export async function addComment(
   actor: Actor,
   projectId: number,
   body: string,
-  type: 'comment' | 'review' = 'comment',
   parentId: number | null = null,
 ) {
   // عضو و کارفرمای پروژه هم کامنت می‌گذارند (مخاطبِ comment_added ِ نسخهٔ قبلی).
@@ -1522,18 +1540,17 @@ export async function addComment(
   const text = body.trim();
   if (text === '') throw new ForbiddenError('comment.empty');
 
-  // پاسخ (پورتِ `parent_id`): والد باید از همین پروژه و همین رشته باشد.
+  // پاسخ (پورتِ `parent_id`): والد باید از همین پروژه و از رشتهٔ کامنت باشد.
   if (parentId !== null) {
     const parent = await repo.getComment(parentId);
-    if (!parent || parent.projectId !== projectId || parent.type !== type) throw new NotFoundError();
+    if (!parent || parent.projectId !== projectId || parent.type !== 'comment') throw new NotFoundError();
   }
 
   await db.insert(comments).values({
     projectId,
     userId: actor.id,
     parentId,
-    // پورتِ `render_thread($type)`: رشتهٔ «بازبینی» جدا از «کامنت» است.
-    type,
+    type: 'comment',
     // ⚠️ پاسخِ تازه با «نیازمند بررسی» می‌آید — وضعیتِ رشته از تازه‌ترین پیام است، پس رشتهٔ بسته باز می‌شود.
     status: OPEN_STATUS,
     body: text,
@@ -1551,7 +1568,7 @@ export async function addComment(
     type: 'comment',
     // ⚠️ عنوان **ثابت** است تا کلیدِ ترجمه بماند؛ دادهٔ متغیر در بدنه
     // می‌نشیند (R-NOTIF-06). همین الگو در بقیهٔ اعلان‌ها هم هست.
-    title: type === 'review' ? 'بازبینیِ جدید در پروژه' : 'کامنت جدید در پروژه',
+    title: 'کامنت جدید در پروژه',
     body: `«${project?.title ?? ''}» — ${text.slice(0, 140)}`,
     url: `/projects/${projectId}?tab=comments`,
   });

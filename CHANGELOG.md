@@ -2,6 +2,26 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.68.0]
+
+### Removed
+
+- **The "Reviews" thread inside the Comments tab.** It was a second thread with the same mechanics as comments and only one difference — the closed state was called "resolved" instead of "done". Nothing counted it: the dashboard filtered comments by type, and the project's "open comments" card treated a *resolved* review as still open. A migration turns every review into a comment (resolved → done), so nothing is lost. One place to talk, tasks for work.
+
+### Fixed
+
+- **Deleting a project now deletes its notifications.** "You were added to the project" and "a task needs review" stayed in the bell after the project was gone, and their View button landed on a 404.
+- **A notification opens the right tab even when you are already on that project.** The tab was component state while the address said something else, so clicking a comment notification from the Tasks tab was, to the router, a move to the page you were already on — and nothing happened. Selecting a tab now updates the address too, so the two can no longer drift.
+- **A task that is up for review no longer appears under "In progress" as well.** That status belongs to the in-progress group, so the same task showed in two sub-tabs and managers met it twice.
+
+### Changed
+
+- **"A task needs review" goes to the Tasks page**, not to one project. Review is done across projects from the "Waiting for your review" card.
+- **The whole row opens a task in the Tasks page**, with a pointer cursor, instead of the title alone; the project link and the claim button still do their own job.
+- **The task dialog can change the status.** Anyone who can work on the project can approve or send a task back from the dialog, including from the Tasks page — no need to find the task again inside the project.
+
+---
+
 ## [1.67.0]
 
 ### Added

@@ -66,4 +66,27 @@ describe('project_signed', () => {
     await service.addProjectMember(ownerActor(), projectId, { userId: dev, roleTagId: devRole, agreedAmount: '200' });
     expect(await db.select().from(notifications).where(eq(notifications.userId, dev))).toHaveLength(1);
   });
+
+  /**
+   * ⚠️ اعلان از پروژه‌اش عمر بیشتری نمی‌کند. پیش از این «به پروژه اضافه
+   * شدید» در زنگوله می‌ماند و پس از حذفِ پروژه دکمهٔ «مشاهده»‌اش کاربر را
+   * روی ۴۰۴ می‌گذاشت — گزارشِ واقعیِ کارفرما.
+   */
+  it('⚠️ حذفِ پروژه اعلان‌های همان پروژه را هم می‌بَرد', async () => {
+    // یک اعلانِ زیرتب‌دار هم بگذار تا الگوی `?tab=` هم پوشش بگیرد.
+    await db.insert(notifications).values({
+      userId: client, type: 'comment', title: 'کامنت جدید در پروژه', body: '',
+      url: `/projects/${projectId}?tab=comments`,
+    });
+    // و یک اعلانِ پروژهٔ دیگر که **نباید** دست بخورد.
+    await db.insert(notifications).values({
+      userId: client, type: 'comment', title: 'کامنت جدید در پروژه', body: '',
+      url: `/projects/${projectId + 1000}`,
+    });
+
+    await service.deleteProject(ownerActor(), projectId, { mode: 'full', confirmTitle: 'وب‌سایت' });
+
+    const left = await db.select().from(notifications).where(eq(notifications.userId, client));
+    expect(left.map((n) => n.url)).toEqual([`/projects/${projectId + 1000}`]);
+  });
 });

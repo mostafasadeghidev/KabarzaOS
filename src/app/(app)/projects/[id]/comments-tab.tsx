@@ -109,7 +109,6 @@ function StatusToggle({ comment, canToggle }: { comment: CommentItem; canToggle:
 /** فرمِ نوشتن — کامنتِ تازه (بی‌والد) یا پاسخ (با `parentId`). */
 function Composer({
   projectId,
-  type,
   parentId,
   placeholder,
   buttonLabel,
@@ -117,7 +116,6 @@ function Composer({
   onDone,
 }: {
   projectId: number;
-  type: 'comment' | 'review';
   parentId: number | null;
   placeholder: string;
   buttonLabel: string;
@@ -133,7 +131,6 @@ function Composer({
   return (
     <form action={formAction} className="grid gap-2">
       <input type="hidden" name="projectId" value={projectId} />
-      <input type="hidden" name="type" value={type} />
       {parentId !== null && <input type="hidden" name="parentId" value={parentId} />}
       <Textarea name="body" rows={rows} required placeholder={placeholder} />
       <div className="flex justify-end"><SendButton label={buttonLabel} /></div>
@@ -146,7 +143,6 @@ function Node({
   comment,
   thread,
   projectId,
-  type,
   canManage,
   canInteract,
   isFrozen,
@@ -155,7 +151,6 @@ function Node({
   comment: ThreadItem;
   thread: Thread<ThreadItem>;
   projectId: number;
-  type: 'comment' | 'review';
   canManage: boolean;
   canInteract: boolean;
   isFrozen: boolean;
@@ -212,7 +207,6 @@ function Node({
           {replying ? (
             <Composer
               projectId={projectId}
-              type={type}
               parentId={comment.id}
               placeholder={t('پاسخ شما…')}
               buttonLabel={t('ارسال پاسخ')}
@@ -238,14 +232,12 @@ function Node({
 /** یک رشته (کامنت یا بازبینی) — زیرتب‌های وضعیت، رشته‌ها با پاسخ‌هایشان، و فرمِ خودش. */
 function ThreadList({
   projectId,
-  type,
   comments,
   canManage,
   canInteract,
   isFrozen,
 }: {
   projectId: number;
-  type: 'comment' | 'review';
   comments: CommentItem[];
   canManage: boolean;
   canInteract: boolean;
@@ -255,15 +247,13 @@ function ThreadList({
 
   /**
    * پورتِ `render_thread`: رشته‌ها با وضعیتِ **تازه‌ترین** پیامشان به دو
-   * سطلِ «نیازمند بررسی» / «انجام‌شده ∕ حل‌شده» می‌روند؛ تازه‌ترین رشته اول.
+   * سطلِ «نیازمند بررسی» / «انجام‌شده» می‌روند؛ تازه‌ترین رشته اول.
    */
   const { open, closed } = buildThreads<ThreadItem>(
     comments.map((c) => ({ ...c, parentId: c.parentId ?? null })),
-    type,
   );
   const [bucket, setBucket] = useState<'open' | 'closed'>(open.length > 0 || closed.length === 0 ? 'open' : 'closed');
   const list = bucket === 'open' ? open : closed;
-  const closedLabel = type === 'review' ? 'حل‌شده' : 'انجام‌شده';
 
   return (
     <div className="grid gap-3">
@@ -271,10 +261,9 @@ function ThreadList({
       {canInteract && !isFrozen && (
         <Composer
           projectId={projectId}
-          type={type}
           parentId={null}
-          placeholder={type === 'review' ? t("ریویو خود را بنویسید…") : t("دیدگاه خود را بنویسید…")}
-          buttonLabel={type === 'review' ? t('ثبت ریویو') : t('ارسال کامنت')}
+          placeholder={t("دیدگاه خود را بنویسید…")}
+          buttonLabel={t('ارسال کامنت')}
           rows={3}
         />
       )}
@@ -287,7 +276,7 @@ function ThreadList({
             onClick={() => setBucket(key)}
             className={`flex items-center gap-2 rounded-md px-3 py-1 text-sm ${bucket === key ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/60'}`}
           >
-            {key === 'open' ? t('نیازمند بررسی') : t(closedLabel)}
+            {key === 'open' ? t('نیازمند بررسی') : t('انجام‌شده')}
             {/* عدد نشانِ جداست، نه ادامهٔ کلمه — در راست‌به‌چپ می‌چسبید. */}
             <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
               {key === 'open' ? open.length : closed.length}
@@ -308,8 +297,7 @@ function ThreadList({
                 comment={thread.root}
                 thread={thread}
                 projectId={projectId}
-                type={type}
-                canManage={canManage}
+                  canManage={canManage}
                 canInteract={canInteract}
                 isFrozen={isFrozen}
                 depth={0}
@@ -320,8 +308,7 @@ function ThreadList({
                   comment={r.node}
                   thread={thread}
                   projectId={projectId}
-                  type={type}
-                  canManage={canManage}
+                      canManage={canManage}
                   canInteract={canInteract}
                   isFrozen={isFrozen}
                   depth={r.depth}
@@ -336,9 +323,14 @@ function ThreadList({
 }
 
 /**
- * تبِ کامنت‌ها — پورتِ `render_thread($type)`: دو رشتهٔ جدا («کامنت‌ها» و
- * «بازبینی‌ها») با پاسخ‌های تودرتو؛ وضعیتِ هر رشته از تازه‌ترین پیامش می‌آید و
- * هر شرکت‌کننده می‌تواند آن را عوض کند.
+ * تبِ کامنت‌ها — **یک** رشته، با پاسخ‌های تودرتو؛ وضعیتِ هر رشته از تازه‌ترین
+ * پیامش می‌آید و هر شرکت‌کننده می‌تواند آن را عوض کند.
+ *
+ * ⚠️ رشتهٔ دومِ «بازبینی» برداشته شد (مهاجرتِ 0026). مکانیزمش با کامنت مو
+ * نمی‌زد و تنها تفاوتش نامِ حالتِ بسته بود؛ در عوض هیچ شمارنده‌ای آن را
+ * نمی‌دید — داشبورد صریحاً `type='comment'` فیلتر می‌کرد و کارتِ «کامنت باز»
+ * ِ پروژه بازبینیِ **حل‌شده** را باز حساب می‌کرد. یک جا برای گفت‌وگو، و
+ * تسک برای کار.
  */
 export function CommentsTab({
   projectId,
@@ -354,32 +346,11 @@ export function CommentsTab({
   canInteract: boolean;
   isFrozen?: boolean;
 }) {
-  const t = useT();
-  const [thread, setThread] = useState<'comment' | 'review'>('comment');
-  const ofType = (type: string) => comments.filter((c) => c.type === type);
-
   return (
     <div className="grid max-w-4xl gap-4">
-      <nav className="flex flex-wrap gap-1">
-        {(['comment', 'review'] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setThread(key)}
-            className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${thread === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-          >
-            {key === 'comment' ? t('کامنت‌ها') : t('بازبینی‌ها')}
-            <span className="num rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] leading-none dark:bg-white/15">
-              {ofType(key).filter((c) => !c.parentId).length}
-            </span>
-          </button>
-        ))}
-      </nav>
       <ThreadList
-        key={thread}
         projectId={projectId}
-        type={thread}
-        comments={ofType(thread)}
+        comments={comments}
         canManage={canManage}
         canInteract={canInteract}
         isFrozen={isFrozen}

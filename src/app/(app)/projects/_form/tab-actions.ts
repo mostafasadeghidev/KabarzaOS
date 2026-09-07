@@ -54,7 +54,6 @@ export async function toggleCommentAction(commentId: number): Promise<TabActionS
 export async function addCommentAction(_prev: TabActionState, formData: FormData): Promise<TabActionState> {
   const projectId = Number(formData.get('projectId'));
   const body = String(formData.get('body') ?? '');
-  const type = formData.get('type') === 'review' ? 'review' : 'comment';
   const parentId = Number(formData.get('parentId') ?? 0) || null;
 
   if (!Number.isInteger(projectId) || projectId <= 0) return { error: 'پروژه معتبر نیست.' };
@@ -62,7 +61,7 @@ export async function addCommentAction(_prev: TabActionState, formData: FormData
 
   try {
     const actor = await requireActor();
-    await addComment(actor, projectId, body, type, parentId);
+    await addComment(actor, projectId, body, parentId);
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ثبتِ کامنت ندارید.' };
     return { error: 'کامنت ثبت نشد.' };

@@ -18,14 +18,15 @@ describe('رشته‌های کامنت — پورتِ render_thread', () => {
     expect(closed[0]!.replies.map((r) => [r.node.id, r.depth])).toEqual([[2, 1], [3, 2]]);
   });
 
-  it('حالتِ بستهٔ بازبینی «resolved» است، نه «done»', () => {
-    const review = [
+  it('⚠️ «resolved» ِ قدیمی بسته نیست — مهاجرتِ 0026 آن را به done برده', () => {
+    // اگر ردیفی جا مانده باشد، باز شمرده می‌شود و دیده می‌ماند؛ بی‌صدا گم نمی‌شود.
+    const legacy = [
       { id: 1, parentId: null, status: 'resolved' },
-      { id: 2, parentId: null, status: 'done' }, // برای بازبینی «done» بسته نیست
+      { id: 2, parentId: null, status: 'done' },
     ];
-    const { open, closed } = buildThreads(review, 'review');
-    expect(closed.map((t) => t.root.id)).toEqual([1]);
-    expect(open.map((t) => t.root.id)).toEqual([2]);
+    const { open, closed } = buildThreads(legacy);
+    expect(closed.map((t) => t.root.id)).toEqual([2]);
+    expect(open.map((t) => t.root.id)).toEqual([1]);
   });
 
   it('شمارندهٔ «نیازمند بررسی» رشته می‌شمارد، نه ردیف', () => {

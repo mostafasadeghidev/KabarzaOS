@@ -1,39 +1,38 @@
 import { describe, it, expect } from 'vitest';
 import { closedStatus, isOpen, statusLabel, toggleStatus } from './comments';
 
-describe('R-PROJ-27 — حالتِ بستهٔ رشته به نوعش بستگی دارد', () => {
-  it('⚠️ ریویو resolved می‌شود، کامنت done', () => {
-    // یکی‌کردنشان شمارندهٔ «نیازمند بررسی» را برای یکی از دو نوع خراب می‌کرد.
-    expect(closedStatus('review')).toBe('resolved');
+/**
+ * ⚠️ نوعِ «بازبینی» برداشته شد (مهاجرتِ 0026) — یک واژگان برای هر رشته.
+ * پیش‌تر بستهٔ ریویو `resolved` بود و بستهٔ کامنت `done`، و همین دوگانگی
+ * کارتِ «کامنت باز» ِ پروژه را خراب می‌کرد: بازبینیِ حل‌شده هنوز باز شمرده
+ * می‌شد. ردیف‌های قدیمی در مهاجرت به `done` تبدیل شدند.
+ */
+
+describe('حالتِ بستهٔ رشته', () => {
+  it('برای هر نوع done است', () => {
     expect(closedStatus('comment')).toBe('done');
     expect(closedStatus('task_note')).toBe('done');
+    expect(closedStatus()).toBe('done');
   });
 
-  it('برچسب‌ها هم جدا هستند', () => {
-    expect(statusLabel('review', 'resolved')).toBe('حل شد');
+  it('برچسب‌ها', () => {
     expect(statusLabel('comment', 'done')).toBe('انجام شد');
-    expect(statusLabel('review', 'needs_review')).toBe('بررسی بشه');
     expect(statusLabel('comment', 'needs_review')).toBe('نیاز به بررسی');
   });
 
-  it('برچسبِ ناموجود رشتهٔ خالی است، نه undefined', () => {
+  it('⚠️ «resolved» ِ قدیمی دیگر برچسبی ندارد — مهاجرت باید آن را برده باشد', () => {
     expect(statusLabel('comment', 'resolved')).toBe('');
   });
 });
 
 describe('تیکِ جابه‌جاکننده', () => {
-  it('بازِ کامنت → done و مهرِ بستن می‌خورد', () => {
+  it('باز → done و مهرِ بستن می‌خورد', () => {
     expect(toggleStatus('comment', 'needs_review')).toEqual({ status: 'done', stampCloser: true });
-  });
-
-  it('بازِ ریویو → resolved', () => {
-    expect(toggleStatus('review', 'needs_review')).toEqual({ status: 'resolved', stampCloser: true });
   });
 
   it('⚠️ بازکردنِ دوباره مهرِ «انجام شد توسط» را نمی‌زند', () => {
     // وگرنه نامِ بازکننده به‌جای بندنده می‌نشست.
     expect(toggleStatus('comment', 'done')).toEqual({ status: 'needs_review', stampCloser: false });
-    expect(toggleStatus('review', 'resolved')).toEqual({ status: 'needs_review', stampCloser: false });
   });
 
   it('فقط needs_review باز است', () => {

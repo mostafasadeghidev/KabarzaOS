@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
-  addTaskNote, createTask, deleteTask, getTaskDetail, getTaskFormOptions, referTask, updateTask,
+  addTaskNote, createTask, deleteTask, getTaskDetail, getTaskFormOptions, referTask,
+  taskStatusOptionsFor, updateTask,
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FrozenProjectError } from '@/server/projects/authority';
@@ -199,8 +200,22 @@ export async function addTaskNoteAction(_prev: TaskFormState, formData: FormData
 export async function loadTaskAction(taskId: number) {
   const actor = await requireActor();
   const detail = await getTaskDetail(actor, taskId);
-  const options = detail.canManage
-    ? await getTaskFormOptions(actor, detail.task.projectId, detail.task.assignedTo)
-    : null;
-  return { detail, options };
+  /**
+   * ⚠️ وضعیت‌ها برای **هر شرکت‌کننده** خوانده می‌شوند، نه فقط مدیر: عضو هم
+   * تسکش را به «آماده برای بررسی» می‌فرستد. بدونِ این، مودالِ صندوقِ تسک‌ها
+   * فقط یک چیپِ خواندنی داشت و کاربر باید به صفحهٔ پروژه می‌رفت.
+   */
+  const [options, statuses] = await Promise.all([
+    detail.canManage
+      ? getTaskFormOptions(actor, detail.task.projectId, detail.task.assignedTo)
+      : Promise.resolve(null),
+    detail.canInteract
+      ? taskStatusOptionsFor(actor, detail.task.projectId)
+      : Promise.resolve([]),
+  ]);
+  return {
+    detail,
+    options,
+    statuses: statuses.map((s) => ({ id: s.id, name: s.name, group: s.group, color: s.color })),
+  };
 }

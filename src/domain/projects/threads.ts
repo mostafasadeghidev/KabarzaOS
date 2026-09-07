@@ -25,7 +25,7 @@ export interface Thread<T extends ThreadNode> {
 
 export function buildThreads<T extends ThreadNode>(
   rows: readonly T[],
-  type: CommentType,
+  type: CommentType = 'comment',
 ): { open: Array<Thread<T>>; closed: Array<Thread<T>> } {
   const byId = new Map<number, T>();
   const children = new Map<number, T[]>();

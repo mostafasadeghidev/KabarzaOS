@@ -4,9 +4,10 @@ import { useMemo, useState, useTransition } from 'react';
 import { Check, ChevronDown, Columns3, Hand, Link2, List as ListIcon, Lock, User, MessageSquare } from 'lucide-react';
 import { claimTaskAction, setTaskStatusAction } from '../_form/tab-actions';
 import { canClaimTask } from '@/domain/projects/claim';
-import { TASK_STATUS_GROUPS, groupLabels } from '@/domain/tags/groups';
 import { Button } from '@/components/ui/button';
 import { TaskDialog } from './task-dialog';
+import { GROUP_LABEL, TaskStatusPicker, type TaskStatusOption } from './task-status-picker';
+export type { TaskStatusOption };
 import { AddTaskDialog, type TaskFormOptions } from './add-task-dialog';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -55,23 +56,6 @@ export interface TaskItem {
   blockedBy?: string | null;
 }
 
-export interface TaskStatusOption {
-  id: number;
-  name: string;
-  group: string | null;
-  color: string | null;
-}
-
-/**
- * برچسبِ گروه‌های وضعیتِ تسک — `Tags::status_groups()`.
- *
- * ⚠️ سه گروهِ اول از دامنه می‌آیند تا با فرمِ تگ یکی بمانند؛ `other` گروهِ
- * واقعی نیست — سطلِ تگ‌هایی است که گروه ندارند.
- */
-const GROUP_LABEL: Record<string, string> = {
-  ...groupLabels(TASK_STATUS_GROUPS),
-  other: 'بدون دسته',
-};
 const GROUP_ORDER = ['todo', 'in_progress', 'complete', 'other'];
 
 /**
@@ -100,97 +84,6 @@ function Assignee({ task }: { task: TaskItem }) {
             : ` — ${t('هنوز ساین نشده')}`}
         </span>
       ))}
-    </div>
-  );
-}
-
-function TaskStatusPicker({
-  task,
-  options,
-  canManage,
-}: {
-  task: TaskItem;
-  options: TaskStatusOption[];
-  canManage: boolean;
-}) {
-  const tr = useT();
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-
-  /**
-   * ⚠️ رنگ از **خودِ تگِ وضعیت** می‌آید — همان رنگی که مدیر در تنظیمات
-   * انتخاب کرده — و متن با قاعدهٔ کنتراست سیاه یا سفید می‌شود. تگِ بی‌رنگ
-   * به ظاهرِ پیش‌فرض برمی‌گردد (و «نیاز به ریویو» زردِ خودش را می‌گیرد).
-   */
-  const statusStyle = chipStyle(task.statusColor);
-  const chip = task.statusName ? (
-    <Badge
-      variant={statusStyle ? 'outline' : (task.isReview ? 'warning' : 'secondary')}
-      style={statusStyle}
-    >
-      {task.statusName}
-    </Badge>
-  ) : (
-    <Badge variant="outline">{tr("بدون وضعیت")}</Badge>
-  );
-
-  if (!canManage) return chip;
-
-  const grouped = new Map<string, TaskStatusOption[]>();
-  for (const o of options) {
-    const key = o.group ?? '';
-    grouped.set(key, [...(grouped.get(key) ?? []), o]);
-  }
-
-  const pick = (statusTagId: number | null) => {
-    setError(null);
-    startTransition(async () => {
-      const result = await setTaskStatusAction(task.id, statusTagId);
-      if (result.error) setError(result.error);
-    });
-  };
-
-  return (
-    <div className="grid gap-0.5">
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className="flex items-center gap-1 disabled:opacity-60"
-          title={tr("تغییر وضعیت")}
-          disabled={pending}
-        >
-          {chip}
-          <ChevronDown className="size-3 text-muted-foreground" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
-          <DropdownMenuItem onSelect={() => pick(null)}>
-            <span className="size-2 shrink-0" />
-            {tr("— بدون وضعیت —")}
-            {task.statusTagId === null && <Check className="ms-auto size-3.5" />}
-          </DropdownMenuItem>
-          {[...grouped].map(([key, list]) => (
-            <div key={key}>
-              <DropdownMenuSeparator />
-              {/* نامِ گروه سرفصل است نه گزینه — ریزتر و کم‌رنگ‌تر، مثلِ وضعیتِ پروژه. */}
-              {GROUP_LABEL[key] && (
-                <DropdownMenuLabel className="px-2 py-1 text-[11px] font-normal text-muted-foreground/80">
-                  {tr(GROUP_LABEL[key])}
-                </DropdownMenuLabel>
-              )}
-              {list.map((o) => (
-                <DropdownMenuItem key={o.id} onSelect={() => pick(o.id)}>
-                  <span
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: o.color || 'var(--color-muted-foreground)' }}
-                  />
-                  {o.name}
-                  {o.id === task.statusTagId && <Check className="ms-auto size-3.5" />}
-                </DropdownMenuItem>
-              ))}
-            </div>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      {error && <span className="text-[11px] text-destructive">{tr(error)}</span>}
     </div>
   );
 }
@@ -434,6 +327,13 @@ export function TasksTab({
   const { buckets, review } = useMemo(() => {
     const b = new Map<string, TaskItem[]>();
     for (const t of tasks) {
+      /**
+       * ⚠️ تسکی که «آماده برای بررسی» است در گروهِ خودش هم **نمی‌آید**.
+       * گروهِ این وضعیت `in_progress` است، پس تسک هم‌زمان در «در حال انجام»
+       * و در «نیاز به ریویو» دیده می‌شد و مدیر دو بار به یک کار می‌خورد.
+       * کارش تمام شده و منتظرِ نظرِ کسِ دیگری است — جایش زیرتبِ ریویو است.
+       */
+      if (t.isReview) continue;
       const key = t.statusGroup && GROUP_LABEL[t.statusGroup] ? t.statusGroup : 'other';
       b.set(key, [...(b.get(key) ?? []), t]);
     }

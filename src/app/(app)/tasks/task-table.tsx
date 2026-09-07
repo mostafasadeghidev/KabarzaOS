@@ -117,20 +117,24 @@ export function TaskTable({
             </TableHeader>
             <TableBody>
               {visible.map((task) => (
-                <TableRow key={task.id}>
+                /**
+                 * ⚠️ **کلِ سطر** باز می‌شود، نه فقط عنوان: هدفِ کلیک به اندازهٔ
+                 * یک خطِ متن بود و کاربر روی ستونِ وضعیت یا پروژه کلیک می‌کرد و
+                 * هیچ اتفاقی نمی‌افتاد. نشانگر هم `pointer` می‌شود تا معلوم باشد
+                 * سطر کلیک‌پذیر است.
+                 */
+                <TableRow
+                  key={task.id}
+                  onClick={() => setOpenTask(task.id)}
+                  className="cursor-pointer"
+                >
                   <TableCell>
                     <span className="flex items-center gap-1.5">
                       {/* پورتِ چیپِ 🔒 «خصوصی». */}
                       {task.isPrivate && (
                         <Lock className="size-3.5 shrink-0 text-muted-foreground" aria-label={t('خصوصی')} />
                       )}
-                      <button
-                        type="button"
-                        onClick={() => setOpenTask(task.id)}
-                        className="text-start font-medium hover:underline"
-                      >
-                        {task.title}
-                      </button>
+                      <span className="font-medium">{task.title}</span>
                     </span>
                     {/* نقش‌ها زیرِ عنوان می‌نشینند تا ستون‌ها به‌هم نریزند. */}
                     {task.roles.length > 0 && (
@@ -161,7 +165,8 @@ export function TaskTable({
                       : <span className="text-muted-foreground">—</span>}
                   </TableCell>
 
-                  <TableCell>
+                  {/* ⚠️ لینک و دکمه کارِ خودشان را می‌کنند، نه بازکردنِ مودال. */}
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <Link
                       href={`/projects/${task.projectId}?tab=tasks&view=${task.isReview ? 'review' : 'cur'}`}
                       className="text-muted-foreground hover:text-foreground hover:underline"
@@ -171,7 +176,7 @@ export function TaskTable({
                   </TableCell>
                   <TableNumericCell className="text-muted-foreground">{task.dueDate ?? '—'}</TableNumericCell>
 
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     {task.claimable && <ClaimTaskButton taskId={task.id} projectId={task.projectId} />}
                   </TableCell>
                 </TableRow>

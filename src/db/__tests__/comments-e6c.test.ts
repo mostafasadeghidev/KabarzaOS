@@ -31,15 +31,13 @@ afterAll(async () => { await sql.end(); });
 
 describe('پاسخِ رشته‌ای', () => {
   it('پاسخ زیرِ والدِ همان پروژه و همان رشته؛ والدِ غریبه رد می‌شود', async () => {
-    await addComment(owner(), P, 'ریشه', 'comment');
+    await addComment(owner(), P, 'ریشه');
     const [root] = await db.select({ id: comments.id }).from(comments).where(eq(comments.projectId, P));
-    await addComment(member(), P, 'پاسخ', 'comment', root!.id);
+    await addComment(member(), P, 'پاسخ', root!.id);
     const rows = await db.select({ parentId: comments.parentId, body: comments.body }).from(comments).where(eq(comments.projectId, P));
     expect(rows.find((r) => r.body === 'پاسخ')!.parentId).toBe(root!.id);
 
-    // والد از رشتهٔ «بازبینی» نیست → رد.
-    await expect(addComment(member(), P, 'پاسخ', 'review', root!.id)).rejects.toBeInstanceOf(NotFoundError);
-    await expect(addComment(member(), P, 'پاسخ', 'comment', 99999)).rejects.toBeInstanceOf(NotFoundError);
+    await expect(addComment(member(), P, 'پاسخ', 99999)).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('⚠️ شمارندهٔ داشبورد رشته می‌شمارد (وضعیتِ تازه‌ترین پیام)، نه ردیف؛ تبِ پروژه parentId می‌دهد', async () => {
