@@ -84,6 +84,12 @@ export function MeetingForm({
     meeting === null || meeting.projectId ? 'project' : 'general',
   );
   const [projectId, setProjectId] = useState<string>(meeting?.projectId ? String(meeting.projectId) : '');
+  const [project, setProject] = useState<{ id: number | null; label: string }>({
+    id: meeting?.projectId ?? null,
+    label: meeting?.projectId
+      ? (options.projects.find((p) => p.id === meeting.projectId)?.title ?? '')
+      : '',
+  });
   const [officeId, setOfficeId] = useState<string>(meeting?.officeId ? String(meeting.officeId) : '');
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   /** با هر بار باز شدن یکی بالا می‌رود — کلیدِ ریستِ فرم. */
@@ -105,10 +111,18 @@ export function MeetingForm({
     setFormKey((n) => n + 1);
     setKind(meeting === null || meeting.projectId ? 'project' : 'general');
     setProjectId(meeting?.projectId ? String(meeting.projectId) : '');
+    // ⚠️ **متنِ** انتخابگر هم ریست می‌شود، نه فقط شناسه: بدونِ این، نامِ
+    // پروژهٔ جلسهٔ قبلی در فیلد می‌ماند در حالی که شناسه خالی شده بود.
+    setProject({
+      id: meeting?.projectId ?? null,
+      label: meeting?.projectId
+        ? (options.projects.find((p) => p.id === meeting.projectId)?.title ?? '')
+        : '',
+    });
     setOfficeId(meeting?.officeId ? String(meeting.officeId) : '');
     setChecked(new Set(meeting?.attendees.map((a) => a.userId) ?? []));
     setCandidates(null);
-  }, [meeting, open]);
+  }, [meeting, open, options.projects]);
 
   // فهرستِ دعوت‌شدگان با نوع/پروژه/دفتر عوض می‌شود.
   useEffect(() => {
@@ -187,15 +201,22 @@ export function MeetingForm({
                 پیمایشِ یک select ِ بلند عملاً غیرقابلِ استفاده است.
                 فهرستِ دعوت‌شدگان هم با تغییرِ همین مقدار تازه می‌شود.
               */}
+              {/*
+                ⚠️ **متنِ** انتخابگر هم state ِ خودش را دارد، نه فقط شناسه.
+                پیش از این برچسب هر بار از روی `projectId` بازساخته می‌شد؛
+                تایپ‌کردن اول شناسه را باطل می‌کرد (`id: null`) و بلافاصله
+                برچسب به رشتهٔ خالی برمی‌گشت — یعنی فیلد عملاً قفل بود و
+                هیچ حرفی داخلش نمی‌ماند.
+              */}
               <Combobox
                 id="m-project"
                 name="projectId"
                 options={options.projects.map((p) => ({ value: p.id, label: p.title }))}
-                value={{
-                  id: projectId ? Number(projectId) : null,
-                  label: options.projects.find((p) => String(p.id) === projectId)?.title ?? '',
+                value={project}
+                onChange={(next) => {
+                  setProject(next);
+                  setProjectId(next.id ? String(next.id) : '');
                 }}
-                onChange={(next) => setProjectId(next.id ? String(next.id) : '')}
                 placeholder={t("نامِ پروژه را تایپ کنید…")}
                 disabled={isEdit}
               />

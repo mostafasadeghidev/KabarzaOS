@@ -2,6 +2,15 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.58.1]
+
+### Fixed
+
+- **Search dropdowns inside dialogs could not be clicked.** Since the option lists were moved out of the dialog (so they are no longer clipped by its scroll area), they inherited the `pointer-events: none` that the dialog puts on the page behind it, and a real mouse click passed straight through them. They now take pointer events again — this affected the meeting project picker, the task assignee, role and dependency pickers, and every other searchable field opened from a dialog.
+- **The meeting project field could not be typed into.** The field rebuilt its text from the selected project on every keystroke, so a typed letter was wiped before it could filter anything. It keeps what is typed, and reopening "New meeting" clears the previously chosen project instead of carrying it over.
+
+---
+
 ## [1.58.0]
 
 ### Added — task assignment

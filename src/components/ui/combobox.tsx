@@ -191,7 +191,15 @@ export function Combobox({
           role="listbox"
           // ⚠️ همان دلیلِ MultiSelect: فهرست باید **روی** مودال بنشیند.
           className="fixed z-[100] max-h-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-md"
-          style={{ top: listBox.top, left: listBox.left, width: listBox.width }}
+          /**
+           * ⚠️ `pointerEvents: 'auto'` حیاتی است: مودالِ Radix تا وقتی باز است
+           * روی `body` مقدارِ `pointer-events: none` می‌گذارد و چون این فهرست
+           * با portal **بیرونِ** مودال رندر می‌شود، همان را به ارث می‌برد —
+           * یعنی کلیکِ واقعیِ ماوس از رویش رد می‌شد و هیچ گزینه‌ای انتخاب
+           * نمی‌شد (رویدادِ ساختگیِ تست این را نشان نمی‌دهد، چون
+           * pointer-events فقط روی ورودیِ واقعی اثر دارد).
+           */
+          style={{ top: listBox.top, left: listBox.left, width: listBox.width, pointerEvents: 'auto' }}
         >
           {visible.length === 0 ? (
             <li className="px-2 py-1.5 text-xs text-muted-foreground">
@@ -311,9 +319,11 @@ export function MultiSelect({
       {open && available.length > 0 && listBox && createPortal(
         <ul
           role="listbox"
-          // ⚠️ z بالاتر از مودال (z-50) تا فهرست رویش بنشیند، نه زیرش.
+          // ⚠️ z بالاتر از مودال (z-50) تا فهرست رویش بنشیند، نه زیرش؛ و
+          // `pointer-events: auto` تا کلیکِ ماوس در مودالِ باز به آن برسد
+          // (Radix روی body مقدارِ none می‌گذارد و portal آن را ارث می‌برد).
           className="fixed z-[100] max-h-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-md"
-          style={{ top: listBox.top, left: listBox.left, width: listBox.width }}
+          style={{ top: listBox.top, left: listBox.left, width: listBox.width, pointerEvents: 'auto' }}
         >
           {available.map((o) => (
             <li key={o.value}>
