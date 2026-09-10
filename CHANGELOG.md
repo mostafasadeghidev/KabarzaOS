@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.70.0]
+
+### Fixed
+
+- **Removing the "Team manager" role now actually removes the offices that person manages.** The "manages these offices" field stayed on screen after the role was taken away — so it could be given back — and saving simply resubmitted the same offices. The person kept the authority, which comes from those rows, and the role and the access drifted apart. The role is now the gate: the field appears only with the role, a line says what removing it will take away, and the **server** enforces the rule, so the form cannot grant office management without the role. Office *membership* is untouched — this is only about managing.
+
+### Changed
+
+- **The board view's cards are smaller.** Narrower columns and tighter cards, with the description on one line, so more of a column fits on screen at once. The list view is unchanged.
+
+---
+
 ## [1.69.0]
 
 ### Fixed

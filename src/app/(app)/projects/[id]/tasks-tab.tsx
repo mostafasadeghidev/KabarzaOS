@@ -142,11 +142,18 @@ function ClaimButton({
 }
 
 /** پورتِ کارتِ تسک: چیپِ اولویت به رنگِ تگ، توضیح، شمار و آخرین یادداشتِ گفتگو (`task_notes_summary`). */
-function TaskExtras({ task }: { task: TaskItem }) {
+/**
+ * ریزه‌کاری‌های کارتِ تسک — اولویت، شمارِ یادداشت، توضیح، آخرین یادداشت.
+ *
+ * ⚠️ `compact` برای **نمای برد** است: آنجا کارت‌ها در ستون‌های باریک کنارِ هم
+ * می‌نشینند و باید چند تا با هم دیده شوند؛ در نمای فهرست جا هست و کارت
+ * می‌تواند راحت‌تر نفس بکشد.
+ */
+function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boolean }) {
   const tr = useT();
   if (!task.priorityName && !task.description && !task.notesCount && !task.blockedBy) return null;
   return (
-    <div className="mt-1 grid gap-1">
+    <div className={compact ? 'grid gap-0.5' : 'mt-1 grid gap-1'}>
       {/*
         ⚠️ «منتظرِ …» — تا وابستگی تمام نشده، نوبتِ این کار نرسیده. بدونِ
         این خط، کارتِ «در نوبت» می‌گفت دست نگه دار ولی نمی‌گفت منتظرِ چه.
@@ -176,7 +183,11 @@ function TaskExtras({ task }: { task: TaskItem }) {
           )}
         </div>
       )}
-      {task.description && <p className="line-clamp-2 text-xs text-muted-foreground">{task.description}</p>}
+      {task.description && (
+        <p className={`text-muted-foreground ${compact ? 'line-clamp-1 text-[11px]' : 'line-clamp-2 text-xs'}`}>
+          {task.description}
+        </p>
+      )}
       {task.lastNote && <p className="line-clamp-1 text-[11px] text-muted-foreground">💬 {task.lastNote}</p>}
     </div>
   );
@@ -242,7 +253,8 @@ function KanbanBoard({
               const id = Number(e.dataTransfer.getData('text/plain'));
               if (id) move(id, s.id);
             }}
-            className={`grid w-72 shrink-0 content-start gap-2 rounded-md border-t-4 bg-muted/40 p-2 ${over === s.id ? 'ring-2 ring-primary/40' : ''}`}
+            // ستونِ باریک‌تر و فاصله‌های کمتر — چند کارت با هم دیده شوند.
+            className={`grid w-60 shrink-0 content-start gap-1.5 rounded-md border-t-4 bg-muted/40 p-1.5 ${over === s.id ? 'ring-2 ring-primary/40' : ''}`}
             style={{ borderTopColor: s.color || 'var(--color-primary)' }}
           >
             <h4 className="flex items-center justify-between px-1 text-xs font-medium">
@@ -259,18 +271,18 @@ function KanbanBoard({
                   setDragging(t.id);
                 }}
                 onDragEnd={() => setDragging(null)}
-                className={`grid gap-1.5 rounded-md border bg-background p-2 ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''} ${dragging === t.id || pending ? 'opacity-60' : ''}`}
+                className={`grid gap-1 rounded-md border bg-background p-2 ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''} ${dragging === t.id || pending ? 'opacity-60' : ''}`}
               >
                 <button
                   type="button"
                   onClick={() => onOpen(t.id)}
-                  className="flex items-start gap-1.5 text-start text-sm hover:underline"
+                  className="flex items-start gap-1.5 text-start text-[13px] font-medium hover:underline"
                 >
                   {t.isPrivate && <Lock className="mt-0.5 size-3 shrink-0 text-muted-foreground" />}
                   <span className="line-clamp-2">{t.title}</span>
                 </button>
-                <TaskExtras task={t} />
-                <div className="flex flex-wrap items-center gap-2">{renderMeta(t)}</div>
+                <TaskExtras task={t} compact />
+                <div className="flex flex-wrap items-center gap-1.5">{renderMeta(t)}</div>
                 {canDrag && (
                   <select
                     aria-label={tr("انتقال وضعیت")}

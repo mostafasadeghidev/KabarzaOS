@@ -9,6 +9,7 @@ import {
 } from '@/domain/access/staff-levels';
 import { assertCanManage, assertCanView, canSeeScope, ForbiddenError } from '@/domain/access/guard';
 import { canEditPerson } from '@/domain/access/people-edit';
+import { managedOfficesFor } from '@/domain/access/office-scope';
 import {
   normalizeState, planRemovePerson, removeMessage,
   type MemberState, type RemoveOutcome,
@@ -136,6 +137,8 @@ export async function createPerson(actor: Actor, role: Role, input: PersonInput)
     if (!policy.ok) throw new ForbiddenError(`password.${policy.reason}`);
   }
 
+  const managedOffices = await gateManagedOffices(input.tagIds, input.managedOfficeIds);
+
   const id = await db.transaction(async (tx) => {
     const rows = await tx.insert(users).values({
       name: input.name,
@@ -151,7 +154,7 @@ export async function createPerson(actor: Actor, role: Role, input: PersonInput)
 
     await tx.insert(userRoles).values({ userId, role });
     await writeTags(tx, userId, input.tagIds);
-    await writeOffices(tx, userId, input.officeIds, input.managedOfficeIds);
+    await writeOffices(tx, userId, input.officeIds, managedOffices);
     return userId;
   });
 
@@ -182,6 +185,7 @@ export async function attachRole(
 
   const roles = await repo.rolesOf(userId);
   const alreadyHad = roles.includes(role);
+  const managedOffices = await gateManagedOffices(input?.tagIds ?? [], input?.managedOfficeIds ?? []);
 
   await db.transaction(async (tx) => {
     if (!alreadyHad) await tx.insert(userRoles).values({ userId, role });
@@ -198,7 +202,7 @@ export async function attachRole(
     }
     if (input?.tagIds?.length) await writeTags(tx, userId, input.tagIds);
     if (input?.officeIds || input?.managedOfficeIds) {
-      await writeOffices(tx, userId, input.officeIds ?? [], input.managedOfficeIds ?? []);
+      await writeOffices(tx, userId, input.officeIds ?? [], managedOffices);
     }
   });
 
@@ -253,6 +257,8 @@ export async function updatePerson(actor: Actor, userId: number, input: PersonIn
   );
   if (clash.some((c) => c.id !== userId)) throw new ForbiddenError('email.taken');
 
+  const managedOffices = await gateManagedOffices(input.tagIds, input.managedOfficeIds);
+
   await db.transaction(async (tx) => {
     await tx.update(users).set({
       name: input.name,
@@ -265,7 +271,7 @@ export async function updatePerson(actor: Actor, userId: number, input: PersonIn
     }).where(eq(users.id, userId));
 
     await writeTags(tx, userId, input.tagIds);
-    await writeOffices(tx, userId, input.officeIds, input.managedOfficeIds);
+    await writeOffices(tx, userId, input.officeIds, managedOffices);
   });
 
   await audit(actor, 'person.update', userId, before, input);
@@ -341,6 +347,21 @@ async function writeTags(tx: Tx, userId: number, tagIds: number[]) {
   await tx.insert(tagRelations).values(
     tagIds.map((tagId) => ({ tagId, objectId: userId, objectType: 'user' as const })),
   );
+}
+
+
+/**
+ * دفاترِ تحتِ مدیریت را با نقشِ فرد می‌سنجد — قاعده در `managedOfficesFor`.
+ * ⚠️ روی **سرور**، نه فرم: فیلدِ «مدیرِ این دفاتر» وقتی هم دیده می‌شود که
+ * نقش برداشته شده باشد (تا بشود پسش گرفت)، پس مقدارِ فرم به‌تنهایی حجت نیست.
+ */
+async function gateManagedOffices(tagIds: number[], requested: number[]): Promise<number[]> {
+  if (requested.length === 0) return [];
+  return managedOfficesFor({
+    requested,
+    tagIds,
+    managerTagIds: await repo.officeManagerTagIds(),
+  });
 }
 
 /**

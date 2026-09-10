@@ -22,6 +22,33 @@ export function isOfficeManager(managedOfficeIds: readonly number[]): boolean {
 }
 
 /**
+ * کدام دفاترِ «تحتِ مدیریت» واقعاً ثبت می‌شوند.
+ *
+ * ⚠️ نقشِ «مدیرِ تیم» **دروازه** است، نه یک برچسبِ تزیینی: بدونِ تگی که
+ * `office_manager` می‌دهد، هیچ دفتری مدیریت نمی‌شود.
+ *
+ * ⚠️ چرا قاعده روی سرور لازم بود: فرمِ افراد فیلدِ «مدیرِ این دفاتر» را
+ * وقتی هم نشان می‌داد که فرد از قبل دفترِ تحتِ مدیریت داشت — تا بشود پسش
+ * گرفت. نتیجه‌اش این بود که برداشتنِ نقشِ «مدیرِ تیم» **هیچ کاری نمی‌کرد**:
+ * فیلد سرِ جایش می‌ماند، مقدارهای قبلی دوباره فرستاده می‌شدند و آدم پس از
+ * ذخیره هنوز مدیرِ دفتر بود. اختیارِ واقعی از همین ردیف‌ها می‌آید
+ * (`isOfficeManager`)، پس نقش و اختیار از هم جدا می‌افتادند.
+ *
+ * @param requested دفاترِ فرستاده‌شده از فرم.
+ * @param tagIds تگ‌هایی که برای این فرد ذخیره می‌شود.
+ * @param managerTagIds تگ‌هایی که `office_manager` می‌دهند.
+ */
+export function managedOfficesFor(input: {
+  requested: readonly number[];
+  tagIds: readonly number[];
+  managerTagIds: readonly number[];
+}): number[] {
+  const grants = new Set(input.managerTagIds);
+  if (!input.tagIds.some((id) => grants.has(id))) return [];
+  return [...new Set(input.requested)];
+}
+
+/**
  * شناسه‌هایی که مدیرِ دفتر می‌تواند پروفایلِ کاریشان را باز کند.
  *
  * اعضای دفاترِ تحتِ مدیریت **به‌علاوهٔ** هر کسی که روی پروژه‌های همان دفاتر

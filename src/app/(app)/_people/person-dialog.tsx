@@ -136,15 +136,21 @@ export function PersonDialog({
   /**
    * «مدیرِ این دفاتر» فقط وقتی معنا دارد که فرد نقشِ **مدیرِ تیم** داشته باشد
    * (تگی که `office_manager` می‌دهد). کارفرما اصلاً این فیلد را نمی‌بیند.
-   * ⚠️ اگر کسی از قبل دفترِ تحتِ مدیریت دارد، فیلد می‌ماند تا برداشتنش ممکن
-   * باشد — پنهان‌کردنِ داده‌ای که وجود دارد یعنی نشود پسش گرفت.
+   *
+   * ⚠️ پیش‌تر شرطِ «یا از قبل دفترِ تحتِ مدیریت دارد» هم بود، تا بشود پسش
+   * گرفت. نتیجه‌اش عکسِ آن شد: با برداشتنِ نقشِ «مدیرِ تیم» فیلد سرِ جایش
+   * می‌ماند، همان دفاتر دوباره فرستاده می‌شدند و آدم پس از ذخیره **هنوز
+   * مدیر بود**. حالا نقش دروازه است — و سرور هم همین را اعمال می‌کند
+   * (`managedOfficesFor`)، پس فرم نمی‌تواند دورش بزند.
    */
   const managerTagIds = new Set(
     options.roleTags.filter((t) => t.grantsCap === OFFICE_MANAGER_CAP).map((t) => t.id),
   );
   const [pickedTags, setPickedTags] = useState<number[]>([...tagIds]);
-  const showsManagedOffices = section.supportsTags
-    && (managedIds.size > 0 || pickedTags.some((id) => managerTagIds.has(id)));
+  const hasManagerTag = pickedTags.some((id) => managerTagIds.has(id));
+  const showsManagedOffices = section.supportsTags && hasManagerTag;
+  /** نقش برداشته شده ولی دفترِ تحتِ مدیریت هنوز ثبت است — با ذخیره پاک می‌شود. */
+  const managedWillClear = section.supportsTags && !hasManagerTag && managedIds.size > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -365,6 +371,15 @@ export function PersonDialog({
               این فیلد همیشه بود و می‌شد ناخواسته به هرکس مدیریتِ دفتر داد —
               دسترسی‌ای که پروژه‌ها و ساعتِ کلِ آن دفتر را باز می‌کند.
             */}
+            {/*
+              ⚠️ خبر می‌دهد، بی‌صدا پاک نمی‌کند: کاربر باید بداند برداشتنِ نقش
+              چه چیزِ دیگری را هم برمی‌دارد.
+            */}
+            {managedWillClear && (
+              <p className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+                {tr("با برداشتنِ نقشِ «مدیرِ تیم»، دفاترِ تحتِ مدیریتِ این فرد هم با ذخیره برداشته می‌شوند.")}
+              </p>
+            )}
             {showsManagedOffices && (
             <div className="grid gap-1.5">
               <Label className="text-xs text-muted-foreground">{tr("مدیرِ این دفاتر")}</Label>

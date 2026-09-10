@@ -9,6 +9,7 @@ import {
 } from '@/db/schema';
 import type { Role } from '@/domain/access/permissions';
 import type { MemberState } from '@/domain/people/offboarding';
+import { OFFICE_MANAGER_CAP } from '@/domain/access/project-scope';
 import {
   deriveState, normalizeConfig, type PresenceState,
 } from '@/domain/people/presence';
@@ -234,6 +235,17 @@ export async function roleTagOptions() {
     id: tags.id, name: tagName(await currentLocale()), color: tags.color, grantsCap: tags.grantsCap,
   })
     .from(tags).where(eq(tags.type, 'member_role')).orderBy(tags.sortOrder, tags.id);
+}
+
+/**
+ * تگ‌هایی که مجوزِ «مدیرِ دفتر» می‌دهند.
+ * ⚠️ سرور خودش می‌خواندشان و به فرم اعتماد نمی‌کند: مدیریتِ دفتر پروژه‌ها و
+ * ساعتِ کلِ آن دفتر را باز می‌کند و نباید با یک فیلدِ فرستاده‌شده تعیین شود.
+ */
+export async function officeManagerTagIds(): Promise<number[]> {
+  const rows = await db.select({ id: tags.id }).from(tags)
+    .where(and(eq(tags.type, 'member_role'), eq(tags.grantsCap, OFFICE_MANAGER_CAP)));
+  return rows.map((r) => r.id);
 }
 
 export { users, userRoles, userOffices, tagRelations, projectMembers, projectPayments, timelogs };

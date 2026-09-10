@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  canMonitor, csvCell, csvDocument, csvRow, isOfficeManager,
+  canMonitor, csvCell, csvDocument, csvRow, isOfficeManager, managedOfficesFor,
   monitorableUserIds, resolveRange,
 } from '../office-scope';
 
@@ -89,5 +89,37 @@ describe('CSV', () => {
     expect(doc.charCodeAt(0)).toBe(0xfeff);
     expect(doc).toContain('"سارا"');
     expect(doc.endsWith('\r\n')).toBe(true);
+  });
+});
+
+describe('managedOfficesFor — نقشِ «مدیرِ تیم» دروازه است', () => {
+  const managerTagIds = [7]; // تگی که office_manager می‌دهد
+
+  it('با نقشِ مدیرِ تیم، دفاترِ خواسته‌شده ثبت می‌شوند', () => {
+    expect(managedOfficesFor({ requested: [1, 2], tagIds: [3, 7], managerTagIds }))
+      .toEqual([1, 2]);
+  });
+
+  it('⚠️ با برداشتنِ نقش، دفاترِ تحتِ مدیریت هم برداشته می‌شوند', () => {
+    // گزارشِ واقعی: نقش برداشته می‌شد ولی فرم همان دفاتر را دوباره می‌فرستاد
+    // و آدم پس از ذخیره هنوز مدیرِ دفتر بود.
+    expect(managedOfficesFor({ requested: [1, 2], tagIds: [3], managerTagIds })).toEqual([]);
+  });
+
+  it('بدونِ هیچ تگی هم هیچ دفتری مدیریت نمی‌شود', () => {
+    expect(managedOfficesFor({ requested: [1], tagIds: [], managerTagIds })).toEqual([]);
+  });
+
+  it('اگر هیچ تگی این مجوز را ندهد، درخواست بی‌اثر است', () => {
+    expect(managedOfficesFor({ requested: [1], tagIds: [3, 7], managerTagIds: [] })).toEqual([]);
+  });
+
+  it('تکراری‌ها یکی می‌شوند', () => {
+    expect(managedOfficesFor({ requested: [1, 1, 2], tagIds: [7], managerTagIds })).toEqual([1, 2]);
+  });
+
+  it('عضویت در دفتر دست نمی‌خورد — این قاعده فقط دربارهٔ مدیریت است', () => {
+    // خالی‌بودنِ خروجی یعنی «مدیرِ هیچ دفتری»، نه «عضوِ هیچ دفتری».
+    expect(managedOfficesFor({ requested: [], tagIds: [7], managerTagIds })).toEqual([]);
   });
 });

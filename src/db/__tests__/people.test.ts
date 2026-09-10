@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db, sql } from '../client';
-import { users, userRoles, projectMembers, projects, currencies, tags } from '../schema';
+import { users, userRoles, projectMembers, projects, currencies, offices, tags, userOffices } from '../schema';
 import * as service from '@/server/people/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { verifyPassword } from '@/domain/auth/password';
@@ -18,7 +18,7 @@ const viewer = () => actor({ id: 2, permissions: ['members.view'] as Permission[
 let plain: number, withHistory: number, dualRole: number, ownerUser: number, devRole: number;
 
 beforeAll(async () => {
-  await sql`truncate table audit_log, project_members, projects, tags, user_offices,
+  await sql`truncate table audit_log, project_members, projects, tags, user_offices, offices,
     tag_relations, user_roles, users, currencies restart identity cascade`;
 
   const c = await db.insert(currencies)
@@ -142,6 +142,66 @@ describe('ساخت و ویرایش', () => {
       name: 'تکراری', email: 'new@t', phone: '',
       tagIds: [], officeIds: [], managedOfficeIds: [],
     })).rejects.toThrow(ForbiddenError);
+  });
+});
+
+/**
+ * نقشِ «مدیرِ تیم» دروازهٔ مدیریتِ دفتر است.
+ *
+ * ⚠️ گزارشِ واقعی: نقش برداشته می‌شد، ذخیره می‌شد، و آدم هنوز مدیرِ دفتر
+ * بود — چون فرم فیلدِ «مدیرِ این دفاتر» را نگه می‌داشت و همان مقدارها را
+ * دوباره می‌فرستاد، و سرور بی‌چون‌وچرا می‌نوشتشان.
+ */
+describe('مدیریتِ دفتر به نقش گره خورده است', () => {
+  let officeId = 0, managerTag = 0, person = 0;
+
+  beforeAll(async () => {
+    const o = await db.insert(offices).values({ name: 'دفترِ تهران' }).returning({ id: offices.id });
+    officeId = o[0]!.id;
+    const t = await db.insert(tags)
+      .values({ name: 'مدیر تیم', type: 'member_role', grantsCap: 'office_manager' })
+      .returning({ id: tags.id });
+    managerTag = t[0]!.id;
+
+    person = await service.createPerson(manager(), 'member' as Role, {
+      name: 'مدیرِ دفتر', email: 'om@t', phone: '',
+      tagIds: [devRole, managerTag], officeIds: [officeId], managedOfficeIds: [officeId],
+    });
+  });
+
+  const managed = async () => db.select({ officeId: userOffices.officeId })
+    .from(userOffices)
+    .where(and(eq(userOffices.userId, person), eq(userOffices.manages, true)));
+
+  it('با نقشِ مدیرِ تیم، دفتر ثبت می‌شود', async () => {
+    expect((await managed()).map((r) => r.officeId)).toEqual([officeId]);
+  });
+
+  it('⚠️ با برداشتنِ نقش، مدیریتِ دفتر هم می‌رود — حتی اگر فرم همان دفتر را بفرستد', async () => {
+    await service.updatePerson(manager(), person, {
+      name: 'مدیرِ دفتر', email: 'om@t', phone: '',
+      tagIds: [devRole], officeIds: [officeId], managedOfficeIds: [officeId],
+    });
+    expect(await managed()).toEqual([]);
+    // عضویت دست نخورده می‌ماند — قاعده فقط دربارهٔ مدیریت است.
+    const all = await db.select().from(userOffices).where(eq(userOffices.userId, person));
+    expect(all.map((r) => r.officeId)).toEqual([officeId]);
+  });
+
+  it('⚠️ بدونِ نقش نمی‌شود از راهِ فرم مدیرِ دفتر شد', async () => {
+    await service.updatePerson(manager(), person, {
+      name: 'مدیرِ دفتر', email: 'om@t', phone: '',
+      tagIds: [devRole], officeIds: [], managedOfficeIds: [officeId],
+    });
+    expect(await managed()).toEqual([]);
+  });
+
+  it('با برگرداندنِ نقش، دوباره ثبت می‌شود', async () => {
+    await service.updatePerson(manager(), person, {
+      name: 'مدیرِ دفتر', email: 'om@t', phone: '',
+      tagIds: [devRole, managerTag], officeIds: [], managedOfficeIds: [officeId],
+    });
+    expect((await managed()).map((r) => r.officeId)).toEqual([officeId]);
   });
 });
 
