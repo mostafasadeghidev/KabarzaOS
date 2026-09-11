@@ -13,7 +13,8 @@ import {
 import { useT } from '@/i18n/client';
 import { ClaimTaskButton } from './inbox-claim';
 import { TaskDialog } from '../projects/[id]/task-dialog';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 /**
  * فهرستِ تسک‌های صندوق — **جدول**، نه ردیفِ درهم.
@@ -84,16 +85,16 @@ export function TaskTable({
           </div>
           {/* انتخابِ پروژه — وقتی بیش از یک پروژه در فهرست باشد معنا دارد. */}
           {projects.length > 1 && (
-            <NativeSelect
+            <SearchableSelect
               value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
+              onValueChange={(v) => setProjectId(v)}
               
             >
               <NativeSelectOption value="">{t('همهٔ پروژه‌ها')}</NativeSelectOption>
               {projects.map((p) => (
                 <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>
               ))}
-            </NativeSelect>
+            </SearchableSelect>
           )}
           <span className="num text-xs text-muted-foreground">
             {tr('{n} تسک', { n: visible.length })}
@@ -112,7 +113,7 @@ export function TaskTable({
                 <TableHead>{t("اولویت")}</TableHead>
                 <TableHead>{t("وضعیت")}</TableHead>
                 <TableHead>{t("پروژه")}</TableHead>
-                <TableHead className="text-end">{t("ددلاین")}</TableHead>
+                <TableHead numeric>{t("ددلاین")}</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>

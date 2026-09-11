@@ -23,7 +23,8 @@ import {
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
 
 export interface LogRow {
@@ -79,11 +80,11 @@ function ProjectSelect({
 }) {
   const t = useT();
   return (
-    <NativeSelect id={id} name="projectId" containerClassName="w-full" defaultValue={defaultValue} required={!allowGeneral}>
+    <SearchableSelect id={id} name="projectId" containerClassName="w-full" defaultValue={defaultValue} required={!allowGeneral}>
       {/* ⚠️ ساعتِ عمومی یک گزینهٔ واقعی است، نه «انتخاب نشده» — ولی فقط برای کسی که مجازش است. */}
       {allowGeneral && <NativeSelectOption value="">{t("بدون پروژه (کارِ عمومی)")}</NativeSelectOption>}
       {projects.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>)}
-    </NativeSelect>
+    </SearchableSelect>
   );
 }
 
@@ -334,10 +335,10 @@ export function HoursView({ data }: { data: HoursData }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-end">{t("تاریخ")}</TableHead>
+              <TableHead numeric>{t("تاریخ")}</TableHead>
               <TableHead>{t("پروژه")}</TableHead>
               <TableHead>{t("توضیح")}</TableHead>
-              <TableHead className="text-end">{t("مدت")}</TableHead>
+              <TableHead numeric>{t("مدت")}</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>

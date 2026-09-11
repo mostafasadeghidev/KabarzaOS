@@ -1,5 +1,5 @@
 /**
- * فیلترِ «جزئیاتِ ثبت‌ها» در تبِ مدیریتِ پروژه — عضو و روز.
+ * فیلترِ «جزئیاتِ ثبت‌ها» در تبِ مدیریتِ پروژه — عضو و بازهٔ تاریخ.
  *
  * ⚠️ روی همان ثبت‌هایی کار می‌کند که صفحه لود کرده (`projectLogs`: تازه‌ترین
  * ۵۰۰تا، همان سقفِ نسخهٔ قبلی)، نه کلِ تاریخچه — پس فوری است و رفت‌وبرگشتِ
@@ -7,20 +7,23 @@
  */
 
 export interface LogFilter {
-  /** شناسهٔ عضو به‌شکلِ رشته — همان مقدارِ select؛ خالی یعنی همه. */
+  /** شناسهٔ عضو به‌شکلِ رشته — همان مقدارِ فهرست؛ خالی یعنی همه. */
   userId: string;
-  /** `yyyy-mm-dd`؛ خالی یعنی همهٔ روزها. */
-  date: string;
+  /** `yyyy-mm-dd`؛ خالی یعنی از این سر بی‌کران. هر دو سر شاملِ بازه‌اند. */
+  from: string;
+  to: string;
 }
 
 export function filterLogs<T extends { userId: number; logDate: string }>(
   rows: readonly T[],
   filter: LogFilter,
 ): T[] {
+  // ⚠️ مقایسهٔ رشته‌ای درست است: `yyyy-mm-dd` به ترتیبِ الفبا همان ترتیبِ زمان است.
   return rows.filter(
     (r) =>
       (filter.userId === '' || String(r.userId) === filter.userId) &&
-      (filter.date === '' || r.logDate === filter.date),
+      (filter.from === '' || r.logDate >= filter.from) &&
+      (filter.to === '' || r.logDate <= filter.to),
   );
 }
 
@@ -39,4 +42,12 @@ export function logMembers(
 
 export function totalMinutes(rows: readonly { minutes: number }[]): number {
   return rows.reduce((sum, r) => sum + r.minutes, 0);
+}
+
+/**
+ * تاریخِ **محلیِ** مرورگر به‌شکلِ `yyyy-mm-dd` — برای «امروز» ِ میان‌بُرها.
+ * ⚠️ نه `toISOString`: آن UTC است و در ساعت‌های اولِ بامداد روزِ دیروز را می‌داد.
+ */
+export function localIsoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

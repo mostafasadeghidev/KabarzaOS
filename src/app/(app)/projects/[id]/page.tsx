@@ -267,6 +267,7 @@ export default async function ProjectDetailPage({
               isTender: project.isTender,
               tenderRoles: project.tenderRoles,
               scope: project.scope,
+              thumbnailFileId: project.thumbnailFileId,
             }}
           />
         )}
@@ -343,7 +344,6 @@ export default async function ProjectDetailPage({
           isTender: project.isTender,
           isArchived: project.isArchived,
           isFrozen: detail.isFrozen,
-          thumbnailFileId: project.thumbnailFileId,
           roleHolders: detail.roleHolders,
           currentUserId: detail.currentUserId,
           myMoney,
@@ -362,6 +362,7 @@ export default async function ProjectDetailPage({
             logs: detail.logs,
             matrix: detail.matrix,
             dayLabels: detail.dayLabels,
+            weekStart: detail.weekStart,
           tasks,
           taskStatuses: taskStatuses.map((t) => ({
             id: t.id, name: t.name, group: t.group, color: t.color,
@@ -407,7 +408,7 @@ export default async function ProjectDetailPage({
                           پیش از این ستون برای همه رندر می‌شد.
                         */}
                         {canSeeAgreedAmounts && (
-                          <TableHead className="text-end">{t("مبلغ توافقی")}</TableHead>
+                          <TableHead numeric>{t("مبلغ توافقی")}</TableHead>
                         )}
                         {canManage && <TableHead />}
                       </TableRow>

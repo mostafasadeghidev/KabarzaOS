@@ -16,7 +16,8 @@ import {
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
 
 export interface MyAbsence {
@@ -72,7 +73,7 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
           {canPickPerson ? (
             <div className="grid gap-1.5">
               <Label htmlFor="a-user">{tr('برای')}</Label>
-              <NativeSelect
+              <SearchableSelect
                 id="a-user"
                 name="userId"
                 defaultValue={data.meId}
@@ -83,7 +84,7 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
                     {p.id === data.meId ? tr('خودم') : p.name}
                   </NativeSelectOption>
                 ))}
-              </NativeSelect>
+              </SearchableSelect>
             </div>
           ) : (
             <input type="hidden" name="userId" value={data.meId} />
@@ -122,8 +123,8 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-end">{tr('از')}</TableHead>
-                <TableHead className="text-end">{tr('تا')}</TableHead>
+                <TableHead numeric>{tr('از')}</TableHead>
+                <TableHead numeric>{tr('تا')}</TableHead>
                 <TableHead>{tr('توضیح')}</TableHead>
                 <TableHead />
               </TableRow>

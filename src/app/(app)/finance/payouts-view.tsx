@@ -29,6 +29,7 @@ import { TablePager, TableSearch, useTableView } from '@/components/ui/table-sea
 import { BankDirectory, type BankRow } from './bank-directory';
 import { useConfirm } from '@/components/ui/confirm';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -336,9 +337,9 @@ export function PayoutsView({
                 <TableRow>
                   <TableHead>{t("عضو")}</TableHead>
                   <TableHead>{t("پروژه")}</TableHead>
-                  <TableHead className="text-end">{t("مبلغ")}</TableHead>
-                  <TableHead className="text-end">{t("ماندهٔ قرارداد")}</TableHead>
-                  <TableHead className="text-end">{t("تاریخ")}</TableHead>
+                  <TableHead numeric>{t("مبلغ")}</TableHead>
+                  <TableHead numeric>{t("ماندهٔ قرارداد")}</TableHead>
+                  <TableHead numeric>{t("تاریخ")}</TableHead>
                   <TableHead>{t("وضعیت")}</TableHead>
                   <TableHead>{t("اطلاعات بانکی")}</TableHead>
                   {canManage && <TableHead />}
@@ -441,11 +442,11 @@ export function PayoutsView({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-end">{t("تاریخ")}</TableHead>
+                  <TableHead numeric>{t("تاریخ")}</TableHead>
                   <TableHead>{t("عضو")}</TableHead>
                   <TableHead>{t("پروژه")}</TableHead>
-                  <TableHead className="text-end">{t("تعداد")}</TableHead>
-                  <TableHead className="text-end">{t("مبلغ")}</TableHead>
+                  <TableHead numeric>{t("تعداد")}</TableHead>
+                  <TableHead numeric>{t("مبلغ")}</TableHead>
                   {canManage && <TableHead />}
                 </TableRow>
               </TableHeader>
@@ -489,10 +490,10 @@ export function PayoutsView({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-end">{t("تاریخ")}</TableHead>
+                <TableHead numeric>{t("تاریخ")}</TableHead>
                 <TableHead>{t("طرف")}</TableHead>
                 <TableHead>{t("نوع")}</TableHead>
-                <TableHead className="text-end">{t("مبلغ")}</TableHead>
+                <TableHead numeric>{t("مبلغ")}</TableHead>
                 <TableHead>{t("توضیحات")}</TableHead>
                 <TableHead>{t("رسید")}</TableHead>
               </TableRow>
@@ -544,15 +545,15 @@ export function PayoutsView({
                 className="h-9"
               />
             </div>
-            <NativeSelect
+            <SearchableSelect
               value={expenseVendor}
-              onChange={(e) => setExpenseVendor(e.target.value)}
+              onValueChange={(v) => setExpenseVendor(v)}
               
               aria-label={tr('طرف‌حساب')}
             >
               <NativeSelectOption value="">{tr('همهٔ طرف‌حساب‌ها')}</NativeSelectOption>
               {vendors.map((v) => <NativeSelectOption key={v.id} value={v.name}>{v.name}</NativeSelectOption>)}
-            </NativeSelect>
+            </SearchableSelect>
             <NativeSelect
               value={expenseKind}
               onChange={(e) => setExpenseKind(e.target.value)}
@@ -573,24 +574,24 @@ export function PayoutsView({
               <NativeSelectOption value="inactive">{tr('غیرفعال')}</NativeSelectOption>
               <NativeSelectOption value="all">{tr('همه')}</NativeSelectOption>
             </NativeSelect>
-            <NativeSelect
+            <SearchableSelect
               containerClassName="w-full sm:w-40"
               value={expenseCategory}
-              onChange={(e) => setExpenseCategory(e.target.value)}
+              onValueChange={(v) => setExpenseCategory(v)}
               aria-label={tr('دسته')}
             >
               <NativeSelectOption value="">{tr('همهٔ دسته‌ها')}</NativeSelectOption>
               {categories.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.name ?? ''}</NativeSelectOption>)}
-            </NativeSelect>
-            <NativeSelect
+            </SearchableSelect>
+            <SearchableSelect
               containerClassName="w-full sm:w-44"
               value={expenseAccount}
-              onChange={(e) => setExpenseAccount(e.target.value)}
+              onValueChange={(v) => setExpenseAccount(v)}
               aria-label={tr('حسابِ پرداخت')}
             >
               <NativeSelectOption value="">{tr('همهٔ حساب‌ها')}</NativeSelectOption>
               {accounts.map((a) => <NativeSelectOption key={a.id} value={a.id}>{a.name}</NativeSelectOption>)}
-            </NativeSelect>
+            </SearchableSelect>
             <DatePicker value={dueFrom} onChange={(v) => setDueFrom(v)} className="w-36" aria-label={tr('سررسید از')} />
             <DatePicker value={dueTo} onChange={(v) => setDueTo(v)} className="w-36" aria-label={tr('سررسید تا')} />
             <Button size="sm" variant="ghost" onClick={clearExpenseFilters}>{tr('پاک‌کردنِ فیلترها')}</Button>
@@ -766,11 +767,11 @@ export function PayoutsView({
 
               <div className="grid gap-1.5">
                 <Label htmlFor="pay-account">{t("حساب")}</Label>
-                <NativeSelect id="pay-account" name="accountId" containerClassName="w-full" defaultValue={accounts[0]?.id ?? ''}>
+                <SearchableSelect id="pay-account" name="accountId" containerClassName="w-full" defaultValue={accounts[0]?.id ?? ''}>
                   {accounts.map((a) => (
                     <NativeSelectOption key={a.id} value={a.id}>{a.name} ({a.currencyCode})</NativeSelectOption>
                   ))}
-                </NativeSelect>
+                </SearchableSelect>
               </div>
 
               <div className="grid gap-1.5">
@@ -822,11 +823,11 @@ export function PayoutsView({
               </p>
               <div className="grid gap-1.5">
                 <Label htmlFor="unit-account">{t("حساب")}</Label>
-                <NativeSelect id="unit-account" name="accountId" containerClassName="w-full" defaultValue={accounts[0]?.id ?? ''}>
+                <SearchableSelect id="unit-account" name="accountId" containerClassName="w-full" defaultValue={accounts[0]?.id ?? ''}>
                   {accounts.map((a) => (
                     <NativeSelectOption key={a.id} value={a.id}>{a.name} ({a.currencyCode})</NativeSelectOption>
                   ))}
-                </NativeSelect>
+                </SearchableSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="unit-date">{t("تاریخ")}</Label>
@@ -916,7 +917,7 @@ export function PayoutsView({
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-account">{t("حسابِ پرداخت")}</Label>
-                <NativeSelect
+                <SearchableSelect
                   id="e-account"
                   name="accountId"
                   containerClassName="w-full"
@@ -924,14 +925,14 @@ export function PayoutsView({
                 >
                   <NativeSelectOption value="">{t("— بدونِ حساب —")}</NativeSelectOption>
                   {accounts.map((a) => <NativeSelectOption key={a.id} value={a.id}>{a.name}</NativeSelectOption>)}
-                </NativeSelect>
+                </SearchableSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-vendor">{t("طرف‌حساب")}</Label>
-                <NativeSelect id="e-vendor" name="vendorId" containerClassName="w-full" defaultValue={editing?.vendorId ? String(editing.vendorId) : ''}>
+                <SearchableSelect id="e-vendor" name="vendorId" containerClassName="w-full" defaultValue={editing?.vendorId ? String(editing.vendorId) : ''}>
                   <NativeSelectOption value="">{t("بدون طرف‌حساب")}</NativeSelectOption>
                   {vendors.map((v) => <NativeSelectOption key={v.id} value={v.id}>{v.name}</NativeSelectOption>)}
-                </NativeSelect>
+                </SearchableSelect>
                 {/* پورتِ `find_or_create`: طرف‌حسابِ تازه همین‌جا ساخته می‌شود. */}
                 <Input name="vendorName" placeholder={tr('یا طرف‌حسابِ تازه…')} className="h-8 text-xs" />
               </div>
@@ -940,10 +941,10 @@ export function PayoutsView({
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="grid gap-1.5">
                 <Label htmlFor="e-cat">{t("دسته")}</Label>
-                <NativeSelect id="e-cat" name="categoryTagId" containerClassName="w-full" defaultValue={editing?.categoryTagId ? String(editing.categoryTagId) : ''}>
+                <SearchableSelect id="e-cat" name="categoryTagId" containerClassName="w-full" defaultValue={editing?.categoryTagId ? String(editing.categoryTagId) : ''}>
                   <NativeSelectOption value="">{t("— بدونِ دسته —")}</NativeSelectOption>
                   {categories.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.name ?? ''}</NativeSelectOption>)}
-                </NativeSelect>
+                </SearchableSelect>
               </div>
               <div className="grid gap-1.5 sm:col-span-2">
                 <Label htmlFor="e-note">{t("یادداشت")}</Label>

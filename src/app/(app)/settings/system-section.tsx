@@ -22,6 +22,7 @@ import { agoParts, type SchedulerHealth } from '@/domain/scheduler/health';
 import type { TelegramSettingsView } from '@/server/settings/telegram-service';
 import { Activity } from 'lucide-react';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Switch } from '@/components/ui/switch';
 
 function Submit() {
@@ -172,7 +173,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="s-tz">{t("منطقهٔ زمانیِ سامانه")}</Label>
-          <NativeSelect
+          <SearchableSelect
             id="s-tz"
             name="timezone"
             defaultValue={config.timezone}
@@ -182,7 +183,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
             {allTimezones().map((zone) => (
               <NativeSelectOption key={zone} value={zone}>{zone}</NativeSelectOption>
             ))}
-          </NativeSelect>
+          </SearchableSelect>
           <p className="text-xs text-muted-foreground">
             {tr("ساعتِ ارسالِ گزارشِ روزانه و یادآوریِ جلسات با همین منطقه سنجیده می‌شود.")}
           </p>

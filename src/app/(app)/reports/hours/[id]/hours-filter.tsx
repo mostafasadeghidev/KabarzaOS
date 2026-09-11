@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useT } from '@/i18n/client';
 import { monthRange, weekRange, yearRange } from '@/domain/reports/filters';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
 
 /**
@@ -83,10 +84,10 @@ export function HoursFilter({
 
       <div className="grid gap-1.5">
         <Label htmlFor="hf-project" className="text-xs">{tr('پروژه')}</Label>
-        <NativeSelect id="hf-project" name="project" defaultValue={value('project')} >
+        <SearchableSelect id="hf-project" name="project" defaultValue={value('project')} >
           <NativeSelectOption value="">{tr('همهٔ پروژه‌ها')}</NativeSelectOption>
           {projects.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>)}
-        </NativeSelect>
+        </SearchableSelect>
       </div>
 
       <div className="grid gap-1.5">

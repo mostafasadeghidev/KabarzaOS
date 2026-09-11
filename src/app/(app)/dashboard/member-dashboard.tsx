@@ -110,12 +110,12 @@ function MemberBlock({ data, unread, money }: { data: MemberSection; unread: num
                   <TableRow>
                     <TableHead>{t('نام')}</TableHead>
                     <TableHead>{t('نقش شما')}</TableHead>
-                    <TableHead className="text-end">{t('تاریخ شروع')}</TableHead>
+                    <TableHead numeric>{t('تاریخ شروع')}</TableHead>
                     <TableHead>{t('وضعیت پروژه')}</TableHead>
-                    <TableHead className="text-end">{t('ددلاین')}</TableHead>
-                    <TableHead className="text-end">{t('ساعت کاری شما')}</TableHead>
-                    <TableHead className="text-end">{t('تسک‌های باقی‌مانده')}</TableHead>
-                    <TableHead className="text-end">{t('درصد پیشرفت')}</TableHead>
+                    <TableHead numeric>{t('ددلاین')}</TableHead>
+                    <TableHead numeric>{t('ساعت کاری شما')}</TableHead>
+                    <TableHead numeric>{t('تسک‌های باقی‌مانده')}</TableHead>
+                    <TableHead numeric>{t('درصد پیشرفت')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -170,14 +170,14 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
                     {/* ⚠️ سرستون و مقدار باید یک‌جور تراز شوند؛ ستونِ عددی
                         مقدارش `text-end` بود و سرستونش نه — در راست‌به‌چپ
                         عدد زیرِ سرستونِ خودش دیده نمی‌شد. */}
-                    <TableHead className="text-end">{t('تاریخ ثبت')}</TableHead>
-                    <TableHead className="text-end">{t('قیمت')}</TableHead>
+                    <TableHead numeric>{t('تاریخ ثبت')}</TableHead>
+                    <TableHead numeric>{t('قیمت')}</TableHead>
                     <TableHead>{t('وضعیت پروژه')}</TableHead>
                     <TableHead>{t('وضعیت پرداخت')}</TableHead>
-                    <TableHead className="text-end">{t('مانده')}</TableHead>
-                    <TableHead className="text-end">{t('تعداد تسک‌ها')}</TableHead>
-                    <TableHead className="text-end">{t('درصد پیشرفت')}</TableHead>
-                    <TableHead className="text-end">{t('ساعت کاری تیم')}</TableHead>
+                    <TableHead numeric>{t('مانده')}</TableHead>
+                    <TableHead numeric>{t('تعداد تسک‌ها')}</TableHead>
+                    <TableHead numeric>{t('درصد پیشرفت')}</TableHead>
+                    <TableHead numeric>{t('ساعت کاری تیم')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -243,7 +243,7 @@ export function MemberDashboardView({ data, timezone = '' }: { data: MemberDashb
                   <TableRow>
                     <TableHead>{t('نام')}</TableHead>
                     <TableHead>{t('نقش‌های شما')}</TableHead>
-                    <TableHead className="text-end">{t('پیشنهاد شما')}</TableHead>
+                    <TableHead numeric>{t('پیشنهاد شما')}</TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
 
 export interface LedgerPaging {
@@ -100,12 +101,12 @@ export function LedgerFilter({
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="lf-tag" className="text-xs">{tr('دسته')}</Label>
-          <NativeSelect id="lf-tag" name="tag" defaultValue={value('tag')} >
+          <SearchableSelect id="lf-tag" name="tag" defaultValue={value('tag')} >
             <NativeSelectOption value="">{tr('همه')}</NativeSelectOption>
             {options.categories.map((c) => (
               <NativeSelectOption key={c.id} value={c.id}>{c.name}</NativeSelectOption>
             ))}
-          </NativeSelect>
+          </SearchableSelect>
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="lf-project" className="text-xs">{tr('پروژه')}</Label>

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 /**
  * افزودنِ سریعِ عضو و کارفرما از خودِ کارت.:
@@ -67,17 +68,17 @@ export function CardQuickAdd({ projectId, options }: { projectId: number; option
         <form action={memberAction} className="grid gap-1">
           <input type="hidden" name="projectId" value={projectId} />
           <div className="flex flex-wrap items-center gap-1">
-            <NativeSelect
+            <SearchableSelect
               name="userId"
               size="sm" className="h-7 text-xs" containerClassName="min-w-0 flex-1"
               value={pickedUser}
-              onChange={(e) => setPickedUser(e.target.value)}
+              onValueChange={(v) => setPickedUser(v)}
             >
               <NativeSelectOption value="">{t("— عضو —")}</NativeSelectOption>
               {options.team.map((u) => (
                 <NativeSelectOption key={u.id} value={u.id}>{u.name}</NativeSelectOption>
               ))}
-            </NativeSelect>
+            </SearchableSelect>
             {/*
               ⚠️ تا عضوی انتخاب نشده، نقشی هم پیشنهاد نمی‌شود: نقشِ معتبر به
               خودِ فرد بستگی دارد. پس از انتخاب، فقط نقش‌های همان فرد می‌مانند.
@@ -116,12 +117,12 @@ export function CardQuickAdd({ projectId, options }: { projectId: number; option
         <form action={clientAction} className="grid gap-1">
           <input type="hidden" name="projectId" value={projectId} />
           <div className="flex flex-wrap items-center gap-1">
-            <NativeSelect name="userId" size="sm" className="h-7 text-xs" containerClassName="min-w-0 flex-1" defaultValue="">
+            <SearchableSelect name="userId" size="sm" className="h-7 text-xs" containerClassName="min-w-0 flex-1" defaultValue="">
               <NativeSelectOption value="">{t("— کارفرما —")}</NativeSelectOption>
               {options.clients.map((u) => (
                 <NativeSelectOption key={u.id} value={u.id}>{u.name}</NativeSelectOption>
               ))}
-            </NativeSelect>
+            </SearchableSelect>
             <Submit label={t("افزودن")} />
             <Button
               type="button"

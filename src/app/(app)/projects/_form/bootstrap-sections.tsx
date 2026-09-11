@@ -94,6 +94,19 @@ export function FilePicker({
     setFiles(next);
   };
 
+  /**
+   * ⚠️ فرمِ ویرایش پس از ذخیره باز می‌ماند و React فرم را `reset` می‌کند: ورودیِ
+   * نام‌دار خالی می‌شد ولی فهرست و پیش‌نمایش می‌ماند و کاربر فکر می‌کرد تصویر
+   * هنوز منتظرِ ذخیره است. فهرست همراهِ فرم خالی می‌شود.
+   */
+  useEffect(() => {
+    const form = holderRef.current?.form;
+    if (!form) return;
+    const onReset = () => setFiles([]);
+    form.addEventListener('reset', onReset);
+    return () => form.removeEventListener('reset', onReset);
+  }, []);
+
   useEffect(() => {
     const first = preview ? files[0] : undefined;
     if (!first || !first.type.startsWith('image/')) { setPreviewUrl(null); return; }

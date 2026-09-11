@@ -2,6 +2,22 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.74.0]
+
+### Added
+
+- **Live search in pickers.** 28 dropdowns — every one that picks a person, project, task, account, vendor or expense category, and the timezone list — now open a searchable list: type part of a name to narrow it down, move with the arrow keys and pick with Enter, or click. The Arabic and Persian forms of «ی» and «ک» match each other and zero-width non-joiners are ignored, so a name is found whichever keyboard typed it. The fields submit exactly the same values as before, so nothing changes on the server. Short fixed lists (status, priority, currency, type, unit, language, office, role) stay plain dropdowns.
+- **A date range with shortcuts in Log details.** The date filter on a project's Log details takes a start and an end date, picked on one calendar in either order, and the calendar offers "This week" and "This month" — the week starts on the day set in Settings, as in Reports. The member filter has live search.
+- shadcn **Command** component (with its `cmdk` dependency), plus a **Searchable Select** built from Popover and Command and a **Date Range Picker**.
+
+### Changed
+
+- **The featured image is set in the project's Edit form**, under the title and description — the same place as in the New project form — instead of in a card at the top of the Manage tab. The current image is shown beside the picker, a new one is saved with "Save changes", and a rejected file (wrong type or too large) is reported before anything else in the form is saved.
+- **Number columns line up on the right in every language.** Numbers, amounts, dates and durations, and their headers, now share the right edge of their column — the start of the row in Persian, Arabic and Kurdish, and the usual end in left-to-right languages — so units sit under units. In 1.73.0 they shared the left edge, which still looked misaligned on right-to-left pages. All 110 number columns follow the same rule, set in one place.
+- **The Manage tab is laid out for reading**: "Project members' availability" is the first card; "Members' working hours" and "Log details" are as wide as the archive and lightening cards instead of stretching across the page; and the log details columns are spread evenly across the card, whatever their content.
+
+---
+
 ## [1.73.0]
 
 ### Added

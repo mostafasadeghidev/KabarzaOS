@@ -27,6 +27,7 @@ import { ClaimTaskButton } from '@/app/(app)/tasks/inbox-claim';
 import { chipStyle } from '@/domain/ui/contrast';
 import { TaskStatusPicker } from './task-status-picker';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
 
 /**
@@ -291,12 +292,12 @@ export function TaskDialog({
                 {(options.tasks?.filter((x) => x.id !== task.id).length ?? 0) > 0 && (
                   <div className="grid gap-1.5">
                     <Label htmlFor="t-depends">{t("وابسته به")}</Label>
-                    <NativeSelect id="t-depends" name="dependsOn" containerClassName="w-full" defaultValue={task.dependsOn ? String(task.dependsOn) : ''}>
+                    <SearchableSelect id="t-depends" name="dependsOn" containerClassName="w-full" defaultValue={task.dependsOn ? String(task.dependsOn) : ''}>
                       <NativeSelectOption value="">—</NativeSelectOption>
                       {options.tasks!.filter((x) => x.id !== task.id).map((x) => (
                         <NativeSelectOption key={x.id} value={x.id}>{x.title}</NativeSelectOption>
                       ))}
-                    </NativeSelect>
+                    </SearchableSelect>
                   </div>
                 )}
 

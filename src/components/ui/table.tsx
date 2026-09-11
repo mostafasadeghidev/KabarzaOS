@@ -28,10 +28,36 @@ export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTable
   return <tr className={cn('border-b transition-colors hover:bg-muted/50', className)} {...props} />;
 }
 
-export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+/**
+ * ترازِ ستونِ عددی — سرستون و سلول **هر دو** از همین می‌خوانند تا هرگز از هم جدا نشوند.
+ *
+ * ⚠️ عدد در **هر** زبانی راست‌چین است: رقم همیشه چپ‌به‌راست نوشته می‌شود و
+ * ستونِ عدد باید رقمِ یکان را زیرِ رقمِ یکان بچیند. در فارسی راست همان
+ * «ابتدا» ی جدول است، پس سرستون و عدد لبهٔ راستِ مشترک دارند، مثلِ ستون‌های
+ * متنی؛ در انگلیسی همان «انتها» ی مرسومِ جدولِ مالی. `text-end` ِ تنها (۱.۷۳.۰)
+ * در فارسی عدد و سرستون را **چپ**‌چین می‌کرد: لبهٔ چپشان یکی بود ولی چشمِ
+ * خوانندهٔ راست‌به‌چپ لبهٔ راست را می‌سنجد و ستون «زیرِ هم نبود».
+ *
+ * ⚠️ نه `text-right`: گاردِ R-I18N-05 (`rtl-safety.test.ts`) کلاسِ فیزیکی را رد
+ * می‌کند؛ این دو کلاسِ منطقی همان نتیجه را با جهتِ صریح می‌دهند.
+ */
+const NUMERIC_ALIGN = 'ltr:text-end rtl:text-start';
+
+export function TableHead({
+  className,
+  numeric = false,
+  ...props
+}: React.ThHTMLAttributes<HTMLTableCellElement> & {
+  /** سرستونِ ستونی که سلول‌هایش `TableNumericCell` اند. */
+  numeric?: boolean;
+}) {
   return (
     <th
-      className={cn('h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground', className)}
+      className={cn(
+        'h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground',
+        numeric && NUMERIC_ALIGN,
+        className,
+      )}
       {...props}
     />
   );
@@ -42,21 +68,18 @@ export function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTa
 }
 
 /**
- * سلولِ عددی — اعداد همیشه LTR و هم‌عرض (R-I18N-07).
+ * سلولِ عددی — اعداد همیشه LTR و هم‌عرض (R-I18N-07)، با ترازِ `NUMERIC_ALIGN`.
  *
- * ⚠️ `num` روی یک `<span>` ِ درونی می‌نشیند، نه روی خودِ سلول. چون `num`
- * جهت را به LTR می‌برد، اگر روی سلول باشد `text-end` ِ سلول یعنی **راست**
- * در حالی که `text-end` ِ سرستون (که جهتِ جدول را دارد) در فارسی یعنی
- * **چپ** — عدد و سرستونش به دو سمتِ مخالف می‌رفتند. با span، ترازِ سلول و
- * سرستون هر دو از جهتِ جدول می‌آید و در هر زبانی زیرِ هم می‌مانند.
+ * ⚠️ `num` روی یک `<span>` ِ درونی می‌نشیند، نه روی خودِ سلول: `num` جهت را
+ * LTR می‌کند و روی سلول، جهتِ خودِ سلول را هم عوض می‌کرد.
  *
- * ⚠️ سرستونِ ستونِ عددی **خودش** `text-end` نمی‌گیرد — `TableHead` پیش‌فرض
- * `text-start` است و باید `className="text-end"` بخورد. بدونِ آن در فارسی
- * سرستون راست می‌نشست و عددها چپ (۹۸ سرستون در ۱.۷۳.۰ همین‌طور بودند).
+ * ⚠️ سرستونِ همین ستون باید `<TableHead numeric>` باشد — `TableHead` پیش‌فرض
+ * `text-start` است و بدونِ آن سرستون و عدد به دو لبهٔ ستون می‌رفتند (۹۸
+ * سرستون تا ۱.۷۳.۰ همین‌طور بودند).
  */
 export function TableNumericCell({ className, children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={cn('px-3 py-2 align-middle text-end', className)} {...props}>
+    <td className={cn('px-3 py-2 align-middle', NUMERIC_ALIGN, className)} {...props}>
       <span className="num">{children}</span>
     </td>
   );

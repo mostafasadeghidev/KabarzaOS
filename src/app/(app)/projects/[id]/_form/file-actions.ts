@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
-  addAttachment, addLink, deleteAttachment, setProjectThumbnail,
+  addAttachment, addLink, deleteAttachment,
 } from '@/server/files/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
@@ -100,23 +100,4 @@ export async function deleteAttachmentAction(attachmentId: number, projectId: nu
 
   revalidatePath(`/projects/${projectId}`);
   return { message: 'حذف شد.' };
-}
-
-export async function setThumbnailAction(
-  _prev: FileFormState,
-  formData: FormData,
-): Promise<FileFormState> {
-  const projectId = Number(formData.get('projectId'));
-  const file = formData.get('file');
-  if (!(file instanceof File) || file.size === 0) return { error: 'تصویری انتخاب نشده است.' };
-
-  try {
-    await setProjectThumbnail(await requireActor(), projectId, await toBlob(file));
-  } catch (error) {
-    return { error: message(error) };
-  }
-
-  revalidatePath(`/projects/${projectId}`);
-  revalidatePath('/projects');
-  return { message: 'تصویرِ شاخص ثبت شد.' };
 }

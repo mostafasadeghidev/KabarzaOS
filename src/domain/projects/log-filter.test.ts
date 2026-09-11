@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterLogs, logMembers, totalMinutes } from './log-filter';
+import { filterLogs, localIsoDate, logMembers, totalMinutes } from './log-filter';
 
 const rows = [
   { id: 1, userId: 7, userName: 'سارا', logDate: '2026-09-10', minutes: 90 },
@@ -8,22 +8,31 @@ const rows = [
   { id: 4, userId: 12, userName: null, logDate: '2026-09-08', minutes: 15 },
 ];
 
+const none = { userId: '', from: '', to: '' };
+const ids = (list: Array<{ id: number }>) => list.map((r) => r.id);
+
 describe('فیلترِ جزئیاتِ ثبت‌ها', () => {
   it('بدونِ فیلتر همه می‌مانند', () => {
-    expect(filterLogs(rows, { userId: '', date: '' })).toHaveLength(4);
+    expect(filterLogs(rows, none)).toHaveLength(4);
   });
 
   it('فقط ثبت‌های همان عضو', () => {
-    expect(filterLogs(rows, { userId: '7', date: '' }).map((r) => r.id)).toEqual([1, 3]);
+    expect(ids(filterLogs(rows, { ...none, userId: '7' }))).toEqual([1, 3]);
   });
 
-  it('فقط ثبت‌های همان روز', () => {
-    expect(filterLogs(rows, { userId: '', date: '2026-09-10' }).map((r) => r.id)).toEqual([1, 2]);
+  it('بازهٔ تاریخ — هر دو سر شاملِ بازه‌اند', () => {
+    expect(ids(filterLogs(rows, { ...none, from: '2026-09-09', to: '2026-09-10' }))).toEqual([1, 2, 3]);
+    expect(ids(filterLogs(rows, { ...none, from: '2026-09-10', to: '2026-09-10' }))).toEqual([1, 2]);
   });
 
-  it('عضو و روز با هم', () => {
-    expect(filterLogs(rows, { userId: '7', date: '2026-09-10' }).map((r) => r.id)).toEqual([1]);
-    expect(filterLogs(rows, { userId: '3', date: '2026-09-09' })).toEqual([]);
+  it('یک سرِ بازه می‌تواند باز باشد', () => {
+    expect(ids(filterLogs(rows, { ...none, from: '2026-09-09' }))).toEqual([1, 2, 3]);
+    expect(ids(filterLogs(rows, { ...none, to: '2026-09-08' }))).toEqual([4]);
+  });
+
+  it('عضو و بازه با هم', () => {
+    expect(ids(filterLogs(rows, { userId: '7', from: '2026-09-10', to: '2026-09-30' }))).toEqual([1]);
+    expect(filterLogs(rows, { userId: '3', from: '2026-09-01', to: '2026-09-09' })).toEqual([]);
   });
 
   it('فهرستِ اعضا: هر نفر یک بار، به ترتیبِ نام؛ بی‌نام با شناسه', () => {
@@ -35,7 +44,12 @@ describe('فیلترِ جزئیاتِ ثبت‌ها', () => {
   });
 
   it('مجموعِ دقیقه‌های ثبت‌های منطبق', () => {
-    expect(totalMinutes(filterLogs(rows, { userId: '7', date: '' }))).toBe(135);
+    expect(totalMinutes(filterLogs(rows, { ...none, userId: '7' }))).toBe(135);
     expect(totalMinutes([])).toBe(0);
+  });
+
+  it('امروز به تاریخِ محلی، نه UTC', () => {
+    expect(localIsoDate(new Date(2026, 0, 5, 0, 30))).toBe('2026-01-05');
+    expect(localIsoDate(new Date(2026, 11, 31, 23, 59))).toBe('2026-12-31');
   });
 });

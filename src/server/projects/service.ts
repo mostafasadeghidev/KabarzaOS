@@ -1338,6 +1338,8 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     logs,
     matrix,
     dayLabels,
+    // روزِ آغازِ هفته (۰ = شنبه) — میان‌بُرِ «این هفته» و تقویمِ فیلترِ ثبت‌ها.
+    weekStart: systemForMatrix.weekStart,
     isFrozen,
     statusGroup,
     statusName,

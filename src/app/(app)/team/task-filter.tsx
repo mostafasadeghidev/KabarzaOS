@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 export interface TaskFilterOptions {
   statuses: Array<{ id: number; name: string }>;
@@ -63,16 +64,16 @@ export function TaskFilter({
           {options.statuses.map((s) => <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>)}
         </NativeSelect>
 
-        <NativeSelect
+        <SearchableSelect
           value={value('tassignee')} 
-          onChange={(e) => go({ tassignee: e.target.value })}
+          onValueChange={(v) => go({ tassignee: v })}
           aria-label={tr('مسئول')}
         >
           <NativeSelectOption value="">{tr('همهٔ مسئول‌ها')}</NativeSelectOption>
           {/* ⚠️ صفر معنایش «بدونِ مسئول» است، نه «همه». */}
           <NativeSelectOption value="0">{tr('بدونِ مسئول')}</NativeSelectOption>
           {options.assignees.map((a) => <NativeSelectOption key={a.id} value={a.id}>{a.name}</NativeSelectOption>)}
-        </NativeSelect>
+        </SearchableSelect>
 
         <NativeSelect
           value={value('tprio')} 

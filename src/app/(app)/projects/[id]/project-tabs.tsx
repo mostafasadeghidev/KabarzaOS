@@ -34,7 +34,6 @@ export interface ProjectTabsData {
   isArchived: boolean;
   /** منجمد = بایگانی یا لغو/توقف — فرم‌ها پنهان می‌شوند (پورتِ `is_frozen`). */
   isFrozen: boolean;
-  thumbnailFileId: number | null;
   price: string;
   /** حقِ دیدنِ قیمتِ پروژه — `domain/access/project-money`. */
   canSeePrice: boolean;
@@ -48,6 +47,8 @@ export interface ProjectTabsData {
   logs: LogRow[];
   matrix: MatrixRowView[];
   dayLabels: string[];
+  /** روزِ آغازِ هفته از تنظیمات (۰ = شنبه) — میان‌بُرِ «این هفته» ِ فیلترِ ثبت‌ها. */
+  weekStart: number;
   tasks: TaskItem[];
   taskStatuses: TaskStatusOption[];
   /** نقش ← اعضایی که آن نقش را دارند (قاعدهٔ «برداشتنِ تسک»). */
@@ -275,10 +276,10 @@ export function ProjectTabs({
           logs={data.logs}
           matrix={data.matrix}
           dayLabels={data.dayLabels}
+          weekStart={data.weekStart}
           canManage={data.canManage}
           deleteState={data.deleteState}
           lightenSummary={data.lightenSummary}
-          thumbnailFileId={data.thumbnailFileId}
         />
       )}
 

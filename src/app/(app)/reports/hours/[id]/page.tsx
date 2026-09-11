@@ -125,7 +125,7 @@ export default async function MemberHoursPage({
             <TableHeader>
               <TableRow>
                 <TableHead>{t('پروژه')}</TableHead>
-                <TableHead className="text-end">{t('ساعت کاری')}</TableHead>
+                <TableHead numeric>{t('ساعت کاری')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -163,8 +163,8 @@ export default async function MemberHoursPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-end">{t('تاریخ')}</TableHead>
-                  <TableHead className="text-end">{t('ساعت کاری')}</TableHead>
+                  <TableHead numeric>{t('تاریخ')}</TableHead>
+                  <TableHead numeric>{t('ساعت کاری')}</TableHead>
                   <TableHead>{t('شرح')}</TableHead>
                 </TableRow>
               </TableHeader>

@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -137,12 +138,12 @@ export function QuickTaskForm({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="q-assignee">{t("مسئول")}</Label>
-                <NativeSelect id="q-assignee" name="assignedTo" containerClassName="w-full" disabled={loading}>
+                <SearchableSelect id="q-assignee" name="assignedTo" containerClassName="w-full" disabled={loading}>
                   <NativeSelectOption value="">{t("— بدونِ مسئول —")}</NativeSelectOption>
                   {(options?.assignees ?? []).map((a) => (
                     <NativeSelectOption key={a.id} value={a.id}>{a.label}</NativeSelectOption>
                   ))}
-                </NativeSelect>
+                </SearchableSelect>
               </div>
 
               <div className="grid gap-1.5">

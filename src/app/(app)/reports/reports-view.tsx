@@ -410,11 +410,11 @@ export function ReportsView({
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("عضو")}</TableHead>
-                <TableHead className="text-end">{tr("پروژه‌ها")}</TableHead>
-                <TableHead className="text-end">{tr("توافقی")}</TableHead>
-                <TableHead className="text-end">{tr("پرداختی")}</TableHead>
-                <TableHead className="text-end">{tr("مانده")}</TableHead>
-                <TableHead className="text-end">{tr("ساعت کاری")}</TableHead>
+                <TableHead numeric>{tr("پروژه‌ها")}</TableHead>
+                <TableHead numeric>{tr("توافقی")}</TableHead>
+                <TableHead numeric>{tr("پرداختی")}</TableHead>
+                <TableHead numeric>{tr("مانده")}</TableHead>
+                <TableHead numeric>{tr("ساعت کاری")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -478,10 +478,10 @@ export function ReportsView({
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("کارفرما")}</TableHead>
-                <TableHead className="text-end">{tr("قیمت")}</TableHead>
-                <TableHead className="text-end">{tr("هزینه‌های قابلِ صورت‌حساب")}</TableHead>
-                <TableHead className="text-end">{tr("دریافتی")}</TableHead>
-                <TableHead className="text-end">{tr("مطالبات")}</TableHead>
+                <TableHead numeric>{tr("قیمت")}</TableHead>
+                <TableHead numeric>{tr("هزینه‌های قابلِ صورت‌حساب")}</TableHead>
+                <TableHead numeric>{tr("دریافتی")}</TableHead>
+                <TableHead numeric>{tr("مطالبات")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -573,8 +573,8 @@ export function ReportsView({
                 <TableHeader>
                   <TableRow>
                     <TableHead>{tr("طرف‌حساب")}</TableHead>
-                    <TableHead className="text-end">{tr("تعداد")}</TableHead>
-                    <TableHead className="text-end">{tr("مبلغ (یورو)")}</TableHead>
+                    <TableHead numeric>{tr("تعداد")}</TableHead>
+                    <TableHead numeric>{tr("مبلغ (یورو)")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -596,9 +596,9 @@ export function ReportsView({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-end">{tr("ماه")}</TableHead>
+                    <TableHead numeric>{tr("ماه")}</TableHead>
                     <TableHead className="w-1/2">{tr("روند")}</TableHead>
-                    <TableHead className="text-end">{tr("مبلغ (یورو)")}</TableHead>
+                    <TableHead numeric>{tr("مبلغ (یورو)")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -625,11 +625,11 @@ export function ReportsView({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-end">{tr("تاریخ")}</TableHead>
+                    <TableHead numeric>{tr("تاریخ")}</TableHead>
                     <TableHead>{tr("شرح")}</TableHead>
                     <TableHead>{tr("حساب")}</TableHead>
                     <TableHead>{tr("جهت")}</TableHead>
-                    <TableHead className="text-end">{tr("معادل یورو")}</TableHead>
+                    <TableHead numeric>{tr("معادل یورو")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -656,11 +656,11 @@ export function ReportsView({
               <TableRow>
                 <TableHead>{tr("حساب")}</TableHead>
                 <TableHead>{tr("ارز")}</TableHead>
-                <TableHead className="text-end">{tr("مانده اولیه")}</TableHead>
-                <TableHead className="text-end">{tr("واریز")}</TableHead>
-                <TableHead className="text-end">{tr("برداشت")}</TableHead>
-                <TableHead className="text-end">{tr("مانده")}</TableHead>
-                <TableHead className="text-end">{tr("معادل یورو")}</TableHead>
+                <TableHead numeric>{tr("مانده اولیه")}</TableHead>
+                <TableHead numeric>{tr("واریز")}</TableHead>
+                <TableHead numeric>{tr("برداشت")}</TableHead>
+                <TableHead numeric>{tr("مانده")}</TableHead>
+                <TableHead numeric>{tr("معادل یورو")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -695,9 +695,9 @@ export function ReportsView({
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr("عضو")}</TableHead>
-                  <TableHead className="text-end">{tr("ساعتِ پروژه")}</TableHead>
-                  <TableHead className="text-end">{tr("ساعتِ عمومی")}</TableHead>
-                  <TableHead className="text-end">{tr("مجموع")}</TableHead>
+                  <TableHead numeric>{tr("ساعتِ پروژه")}</TableHead>
+                  <TableHead numeric>{tr("ساعتِ عمومی")}</TableHead>
+                  <TableHead numeric>{tr("مجموع")}</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -732,12 +732,12 @@ export function ReportsView({
               <TableRow>
                 <TableHead>{tr("پروژه")}</TableHead>
                 <TableHead>{tr("وضعیت")}</TableHead>
-                <TableHead className="text-end">{tr("قیمت")}</TableHead>
-                <TableHead className="text-end">{tr("دریافتی")}</TableHead>
-                <TableHead className="text-end">{tr("مطالبات")}</TableHead>
-                <TableHead className="text-end">{tr("پرداختی به اعضا")}</TableHead>
-                <TableHead className="text-end">{tr("سود")}</TableHead>
-                <TableHead className="text-end">{tr("ساعت کاری")}</TableHead>
+                <TableHead numeric>{tr("قیمت")}</TableHead>
+                <TableHead numeric>{tr("دریافتی")}</TableHead>
+                <TableHead numeric>{tr("مطالبات")}</TableHead>
+                <TableHead numeric>{tr("پرداختی به اعضا")}</TableHead>
+                <TableHead numeric>{tr("سود")}</TableHead>
+                <TableHead numeric>{tr("ساعت کاری")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -788,9 +788,9 @@ export function ReportsView({
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("عضو")}</TableHead>
-                <TableHead className="text-end">{tr("پرداخت‌شده")}</TableHead>
-                <TableHead className="text-end">{tr("پرداخت‌نشده")}</TableHead>
-                <TableHead className="text-end">{tr("جمع")}</TableHead>
+                <TableHead numeric>{tr("پرداخت‌شده")}</TableHead>
+                <TableHead numeric>{tr("پرداخت‌نشده")}</TableHead>
+                <TableHead numeric>{tr("جمع")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -849,8 +849,8 @@ export function ReportsView({
                 <TableHeader>
                   <TableRow>
                     <TableHead>{tr("عضو")}</TableHead>
-                    <TableHead className="text-end">{tr("از")}</TableHead>
-                    <TableHead className="text-end">{tr("تا")}</TableHead>
+                    <TableHead numeric>{tr("از")}</TableHead>
+                    <TableHead numeric>{tr("تا")}</TableHead>
                     <TableHead>{tr("توضیح")}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -918,14 +918,14 @@ export function ReportsView({
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr("حساب")}</TableHead>
-                  <TableHead className="text-end">{tr("از")}</TableHead>
-                  <TableHead className="text-end">{tr("واریز")}</TableHead>
-                  <TableHead className="text-end">{tr("برداشت")}</TableHead>
-                  <TableHead className="text-end">{tr("مانده")}</TableHead>
-                  <TableHead className="text-end">{tr("از کارفرما")}</TableHead>
-                  <TableHead className="text-end">{tr("به اعضا")}</TableHead>
-                  <TableHead className="text-end">{tr("هزینه‌ها")}</TableHead>
-                  <TableHead className="text-end">{tr("مانده پایان (یورو)")}</TableHead>
+                  <TableHead numeric>{tr("از")}</TableHead>
+                  <TableHead numeric>{tr("واریز")}</TableHead>
+                  <TableHead numeric>{tr("برداشت")}</TableHead>
+                  <TableHead numeric>{tr("مانده")}</TableHead>
+                  <TableHead numeric>{tr("از کارفرما")}</TableHead>
+                  <TableHead numeric>{tr("به اعضا")}</TableHead>
+                  <TableHead numeric>{tr("هزینه‌ها")}</TableHead>
+                  <TableHead numeric>{tr("مانده پایان (یورو)")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

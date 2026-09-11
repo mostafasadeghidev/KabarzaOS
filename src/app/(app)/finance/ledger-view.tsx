@@ -31,7 +31,8 @@ import { useT } from '@/i18n/client';
 import { LedgerFilter, type LedgerPaging } from './ledger-filter';
 import { TableSearch, useTableView } from '@/components/ui/table-search';
 import { useConfirm } from '@/components/ui/confirm';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DatePicker } from '@/components/ui/date-picker';
 
@@ -223,15 +224,15 @@ export function LedgerView({
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <NativeSelect
+        <SearchableSelect
           containerClassName="w-full max-w-xs"
           value={accountId}
-          onChange={(e) => onSelectAccount(Number(e.target.value))}
+          onValueChange={(v) => onSelectAccount(Number(v))}
         >
           {accounts.map((a) => (
             <NativeSelectOption key={a.id} value={a.id}>{accountLabel(a)}</NativeSelectOption>
           ))}
-        </NativeSelect>
+        </SearchableSelect>
 
         {canManage && (
           <div className="flex gap-2">
@@ -306,16 +307,16 @@ export function LedgerView({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-end">#</TableHead>
-                <TableHead className="text-end">{t("تاریخ")}</TableHead>
+                <TableHead numeric>#</TableHead>
+                <TableHead numeric>{t("تاریخ")}</TableHead>
                 <TableHead>{t("تگ‌ها")}</TableHead>
                 <TableHead>{t("توضیحات")}</TableHead>
-                <TableHead className="text-end">{t("مبلغ")}</TableHead>
+                <TableHead numeric>{t("مبلغ")}</TableHead>
                 <TableHead>{t("پرداخت‌کننده")}</TableHead>
                 <TableHead>{t("دریافت‌کننده")}</TableHead>
                 <TableHead>{t("بابت")}</TableHead>
                 <TableHead>{t("توسط")}</TableHead>
-                {showEur && <TableHead className="text-end">{t("معادل یورو")}</TableHead>}
+                {showEur && <TableHead numeric>{t("معادل یورو")}</TableHead>}
                 <TableHead>{t("رسید")}</TableHead>
                 {canManage && <TableHead />}
               </TableRow>
@@ -471,20 +472,20 @@ export function LedgerView({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="t-from">{t("از حساب")}</Label>
-                <NativeSelect id="t-from" name="fromAccountId" containerClassName="w-full" defaultValue={accountId}>
+                <SearchableSelect id="t-from" name="fromAccountId" containerClassName="w-full" defaultValue={accountId}>
                   {accounts.map((a) => (
                     <NativeSelectOption key={a.id} value={a.id}>{accountLabel(a)}</NativeSelectOption>
                   ))}
-                </NativeSelect>
+                </SearchableSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="t-to">{t("به حساب")}</Label>
-                <NativeSelect id="t-to" name="toAccountId" containerClassName="w-full" defaultValue={String(accounts.find((a) => a.id !== accountId)?.id ?? '')}>
+                <SearchableSelect id="t-to" name="toAccountId" containerClassName="w-full" defaultValue={String(accounts.find((a) => a.id !== accountId)?.id ?? '')}>
                   <NativeSelectOption value="">{t("— انتخاب —")}</NativeSelectOption>
                   {accounts.map((a) => (
                     <NativeSelectOption key={a.id} value={a.id}>{accountLabel(a)}</NativeSelectOption>
                   ))}
-                </NativeSelect>
+                </SearchableSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="t-famount">{t("مبلغِ خروجی")}</Label>

@@ -141,9 +141,9 @@ export function FinanceTab({
               <TableRow>
                 <TableHead>{t("شرح")}</TableHead>
                 <TableHead>{t("نوع")}</TableHead>
-                <TableHead className="text-end">{t("تاریخ")}</TableHead>
-                <TableHead className="text-end">{t("مبلغ")}</TableHead>
-                <TableHead className="text-end">{t("معادل (محاسبه)")}</TableHead>
+                <TableHead numeric>{t("تاریخ")}</TableHead>
+                <TableHead numeric>{t("مبلغ")}</TableHead>
+                <TableHead numeric>{t("معادل (محاسبه)")}</TableHead>
                 <TableHead>{t("رسید")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -609,7 +609,7 @@ export function BidsTab({
             <TableRow>
               <TableHead>{t("پیشنهاددهنده")}</TableHead>
               <TableHead>{t("نقش")}</TableHead>
-              <TableHead className="text-end">{t("مبلغ")}</TableHead>
+              <TableHead numeric>{t("مبلغ")}</TableHead>
               <TableHead>{t("وضعیت")}</TableHead>
               {canManage && <TableHead />}
             </TableRow>

@@ -18,8 +18,11 @@ import {
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Thumb } from '@/components/thumb';
+import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 
 export interface Option {
   id: number;
@@ -57,6 +60,8 @@ export interface ProjectDefaults {
   /** نقش ← سقف. */
   tenderRoles: Record<string, string | null> | null;
   scope: string;
+  /** تصویرِ شاخصِ فعلی — پیش‌نمایشِ کنارِ انتخابگر در حالتِ ویرایش. */
+  thumbnailFileId: number | null;
 }
 
 /** یک ردیفِ فیلد با برچسب و خطای زیرِ آن — قالبِ مشترکِ همهٔ فرم‌ها. */
@@ -216,21 +221,35 @@ export function ProjectDialog({
             ⚠️ تصویرِ شاخص کنارِ عنوان و توضیحات می‌نشیند، نه در تبِ فایل‌ها:
             در نسخهٔ قبلی هم جعبه‌اش کنارِ همین دو فیلد بود و کاربر انتظار
             دارد «هویتِ پروژه» یک‌جا پر شود.
+            در ویرایش هم همین‌جاست، نه تبِ مدیریت: تصویر یک بار انتخاب می‌شود
+            و جایش کنارِ بقیهٔ هویتِ پروژه است، نه میانِ کارهای روزمره. با
+            «ذخیرهٔ تغییرات» ثبت می‌شود (← updateProjectAction).
           */}
-          {options.bootstrap && (
+          {(options.bootstrap || isEdit) && (
             <div className="grid gap-1.5">
               <span className="text-sm font-medium">{tr("تصویرِ شاخص")}</span>
               <p className="text-xs text-muted-foreground">
-                {tr("بدونِ تصویر، تک‌نگارِ رنگی نشان داده می‌شود.")}
+                {tr('JPEG، PNG، GIF یا WebP — تا {size}.', { size: humanSize(MAX_SIZE.avatar, tr) })}
+                {' '}
+                {project?.thumbnailFileId
+                  ? tr('تصویرِ قبلی پس از ذخیره حذف می‌شود.')
+                  : tr("بدونِ تصویر، تک‌نگارِ رنگی نشان داده می‌شود.")}
               </p>
-              <FilePicker
-                name="thumbnailFile"
-                accept="image/*"
-                multiple={false}
-                preview
-                addLabel={tr("انتخابِ تصویر")}
-                emptyLabel={tr("تصویری انتخاب نشده")}
-              />
+              <div className="flex items-start gap-3">
+                {isEdit && (
+                  <Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} size={56} />
+                )}
+                <div className="min-w-0 flex-1">
+                  <FilePicker
+                    name="thumbnailFile"
+                    accept="image/*"
+                    multiple={false}
+                    preview
+                    addLabel={tr("انتخابِ تصویر")}
+                    emptyLabel={tr("تصویری انتخاب نشده")}
+                  />
+                </div>
+              </div>
             </div>
           )}
 
@@ -298,12 +317,12 @@ export function ProjectDialog({
             hint={tr("اگر ادامه یا تغییرِ یک پروژهٔ دیگر است (نگهداری)، آن را انتخاب کنید.")}
           >
             {(id) => (
-              <NativeSelect id={id} name="parentId" containerClassName="w-full" defaultValue={keep('parentId')}>
+              <SearchableSelect id={id} name="parentId" containerClassName="w-full" defaultValue={keep('parentId')}>
                 <NativeSelectOption value="">{tr("— بدونِ والد —")}</NativeSelectOption>
                 {options.parents.map((p) => (
                   <NativeSelectOption key={p.id} value={p.id}>{p.label}</NativeSelectOption>
                 ))}
-              </NativeSelect>
+              </SearchableSelect>
             )}
           </Field>
 

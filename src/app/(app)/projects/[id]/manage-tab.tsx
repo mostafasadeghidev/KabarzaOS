@@ -2,14 +2,11 @@
 
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Archive, ArchiveRestore, ImageIcon, Trash2, CircleAlert, TriangleAlert, X } from 'lucide-react';
+import { Archive, ArchiveRestore, Trash2, CircleAlert, TriangleAlert, X } from 'lucide-react';
 import {
   deleteProjectAction, lightenAction, setArchivedAction, type DeleteActionState,
 } from '../_form/tab-actions';
-import { setThumbnailAction } from './_form/file-actions';
 import { format } from '@/domain/money/money';
-import { humanSize, MAX_SIZE } from '@/domain/files/upload';
-import { Thumb } from '@/components/thumb';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,15 +17,16 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { TablePager, useTableView } from '@/components/ui/table-search';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { DatePicker } from '@/components/ui/date-picker';
-import { filterLogs, logMembers, totalMinutes } from '@/domain/projects/log-filter';
+import { NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { DateRangePicker, type DateRangeValue } from '@/components/ui/date-picker';
+import { filterLogs, localIsoDate, logMembers, totalMinutes } from '@/domain/projects/log-filter';
+import { monthRange, weekRange } from '@/domain/reports/filters';
 
 /**
  * تبِ مدیریت — بازسازیِ `manage_tab_html()`:
@@ -99,65 +97,90 @@ export function TeamMatrix({ rows, dayLabels }: { rows: MatrixRowView[]; dayLabe
 
 /**
  * پورتِ «جزئیاتِ ثبت‌ها»: تاریخ، عضو، مدت، توضیح — ۱۵تایی.
- * فیلترِ عضو و روز روی همان ثبت‌های لودشده است (← log-filter)؛ با فیلترِ
- * فعال، مجموعِ مدتِ ثبت‌های منطبق هم زیرِ جدول می‌آید.
+ * فیلترِ عضو (با جستجوی زنده) و بازهٔ تاریخ (با میان‌بُرِ «این هفته» و «این
+ * ماه») روی همان ثبت‌های لودشده است (← log-filter)؛ با فیلترِ فعال، مجموعِ
+ * مدتِ ثبت‌های منطبق هم زیرِ جدول می‌آید.
  */
-function LogDetail({ logs }: { logs: LogRow[] }) {
+function LogDetail({ logs, weekStart }: { logs: LogRow[]; weekStart: number }) {
   const t = useT();
   const [userId, setUserId] = useState('');
-  const [date, setDate] = useState('');
+  const [range, setRange] = useState<DateRangeValue>({ from: '', to: '' });
   const members = useMemo(() => logMembers(logs), [logs]);
-  const filtered = useMemo(() => filterLogs(logs, { userId, date }), [logs, userId, date]);
+  const filtered = useMemo(
+    () => filterLogs(logs, { userId, from: range.from, to: range.to }),
+    [logs, userId, range],
+  );
   const view = useTableView(filtered, (r) => `${r.userName ?? ''} ${r.description} ${r.logDate}`, 15);
-  const filtering = userId !== '' || date !== '';
+  const filtering = userId !== '' || range.from !== '' || range.to !== '';
   if (logs.length === 0) return null;
 
   // ⚠️ هر تغییرِ فیلتر به صفحهٔ اول برمی‌گردد؛ وگرنه کاربر روی «صفحهٔ ۳» ِ
   // فهرستی می‌ماند که حالا کوتاه‌تر شده.
-  const applyFilter = (next: { userId?: string; date?: string }) => {
+  const applyFilter = (next: { userId?: string; range?: DateRangeValue }) => {
     if (next.userId !== undefined) setUserId(next.userId);
-    if (next.date !== undefined) setDate(next.date);
+    if (next.range !== undefined) setRange(next.range);
     view.setPage(1);
   };
 
+  // همان پیش‌تنظیم‌های گزارشِ ساعت — «این هفته» از روزِ آغازِ هفتهٔ تنظیمات تا امروز.
+  const presets = [
+    { key: 'week', label: t('این هفته'), range: () => weekRange(localIsoDate(new Date()), weekStart) },
+    { key: 'month', label: t('این ماه'), range: () => monthRange(localIsoDate(new Date())) },
+  ];
+
   return (
-    <Card className="gap-2 px-4 py-4 shadow-xs">
+    <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold">{t("جزئیاتِ ثبت‌ها")}</h3>
         <div className="flex flex-wrap items-center gap-2">
-          <NativeSelect
+          <SearchableSelect
             size="sm"
             aria-label={t("عضو")}
             value={userId}
-            onChange={(e) => applyFilter({ userId: e.target.value })}
+            onValueChange={(v) => applyFilter({ userId: v })}
+            containerClassName="w-44"
           >
             <NativeSelectOption value="">{t("همهٔ اعضا")}</NativeSelectOption>
             {members.map((m) => (
               <NativeSelectOption key={m.id} value={m.id}>{m.name}</NativeSelectOption>
             ))}
-          </NativeSelect>
-          <DatePicker
+          </SearchableSelect>
+          <DateRangePicker
             size="sm"
             aria-label={t("تاریخ")}
             placeholder={t("تاریخ")}
-            value={date}
-            onChange={(v) => applyFilter({ date: v })}
-            className="w-[9.5rem]"
+            value={range}
+            onChange={(v) => applyFilter({ range: v })}
+            presets={presets}
+            // تنظیمات: ۰ = شنبه؛ react-day-picker: ۰ = یکشنبه.
+            weekStartsOn={((weekStart + 6) % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6}
+            className="w-52"
           />
           {filtering && (
-            <Button type="button" size="sm" variant="ghost" onClick={() => applyFilter({ userId: '', date: '' })}>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => applyFilter({ userId: '', range: { from: '', to: '' } })}
+            >
               <X />
               {t("پاک کردن")}
             </Button>
           )}
         </div>
       </div>
-      <Table>
+      {/*
+        ⚠️ `table-fixed` با پهنای درصدی: ستون‌ها در کلِ عرضِ کارت پخش می‌شوند،
+        مستقل از طولِ محتوا. چیدمانِ خودکار فضا را به نسبتِ متن پخش می‌کرد
+        (تاریخ وسطِ ستونی پهن)، و ستونِ توضیحاتِ `w-full` همه را در ابتدای ردیف
+        به هم می‌چسباند. ستونِ آخر باقیِ عرض را می‌گیرد.
+      */}
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead className="text-end">{t("تاریخ")}</TableHead>
-            <TableHead>{t("عضو")}</TableHead>
-            <TableHead className="text-end">{t("مدت")}</TableHead>
+            <TableHead numeric className="w-[20%]">{t("تاریخ")}</TableHead>
+            <TableHead className="w-[28%]">{t("عضو")}</TableHead>
+            <TableHead numeric className="w-[16%]">{t("مدت")}</TableHead>
             <TableHead>{t("توضیحات")}</TableHead>
           </TableRow>
         </TableHeader>
@@ -165,9 +188,9 @@ function LogDetail({ logs }: { logs: LogRow[] }) {
           {view.rows.map((r) => (
             <TableRow key={r.id}>
               <TableNumericCell>{r.logDate}</TableNumericCell>
-              <TableCell>{r.userName ?? '—'}</TableCell>
+              <TableCell className="break-words">{r.userName ?? '—'}</TableCell>
               <TableNumericCell>{hhmm(r.minutes)}</TableNumericCell>
-              <TableCell>{r.description || '—'}</TableCell>
+              <TableCell className="break-words">{r.description || '—'}</TableCell>
             </TableRow>
           ))}
           {filtered.length === 0 && (
@@ -462,58 +485,6 @@ function LightenBox({
   );
 }
 
-/**
- * تصویرِ شاخصِ پروژه.
- * ⚠️ پیش‌نمایش همان کامپوننتِ کارت است تا آنچه اینجا دیده می‌شود دقیقاً همان
- * چیزی باشد که در فهرست ظاهر می‌شود.
- */
-function ThumbnailForm({
-  projectId,
-  title,
-  fileId,
-}: {
-  projectId: number;
-  title: string;
-  fileId: number | null;
-}) {
-  const t = useT();
-  const [state, action] = useActionState(setThumbnailAction, {});
-  useActionToast(state);
-
-  // ⚠️ کادر از آنِ بخش است، نه فرم — وگرنه دو حاشیهٔ تودرتو می‌شد.
-  return (
-    <form action={action} className="flex flex-wrap items-end gap-3">
-      <input type="hidden" name="projectId" value={projectId} />
-      <Thumb id={projectId} title={title} fileId={fileId} size={56} />
-
-      <div className="grid flex-1 gap-1.5">
-        <Label htmlFor="thumb-file">{t("تصویر تازه")}</Label>
-        <Input id="thumb-file" name="file" type="file" accept="image/*" required />
-        <p className="text-xs text-muted-foreground">
-          {t('JPEG، PNG، GIF یا WebP — تا {size}.', { size: humanSize(MAX_SIZE.avatar, t) })}
-          {' '}
-          {fileId
-            ? t('تصویرِ قبلی پس از ذخیره حذف می‌شود.')
-            : t('بدونِ تصویر، تک‌نگارِ رنگی نشان داده می‌شود.')}
-        </p>
-      </div>
-
-      <ThumbnailSubmit />
-    </form>
-  );
-}
-
-function ThumbnailSubmit() {
-  const { pending } = useFormStatus();
-  const tr = useT();
-  return (
-    <Button type="submit" size="sm" variant="outline" disabled={pending}>
-      <ImageIcon className="size-3.5" />
-      {pending ? tr('در حالِ ارسال…') : tr('ذخیره تصویر')}
-    </Button>
-  );
-}
-
 export function ManageTab({
   projectId,
   title,
@@ -522,22 +493,23 @@ export function ManageTab({
   canManage,
   deleteState,
   lightenSummary,
-  thumbnailFileId,
   logs = [],
   matrix = [],
   dayLabels = [],
+  weekStart = 0,
 }: {
   projectId: number;
   title: string;
   isArchived: boolean;
   hours: HourRow[];
   canManage: boolean;
-  thumbnailFileId: number | null;
   deleteState: 'clean' | 'confirm' | 'locked';
   lightenSummary: LightenSummaryView | null;
   logs?: LogRow[];
   matrix?: MatrixRowView[];
   dayLabels?: string[];
+  /** روزِ آغازِ هفته از تنظیمات (۰ = شنبه). */
+  weekStart?: number;
 }) {
   const tr = useT();
   const t = useT();
@@ -547,21 +519,23 @@ export function ManageTab({
 
   return (
     /**
-     * ⚠️ هر بخش یک **کارتِ خط‌چین** است، نه ردیف‌های چسبیده: تبِ مدیریت شش
-     * کارِ بی‌ربط به هم دارد (تصویر، ساعت، ثبت‌ها، در دسترس بودن، بایگانی،
+     * ⚠️ هر بخش یک **کارتِ خط‌چین** است، نه ردیف‌های چسبیده: تبِ مدیریت چند
+     * کارِ بی‌ربط به هم دارد (ساعت، ثبت‌ها، در دسترس بودن، بایگانی، سبک‌سازی،
      * حذف) و بدونِ مرز، چشم نمی‌فهمید کجا یکی تمام و بعدی شروع می‌شود.
+     * تصویرِ شاخص از ۱.۷۴.۰ در فرمِ «ویرایش» ِ پروژه است، نه اینجا.
      * خط‌چین عمدی است: مرزِ نرم، تا از کادرِ **قرمزِ توپرِ** حذف تفکیک شود.
      */
     <div className="grid max-w-5xl gap-4">
+      {/* ترتیبِ کارت‌ها: در دسترس بودن ← ساعت ← ثبت‌ها ← بایگانی ← سبک‌سازی ← حذف. */}
       {canManage && (
-        // کارتِ تصویر باریک می‌ماند؛ محتوایش یک تصویرِ ۵۶ پیکسلی و یک دکمه است.
-        <Card className="max-w-xl gap-2 px-4 py-4 shadow-xs">
-          <h3 className="text-sm font-semibold">{t("تصویر شاخص")}</h3>
-          <ThumbnailForm projectId={projectId} title={title} fileId={thumbnailFileId} />
+        <Card className="gap-2 px-4 py-4 shadow-xs">
+          <h3 className="text-sm font-semibold">{t("در دسترس بودنِ اعضای پروژه")}</h3>
+          <TeamMatrix rows={matrix} dayLabels={dayLabels} />
         </Card>
       )}
 
-      <Card className="gap-2 px-4 py-4 shadow-xs">
+      {/* ساعت و ثبت‌ها هم‌عرضِ بایگانی و سبک‌سازی‌اند: جدولِ کم‌ستون در تمامِ عرضِ صفحه پراکنده می‌شد. */}
+      <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs">
         <h3 className="text-sm font-semibold">{t("ساعت کاری اعضا")}</h3>
         {hours.length === 0 ? (
           <p className="text-xs text-muted-foreground">{t("ساعتِ کاری‌ای ثبت نشده.")}</p>
@@ -570,7 +544,7 @@ export function ManageTab({
             <TableHeader>
               <TableRow>
                 <TableHead>{t("عضو")}</TableHead>
-                <TableHead className="text-end">{t("ساعت کاری")}</TableHead>
+                <TableHead numeric>{t("ساعت کاری")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -589,14 +563,7 @@ export function ManageTab({
         )}
       </Card>
 
-      {canManage && <LogDetail logs={logs} />}
-
-      {canManage && (
-        <Card className="gap-2 px-4 py-4 shadow-xs">
-          <h3 className="text-sm font-semibold">{t("در دسترس بودنِ اعضای پروژه")}</h3>
-          <TeamMatrix rows={matrix} dayLabels={dayLabels} />
-        </Card>
-      )}
+      {canManage && <LogDetail logs={logs} weekStart={weekStart} />}
 
       {canManage && (
         <>

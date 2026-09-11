@@ -55,9 +55,9 @@ export async function OffboardedShell({ actor }: { actor: Actor }) {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("پروژه")}</TableHead>
-                <TableHead className="text-end">{t("توافق‌شده")}</TableHead>
-                <TableHead className="text-end">{t("پرداخت‌شده")}</TableHead>
-                <TableHead className="text-end">{t("مانده")}</TableHead>
+                <TableHead numeric>{t("توافق‌شده")}</TableHead>
+                <TableHead numeric>{t("پرداخت‌شده")}</TableHead>
+                <TableHead numeric>{t("مانده")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

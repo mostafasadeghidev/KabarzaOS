@@ -15,6 +15,7 @@ import {
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 export interface MemberRow {
   userId: number | null;
@@ -158,17 +159,17 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                           <input type="hidden" name="memberUser" value={row.userId ?? ''} />
                         </div>
                       ) : (
-                        <NativeSelect
+                        <SearchableSelect
                           name="memberUser"
                           size="sm" containerClassName="w-full"
                           value={row.userId ?? ''}
-                          onChange={(e) => patch(i, { userId: e.target.value ? Number(e.target.value) : null })}
+                          onValueChange={(v) => patch(i, { userId: v ? Number(v) : null })}
                         >
                           <NativeSelectOption value="">—</NativeSelectOption>
                           {data.team.map((u) => (
                             <NativeSelectOption key={u.id} value={u.id}>{u.name}</NativeSelectOption>
                           ))}
-                        </NativeSelect>
+                        </SearchableSelect>
                       )}
                       {row.isOwed && (
                         <span className="mt-0.5 block text-[11px] text-amber-600 dark:text-amber-500">

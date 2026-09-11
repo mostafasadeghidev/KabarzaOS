@@ -246,3 +246,134 @@ export function DateTimePicker({
     </div>
   );
 }
+
+export interface DateRangeValue {
+  /** `yyyy-mm-dd` یا خالی. */
+  from: string;
+  to: string;
+}
+
+export interface DateRangePreset {
+  key: string;
+  label: string;
+  /** هنگامِ کلیک حساب می‌شود، نه هنگامِ رندر — صفحه‌ای که از دیروز باز مانده «امروز» را درست بگیرد. */
+  range: () => DateRangeValue;
+}
+
+/**
+ * انتخابگرِ بازهٔ تاریخ — Calendar ِ shadcn در حالتِ `range`، با میان‌بُرها (مثلاً
+ * «این هفته»، «این ماه») بالای همان تقویم.
+ *
+ * ⚠️ بازه با **دو کلیک** ثبت می‌شود و تا کلیکِ دوم به `onChange` نمی‌رسد: فیلتر
+ * با بازهٔ نیمه اعمال نمی‌شود و جدول با کلیکِ اول نمی‌پرد. ترتیبِ کلیک مهم
+ * نیست — تاریخِ کوچک‌تر «از» می‌شود؛ دو کلیک روی یک روز یعنی همان یک روز.
+ *
+ * ⚠️ `name` نمی‌گیرد: برای فیلترهای سمتِ کلاینت است، نه فرم.
+ */
+export function DateRangePicker({
+  value,
+  onChange,
+  presets = [],
+  weekStartsOn,
+  placeholder,
+  size = 'default',
+  className,
+  'aria-label': ariaLabel,
+}: {
+  value: DateRangeValue;
+  onChange: (value: DateRangeValue) => void;
+  presets?: DateRangePreset[];
+  /** ۰ = یکشنبه … ۶ = شنبه — قراردادِ react-day-picker، نه تنظیماتِ اپ. */
+  weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  placeholder?: string;
+  size?: 'sm' | 'default';
+  className?: string;
+  'aria-label'?: string;
+}) {
+  const locale = useLocale();
+  const dir = useDirection();
+  const [open, setOpen] = React.useState(false);
+  /** سرِ اولِ بازه تا وقتی سرِ دوم انتخاب نشده. */
+  const [first, setFirst] = React.useState('');
+  const year = new Date().getFullYear();
+
+  const commit = (next: DateRangeValue) => {
+    onChange(next);
+    setFirst('');
+    setOpen(false);
+  };
+
+  const onDay = (day: Date) => {
+    const iso = toIso(day);
+    if (first === '') {
+      setFirst(iso);
+      return;
+    }
+    commit(iso < first ? { from: iso, to: first } : { from: first, to: iso });
+  };
+
+  const shown = first !== '' ? { from: first, to: '' } : value;
+  const label = value.from && value.to
+    ? value.from === value.to ? value.from : `${value.from} – ${value.to}`
+    : '';
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setFirst('');
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size={size}
+          aria-label={ariaLabel}
+          className={cn('justify-between font-normal', !label && 'text-muted-foreground', className)}
+        >
+          <span className={cn('truncate', label && 'num')}>{label || placeholder || '—'}</span>
+          <CalendarIcon className="opacity-60" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+        {presets.length > 0 && (
+          <div className="flex flex-wrap gap-1 border-b p-2">
+            {presets.map((preset) => {
+              const range = preset.range();
+              const active = range.from === value.from && range.to === value.to;
+              return (
+                <Button
+                  key={preset.key}
+                  type="button"
+                  size="sm"
+                  variant={active ? 'secondary' : 'ghost'}
+                  className="h-7 px-2.5 text-xs"
+                  onClick={() => commit(range)}
+                >
+                  {preset.label}
+                </Button>
+              );
+            })}
+          </div>
+        )}
+        <Calendar
+          mode="range"
+          selected={{ from: fromIso(shown.from), to: fromIso(shown.to) }}
+          onSelect={(_range, day) => onDay(day)}
+          defaultMonth={fromIso(value.to) ?? fromIso(value.from)}
+          captionLayout="dropdown"
+          startMonth={new Date(year - 10, 0)}
+          endMonth={new Date(year + 5, 11)}
+          weekStartsOn={weekStartsOn}
+          dir={dir}
+          locale={DAY_PICKER_LOCALES[locale as keyof typeof DAY_PICKER_LOCALES] ?? enUS}
+          formatters={{
+            formatMonthDropdown: (d) => d.toLocaleString(LOCALE_TAGS[locale] ?? 'en-US-u-ca-gregory', { month: 'short' }),
+          }}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}

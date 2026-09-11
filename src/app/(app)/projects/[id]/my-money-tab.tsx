@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
 
 export interface UnitRow {
@@ -138,9 +139,9 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
             {data.canManage && (
               <div className="grid gap-1.5">
                 <Label htmlFor="u-user">{t("عضو")}</Label>
-                <NativeSelect id="u-user" name="userId" containerClassName="w-44" required>
+                <SearchableSelect id="u-user" name="userId" containerClassName="w-44" required>
                   {data.members.map((m) => <NativeSelectOption key={m.id} value={m.id}>{m.name}</NativeSelectOption>)}
-                </NativeSelect>
+                </SearchableSelect>
               </div>
             )}
 
@@ -166,10 +167,10 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-end">{t("تاریخ")}</TableHead>
+                <TableHead numeric>{t("تاریخ")}</TableHead>
                 {data.canManage && <TableHead>{t("عضو")}</TableHead>}
-                <TableHead className="text-end">{t("تعداد")}</TableHead>
-                <TableHead className="text-end">{t("مبلغ")}</TableHead>
+                <TableHead numeric>{t("تعداد")}</TableHead>
+                <TableHead numeric>{t("مبلغ")}</TableHead>
                 <TableHead>{t("وضعیت")}</TableHead>
                 <TableHead />
               </TableRow>

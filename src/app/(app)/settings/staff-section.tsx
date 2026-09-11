@@ -13,7 +13,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 export interface StaffRow {
   id: number;
@@ -69,16 +70,16 @@ export function StaffSection({
   const adder = candidates.length > 0 && (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-dashed p-3">
       <span className="text-sm text-muted-foreground">{tr('افزودنِ همکارِ ادمین')}</span>
-      <NativeSelect
+      <SearchableSelect
         value={pick}
-        onChange={(e) => setPick(e.target.value)}
+        onValueChange={(v) => setPick(v)}
         containerClassName="min-w-56 flex-1"
       >
         <NativeSelectOption value="">{t('— انتخابِ کاربر —')}</NativeSelectOption>
         {candidates.map((c) => (
           <NativeSelectOption key={c.id} value={c.id}>{`${c.name} — ${c.email}`}</NativeSelectOption>
         ))}
-      </NativeSelect>
+      </SearchableSelect>
       <Button
         type="button"
         size="sm"

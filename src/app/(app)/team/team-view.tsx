@@ -159,7 +159,7 @@ export function TeamView({ data }: { data: TeamData }) {
               <TableRow>
                 <TableHead>{tr("پروژه")}</TableHead>
                 <TableHead>{tr("وضعیت")}</TableHead>
-                <TableHead className="text-end">{tr("ددلاین")}</TableHead>
+                <TableHead numeric>{tr("ددلاین")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -188,7 +188,7 @@ export function TeamView({ data }: { data: TeamData }) {
                 <TableHead>{tr("تسک")}</TableHead>
                 <TableHead>{tr("پروژه")}</TableHead>
                 <TableHead>{tr("مسئول")}</TableHead>
-                <TableHead className="text-end">{tr("ددلاین")}</TableHead>
+                <TableHead numeric>{tr("ددلاین")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

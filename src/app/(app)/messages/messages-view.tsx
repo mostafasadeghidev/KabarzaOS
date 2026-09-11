@@ -25,6 +25,7 @@ import { useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -498,17 +499,17 @@ export function MessagesView({
                       <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>
                     ))}
                   </NativeSelect>
-                  <NativeSelect
+                  <SearchableSelect
                     aria-label={tr("فیلترِ پروژه")}
                     
                     value={projectId ?? ''}
-                    onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : null)}
+                    onValueChange={(v) => setProjectId(v ? Number(v) : null)}
                   >
                     <NativeSelectOption value="">{tr("همهٔ پروژه‌ها")}</NativeSelectOption>
                     {shownProjects.map((p) => (
                       <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>
                     ))}
-                  </NativeSelect>
+                  </SearchableSelect>
                 </div>
 
                 <div className="grid max-h-48 gap-1 overflow-y-auto">

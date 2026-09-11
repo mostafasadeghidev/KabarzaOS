@@ -7,6 +7,8 @@ import {
   bootstrapProject, createProject, InvalidParentError, NotFoundError, updateProject,
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
+import { FileRejected, rejectMessage } from '@/domain/files/upload';
+import { setProjectThumbnail } from '@/server/files/service';
 import { createProjectSchema, type FormState } from './schema';
 
 /** فیلدهای متنی‌ای که در صورتِ خطا باید به فرم برگردند. */
@@ -106,8 +108,16 @@ export async function updateProjectAction(_prev: FormState, formData: FormData):
 
   try {
     const actor = await requireActor();
+    /**
+     * ⚠️ تصویرِ شاخص **پیش از** فیلدها: ردِ فایل (نوع یا حجم) محتمل‌ترین خطای
+     * این فرم است و باید پیش از ذخیرهٔ بقیه گفته شود — نه وقتی نیمی از فرم
+     * ثبت شده و پیامِ خطا القا می‌کند هیچ چیز ذخیره نشد.
+     */
+    const thumbnail = await readBlob(formData.get('thumbnailFile'));
+    if (thumbnail) await setProjectThumbnail(actor, id, thumbnail);
     await updateProject(actor, id, parsed.data);
   } catch (error) {
+    if (error instanceof FileRejected) return { error: rejectMessage(error.reason), values };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ویرایشِ پروژه ندارید.', values };
     if (error instanceof InvalidParentError) {
       return {
