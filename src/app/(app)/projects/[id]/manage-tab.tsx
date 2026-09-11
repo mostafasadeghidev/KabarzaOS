@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Archive, ArchiveRestore, ImageIcon, Trash2 } from 'lucide-react';
+import { Archive, ArchiveRestore, ImageIcon, Trash2, CircleAlert, TriangleAlert } from 'lucide-react';
 import {
   deleteProjectAction, lightenAction, setArchivedAction, type DeleteActionState,
 } from '../_form/tab-actions';
@@ -24,6 +24,8 @@ import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { TablePager, useTableView } from '@/components/ui/table-search';
+import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /**
  * تبِ مدیریت — بازسازیِ `manage_tab_html()`:
@@ -96,7 +98,7 @@ function LogDetail({ logs }: { logs: LogRow[] }) {
   const view = useTableView(logs, (r) => `${r.userName ?? ''} ${r.description} ${r.logDate}`, 15);
   if (logs.length === 0) return null;
   return (
-    <section className="grid gap-2 rounded-md border border-dashed p-3">
+    <Card className="gap-2 px-4 py-4 shadow-xs">
       <h3 className="text-sm font-semibold">{t("جزئیاتِ ثبت‌ها")}</h3>
       <Table>
         <TableHeader>
@@ -119,7 +121,7 @@ function LogDetail({ logs }: { logs: LogRow[] }) {
         </TableBody>
       </Table>
       <TablePager view={view} />
-    </section>
+    </Card>
   );
 }
 
@@ -176,17 +178,17 @@ function DeleteBox({
 
   if (state === 'locked') {
     return (
-      <section className="grid max-w-2xl gap-2 rounded-md border border-destructive/40 p-3">
+      <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs border-destructive/40">
         <h3 className="text-sm font-semibold text-destructive">{t("حذف پروژه")}</h3>
         <p className="text-xs text-muted-foreground">
           {tr("این پروژه پرداختِ ناقص (ماندهٔ باز) دارد. تا وقتی ماندهٔ کارفرما/عضو تسویه نشود، حذف تحت هیچ شرایطی ممکن نیست.")}
         </p>
-      </section>
+      </Card>
     );
   }
 
   return (
-    <section className="grid max-w-2xl gap-2 rounded-md border border-destructive/40 p-3">
+    <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs border-destructive/40">
       <h3 className="text-sm font-semibold text-destructive">{t("حذف پروژه")}</h3>
 
       {state === 'clean' ? (
@@ -210,7 +212,12 @@ function DeleteBox({
               {t("حذف پروژه")}
             </Button>
           </div>
-          {result.error && <p className="text-xs text-destructive">{tr(result.error)}</p>}
+          {result.error && (
+            <Alert variant="destructive">
+              <CircleAlert />
+              <AlertDescription>{tr(result.error)}</AlertDescription>
+            </Alert>
+          )}
 
           <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
             <DialogContent className="sm:max-w-md">
@@ -287,10 +294,15 @@ function DeleteBox({
             {tr("«جداسازی»: پروژه می‌رود ولی تراکنش‌ها حذف نمی‌شوند و با ذکرِ نامِ پروژه در شرحشان در «پرداخت‌های بی‌پروژه» می‌مانند (مانده حساب دست‌نخورده). «حذف کامل»: تراکنش‌ها هم پاک و مانده حساب بازمحاسبه می‌شود.")}
           </p>
 
-          {result.error && <p className="text-xs text-destructive">{tr(result.error)}</p>}
+          {result.error && (
+            <Alert variant="destructive">
+              <CircleAlert />
+              <AlertDescription>{tr(result.error)}</AlertDescription>
+            </Alert>
+          )}
         </form>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -311,7 +323,7 @@ function LightenBox({
 
   if (summary) {
     return (
-      <section className="grid max-w-2xl gap-2 rounded-md border border-dashed p-3">
+      <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs">
         <h3 className="text-sm font-semibold">{t("سبک‌سازی دیتابیس")}</h3>
         <p className="text-xs text-muted-foreground">{t("این پروژه سبک شده است. خلاصهٔ ثابت‌شده:")}</p>
         <dl className="grid gap-1 text-xs sm:grid-cols-2">
@@ -333,12 +345,12 @@ function LightenBox({
           </div>
         </dl>
         {summary.wasTender && <Badge variant="outline">{t("پیش‌تر مناقصه بوده")}</Badge>}
-      </section>
+      </Card>
     );
   }
 
   return (
-    <section className="grid max-w-2xl gap-2 rounded-md border border-dashed p-3">
+    <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs">
       <h3 className="text-sm font-semibold">{t("سبک‌سازی دیتابیس")}</h3>
       <p className="text-xs text-muted-foreground">
         {tr("فایل‌ها، تسک‌ها، کامنت‌ها، چک‌لیست QA و جزئیات ساعت کاری پاک می‌شوند تا دیتابیس سبک شود. سوابق مالی، اعضا، کارفرمایان و یک خلاصه می‌مانند. این کار برگشت‌ناپذیر است.")}
@@ -366,12 +378,18 @@ function LightenBox({
         </div>
       ) : (
         /* R-PROJ-06 — قدمِ برگشت‌پذیر (بایگانی) پیش از قدمِ برگشت‌ناپذیر. */
-        <p className="text-xs text-amber-600 dark:text-amber-500">
-          {tr("برای سبک‌سازی، ابتدا پروژه را از همین صفحه بایگانی کنید.")}
-        </p>
+        <Alert variant="warning">
+          <TriangleAlert />
+          <AlertDescription>{tr("برای سبک‌سازی، ابتدا پروژه را از همین صفحه بایگانی کنید.")}</AlertDescription>
+        </Alert>
       )}
-      {error && <p className="text-xs text-destructive">{t(error)}</p>}
-    </section>
+      {error && (
+        <Alert variant="destructive">
+          <CircleAlert />
+          <AlertDescription>{t(error)}</AlertDescription>
+        </Alert>
+      )}
+    </Card>
   );
 }
 
@@ -468,13 +486,13 @@ export function ManageTab({
     <div className="grid max-w-5xl gap-4">
       {canManage && (
         // کارتِ تصویر باریک می‌ماند؛ محتوایش یک تصویرِ ۵۶ پیکسلی و یک دکمه است.
-        <section className="grid max-w-xl gap-2 rounded-md border border-dashed p-3">
+        <Card className="max-w-xl gap-2 px-4 py-4 shadow-xs">
           <h3 className="text-sm font-semibold">{t("تصویر شاخص")}</h3>
           <ThumbnailForm projectId={projectId} title={title} fileId={thumbnailFileId} />
-        </section>
+        </Card>
       )}
 
-      <section className="grid gap-2 rounded-md border border-dashed p-3">
+      <Card className="gap-2 px-4 py-4 shadow-xs">
         <h3 className="text-sm font-semibold">{t("ساعت کاری اعضا")}</h3>
         {hours.length === 0 ? (
           <p className="text-xs text-muted-foreground">{t("ساعتِ کاری‌ای ثبت نشده.")}</p>
@@ -500,20 +518,20 @@ export function ManageTab({
             </TableBody>
           </Table>
         )}
-      </section>
+      </Card>
 
       {canManage && <LogDetail logs={logs} />}
 
       {canManage && (
-        <section className="grid gap-2 rounded-md border border-dashed p-3">
+        <Card className="gap-2 px-4 py-4 shadow-xs">
           <h3 className="text-sm font-semibold">{t("در دسترس بودنِ اعضای پروژه")}</h3>
           <TeamMatrix rows={matrix} dayLabels={dayLabels} />
-        </section>
+        </Card>
       )}
 
       {canManage && (
         <>
-          <section className="grid max-w-2xl gap-2 rounded-md border border-dashed p-3">
+          <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs">
             <h3 className="text-sm font-semibold">{t("بایگانی")}</h3>
             <p className="text-xs text-muted-foreground">
               {tr("بایگانی برگشت‌پذیر است؛ پروژهٔ بایگانی‌شده فقط در تبِ بایگانی دیده می‌شود.")}
@@ -535,8 +553,13 @@ export function ManageTab({
                 {isArchived ? t('خارج کردن از بایگانی') : t('بایگانی کردن پروژه')}
               </Button>
             </div>
-            {error && <p className="text-xs text-destructive">{t(error)}</p>}
-          </section>
+            {error && (
+        <Alert variant="destructive">
+          <CircleAlert />
+          <AlertDescription>{t(error)}</AlertDescription>
+        </Alert>
+      )}
+          </Card>
 
           <LightenBox projectId={projectId} isArchived={isArchived} summary={lightenSummary} />
           <DeleteBox projectId={projectId} title={title} state={deleteState} />

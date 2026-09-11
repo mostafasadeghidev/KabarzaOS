@@ -18,6 +18,7 @@ import { useT, useTimeZone } from '@/i18n/client';
 import { formatForDateTimeInput } from '@/i18n/datetime';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DateTimePicker } from '@/components/ui/date-picker';
 
 export interface MeetingFormOptions {
   projects: Array<{ id: number; title: string }>;
@@ -257,11 +258,9 @@ export function MeetingForm({
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="m-at">{t("تاریخ و ساعت")}</Label>
-              <Input
+              <DateTimePicker
                 id="m-at"
-                type="datetime-local"
                 name="meetAt"
-                className="num"
                 defaultValue={state.values?.meetAt ?? toLocalInput(meeting?.meetAt ?? null, tz)}
                 required
               />
@@ -302,20 +301,24 @@ export function MeetingForm({
             ) : (
               <>
                 <div className="flex gap-2 text-xs">
-                  <button
+                  <Button
                     type="button"
-                    className="text-muted-foreground hover:text-foreground"
+                    variant="link"
+                    size="xs"
+                    className="px-0 text-muted-foreground"
                     onClick={() => setChecked(new Set(candidates.map((c) => c.userId)))}
                   >
                     {tr("انتخاب همه")}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className="text-muted-foreground hover:text-foreground"
+                    variant="link"
+                    size="xs"
+                    className="px-0 text-muted-foreground"
                     onClick={() => setChecked(new Set())}
                   >
                     {tr("هیچ‌کدام")}
-                  </button>
+                  </Button>
                 </div>
                 <div className="grid gap-1">
                   {candidates.map((c) => (

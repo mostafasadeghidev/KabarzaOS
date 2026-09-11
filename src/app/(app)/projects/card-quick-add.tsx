@@ -53,22 +53,14 @@ export function CardQuickAdd({ projectId, options }: { projectId: number; option
   return (
     <div className="grid gap-1.5">
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => toggle('member')}
-          className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
-        >
+        <Button type="button" variant="ghost" size="xs" onClick={() => toggle('member')} className="text-muted-foreground">
           <Plus className="size-3" />
           {tr("افزودن عضو")}
-        </button>
-        <button
-          type="button"
-          onClick={() => toggle('client')}
-          className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
-        >
+        </Button>
+        <Button type="button" variant="ghost" size="xs" onClick={() => toggle('client')} className="text-muted-foreground">
           <Plus className="size-3" />
           {tr("افزودن کارفرما")}
-        </button>
+        </Button>
       </div>
 
       {openForm === 'member' && (

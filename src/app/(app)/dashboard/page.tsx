@@ -12,6 +12,8 @@ import { MemberHoursChart, StatusChart, WeeklyTrendChart } from './charts';
 import { activeLocale, primeTranslations, t } from '@/i18n/server';
 import { intlTag } from '@/i18n/config';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 /**
  * داشبورد.
@@ -88,7 +90,7 @@ export default async function DashboardPage({
         ]);
         return (
           <main className="p-6">
-            <h1 className="mb-4 text-2xl font-bold">
+            <h1 className="mb-4 text-xl font-semibold">
               {t("سلام، {name}", { name: session?.name ?? '' })}
             </h1>
             <MemberDashboardView data={own} />
@@ -166,7 +168,7 @@ export default async function DashboardPage({
           {/* فیلترِ دفتر — فقط نمودارهای ساعت را محدود می‌کند (پورتِ `kt_office`). */}
           {charts.offices.length > 1 && (
             <form method="get" className="flex items-center gap-2 text-sm">
-              <label htmlFor="d-office" className="text-muted-foreground">{t("دفتر")}</label>
+              <Label htmlFor="d-office" className="font-normal text-muted-foreground">{t("دفتر")}</Label>
               <NativeSelect
                 id="d-office" name="office" defaultValue={charts.officeId ?? ''}
                 size="sm"
@@ -174,7 +176,7 @@ export default async function DashboardPage({
                 <NativeSelectOption value="">{t("همهٔ دفترها")}</NativeSelectOption>
                 {charts.offices.map((o) => <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>)}
               </NativeSelect>
-              <button type="submit" className="h-8 rounded-md border px-2 text-xs hover:bg-accent">{t("اعمال")}</button>
+              <Button type="submit" variant="outline" size="sm">{t("اعمال")}</Button>
             </form>
           )}
         </div>

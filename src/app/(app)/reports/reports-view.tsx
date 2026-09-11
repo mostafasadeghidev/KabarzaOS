@@ -970,7 +970,7 @@ function RecomputeEurButton() {
   const [state, setState] = useState<{ error?: string; message?: string }>({});
   const [pending, startTransition] = useTransition();
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-md border border-dashed px-3 py-2">
+    <Card className="flex-row flex-wrap items-center gap-3 px-3 py-2 shadow-xs">
       <Button
         size="sm"
         variant="outline"
@@ -986,7 +986,7 @@ function RecomputeEurButton() {
         {state.error ?? state.message
           ?? tr('برای ردیف‌هایی که پیش از ثبتِ نرخِ ارزشان وارد شده‌اند.')}
       </span>
-    </div>
+    </Card>
   );
 }
 

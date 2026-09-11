@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Button } from '@/components/ui/button';
 
 /**
  * منویِ کاربر در فوترِ سایدبار.
@@ -159,14 +160,10 @@ export function UserMenu({
         <div className="px-2 py-1.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm text-muted-foreground">{t("ظاهر")}</span>
-            <button
-              type="button"
-              onClick={() => setTheme(THEME_NEXT[theme])}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs hover:bg-muted"
-            >
+            <Button type="button" variant="ghost" size="xs" onClick={() => setTheme(THEME_NEXT[theme])}>
               <ThemeIcon className="size-3.5" />
               <span>{t(THEME_LABEL[theme])}</span>
-            </button>
+            </Button>
           </div>
         </div>
 

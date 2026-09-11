@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { t } from '@/i18n/server';
 
@@ -82,9 +82,14 @@ export function CompactCard({
       <span className="mt-1.5 text-xs leading-snug text-muted-foreground">{label}</span>
     </>
   );
-  const base = 'flex min-w-30 flex-1 flex-col rounded-[--radius] border bg-card p-3 shadow-xs';
+  /**
+   * ⚠️ بی‌قاب — داخلِ کارتِ گروه می‌نشیند. پیش از این هر عدد کارتِ خودش را
+   * داشت و گروه هم قابِ دیگری بود: «کارت در کارت»، دو لایه مرز و سایه برای
+   * یک عدد.
+   */
+  const base = 'flex min-w-28 flex-1 flex-col rounded-md p-2.5';
   if (!href) return <div className={cn(base, 'opacity-60')}>{body}</div>;
-  return <Link href={href} className={cn(base, 'transition-colors hover:bg-muted/50')}>{body}</Link>;
+  return <Link href={href} className={cn(base, 'transition-colors hover:bg-muted/60')}>{body}</Link>;
 }
 
 export function DashHeading({ children }: { children: React.ReactNode }) {
@@ -94,10 +99,12 @@ export function DashHeading({ children }: { children: React.ReactNode }) {
 /** گروهِ کارت‌ها با عنوانِ کوچک — مثلِ `. نسخهٔ قبلی. */
 export function CardGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-[--radius] border bg-muted/30 p-3">
-      <div className="mb-2 text-xs font-medium text-muted-foreground">{title}</div>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
+    <Card className="gap-1 py-3 shadow-xs">
+      <CardHeader className="px-4">
+        <CardDescription className="text-xs font-medium">{title}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-1 px-1.5">{children}</CardContent>
+    </Card>
   );
 }
 

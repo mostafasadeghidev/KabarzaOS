@@ -2,6 +2,25 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.72.0]
+
+### Changed
+
+- **Dates are picked from a calendar.** All 29 date fields now use the shadcn Date Picker instead of the browser's native control, which looked different in every browser and ignored the app's theme and language. Month and weekday names follow the user's language, the calendar runs right-to-left in Persian, Arabic and Kurdish, and month and year drop-downs make distant dates quick to reach. The meeting time and reminder fields use the matching date-and-time layout. Values are still submitted as `yyyy-mm-dd` (and `yyyy-mm-ddThh:mm`), so nothing changes on the server; required fields still refuse to submit empty, and forms still clear them after saving.
+- **Empty states use shadcn Empty** — every "nothing here yet" message across the app now shares one layout.
+- **The dashboard's "Needs action" groups no longer nest cards inside cards.** Each group is a single card with its figures laid out inside it, instead of a bordered box full of separately bordered cards.
+- **The project Manage tab is built from cards**: working hours, archive, database lightening, thumbnail and delete each sit in their own card, the delete card keeps its red edge, and the errors and the "archive first" note are alerts.
+- **The timer bar** under the header is a shadcn Alert with icons instead of emoji.
+- **The last hand-rolled controls moved to shadcn**: sign-in, forgot-password and reset fields use Input and Label; icon-only delete buttons, "select all" and "none" links, reply and quick-add actions use Button; the ledger's unit chips use Toggle; tag types in Settings use Tabs; the command-palette trigger, the payment rejection note and the company logo upload use their shadcn counterparts; the availability panels are cards.
+- **Page titles** share one size.
+
+### Added
+
+- shadcn components: **Calendar**, **Popover** and **Empty**, plus a **Date Picker** and **Date-Time Picker** composed from them. The Calendar's range corners and drop-down padding were made direction-aware.
+- Dependencies `react-day-picker` and `date-fns`, required by the shadcn Calendar.
+
+---
+
 ## [1.71.0]
 
 ### Changed

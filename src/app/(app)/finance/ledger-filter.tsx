@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export interface LedgerPaging {
   page: number;
@@ -91,11 +92,11 @@ export function LedgerFilter({
       >
         <div className="grid gap-1.5">
           <Label htmlFor="lf-from" className="text-xs">{tr('از تاریخ')}</Label>
-          <Input id="lf-from" name="from" type="date" className="num h-9 w-[9.5rem]" defaultValue={value('from')} />
+          <DatePicker id="lf-from" name="from" className="w-[9.5rem]" defaultValue={value('from')} />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="lf-to" className="text-xs">{tr('تا تاریخ')}</Label>
-          <Input id="lf-to" name="to" type="date" className="num h-9 w-[9.5rem]" defaultValue={value('to')} />
+          <DatePicker id="lf-to" name="to" className="w-[9.5rem]" defaultValue={value('to')} />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="lf-tag" className="text-xs">{tr('دسته')}</Label>

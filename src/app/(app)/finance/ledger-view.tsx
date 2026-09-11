@@ -33,6 +33,7 @@ import { TableSearch, useTableView } from '@/components/ui/table-search';
 import { useConfirm } from '@/components/ui/confirm';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DatePicker } from '@/components/ui/date-picker';
 
 /** یک حساب — همان شکلی که `listAccounts` برمی‌گرداند. */
 export interface AccountOption {
@@ -498,7 +499,7 @@ export function LedgerView({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="t-date">{t("تاریخ")}</Label>
-                <Input id="t-date" type="date" name="entryDate" className="num" defaultValue={today} required />
+                <DatePicker id="t-date" name="entryDate" defaultValue={today} required />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="t-desc">{t("توضیحات")}</Label>

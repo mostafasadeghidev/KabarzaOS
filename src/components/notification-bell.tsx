@@ -145,15 +145,17 @@ export function NotificationBell({
         <DropdownMenuLabel className="flex items-center justify-between">
           {t('اعلان‌ها')}
           {unread > 0 && (
-            <button
+            <Button
               type="button"
-              className="flex items-center gap-1 text-xs font-normal text-muted-foreground hover:text-foreground disabled:opacity-60"
+              variant="ghost"
+              size="xs"
+              className="font-normal text-muted-foreground"
               disabled={pending}
               onClick={() => startTransition(async () => { await onReadAll(); })}
             >
               <CheckCheck className="size-3.5" />
               {tr("خواندنِ همه")}
-            </button>
+            </Button>
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

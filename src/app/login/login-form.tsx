@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export function LoginForm({ notice }: { notice?: string } = {}) {
   const t = useT();
@@ -27,23 +29,21 @@ export function LoginForm({ notice }: { notice?: string } = {}) {
               <p className="rounded-[--radius] bg-emerald-500/10 px-3 py-2 text-sm">{t(notice)}</p>
             )}
             <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium">
+              <Label htmlFor="email">
                 {t("ایمیل یا نام کاربری")}
-              </label>
+              </Label>
               {/*
                 ⚠️ `type="text"` نه `email`: اعتبارسنجیِ مرورگر نامِ کاربری
                 را رد می‌کرد و کاربر بدونِ پیام گیر می‌افتاد.
               */}
-              <input
+              <Input
                 id="email" name="email" type="text" required autoComplete="username" dir="ltr"
-                className="h-9 w-full rounded-[--radius] border bg-background px-3 text-sm"
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-medium">{t("رمز عبور")}</label>
-              <input
+              <Label htmlFor="password">{t("رمز عبور")}</Label>
+              <Input
                 id="password" name="password" type="password" required autoComplete="current-password" dir="ltr"
-                className="h-9 w-full rounded-[--radius] border bg-background px-3 text-sm"
               />
             </div>
 

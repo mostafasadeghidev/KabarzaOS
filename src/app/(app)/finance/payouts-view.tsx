@@ -32,6 +32,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export interface RequestRow {
   id: number;
@@ -590,8 +591,8 @@ export function PayoutsView({
               <NativeSelectOption value="">{tr('همهٔ حساب‌ها')}</NativeSelectOption>
               {accounts.map((a) => <NativeSelectOption key={a.id} value={a.id}>{a.name}</NativeSelectOption>)}
             </NativeSelect>
-            <Input type="date" value={dueFrom} onChange={(e) => setDueFrom(e.target.value)} className="h-9 w-36 num" aria-label={tr('سررسید از')} />
-            <Input type="date" value={dueTo} onChange={(e) => setDueTo(e.target.value)} className="h-9 w-36 num" aria-label={tr('سررسید تا')} />
+            <DatePicker value={dueFrom} onChange={(v) => setDueFrom(v)} className="w-36" aria-label={tr('سررسید از')} />
+            <DatePicker value={dueTo} onChange={(v) => setDueTo(v)} className="w-36" aria-label={tr('سررسید تا')} />
             <Button size="sm" variant="ghost" onClick={clearExpenseFilters}>{tr('پاک‌کردنِ فیلترها')}</Button>
           </div>
         )}
@@ -774,7 +775,7 @@ export function PayoutsView({
 
               <div className="grid gap-1.5">
                 <Label htmlFor="pay-date">{t("تاریخ")}</Label>
-                <Input id="pay-date" type="date" name="entryDate" className="num" defaultValue={today} required />
+                <DatePicker id="pay-date" name="entryDate" defaultValue={today} required />
               </div>
 
               {/* پورتِ `record_payment_url`: مبلغِ درخواست معادلِ تعهد است؛ مبلغِ واقعی از حساب اختیاری. */}
@@ -829,7 +830,7 @@ export function PayoutsView({
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="unit-date">{t("تاریخ")}</Label>
-                <Input id="unit-date" type="date" name="entryDate" className="num" defaultValue={today} required />
+                <DatePicker id="unit-date" name="entryDate" defaultValue={today} required />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="unit-amount">{t("مبلغِ واقعی از حساب (اختیاری)")}</Label>
@@ -907,11 +908,11 @@ export function PayoutsView({
             <div className="grid gap-3 sm:grid-cols-4">
               <div className="grid gap-1.5">
                 <Label htmlFor="e-start">{t("تاریخ شروع")}</Label>
-                <Input id="e-start" type="date" name="startDate" className="num" defaultValue={editing?.nextDueDate ?? today} required />
+                <DatePicker id="e-start" name="startDate" defaultValue={editing?.nextDueDate ?? today} required />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-next">{t("سررسیدِ بعدی")}</Label>
-                <Input id="e-next" type="date" name="nextDueDate" className="num" defaultValue={editing?.nextDueDate ?? ''} />
+                <DatePicker id="e-next" name="nextDueDate" defaultValue={editing?.nextDueDate ?? ''} />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-account">{t("حسابِ پرداخت")}</Label>

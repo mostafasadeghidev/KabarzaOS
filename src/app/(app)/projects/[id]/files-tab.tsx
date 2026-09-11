@@ -170,15 +170,14 @@ export function FilesTab({
                     <Download className="size-4" />
                   </a>
                   {canDelete(f) && (
-                    <button
+                    <Button
                       type="button"
                       onClick={() => remove(f.id)}
-                      disabled={removing}
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-60"
+                      disabled={removing} variant="ghost" size="icon-sm" className="text-muted-foreground"
                       aria-label={t("حذف")}
                     >
                       <Trash2 className="size-4" />
-                    </button>
+                    </Button>
                   )}
                 </li>
               );
@@ -234,15 +233,14 @@ export function FilesTab({
                 </a>
                 <span className="shrink-0 text-xs text-muted-foreground">{f.uploaderName ?? '—'}</span>
                 {canDelete(f) && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => remove(f.id)}
-                    disabled={removing}
-                    className="rounded-md p-1 text-muted-foreground hover:bg-muted disabled:opacity-60"
+                    disabled={removing} variant="ghost" size="icon-xs" className="text-muted-foreground"
                     aria-label={t("حذف")}
                   >
                     <Trash2 className="size-3.5" />
-                  </button>
+                  </Button>
                 )}
               </li>
             ))}

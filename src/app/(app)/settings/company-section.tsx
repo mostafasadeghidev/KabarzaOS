@@ -52,9 +52,9 @@ export function CompanySection({ company, isOwner }: {
           ) : (
             <span className="text-xs text-muted-foreground">{tr('لوگویی ثبت نشده')}</span>
           )}
-          <input
+          <Input
             type="file" name="logo" accept="image/*"
-            className="text-xs file:me-2 file:rounded-md file:border file:bg-background file:px-2 file:py-1 file:text-xs"
+            className="text-xs"
           />
           <Button type="submit" size="sm" variant="outline">{tr('بارگذاری لوگو')}</Button>
           {/* حذفِ لوگو فقط برای مالک — همان گاردِ سرور. */}

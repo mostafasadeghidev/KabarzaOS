@@ -17,6 +17,7 @@ import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { DatePicker } from '@/components/ui/date-picker';
 
 
 function SubmitButton() {
@@ -168,7 +169,7 @@ export function QuickTaskForm({
 
               <div className="grid gap-1.5">
                 <Label htmlFor="q-due">{t("ددلاین")}</Label>
-                <Input id="q-due" type="date" name="dueDate" className="num" min={today} />
+                <DatePicker id="q-due" name="dueDate" min={today} />
               </div>
             </div>
 

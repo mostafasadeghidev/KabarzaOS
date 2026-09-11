@@ -27,6 +27,7 @@ import { ClaimTaskButton } from '@/app/(app)/tasks/inbox-claim';
 import { chipStyle } from '@/domain/ui/contrast';
 import { TaskStatusPicker } from './task-status-picker';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 /**
  * مودالِ تسک — بازسازیِ `task_admin_html()`:
@@ -370,11 +371,9 @@ export function TaskDialog({
 
                   <div className="grid gap-1.5">
                     <Label htmlFor="t-due">{t("ددلاین")}</Label>
-                    <Input
+                    <DatePicker
                       id="t-due"
-                      type="date"
                       name="dueDate"
-                      className="num"
                       defaultValue={task.dueDate ?? ''}
                     />
                   </div>

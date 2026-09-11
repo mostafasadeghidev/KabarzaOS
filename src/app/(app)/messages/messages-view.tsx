@@ -535,13 +535,12 @@ export function MessagesView({
                   )}
                 </div>
                 {picked.size > 0 && (
-                  <button
-                    type="button"
-                    className="justify-self-start text-xs text-muted-foreground hover:text-foreground"
+                  <Button
+                    type="button" variant="link" size="xs" className="justify-self-start px-0 text-muted-foreground"
                     onClick={() => setPicked(new Set())}
                   >
                     {tr("پاک کردن همه")}
-                  </button>
+                  </Button>
                 )}
               </fieldset>
             )}

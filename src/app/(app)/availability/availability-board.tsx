@@ -16,6 +16,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Toggle } from '@/components/ui/toggle';
 import { buttonVariants } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 interface Cell {
   state: CellState;
@@ -343,10 +344,12 @@ function Panel({
   icon, title, children,
 }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <section className="grid gap-2 rounded-md border p-3">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold">{icon}{title}</h2>
-      {children}
-    </section>
+    <Card className="gap-2 py-3 shadow-xs">
+      <CardHeader className="px-3">
+        <h2 className="flex items-center gap-1.5 text-sm leading-none font-semibold">{icon}{title}</h2>
+      </CardHeader>
+      <CardContent className="grid gap-2 px-3">{children}</CardContent>
+    </Card>
   );
 }
 

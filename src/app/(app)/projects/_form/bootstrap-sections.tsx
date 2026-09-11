@@ -9,6 +9,7 @@ import type { Option } from './project-dialog';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export interface BootstrapOptions {
   /** اعضای قابلِ افزودن — نامِ فرد به‌علاوهٔ ایمیل برای تفکیکِ هم‌نام‌ها. */
@@ -153,14 +154,13 @@ export function FilePicker({
 function RemoveButton({ onClick }: { onClick: () => void }) {
   const tr = useT();
   return (
-    <button
+    <Button
       type="button"
       aria-label={tr("حذفِ ردیف")}
-      onClick={onClick}
-      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"
+      onClick={onClick} variant="ghost" size="icon-sm" className="text-muted-foreground"
     >
       <X className="size-3.5" />
-    </button>
+    </Button>
   );
 }
 
@@ -382,13 +382,11 @@ export function BootstrapSections({
                   placeholder={tr("نقش‌ها…")}
                 />
               )}
-              <Input
+              <DatePicker
                 name="taskDue"
-                type="date"
-                className="num"
                 value={row.due}
-                onChange={(e) => setTasks((rows) => rows.map((r, j) =>
-                  (j === i ? { ...r, due: e.target.value } : r)))}
+                onChange={(v) => setTasks((rows) => rows.map((r, j) =>
+                  (j === i ? { ...r, due: v } : r)))}
               />
               <NativeSelect
                 name="taskPriority"

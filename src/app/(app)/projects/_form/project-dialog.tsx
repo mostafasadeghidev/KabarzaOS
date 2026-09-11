@@ -19,6 +19,7 @@ import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export interface Option {
   id: number;
@@ -237,12 +238,12 @@ export function ProjectDialog({
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label={tr("تاریخ ثبت")} name="regDate" error={fe.regDate}>
               {(id) => (
-                <Input id={id} type="date" name="regDate" defaultValue={keep('regDate', options.today)} className="num" />
+                <DatePicker id={id} name="regDate" defaultValue={keep('regDate', options.today)} />
               )}
             </Field>
 
             <Field label={tr("ددلاین")} name="deadline" error={fe.deadline}>
-              {(id) => <Input id={id} type="date" name="deadline" defaultValue={keep('deadline')} className="num" />}
+              {(id) => <DatePicker id={id} name="deadline" defaultValue={keep('deadline')} />}
             </Field>
 
             <Field label={tr("وضعیت پروژه")} name="statusTagId" error={fe.statusTagId}>
@@ -366,14 +367,13 @@ export function ProjectDialog({
                         rows.map((r, j) => (j === i ? { ...r, cap: e.target.value } : r)))}
                     />
 
-                    <button
+                    <Button
                       type="button"
                       aria-label={tr("حذفِ ردیف")}
-                      onClick={() => setTenderRows((rows) => rows.filter((_, j) => j !== i))}
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"
+                      onClick={() => setTenderRows((rows) => rows.filter((_, j) => j !== i))} variant="ghost" size="icon-sm" className="text-muted-foreground"
                     >
                       <X className="size-3.5" />
-                    </button>
+                    </Button>
                   </div>
                 ))}
 

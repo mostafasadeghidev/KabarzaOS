@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/table';
 import { logout } from '@/app/login/actions';
 import { t } from '@/i18n/server';
+import { Button } from '@/components/ui/button';
 
 /**
  * نمای عضوِ سابقِ «فقط مالی» — پورتِ `render_offboarded_finance()`.
@@ -30,9 +31,9 @@ export async function OffboardedShell({ actor }: { actor: Actor }) {
       <header className="flex items-center justify-between border-b pb-3">
         <strong className="text-sm">{me.name}</strong>
         <form action={logout}>
-          <button type="submit" className="text-xs text-muted-foreground hover:text-foreground">
+          <Button type="submit" variant="ghost" size="xs" className="text-muted-foreground">
             {t("⎋ خروج")}
-          </button>
+          </Button>
         </form>
       </header>
 

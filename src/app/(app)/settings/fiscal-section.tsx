@@ -5,12 +5,12 @@ import { useFormStatus } from 'react-dom';
 import { Lock, Unlock } from 'lucide-react';
 import { closePeriodAction, reopenPeriodAction, type FiscalState } from './_form/actions';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { format } from '@/domain/money/money';
+import { DatePicker } from '@/components/ui/date-picker';
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -106,7 +106,7 @@ export function FiscalSection({
 
         <div className="grid gap-1.5 sm:max-w-xs">
           <Label htmlFor="f-date">{t("تاریخِ بستن")}</Label>
-          <Input id="f-date" name="lockDate" type="date" className="num" defaultValue={today} required />
+          <DatePicker id="f-date" name="lockDate" defaultValue={today} required />
         </div>
 
         {/*

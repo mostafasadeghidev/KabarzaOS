@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { useT } from '@/i18n/client';
 import { isPresetActive, reportQuery, type RangePreset } from '@/domain/reports/filters';
+import { DatePicker } from '@/components/ui/date-picker';
 
 /**
  * فیلترهای صفحهٔ گزارش‌ها — پورتِ `office_filter_html` و نوارِ بازهٔ
@@ -99,11 +99,11 @@ export function RangeBar({
         {officeIds.map((id) => <input key={id} type="hidden" name="office" value={id} />)}
         <label className="grid gap-1 text-xs text-muted-foreground">
           {tr('از')}
-          <Input type="date" name={fromName} defaultValue={range.from} className="num h-8 w-[9.5rem]" />
+          <DatePicker name={fromName} defaultValue={range.from} size="sm" className="w-[9.5rem]" />
         </label>
         <label className="grid gap-1 text-xs text-muted-foreground">
           {tr('تا')}
-          <Input type="date" name={toName} defaultValue={range.to} className="num h-8 w-[9.5rem]" />
+          <DatePicker name={toName} defaultValue={range.to} size="sm" className="w-[9.5rem]" />
         </label>
         <Button type="submit" size="sm" variant="outline" className="h-8">{tr('اعمال')}</Button>
       </form>

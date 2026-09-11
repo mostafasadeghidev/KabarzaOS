@@ -21,6 +21,8 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
+import { Toggle } from '@/components/ui/toggle';
+import { DatePicker } from '@/components/ui/date-picker';
 
 
 function SubmitButton({ label }: { label: string }) {
@@ -216,8 +218,8 @@ export function EntryForm({
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="grid gap-1.5">
           <Label htmlFor="l-date">{tr("تاریخ")}</Label>
-          <Input
-            id="l-date" type="date" name="entryDate" className="num"
+          <DatePicker
+            id="l-date" name="entryDate"
             defaultValue={keep('entryDate', editing?.entryDate ?? today)}
             required
           />
@@ -389,19 +391,20 @@ export function EntryForm({
           </p>
           <div className="flex flex-wrap gap-1.5">
             {unitRows.map((u) => (
-              <button
+              <Toggle
                 key={u.id}
-                type="button"
-                onClick={() => {
+                variant="outline"
+                size="sm"
+                pressed={pickedUnit === u.id}
+                onPressedChange={() => {
                   onSettledChange(String(Number(u.amount)));
                   if (u.currencyId) setSettledOverride(u.currencyId);
                   setFromUnit(pickedUnit === u.id ? null : u.id);
                 }}
-                className={`num rounded-md border px-2 py-1 text-xs ${pickedUnit === u.id ? 'border-primary bg-primary/10' : 'hover:bg-muted'}`}
-                aria-pressed={pickedUnit === u.id}
+                className="num h-7 px-2 text-xs font-normal data-[state=on]:border-primary data-[state=on]:bg-primary/10"
               >
                 {u.text}
-              </button>
+              </Toggle>
             ))}
           </div>
           <input type="hidden" name="fromUnit" value={pickedUnit ?? ''} />

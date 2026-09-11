@@ -24,6 +24,7 @@ import { useConfirm } from '@/components/ui/confirm';
 import { CalendarMenu } from './calendar-menu';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DateTimePicker } from '@/components/ui/date-picker';
 
 export interface MeetingRow extends MeetingView {
   projectTitle: string | null;
@@ -227,7 +228,7 @@ export function MeetingsView({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="r-at">{t("تاریخ و ساعت")}</Label>
-                <Input id="r-at" type="datetime-local" name="remindAt" className="num" required />
+                <DateTimePicker id="r-at" name="remindAt" required />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="r-body">{t("متن یادآور")}</Label>

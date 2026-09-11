@@ -10,6 +10,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { useT } from '@/i18n/client';
+import { Button } from '@/components/ui/button';
 
 const MIN_QUERY = 3;
 
@@ -206,15 +207,17 @@ export function CommandPaletteTrigger() {
   useEffect(() => { setIsMac(/mac/i.test(navigator.userAgent)); }, []);
 
   return (
-    <button
+    <Button
       type="button"
       aria-label={t("جستجوی سراسری")}
       onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
-      className="flex items-center gap-2 rounded-md border px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
+      variant="outline"
+      size="sm"
+      className="h-7 gap-2 px-2 text-xs font-normal text-muted-foreground"
     >
       <Search className="size-3.5" />
       <span className="hidden sm:inline">{t("جستجو")}</span>
       <kbd className="num rounded bg-muted px-1 py-0.5 text-[10px]">{isMac ? '⌘K' : 'Ctrl+K'}</kbd>
-    </button>
+    </Button>
   );
 }

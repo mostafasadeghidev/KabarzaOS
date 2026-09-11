@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { useT } from '@/i18n/client';
+import { Button } from '@/components/ui/button';
 
 /**
  * مرزِ خطای برنامه.
@@ -35,19 +36,16 @@ export default function AppError({
       </p>
       {error.digest && <code className="num text-xs text-muted-foreground">{error.digest}</code>}
       <div className="mt-2 flex gap-2">
-        <button
-          type="button"
-          onClick={reset}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
+        <Button type="button" onClick={reset}>
           {t('تلاشِ دوباره')}
-        </button>
+        </Button>
+        <Button asChild variant="outline">
         <Link
           href="/"
-          className="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
         >
           {t('بازگشت به خانه')}
         </Link>
+        </Button>
       </div>
     </main>
   );

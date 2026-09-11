@@ -17,6 +17,7 @@ import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export interface MyAbsence {
   id: number;
@@ -90,11 +91,11 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
 
           <div className="grid gap-1.5">
             <Label htmlFor="a-from">{tr('از تاریخ')}</Label>
-            <Input id="a-from" name="from" type="date" className="num" defaultValue={data.today} required />
+            <DatePicker id="a-from" name="from" defaultValue={data.today} required />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="a-to">{tr('تا تاریخ')}</Label>
-            <Input id="a-to" name="to" type="date" className="num" defaultValue={data.today} required />
+            <DatePicker id="a-to" name="to" defaultValue={data.today} required />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="a-note">{tr('توضیح (اختیاری)')}</Label>

@@ -24,6 +24,7 @@ import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export interface LogRow {
   id: number;
@@ -253,7 +254,7 @@ export function HoursView({ data }: { data: HoursData }) {
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="log-date">{t("تاریخ")}</Label>
-                  <Input id="log-date" name="logDate" type="date" defaultValue={data.today} required />
+                  <DatePicker id="log-date" name="logDate" defaultValue={data.today} required />
                 </div>
                 <div className="flex items-end gap-2">
                   <div className="grid gap-1.5">
@@ -293,11 +294,11 @@ export function HoursView({ data }: { data: HoursData }) {
           <form method="get" action="/hours" className="flex flex-wrap items-end gap-2">
             <div className="grid gap-1.5">
               <Label htmlFor="f-from">{t("از تاریخ")}</Label>
-              <Input id="f-from" name="from" type="date" className="num w-[9.5rem]" defaultValue={data.filter.from} />
+              <DatePicker id="f-from" name="from" className="w-[9.5rem]" defaultValue={data.filter.from} />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="f-to">{t("تا تاریخ")}</Label>
-              <Input id="f-to" name="to" type="date" className="num w-[9.5rem]" defaultValue={data.filter.to} />
+              <DatePicker id="f-to" name="to" className="w-[9.5rem]" defaultValue={data.filter.to} />
             </div>
             <div className="grid flex-1 gap-1.5">
               <Label htmlFor="f-project">{t("پروژه")}</Label>
@@ -352,16 +353,18 @@ export function HoursView({ data }: { data: HoursData }) {
                   {l.editable ? (
                     <div className="flex justify-end gap-1">
                       <Button size="sm" variant="ghost" onClick={() => setEditing(l)}>{t("ویرایش")}</Button>
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon-sm"
                         onClick={async () => {
                           if (await ask({ title: t('این ساعت حذف شود؟') })) await deleteLogAction(l.id);
                         }}
-                        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"
+                        className="text-muted-foreground"
                         aria-label={t("حذف")}
                       >
                         <Trash2 className="size-4" />
-                      </button>
+                      </Button>
                     </div>
                   ) : (
                     <span className="text-xs text-muted-foreground">🔒 {t("قفل‌شده")}</span>
@@ -400,7 +403,7 @@ export function HoursView({ data }: { data: HoursData }) {
               <input type="hidden" name="logId" value={editing.id} />
               <div className="grid gap-1.5">
                 <Label htmlFor="e-date">{t("تاریخ")}</Label>
-                <Input id="e-date" name="logDate" type="date" className="num w-[9.5rem]" defaultValue={editing.logDate} />
+                <DatePicker id="e-date" name="logDate" className="w-[9.5rem]" defaultValue={editing.logDate} />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-project">{t("پروژه")}</Label>

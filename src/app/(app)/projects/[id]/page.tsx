@@ -215,7 +215,7 @@ export default async function ProjectDetailPage({
 
       <header className="mt-3 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{project.title}</h1>
+          <h1 className="text-xl font-semibold">{project.title}</h1>
           {/* توضیحِ پروژه — پیش از این فقط داخلِ فرمِ ویرایش دیده می‌شد. */}
           {project.description && (
             <p className="mt-2 max-w-3xl whitespace-pre-wrap text-sm text-muted-foreground">

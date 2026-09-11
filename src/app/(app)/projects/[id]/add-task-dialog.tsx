@@ -18,6 +18,7 @@ import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { defaultTaskStatusId } from '@/domain/projects/defaults';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 /** گزینه‌های فرمِ تسک — از سرور می‌آیند (همان `getTaskFormOptions`). */
 export interface TaskFormOptions {
@@ -193,7 +194,7 @@ export function AddTaskDialog({
 
             <div className="grid gap-1.5">
               <Label htmlFor="nt-due">{t("ددلاین")}</Label>
-              <Input id="nt-due" type="date" name="dueDate" className="num" defaultValue={keep('dueDate')} />
+              <DatePicker id="nt-due" name="dueDate" defaultValue={keep('dueDate')} />
               {state.fieldErrors?.dueDate && (
                 <p className="text-xs text-destructive">{tr(state.fieldErrors.dueDate)}</p>
               )}

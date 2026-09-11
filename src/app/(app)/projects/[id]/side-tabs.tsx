@@ -294,7 +294,7 @@ function QaDelete({ itemId }: { itemId: number }) {
   const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
   return (
-    <button
+    <Button
       type="button"
       aria-label={t("حذفِ آیتم")}
       disabled={pending}
@@ -303,10 +303,12 @@ function QaDelete({ itemId }: { itemId: number }) {
           startTransition(async () => { await deleteQaItemAction(itemId); });
         }
       }}
-      className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-60"
+      variant="ghost"
+      size="icon-xs"
+      className="text-muted-foreground"
     >
       <X className="size-3.5" />
-    </button>
+    </Button>
   );
 }
 

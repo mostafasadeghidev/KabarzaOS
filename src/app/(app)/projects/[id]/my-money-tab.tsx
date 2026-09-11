@@ -19,6 +19,7 @@ import {
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export interface UnitRow {
   id: number;
@@ -145,7 +146,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
 
             <div className="grid gap-1.5">
               <Label htmlFor="u-date">{t("تاریخ")}</Label>
-              <Input id="u-date" name="entryDate" type="date" className="num w-40" defaultValue={data.today} />
+              <DatePicker id="u-date" name="entryDate" className="w-40" defaultValue={data.today} />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="u-qty">{t("تعداد")}</Label>
@@ -213,15 +214,14 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
                             )
                           )}
                           {(data.canManage || u.isMine) && (
-                            <button
+                            <Button
                               type="button"
                               disabled={pending}
-                              onClick={() => run(() => deleteUnitAction(u.id, data.projectId))}
-                              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"
+                              onClick={() => run(() => deleteUnitAction(u.id, data.projectId))} variant="ghost" size="icon-sm" className="text-muted-foreground"
                               aria-label={t("حذف")}
                             >
                               <Trash2 className="size-4" />
-                            </button>
+                            </Button>
                           )}
                         </div>
                       )}

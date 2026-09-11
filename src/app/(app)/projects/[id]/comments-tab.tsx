@@ -52,7 +52,7 @@ function CommentDelete({ commentId, hasReplies }: { commentId: number; hasReplie
   const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
   return (
-    <button
+    <Button
       type="button"
       aria-label={t("حذفِ کامنت")}
       disabled={pending}
@@ -65,10 +65,12 @@ function CommentDelete({ commentId, hasReplies }: { commentId: number; hasReplie
           startTransition(async () => { await deleteCommentAction(commentId); });
         }
       }}
-      className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-60"
+      variant="ghost"
+      size="icon-xs"
+      className="text-muted-foreground"
     >
       <Trash2 className="size-3.5" />
-    </button>
+    </Button>
   );
 }
 
@@ -215,14 +217,16 @@ function Node({
               onDone={() => setReplying(false)}
             />
           ) : (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="xs"
               onClick={() => setReplying(true)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground"
             >
               <Reply className="size-3.5" />
               {t('پاسخ')}
-            </button>
+            </Button>
           )}
         </div>
       )}

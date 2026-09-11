@@ -2,11 +2,11 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useT } from '@/i18n/client';
 import { monthRange, weekRange, yearRange } from '@/domain/reports/filters';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 /**
  * نوارِ فیلترِ ریزِ ساعت — پورتِ `hours-filters.php`.
@@ -91,11 +91,11 @@ export function HoursFilter({
 
       <div className="grid gap-1.5">
         <Label htmlFor="hf-from" className="text-xs">{tr('از')}</Label>
-        <Input id="hf-from" name="from" type="date" className="num h-9 w-[9.5rem]" defaultValue={value('from')} />
+        <DatePicker id="hf-from" name="from" className="w-[9.5rem]" defaultValue={value('from')} />
       </div>
       <div className="grid gap-1.5">
         <Label htmlFor="hf-to" className="text-xs">{tr('تا')}</Label>
-        <Input id="hf-to" name="to" type="date" className="num h-9 w-[9.5rem]" defaultValue={value('to')} />
+        <DatePicker id="hf-to" name="to" className="w-[9.5rem]" defaultValue={value('to')} />
       </div>
 
       <Button type="submit" size="sm">{tr('اعمال')}</Button>

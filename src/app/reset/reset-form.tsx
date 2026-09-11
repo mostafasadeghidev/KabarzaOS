@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 /** فرمِ تعیینِ رمزِ تازه از راهِ لینک. */
 export function ResetForm({ token }: { token: string }) {
@@ -25,18 +27,16 @@ export function ResetForm({ token }: { token: string }) {
           <form action={formAction} className="space-y-4">
             <input type="hidden" name="token" value={token} />
             <div className="space-y-1.5">
-              <label htmlFor="next" className="text-sm font-medium">{t("رمزِ تازه")}</label>
-              <input
+              <Label htmlFor="next">{t("رمزِ تازه")}</Label>
+              <Input
                 id="next" name="next" type="password" required minLength={8} autoComplete="new-password" dir="ltr"
-                className="h-9 w-full rounded-[--radius] border bg-background px-3 text-sm"
                 placeholder={t("دستِ‌کم ۸ نویسه")}
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="repeat" className="text-sm font-medium">{t("تکرارِ رمزِ تازه")}</label>
-              <input
+              <Label htmlFor="repeat">{t("تکرارِ رمزِ تازه")}</Label>
+              <Input
                 id="repeat" name="repeat" type="password" required minLength={8} autoComplete="new-password" dir="ltr"
-                className="h-9 w-full rounded-[--radius] border bg-background px-3 text-sm"
               />
             </div>
             {state.error && (

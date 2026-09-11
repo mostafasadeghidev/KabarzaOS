@@ -39,6 +39,7 @@ import { trimRate } from '@/domain/currency/rates';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export interface SettingsData {
   /** برای پنهان‌کردنِ تب‌های مالکانه از دیدِ حسابدار. */
@@ -240,11 +241,9 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="r-date">{tr("تاریخ")}</Label>
-                  <Input
+                  <DatePicker
                     id="r-date"
                     name="effectiveDate"
-                    type="date"
-                    className="num"
                     defaultValue={editing?.effectiveDate ?? new Date().toISOString().slice(0, 10)}
                   />
                 </div>
@@ -256,19 +255,16 @@ export function SettingsView({ data }: { data: SettingsData }) {
 
       {tab === 'tags' && (
         <div className="grid gap-3">
-          <div className="flex flex-wrap gap-1">
-            {TAG_TYPES.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setTagType(t.key)}
-                className={`rounded-md px-2.5 py-1 text-xs ${
-                  tagType === t.key ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                {tr(t.label)}
-              </button>
-            ))}
+          <div className="overflow-x-auto overflow-y-hidden">
+            <Tabs value={tagType} onValueChange={(v) => setTagType(v as TagType)}>
+              <TabsList className="w-max">
+                {TAG_TYPES.map((t) => (
+                  <TabsTrigger key={t.key} value={t.key} className="flex-none px-3 text-xs">
+                    {tr(t.label)}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </div>
 
           <CatalogSection

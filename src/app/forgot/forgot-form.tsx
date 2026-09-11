@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 /** فرمِ «رمزم را فراموش کرده‌ام». */
 export function ForgotForm() {
@@ -32,10 +34,9 @@ export function ForgotForm() {
           ) : (
             <form action={formAction} className="space-y-4">
               <div className="space-y-1.5">
-                <label htmlFor="email" className="text-sm font-medium">{t("ایمیل یا نام کاربری")}</label>
-                <input
+                <Label htmlFor="email">{t("ایمیل یا نام کاربری")}</Label>
+                <Input
                   id="email" name="email" type="text" required autoComplete="username" dir="ltr"
-                  className="h-9 w-full rounded-[--radius] border bg-background px-3 text-sm"
                 />
               </div>
               {state.error && (

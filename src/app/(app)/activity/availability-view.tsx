@@ -83,14 +83,13 @@ function DayEditor({ weekday, initial }: { weekday: number; initial: Slot[] | un
                   defaultValue={slot.to}
                   className="num w-32"
                 />
-                <button
+                <Button
                   type="button"
-                  onClick={() => setSlots((s) => s.filter((_, k) => k !== i))}
-                  className="rounded-md p-1 text-muted-foreground hover:bg-muted"
+                  onClick={() => setSlots((s) => s.filter((_, k) => k !== i))} variant="ghost" size="icon-xs" className="text-muted-foreground"
                   aria-label={t("حذفِ بازه")}
                 >
                   <X className="size-4" />
-                </button>
+                </Button>
               </div>
             ))}
           </div>
