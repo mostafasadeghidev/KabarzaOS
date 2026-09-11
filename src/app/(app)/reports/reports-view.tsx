@@ -13,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
-import { Download } from 'lucide-react';
+import { Download, TriangleAlert, CircleAlert } from 'lucide-react';
 import { isExportableTab } from '@/domain/reports/export';
 import { monthlyAverage, reportQuery, withBars, type RangePreset } from '@/domain/reports/filters';
 import { OfficeFilter, RangeBar, type OfficeOption } from './report-filters';
@@ -21,6 +21,9 @@ import {
   TablePager, TableSearch, useTableView, type TableView,
 } from '@/components/ui/table-search';
 import { chipStyle } from '@/domain/ui/contrast';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Toggle } from '@/components/ui/toggle';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /** «دورهٔ بسته» هم خروجی دارد ولی تبِ صادرشدنی نیست — تاریخ لازم دارد. */
 function isExportable(tab: string): boolean {
@@ -268,22 +271,18 @@ export function ReportsView({
 
   return (
     <div className="grid gap-4">
-      <nav className="flex flex-wrap gap-1 border-b">
-        {visible.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm transition-colors ${
-              tab === t.key
-                ? 'border-primary font-medium text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tr(t.label)}
-          </button>
-        ))}
-      </nav>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
+        <div className="overflow-x-auto pb-1.5">
+          <TabsList variant="line" className="w-max">
+            {visible.map((t) => (
+              <TabsTrigger key={t.key} value={t.key} className="flex-none">
+                {tr(t.label)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+      </Tabs>
 
       {/*
         ⚠️ پیوندِ ساده، نه دکمهٔ جاوااسکریپتی: مرورگر خودش دانلود را می‌گیرد و
@@ -330,27 +329,38 @@ export function ReportsView({
         {data.canRecompute && <RecomputeEurButton />}
         {/* ⚠️ نبودِ نرخ بی‌صدا ۱ نمی‌شود (R-MONEY-06) — ولی بی‌صدا هم نمی‌ماند. */}
         {/* پورتِ `rate_banner_html`: نرخ‌هایی که ارقام بر آن‌ها تکیه دارند + هشدارِ کهنه/غایب. */}
-        {data.overall.rates.visible && (
+        {data.overall.rates.visible && data.overall.rates.shown.length > 0 && (
           <div className="flex flex-wrap items-center gap-3 rounded-md border px-3 py-2 text-xs">
-            {data.overall.rates.shown.length > 0 && (
-              <span className="num" dir="ltr">{data.overall.rates.shown.join('  ·  ')}</span>
-            )}
-            {data.overall.rates.stale.length > 0 && (
-              <span className="text-amber-600 dark:text-amber-500">
-                ⚠ {tr('نرخِ {codes} مدتی است به‌روزرسانی نشده؛ ارقام شاید قدیمی باشند.', { codes: data.overall.rates.stale.join(tr('، ')) })}
-              </span>
-            )}
-            {data.overall.rates.missing.length > 0 && (
-              <span className="text-destructive">
-                ⚠ {tr('برای {codes} نرخی ثبت نشده؛ ردیف‌های آن ارز صفر شمرده می‌شوند. در تنظیمات ← ارزها ثبت کنید.', { codes: data.overall.rates.missing.join(tr('، ')) })}
-              </span>
-            )}
+            <span className="num" dir="ltr">{data.overall.rates.shown.join('  ·  ')}</span>
           </div>
         )}
+        {/*
+          ⚠️ هشدارها از ردیفِ نرخ‌ها بیرون آمده‌اند و Alert ِ خودشان را دارند: متنِ
+          رنگیِ کوچک وسطِ یک سطرِ عدد، همان چیزی بود که دیده نمی‌شد.
+        */}
+        {data.overall.rates.visible && data.overall.rates.stale.length > 0 && (
+          <Alert variant="warning">
+            <TriangleAlert />
+            <AlertDescription>
+              {tr('نرخِ {codes} مدتی است به‌روزرسانی نشده؛ ارقام شاید قدیمی باشند.', { codes: data.overall.rates.stale.join(tr('، ')) })}
+            </AlertDescription>
+          </Alert>
+        )}
+        {data.overall.rates.visible && data.overall.rates.missing.length > 0 && (
+          <Alert variant="destructive">
+            <CircleAlert />
+            <AlertDescription>
+              {tr('برای {codes} نرخی ثبت نشده؛ ردیف‌های آن ارز صفر شمرده می‌شوند. در تنظیمات ← ارزها ثبت کنید.', { codes: data.overall.rates.missing.join(tr('، ')) })}
+            </AlertDescription>
+          </Alert>
+        )}
         {data.overall.rateMissing > 0 && (
-          <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-            {tr('{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.', { n: data.overall.rateMissing })}
-          </p>
+          <Alert variant="warning">
+            <TriangleAlert />
+            <AlertDescription>
+              {tr('{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.', { n: data.overall.rateMissing })}
+            </AlertDescription>
+          </Alert>
         )}
         {cardGroups.map((group) => (
           <section key={group.title} className="grid gap-2">
@@ -539,22 +549,22 @@ export function ReportsView({
                 {data.expenses.byVendor.map((v) => {
                   const on = vendorSel === null || vendorSel.includes(v.id);
                   return (
-                    <button
+                    <Toggle
                       key={v.id}
-                      type="button"
-                      onClick={() => toggleVendor(v.id)}
-                      className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
-                        vendorSel !== null && on ? 'border-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'
-                      }`}
+                      variant="outline"
+                      size="sm"
+                      pressed={vendorSel !== null && on}
+                      onPressedChange={() => toggleVendor(v.id)}
+                      className="h-7 rounded-full px-3 text-xs font-normal data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-foreground"
                     >
                       {v.label || tr('بدون طرف‌حساب')}
-                    </button>
+                    </Toggle>
                   );
                 })}
                 {vendorSel !== null && (
-                  <button type="button" onClick={() => setVendorSel(null)} className="text-xs text-muted-foreground underline">
+                  <Button type="button" variant="link" size="xs" onClick={() => setVendorSel(null)} className="text-muted-foreground">
                     {tr('همه')}
-                  </button>
+                  </Button>
                 )}
               </div>
             )}

@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 export interface UnitRow {
   id: number;
@@ -83,8 +84,6 @@ export interface MyMoneyData {
   today: string;
 }
 
-const selectClass =
-  'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none';
 
 /** برچسبِ وضعیتِ تسویه — پورتِ `Payments::status_label`. */
 export const PAY_STATUS_LABELS: Record<string, string> = {
@@ -138,9 +137,9 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
             {data.canManage && (
               <div className="grid gap-1.5">
                 <Label htmlFor="u-user">{t("عضو")}</Label>
-                <select id="u-user" name="userId" className={`${selectClass} w-44`} required>
-                  {data.members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
+                <NativeSelect id="u-user" name="userId" containerClassName="w-44" required>
+                  {data.members.map((m) => <NativeSelectOption key={m.id} value={m.id}>{m.name}</NativeSelectOption>)}
+                </NativeSelect>
               </div>
             )}
 

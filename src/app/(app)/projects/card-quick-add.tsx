@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 /**
  * افزودنِ سریعِ عضو و کارفرما از خودِ کارت.:
@@ -26,8 +27,6 @@ export interface CardOptions {
   roleMap: Record<number, number[]>;
 }
 
-const cell =
-  'h-7 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -76,35 +75,35 @@ export function CardQuickAdd({ projectId, options }: { projectId: number; option
         <form action={memberAction} className="grid gap-1">
           <input type="hidden" name="projectId" value={projectId} />
           <div className="flex flex-wrap items-center gap-1">
-            <select
+            <NativeSelect
               name="userId"
-              className={cell}
+              size="sm" className="h-7 text-xs" containerClassName="min-w-0 flex-1"
               value={pickedUser}
               onChange={(e) => setPickedUser(e.target.value)}
             >
-              <option value="">{t("— عضو —")}</option>
+              <NativeSelectOption value="">{t("— عضو —")}</NativeSelectOption>
               {options.team.map((u) => (
-                <option key={u.id} value={u.id}>{u.name}</option>
+                <NativeSelectOption key={u.id} value={u.id}>{u.name}</NativeSelectOption>
               ))}
-            </select>
+            </NativeSelect>
             {/*
               ⚠️ تا عضوی انتخاب نشده، نقشی هم پیشنهاد نمی‌شود: نقشِ معتبر به
               خودِ فرد بستگی دارد. پس از انتخاب، فقط نقش‌های همان فرد می‌مانند.
             */}
-            <select
+            <NativeSelect
               name="roleTagId"
-              className={cell}
+              size="sm" className="h-7 text-xs" containerClassName="min-w-0 flex-1"
               defaultValue=""
               key={pickedUser}
               disabled={pickedUser === ''}
             >
-              <option value="">{t("— نقشِ خودش —")}</option>
+              <NativeSelectOption value="">{t("— نقشِ خودش —")}</NativeSelectOption>
               {options.roles
                 .filter((r) => (options.roleMap[Number(pickedUser)] ?? []).includes(r.id))
                 .map((r) => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
+                  <NativeSelectOption key={r.id} value={r.id}>{r.name}</NativeSelectOption>
                 ))}
-            </select>
+            </NativeSelect>
             <Input name="amount" inputMode="decimal" placeholder={t("مبلغ")} className="num h-7 w-20 text-xs" />
             <Submit label={t("افزودن")} />
             <Button
@@ -125,12 +124,12 @@ export function CardQuickAdd({ projectId, options }: { projectId: number; option
         <form action={clientAction} className="grid gap-1">
           <input type="hidden" name="projectId" value={projectId} />
           <div className="flex flex-wrap items-center gap-1">
-            <select name="userId" className={cell} defaultValue="">
-              <option value="">{t("— کارفرما —")}</option>
+            <NativeSelect name="userId" size="sm" className="h-7 text-xs" containerClassName="min-w-0 flex-1" defaultValue="">
+              <NativeSelectOption value="">{t("— کارفرما —")}</NativeSelectOption>
               {options.clients.map((u) => (
-                <option key={u.id} value={u.id}>{u.name}</option>
+                <NativeSelectOption key={u.id} value={u.id}>{u.name}</NativeSelectOption>
               ))}
-            </select>
+            </NativeSelect>
             <Submit label={t("افزودن")} />
             <Button
               type="button"

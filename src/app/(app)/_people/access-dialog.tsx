@@ -6,6 +6,7 @@ import { REPORT_TABS, SECTION_ACCESS } from '@/domain/access/staff-levels';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -81,21 +82,21 @@ export function AccessDialog({
             {SECTION_ACCESS.map((section) => (
               <fieldset key={section.key} className="grid gap-1.5">
                 <legend className="text-sm font-medium">{tr(section.label)}</legend>
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                <RadioGroup
+                  name={`access-${section.key}`}
+                  value={levels[section.key] ?? 'none'}
+                  onValueChange={(v) => setLevels((s) => ({
+                    ...s, [section.key]: v as (typeof section.levels)[number]['value'],
+                  }))}
+                  className="flex flex-wrap gap-x-4 gap-y-1"
+                >
                   {section.levels.map((level) => (
                     <label key={level.value} className="flex items-center gap-1.5 text-sm">
-                      <input
-                        type="radio"
-                        name={`access-${section.key}`}
-                        value={level.value}
-                        checked={(levels[section.key] ?? 'none') === level.value}
-                        onChange={() => setLevels((s) => ({ ...s, [section.key]: level.value }))}
-                        className="size-3.5 accent-primary"
-                      />
+                      <RadioGroupItem value={level.value} />
                       {tr(level.label)}
                     </label>
                   ))}
-                </div>
+                </RadioGroup>
 
                 {section.key === 'finance' && (
                   <p className="text-xs text-muted-foreground">

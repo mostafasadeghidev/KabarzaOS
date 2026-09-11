@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
-import { Plus } from 'lucide-react';
+import { Plus, CircleAlert } from 'lucide-react';
 import { createTaskAction, type TaskFormState } from '../projects/_form/task-actions';
 import { loadQuickTaskOptionsAction, type QuickTaskOptions } from './quick-actions';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-const selectClass =
-  'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 function SubmitButton() {
   const tr = useT();
@@ -135,12 +136,12 @@ export function QuickTaskForm({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="q-assignee">{t("مسئول")}</Label>
-                <select id="q-assignee" name="assignedTo" className={selectClass} disabled={loading}>
-                  <option value="">{t("— بدونِ مسئول —")}</option>
+                <NativeSelect id="q-assignee" name="assignedTo" containerClassName="w-full" disabled={loading}>
+                  <NativeSelectOption value="">{t("— بدونِ مسئول —")}</NativeSelectOption>
                   {(options?.assignees ?? []).map((a) => (
-                    <option key={a.id} value={a.id}>{a.label}</option>
+                    <NativeSelectOption key={a.id} value={a.id}>{a.label}</NativeSelectOption>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
 
               <div className="grid gap-1.5">
@@ -157,12 +158,12 @@ export function QuickTaskForm({
 
               <div className="grid gap-1.5">
                 <Label htmlFor="q-priority">{t("اولویت")}</Label>
-                <select id="q-priority" name="priorityTagId" className={selectClass} disabled={loading}>
-                  <option value="">{t("— انتخاب —")}</option>
+                <NativeSelect id="q-priority" name="priorityTagId" containerClassName="w-full" disabled={loading}>
+                  <NativeSelectOption value="">{t("— انتخاب —")}</NativeSelectOption>
                   {(options?.priorities ?? []).map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                    <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
 
               <div className="grid gap-1.5">
@@ -177,14 +178,17 @@ export function QuickTaskForm({
             </div>
 
             <label className="flex items-center gap-1.5 text-xs">
-              <input type="checkbox" name="isPrivate" className="size-3.5 accent-primary" />
+              <Checkbox name="isPrivate" />
               {t("خصوصی (فقط مدیران)")}
             </label>
           </>
         )}
 
         {state.error && (
-          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{tr(state.error)}</p>
+          <Alert variant="destructive">
+            <CircleAlert />
+            <AlertDescription>{tr(state.error)}</AlertDescription>
+          </Alert>
         )}
 
         <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Megaphone, Plus, Send, ShieldQuestion, Trash2 } from 'lucide-react';
+import { Megaphone, Plus, Send, ShieldQuestion, Trash2, CircleAlert } from 'lucide-react';
 import {
   composeAction, contactManagementAction, deleteThreadAction, leaveThreadAction, openThreadAction,
   replyAction, type MessageState,
@@ -24,6 +24,9 @@ import {
 import { useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export interface InboxRow {
   id: number;
@@ -460,18 +463,18 @@ export function MessagesView({
             {canBroadcast && (
               <div className="grid gap-1.5">
                 <Label htmlFor="msg-audience">{tr("مخاطب")}</Label>
-                <select
+                <NativeSelect
                   id="msg-audience"
                   name="audience"
-                  className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  containerClassName="w-full"
                   value={audience}
                   onChange={(e) => setAudience(e.target.value as '' | Audience)}
                 >
-                  <option value="">{tr("— انتخابِ دستی —")}</option>
+                  <NativeSelectOption value="">{tr("— انتخابِ دستی —")}</NativeSelectOption>
                   {(Object.keys(AUDIENCE_LABELS) as Audience[]).map((key) => (
-                    <option key={key} value={key}>{tr(AUDIENCE_LABELS[key])}</option>
+                    <NativeSelectOption key={key} value={key}>{tr(AUDIENCE_LABELS[key])}</NativeSelectOption>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
             )}
 
@@ -484,40 +487,38 @@ export function MessagesView({
                   کسی که قبلاً تیک خورده هرگز نمی‌افتد.
                 */}
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <select
+                  <NativeSelect
                     aria-label={tr("فیلترِ دفتر")}
-                    className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+                    
                     value={officeId ?? ''}
                     onChange={(e) => setOfficeId(e.target.value ? Number(e.target.value) : null)}
                   >
-                    <option value="">{tr("همهٔ دفاتر")}</option>
+                    <NativeSelectOption value="">{tr("همهٔ دفاتر")}</NativeSelectOption>
                     {filters.offices.map((o) => (
-                      <option key={o.id} value={o.id}>{o.name}</option>
+                      <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>
                     ))}
-                  </select>
-                  <select
+                  </NativeSelect>
+                  <NativeSelect
                     aria-label={tr("فیلترِ پروژه")}
-                    className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+                    
                     value={projectId ?? ''}
                     onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : null)}
                   >
-                    <option value="">{tr("همهٔ پروژه‌ها")}</option>
+                    <NativeSelectOption value="">{tr("همهٔ پروژه‌ها")}</NativeSelectOption>
                     {shownProjects.map((p) => (
-                      <option key={p.id} value={p.id}>{p.title}</option>
+                      <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </div>
 
                 <div className="grid max-h-48 gap-1 overflow-y-auto">
                   {shownRecipients.map((r) => (
                     <label key={r.id} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         name="recipients"
-                        value={r.id}
+                        value={String(r.id)}
                         checked={picked.has(r.id)}
-                        onChange={() => togglePick(r.id)}
-                        className="size-4 accent-primary"
+                        onCheckedChange={() => togglePick(r.id)}
                       />
                       {r.name}
                       <span className="text-xs text-muted-foreground">
@@ -551,19 +552,20 @@ export function MessagesView({
             </div>
 
             <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
+              <Checkbox
                 name="allowReply"
-                defaultChecked
-                className="mt-0.5 size-4 accent-primary"
+                defaultChecked className="mt-0.5"
               />
               {tr("پاسخ مجاز باشد (برای سؤال)؛ بدون تیک = اعلانِ یک‌طرفه")}
             </label>
 
             {composeState.error && (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {tr(composeState.error)}
-              </p>
+              <Alert variant="destructive">
+                <CircleAlert />
+                <AlertDescription>
+                  {tr(composeState.error)}
+                </AlertDescription>
+              </Alert>
             )}
 
             <DialogFooter>

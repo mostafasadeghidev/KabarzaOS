@@ -19,6 +19,7 @@ import {
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { OFFICE_MANAGER_CAP } from '@/domain/access/project-scope';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export interface PersonFormOptions {
   /** `grantsCap` تعیین می‌کند کدام نقش «مدیرِ تیم» است. */
@@ -325,10 +326,8 @@ export function PersonDialog({
             <fieldset className="grid gap-1.5 rounded-md border border-dashed p-3">
               <legend className="px-1 text-sm font-medium">{tr("دسترسیِ ویژه")}</legend>
               <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox" name="privateAccess" value="1"
+                <Checkbox name="privateAccess" value="1"
                   defaultChecked={person?.privateAccess ?? false}
-                  className="size-4 accent-primary"
                 />
                 {tr("دیدنِ پروژه‌های خصوصی")}
               </label>
@@ -400,7 +399,7 @@ export function PersonDialog({
 
           {/* پورتِ چک‌باکسِ «ارسالِ دعوت‌نامه»: تازه → لینکِ تعیینِ رمزِ ۳روزه؛ موجود → آدرسِ داشبورد. */}
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="sendInvite" defaultChecked={!isEdit} className="size-4 accent-primary" />
+            <Checkbox name="sendInvite" defaultChecked={!isEdit} />
             {tr("ارسالِ دعوت‌نامه با ایمیل")}
           </label>
 

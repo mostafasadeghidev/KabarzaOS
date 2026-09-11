@@ -16,6 +16,8 @@ import {
 import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatForDateTimeInput } from '@/i18n/datetime';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export interface MeetingFormOptions {
   projects: Array<{ id: number; title: string }>;
@@ -33,8 +35,6 @@ export interface MeetingView {
   attendees: Array<{ userId: number; name: string }>;
 }
 
-const cellSelect =
-  'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 /** `datetime-local` مقدارِ محلیِ **کاربر** می‌خواهد، نه ISO ِ UTC و نه منطقهٔ مرورگرِ اتفاقی. */
 function toLocalInput(value: Date | string | null, tz: string): string {
@@ -174,18 +174,18 @@ export function MeetingForm({
             <Label htmlFor="m-kind">{t("نوع جلسه")}</Label>
             {/* ⚠️ نوع و پروژه/دفتر پس از ساخت عوض نمی‌شوند (پورتِ `Meetings::update()`) —
                 سرور هم آن‌ها را نادیده می‌گیرد؛ اینجا فقط قفل نشان داده می‌شود. */}
-            <select
+            <NativeSelect
               id="m-kind"
-              className={cellSelect}
+              containerClassName="w-full"
               value={kind}
               disabled={isEdit}
               onChange={(e) => setKind(e.target.value as 'project' | 'general')}
             >
-              <option value="project">{t("مرتبط با پروژه")}</option>
+              <NativeSelectOption value="project">{t("مرتبط با پروژه")}</NativeSelectOption>
               {(canCreateGeneral || kind === 'general') && (
-                <option value="general">{t("عمومی / تیمی (بدون پروژه)")}</option>
+                <NativeSelectOption value="general">{t("عمومی / تیمی (بدون پروژه)")}</NativeSelectOption>
               )}
-            </select>
+            </NativeSelect>
             {isEdit && (
               <p className="text-xs text-muted-foreground">
                 {tr("نوعِ جلسه و پروژه/دفترِ آن پس از ساخت تغییر نمی‌کند.")}
@@ -224,19 +224,19 @@ export function MeetingForm({
           ) : (
             <div className="grid gap-1.5">
               <Label htmlFor="m-office">{t("دفتر (برای جلسهٔ عمومی)")}</Label>
-              <select
+              <NativeSelect
                 id="m-office"
                 name="officeId"
-                className={cellSelect}
+                containerClassName="w-full"
                 value={officeId}
                 disabled={isEdit}
                 onChange={(e) => setOfficeId(e.target.value)}
               >
-                <option value="">{t("همهٔ دفاتر")}</option>
+                <NativeSelectOption value="">{t("همهٔ دفاتر")}</NativeSelectOption>
                 {options.offices.map((o) => (
-                  <option key={o.id} value={o.id}>{o.name}</option>
+                  <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
           )}
 
@@ -320,13 +320,11 @@ export function MeetingForm({
                 <div className="grid gap-1">
                   {candidates.map((c) => (
                     <label key={c.userId} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         name="attendees"
-                        value={c.userId}
+                        value={String(c.userId)}
                         checked={checked.has(c.userId)}
-                        onChange={() => toggle(c.userId)}
-                        className="size-4 accent-primary"
+                        onCheckedChange={() => toggle(c.userId)}
                       />
                       {c.name}
                       {/* ⚠️ `sub` کلیدِ ترجمه است: یا نامِ تگ (که خودش

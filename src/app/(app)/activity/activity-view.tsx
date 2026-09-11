@@ -12,6 +12,7 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export interface EventRow {
   id: number;
@@ -86,22 +87,18 @@ export function ActivityView({
 
   return (
     <div className="grid gap-4">
-      <nav className="flex flex-wrap gap-1 border-b">
-        {visible.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm transition-colors ${
-              tab === t.key
-                ? 'border-primary font-medium text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tr(t.label)}
-          </button>
-        ))}
-      </nav>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
+        <div className="overflow-x-auto pb-1.5">
+          <TabsList variant="line" className="w-max">
+            {visible.map((t) => (
+              <TabsTrigger key={t.key} value={t.key} className="flex-none">
+                {tr(t.label)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+      </Tabs>
 
       {tab === 'events' && (
         events.length === 0 ? <EmptyState title={tr("رویدادی ثبت نشده")} /> : (

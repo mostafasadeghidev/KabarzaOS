@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -45,12 +47,10 @@ export function ReportSection({ config }: { config: ReportConfig }) {
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             {REPORT_SECTIONS.map((s) => (
               <label key={s.key} className="flex items-center gap-1.5 text-sm">
-                <input
-                  type="checkbox"
+                <Checkbox
                   name="sections"
-                  value={s.key}
+                  value={String(s.key)}
                   defaultChecked={config.sections.includes(s.key)}
-                  className="size-3.5 accent-primary"
                 />
                 {s.icon} {t(s.label)}
               </label>
@@ -77,9 +77,7 @@ export function ReportSection({ config }: { config: ReportConfig }) {
           <legend className="px-1 text-sm font-medium">{t("مقصدها")}</legend>
 
           <label className="flex items-center gap-1.5 text-sm">
-            <input
-              type="checkbox" name="discord" defaultChecked={config.discord}
-              className="size-3.5 accent-primary"
+            <Switch name="discord" defaultChecked={config.discord}
             />
             {tr("دیسکورد")}
           </label>
@@ -89,9 +87,7 @@ export function ReportSection({ config }: { config: ReportConfig }) {
           />
 
           <label className="flex items-center gap-1.5 text-sm">
-            <input
-              type="checkbox" name="telegram" defaultChecked={config.telegram}
-              className="size-3.5 accent-primary"
+            <Switch name="telegram" defaultChecked={config.telegram}
             />
             {tr("تلگرامِ مدیرِ کل")}
           </label>

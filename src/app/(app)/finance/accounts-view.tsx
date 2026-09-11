@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, TriangleAlert } from 'lucide-react';
 import {
   deleteAccountAction, saveAccountAction, type PayoutState,
 } from './_form/payout-actions';
@@ -22,6 +22,9 @@ import {
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // همان شکلِ `listAccounts` — یک تعریف برای هر دو تب.
 export type { AccountOption as AccountRow } from './ledger-view';
@@ -34,7 +37,6 @@ export interface AccountFormOptions {
   accountantsByAccount: Record<number, number[]>;
 }
 
-const field = 'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 function Save() {
   const { pending } = useFormStatus();
@@ -87,9 +89,12 @@ export function AccountsView({
 
       {/* پورتِ اخطارِ «ابتدا ارز تعریف کنید» — پیش از این فقط هنگامِ ذخیره خطا می‌داد. */}
       {options.currencies.length === 0 && (
-        <p className="rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-500">
-          {tr("ابتدا در تنظیمات یک ارز تعریف کنید؛ حساب بدونِ ارز ساخته نمی‌شود.")}
-        </p>
+        <Alert variant="warning">
+          <TriangleAlert />
+          <AlertDescription>
+            {tr("ابتدا در تنظیمات یک ارز تعریف کنید؛ حساب بدونِ ارز ساخته نمی‌شود.")}
+          </AlertDescription>
+        </Alert>
       )}
 
       {accounts.length === 0 ? (
@@ -181,36 +186,36 @@ export function AccountsView({
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="a-cur">{t("ارز")}</Label>
-                <select
+                <NativeSelect
                   id="a-cur"
                   name="currencyId"
-                  className={field}
+                  containerClassName="w-full"
                   defaultValue={String(editing?.currencyId ?? options.currencies.find((c) => c.isDefault)?.id ?? '')}
                 >
-                  {options.currencies.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-                </select>
+                  {options.currencies.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>)}
+                </NativeSelect>
               </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-4">
               <div className="grid gap-1.5">
                 <Label htmlFor="a-type">{t("نوع")}</Label>
-                <select id="a-type" name="type" className={field} defaultValue={editing?.type ?? 'business'}>
-                  <option value="business">{t("کاری")}</option>
-                  <option value="personal">{t("شخصی")}</option>
-                </select>
+                <NativeSelect id="a-type" name="type" containerClassName="w-full" defaultValue={editing?.type ?? 'business'}>
+                  <NativeSelectOption value="business">{t("کاری")}</NativeSelectOption>
+                  <NativeSelectOption value="personal">{t("شخصی")}</NativeSelectOption>
+                </NativeSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="a-office">{t("دفتر")}</Label>
-                <select
+                <NativeSelect
                   id="a-office"
                   name="officeId"
-                  className={field}
+                  containerClassName="w-full"
                   defaultValue={editing?.officeId ? String(editing.officeId) : ''}
                 >
-                  <option value="">{t("— هیچ‌کدام —")}</option>
-                  {options.offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-                </select>
+                  <NativeSelectOption value="">{t("— هیچ‌کدام —")}</NativeSelectOption>
+                  {options.offices.map((o) => <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>)}
+                </NativeSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="a-opening">{t("مانده اولیه")}</Label>
@@ -242,12 +247,10 @@ export function AccountsView({
               <div className="grid max-h-40 gap-1 overflow-y-auto">
                 {options.people.map((p) => (
                   <label key={p.id} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       name="accountantIds"
-                      value={p.id}
+                      value={String(p.id)}
                       defaultChecked={assigned.has(p.id)}
-                      className="size-4 accent-primary"
                     />
                     {p.name}
                   </label>
@@ -257,16 +260,14 @@ export function AccountsView({
 
             <div className="flex flex-wrap items-center gap-4">
               <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
+                <Checkbox
                   name="isActive"
                   defaultChecked={editing?.isActive ?? true}
-                  className="size-4 accent-primary"
                 />
                 {tr("فعال")}
               </label>
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="scope" value="private" defaultChecked={editing?.scope === 'private'} className="size-4 accent-primary" />
+                <Checkbox name="scope" value="private" defaultChecked={editing?.scope === 'private'} />
                 {tr("حسابِ خصوصی (فقط با دسترسیِ خصوصی دیده می‌شود)")}
               </label>
             </div>

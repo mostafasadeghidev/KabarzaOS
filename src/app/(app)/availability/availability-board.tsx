@@ -12,6 +12,10 @@ import { Thumb } from '@/components/thumb';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useT } from '@/i18n/client';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Toggle } from '@/components/ui/toggle';
+import { buttonVariants } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Cell {
   state: CellState;
@@ -50,8 +54,6 @@ export interface BoardProps {
   roles: Array<{ id: number; name: string }>;
 }
 
-const selectClass =
-  'h-8 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 /** «۳ دقیقه پیش» — بازهٔ درشت کافی است؛ ثانیه هر ثانیه کهنه می‌شود. */
 function ago(
@@ -138,30 +140,30 @@ export function AvailabilityBoard(props: BoardProps) {
                 {props.offices.map((o) => {
                   const on = offices.includes(o.id);
                   return (
-                    <button
+                    <Toggle
                       key={o.id}
-                      type="button"
-                      onClick={() => setOffices((prev) => (on ? prev.filter((x) => x !== o.id) : [...prev, o.id]))}
-                      className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${on ? 'border-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground'}`}
+                      variant="outline"
+                      size="sm"
+                      pressed={on}
+                      onPressedChange={() => setOffices((prev) => (on ? prev.filter((x) => x !== o.id) : [...prev, o.id]))}
+                      className="h-7 rounded-full px-3 text-xs font-normal data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-foreground"
                     >
                       {o.name}
-                    </button>
+                    </Toggle>
                   );
                 })}
               </div>
             )}
             {props.roles.length > 0 && (
-              <select className={selectClass} value={role} onChange={(e) => setRole(e.target.value)}>
-                <option value="">{t("همهٔ نقش‌ها")}</option>
-                {props.roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-              </select>
+              <NativeSelect size="sm" value={role} onChange={(e) => setRole(e.target.value)}>
+                <NativeSelectOption value="">{t("همهٔ نقش‌ها")}</NativeSelectOption>
+                {props.roles.map((r) => <NativeSelectOption key={r.id} value={r.id}>{r.name}</NativeSelectOption>)}
+              </NativeSelect>
             )}
             <label className="flex items-center gap-1.5 text-sm">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={nowOnly}
-                onChange={(e) => setNowOnly(e.target.checked)}
-                className="size-3.5 accent-primary"
+                onCheckedChange={(c) => setNowOnly(c === true)}
               />
               {tr("فقط در دسترسِ الان")}
             </label>
@@ -327,9 +329,9 @@ function ViewLink({
   return (
     <Link
       href={href}
-      className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm ${
-        active ? 'border-primary bg-primary/10 font-medium' : 'text-muted-foreground hover:bg-muted'
-      }`}
+      aria-current={active ? 'page' : undefined}
+      // ⚠️ پیوند می‌ماند، نه ToggleGroup: نما در آدرس است تا قابلِ اشتراک باشد.
+      className={buttonVariants({ variant: active ? 'secondary' : 'ghost', size: 'sm' })}
     >
       {icon === 'matrix' ? <Table2 className="size-4" /> : <LayoutGrid className="size-4" />}
       {label}

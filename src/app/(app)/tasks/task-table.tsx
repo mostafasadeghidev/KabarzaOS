@@ -13,6 +13,7 @@ import {
 import { useT } from '@/i18n/client';
 import { ClaimTaskButton } from './inbox-claim';
 import { TaskDialog } from '../projects/[id]/task-dialog';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 /**
  * فهرستِ تسک‌های صندوق — **جدول**، نه ردیفِ درهم.
@@ -83,16 +84,16 @@ export function TaskTable({
           </div>
           {/* انتخابِ پروژه — وقتی بیش از یک پروژه در فهرست باشد معنا دارد. */}
           {projects.length > 1 && (
-            <select
+            <NativeSelect
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              
             >
-              <option value="">{t('همهٔ پروژه‌ها')}</option>
+              <NativeSelectOption value="">{t('همهٔ پروژه‌ها')}</NativeSelectOption>
               {projects.map((p) => (
-                <option key={p.id} value={p.id}>{p.title}</option>
+                <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>
               ))}
-            </select>
+            </NativeSelect>
           )}
           <span className="num text-xs text-muted-foreground">
             {tr('{n} تسک', { n: visible.length })}

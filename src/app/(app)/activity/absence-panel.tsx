@@ -16,6 +16,7 @@ import {
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 export interface MyAbsence {
   id: number;
@@ -70,18 +71,18 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
           {canPickPerson ? (
             <div className="grid gap-1.5">
               <Label htmlFor="a-user">{tr('برای')}</Label>
-              <select
+              <NativeSelect
                 id="a-user"
                 name="userId"
                 defaultValue={data.meId}
-                className="h-9 rounded-md border bg-background px-2 text-sm"
+                
               >
                 {data.targets.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <NativeSelectOption key={p.id} value={p.id}>
                     {p.id === data.meId ? tr('خودم') : p.name}
-                  </option>
+                  </NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
           ) : (
             <input type="hidden" name="userId" value={data.meId} />

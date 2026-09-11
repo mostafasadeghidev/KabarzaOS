@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, TriangleAlert } from 'lucide-react';
 import { currentActor } from '@/server/auth';
 import { getMemberDetail } from '@/server/reports/service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Thumb } from '@/components/thumb';
 import { MemberProjectsTable } from '../../detail-tables';
 import { primeTranslations, t } from '@/i18n/server';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /**
  * ریزِ کارِ یک عضو در گزارش‌ها — پورتِ `member_detail` ِ افزونه: کارت‌های یورو،
@@ -93,9 +94,12 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
       </header>
 
       {data.rateMissing > 0 && (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-          {t('{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.', { n: data.rateMissing })}
-        </p>
+        <Alert variant="warning">
+          <TriangleAlert />
+          <AlertDescription>
+            {t('{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.', { n: data.rateMissing })}
+          </AlertDescription>
+        </Alert>
       )}
 
       <div className="grid gap-3 @xl/main:grid-cols-3">

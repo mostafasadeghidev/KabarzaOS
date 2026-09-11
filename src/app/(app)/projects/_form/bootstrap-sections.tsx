@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Combobox, MultiSelect, type Option as ComboOption } from '@/components/ui/combobox';
 import type { Option } from './project-dialog';
 import { useT } from '@/i18n/client';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export interface BootstrapOptions {
   /** اعضای قابلِ افزودن — نامِ فرد به‌علاوهٔ ایمیل برای تفکیکِ هم‌نام‌ها. */
@@ -235,14 +237,14 @@ export function BootstrapSections({
               */}
               <input type="hidden" name="memberUser" value={row.userId ?? ''} />
 
-              <select
+              <NativeSelect
                 name="memberRole"
                 value={row.roleTagId}
                 onChange={(e) => setMembers((rows) => rows.map((r, j) =>
                   (j === i ? { ...r, roleTagId: e.target.value } : r)))}
-                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                
               >
-                <option value="">{tr("— نقش —")}</option>
+                <NativeSelectOption value="">{tr("— نقش —")}</NativeSelectOption>
                 {/*
                   ⚠️ فقط نقش‌هایی که روی **خودِ این فرد** امضا شده‌اند.
                   پیش‌تر همهٔ نقش‌های سامانه می‌آمد و می‌شد کسی را با نقشی
@@ -253,9 +255,9 @@ export function BootstrapSections({
                   فهرستِ کامل یعنی دعوت به انتخابی که بعداً رد می‌شود.
                 */}
                 {rolesFor(row.userId).map((t) => (
-                  <option key={t.id} value={t.id}>{t.label}</option>
+                  <NativeSelectOption key={t.id} value={t.id}>{t.label}</NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
 
               {/*
                 ⚠️ «مبلغِ توافقی» و «نرخِ هر واحد» جای هم را می‌گیرند، نه اینکه
@@ -291,18 +293,18 @@ export function BootstrapSections({
                 </>
               )}
 
-              <select
+              <NativeSelect
                 name="memberCurrency"
                 value={row.currencyId}
                 onChange={(e) => setMembers((rows) => rows.map((r, j) =>
                   (j === i ? { ...r, currencyId: e.target.value } : r)))}
-                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                
               >
-                <option value="">{tr("— ارز —")}</option>
+                <NativeSelectOption value="">{tr("— ارز —")}</NativeSelectOption>
                 {options.currencies.map((c) => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
+                  <NativeSelectOption key={c.id} value={c.id}>{c.label}</NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
 
             <div className="flex items-start">
@@ -388,18 +390,18 @@ export function BootstrapSections({
                 onChange={(e) => setTasks((rows) => rows.map((r, j) =>
                   (j === i ? { ...r, due: e.target.value } : r)))}
               />
-              <select
+              <NativeSelect
                 name="taskPriority"
                 value={row.priorityTagId}
                 onChange={(e) => setTasks((rows) => rows.map((r, j) =>
                   (j === i ? { ...r, priorityTagId: e.target.value } : r)))}
-                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                
               >
-                <option value="">{tr("— اولویت —")}</option>
+                <NativeSelectOption value="">{tr("— اولویت —")}</NativeSelectOption>
                 {options.priorities.map((p) => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
+                  <NativeSelectOption key={p.id} value={p.id}>{p.label}</NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
 
             {/*
@@ -415,15 +417,13 @@ export function BootstrapSections({
             />
 
             <label className="flex items-center gap-1.5 text-xs">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={row.toClient}
-                onChange={(e) => setTasks((rows) => rows.map((r, j) =>
+                onCheckedChange={(c) => setTasks((rows) => rows.map((r, j) =>
                   // تیکِ کارفرما نقش‌های تیمی را پاک می‌کند.
                   (j === i
-                    ? { ...r, toClient: e.target.checked, roleTagIds: e.target.checked ? [] : r.roleTagIds }
+                    ? { ...r, toClient: (c === true), roleTagIds: (c === true) ? [] : r.roleTagIds }
                     : r)))}
-                className="size-3.5 accent-primary"
               />
               {tr("سپردن به کارفرما")}
             </label>
@@ -479,12 +479,10 @@ export function BootstrapSections({
             </Button>
           </div>
           <label className="flex items-center gap-1.5 text-xs">
-            <input
-              type="checkbox"
+            <Checkbox
               name="qaClient"
               checked={qaClient}
-              onChange={(e) => setQaClient(e.target.checked)}
-              className="size-3.5 accent-primary"
+              onCheckedChange={(c) => setQaClient(c === true)}
             />
             {tr("آیتم‌های کارفرما هم اضافه شوند")}
           </label>

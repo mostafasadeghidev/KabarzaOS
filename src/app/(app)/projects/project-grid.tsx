@@ -14,6 +14,7 @@ import type { CardOptions } from './card-quick-add';
 import { cn } from '@/lib/utils';
 import { CardPager, useCardPage } from '@/components/ui/card-pager';
 import { useT } from '@/i18n/client';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 /**
  * شبکهٔ کارتِ پروژه‌ها با تب و جستجو.
@@ -70,22 +71,19 @@ export function ProjectGrid({
 
   return (
     <>
-      <nav className="flex flex-wrap gap-1 border-b pb-2">
-        {tabs.filter((t) => !t.hidden || t.key === tab).map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => selectTab(t.key)}
-            className={cn(
-              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
-              t.key === tab ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/60',
-            )}
-          >
-            {tr(t.label)}
-            <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{t.count}</Badge>
-          </button>
-        ))}
-      </nav>
+      {/* shadcn Tabs — روی صفحهٔ باریک پیمایشِ افقی، به‌جای شکستنِ خط. */}
+      <div className="overflow-x-auto overflow-y-hidden">
+        <Tabs value={tab} onValueChange={(v) => selectTab(v as typeof tab)}>
+          <TabsList className="w-max">
+            {tabs.filter((t) => !t.hidden || t.key === tab).map((t) => (
+              <TabsTrigger key={t.key} value={t.key} className="flex-none px-3">
+                {tr(t.label)}
+                <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{t.count}</Badge>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
 
       <div className="relative max-w-sm">
         <Search className="pointer-events-none absolute top-1/2 start-3 size-4 -translate-y-1/2 text-muted-foreground" />

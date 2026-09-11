@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export interface AvailabilityData {
   /** برنامهٔ خودِ کاربر. */
@@ -38,14 +39,12 @@ function DayEditor({ weekday, initial }: { weekday: number; initial: Slot[] | un
   return (
     <div className="grid gap-2 rounded-md border p-3">
       <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
+        <Checkbox
           id={`day-${weekday}`}
           name="onDays"
-          value={weekday}
+          value={String(weekday)}
           checked={on}
-          onChange={(e) => setOn(e.target.checked)}
-          className="size-4 accent-primary"
+          onCheckedChange={(c) => setOn(c === true)}
         />
         <Label htmlFor={`day-${weekday}`} className="font-medium">{tr(WEEKDAYS[weekday] ?? '')}</Label>
 

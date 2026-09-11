@@ -14,6 +14,7 @@ import { useT } from '@/i18n/client';
 import { TaskFilter, type TaskFilterOptions, type TaskPaging } from './task-filter';
 import { Thumb } from '@/components/thumb';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export interface TeamData {
   projects: Array<{
@@ -106,22 +107,18 @@ export function TeamView({ data }: { data: TeamData }) {
 
   return (
     <div className="grid gap-4">
-      <nav className="flex flex-wrap gap-1 border-b">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm transition-colors ${
-              tab === t.key
-                ? 'border-primary font-medium text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tr(t.label)}
-          </button>
-        ))}
-      </nav>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
+        <div className="overflow-x-auto pb-1.5">
+          <TabsList variant="line" className="w-max">
+            {TABS.map((t) => (
+              <TabsTrigger key={t.key} value={t.key} className="flex-none">
+                {tr(t.label)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+      </Tabs>
 
       {tab === 'members' && (
         <div className="grid gap-2">

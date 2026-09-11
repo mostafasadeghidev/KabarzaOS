@@ -14,6 +14,7 @@ import {
 } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n/client';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 /**
  * منویِ کاربر در فوترِ سایدبار.
@@ -122,7 +123,7 @@ export function UserMenu({
             <label htmlFor="um-locale" className="text-sm text-muted-foreground">
               {t("زبان")}
             </label>
-            <select
+            <NativeSelect
               id="um-locale"
               value={locale}
               onChange={async (e) => {
@@ -143,14 +144,14 @@ export function UserMenu({
                  */
                 window.location.reload();
               }}
-              className="h-7 rounded-md border bg-background px-2 text-xs"
+              size="sm" className="h-7 text-xs"
             >
               {LOCALES.map((code) => (
-                <option key={code} value={code}>
+                <NativeSelectOption key={code} value={code}>
                   {LOCALE_NAMES[code]}
-                </option>
+                </NativeSelectOption>
               ))}
-            </select>
+            </NativeSelect>
           </div>
         </div>
 

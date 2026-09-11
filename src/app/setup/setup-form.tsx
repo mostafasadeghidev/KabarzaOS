@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useT } from '@/i18n/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CircleAlert } from 'lucide-react';
 
 /**
  * ویزاردِ نصب — تنها صفحه‌ای که پیش از وجودِ هر کاربری دیده می‌شود.
@@ -81,9 +83,12 @@ export function SetupForm() {
             </div>
 
             {state.error && (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {t(state.error)}
-              </p>
+              <Alert variant="destructive">
+                <CircleAlert />
+                <AlertDescription>
+                  {t(state.error)}
+                </AlertDescription>
+              </Alert>
             )}
 
             <Button type="submit" disabled={pending} className="w-full">

@@ -21,6 +21,8 @@ import { LOCALES, LOCALE_NAMES } from '@/i18n/config';
 import { agoParts, type SchedulerHealth } from '@/domain/scheduler/health';
 import type { TelegramSettingsView } from '@/server/settings/telegram-service';
 import { Activity } from 'lucide-react';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Switch } from '@/components/ui/switch';
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -40,16 +42,16 @@ function Seconds({
 }) {
   const tr = useT();
   return (
-    <select
+    <NativeSelect
       id={id}
       name={name}
       defaultValue={value}
-      className="num h-9 rounded-md border bg-background px-2 text-sm"
+      className="num"
     >
       {choices.map((c) => (
-        <option key={c} value={c}>{tr('{n} ثانیه', { n: c })}</option>
+        <NativeSelectOption key={c} value={c}>{tr('{n} ثانیه', { n: c })}</NativeSelectOption>
       ))}
-    </select>
+    </NativeSelect>
   );
 }
 
@@ -138,49 +140,49 @@ export function SystemSection({ config, health, isOwner, telegram }: {
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="s-locale">{t("زبانِ پیش‌فرضِ پنل")}</Label>
-          <select
+          <NativeSelect
             id="s-locale"
             name="defaultLocale"
             defaultValue={config.defaultLocale}
-            className="h-9 rounded-md border bg-background px-2 text-sm"
+            
           >
             {LOCALES.map((code) => (
-              <option key={code} value={code}>{LOCALE_NAMES[code]}</option>
+              <NativeSelectOption key={code} value={code}>{LOCALE_NAMES[code]}</NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
           <p className="text-xs text-muted-foreground">
             {tr("زبانِ کسانی که خودشان زبانی انتخاب نکرده‌اند. انتخابِ هر کاربر همیشه بر این مقدم است.")}
           </p>
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="s-week">{t("روزِ شروعِ هفته")}</Label>
-          <select
+          <NativeSelect
             id="s-week"
             name="weekStart"
             defaultValue={config.weekStart}
-            className="h-9 rounded-md border bg-background px-2 text-sm"
+            
           >
             {WEEKDAYS.map((label, i) => (
-              <option key={label} value={i}>{tr(label)}</option>
+              <NativeSelectOption key={label} value={i}>{tr(label)}</NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
           <p className="text-xs text-muted-foreground">
             {tr("جدولِ در دسترس‌بودن و نمای هفتگی از همین روز شروع می‌شوند.")}
           </p>
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="s-tz">{t("منطقهٔ زمانیِ سامانه")}</Label>
-          <select
+          <NativeSelect
             id="s-tz"
             name="timezone"
             defaultValue={config.timezone}
-            className="h-9 rounded-md border bg-background px-2 text-sm"
+            
           >
-            <option value="">{tr("پیش‌فرضِ سرور")}</option>
+            <NativeSelectOption value="">{tr("پیش‌فرضِ سرور")}</NativeSelectOption>
             {allTimezones().map((zone) => (
-              <option key={zone} value={zone}>{zone}</option>
+              <NativeSelectOption key={zone} value={zone}>{zone}</NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
           <p className="text-xs text-muted-foreground">
             {tr("ساعتِ ارسالِ گزارشِ روزانه و یادآوریِ جلسات با همین منطقه سنجیده می‌شود.")}
           </p>
@@ -190,9 +192,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
       <fieldset className="grid gap-3 rounded-md border p-3">
         <legend className="px-1 text-sm font-medium">{t("حضورِ زنده")}</legend>
         <label className="flex items-center gap-1.5 text-sm">
-          <input
-            type="checkbox" name="presenceEnabled" defaultChecked={config.presenceEnabled}
-            className="size-3.5 accent-primary"
+          <Switch name="presenceEnabled" defaultChecked={config.presenceEnabled}
           />
           {tr("نمایشِ «چه کسی آنلاین است»")}
         </label>
@@ -217,9 +217,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-1.5">
             <label className="flex items-center gap-1.5 text-sm">
-              <input
-                type="checkbox" name="pulseEnabled" defaultChecked={config.pulseEnabled}
-                className="size-3.5 accent-primary"
+              <Switch name="pulseEnabled" defaultChecked={config.pulseEnabled}
               />
               {tr("نبضِ نشان‌ها")}
             </label>
@@ -227,9 +225,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
           </div>
           <div className="grid gap-1.5">
             <label className="flex items-center gap-1.5 text-sm">
-              <input
-                type="checkbox" name="chatPollEnabled" defaultChecked={config.chatPollEnabled}
-                className="size-3.5 accent-primary"
+              <Switch name="chatPollEnabled" defaultChecked={config.chatPollEnabled}
               />
               {tr("گفت‌وگویِ زنده")}
             </label>

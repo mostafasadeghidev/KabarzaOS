@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useT } from '@/i18n/client';
 import { monthRange, weekRange, yearRange } from '@/domain/reports/filters';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 /**
  * نوارِ فیلترِ ریزِ ساعت — پورتِ `hours-filters.php`.
@@ -82,10 +83,10 @@ export function HoursFilter({
 
       <div className="grid gap-1.5">
         <Label htmlFor="hf-project" className="text-xs">{tr('پروژه')}</Label>
-        <select id="hf-project" name="project" defaultValue={value('project')} className={cell}>
-          <option value="">{tr('همهٔ پروژه‌ها')}</option>
-          {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-        </select>
+        <NativeSelect id="hf-project" name="project" defaultValue={value('project')} >
+          <NativeSelectOption value="">{tr('همهٔ پروژه‌ها')}</NativeSelectOption>
+          {projects.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>)}
+        </NativeSelect>
       </div>
 
       <div className="grid gap-1.5">

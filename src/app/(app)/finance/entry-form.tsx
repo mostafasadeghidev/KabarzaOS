@@ -17,9 +17,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useT } from '@/i18n/client';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CircleAlert } from 'lucide-react';
 
-const selectClass =
-  'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -224,15 +226,15 @@ export function EntryForm({
 
         <div className="grid gap-1.5">
           <Label htmlFor="l-dir">{tr("جهت")}</Label>
-          <select
+          <NativeSelect
             id="l-dir"
-            className={selectClass}
+            containerClassName="w-full"
             value={direction}
             onChange={(e) => changeDirection(e.target.value as Direction)}
           >
-            <option value="out">{tr("برداشت / هزینه")}</option>
-            <option value="in">{tr("واریز / درآمد")}</option>
-          </select>
+            <NativeSelectOption value="out">{tr("برداشت / هزینه")}</NativeSelectOption>
+            <NativeSelectOption value="in">{tr("واریز / درآمد")}</NativeSelectOption>
+          </NativeSelect>
         </div>
 
         <div className="grid gap-1.5">
@@ -261,13 +263,13 @@ export function EntryForm({
 
         <div className="grid gap-1.5">
           <Label htmlFor="l-cur">{tr("ارز")}</Label>
-          <select
-            id="l-cur" name="currencyId" className={selectClass}
+          <NativeSelect
+            id="l-cur" name="currencyId" containerClassName="w-full"
             value={currencyId}
             onChange={(e) => setCurrencyId(e.target.value)}
           >
-            {options.currencies.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-          </select>
+            {options.currencies.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>)}
+          </NativeSelect>
         </div>
 
         <div className="grid gap-1.5">
@@ -332,9 +334,7 @@ export function EntryForm({
       {billableVisible && (
         <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
           {/* ⚠️ پیش‌فرض تیک‌خورده — هزینهٔ پروژه معمولاً به کارفرما می‌خورد. */}
-          <input
-            type="checkbox" name="billable" value="1" defaultChecked={editing ? editing.billable : true}
-            className="mt-0.5 size-4 accent-primary"
+          <Checkbox name="billable" value="1" defaultChecked={editing ? editing.billable : true} className="mt-0.5"
           />
           <span>
               {tr("قابل بازپرداخت از کارفرما")}
@@ -355,14 +355,14 @@ export function EntryForm({
               placeholder={tr("اختیاری")} value={settled}
               onChange={(e) => onSettledChange(e.target.value)}
             />
-            <select
-              name="settledCurrencyId" className={`${selectClass} w-28`}
+            <NativeSelect
+              name="settledCurrencyId" containerClassName="w-28"
               value={String(settledOverride ?? settledCurrency ?? '')}
               // ⚠️ پیش از این کنترل‌شده بود ولی state نداشت: تغییرِ دستی همان لحظه برمی‌گشت.
               onChange={(e) => setSettledOverride(Number(e.target.value) || null)}
             >
-              {options.currencies.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-            </select>
+              {options.currencies.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>)}
+            </NativeSelect>
 
             <span className="flex items-center gap-1 text-sm" dir="ltr">
               {/* پورتِ «۱ EUR = … IRR»: کدهای دو سرِ نرخ. */}
@@ -432,9 +432,7 @@ export function EntryForm({
           <ul className="grid gap-1">
             {editing.receipts.map((r) => (
               <li key={r.id} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox" id={`rm-${r.id}`} name="removeReceipt" value={r.id}
-                  className="size-3.5 accent-destructive"
+                <Checkbox id={`rm-${r.id}`} name="removeReceipt" value={String(r.id)} className="data-[state=checked]:border-destructive data-[state=checked]:bg-destructive"
                 />
                 <Label htmlFor={`rm-${r.id}`} className="text-xs font-normal text-muted-foreground">{tr("حذف")}</Label>
                 <a href={r.href} target="_blank" rel="noopener noreferrer" className="flex-1 truncate hover:underline">
@@ -451,7 +449,7 @@ export function EntryForm({
       {recurringVisible && (
         <div className="grid gap-2 rounded-md border p-3 text-sm">
           <label className="flex items-start gap-2">
-            <input type="checkbox" name="makeRecurring" value="1" className="mt-0.5 size-4 accent-primary" />
+            <Checkbox name="makeRecurring" value="1" className="mt-0.5" />
             <span>
                 {tr("این هزینه را به‌عنوان هزینهٔ دوره‌ای هم ثبت کن")}
               <span className="block text-xs text-muted-foreground">
@@ -461,24 +459,27 @@ export function EntryForm({
           </label>
           {/* پورتِ re_kind / re_count / re_unit: نوبتِ بعدی یک دوره بعد از این ردیف. */}
           <div className="flex flex-wrap items-center gap-2 ps-6 text-xs">
-            <select name="reKind" className="h-8 rounded-md border bg-background px-2" defaultValue="recurring" aria-label={tr('نوع')}>
-              <option value="recurring">{tr('دوره‌ای')}</option>
-              <option value="once">{tr('یک‌بار')}</option>
-            </select>
+            <NativeSelect name="reKind" size="sm" defaultValue="recurring" aria-label={tr('نوع')}>
+              <NativeSelectOption value="recurring">{tr('دوره‌ای')}</NativeSelectOption>
+              <NativeSelectOption value="once">{tr('یک‌بار')}</NativeSelectOption>
+            </NativeSelect>
             <span>{tr('هر')}</span>
             <Input name="reCount" type="number" min={1} defaultValue={1} className="h-8 w-16 num" aria-label={tr('هر چند دوره')} />
-            <select name="reUnit" className="h-8 rounded-md border bg-background px-2" defaultValue="month" aria-label={tr('دوره')}>
-              <option value="day">{tr('روز')}</option>
-              <option value="week">{tr('هفته')}</option>
-              <option value="month">{tr('ماه')}</option>
-              <option value="year">{tr('سال')}</option>
-            </select>
+            <NativeSelect name="reUnit" size="sm" defaultValue="month" aria-label={tr('دوره')}>
+              <NativeSelectOption value="day">{tr('روز')}</NativeSelectOption>
+              <NativeSelectOption value="week">{tr('هفته')}</NativeSelectOption>
+              <NativeSelectOption value="month">{tr('ماه')}</NativeSelectOption>
+              <NativeSelectOption value="year">{tr('سال')}</NativeSelectOption>
+            </NativeSelect>
           </div>
         </div>
       )}
 
       {error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{tr(error)}</p>
+        <Alert variant="destructive">
+          <CircleAlert />
+          <AlertDescription>{tr(error)}</AlertDescription>
+        </Alert>
       )}
 
       <DialogFooter>

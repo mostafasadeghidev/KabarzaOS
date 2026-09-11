@@ -7,6 +7,8 @@ import type { LoginState } from './schema';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useT } from '@/i18n/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CircleAlert } from 'lucide-react';
 
 export function LoginForm({ notice }: { notice?: string } = {}) {
   const t = useT();
@@ -46,9 +48,12 @@ export function LoginForm({ notice }: { notice?: string } = {}) {
             </div>
 
             {state.error && (
-              <p role="alert" className="rounded-[--radius] bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {t(state.error)}
-              </p>
+              <Alert variant="destructive">
+                <CircleAlert />
+                <AlertDescription>
+                  {t(state.error)}
+                </AlertDescription>
+              </Alert>
             )}
 
             <Button type="submit" className="w-full" disabled={pending}>

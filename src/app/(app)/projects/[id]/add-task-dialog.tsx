@@ -17,6 +17,7 @@ import { Combobox, MultiSelect as SearchableMultiSelect } from '@/components/ui/
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { defaultTaskStatusId } from '@/domain/projects/defaults';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 /** گزینه‌های فرمِ تسک — از سرور می‌آیند (همان `getTaskFormOptions`). */
 export interface TaskFormOptions {
@@ -34,8 +35,6 @@ export interface TaskFormOptions {
   tasks?: Array<{ id: number; title: string }>;
 }
 
-const cellSelect =
-  'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -121,15 +120,15 @@ export function AddTaskDialog({
                 همین را می‌گذارد (`defaultTaskStatusId`) و نشان‌دادنِ
                 «بدون وضعیت» در فرم یعنی کاربر چیزی می‌بیند که ذخیره نمی‌شود.
               */}
-              <select
-                id="nt-status" name="statusTagId" className={cellSelect}
+              <NativeSelect
+                id="nt-status" name="statusTagId" containerClassName="w-full"
                 defaultValue={keep('statusTagId') || String(defaultTaskStatusId(options.statuses.map((s) => ({ id: s.id, group: s.group ?? null }))) ?? '')}
               >
-                <option value="">{t("— بدون وضعیت —")}</option>
+                <NativeSelectOption value="">{t("— بدون وضعیت —")}</NativeSelectOption>
                 {options.statuses.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
 
             {/*
@@ -184,12 +183,12 @@ export function AddTaskDialog({
 
             <div className="grid gap-1.5">
               <Label htmlFor="nt-priority">{t("اولویت…")}</Label>
-              <select id="nt-priority" name="priorityTagId" className={cellSelect} defaultValue={keep('priorityTagId')}>
-                <option value="">—</option>
+              <NativeSelect id="nt-priority" name="priorityTagId" containerClassName="w-full" defaultValue={keep('priorityTagId')}>
+                <NativeSelectOption value="">—</NativeSelectOption>
                 {options.priorities.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
 
             <div className="grid gap-1.5">

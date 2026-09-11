@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
 import { useT } from '@/i18n/client';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 export interface LedgerPaging {
   page: number;
@@ -98,12 +99,12 @@ export function LedgerFilter({
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="lf-tag" className="text-xs">{tr('دسته')}</Label>
-          <select id="lf-tag" name="tag" defaultValue={value('tag')} className={cell}>
-            <option value="">{tr('همه')}</option>
+          <NativeSelect id="lf-tag" name="tag" defaultValue={value('tag')} >
+            <NativeSelectOption value="">{tr('همه')}</NativeSelectOption>
             {options.categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <NativeSelectOption key={c.id} value={c.id}>{c.name}</NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="lf-project" className="text-xs">{tr('پروژه')}</Label>
@@ -180,15 +181,15 @@ export function LedgerFilter({
               {tr('بعدی')}
             </Button>
           </div>
-          <select
+          <NativeSelect
             value={String(paging.perPage)}
             onChange={(e) => go({ per: e.target.value, page: '1' })}
-            className="h-7 rounded-md border bg-background px-1 text-xs"
+            size="sm" className="h-7 text-xs"
           >
             {[25, 50, 100, 200].map((n) => (
-              <option key={n} value={n}>{n}</option>
+              <NativeSelectOption key={n} value={n}>{n}</NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
         </div>
       )}
     </div>

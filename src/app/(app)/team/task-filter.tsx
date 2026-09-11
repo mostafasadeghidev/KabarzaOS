@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/i18n/client';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 export interface TaskFilterOptions {
   statuses: Array<{ id: number; name: string }>;
@@ -53,46 +54,46 @@ export function TaskFilter({
   return (
     <div className="grid gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={value('tstatus')} className={cell}
+        <NativeSelect
+          value={value('tstatus')} 
           onChange={(e) => go({ tstatus: e.target.value })}
           aria-label={tr('وضعیت')}
         >
-          <option value="">{tr('همهٔ وضعیت‌ها')}</option>
-          {options.statuses.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+          <NativeSelectOption value="">{tr('همهٔ وضعیت‌ها')}</NativeSelectOption>
+          {options.statuses.map((s) => <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>)}
+        </NativeSelect>
 
-        <select
-          value={value('tassignee')} className={cell}
+        <NativeSelect
+          value={value('tassignee')} 
           onChange={(e) => go({ tassignee: e.target.value })}
           aria-label={tr('مسئول')}
         >
-          <option value="">{tr('همهٔ مسئول‌ها')}</option>
+          <NativeSelectOption value="">{tr('همهٔ مسئول‌ها')}</NativeSelectOption>
           {/* ⚠️ صفر معنایش «بدونِ مسئول» است، نه «همه». */}
-          <option value="0">{tr('بدونِ مسئول')}</option>
-          {options.assignees.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-        </select>
+          <NativeSelectOption value="0">{tr('بدونِ مسئول')}</NativeSelectOption>
+          {options.assignees.map((a) => <NativeSelectOption key={a.id} value={a.id}>{a.name}</NativeSelectOption>)}
+        </NativeSelect>
 
-        <select
-          value={value('tprio')} className={cell}
+        <NativeSelect
+          value={value('tprio')} 
           onChange={(e) => go({ tprio: e.target.value })}
           aria-label={tr('اولویت')}
         >
-          <option value="">{tr('همهٔ اولویت‌ها')}</option>
-          {options.priorities.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
+          <NativeSelectOption value="">{tr('همهٔ اولویت‌ها')}</NativeSelectOption>
+          {options.priorities.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>)}
+        </NativeSelect>
 
-        <select
-          value={value('tdue')} className={cell}
+        <NativeSelect
+          value={value('tdue')} 
           onChange={(e) => go({ tdue: e.target.value })}
           aria-label={tr('ددلاین')}
         >
-          <option value="">{tr('هر ددلاینی')}</option>
-          <option value="overdue">{tr('گذشته')}</option>
-          <option value="today">{tr('امروز')}</option>
-          <option value="week">{tr('هفتهٔ آینده')}</option>
-          <option value="none">{tr('بدونِ ددلاین')}</option>
-        </select>
+          <NativeSelectOption value="">{tr('هر ددلاینی')}</NativeSelectOption>
+          <NativeSelectOption value="overdue">{tr('گذشته')}</NativeSelectOption>
+          <NativeSelectOption value="today">{tr('امروز')}</NativeSelectOption>
+          <NativeSelectOption value="week">{tr('هفتهٔ آینده')}</NativeSelectOption>
+          <NativeSelectOption value="none">{tr('بدونِ ددلاین')}</NativeSelectOption>
+        </NativeSelect>
 
         {hasFilter && (
           <Button

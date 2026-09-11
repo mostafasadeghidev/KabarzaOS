@@ -31,6 +31,8 @@ import { deadlineLabel, taskProgress } from '@/domain/projects/deadline';
 import { StatusPicker } from '../status-picker';
 import { chipStyle } from '@/domain/ui/contrast';
 import { countOpenThreads } from '@/domain/projects/threads';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CircleAlert } from 'lucide-react';
 
 export default async function ProjectDetailPage({
   params,
@@ -272,9 +274,12 @@ export default async function ProjectDetailPage({
 
       {/* پورتِ نوارِ فقط‌خواندنیِ پروژهٔ منجمد (بایگانی / لغو / توقف). */}
       {detail.isFrozen && (
-        <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {t("این پروژه بسته یا بایگانی شده است و فقط‌خواندنی است: افزودن یا تغییرِ تسک، ساعت کاری و کامنت غیرفعال است.")}
-        </p>
+        <Alert variant="destructive" className="mt-3">
+          <CircleAlert />
+          <AlertDescription>
+            {t("این پروژه بسته یا بایگانی شده است و فقط‌خواندنی است: افزودن یا تغییرِ تسک، ساعت کاری و کامنت غیرفعال است.")}
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* پورتِ `kteam-detail-meta`: تاریخِ ثبت، ددلاین با شمارش، پیشرفت، ساعت، والد/زیرپروژه‌ها. */}

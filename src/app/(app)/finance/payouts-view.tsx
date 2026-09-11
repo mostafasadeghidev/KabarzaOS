@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Banknote, Check, Plus, Trash2, X } from 'lucide-react';
+import { Banknote, Check, Plus, Trash2, X, CircleAlert } from 'lucide-react';
 import {
   decideRequestAction, deleteRecurringAction, payRecurringAction,
   payRequestAction, payUnitAction, saveRecurringAction, type PayoutState,
@@ -28,6 +28,10 @@ import { useT } from '@/i18n/client';
 import { TablePager, TableSearch, useTableView } from '@/components/ui/table-search';
 import { BankDirectory, type BankRow } from './bank-directory';
 import { useConfirm } from '@/components/ui/confirm';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export interface RequestRow {
   id: number;
@@ -310,23 +314,18 @@ export function PayoutsView({
             <TableSearch view={requestsView} placeholder={tr('جستجوی عضو یا پروژه…')} />
           )}
         </div>
-        <nav className="flex flex-wrap gap-1 border-b pb-2">
-          {tabs.map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setStatus(key)}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
-                status === key ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/60'
-              }`}
-            >
-              {t(REQUEST_TAB_LABELS[key])}
-              {key === 'pending' && pendingCount > 0 && (
-                <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{pendingCount}</Badge>
-              )}
-            </button>
-          ))}
-        </nav>
+        <Tabs value={status} onValueChange={(v) => setStatus(v as typeof status)}>
+          <TabsList>
+            {tabs.map((key) => (
+              <TabsTrigger key={key} value={key} className="flex-none px-3">
+                {t(REQUEST_TAB_LABELS[key])}
+                {key === 'pending' && pendingCount > 0 && (
+                  <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{pendingCount}</Badge>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         {tabRows.length === 0 ? (
           <EmptyState title={t("درخواستی در این وضعیت نیست")} />
         ) : (
@@ -544,53 +543,53 @@ export function PayoutsView({
                 className="h-9"
               />
             </div>
-            <select
+            <NativeSelect
               value={expenseVendor}
               onChange={(e) => setExpenseVendor(e.target.value)}
-              className="h-9 rounded-md border bg-background px-2 text-sm"
+              
               aria-label={tr('طرف‌حساب')}
             >
-              <option value="">{tr('همهٔ طرف‌حساب‌ها')}</option>
-              {vendors.map((v) => <option key={v.id} value={v.name}>{v.name}</option>)}
-            </select>
-            <select
+              <NativeSelectOption value="">{tr('همهٔ طرف‌حساب‌ها')}</NativeSelectOption>
+              {vendors.map((v) => <NativeSelectOption key={v.id} value={v.name}>{v.name}</NativeSelectOption>)}
+            </NativeSelect>
+            <NativeSelect
               value={expenseKind}
               onChange={(e) => setExpenseKind(e.target.value)}
-              className="h-9 rounded-md border bg-background px-2 text-sm"
+              
               aria-label={tr('نوع')}
             >
-              <option value="">{tr('هر نوع')}</option>
-              <option value="recurring">{tr('دوره‌ای')}</option>
-              <option value="once">{tr('یک‌بار')}</option>
-            </select>
-            <select
-              className={`${field} sm:w-40`}
+              <NativeSelectOption value="">{tr('هر نوع')}</NativeSelectOption>
+              <NativeSelectOption value="recurring">{tr('دوره‌ای')}</NativeSelectOption>
+              <NativeSelectOption value="once">{tr('یک‌بار')}</NativeSelectOption>
+            </NativeSelect>
+            <NativeSelect
+              containerClassName="w-full sm:w-40"
               value={expenseStatus}
               onChange={(e) => setExpenseStatus(e.target.value as 'active' | 'inactive' | 'all')}
               aria-label={tr('وضعیت')}
             >
-              <option value="active">{tr('فعال')}</option>
-              <option value="inactive">{tr('غیرفعال')}</option>
-              <option value="all">{tr('همه')}</option>
-            </select>
-            <select
-              className={`${field} sm:w-40`}
+              <NativeSelectOption value="active">{tr('فعال')}</NativeSelectOption>
+              <NativeSelectOption value="inactive">{tr('غیرفعال')}</NativeSelectOption>
+              <NativeSelectOption value="all">{tr('همه')}</NativeSelectOption>
+            </NativeSelect>
+            <NativeSelect
+              containerClassName="w-full sm:w-40"
               value={expenseCategory}
               onChange={(e) => setExpenseCategory(e.target.value)}
               aria-label={tr('دسته')}
             >
-              <option value="">{tr('همهٔ دسته‌ها')}</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name ?? ''}</option>)}
-            </select>
-            <select
-              className={`${field} sm:w-44`}
+              <NativeSelectOption value="">{tr('همهٔ دسته‌ها')}</NativeSelectOption>
+              {categories.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.name ?? ''}</NativeSelectOption>)}
+            </NativeSelect>
+            <NativeSelect
+              containerClassName="w-full sm:w-44"
               value={expenseAccount}
               onChange={(e) => setExpenseAccount(e.target.value)}
               aria-label={tr('حسابِ پرداخت')}
             >
-              <option value="">{tr('همهٔ حساب‌ها')}</option>
-              {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
+              <NativeSelectOption value="">{tr('همهٔ حساب‌ها')}</NativeSelectOption>
+              {accounts.map((a) => <NativeSelectOption key={a.id} value={a.id}>{a.name}</NativeSelectOption>)}
+            </NativeSelect>
             <Input type="date" value={dueFrom} onChange={(e) => setDueFrom(e.target.value)} className="h-9 w-36 num" aria-label={tr('سررسید از')} />
             <Input type="date" value={dueTo} onChange={(e) => setDueTo(e.target.value)} className="h-9 w-36 num" aria-label={tr('سررسید تا')} />
             <Button size="sm" variant="ghost" onClick={clearExpenseFilters}>{tr('پاک‌کردنِ فیلترها')}</Button>
@@ -604,15 +603,17 @@ export function PayoutsView({
               {eurMissing > 0 && ` (${tr('{n} مورد بی‌نرخ', { n: eurMissing })})`}
             </span>
             {vendorSummary.map((v) => (
-              <button
+              <Button
                 key={v.key}
                 type="button"
+                variant="outline"
+                size="xs"
                 onClick={() => setExpenseVendor(v.vendor)}
-                className="rounded-full border px-2 py-0.5 hover:bg-muted"
+                className="rounded-full font-normal"
                 title={tr('فیلتر بر اساسِ طرف‌حساب')}
               >
                 {v.vendor}: <span className="num">{format(v.total)} {v.code}</span>
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -764,11 +765,11 @@ export function PayoutsView({
 
               <div className="grid gap-1.5">
                 <Label htmlFor="pay-account">{t("حساب")}</Label>
-                <select id="pay-account" name="accountId" className={field} defaultValue={accounts[0]?.id ?? ''}>
+                <NativeSelect id="pay-account" name="accountId" containerClassName="w-full" defaultValue={accounts[0]?.id ?? ''}>
                   {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name} ({a.currencyCode})</option>
+                    <NativeSelectOption key={a.id} value={a.id}>{a.name} ({a.currencyCode})</NativeSelectOption>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
 
               <div className="grid gap-1.5">
@@ -786,9 +787,12 @@ export function PayoutsView({
               </div>
 
               {payState.error && (
-                <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {tr(payState.error)}
-                </p>
+                <Alert variant="destructive">
+                  <CircleAlert />
+                  <AlertDescription>
+                    {tr(payState.error)}
+                  </AlertDescription>
+                </Alert>
               )}
 
               <DialogFooter>
@@ -817,11 +821,11 @@ export function PayoutsView({
               </p>
               <div className="grid gap-1.5">
                 <Label htmlFor="unit-account">{t("حساب")}</Label>
-                <select id="unit-account" name="accountId" className={field} defaultValue={accounts[0]?.id ?? ''}>
+                <NativeSelect id="unit-account" name="accountId" containerClassName="w-full" defaultValue={accounts[0]?.id ?? ''}>
                   {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>{a.name} ({a.currencyCode})</option>
+                    <NativeSelectOption key={a.id} value={a.id}>{a.name} ({a.currencyCode})</NativeSelectOption>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="unit-date">{t("تاریخ")}</Label>
@@ -832,9 +836,12 @@ export function PayoutsView({
                 <Input id="unit-amount" name="amount" inputMode="decimal" className="num" placeholder={unitTarget.amount} />
               </div>
               {unitState.error && (
-                <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {tr(unitState.error)}
-                </p>
+                <Alert variant="destructive">
+                  <CircleAlert />
+                  <AlertDescription>
+                    {tr(unitState.error)}
+                  </AlertDescription>
+                </Alert>
               )}
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setUnitTarget(null)}>{t("انصراف")}</Button>
@@ -872,24 +879,24 @@ export function PayoutsView({
             <div className="grid gap-3 sm:grid-cols-4">
               <div className="grid gap-1.5">
                 <Label htmlFor="e-cur">{t("ارز")}</Label>
-                <select id="e-cur" name="currencyId" className={field} defaultValue={editing?.currencyId ?? currencies.find((c) => c.isDefault)?.id ?? ''}>
-                  {currencies.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-                </select>
+                <NativeSelect id="e-cur" name="currencyId" containerClassName="w-full" defaultValue={editing?.currencyId ?? currencies.find((c) => c.isDefault)?.id ?? ''}>
+                  {currencies.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>)}
+                </NativeSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-kind">{t("نوع")}</Label>
-                <select id="e-kind" name="kind" className={field} defaultValue={editing?.kind ?? 'recurring'}>
-                  <option value="recurring">{t("دوره‌ای")}</option>
-                  <option value="once">{t("یک‌بار")}</option>
-                </select>
+                <NativeSelect id="e-kind" name="kind" containerClassName="w-full" defaultValue={editing?.kind ?? 'recurring'}>
+                  <NativeSelectOption value="recurring">{t("دوره‌ای")}</NativeSelectOption>
+                  <NativeSelectOption value="once">{t("یک‌بار")}</NativeSelectOption>
+                </NativeSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-unit">{t("دوره")}</Label>
-                <select id="e-unit" name="intervalUnit" className={field} defaultValue={editing?.intervalUnit ?? 'month'}>
+                <NativeSelect id="e-unit" name="intervalUnit" containerClassName="w-full" defaultValue={editing?.intervalUnit ?? 'month'}>
                   {(Object.keys(UNIT_LABELS) as IntervalUnit[]).map((u) => (
-                    <option key={u} value={u}>{t(UNIT_LABELS[u])}</option>
+                    <NativeSelectOption key={u} value={u}>{t(UNIT_LABELS[u])}</NativeSelectOption>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-count">{t("هر چند دوره")}</Label>
@@ -908,22 +915,22 @@ export function PayoutsView({
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-account">{t("حسابِ پرداخت")}</Label>
-                <select
+                <NativeSelect
                   id="e-account"
                   name="accountId"
-                  className={field}
+                  containerClassName="w-full"
                   defaultValue={editing?.accountId ? String(editing.accountId) : ''}
                 >
-                  <option value="">{t("— بدونِ حساب —")}</option>
-                  {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
+                  <NativeSelectOption value="">{t("— بدونِ حساب —")}</NativeSelectOption>
+                  {accounts.map((a) => <NativeSelectOption key={a.id} value={a.id}>{a.name}</NativeSelectOption>)}
+                </NativeSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="e-vendor">{t("طرف‌حساب")}</Label>
-                <select id="e-vendor" name="vendorId" className={field} defaultValue={editing?.vendorId ? String(editing.vendorId) : ''}>
-                  <option value="">{t("بدون طرف‌حساب")}</option>
-                  {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-                </select>
+                <NativeSelect id="e-vendor" name="vendorId" containerClassName="w-full" defaultValue={editing?.vendorId ? String(editing.vendorId) : ''}>
+                  <NativeSelectOption value="">{t("بدون طرف‌حساب")}</NativeSelectOption>
+                  {vendors.map((v) => <NativeSelectOption key={v.id} value={v.id}>{v.name}</NativeSelectOption>)}
+                </NativeSelect>
                 {/* پورتِ `find_or_create`: طرف‌حسابِ تازه همین‌جا ساخته می‌شود. */}
                 <Input name="vendorName" placeholder={tr('یا طرف‌حسابِ تازه…')} className="h-8 text-xs" />
               </div>
@@ -932,10 +939,10 @@ export function PayoutsView({
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="grid gap-1.5">
                 <Label htmlFor="e-cat">{t("دسته")}</Label>
-                <select id="e-cat" name="categoryTagId" className={field} defaultValue={editing?.categoryTagId ? String(editing.categoryTagId) : ''}>
-                  <option value="">{t("— بدونِ دسته —")}</option>
-                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name ?? ''}</option>)}
-                </select>
+                <NativeSelect id="e-cat" name="categoryTagId" containerClassName="w-full" defaultValue={editing?.categoryTagId ? String(editing.categoryTagId) : ''}>
+                  <NativeSelectOption value="">{t("— بدونِ دسته —")}</NativeSelectOption>
+                  {categories.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.name ?? ''}</NativeSelectOption>)}
+                </NativeSelect>
               </div>
               <div className="grid gap-1.5 sm:col-span-2">
                 <Label htmlFor="e-note">{t("یادداشت")}</Label>
@@ -944,12 +951,12 @@ export function PayoutsView({
             </div>
             {/* ⚠️ پیش از این ویرایش، طرف‌حساب و ارز را بی‌صدا پاک می‌کرد و دسته/یادداشت/فعال ذخیره نمی‌شدند. */}
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="isActive" defaultChecked={editing?.isActive ?? true} className="size-4 accent-primary" />
+              <Checkbox name="isActive" defaultChecked={editing?.isActive ?? true} />
               {tr("فعال")}
             </label>
             {!editing && (
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="payNow" className="size-4 accent-primary" />
+                <Checkbox name="payNow" />
                 {tr("نوبتِ اول همین حالا پرداخت شود")}
                 <span className="text-xs text-muted-foreground">{tr("(با حساب، ردیفِ دفتر نوشته می‌شود)")}</span>
               </label>
@@ -960,9 +967,12 @@ export function PayoutsView({
             </p>
 
             {expenseState.error && (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {tr(expenseState.error)}
-              </p>
+              <Alert variant="destructive">
+                <CircleAlert />
+                <AlertDescription>
+                  {tr(expenseState.error)}
+                </AlertDescription>
+              </Alert>
             )}
 
             <DialogFooter>

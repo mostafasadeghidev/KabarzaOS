@@ -17,6 +17,7 @@ import { FilesTab, type FileRow } from './files-tab';
 import { MyMoneyTab, type MyMoneyData } from './my-money-tab';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
 import { useT } from '@/i18n/client';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 /**
  * هشت تبِ صفحهٔ پروژه — همان تب‌های مودالِ ویرایشِ نسخهٔ قبلی و به همان ترتیب:
@@ -166,32 +167,28 @@ export function ProjectTabs({
 
   return (
     <div className="mt-6 grid gap-4">
-      <nav className="flex flex-wrap gap-1 border-b">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => selectTab(t.key)}
-            className={`-mb-px flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition-colors ${
-              tab === t.key
-                ? 'border-primary font-medium text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tr(t.label)}
-            {/*
-              ⚠️ فاصله با `gap` روی خودِ دکمه، نه با حاشیهٔ منطقیِ نشان:
-              حاشیه در راست‌به‌چپ به همان سمتی می‌افتاد که متن است و عدد
-              عملاً به حرفِ آخر می‌چسبید («تسک‌ها۴»). `gap` جهت‌مستقل است.
-            */}
-            {t.badge !== undefined && t.badge > 0 && (
-              <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
-                {t.badge}
-              </span>
-            )}
-          </button>
-        ))}
-      </nav>
+      <Tabs value={tab} onValueChange={(v) => selectTab(v as typeof tab)}>
+        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
+        <div className="overflow-x-auto pb-1.5">
+          <TabsList variant="line" className="w-max">
+            {tabs.map((t) => (
+              <TabsTrigger key={t.key} value={t.key} className="flex-none">
+                {tr(t.label)}
+                {/*
+                  ⚠️ فاصله با `gap` روی خودِ دکمه، نه با حاشیهٔ منطقیِ نشان:
+                  حاشیه در راست‌به‌چپ به همان سمتی می‌افتاد که متن است و عدد
+                  عملاً به حرفِ آخر می‌چسبید («تسک‌ها۴»). `gap` جهت‌مستقل است.
+                */}
+                {t.badge !== undefined && t.badge > 0 && (
+                  <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
+                    {t.badge}
+                  </span>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+      </Tabs>
 
       {tab === 'info' && info}
 

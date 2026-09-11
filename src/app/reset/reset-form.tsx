@@ -6,6 +6,8 @@ import { completeResetAction, type ResetState } from './actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useT } from '@/i18n/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CircleAlert } from 'lucide-react';
 
 /** فرمِ تعیینِ رمزِ تازه از راهِ لینک. */
 export function ResetForm({ token }: { token: string }) {
@@ -38,9 +40,12 @@ export function ResetForm({ token }: { token: string }) {
               />
             </div>
             {state.error && (
-              <p role="alert" className="rounded-[--radius] bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {t(state.error)}
-              </p>
+              <Alert variant="destructive">
+                <CircleAlert />
+                <AlertDescription>
+                  {t(state.error)}
+                </AlertDescription>
+              </Alert>
             )}
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? t('در حالِ ذخیره…') : t('ذخیرهٔ رمز')}

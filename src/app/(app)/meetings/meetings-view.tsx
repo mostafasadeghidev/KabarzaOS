@@ -22,6 +22,8 @@ import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { useConfirm } from '@/components/ui/confirm';
 import { CalendarMenu } from './calendar-menu';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export interface MeetingRow extends MeetingView {
   projectTitle: string | null;
@@ -108,20 +110,15 @@ export function MeetingsView({
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-1">
-          {(['meetings', 'reminders'] as const).map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTab(key)}
-              className={`rounded-md px-3 py-1.5 text-sm ${
-                tab === key ? 'bg-primary/10 font-medium' : 'text-muted-foreground hover:bg-muted'
-              }`}
-            >
-              {key === 'meetings' ? tr('جلسات') : tr('یادآورهای من')}
-            </button>
-          ))}
-        </div>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+          <TabsList>
+            {(['meetings', 'reminders'] as const).map((key) => (
+              <TabsTrigger key={key} value={key} className="flex-none px-3">
+                {key === 'meetings' ? tr('جلسات') : tr('یادآورهای من')}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
         {tab === 'meetings' && canManage && (
           <Button size="sm" onClick={() => { setEditing(null); setFormOpen(true); }}>
@@ -243,12 +240,10 @@ export function MeetingsView({
               <div className="flex flex-wrap gap-3">
                 {LEAD_OPTIONS.map((o) => (
                   <label key={o.minutes} className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       name="leads"
-                      value={o.minutes}
+                      value={String(o.minutes)}
                       defaultChecked={o.minutes === 0}
-                      className="size-4 accent-primary"
                     />
                     {tr(o.label)}
                   </label>

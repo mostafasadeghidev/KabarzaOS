@@ -11,6 +11,7 @@ import {
 import { MemberHoursChart, StatusChart, WeeklyTrendChart } from './charts';
 import { activeLocale, primeTranslations, t } from '@/i18n/server';
 import { intlTag } from '@/i18n/config';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 /**
  * داشبورد.
@@ -166,13 +167,13 @@ export default async function DashboardPage({
           {charts.offices.length > 1 && (
             <form method="get" className="flex items-center gap-2 text-sm">
               <label htmlFor="d-office" className="text-muted-foreground">{t("دفتر")}</label>
-              <select
+              <NativeSelect
                 id="d-office" name="office" defaultValue={charts.officeId ?? ''}
-                className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+                size="sm"
               >
-                <option value="">{t("همهٔ دفترها")}</option>
-                {charts.offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-              </select>
+                <NativeSelectOption value="">{t("همهٔ دفترها")}</NativeSelectOption>
+                {charts.offices.map((o) => <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>)}
+              </NativeSelect>
               <button type="submit" className="h-8 rounded-md border px-2 text-xs hover:bg-accent">{t("اعمال")}</button>
             </form>
           )}

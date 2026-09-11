@@ -20,6 +20,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useActionToast } from '@/components/ui/toast';
 import { useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/client';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 
 export interface ProfileData {
   id: number;
@@ -107,23 +110,19 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
   return (
     <div className="grid gap-4">
-      <nav className="flex flex-wrap gap-1 border-b">
-        {visible.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={`-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm transition-colors ${
-              tab === t.key
-                ? 'border-primary font-medium text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <t.icon className="size-3.5" />
-            {tr(t.label)}
-          </button>
-        ))}
-      </nav>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
+        <div className="overflow-x-auto pb-1.5">
+          <TabsList variant="line" className="w-max">
+            {visible.map((t) => (
+              <TabsTrigger key={t.key} value={t.key} className="flex-none">
+                <t.icon className="size-3.5" />
+                {tr(t.label)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+      </Tabs>
 
       {/* پورتِ پنلِ «حساب» ِ داشبورد: نام، ایمیل و تلفن به دستِ خودِ کاربر. */}
       {tab === 'account' && (
@@ -267,9 +266,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
             )}
 
             <label className="flex items-center gap-1.5 text-sm">
-              <input
-                type="checkbox" name="emailOn" defaultChecked={data.notify.emailOn}
-                className="size-3.5 accent-primary"
+              <Switch name="emailOn" defaultChecked={data.notify.emailOn}
               />
               {tr("دریافتِ اعلان با ایمیل")}
             </label>
@@ -292,10 +289,8 @@ export function ProfileView({ data }: { data: ProfileData }) {
               <div className="flex flex-wrap gap-x-4 gap-y-2">
                 {EMAIL_CATEGORIES.map((c) => (
                   <label key={c.key} className="flex items-center gap-1.5 text-sm">
-                    <input
-                      type="checkbox" name="muted" value={c.key}
+                    <Checkbox name="muted" value={String(c.key)}
                       defaultChecked={data.notify.muted.includes(c.key)}
-                      className="size-3.5 accent-primary"
                     />
                     {tr(c.label)}
                   </label>
@@ -307,9 +302,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
           <fieldset className="grid gap-2 rounded-md border p-3">
             <legend className="px-1 text-sm font-medium">{tr("تلگرام")}</legend>
             <label className="flex items-center gap-1.5 text-sm">
-              <input
-                type="checkbox" name="telegramOn" defaultChecked={data.notify.telegramOn}
-                className="size-3.5 accent-primary"
+              <Switch name="telegramOn" defaultChecked={data.notify.telegramOn}
               />
               {tr("دریافتِ اعلان در تلگرام")}
             </label>

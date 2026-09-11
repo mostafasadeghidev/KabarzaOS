@@ -16,6 +16,7 @@ import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { useConfirm } from '@/components/ui/confirm';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export interface CommentItem {
   id: number;
@@ -268,22 +269,19 @@ function ThreadList({
         />
       )}
 
-      <nav className="flex flex-wrap gap-1 border-b pb-2">
-        {(['open', 'closed'] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setBucket(key)}
-            className={`flex items-center gap-2 rounded-md px-3 py-1 text-sm ${bucket === key ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/60'}`}
-          >
-            {key === 'open' ? t('نیازمند بررسی') : t('انجام‌شده')}
-            {/* عدد نشانِ جداست، نه ادامهٔ کلمه — در راست‌به‌چپ می‌چسبید. */}
-            <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
-              {key === 'open' ? open.length : closed.length}
-            </span>
-          </button>
-        ))}
-      </nav>
+      <Tabs value={bucket} onValueChange={(v) => setBucket(v as typeof bucket)}>
+        <TabsList>
+          {(['open', 'closed'] as const).map((key) => (
+            <TabsTrigger key={key} value={key} className="flex-none px-3">
+              {key === 'open' ? t('نیازمند بررسی') : t('انجام‌شده')}
+              {/* عدد نشانِ جداست، نه ادامهٔ کلمه — در راست‌به‌چپ می‌چسبید. */}
+              <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">
+                {key === 'open' ? open.length : closed.length}
+              </Badge>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {list.length === 0 ? (
         <EmptyState title={bucket === 'open' ? t("موردی برای بررسی نیست.") : t("موردی نیست.")} />

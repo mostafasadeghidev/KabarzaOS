@@ -36,6 +36,9 @@ import { GRANTABLE_CAPS } from '@/domain/access/project-scope';
 import type { SchedulerHealth } from '@/domain/scheduler/health';
 import { DEFAULT_LOCALE, isRtl, LOCALE_NAMES, LOCALES } from '@/i18n/config';
 import { trimRate } from '@/domain/currency/rates';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export interface SettingsData {
   /** برای پنهان‌کردنِ تب‌های مالکانه از دیدِ حسابدار. */
@@ -105,7 +108,6 @@ const TABS = [
   { key: 'fiscal', label: 'دورهٔ مالی', ownerOnly: true },
 ] as const;
 
-const field = 'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 export function SettingsView({ data }: { data: SettingsData }) {
   const tr = useT();
@@ -119,22 +121,18 @@ export function SettingsView({ data }: { data: SettingsData }) {
 
   return (
     <div className="grid gap-4">
-      <nav className="flex flex-wrap gap-1 border-b">
-        {TABS.filter((t) => !t.ownerOnly || data.isOwner).map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={`-mb-px border-b-2 px-3 py-2 text-sm transition-colors ${
-              tab === t.key
-                ? 'border-primary font-medium text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tr(t.label)}
-          </button>
-        ))}
-      </nav>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
+        <div className="overflow-x-auto pb-1.5">
+          <TabsList variant="line" className="w-max">
+            {TABS.filter((t) => !t.ownerOnly || data.isOwner).map((t) => (
+              <TabsTrigger key={t.key} value={t.key} className="flex-none">
+                {tr(t.label)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+      </Tabs>
 
       {tab === 'currencies' && (
         <div className="grid gap-6">
@@ -196,7 +194,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
                   <Input id="c-dec" name="decimals" type="number" className="num" defaultValue={editing?.decimals ?? 2} />
                 </div>
                 <label className="flex items-center gap-2 text-sm sm:col-span-4">
-                  <input type="checkbox" name="isActive" defaultChecked={editing?.isActive ?? true} className="size-4 accent-primary" />
+                  <Checkbox name="isActive" defaultChecked={editing?.isActive ?? true} />
                   {tr("فعال (در فرم‌ها پیشنهاد می‌شود)")}
                 </label>
               </div>
@@ -220,21 +218,21 @@ export function SettingsView({ data }: { data: SettingsData }) {
               <div className="grid gap-3 sm:grid-cols-4">
                 <div className="grid gap-1.5">
                   <Label htmlFor="r-from">{tr("از ارز")}</Label>
-                  <select id="r-from" name="fromCurrencyId" className={field} defaultValue={editing ? String(editing.fromCurrencyId) : ''}>
-                    <option value="">{tr("— انتخاب —")}</option>
+                  <NativeSelect id="r-from" name="fromCurrencyId" containerClassName="w-full" defaultValue={editing ? String(editing.fromCurrencyId) : ''}>
+                    <NativeSelectOption value="">{tr("— انتخاب —")}</NativeSelectOption>
                     {data.currencies.map((c) => (
-                      <option key={c.id} value={c.id}>{c.code}</option>
+                      <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="r-to">{tr("به ارز")}</Label>
-                  <select id="r-to" name="toCurrencyId" className={field} defaultValue={editing ? String(editing.toCurrencyId) : ''}>
-                    <option value="">{tr("— انتخاب —")}</option>
+                  <NativeSelect id="r-to" name="toCurrencyId" containerClassName="w-full" defaultValue={editing ? String(editing.toCurrencyId) : ''}>
+                    <NativeSelectOption value="">{tr("— انتخاب —")}</NativeSelectOption>
                     {data.currencies.map((c) => (
-                      <option key={c.id} value={c.id}>{c.code}</option>
+                      <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="r-rate">{tr("نرخ")}</Label>
@@ -375,14 +373,14 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 {groupChoices(tagType).length > 0 && (
                   <div className="grid gap-1.5">
                     <Label htmlFor="t-group">{tr(groupFieldLabel(tagType))}</Label>
-                    <select
-                      id="t-group" name="statusGroup" className={tagSelectClass}
+                    <NativeSelect
+                      id="t-group" name="statusGroup" containerClassName="w-full"
                       defaultValue={editing?.statusGroup ?? ''}
                     >
                       {groupChoices(tagType).map((c) => (
-                        <option key={c.value || 'none'} value={c.value}>{tr(c.label)}</option>
+                        <NativeSelectOption key={c.value || 'none'} value={c.value}>{tr(c.label)}</NativeSelectOption>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </div>
                 )}
 
@@ -390,10 +388,8 @@ export function SettingsView({ data }: { data: SettingsData }) {
                   <div className="grid gap-2 rounded-md border p-3">
                     {supportsClosed(tagType) && (
                       <label className="flex items-center gap-2 text-sm">
-                        <input
-                          type="checkbox" name="isClosed" value="1"
+                        <Checkbox name="isClosed" value="1"
                           defaultChecked={editing?.isClosed ?? false}
-                          className="size-4 accent-primary"
                         />
                         {tagType === 'task_status'
                           ? tr("این وضعیت یعنی تسک تمام‌شده است")
@@ -402,10 +398,8 @@ export function SettingsView({ data }: { data: SettingsData }) {
                     )}
                     {supportsReview(tagType) && (
                       <label className="flex items-center gap-2 text-sm">
-                        <input
-                          type="checkbox" name="isReview" value="1"
+                        <Checkbox name="isReview" value="1"
                           defaultChecked={editing?.isReview ?? false}
-                          className="size-4 accent-primary"
                         />
                         {tr("این وضعیت ستونِ «نیازمندِ بررسی» است")}
                       </label>
@@ -459,16 +453,16 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 {supportsGrant(tagType) && (
                   <div className="grid gap-1.5">
                     <Label htmlFor="t-cap">{tr("دسترسی‌ای که این نقش می‌دهد")}</Label>
-                    <select
+                    <NativeSelect
                       id="t-cap"
                       name="grantsCap"
                       defaultValue={editing?.grantsCap ?? ''}
-                      className={tagSelectClass}
+                      containerClassName="w-full"
                     >
                       {GRANTABLE_CAPS.map((c) => (
-                        <option key={c.value || 'none'} value={c.value}>{tr(c.label)}</option>
+                        <NativeSelectOption key={c.value || 'none'} value={c.value}>{tr(c.label)}</NativeSelectOption>
                       ))}
-                    </select>
+                    </NativeSelect>
                     <p className="text-xs text-muted-foreground">
                       {tr("دسترسی را اضافه می‌کند؛ هرگز چیزی را پس نمی‌گیرد.")}
                     </p>
@@ -509,23 +503,21 @@ export function SettingsView({ data }: { data: SettingsData }) {
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="o-cur">{tr("ارزِ پیش‌فرض")}</Label>
-                <select
+                <NativeSelect
                   id="o-cur"
                   name="defaultCurrencyId"
-                  className={field}
+                  containerClassName="w-full"
                   defaultValue={editing?.defaultCurrencyId ? String(editing.defaultCurrencyId) : ''}
                 >
-                  <option value="">{tr("— هیچ‌کدام —")}</option>
+                  <NativeSelectOption value="">{tr("— هیچ‌کدام —")}</NativeSelectOption>
                   {data.currencies.map((c) => (
-                    <option key={c.id} value={c.id}>{c.code}</option>
+                    <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <label className="flex items-center gap-2 text-sm sm:col-span-3">
-                <input
-                  type="checkbox" name="isActive"
+                <Checkbox name="isActive"
                   defaultChecked={editing ? editing.isActive : true}
-                  className="size-4 accent-primary"
                 />
                 {tr("فعال")}
               </label>
@@ -590,18 +582,18 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="q-role">{tr("نقش")}</Label>
-                  <select
+                  <NativeSelect
                     id="q-role"
                     name="roleTagId"
-                    className={field}
+                    containerClassName="w-full"
                     defaultValue={editing?.roleTagId ? String(editing.roleTagId) : ''}
                   >
                     {/* R-QA-02 — نقشِ خالی یعنی مخاطبِ «کارفرما». */}
-                    <option value="">{tr("کارفرما")}</option>
+                    <NativeSelectOption value="">{tr("کارفرما")}</NativeSelectOption>
                     {data.tags.filter((t) => t.type === 'member_role').map((t) => (
-                      <option key={t.id} value={t.id}>{t.nameI18n?.[locale] || t.nameI18n?.en || t.name}</option>
+                      <NativeSelectOption key={t.id} value={t.id}>{t.nameI18n?.[locale] || t.nameI18n?.en || t.name}</NativeSelectOption>
                     ))}
-                  </select>
+                  </NativeSelect>
                 </div>
               </div>
               <div className="grid gap-1.5">
@@ -615,11 +607,9 @@ export function SettingsView({ data }: { data: SettingsData }) {
               </div>
               <div className="flex flex-wrap items-center gap-4">
                 <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     name="isTask"
                     defaultChecked={editing?.isTask ?? false}
-                    className="size-4 accent-primary"
                   />
                   {tr("تسک‌ساز (هنگامِ اعمال یک تسکِ واقعی می‌سازد)")}
                 </label>

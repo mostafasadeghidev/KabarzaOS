@@ -11,6 +11,9 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { CardPager, useCardPage } from '@/components/ui/card-pager';
 import { useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Toggle } from '@/components/ui/toggle';
+import { Badge } from '@/components/ui/badge';
 
 /**
  * شبکهٔ افراد — بازسازیِ `tab_panel_html()`:
@@ -80,26 +83,18 @@ export function PeopleGrid({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex gap-1">
           {section.supportsOffboarding && (
-          <>
-          <button
-            type="button"
-            onClick={() => setTab('active')}
-            className={`rounded-md px-3 py-1.5 text-sm ${
-              tab === 'active' ? 'bg-primary/10 font-medium' : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {section.role === 'member' ? t('اعضای فعال') : t('فعال')} (<span className="num">{counts.active}</span>)
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('former')}
-            className={`rounded-md px-3 py-1.5 text-sm ${
-              tab === 'former' ? 'bg-primary/10 font-medium' : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {section.role === 'member' ? t('اعضای سابق') : t('سابق')} (<span className="num">{counts.former}</span>)
-          </button>
-          </>
+            <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+              <TabsList>
+                <TabsTrigger value="active" className="flex-none px-3">
+                  {section.role === 'member' ? t('اعضای فعال') : t('فعال')}
+                  <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{counts.active}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="former" className="flex-none px-3">
+                  {section.role === 'member' ? t('اعضای سابق') : t('سابق')}
+                  <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{counts.former}</Badge>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           )}
         </div>
 
@@ -120,18 +115,16 @@ export function PeopleGrid({
           className="max-w-xs"
         />
         {section.supportsOffices && offices.map((o) => (
-          <button
+          <Toggle
             key={o.id}
-            type="button"
-            onClick={() => toggleOffice(o.id)}
-            className={`rounded-full border px-2.5 py-1 text-xs ${
-              officeIds.includes(o.id)
-                ? 'border-primary bg-primary/10 text-foreground'
-                : 'text-muted-foreground hover:bg-muted'
-            }`}
+            variant="outline"
+            size="sm"
+            pressed={officeIds.includes(o.id)}
+            onPressedChange={() => toggleOffice(o.id)}
+            className="h-7 rounded-full px-3 text-xs font-normal data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-foreground"
           >
             {o.name}
-          </button>
+          </Toggle>
         ))}
       </div>
 

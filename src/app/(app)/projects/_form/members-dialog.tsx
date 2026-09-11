@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 export interface MemberRow {
   userId: number | null;
@@ -35,8 +36,6 @@ export interface MembersFormData {
   currencies: Array<{ id: number; code: string; isDefault: boolean }>;
 }
 
-const cellSelect =
-  'h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 function SaveButton() {
   const { pending } = useFormStatus();
@@ -159,17 +158,17 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                           <input type="hidden" name="memberUser" value={row.userId ?? ''} />
                         </div>
                       ) : (
-                        <select
+                        <NativeSelect
                           name="memberUser"
-                          className={cellSelect}
+                          size="sm" containerClassName="w-full"
                           value={row.userId ?? ''}
                           onChange={(e) => patch(i, { userId: e.target.value ? Number(e.target.value) : null })}
                         >
-                          <option value="">—</option>
+                          <NativeSelectOption value="">—</NativeSelectOption>
                           {data.team.map((u) => (
-                            <option key={u.id} value={u.id}>{u.name}</option>
+                            <NativeSelectOption key={u.id} value={u.id}>{u.name}</NativeSelectOption>
                           ))}
-                        </select>
+                        </NativeSelect>
                       )}
                       {row.isOwed && (
                         <span className="mt-0.5 block text-[11px] text-amber-600 dark:text-amber-500">
@@ -179,17 +178,17 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                     </td>
 
                     <td className="py-1.5 pe-2">
-                      <select
+                      <NativeSelect
                         name="memberRole"
-                        className={cellSelect}
+                        size="sm" containerClassName="w-full"
                         value={row.roleTagId ?? ''}
                         onChange={(e) => patch(i, { roleTagId: e.target.value ? Number(e.target.value) : null })}
                       >
-                        <option value="">{t("— نقشِ خودش —")}</option>
+                        <NativeSelectOption value="">{t("— نقشِ خودش —")}</NativeSelectOption>
                         {data.roles.map((r) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
+                          <NativeSelectOption key={r.id} value={r.id}>{r.name}</NativeSelectOption>
                         ))}
-                      </select>
+                      </NativeSelect>
                     </td>
 
                     <td className="py-1.5 pe-2">
@@ -213,16 +212,16 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                     </td>
 
                     <td className="py-1.5 pe-2">
-                      <select
+                      <NativeSelect
                         name="memberCurrency"
-                        className={cellSelect}
+                        size="sm" containerClassName="w-full"
                         value={row.currencyId ?? ''}
                         onChange={(e) => patch(i, { currencyId: e.target.value ? Number(e.target.value) : null })}
                       >
                         {data.currencies.map((c) => (
-                          <option key={c.id} value={c.id}>{c.code}</option>
+                          <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>
                         ))}
-                      </select>
+                      </NativeSelect>
                     </td>
 
                     <td className="py-1.5">

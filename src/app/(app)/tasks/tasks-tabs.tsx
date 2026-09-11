@@ -6,6 +6,7 @@ import { QuickTaskForm } from './quick-task';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n/client';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 /**
  * دو نمای صفحهٔ «تسک‌ها»:
@@ -31,29 +32,23 @@ export function TasksTabs({
   const [tab, setTab] = useState<'inbox' | 'quick'>('inbox');
 
   const item = (key: 'inbox' | 'quick', label: string, icon: React.ReactNode, count?: number) => (
-    <button
-      key={key}
-      type="button"
-      onClick={() => setTab(key)}
-      className={cn(
-        'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
-        tab === key ? 'bg-muted font-medium' : 'text-muted-foreground hover:bg-muted/60',
-      )}
-    >
+    <TabsTrigger key={key} value={key} className="flex-none px-3">
       {icon}
       {label}
       {count !== undefined && count > 0 && (
         <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{count}</Badge>
       )}
-    </button>
+    </TabsTrigger>
   );
 
   return (
     <>
-      <nav className="flex flex-wrap gap-1 border-b pb-2">
-        {item('inbox', tr('سپرده‌شده به من'), <Inbox className="size-3.5" />, inboxCount)}
-        {item('quick', tr('افزودنِ سریع'), <Plus className="size-3.5" />)}
-      </nav>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+        <TabsList>
+          {item('inbox', tr('سپرده‌شده به من'), <Inbox className="size-3.5" />, inboxCount)}
+          {item('quick', tr('افزودنِ سریع'), <Plus className="size-3.5" />)}
+        </TabsList>
+      </Tabs>
 
       <div className={tab === 'inbox' ? 'contents' : 'hidden'}>{inbox}</div>
       {tab === 'quick' && <QuickTaskForm projects={projects} today={today} />}

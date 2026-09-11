@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { ArrowLeftRight, Lock, Paperclip, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Lock, Paperclip, Plus, Trash2, CircleAlert } from 'lucide-react';
 import {
   deleteEntryAction, saveEntryAction, transferAction, type FinanceState,
 } from './_form/actions';
@@ -31,6 +31,8 @@ import { useT } from '@/i18n/client';
 import { LedgerFilter, type LedgerPaging } from './ledger-filter';
 import { TableSearch, useTableView } from '@/components/ui/table-search';
 import { useConfirm } from '@/components/ui/confirm';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /** یک حساب — همان شکلی که `listAccounts` برمی‌گرداند. */
 export interface AccountOption {
@@ -114,8 +116,6 @@ export interface FormOptions {
   unitUnpaid?: Record<string, Array<{ id: number; amount: string; currencyId: number | null; text: string }>>;
 }
 
-const cellSelect =
-  'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 /** برچسبِ حساب «دفتر · حساب (ارز)» — پورتِ `Accounts::label()`. */
 const accountLabel = (a: AccountOption) =>
@@ -222,15 +222,15 @@ export function LedgerView({
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <select
-          className={`${cellSelect} max-w-xs`}
+        <NativeSelect
+          containerClassName="w-full max-w-xs"
           value={accountId}
           onChange={(e) => onSelectAccount(Number(e.target.value))}
         >
           {accounts.map((a) => (
-            <option key={a.id} value={a.id}>{accountLabel(a)}</option>
+            <NativeSelectOption key={a.id} value={a.id}>{accountLabel(a)}</NativeSelectOption>
           ))}
-        </select>
+        </NativeSelect>
 
         {canManage && (
           <div className="flex gap-2">
@@ -259,17 +259,19 @@ export function LedgerView({
 
       {/* ⚠️ نشانِ قفل پیش از فرم دیده می‌شود، نه بعد از خطا. */}
       {lockDate && (
-        <p className="flex items-center gap-1.5 rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-500">
-          <Lock className="size-3.5" />
-          {tr('دورهٔ مالی تا {date} بسته است؛ ردیف‌های آن بازه تغییر نمی‌کنند.', {
-            date: lockDate,
-          })}
-          {periodScoped && (
-            <a href={`/finance?account=${accountId}&all=1`} className="ms-auto underline">
-              {tr('نمایشِ ردیف‌های دورهٔ بسته')}
-            </a>
-          )}
-        </p>
+        <Alert variant="warning">
+          <Lock />
+          <AlertDescription>
+            {tr('دورهٔ مالی تا {date} بسته است؛ ردیف‌های آن بازه تغییر نمی‌کنند.', {
+              date: lockDate,
+            })}
+            {periodScoped && (
+              <a href={`/finance?account=${accountId}&all=1`} className="ms-auto underline">
+                {tr('نمایشِ ردیف‌های دورهٔ بسته')}
+              </a>
+            )}
+          </AlertDescription>
+        </Alert>
       )}
 
       <div className="grid gap-3 @2xl/main:grid-cols-5 @xl/main:grid-cols-3">
@@ -468,20 +470,20 @@ export function LedgerView({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="t-from">{t("از حساب")}</Label>
-                <select id="t-from" name="fromAccountId" className={cellSelect} defaultValue={accountId}>
+                <NativeSelect id="t-from" name="fromAccountId" containerClassName="w-full" defaultValue={accountId}>
                   {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>{accountLabel(a)}</option>
+                    <NativeSelectOption key={a.id} value={a.id}>{accountLabel(a)}</NativeSelectOption>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="t-to">{t("به حساب")}</Label>
-                <select id="t-to" name="toAccountId" className={cellSelect} defaultValue={String(accounts.find((a) => a.id !== accountId)?.id ?? '')}>
-                  <option value="">{t("— انتخاب —")}</option>
+                <NativeSelect id="t-to" name="toAccountId" containerClassName="w-full" defaultValue={String(accounts.find((a) => a.id !== accountId)?.id ?? '')}>
+                  <NativeSelectOption value="">{t("— انتخاب —")}</NativeSelectOption>
                   {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>{accountLabel(a)}</option>
+                    <NativeSelectOption key={a.id} value={a.id}>{accountLabel(a)}</NativeSelectOption>
                   ))}
-                </select>
+                </NativeSelect>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="t-famount">{t("مبلغِ خروجی")}</Label>
@@ -517,9 +519,12 @@ export function LedgerView({
             </div>
 
             {transferState.error && (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {tr(transferState.error)}
-              </p>
+              <Alert variant="destructive">
+                <CircleAlert />
+                <AlertDescription>
+                  {tr(transferState.error)}
+                </AlertDescription>
+              </Alert>
             )}
 
             <DialogFooter>

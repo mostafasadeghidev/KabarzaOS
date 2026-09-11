@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useRef, useState, useTransition } from 'react';
+import { useActionState, useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
 import { Check, ExternalLink, FileText, Link2, Paperclip, Square, X } from 'lucide-react';
@@ -23,6 +23,7 @@ import { useConfirm } from '@/components/ui/confirm';
 import { summarizeProject } from '@/domain/team-money/payments';
 import { PAY_STATUS_LABELS } from './my-money-tab';
 import { chipStyle } from '@/domain/ui/contrast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 /* ------------------------------------------------------------------ *
  * تبِ مالی — `finance` panel ِ مودالِ نسخهٔ قبلی.
@@ -223,13 +224,21 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
       : tr('{n} آیتم اعمال شد.', { n: state.added ?? 0 }),
   });
   const { pending } = useFormStatus();
-  const boxRef = useRef<HTMLDivElement>(null);
-
-  /** همهٔ مخاطب‌ها را با هم تیک می‌زند یا برمی‌دارد. */
-  const setAll = (checked: boolean) => {
-    boxRef.current?.querySelectorAll<HTMLInputElement>('input[name="audience"]')
-      .forEach((box) => { box.checked = checked; });
-  };
+  /**
+   * مخاطب‌های تیک‌خورده — **کنترل‌شده**.
+   * ⚠️ چک‌باکسِ shadcn یک `<button>` است، نه `<input>`؛ تیک‌زدنِ دستیِ DOM
+   * (`input.checked = …`) که «انتخابِ همه» با آن کار می‌کرد دیگر اثری ندارد.
+   */
+  const allAudiences = [...roles.map((r) => String(r.id)), 'client'];
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  const toggleAudience = (value: string, on: boolean) => setPicked((prev) => {
+    const next = new Set(prev);
+    if (on) next.add(value); else next.delete(value);
+    return next;
+  });
+  const setAll = (checked: boolean) => setPicked(checked ? new Set(allAudiences) : new Set());
+  // پس از اعمالِ موفق فرم خالی می‌شود — همان کاری که فرمِ کنترل‌نشده خودش می‌کرد.
+  useEffect(() => { if (state.ok) setPicked(new Set()); }, [state]);
 
   return (
     <form action={formAction} className="grid max-w-3xl gap-2 rounded-md border p-3">
@@ -239,16 +248,26 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
         {tr("آیتم‌های کتابخانهٔ QA برای نقش‌های انتخاب‌شده روی این پروژه می‌نشینند. آیتمِ تکراری دوباره اعمال نمی‌شود.")}
       </p>
 
-      <div ref={boxRef} className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3">
         {roles.map((r) => (
           <label key={r.id} className="flex items-center gap-1.5 text-sm">
-            <input type="checkbox" name="audience" value={r.id} className="size-4 accent-primary" />
+            <Checkbox
+              name="audience"
+              value={String(r.id)}
+              checked={picked.has(String(r.id))}
+              onCheckedChange={(v) => toggleAudience(String(r.id), v === true)}
+            />
             {r.name}
           </label>
         ))}
         {/* R-QA-02 — مخاطبِ «کارفرما» یک نقشِ واقعی نیست؛ توکنِ خودش را دارد. */}
         <label className="flex items-center gap-1.5 text-sm">
-          <input type="checkbox" name="audience" value="client" className="size-4 accent-primary" />
+          <Checkbox
+            name="audience"
+            value="client"
+            checked={picked.has('client')}
+            onCheckedChange={(v) => toggleAudience('client', v === true)}
+          />
           {tr("کارفرما")}
         </label>
       </div>

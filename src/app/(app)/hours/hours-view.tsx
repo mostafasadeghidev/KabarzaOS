@@ -23,6 +23,7 @@ import {
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 export interface LogRow {
   id: number;
@@ -52,8 +53,6 @@ export interface HoursData {
   today: string;
 }
 
-const field =
-  'h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs';
 
 function Submit({ children, variant }: { children: React.ReactNode; variant?: 'outline' | 'default' }) {
   const { pending } = useFormStatus();
@@ -79,11 +78,11 @@ function ProjectSelect({
 }) {
   const t = useT();
   return (
-    <select id={id} name="projectId" className={field} defaultValue={defaultValue} required={!allowGeneral}>
+    <NativeSelect id={id} name="projectId" containerClassName="w-full" defaultValue={defaultValue} required={!allowGeneral}>
       {/* ⚠️ ساعتِ عمومی یک گزینهٔ واقعی است، نه «انتخاب نشده» — ولی فقط برای کسی که مجازش است. */}
-      {allowGeneral && <option value="">{t("بدون پروژه (کارِ عمومی)")}</option>}
-      {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-    </select>
+      {allowGeneral && <NativeSelectOption value="">{t("بدون پروژه (کارِ عمومی)")}</NativeSelectOption>}
+      {projects.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>)}
+    </NativeSelect>
   );
 }
 
@@ -307,7 +306,7 @@ export function HoursView({ data }: { data: HoursData }) {
                 placeholder={t("نام پروژه…")} defaultValue={data.filter.project}
               />
               <datalist id="hours-project-list">
-                {data.projectTitles.map((title) => <option key={title} value={title} />)}
+                {data.projectTitles.map((title) => <NativeSelectOption key={title} value={title} />)}
               </datalist>
             </div>
             <Button type="submit" size="sm" variant="outline">{t("فیلتر")}</Button>

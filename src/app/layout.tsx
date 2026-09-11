@@ -6,6 +6,7 @@ import { TranslationProvider } from '@/i18n/client';
 import { ThemeProvider, themeScript } from '@/components/theme-provider';
 import { ToastProvider } from '@/components/ui/toast';
 import { ConfirmProvider } from '@/components/ui/confirm';
+import { DirectionProvider } from '@/components/ui/direction';
 import './globals.css';
 
 /**
@@ -41,21 +42,28 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-screen antialiased">
-        <ThemeProvider>
-          <TranslationProvider locale={locale} messages={messages} timeZone={timeZone}>
-            {/*
-              ⚠️ توست در **ریشه** سوار می‌شود، نه در چیدمانِ اپ: صفحهٔ ورود،
-              نصبِ اولیه و پوستهٔ عضوِ سابق (که چیدمانِ اپ را کنار می‌گذارد)
-              هم فرم دارند و بازخوردشان نباید بی‌صدا بماند.
-            */}
-            <ToastProvider>
-              {/* تأییدِ کارِ مخرب — یک دیالوگ برای همهٔ دکمه‌های حذف (پورتِ confirm()). */}
-              <ConfirmProvider>
-                {children}
-              </ConfirmProvider>
-            </ToastProvider>
-          </TranslationProvider>
-        </ThemeProvider>
+        {/*
+          ⚠️ جهت برای Radix — `<html dir>` به کامپوننت‌های Radix نمی‌رسد و
+          آن‌ها خودشان `dir="ltr"` می‌گذارند. بیرونی‌ترین لایه است تا منوها،
+          دیالوگ‌ها و توست‌هایی که پورتال می‌شوند هم جهت را بگیرند.
+        */}
+        <DirectionProvider dir={direction(locale)}>
+          <ThemeProvider>
+            <TranslationProvider locale={locale} messages={messages} timeZone={timeZone}>
+              {/*
+                ⚠️ توست در **ریشه** سوار می‌شود، نه در چیدمانِ اپ: صفحهٔ ورود،
+                نصبِ اولیه و پوستهٔ عضوِ سابق (که چیدمانِ اپ را کنار می‌گذارد)
+                هم فرم دارند و بازخوردشان نباید بی‌صدا بماند.
+              */}
+              <ToastProvider>
+                {/* تأییدِ کارِ مخرب — یک دیالوگ برای همهٔ دکمه‌های حذف (پورتِ confirm()). */}
+                <ConfirmProvider>
+                  {children}
+                </ConfirmProvider>
+              </ToastProvider>
+            </TranslationProvider>
+          </ThemeProvider>
+        </DirectionProvider>
       </body>
     </html>
   );

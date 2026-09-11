@@ -2,6 +2,27 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.71.0]
+
+### Changed
+
+- **The app now uses shadcn/ui components throughout instead of hand-styled controls.** The official shadcn primitives were installed but barely used: 73 dropdowns, 35 checkboxes, a radio group, 8 section tab bars, 9 segmented switches and every filter chip were hand-rolled with their own class strings, so the same control looked and behaved differently from page to page.
+  - **Dropdowns** → shadcn **Native Select** — one height, border, focus ring and chevron everywhere. It is still a real `<select>`, so every form submits exactly as before.
+  - **Checkboxes** → shadcn **Checkbox**; on/off settings (presence, live pulse, chat polling, e-mail and Telegram notifications, report delivery) → **Switch**; access levels → **Radio Group**.
+  - **Section tabs** (project, settings, finance, reports, activity, profile, team, project dialog) → shadcn **Tabs** in the line style. On narrow screens they scroll sideways instead of wrapping — Reports used to break onto a second row.
+  - **Segmented switches** (project status, task inbox, active/former members, meetings, payment requests, comment buckets, task sub-tabs) → shadcn **Tabs**; list/board → **Toggle Group**; office and vendor filter chips → **Toggle**.
+  - **Inline errors and warnings** (sign-in, form errors, closed financial periods, missing or stale exchange rates) → shadcn **Alert** with an icon. The exchange-rate warnings on Reports were small coloured text inside a row of numbers; they now stand on their own.
+
+### Fixed
+
+- **Right-to-left direction for every Radix component.** Radix does not read `<html dir>`: without a direction provider each component sets `dir="ltr"` on itself, so in Persian, Arabic and Kurdish the order of tabs came out reversed and arrow-key navigation in menus ran backwards. A `DirectionProvider` at the root now passes the page direction to all of them, including menus and dialogs rendered in portals.
+
+### Added
+
+- shadcn components: **Native Select**, **Toggle**, **Toggle Group**, **Alert** (with a `warning` variant), **Radio Group**, **Switch** and **Direction**. Where the official code uses physical sides it was adapted for right-to-left: the Native Select chevron, the Toggle Group's rounded ends and borders, and the Switch thumb, which would otherwise slide out of its track.
+
+---
+
 ## [1.70.0]
 
 ### Fixed

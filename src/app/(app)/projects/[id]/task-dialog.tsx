@@ -26,6 +26,7 @@ import { useConfirm } from '@/components/ui/confirm';
 import { ClaimTaskButton } from '@/app/(app)/tasks/inbox-claim';
 import { chipStyle } from '@/domain/ui/contrast';
 import { TaskStatusPicker } from './task-status-picker';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 
 /**
  * مودالِ تسک — بازسازیِ `task_admin_html()`:
@@ -35,8 +36,6 @@ import { TaskStatusPicker } from './task-status-picker';
 
 type Loaded = Awaited<ReturnType<typeof loadTaskAction>>;
 
-const cellSelect =
-  'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 /** تاریخ/ساعت به وقتِ بیننده — نه UTC ِ خام (`useDateTime`). */
 function when(value: Date | string | null | undefined, tz: string): string {
@@ -291,29 +290,29 @@ export function TaskDialog({
                 {(options.tasks?.filter((x) => x.id !== task.id).length ?? 0) > 0 && (
                   <div className="grid gap-1.5">
                     <Label htmlFor="t-depends">{t("وابسته به")}</Label>
-                    <select id="t-depends" name="dependsOn" className={cellSelect} defaultValue={task.dependsOn ? String(task.dependsOn) : ''}>
-                      <option value="">—</option>
+                    <NativeSelect id="t-depends" name="dependsOn" containerClassName="w-full" defaultValue={task.dependsOn ? String(task.dependsOn) : ''}>
+                      <NativeSelectOption value="">—</NativeSelectOption>
                       {options.tasks!.filter((x) => x.id !== task.id).map((x) => (
-                        <option key={x.id} value={x.id}>{x.title}</option>
+                        <NativeSelectOption key={x.id} value={x.id}>{x.title}</NativeSelectOption>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </div>
                 )}
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="grid gap-1.5">
                     <Label htmlFor="t-status">{t("وضعیت")}</Label>
-                    <select
+                    <NativeSelect
                       id="t-status"
                       name="statusTagId"
-                      className={cellSelect}
+                      containerClassName="w-full"
                       defaultValue={task.statusTagId ? String(task.statusTagId) : ''}
                     >
-                      <option value="">{t("— بدون وضعیت —")}</option>
+                      <NativeSelectOption value="">{t("— بدون وضعیت —")}</NativeSelectOption>
                       {options.statuses.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
+                        <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </div>
 
                   {/* جستجوی زنده — همان دلیلِ فرمِ افزودن: فهرستِ بلند. */}
@@ -356,17 +355,17 @@ export function TaskDialog({
 
                   <div className="grid gap-1.5">
                     <Label htmlFor="t-priority">{t("اولویت…")}</Label>
-                    <select
+                    <NativeSelect
                       id="t-priority"
                       name="priorityTagId"
-                      className={cellSelect}
+                      containerClassName="w-full"
                       defaultValue={task.priorityTagId ? String(task.priorityTagId) : ''}
                     >
-                      <option value="">—</option>
+                      <NativeSelectOption value="">—</NativeSelectOption>
                       {options.priorities.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
+                        <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>
                       ))}
-                    </select>
+                    </NativeSelect>
                   </div>
 
                   <div className="grid gap-1.5">

@@ -17,6 +17,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useT } from '@/i18n/client';
 import { chipStyle } from '@/domain/ui/contrast';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 /**
  * تبِ تسک‌ها — بازسازیِ `edit_tasks_subtabs()` + `edit_task_li()`.
@@ -284,14 +287,14 @@ function KanbanBoard({
                 <TaskExtras task={t} compact />
                 <div className="flex flex-wrap items-center gap-1.5">{renderMeta(t)}</div>
                 {canDrag && (
-                  <select
+                  <NativeSelect
                     aria-label={tr("انتقال وضعیت")}
                     value={t.statusTagId ?? ''}
                     onChange={(e) => move(t.id, Number(e.target.value))}
-                    className="h-7 rounded-md border bg-background px-1 text-xs sm:hidden"
+                    size="sm" className="h-7 text-xs" containerClassName="sm:hidden"
                   >
-                    {statuses.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-                  </select>
+                    {statuses.map((o) => <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>)}
+                  </NativeSelect>
                 )}
               </article>
             ))}
@@ -370,22 +373,22 @@ export function TasksTab({
     <div className="grid gap-3">
       <div className="flex flex-wrap items-center justify-end gap-2">
         {/* نمای برد — همان تسک‌ها، چیدمانِ ستونی (پورتِ task_kanban). */}
-        <div className="me-auto flex rounded-md border p-0.5">
-          <button
-            type="button"
-            onClick={() => setView('list')}
-            className={`rounded px-2 py-1 text-xs ${view === 'list' ? 'bg-muted' : 'text-muted-foreground'}`}
-          >
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={view}
+          // تک‌انتخابی نباید خالی بماند: کلیک روی گزینهٔ فعال بی‌اثر است.
+          onValueChange={(v) => { if (v) setView(v as typeof view); }}
+          className="me-auto"
+        >
+          <ToggleGroupItem value="list" aria-label={tr('نمای فهرست')}>
             <ListIcon className="size-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setView('board')}
-            className={`rounded px-2 py-1 text-xs ${view === 'board' ? 'bg-muted' : 'text-muted-foreground'}`}
-          >
+          </ToggleGroupItem>
+          <ToggleGroupItem value="board" aria-label={tr('نمای برد')}>
             <Columns3 className="size-3.5" />
-          </button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
         {formOptions && (
           <AddTaskDialog projectId={projectId} options={formOptions} canManage={canManage} currentUserId={currentUserId} />
         )}
@@ -394,39 +397,24 @@ export function TasksTab({
       {tasks.length === 0 && <EmptyState title={tr("تسکی ثبت نشده")} />}
 
       {/* زیرتب‌ها — «نیاز به ریویو» اول، ولی گروهِ اول پیش‌فرضِ فعال است. */}
-      <div className={`flex flex-wrap gap-1 border-b pb-2 ${tasks.length === 0 || view === 'board' ? 'hidden' : ''}`}>
-        {review.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setTab('review')}
-            className={`flex items-center gap-2 rounded-md px-2.5 py-1 text-xs ${
-              tab === 'review' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {tr('نیاز به ریویو')}
-            <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none">
-              {review.length}
-            </span>
-          </button>
-        )}
-        {groupKeys.map((k) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setTab(k)}
-            // ⚠️ فاصله با `gap`، نه حاشیهٔ منطقی: در راست‌به‌چپ عدد به حرفِ
-            // آخر می‌چسبید و «برای انجام۲» خوانده می‌شد.
-            className={`flex items-center gap-2 rounded-md px-2.5 py-1 text-xs ${
-              tab === k ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {/* نامِ گروه سرفصل است نه عنوان: ریزتر و کم‌رنگ‌تر، مثلِ وضعیتِ پروژه. */}
-            <span className="text-[11px] font-normal opacity-80">{tr(GROUP_LABEL[k] ?? k)}</span>
-            <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none">
-              {buckets.get(k)!.length}
-            </span>
-          </button>
-        ))}
+      <div className={`overflow-x-auto overflow-y-hidden ${tasks.length === 0 || view === 'board' ? 'hidden' : ''}`}>
+        <Tabs value={tab} onValueChange={setTab}>
+          {/* ⚠️ نامِ گروه سرفصل است نه عنوان: `text-xs`، ریزتر از تبِ معمولی. */}
+          <TabsList className="w-max">
+            {review.length > 0 && (
+              <TabsTrigger value="review" className="flex-none px-3 text-xs">
+                {tr('نیاز به ریویو')}
+                <Badge variant="warning" className="num px-1.5 py-0 text-[10px]">{review.length}</Badge>
+              </TabsTrigger>
+            )}
+            {groupKeys.map((k) => (
+              <TabsTrigger key={k} value={k} className="flex-none px-3 text-xs font-normal">
+                {tr(GROUP_LABEL[k] ?? k)}
+                <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{buckets.get(k)!.length}</Badge>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       {view === 'board' ? (

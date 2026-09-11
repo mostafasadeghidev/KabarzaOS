@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/dialog';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export interface Option {
   id: number;
@@ -82,26 +84,6 @@ function Field({
   );
 }
 
-/** select ِ بومی — سبک‌تر از رادیکس و مستقیماً با FormData ِ سرور سازگار. */
-function NativeSelect({
-  id, name, defaultValue, children,
-}: {
-  id: string;
-  name: string;
-  defaultValue?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <select
-      id={id}
-      name={name}
-      defaultValue={defaultValue}
-      className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-    >
-      {children}
-    </select>
-  );
-}
 
 function SubmitButton({ isEdit }: { isEdit: boolean }) {
   const { pending } = useFormStatus();
@@ -204,27 +186,20 @@ export function ProjectDialog({
             کردنِ تبِ غیرفعال، فیلدهایش از FormData بیرون می‌افتادند و
             ذخیره بی‌صدا مقادیر را پاک می‌کرد.
           */}
-          <div className="flex flex-wrap gap-1 border-b">
-            {([
-              ['info', tr('اطلاعات')],
-              ...(showBootstrap
-                ? ([['tasks', tr('تسک‌ها')], ['files', tr('فایل‌ها')], ['qa', 'QA']] as const)
-                : []),
-            ] as ReadonlyArray<readonly [typeof formTab, string]>).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setFormTab(key)}
-                className={`-mb-px border-b-2 px-3 py-1.5 text-sm transition ${
-                  formTab === key
-                    ? 'border-primary font-medium text-foreground'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <Tabs value={formTab} onValueChange={(v) => setFormTab(v as typeof formTab)}>
+            <TabsList variant="line">
+              {([
+                ['info', tr('اطلاعات')],
+                ...(showBootstrap
+                  ? ([['tasks', tr('تسک‌ها')], ['files', tr('فایل‌ها')], ['qa', 'QA']] as const)
+                  : []),
+              ] as ReadonlyArray<readonly [typeof formTab, string]>).map(([key, label]) => (
+                <TabsTrigger key={key} value={key} className="flex-none">
+                  {label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
 
           <div className={formTab === 'info' ? 'grid gap-4' : 'hidden'}>
 
@@ -272,10 +247,10 @@ export function ProjectDialog({
 
             <Field label={tr("وضعیت پروژه")} name="statusTagId" error={fe.statusTagId}>
               {(id) => (
-                <NativeSelect id={id} name="statusTagId" defaultValue={keep('statusTagId')}>
-                  <option value="">{tr("— انتخاب —")}</option>
+                <NativeSelect id={id} name="statusTagId" containerClassName="w-full" defaultValue={keep('statusTagId')}>
+                  <NativeSelectOption value="">{tr("— انتخاب —")}</NativeSelectOption>
                   {options.statuses.map((s) => (
-                    <option key={s.id} value={s.id}>{s.label}</option>
+                    <NativeSelectOption key={s.id} value={s.id}>{s.label}</NativeSelectOption>
                   ))}
                 </NativeSelect>
               )}
@@ -292,10 +267,11 @@ export function ProjectDialog({
                 <NativeSelect
                   id={id}
                   name="currencyId"
+                  containerClassName="w-full"
                   defaultValue={keep('currencyId', options.defaultCurrencyId ? String(options.defaultCurrencyId) : '')}
                 >
                   {options.currencies.map((c) => (
-                    <option key={c.id} value={c.id}>{c.label}</option>
+                    <NativeSelectOption key={c.id} value={c.id}>{c.label}</NativeSelectOption>
                   ))}
                 </NativeSelect>
               )}
@@ -303,10 +279,10 @@ export function ProjectDialog({
 
             <Field label={tr("دفتر")} name="officeId" error={fe.officeId}>
               {(id) => (
-                <NativeSelect id={id} name="officeId" defaultValue={keep('officeId')}>
-                  <option value="">{tr("— هیچ‌کدام —")}</option>
+                <NativeSelect id={id} name="officeId" containerClassName="w-full" defaultValue={keep('officeId')}>
+                  <NativeSelectOption value="">{tr("— هیچ‌کدام —")}</NativeSelectOption>
                   {options.offices.map((o) => (
-                    <option key={o.id} value={o.id}>{o.label}</option>
+                    <NativeSelectOption key={o.id} value={o.id}>{o.label}</NativeSelectOption>
                   ))}
                 </NativeSelect>
               )}
@@ -321,10 +297,10 @@ export function ProjectDialog({
             hint={tr("اگر ادامه یا تغییرِ یک پروژهٔ دیگر است (نگهداری)، آن را انتخاب کنید.")}
           >
             {(id) => (
-              <NativeSelect id={id} name="parentId" defaultValue={keep('parentId')}>
-                <option value="">{tr("— بدونِ والد —")}</option>
+              <NativeSelect id={id} name="parentId" containerClassName="w-full" defaultValue={keep('parentId')}>
+                <NativeSelectOption value="">{tr("— بدونِ والد —")}</NativeSelectOption>
                 {options.parents.map((p) => (
-                  <option key={p.id} value={p.id}>{p.label}</option>
+                  <NativeSelectOption key={p.id} value={p.id}>{p.label}</NativeSelectOption>
                 ))}
               </NativeSelect>
             )}
@@ -367,18 +343,18 @@ export function ProjectDialog({
 
                 {tenderRows.map((row, i) => (
                   <div key={i} className="flex flex-wrap items-center gap-2">
-                    <select
+                    <NativeSelect
                       name="tenderRole"
-                      className="h-9 w-44 rounded-md border border-input bg-transparent px-3 text-sm"
+                      containerClassName="w-44"
                       value={row.roleTagId}
                       onChange={(e) => setTenderRows((rows) =>
                         rows.map((r, j) => (j === i ? { ...r, roleTagId: e.target.value } : r)))}
                     >
-                      <option value="">{tr("— نقش —")}</option>
+                      <NativeSelectOption value="">{tr("— نقش —")}</NativeSelectOption>
                       {options.roleTags.map((t) => (
-                        <option key={t.id} value={t.id}>{t.label}</option>
+                        <NativeSelectOption key={t.id} value={t.id}>{t.label}</NativeSelectOption>
                       ))}
-                    </select>
+                    </NativeSelect>
 
                     <Input
                       name="tenderCap"
@@ -431,9 +407,9 @@ export function ProjectDialog({
               hint={tr("پروژهٔ خصوصی فقط برای کسانی دیده می‌شود که دسترسیِ خصوصی دارند.")}
             >
               {(id) => (
-                <NativeSelect id={id} name="scope" defaultValue={keep('scope', 'company')}>
-                  <option value="company">{tr("شرکتی")}</option>
-                  <option value="private">{tr("خصوصی")}</option>
+                <NativeSelect id={id} name="scope" containerClassName="w-full" defaultValue={keep('scope', 'company')}>
+                  <NativeSelectOption value="company">{tr("شرکتی")}</NativeSelectOption>
+                  <NativeSelectOption value="private">{tr("خصوصی")}</NativeSelectOption>
                 </NativeSelect>
               )}
             </Field>
