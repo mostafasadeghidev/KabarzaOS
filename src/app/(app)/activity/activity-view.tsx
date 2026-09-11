@@ -108,7 +108,7 @@ export function ActivityView({
                 <TableHead>{tr("رویداد")}</TableHead>
                 <TableHead>{tr("مورد")}</TableHead>
                 <TableHead>{tr("کاربر")}</TableHead>
-                <TableHead>{tr("زمان")}</TableHead>
+                <TableHead className="text-end">{tr("زمان")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -175,8 +175,8 @@ export function ActivityView({
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("عضو")}</TableHead>
-                <TableHead>{tr("از")}</TableHead>
-                <TableHead>{tr("تا")}</TableHead>
+                <TableHead className="text-end">{tr("از")}</TableHead>
+                <TableHead className="text-end">{tr("تا")}</TableHead>
                 <TableHead>{tr("توضیح")}</TableHead>
               </TableRow>
             </TableHeader>

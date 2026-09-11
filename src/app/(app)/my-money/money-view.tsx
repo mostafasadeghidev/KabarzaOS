@@ -53,9 +53,9 @@ function PaymentLines({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{t('تاریخ')}</TableHead>
-            <TableHead>{t('مبلغ')}</TableHead>
-            {showCounted && <TableHead>{t('معادل (محاسبه)')}</TableHead>}
+            <TableHead className="text-end">{t('تاریخ')}</TableHead>
+            <TableHead className="text-end">{t('مبلغ')}</TableHead>
+            {showCounted && <TableHead className="text-end">{t('معادل (محاسبه)')}</TableHead>}
             <TableHead>{t('توضیحات')}</TableHead>
             <TableHead>{t('رسید')}</TableHead>
           </TableRow>
@@ -244,9 +244,9 @@ export function MyMoneyView({
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>{t('تاریخ')}</TableHead>
-                                <TableHead>{t('تعداد')}</TableHead>
-                                <TableHead>{t('مبلغ')}</TableHead>
+                                <TableHead className="text-end">{t('تاریخ')}</TableHead>
+                                <TableHead className="text-end">{t('تعداد')}</TableHead>
+                                <TableHead className="text-end">{t('مبلغ')}</TableHead>
                                 <TableHead>{t('وضعیت')}</TableHead>
                               </TableRow>
                             </TableHeader>

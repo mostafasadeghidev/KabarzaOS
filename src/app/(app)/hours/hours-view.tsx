@@ -334,10 +334,10 @@ export function HoursView({ data }: { data: HoursData }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("تاریخ")}</TableHead>
+              <TableHead className="text-end">{t("تاریخ")}</TableHead>
               <TableHead>{t("پروژه")}</TableHead>
               <TableHead>{t("توضیح")}</TableHead>
-              <TableHead>{t("مدت")}</TableHead>
+              <TableHead className="text-end">{t("مدت")}</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>

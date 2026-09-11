@@ -92,11 +92,11 @@ export function MemberProjectsTable({
         <TableHeader>
           <TableRow>
             <TableHead>{t("پروژه")}</TableHead>
-            <TableHead>{t("توافق‌شده")}</TableHead>
-            <TableHead>{t("پرداخت‌شده")}</TableHead>
-            <TableHead>{t("مانده")}</TableHead>
+            <TableHead className="text-end">{t("توافق‌شده")}</TableHead>
+            <TableHead className="text-end">{t("پرداخت‌شده")}</TableHead>
+            <TableHead className="text-end">{t("مانده")}</TableHead>
             <TableHead>{t("وضعیت")}</TableHead>
-            <TableHead>{t("ساعت کاری")}</TableHead>
+            <TableHead className="text-end">{t("ساعت کاری")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -161,10 +161,10 @@ export function ClientProjectsTable({
           <TableRow>
             <TableHead>{t("پروژه")}</TableHead>
             <TableHead>{t("وضعیت")}</TableHead>
-            <TableHead>{t("قیمت")}</TableHead>
-            <TableHead>{t("هزینه‌های قابلِ صورت‌حساب")}</TableHead>
-            <TableHead>{t("دریافت‌شده")}</TableHead>
-            <TableHead>{t("مانده")}</TableHead>
+            <TableHead className="text-end">{t("قیمت")}</TableHead>
+            <TableHead className="text-end">{t("هزینه‌های قابلِ صورت‌حساب")}</TableHead>
+            <TableHead className="text-end">{t("دریافت‌شده")}</TableHead>
+            <TableHead className="text-end">{t("مانده")}</TableHead>
             <TableHead>{t("تسویه")}</TableHead>
           </TableRow>
         </TableHeader>

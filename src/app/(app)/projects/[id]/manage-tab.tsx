@@ -1,8 +1,8 @@
 'use client';
 
-import { useActionState, useState, useTransition } from 'react';
+import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Archive, ArchiveRestore, ImageIcon, Trash2, CircleAlert, TriangleAlert } from 'lucide-react';
+import { Archive, ArchiveRestore, ImageIcon, Trash2, CircleAlert, TriangleAlert, X } from 'lucide-react';
 import {
   deleteProjectAction, lightenAction, setArchivedAction, type DeleteActionState,
 } from '../_form/tab-actions';
@@ -26,6 +26,9 @@ import { useConfirm } from '@/components/ui/confirm';
 import { TablePager, useTableView } from '@/components/ui/table-search';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { DatePicker } from '@/components/ui/date-picker';
+import { filterLogs, logMembers, totalMinutes } from '@/domain/projects/log-filter';
 
 /**
  * تبِ مدیریت — بازسازیِ `manage_tab_html()`:
@@ -42,6 +45,8 @@ export interface HourRow {
 export interface LogRow {
   id: number;
   logDate: string;
+  /** برای فیلترِ عضو — با نام نه، چون دو عضو ممکن است هم‌نام باشند. */
+  userId: number;
   userName: string | null;
   minutes: number;
   description: string;
@@ -92,20 +97,67 @@ export function TeamMatrix({ rows, dayLabels }: { rows: MatrixRowView[]; dayLabe
   );
 }
 
-/** پورتِ «جزئیاتِ ثبت‌ها»: تاریخ، عضو، مدت، توضیح — ۱۵تایی. */
+/**
+ * پورتِ «جزئیاتِ ثبت‌ها»: تاریخ، عضو، مدت، توضیح — ۱۵تایی.
+ * فیلترِ عضو و روز روی همان ثبت‌های لودشده است (← log-filter)؛ با فیلترِ
+ * فعال، مجموعِ مدتِ ثبت‌های منطبق هم زیرِ جدول می‌آید.
+ */
 function LogDetail({ logs }: { logs: LogRow[] }) {
   const t = useT();
-  const view = useTableView(logs, (r) => `${r.userName ?? ''} ${r.description} ${r.logDate}`, 15);
+  const [userId, setUserId] = useState('');
+  const [date, setDate] = useState('');
+  const members = useMemo(() => logMembers(logs), [logs]);
+  const filtered = useMemo(() => filterLogs(logs, { userId, date }), [logs, userId, date]);
+  const view = useTableView(filtered, (r) => `${r.userName ?? ''} ${r.description} ${r.logDate}`, 15);
+  const filtering = userId !== '' || date !== '';
   if (logs.length === 0) return null;
+
+  // ⚠️ هر تغییرِ فیلتر به صفحهٔ اول برمی‌گردد؛ وگرنه کاربر روی «صفحهٔ ۳» ِ
+  // فهرستی می‌ماند که حالا کوتاه‌تر شده.
+  const applyFilter = (next: { userId?: string; date?: string }) => {
+    if (next.userId !== undefined) setUserId(next.userId);
+    if (next.date !== undefined) setDate(next.date);
+    view.setPage(1);
+  };
+
   return (
     <Card className="gap-2 px-4 py-4 shadow-xs">
-      <h3 className="text-sm font-semibold">{t("جزئیاتِ ثبت‌ها")}</h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold">{t("جزئیاتِ ثبت‌ها")}</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <NativeSelect
+            size="sm"
+            aria-label={t("عضو")}
+            value={userId}
+            onChange={(e) => applyFilter({ userId: e.target.value })}
+          >
+            <NativeSelectOption value="">{t("همهٔ اعضا")}</NativeSelectOption>
+            {members.map((m) => (
+              <NativeSelectOption key={m.id} value={m.id}>{m.name}</NativeSelectOption>
+            ))}
+          </NativeSelect>
+          <DatePicker
+            size="sm"
+            aria-label={t("تاریخ")}
+            placeholder={t("تاریخ")}
+            value={date}
+            onChange={(v) => applyFilter({ date: v })}
+            className="w-[9.5rem]"
+          />
+          {filtering && (
+            <Button type="button" size="sm" variant="ghost" onClick={() => applyFilter({ userId: '', date: '' })}>
+              <X />
+              {t("پاک کردن")}
+            </Button>
+          )}
+        </div>
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{t("تاریخ")}</TableHead>
+            <TableHead className="text-end">{t("تاریخ")}</TableHead>
             <TableHead>{t("عضو")}</TableHead>
-            <TableHead>{t("مدت")}</TableHead>
+            <TableHead className="text-end">{t("مدت")}</TableHead>
             <TableHead>{t("توضیحات")}</TableHead>
           </TableRow>
         </TableHeader>
@@ -118,9 +170,26 @@ function LogDetail({ logs }: { logs: LogRow[] }) {
               <TableCell>{r.description || '—'}</TableCell>
             </TableRow>
           ))}
+          {filtered.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={4} className="py-4 text-center text-xs text-muted-foreground">
+                {t("نتیجه‌ای نیست")}
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
-      <TablePager view={view} />
+      {(view.totalPages > 1 || (filtering && filtered.length > 0)) && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <TablePager view={view} />
+          {filtering && filtered.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {t("مجموع ساعت کاری")}:{' '}
+              <span className="num font-medium text-foreground">{hhmm(totalMinutes(filtered))}</span>
+            </p>
+          )}
+        </div>
+      )}
     </Card>
   );
 }
@@ -501,7 +570,7 @@ export function ManageTab({
             <TableHeader>
               <TableRow>
                 <TableHead>{t("عضو")}</TableHead>
-                <TableHead>{t("ساعت کاری")}</TableHead>
+                <TableHead className="text-end">{t("ساعت کاری")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

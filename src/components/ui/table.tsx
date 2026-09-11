@@ -49,6 +49,10 @@ export function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTa
  * در حالی که `text-end` ِ سرستون (که جهتِ جدول را دارد) در فارسی یعنی
  * **چپ** — عدد و سرستونش به دو سمتِ مخالف می‌رفتند. با span، ترازِ سلول و
  * سرستون هر دو از جهتِ جدول می‌آید و در هر زبانی زیرِ هم می‌مانند.
+ *
+ * ⚠️ سرستونِ ستونِ عددی **خودش** `text-end` نمی‌گیرد — `TableHead` پیش‌فرض
+ * `text-start` است و باید `className="text-end"` بخورد. بدونِ آن در فارسی
+ * سرستون راست می‌نشست و عددها چپ (۹۸ سرستون در ۱.۷۳.۰ همین‌طور بودند).
  */
 export function TableNumericCell({ className, children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (

@@ -107,8 +107,8 @@ export function AccountsView({
                 <TableHead>{t("نام")}</TableHead>
                 <TableHead>{t("ارز")}</TableHead>
                 <TableHead>{t("دفتر")}</TableHead>
-                <TableHead>{t("مانده اولیه")}</TableHead>
-                <TableHead>{t("مانده")}</TableHead>
+                <TableHead className="text-end">{t("مانده اولیه")}</TableHead>
+                <TableHead className="text-end">{t("مانده")}</TableHead>
                 <TableHead>{t("وضعیت")}</TableHead>
                 {canManage && <TableHead />}
               </TableRow>

@@ -122,8 +122,8 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{tr('از')}</TableHead>
-                <TableHead>{tr('تا')}</TableHead>
+                <TableHead className="text-end">{tr('از')}</TableHead>
+                <TableHead className="text-end">{tr('تا')}</TableHead>
                 <TableHead>{tr('توضیح')}</TableHead>
                 <TableHead />
               </TableRow>

@@ -166,10 +166,10 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("تاریخ")}</TableHead>
+                <TableHead className="text-end">{t("تاریخ")}</TableHead>
                 {data.canManage && <TableHead>{t("عضو")}</TableHead>}
-                <TableHead>{t("تعداد")}</TableHead>
-                <TableHead>{t("مبلغ")}</TableHead>
+                <TableHead className="text-end">{t("تعداد")}</TableHead>
+                <TableHead className="text-end">{t("مبلغ")}</TableHead>
                 <TableHead>{t("وضعیت")}</TableHead>
                 <TableHead />
               </TableRow>

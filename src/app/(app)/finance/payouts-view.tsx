@@ -336,9 +336,9 @@ export function PayoutsView({
                 <TableRow>
                   <TableHead>{t("عضو")}</TableHead>
                   <TableHead>{t("پروژه")}</TableHead>
-                  <TableHead>{t("مبلغ")}</TableHead>
-                  <TableHead>{t("ماندهٔ قرارداد")}</TableHead>
-                  <TableHead>{t("تاریخ")}</TableHead>
+                  <TableHead className="text-end">{t("مبلغ")}</TableHead>
+                  <TableHead className="text-end">{t("ماندهٔ قرارداد")}</TableHead>
+                  <TableHead className="text-end">{t("تاریخ")}</TableHead>
                   <TableHead>{t("وضعیت")}</TableHead>
                   <TableHead>{t("اطلاعات بانکی")}</TableHead>
                   {canManage && <TableHead />}
@@ -441,11 +441,11 @@ export function PayoutsView({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t("تاریخ")}</TableHead>
+                  <TableHead className="text-end">{t("تاریخ")}</TableHead>
                   <TableHead>{t("عضو")}</TableHead>
                   <TableHead>{t("پروژه")}</TableHead>
-                  <TableHead>{t("تعداد")}</TableHead>
-                  <TableHead>{t("مبلغ")}</TableHead>
+                  <TableHead className="text-end">{t("تعداد")}</TableHead>
+                  <TableHead className="text-end">{t("مبلغ")}</TableHead>
                   {canManage && <TableHead />}
                 </TableRow>
               </TableHeader>
@@ -489,10 +489,10 @@ export function PayoutsView({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("تاریخ")}</TableHead>
+                <TableHead className="text-end">{t("تاریخ")}</TableHead>
                 <TableHead>{t("طرف")}</TableHead>
                 <TableHead>{t("نوع")}</TableHead>
-                <TableHead>{t("مبلغ")}</TableHead>
+                <TableHead className="text-end">{t("مبلغ")}</TableHead>
                 <TableHead>{t("توضیحات")}</TableHead>
                 <TableHead>{t("رسید")}</TableHead>
               </TableRow>

@@ -108,8 +108,8 @@ export default async function TeamMemberPage({
                 <TableHead>{t("پروژه")}</TableHead>
                 <TableHead>{t("نقش")}</TableHead>
                 <TableHead>{t("درصد پیشرفت")}</TableHead>
-                <TableHead>{t("ساعت کاری")}</TableHead>
-                <TableHead>{t("تسک باز")}</TableHead>
+                <TableHead className="text-end">{t("ساعت کاری")}</TableHead>
+                <TableHead className="text-end">{t("تسک باز")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,7 +143,7 @@ export default async function TeamMemberPage({
             <TableHeader>
               <TableRow>
                 <TableHead>{t("پروژه")}</TableHead>
-                <TableHead>{t("ساعت کاری")}</TableHead>
+                <TableHead className="text-end">{t("ساعت کاری")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

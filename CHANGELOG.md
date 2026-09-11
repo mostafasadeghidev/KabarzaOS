@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.73.0]
+
+### Added
+
+- **Filters for a project's log details.** The "Log details" table on the project's Manage tab can be narrowed to one member and one day. The filters work on the entries already loaded on the page (the latest 500, as before), so the table updates instantly; while a filter is on, the total time of the matching entries is shown under the table, and "Clear" removes both filters.
+
+### Fixed
+
+- **Table headers line up with their values in right-to-left languages.** Number, amount, date and duration cells are aligned to the end of their column, but most of their headers were aligned to the start, so in Persian, Arabic and Kurdish the header sat on the right of the column and its values on the left. 98 headers across Reports, Finance, Hours, My money, the Team pages, Activity and the project tabs — including "Members' working hours" and "Log details" — now sit above their values.
+
+---
+
 ## [1.72.1]
 
 ### Fixed

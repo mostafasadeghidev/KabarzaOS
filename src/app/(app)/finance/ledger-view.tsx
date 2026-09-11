@@ -306,16 +306,16 @@ export function LedgerView({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>{t("تاریخ")}</TableHead>
+                <TableHead className="text-end">#</TableHead>
+                <TableHead className="text-end">{t("تاریخ")}</TableHead>
                 <TableHead>{t("تگ‌ها")}</TableHead>
                 <TableHead>{t("توضیحات")}</TableHead>
-                <TableHead>{t("مبلغ")}</TableHead>
+                <TableHead className="text-end">{t("مبلغ")}</TableHead>
                 <TableHead>{t("پرداخت‌کننده")}</TableHead>
                 <TableHead>{t("دریافت‌کننده")}</TableHead>
                 <TableHead>{t("بابت")}</TableHead>
                 <TableHead>{t("توسط")}</TableHead>
-                {showEur && <TableHead>{t("معادل یورو")}</TableHead>}
+                {showEur && <TableHead className="text-end">{t("معادل یورو")}</TableHead>}
                 <TableHead>{t("رسید")}</TableHead>
                 {canManage && <TableHead />}
               </TableRow>
