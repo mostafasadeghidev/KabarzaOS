@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.72.1]
+
+### Fixed
+
+- **Project cards line up with the cards beside them.** Each card on the Projects page stacked its sections on its own, so a card with a deadline, a parent link, a longer title or more team chips pushed everything below it down, and the task counters, progress bars and View buttons of cards in the same row ended up at different heights. The cards now share the grid's rows (CSS subgrid): the deadline line, counters, progress bar, team box, quick-add links and View button each start on the same line across a row, and the dashed team boxes in a row are the same height. A card without a deadline says "No deadline" on that line instead of leaving a gap.
+
+---
+
 ## [1.72.0]
 
 ### Changed

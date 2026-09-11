@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { ChevronDown, CornerDownLeft, MessageSquare, ListChecks } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format } from '@/domain/money/money';
 import { summarizeProject } from '@/domain/team-money/payments';
@@ -20,7 +20,7 @@ import { useT } from '@/i18n/client';
  *
  * ترتیبِ بخش‌ها عیناً همان است: سرصفحه (عنوان + چیپِ وضعیت + مونوگرام) ←
  * پیوندِ والد/فرزند ← مبلغِ پنهان ← نوارِ ددلاین ← شمارنده‌های ریویو ←
- * نوارِ پیشرفت ← چیپِ کارفرما و تیم ← دکمهٔ مشاهده.
+ * نوارِ پیشرفت ← چیپِ کارفرما و تیم ← افزودنِ سریع ← دکمهٔ مشاهده.
  */
 
 /** رنگِ نوارِ ددلاین بر پایهٔ فوریت — همان پله‌های نسخهٔ قبلی. */
@@ -73,10 +73,22 @@ export function ProjectCard({
    * ⚠️ سایهٔ واقعی، نه `shadow-xs`: با پس‌زمینهٔ کاغذیِ تازه، کارت باید از
    * صفحه بلند شود. `hover:shadow-md` بازخوردِ لمسی می‌دهد بی‌آنکه رنگی
    * اضافه کند.
+   *
+   * ⚠️ هم‌ترازی با کارت‌های کناری — subgrid: کارت ۹ ردیف از شبکهٔ والد را
+   * می‌گیرد (`row-span-9`) و ردیف‌هایش را از همان‌جا برمی‌دارد
+   * (`grid-rows-subgrid`). ارتفاعِ هر ردیف بلندترین نسخهٔ آن بخش در ردیفِ
+   * کارت‌هاست، پس ددلاین، نوارِ پیشرفت و دکمهٔ مشاهده در همهٔ کارت‌های یک
+   * ردیف روی یک خط می‌نشینند — هر قدر هم عنوان یا چیپ‌های بالایشان بلند باشد.
+   *   - هر بخش **همیشه** یک فرزندِ مستقیم است، حتی خالی: بخشِ غایب بخش‌های
+   *     بعدی را یک ردیف بالا می‌کشد. شمارِ فرزندانِ درون‌جریان = ۹.
+   *   - فاصله `pt` ِ خودِ بخش است و `gap` صفر: ردیفی که در هیچ کارتی محتوا
+   *     ندارد (پیوندِ والد، مبلغ برای عضو، افزودنِ سریع برای غیرمدیر) باید
+   *     صفر شود، ولی gap دو طرفش می‌ماند. فاصلهٔ عمودیِ کارت‌ها هم به همین
+   *     دلیل `mb-3` است نه `gap-y` ِ شبکه (← project-grid).
    */
   return (
-    <Card className="relative gap-3 overflow-hidden py-4 shadow-sm transition-all hover:border-border/80 hover:shadow-md">
-      {/* نوارهای گوشه — بایگانی و مناقصه، مثلِ ribbonهای نسخهٔ قبلی. */}
+    <Card className="relative row-span-9 mb-3 grid grid-rows-subgrid gap-0 overflow-clip px-4 py-4 shadow-sm transition-all hover:border-border/80 hover:shadow-md">
+      {/* نوارهای گوشه — بایگانی و مناقصه، مثلِ ribbonهای نسخهٔ قبلی. absolute است و ردیفی نمی‌گیرد. */}
       <div className="absolute top-0 end-0 flex">
         {project.isArchived && (
           <span className="bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
@@ -94,40 +106,41 @@ export function ProjectCard({
         )}
       </div>
 
-      <CardHeader className="gap-2 px-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <Link
-              href={`/projects/${project.id}`}
-              className="block text-sm leading-snug font-semibold hover:underline"
-            >
-              {project.title}
-            </Link>
-            <div className="mt-1">
-              <StatusPicker
-                projectId={project.id}
-                name={project.statusName}
-                group={project.statusGroup}
-                statusId={project.statusTagId}
-                options={statuses}
-                canManage={cardOptions !== null}
-              />
-            </div>
+      {/* ۱ · سرصفحه */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <Link
+            href={`/projects/${project.id}`}
+            className="block text-sm leading-snug font-semibold hover:underline"
+          >
+            {project.title}
+          </Link>
+          <div className="mt-1">
+            <StatusPicker
+              projectId={project.id}
+              name={project.statusName}
+              group={project.statusGroup}
+              statusId={project.statusTagId}
+              options={statuses}
+              canManage={cardOptions !== null}
+            />
           </div>
-          <Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} />
         </div>
+        <Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} />
+      </div>
 
-        {/* والد یا فرزندان — پیوند به کارتِ آن پروژه. */}
+      {/* ۲ · والد یا فرزندان — پیوند به کارتِ آن پروژه. */}
+      <div>
         {project.parentId !== null ? (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 pt-2 text-xs text-muted-foreground">
             <CornerDownLeft className="size-3" />
-              {tr("پیروِ:")}
+            {tr("پیروِ:")}
             <Link href={`/projects/${project.parentId}`} className="text-foreground hover:underline">
               {project.parentTitle}
             </Link>
           </div>
         ) : project.children.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-1 pt-2 text-xs text-muted-foreground">
             <ChevronDown className="size-3" />
             {t('زیرپروژه‌ها:')}
             {project.children.map((c, i) => (
@@ -140,16 +153,17 @@ export function ProjectCard({
             ))}
           </div>
         ) : null}
-      </CardHeader>
+      </div>
 
-      <CardContent className="grid gap-3 px-4">
-        {/*
-          ⚠️ ردیفِ «مبلغ» فقط برای کسی که حقِ دیدنِ قیمت دارد — مالک/مدیرِ
-          مالی و کارفرمای همین پروژه. سرویس قیمت را برای بقیه صفر می‌فرستد
-          (`maskPrices`)، پس نشان‌دادنِ «۰» گمراه‌کننده بود.
-        */}
+      {/*
+        ۳ · مبلغ.
+        ⚠️ ردیفِ «مبلغ» فقط برای کسی که حقِ دیدنِ قیمت دارد — مالک/مدیرِ
+        مالی و کارفرمای همین پروژه. سرویس قیمت را برای بقیه صفر می‌فرستد
+        (`maskPrices`)، پس نشان‌دادنِ «۰» گمراه‌کننده بود.
+      */}
+      <div>
         {project.canSeePrice && (
-          <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center justify-between pt-3 text-xs">
             <span className="text-muted-foreground">{t("مبلغ")}</span>
             {/*
               R-TEAM-04 — «مبلغ» جمعِ قیمت و هزینه‌های قابلِ‌صورتحساب است،
@@ -162,9 +176,15 @@ export function ProjectCard({
             />
           </div>
         )}
+      </div>
 
-        {/* نوارِ ددلاین — پر می‌شود و روزهای مانده را نشان می‌دهد. */}
-        {bar && urgency && (
+      {/*
+        ۴ · نوارِ ددلاین — پر می‌شود و روزهای مانده را نشان می‌دهد.
+        ⚠️ بی‌ددلاین هم خطش می‌ماند: کنارِ کارتی که ددلاین دارد، جای خالی وسطِ
+        کارت شبیهِ خطای چیدمان بود؛ «بدون ددلاین» می‌گوید چرا خالی است.
+      */}
+      <div className="pt-3">
+        {bar && urgency ? (
           <div className="grid gap-1">
             <div className="flex items-center justify-between text-[11px]">
               <span className="text-muted-foreground">{t("ددلاین")}</span>
@@ -175,31 +195,35 @@ export function ProjectCard({
               <div className={`h-full ${urgency.bar}`} style={{ width: `${bar.percent}%` }} />
             </div>
           </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">{t("بدون ددلاین")}</p>
         )}
+      </div>
 
-        {/* دو شمارندهٔ ریویو — تسک و کامنت. */}
-        <div className="flex gap-4 text-xs">
-          <Link
-            href={`/projects/${project.id}?tab=tasks&view=review`}
-            className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-            title={t("تسک‌های نیازمند ریویو")}
-          >
-            <ListChecks className="size-3.5" />
-              {tr("تسک‌ها")}
-            <b className="num">{project.reviewCount}</b>
-          </Link>
-          <Link
-            href={`/projects/${project.id}?tab=comments`}
-            className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-            title={t("کامنت‌های نیازمند بررسی")}
-          >
-            <MessageSquare className="size-3.5" />
-              {tr("کامنت")}
-            <b className="num">{project.commentReviewCount}</b>
-          </Link>
-        </div>
+      {/* ۵ · دو شمارندهٔ ریویو — تسک و کامنت. */}
+      <div className="flex gap-4 pt-3 text-xs">
+        <Link
+          href={`/projects/${project.id}?tab=tasks&view=review`}
+          className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          title={t("تسک‌های نیازمند ریویو")}
+        >
+          <ListChecks className="size-3.5" />
+          {tr("تسک‌ها")}
+          <b className="num">{project.reviewCount}</b>
+        </Link>
+        <Link
+          href={`/projects/${project.id}?tab=comments`}
+          className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          title={t("کامنت‌های نیازمند بررسی")}
+        >
+          <MessageSquare className="size-3.5" />
+          {tr("کامنت")}
+          <b className="num">{project.commentReviewCount}</b>
+        </Link>
+      </div>
 
-        {/* پیشرفتِ تسک‌ها. */}
+      {/* ۶ · پیشرفتِ تسک‌ها. */}
+      <div className="pt-3">
         <Link
           href={`/projects/${project.id}?tab=tasks`}
           className="grid gap-1"
@@ -215,9 +239,15 @@ export function ProjectCard({
             {tr('{done}/{total} تسک', { done: project.doneTaskCount, total: project.totalTaskCount })}
           </small>
         </Link>
+      </div>
 
-        {/* جعبهٔ چیپ‌ها — کارفرمایان بالا، اعضا پایین. */}
-        <div className="rounded-md border border-dashed p-2">
+      {/*
+        ۷ · جعبهٔ چیپ‌ها — کارفرمایان بالا، اعضا پایین.
+        ⚠️ جعبه تا تهِ ردیف کش می‌آید تا کادرهای خط‌چینِ یک ردیف هم‌قد باشند،
+        نه یکی کوتاه‌تر از کناری‌اش.
+      */}
+      <div className="flex flex-col pt-3">
+        <div className="flex-1 rounded-md border border-dashed p-2">
           {project.clients.length === 0 && project.members.length === 0 ? (
             <span className="text-xs text-muted-foreground">{t("هنوز کسی ساین نشده")}</span>
           ) : (
@@ -240,16 +270,23 @@ export function ProjectCard({
             </div>
           )}
         </div>
+      </div>
 
-        {/* افزودنِ سریع — زیرِ جعبهٔ چیپ‌ها، دقیقاً مثلِ نسخهٔ قبلی. */}
-        {cardOptions && <CardQuickAdd projectId={project.id} options={cardOptions} />}
+      {/* ۸ · افزودنِ سریع — زیرِ جعبهٔ چیپ‌ها، دقیقاً مثلِ نسخهٔ قبلی. */}
+      <div>
+        {cardOptions && (
+          <div className="pt-3">
+            <CardQuickAdd projectId={project.id} options={cardOptions} />
+          </div>
+        )}
+      </div>
 
-        <div className="flex justify-end">
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/projects/${project.id}`}>{t("مشاهده")}</Link>
-          </Button>
-        </div>
-      </CardContent>
+      {/* ۹ · دکمهٔ مشاهده — ردیفِ آخر. */}
+      <div className="flex justify-end pt-3">
+        <Button asChild size="sm" variant="outline">
+          <Link href={`/projects/${project.id}`}>{t("مشاهده")}</Link>
+        </Button>
+      </div>
     </Card>
   );
 }
