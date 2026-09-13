@@ -17,7 +17,7 @@
     "verify": "pnpm typecheck && pnpm test",
     "test:db": "vitest run --config vitest.db.config.ts",
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
-    "start:all": "docker compose up -d db storage && pnpm db:migrate && pnpm dev"
+    "start:all": "docker compose -f docker-compose.dev.yml up -d --wait db storage && pnpm db:migrate && pnpm dev"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1119.0",
