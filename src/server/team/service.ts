@@ -4,8 +4,9 @@ import { and, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   comments, projectMembers, projects, tags, tasks, timelogs, userOffices, users, userRoles, tagRelations, absences,
+  offices as officesTable,
 } from '@/db/schema';
-import { type Actor } from '@/domain/access/permissions';
+import { isOwner, type Actor } from '@/domain/access/permissions';
 import { ForbiddenError, visibleScopes } from '@/domain/access/guard';
 import {
   canMonitor, isOfficeManager, monitorableUserIds, resolveRange,
@@ -35,18 +36,38 @@ export async function managedOfficeIds(userId: number): Promise<number[]> {
 }
 
 /**
+ * دفاترِ «تیمِ من» برای این کاربر.
+ *
+ * مدیرِ دفتر: دفاترِ تحتِ مدیریتش. مدیرِ کل: اگر تنظیمِ «تیمِ من برای مدیرِ کل»
+ * روشن باشد، **همهٔ** دفاتر (غیرفعال هم، مثلِ مدیرِ دفتری که به دفترِ غیرفعال
+ * وصل است) — بی‌آنکه مدیرِ دفتری شود؛ حسابِ مدیرِ کل از صفحهٔ اعضا عمداً
+ * ویرایش‌پذیر نیست (`canEditPerson`).
+ *
+ * ⚠️ فقط دامنهٔ همین بخش است و ردیفِ `user_offices` نمی‌سازد: اعلان‌های مدیرِ
+ * دفتر، دسترسیِ پروژه و جلسات همچنان از مدیریتِ واقعی می‌خوانند.
+ */
+async function teamOfficeIds(actor: Actor): Promise<number[]> {
+  if (isOwner(actor) && (await getSystemConfig()).ownerTeamView) {
+    const rows = await db.select({ id: officesTable.id }).from(officesTable).orderBy(officesTable.id);
+    return rows.map((r) => r.id);
+  }
+  return managedOfficeIds(actor.id);
+}
+
+/**
  * آیا این کاربر بخشِ «تیمِ من» را می‌بیند؟
  *
- * ⚠️ تنها شرط داشتنِ دفترِ تحتِ مدیریت است — مثلِ `is_office_manager()` ِ
- * نسخهٔ قبلی. اول مدیرانِ پروژه را استثنا کرده بودم، ولی آن‌وقت منو و خودِ صفحه
- * دو جواب می‌دادند: منو پنهان بود و آدرس باز می‌شد.
+ * ⚠️ شرط، داشتنِ دفتر در دامنهٔ «تیمِ من» است (← teamOfficeIds) — برای مدیرِ
+ * دفتر مثلِ `is_office_manager()` ِ نسخهٔ قبلی. اول مدیرانِ پروژه را استثنا
+ * کرده بودم، ولی آن‌وقت منو و خودِ صفحه دو جواب می‌دادند: منو پنهان بود و آدرس
+ * باز می‌شد.
  */
 export async function hasTeamScope(actor: Actor): Promise<boolean> {
-  return isOfficeManager(await managedOfficeIds(actor.id));
+  return isOfficeManager(await teamOfficeIds(actor));
 }
 
 async function assertTeamScope(actor: Actor): Promise<number[]> {
-  const offices = await managedOfficeIds(actor.id);
+  const offices = await teamOfficeIds(actor);
   if (!isOfficeManager(offices)) throw new ForbiddenError('office.not_manager');
   return offices;
 }

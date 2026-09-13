@@ -281,6 +281,7 @@ export async function saveSystemAction(
       pulseInterval: formData.get('pulseInterval'),
       chatPollEnabled: formData.get('chatPollEnabled') !== null,
       chatPollInterval: formData.get('chatPollInterval'),
+      ownerTeamView: formData.get('ownerTeamView') !== null,
     });
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'دسترسی ندارید.' };

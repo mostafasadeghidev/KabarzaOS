@@ -31,6 +31,13 @@ describe('تنظیماتِ سامانه', () => {
     expect(normalizeSystem({ chatPollEnabled: '1' }).chatPollEnabled).toBe(true);
   });
 
+  it('«تیمِ من» برای مدیرِ کل پیش‌فرض خاموش است و فقط با انتخاب روشن می‌شود', () => {
+    expect(normalizeSystem({}).ownerTeamView).toBe(false);
+    expect(normalizeSystem({ ownerTeamView: true }).ownerTeamView).toBe(true);
+    expect(normalizeSystem({ ownerTeamView: '0' }).ownerTeamView).toBe(false);
+    expect(normalizeSystem({ ownerTeamView: 'بله' }).ownerTeamView).toBe(false);
+  });
+
   it('پاک‌سازیِ پیام در هر دو سو مهار می‌شود', () => {
     expect(normalizeSystem({ msgPurgeDays: -5 }).msgPurgeDays).toBe(0);
     expect(normalizeSystem({ msgPurgeDays: 9999 }).msgPurgeDays).toBe(MAX_PURGE_DAYS);

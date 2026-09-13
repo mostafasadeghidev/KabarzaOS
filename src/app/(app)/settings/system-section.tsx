@@ -190,6 +190,21 @@ export function SystemSection({ config, health, isOwner, telegram }: {
         </div>
       </div>
 
+      {/*
+        ⚠️ برای همهٔ کسانی که این فرم را ذخیره می‌کنند دیده می‌شود، نه فقط مالک:
+        کلیدِ خاموش در FormData نیست، پس اگر برای همکارِ ادمین پنهان بود، ذخیرهٔ
+        او بی‌صدا خاموشش می‌کرد.
+      */}
+      <div className="grid gap-1">
+        <label className="flex items-center gap-1.5 text-sm">
+          <Switch name="ownerTeamView" defaultChecked={config.ownerTeamView} />
+          {tr("«تیمِ من» برای مدیرِ کل")}
+        </label>
+        <p className="text-xs text-muted-foreground">
+          {tr("مدیرِ کل بدونِ اینکه مدیرِ دفتری باشد، منوی «تیمِ من» را با همهٔ دفاتر می‌بیند.")}
+        </p>
+      </div>
+
       <fieldset className="grid gap-3 rounded-md border p-3">
         <legend className="px-1 text-sm font-medium">{t("حضورِ زنده")}</legend>
         <label className="flex items-center gap-1.5 text-sm">

@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.75.0]
+
+### Added
+
+- **"My team" for the owner.** Settings → System has a new switch, "My team for the owner". When it is on, the owner sees the My team menu with every office — its members and their hours, projects, tasks and review queue — without being made the manager of an office, which the owner's account cannot be from the Members page. It is off by default. Projects that have no office are not part of My team, the same as for office managers.
+
+### Security
+
+- **The owner can no longer be changed through "Add existing user".** Editing refuses the owner's account, but choosing an existing user in the Add form skipped that check, so anyone allowed to manage members could pick the owner and change the owner's roles and offices (not the name, email or password). The Add form now follows the same rule as editing: the owner is never offered or accepted, and admin colleagues can be added only by the owner.
+
+---
+
 ## [1.74.0]
 
 ### Added

@@ -181,14 +181,21 @@ export async function rolesOf(userId: number): Promise<Role[]> {
  * ⚠️ کاربرِ حذف‌شده (`deleted_at`) بیرون است، ولی عضوِ **سابق** عمداً می‌ماند:
  * درست همان کسی که پیش‌تر همکار بوده و حالا به‌عنوانِ کارفرما برمی‌گردد.
  */
-export async function usersWithoutRole(role: Role) {
+export async function usersWithoutRole(role: Role, exclude: readonly Role[] = []) {
   const holders = db.select({ userId: userRoles.userId })
     .from(userRoles).where(eq(userRoles.role, role));
+  // دارندگانِ نقش‌های `exclude` اصلاً در فهرست نمی‌آیند (← editableCandidates در سرویس).
+  const excluded = db.select({ userId: userRoles.userId })
+    .from(userRoles).where(inArray(userRoles.role, [...exclude]));
 
   return db
     .select({ id: users.id, name: users.name, email: users.email, phone: users.phone })
     .from(users)
-    .where(and(isNull(users.deletedAt), notInArray(users.id, holders)))
+    .where(and(
+      isNull(users.deletedAt),
+      notInArray(users.id, holders),
+      exclude.length > 0 ? notInArray(users.id, excluded) : undefined,
+    ))
     .orderBy(users.name);
 }
 

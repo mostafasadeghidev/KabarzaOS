@@ -1,9 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
-  absences, currencies, offices, projectMembers, projects, tagRelations, tags, tasks, timelogs, userOffices, userRoles, users,
+  absences, currencies, offices, projectMembers, projects, schedulerStamps, tagRelations, tags, tasks, timelogs,
+  userOffices, userRoles, users,
 } from '../schema';
-import { teamMember, teamMembers } from '@/server/team/service';
+import { hasTeamScope, teamMember, teamMembers, teamScope } from '@/server/team/service';
+import { ForbiddenError } from '@/domain/access/guard';
 import type { Actor } from '@/domain/access/permissions';
 
 /** «تیمِ من» — کارت‌های اعضا و پروفایلِ عضو (پورتِ view_team_members / view_team_member). */
@@ -74,5 +77,59 @@ describe('پروفایلِ عضو', () => {
     expect(d.dayLabels).toHaveLength(7);
     expect(d.canLeave).toBe(true);
     expect(d.absences.map((a) => a.note)).toEqual(['امروز']);
+  });
+});
+
+/**
+ * «تیمِ من» برای مدیرِ کل — تنظیمِ سامانه، بی‌آنکه مدیرِ دفتری شود.
+ * ⚠️ تنظیمِ سامانه در `scheduler_stamps` است و میانِ فایل‌های تست مشترک؛ مقدارِ
+ * قبلی برمی‌گردد تا تست‌های دیگر همان را ببینند.
+ */
+describe('«تیمِ من» برای مدیرِ کل', () => {
+  const KEY = 'system:config';
+  let OWNER = 0;
+  let previous: string | undefined;
+  const owner = (): Actor => ({ id: OWNER, roles: ['owner'], permissions: [], privateAccess: true });
+  const setOwnerTeamView = async (on: boolean) => {
+    const value = JSON.stringify({ ownerTeamView: on });
+    await db.insert(schedulerStamps).values({ key: KEY, value })
+      .onConflictDoUpdate({ target: schedulerStamps.key, set: { value } });
+  };
+
+  beforeAll(async () => {
+    previous = (await db.select({ value: schedulerStamps.value }).from(schedulerStamps)
+      .where(eq(schedulerStamps.key, KEY)))[0]?.value;
+    const [u] = await db.insert(users).values({ email: 'owner@t', name: 'مالک' }).returning({ id: users.id });
+    OWNER = u!.id;
+    await db.insert(userRoles).values({ userId: OWNER, role: 'owner' });
+    // دفترِ غیرفعال هم در دامنه است، مثلِ مدیرِ دفتری که به آن وصل است.
+    await db.insert(offices).values({ name: 'قدیمی', isActive: false });
+  });
+
+  afterAll(async () => {
+    if (previous === undefined) await db.delete(schedulerStamps).where(eq(schedulerStamps.key, KEY));
+    else await db.update(schedulerStamps).set({ value: previous }).where(eq(schedulerStamps.key, KEY));
+  });
+
+  it('خاموش: مدیرِ کلی که مدیرِ دفتری نیست، منو و صفحه ندارد', async () => {
+    await setOwnerTeamView(false);
+    expect(await hasTeamScope(owner())).toBe(false);
+    await expect(teamScope(owner())).rejects.toThrow(ForbiddenError);
+  });
+
+  it('روشن: همهٔ دفاتر و پروژه‌هایشان — بی‌آنکه ردیفِ مدیریتی ساخته شود', async () => {
+    await setOwnerTeamView(true);
+    expect(await hasTeamScope(owner())).toBe(true);
+    const all = (await db.select({ id: offices.id }).from(offices).orderBy(offices.id)).map((r) => r.id);
+    const scope = await teamScope(owner());
+    expect(scope.offices).toEqual(all);
+    expect(all).toHaveLength(2);
+    expect([...scope.projectIds].sort((a, b) => a - b)).toEqual([P_OPEN, P_DONE].sort((a, b) => a - b));
+    expect(await db.select().from(userOffices).where(eq(userOffices.userId, OWNER))).toEqual([]);
+  });
+
+  it('روشن بودنش برای غیرِ مدیرِ کل اثری ندارد', async () => {
+    await setOwnerTeamView(true);
+    expect(await hasTeamScope({ id: M1, roles: ['member'], permissions: [], privateAccess: false })).toBe(false);
   });
 });

@@ -55,6 +55,11 @@ export interface SystemConfig {
   pulseInterval: number;
   chatPollEnabled: boolean;
   chatPollInterval: number;
+  /**
+   * «تیمِ من» برای مدیرِ کل — با همهٔ دفاتر، بی‌آنکه مدیرِ دفتری باشد.
+   * ⚠️ پیش‌فرض خاموش: تا کسی روشنش نکند، فقط مدیرِ دفتر این منو را می‌بیند.
+   */
+  ownerTeamView: boolean;
 }
 
 export const DEFAULT_SYSTEM: SystemConfig = {
@@ -71,6 +76,7 @@ export const DEFAULT_SYSTEM: SystemConfig = {
   pulseInterval: 45,
   chatPollEnabled: true,
   chatPollInterval: 7,
+  ownerTeamView: false,
 };
 
 function fromChoices(value: unknown, choices: readonly number[], fallback: number): number {
@@ -120,5 +126,6 @@ export function normalizeSystem(input: Partial<Record<keyof SystemConfig, unknow
     chatPollInterval: fromChoices(
       input.chatPollInterval, CHATPOLL_CHOICES, DEFAULT_SYSTEM.chatPollInterval,
     ),
+    ownerTeamView: bool(input.ownerTeamView, DEFAULT_SYSTEM.ownerTeamView),
   };
 }

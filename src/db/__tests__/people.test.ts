@@ -213,19 +213,23 @@ describe('مدیریتِ دفتر به نقش گره خورده است', () => {
  * را واقعاً پاک می‌کنند و تکیه بر آن‌ها تست را به ترتیبِ اجرا وابسته می‌کرد.
  */
 describe('افزودنِ کاربرِ موجود به یک بخش', () => {
-  let solo: number, both: number;
+  let solo: number, both: number, ownerOnly: number, adminOnly: number;
 
   beforeAll(async () => {
     const rows = await db.insert(users).values([
       { email: 'solo@t', name: 'فقط‌عضو' },
       { email: 'both@t', name: 'هردو' },
+      { email: 'owner-only@t', name: 'مالکِ تنها' },
+      { email: 'admin-only@t', name: 'همکارِ ادمین' },
     ]).returning({ id: users.id });
-    [solo, both] = rows.map((r) => r.id) as [number, number];
+    [solo, both, ownerOnly, adminOnly] = rows.map((r) => r.id) as [number, number, number, number];
 
     await db.insert(userRoles).values([
       { userId: solo, role: 'member' },
       { userId: both, role: 'member' },
       { userId: both, role: 'client' },
+      { userId: ownerOnly, role: 'owner' },
+      { userId: adminOnly, role: 'admin' },
     ]);
   });
 
@@ -278,6 +282,32 @@ describe('افزودنِ کاربرِ موجود به یک بخش', () => {
       .rejects.toThrow(ForbiddenError);
     await expect(service.attachCandidates(viewer(), 'client' as Role))
       .rejects.toThrow(ForbiddenError);
+  });
+
+  it('⚠️ مالک از راهِ «افزودن» هم دست نمی‌خورد — نه در فهرست، نه با شناسهٔ مستقیم', async () => {
+    const owner = actor({ id: ownerOnly, roles: ['owner'] as Role[] });
+    const ids = async (who: Actor) => (await service.attachCandidates(who, 'finance' as Role)).map((c) => c.id);
+    expect(await ids(manager())).not.toContain(ownerOnly);
+    // حتی برای خودِ مالک: مالک خودش را از پروفایل ویرایش می‌کند، نه از این صفحه.
+    expect(await ids(owner)).not.toContain(ownerOnly);
+
+    await expect(service.attachRole(manager(), ownerOnly, 'finance' as Role, {
+      tagIds: [], officeIds: [], managedOfficeIds: [],
+    })).rejects.toThrow('people.owner_protected');
+    const roles = await db.select({ role: userRoles.role }).from(userRoles)
+      .where(eq(userRoles.userId, ownerOnly));
+    expect(roles.map((r) => r.role)).toEqual(['owner']);
+  });
+
+  it('همکارِ ادمین را از راهِ «افزودن» فقط مالک تغییر می‌دهد', async () => {
+    const owner = actor({ id: ownerOnly, roles: ['owner'] as Role[] });
+    const ids = async (who: Actor) => (await service.attachCandidates(who, 'finance' as Role)).map((c) => c.id);
+    expect(await ids(manager())).not.toContain(adminOnly);
+    await expect(service.attachRole(manager(), adminOnly, 'finance' as Role))
+      .rejects.toThrow('rbac.owner_only');
+
+    expect(await ids(owner)).toContain(adminOnly);
+    expect((await service.attachRole(owner, adminOnly, 'finance' as Role)).added).toBe(true);
   });
 });
 

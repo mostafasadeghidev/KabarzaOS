@@ -52,7 +52,7 @@ export async function listPeople(actor: Actor, role: Role) {
     repo.roleTagOptions(),
     // ⚠️ فهرستِ کاندیداها فقط برای مدیر خوانده می‌شود؛ کسی که دکمهٔ افزودن
     // را نمی‌بیند، نباید فهرستِ کاربرانِ سامانه را هم بگیرد.
-    canManage ? repo.usersWithoutRole(role) : Promise.resolve([]),
+    canManage ? editableCandidates(actor, role) : Promise.resolve([]),
   ]);
 
   return {
@@ -182,6 +182,12 @@ export async function attachRole(
   assertCanManage(actor, 'members');
   const person = await repo.getPerson(userId);
   if (!person) throw new PersonNotFoundError();
+  /**
+   * ⚠️ همان قاعدهٔ ویرایش: «افزودن» هم نقش، تگ و دفترِ فرد را می‌نویسد. بدونِ
+   * این چک، کسی که «اعضا → مدیریت» داشت مالک را به‌عنوانِ «کاربرِ موجود» انتخاب
+   * می‌کرد و نقش‌ها و دفاترش را عوض می‌کرد — قفلی که ویرایش داشت، اینجا نبود.
+   */
+  await assertEditableTarget(actor, userId);
 
   const roles = await repo.rolesOf(userId);
   const alreadyHad = roles.includes(role);
@@ -217,7 +223,7 @@ export async function attachRole(
  */
 export async function attachCandidates(actor: Actor, role: Role) {
   assertCanManage(actor, 'members');
-  return repo.usersWithoutRole(role);
+  return editableCandidates(actor, role);
 }
 
 /**
@@ -231,6 +237,14 @@ async function assertEditableTarget(actor: Actor, userId: number): Promise<void>
   const verdict = canEditPerson({ actorRoles: actor.roles, targetRoles: await repo.rolesOf(userId) });
   if (verdict === 'owner_protected') throw new ForbiddenError('people.owner_protected');
   if (verdict === 'owner_only') throw new ForbiddenError('rbac.owner_only');
+}
+
+/**
+ * کاندیداهای «کاربرِ موجود» — بدونِ کسانی که این صفحه اجازهٔ تغییرشان را ندارد.
+ * همان قاعدهٔ `canEditPerson`: مالک هرگز (حتی برای خودش)، همکارِ ادمین فقط برای مالک.
+ */
+function editableCandidates(actor: Actor, role: Role) {
+  return repo.usersWithoutRole(role, actor.roles.includes('owner') ? ['owner'] : ['owner', 'admin']);
 }
 
 /** ویرایشِ فرد. */
