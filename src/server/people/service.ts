@@ -14,6 +14,7 @@ import {
   normalizeState, planRemovePerson, removeMessage,
   type MemberState, type RemoveOutcome,
 } from '@/domain/people/offboarding';
+import { notifyRevocationNeeded, openGrantCounts } from '@/server/access/service';
 import * as repo from './repository';
 
 /**
@@ -46,7 +47,7 @@ export async function listPeople(actor: Actor, role: Role) {
 
   const canManage = canManageSection(actor, 'members');
 
-  const [people, officeList, roleTags, candidates] = await Promise.all([
+  const [peopleRows, officeList, roleTags, candidates] = await Promise.all([
     repo.listByRole(role),
     repo.officeOptions(),
     repo.roleTagOptions(),
@@ -54,6 +55,13 @@ export async function listPeople(actor: Actor, role: Role) {
     // را نمی‌بیند، نباید فهرستِ کاربرانِ سامانه را هم بگیرد.
     canManage ? editableCandidates(actor, role) : Promise.resolve([]),
   ]);
+
+  /**
+   * دسترسی‌های بیرونیِ بازِ هر نفر — بجِ کارت. بدونِ این، مدیری که همین حالا
+   * کسی را off-board کرده هیچ نشانه‌ای نمی‌دید که کاری مانده.
+   */
+  const openGrants = await openGrantCounts(actor, peopleRows.map((p) => p.id));
+  const people = peopleRows.map((p) => ({ ...p, openGrants: openGrants.get(p.id) ?? 0 }));
 
   return {
     people,
@@ -304,6 +312,20 @@ export async function setMemberState(actor: Actor, userId: number, raw: string) 
     .where(eq(users.id, userId));
 
   await audit(actor, 'person.state', userId, person.memberState, state);
+
+  /**
+   * ⚠️ قفل‌کردنِ حساب فقط درِ خودِ KabarzaOS را می‌بندد؛ حسابِ او در
+   * سرویس‌های بیرونی باز می‌ماند. مسئولِ هر سرویس همین‌جا خبر می‌گیرد تا
+   * کارِ نیمه‌تمام به کسی سپرده شود که می‌تواند تمامش کند.
+   *
+   * ⚠️ شکستِ اعلان نباید off-boarding را بشکند (R-NOTIF-03).
+   */
+  if (state !== 'active' && person.memberState === 'active') {
+    try {
+      await notifyRevocationNeeded(userId);
+    } catch { /* اعلان بهترین‌کوشش است */ }
+  }
+
   return state;
 }
 

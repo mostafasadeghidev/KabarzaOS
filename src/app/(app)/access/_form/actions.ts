@@ -54,6 +54,11 @@ export async function saveServiceAction(_prev: AccessState, formData: FormData) 
      * همین است، پس پیش‌فرضِ فرم تیک‌خورده می‌آید تا سرویسِ نو فعال باشد.
      */
     isActive: formData.get('isActive') !== null,
+    /**
+     * ⚠️ نبودنِ فیلد با «پاک‌کن» یکی نیست: فرمِ کسی که هزینه را نمی‌بیند
+     * این ورودی را ندارد. سرویس در آن حالت مقدارِ قبلی را نگه می‌دارد.
+     */
+    recurringExpenseId: num(formData.get('recurringExpenseId')),
   }), 'سرویس ذخیره نشد.');
 }
 
@@ -76,4 +81,9 @@ export async function grantAccessAction(_prev: AccessState, formData: FormData) 
 
 export async function revokeAccessAction(grantId: number) {
   return run((actor) => access.revokeAccess(actor, grantId), 'دسترسی قطع نشد.');
+}
+
+/** قطعِ گروهی — چک‌لیستِ خروجِ عضو. */
+export async function revokeManyAction(grantIds: number[]) {
+  return run((actor) => access.revokeMany(actor, grantIds), 'دسترسی‌ها قطع نشدند.');
 }

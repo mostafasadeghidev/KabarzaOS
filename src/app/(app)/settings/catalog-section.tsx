@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
@@ -126,18 +126,25 @@ export function CatalogSection<T extends { id: number }>({
           <Table>
             <TableHeader>
               <TableRow>
-                {columns.map((c) => <TableHead key={c.header}>{tr(c.header)}</TableHead>)}
+                {/*
+                  ⚠️ سرستونِ عددی هم `numeric` می‌گیرد؛ بدونِ آن سرستون
+                  `text-start` می‌ماند و در رابطِ چپ‌به‌راست، عدد و عنوانش به
+                  دو لبهٔ ستون می‌رفتند — همان چیزی که در ۱.۷۴.۰ همه‌جا اصلاح شد.
+                */}
+                {columns.map((c) => (
+                  <TableHead key={c.header} numeric={c.numeric}>{tr(c.header)}</TableHead>
+                ))}
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={row.id}>
-                  {columns.map((c) => (
-                    <TableCell key={c.header} className={c.numeric ? 'num' : undefined}>
-                      {c.cell(row)}
-                    </TableCell>
-                  ))}
+                  {columns.map((c) => (c.numeric ? (
+                    <TableNumericCell key={c.header}>{c.cell(row)}</TableNumericCell>
+                  ) : (
+                    <TableCell key={c.header}>{c.cell(row)}</TableCell>
+                  )))}
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
                       {rowActions?.(row)}

@@ -2,6 +2,26 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.77.0]
+
+### Added
+
+- **A revocation checklist when someone leaves.** Deactivating a member now warns the colleague responsible for each outside service that the person's account there is still open, and the Access page has a checklist that lists every former member's open entries grouped by person — with the responsible colleague's name and a link to the service's admin panel — and closes the ones you tick in a single step. The checklist closes the register, not the outside account: the wording says so, because a register that claims an account is closed while it is still open is worse than no register.
+- **"N open accesses" on a former member's card.** The badge appears on the Members page exactly where someone is deactivated, so the unfinished work is visible at the moment it is created.
+- **CSV export of the register**, following the filters on screen. The password-vault reference is deliberately left out of the file: a CSV travels by e-mail and USB stick, and a map of vault entry names is not something to send that way.
+- **Monthly cost per service.** A service can be linked to its recurring expense in Finance; the Services tab then shows the cost normalised to a month (a yearly subscription is divided by twelve), the cost per person with open access, and the monthly total per currency. Nothing is stored twice — the amount, currency and period stay in Finance — and a service you deactivated whose subscription still renews is flagged, because that is money leaving quietly.
+
+### Changed
+
+- **Numbers in catalogue tables line up with their headers.** Settings and the Services tab use the numeric alignment rule from 1.74.0, which their tables had not yet adopted; in left-to-right languages the number and its heading sat at opposite edges of the column.
+
+### Security
+
+- **Cost is guarded separately from access.** Managing members does not grant sight of what the subscriptions cost: without `finance.view` the cost columns are not rendered, the subscription list is never read, and editing a service keeps its existing link to Finance instead of quietly clearing it.
+- **The "close their access" notice is never silenced.** It is a security task for whoever holds the keys to the service, so it is not a category a recipient can switch off.
+
+---
+
 ## [1.76.0]
 
 ### Added

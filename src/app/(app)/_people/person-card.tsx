@@ -42,6 +42,8 @@ export interface PersonView {
   username: string | null;
   /** گرنتِ دیدنِ پروژه‌های خصوصی — نقش نیست، گرنتِ per-user است. */
   privateAccess: boolean;
+  /** دسترسی‌های بیرونیِ بازِ این شخص — دفترِ `/access`. */
+  openGrants: number;
   offices: Array<{ id: number; name: string; manages: boolean }>;
   tags: Array<{ id: number; name: string; color: string | null }>;
 }
@@ -144,6 +146,16 @@ export function PersonCard({
               <p className="num text-xs text-muted-foreground" dir="ltr">@{person.username}</p>
             )}
             {label && <Badge variant="outline" className="mt-0.5">{tr(label)}</Badge>}
+            {/*
+              ⚠️ عضوی که رفته ولی حسابش در سرویس‌های بیرونی باز مانده.
+              درست همان‌جایی دیده می‌شود که off-boardش کرده‌ای — وگرنه
+              هیچ نشانه‌ای نبود که کاری مانده.
+            */}
+            {person.memberState !== 'active' && person.openGrants > 0 && (
+              <Badge variant="destructive" className="mt-0.5">
+                {tr('{n} دسترسیِ باز', { n: person.openGrants })}
+              </Badge>
+            )}
           </div>
 
           {canManage && (

@@ -178,6 +178,14 @@ export const services = pgTable('services', {
   ownerUserId: fk('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
   adminUrl: text('admin_url').notNull().default(''),
   note: text('note').notNull().default(''),
+  /**
+   * هزینهٔ سرویس از ماژولِ مالی می‌آید: اشتراکِ متناظر در `recurring_expenses`.
+   *
+   * ⚠️ بدونِ `.references()` عمداً — `payments.ts` خودش از `access.ts` جدول
+   * می‌خواند و ارجاعِ برگشتی حلقهٔ import می‌ساخت. کلیدِ خارجی در مهاجرتِ
+   * ۰۰۲۹ تعریف شده است، دقیقاً مثلِ `user_offices.office_id`.
+   */
+  recurringExpenseId: fk('recurring_expense_id'),
   /** مثلِ دفتر، حذف نمی‌شود بلکه غیرفعال می‌شود تا گرنت‌های تاریخی نشکنند. */
   isActive: boolean('is_active').notNull().default(true),
   ...stamps,

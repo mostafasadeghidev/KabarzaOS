@@ -2,12 +2,13 @@
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { KeyRound, Pencil, Plus, ShieldAlert, XCircle } from 'lucide-react';
+import { Download, KeyRound, ListChecks, Pencil, Plus, ShieldAlert, XCircle } from 'lucide-react';
 import { CatalogSection } from '../settings/catalog-section';
 import {
-  deleteServiceAction, grantAccessAction, revokeAccessAction, saveServiceAction,
-  type AccessState,
+  deleteServiceAction, grantAccessAction, revokeAccessAction, revokeManyAction,
+  saveServiceAction, type AccessState,
 } from './_form/actions';
+import { format as formatMoney } from '@/domain/money/money';
 import {
   GRANT_LEVELS, KIND_LABELS, LEVEL_LABELS, SERVICE_KINDS,
   type GrantLevel, type ServiceKind,
@@ -52,6 +53,18 @@ export interface ServiceRow {
   isActive: boolean;
   /** شمارِ دسترسیِ بازِ همین سرویس. */
   openCount: number;
+  /** اشتراکِ متناظر در ماژولِ مالی. */
+  recurringExpenseId: number | null;
+  /** هزینه — فقط برای کسی که `finance.view` دارد؛ وگرنه همیشه null. */
+  cost: {
+    subscriptionId: number;
+    title: string;
+    monthly: string;
+    perUser: string | null;
+    currencyId: number;
+    currencyCode: string;
+    subscriptionActive: boolean;
+  } | null;
 }
 
 export interface GrantRow {
@@ -74,6 +87,12 @@ export interface AccessData {
   people: Array<{ id: number; name: string; memberState: MemberState }>;
   risks: Array<{ userId: number; memberState: MemberState; grantIds: number[] }>;
   canManage: boolean;
+  /** هزینه دادهٔ مالی است و گاردِ جدا دارد. */
+  canSeeCost: boolean;
+  subscriptions: Array<{
+    id: number; title: string; currencyCode: string | null; isActive: boolean;
+  }>;
+  costTotals: Array<{ currencyId: number; currencyCode: string; monthly: string }>;
 }
 
 type StatusFilter = 'open' | 'revoked' | 'all';
@@ -88,6 +107,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
   const [status, setStatus] = useState<StatusFilter>('open');
   const [formerOnly, setFormerOnly] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
   const [editing, setEditing] = useState<GrantRow | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -106,6 +126,14 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
   }), [data.grants, person, service, status, formerOnly]);
 
   const openGrant = (row: GrantRow | null) => { setEditing(row); setDialogOpen(true); };
+
+  // خروجی دقیقاً همان چیزی را می‌دهد که روی صفحه می‌بینی، نه کلِ دفتر.
+  const exportHref = `/access/export?${new URLSearchParams({
+    ...(person ? { user: person } : {}),
+    ...(service ? { service } : {}),
+    status,
+    ...(formerOnly ? { former: '1' } : {}),
+  }).toString()}`;
 
   const revoke = (row: GrantRow) => {
     startTransition(async () => {
@@ -138,6 +166,12 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
           >
             {tr("نمایش بده")}
           </Button>
+          {data.canManage && (
+            <Button size="sm" onClick={() => setChecklistOpen(true)}>
+              <ListChecks className="size-4" />
+              {tr("چک‌لیستِ قطع")}
+            </Button>
+          )}
         </div>
       )}
 
@@ -207,12 +241,21 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
               {tr("فقط اعضای سابق")}
             </label>
 
-            {data.canManage && (
-              <Button size="sm" className="ms-auto" onClick={() => openGrant(null)}>
-                <Plus className="size-4" />
-                {tr("ثبتِ دسترسی")}
+            <div className="ms-auto flex items-center gap-2">
+              <Button size="sm" variant="outline" asChild>
+                {/* دانلودِ مستقیم؛ نه اکشنِ سرور — فایل از همان مسیرِ گاردشده می‌آید. */}
+                <a href={exportHref} download>
+                  <Download className="size-4" />
+                  {tr("خروجی CSV")}
+                </a>
               </Button>
-            )}
+              {data.canManage && (
+                <Button size="sm" onClick={() => openGrant(null)}>
+                  <Plus className="size-4" />
+                  {tr("ثبتِ دسترسی")}
+                </Button>
+              )}
+            </div>
           </div>
 
           {rows.length === 0 ? (
@@ -308,6 +351,17 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
         </section>
       )}
 
+      {tab === 'services' && data.canSeeCost && data.costTotals.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {tr("هزینهٔ ماهانهٔ اشتراک‌های فعال:")}{' '}
+          {data.costTotals.map((c) => (
+            <span key={c.currencyId} className="num me-3">
+              {formatMoney(c.monthly)} {c.currencyCode}
+            </span>
+          ))}
+        </p>
+      )}
+
       {tab === 'services' && (
         <CatalogSection
           title={tr("سرویس‌ها")}
@@ -319,9 +373,41 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
             { header: 'دسته', cell: (s) => tr(KIND_LABELS[s.kind]) },
             { header: 'مسئول', cell: (s) => (s.ownerUserId ? personName(s.ownerUserId) : '—') },
             { header: 'کاربران', cell: (s) => s.openCount, numeric: true },
+            /**
+             * ⚠️ ستونِ هزینه فقط برای کسی ساخته می‌شود که `finance.view` دارد.
+             * سرور هم همان را گارد می‌کند؛ این فقط ستونِ خالی را برمی‌دارد.
+             */
+            ...(data.canSeeCost ? [{
+              header: 'ماهانه',
+              numeric: true,
+              cell: (s: ServiceRow) => (s.cost
+                ? (
+                  <span className="num">
+                    {formatMoney(s.cost.monthly)} {s.cost.currencyCode}
+                  </span>
+                )
+                : '—'),
+            }, {
+              header: 'سرانه',
+              numeric: true,
+              cell: (s: ServiceRow) => (s.cost?.perUser
+                ? <span className="num">{formatMoney(s.cost.perUser)}</span>
+                : '—'),
+            }] : []),
             {
               header: 'وضعیت',
-              cell: (s) => (s.isActive ? null : <Badge variant="outline">{tr("غیرفعال")}</Badge>),
+              cell: (s) => (
+                <span className="flex flex-wrap gap-1">
+                  {!s.isActive && <Badge variant="outline">{tr("غیرفعال")}</Badge>}
+                  {/*
+                    سرویسی که کنار گذاشته‌ای ولی اشتراکش هنوز تمدید می‌شود —
+                    همان پولی که بی‌صدا می‌رود.
+                  */}
+                  {!s.isActive && s.cost?.subscriptionActive && (
+                    <Badge variant="destructive">{tr("اشتراک فعال")}</Badge>
+                  )}
+                </span>
+              ),
             },
           ]}
           saveAction={saveServiceAction}
@@ -359,6 +445,27 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                 <Label htmlFor="s-url">{tr("پنلِ مدیریت")}</Label>
                 <Input id="s-url" name="adminUrl" dir="ltr" defaultValue={edit?.adminUrl ?? ''} placeholder="https://" />
               </div>
+              {data.canSeeCost && (
+                <div className="grid gap-1.5 sm:col-span-2">
+                  <Label htmlFor="s-sub">{tr("اشتراکِ مالی")}</Label>
+                  <SearchableSelect
+                    id="s-sub"
+                    name="recurringExpenseId"
+                    defaultValue={edit?.recurringExpenseId ? String(edit.recurringExpenseId) : ''}
+                    containerClassName="w-full"
+                  >
+                    <NativeSelectOption value="">{tr("بدون اشتراک")}</NativeSelectOption>
+                    {data.subscriptions.map((sub) => (
+                      <NativeSelectOption key={sub.id} value={String(sub.id)}>
+                        {sub.title}{sub.currencyCode ? ` — ${sub.currencyCode}` : ''}
+                      </NativeSelectOption>
+                    ))}
+                  </SearchableSelect>
+                  <p className="text-xs text-muted-foreground">
+                    {tr("مبلغ و دوره از همان هزینهٔ دوره‌ای خوانده می‌شود؛ اینجا چیزی ذخیره نمی‌شود.")}
+                  </p>
+                </div>
+              )}
               <div className="grid gap-1.5 sm:col-span-2">
                 <Label htmlFor="s-note">{tr("یادداشت")}</Label>
                 <Input id="s-note" name="note" defaultValue={edit?.note ?? ''} />
@@ -379,7 +486,132 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
         services={data.services}
         people={data.people}
       />
+
+      <ChecklistDialog
+        open={checklistOpen}
+        onOpenChange={setChecklistOpen}
+        data={data}
+      />
     </div>
+  );
+}
+
+/**
+ * چک‌لیستِ قطعِ دسترسیِ اعضای سابق.
+ *
+ * ⚠️ نامِ مسئولِ هر سرویس کنارِ ردیف می‌آید: کسی که این فهرست را می‌بندد
+ * معمولاً خودش به پنلِ آن سرویس دسترسی ندارد و باید بداند از که بخواهد.
+ *
+ * ⚠️ تیک‌زدن اینجا فقط **دفتر** را می‌بندد. قطعِ واقعی در خودِ سرویس انجام
+ * می‌شود؛ متنِ بالای دیالوگ همین را می‌گوید تا کسی خیال نکند کار تمام است.
+ */
+function ChecklistDialog({
+  open, onOpenChange, data,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  data: AccessData;
+}) {
+  const tr = useT();
+  const { show } = useToast();
+  const [picked, setPicked] = useState<number[]>([]);
+  const [pending, startTransition] = useTransition();
+
+  const groups = useMemo(() => data.risks.map((risk) => ({
+    userId: risk.userId,
+    name: data.people.find((p) => p.id === risk.userId)?.name ?? `#${risk.userId}`,
+    state: risk.memberState,
+    rows: risk.grantIds.map((id) => {
+      const grant = data.grants.find((g) => g.id === id)!;
+      const service = data.services.find((s) => s.id === grant.serviceId);
+      return {
+        id,
+        serviceName: service?.name ?? '',
+        adminUrl: service?.adminUrl ?? '',
+        owner: service?.ownerUserId
+          ? data.people.find((p) => p.id === service.ownerUserId)?.name ?? ''
+          : '',
+      };
+    }),
+  })), [data]);
+
+  // با هر بازشدن، همه‌چیز از نو تیک می‌خورد — پیش‌فرضِ «همه را ببند».
+  useEffect(() => {
+    if (open) setPicked(groups.flatMap((g) => g.rows.map((r) => r.id)));
+  }, [open, groups]);
+
+  const toggle = (id: number) =>
+    setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const submit = () => {
+    startTransition(async () => {
+      const result = await revokeManyAction(picked);
+      if (result.error) show(tr(result.error), 'error');
+      else {
+        show(tr('دسترسی‌ها در دفتر بسته شدند.'), 'success');
+        onOpenChange(false);
+      }
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{tr("چک‌لیستِ قطعِ دسترسی")}</DialogTitle>
+          <DialogDescription>
+            {tr("اول در پنلِ هر سرویس حساب را ببند، بعد اینجا تیکش را نگه دار تا در دفتر هم بسته شود.")}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4">
+          {groups.map((group) => (
+            <section key={group.userId} className="grid gap-2">
+              <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                {group.name}
+                <Badge variant="outline">{tr(stateLabel(group.state) ?? '')}</Badge>
+              </h3>
+              {group.rows.map((row) => (
+                <label key={row.id} className="flex items-start gap-2 rounded-md border p-2 text-sm">
+                  <Checkbox
+                    className="mt-0.5"
+                    checked={picked.includes(row.id)}
+                    onCheckedChange={() => toggle(row.id)}
+                  />
+                  <span className="grid flex-1 gap-0.5">
+                    <span>{row.serviceName}</span>
+                    {row.owner && (
+                      <span className="text-xs text-muted-foreground">
+                        {tr("مسئول")}: {row.owner}
+                      </span>
+                    )}
+                  </span>
+                  {row.adminUrl && (
+                    <a
+                      href={row.adminUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs underline"
+                    >
+                      {tr("پنل")}
+                    </a>
+                  )}
+                </label>
+              ))}
+            </section>
+          ))}
+        </div>
+
+        <DialogFooter>
+          <Button type="button" size="sm" variant="outline" onClick={() => onOpenChange(false)}>
+            {tr("انصراف")}
+          </Button>
+          <Button size="sm" disabled={pending || picked.length === 0} onClick={submit}>
+            {tr('قطعِ {n} مورد', { n: picked.length })}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

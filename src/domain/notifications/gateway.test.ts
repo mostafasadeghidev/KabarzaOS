@@ -44,7 +44,11 @@ describe('R-NOTIF-05 — دسته‌بندی و پیش‌فرضِ امن', () =>
      * این‌ها عمداً `other` هستند و هرگز خاموش نمی‌شوند — یادآورِ کارِ خودِ
      * کاربر و تغییری که دیگری در تقویمِ او داده.
      */
-    const intentionallyOther = new Set(['no_timelog', 'timer_running', 'absence_set', 'user']);
+    const intentionallyOther = new Set([
+      'no_timelog', 'timer_running', 'absence_set', 'user',
+      // کارِ امنیتیِ مسئولِ سرویس — بستنِ دسترسیِ عضوی که رفته. خاموش‌شدنی نیست.
+      'access.revoke_needed',
+    ]);
     const unmapped = [...emitted]
       .filter((t) => !intentionallyOther.has(t) && categoryOf(t) === 'other');
 
