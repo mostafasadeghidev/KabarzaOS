@@ -26,7 +26,7 @@ automatically when the app boots.
 
 | Module | Tables | What it covers |
 |---|---|---|
-| `access` | `users`, `user_roles`, `user_permissions`, `user_offices`, `api_keys`, `audit_log` | Identity, roles, per-section permissions, office scope, activity trail |
+| `access` | `users`, `user_roles`, `user_permissions`, `user_offices`, `api_keys`, `audit_log`, `services`, `service_grants` | Identity, roles, per-section permissions, office scope, activity trail, and the register of access to outside systems (never credentials) |
 | `base` | `currencies`, `exchange_rates`, `offices`, `vendors`, `tags`, `tag_relations` | Shared catalogs. `tags` is polymorphic with `type` constrained by a check (D-014) |
 | `company` | `company` | Single-row organization settings |
 | `projects` | `projects`, `project_members`, `project_clients`, `tasks`, `task_roles`, `comments`, `attachments`, `timelogs`, `unit_entries`, `qa_items`, `project_qa`, `tender_bids` | Projects and everything attached to them, including QA checklists and tender bids |

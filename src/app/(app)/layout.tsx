@@ -58,6 +58,12 @@ const NAV: Array<NavItem & {
   { href: '/members', label: t("اعضا"), icon: 'members', group: 'data', section: 'members' },
   // کارفرمایان هم زیرِ همان بخشِ «اعضا» گارد می‌شوند — در نسخهٔ قبلی هم یک صفحهٔ پایه‌اند.
   { href: '/clients', label: t("کارفرمایان"), icon: 'clients', group: 'data', section: 'members' },
+  /**
+   * دفترِ دسترسی‌های بیرونی — «چه کسی به چه سامانه‌ای دسترسی دارد».
+   * ⚠️ زیرِ همان بخشِ «اعضا» گارد می‌شود: این پروندهٔ پرسنلی است، نه
+   * تنظیماتِ سامانه؛ پس همان کسی که اعضا را اداره می‌کند آن را می‌بیند.
+   */
+  { href: '/access', label: t("دسترسی‌ها"), icon: 'access', group: 'data', section: 'members' },
   { href: '/finance', label: t("مالی"), icon: 'finance', group: 'data', section: 'finance' },
   { href: '/reports', label: t("گزارش‌ها"), icon: 'reports', group: 'data', section: 'reports' },
   /**

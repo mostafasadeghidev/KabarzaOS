@@ -2,6 +2,21 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.76.0]
+
+### Added
+
+- **Access register — who has access to what.** A new Access page lists every account the team holds in outside systems: AI tools, VoIP, company storage, e-mail and anything else you define. Each row records the person, the service, the level (admin, user, view only), the account identifier in that service, when it was granted and by whom, and — once it is cut — when it was revoked and by whom. Rows are never deleted, so "what did they have, and when did we take it back?" always has an answer. A second tab holds the catalogue of services, each with the colleague responsible for granting access and a link to its admin panel; a service is deactivated rather than deleted, so its history survives. The page opens for anyone who can see members, and only those who can manage members can write to it. A member's card links straight to their own row.
+- **A warning for former members who still have open access.** Deactivating someone closes their KabarzaOS account, but their accounts in outside systems stay open. The Access page now says how many former members still hold open access and how many entries that is, and lists them in one click. Granting new access to a former member is refused, and so is granting on an inactive service.
+- **"My access" in the profile.** Everyone can see the read-only list of systems they have been given access to. The tab appears only when there is something in it.
+
+### Security
+
+- **No credentials are stored.** The register records who has access to what — never a password, token or key. A grant can carry the name of its entry in a password manager as a pointer, nothing more.
+- **The audit-label guard now covers action keys with underscores.** The check that proves every audited action has a readable label matched only letters and dots, so a family such as `service_grant.revoke` slipped past it and would have reached the Activity page as a raw key.
+
+---
+
 ## [1.75.0]
 
 ### Added

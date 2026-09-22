@@ -157,6 +157,20 @@ export function PersonCard({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onSelect={() => onEdit(person)}>{tr(section.editLabel)}</DropdownMenuItem>
+                {/*
+                  دفترِ دسترسی‌های بیرونی، فیلترشده روی همین شخص — وقتی روی
+                  یک نفر کار می‌کنی نباید مجبور شوی صفحه عوض کنی.
+                  ⚠️ فقط برای اعضا: کارفرما کاربرِ بیرونی است و به سامانه‌های
+                  داخلیِ شرکت دسترسی نمی‌گیرد.
+                */}
+                {section.role === 'member' && (
+                  <DropdownMenuItem asChild>
+                    <Link href={`/access?user=${person.id}`} prefetch={false}>
+                      <KeyRound className="size-3.5" />
+                      {tr("دسترسی‌های بیرونی")}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 {isOwner && person.isStaff && (
                   <DropdownMenuItem onSelect={() => onAccess(person)}>
                     <KeyRound className="size-3.5" />

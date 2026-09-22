@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Bell, Building2, CreditCard, Clock, Send, Lock, UserRound } from 'lucide-react';
+import { Bell, Building2, CreditCard, Clock, KeyRound, Send, Lock, UserRound } from 'lucide-react';
 import { Thumb } from '@/components/thumb';
 import {
   changePasswordAction, completeTelegramAction, connectTelegramAction,
@@ -22,6 +22,11 @@ import { useSearchParams } from 'next/navigation';
 import { useT } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
+import { LEVEL_LABELS, type GrantLevel } from '@/domain/access/service-grants';
+import { formatDateTime } from '@/i18n/datetime';
 import { Switch } from '@/components/ui/switch';
 
 export interface ProfileData {
@@ -44,6 +49,11 @@ export interface ProfileData {
     /** بدونِ mailer، گزینه‌های ایمیل بی‌اثرند و همین گفته می‌شود. */
     mailerReady: boolean;
   };
+  /** دسترسی‌های بیرونیِ بازِ خودم — فقط‌خواندنی. */
+  myAccess: Array<{
+    id: number; serviceName: string; level: GrantLevel;
+    accountRef: string; grantedAt: Date | string;
+  }>;
   isOwner: boolean;
   company: {
     logoFileId: number | null;
@@ -54,6 +64,7 @@ export interface ProfileData {
 
 const TABS = [
   { key: 'account', label: 'حساب کاربری', icon: UserRound },
+  { key: 'access', label: 'دسترسی‌های من', icon: KeyRound },
   { key: 'bank', label: 'حساب بانکی', icon: CreditCard },
   { key: 'prefs', label: 'ترجیحات', icon: Clock },
   { key: 'password', label: 'رمزِ ورود', icon: Lock },
@@ -72,7 +83,11 @@ export function ProfileView({ data }: { data: ProfileData }) {
   const tr = useT();
   // ⚠️ یک بار محاسبه می‌شود؛ چهارصد رشته است و هر رندر ساختنش بیهوده است.
   const timezones = useMemo(() => allTimezones(), []);
-  const visible = TABS;
+  /**
+   * ⚠️ تبِ «دسترسی‌های من» فقط وقتی هست که چیزی برای نشان‌دادن باشد؛
+   * تبِ همیشه‌خالی فقط سؤال می‌سازد.
+   */
+  const visible = data.myAccess.length > 0 ? TABS : TABS.filter((x) => x.key !== 'access');
 
   /**
    * تبِ آغازین از نشانی خوانده می‌شود.
@@ -174,6 +189,42 @@ export function ProfileView({ data }: { data: ProfileData }) {
                 )}
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/*
+        دسترسی‌های بیرونیِ خودِ کاربر — فقط‌خواندنی.
+        ⚠️ هیچ رمزی اینجا نیست؛ فقط فهرستِ «به چه چیزهایی دسترسی دارم».
+      */}
+      {tab === 'access' && (
+        <div className="grid max-w-xl gap-3">
+          <p className="text-sm text-muted-foreground">
+            {tr("سامانه‌هایی که به تو دسترسی داده شده. اگر چیزی اینجا درست نیست، به مدیر بگو.")}
+          </p>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tr("سرویس")}</TableHead>
+                  <TableHead>{tr("سطح")}</TableHead>
+                  <TableHead>{tr("شناسهٔ حساب")}</TableHead>
+                  <TableHead>{tr("از تاریخ")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.myAccess.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell>{row.serviceName}</TableCell>
+                    <TableCell>{tr(LEVEL_LABELS[row.level])}</TableCell>
+                    <TableCell className="num text-xs" dir="ltr">{row.accountRef || '—'}</TableCell>
+                    <TableCell className="num text-xs">
+                      {formatDateTime(row.grantedAt).slice(0, 10)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}

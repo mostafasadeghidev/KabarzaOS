@@ -128,6 +128,14 @@ export const ACTION_LABELS: Record<string, string> = {
   'vendor.update': 'ویرایشِ طرف‌حساب',
   'vendor.delete': 'حذفِ طرف‌حساب',
   'settings.system': 'تنظیماتِ سامانه',
+
+  // دفترِ دسترسی‌های بیرونی
+  'service.create': 'سرویسِ جدید',
+  'service.update': 'ویرایشِ سرویس',
+  'service.deactivate': 'غیرفعال‌سازیِ سرویس',
+  'service_grant.create': 'اعطای دسترسیِ بیرونی',
+  'service_grant.update': 'ویرایشِ دسترسیِ بیرونی',
+  'service_grant.revoke': 'قطعِ دسترسیِ بیرونی',
   'fiscal.close': 'بستنِ دورهٔ مالی',
   'fiscal.recompute': 'بازمحاسبهٔ معادلِ یورو',
   'fiscal.reopen': 'بازگشاییِ دورهٔ مالی',

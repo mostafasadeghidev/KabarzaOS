@@ -150,3 +150,78 @@ export const auditLog = pgTable('audit_log', {
   index('audit_log_actor_ix').on(t.actorType, t.actorId),
   index('audit_log_created_ix').on(t.createdAt),
 ]);
+
+/* ------------------------------------------------------------------ *
+ * دفترِ دسترسی‌های بیرونی — «چه کسی به چه سامانه‌ای دسترسی دارد»
+ * ------------------------------------------------------------------ */
+
+/**
+ * دستهٔ سرویس — فقط برای گروه‌بندی و فیلتر؛ هیچ منطقی به آن گره نخورده.
+ * `other` عمداً هست تا سرویسِ تازه بی‌مهاجرت ثبت شود.
+ */
+export const SERVICE_KINDS = [
+  'ai', 'voip', 'storage', 'email', 'design', 'dev', 'social', 'finance', 'other',
+] as const;
+export type ServiceKind = (typeof SERVICE_KINDS)[number];
+
+/**
+ * سامانه‌های بیرونِ KabarzaOS که تیم به آن‌ها دسترسی می‌گیرد.
+ *
+ * ⚠️ هیچ اعتبارنامه‌ای اینجا ذخیره نمی‌شود — نه رمز، نه توکن، نه کلید.
+ * این جدول فقط می‌گوید «چنین سرویسی داریم و کلیدش دستِ کیست».
+ */
+export const services = pgTable('services', {
+  id: pk(),
+  name: text('name').notNull(),
+  kind: text('kind').notNull().default('other').$type<ServiceKind>(),
+  /** مسئولِ اعطا و قطعِ دسترسی — کسی که پنلِ مدیریتِ سرویس دستِ اوست. */
+  ownerUserId: fk('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
+  adminUrl: text('admin_url').notNull().default(''),
+  note: text('note').notNull().default(''),
+  /** مثلِ دفتر، حذف نمی‌شود بلکه غیرفعال می‌شود تا گرنت‌های تاریخی نشکنند. */
+  isActive: boolean('is_active').notNull().default(true),
+  ...stamps,
+}, (t) => [
+  check('services_kind_ck', sql`${t.kind} in ('ai','voip','storage','email','design','dev','social','finance','other')`),
+  index('services_name_lower_ix').on(sql`lower(${t.name})`),
+]);
+
+/** سطحِ دسترسی — فهرستِ ثابت تا گزارش‌ها قابلِ جمع‌بستن بمانند. */
+export const GRANT_LEVELS = ['admin', 'member', 'viewer'] as const;
+export type GrantLevel = (typeof GRANT_LEVELS)[number];
+
+/**
+ * یک دسترسیِ داده‌شده به یک نفر روی یک سرویس.
+ *
+ * ⚠️ R-ACCESS-01 — ردیف **هرگز پاک نمی‌شود**؛ فقط `revoked_at` می‌خورد.
+ * پرسشِ اصلیِ این ماژول «او چه داشت و کی ازش گرفته شد» است؛ با حذفِ ردیف
+ * همان پرسش بی‌جواب می‌ماند — همان درسی که در off-boarding هم گرفتیم.
+ *
+ * ⚠️ R-ACCESS-02 — یکتاییِ (کاربر، سرویس) فقط روی گرنتِ **باز** اعمال
+ * می‌شود. اگر یکتاییِ کامل می‌گذاشتیم، کسی که رفت و برگشت دیگر نمی‌توانست
+ * دسترسیِ دوباره بگیرد.
+ */
+export const serviceGrants = pgTable('service_grants', {
+  id: pk(),
+  serviceId: fk('service_id').notNull().references(() => services.id, { onDelete: 'cascade' }),
+  userId: fk('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /** شناسهٔ حساب در آن سرویس — ایمیل، نامِ کاربری یا شمارهٔ داخلی. هرگز رمز. */
+  accountRef: text('account_ref').notNull().default(''),
+  level: text('level').notNull().default('member').$type<GrantLevel>(),
+  /**
+   * نامِ آیتم در password manager — فقط یک **اشاره**، نه خودِ راز.
+   * راز در جای خودش می‌ماند؛ این ستون صرفاً می‌گوید کجا دنبالش بگردیم.
+   */
+  vaultRef: text('vault_ref').notNull().default(''),
+  note: text('note').notNull().default(''),
+  grantedAt: ts('granted_at').notNull().defaultNow(),
+  grantedBy: fk('granted_by').references(() => users.id, { onDelete: 'set null' }),
+  revokedAt: ts('revoked_at'),
+  revokedBy: fk('revoked_by').references(() => users.id, { onDelete: 'set null' }),
+  ...stamps,
+}, (t) => [
+  check('service_grants_level_ck', sql`${t.level} in ('admin','member','viewer')`),
+  uniqueIndex('service_grants_open_uq').on(t.serviceId, t.userId).where(sql`${t.revokedAt} is null`),
+  index('service_grants_user_ix').on(t.userId),
+  index('service_grants_service_ix').on(t.serviceId),
+]);

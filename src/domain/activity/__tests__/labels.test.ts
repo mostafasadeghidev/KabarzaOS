@@ -30,8 +30,10 @@ function walk(dir: string): string[] {
 function staticActionKeys(): string[] {
   const keys = new Set<string>();
   const patterns = [
-    /audit\(\s*actor\s*,\s*'([a-z.]+)'/g,
-    /\baction:\s*'([a-z][a-z.]*\.[a-z.]+)'/g,
+    // ⚠️ زیرخط هم بخشی از کلید است (`service_grant.revoke`)؛ بدونِ آن این
+    // خانواده بی‌صدا از دیدِ گارد می‌افتاد و کلیدِ خام به صفحهٔ فعالیت می‌رفت.
+    /audit\(\s*actor\s*,\s*'([a-z._]+)'/g,
+    /\baction:\s*'([a-z][a-z._]*\.[a-z._]+)'/g,
   ];
   for (const file of walk(join(process.cwd(), 'src', 'server'))) {
     const source = readFileSync(file, 'utf8');

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { can } from '@/domain/access/permissions';
 import { currentActor } from '@/server/auth';
 import { getAccountInfo, getCompany, getMyProfile } from '@/server/people/profile-service';
+import { myGrants } from '@/server/access/service';
 import { ProfileView } from './profile-view';
 import { primeTranslations, t } from '@/i18n/server';
 
@@ -24,11 +25,13 @@ export default async function ProfilePage() {
    * حسابدارِ نسخهٔ قبلی هم این تب را داشت (زیرِ).
    */
   const isOwner = can(actor, 'settings.manage');
-  const [me, company, account] = await Promise.all([
+  const [me, company, account, myAccess] = await Promise.all([
     getMyProfile(actor),
     // مشخصاتِ شرکت فقط برای مالک خوانده می‌شود.
     isOwner ? getCompany() : Promise.resolve(null),
     getAccountInfo(actor),
+    // دسترسی‌های بیرونیِ خودم — بی‌مجوزِ خاص، چون دادهٔ خودِ کاربر است.
+    myGrants(actor),
   ]);
 
   return (
@@ -51,6 +54,7 @@ export default async function ProfilePage() {
           hasBank: me.hasBank,
           telegram: me.telegram,
           notify: me.notify,
+          myAccess,
           isOwner,
           company: company ?? {
             name: '', address: '', taxId: '', email: '',
