@@ -94,7 +94,7 @@ export default async function AvailabilityPage({
       )}
       {targets.length > 1 && (
         <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">🌴 {t("ثبت مرخصی برای عضو")}</h2>
+          <h2 className="text-sm font-semibold">{t("ثبت مرخصی برای عضو")}</h2>
           <AbsencePanel data={{ mine, targets, meId: actor.id, today }} />
         </section>
       )}

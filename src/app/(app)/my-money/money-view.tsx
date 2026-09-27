@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ChevronLeft, Paperclip } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronLeft, Paperclip } from 'lucide-react';
 import type { MyClientProject, MyMemberProject, MyPaymentLine } from '@/server/finance/my-money';
 import { format } from '@/domain/money/money';
 import { Badge } from '@/components/ui/badge';
@@ -117,7 +117,7 @@ function Row({
           className="flex items-center gap-1.5 text-sm font-medium hover:text-primary"
           aria-expanded={open}
         >
-          {open ? <ChevronDown className="size-4" /> : <ChevronLeft className="size-4" />}
+          {open ? <ChevronDown className="size-4" /> : <ChevronLeft className="size-4 ltr:rotate-180" />}
           {title}
         </button>
         <StatusChip status={status} />
@@ -128,7 +128,10 @@ function Row({
               <b className={`num ${c.strong ? 'text-sm text-foreground' : ''}`}>{c.value}</b>
             </span>
           ))}
-          <Link href={href} className="text-primary hover:underline">{t('پروژه')} →</Link>
+          <Link href={href} className="inline-flex items-center gap-1 text-primary hover:underline">
+            {t('پروژه')}
+            <ArrowLeft className="size-3.5 ltr:rotate-180" aria-hidden />
+          </Link>
         </div>
       </div>
       {open && <div className="grid gap-3 border-t bg-muted/30 p-3">{children}</div>}
@@ -206,8 +209,9 @@ export function MyMoneyView({
         <section className="grid gap-2">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-sm font-semibold">{t('دریافتی‌های شما (عضوِ تیم)')}</h2>
-            <Link href={bankHref} className="text-xs text-primary hover:underline">
-              {t('اطلاعاتِ حسابِ بانکی')} →
+            <Link href={bankHref} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+              {t('اطلاعاتِ حسابِ بانکی')}
+              <ArrowLeft className="size-3 ltr:rotate-180" aria-hidden />
             </Link>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -257,7 +261,15 @@ export function MyMoneyView({
                                   <TableNumericCell>{u.quantity}</TableNumericCell>
                                   <TableNumericCell>{money(u.amount, p.currencyCode)}</TableNumericCell>
                                   <TableCell>
-                                    {u.isPaid ? `✅ ${t('پرداخت‌شده')}` : t('پرداخت‌نشده')}
+                                    {u.isPaid ? (
+                                      <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 dark:text-emerald-500">
+                                        {t('پرداخت‌شده')}
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
+                                        {t('پرداخت‌نشده')}
+                                      </Badge>
+                                    )}
                                   </TableCell>
                                 </TableRow>
                               ))}

@@ -6,14 +6,14 @@ import { ForbiddenError } from '@/domain/access/guard';
 import { hoursLabel } from '@/domain/timelogs/timer';
 import { RANGE_LABELS, type RangeKey } from '@/domain/access/office-scope';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { TeamMatrix } from '../../projects/[id]/manage-tab';
 import { AbsencePanel } from '../../activity/absence-panel';
 import { primeTranslations, t } from '@/i18n/server';
-import { PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell } from '@/components/page-shell';
+import { StatCard } from '@/components/stat-card';
 
 /**
  * پروفایلِ کاریِ یک عضو برای مدیرِ دفتر — پورتِ `view_team_member`: آمار،
@@ -48,9 +48,9 @@ export default async function TeamMemberPage({
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState title={t("دسترسی ندارید")} description={t("این عضو در دامنهٔ مدیریتِ شما نیست.")} />
-        </main>
+        </PageShell>
       );
     }
     throw error;
@@ -68,38 +68,29 @@ export default async function TeamMemberPage({
 
   return (
     <PageShell>
-      <header className="grid gap-1">
-        <Link href="/team" className="text-xs text-muted-foreground hover:underline">{t("← تیمِ من")}</Link>
-        <h1 className="text-xl font-semibold">{data.person?.name ?? `#${userId}`}</h1>
-        <p className="text-sm text-muted-foreground">
-          {data.person?.roleNames.length ? data.person.roleNames.join('، ') : t('عضو')}
-          {' · '}
-          {t(RANGE_LABELS[(data.period.range ?? 'week') as RangeKey])} · {t('مجموع')}{' '}
-          <span className="num">{hoursLabel(total)}</span>
-        </p>
-      </header>
+      <PageHeader
+        back={{ href: '/team', label: t("تیمِ من") }}
+        title={data.person?.name ?? `#${userId}`}
+        description={(
+          <>
+            {data.person?.roleNames.length ? data.person.roleNames.join('، ') : t('عضو')}
+            {' · '}
+            {t(RANGE_LABELS[(data.period.range ?? 'week') as RangeKey])} · {t('مجموع')}{' '}
+            <span className="num">{hoursLabel(total)}</span>
+          </>
+        )}
+      />
 
       {/* پورتِ کارت‌های آمار. */}
-      <div className="grid gap-3 @xl/main:grid-cols-4">
+      <div className="grid gap-4 @md/main:grid-cols-2 @xl/main:grid-cols-4">
         {stats.map((c) => (
-          <Card key={c.label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-normal text-muted-foreground">{t(c.label)}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {c.href ? (
-                <Link href={c.href} className="num text-xl font-semibold hover:underline">{c.value}</Link>
-              ) : (
-                <p className="num text-xl font-semibold">{c.value}</p>
-              )}
-            </CardContent>
-          </Card>
+          <StatCard key={c.label} label={t(c.label)} value={c.value} href={c.href} />
         ))}
       </div>
 
       {/* پروژه‌های در حال اجرا: نقش، پیشرفت، ساعتِ خودش، تسکِ باز. */}
       <section className="grid gap-2">
-        <h2 className="text-sm font-semibold">🚧 {t("پروژه‌های در حال اجرا")}</h2>
+        <h2 className="text-sm font-semibold">{t("پروژه‌های در حال اجرا")}</h2>
         {data.openProjects.length === 0 ? (
           <p className="text-xs text-muted-foreground">{t("پروژهٔ بازی ندارد.")}</p>
         ) : (
@@ -136,7 +127,7 @@ export default async function TeamMemberPage({
       </section>
 
       <section className="grid gap-2">
-        <h2 className="text-sm font-semibold">⏱ {t("کارکرد به تفکیک پروژه")}</h2>
+        <h2 className="text-sm font-semibold">{t("کارکرد به تفکیک پروژه")}</h2>
         {data.hoursAllTime.length === 0 ? (
           <p className="text-xs text-muted-foreground">{t("هنوز ساعتی ثبت نشده.")}</p>
         ) : (
@@ -167,7 +158,7 @@ export default async function TeamMemberPage({
 
       {data.matrix.length > 0 && (
         <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">📅 {t("در دسترس بودن")}</h2>
+          <h2 className="text-sm font-semibold">{t("در دسترس بودن")}</h2>
           <TeamMatrix rows={data.matrix} dayLabels={data.dayLabels} />
         </section>
       )}
@@ -175,7 +166,7 @@ export default async function TeamMemberPage({
       {/* پورتِ کارتِ مرخصی: مدیرِ دفتر برای این عضو مرخصی ثبت/حذف می‌کند. */}
       {data.canLeave && data.person && (
         <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">🌴 {t("مرخصی / غیبت")}</h2>
+          <h2 className="text-sm font-semibold">{t("مرخصی / غیبت")}</h2>
           <p className="text-xs text-muted-foreground">{t("برای این عضو مرخصی ثبت کنید؛ به او اطلاع داده می‌شود و در بُردِ تیم دیده می‌شود.")}</p>
           <AbsencePanel
             data={{

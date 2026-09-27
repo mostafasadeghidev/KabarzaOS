@@ -14,6 +14,7 @@ import { intlTag } from '@/i18n/config';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /**
  * داشبورد.
@@ -89,18 +90,16 @@ export default async function DashboardPage({
           currentSession(),
         ]);
         return (
-          <main className="p-6">
-            <h1 className="mb-4 text-xl font-semibold">
-              {t("سلام، {name}", { name: session?.name ?? '' })}
-            </h1>
+          <PageShell>
+            <PageHeader title={t("سلام، {name}", { name: session?.name ?? '' })} />
             <MemberDashboardView data={own} />
-          </main>
+          </PageShell>
         );
       }
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState title={t("دسترسی ندارید")} description={t("برای دیدنِ داشبورد از مدیر دسترسی بگیرید.")} />
-        </main>
+        </PageShell>
       );
     }
     throw error;
@@ -116,11 +115,8 @@ export default async function DashboardPage({
   const units = [t('تسک'), t('کامنت'), t('ساعت')];
 
   return (
-    <main className="@container/main flex flex-col gap-6 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("داشبورد")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">{todayLabel()}</p>
-      </header>
+    <PageShell>
+      <PageHeader title={t("داشبورد")} description={todayLabel()} />
 
       {/* پیشرفتِ این هفته — کارت‌های بزرگ با بجِ روند */}
       <section className="flex flex-col gap-3">
@@ -150,7 +146,7 @@ export default async function DashboardPage({
       {/* منتظرِ اقدام — گروه‌بندی‌شده، مثلِ نسخهٔ قبلی */}
       <section className="flex flex-col gap-3">
         <DashHeading>{t("منتظرِ اقدام")}</DashHeading>
-        <div className="grid gap-3 @3xl/main:grid-cols-3">
+        <div className="grid gap-4 @3xl/main:grid-cols-3">
           {actionGroups.map((group) => (
             <CardGroup key={group.title} title={t(group.title)}>
               {group.cards.map((card) => (
@@ -180,7 +176,7 @@ export default async function DashboardPage({
             </form>
           )}
         </div>
-        <div className="grid gap-3 @5xl/main:grid-cols-2">
+        <div className="grid gap-4 @5xl/main:grid-cols-2">
           <DashPanel title={t("روندِ ساعتِ کاریِ تیم")}>
             {charts.weeklyTrend.every((w) => w.hours === 0) ? (
               <p className="text-sm text-muted-foreground">{t("ساعتِ کاری ثبت نشده.")}</p>
@@ -208,7 +204,7 @@ export default async function DashboardPage({
       {/* امروز */}
       <section className="flex flex-col gap-3">
         <DashHeading>{t("امروز")}</DashHeading>
-        <div className="grid gap-3 @3xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+        <div className="grid gap-4 @3xl/main:grid-cols-2 @5xl/main:grid-cols-4">
           <DashPanel title={t("جلساتِ این هفته")}>
             {today.meetings.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("جلسه‌ای ثبت نشده.")}</p>
@@ -319,7 +315,7 @@ export default async function DashboardPage({
             <p className="text-sm text-muted-foreground">{t("هیچ ریسکی شناسایی نشد.")}</p>
           </DashPanel>
         ) : (
-          <div className="grid gap-3 @3xl/main:grid-cols-2">
+          <div className="grid gap-4 @3xl/main:grid-cols-2">
             <DashPanel title={t("ددلاینِ گذشته")} action={{ href: '/projects', label: t("پروژه‌ها") }}>
               <RiskList items={risk.overdue} empty={t("موردی نیست.")} tone="danger" />
             </DashPanel>
@@ -358,6 +354,6 @@ export default async function DashboardPage({
           </div>
         )}
       </section>
-    </main>
+    </PageShell>
   );
 }

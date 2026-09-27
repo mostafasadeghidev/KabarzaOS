@@ -16,8 +16,14 @@ function Tabs({
       data-slot="tabs"
       data-orientation={orientation}
       orientation={orientation}
+      /**
+       * ⚠️ `min-w-0`: ریشهٔ تب اغلب فرزندِ یک grid است و نوارِ تبِ پیمایشی
+       * (`w-max` داخلِ `overflow-x-auto`) حداقل‌عرضِ خودش را به ستونِ grid
+       * تحمیل می‌کرد — روی موبایل کلِ صفحه پهن‌تر از صفحه‌نمایش می‌شد (گزارش‌ها
+       * ۹۷۵px، تنظیمات ۷۷۲px) به‌جای آنکه فقط نوارِ تب پیمایش بخورد.
+       */
       className={cn(
-        "group/tabs flex gap-2 data-[orientation=horizontal]:flex-col",
+        "group/tabs flex min-w-0 gap-2 data-[orientation=horizontal]:flex-col",
         className
       )}
       {...props}

@@ -1,17 +1,16 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowRight, TriangleAlert } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 import { currentActor } from '@/server/auth';
 import { getClientDetail } from '@/server/reports/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { can } from '@/domain/access/permissions';
 import { format } from '@/domain/money/money';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClientProjectsTable } from '../../detail-tables';
 import { primeTranslations, t } from '@/i18n/server';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell } from '@/components/page-shell';
+import { StatCard } from '@/components/stat-card';
 
 /**
  * ریزِ مطالباتِ یک کارفرما — پورتِ `client_detail` ِ افزونه: کارت‌های یورو،
@@ -32,9 +31,9 @@ export default async function ClientReportPage({ params }: { params: Promise<{ i
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState title={t("دسترسی ندارید")} description={t("دیدنِ گزارش‌ها مجوزِ جداگانه دارد.")} />
-        </main>
+        </PageShell>
       );
     }
     throw error;
@@ -42,9 +41,9 @@ export default async function ClientReportPage({ params }: { params: Promise<{ i
 
   if (!data) {
     return (
-      <main className="p-6">
+      <PageShell>
         <EmptyState title={t("کارفرما پیدا نشد")} />
-      </main>
+      </PageShell>
     );
   }
 
@@ -57,17 +56,11 @@ export default async function ClientReportPage({ params }: { params: Promise<{ i
 
   return (
     <PageShell>
-      <header className="grid gap-1">
-        <Link
-          href="/reports?tab=clients"
-          className="flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <ArrowRight className="size-3.5" />
-          {t("بازگشت به گزارش‌ها")}
-        </Link>
-        <h1 className="text-xl font-semibold">{data.person.name}</h1>
-        <p className="text-sm text-muted-foreground">{data.person.email}</p>
-      </header>
+      <PageHeader
+        back={{ href: '/reports?tab=clients', label: t("گزارش‌ها") }}
+        title={data.person.name}
+        description={data.person.email}
+      />
 
       {data.rateMissing > 0 && (
         <Alert variant="warning">
@@ -78,12 +71,9 @@ export default async function ClientReportPage({ params }: { params: Promise<{ i
         </Alert>
       )}
 
-      <div className="grid gap-3 @xl/main:grid-cols-3">
+      <div className="grid gap-4 @xl/main:grid-cols-3">
         {cards.map((c) => (
-          <Card key={c.label}>
-            <CardHeader className="pb-2"><CardTitle className="text-xs font-normal text-muted-foreground">{t(c.label)}</CardTitle></CardHeader>
-            <CardContent><p className={`num text-xl font-semibold ${c.warn ? 'text-amber-600 dark:text-amber-500' : ''}`}>{c.value}</p></CardContent>
-          </Card>
+          <StatCard key={c.label} label={t(c.label)} value={c.value} tone={c.warn ? 'warning' : 'default'} />
         ))}
       </div>
 

@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowRight } from 'lucide-react';
 import { currentActor } from '@/server/auth';
 import { getFocusList } from '@/server/dashboard-focus';
 import { focusHref, isFocusView, type FocusView } from '@/domain/dashboard/focus';
@@ -9,7 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { ProjectStatus } from '../../projects/project-status';
 import { primeTranslations, t } from '@/i18n/server';
-import { PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /**
  * فهرستِ متمرکزِ داشبورد — پورتِ `class-focus-page.php`: کارتِ «منتظرِ اقدام»
@@ -59,9 +58,9 @@ export default async function FocusPage({
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState title={t('دسترسی کافی ندارید.')} />
-        </main>
+        </PageShell>
       );
     }
     throw error;
@@ -71,17 +70,11 @@ export default async function FocusPage({
 
   return (
     <PageShell>
-      <div>
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowRight className="size-3.5 rtl:rotate-0 ltr:rotate-180" />
-          {t('بازگشت به داشبورد')}
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold">{t(META[view].title)}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">{t(META[view].hint)}</p>
-      </div>
+      <PageHeader
+        back={{ href: '/dashboard', label: t('داشبورد') }}
+        title={t(META[view].title)}
+        description={t(META[view].hint)}
+      />
 
       {empty && <EmptyState title={t('موردی نیست.')} />}
 

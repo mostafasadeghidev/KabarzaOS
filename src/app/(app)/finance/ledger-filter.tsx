@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, X } from 'lucide-react';
+import { Download, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -150,12 +150,12 @@ export function LedgerFilter({
           </Button>
         )}
 
-        <a
-          href={`/finance/export?${params.toString()}&account=${accountId}`}
-          className="ms-auto inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          {tr('خروجی CSV')}
-        </a>
+        <Button asChild size="sm" variant="outline" className="ms-auto">
+          <a href={`/finance/export?${params.toString()}&account=${accountId}`}>
+            <Download />
+            {tr('خروجی CSV')}
+          </a>
+        </Button>
       </form>
 
       {paging.totalPages > 1 && (

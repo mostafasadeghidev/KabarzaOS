@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Download } from 'lucide-react';
+import { Clock, Download, ListTodo } from 'lucide-react';
 import { hoursLabel } from '@/domain/timelogs/timer';
 import { RANGE_LABELS, type RangeKey } from '@/domain/access/office-scope';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import { TaskFilter, type TaskFilterOptions, type TaskPaging } from './task-filt
 import { Thumb } from '@/components/thumb';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 
 export interface TeamData {
   projects: Array<{
@@ -87,8 +88,12 @@ function MemberCards({ members, range }: { members: TeamData['members']; range: 
                 <span className="block truncate text-xs text-muted-foreground">
                   {m.roleNames.length > 0 ? m.roleNames.join('، ') : tr("عضو")}
                 </span>
-                <span className="num block text-xs text-muted-foreground">
-                  ⏱ {hoursLabel(m.minutes)} · 📋 {tr('{n} تسک باز', { n: m.openTasks })}
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="size-3" aria-hidden />
+                  <span className="num">{hoursLabel(m.minutes)}</span>
+                  <span aria-hidden>·</span>
+                  <ListTodo className="size-3" aria-hidden />
+                  {tr('{n} تسک باز', { n: m.openTasks })}
                 </span>
               </span>
             </Link>
@@ -125,23 +130,16 @@ export function TeamView({ data }: { data: TeamData }) {
           <div className="flex flex-wrap items-center gap-2">
             {/* بازه با پیمایشِ صفحه عوض می‌شود تا لینک قابلِ اشتراک بماند. */}
             {(Object.keys(RANGE_LABELS) as RangeKey[]).filter((r) => r !== 'custom').map((r) => (
-              <Link
-                key={r}
-                href={`/team?range=${r}`}
-                className={`rounded-md px-2.5 py-1 text-xs ${
-                  data.range === r ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                {tr(RANGE_LABELS[r])}
-              </Link>
+              <Button key={r} asChild size="sm" variant={data.range === r ? 'default' : 'outline'}>
+                <Link href={`/team?range=${r}`}>{tr(RANGE_LABELS[r])}</Link>
+              </Button>
             ))}
-            <a
-              href={`/team/export?range=${data.range}`}
-              className="ms-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <Download className="size-3.5" />
-              {tr("خروجی CSV")}
-            </a>
+            <Button asChild size="sm" variant="outline" className="ms-auto">
+              <a href={`/team/export?range=${data.range}`}>
+                <Download />
+                {tr("خروجی CSV")}
+              </a>
+            </Button>
           </div>
 
           {data.members.length === 0 ? (

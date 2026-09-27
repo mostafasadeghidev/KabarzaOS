@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { primeTranslations, t } from '@/i18n/server';
 import { TaskTable } from './task-table';
 import { TasksTabs } from './tasks-tabs';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /**
  * «تسک‌های شما» — پورتِ `view_tasks()` ِ داشبوردِ نسخهٔ قبلی.
@@ -38,15 +39,17 @@ export default async function MyTasksPage() {
      */
     const total = inbox.active.length + inbox.review.length;
     return (
-      // ⚠️ پهنای خواندنی: جدولِ تسک تا لبهٔ نمایشگر کش نمی‌آید.
-      <main className="@container/main flex max-w-5xl flex-col gap-4 p-4 lg:p-6">
-        <header>
-          <h1 className="text-xl font-semibold">{t("تسک‌های شما")}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {t('{n} تسکِ سپرده‌شده به شما', { n: inbox.active.length })}
-            {inbox.review.length > 0 && <> · {t('{n} در انتظارِ بررسیِ شما', { n: inbox.review.length })}</>}
-          </p>
-        </header>
+      // ⚠️ تمام‌عرض، مثلِ هر صفحهٔ جدولی (قاعدهٔ دوسطحیِ `PageShell`).
+      <PageShell>
+        <PageHeader
+          title={t("تسک‌های شما")}
+          description={(
+            <>
+              {t('{n} تسکِ سپرده‌شده به شما', { n: inbox.active.length })}
+              {inbox.review.length > 0 && <> · {t('{n} در انتظارِ بررسیِ شما', { n: inbox.review.length })}</>}
+            </>
+          )}
+        />
 
         {total === 0 ? (
           <EmptyState
@@ -54,7 +57,7 @@ export default async function MyTasksPage() {
             description={t("وقتی کاری به شما سپرده شود یا تیم چیزی را برای بررسی بفرستد، اینجا می‌آید.")}
           />
         ) : (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {inbox.active.length > 0 && (
               <Card className="gap-2 py-4">
                 <CardHeader className="px-4 pb-0">
@@ -73,7 +76,7 @@ export default async function MyTasksPage() {
             )}
           </div>
         )}
-      </main>
+      </PageShell>
     );
   }
 
@@ -94,7 +97,7 @@ export default async function MyTasksPage() {
          * پروژه، ددلاین، کنش) و در نیمهٔ صفحه اسکرولِ افقی می‌خورد. کارت‌ها
          * زیرِ هم و تمام‌عرض‌اند تا هر ستون جای خودش را داشته باشد.
          */
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <Card className="gap-2 py-4">
             <CardHeader className="px-4 pb-0"><CardTitle className="text-sm">{t("تسک‌های جاری شما")}</CardTitle></CardHeader>
             <CardContent className="px-0 pb-0"><TaskTable rows={active} empty={t("تسکِ جاری ندارید.")} filterable /></CardContent>
@@ -122,14 +125,16 @@ export default async function MyTasksPage() {
   );
 
   return (
-    <main className="@container/main flex max-w-6xl flex-col gap-4 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("تسک‌ها")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {t('{n} تسکِ جاری', { n: active.length })}
-          {waiting.length > 0 && <> · {t('{n} در انتظارِ بررسی', { n: waiting.length })}</>}
-        </p>
-      </header>
+    <PageShell>
+      <PageHeader
+        title={t("تسک‌ها")}
+        description={(
+          <>
+            {t('{n} تسکِ جاری', { n: active.length })}
+            {waiting.length > 0 && <> · {t('{n} در انتظارِ بررسی', { n: waiting.length })}</>}
+          </>
+        )}
+      />
 
       <TasksTabs
         inbox={inboxPanel}
@@ -137,6 +142,6 @@ export default async function MyTasksPage() {
         projects={projects}
         today={new Date().toISOString().slice(0, 10)}
       />
-    </main>
+    </PageShell>
   );
 }

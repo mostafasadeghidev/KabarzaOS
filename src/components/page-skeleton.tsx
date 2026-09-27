@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageShell } from '@/components/page-shell';
 
 /**
  * پوستهٔ صفحه در زمانِ بارگذاری — همان چیدمانی که یک لحظه بعد پر می‌شود.
@@ -20,7 +21,7 @@ export function PageSkeleton({
   rows?: number;
 }) {
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+    <PageShell>
       <header className="grid gap-2">
         <Skeleton className="h-6 w-40" />
         <Skeleton className="h-4 w-24" />
@@ -40,6 +41,6 @@ export function PageSkeleton({
           ))}
         </div>
       )}
-    </main>
+    </PageShell>
   );
 }

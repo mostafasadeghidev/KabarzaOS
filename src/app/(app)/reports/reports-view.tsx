@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from '@/domain/money/money';
 import { hoursLabel } from '@/domain/reports/summary';
 import { REPORT_TABS } from '@/domain/access/staff-levels';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
@@ -25,6 +25,7 @@ import { chipStyle } from '@/domain/ui/contrast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Toggle } from '@/components/ui/toggle';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { StatCard } from '@/components/stat-card';
 
 /** «دورهٔ بسته» هم خروجی دارد ولی تبِ صادرشدنی نیست — تاریخ لازم دارد. */
 function isExportable(tab: string): boolean {
@@ -304,13 +305,12 @@ export function ReportsView({
             : <span />}
 
           {isExportable(tab) && (
-            <a
-              href={`/reports/export?tab=${tab}&${exportQuery}${tab === 'closings' && data.closings.active ? `&date=${data.closings.active}` : ''}`}
-              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <Download className="size-3.5" />
-              {tr("خروجی CSV")}
-            </a>
+            <Button asChild size="sm" variant="outline">
+              <a href={`/reports/export?tab=${tab}&${exportQuery}${tab === 'closings' && data.closings.active ? `&date=${data.closings.active}` : ''}`}>
+                <Download />
+                {tr("خروجی CSV")}
+              </a>
+            </Button>
           )}
         </div>
       )}
@@ -366,18 +366,15 @@ export function ReportsView({
         {cardGroups.map((group) => (
           <section key={group.title} className="grid gap-2">
             <h3 className="text-sm font-semibold">{tr(group.title)}</h3>
-            <div className="grid gap-3 @3xl/main:grid-cols-4 @xl/main:grid-cols-2">
+            <div className="grid gap-4 @xl/main:grid-cols-2 @3xl/main:grid-cols-4">
               {group.cards.map((c) => (
-                <Card key={c.label} className={c.danger ? 'border-destructive/50' : ''}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xs font-normal text-muted-foreground">{tr(c.label)}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className={`num ${c.strong ? 'text-xl font-semibold' : 'text-lg font-medium'} ${c.danger ? 'text-destructive' : ''}`}>
-                      {c.value}
-                    </p>
-                  </CardContent>
-                </Card>
+                <StatCard
+                  key={c.label}
+                  label={tr(c.label)}
+                  value={c.value}
+                  emphasis={c.strong ? 'strong' : 'quiet'}
+                  tone={c.danger ? 'danger' : 'default'}
+                />
               ))}
             </div>
           </section>
@@ -392,16 +389,13 @@ export function ReportsView({
         data.members.length === 0 ? <EmptyState title={tr("داده‌ای نیست")} /> : (
           <div className="grid gap-3">
           {/* پورتِ کارت‌های جمعِ تبِ اعضا: تعهد / پرداختی / بدهی (یورو). */}
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-4 @xl/main:grid-cols-3">
             {[
               { label: 'تعهد به اعضا', value: sum(data.members, 'agreed') },
               { label: 'پرداختی به اعضا', value: sum(data.members, 'paid') },
               { label: 'بدهی به اعضا', value: sum(data.members, 'remaining') },
             ].map((c) => (
-              <Card key={c.label}>
-                <CardHeader className="pb-2"><CardTitle className="text-xs font-normal text-muted-foreground">{tr(c.label)}</CardTitle></CardHeader>
-                <CardContent><p className="num text-lg font-medium">{format(c.value)}</p></CardContent>
-              </Card>
+              <StatCard key={c.label} label={tr(c.label)} value={format(c.value)} />
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -460,16 +454,13 @@ export function ReportsView({
       {tab === 'clients' && (
         data.clients.length === 0 ? <EmptyState title={tr("کارفرمایی به پروژه‌ای وصل نیست")} /> : (
           <div className="grid gap-3">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-4 @xl/main:grid-cols-3">
             {[
               { label: 'صورتحساب‌شدهٔ کل', value: sum(data.clients, 'billed') },
               { label: 'دریافتیِ کل', value: sum(data.clients, 'paid') },
               { label: 'طلبِ کل', value: sum(data.clients, 'due') },
             ].map((c) => (
-              <Card key={c.label}>
-                <CardHeader className="pb-2"><CardTitle className="text-xs font-normal text-muted-foreground">{tr(c.label)}</CardTitle></CardHeader>
-                <CardContent><p className="num text-lg font-medium">{format(c.value)}</p></CardContent>
-              </Card>
+              <StatCard key={c.label} label={tr(c.label)} value={format(c.value)} />
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -522,20 +513,13 @@ export function ReportsView({
           <RangeBar tab="expenses" presets={filters.expenses.presets} range={filters.expenses.range} officeIds={filters.officeIds} />
 
           {/* پورتِ کارت‌های افزونه: جمع (قرمز اگر مثبت)، تعداد، میانگینِ ماهانه از ماه‌های دارای داده. */}
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-4 @xl/main:grid-cols-3">
             {[
               { label: 'مجموع هزینه‌ها (یورو)', value: format(expenseStats.total), danger: Number(expenseStats.total) > 0 },
               { label: 'تعداد ردیف', value: String(expenseStats.count), danger: false },
               { label: 'میانگین ماهانه (یورو)', value: format(expenseStats.avg), danger: false },
             ].map((c) => (
-              <Card key={c.label}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-normal text-muted-foreground">{tr(c.label)}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className={`num text-lg font-semibold ${c.danger ? 'text-destructive' : ''}`}>{c.value}</p>
-                </CardContent>
-              </Card>
+              <StatCard key={c.label} label={tr(c.label)} value={c.value} tone={c.danger ? 'danger' : 'default'} />
             ))}
           </div>
 

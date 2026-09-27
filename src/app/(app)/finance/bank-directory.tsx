@@ -47,7 +47,7 @@ export function BankDirectory({
     <div className="grid gap-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-medium">{tr('اطلاعات حساب اعضا')}</h2>
+          <h2 className="text-sm font-semibold">{tr('اطلاعات حساب اعضا')}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {tr('عضوِ سابقی که تسویه شده در این فهرست نیست.')}
           </p>

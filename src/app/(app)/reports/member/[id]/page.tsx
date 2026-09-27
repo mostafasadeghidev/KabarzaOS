@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowRight, TriangleAlert } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 import { currentActor } from '@/server/auth';
 import { getMemberDetail } from '@/server/reports/service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -9,12 +8,12 @@ import { format } from '@/domain/money/money';
 import { hoursLabel } from '@/domain/reports/summary';
 import { formatSlots } from '@/domain/availability/weekly';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Thumb } from '@/components/thumb';
 import { MemberProjectsTable } from '../../detail-tables';
 import { primeTranslations, t } from '@/i18n/server';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell } from '@/components/page-shell';
+import { StatCard } from '@/components/stat-card';
 
 /**
  * ریزِ کارِ یک عضو در گزارش‌ها — پورتِ `member_detail` ِ افزونه: کارت‌های یورو،
@@ -35,9 +34,9 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState title={t("دسترسی ندارید")} description={t("دیدنِ گزارش‌ها مجوزِ جداگانه دارد.")} />
-        </main>
+        </PageShell>
       );
     }
     throw error;
@@ -45,9 +44,9 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
 
   if (!data) {
     return (
-      <main className="p-6">
+      <PageShell>
         <EmptyState title={t("عضو پیدا نشد")} />
-      </main>
+      </PageShell>
     );
   }
 
@@ -75,24 +74,12 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
 
   return (
     <PageShell>
-      <header className="grid gap-1">
-        <Link
-          href="/reports?tab=members"
-          className="flex w-fit items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <ArrowRight className="size-3.5" />
-          {t("بازگشت به گزارش‌ها")}
-        </Link>
-        <div className="flex items-center gap-3">
-          <Thumb id={data.person.id} title={data.person.name} fileId={data.person.avatarFileId} size={48} />
-          <div>
-            <h1 className="text-xl font-semibold">{data.person.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {data.person.roleNames.length > 0 ? data.person.roleNames.join('، ') : data.person.email}
-            </p>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        back={{ href: '/reports?tab=members', label: t("گزارش‌ها") }}
+        media={<Thumb id={data.person.id} title={data.person.name} fileId={data.person.avatarFileId} size={48} />}
+        title={data.person.name}
+        description={data.person.roleNames.length > 0 ? data.person.roleNames.join('، ') : data.person.email}
+      />
 
       {data.rateMissing > 0 && (
         <Alert variant="warning">
@@ -103,22 +90,16 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
         </Alert>
       )}
 
-      <div className="grid gap-3 @xl/main:grid-cols-3">
+      <div className="grid gap-4 @xl/main:grid-cols-3">
         {moneyCards.map((c) => (
-          <Card key={c.label}>
-            <CardHeader className="pb-2"><CardTitle className="text-xs font-normal text-muted-foreground">{t(c.label)}</CardTitle></CardHeader>
-            <CardContent><p className={`num text-xl font-semibold ${c.warn ? 'text-amber-600 dark:text-amber-500' : ''}`}>{c.value}</p></CardContent>
-          </Card>
+          <StatCard key={c.label} label={t(c.label)} value={c.value} tone={c.warn ? 'warning' : 'default'} />
         ))}
       </div>
 
       {/* پورتِ کارت‌های عملیاتیِ «۳۶۰». */}
-      <div className="grid gap-3 @xl/main:grid-cols-5 @md/main:grid-cols-2">
+      <div className="grid gap-4 @md/main:grid-cols-2 @3xl/main:grid-cols-5">
         {opCards.map((c) => (
-          <Card key={c.label}>
-            <CardHeader className="pb-2"><CardTitle className="text-xs font-normal text-muted-foreground">{t(c.label)}</CardTitle></CardHeader>
-            <CardContent><p className="num text-lg font-semibold">{c.value}</p></CardContent>
-          </Card>
+          <StatCard key={c.label} label={t(c.label)} value={c.value} />
         ))}
       </div>
 

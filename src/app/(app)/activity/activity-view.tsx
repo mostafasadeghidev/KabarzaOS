@@ -13,6 +13,7 @@ import { useSearchParams } from 'next/navigation';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 
 export interface EventRow {
   id: number;
@@ -144,20 +145,14 @@ export function ActivityView({
           </span>
           <div className="flex gap-1">
             {paging.page > 1 && (
-              <Link
-                href={`/activity?page=${paging.page - 1}`}
-                className="rounded-md border px-3 py-1 text-xs hover:bg-muted"
-              >
-                {tr("تازه‌تر")}
-              </Link>
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/activity?page=${paging.page - 1}`}>{tr("تازه‌تر")}</Link>
+              </Button>
             )}
             {paging.page < paging.totalPages && (
-              <Link
-                href={`/activity?page=${paging.page + 1}`}
-                className="rounded-md border px-3 py-1 text-xs hover:bg-muted"
-              >
-                {tr("قدیمی‌تر")}
-              </Link>
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/activity?page=${paging.page + 1}`}>{tr("قدیمی‌تر")}</Link>
+              </Button>
             )}
           </div>
         </div>

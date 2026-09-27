@@ -35,12 +35,12 @@ export default async function AccessPage({
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState
             title={t("دسترسی ندارید")}
             description={t("دفترِ دسترسی‌ها برای کسی باز است که اعضا را می‌بیند.")}
           />
-        </main>
+        </PageShell>
       );
     }
     throw error;

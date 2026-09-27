@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search } from 'lucide-react';
+import {
+  ArrowUpRight, Building2, FolderKanban, Landmark, Search, User, type LucideIcon,
+} from 'lucide-react';
 import { searchAction } from '@/app/(app)/_actions/search';
 import type { SearchHit } from '@/server/search/service';
 import { Input } from '@/components/ui/input';
@@ -12,11 +14,12 @@ import {
 import { useT } from '@/i18n/client';
 import { Button } from '@/components/ui/button';
 import { Kbd } from '@/components/ui/kbd';
+import { Spinner } from '@/components/ui/spinner';
 
 const MIN_QUERY = 3;
 
-const KIND_ICON: Record<SearchHit['kind'], string> = {
-  project: '📁', member: '👤', client: '🏢', account: '🏦',
+const KIND_ICON: Record<SearchHit['kind'], LucideIcon> = {
+  project: FolderKanban, member: User, client: Building2, account: Landmark,
 };
 
 const KIND_LABEL: Record<SearchHit['kind'], string> = {
@@ -29,7 +32,7 @@ interface Item {
   href: string;
   /** برچسبِ کوچکِ کنارِ ردیف — نوعِ رکورد؛ صفحه‌ها ندارند. */
   sub?: string;
-  icon?: string;
+  icon?: LucideIcon;
 }
 
 /**
@@ -102,7 +105,7 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
      * جستجو نیز روی متنِ ترجمه‌شده انجام می‌شود تا با آنچه کاربر می‌بیند بخواند.
      */
     const pageItems: Item[] = pages
-      .map((p) => ({ key: `page-${p.href}`, label: tr(p.label), href: p.href, icon: '↗' }))
+      .map((p) => ({ key: `page-${p.href}`, label: tr(p.label), href: p.href, icon: ArrowUpRight }))
       .filter((p) => !q || p.label.toLowerCase().includes(q));
 
     const hitItems: Item[] = hits.map((h) => ({
@@ -172,7 +175,7 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
                     i === selected ? 'bg-muted' : ''
                   }`}
                 >
-                  <span aria-hidden className="w-4 text-center">{item.icon}</span>
+                  {item.icon && <item.icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />}
                   <span className="flex-1 truncate">{item.label}</span>
                   {item.sub && <span className="text-xs text-muted-foreground">{item.sub}</span>}
                 </button>
@@ -180,7 +183,12 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
             ))}
           </ul>
 
-          {searching && <p className="p-3 text-xs text-muted-foreground">{t("⏳ در حالِ جستجو…")}</p>}
+          {searching && (
+            <p className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
+              <Spinner />
+              {t("در حال جستجو…")}
+            </p>
+          )}
 
           {/* «پیدا نشد» فقط وقتی جستجو تمام شده باشد. */}
           {!searching && items.length === 0 && (

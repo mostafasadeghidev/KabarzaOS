@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Lock, Pencil, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Lock, Pencil, Share2, Trash2 } from 'lucide-react';
 import {
   addTaskNoteAction, deleteTaskAction, loadTaskAction, referTaskAction, updateTaskAction,
   type TaskFormState,
@@ -206,7 +206,8 @@ export function TaskDialog({
             <div>
               <Button asChild size="sm" variant="ghost" className="px-0 text-primary hover:bg-transparent">
                 <Link href={`/projects/${task.projectId}?tab=tasks`}>
-                  {tr('رفتن به پروژه')} →
+                  {tr('رفتن به پروژه')}
+                  <ArrowLeft className="ltr:rotate-180" aria-hidden />
                 </Link>
               </Button>
             </div>

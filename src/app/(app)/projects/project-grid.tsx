@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { CardPager, useCardPage } from '@/components/ui/card-pager';
 import { useT } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageHeader } from '@/components/page-shell';
 
 /**
  * شبکهٔ کارتِ پروژه‌ها با تب و جستجو.
@@ -23,6 +24,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
  * سمتِ کلاینت است تا فوری باشد — همان رفتارِ نسخهٔ قبلی.
  */
 export function ProjectGrid({
+  header,
   projects,
   tabs,
   initialTab,
@@ -30,6 +32,11 @@ export function ProjectGrid({
   statuses,
   cardOptions,
 }: {
+  /**
+   * سرصفحهٔ صفحه — اینجا کشیده می‌شود چون جستجو (state ِ همین کامپوننت)
+   * کنارِ دکمهٔ اصلی در سرصفحه می‌نشیند.
+   */
+  header: { title: React.ReactNode; description?: React.ReactNode; actions?: React.ReactNode };
   projects: VisibleProjectRow[];
   tabs: TabInfo[];
   initialTab: TabKey;
@@ -71,6 +78,31 @@ export function ProjectGrid({
 
   return (
     <>
+      {/*
+        ⚠️ جستجو کنارِ دکمهٔ اصلی در سرصفحه، نه زیرِ تب‌ها: پیش از این تنها و
+        بی‌قرینه زیرِ نوارِ تب می‌نشست — و تب‌های وضعیت آن‌قدر زیادند که کنارِ
+        هم در یک ردیف جا نمی‌شوند.
+      */}
+      <PageHeader
+        title={header.title}
+        description={header.description}
+        actions={(
+          <>
+            <div className="relative w-56 sm:w-64">
+              <Search className="pointer-events-none absolute top-1/2 start-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={tr("جستجوی نام پروژه…")}
+                className="ps-9"
+              />
+            </div>
+            {header.actions}
+          </>
+        )}
+      />
+
       {/* shadcn Tabs — روی صفحهٔ باریک پیمایشِ افقی، به‌جای شکستنِ خط. */}
       <div className="overflow-x-auto overflow-y-hidden">
         <Tabs value={tab} onValueChange={(v) => selectTab(v as typeof tab)}>
@@ -83,17 +115,6 @@ export function ProjectGrid({
             ))}
           </TabsList>
         </Tabs>
-      </div>
-
-      <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute top-1/2 start-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={tr("جستجوی نام پروژه…")}
-          className="ps-9"
-        />
       </div>
 
       {visible.length === 0 ? (

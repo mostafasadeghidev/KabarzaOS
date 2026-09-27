@@ -35,12 +35,12 @@ export default async function HoursPage({
    */
   if (!await canUseTimesheet(actor)) {
     return (
-      <main className="p-6">
+      <PageShell>
         <EmptyState
           title={t("این بخش برای اعضای تیم است")}
           description={t("ثبتِ ساعت کارِ اعضاست؛ ساعتِ تیم را در «تیمِ من» و گزارش‌ها می‌بینید.")}
         />
-      </main>
+      </PageShell>
     );
   }
 

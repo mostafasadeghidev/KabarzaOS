@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { Clock, Pause, Play, Trash2 } from 'lucide-react';
+import { Clock, Lock, Pause, Play, Trash2 } from 'lucide-react';
 import {
   confirmPendingAction, deleteLogAction, discardPendingAction, logHoursAction,
   resumePendingAction, startTimerAction, stopTimerAction, updateLogAction,
@@ -27,6 +27,7 @@ import { useConfirm } from '@/components/ui/confirm';
 import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { StatCard } from '@/components/stat-card';
 
 export interface LogRow {
   id: number;
@@ -137,19 +138,9 @@ export function HoursView({ data }: { data: HoursData }) {
   return (
     <div className="grid gap-4">
       {/* پورتِ آمارِ افزونه: هفتهٔ تقویمی از روزِ شروعِ تنظیمات + این ماه. */}
-      <div className="grid gap-3 @2xl/main:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-normal text-muted-foreground">{t("این هفته")}</CardTitle>
-          </CardHeader>
-          <CardContent><p className="num text-xl font-semibold">{hoursLabel(data.totals.week)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-normal text-muted-foreground">{t("این ماه")}</CardTitle>
-          </CardHeader>
-          <CardContent><p className="num text-xl font-semibold">{hoursLabel(data.totals.month)}</p></CardContent>
-        </Card>
+      <div className="grid gap-4 @2xl/main:grid-cols-2">
+        <StatCard label={t("این هفته")} value={hoursLabel(data.totals.week)} />
+        <StatCard label={t("این ماه")} value={hoursLabel(data.totals.month)} />
       </div>
 
       {/* ── تایمرِ پارک‌شده: مهم‌ترین حالت، پس بالاتر از همه ── */}
@@ -369,7 +360,10 @@ export function HoursView({ data }: { data: HoursData }) {
                       </Button>
                     </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground">🔒 {t("قفل‌شده")}</span>
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <Lock className="size-3" aria-hidden />
+                      {t("قفل‌شده")}
+                    </span>
                   )}
                 </TableCell>
               </TableRow>

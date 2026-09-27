@@ -2,6 +2,25 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.81.0]
+
+### Changed
+
+- **Detail pages share one header.** The member, client and hours reports, a teammate's profile, the focus lists, the bidder view and the project page itself now use `PageHeader` with a back link above the title. The back link had four shapes before: an arrow typed into the translation ("← Projects"), an icon that stayed pointing the wrong way in left-to-right languages, a breadcrumb, and two font sizes. It now names the parent page, with an arrow that follows the reading direction.
+- **The last pages moved onto the shell** — dashboard, tasks, finance, my money, the former-member view, the loading skeleton and every "no access / not found" state — so padding and spacing no longer change from one screen to the next.
+- **One stat card.** The small label-over-number card was hand-built in ten files with five different sizes. `StatCard` follows shadcn's `SectionCards`: one label size, one figure size, a quieter figure for secondary totals, amber for warnings, red for problems, and the whole card as the link target where it links.
+- **Search sits beside the primary button on Projects.** It used to sit alone below the status tabs; there are too many tabs to share their row, so it moved into the header next to "Add project".
+- **Controls look like controls.** CSV exports, the invoice link, the activity pager and the team's period switch were styled links; they are shadcn buttons now, matching the rest of the app. Section headings use one size.
+- **Icons instead of emoji.** The command palette, the locked-hours marker, the latest task note, the team cards and the sign-out button use the same icon set as the sidebar.
+
+### Fixed
+
+- **Pages no longer overflow on phones.** A scrolling tab strip or wide table inside a grid forced its minimum width onto the whole page, so the browser zoomed out: Reports rendered 975 px wide on a 375 px screen, Settings 772, a project's manage tab 576, Tasks 451. Tab roots may shrink now and page stacks use `minmax(0, 1fr)` columns, so only the strip or the table scrolls.
+- **"Go to …" arrows pointed backwards in Persian.** The `→` glyph is not mirrored in right-to-left text; these links use a direction-aware icon now.
+- **The invoice used half its width.** A centred flex child shrinks to its content; it now takes its full reading column.
+
+---
+
 ## [1.80.0]
 
 ### Changed

@@ -13,7 +13,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
@@ -26,6 +25,7 @@ import { summarizeProject } from '@/domain/team-money/payments';
 import { PAY_STATUS_LABELS } from './my-money-tab';
 import { chipStyle } from '@/domain/ui/contrast';
 import { Checkbox } from '@/components/ui/checkbox';
+import { StatCard } from '@/components/stat-card';
 
 /* ------------------------------------------------------------------ *
  * تبِ مالی — `finance` panel ِ مودالِ نسخهٔ قبلی.
@@ -105,29 +105,23 @@ export function FinanceTab({
     <div className="grid gap-4">
       <div className="flex justify-end">
         {/* فاکتور صفحهٔ جدا دارد تا Ctrl+P سندِ تمیز بدهد. */}
-        <a
-          href={`/projects/${projectId}/invoice`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs hover:bg-muted"
-        >
-          <FileText className="size-3.5" />
-          {tr("فاکتور")}
-        </a>
+        <Button asChild size="sm" variant="outline">
+          <a href={`/projects/${projectId}/invoice`} target="_blank" rel="noopener noreferrer">
+            <FileText />
+            {tr("فاکتور")}
+          </a>
+        </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-4 @xl/main:grid-cols-3">
         {cards.map((c) => (
-          <Card key={c.label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-normal text-muted-foreground">{t(c.label)}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className={`${c.plain ? '' : 'num'} text-lg font-semibold ${c.warn ? 'text-amber-600 dark:text-amber-500' : ''}`}>
-                {c.value}
-              </p>
-            </CardContent>
-          </Card>
+          <StatCard
+            key={c.label}
+            label={t(c.label)}
+            value={c.value}
+            numeric={!c.plain}
+            tone={c.warn ? 'warning' : 'default'}
+          />
         ))}
       </div>
 

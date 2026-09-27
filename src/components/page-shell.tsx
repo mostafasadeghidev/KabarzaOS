@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -45,26 +47,66 @@ export function PageShell({
  * ⚠️ دکمهٔ اصلیِ صفحه جای ثابتی می‌خواهد. پیش از این بعضی صفحه‌ها آن را
  * بالای فهرست می‌گذاشتند، بعضی وسطِ نوارِ فیلترها و بعضی اصلاً پایین؛ چشم
  * هر بار باید دنبالش می‌گشت.
+ *
+ * `back`     — صفحه‌های جزئیات (گزارشِ یک عضو، پروژه، …) راهِ برگشت به
+ *              فهرستِ مادر را بالای عنوان دارند. ⚠️ پیش از این چهار شکلِ
+ *              مختلف داشت: پیکان در متنِ ترجمه («← پروژه‌ها»)، پیکانِ آیکونی
+ *              که در زبان‌های چپ‌به‌راست برعکس می‌ماند، مسیرِ نان‌ریزه‌ای، و
+ *              دو اندازهٔ قلم. برچسب نامِ همان صفحهٔ مادر است.
+ * `media`    — تصویرِ کنارِ عنوان (آواتارِ عضو).
+ * `children` — ردیفِ چیپ‌های زیرِ عنوان (وضعیت، برچسب‌ها).
  */
 export function PageHeader({
   title,
   description,
   actions,
+  back,
+  media,
+  children,
 }: {
   title: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
+  back?: { href: string; label: React.ReactNode };
+  media?: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
-    <header className="flex flex-wrap items-start justify-between gap-3">
-      <div className="grid gap-1">
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        {description && (
-          <div className="text-sm text-muted-foreground">{description}</div>
-        )}
+    <header className="grid gap-2">
+      {back && <BackLink href={back.href}>{back.label}</BackLink>}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          {media}
+          <div className="grid min-w-0 gap-1">
+            <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+            {description && (
+              <div className="text-sm text-muted-foreground">{description}</div>
+            )}
+            {children && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">{children}</div>
+            )}
+          </div>
+        </div>
+        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
+  );
+}
+
+/**
+ * پیوندِ «برگشت به صفحهٔ مادر» — یک شکل همه‌جا (سرصفحه، فاکتور).
+ * برچسب نامِ صفحهٔ مادر است؛ پیکان جهتِ برگشت را می‌گوید.
+ */
+export function BackLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+    >
+      {/* در راست‌به‌چپ «برگشت» به راست است؛ در چپ‌به‌راست به چپ. */}
+      <ArrowRight className="size-4 ltr:rotate-180" aria-hidden />
+      {children}
+    </Link>
   );
 }
 
@@ -74,6 +116,10 @@ export function PageHeader({
  * ⚠️ چرا لازم شد: تب‌های **یک** صفحه هر کدام قاعدهٔ خودشان را داشتند —
  * سه فاصلهٔ متفاوت (۳، ۴، ۵) و دو عرضِ متفاوت. حالا تصمیمِ عرض کنارِ خودِ
  * تب نوشته می‌شود و فاصله دیگر انتخابی نیست.
+ *
+ * ⚠️ `grid-cols-1` یعنی `minmax(0, 1fr)`: ستونِ پیش‌فرضِ grid (`auto`) هرگز
+ * از حداقل‌عرضِ محتوا کوچک‌تر نمی‌شود، پس یک جدولِ پهن روی موبایل کلِ صفحه
+ * را پهن می‌کرد به‌جای آنکه خودش پیمایش بخورد.
  */
 export function TabPanel({
   width = 'full',
@@ -85,7 +131,7 @@ export function TabPanel({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn('grid gap-4', width === 'reading' && 'w-full max-w-4xl', className)}>
+    <div className={cn('grid grid-cols-1 gap-4', width === 'reading' && 'w-full max-w-4xl', className)}>
       {children}
     </div>
   );

@@ -312,23 +312,26 @@ export function PayoutsView({
       {section === 'members' && (
       <section className="grid gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-base font-semibold">{t("درخواست‌های پرداخت")}</h2>
+          <h2 className="text-sm font-semibold">{t("درخواست‌های پرداخت")}</h2>
           {/* روی جدولِ درخواست‌ها. */}
           {requests.length > 0 && (
             <TableSearch view={requestsView} placeholder={tr('جستجوی عضو یا پروژه…')} />
           )}
         </div>
         <Tabs value={status} onValueChange={(v) => setStatus(v as typeof status)}>
-          <TabsList>
-            {tabs.map((key) => (
-              <TabsTrigger key={key} value={key} className="flex-none px-3">
-                {t(REQUEST_TAB_LABELS[key])}
-                {key === 'pending' && pendingCount > 0 && (
-                  <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{pendingCount}</Badge>
-                )}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          {/* روی صفحهٔ باریک پیمایشِ افقی، به‌جای بیرون‌زدن از صفحه — مثلِ بقیهٔ نوارهای تب. */}
+          <div className="overflow-x-auto overflow-y-hidden">
+            <TabsList className="w-max">
+              {tabs.map((key) => (
+                <TabsTrigger key={key} value={key} className="flex-none px-3">
+                  {t(REQUEST_TAB_LABELS[key])}
+                  {key === 'pending' && pendingCount > 0 && (
+                    <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{pendingCount}</Badge>
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
         </Tabs>
         {tabRows.length === 0 ? (
           <EmptyState title={t("درخواستی در این وضعیت نیست")} />
@@ -432,7 +435,7 @@ export function PayoutsView({
       {section === 'members' && (
       <section className="grid gap-3">
         <div>
-          <h2 className="text-base font-semibold">{t("کارکردهای پرداخت‌نشده")}</h2>
+          <h2 className="text-sm font-semibold">{t("کارکردهای پرداخت‌نشده")}</h2>
           <p className="text-xs text-muted-foreground">
             {tr("ردیف‌های کارکردِ تعدادی که هنوز پرداخت نشده‌اند و درخواستِ بازی ندارند؛ «ثبت در حسابداری» ردیفِ برداشت را می‌نویسد و کارکرد «پرداخت‌شده» می‌شود.")}
           </p>
@@ -483,7 +486,7 @@ export function PayoutsView({
       {section === 'members' && detachedPayments.length > 0 && (
       <section className="grid gap-3">
         <div>
-          <h2 className="text-base font-semibold">{t("پرداخت‌های بی‌پروژه")}</h2>
+          <h2 className="text-sm font-semibold">{t("پرداخت‌های بی‌پروژه")}</h2>
           <p className="text-xs text-muted-foreground">
             {tr("ردیف‌هایی که با «جداسازی» از پروژهٔ حذف‌شده مانده‌اند؛ پول در دفتر هست و نامِ پروژه در توضیحات.")}
           </p>
@@ -527,7 +530,7 @@ export function PayoutsView({
       {section === 'expenses' && (
       <section className="grid gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">{t("هزینه‌های دوره‌ای")}</h2>
+          <h2 className="text-sm font-semibold">{t("هزینه‌های دوره‌ای")}</h2>
           {canManage && (
             <Button size="sm" onClick={() => { setEditing(null); setExpenseOpen(true); }}>
               <Plus className="size-4" />

@@ -168,7 +168,7 @@ export function ProjectTabs({
   };
 
   return (
-    <div className="mt-6 grid gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <Tabs value={tab} onValueChange={(v) => selectTab(v as typeof tab)}>
         {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
         <div className="overflow-x-auto pb-1.5">

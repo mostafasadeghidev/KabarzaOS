@@ -31,14 +31,14 @@ export async function PeopleSectionPage({ section }: { section: SectionConfig })
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState
             title={t("دسترسی ندارید")}
             description={t('برای دیدنِ {section} از مدیر دسترسی بگیرید.', {
               section: section.title,
             })}
           />
-        </main>
+        </PageShell>
       );
     }
     throw error;

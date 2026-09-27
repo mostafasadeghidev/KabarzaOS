@@ -90,7 +90,7 @@ export function CatalogSection<T extends { id: number }>({
     <section className="grid gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-base font-semibold">{tr(title)}</h2>
+          <h2 className="text-sm font-semibold">{tr(title)}</h2>
           {description && <p className="text-xs text-muted-foreground">{tr(description)}</p>}
         </div>
         <Button

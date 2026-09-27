@@ -92,12 +92,12 @@ export default async function TeamPage({
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState
             title={t("دفترِ تحتِ مدیریتی ندارید")}
             description={t("این بخش برای مدیرانِ دفتر است.")}
           />
-        </main>
+        </PageShell>
       );
     }
     throw error;

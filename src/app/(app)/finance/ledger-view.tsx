@@ -16,7 +16,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -37,6 +36,7 @@ import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DatePicker } from '@/components/ui/date-picker';
+import { StatCard } from '@/components/stat-card';
 
 /** یک حساب — همان شکلی که `listAccounts` برمی‌گرداند. */
 export interface AccountOption {
@@ -278,18 +278,15 @@ export function LedgerView({
         </Alert>
       )}
 
-      <div className="grid gap-3 @2xl/main:grid-cols-5 @xl/main:grid-cols-3">
+      {/* ⚠️ پنج ستون فقط وقتی جا هست — رقمِ پولی در ستونِ باریک از کارت بیرون می‌زد. */}
+      <div className="grid gap-4 @xl/main:grid-cols-3 @4xl/main:grid-cols-5">
         {cards.map((c) => (
-          <Card key={c.label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-normal text-muted-foreground">{t(c.label)}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className={`num ${c.strong ? 'text-lg font-semibold' : 'text-sm font-medium'}`}>
-                {c.value}
-              </p>
-            </CardContent>
-          </Card>
+          <StatCard
+            key={c.label}
+            label={t(c.label)}
+            value={c.value}
+            emphasis={c.strong ? 'strong' : 'quiet'}
+          />
         ))}
       </div>
 

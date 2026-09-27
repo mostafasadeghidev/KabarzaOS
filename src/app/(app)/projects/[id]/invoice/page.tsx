@@ -1,5 +1,4 @@
 import { notFound, redirect } from 'next/navigation';
-import Link from 'next/link';
 import { currentActor } from '@/server/auth';
 import { getInvoice } from '@/server/finance/invoice-service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -7,6 +6,7 @@ import { format, type Currency } from '@/domain/money/money';
 import { EmptyState } from '@/components/ui/empty-state';
 import { primeTranslations, t } from '@/i18n/server';
 import { PrintButton } from '@/components/print-button';
+import { BackLink, PageShell } from '@/components/page-shell';
 
 /**
  * فاکتورِ پروژه — سندِ قابلِ چاپ.
@@ -37,12 +37,12 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     if (error instanceof ForbiddenError) {
       // پورتِ افزونه: شناسهٔ ناموجود «پروژه یافت نشد» می‌گوید، نه «دسترسی ندارید».
       if (error.message === 'project.not_found') {
-        return <main className="p-6"><EmptyState title={t("پروژه یافت نشد")} /></main>;
+        return <PageShell><EmptyState title={t("پروژه یافت نشد")} /></PageShell>;
       }
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState title={t("دسترسی ندارید")} description={t("دیدنِ فاکتور مجوزِ مالی می‌خواهد.")} />
-        </main>
+        </PageShell>
       );
     }
     throw error;
@@ -54,11 +54,9 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   const money = (v: string) => `${format(v, currency)} ${cur}`.trim();
 
   return (
-    <main className="mx-auto grid max-w-3xl gap-6 p-6 print:max-w-none print:p-0">
+    <main className="mx-auto grid w-full max-w-3xl gap-6 p-6 print:max-w-none print:p-0">
       <div className="flex items-center justify-between print:hidden">
-        <Link href={`/projects/${id}`} className="text-xs text-muted-foreground hover:underline">
-          {t("← بازگشت به پروژه")}
-        </Link>
+        <BackLink href={`/projects/${id}`}>{data.project.title}</BackLink>
         <div className="flex items-center gap-3">
           {!data.issuable && (
             <span className="text-xs text-amber-600 dark:text-amber-500">

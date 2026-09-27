@@ -10,6 +10,8 @@ import {
 import { logout } from '@/app/login/actions';
 import { t } from '@/i18n/server';
 import { Button } from '@/components/ui/button';
+import { PageHeader, PageShell } from '@/components/page-shell';
+import { LogOut } from 'lucide-react';
 
 /**
  * نمای عضوِ سابقِ «فقط مالی» — پورتِ `render_offboarded_finance()`.
@@ -27,22 +29,21 @@ export async function OffboardedShell({ actor }: { actor: Actor }) {
   ]);
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-5 p-6">
+    <PageShell width="reading">
       <header className="flex items-center justify-between border-b pb-3">
         <strong className="text-sm">{me.name}</strong>
         <form action={logout}>
           <Button type="submit" variant="ghost" size="xs" className="text-muted-foreground">
-            {t("⎋ خروج")}
+            <LogOut />
+            {t("خروج")}
           </Button>
         </form>
       </header>
 
-      <div>
-        <h1 className="text-xl font-semibold">{t("امور مالی شما")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t("همکاری شما با تیم پایان یافته است. این صفحه فقط برای پیگیریِ تسویهٔ مالیِ شما در دسترس است.")}
-        </p>
-      </div>
+      <PageHeader
+        title={t("امور مالی شما")}
+        description={t("همکاری شما با تیم پایان یافته است. این صفحه فقط برای پیگیریِ تسویهٔ مالیِ شما در دسترس است.")}
+      />
 
       <BankCard bank={me.bank} card={me.bank.card} />
 
@@ -91,6 +92,6 @@ export async function OffboardedShell({ actor }: { actor: Actor }) {
           </ul>
         </section>
       )}
-    </div>
+    </PageShell>
   );
 }

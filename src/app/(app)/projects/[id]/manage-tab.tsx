@@ -525,7 +525,7 @@ export function ManageTab({
      * تصویرِ شاخص از ۱.۷۴.۰ در فرمِ «ویرایش» ِ پروژه است، نه اینجا.
      * خط‌چین عمدی است: مرزِ نرم، تا از کادرِ **قرمزِ توپرِ** حذف تفکیک شود.
      */
-    <div className="grid max-w-5xl gap-4">
+    <div className="grid max-w-5xl grid-cols-1 gap-4">
       {/* ترتیبِ کارت‌ها: در دسترس بودن ← ساعت ← ثبت‌ها ← بایگانی ← سبک‌سازی ← حذف. */}
       {canManage && (
         <Card className="gap-2 px-4 py-4 shadow-xs">

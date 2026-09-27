@@ -3,7 +3,7 @@ import type { ClientSection, MemberDashboard, MemberSection } from '@/server/das
 import { format } from '@/domain/money/money';
 import { SecretAmount } from '@/components/secret-amount';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ProjectStatus } from '../projects/project-status';
 import {
@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/table';
 import { t } from '@/i18n/server';
 import { formatDateTime } from '@/i18n/datetime';
+import { StatCard } from '@/components/stat-card';
+import { ArrowLeft } from 'lucide-react';
 
 /**
  * داشبوردِ عضو و کارفرما — پورتِ `member_overview()` / `client_overview()`.
@@ -35,19 +37,6 @@ const PAY_LABELS: Record<string, string> = {
   paid: 'تسویه‌شده',
 };
 
-function Stat({ value, label, href }: { value: number; label: string; href: string }) {
-  return (
-    <Link href={href}>
-      <Card className="transition-colors hover:border-primary/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-normal text-muted-foreground">{label}</CardTitle>
-        </CardHeader>
-        <CardContent><p className="num text-2xl font-semibold">{value}</p></CardContent>
-      </Card>
-    </Link>
-  );
-}
-
 /**
  * کارتِ ماندهٔ باز — به «امور مالی» می‌برد.
  * ⚠️ به تفکیکِ ارز نوشته می‌شود؛ جمعِ چندارزی در یک عدد بی‌معناست.
@@ -56,32 +45,30 @@ function MoneyStat({
   lines, label,
 }: { lines: Array<{ currencyCode: string; total: string }>; label: string }) {
   return (
-    <Card className="transition-colors hover:border-primary/50">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between gap-2 text-sm font-normal text-muted-foreground">
+    <Card className="h-full gap-0 py-4 shadow-xs">
+      <CardHeader className="gap-1.5 px-4">
+        <CardDescription className="flex items-center justify-between gap-2">
           {label}
           {/* رفتن به صفحهٔ مالی، جدا از کلیکِ «نمایشِ مبلغ». */}
           <Link href="/my-money" className="text-xs text-primary hover:underline">{t('جزئیات')}</Link>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+        </CardDescription>
         {/* ⚠️ صفر هم پوشیده است: اگر فقط رقمِ غیرِصفر پوشیده باشد، «•••» خودش
             می‌گوید «چیزی هست» و پوشش بی‌معنا می‌شود. */}
         {lines.length === 0 ? (
-          <p className="text-2xl font-semibold">
+          <CardTitle className="text-xl font-semibold">
             <SecretAmount value="0" />
-          </p>
+          </CardTitle>
         ) : (
-          <div className="grid gap-0.5">
+          <div className="grid gap-1">
             {lines.map((l) => (
-              <p key={l.currencyCode} className="num text-xl font-semibold">
+              <CardTitle key={l.currencyCode} className="num text-xl font-semibold">
                 {/* رقم پیش‌فرض پوشیده است؛ با کلیک باز می‌شود. */}
                 <SecretAmount value={`${format(l.total)} ${l.currencyCode}`} />
-              </p>
+              </CardTitle>
             ))}
           </div>
         )}
-      </CardContent>
+      </CardHeader>
     </Card>
   );
 }
@@ -89,11 +76,11 @@ function MoneyStat({
 function MemberBlock({ data, unread, money }: { data: MemberSection; unread: number; money: MoneyLines }) {
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat value={data.stats.projects} label={t('پروژه‌ها')} href="/projects" />
-        <Stat value={data.stats.openTasks} label={t('تسک‌های باز')} href="/tasks" />
-        <Stat value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/projects?tab=review" />
-        <Stat value={unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" />
+      <div className="grid gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+        <StatCard value={data.stats.projects} label={t('پروژه‌ها')} href="/projects" />
+        <StatCard value={data.stats.openTasks} label={t('تسک‌های باز')} href="/tasks" />
+        <StatCard value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/projects?tab=review" />
+        <StatCard value={unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" />
         <MoneyStat lines={money} label={t('ماندهٔ دریافتیِ شما')} />
       </div>
 
@@ -146,11 +133,11 @@ function MemberBlock({ data, unread, money }: { data: MemberSection; unread: num
 function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection; unread: number; showUnread: boolean; money: MoneyLines }) {
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat value={data.stats.projects} label={t('پروژه‌ها (به‌عنوان کارفرما)')} href="/projects" />
-        <Stat value={data.stats.reviewTasks} label={t('تسک‌های نیازمند بررسی')} href="/tasks" />
-        <Stat value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/projects?tab=review" />
-        {showUnread && <Stat value={unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" />}
+      <div className="grid gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+        <StatCard value={data.stats.projects} label={t('پروژه‌ها (به‌عنوان کارفرما)')} href="/projects" />
+        <StatCard value={data.stats.reviewTasks} label={t('تسک‌های نیازمند بررسی')} href="/tasks" />
+        <StatCard value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/projects?tab=review" />
+        {showUnread && <StatCard value={unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" />}
         <MoneyStat lines={money} label={t('ماندهٔ پرداختیِ شما')} />
       </div>
 
@@ -216,7 +203,7 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
 
 export function MemberDashboardView({ data, timezone = '' }: { data: MemberDashboard; timezone?: string }) {
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4 md:gap-6">
       {data.member && (
         <MemberBlock data={data.member} unread={data.unread} money={data.money?.member ?? []} />
       )}
@@ -276,7 +263,7 @@ export function MemberDashboardView({ data, timezone = '' }: { data: MemberDashb
             <CardTitle className="text-base">{t('جلسات این هفته')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid gap-2 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
               {data.meetings.map((m) => (
                 <li key={m.id} className="rounded-md border p-3 text-sm">
                   <p className="font-medium">{m.title}</p>
@@ -287,7 +274,10 @@ export function MemberDashboardView({ data, timezone = '' }: { data: MemberDashb
               ))}
             </ul>
             <p className="mt-3 text-sm">
-              <Link href="/meetings" className="underline">{t('همهٔ جلسات')} →</Link>
+              <Link href="/meetings" className="inline-flex items-center gap-1 underline">
+                {t('همهٔ جلسات')}
+                <ArrowLeft className="size-3.5 ltr:rotate-180" aria-hidden />
+              </Link>
             </p>
           </CardContent>
         </Card>

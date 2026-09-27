@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { Download, FileText } from 'lucide-react';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
 import { t } from '@/i18n/server';
-import { PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 export interface BidderData {
   project: { id: number; title: string; description: string | null };
@@ -20,16 +19,13 @@ export interface BidderData {
  */
 export function BidderView({ data }: { data: BidderData }) {
   return (
-    <PageShell>
-      <header className="grid gap-1">
-        <Link href="/projects" className="text-xs text-muted-foreground hover:underline">
-          {t("← پروژه‌ها")}
-        </Link>
-        <h1 className="text-xl font-semibold">{data.project.title}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t("شما عضوِ این پروژه نیستید؛ این نما فقط برای پیشنهادِ قیمت است.")}
-        </p>
-      </header>
+    // ⚠️ عرضِ خواندنی: همان قاعدهٔ تبِ «پیشنهادِ من» — متن و فرم، نه جدول.
+    <PageShell width="reading">
+      <PageHeader
+        back={{ href: '/projects', label: t("پروژه‌ها") }}
+        title={data.project.title}
+        description={t("شما عضوِ این پروژه نیستید؛ این نما فقط برای پیشنهادِ قیمت است.")}
+      />
 
       {data.project.description && (
         <section className="rounded-md border p-3 text-sm whitespace-pre-line">

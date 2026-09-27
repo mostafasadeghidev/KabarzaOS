@@ -40,9 +40,9 @@ export default async function ProjectsPage({
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState title={t("دسترسی ندارید")} description={t("برای دیدنِ پروژه‌ها از مدیر دسترسی بگیرید.")} />
-        </main>
+        </PageShell>
       );
     }
     throw error;
@@ -72,47 +72,50 @@ export default async function ProjectsPage({
     color: s.color,
   }));
 
+  const header = {
+    title: t("پروژه‌ها"),
+    description: (
+      <><span className="num">{projects.filter((p) => !p.isArchived).length}</span> {t("پروژهٔ فعال")}</>
+    ),
+    // R-RBAC-06 — دکمهٔ تغییر فقط برای مدیر (سرویس هم مستقل گارد دارد).
+    actions: formOptions && (
+      <ProjectDialog
+        options={{
+          statuses: formOptions.statuses.map((s) => ({ id: s.id, label: s.name })),
+          currencies: formOptions.currencies.map((c) => ({ id: c.id, label: c.code })),
+          offices: formOptions.offices.map((o) => ({ id: o.id, label: o.name })),
+          parents: formOptions.parents.map((p) => ({ id: p.id, label: p.title })),
+          defaultCurrencyId: formOptions.currencies.find((c) => c.isDefault)?.id ?? null,
+          roleTags: formOptions.roleTags,
+          canUsePrivate: formOptions.canUsePrivate,
+          today: new Date().toISOString().slice(0, 10),
+          // بخش‌های اولیه فقط در همین فرمِ ساخت لازم‌اند.
+          bootstrap: {
+            people: formOptions.people.map((p) => ({ value: p.id, label: p.name })),
+            clients: formOptions.clientPeople.map((c) => ({ value: c.id, label: c.name })),
+            memberRoles: formOptions.memberRoles,
+            roleTags: formOptions.roleTags,
+            priorities: formOptions.priorities.map((p) => ({ id: p.id, label: p.name })),
+            currencies: formOptions.currencies.map((c) => ({ id: c.id, label: c.code })),
+            defaultCurrencyId: formOptions.currencies.find((c) => c.isDefault)?.id ?? null,
+            hasQaLibrary: formOptions.hasQaLibrary,
+          },
+        }}
+      />
+    ),
+  };
+
   return (
     <PageShell>
-      <PageHeader
-        title={t("پروژه‌ها")}
-        description={(
-          <><span className="num">{projects.filter((p) => !p.isArchived).length}</span> {t("پروژهٔ فعال")}</>
-        )}
-        actions={(
-          /* R-RBAC-06 — دکمهٔ تغییر فقط برای مدیر (سرویس هم مستقل گارد دارد). */
-          formOptions && (
-            <ProjectDialog
-              options={{
-                statuses: formOptions.statuses.map((s) => ({ id: s.id, label: s.name })),
-                currencies: formOptions.currencies.map((c) => ({ id: c.id, label: c.code })),
-                offices: formOptions.offices.map((o) => ({ id: o.id, label: o.name })),
-                parents: formOptions.parents.map((p) => ({ id: p.id, label: p.title })),
-                defaultCurrencyId: formOptions.currencies.find((c) => c.isDefault)?.id ?? null,
-                roleTags: formOptions.roleTags,
-                canUsePrivate: formOptions.canUsePrivate,
-                today: new Date().toISOString().slice(0, 10),
-                // بخش‌های اولیه فقط در همین فرمِ ساخت لازم‌اند.
-                bootstrap: {
-                  people: formOptions.people.map((p) => ({ value: p.id, label: p.name })),
-                  clients: formOptions.clientPeople.map((c) => ({ value: c.id, label: c.name })),
-                  memberRoles: formOptions.memberRoles,
-                  roleTags: formOptions.roleTags,
-                  priorities: formOptions.priorities.map((p) => ({ id: p.id, label: p.name })),
-                  currencies: formOptions.currencies.map((c) => ({ id: c.id, label: c.code })),
-                  defaultCurrencyId: formOptions.currencies.find((c) => c.isDefault)?.id ?? null,
-                  hasQaLibrary: formOptions.hasQaLibrary,
-                },
-              }}
-            />
-          )
-        )}
-      />
-
+      {/* ⚠️ سرصفحه را شبکه می‌کشد (جستجو کنارِ دکمهٔ اصلی)؛ حالتِ خالی جستجو ندارد. */}
       {projects.length === 0 ? (
-        <EmptyState title={t("پروژه‌ای ثبت نشده")} description={t("اولین پروژه را بسازید تا اینجا دیده شود.")} />
+        <>
+          <PageHeader {...header} />
+          <EmptyState title={t("پروژه‌ای ثبت نشده")} description={t("اولین پروژه را بسازید تا اینجا دیده شود.")} />
+        </>
       ) : (
         <ProjectGrid
+          header={header}
           projects={projects}
           tabs={tabs}
           initialTab={activeTab(tabs)}

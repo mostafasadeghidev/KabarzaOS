@@ -1,12 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowRight } from 'lucide-react';
 import { currentActor } from '@/server/auth';
 import { getMemberHours } from '@/server/reports/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { hoursLabel } from '@/domain/reports/summary';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
@@ -14,7 +12,8 @@ import { primeTranslations, t } from '@/i18n/server';
 import { HoursFilter } from './hours-filter';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { hoursRange, rangeLabel, reportQuery } from '@/domain/reports/filters';
-import { PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell } from '@/components/page-shell';
+import { StatCard } from '@/components/stat-card';
 
 /**
  * ریزِ ساعتِ کاریِ یک عضو — پورتِ نمای drill-down نسخهٔ قبلی.
@@ -61,9 +60,9 @@ export default async function MemberHoursPage({
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState title={t('دسترسی ندارید')} />
-        </main>
+        </PageShell>
       );
     }
     throw error;
@@ -71,9 +70,9 @@ export default async function MemberHoursPage({
 
   if (!data) {
     return (
-      <main className="p-6">
+      <PageShell>
         <EmptyState title={t('عضو یافت نشد')} />
-      </main>
+      </PageShell>
     );
   }
 
@@ -81,21 +80,20 @@ export default async function MemberHoursPage({
 
   return (
     <PageShell>
-      <div>
-        <Link
-          href={`/reports?tab=hours&${range.allTime ? 'hfrom=&hto=' : reportQuery({ hfrom: range.from, hto: range.to })}`}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowRight className="size-3.5 rtl:rotate-0 ltr:rotate-180" />
-          {t('بازگشت به گزارش‌ها')}
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold">{data.member.name}</h1>
-        <p className="text-sm text-muted-foreground">
-          {data.member.email}
-          {/* پورتِ برچسبِ بازه زیرِ نام: «از … تا …» / «کل دوره». */}
-          <span className="num ms-2">· {rangeLabel(range, t)}</span>
-        </p>
-      </div>
+      <PageHeader
+        back={{
+          href: `/reports?tab=hours&${range.allTime ? 'hfrom=&hto=' : reportQuery({ hfrom: range.from, hto: range.to })}`,
+          label: t('گزارش‌ها'),
+        }}
+        title={data.member.name}
+        description={(
+          <>
+            {data.member.email}
+            {/* پورتِ برچسبِ بازه زیرِ نام: «از … تا …» / «کل دوره». */}
+            <span className="num ms-2">· {rangeLabel(range, t)}</span>
+          </>
+        )}
+      />
 
       <HoursFilter
         userId={userId}
@@ -103,18 +101,13 @@ export default async function MemberHoursPage({
         weekStart={weekStart}
       />
 
-      <div className="grid gap-3 @xl/main:grid-cols-3">
+      <div className="grid gap-4 @xl/main:grid-cols-3">
         {[
           { label: t('مجموع ساعت'), value: hoursLabel(data.totals.all) },
           { label: t('ساعتِ پروژه‌ها'), value: hoursLabel(data.totals.project) },
           { label: t('ساعتِ عمومی'), value: hoursLabel(data.totals.general) },
         ].map((c) => (
-          <Card key={c.label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs font-normal text-muted-foreground">{c.label}</CardTitle>
-            </CardHeader>
-            <CardContent className="num text-2xl font-semibold">{c.value}</CardContent>
-          </Card>
+          <StatCard key={c.label} label={c.label} value={c.value} />
         ))}
       </div>
 

@@ -41,9 +41,9 @@ export default async function Finance({
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState title={t("دسترسی ندارید")} description={t("برای دیدنِ بخشِ مالی از مدیر دسترسی بگیرید.")} />
-        </main>
+        </PageShell>
       );
     }
     throw error;
@@ -60,12 +60,12 @@ export default async function Finance({
     const canManage = can(actor, 'finance.manage');
     if (!canManage) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState
             title={t("حسابی تعریف نشده")}
             description={t("هنوز حسابی ساخته نشده. از مدیرِ مالی بخواهید یکی بسازد.")}
           />
-        </main>
+        </PageShell>
       );
     }
     const firstOptions = await getAccountFormOptions(actor);
@@ -133,11 +133,8 @@ export default async function Finance({
   const accountOptions = data.canManage ? await getAccountFormOptions(actor) : null;
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("مالی")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">{data.account.name}</p>
-      </header>
+    <PageShell>
+      <PageHeader title={t("مالی")} description={data.account.name} />
 
       <FinancePage
         accountId={accountId}
@@ -180,6 +177,6 @@ export default async function Finance({
           accountantsByAccount: Object.fromEntries(accountOptions.accountantsByAccount),
         } : null}
       />
-    </main>
+    </PageShell>
   );
 }

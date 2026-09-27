@@ -4,6 +4,7 @@ import { getMyMoney, hasPersonalMoney } from '@/server/finance/my-money';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MyMoneyView } from './money-view';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /**
  * «مالیِ من» — صورت‌حسابِ کارفرما و دریافتی‌های عضو، روی همهٔ پروژه‌ها
@@ -22,25 +23,24 @@ export default async function MyMoneyPage() {
    */
   if (!hasPersonalMoney(actor)) {
     return (
-      <main className="p-6">
+      <PageShell>
         <EmptyState
           title={t("اطلاعات مالی‌ای برای نمایش نیست")}
           description={t("این صفحه صورت‌حسابِ کارفرما و دریافتی‌های عضوِ تیم را نشان می‌دهد.")}
         />
-      </main>
+      </PageShell>
     );
   }
 
   const data = await getMyMoney(actor);
 
   return (
-    <main className="grid gap-5 p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("امور مالی")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t("خلاصهٔ مالیِ شما روی همهٔ پروژه‌ها — برای جزئیاتِ هر پروژه واردِ خودِ پروژه شوید.")}
-        </p>
-      </header>
+    // ⚠️ عرضِ خواندنی — همان قاعدهٔ تبِ «پرداختِ من» ِ پروژه.
+    <PageShell width="reading">
+      <PageHeader
+        title={t("امور مالی")}
+        description={t("خلاصهٔ مالیِ شما روی همهٔ پروژه‌ها — برای جزئیاتِ هر پروژه واردِ خودِ پروژه شوید.")}
+      />
 
       <MyMoneyView
         memberProjects={data.memberProjects}
@@ -51,6 +51,6 @@ export default async function MyMoneyPage() {
         isClient={data.isClient}
         bankHref="/profile"
       />
-    </main>
+    </PageShell>
   );
 }

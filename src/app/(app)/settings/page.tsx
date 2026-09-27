@@ -67,9 +67,9 @@ export default async function SettingsPage() {
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return (
-        <main className="p-6">
+        <PageShell>
           <EmptyState title={t("دسترسی ندارید")} description={t("تنظیمات برای مدیرِ کل و مدیرِ مالی در دسترس است.")} />
-        </main>
+        </PageShell>
       );
     }
     throw error;

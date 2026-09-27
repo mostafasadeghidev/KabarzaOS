@@ -33,6 +33,8 @@ import { chipStyle } from '@/domain/ui/contrast';
 import { countOpenThreads } from '@/domain/projects/threads';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
+import { PageHeader, PageShell } from '@/components/page-shell';
+import { StatCard } from '@/components/stat-card';
 
 export default async function ProjectDetailPage({
   params,
@@ -206,41 +208,15 @@ export default async function ProjectDetailPage({
     canManageSection(actor, 'projects') || canManageSection(actor, 'finance');
 
   return (
-    <main className="p-6">
-      <nav className="text-sm text-muted-foreground">
-        <Link href="/projects" className="hover:underline">{t("پروژه‌ها")}</Link>
-        <span className="mx-2">/</span>
-        <span>{project.title}</span>
-      </nav>
-
-      <header className="mt-3 flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">{project.title}</h1>
-          {/* توضیحِ پروژه — پیش از این فقط داخلِ فرمِ ویرایش دیده می‌شد. */}
-          {project.description && (
-            <p className="mt-2 max-w-3xl whitespace-pre-wrap text-sm text-muted-foreground">
-              {project.description}
-            </p>
-          )}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {/* پورتِ `project_status_control`: مدیر انتخابگر، بقیه چیپ. */}
-            {formOptions ? (
-              <StatusPicker
-                projectId={project.id}
-                name={detail.statusName}
-                group={detail.statusGroup}
-                statusId={project.statusTagId ?? null}
-                options={formOptions.statuses.map((s) => ({ id: s.id, name: s.name, group: s.group ?? null, color: s.color ?? null }))}
-                canManage
-              />
-            ) : (
-              <ProjectStatus name={detail.statusName} group={detail.statusGroup} />
-            )}
-            {project.scope === 'private' && <Badge variant="warning">{t("خصوصی")}</Badge>}
-            {project.isArchived && <Badge variant="secondary">{t("بایگانی‌شده")}</Badge>}
-          </div>
-        </div>
-        {formOptions && (
+    <PageShell>
+      <PageHeader
+        back={{ href: '/projects', label: t("پروژه‌ها") }}
+        title={project.title}
+        description={project.description ? (
+          // توضیحِ پروژه — پیش از این فقط داخلِ فرمِ ویرایش دیده می‌شد.
+          <p className="max-w-3xl whitespace-pre-wrap">{project.description}</p>
+        ) : undefined}
+        actions={formOptions && (
           <ProjectDialog
             options={{
               statuses: formOptions.statuses.map((s) => ({ id: s.id, label: s.name })),
@@ -271,11 +247,27 @@ export default async function ProjectDetailPage({
             }}
           />
         )}
-      </header>
+      >
+        {/* پورتِ `project_status_control`: مدیر انتخابگر، بقیه چیپ. */}
+        {formOptions ? (
+          <StatusPicker
+            projectId={project.id}
+            name={detail.statusName}
+            group={detail.statusGroup}
+            statusId={project.statusTagId ?? null}
+            options={formOptions.statuses.map((s) => ({ id: s.id, name: s.name, group: s.group ?? null, color: s.color ?? null }))}
+            canManage
+          />
+        ) : (
+          <ProjectStatus name={detail.statusName} group={detail.statusGroup} />
+        )}
+        {project.scope === 'private' && <Badge variant="warning">{t("خصوصی")}</Badge>}
+        {project.isArchived && <Badge variant="secondary">{t("بایگانی‌شده")}</Badge>}
+      </PageHeader>
 
       {/* پورتِ نوارِ فقط‌خواندنیِ پروژهٔ منجمد (بایگانی / لغو / توقف). */}
       {detail.isFrozen && (
-        <Alert variant="destructive" className="mt-3">
+        <Alert variant="destructive">
           <CircleAlert />
           <AlertDescription>
             {t("این پروژه بسته یا بایگانی شده است و فقط‌خواندنی است: افزودن یا تغییرِ تسک، ساعت کاری و کامنت غیرفعال است.")}
@@ -360,19 +352,10 @@ export default async function ProjectDetailPage({
         می‌گذاشت. جایش «کامنتِ باز» نشسته — رشته‌هایی که تازه‌ترین پیامشان
         هنوز بسته نشده و منتظرِ کسی هستند.
       */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-normal text-muted-foreground">{t("اعضا")}</CardTitle></CardHeader>
-          <CardContent><p className="num text-xl font-semibold">{members.length}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-normal text-muted-foreground">{t("تسکِ باز")}</CardTitle></CardHeader>
-          <CardContent><p className="num text-xl font-semibold">{openTasks.length}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-normal text-muted-foreground">{t("کامنتِ باز")}</CardTitle></CardHeader>
-          <CardContent><p className="num text-xl font-semibold">{openComments}</p></CardContent>
-        </Card>
+      <div className="grid gap-4 @xl/main:grid-cols-3">
+        <StatCard label={t("اعضا")} value={members.length} />
+        <StatCard label={t("تسکِ باز")} value={openTasks.length} />
+        <StatCard label={t("کامنتِ باز")} value={openComments} />
       </div>
 
       <ProjectTabs
@@ -425,7 +408,7 @@ export default async function ProjectDetailPage({
           payments: detail.payments,
         }}
         info={
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <Card>
               <CardHeader className="flex-row items-center justify-between">
                 <CardTitle className="text-base">{t("اعضای پروژه")}</CardTitle>
@@ -530,6 +513,6 @@ export default async function ProjectDetailPage({
         }
       />
 
-    </main>
+    </PageShell>
   );
 }

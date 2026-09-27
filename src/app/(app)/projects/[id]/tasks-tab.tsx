@@ -192,7 +192,12 @@ function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boole
           {task.description}
         </p>
       )}
-      {task.lastNote && <p className="line-clamp-1 text-[11px] text-muted-foreground">💬 {task.lastNote}</p>}
+      {task.lastNote && (
+        <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <MessageSquare className="size-3 shrink-0" aria-hidden />
+          <span className="line-clamp-1 min-w-0">{task.lastNote}</span>
+        </p>
+      )}
     </div>
   );
 }
