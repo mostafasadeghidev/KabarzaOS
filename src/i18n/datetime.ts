@@ -35,6 +35,34 @@ export function formatDateTime(value: Date | string | null | undefined, timeZone
   return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
 }
 
+/**
+ * زمانِ فشرده برای فهرست‌ها و حباب‌های گفتگو — همان رقمِ لاتین.
+ *
+ * ⚠️ چرا: «2026-08-28 23:04» کنارِ هر ردیفِ صندوق و زیرِ هر پیام شلوغ است و
+ * چشم دنبالِ همان بخشی می‌گردد که عوض می‌شود. امروز فقط ساعت، امسال ماه و
+ * روز، سال‌های قبل تاریخِ کامل — مثلِ هر پیام‌رسان. «امروز» در منطقهٔ زمانیِ
+ * بیننده سنجیده می‌شود، نه UTC.
+ *
+ * `withTime` ساعت را برای روزهای دیگر هم نگه می‌دارد (حبابِ پیام)؛ بدونِ آن
+ * فقط تاریخ (ردیفِ صندوق).
+ */
+export function formatCompact(
+  value: Date | string | null | undefined,
+  timeZone?: string,
+  options: { withTime?: boolean; now?: Date } = {},
+): string {
+  if (!value) return '';
+  const d = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return '';
+  const zone = resolveZone(timeZone);
+  const p = parts(d, zone);
+  const n = parts(options.now ?? new Date(), zone);
+  const time = `${p.hour}:${p.minute}`;
+  if (p.year === n.year && p.month === n.month && p.day === n.day) return time;
+  const date = p.year === n.year ? `${p.month}-${p.day}` : `${p.year}-${p.month}-${p.day}`;
+  return options.withTime ? `${date} ${time}` : date;
+}
+
 /** مقدارِ `<input type="datetime-local">` — همان تاریخ در منطقهٔ زمانیِ کاربر. */
 export function formatForDateTimeInput(value: Date | string | null | undefined, timeZone?: string): string {
   const s = formatDateTime(value, timeZone);

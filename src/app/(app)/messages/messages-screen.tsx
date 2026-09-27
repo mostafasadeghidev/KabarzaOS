@@ -4,7 +4,7 @@ import { getRecipientFilterData, getRecipients, listInbox } from '@/server/messa
 import { can } from '@/domain/access/permissions';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { MessagesView } from './messages-view';
-import { PageHeader, PageShell } from '@/components/page-shell';
+import { PageShell } from '@/components/page-shell';
 import { primeTranslations, t } from '@/i18n/server';
 
 /**
@@ -42,34 +42,38 @@ export async function MessagesScreen({ threadId = null }: { threadId?: number | 
   const unread = inbox.threads.reduce((sum, t) => sum + t.unread, 0);
 
   return (
-    <PageShell>
-      <PageHeader
-        title={t("پیام‌ها")}
-        description={(
-          <>
-            <p>
-              <span className="num">{inbox.threads.length}</span> {t("گفتگو")}
-              {unread > 0 && <> · <span className="num">{unread}</span> {t("خوانده‌نشده")}</>}
-            </p>
-            {/*
-              ⚠️ اگر پاک‌سازیِ خودکار روشن است کاربر باید **بداند**؛ پیامی که
-              بی‌خبر ناپدید شود شبیهِ باگ است، نه سیاست. صفر یعنی هرگز و
-              آن‌وقت هیچ جمله‌ای چاپ نمی‌شود.
-            */}
-            {system.msgPurgeDays > 0 && (
-              <p className="mt-0.5 text-xs">
-                {/* ⚠️ یک جملهٔ پارامتری، نه سه تکه: در زبانِ دیگر ترتیبِ
-                    تکه‌ها عوض می‌شود و جمله بی‌معنا از آب درمی‌آید. */}
-                {t('پیام‌ها پس از {days} روز به‌صورت خودکار پاک می‌شوند.', {
-                  days: system.msgPurgeDays,
-                })}
-              </p>
-            )}
-          </>
-        )}
-      />
-
+    /*
+      ⚠️ ارتفاعِ ثابت (پنجره منهای نوارِ بالای اپ): صندوق و گفتگو باید هر کدام
+      خودشان اسکرول بخورند، نه کلِ صفحه — وگرنه گفتگوی بلند کادرِ پاسخ را
+      از دیدرس بیرون می‌برد.
+    */
+    <PageShell className="h-[calc(100svh-3rem)] min-h-[32rem] flex-none">
       <MessagesView
+        header={{
+          title: t("پیام‌ها"),
+          description: (
+            <>
+              <p>
+                <span className="num">{inbox.threads.length}</span> {t("گفتگو")}
+                {unread > 0 && <> · <span className="num">{unread}</span> {t("خوانده‌نشده")}</>}
+              </p>
+              {/*
+                ⚠️ اگر پاک‌سازیِ خودکار روشن است کاربر باید **بداند**؛ پیامی که
+                بی‌خبر ناپدید شود شبیهِ باگ است، نه سیاست. صفر یعنی هرگز و
+                آن‌وقت هیچ جمله‌ای چاپ نمی‌شود.
+              */}
+              {system.msgPurgeDays > 0 && (
+                <p className="mt-0.5 text-xs">
+                  {/* ⚠️ یک جملهٔ پارامتری، نه سه تکه: در زبانِ دیگر ترتیبِ
+                      تکه‌ها عوض می‌شود و جمله بی‌معنا از آب درمی‌آید. */}
+                  {t('پیام‌ها پس از {days} روز به‌صورت خودکار پاک می‌شوند.', {
+                    days: system.msgPurgeDays,
+                  })}
+                </p>
+              )}
+            </>
+          ),
+        }}
         inbox={inbox.threads}
         recipients={recipients}
         filters={filters}

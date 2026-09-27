@@ -2,6 +2,21 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.82.0]
+
+### Changed
+
+- **Messages is a real messenger now.** The page is rebuilt on shadcn's chat components — `Message`, `Bubble`, `Marker` and `Avatar` — inside the Mail layout: one frame, the inbox on one side and the conversation on the other, each scrolling on its own while the reply box stays in view.
+  - Your messages are coloured bubbles on the far side; the other person's are muted, with their avatar and name at the head of each run of messages.
+  - Days are separated by a dated marker ("Today", "Yesterday", or the date), so each bubble carries only its time; read receipts are icons instead of ✓ characters.
+  - The inbox gets avatars, a compact time (today's time, this year's month and day), bold rows and a count for unread threads, a search box, and an "Unread" tab.
+  - Opening a thread scrolls to the latest message; a new message only scrolls you down if you are already at the bottom, and a button takes you back down when you have scrolled up.
+  - On a phone the inbox and the conversation take turns, with a back button, instead of being stacked on one long page.
+  - "New message" and "Message management" moved into the page header, where every other page keeps its main action.
+- **Deleting a conversation asks first**, like every other delete in the app, and says whether it disappears for everyone or only from your inbox.
+
+---
+
 ## [1.81.0]
 
 ### Changed

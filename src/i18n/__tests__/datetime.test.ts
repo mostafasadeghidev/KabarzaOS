@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDateTime, formatForDateTimeInput, parseInZone } from '../datetime';
+import { formatCompact, formatDateTime, formatForDateTimeInput, parseInZone } from '../datetime';
 
 describe('formatDateTime — به وقتِ بیننده، نه UTC', () => {
   const instant = new Date('2026-09-02T10:30:00Z');
@@ -21,6 +21,33 @@ describe('formatDateTime — به وقتِ بیننده، نه UTC', () => {
 
   it('مقدارِ datetime-local همان است با T', () => {
     expect(formatForDateTimeInput(instant, 'Asia/Tehran')).toBe('2026-09-02T14:00');
+  });
+});
+
+describe('formatCompact — زمانِ فشردهٔ صندوق و حباب‌ها', () => {
+  // ۱۳:۳۰ ِ تهران، ۲۸ سپتامبر.
+  const now = new Date('2026-09-28T10:00:00Z');
+  const tz = 'Asia/Tehran';
+
+  it('امروز فقط ساعت', () => {
+    expect(formatCompact('2026-09-28T10:30:00Z', tz, { now })).toBe('14:00');
+    expect(formatCompact('2026-09-28T10:30:00Z', tz, { now, withTime: true })).toBe('14:00');
+  });
+
+  it('«امروز» در منطقهٔ بیننده است، نه UTC', () => {
+    // ۲۱:۰۰ ِ UTC ِ روزِ ۲۷ در تهران ۰۰:۳۰ ِ روزِ ۲۸ است.
+    expect(formatCompact('2026-09-27T21:00:00Z', tz, { now })).toBe('00:30');
+  });
+
+  it('امسال: ماه و روز، و با `withTime` ساعت هم', () => {
+    expect(formatCompact('2026-08-28T19:34:00Z', tz, { now })).toBe('08-28');
+    expect(formatCompact('2026-08-28T19:34:00Z', tz, { now, withTime: true })).toBe('08-28 23:04');
+  });
+
+  it('سال‌های قبل: تاریخِ کامل؛ خالی هیچ', () => {
+    expect(formatCompact('2025-12-31T10:00:00Z', tz, { now })).toBe('2025-12-31');
+    expect(formatCompact(null, tz, { now })).toBe('');
+    expect(formatCompact('not a date', tz, { now })).toBe('');
   });
 });
 

@@ -1,21 +1,35 @@
 'use client';
 
-import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Megaphone, Plus, Send, ShieldQuestion, Trash2, CircleAlert } from 'lucide-react';
+import {
+  ArrowDown, ArrowRight, Check, CheckCheck, ChevronDown, CircleAlert, Inbox, Megaphone,
+  MessagesSquare, Plus, Search, SendHorizontal, ShieldQuestion, Trash2,
+} from 'lucide-react';
 import {
   composeAction, contactManagementAction, deleteThreadAction, leaveThreadAction, openThreadAction,
   replyAction, type MessageState,
 } from './_form/actions';
 import { AUDIENCE_LABELS, type Audience } from '@/domain/messaging/threads';
 import { groupInbox } from '@/domain/messaging/labels';
+import { monogram } from '@/domain/files/monogram';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
+import { Input } from '@/components/ui/input';
+import { Marker, MarkerContent } from '@/components/ui/marker';
+import {
+  Message, MessageAvatar, MessageContent, MessageFooter, MessageGroup, MessageHeader,
+} from '@/components/ui/message';
 import { Spinner } from '@/components/ui/spinner';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageHeader } from '@/components/page-shell';
+import { useConfirm } from '@/components/ui/confirm';
 import {
   allowedRecipients, keepsProject, pickableRecipients, visibleProjects,
 } from '@/domain/messaging/recipient-filter';
@@ -25,11 +39,12 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
-import { formatDateTime } from '@/i18n/datetime';
+import { formatCompact, formatDateTime } from '@/i18n/datetime';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 export interface InboxRow {
   id: number;
@@ -62,10 +77,24 @@ export interface FilterData {
 }
 
 type Thread = Awaited<ReturnType<typeof openThreadAction>>;
+type ThreadMessage = Thread['messages'][number];
 
-/** تاریخ/ساعت به وقتِ بیننده — نه UTC ِ خام (`useDateTime`). */
-function when(value: Date | string | null | undefined, tz: string): string {
-  return formatDateTime(value, tz);
+/**
+ * آواتارِ گفتگو — تک‌نگارِ رنگی روی `Avatar` ِ shadcn.
+ *
+ * ⚠️ رنگ فقط از **برچسب** ساخته می‌شود، نه از شناسهٔ کاربر: برچسب سمتِ سرور
+ * ماسک می‌شود (R-MSG-03) و همهٔ مدیران «مدیریت»اند. اگر رنگ از شناسهٔ واقعی
+ * می‌آمد، دو «مدیریت» با دو رنگ از هم تشخیص داده می‌شدند و ماسک بی‌اثر می‌شد.
+ */
+function ChatAvatar({ label, size = 'default' }: { label: string; size?: 'sm' | 'default' | 'lg' }) {
+  const { letter, background } = monogram(0, label || '—');
+  return (
+    <Avatar size={size}>
+      <AvatarFallback className="font-semibold text-white" style={{ background }}>
+        {letter}
+      </AvatarFallback>
+    </Avatar>
+  );
 }
 
 /** یک ردیفِ صندوق — هم تک‌گفتگو هم فرزندِ آکاردئونِ ارسالِ همگانی. */
@@ -75,29 +104,47 @@ function InboxRowButton({
   row: InboxRow; open: boolean; onOpen: (id: number) => void; tz: string;
 }) {
   const tr = useT();
+  const unread = row.unread > 0;
   return (
     <button
       type="button"
       onClick={() => onOpen(row.id)}
-      className={`w-full rounded-md border p-3 text-start transition-colors hover:bg-muted/50 ${
-        open ? 'border-primary bg-muted/40' : ''
-      }`}
+      aria-current={open ? 'true' : undefined}
+      className={cn(
+        'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start transition-colors',
+        open ? 'bg-accent' : 'hover:bg-accent/60',
+      )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-medium">{row.label || '—'}</span>
-        <span className="flex items-center gap-1">
+      <ChatAvatar label={row.label} size="lg" />
+      <span className="grid min-w-0 flex-1 gap-0.5">
+        <span className="flex items-center gap-1.5">
+          <span className={cn('truncate text-sm', unread ? 'font-semibold' : 'font-medium')}>
+            {row.label || '—'}
+          </span>
           {!row.allowReply && (
-            <Megaphone className="size-3.5 text-muted-foreground" aria-label={tr("اعلان یک‌طرفه")} />
+            <Megaphone className="size-3.5 shrink-0 text-muted-foreground" aria-label={tr('اعلان یک‌طرفه')} />
           )}
-          {row.unread > 0 && <Badge className="num">{row.unread}</Badge>}
+          <span
+            className={cn('num ms-auto shrink-0 text-xs', unread ? 'font-medium text-primary' : 'text-muted-foreground')}
+            title={formatDateTime(row.lastAt, tz)}
+          >
+            {formatCompact(row.lastAt, tz)}
+          </span>
         </span>
-      </div>
-      <p className="mt-1 truncate text-xs text-muted-foreground">{row.lastBody}</p>
-      <p className="num mt-0.5 text-[11px] text-muted-foreground">{when(row.lastAt, tz)}</p>
+        <span className="flex items-center gap-2">
+          <span className={cn('min-w-0 flex-1 truncate text-xs', unread ? 'text-foreground' : 'text-muted-foreground')}>
+            {row.lastBody}
+          </span>
+          {unread && (
+            <Badge className="num h-5 min-w-5 shrink-0 rounded-full px-1.5">{row.unread}</Badge>
+          )}
+        </span>
+      </span>
     </button>
   );
 }
 
+/** دکمهٔ ارسالِ فرم‌های دیالوگ — با برچسب. */
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
@@ -107,6 +154,43 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
+/** دکمهٔ ارسالِ پاسخ — آیکونی مثلِ هر پیام‌رسان؛ برچسب در تولتیپ و برای صفحه‌خوان. */
+function SendButton({ label }: { label: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <IconButton type="submit" label={label} disabled={pending} className="size-10 shrink-0 rounded-full">
+      {pending ? <Spinner /> : <SendHorizontal className="rtl:-scale-x-100" />}
+    </IconButton>
+  );
+}
+
+/**
+ * تکه‌های گفتگو: جداکنندهٔ روز + دسته‌های پیاپیِ یک فرستنده.
+ *
+ * ⚠️ دسته‌بندی فقط نمایشی است: نامِ فرستنده سرِ دسته و آواتار تهِ دسته می‌آید
+ * (الگوی `MessageGroup` ِ shadcn)، ولی هر پیام ساعت و تیکِ خودش را نگه می‌دارد
+ * — رسیدِ خواندن به‌ازای هر پیام است (R-MSG-07) و نباید در دسته گم شود.
+ */
+type Block =
+  | { kind: 'day'; key: string; day: string }
+  | { kind: 'group'; key: string; fromUserId: number; fromName: string; items: ThreadMessage[] };
+
+function toBlocks(messages: ThreadMessage[], tz: string): Block[] {
+  const blocks: Block[] = [];
+  let day = '';
+  for (const m of messages) {
+    const d = formatDateTime(m.createdAt, tz).slice(0, 10);
+    if (d !== day) {
+      day = d;
+      blocks.push({ kind: 'day', key: `d${d}`, day: d });
+    }
+    const last = blocks[blocks.length - 1];
+    if (last?.kind === 'group' && last.fromUserId === m.fromUserId) last.items.push(m);
+    else blocks.push({ kind: 'group', key: `g${m.id}`, fromUserId: m.fromUserId, fromName: m.fromName ?? '—', items: [m] });
+  }
+  return blocks;
+}
+
 /**
  * پیام‌ها — صندوقِ شخصی + گفتگو + نوشتنِ پیامِ نو.
  *
@@ -114,6 +198,7 @@ function SubmitButton({ label }: { label: string }) {
  * گیرنده‌ها همدیگر را نبینند (R-MSG-N1).
  */
 export function MessagesView({
+  header,
   inbox,
   recipients,
   filters,
@@ -123,6 +208,12 @@ export function MessagesView({
   initialThreadId = null,
   viewerId,
 }: {
+  /**
+   * عنوان و توضیحِ صفحه — اینجا کشیده می‌شود چون دکمه‌های «پیام جدید» و
+   * «پیام به مدیریت» (state ِ همین کامپوننت) جای ثابتِ دکمهٔ اصلی را در
+   * سرصفحه می‌گیرند، مثلِ هر صفحهٔ دیگر.
+   */
+  header: { title: React.ReactNode; description?: React.ReactNode };
   inbox: InboxRow[];
   recipients: RecipientOption[];
   filters: FilterData;
@@ -143,6 +234,7 @@ export function MessagesView({
   const tr = useT();
   const tz = useTimeZone();
   const { show } = useToast();
+  const confirm = useConfirm();
   const [openId, setOpenId] = useState<number | null>(initialThreadId);
   const [thread, setThread] = useState<Thread | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
@@ -157,6 +249,10 @@ export function MessagesView({
 
   const [audience, setAudience] = useState<'' | Audience>('');
   const [picked, setPicked] = useState<Set<number>>(new Set());
+
+  /** جستجو و زبانهٔ «خوانده‌نشده» — فقط نمایشِ صندوق را باریک می‌کنند. */
+  const [query, setQuery] = useState('');
+  const [box, setBox] = useState<'all' | 'unread'>('all');
 
   /**
    * فیلترِ زندهٔ گیرندگان — انتخابِ دفتر پروژه‌ها را باریک می‌کند و
@@ -186,7 +282,11 @@ export function MessagesView({
     let alive = true;
     openThreadAction(openId)
       .then((t) => { if (alive) setThread(t); })
-      .catch(() => show(tr('این گفتگو در دسترس نیست.'), 'error'));
+      .catch(() => {
+        show(tr('این گفتگو در دسترس نیست.'), 'error');
+        // ⚠️ گفتگوی باز‌نشدنی بسته می‌شود؛ وگرنه قابِ گفتگو در حالتِ بارگذاری می‌ماند.
+        if (alive) setOpenId(null);
+      });
     return () => { alive = false; };
   }, [openId, replyState]);
 
@@ -273,170 +373,341 @@ export function MessagesView({
       return next;
     });
 
-  /*
-   * ⚠️ چیدمانِ «نامه‌رسان» ِ shadcn: دو قابِ هم‌قد که تا کفِ صفحه می‌آیند، هر
-   * کدام با سرصفحهٔ ثابت و بدنهٔ اسکرول‌شونده. پیش از این دو ستونِ آزاد بودند
-   * و قدشان با محتوا فرق می‌کرد — یکی نصفهٔ صفحه، دیگری تا ته.
+  // ---- صندوق: جستجو + «خوانده‌نشده» ----
+  const unreadTotal = inbox.reduce((sum, row) => sum + row.unread, 0);
+  const needle = query.trim().toLowerCase();
+  const entries = useMemo(() => groupInbox(inbox.filter((row) =>
+    (box === 'all' || row.unread > 0)
+    && (!needle || row.label.toLowerCase().includes(needle) || row.lastBody.toLowerCase().includes(needle)),
+  )), [inbox, box, needle]);
+
+  // ---- گفتگو: پیمایش تا آخرین پیام ----
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrolledFor = useRef<number | null>(null);
+  const [atEnd, setAtEnd] = useState(true);
+  const lastMessageId = thread ? thread.messages[thread.messages.length - 1]?.id ?? null : null;
+
+  /**
+   * ⚠️ با بازشدنِ گفتگو همیشه ته، ولی با پیامِ تازه فقط اگر کاربر همان
+   * پایین است — کسی که بالا رفته تا پیامِ قدیمی را بخواند نباید پرت شود.
    */
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !thread) return;
+    const switched = scrolledFor.current !== thread.thread.id;
+    const nearEnd = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+    if (switched || nearEnd) el.scrollTop = el.scrollHeight;
+    scrolledFor.current = thread.thread.id;
+    setAtEnd(true);
+  }, [thread?.thread.id, lastMessageId]);
+
+  const scrollToEnd = () => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  };
+
+  const blocks = useMemo(() => (thread ? toBlocks(thread.messages, tz) : []), [thread, tz]);
+  const today = formatDateTime(new Date(), tz).slice(0, 10);
+  const yesterday = formatDateTime(new Date(Date.now() - 86_400_000), tz).slice(0, 10);
+  const dayLabel = (day: string) =>
+    day === today ? tr('امروز') : day === yesterday ? tr('دیروز') : day;
+
+  /**
+   * ⚠️ دو معنا، دو دکمه (R-MSG-11): سازنده/مدیر گفتگو را برای **همه** حذف
+   * می‌کند؛ گیرندهٔ عادی فقط از صندوقِ **خودش** کنار می‌گذارد و رشته برای
+   * بقیه می‌ماند. هر دو پیش از اجرا تأیید می‌خواهند — مثلِ هر حذفِ دیگرِ اپ.
+   */
+  const removeThread = async () => {
+    if (!thread) return;
+    const everyone = thread.thread.canDelete;
+    const ok = await confirm({
+      title: everyone ? tr('این گفتگو برای همه حذف شود؟') : tr('این گفتگو از صندوقِ شما برداشته شود؟'),
+      description: everyone
+        ? tr('پیام‌های آن برای طرفِ مقابل هم پاک می‌شوند.')
+        : tr('گفتگو برای طرفِ مقابل می‌ماند.'),
+      confirmLabel: tr('حذف'),
+    });
+    if (!ok) return;
+    startTransition(async () => {
+      const result = everyone
+        ? await deleteThreadAction(thread.thread.id)
+        : await leaveThreadAction(thread.thread.id);
+      if (result.error) show(tr(result.error), 'error');
+      else { setOpenId(null); show(tr('گفتگو حذف شد.'), 'success'); }
+    });
+  };
+
+  const loading = openId !== null && (thread === null || thread.thread.id !== openId);
+
   return (
-    <div className="grid min-h-0 flex-1 gap-4 @3xl/main:grid-cols-[22rem_1fr]">
-      {/* ---- صندوق ---- */}
-      <Card className="flex min-h-0 flex-col gap-0 overflow-hidden py-0">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2.5">
-          <h2 className="text-sm font-semibold">{tr("صندوق پیام")}</h2>
-          <div className="flex gap-1">
+    <>
+      <PageHeader
+        title={header.title}
+        description={header.description}
+        actions={(canSend || !canBroadcast) ? (
+          <>
             {/*
               ⚠️ «پیام به مدیریت» به `canSend` بسته **نیست**: کسی که حق ندارد
               گیرنده انتخاب کند هم باید بتواند به مدیریت پیام بدهد.
             */}
             {!canBroadcast && (
-              <Button size="sm" variant="outline" onClick={() => setMgmtOpen(true)}>
-                <ShieldQuestion className="size-4" />
-                {tr("پیام به مدیریت")}
+              <Button variant="outline" onClick={() => setMgmtOpen(true)}>
+                <ShieldQuestion />
+                {tr('پیام به مدیریت')}
               </Button>
             )}
             {canSend && (
-              <Button size="sm" onClick={() => setComposeOpen(true)}>
-                <Plus className="size-4" />
-                {tr("پیام جدید")}
+              <Button onClick={() => setComposeOpen(true)}>
+                <Plus />
+                {tr('پیام جدید')}
               </Button>
-            )}
-          </div>
-        </div>
-
-
-        {inbox.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center p-4">
-            <EmptyState className="w-full border-0" title={tr("هنوز پیامی ندارید.")} />
-          </div>
-        ) : (
-          <ul className="grid min-h-0 flex-1 content-start gap-1 overflow-y-auto p-2">
-            {/*
-              ⚠️ R-MSG-01 — گفتگوهای یک ارسالِ همگانی در صندوقِ **فرستنده** یک
-              آکاردئون‌اند (شمار، جمعِ خوانده‌نشده، ردیف‌های فرزند)؛ گیرنده هر
-              کدام را جدا و بی‌خبر از بقیه می‌بیند. قاعده در `groupInbox`.
-            */}
-            {groupInbox(inbox).map((entry) => (entry.kind === 'single' ? (
-              <li key={entry.thread.id}>
-                <InboxRowButton row={entry.thread} open={openId === entry.thread.id} onOpen={setOpenId} tz={tz} />
-              </li>
-            ) : (
-              <li key={`g${entry.broadcastId}`}>
-                <details className="rounded-md border" open={entry.threads.some((t) => t.id === openId)}>
-                  <summary className="flex cursor-pointer items-center justify-between gap-2 p-3 text-sm font-medium">
-                    <span className="flex items-center gap-1.5">
-                      <Megaphone className="size-3.5 text-muted-foreground" />
-                      {tr('ارسالِ همگانی به {n} نفر', { n: entry.threads.length })}
-                    </span>
-                    {entry.unread > 0 && <Badge className="num">{entry.unread}</Badge>}
-                  </summary>
-                  <ul className="grid gap-1 border-t p-1">
-                    {entry.threads.map((t) => (
-                      <li key={t.id}>
-                        <InboxRowButton row={t} open={openId === t.id} onOpen={setOpenId} tz={tz} />
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              </li>
-            )))}
-          </ul>
-        )}
-      </Card>
-
-      {/* ---- گفتگو ---- */}
-      <Card className="flex min-h-0 flex-col gap-0 overflow-hidden py-0">
-        {thread === null ? (
-          <div className="flex flex-1 items-center justify-center p-6">
-            <EmptyState
-              className="w-full max-w-sm border-0"
-              title={tr("گفتگویی انتخاب نشده")}
-              description={tr("از فهرستِ کنار یکی را باز کنید.")}
-            />
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between gap-2 border-b px-3 py-2.5">
-              {/* سربرگ: طرفِ مقابل (ماسک‌شده) + نشانِ اعلانِ یک‌طرفه — پورتِ `chat.php`. */}
-              <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold">
-                <span className="truncate">{thread.thread.label || tr("گفتگو")}</span>
-                {!thread.thread.allowReply && (
-                  <Badge variant="outline" className="shrink-0 font-normal">{tr("اعلان یک‌طرفه")}</Badge>
-                )}
-              </h2>
-              {/*
-                ⚠️ دو معنا، دو دکمه (R-MSG-11): سازنده/مدیر گفتگو را برای **همه**
-                حذف می‌کند؛ گیرندهٔ عادی فقط از صندوقِ **خودش** کنار می‌گذارد و
-                رشته برای بقیه می‌ماند.
-              */}
-              <Button
-                size="sm"
-                variant="ghost"
-                className="shrink-0 text-destructive hover:text-destructive"
-                disabled={pending}
-                onClick={() =>
-                  startTransition(async () => {
-                    const result = thread.thread.canDelete
-                      ? await deleteThreadAction(thread.thread.id)
-                      : await leaveThreadAction(thread.thread.id);
-                    if (result.error) show(tr(result.error), 'error');
-                    else { setOpenId(null); show(tr('گفتگو حذف شد.'), 'success'); }
-                  })
-                }
-              >
-                <Trash2 className="size-3.5" />
-                {thread.thread.canDelete ? tr("حذف گفتگو") : tr("حذف از صندوق")}
-              </Button>
-            </div>
-
-            <ul className="grid min-h-0 flex-1 content-start gap-2 overflow-y-auto p-3">
-              {/*
-                پیام‌های خودم سمتِ دیگر و پررنگ؛ نامِ نویسنده فقط روی پیامِ دیگران.
-                تیکِ ✓/✓✓ (R-MSG-07): ✓✓ وقتی **همهٔ** طرف‌های دیگر به آن رسیده‌اند —
-                و مثلِ نسخهٔ قبلی فقط برای مدیران نمایش داده می‌شود.
-              */}
-              {thread.messages.map((m) => {
-                const mine = m.fromUserId === viewerId;
-                return (
-                  <li
-                    key={m.id}
-                    className={`rounded-md border p-3 ${mine ? 'ms-8 bg-primary/5' : 'me-8'}`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{m.body}</p>
-                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                      {!mine && <>{m.fromName ?? '—'} · </>}
-                      <span className="num">{when(m.createdAt, tz)}</span>
-                      {mine && thread.thread.showReceipts && (
-                        <span
-                          className="num"
-                          title={m.id <= thread.readUpTo ? tr('خوانده شد') : tr('تحویل شد')}
-                        >
-                          {m.id <= thread.readUpTo ? '✓✓' : '✓'}
-                        </span>
-                      )}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-
-            {thread.canReply ? (
-              <form action={replyFormAction} className="grid gap-2 border-t p-3">
-                <input type="hidden" name="threadId" value={thread.thread.id} />
-                <Textarea name="body" rows={2} placeholder={tr("پاسخ شما…")} required />
-                {replyState.error && <p className="text-xs text-destructive">{tr(replyState.error)}</p>}
-                <div className="flex justify-end">
-                  <SubmitButton label={tr("ارسال")} />
-                </div>
-              </form>
-            ) : (
-              <p className="border-t bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
-                {tr("این یک اعلانِ یک‌طرفه است و امکان پاسخ ندارد.")}
-              </p>
             )}
           </>
-        )}
-      </Card>
+        ) : undefined}
+      />
+
+      {/*
+        ⚠️ چیدمانِ «Mail» ِ shadcn: یک قاب، دو ستون — صندوق و گفتگو — که تا
+        کفِ صفحه می‌آیند و هر کدام خودش اسکرول می‌خورد. روی صفحهٔ باریک فقط
+        یکی دیده می‌شود: صندوق، و با بازشدنِ گفتگو خودِ گفتگو با دکمهٔ برگشت.
+      */}
+      <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs @3xl/main:grid-cols-[20rem_minmax(0,1fr)] @5xl/main:grid-cols-[24rem_minmax(0,1fr)]">
+        {/* ---- صندوق ---- */}
+        <section
+          aria-label={tr('صندوق پیام')}
+          className={cn('flex min-h-0 flex-col @3xl/main:border-e', openId !== null && 'hidden @3xl/main:flex')}
+        >
+          <div className="grid gap-3 border-b p-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={tr('جستجوی گفتگو…')}
+                aria-label={tr('جستجوی گفتگو…')}
+                className="ps-8"
+              />
+            </div>
+            <Tabs value={box} onValueChange={(v) => setBox(v as typeof box)}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="all">{tr('همه')}</TabsTrigger>
+                <TabsTrigger value="unread">
+                  {tr('خوانده‌نشده')}
+                  {unreadTotal > 0 && (
+                    <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{unreadTotal}</Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {inbox.length === 0 ? (
+              <EmptyState className="m-3 border-0" icon={<Inbox />} title={tr('هنوز پیامی ندارید.')} />
+            ) : entries.length === 0 ? (
+              <EmptyState className="m-3 border-0" title={needle ? tr('نتیجه‌ای نیست') : tr('موردی نیست.')} />
+            ) : (
+              <ul className="grid gap-0.5 p-2">
+                {/*
+                  ⚠️ R-MSG-01 — گفتگوهای یک ارسالِ همگانی در صندوقِ **فرستنده** یک
+                  آکاردئون‌اند (شمار، جمعِ خوانده‌نشده، ردیف‌های فرزند)؛ گیرنده هر
+                  کدام را جدا و بی‌خبر از بقیه می‌بیند. قاعده در `groupInbox`.
+                */}
+                {entries.map((entry) => (entry.kind === 'single' ? (
+                  <li key={entry.thread.id}>
+                    <InboxRowButton row={entry.thread} open={openId === entry.thread.id} onOpen={setOpenId} tz={tz} />
+                  </li>
+                ) : (
+                  <li key={`g${entry.broadcastId}`}>
+                    <details className="group/bc" open={entry.threads.some((t) => t.id === openId)}>
+                      <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-accent/60 [&::-webkit-details-marker]:hidden">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                          <Megaphone className="size-4" />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                          {tr('ارسالِ همگانی به {n} نفر', { n: entry.threads.length })}
+                        </span>
+                        {entry.unread > 0 && (
+                          <Badge className="num h-5 min-w-5 shrink-0 rounded-full px-1.5">{entry.unread}</Badge>
+                        )}
+                        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open/bc:rotate-180" />
+                      </summary>
+                      <ul className="ms-8 grid gap-0.5 border-s ps-2">
+                        {entry.threads.map((t) => (
+                          <li key={t.id}>
+                            <InboxRowButton row={t} open={openId === t.id} onOpen={setOpenId} tz={tz} />
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  </li>
+                )))}
+              </ul>
+            )}
+          </div>
+        </section>
+
+        {/* ---- گفتگو ---- */}
+        <section
+          aria-label={tr('گفتگو')}
+          className={cn('flex min-h-0 flex-col', openId === null && 'hidden @3xl/main:flex')}
+        >
+          {openId === null ? (
+            <div className="flex flex-1 items-center justify-center p-6">
+              <EmptyState
+                className="max-w-sm border-0"
+                icon={<MessagesSquare />}
+                title={tr('گفتگویی انتخاب نشده')}
+                description={tr('از فهرستِ کنار یکی را باز کنید.')}
+              />
+            </div>
+          ) : loading || thread === null ? (
+            <div className="flex flex-1 items-center justify-center text-muted-foreground">
+              <Spinner />
+            </div>
+          ) : (
+            <>
+              {/* سربرگ: طرفِ مقابل (ماسک‌شده) + نشانِ اعلانِ یک‌طرفه — پورتِ `chat.php`. */}
+              <header className="flex items-center gap-3 border-b px-3 py-2.5">
+                <IconButton
+                  variant="ghost"
+                  label={tr('صندوق پیام')}
+                  className="@3xl/main:hidden"
+                  onClick={() => setOpenId(null)}
+                >
+                  <ArrowRight className="ltr:rotate-180" />
+                </IconButton>
+                <ChatAvatar label={thread.thread.label} />
+                <div className="grid min-w-0 flex-1 gap-0.5">
+                  <h2 className="truncate text-sm font-semibold">{thread.thread.label || tr('گفتگو')}</h2>
+                  {!thread.thread.allowReply && (
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Megaphone className="size-3" />
+                      {tr('اعلان یک‌طرفه')}
+                    </p>
+                  )}
+                </div>
+                <IconButton
+                  variant="ghost"
+                  label={thread.thread.canDelete ? tr('حذف گفتگو') : tr('حذف از صندوق')}
+                  className="text-muted-foreground hover:text-destructive"
+                  disabled={pending}
+                  onClick={() => { void removeThread(); }}
+                >
+                  {pending ? <Spinner /> : <Trash2 />}
+                </IconButton>
+              </header>
+
+              <div className="relative min-h-0 flex-1">
+                <div
+                  ref={scrollRef}
+                  onScroll={(e) => {
+                    const el = e.currentTarget;
+                    setAtEnd(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
+                  }}
+                  className="h-full overflow-y-auto overscroll-contain"
+                >
+                  <div className="flex min-h-full flex-col justify-end gap-4 p-4">
+                    {/*
+                      پیام‌های خودم سمتِ دیگر و رنگی؛ نامِ فرستنده فقط سرِ دستهٔ پیام‌های دیگران.
+                      تیکِ ✓/✓✓ (R-MSG-07): ✓✓ وقتی **همهٔ** طرف‌های دیگر به آن رسیده‌اند —
+                      و مثلِ نسخهٔ قبلی فقط برای مدیران نمایش داده می‌شود.
+                    */}
+                    {blocks.map((block) => {
+                      if (block.kind === 'day') {
+                        return (
+                          <Marker key={block.key} variant="separator" className="text-xs">
+                            <MarkerContent className={cn(block.day !== today && block.day !== yesterday && 'num')}>
+                              {dayLabel(block.day)}
+                            </MarkerContent>
+                          </Marker>
+                        );
+                      }
+                      const mine = block.fromUserId === viewerId;
+                      return (
+                        <MessageGroup key={block.key}>
+                          {block.items.map((m, i) => {
+                            const lastInGroup = i === block.items.length - 1;
+                            const read = m.id <= thread.readUpTo;
+                            return (
+                              <Message key={m.id} align={mine ? 'end' : 'start'}>
+                                {!mine && (
+                                  <MessageAvatar className={cn(!lastInGroup && 'invisible')}>
+                                    <ChatAvatar label={block.fromName} />
+                                  </MessageAvatar>
+                                )}
+                                <MessageContent className="gap-1">
+                                  {!mine && i === 0 && <MessageHeader>{block.fromName}</MessageHeader>}
+                                  <Bubble variant={mine ? 'default' : 'muted'} align={mine ? 'end' : 'start'}>
+                                    <BubbleContent className="whitespace-pre-wrap">{m.body}</BubbleContent>
+                                  </Bubble>
+                                  <MessageFooter className="gap-1 font-normal">
+                                    <span className="num" title={formatDateTime(m.createdAt, tz)}>
+                                      {formatDateTime(m.createdAt, tz).slice(11)}
+                                    </span>
+                                    {mine && thread.thread.showReceipts && (
+                                      <span
+                                        className={cn('inline-flex', read && 'text-primary')}
+                                        title={read ? tr('خوانده شد') : tr('تحویل شد')}
+                                        aria-label={read ? tr('خوانده شد') : tr('تحویل شد')}
+                                      >
+                                        {read ? <CheckCheck className="size-3.5" /> : <Check className="size-3.5" />}
+                                      </span>
+                                    )}
+                                  </MessageFooter>
+                                </MessageContent>
+                              </Message>
+                            );
+                          })}
+                        </MessageGroup>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* رفتن به آخرین پیام — فقط وقتی کاربر از ته فاصله گرفته. */}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon-sm"
+                  onClick={scrollToEnd}
+                  aria-label={tr('رفتن به آخرین پیام')}
+                  className={cn(
+                    'absolute inset-x-0 bottom-3 mx-auto rounded-full border shadow-sm transition-opacity',
+                    atEnd && 'pointer-events-none opacity-0',
+                  )}
+                >
+                  <ArrowDown />
+                </Button>
+              </div>
+
+              {thread.canReply ? (
+                <form action={replyFormAction} className="border-t p-3">
+                  <input type="hidden" name="threadId" value={thread.thread.id} />
+                  <div className="flex items-end gap-2">
+                    <Textarea
+                      name="body"
+                      rows={1}
+                      placeholder={tr('پاسخ شما…')}
+                      aria-label={tr('پاسخ شما…')}
+                      required
+                      className="max-h-40 min-h-10 resize-none"
+                    />
+                    <SendButton label={tr('ارسال')} />
+                  </div>
+                  {replyState.error && <p className="mt-2 text-xs text-destructive">{tr(replyState.error)}</p>}
+                </form>
+              ) : (
+                <p className="flex items-center gap-2 border-t bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+                  <Megaphone className="size-3.5 shrink-0" />
+                  {tr('این یک اعلانِ یک‌طرفه است و امکان پاسخ ندارد.')}
+                </p>
+              )}
+            </>
+          )}
+        </section>
+      </div>
 
       {/* ---- نوشتنِ پیامِ نو ---- */}
       <Dialog open={mgmtOpen} onOpenChange={setMgmtOpen}>
@@ -505,7 +776,6 @@ export function MessagesView({
                 <div className="grid gap-2 sm:grid-cols-2">
                   <NativeSelect
                     aria-label={tr("فیلترِ دفتر")}
-                    
                     value={officeId ?? ''}
                     onChange={(e) => setOfficeId(e.target.value ? Number(e.target.value) : null)}
                   >
@@ -516,7 +786,6 @@ export function MessagesView({
                   </NativeSelect>
                   <SearchableSelect
                     aria-label={tr("فیلترِ پروژه")}
-                    
                     value={projectId ?? ''}
                     onValueChange={(v) => setProjectId(v ? Number(v) : null)}
                   >
@@ -592,6 +861,6 @@ export function MessagesView({
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
