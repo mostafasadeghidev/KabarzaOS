@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Download, FileText } from 'lucide-react';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
 import { t } from '@/i18n/server';
+import { PageShell } from '@/components/page-shell';
 
 export interface BidderData {
   project: { id: number; title: string; description: string | null };
@@ -19,7 +20,7 @@ export interface BidderData {
  */
 export function BidderView({ data }: { data: BidderData }) {
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+    <PageShell>
       <header className="grid gap-1">
         <Link href="/projects" className="text-xs text-muted-foreground hover:underline">
           {t("← پروژه‌ها")}
@@ -86,6 +87,6 @@ export function BidderView({ data }: { data: BidderData }) {
           </ul>
         </section>
       )}
-    </main>
+    </PageShell>
   );
 }

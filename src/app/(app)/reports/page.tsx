@@ -16,6 +16,7 @@ import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ReportsView } from './reports-view';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /** گزارش‌ها — همهٔ اعداد در ارزِ پایه و از ستون‌های منجمد. */
 export default async function ReportsPage({
@@ -90,13 +91,13 @@ export default async function ReportsPage({
       : { dates, active: null, rows: [], lockDate };
 
     return (
-      <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-        <header>
-          <h1 className="text-xl font-semibold">{t("گزارش‌ها")}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {t("همهٔ مبالغ در ارزِ پایه و بر مبنای نرخِ لحظهٔ ثبت.")}
-          </p>
-        </header>
+      <PageShell>
+        <PageHeader
+          title={t("گزارش‌ها")}
+          description={(
+            <>{t("همهٔ مبالغ در ارزِ پایه و بر مبنای نرخِ لحظهٔ ثبت.")}</>
+          )}
+        />
 
         <ReportsView
           tabs={tabs}
@@ -110,7 +111,7 @@ export default async function ReportsPage({
             projectRows, units, attendance, closings,
           }}
         />
-      </main>
+      </PageShell>
     );
   } catch (error) {
     if (error instanceof ForbiddenError) {

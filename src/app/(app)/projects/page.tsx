@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ProjectGrid } from './project-grid';
 import { ProjectDialog } from './_form/project-dialog';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /**
  * نمای کارتِ پروژه‌ها — ساختار از نسخهٔ قبلی:
@@ -72,41 +73,41 @@ export default async function ProjectsPage({
   }));
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{t("پروژه‌ها")}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            <span className="num">{projects.filter((p) => !p.isArchived).length}</span> {t("پروژهٔ فعال")}
-          </p>
-        </div>
-        {/* R-RBAC-06 — دکمهٔ تغییر فقط برای مدیر (سرویس هم مستقل گارد دارد). */}
-        {formOptions && (
-          <ProjectDialog
-            options={{
-              statuses: formOptions.statuses.map((s) => ({ id: s.id, label: s.name })),
-              currencies: formOptions.currencies.map((c) => ({ id: c.id, label: c.code })),
-              offices: formOptions.offices.map((o) => ({ id: o.id, label: o.name })),
-              parents: formOptions.parents.map((p) => ({ id: p.id, label: p.title })),
-              defaultCurrencyId: formOptions.currencies.find((c) => c.isDefault)?.id ?? null,
-              roleTags: formOptions.roleTags,
-              canUsePrivate: formOptions.canUsePrivate,
-              today: new Date().toISOString().slice(0, 10),
-              // بخش‌های اولیه فقط در همین فرمِ ساخت لازم‌اند.
-              bootstrap: {
-                people: formOptions.people.map((p) => ({ value: p.id, label: p.name })),
-                clients: formOptions.clientPeople.map((c) => ({ value: c.id, label: c.name })),
-                memberRoles: formOptions.memberRoles,
-                roleTags: formOptions.roleTags,
-                priorities: formOptions.priorities.map((p) => ({ id: p.id, label: p.name })),
-                currencies: formOptions.currencies.map((c) => ({ id: c.id, label: c.code })),
-                defaultCurrencyId: formOptions.currencies.find((c) => c.isDefault)?.id ?? null,
-                hasQaLibrary: formOptions.hasQaLibrary,
-              },
-            }}
-          />
+    <PageShell>
+      <PageHeader
+        title={t("پروژه‌ها")}
+        description={(
+          <><span className="num">{projects.filter((p) => !p.isArchived).length}</span> {t("پروژهٔ فعال")}</>
         )}
-      </header>
+        actions={(
+          /* R-RBAC-06 — دکمهٔ تغییر فقط برای مدیر (سرویس هم مستقل گارد دارد). */
+          formOptions && (
+            <ProjectDialog
+              options={{
+                statuses: formOptions.statuses.map((s) => ({ id: s.id, label: s.name })),
+                currencies: formOptions.currencies.map((c) => ({ id: c.id, label: c.code })),
+                offices: formOptions.offices.map((o) => ({ id: o.id, label: o.name })),
+                parents: formOptions.parents.map((p) => ({ id: p.id, label: p.title })),
+                defaultCurrencyId: formOptions.currencies.find((c) => c.isDefault)?.id ?? null,
+                roleTags: formOptions.roleTags,
+                canUsePrivate: formOptions.canUsePrivate,
+                today: new Date().toISOString().slice(0, 10),
+                // بخش‌های اولیه فقط در همین فرمِ ساخت لازم‌اند.
+                bootstrap: {
+                  people: formOptions.people.map((p) => ({ value: p.id, label: p.name })),
+                  clients: formOptions.clientPeople.map((c) => ({ value: c.id, label: c.name })),
+                  memberRoles: formOptions.memberRoles,
+                  roleTags: formOptions.roleTags,
+                  priorities: formOptions.priorities.map((p) => ({ id: p.id, label: p.name })),
+                  currencies: formOptions.currencies.map((c) => ({ id: c.id, label: c.code })),
+                  defaultCurrencyId: formOptions.currencies.find((c) => c.isDefault)?.id ?? null,
+                  hasQaLibrary: formOptions.hasQaLibrary,
+                },
+              }}
+            />
+          )
+        )}
+      />
 
       {projects.length === 0 ? (
         <EmptyState title={t("پروژه‌ای ثبت نشده")} description={t("اولین پروژه را بسازید تا اینجا دیده شود.")} />
@@ -120,6 +121,6 @@ export default async function ProjectsPage({
           cardOptions={cardOptions}
         />
       )}
-    </main>
+    </PageShell>
   );
 }

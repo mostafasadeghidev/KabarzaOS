@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClientProjectsTable } from '../../detail-tables';
 import { primeTranslations, t } from '@/i18n/server';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PageShell } from '@/components/page-shell';
 
 /**
  * ریزِ مطالباتِ یک کارفرما — پورتِ `client_detail` ِ افزونه: کارت‌های یورو،
@@ -55,7 +56,7 @@ export default async function ClientReportPage({ params }: { params: Promise<{ i
   ];
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+    <PageShell>
       <header className="grid gap-1">
         <Link
           href="/reports?tab=clients"
@@ -91,6 +92,6 @@ export default async function ClientReportPage({ params }: { params: Promise<{ i
       ) : (
         <ClientProjectsTable rows={data.projects} lines={data.lines} canOpen={canOpen} />
       )}
-    </main>
+    </PageShell>
   );
 }

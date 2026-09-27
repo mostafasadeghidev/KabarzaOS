@@ -5,6 +5,7 @@ import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AccessView } from './access-view';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /**
  * دفترِ دسترسی‌های بیرونی — «چه کسی به چه سامانه‌ای دسترسی دارد».
@@ -49,17 +50,17 @@ export default async function AccessPage({
   const openCount = data.grants.filter((g) => g.revokedAt === null).length;
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("دسترسی‌ها")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          <span className="num">{openCount}</span>{' '}{t('دسترسیِ باز')}
+    <PageShell>
+      <PageHeader
+        title={t("دسترسی‌ها")}
+        description={(
+          <><span className="num">{openCount}</span>{' '}{t('دسترسیِ باز')}
           {' · '}
-          <span className="num">{data.services.length}</span>{' '}{t('سرویس')}
-        </p>
-      </header>
+          <span className="num">{data.services.length}</span>{' '}{t('سرویس')}</>
+        )}
+      />
 
       <AccessView data={data} focusUser={focusUser} />
-    </main>
+    </PageShell>
   );
 }

@@ -5,6 +5,7 @@ import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MeetingsView } from './meetings-view';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /** جلسات — دو تبِ `Meetings_Page`: «جلسات» و «یادآورهای من». */
 export default async function MeetingsPage({
@@ -47,13 +48,13 @@ export default async function MeetingsPage({
   ]);
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("جلسات")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          <span className="num">{data.meetings.length}</span> {t("جلسهٔ پیشِ‌رو")}
-        </p>
-      </header>
+    <PageShell>
+      <PageHeader
+        title={t("جلسات")}
+        description={(
+          <><span className="num">{data.meetings.length}</span> {t("جلسهٔ پیشِ‌رو")}</>
+        )}
+      />
 
       <MeetingsView
         meetings={data.meetings}
@@ -65,6 +66,6 @@ export default async function MeetingsPage({
         // اعلانِ جلسه با `?meeting=` می‌آید — همان جلسه باز شود، نه فهرست.
         openMeetingId={Number(meeting) > 0 ? Number(meeting) : null}
       />
-    </main>
+    </PageShell>
   );
 }

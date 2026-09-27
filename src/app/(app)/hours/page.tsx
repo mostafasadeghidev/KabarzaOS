@@ -9,6 +9,7 @@ import { toDateString } from '@/domain/timelogs/timer';
 import { hasHoursFilter, parseHoursFilter } from '@/domain/timelogs/hours-filter';
 import { HoursView } from './hours-view';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /** ساعتِ کاری — تایمر، ثبتِ دستی و فهرستِ ثبت‌های خودِ کاربر (پورتِ `view_hours`). */
 export default async function HoursPage({
@@ -55,17 +56,17 @@ export default async function HoursPage({
   ]);
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h1 className="text-xl font-semibold">{t("ساعت کاری")}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {t("تایمر روی سرور می‌شمارد؛ بستنِ مرورگر چیزی را از بین نمی‌برد.")}
-          </p>
-        </div>
-        {/* پورتِ یادداشتِ سربرگِ افزونه. */}
-        <span className="text-xs text-muted-foreground">{t("ساعت‌های ثبت‌شده تا ۲ هفته قابل ویرایش‌اند.")}</span>
-      </header>
+    <PageShell>
+      <PageHeader
+        title={t("ساعت کاری")}
+        description={(
+          <>{t("تایمر روی سرور می‌شمارد؛ بستنِ مرورگر چیزی را از بین نمی‌برد.")}</>
+        )}
+        actions={(
+          /* پورتِ یادداشتِ سربرگِ افزونه. */
+          <span className="text-xs text-muted-foreground">{t("ساعت‌های ثبت‌شده تا ۲ هفته قابل ویرایش‌اند.")}</span>
+        )}
+      />
 
       <HoursView
         data={{
@@ -82,6 +83,6 @@ export default async function HoursPage({
           today: toDateString(now),
         }}
       />
-    </main>
+    </PageShell>
   );
 }

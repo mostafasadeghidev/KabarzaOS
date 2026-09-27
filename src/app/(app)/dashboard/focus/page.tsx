@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { ProjectStatus } from '../../projects/project-status';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageShell } from '@/components/page-shell';
 
 /**
  * فهرستِ متمرکزِ داشبورد — پورتِ `class-focus-page.php`: کارتِ «منتظرِ اقدام»
@@ -69,7 +70,7 @@ export default async function FocusPage({
   const empty = data.projects.length === 0 && data.groups.length === 0;
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+    <PageShell>
       <div>
         <Link
           href="/dashboard"
@@ -131,6 +132,6 @@ export default async function FocusPage({
           ))}
         </div>
       )}
-    </main>
+    </PageShell>
   );
 }

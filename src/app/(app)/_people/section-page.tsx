@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { PeopleGrid } from './people-grid';
 import type { SectionConfig } from './person-card';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /**
  * صفحهٔ پایهٔ افراد — همان نقشی که در نسخهٔ قبلی دارد.
@@ -49,14 +50,14 @@ export async function PeopleSectionPage({ section }: { section: SectionConfig })
     : data.people.length;
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t(section.title)}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          <span className="num">{activeCount}</span>{' '}
-          {section.role === 'member' ? t('عضوِ فعال') : t('کارفرما')}
-        </p>
-      </header>
+    <PageShell>
+      <PageHeader
+        title={t(section.title)}
+        description={(
+          <><span className="num">{activeCount}</span>{' '}
+          {section.role === 'member' ? t('عضوِ فعال') : t('کارفرما')}</>
+        )}
+      />
 
       <PeopleGrid
         people={data.people}
@@ -73,6 +74,6 @@ export async function PeopleSectionPage({ section }: { section: SectionConfig })
         canViewReports={data.canViewReports}
         isOwner={data.isOwner}
       />
-    </main>
+    </PageShell>
   );
 }

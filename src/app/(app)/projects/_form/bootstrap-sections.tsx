@@ -234,7 +234,7 @@ export function BootstrapSections({
         <SectionTitle hint={tr("نقش و مبلغِ توافقیِ هر عضو. مبلغ خالی یعنی صفر.")}>{tr("اعضا")}</SectionTitle>
 
         {members.map((row, i) => (
-          <div key={i} className="grid gap-2 rounded-md border border-dashed p-2 sm:grid-cols-[1fr_auto]">
+          <div key={i} className="grid gap-2 rounded-md border border-dashed p-3 sm:grid-cols-[1fr_auto]">
             <div className="grid gap-2 sm:grid-cols-2">
               <Combobox
                 options={options.people}
@@ -363,7 +363,7 @@ export function BootstrapSections({
         </SectionTitle>
 
         {tasks.map((row, i) => (
-          <div key={i} className="grid gap-2 rounded-md border border-dashed p-2">
+          <div key={i} className="grid gap-2 rounded-md border border-dashed p-3">
             <div className="flex items-start gap-2">
               <Input
                 name="taskTitle"

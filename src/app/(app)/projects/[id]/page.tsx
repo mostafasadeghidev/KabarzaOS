@@ -283,35 +283,75 @@ export default async function ProjectDetailPage({
         </Alert>
       )}
 
-      {/* پورتِ `kteam-detail-meta`: تاریخِ ثبت، ددلاین با شمارش، پیشرفت، ساعت، والد/زیرپروژه‌ها. */}
-      <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
-        <li>{t("تاریخ ثبت")}: <b className="num text-foreground">{project.regDate ?? '—'}</b></li>
-        <li>
-          {t("ددلاین")}: <b className="num text-foreground">{project.deadline ?? '—'}</b>
-          {deadlineHint && <span className="ms-1">({deadlineHint})</span>}
-        </li>
-        <li>
-          {t("درصد پیشرفت")}: <b className="num text-foreground">{percent}%</b>
-          <span className="ms-1 num">({detail.meta.doneTasks}/{detail.meta.totalTasks} {t("تسک")})</span>
-        </li>
+      {/*
+        پورتِ `kteam-detail-meta`: تاریخِ ثبت، ددلاین با شمارش، پیشرفت، ساعت.
+
+        ⚠️ شبکهٔ برچسب/مقدار، نه یک سطرِ درهم: پیش از این هر پنج قلم پشتِ هم
+        در یک خط می‌نشستند («تاریخ ثبت: … ددلاین: … درصد پیشرفت: …») و چشم
+        مرزِ قلم‌ها را پیدا نمی‌کرد. حالا برچسبِ کوچک بالا و مقدارِ پررنگ
+        پایین است — همان الگویی که shadcn برای فراداده به کار می‌برد.
+      */}
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm @2xl/main:grid-cols-3 @5xl/main:grid-cols-5">
+        <div className="grid gap-0.5">
+          <dt className="text-xs text-muted-foreground">{t("تاریخ ثبت")}</dt>
+          <dd className="num font-medium">{project.regDate ?? '—'}</dd>
+        </div>
+        <div className="grid gap-0.5">
+          <dt className="text-xs text-muted-foreground">{t("ددلاین")}</dt>
+          <dd className="font-medium">
+            <span className="num">{project.deadline ?? '—'}</span>
+            {deadlineHint && (
+              <span className="ms-1 text-xs font-normal text-muted-foreground">({deadlineHint})</span>
+            )}
+          </dd>
+        </div>
+        <div className="grid gap-0.5">
+          <dt className="text-xs text-muted-foreground">{t("درصد پیشرفت")}</dt>
+          <dd className="font-medium">
+            <span className="num">{percent}%</span>
+            <span className="num ms-1 text-xs font-normal text-muted-foreground">
+              ({detail.meta.doneTasks}/{detail.meta.totalTasks} {t("تسک")})
+            </span>
+          </dd>
+        </div>
         {detail.meta.myMinutes !== null && (
-          <li>{t("ساعت کاری شما")}: <b className="num text-foreground">{hoursLabel(detail.meta.myMinutes)}</b></li>
+          <div className="grid gap-0.5">
+            <dt className="text-xs text-muted-foreground">{t("ساعت کاری شما")}</dt>
+            <dd className="num font-medium">{hoursLabel(detail.meta.myMinutes)}</dd>
+          </div>
         )}
         {detail.meta.teamMinutes !== null && (
-          <li>{t("ساعت کاری تیم")}: <b className="num text-foreground">{hoursLabel(detail.meta.teamMinutes)}</b></li>
+          <div className="grid gap-0.5">
+            <dt className="text-xs text-muted-foreground">{t("ساعت کاری تیم")}</dt>
+            <dd className="num font-medium">{hoursLabel(detail.meta.teamMinutes)}</dd>
+          </div>
         )}
-        {detail.meta.parent && (
-          <li>↳ {t("پیروِ پروژهٔ")}: <Link href={`/projects/${detail.meta.parent.id}`} className="underline">{detail.meta.parent.title}</Link></li>
-        )}
-        {detail.meta.children.length > 0 && (
-          <li>
-            {t("زیرپروژه‌ها (تغییر/نگهداری)")}:{' '}
-            {detail.meta.children.map((c, i) => (
-              <span key={c.id}>{i > 0 && t('، ')}<Link href={`/projects/${c.id}`} className="underline">{c.title}</Link></span>
-            ))}
-          </li>
-        )}
-      </ul>
+      </dl>
+
+      {/* خویشاوندیِ پروژه‌ها سطرِ خودش را دارد: عنوان‌ها بلندند و در شبکه نمی‌نشینند. */}
+      {(detail.meta.parent || detail.meta.children.length > 0) && (
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+          {detail.meta.parent && (
+            <span>
+              ↳ {t("پیروِ پروژهٔ")}:{' '}
+              <Link href={`/projects/${detail.meta.parent.id}`} className="underline">
+                {detail.meta.parent.title}
+              </Link>
+            </span>
+          )}
+          {detail.meta.children.length > 0 && (
+            <span>
+              {t("زیرپروژه‌ها (تغییر/نگهداری)")}:{' '}
+              {detail.meta.children.map((c, i) => (
+                <span key={c.id}>
+                  {i > 0 && t('، ')}
+                  <Link href={`/projects/${c.id}`} className="underline">{c.title}</Link>
+                </span>
+              ))}
+            </span>
+          )}
+        </div>
+      )}
 
       {/*
         ⚠️ کارت‌های سرِ صفحه «کارِ باز» را می‌گویند، نه پول: قیمتِ پروژه جای

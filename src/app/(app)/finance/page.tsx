@@ -10,6 +10,7 @@ import { FinancePage } from './finance-page';
 import { primeTranslations, t } from '@/i18n/server';
 import { AccountsView } from './accounts-view';
 import { can } from '@/domain/access/permissions';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /** حسابداری — دفترکلِ حساب‌ها. */
 export default async function Finance({
@@ -69,13 +70,13 @@ export default async function Finance({
     }
     const firstOptions = await getAccountFormOptions(actor);
     return (
-      <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-        <header>
-          <h1 className="text-xl font-semibold">{t("مالی")}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {t("برای شروع یک حساب بسازید؛ هر ردیفِ دفترکل به یک حساب می‌چسبد.")}
-          </p>
-        </header>
+      <PageShell>
+        <PageHeader
+          title={t("مالی")}
+          description={(
+            <>{t("برای شروع یک حساب بسازید؛ هر ردیفِ دفترکل به یک حساب می‌چسبد.")}</>
+          )}
+        />
         <AccountsView
           accounts={[]}
           options={{
@@ -87,7 +88,7 @@ export default async function Finance({
           }}
           canManage
         />
-      </main>
+      </PageShell>
     );
   }
 

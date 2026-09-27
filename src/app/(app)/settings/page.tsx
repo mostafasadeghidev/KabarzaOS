@@ -14,6 +14,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SettingsView } from './settings-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { getCompany } from '@/server/people/profile-service';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /**
  * تنظیمات — فهرست‌های پایه.
@@ -75,15 +76,15 @@ export default async function SettingsPage() {
   }
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("تنظیمات")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {t("فهرست‌های پایه‌ای که همهٔ بخش‌ها از آن‌ها استفاده می‌کنند.")}
-        </p>
-      </header>
+    <PageShell>
+      <PageHeader
+        title={t("تنظیمات")}
+        description={(
+          <>{t("فهرست‌های پایه‌ای که همهٔ بخش‌ها از آن‌ها استفاده می‌کنند.")}</>
+        )}
+      />
 
       <SettingsView data={data} />
-    </main>
+    </PageShell>
   );
 }

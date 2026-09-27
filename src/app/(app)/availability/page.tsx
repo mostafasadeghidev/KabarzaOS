@@ -11,6 +11,7 @@ import { AvailabilityBoard } from './availability-board';
 import { primeTranslations, t } from '@/i18n/server';
 import { leaveTargets, listAbsences } from '@/server/availability/absence-service';
 import { AbsencePanel } from '../activity/absence-panel';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /**
  * «در دسترس بودن اعضا» — پورتِ صفحهٔ مستقلِ `Admin\Availability_Page`.
@@ -55,13 +56,13 @@ export default async function AvailabilityPage({
   ]);
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("در دسترس بودن اعضا")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {t("هر عضو روزها و ساعت‌هایی که در هفته در دسترسِ کار است را خودش ثبت می‌کند؛ این صفحه نمای هفتگیِ کلِ تیم است.")}
-        </p>
-      </header>
+    <PageShell>
+      <PageHeader
+        title={t("در دسترس بودن اعضا")}
+        description={(
+          <>{t("هر عضو روزها و ساعت‌هایی که در هفته در دسترسِ کار است را خودش ثبت می‌کند؛ این صفحه نمای هفتگیِ کلِ تیم است.")}</>
+        )}
+      />
 
       {rows.length === 0 ? (
         <EmptyState title={t("عضوی ثبت نشده.")} />
@@ -97,6 +98,6 @@ export default async function AvailabilityPage({
           <AbsencePanel data={{ mine, targets, meId: actor.id, today }} />
         </section>
       )}
-    </main>
+    </PageShell>
   );
 }

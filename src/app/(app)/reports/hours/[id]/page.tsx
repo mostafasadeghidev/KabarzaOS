@@ -14,6 +14,7 @@ import { primeTranslations, t } from '@/i18n/server';
 import { HoursFilter } from './hours-filter';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { hoursRange, rangeLabel, reportQuery } from '@/domain/reports/filters';
+import { PageShell } from '@/components/page-shell';
 
 /**
  * ریزِ ساعتِ کاریِ یک عضو — پورتِ نمای drill-down نسخهٔ قبلی.
@@ -79,7 +80,7 @@ export default async function MemberHoursPage({
   const selectedId = Number(query.project) || null;
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+    <PageShell>
       <div>
         <Link
           href={`/reports?tab=hours&${range.allTime ? 'hfrom=&hto=' : reportQuery({ hfrom: range.from, hto: range.to })}`}
@@ -181,6 +182,6 @@ export default async function MemberHoursPage({
           </div>
         )
       )}
-    </main>
+    </PageShell>
   );
 }

@@ -12,6 +12,7 @@ import { can } from '@/domain/access/permissions';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { ActivityView } from './activity-view';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /** فعالیت و حضور — از همان لاگِ ممیزی که هر سرویس در آن می‌نویسد. */
 export default async function ActivityPage({
@@ -74,13 +75,13 @@ export default async function ActivityPage({
   const toRecord = (m: Map<number, Slot[]>) => Object.fromEntries(m) as Record<number, Slot[]>;
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("فعالیت")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {t("آخرین رویدادهای سامانه و مرخصی‌های ثبت‌شده.")}
-        </p>
-      </header>
+    <PageShell>
+      <PageHeader
+        title={t("فعالیت")}
+        description={(
+          <>{t("آخرین رویدادهای سامانه و مرخصی‌های ثبت‌شده.")}</>
+        )}
+      />
 
       <ActivityView
         events={(feed?.rows ?? []).map((r) => ({ ...r, label: actionLabel(r.action) }))}
@@ -97,6 +98,6 @@ export default async function ActivityPage({
           order: weekOrder(system.weekStart),
         }}
       />
-    </main>
+    </PageShell>
   );
 }

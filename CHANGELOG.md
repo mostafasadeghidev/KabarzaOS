@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.80.0]
+
+### Changed
+
+- **Every page is built from the same shell.** All eighteen screens now use `PageShell`, and twelve of them state their title, one-line description and primary action through `PageHeader` instead of hand-writing the markup. Headings, spacing and the position of the main button are the same everywhere; before, each page decided for itself and they drifted.
+- **A project's details read as a grid, not a sentence.** Registration date, deadline, progress, your hours and the team's hours were strung along one line — "Registered: … Deadline: … Progress: …" — where the eye could not find the boundaries. Each is now a small label above a bold value, laid out in a responsive grid, which is how shadcn presents metadata. Parent and sub-projects moved to their own line, since titles are long and do not fit a grid cell.
+- **Dashed boxes share one shape.** They had three paddings and two corner radii across twelve places; now one of each.
+
+---
+
 ## [1.79.0]
 
 ### Added

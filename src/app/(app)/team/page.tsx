@@ -8,6 +8,7 @@ import type { RangeKey } from '@/domain/access/office-scope';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TeamView } from './team-view';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /** «تیمِ من» — نمای مدیرِ دفتر. عملیاتی، نه مالی. */
 export default async function TeamPage({
@@ -61,13 +62,13 @@ export default async function TeamPage({
     ]);
 
     return (
-      <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-        <header>
-          <h1 className="text-xl font-semibold">{t("تیمِ من")}</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {t("پروژه‌ها، تسک‌ها و ساعتِ کاریِ دفاترِ تحتِ مدیریتِ شما.")}
-          </p>
-        </header>
+      <PageShell>
+        <PageHeader
+          title={t("تیمِ من")}
+          description={(
+            <>{t("پروژه‌ها، تسک‌ها و ساعتِ کاریِ دفاترِ تحتِ مدیریتِ شما.")}</>
+          )}
+        />
 
         <TeamView
           data={{
@@ -86,7 +87,7 @@ export default async function TeamPage({
             range: (members.period.range ?? 'week') as RangeKey,
           }}
         />
-      </main>
+      </PageShell>
     );
   } catch (error) {
     if (error instanceof ForbiddenError) {

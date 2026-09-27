@@ -295,7 +295,7 @@ function ThreadList({
         // باید از مرزِ دو پیامِ یک گفتگو پررنگ‌تر باشد.
         <ul className="grid gap-5">
           {list.map((thread) => (
-            <li key={thread.root.id} className="grid gap-2 rounded-lg border border-dashed p-3">
+            <li key={thread.root.id} className="grid gap-2 rounded-md border border-dashed p-3">
               <Node
                 comment={thread.root}
                 thread={thread}

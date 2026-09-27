@@ -5,6 +5,7 @@ import { getAccountInfo, getCompany, getMyProfile } from '@/server/people/profil
 import { myGrants } from '@/server/access/service';
 import { ProfileView } from './profile-view';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageHeader, PageShell } from '@/components/page-shell';
 
 /** پروفایلِ من — هر کاربرِ واردشده‌ای دارد؛ مجوزِ خاصی لازم نیست. */
 export default async function ProfilePage() {
@@ -35,11 +36,13 @@ export default async function ProfilePage() {
   ]);
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("پروفایلِ من")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">{me.name} · {me.email}</p>
-      </header>
+    <PageShell>
+      <PageHeader
+        title={t("پروفایلِ من")}
+        description={(
+          <>{me.name} · {me.email}</>
+        )}
+      />
 
       <ProfileView
         data={{
@@ -62,6 +65,6 @@ export default async function ProfilePage() {
           },
         }}
       />
-    </main>
+    </PageShell>
   );
 }

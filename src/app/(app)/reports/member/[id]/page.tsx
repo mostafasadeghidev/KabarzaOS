@@ -14,6 +14,7 @@ import { Thumb } from '@/components/thumb';
 import { MemberProjectsTable } from '../../detail-tables';
 import { primeTranslations, t } from '@/i18n/server';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PageShell } from '@/components/page-shell';
 
 /**
  * ریزِ کارِ یک عضو در گزارش‌ها — پورتِ `member_detail` ِ افزونه: کارت‌های یورو،
@@ -73,7 +74,7 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
   ];
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+    <PageShell>
       <header className="grid gap-1">
         <Link
           href="/reports?tab=members"
@@ -175,6 +176,6 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
           </ul>
         )}
       </section>
-    </main>
+    </PageShell>
   );
 }

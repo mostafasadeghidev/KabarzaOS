@@ -13,6 +13,7 @@ import {
 import { TeamMatrix } from '../../projects/[id]/manage-tab';
 import { AbsencePanel } from '../../activity/absence-panel';
 import { primeTranslations, t } from '@/i18n/server';
+import { PageShell } from '@/components/page-shell';
 
 /**
  * پروفایلِ کاریِ یک عضو برای مدیرِ دفتر — پورتِ `view_team_member`: آمار،
@@ -66,7 +67,7 @@ export default async function TeamMemberPage({
   ];
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
+    <PageShell>
       <header className="grid gap-1">
         <Link href="/team" className="text-xs text-muted-foreground hover:underline">{t("← تیمِ من")}</Link>
         <h1 className="text-xl font-semibold">{data.person?.name ?? `#${userId}`}</h1>
@@ -204,6 +205,6 @@ export default async function TeamMemberPage({
           </ul>
         )}
       </section>
-    </main>
+    </PageShell>
   );
 }
