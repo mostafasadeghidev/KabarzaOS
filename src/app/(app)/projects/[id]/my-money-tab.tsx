@@ -11,6 +11,7 @@ import { format } from '@/domain/money/money';
 import { REQUEST_STATUS_LABELS, UNIT_STATUS_LABELS } from '@/domain/finance/member-money';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -97,7 +98,7 @@ export const PAY_STATUS_LABELS: Record<string, string> = {
 function Submit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
   const tr = useT();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? tr('صبر کنید…') : children}</Button>;
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? <><Spinner />{tr('صبر کنید…')}</> : children}</Button>;
 }
 
 /**

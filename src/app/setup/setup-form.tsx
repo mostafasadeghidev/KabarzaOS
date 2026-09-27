@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { installAction, type SetupState } from './actions';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -92,7 +93,7 @@ export function SetupForm() {
             )}
 
             <Button type="submit" disabled={pending} className="w-full">
-              {pending ? t("در حالِ ساخت…") : t("ساختِ حساب و ورود")}
+              {pending ? <><Spinner />{t("در حالِ ساخت…")}</> : t("ساختِ حساب و ورود")}
             </Button>
           </form>
         </CardContent>

@@ -2,6 +2,23 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.78.0]
+
+### Added
+
+- **Loading skeletons.** Sixteen pages — overview, projects, a project, tasks, members, clients, access, finance, reports, meetings, messages, activity, settings, profile, team and hours — now show the shape of the page while the data is on its way. Until now nothing appeared at all: a click left you on the previous page with no sign it had registered.
+- **Tooltips on icon-only buttons.** All fifteen of them — edit, delete, revoke access, pay, tick a checklist item — had a label for screen readers but nothing for anyone using a mouse. They share one component now, so the accessible name and the tooltip can never drift apart.
+- **A spinner on every button that is working.** Forty-one buttons changed their text while a form was being submitted but showed no motion; three of them said only "…".
+- **Collapsible sidebar groups.** "Operations" and "Basic data" fold away, and each group remembers whether you left it open. The group holding the page you are on opens by itself — but stays yours to close. When the sidebar is collapsed to icons the groups always stay open, since the labels are hidden there and a closed group would leave an empty strip.
+- shadcn **Alert Dialog**, **Collapsible**, **Spinner** and **Kbd** components.
+
+### Changed
+
+- **Confirmations are alert dialogs now.** Every "are you sure?" — sixteen of them, from deleting a task to lightening a project — is announced as an alert, has no corner close button, and cannot be dismissed by clicking outside. The initial focus is on **Cancel** rather than the red button, so a hurried Enter no longer deletes anything. The way the code calls it did not change at all.
+- The keyboard hint in the search button uses the Kbd component instead of hand-styled markup.
+
+---
+
 ## [1.77.0]
 
 ### Added

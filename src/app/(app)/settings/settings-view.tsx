@@ -27,7 +27,7 @@ import { FiscalSection, type ClosingPreview } from './fiscal-section';
 import type { SystemConfig } from '@/domain/settings/system';
 import type { ReportConfig } from '@/domain/scheduler/daily-report';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -160,11 +160,10 @@ export function SettingsView({ data }: { data: SettingsData }) {
             deleteAction={(c) => deleteCurrencyAction(c.id)}
             rowActions={(c) =>
               c.isDefault ? null : (
-                <Button
-                  size="icon"
+                <IconButton
                   variant="ghost"
                   className="size-8"
-                  aria-label={tr("تنظیم به‌عنوانِ پیش‌فرض")}
+                  label={tr("تنظیم به‌عنوانِ پیش‌فرض")}
                   title={tr("تنظیم به‌عنوانِ پیش‌فرض")}
                   disabled={pending}
                   onClick={() => startTransition(async () => {
@@ -173,7 +172,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
                   })}
                 >
                   <Star className="size-3.5" />
-                </Button>
+                </IconButton>
               )
             }
             renderForm={(editing) => (

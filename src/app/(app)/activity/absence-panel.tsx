@@ -7,6 +7,8 @@ import {
   deleteAbsenceAction, saveAbsenceAction, type AbsenceState,
 } from './_form/absence-actions';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -43,7 +45,7 @@ function Submit() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? tr('در حالِ ذخیره…') : tr('ثبتِ مرخصی')}
+      {pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : tr('ثبتِ مرخصی')}
     </Button>
   );
 }
@@ -137,11 +139,10 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
                   <TableCell>{a.note || '—'}</TableCell>
                   <TableCell>
                     <div className="flex justify-end">
-                      <Button
-                        size="icon"
+                      <IconButton
                         variant="ghost"
                         className="size-8 text-muted-foreground hover:text-destructive"
-                        aria-label={tr('حذف')}
+                        label={tr('حذف')}
                         disabled={pending}
                         onClick={async () => {
                           if (await confirm({ title: tr('این مرخصی حذف شود؟') })) {
@@ -150,7 +151,7 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
                         }}
                       >
                         <Trash2 className="size-3.5" />
-                      </Button>
+                      </IconButton>
                     </div>
                   </TableCell>
                 </TableRow>

@@ -10,6 +10,7 @@ import {
 } from './_form/file-actions';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
@@ -40,7 +41,7 @@ function SubmitButton({ children }: { children: React.ReactNode }) {
   const tr = useT();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? tr('در حال ارسال…') : children}
+      {pending ? <><Spinner />{tr('در حال ارسال…')}</> : children}
     </Button>
   );
 }

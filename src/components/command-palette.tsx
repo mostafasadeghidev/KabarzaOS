@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { useT } from '@/i18n/client';
 import { Button } from '@/components/ui/button';
+import { Kbd } from '@/components/ui/kbd';
 
 const MIN_QUERY = 3;
 
@@ -217,7 +218,8 @@ export function CommandPaletteTrigger() {
     >
       <Search className="size-3.5" />
       <span className="hidden sm:inline">{t("جستجو")}</span>
-      <kbd className="num rounded bg-muted px-1 py-0.5 text-[10px]">{isMac ? '⌘K' : 'Ctrl+K'}</kbd>
+      {/* کلیدِ میان‌بر با کامپوننتِ رسمی — پیش از این `<kbd>` ِ دستی با کلاس‌های خودمان بود. */}
+      <Kbd className="num text-[10px]">{isMac ? '⌘K' : 'Ctrl+K'}</Kbd>
     </Button>
   );
 }

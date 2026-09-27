@@ -1,10 +1,10 @@
 'use client';
 
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog';
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useT } from '@/i18n/client';
 
 /**
@@ -19,6 +19,14 @@ import { useT } from '@/i18n/client';
  * دکمهٔ حذف داریم و هر کدام که دیالوگِ خودش را می‌ساخت، هم کد تکرار می‌شد
  * هم تله‌های فوکوسِ تودرتو با منوها درگیر می‌شدند. صدازننده فقط
  * `await confirm({ title })` می‌کند و متنش را خودش ترجمه‌شده می‌دهد.
+ *
+ * ⚠️ روی `AlertDialog` سوار است، نه `Dialog`. سه فرقِ رفتاری که همه‌شان به
+ * سودِ کارِ مخرب‌اند:
+ *   · نقشِ `alertdialog` — صفحه‌خوان آن را هشدار اعلام می‌کند، نه قابی ساده.
+ *   · دکمهٔ بستنِ گوشه ندارد و کلیکِ بیرون نمی‌بنددش؛ فقط «انصراف» یا Escape.
+ *   · فوکوسِ آغازین روی **انصراف** است، نه دکمهٔ قرمز؛ یعنی Enter ِ عجولانه
+ *     دیگر چیزی را حذف نمی‌کند.
+ * API دست‌نخورده است؛ هیچ‌کدام از صدازننده‌ها تغییر نکردند.
  */
 
 export interface ConfirmOptions {
@@ -47,6 +55,12 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     setOptions(next);
   }), []);
 
+  /**
+   * ⚠️ بعد از اولین پاسخ `resolver` خالی می‌شود، و این لازم است: دکمهٔ تأیید
+   * هم خودش دیالوگ را می‌بندد و هم `onOpenChange` را صدا می‌زند، پس `settle`
+   * دو بار اجرا می‌شود — بارِ دوم باید بی‌اثر بماند، وگرنه «بله» با «نه»
+   * بازنویسی می‌شد.
+   */
   const settle = (ok: boolean) => {
     resolver.current?.(ok);
     resolver.current = null;
@@ -56,31 +70,31 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   return (
     <ConfirmContext.Provider value={ask}>
       {children}
-      <Dialog open={options !== null} onOpenChange={(open) => { if (!open) settle(false); }}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{options?.title ?? ''}</DialogTitle>
+      <AlertDialog open={options !== null} onOpenChange={(open) => { if (!open) settle(false); }}>
+        <AlertDialogContent className="sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{options?.title ?? ''}</AlertDialogTitle>
             {options?.description ? (
-              <DialogDescription>{options.description}</DialogDescription>
+              <AlertDialogDescription>{options.description}</AlertDialogDescription>
             ) : (
-              <DialogDescription className="sr-only">{tr('این کار نیاز به تأیید دارد.')}</DialogDescription>
+              <AlertDialogDescription className="sr-only">
+                {tr('این کار نیاز به تأیید دارد.')}
+              </AlertDialogDescription>
             )}
-          </DialogHeader>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => settle(false)}>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => settle(false)}>
               {tr('انصراف')}
-            </Button>
-            <Button
-              type="button"
+            </AlertDialogCancel>
+            <AlertDialogAction
               variant={options?.destructive === false ? 'default' : 'destructive'}
               onClick={() => settle(true)}
-              autoFocus
             >
               {options?.confirmLabel ?? tr('بله، انجام بده')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ConfirmContext.Provider>
   );
 }

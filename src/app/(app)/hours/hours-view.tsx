@@ -13,6 +13,7 @@ import { hoursLabel } from '@/domain/timelogs/timer';
 import { hoursQuery } from '@/domain/timelogs/hours-filter';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,7 +62,7 @@ function Submit({ children, variant }: { children: React.ReactNode; variant?: 'o
   const tr = useT();
   return (
     <Button type="submit" size="sm" variant={variant} disabled={pending}>
-      {pending ? tr('صبر کنید…') : children}
+      {pending ? <><Spinner />{tr('صبر کنید…')}</> : children}
     </Button>
   );
 }

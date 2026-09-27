@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { loadCandidatesAction, saveMeetingAction, type MeetingFormState } from './_form/actions';
 import type { Candidate } from '@/domain/meetings/attendees';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,7 +46,7 @@ function toLocalInput(value: Date | string | null, tz: string): string {
 function SubmitButton({ isEdit }: { isEdit: boolean }) {
   const t = useT();
   const { pending } = useFormStatus();
-  if (pending) return <Button type="submit" disabled>{t("در حالِ ذخیره…")}</Button>;
+  if (pending) return <Button type="submit" disabled><Spinner />{t("در حالِ ذخیره…")}</Button>;
   return <Button type="submit">{isEdit ? t('ذخیرهٔ جلسه') : t('ایجاد جلسه')}</Button>;
 }
 

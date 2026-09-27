@@ -10,6 +10,8 @@ import { MeetingForm, type MeetingFormOptions, type MeetingView } from './meetin
 import { LEAD_OPTIONS, leadLabel } from '@/domain/meetings/reminders';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@/components/ui/icon-button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -50,7 +52,7 @@ function when(value: Date | string | null | undefined, tz: string): string {
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? '…' : label}</Button>;
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? <Spinner /> : label}</Button>;
 }
 
 /**
@@ -277,18 +279,17 @@ export function MeetingsView({
                     <Badge variant={r.isSent ? 'success' : 'secondary'}>
                       {r.isSent ? tr('ارسال‌شده') : tr('در انتظار')}
                     </Badge>
-                    <Button
-                      size="icon"
+                    <IconButton
                       variant="ghost"
                       className="size-7 text-muted-foreground hover:text-destructive"
-                      aria-label={t("حذفِ یادآور")}
+                      label={t("حذفِ یادآور")}
                       disabled={pending}
                       onClick={async () => {
                         if (await confirm({ title: t('این یادآور حذف شود؟') })) run(() => deleteReminderAction(r.id));
                       }}
                     >
                       <Trash2 className="size-3.5" />
-                    </Button>
+                    </IconButton>
                   </div>
                 </li>
               ))}

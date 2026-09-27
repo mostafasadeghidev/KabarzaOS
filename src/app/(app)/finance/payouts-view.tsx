@@ -14,6 +14,8 @@ import {
 } from '@/domain/finance/recurring';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -138,7 +140,7 @@ const field = 'h-9 w-full rounded-md border border-input bg-transparent px-3 tex
 function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
   const tr = useT();
-  return <Button type="submit" disabled={pending}>{pending ? tr('در حالِ ثبت…') : label}</Button>;
+  return <Button type="submit" disabled={pending}>{pending ? <><Spinner />{tr('در حالِ ثبت…')}</> : label}</Button>;
 }
 
 /**
@@ -682,18 +684,17 @@ export function PayoutsView({
                               >
                                 {tr("ویرایش")}
                               </Button>
-                              <Button
-                                size="icon"
+                              <IconButton
                                 variant="ghost"
                                 className="size-8 text-muted-foreground hover:text-destructive"
-                                aria-label={t("حذف")}
+                                label={t("حذف")}
                                 disabled={pending}
                                 onClick={async () => {
                                   if (await confirm({ title: t('این هزینه حذف شود؟') })) act(() => deleteRecurringAction(r.id));
                                 }}
                               >
                                 <Trash2 className="size-3.5" />
-                              </Button>
+                              </IconButton>
                             </div>
                           </TableCell>
                         )}

@@ -6,6 +6,7 @@ import { Gavel } from 'lucide-react';
 import { submitBidAction, type BidState } from '../_form/tab-actions';
 import { format } from '@/domain/money/money';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
@@ -28,7 +29,7 @@ export interface MyBidData {
 function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
   const tr = useT();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? tr('صبر کنید…') : label}</Button>;
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? <><Spinner />{tr('صبر کنید…')}</> : label}</Button>;
 }
 
 function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['openRoles'][number] }) {

@@ -14,6 +14,8 @@ import { format } from '@/domain/money/money';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@/components/ui/icon-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -126,7 +128,7 @@ const accountLabel = (a: AccountOption) =>
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   const tr = useT();
-  return <Button type="submit" disabled={pending}>{pending ? tr('در حالِ ثبت…') : label}</Button>;
+  return <Button type="submit" disabled={pending}>{pending ? <><Spinner />{tr('در حالِ ثبت…')}</> : label}</Button>;
 }
 
 /**
@@ -381,11 +383,10 @@ export function LedgerView({
                         >
                           {tr("ویرایش")}
                         </Button>
-                        <Button
-                          size="icon"
+                        <IconButton
                           variant="ghost"
                           className="size-8 text-muted-foreground hover:text-destructive"
-                          aria-label={t("حذفِ ردیف")}
+                          label={t("حذفِ ردیف")}
                           disabled={pending}
                           onClick={async () => {
                             if (!(await confirm({ title: t('این ردیفِ دفتر حذف شود؟') }))) return;
@@ -397,7 +398,7 @@ export function LedgerView({
                           }}
                         >
                           <Trash2 className="size-3.5" />
-                        </Button>
+                        </IconButton>
                       </div>
                       )}
                     </TableCell>

@@ -7,6 +7,7 @@ import { Plus, CircleAlert } from 'lucide-react';
 import { createTaskAction, type TaskFormState } from '../projects/_form/task-actions';
 import { loadQuickTaskOptionsAction, type QuickTaskOptions } from './quick-actions';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Combobox, MultiSelect } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,7 +28,7 @@ function SubmitButton() {
   return (
     <Button type="submit" disabled={pending}>
       <Plus className="size-4" />
-      {pending ? tr('در حالِ ثبت…') : tr('ثبتِ تسک')}
+      {pending ? <><Spinner />{tr('در حالِ ثبت…')}</> : tr('ثبتِ تسک')}
     </Button>
   );
 }

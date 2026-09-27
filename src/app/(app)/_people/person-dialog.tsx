@@ -8,6 +8,7 @@ import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Thumb } from '@/components/thumb';
 import type { PersonView, SectionConfig } from './person-card';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Combobox } from '@/components/ui/combobox';
@@ -37,7 +38,7 @@ export interface PersonFormOptions {
 function SubmitButton({ label }: { label: string }) {
   const tr = useT();
   const { pending } = useFormStatus();
-  if (pending) return <Button type="submit" disabled>{tr("در حالِ ذخیره…")}</Button>;
+  if (pending) return <Button type="submit" disabled><Spinner />{tr("در حالِ ذخیره…")}</Button>;
   return <Button type="submit">{label}</Button>;
 }
 
@@ -84,7 +85,7 @@ function AvatarPicker({ person }: { person: PersonView }) {
         </p>
       </div>
       <Button type="button" size="sm" variant="outline" disabled={pending} onClick={upload}>
-        {pending ? tr('در حالِ ارسال…') : tr('ذخیره تصویر')}
+        {pending ? <><Spinner />{tr('در حالِ ارسال…')}</> : tr('ذخیره تصویر')}
       </Button>
       {person.avatarFileId && (
         <Button

@@ -17,6 +17,8 @@ import type { MemberState } from '@/domain/people/offboarding';
 import { stateLabel } from '@/domain/people/offboarding';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@/components/ui/icon-button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
@@ -314,20 +316,18 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                         <TableCell>
                           {data.canManage && row.revokedAt === null && (
                             <div className="flex items-center justify-end gap-1">
-                              <Button
-                                size="icon"
+                              <IconButton
                                 variant="ghost"
                                 className="size-8"
-                                aria-label={tr("ویرایش")}
+                                label={tr("ویرایش")}
                                 onClick={() => openGrant(row)}
                               >
                                 <Pencil className="size-3.5" />
-                              </Button>
-                              <Button
-                                size="icon"
+                              </IconButton>
+                              <IconButton
                                 variant="ghost"
                                 className="size-8 text-muted-foreground hover:text-destructive"
-                                aria-label={tr("قطعِ دسترسی")}
+                                label={tr("قطعِ دسترسی")}
                                 disabled={pending}
                                 onClick={async () => {
                                   if (await confirm({
@@ -337,7 +337,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                                 }}
                               >
                                 <XCircle className="size-3.5" />
-                              </Button>
+                              </IconButton>
                             </div>
                           )}
                         </TableCell>
@@ -734,7 +734,7 @@ function SaveButton() {
   const tr = useT();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? tr('در حالِ ذخیره…') : tr('ذخیره')}
+      {pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : tr('ذخیره')}
     </Button>
   );
 }

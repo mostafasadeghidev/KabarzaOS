@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { Users } from 'lucide-react';
 import { setClientsAction, type ClientsFormState } from './clients-actions';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { MultiSelect } from '@/components/ui/multi-select';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
@@ -24,7 +25,7 @@ function SaveButton() {
   const tr = useT();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? tr('در حالِ ذخیره…') : tr('ذخیرهٔ کارفرمایان')}
+      {pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : tr('ذخیرهٔ کارفرمایان')}
     </Button>
   );
 }

@@ -5,6 +5,8 @@ import { useFormStatus } from 'react-dom';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import type { SettingsState } from './_form/actions';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@/components/ui/icon-button';
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -148,21 +150,19 @@ export function CatalogSection<T extends { id: number }>({
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
                       {rowActions?.(row)}
-                      <Button
-                        size="icon"
+                      <IconButton
                         variant="ghost"
                         className="size-8"
-                        aria-label={t("ویرایش")}
+                        label={t("ویرایش")}
                         onClick={() => { setEditing(row); setOpen(true); }}
                       >
                         <Pencil className="size-3.5" />
-                      </Button>
+                      </IconButton>
                       {(canDelete?.(row) ?? true) && (
-                        <Button
-                          size="icon"
+                        <IconButton
                           variant="ghost"
                           className="size-8 text-muted-foreground hover:text-destructive"
-                          aria-label={t("حذف")}
+                          label={t("حذف")}
                           disabled={pending}
                           onClick={async () => {
                             // پورتِ `confirm('حذف شود؟')` ِ هر ردیفِ کاتالوگ — حذفِ یک‌کلیکی نه.
@@ -175,7 +175,7 @@ export function CatalogSection<T extends { id: number }>({
                           }}
                         >
                           <Trash2 className="size-3.5" />
-                        </Button>
+                        </IconButton>
                       )}
                     </div>
                   </TableCell>
@@ -192,5 +192,5 @@ export function CatalogSection<T extends { id: number }>({
 function SaveButton() {
   const { pending } = useFormStatus();
   const tr = useT();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? tr('در حالِ ذخیره…') : tr('ذخیره')}</Button>;
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : tr('ذخیره')}</Button>;
 }

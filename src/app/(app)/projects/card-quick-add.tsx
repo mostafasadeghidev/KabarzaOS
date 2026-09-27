@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { Plus } from 'lucide-react';
 import { addClientAction, addMemberAction, type CardActionState } from './_form/card-actions';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
@@ -33,7 +34,7 @@ function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="sm" className="h-7 px-2 text-xs" disabled={pending}>
-      {pending ? '…' : label}
+      {pending ? <Spinner /> : label}
     </Button>
   );
 }

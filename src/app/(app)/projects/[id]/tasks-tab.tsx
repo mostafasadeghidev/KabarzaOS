@@ -5,6 +5,7 @@ import { Check, ChevronDown, Columns3, Hand, Link2, List as ListIcon, Lock, User
 import { claimTaskAction, setTaskStatusAction } from '../_form/tab-actions';
 import { canClaimTask } from '@/domain/projects/claim';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { TaskDialog } from './task-dialog';
 import { GROUP_LABEL, TaskStatusPicker, type TaskStatusOption } from './task-status-picker';
 export type { TaskStatusOption };
@@ -137,7 +138,7 @@ function ClaimButton({
         })}
       >
         <Hand className="size-3.5" />
-        {pending ? tr('صبر کنید…') : tr('برمی‌دارم')}
+        {pending ? <><Spinner />{tr('صبر کنید…')}</> : tr('برمی‌دارم')}
       </Button>
       {error && <span className="text-xs text-destructive">{tr(error)}</span>}
     </span>

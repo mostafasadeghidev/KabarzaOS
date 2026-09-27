@@ -11,6 +11,7 @@ import {
 } from '../_form/task-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,7 +49,7 @@ function SubmitButton({ label, busy }: { label: string; busy: string }) {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? busy : label}
+      {pending ? <><Spinner />{busy}</> : label}
     </Button>
   );
 }

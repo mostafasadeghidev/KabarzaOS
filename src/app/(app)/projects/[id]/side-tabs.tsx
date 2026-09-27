@@ -11,6 +11,8 @@ import { deleteQaItemAction } from '../_form/tab-actions';
 import { format } from '@/domain/money/money';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@/components/ui/icon-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -274,7 +276,7 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
 
       <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" size="sm" disabled={pending}>
-          {pending ? t('در حالِ اعمال…') : t('اعمالِ چک‌لیست')}
+          {pending ? <><Spinner />{t('در حالِ اعمال…')}</> : t('اعمالِ چک‌لیست')}
         </Button>
         {/* چک‌لیستِ QA اغلب برای **همهٔ** نقش‌ها لازم است؛ تیک‌زدنِ ده‌تایی کارِ تکراری بود. */}
         <Button type="button" size="sm" variant="outline" onClick={() => setAll(true)}>
@@ -364,12 +366,11 @@ function QaTick({ row, canManage }: { row: QaRow; canManage: boolean }) {
 
   return (
     <span className="flex items-center gap-1">
-      <Button
+      <IconButton
         type="button"
-        size="icon"
         variant="ghost"
         className="size-7"
-        title={row.isDone ? t('برداشتنِ تیک') : t('انجام شد')}
+        label={row.isDone ? t('برداشتنِ تیک') : t('انجام شد')}
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
@@ -379,7 +380,7 @@ function QaTick({ row, canManage }: { row: QaRow; canManage: boolean }) {
         }
       >
         {row.isDone ? <Check className="size-3.5 text-emerald-600" /> : <Square className="size-3.5" />}
-      </Button>
+      </IconButton>
       {error && <span className="text-[11px] text-destructive">{t(error)}</span>}
     </span>
   );

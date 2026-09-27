@@ -11,6 +11,7 @@ import {
 } from '@/domain/ledger/form-rules';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Combobox, MultiSelect, type Option } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,7 +29,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   const tr = useT();
-  return <Button type="submit" disabled={pending}>{pending ? tr('در حالِ ثبت…') : label}</Button>;
+  return <Button type="submit" disabled={pending}>{pending ? <><Spinner />{tr('در حالِ ثبت…')}</> : label}</Button>;
 }
 
 /**

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { UserMinus } from 'lucide-react';
 import { removeMemberAction } from './tab-actions';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
 import { useConfirm } from '@/components/ui/confirm';
 import { useT } from '@/i18n/client';
 
@@ -31,13 +31,12 @@ export function MemberRemoveButton({
   return (
     <span className="inline-flex items-center gap-1">
       {error && <span className="text-[11px] text-destructive">{t(error)}</span>}
-      <Button
+      <IconButton
         type="button"
-        size="icon"
         variant="ghost"
         className="size-8 text-muted-foreground hover:text-destructive"
         disabled={pending}
-        aria-label={t('حذف از پروژه')}
+        label={t('حذف از پروژه')}
         title={t('حذف از پروژه')}
         onClick={async () => {
           const ok = await confirm({
@@ -54,7 +53,7 @@ export function MemberRemoveButton({
         }}
       >
         <UserMinus className="size-3.5" />
-      </Button>
+      </IconButton>
     </span>
   );
 }

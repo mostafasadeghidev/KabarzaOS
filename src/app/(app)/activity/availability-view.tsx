@@ -6,6 +6,7 @@ import { Plus, X } from 'lucide-react';
 import { saveAvailabilityAction, type AvailabilityState } from './_form/availability-actions';
 import { WEEKDAYS, type Slot } from '@/domain/availability/weekly';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
@@ -23,7 +24,7 @@ function Submit() {
   const tr = useT();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? tr('در حالِ ذخیره…') : tr('ذخیرهٔ برنامه')}
+      {pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : tr('ذخیرهٔ برنامه')}
     </Button>
   );
 }

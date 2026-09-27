@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { saveBankAction, type ProfileState } from './_form/actions';
 import { maskCard } from '@/domain/people/profile';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
@@ -15,7 +16,7 @@ function Submit() {
   const tr = useT();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? tr('در حالِ ذخیره…') : tr('ذخیره اطلاعات حساب')}
+      {pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : tr('ذخیره اطلاعات حساب')}
     </Button>
   );
 }

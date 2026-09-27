@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { Hand } from 'lucide-react';
 import { claimTaskAction } from '@/app/(app)/projects/_form/tab-actions';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { useT } from '@/i18n/client';
 
 /**
@@ -37,7 +38,7 @@ export function ClaimTaskButton({
         })}
       >
         <Hand className="size-3.5" />
-        {pending ? tr('صبر کنید…') : tr('برمی‌دارم')}
+        {pending ? <><Spinner />{tr('صبر کنید…')}</> : tr('برمی‌دارم')}
       </Button>
       {error && <span className="text-xs text-destructive">{tr(error)}</span>}
     </span>

@@ -7,6 +7,7 @@ import { createProjectAction, updateProjectAction } from './actions';
 import type { FormState } from './schema';
 import { BootstrapSections, FilePicker, type BootstrapOptions } from './bootstrap-sections';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -98,7 +99,7 @@ function SubmitButton({ isEdit }: { isEdit: boolean }) {
   const tr = useT();
   const busy = isEdit ? tr('در حالِ ذخیره…') : tr('در حالِ ساخت…');
   const idle = isEdit ? tr('ذخیرهٔ تغییرات') : tr('ساخت پروژه');
-  return <Button type="submit" disabled={pending}>{pending ? busy : idle}</Button>;
+  return <Button type="submit" disabled={pending}>{pending ? <><Spinner />{busy}</> : idle}</Button>;
 }
 
 /**

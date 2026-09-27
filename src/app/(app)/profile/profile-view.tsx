@@ -14,6 +14,7 @@ import { EMAIL_CATEGORIES } from '@/domain/notifications/gateway';
 import { allTimezones, type TelegramState } from '@/domain/people/profile';
 import { BankCard } from './bank-card';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -75,7 +76,7 @@ const TABS = [
 function Submit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
   const tr = useT();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? tr('در حالِ ذخیره…') : children}</Button>;
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : children}</Button>;
 }
 
 /** پروفایلِ من — حساب بانکی، ترجیحات، تلگرام، و (برای مالک) مشخصاتِ شرکت. */

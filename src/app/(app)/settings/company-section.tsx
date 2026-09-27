@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { removeCompanyLogoAction, saveCompanyAction, setCompanyLogoAction, type ProfileState } from '../profile/_form/actions';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -122,5 +123,5 @@ export function CompanySection({ company, isOwner }: {
 function Submit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
   const tr = useT();
-  return <Button type="submit" size="sm" disabled={pending}>{pending ? tr('در حالِ ذخیره…') : children}</Button>;
+  return <Button type="submit" size="sm" disabled={pending}>{pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : children}</Button>;
 }

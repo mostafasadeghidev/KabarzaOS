@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { loadAccessAction, saveAccessAction } from './_form/access-actions';
 import { REPORT_TABS, SECTION_ACCESS } from '@/domain/access/staff-levels';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -142,7 +143,7 @@ export function AccessDialog({
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{tr("انصراف")}</Button>
           <Button type="button" onClick={save} disabled={pending || loading}>
-            {pending ? tr('در حالِ ذخیره…') : tr('ذخیره دسترسی‌ها')}
+            {pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : tr('ذخیره دسترسی‌ها')}
           </Button>
         </DialogFooter>
       </DialogContent>

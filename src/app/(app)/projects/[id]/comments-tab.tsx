@@ -10,6 +10,8 @@ import { isOpen, statusLabel, type CommentType } from '@/domain/projects/comment
 import { buildThreads, type Thread } from '@/domain/projects/threads';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@/components/ui/icon-button';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useActionToast } from '@/components/ui/toast';
@@ -42,7 +44,7 @@ function SendButton({ label }: { label: string }) {
   const tr = useT();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? tr('در حال ارسال…') : label}
+      {pending ? <><Spinner />{tr('در حال ارسال…')}</> : label}
     </Button>
   );
 }
@@ -88,12 +90,11 @@ function StatusToggle({ comment, canToggle }: { comment: CommentItem; canToggle:
   return (
     <div className="flex items-center gap-1">
       {chip}
-      <Button
+      <IconButton
         type="button"
-        size="icon"
         variant="ghost"
         className="size-7"
-        title={open ? t('علامت‌زدن به‌عنوانِ انجام‌شده') : t('بازکردنِ دوباره')}
+        label={open ? t('علامت‌زدن به‌عنوانِ انجام‌شده') : t('بازکردنِ دوباره')}
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
@@ -103,7 +104,7 @@ function StatusToggle({ comment, canToggle }: { comment: CommentItem; canToggle:
         }
       >
         {open ? <Check className="size-3.5" /> : <RotateCcw className="size-3.5" />}
-      </Button>
+      </IconButton>
       {error && <span className="text-[11px] text-destructive">{t(error)}</span>}
     </div>
   );

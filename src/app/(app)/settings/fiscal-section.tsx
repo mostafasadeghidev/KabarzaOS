@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { Lock, Unlock } from 'lucide-react';
 import { closePeriodAction, reopenPeriodAction, type FiscalState } from './_form/actions';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
@@ -18,7 +19,7 @@ function Submit() {
   return (
     <Button type="submit" size="sm" disabled={pending}>
       <Lock className="size-3.5" />
-      {pending ? tr('در حالِ بستن…') : tr('بستنِ دوره')}
+      {pending ? <><Spinner />{tr('در حالِ بستن…')}</> : tr('بستنِ دوره')}
     </Button>
   );
 }

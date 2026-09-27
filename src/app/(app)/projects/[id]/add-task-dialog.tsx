@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { Plus } from 'lucide-react';
 import { createTaskAction, type TaskFormState } from '../_form/task-actions';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,7 +43,7 @@ function SubmitButton() {
   const tr = useT();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? tr('در حالِ ثبت…') : tr('افزودن تسک')}
+      {pending ? <><Spinner />{tr('در حالِ ثبت…')}</> : tr('افزودن تسک')}
     </Button>
   );
 }

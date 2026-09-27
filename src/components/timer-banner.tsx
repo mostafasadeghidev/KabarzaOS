@@ -8,6 +8,7 @@ import {
 } from '@/app/(app)/hours/_form/actions';
 import { hoursLabel } from '@/domain/timelogs/timer';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
@@ -25,7 +26,7 @@ function Submit({ children, variant }: { children: React.ReactNode; variant?: 'o
   const tr = useT();
   return (
     <Button type="submit" size="sm" variant={variant} disabled={pending}>
-      {pending ? tr('صبر کنید…') : children}
+      {pending ? <><Spinner />{tr('صبر کنید…')}</> : children}
     </Button>
   );
 }

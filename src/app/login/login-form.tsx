@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { login } from './actions';
 import type { LoginState } from './schema';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -57,7 +58,7 @@ export function LoginForm({ notice }: { notice?: string } = {}) {
             )}
 
             <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? t('در حال ورود…') : t('ورود')}
+              {pending ? <><Spinner />{t('در حال ورود…')}</> : t('ورود')}
             </Button>
             {/* پورتِ `wp_lostpassword_url`: راهِ خودخدمتِ بازنشانی. */}
             <Link href="/forgot" className="block text-center text-sm text-muted-foreground underline">

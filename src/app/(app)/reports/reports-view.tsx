@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { format } from '@/domain/money/money';
@@ -980,7 +981,7 @@ function RecomputeEurButton() {
           setState(await recomputeEurAction());
         })}
       >
-        {pending ? tr('در حالِ بازمحاسبه…') : tr('بازمحاسبهٔ معادلِ یورو')}
+        {pending ? <><Spinner />{tr('در حالِ بازمحاسبه…')}</> : tr('بازمحاسبهٔ معادلِ یورو')}
       </Button>
       <span className="text-xs text-muted-foreground">
         {state.error ?? state.message

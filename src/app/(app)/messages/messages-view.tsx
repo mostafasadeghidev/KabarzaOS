@@ -11,6 +11,7 @@ import { AUDIENCE_LABELS, type Audience } from '@/domain/messaging/threads';
 import { groupInbox } from '@/domain/messaging/labels';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -100,7 +101,7 @@ function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" size="sm" disabled={pending}>
-      {pending ? '…' : label}
+      {pending ? <Spinner /> : label}
     </Button>
   );
 }

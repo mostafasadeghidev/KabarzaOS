@@ -6,6 +6,8 @@ import { Plus, X } from 'lucide-react';
 import { setMembersAction } from './members-actions';
 import type { MembersFormState } from './members-schema';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
+import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -43,7 +45,7 @@ function SaveButton() {
   const tr = useT();
   return (
     <Button type="submit" disabled={pending}>
-      {pending ? tr('در حالِ ذخیره…') : tr('ذخیرهٔ اعضا')}
+      {pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : tr('ذخیرهٔ اعضا')}
     </Button>
   );
 }
@@ -226,16 +228,15 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                     </td>
 
                     <td className="py-1.5">
-                      <Button
+                      <IconButton
                         type="button"
-                        size="icon"
                         variant="ghost"
                         className="size-8 text-muted-foreground hover:text-destructive"
-                        aria-label={t("حذفِ ردیف")}
+                        label={t("حذفِ ردیف")}
                         onClick={() => setRows((rs) => rs.filter((_, idx) => idx !== i))}
                       >
                         <X className="size-4" />
-                      </Button>
+                      </IconButton>
                     </td>
                   </tr>
                 ))}

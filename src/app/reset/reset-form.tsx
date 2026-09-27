@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { completeResetAction, type ResetState } from './actions';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -48,7 +49,7 @@ export function ResetForm({ token }: { token: string }) {
               </Alert>
             )}
             <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? t('در حالِ ذخیره…') : t('ذخیرهٔ رمز')}
+              {pending ? <><Spinner />{t('در حالِ ذخیره…')}</> : t('ذخیرهٔ رمز')}
             </Button>
             <Link href="/forgot" className="block text-center text-sm text-muted-foreground underline">
               {t("درخواستِ لینکِ تازه")}

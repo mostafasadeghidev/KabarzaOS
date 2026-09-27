@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Ban, Undo2 } from 'lucide-react';
 import { setProjectAccessAction } from './members-actions';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
 import { useT } from '@/i18n/client';
 
 /**
@@ -29,13 +29,12 @@ export function MemberAccessToggle({
   return (
     <span className="flex items-center justify-end gap-1">
       {error && <span className="text-[11px] text-destructive">{t(error)}</span>}
-      <Button
+      <IconButton
         type="button"
-        size="icon"
         variant="ghost"
         className={`size-8 ${blocked ? 'text-amber-600 dark:text-amber-500' : 'text-muted-foreground hover:text-destructive'}`}
         disabled={pending}
-        aria-label={blocked ? t('بازگرداندنِ دسترسی') : t('قطعِ دسترسی به این پروژه')}
+        label={blocked ? t('بازگرداندنِ دسترسی') : t('قطعِ دسترسی به این پروژه')}
         title={blocked ? t('بازگرداندنِ دسترسی') : t('قطعِ دسترسی به این پروژه')}
         onClick={() =>
           startTransition(async () => {
@@ -45,7 +44,7 @@ export function MemberAccessToggle({
         }
       >
         {blocked ? <Undo2 className="size-3.5" /> : <Ban className="size-3.5" />}
-      </Button>
+      </IconButton>
     </span>
   );
 }

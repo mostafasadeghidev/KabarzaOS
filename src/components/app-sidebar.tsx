@@ -2,15 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   FolderKanban, Users, Wallet, BarChart3, CalendarCheck, CalendarDays, MessageSquare,
   LayoutDashboard, Building2, Settings, Activity, Clock, UsersRound, UserCircle, ListChecks,
-  KeyRound,
+  KeyRound, ChevronDown,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
+import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { UserMenu } from '@/components/user-menu';
 import { isRtl, type Locale } from '@/i18n/config';
 import { useT } from '@/i18n/client';
@@ -63,6 +68,107 @@ const GROUP_LABELS = {
   operations: 'عملیات',
   data: 'اطلاعات پایه',
 } as const;
+
+/**
+ * گروهِ منو — جمع‌شونده.
+ *
+ * ⚠️ چرا: فهرستِ منو برای مالک بلند است و همهٔ گروه‌ها همیشه باز بودند.
+ * حالا هر گروه بسته می‌شود و حالتش می‌ماند.
+ *
+ * ⚠️ در حالتِ آیکونیِ سایدبار **همیشه باز** است: آنجا برچسبِ گروه پنهان
+ * می‌شود و اگر محتوا هم بسته می‌ماند، کاربر یک ستونِ خالی می‌دید.
+ *
+ * ⚠️ گروهی که صفحهٔ بازِ کاربر در آن است خودکار باز می‌شود، ولی قفل نیست —
+ * بعدش می‌شود بست. اگر قفل بود، کسی که «پروژه‌ها» را باز کرده هیچ‌وقت
+ * نمی‌توانست آن گروه را جمع کند.
+ *
+ * ⚠️ حالتِ ذخیره‌شده **بعد از mount** خوانده می‌شود، نه در رندرِ اول:
+ * `localStorage` روی سرور نیست و خواندنش در رندر، HTML ِ سرور و کلاینت را
+ * ناهمگام می‌کرد.
+ */
+function NavGroup({
+  label,
+  items,
+  pathname,
+  unread,
+}: {
+  label: string;
+  items: NavItem[];
+  pathname: string;
+  unread: number;
+}) {
+  const t = useT();
+  const { state, isMobile } = useSidebar();
+  const iconMode = state === 'collapsed' && !isMobile;
+  const storageKey = `kbz.nav.${label}`;
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(storageKey);
+      if (saved !== null) setOpen(saved === '1');
+    } catch { /* حالتِ خصوصیِ مرورگر — پیش‌فرضِ «باز» می‌ماند */ }
+  }, [storageKey]);
+
+  const hasActive = items.some(
+    (i) => pathname === i.href || pathname.startsWith(`${i.href}/`),
+  );
+
+  useEffect(() => { if (hasActive) setOpen(true); }, [hasActive]);
+
+  const change = (next: boolean) => {
+    // در حالتِ آیکونی گروه به‌زور باز است؛ کلیکِ اتفاقی نباید حالت را ذخیره کند.
+    if (iconMode) return;
+    setOpen(next);
+    try { window.localStorage.setItem(storageKey, next ? '1' : '0'); } catch { /* بی‌خیال */ }
+  };
+
+  return (
+    <Collapsible open={iconMode || open} onOpenChange={change} className="group/collapsible">
+      <SidebarGroup>
+        <SidebarGroupLabel asChild>
+          <CollapsibleTrigger className="w-full cursor-pointer">
+            {t(label)}
+            {/* ▼ بسته (باز کن) · ▲ باز — چرخشِ ۱۸۰ درجه در هر دو جهتِ متن یکسان می‌نشیند. */}
+            <ChevronDown className="ms-auto size-3.5 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+          </CollapsibleTrigger>
+        </SidebarGroupLabel>
+        <CollapsibleContent>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => {
+                const Icon = ICONS[item.icon];
+                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild isActive={active} tooltip={t(item.label)}>
+                      {/*
+                        ⚠️ prefetch خاموش: کلِ محتوای این اپ per-user است
+                        (زبان، مجوز، دامنهٔ دید). با prefetch، Next پاسخِ
+                        RSC ِ هر لینکِ دیدهٔ سایدبار را کش می‌کند و بعد از
+                        تعویضِ زبان همان کهنه را نشان می‌دهد — سایدبار
+                        انگلیسی و محتوا فارسی، در یک صفحه. آزموده شد.
+                      */}
+                      <Link href={item.href} prefetch={false}>
+                        <Icon />
+                        <span>{t(item.label)}</span>
+                        {item.icon === 'messages' && unread > 0 && (
+                          <Badge className="ms-auto size-4 justify-center p-0 text-[10px]">
+                            <LiveCount initial={unread} live={null} />
+                          </Badge>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
+  );
+}
 
 export function AppSidebar({
   items,
@@ -148,39 +254,13 @@ export function AppSidebar({
 
       <SidebarContent>
         {groups.map((group) => (
-          <SidebarGroup key={group.key}>
-            <SidebarGroupLabel>{t(GROUP_LABELS[group.key])}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item) => {
-                  const Icon = ICONS[item.icon];
-                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild isActive={active} tooltip={t(item.label)}>
-                        {/*
-                          ⚠️ prefetch خاموش: کلِ محتوای این اپ per-user است
-                          (زبان، مجوز، دامنهٔ دید). با prefetch، Next پاسخِ
-                          RSC ِ هر لینکِ دیدهٔ سایدبار را کش می‌کند و بعد از
-                          تعویضِ زبان همان کهنه را نشان می‌دهد — سایدبار
-                          انگلیسی و محتوا فارسی، در یک صفحه. آزموده شد.
-                        */}
-                        <Link href={item.href} prefetch={false}>
-                          <Icon />
-                          <span>{t(item.label)}</span>
-                          {item.icon === 'messages' && unread > 0 && (
-                            <Badge className="ms-auto size-4 justify-center p-0 text-[10px]">
-                              <LiveCount initial={unread} live={null} />
-                            </Badge>
-                          )}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <NavGroup
+            key={group.key}
+            label={GROUP_LABELS[group.key]}
+            items={group.items}
+            pathname={pathname}
+            unread={unread}
+          />
         ))}
       </SidebarContent>
 
