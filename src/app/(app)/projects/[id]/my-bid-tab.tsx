@@ -84,7 +84,7 @@ export function MyBidTab({ data }: { data: MyBidData }) {
   const tr = useT();
   const t = useT();
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-4">
       <h3 className="flex items-center gap-1.5 text-sm font-semibold">
         <Gavel className="size-4" />
         {tr("پیشنهادِ من")}

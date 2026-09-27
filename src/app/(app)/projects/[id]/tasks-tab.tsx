@@ -371,7 +371,7 @@ export function TasksTab({
   const list = tab === 'review' ? review : (buckets.get(tab) ?? []);
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-end gap-2">
         {/* نمای برد — همان تسک‌ها، چیدمانِ ستونی (پورتِ task_kanban). */}
         <ToggleGroup

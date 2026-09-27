@@ -2,6 +2,24 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.79.0]
+
+### Added
+
+- **A layout contract for the whole app.** `PageShell`, `PageHeader` and `TabPanel` hold the decisions every screen used to make for itself: one spacing scale (4 between blocks, 6 on large screens, 2 inside a block), one header typography, and a two-tier width rule — tables, cards and dashboards run edge to edge; text and forms sit in a reading column of `max-w-4xl`. It is the rule shadcn follows in its own examples.
+- **A new "Urgent" task priority**, above High, with translations in all nine languages. The ported catalogue had three steps and no "right now"; migration `0030` adds the fourth.
+
+### Changed
+
+- **Messages is a proper mail layout.** The list and the conversation are two panels of equal height that reach the bottom of the page, each with a fixed header and a body that scrolls on its own; the reply box is pinned to the foot of the conversation. Before, the two columns were free-standing and their heights drifted with their content — one half the page, the other to the floor.
+- **The project tabs follow one rule.** Comments, files, my payment, my bid and QA use the reading width; tasks, information, finance, management and bids stay full width. Every panel now shares the same spacing. Until now the tabs of a single page used three different gaps and two different widths.
+
+### Fixed
+
+- **Two project statuses shared a sort order** ("In review" and "Completed" were both 5), so their order in the list was undefined. Only corrected where the collision still stands, so a deliberate ordering is left alone.
+
+---
+
 ## [1.78.0]
 
 ### Added

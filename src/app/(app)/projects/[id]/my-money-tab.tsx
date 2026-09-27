@@ -121,7 +121,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
     startTransition(async () => setRowError((await fn()).error ?? null));
 
   return (
-    <div className="grid max-w-4xl gap-5">
+    <div className="grid gap-4">
       {data.isUnitBased && (
       <section className="grid gap-2">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold">

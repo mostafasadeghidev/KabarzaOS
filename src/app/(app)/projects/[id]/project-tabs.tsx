@@ -18,6 +18,7 @@ import { MyMoneyTab, type MyMoneyData } from './my-money-tab';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
 import { useT } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TabPanel } from '@/components/page-shell';
 
 /**
  * هشت تبِ صفحهٔ پروژه — همان تب‌های مودالِ ویرایشِ نسخهٔ قبلی و به همان ترتیب:
@@ -191,10 +192,15 @@ export function ProjectTabs({
         </div>
       </Tabs>
 
-      {tab === 'info' && info}
+      {/*
+        ⚠️ قاعدهٔ عرض یک‌جا و کنارِ خودِ تب نوشته می‌شود: جدول و داده
+        تمام‌عرض، متن و فرم در عرضِ خواندنی. پیش از این هر تب خودش
+        تصمیم می‌گرفت و سه فاصله و دو عرضِ متفاوت داشتیم.
+      */}
+      {tab === 'info' && <TabPanel>{info}</TabPanel>}
 
       {tab === 'tasks' && (
-        <TasksTab
+        <TabPanel><TasksTab
           projectId={data.projectId}
           tasks={data.tasks}
           statuses={data.taskStatuses}
@@ -205,33 +211,35 @@ export function ProjectTabs({
           currentUserId={data.currentUserId}
           formOptions={data.taskFormOptions}
           initialGroup={initialView}
-        />
+        /></TabPanel>
       )}
 
-      {tab === 'my-bid' && data.myBid && <MyBidTab data={data.myBid} />}
+      {tab === 'my-bid' && data.myBid && (
+        <TabPanel width="reading"><MyBidTab data={data.myBid} /></TabPanel>
+      )}
 
       {tab === 'files' && (
-        <FilesTab
+        <TabPanel width="reading"><FilesTab
           files={data.files}
           projectId={data.projectId}
           canUpload={!data.isFrozen}
           canManage={data.canManage}
           currentUserId={data.currentUserId}
-        />
+        /></TabPanel>
       )}
 
       {tab === 'comments' && (
-        <CommentsTab
+        <TabPanel width="reading"><CommentsTab
           projectId={data.projectId}
           comments={data.comments}
           canManage={data.canManage}
           canInteract={data.canInteract}
           isFrozen={data.isFrozen}
-        />
+        /></TabPanel>
       )}
 
       {tab === 'finance' && (
-        <div className="grid gap-6">
+        <TabPanel>
           {data.canSeePrice && (
             <FinanceTab
               price={data.price}
@@ -253,22 +261,22 @@ export function ProjectTabs({
               <MyMoneyTab data={data.myMoney} />
             </section>
           )}
-        </div>
+        </TabPanel>
       )}
 
       {tab === 'qa' && (
-        <QaTab
+        <TabPanel width="reading"><QaTab
           projectId={data.projectId}
           qa={data.qa}
           form={data.qaForm}
           taskCount={data.qaTaskCount}
           canManage={data.canManage}
           canInteract={data.canInteract && !data.isFrozen}
-        />
+        /></TabPanel>
       )}
 
       {tab === 'manage' && (
-        <ManageTab
+        <TabPanel><ManageTab
           projectId={data.projectId}
           title={data.title}
           isArchived={data.isArchived}
@@ -280,16 +288,16 @@ export function ProjectTabs({
           canManage={data.canManage}
           deleteState={data.deleteState}
           lightenSummary={data.lightenSummary}
-        />
+        /></TabPanel>
       )}
 
       {tab === 'bids' && (
-        <BidsTab
+        <TabPanel><BidsTab
           projectId={data.projectId}
           bids={data.bids}
           isOpen={data.tenderIsOpen}
           canManage={data.canManage}
-        />
+        /></TabPanel>
       )}
     </div>
   );

@@ -10,6 +10,7 @@ import {
 import { AUDIENCE_LABELS, type Audience } from '@/domain/messaging/threads';
 import { groupInbox } from '@/domain/messaging/labels';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Label } from '@/components/ui/label';
@@ -272,11 +273,16 @@ export function MessagesView({
       return next;
     });
 
+  /*
+   * ⚠️ چیدمانِ «نامه‌رسان» ِ shadcn: دو قابِ هم‌قد که تا کفِ صفحه می‌آیند، هر
+   * کدام با سرصفحهٔ ثابت و بدنهٔ اسکرول‌شونده. پیش از این دو ستونِ آزاد بودند
+   * و قدشان با محتوا فرق می‌کرد — یکی نصفهٔ صفحه، دیگری تا ته.
+   */
   return (
-    <div className="grid gap-4 @3xl/main:grid-cols-[22rem_1fr]">
+    <div className="grid min-h-0 flex-1 gap-4 @3xl/main:grid-cols-[22rem_1fr]">
       {/* ---- صندوق ---- */}
-      <section className="grid content-start gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <Card className="flex min-h-0 flex-col gap-0 overflow-hidden py-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2.5">
           <h2 className="text-sm font-semibold">{tr("صندوق پیام")}</h2>
           <div className="flex gap-1">
             {/*
@@ -300,9 +306,11 @@ export function MessagesView({
 
 
         {inbox.length === 0 ? (
-          <EmptyState title={tr("هنوز پیامی ندارید.")} />
+          <div className="flex flex-1 items-center justify-center p-4">
+            <EmptyState className="w-full border-0" title={tr("هنوز پیامی ندارید.")} />
+          </div>
         ) : (
-          <ul className="grid gap-1">
+          <ul className="grid min-h-0 flex-1 content-start gap-1 overflow-y-auto p-2">
             {/*
               ⚠️ R-MSG-01 — گفتگوهای یک ارسالِ همگانی در صندوقِ **فرستنده** یک
               آکاردئون‌اند (شمار، جمعِ خوانده‌نشده، ردیف‌های فرزند)؛ گیرنده هر
@@ -334,15 +342,21 @@ export function MessagesView({
             )))}
           </ul>
         )}
-      </section>
+      </Card>
 
       {/* ---- گفتگو ---- */}
-      <section className="grid content-start gap-3">
+      <Card className="flex min-h-0 flex-col gap-0 overflow-hidden py-0">
         {thread === null ? (
-          <EmptyState title={tr("گفتگویی انتخاب نشده")} description={tr("از فهرستِ کنار یکی را باز کنید.")} />
+          <div className="flex flex-1 items-center justify-center p-6">
+            <EmptyState
+              className="w-full max-w-sm border-0"
+              title={tr("گفتگویی انتخاب نشده")}
+              description={tr("از فهرستِ کنار یکی را باز کنید.")}
+            />
+          </div>
         ) : (
           <>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 border-b px-3 py-2.5">
               {/* سربرگ: طرفِ مقابل (ماسک‌شده) + نشانِ اعلانِ یک‌طرفه — پورتِ `chat.php`. */}
               <h2 className="flex min-w-0 items-center gap-2 text-sm font-semibold">
                 <span className="truncate">{thread.thread.label || tr("گفتگو")}</span>
@@ -375,7 +389,7 @@ export function MessagesView({
               </Button>
             </div>
 
-            <ul className="grid gap-2">
+            <ul className="grid min-h-0 flex-1 content-start gap-2 overflow-y-auto p-3">
               {/*
                 پیام‌های خودم سمتِ دیگر و پررنگ؛ نامِ نویسنده فقط روی پیامِ دیگران.
                 تیکِ ✓/✓✓ (R-MSG-07): ✓✓ وقتی **همهٔ** طرف‌های دیگر به آن رسیده‌اند —
@@ -407,7 +421,7 @@ export function MessagesView({
             </ul>
 
             {thread.canReply ? (
-              <form action={replyFormAction} className="grid gap-2">
+              <form action={replyFormAction} className="grid gap-2 border-t p-3">
                 <input type="hidden" name="threadId" value={thread.thread.id} />
                 <Textarea name="body" rows={2} placeholder={tr("پاسخ شما…")} required />
                 {replyState.error && <p className="text-xs text-destructive">{tr(replyState.error)}</p>}
@@ -416,13 +430,13 @@ export function MessagesView({
                 </div>
               </form>
             ) : (
-              <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+              <p className="border-t bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
                 {tr("این یک اعلانِ یک‌طرفه است و امکان پاسخ ندارد.")}
               </p>
             )}
           </>
         )}
-      </section>
+      </Card>
 
       {/* ---- نوشتنِ پیامِ نو ---- */}
       <Dialog open={mgmtOpen} onOpenChange={setMgmtOpen}>

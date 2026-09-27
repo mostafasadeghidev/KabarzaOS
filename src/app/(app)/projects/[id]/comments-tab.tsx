@@ -350,7 +350,7 @@ export function CommentsTab({
   isFrozen?: boolean;
 }) {
   return (
-    <div className="grid max-w-4xl gap-4">
+    <div className="grid gap-4">
       <ThreadList
         projectId={projectId}
         comments={comments}

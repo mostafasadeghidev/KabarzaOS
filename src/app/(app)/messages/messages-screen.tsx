@@ -4,6 +4,7 @@ import { getRecipientFilterData, getRecipients, listInbox } from '@/server/messa
 import { can } from '@/domain/access/permissions';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { MessagesView } from './messages-view';
+import { PageHeader, PageShell } from '@/components/page-shell';
 import { primeTranslations, t } from '@/i18n/server';
 
 /**
@@ -41,28 +42,32 @@ export async function MessagesScreen({ threadId = null }: { threadId?: number | 
   const unread = inbox.threads.reduce((sum, t) => sum + t.unread, 0);
 
   return (
-    <main className="@container/main flex flex-col gap-4 p-4 lg:p-6">
-      <header>
-        <h1 className="text-xl font-semibold">{t("پیام‌ها")}</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          <span className="num">{inbox.threads.length}</span> {t("گفتگو")}
-          {unread > 0 && <> · <span className="num">{unread}</span> {t("خوانده‌نشده")}</>}
-        </p>
-        {/*
-          ⚠️ اگر پاک‌سازیِ خودکار روشن است کاربر باید **بداند**؛ پیامی که
-          بی‌خبر ناپدید شود شبیهِ باگ است، نه سیاست. صفر یعنی هرگز و آن‌وقت
-          هیچ جمله‌ای چاپ نمی‌شود.
-        */}
-        {system.msgPurgeDays > 0 && (
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {/* ⚠️ یک جملهٔ پارامتری، نه سه تکه: در زبانِ دیگر ترتیبِ
-                تکه‌ها عوض می‌شود و جمله بی‌معنا از آب درمی‌آید. */}
-            {t('پیام‌ها پس از {days} روز به‌صورت خودکار پاک می‌شوند.', {
-              days: system.msgPurgeDays,
-            })}
-          </p>
+    <PageShell>
+      <PageHeader
+        title={t("پیام‌ها")}
+        description={(
+          <>
+            <p>
+              <span className="num">{inbox.threads.length}</span> {t("گفتگو")}
+              {unread > 0 && <> · <span className="num">{unread}</span> {t("خوانده‌نشده")}</>}
+            </p>
+            {/*
+              ⚠️ اگر پاک‌سازیِ خودکار روشن است کاربر باید **بداند**؛ پیامی که
+              بی‌خبر ناپدید شود شبیهِ باگ است، نه سیاست. صفر یعنی هرگز و
+              آن‌وقت هیچ جمله‌ای چاپ نمی‌شود.
+            */}
+            {system.msgPurgeDays > 0 && (
+              <p className="mt-0.5 text-xs">
+                {/* ⚠️ یک جملهٔ پارامتری، نه سه تکه: در زبانِ دیگر ترتیبِ
+                    تکه‌ها عوض می‌شود و جمله بی‌معنا از آب درمی‌آید. */}
+                {t('پیام‌ها پس از {days} روز به‌صورت خودکار پاک می‌شوند.', {
+                  days: system.msgPurgeDays,
+                })}
+              </p>
+            )}
+          </>
         )}
-      </header>
+      />
 
       <MessagesView
         inbox={inbox.threads}
@@ -74,6 +79,6 @@ export async function MessagesScreen({ threadId = null }: { threadId?: number | 
         initialThreadId={threadId}
         viewerId={actor.id}
       />
-    </main>
+    </PageShell>
   );
 }
