@@ -14,6 +14,7 @@ import { AbsencePanel } from '../../activity/absence-panel';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
+import { Progress } from '@/components/ui/progress';
 
 /**
  * پروفایلِ کاریِ یک عضو برای مدیرِ دفتر — پورتِ `view_team_member`: آمار،
@@ -111,9 +112,7 @@ export default async function TeamMemberPage({
                   <TableCell>{p.roles.length > 0 ? p.roles.join('، ') : '—'}</TableCell>
                   <TableCell>
                     <span className="flex items-center gap-2">
-                      <span className="block h-2 w-24 rounded bg-muted">
-                        <span className="block h-2 rounded bg-primary" style={{ width: `${p.progress}%` }} />
-                      </span>
+                      <Progress value={p.progress} className="w-24" aria-label={t("درصد پیشرفت")} />
                       <span className="num text-xs">{p.progress}%</span>
                     </span>
                   </TableCell>

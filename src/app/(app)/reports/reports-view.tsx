@@ -26,6 +26,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Toggle } from '@/components/ui/toggle';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StatCard } from '@/components/stat-card';
+import { Progress } from '@/components/ui/progress';
 
 /** «دورهٔ بسته» هم خروجی دارد ولی تبِ صادرشدنی نیست — تاریخ لازم دارد. */
 function isExportable(tab: string): boolean {
@@ -100,7 +101,7 @@ export interface ReportsData {
   hours: Array<{ userId: number; name: string; project: number; general: number; total: number }>;
   projectRows: Array<{
     id: number; title: string; statusName: string | null; statusColor: string | null;
-    price: string; clientPaid: string; clientDue: string; memberPaid: string;
+    price: string; clientPaid: string; clientDue: string; memberPaid: string; memberCost: string;
     profit: string; minutes: number;
   }>;
   units: Array<{ userId: number; name: string; paid: string; unpaid: string; total: string }>;
@@ -592,9 +593,7 @@ export function ReportsView({
                       <TableNumericCell>{m.ym}</TableNumericCell>
                       <TableCell>
                         {/* پورتِ نوارِ روند: درصدِ هر ماه نسبت به پرترین ماه. */}
-                        <span className="block h-2 w-full rounded bg-muted">
-                          <span className="block h-2 rounded bg-primary" style={{ width: `${m.pct}%` }} />
-                        </span>
+                        <Progress value={m.pct} aria-label={m.ym} />
                       </TableCell>
                       <TableNumericCell>{format(m.amount)}</TableNumericCell>
                     </TableRow>
@@ -720,8 +719,9 @@ export function ReportsView({
                 <TableHead numeric>{tr("قیمت")}</TableHead>
                 <TableHead numeric>{tr("دریافتی")}</TableHead>
                 <TableHead numeric>{tr("مطالبات")}</TableHead>
-                <TableHead numeric>{tr("پرداختی به اعضا")}</TableHead>
-                <TableHead numeric>{tr("سود")}</TableHead>
+                {/* پورتِ ستون‌های افزونه: «هزینهٔ تیم» (تعهد) و «سود تخمینی» (قیمت − تعهد). */}
+                <TableHead numeric>{tr("هزینهٔ تیم")}</TableHead>
+                <TableHead numeric>{tr("سود تخمینی")}</TableHead>
                 <TableHead numeric>{tr("ساعت کاری")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -747,7 +747,7 @@ export function ReportsView({
                   <TableNumericCell>{format(p.price)}</TableNumericCell>
                   <TableNumericCell>{format(p.clientPaid)}</TableNumericCell>
                   <TableNumericCell>{format(p.clientDue)}</TableNumericCell>
-                  <TableNumericCell>{format(p.memberPaid)}</TableNumericCell>
+                  <TableNumericCell>{format(p.memberCost)}</TableNumericCell>
                   {/* ⚠️ سودِ منفی باید در نگاهِ اول دیده شود، نه با خواندنِ رقم. */}
                   <TableNumericCell
                     className={Number(p.profit) < 0 ? 'font-semibold text-destructive' : 'font-semibold'}

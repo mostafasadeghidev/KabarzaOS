@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNull, lte, sql, or, SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lte, sql, or, SQL } from 'drizzle-orm';
 import { convert } from '@/domain/currency/rates';
 import { rateSource, closingDatesQuery, closingRowsQuery } from '@/server/finance/service';
 import { db } from '@/db/client';
@@ -11,7 +11,7 @@ import { assertCanView, visibleScopes } from '@/domain/access/guard';
 import { overallSummary, sumReportable, isReportableExpense } from '@/domain/reports/summary';
 import { currentLocale } from '@/i18n/server';
 import { isSettledFormer, perCurrencyLines, rateBanner, sumInBase } from '@/domain/reports/money';
-import { rowValueIn } from '@/domain/team-money/payments';
+import { contractBalance, rowValueIn } from '@/domain/team-money/payments';
 import { monthlyAverage, withBars, weekRange } from '@/domain/reports/filters';
 import { tagName } from '@/db/tag-name';
 import { alias } from 'drizzle-orm/pg-core';
@@ -577,11 +577,14 @@ export async function getHoursReport(actor: Actor, input: HoursQuery = {}) {
 export { currencies, users, isNull };
 
 /**
- * گزارشِ پروژه‌ها — قیمت، دریافتی، مطالبات، هزینهٔ اعضا و سود.
+ * گزارشِ پروژه‌ها — قیمت، دریافتی، مطالبات، هزینهٔ تیم و سودِ تخمینی.
  *
- * ⚠️ «سود» = قیمت + هزینهٔ قابلِ‌صورتحساب − دریافتیِ اعضا − هزینه‌ها. هزینهٔ
- * **جذب‌شده** (`project_cost`) از سود کم می‌شود ولی به مطالبات اضافه نمی‌شود؛
- * تفاوتشان دقیقاً همان چیزی است که جهتِ چهارم برایش وجود دارد.
+ * ⚠️ پورتِ `Reports::project_rows`: «هزینهٔ تیم» = جمعِ **تعهد** به اعضا
+ * (مبلغِ توافقی، به‌ازای هر ارز تبدیل‌شده به پایه) و «سودِ تخمینی» = قیمت −
+ * همان تعهد. پیش از این ستون «پرداختی به اعضا» بود و سود از پرداختی‌ها کم
+ * می‌شد: تعهدِ پرداخت‌نشده سود را باد می‌کرد و این عدد با کارتِ «سودِ
+ * تخمینی» ِ گزارشِ کلی (ارزش − تعهد) نمی‌خواند. پرداختی هنوز برمی‌گردد
+ * (`memberPaid`) ولی دیگر در سود نیست.
  */
 export async function getProjectsReport(actor: Actor, filters: ReportFilters = {}) {
   assertCanView(actor, 'reports');
@@ -590,6 +593,15 @@ export async function getProjectsReport(actor: Actor, filters: ReportFilters = {
   const locale = await currentLocale();
 
   const fx = await baseConverter();
+  // تعهد به اعضا به‌ازای (پروژه، ارز) — ردیفِ بی‌ارز به ارزِ خودِ پروژه (R-TEAM-05).
+  const commitments = await db.select({
+    projectId: projectMembers.projectId,
+    currencyId: projectMembers.currencyId,
+    total: sql<string>`coalesce(sum(${projectMembers.agreedAmount}), 0)::text`,
+  })
+    .from(projectMembers)
+    .groupBy(projectMembers.projectId, projectMembers.currencyId);
+
   const rows = await db.execute(sql`
     select
       p.id, p.title, p.price::text as price, p.currency_id,
@@ -629,10 +641,16 @@ export async function getProjectsReport(actor: Actor, filters: ReportFilters = {
     member_paid: string; minutes: number;
   }>).map((raw) => {
     // قیمت به ارزِ پایه — بقیهٔ ارقام از ستونِ منجمد می‌آیند و از قبل پایه‌اند.
-    const r = { ...raw, price: fx.toBase(raw.price, (raw as unknown as { currency_id: number | null }).currency_id).toFixed(2) };
+    // ⚠️ `db.execute` شناسه را **رشته** می‌دهد ('1' !== 1): بی‌`Number()` مقایسه با
+    // ارزِ پایه شکست می‌خورد، نرخِ «۱→۱» پیدا نمی‌شد و قیمتِ پروژهٔ یورویی صفر می‌شد.
+    const rawCurrency = (raw as unknown as { currency_id: number | string | null }).currency_id;
+    const projectCurrency = rawCurrency === null ? null : Number(rawCurrency);
+    const r = { ...raw, price: fx.toBase(raw.price, projectCurrency).toFixed(2) };
     const billed = Number(r.price) + Number(r.billable_expenses);
-    const profit = billed - Number(r.member_paid) - Number(r.billable_expenses)
-      - Number(r.absorbed_costs);
+    const memberCost = commitments
+      .filter((c) => c.projectId === Number(raw.id))
+      .reduce((sum, c) => sum + fx.toBase(c.total, c.currencyId ?? projectCurrency), 0);
+    const profit = Number(r.price) - memberCost;
 
     return {
       // ⚠️ `db.execute` اعداد را رشته می‌دهد — شناسه و دقیقه عددی می‌شوند.
@@ -644,6 +662,7 @@ export async function getProjectsReport(actor: Actor, filters: ReportFilters = {
       clientPaid: r.client_paid,
       clientDue: Math.max(0, billed - Number(r.client_paid)).toFixed(2),
       memberPaid: r.member_paid,
+      memberCost: memberCost.toFixed(2),
       profit: profit.toFixed(2),
       minutes: Number(r.minutes),
     };
@@ -782,26 +801,60 @@ export async function getMemberDetail(actor: Actor, userId: number) {
     order by p.title
   `);
 
-  // پورتِ کارت‌های یورو: هر پروژه در ارزِ خودش، جمع‌ها پس از تبدیل (نبودِ نرخ صفر و شمرده).
-  const fx = await baseConverter();
+  /**
+   * ⚠️ پورتِ `Payments::member_summary` / `total_member_payout`: هر پروژه در
+   * **ارزِ قرارداد** — قاعده در `contractBalance` (R-TEAM-05). پیش از این
+   * پرداختیِ ارزِ دیگر بی‌تبدیل با توافقی جمع/تفریق می‌شد و «مانده» عددِ
+   * بی‌معنایی بود.
+   */
+  const [fx, { source }, memberRows, payoutRows, currencyRows] = await Promise.all([
+    baseConverter(),
+    rateSource(),
+    db.select({
+      projectId: projectMembers.projectId,
+      currencyId: projectMembers.currencyId,
+      agreed: projectMembers.agreedAmount,
+    })
+      .from(projectMembers)
+      .where(eq(projectMembers.userId, userId))
+      .orderBy(asc(projectMembers.id)),
+    db.select({
+      projectId: projectPayments.projectId,
+      amount: projectPayments.amount,
+      currencyId: projectPayments.currencyId,
+      amountSettled: projectPayments.amountSettled,
+      settledCurrencyId: projectPayments.settledCurrencyId,
+    })
+      .from(projectPayments)
+      .where(and(eq(projectPayments.userId, userId), eq(projectPayments.direction, 'member_payout'))),
+    db.select({ id: currencies.id, code: currencies.code }).from(currencies),
+  ]);
+  const codeOf = new Map(currencyRows.map((c) => [c.id, c.code]));
+
+  // پورتِ کارت‌های یورو: هر پروژه در ارزِ قراردادش، جمع‌ها پس از تبدیل (نبودِ نرخ صفر و شمرده).
   let agreedEur = 0;
   let paidEur = 0;
   const projectRows = (rows as unknown as Array<{
     project_id: number | string; title: string; currency_id: number | string | null; currency_code: string | null;
     agreed: string; paid: string; minutes: number | string;
   }>).map((r) => {
-    const agreed = Number(r.agreed);
-    const paid = Number(r.paid);
-    const currencyId = r.currency_id === null ? null : Number(r.currency_id);
-    agreedEur += fx.toBase(r.agreed, currencyId);
-    paidEur += fx.toBase(r.paid, currencyId);
+    const projectId = Number(r.project_id);
+    const { currencyId, agreed, paid } = contractBalance({
+      memberRows: memberRows.filter((m) => m.projectId === projectId),
+      payouts: payoutRows.filter((p) => p.projectId === projectId),
+      projectCurrencyId: r.currency_id === null ? null : Number(r.currency_id),
+      source,
+    });
+
+    agreedEur += fx.toBase(agreed.toFixed(4), currencyId);
+    paidEur += fx.toBase(paid.toFixed(4), currencyId);
     return {
-      projectId: Number(r.project_id),
+      projectId,
       title: r.title,
       currencyId,
-      currencyCode: r.currency_code,
-      agreed: r.agreed,
-      paid: r.paid,
+      currencyCode: currencyId ? (codeOf.get(currencyId) ?? r.currency_code) : r.currency_code,
+      agreed: agreed.toFixed(2),
+      paid: paid.toFixed(2),
       remaining: Math.max(0, agreed - paid).toFixed(2),
       // ⚠️ همان سه‌حالتی نسخهٔ قبلی؛ «تسویه» یعنی پرداختی به توافقی رسیده.
       status: paid <= 0 ? 'unpaid' : (agreed > 0 && paid + 0.001 >= agreed ? 'paid' : 'partial'),

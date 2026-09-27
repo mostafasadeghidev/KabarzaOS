@@ -646,8 +646,9 @@ function GrantDialog({
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{editing ? tr('ویرایشِ دسترسی') : tr('ثبتِ دسترسی')}</DialogTitle>
-          <DialogDescription>
-            {tr("⚠️ رمز، توکن و کلید اینجا ثبت نمی‌شوند. فقط ثبت می‌کنیم چه کسی به چه چیزی دسترسی دارد.")}
+          <DialogDescription className="flex items-start gap-1.5">
+            <ShieldAlert className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-500" aria-hidden />
+            <span>{tr("رمز، توکن و کلید اینجا ثبت نمی‌شوند. فقط ثبت می‌کنیم چه کسی به چه چیزی دسترسی دارد.")}</span>
           </DialogDescription>
         </DialogHeader>
 

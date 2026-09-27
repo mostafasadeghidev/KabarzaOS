@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Archive, ArchiveRestore, Trash2, CircleAlert, TriangleAlert, X } from 'lucide-react';
+import { Archive, ArchiveRestore, CircleAlert, Trash2, TreePalm, TriangleAlert, X } from 'lucide-react';
 import {
   deleteProjectAction, lightenAction, setArchivedAction, type DeleteActionState,
 } from '../_form/tab-actions';
@@ -37,6 +37,8 @@ export interface HourRow {
   userId: number;
   userName: string | null;
   minutes: number;
+  /** تعدادِ ثبت‌های ساعت. */
+  entries: number;
 }
 
 /** یک ثبتِ ساعت — پورتِ «جزئیاتِ ثبت‌ها» (`Timelogs::for_project`). */
@@ -84,7 +86,12 @@ export function TeamMatrix({ rows, dayLabels }: { rows: MatrixRowView[]; dayLabe
               </TableCell>
               {r.cells.map((c, i) => (
                 <TableCell key={i} title={c.tip} className={`num text-xs ${c.isToday ? 'bg-primary/5' : ''}`}>
-                  {c.state === 'leave' ? `🌴 ${t("مرخصی")}${c.span ? ` ${t("تا")} ${c.span}` : ''}` : c.state === 'avail' ? (c.span || t("تمام روز")) : '·'}
+                  {c.state === 'leave' ? (
+                    <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-500">
+                      <TreePalm className="size-3.5 shrink-0" aria-hidden />
+                      {t("مرخصی")}{c.span ? ` ${t("تا")} ${c.span}` : ''}
+                    </span>
+                  ) : c.state === 'avail' ? (c.span || t("تمام روز")) : '·'}
                 </TableCell>
               ))}
             </TableRow>
@@ -545,6 +552,7 @@ export function ManageTab({
               <TableRow>
                 <TableHead>{t("عضو")}</TableHead>
                 <TableHead numeric>{t("ساعت کاری")}</TableHead>
+                <TableHead numeric>{t("تعداد ثبت")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -552,11 +560,15 @@ export function ManageTab({
                 <TableRow key={h.userId}>
                   <TableCell>{h.userName ?? String(h.userId)}</TableCell>
                   <TableNumericCell>{hhmm(h.minutes)}</TableNumericCell>
+                  <TableNumericCell>{h.entries}</TableNumericCell>
                 </TableRow>
               ))}
               <TableRow>
                 <TableCell className="font-semibold">{t("مجموع ساعت کاری")}</TableCell>
                 <TableNumericCell className="font-semibold">{hhmm(totalMinutes)}</TableNumericCell>
+                <TableNumericCell className="font-semibold">
+                  {hours.reduce((sum, h) => sum + h.entries, 0)}
+                </TableNumericCell>
               </TableRow>
             </TableBody>
           </Table>

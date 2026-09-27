@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Clock, Download, ListTodo } from 'lucide-react';
+import { Clock, Download, ListTodo, TreePalm } from 'lucide-react';
 import { hoursLabel } from '@/domain/timelogs/timer';
 import { RANGE_LABELS, type RangeKey } from '@/domain/access/office-scope';
 import { Badge } from '@/components/ui/badge';
@@ -56,7 +56,7 @@ const TABS = [
  * «تیمِ من» — نمای مدیرِ دفتر.
  * ⚠️ عملیاتی است، نه مالی: هیچ مبلغی اینجا نیست.
  */
-/** پورتِ کارت‌های «کارکنان تحت مدیریت»: آواتار، نام + 🌴، نقش‌ها، ⏱ ساعت · 📋 تسکِ باز، جستجوی زنده. */
+/** پورتِ کارت‌های «کارکنان تحت مدیریت»: آواتار، نام + نشانِ مرخصی، نقش‌ها، ساعت · تسکِ باز، جستجوی زنده. */
 function MemberCards({ members, range }: { members: TeamData['members']; range: RangeKey }) {
   const tr = useT();
   const [q, setQ] = useState('');
@@ -83,7 +83,12 @@ function MemberCards({ members, range }: { members: TeamData['members']; range: 
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1.5 font-medium">
                   <span className="truncate">{m.name}</span>
-                  {m.onLeave && <Badge variant="outline" className="text-[10px]">🌴 {tr("مرخصی")}</Badge>}
+                  {m.onLeave && (
+                    <Badge variant="outline" className="text-[10px] text-amber-600 dark:text-amber-500">
+                      <TreePalm aria-hidden />
+                      {tr("مرخصی")}
+                    </Badge>
+                  )}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">
                   {m.roleNames.length > 0 ? m.roleNames.join('، ') : tr("عضو")}

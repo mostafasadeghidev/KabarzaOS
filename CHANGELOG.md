@@ -2,6 +2,34 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.83.0]
+
+### Fixed
+
+- **The Projects report counted projects in the base currency at a price of zero.** The raw query returns the currency id as text, so the comparison with the base currency failed and the price was treated as "no exchange rate". Found by the new tests.
+- **Team cost and estimated profit now match the old app and the overall card.** The Projects report showed "paid to members" and subtracted payouts from profit, so unpaid commitments inflated profit. «Team cost» is the sum of agreed amounts, converted per currency, and «Estimated profit» is the price minus that commitment. The CSV export follows.
+- **A member's money is counted in the contract currency** — the membership's currency, otherwise the project's. Agreed, paid and remaining on the project page, in the member report and on the payout list now convert payouts made in another currency; before, a dollar payout on a euro contract was subtracted as if it were euros. Payment requests are recorded in the contract currency and the summary shows its code.
+- **The "still owed" check that protects members from bulk removal is currency-aware**, using the same rule — a member paid in another currency could be kept or removed wrongly.
+- **The project card converts billable expenses into the project currency** and shows the currency code next to the amount.
+- **A piecework row with no amount can no longer become a zero payment request.**
+
+### Security
+
+- **A member's role must be a role.** Quick-add and the members form accepted any tag id — a status, an office, a ledger category — as the member's role.
+- **Project money stays with those allowed to see it.** Project and office managers could see the price in the edit form, and in the page payload, and change the price, currency and tender caps. Now only the owner and global project or finance managers can; the server keeps the stored values for everyone else.
+
+### Changed
+
+- **The task dialog respects frozen projects.** On an archived, cancelled or stopped project, a project or office manager no longer sees edit, delete, status or claim controls that the server would refuse. The owner and global managers remain exempt, as before.
+- **The file delete button follows the server rule**: project-scoped managers see it only on their own files.
+- **Tasks can be assigned to the owner or an admin from the task form**, which already offered them; the choice used to be dropped silently.
+- **Quick-add from a project card takes the member's currency**, defaulting to the project's, and on piecework projects the unit rate instead of an amount. The members dialog now also defaults new rows to the project currency rather than the system default.
+- **Member hours show the number of entries**, as the old app did.
+- **Tag slugs are unique.** Migration `0031` renames existing duplicates — the catalogue row keeps its slug, nothing is deleted — and adds a unique index. The development seed no longer wipes the tag catalogue and the base currencies; it looks catalogue tags up by slug.
+- **Interface polish.** The Ctrl+K palette is built on shadcn `Command`; progress bars in tables use shadcn `Progress`, mirrored for right-to-left; leave markers and the access-register note use icons instead of emoji; the bidder view drops a nested frame and shows bid amounts without trailing zeros; view spacing follows the 4 / 6 scale.
+
+---
+
 ## [1.82.0]
 
 ### Changed

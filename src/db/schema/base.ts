@@ -76,6 +76,9 @@ export const tags = pgTable('tags', {
   // G9 — enum به‌صورتِ text + check.
   check('tags_type_ck', sql`${t.type} in ('member_role','ledger_category','project_status','task_status','task_priority')`),
   index('tags_type_ix').on(t.type, t.sortOrder),
+  // مهاجرتِ 0031 — یک اسلاگ، یک تگ. خالی مجاز است: تگِ تازه اول درج می‌شود و
+  // بلافاصله `type-id` می‌گیرد.
+  uniqueIndex('tags_slug_uq').on(t.slug).where(sql`${t.slug} <> ''`),
 ]);
 
 /** رابطهٔ چندریختیِ تگ: کاربر↔تگ، دفترکل↔تگ، … (R-DATA-03) */

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  paymentStatus, remaining, summarizeProject, rowValueIn,
+  paymentStatus, remaining, summarizeProject, rowValueIn, contractBalance,
   outstandingTotal, requestableAmount, assertRequestAllowed,
   markPaid, unpaidWorkExcludingRequested, RequestValidationError,
   type RequestRow,
@@ -57,6 +57,44 @@ describe('R-TEAM-01 — ⚠️ مبلغِ تسویه‌شده بر مبلغِ ا
 
   it('تسویه‌شده در ارزِ دیگر تبدیل می‌شود', () => {
     expect(rowValueIn(rates, { amount: '100', currencyId: EUR, amountSettled: '100', settledCurrencyId: USD }, EUR)).toBe('90.0');
+  });
+});
+
+describe('R-TEAM-05 — ترازِ قرارداد در ارزِ قرارداد', () => {
+  it('ارزِ قرارداد: اولین ردیفِ ارزدار، وگرنه ارزِ پروژه', () => {
+    expect(contractBalance({ memberRows: [{ agreed: '100', currencyId: null }], payouts: [], projectCurrencyId: EUR, source: rates }).currencyId).toBe(EUR);
+    expect(contractBalance({ memberRows: [{ agreed: '100', currencyId: USD }], payouts: [], projectCurrencyId: EUR, source: rates }).currencyId).toBe(USD);
+  });
+
+  it('⚠️ پرداختیِ ارزِ دیگر تبدیل می‌شود، نه اینکه با عددِ خودش کم شود', () => {
+    const b = contractBalance({
+      memberRows: [{ agreed: '1000', currencyId: EUR }],
+      payouts: [{ amount: '100', currencyId: USD }],
+      projectCurrencyId: EUR,
+      source: rates,
+    });
+    expect(b.paid).toBeCloseTo(90);
+    expect(b.remaining).toBeCloseTo(910);
+  });
+
+  it('چند نقش جمع می‌شوند، هر کدام به ارزِ قرارداد', () => {
+    const b = contractBalance({
+      memberRows: [{ agreed: '500', currencyId: EUR }, { agreed: '100', currencyId: USD }],
+      payouts: [],
+      projectCurrencyId: EUR,
+      source: rates,
+    });
+    expect(b.agreed).toBeCloseTo(590);
+  });
+
+  it('نبودِ نرخ عددِ اسمی را نگه می‌دارد، نه صفر', () => {
+    const b = contractBalance({
+      memberRows: [{ agreed: '1000', currencyId: EUR }],
+      payouts: [{ amount: '100', currencyId: 99 }],
+      projectCurrencyId: EUR,
+      source: rates,
+    });
+    expect(b.paid).toBe(100);
   });
 });
 

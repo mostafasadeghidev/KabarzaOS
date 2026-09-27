@@ -27,6 +27,8 @@ export interface CardOptions {
    * را می‌داد و می‌شد کسی را با نقشی روی پروژه نشاند که ندارد.
    */
   roleMap: Record<number, number[]>;
+  /** ارزهای فعال — ستونِ «ارز» ِ عضوِ تازه. */
+  currencies: Array<{ id: number; code: string }>;
 }
 
 
@@ -39,7 +41,22 @@ function Submit({ label }: { label: string }) {
   );
 }
 
-export function CardQuickAdd({ projectId, options }: { projectId: number; options: CardOptions }) {
+export function CardQuickAdd({
+  projectId,
+  currencyId,
+  isUnitBased,
+  options,
+}: {
+  projectId: number;
+  /** ارزِ پروژه — پیش‌فرضِ ارزِ عضوِ تازه (همان قاعدهٔ سرویس). */
+  currencyId: number | null;
+  /**
+   * پروژهٔ تعدادی: عضو «نرخِ هر واحد» می‌گیرد، نه مبلغِ توافقی — همان
+   * جابه‌جاییِ ستون‌های فرمِ اعضای نسخهٔ قبلی.
+   */
+  isUnitBased: boolean;
+  options: CardOptions;
+}) {
   const tr = useT();
   const t = useT();
   const [openForm, setOpenForm] = useState<'member' | 'client' | null>(null);
@@ -98,7 +115,34 @@ export function CardQuickAdd({ projectId, options }: { projectId: number; option
                   <NativeSelectOption key={r.id} value={r.id}>{r.name}</NativeSelectOption>
                 ))}
             </NativeSelect>
-            <Input name="amount" inputMode="decimal" placeholder={t("مبلغ")} className="num h-7 w-20 text-xs" />
+            {isUnitBased ? (
+              <Input
+                name="unitRate"
+                inputMode="decimal"
+                placeholder={t("نرخِ هر واحد")}
+                aria-label={t("نرخِ هر واحد")}
+                className="num h-7 w-24 text-xs"
+              />
+            ) : (
+              <Input
+                name="amount"
+                inputMode="decimal"
+                placeholder={t("مبلغ")}
+                aria-label={t("مبلغ")}
+                className="num h-7 w-20 text-xs"
+              />
+            )}
+            <NativeSelect
+              name="currencyId"
+              aria-label={t("ارز")}
+              size="sm"
+              className="h-7 text-xs"
+              defaultValue={currencyId ?? ''}
+            >
+              {options.currencies.map((c) => (
+                <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>
+              ))}
+            </NativeSelect>
             <Submit label={t("افزودن")} />
             <Button
               type="button"

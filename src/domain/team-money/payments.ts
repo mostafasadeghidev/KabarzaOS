@@ -89,6 +89,54 @@ export function rowValueIn(source: RateSource, row: PaymentRow, targetCurrencyId
   return convert(source, row.amount, row.currencyId, targetCurrencyId);
 }
 
+/**
+ * ترازِ قراردادِ یک عضو روی یک پروژه — پورتِ `Payments::member_summary`.
+ *
+ * ⚠️ همه در **ارزِ قرارداد** (R-TEAM-05): ارزِ اولین ردیفِ عضویتی که ارز
+ * دارد، وگرنه ارزِ پروژه — همان ارزی که درخواستِ پرداخت هم با آن ثبت می‌شود.
+ * توافقیِ هر ردیف (هر نقش) به همان ارز تبدیل و جمع می‌شود؛ پرداختی‌ها از
+ * `rowValueIn` (تسویه‌شده بر اسمی مقدم). پیش از این مبلغ‌های چند ارز خام
+ * جمع/تفریق می‌شدند: پرداختیِ دلاری با عددِ خودش از قراردادِ یورویی کم
+ * می‌شد.
+ *
+ * ⚠️ نبودِ نرخ عددِ **اسمی** را نگه می‌دارد، نه صفر: صفر یعنی تعهد یا
+ * پرداختی پنهان شود — عضوی بدهکار «تسویه‌شده» دیده شود یا برعکس.
+ */
+export function contractBalance(input: {
+  /** ردیف‌های عضویت به ترتیبِ ثبت — اولین ارزدار ارزِ قرارداد است. */
+  memberRows: ReadonlyArray<{ agreed: string; currencyId: number | null }>;
+  payouts: ReadonlyArray<{
+    amount: string;
+    currencyId: number | null;
+    amountSettled?: string | null;
+    settledCurrencyId?: number | null;
+  }>;
+  projectCurrencyId: number | null;
+  source: RateSource;
+}): { currencyId: number | null; agreed: number; paid: number; remaining: number } {
+  const { memberRows, payouts, projectCurrencyId, source } = input;
+  const currencyId = memberRows.find((m) => m.currencyId)?.currencyId ?? projectCurrencyId;
+
+  const agreed = memberRows.reduce((sum, m) => {
+    const from = m.currencyId ?? projectCurrencyId;
+    if (!currencyId || !from || from === currencyId) return sum + num(m.agreed);
+    return sum + num(convert(source, m.agreed, from, currencyId) ?? m.agreed);
+  }, 0);
+
+  const paid = payouts.reduce((sum, p) => {
+    if (!currencyId || !p.currencyId) return sum + num(p.amount);
+    const value = rowValueIn(source, {
+      amount: p.amount,
+      currencyId: p.currencyId,
+      amountSettled: p.amountSettled,
+      settledCurrencyId: p.settledCurrencyId,
+    }, currencyId);
+    return sum + num(value ?? p.amount);
+  }, 0);
+
+  return { currencyId, agreed, paid, remaining: Math.max(0, agreed - paid) };
+}
+
 /* ------------------------------------------------------------------ *
  * گاردهای درخواستِ پرداخت
  * ------------------------------------------------------------------ */

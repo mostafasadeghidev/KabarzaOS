@@ -33,6 +33,8 @@ export interface MemberRow {
 export interface MembersFormData {
   projectId: number;
   isUnitBased: boolean;
+  /** ارزِ پروژه — پیش‌فرضِ ردیفِ تازه. */
+  projectCurrencyId: number | null;
   members: MemberRow[];
   team: Array<{ id: number; name: string }>;
   roles: Array<{ id: number; name: string }>;
@@ -101,7 +103,13 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
     }
   }, [state, show, tr]);
 
-  const defaultCurrency = data.currencies.find((c) => c.isDefault)?.id ?? data.currencies[0]?.id ?? null;
+  /**
+   * ⚠️ ردیفِ تازه به **ارزِ پروژه**، نه ارزِ پیش‌فرضِ سامانه — همان قاعدهٔ
+   * افزودنِ سریع از کارت (`addProjectMember`). پیش از این عضوی که روی پروژهٔ
+   * ریالی اضافه می‌شد بی‌صدا قراردادِ یورویی می‌گرفت.
+   */
+  const defaultCurrency = data.projectCurrencyId
+    ?? data.currencies.find((c) => c.isDefault)?.id ?? data.currencies[0]?.id ?? null;
   const blank = (): MemberRow => ({
     userId: null,
     roleTagId: null,

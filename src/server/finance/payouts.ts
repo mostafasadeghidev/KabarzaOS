@@ -1,5 +1,5 @@
 import { notify } from '@/server/notifications/service';
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   accounts, auditLog, currencies, ledger, paymentRequests, projects,
@@ -7,7 +7,7 @@ import {
 } from '@/db/schema';
 import { canManageSection, type Actor, isOwner, canViewSection } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, assertOwner } from '@/domain/access/guard';
-import { markPaid, rowValueIn, unpaidWorkExcludingRequested } from '@/domain/team-money/payments';
+import { contractBalance, markPaid, unpaidWorkExcludingRequested } from '@/domain/team-money/payments';
 import { assertWritable } from '@/domain/ledger/fiscal';
 import {
   computeNext, normalizeUnit, planPay, RecurringPayError,
@@ -127,7 +127,9 @@ async function withRemaining<T extends { projectId: number; userId: number }>(ro
       projectId: projectMembers.projectId, userId: projectMembers.userId,
       agreed: projectMembers.agreedAmount, currencyId: projectMembers.currencyId,
     }).from(projectMembers)
-      .where(and(inArray(projectMembers.projectId, projectIds), inArray(projectMembers.userId, userIds))),
+      .where(and(inArray(projectMembers.projectId, projectIds), inArray(projectMembers.userId, userIds)))
+      // ترتیبِ ثبت — اولین ردیفِ ارزدار ارزِ قرارداد است (R-TEAM-05).
+      .orderBy(asc(projectMembers.id)),
     db.select({
       projectId: projectPayments.projectId, userId: projectPayments.userId,
       amount: projectPayments.amount, currencyId: projectPayments.currencyId,
@@ -146,20 +148,19 @@ async function withRemaining<T extends { projectId: number; userId: number }>(ro
   const projectCurrency = new Map(projectRows.map((p) => [p.id, p.currencyId]));
 
   return rows.map((r): Out => {
-    const mine = members.filter((m) => m.projectId === r.projectId && m.userId === r.userId);
-    const currencyId = mine.find((m) => m.currencyId)?.currencyId ?? projectCurrency.get(r.projectId) ?? null;
-    if (!currencyId) return { ...r, remaining: null, remainingCurrencyCode: null };
-    const agreed = mine.reduce((sum, m) => sum + Number(m.agreed), 0);
-    let paid = 0;
-    for (const p of payments) {
-      if (p.projectId !== r.projectId || p.userId !== r.userId || !p.currencyId) continue;
-      const value = rowValueIn(source, {
-        amount: p.amount, currencyId: p.currencyId,
-        amountSettled: p.amountSettled, settledCurrencyId: p.settledCurrencyId,
-      }, currencyId);
-      paid += Number(value ?? 0);
-    }
-    return { ...r, remaining: Math.max(0, agreed - paid).toFixed(4), remainingCurrencyCode: code.get(currencyId) ?? null };
+    // همان ترازِ قراردادِ صفحهٔ عضو (`contractBalance`) — دو عدد برای یک طلب نداریم.
+    const balance = contractBalance({
+      memberRows: members.filter((m) => m.projectId === r.projectId && m.userId === r.userId),
+      payouts: payments.filter((p) => p.projectId === r.projectId && p.userId === r.userId),
+      projectCurrencyId: projectCurrency.get(r.projectId) ?? null,
+      source,
+    });
+    if (!balance.currencyId) return { ...r, remaining: null, remainingCurrencyCode: null };
+    return {
+      ...r,
+      remaining: balance.remaining.toFixed(4),
+      remainingCurrencyCode: code.get(balance.currencyId) ?? null,
+    };
   });
 }
 

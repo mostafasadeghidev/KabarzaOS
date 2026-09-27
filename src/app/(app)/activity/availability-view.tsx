@@ -111,7 +111,7 @@ export function AvailabilityView({ data }: { data: AvailabilityData }) {
   useActionToast(state);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-4">
       <section className="grid gap-2">
         <h3 className="text-sm font-semibold">{t("برنامهٔ هفتگیِ من")}</h3>
         <p className="text-xs text-muted-foreground">

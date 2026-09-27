@@ -24,6 +24,7 @@ import { userIdsWithCaps } from '@/server/people/tag-caps';
 import { FINANCE_SCOPED_CAP, MANAGE_FINANCE_CAP } from '@/domain/access/project-scope';
 import { relocateParty } from '@/domain/ledger/form-rules';
 import { eurCell } from '@/domain/ledger/eur-cell';
+import { rateSource } from './rates';
 
 /**
  * سرویسِ حسابداری.
@@ -64,29 +65,10 @@ export async function currentLockDate(): Promise<string | null> {
 /**
  * نرخ‌های ارز — یک بار خوانده و به‌صورتِ `RateSource` به دامنه داده می‌شود.
  * ⚠️ جدیدترین نرخِ هر جفت برنده است؛ دامنه به دیتابیس وابسته نیست.
+ * پیاده‌سازی در `./rates` است — تا مخزنِ پروژه‌ها بی‌حلقه واردش کند؛ اینجا
+ * فقط دوباره صادر می‌شود و واردکننده‌های قبلی دست نمی‌خورند.
  */
-export async function rateSource(): Promise<{ source: RateSource; baseCurrencyId: number }> {
-  const [rows, base] = await Promise.all([
-    db.select({
-      fromCurrencyId: exchangeRates.fromCurrencyId,
-      toCurrencyId: exchangeRates.toCurrencyId,
-      rate: exchangeRates.rate,
-      effectiveDate: exchangeRates.effectiveDate,
-    }).from(exchangeRates).orderBy(desc(exchangeRates.effectiveDate), desc(exchangeRates.id)),
-    db.select({ id: currencies.id }).from(currencies).where(eq(currencies.isDefault, true)),
-  ]);
-
-  const byPair = new Map<string, (typeof rows)[number]>();
-  for (const r of rows) {
-    const key = `${r.fromCurrencyId}:${r.toCurrencyId}`;
-    if (!byPair.has(key)) byPair.set(key, r);
-  }
-
-  return {
-    source: { find: (from, to) => byPair.get(`${from}:${to}`) ?? null },
-    baseCurrencyId: base[0]?.id ?? 1,
-  };
-}
+export { rateSource };
 
 /**
  * حساب‌های قابلِ دیدن.

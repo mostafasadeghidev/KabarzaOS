@@ -4,7 +4,7 @@ import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Gavel } from 'lucide-react';
 import { submitBidAction, type BidState } from '../_form/tab-actions';
-import { format } from '@/domain/money/money';
+import { format, inputValue } from '@/domain/money/money';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
@@ -61,7 +61,8 @@ function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['open
             className="num w-40"
             // راهنمای کاربر است؛ گاردِ واقعی روی سرور.
             max={cap > 0 ? role.cap! : undefined}
-            defaultValue={role.myAmount}
+            // R-MONEY-04 — بی‌صفرهای انتهایی: «7200» نه «7200.0000».
+            defaultValue={inputValue(role.myAmount)}
             required
           />
         </div>

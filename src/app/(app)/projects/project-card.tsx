@@ -169,10 +169,11 @@ export function ProjectCard({
               R-TEAM-04 — «مبلغ» جمعِ قیمت و هزینه‌های قابلِ‌صورتحساب است،
               نه قیمتِ تنها؛ کارفرما همین جمع را بدهکار است.
             */}
+            {/* کدِ ارز کنارِ عدد — «۱۲٬۵۰۰» بی‌ارز معلوم نمی‌کرد یورو است یا ریال. */}
             <MaskedPrice
-              value={format(
+              value={`${format(
                 String(summarizeProject(project.price, project.billableExpenses, '0').totalDue),
-              )}
+              )} ${project.currencyCode ?? ''}`.trim()}
             />
           </div>
         )}
@@ -276,7 +277,12 @@ export function ProjectCard({
       <div>
         {cardOptions && (
           <div className="pt-3">
-            <CardQuickAdd projectId={project.id} options={cardOptions} />
+            <CardQuickAdd
+              projectId={project.id}
+              currencyId={project.currencyId}
+              isUnitBased={project.isUnitBased}
+              options={cardOptions}
+            />
           </div>
         )}
       </div>

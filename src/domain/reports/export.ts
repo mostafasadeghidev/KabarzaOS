@@ -68,7 +68,10 @@ export interface ReportExportData {
   hours: Array<{ name: string; project: number; general: number; total: number }>;
   projectRows: Array<{
     title: string; statusName: string | null; price: string;
-    clientPaid: string; clientDue: string; memberPaid: string; profit: string; minutes: number;
+    clientPaid: string; clientDue: string;
+    /** «هزینهٔ تیم» = تعهد به اعضا (پورتِ `member_cost`)، نه پرداختی. */
+    memberCost: string;
+    profit: string; minutes: number;
   }>;
   units: Array<{ name: string; paid: string; unpaid: string; total: string }>;
   attendance: {
@@ -128,7 +131,7 @@ export function buildReportCsv(tab: ExportableTab, data: ReportExportData, t: Tr
         ],
         data.projectRows.map((r) => [
           r.title, r.statusName ?? '', r.price, r.clientPaid, r.clientDue,
-          r.memberPaid, r.profit, hoursLabel(r.minutes),
+          r.memberCost, r.profit, hoursLabel(r.minutes),
         ]),
       );
 

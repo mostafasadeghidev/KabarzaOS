@@ -7,7 +7,9 @@ import {
 } from 'lucide-react';
 import { searchAction } from '@/app/(app)/_actions/search';
 import type { SearchHit } from '@/server/search/service';
-import { Input } from '@/components/ui/input';
+import {
+  Command, CommandGroup, CommandInput, CommandItem, CommandList,
+} from '@/components/ui/command';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -47,6 +49,12 @@ interface Item {
  *
  * ⚠️ فهرستِ صفحه‌ها از چیدمان می‌آید که **روی سرور** با مجوز فیلتر شده
  * (R-RBAC-05) — پالت میان‌بُری به صفحه‌ای که کاربر حق ندارد نمی‌دهد.
+ *
+ * ظاهر و ناوبریِ صفحه‌کلید از `Command` ِ shadcn (cmdk) می‌آید — همان جزئی
+ * که فیلدهای جستجوپذیرِ فرم‌ها دارند. فیلترِ خودِ cmdk خاموش است
+ * (`shouldFilter={false}`): صفحه‌ها اینجا فیلتر می‌شوند و رکوردها از سرور
+ * می‌آیند؛ فیلترِ دوباره نتیجهٔ سرور را که با املای دیگری جور شده بود
+ * پنهان می‌کرد.
  */
 export function CommandPalette({ pages }: { pages: Array<{ href: string; label: string }> }) {
   const tr = useT();
@@ -56,7 +64,6 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selected, setSelected] = useState(0);
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seq = useRef(0);
@@ -96,7 +103,7 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [query]);
 
-  const items: Item[] = useMemo(() => {
+  const [pageItems, hitItems]: [Item[], Item[]] = useMemo(() => {
     const q = query.trim().toLowerCase();
     /**
      * ⚠️ برچسبِ صفحه‌ها **کلید** است، نه متنِ نهایی: چیدمان آنها را در سطحِ
@@ -104,11 +111,11 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
      * همین‌جا ترجمه‌شان می‌کند؛ اینجا هم باید — وگرنه پالت فارسی می‌ماند.
      * جستجو نیز روی متنِ ترجمه‌شده انجام می‌شود تا با آنچه کاربر می‌بیند بخواند.
      */
-    const pageItems: Item[] = pages
+    const pageMatches: Item[] = pages
       .map((p) => ({ key: `page-${p.href}`, label: tr(p.label), href: p.href, icon: ArrowUpRight }))
       .filter((p) => !q || p.label.toLowerCase().includes(q));
 
-    const hitItems: Item[] = hits.map((h) => ({
+    const recordMatches: Item[] = hits.map((h) => ({
       key: `${h.kind}-${h.id}`,
       label: h.label,
       href: h.href,
@@ -116,10 +123,9 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
       icon: KIND_ICON[h.kind],
     }));
 
-    return [...pageItems, ...hitItems];
+    return [pageMatches, recordMatches];
   }, [pages, hits, query]);
-
-  useEffect(() => { setSelected(0); }, [query, hits]);
+  const nothing = pageItems.length === 0 && hitItems.length === 0;
 
   const go = useCallback((href: string) => {
     setOpen(false);
@@ -127,78 +133,57 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
     router.push(href);
   }, [router]);
 
-  const onInputKey = (e: React.KeyboardEvent) => {
-    if (items.length === 0) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelected((s) => (s + 1) % items.length); // چرخشی، مثلِ نسخهٔ قبلی
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelected((s) => (s - 1 + items.length) % items.length);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const item = items[selected];
-      if (item) go(item.href);
-    }
-  };
+  const row = (item: Item) => (
+    <CommandItem key={item.key} value={item.key} onSelect={() => go(item.href)}>
+      {item.icon && <item.icon aria-hidden />}
+      <span className="flex-1 truncate">{item.label}</span>
+      {/* ⚠️ نه `CommandShortcut`: فاصله‌گذاریِ حروفش اتصالِ حروفِ فارسی را می‌شکند. */}
+      {item.sub && <span className="text-xs text-muted-foreground">{item.sub}</span>}
+    </CommandItem>
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-h-[70vh] overflow-hidden p-0 sm:max-w-lg">
-        <DialogHeader className="px-4 pt-4">
-          <DialogTitle className="sr-only">{t("جستجوی سراسری")}</DialogTitle>
-          <DialogDescription className="sr-only">
+      <DialogContent className="overflow-hidden p-0 sm:max-w-lg" showCloseButton={false}>
+        <DialogHeader className="sr-only">
+          <DialogTitle>{t("جستجوی سراسری")}</DialogTitle>
+          <DialogDescription>
             {tr("نامِ صفحه، پروژه، عضو، کارفرما یا حساب را بنویسید.")}
           </DialogDescription>
-          <div className="flex items-center gap-2 rounded-md border px-3">
-            <Search className="size-4 shrink-0 text-muted-foreground" />
-            <Input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={onInputKey}
-              placeholder={t("رفتن به صفحه، یا جستجوی پروژه، عضو، کارفرما و حساب…")}
-              className="border-0 shadow-none focus-visible:ring-0"
-            />
-          </div>
         </DialogHeader>
 
-        <div className="max-h-80 overflow-y-auto px-2 pb-3">
-          <ul>
-            {items.map((item, i) => (
-              <li key={item.key}>
-                <button
-                  type="button"
-                  onMouseEnter={() => setSelected(i)}
-                  onClick={() => go(item.href)}
-                  className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm ${
-                    i === selected ? 'bg-muted' : ''
-                  }`}
-                >
-                  {item.icon && <item.icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />}
-                  <span className="flex-1 truncate">{item.label}</span>
-                  {item.sub && <span className="text-xs text-muted-foreground">{item.sub}</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
+        {/* `loop` — پیمایشِ چرخشی با پیکان‌ها، مثلِ نسخهٔ قبلی. */}
+        <Command shouldFilter={false} loop>
+          <CommandInput
+            value={query}
+            onValueChange={setQuery}
+            placeholder={t("رفتن به صفحه، یا جستجوی پروژه، عضو، کارفرما و حساب…")}
+          />
+          <CommandList className="max-h-80">
+            {pageItems.length > 0 && (
+              <CommandGroup heading={t("صفحه‌ها")}>{pageItems.map(row)}</CommandGroup>
+            )}
+            {hitItems.length > 0 && (
+              <CommandGroup heading={t("نتایج")}>{hitItems.map(row)}</CommandGroup>
+            )}
 
-          {searching && (
-            <p className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
-              <Spinner />
-              {t("در حال جستجو…")}
-            </p>
-          )}
+            {searching && (
+              <p className="flex items-center gap-2 px-4 py-3 text-xs text-muted-foreground">
+                <Spinner />
+                {t("در حال جستجو…")}
+              </p>
+            )}
 
-          {/* «پیدا نشد» فقط وقتی جستجو تمام شده باشد. */}
-          {!searching && items.length === 0 && (
-            <p className="p-3 text-xs text-muted-foreground">
-              {query.trim().length < MIN_QUERY
-                ? t('برای جستجوی رکوردها دستِ‌کم سه حرف بنویسید.')
-                : t('چیزی پیدا نشد.')}
-            </p>
-          )}
-        </div>
+            {/* «پیدا نشد» فقط وقتی جستجو تمام شده باشد. */}
+            {!searching && nothing && (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                {query.trim().length < MIN_QUERY
+                  ? t("برای جستجوی رکوردها دستِ‌کم سه حرف بنویسید.")
+                  : t("چیزی پیدا نشد.")}
+              </p>
+            )}
+          </CommandList>
+        </Command>
       </DialogContent>
     </Dialog>
   );

@@ -31,7 +31,7 @@ const data: ReportExportData = {
   hours: [{ name: 'سارا', project: 120, general: 30, total: 150 }],
   projectRows: [{
     title: 'وب‌سایت', statusName: 'در حالِ انجام', price: '5000.00',
-    clientPaid: '1200.00', clientDue: '3800.00', memberPaid: '400.00',
+    clientPaid: '1200.00', clientDue: '3800.00', memberCost: '400.00',
     profit: '4600.00', minutes: 150,
   }],
   units: [{ name: 'سارا', paid: '100.00', unpaid: '50.00', total: '150.00' }],

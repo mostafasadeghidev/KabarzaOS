@@ -2,7 +2,7 @@ import { rateSource } from '@/server/finance/service';
 import { isFrozenProject } from '@/domain/projects/lifecycle';
 import { notify } from '@/server/notifications/service';
 import { managerIds } from '@/server/notifications/audience';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   auditLog, currencies, paymentRequests, projectMembers, projectPayments, projects, tags, unitEntries, users, ledger,
@@ -13,7 +13,7 @@ import {
   availableToRequest, canCancelRequest, canDeleteUnit, isValidQuantity,
   OPEN_STATUSES, unitAmount, validateRequest, type RequestRejection,
 } from '@/domain/finance/member-money';
-import { paymentStatus } from '@/domain/team-money/payments';
+import { contractBalance, paymentStatus } from '@/domain/team-money/payments';
 import { myPayoutsOn } from '@/server/projects/repository';
 
 /**
@@ -226,26 +226,48 @@ export async function contractRemaining(userId: number, projectId: number): Prom
   return (await contractSummary(userId, projectId)).remaining;
 }
 
-/** توافقی / پرداخت‌شده / مانده — پورتِ `Payments::member_summary`. */
-export async function contractSummary(userId: number, projectId: number): Promise<{ agreed: string; paid: string; remaining: string }> {
-  const [agreedRows, paidRows] = await Promise.all([
-    db.select({ total: sql<string>`coalesce(sum(${projectMembers.agreedAmount}), 0)::text` })
+/**
+ * توافقی / پرداخت‌شده / مانده — پورتِ `Payments::member_summary`، در **ارزِ
+ * قرارداد**؛ قاعده در `contractBalance` (R-TEAM-05).
+ */
+export async function contractSummary(userId: number, projectId: number): Promise<{
+  agreed: string; paid: string; remaining: string; currencyId: number | null;
+}> {
+  const [memberRows, payoutRows, projectRows, fx] = await Promise.all([
+    db.select({ agreed: projectMembers.agreedAmount, currencyId: projectMembers.currencyId })
       .from(projectMembers)
-      .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId))),
+      .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)))
+      .orderBy(asc(projectMembers.id)),
 
-    db.select({ total: sql<string>`coalesce(sum(${projectPayments.amount}), 0)::text` })
+    db.select({
+      amount: projectPayments.amount,
+      currencyId: projectPayments.currencyId,
+      amountSettled: projectPayments.amountSettled,
+      settledCurrencyId: projectPayments.settledCurrencyId,
+    })
       .from(projectPayments)
       .where(and(
         eq(projectPayments.projectId, projectId),
         eq(projectPayments.userId, userId),
         eq(projectPayments.direction, 'member_payout'),
       )),
+
+    db.select({ currencyId: projects.currencyId }).from(projects).where(eq(projects.id, projectId)),
+    rateSource(),
   ]);
 
-  const agreed = Number(agreedRows[0]?.total ?? 0);
-  const paid = Number(paidRows[0]?.total ?? 0);
-  const value = agreed - paid;
-  return { agreed: agreed.toFixed(4), paid: paid.toFixed(4), remaining: (value > 0 ? value : 0).toFixed(4) };
+  const balance = contractBalance({
+    memberRows,
+    payouts: payoutRows,
+    projectCurrencyId: projectRows[0]?.currencyId ?? null,
+    source: fx.source,
+  });
+  return {
+    agreed: balance.agreed.toFixed(4),
+    paid: balance.paid.toFixed(4),
+    remaining: balance.remaining.toFixed(4),
+    currencyId: balance.currencyId,
+  };
 }
 
 /** درخواست‌های خودِ کاربر روی یک پروژه + مبلغِ قابلِ درخواست. */
@@ -253,6 +275,9 @@ export async function myRequests(actor: Actor, projectId: number) {
   // ⚠️ رسیدِ ردیفِ paid از دفترِ آینه می‌آید (fin_receipt_link ِ نسخهٔ قبلی).
   const summary = await contractSummary(actor.id, projectId);
   const remaining = summary.remaining;
+  const [contractCurrency] = summary.currencyId
+    ? await db.select({ code: currencies.code }).from(currencies).where(eq(currencies.id, summary.currencyId))
+    : [];
   const rows = await db
     .select({
       id: paymentRequests.id,
@@ -280,6 +305,8 @@ export async function myRequests(actor: Actor, projectId: number) {
     remaining,
     agreed: summary.agreed,
     paid: summary.paid,
+    /** ارزِ قرارداد — ارقامِ بالا در این ارزند. */
+    currencyCode: contractCurrency?.code ?? null,
     status: paymentStatus(summary.paid, summary.agreed),
     payouts: payouts.map((p) => ({ ...p, paidAt: p.paidAt ?? null })),
     available: availableToRequest(remaining, outstanding),
@@ -299,11 +326,11 @@ export async function createRequest(
   const { project } = await projectContext(actor, input.projectId);
 
   // ⚠️ هر دو عدد سمتِ سرور خوانده می‌شوند؛ فرم فقط مبلغِ درخواستی را می‌دهد.
-  const [remaining, outstanding] = await Promise.all([
-    contractRemaining(actor.id, input.projectId),
+  const [summary, outstanding] = await Promise.all([
+    contractSummary(actor.id, input.projectId),
     outstandingTotal(actor.id, input.projectId),
   ]);
-  const available = availableToRequest(remaining, outstanding);
+  const available = availableToRequest(summary.remaining, outstanding);
 
   let hasOpenForUnit = false;
   if (input.unitEntryId) {
@@ -322,7 +349,8 @@ export async function createRequest(
     projectId: input.projectId,
     userId: actor.id,
     amount: input.amount,
-    currencyId: project.currencyId ?? (await rateSource()).baseCurrencyId,
+    // ⚠️ ارزِ قرارداد، نه ارزِ پروژه — مانده و سقف هم در همین ارزند.
+    currencyId: summary.currencyId ?? project.currencyId ?? (await rateSource()).baseCurrencyId,
     note: input.note.trim().slice(0, 500),
     unitEntryId: input.unitEntryId ?? null,
   }).returning({ id: paymentRequests.id });
@@ -373,6 +401,12 @@ export async function requestForUnit(actor: Actor, entryId: number) {
 
   const { isFrozen, project } = await projectContext(actor, row.projectId);
   if (isFrozen) throw new MemberMoneyError('frozen');
+
+  /**
+   * ⚠️ کارکردِ بی‌مبلغ (عضوی که نرخِ واحد ندارد) درخواستِ صفر می‌ساخت که
+   * فقط صفِ حسابدار را پر می‌کرد. همان گاردِ مسیرِ عمومی (`validateRequest`).
+   */
+  if (!(Number(row.amount) > 0)) throw new MemberMoneyError('amount_invalid');
 
   const open = await db.select({ id: paymentRequests.id }).from(paymentRequests)
     .where(and(

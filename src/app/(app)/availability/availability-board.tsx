@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { CalendarDays, LayoutGrid, Table2, Timer, Users } from 'lucide-react';
+import { CalendarDays, LayoutGrid, Table2, Timer, TreePalm, Users } from 'lucide-react';
 import { formatSlots, WEEKDAYS, type Slot } from '@/domain/availability/weekly';
 import type { CellState } from '@/domain/availability/team';
 import type { PresenceState } from '@/domain/people/presence';
@@ -221,8 +221,9 @@ export function AvailabilityBoard(props: BoardProps) {
                           }`}
                         >
                           {cell.state === 'leave' ? (
-                            <span className="text-amber-600 dark:text-amber-500">
-                              🌴 {tr("مرخصی")}
+                            <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-500">
+                              <TreePalm className="size-3.5 shrink-0" aria-hidden />
+                              {tr("مرخصی")}
                               {cell.span && <span className="num"> {tr("تا")} {cell.span}</span>}
                             </span>
                           ) : cell.state === 'avail' ? (
@@ -250,7 +251,7 @@ export function AvailabilityBoard(props: BoardProps) {
             <ul className="grid gap-1 text-sm">
               {props.away.map((a) => (
                 <li key={a.id} className="flex items-center gap-1.5">
-                  <span>🌴</span>
+                  <TreePalm className="size-3.5 shrink-0 text-amber-600 dark:text-amber-500" aria-hidden />
                   <span>{a.name}</span>
                   {a.until && (
                     <span className="num text-xs text-muted-foreground">{tr("تا")} {a.until}</span>

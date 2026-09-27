@@ -35,10 +35,14 @@ export async function addMemberAction(_prev: CardActionState, formData: FormData
   const userId = Number(formData.get('userId'));
   const roleRaw = Number(formData.get('roleTagId'));
   const amount = String(formData.get('amount') ?? '').trim();
+  // پورتِ ستون‌های «نرخِ هر واحد» و «ارز» ِ `add_member` — بی‌ارز یعنی ارزِ پروژه (سرویس).
+  const unitRate = String(formData.get('unitRate') ?? '').trim();
+  const currencyRaw = Number(formData.get('currencyId'));
 
   if (!Number.isInteger(projectId) || projectId <= 0) return { error: 'پروژه معتبر نیست.' };
   if (!Number.isInteger(userId) || userId <= 0) return { error: 'عضوی انتخاب نشده.' };
   if (amount !== '' && !/^\d+(\.\d{1,4})?$/.test(amount)) return { error: 'مبلغ معتبر نیست.' };
+  if (unitRate !== '' && !/^\d+(\.\d{1,4})?$/.test(unitRate)) return { error: 'مبلغ معتبر نیست.' };
 
   try {
     const actor = await requireActor();
@@ -46,6 +50,8 @@ export async function addMemberAction(_prev: CardActionState, formData: FormData
       userId,
       roleTagId: Number.isInteger(roleRaw) && roleRaw > 0 ? roleRaw : null,
       agreedAmount: amount === '' ? '0' : amount,
+      unitRate: unitRate === '' ? null : unitRate,
+      currencyId: Number.isInteger(currencyRaw) && currencyRaw > 0 ? currencyRaw : null,
     });
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ افزودنِ عضو ندارید.' };

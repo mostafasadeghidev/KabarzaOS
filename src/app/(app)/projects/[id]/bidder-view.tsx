@@ -33,9 +33,8 @@ export function BidderView({ data }: { data: BidderData }) {
         </section>
       )}
 
-      <section className="rounded-md border p-3">
-        <MyBidTab data={data.bid} />
-      </section>
+      {/* ⚠️ بی‌قابِ بیرونی: خودِ فرمِ پیشنهاد قاب دارد و دو مرزِ تودرتو شلوغ بود. */}
+      <MyBidTab data={data.bid} />
 
       {data.tasks.length > 0 && (
         <section className="grid gap-2">

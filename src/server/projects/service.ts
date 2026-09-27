@@ -31,6 +31,7 @@ import { notify } from '@/server/notifications/service';
 import {
   assertCanInteractWithProject, assertCanManageProject, assertCanViewProject, assertNotFrozen,
   canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation, canInteractWithProject, managedOfficeProjectIds, pmProjectIds,
+  isProjectFrozen,
 } from './authority';
 import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
 import { visiblePayments } from '@/domain/access/project-payments';
@@ -267,9 +268,25 @@ function signedNotice(
   };
 }
 
+/**
+ * نقشِ عضو باید واقعاً **نقش** باشد — تگی از نوعِ `member_role`.
+ *
+ * ⚠️ پیش از این هر شناسهٔ تگی (دفتر، دستهٔ دفترکل، وضعیتِ پروژه…) به‌عنوانِ
+ * نقشِ عضو پذیرفته می‌شد: فرم فقط نقش‌ها را نشان می‌داد، ولی درخواستِ دستی
+ * هر چیزی را می‌نوشت و بعد نامِ یک وضعیت به‌جای نقش روی کارتِ عضو می‌نشست.
+ * همان گاردی که `setProjectStatus` و `assertTaskTags` دارند.
+ */
+async function assertMemberRoleTags(ids: ReadonlyArray<number | null | undefined>): Promise<void> {
+  const wanted = [...new Set(ids.filter((id): id is number => typeof id === 'number' && id > 0))];
+  if (wanted.length === 0) return;
+  const roles = new Set((await repo.memberRoleTags()).map((r) => r.id));
+  if (wanted.some((id) => !roles.has(id))) throw new NotFoundError();
+}
+
 export async function setMembers(actor: Actor, projectId: number, desired: MemberInput[]) {
   await getProject(actor, projectId); // گاردِ scope
   await assertCanManageProject(actor, projectId);
+  await assertMemberRoleTags(desired.map((d) => d.roleTagId));
 
   const [existing, inactive, owed] = await Promise.all([
     repo.listMembers(projectId),
@@ -912,6 +929,8 @@ export async function getMembersForm(actor: Actor, projectId: number) {
 
   return {
     isUnitBased: project.isUnitBased,
+    /** ارزِ پروژه — پیش‌فرضِ ردیفِ تازه، همان قاعدهٔ افزودنِ سریع از کارت. */
+    projectCurrencyId: project.currencyId,
     members: rows.map((r) => ({
       userId: r.userId,
       userName: r.userName,
@@ -959,14 +978,22 @@ export async function updateProject(actor: Actor, id: number, input: CreateProje
     parentId = input.parentId;
   }
 
+  /**
+   * ⚠️ پولِ پروژه — قیمت، ارز و سقف‌های مناقصه — فقط برای مالک و مدیرِ
+   * **سراسریِ** پروژه‌ها یا مالی (`domain/access/project-money`). مدیرِ پروژه
+   * یا دفتر کار را می‌گرداند، نه قرارداد را: فرمش این فیلدها را ندارد و
+   * اینجا هم مقدارِ قبلی می‌ماند، وگرنه درخواستِ دستی قیمت را عوض می‌کرد.
+   */
+  const moneyOk = canManageSection(actor, 'projects') || canManageSection(actor, 'finance');
+
   await db.update(projects).set({
     title: input.title,
     description: input.description,
     regDate: input.regDate,
     deadline: input.deadline,
     statusTagId: input.statusTagId,
-    price: input.price,
-    currencyId: await currencyOrDefault(input.currencyId),
+    price: moneyOk ? input.price : before.price,
+    currencyId: moneyOk ? await currencyOrDefault(input.currencyId) : before.currencyId,
     officeId: input.officeId,
     parentId,
     isUnitBased: input.isUnitBased,
@@ -974,12 +1001,14 @@ export async function updateProject(actor: Actor, id: number, input: CreateProje
     updatedAt: new Date(),
   }).where(eq(projects.id, id));
 
-  // پرچمِ مناقصه و اعلانِ نقش‌های تازه اینجا تعیین می‌شوند.
-  await saveTenderRoles(actor, id, {
-    checked: input.isTender,
-    rows: input.tenderRoles ?? [],
-    previouslyAnnounced: before.tenderAnnounced ?? [],
-  });
+  // پرچمِ مناقصه و اعلانِ نقش‌های تازه اینجا تعیین می‌شوند (سقف‌ها پول‌اند — همان قاعده).
+  if (moneyOk) {
+    await saveTenderRoles(actor, id, {
+      checked: input.isTender,
+      rows: input.tenderRoles ?? [],
+      previouslyAnnounced: before.tenderAnnounced ?? [],
+    });
+  }
 
   await audit(actor, 'project.update', id, before, input);
 }
@@ -1015,6 +1044,7 @@ export async function addProjectMember(
 ) {
   const project = await getProject(actor, projectId); // گاردِ scope
   await assertCanManageProject(actor, projectId);
+  await assertMemberRoleTags([input.roleTagId]);
 
   const [existing, inactive, primaryRoleOf] = await Promise.all([
     repo.listMembers(projectId),
@@ -1161,7 +1191,7 @@ export async function getStatusOptions(actor: Actor) {
 /** گزینه‌های افزودنِ سریعِ کارت — عضو، نقش، کارفرما. */
 export async function getCardOptions(actor: Actor) {
   assertCanManage(actor, 'projects');
-  const [team, roles, clients, roleMap] = await Promise.all([
+  const [team, roles, clients, roleMap, currencies] = await Promise.all([
     repo.memberCandidates(),
     repo.memberRoleTags(),
     repo.clientCandidates(),
@@ -1171,8 +1201,10 @@ export async function getCardOptions(actor: Actor) {
      * می‌داد و می‌شد کسی را با نقشی روی پروژه نشاند که اصلاً ندارد.
      */
     repo.memberRoleMap(),
+    // پورتِ ستونِ «ارز» ِ افزودنِ عضو — پیش‌فرض ارزِ خودِ پروژه است.
+    repo.currencyOptions(),
   ]);
-  return { team, roles, clients, roleMap };
+  return { team, roles, clients, roleMap, currencies };
 }
 
 /**
@@ -1960,17 +1992,23 @@ async function resolveTaskAssignment(
   canManage: boolean,
   input: TaskInput,
 ) {
-  const [members, clientIds, roleTags] = await Promise.all([
+  const [members, clientIds, roleTags, admins] = await Promise.all([
     repo.listMembers(projectId),
     repo.listClientIds(projectId),
     repo.memberRoleTags(),
+    /**
+     * ⚠️ مالک و ادمین‌ها — همان فهرستی که فرمِ تسک به مدیرِ پروژه نشان
+     * می‌دهد (`getTaskFormOptions`). پیش از این فرم آنها را پیشنهاد می‌داد
+     * ولی اینجا بی‌صدا دور ریخته می‌شدند و تسک بی‌مسئول ذخیره می‌شد.
+     */
+    canManage ? repo.adminCandidates() : Promise.resolve([]),
   ]);
   const viewer = await viewerContext(actor, projectId, canManage, members);
 
   return resolveAssignment(
     { assignedTo: input.assignedTo, roleTagIds: input.roleTagIds ?? [] },
     {
-      projectUserIds: new Set([...members.map((m) => m.userId), ...clientIds]),
+      projectUserIds: new Set([...members.map((m) => m.userId), ...clientIds, ...admins.map((a) => a.userId)]),
       memberRoleTagIds: new Set(roleTags.map((r) => r.id)),
       rolesOnly: !assignableToPeople(viewer),
     },
@@ -2148,6 +2186,7 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
   if (!visible) throw new NotFoundError();
   // یادداشت‌نویسی «کار کردن» است: همکارِ فقط‌خواندنی فرمش را نمی‌بیند.
   const canInteract = await canInteractWithProject(actor, task.projectId);
+  const frozen = !canManageSection(actor, 'projects') && await isProjectFrozen(task.projectId);
   const [notes, roles, members, dependency] = await Promise.all([
     repo.taskNotes(taskId),
     repo.taskRolesFor([taskId]),
@@ -2187,9 +2226,14 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
     roles: roles.map((r) => ({ ...r, claimedByName: mask(r.claimedBy, r.claimedByName) })),
     /** عنوانِ تسکِ وابسته — فقط اگر خودِ بیننده آن را می‌بیند. */
     dependsOnTitle: dependency && filterVisibleFor(actor, [dependency], canManage).length > 0 ? dependency.title : null,
-    claimable: claimable && canInteract,
-    canManage,
-    canInteract,
+    /**
+     * ⚠️ پروژهٔ منجمد (بایگانی/لغو/توقف) برای **این بیننده** — همان قاعدهٔ
+     * `assertNotFrozen`: مدیرِ سراسری مستثناست. پیش از این مودال دکمه‌های
+     * ویرایش/حذف/وضعیت را نشان می‌داد و کلیک به خطای سرور می‌خورد.
+     */
+    claimable: claimable && canInteract && !frozen,
+    canManage: canManage && !frozen,
+    canInteract: canInteract && !frozen,
   };
 }
 

@@ -79,6 +79,8 @@ export interface MyMoneyData {
   /** پورتِ «مبلغ توافقی شما» · «به شما پرداخت‌شده» · «مانده (وضعیت)». */
   agreed: string;
   paid: string;
+  /** ارزِ قرارداد — همهٔ ارقامِ خلاصه و درخواست در این ارزند. */
+  currencyCode: string | null;
   status: string;
   payouts: PayoutRow[];
   available: string;
@@ -260,16 +262,16 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
           <h3 className="text-sm font-semibold">{t("درخواستِ پرداخت")}</h3>
 
           <div className="flex flex-wrap gap-4 text-sm">
-            <span>{t("مبلغ توافقی شما:")} <b className="num">{format(data.agreed)}</b></span>
-            <span>{t("به شما پرداخت‌شده:")} <b className="num">{format(data.paid)}</b></span>
+            <span>{t("مبلغ توافقی شما:")} <b className="num">{format(data.agreed)} {data.currencyCode}</b></span>
+            <span>{t("به شما پرداخت‌شده:")} <b className="num">{format(data.paid)} {data.currencyCode}</b></span>
             <span>
-              {t("ماندهٔ قرارداد:")} <b className="num">{format(data.remaining)}</b>
+              {t("ماندهٔ قرارداد:")} <b className="num">{format(data.remaining)} {data.currencyCode}</b>
               <Badge variant={data.status === 'paid' ? 'success' : data.status === 'partial' ? 'warning' : 'outline'} className="ms-1">
                 {t(PAY_STATUS_LABELS[data.status] ?? data.status)}
               </Badge>
             </span>
-            <span>{t("درخواست‌های باز:")} <b className="num">{format(data.outstanding)}</b></span>
-            <span>{t("قابلِ درخواست:")} <b className="num">{format(data.available)}</b></span>
+            <span>{t("درخواست‌های باز:")} <b className="num">{format(data.outstanding)} {data.currencyCode}</b></span>
+            <span>{t("قابلِ درخواست:")} <b className="num">{format(data.available)} {data.currencyCode}</b></span>
           </div>
 
           {data.requests.length > 0 && (

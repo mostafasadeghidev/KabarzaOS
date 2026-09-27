@@ -39,6 +39,11 @@ export interface ProjectTabsData {
   /** حقِ دیدنِ قیمتِ پروژه — `domain/access/project-money`. */
   canSeePrice: boolean;
   canManage: boolean;
+  /**
+   * حذفِ فایلِ **دیگران** — مجوزِ سراسریِ پروژه‌ها، همان قاعدهٔ سرور
+   * (`deleteAttachment`). مدیرِ پروژه/دفتر فقط فایلِ خودش را پاک می‌کند.
+   */
+  canDeleteAnyFile: boolean;
   /** «کار کردن» روی پروژه — عضو/کارفرما/مدیر؛ نه بینندهٔ فقط‌خواندنی. */
   canInteract: boolean;
   canSeeFinance: boolean;
@@ -223,7 +228,7 @@ export function ProjectTabs({
           files={data.files}
           projectId={data.projectId}
           canUpload={!data.isFrozen}
-          canManage={data.canManage}
+          canManage={data.canDeleteAnyFile}
           currentUserId={data.currentUserId}
         /></TabPanel>
       )}

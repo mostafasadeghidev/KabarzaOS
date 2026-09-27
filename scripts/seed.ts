@@ -1,6 +1,12 @@
 /**
  * دادهٔ نمونه برای توسعه.
- * اجرای دوباره امن است — همه‌چیز را پاک و از نو می‌سازد.
+ * اجرای دوباره امن است — دادهٔ نمونه را پاک و از نو می‌سازد.
+ *
+ * ⚠️ کاتالوگ دست نمی‌خورد: تگ‌ها (وضعیت، اولویت، نقش، دستهٔ دفتر) و ارزهای
+ * پایه را مهاجرت‌ها می‌سازند (0018، 0019، 0030) و نصبِ تمیز همان است. پیش از
+ * این بذر جدولِ تگ‌ها را خالی می‌کرد و فهرستِ خودش را می‌ریخت — وضعیت‌های
+ * تکراری، «عادی» ِ حذف‌شده و ترجمه‌های گم‌شده. حالا فقط با اسلاگ پیدایشان
+ * می‌کند.
  */
 import { sql, db } from '../src/db/client';
 import {
@@ -20,7 +26,7 @@ await sql`truncate table audit_log, messages, thread_users, threads,
   tender_bids, project_qa, qa_items, attachments, project_payments, ledger,
   user_avatars, files,
   exchange_rates, recurring_expenses, vendors, projects, accounts,
-  user_offices, offices, tag_relations, tags, user_permissions, user_roles, users, currencies restart identity cascade`;
+  user_offices, offices, tag_relations, user_permissions, user_roles, users restart identity cascade`;
 
 /**
  * ⚠️ `truncate … cascade` روی `files` جدولِ تک‌ردیفیِ `company` را هم خالی
@@ -40,11 +46,14 @@ await db.insert(company).values({
   invoiceFooter: 'با تشکر از همکاری شما.',
 }).onConflictDoNothing();
 
-const curRows = await db.insert(currencies).values([
-  { code: 'EUR', name: 'یورو', symbol: '€', decimals: 2, isDefault: true },
-  { code: 'USD', name: 'دلار', symbol: '$', decimals: 2 },
-]).returning({ id: currencies.id });
-const [eur, usd] = curRows;
+/** ارزِ پایه با کدش — از مهاجرتِ 0018؛ اگر نبود (پایگاهِ قدیمی) ساخته می‌شود. */
+async function currency(code: string, name: string, symbol: string): Promise<{ id: number }> {
+  await db.insert(currencies).values({ code, name, symbol, decimals: 2 }).onConflictDoNothing();
+  const [row] = await db.select({ id: currencies.id }).from(currencies).where(eq(currencies.code, code));
+  return row!;
+}
+const eur = await currency('EUR', 'یورو', '€');
+const usd = await currency('USD', 'دلار', '$');
 
 // نرخِ ارز — پایهٔ تبدیلِ ردیف‌های دفتر.
 await db.insert(exchangeRates).values({
@@ -95,27 +104,26 @@ await db.insert(userPermissions).values([
   { userId: staff, permission: 'reports.view' },
 ]);
 
-const statusTags = await db.insert(tags).values([
-  { name: 'شروع نشده', type: 'project_status', statusGroup: 'not_started', sortOrder: 1 },
-  { name: 'احتمال عقد قرارداد', type: 'project_status', statusGroup: 'lead', sortOrder: 2 },
-  { name: 'در حال انجام', type: 'project_status', statusGroup: 'in_progress', sortOrder: 3 },
-  { name: 'تکمیل‌شده', type: 'project_status', statusGroup: 'completed', sortOrder: 4 },
-  // ⚠️ سه وضعیتِ زیر لازم‌اند، نه تزئینی: «متوقف» و «لغو شده» پایهٔ قاعدهٔ
-  // «پروژهٔ منجمد»اند و بدونشان آن قاعده هیچ‌وقت فعال نمی‌شود.
-  { name: 'در حال بررسی', type: 'project_status', statusGroup: 'in_progress', sortOrder: 5 },
-  { name: 'متوقف', type: 'project_status', statusGroup: 'on_hold', sortOrder: 6 },
-  { name: 'لغو شده', type: 'project_status', statusGroup: 'cancelled', sortOrder: 7 },
-  { name: 'دولوپر', type: 'member_role' },
-  { name: 'طراح', type: 'member_role' },
-  { name: 'در حال انجام', type: 'task_status', statusGroup: 'in_progress' },
-  { name: 'نیاز به ریویو', type: 'task_status', statusGroup: 'in_progress', isReview: true },
-  { name: 'انجام شد', type: 'task_status', statusGroup: 'complete' },
-  { name: 'فوری', type: 'task_priority', color: '#dc2626', sortOrder: 1 },
-  { name: 'عادی', type: 'task_priority', color: '#64748b', sortOrder: 2 },
-]).returning({ id: tags.id });
+/**
+ * تگِ کاتالوگ با اسلاگش (یکتا از مهاجرتِ 0031).
+ * ⚠️ نبودنش یعنی مهاجرت‌ها اجرا نشده‌اند — بذر نباید جایشان را بگیرد.
+ */
+async function tagId(slug: string): Promise<number> {
+  const [row] = await db.select({ id: tags.id }).from(tags).where(eq(tags.slug, slug));
+  if (!row) throw new Error(`تگِ «${slug}» در کاتالوگ نیست — اول مهاجرت‌ها را اجرا کنید (pnpm db:migrate).`);
+  return row.id;
+}
 
-const [notStarted, lead, inProgress, done, devRole, designRole, taskInProgress, taskReview, taskDone,
-  priorityUrgent] = statusTags.map((t) => t.id) as number[];
+const notStarted = await tagId('project_status-notstarted');
+const lead = await tagId('project_status-1');
+const inProgress = await tagId('project_status-2');
+const done = await tagId('project_status-4');
+const devRole = await tagId('member-2');
+const designRole = await tagId('member-1');
+const taskInProgress = await tagId('in-progress');
+const taskReview = await tagId('up-for-review');
+const taskDone = await tagId('done');
+const priorityUrgent = await tagId('task_priority-urgent');
 
 const regDate = new Date(Date.now() - 40 * 86400000).toISOString().slice(0, 10);
 
@@ -280,12 +288,7 @@ const accRows = await db.insert(accounts).values([
 ]).returning({ id: accounts.id });
 const acc = accRows;
 
-// دستهٔ دفتر + چند ردیفِ دفترکل.
-const ledgerTags = await db.insert(tags).values([
-  { name: 'درآمدِ پروژه', type: 'ledger_category', sortOrder: 1 },
-  { name: 'هزینهٔ دفتر', type: 'ledger_category', sortOrder: 2 },
-]).returning({ id: tags.id });
-
+// چند ردیفِ دفترکل — دسته‌ها همان کاتالوگِ مهاجرتِ 0019‌اند.
 await db.insert(ledger).values([
   {
     accountId: accRows[0]!.id, entryDate: dayAgo(20), direction: 'in',

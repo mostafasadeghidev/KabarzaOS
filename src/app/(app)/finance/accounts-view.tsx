@@ -78,7 +78,7 @@ export function AccountsView({
   const assigned = new Set(editing ? (options.accountantsByAccount[editing.id] ?? []) : []);
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">{t("حساب‌های بانکی")}</h2>
         {canManage && (

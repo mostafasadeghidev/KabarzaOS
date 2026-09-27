@@ -307,7 +307,7 @@ export function PayoutsView({
   })();
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4 md:gap-6">
       {/* ---- درخواست‌های پرداخت ---- */}
       {section === 'members' && (
       <section className="grid gap-3">

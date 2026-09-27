@@ -109,6 +109,7 @@ export default async function ProjectDetailPage({
       remaining: requests.remaining,
       agreed: requests.agreed,
       paid: requests.paid,
+      currencyCode: requests.currencyCode,
       status: requests.status,
       payouts: requests.payouts,
       available: requests.available,
@@ -226,6 +227,7 @@ export default async function ProjectDetailPage({
               defaultCurrencyId: formOptions.currencies.find((c) => c.isDefault)?.id ?? null,
               roleTags: formOptions.roleTags,
               canUsePrivate: formOptions.canUsePrivate,
+              canEditMoney: canSeeAgreedAmounts,
               today: new Date().toISOString().slice(0, 10),
             }}
             project={{
@@ -235,13 +237,18 @@ export default async function ProjectDetailPage({
               regDate: project.regDate ?? '',
               deadline: project.deadline ?? '',
               statusTagId: project.statusTagId ? String(project.statusTagId) : '',
-              price: project.price,
+              /**
+               * ⚠️ صفر، نه پنهان‌کردن در فرم: هرچه اینجا باشد در payload ِ صفحه
+               * می‌ماند و با View Source خوانده می‌شود. مدیرِ پروژه/دفتر قیمت را
+               * نمی‌بیند (`canEditMoney`) و سرور هم برایش مقدارِ قبلی را نگه می‌دارد.
+               */
+              price: canSeeAgreedAmounts ? project.price : '0',
               currencyId: project.currencyId ? String(project.currencyId) : '',
               officeId: project.officeId ? String(project.officeId) : '',
               parentId: project.parentId ? String(project.parentId) : '',
               isUnitBased: project.isUnitBased,
               isTender: project.isTender,
-              tenderRoles: project.tenderRoles,
+              tenderRoles: canSeeAgreedAmounts ? project.tenderRoles : null,
               scope: project.scope,
               thumbnailFileId: project.thumbnailFileId,
             }}
@@ -379,6 +386,8 @@ export default async function ProjectDetailPage({
           price: detail.canSeePrice ? project.price : '0',
           canSeePrice: detail.canSeePrice,
           canManage,
+          // ⚠️ پیش از این دکمهٔ حذف با `canManage` ِ پروژه‌محور نشان داده می‌شد و سرور ردش می‌کرد.
+          canDeleteAnyFile: canManageSection(actor, 'projects'),
           canInteract: detail.canInteract,
           canSeeFinance: detail.canSeeFinance,
           currencyCode: detail.currencyCode,

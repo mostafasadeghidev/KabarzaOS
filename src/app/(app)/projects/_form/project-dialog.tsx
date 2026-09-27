@@ -37,6 +37,12 @@ export interface FormOptions {
   parents: Option[];
   defaultCurrencyId: number | null;
   canUsePrivate: boolean;
+  /**
+   * قیمت، ارز و مناقصه (سقفِ نقش‌ها) — فقط مالک و مدیرِ سراسریِ پروژه‌ها/مالی.
+   * ⚠️ مدیرِ پروژه یا دفتر پولِ پروژه را نمی‌بیند (`domain/access/project-money`)؛
+   * سرور هم برای او مقدارِ قبلی را نگه می‌دارد. پیش‌فرض: دارد (فرمِ ساخت).
+   */
+  canEditMoney?: boolean;
   today: string;
   /** تگ‌های نقشِ عضو — برای جدولِ نقشِ مناقصه. */
   roleTags: Option[];
@@ -119,6 +125,7 @@ export function ProjectDialog({
 }) {
   const tr = useT();
   const isEdit = project !== undefined;
+  const canEditMoney = options.canEditMoney !== false;
   const [open, setOpen] = useState(false);
   const [formTab, setFormTab] = useState<'info' | 'tasks' | 'files' | 'qa'>('info');
   /** بخش‌های اولیه فقط هنگامِ ساخت وجود دارند. */
@@ -277,26 +284,30 @@ export function ProjectDialog({
               )}
             </Field>
 
-            <Field label={tr("مبلغ پروژه")} name="price" error={fe.price}>
-              {(id) => (
-                <Input id={id} name="price" inputMode="decimal" defaultValue={keep('price', '0')} className="num" />
-              )}
-            </Field>
+            {canEditMoney && (
+              <Field label={tr("مبلغ پروژه")} name="price" error={fe.price}>
+                {(id) => (
+                  <Input id={id} name="price" inputMode="decimal" defaultValue={keep('price', '0')} className="num" />
+                )}
+              </Field>
+            )}
 
-            <Field label={tr("ارز")} name="currencyId" error={fe.currencyId}>
-              {(id) => (
-                <NativeSelect
-                  id={id}
-                  name="currencyId"
-                  containerClassName="w-full"
-                  defaultValue={keep('currencyId', options.defaultCurrencyId ? String(options.defaultCurrencyId) : '')}
-                >
-                  {options.currencies.map((c) => (
-                    <NativeSelectOption key={c.id} value={c.id}>{c.label}</NativeSelectOption>
-                  ))}
-                </NativeSelect>
-              )}
-            </Field>
+            {canEditMoney && (
+              <Field label={tr("ارز")} name="currencyId" error={fe.currencyId}>
+                {(id) => (
+                  <NativeSelect
+                    id={id}
+                    name="currencyId"
+                    containerClassName="w-full"
+                    defaultValue={keep('currencyId', options.defaultCurrencyId ? String(options.defaultCurrencyId) : '')}
+                  >
+                    {options.currencies.map((c) => (
+                      <NativeSelectOption key={c.id} value={c.id}>{c.label}</NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                )}
+              </Field>
+            )}
 
             <Field label={tr("دفتر")} name="officeId" error={fe.officeId}>
               {(id) => (
@@ -344,79 +355,81 @@ export function ProjectDialog({
             </p>
           </div>
 
-          <div className="rounded-md border p-3">
-            <label className="flex items-start gap-2 text-sm font-medium">
-              <Checkbox
-                key={`tender-${formKey}`}
-                name="isTender"
-                value="1"
-                className="mt-0.5"
-                checked={isTender}
-                onCheckedChange={(v) => setIsTender(v === true)}
-              />
-              {tr("این پروژه یک مناقصه است")}
-            </label>
-            {isTender && (
-              <div className="mt-2 ms-6 grid gap-2">
-                <p className="text-xs text-muted-foreground">
-                  {tr("نقش‌های موردنیاز و سقفِ قیمتِ هر نقش. سقفِ خالی یعنی «بدونِ سقف».")}
-                </p>
+          {canEditMoney && (
+            <div className="rounded-md border p-3">
+              <label className="flex items-start gap-2 text-sm font-medium">
+                <Checkbox
+                  key={`tender-${formKey}`}
+                  name="isTender"
+                  value="1"
+                  className="mt-0.5"
+                  checked={isTender}
+                  onCheckedChange={(v) => setIsTender(v === true)}
+                />
+                {tr("این پروژه یک مناقصه است")}
+              </label>
+              {isTender && (
+                <div className="mt-2 ms-6 grid gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {tr("نقش‌های موردنیاز و سقفِ قیمتِ هر نقش. سقفِ خالی یعنی «بدونِ سقف».")}
+                  </p>
 
-                {tenderRows.map((row, i) => (
-                  <div key={i} className="flex flex-wrap items-center gap-2">
-                    <NativeSelect
-                      name="tenderRole"
-                      containerClassName="w-44"
-                      value={row.roleTagId}
-                      onChange={(e) => setTenderRows((rows) =>
-                        rows.map((r, j) => (j === i ? { ...r, roleTagId: e.target.value } : r)))}
-                    >
-                      <NativeSelectOption value="">{tr("— نقش —")}</NativeSelectOption>
-                      {options.roleTags.map((t) => (
-                        <NativeSelectOption key={t.id} value={t.id}>{t.label}</NativeSelectOption>
-                      ))}
-                    </NativeSelect>
+                  {tenderRows.map((row, i) => (
+                    <div key={i} className="flex flex-wrap items-center gap-2">
+                      <NativeSelect
+                        name="tenderRole"
+                        containerClassName="w-44"
+                        value={row.roleTagId}
+                        onChange={(e) => setTenderRows((rows) =>
+                          rows.map((r, j) => (j === i ? { ...r, roleTagId: e.target.value } : r)))}
+                      >
+                        <NativeSelectOption value="">{tr("— نقش —")}</NativeSelectOption>
+                        {options.roleTags.map((t) => (
+                          <NativeSelectOption key={t.id} value={t.id}>{t.label}</NativeSelectOption>
+                        ))}
+                      </NativeSelect>
 
-                    <Input
-                      name="tenderCap"
-                      inputMode="decimal"
-                      className="num w-32"
-                      placeholder={tr("سقف")}
-                      value={row.cap}
-                      onChange={(e) => setTenderRows((rows) =>
-                        rows.map((r, j) => (j === i ? { ...r, cap: e.target.value } : r)))}
-                    />
+                      <Input
+                        name="tenderCap"
+                        inputMode="decimal"
+                        className="num w-32"
+                        placeholder={tr("سقف")}
+                        value={row.cap}
+                        onChange={(e) => setTenderRows((rows) =>
+                          rows.map((r, j) => (j === i ? { ...r, cap: e.target.value } : r)))}
+                      />
 
+                      <Button
+                        type="button"
+                        aria-label={tr("حذفِ ردیف")}
+                        onClick={() => setTenderRows((rows) => rows.filter((_, j) => j !== i))} variant="ghost" size="icon-sm" className="text-muted-foreground"
+                      >
+                        <X className="size-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+
+                  <div>
                     <Button
                       type="button"
-                      aria-label={tr("حذفِ ردیف")}
-                      onClick={() => setTenderRows((rows) => rows.filter((_, j) => j !== i))} variant="ghost" size="icon-sm" className="text-muted-foreground"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setTenderRows((rows) => [...rows, { roleTagId: '', cap: '' }])}
                     >
-                      <X className="size-3.5" />
+                      {tr("افزودنِ نقش")}
                     </Button>
                   </div>
-                ))}
 
-                <div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setTenderRows((rows) => [...rows, { roleTagId: '', cap: '' }])}
-                  >
-                    {tr("افزودنِ نقش")}
-                  </Button>
+                  {/* ⚠️ تیک بدونِ نقش، مناقصه نمی‌سازد — گاردش در سرویس است. */}
+                  {tenderRows.every((r) => !r.roleTagId) && (
+                    <p className="text-xs text-amber-600 dark:text-amber-500">
+                      {tr("بدونِ دستِ‌کم یک نقش، پروژه مناقصه ثبت نمی‌شود.")}
+                    </p>
+                  )}
                 </div>
-
-                {/* ⚠️ تیک بدونِ نقش، مناقصه نمی‌سازد — گاردش در سرویس است. */}
-                {tenderRows.every((r) => !r.roleTagId) && (
-                  <p className="text-xs text-amber-600 dark:text-amber-500">
-                    {tr("بدونِ دستِ‌کم یک نقش، پروژه مناقصه ثبت نمی‌شود.")}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* پروژهٔ خصوصی فقط برای کسی که خودش دسترسیِ خصوصی دارد — گاردِ اصلی در سرویس. */}
           {options.canUsePrivate && (

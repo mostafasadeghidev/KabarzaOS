@@ -158,7 +158,7 @@ export function MyMoneyView({
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4 md:gap-6">
       {isClient && (
         <section className="grid gap-2">
           <h2 className="text-sm font-semibold">{t('صورت‌حسابِ پروژه‌های شما (کارفرما)')}</h2>
