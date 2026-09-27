@@ -426,7 +426,7 @@ export function ReportsView({
                   <TableNumericCell>{m.projects}</TableNumericCell>
                   <TableNumericCell>{format(m.agreed)}</TableNumericCell>
                   <TableNumericCell>{format(m.paid)}</TableNumericCell>
-                  <TableNumericCell className={Number(m.remaining) > 0 ? 'text-amber-600 dark:text-amber-500' : ''}>
+                  <TableNumericCell className={Number(m.remaining) > 0 ? 'text-amber-700 dark:text-amber-500' : ''}>
                     {format(m.remaining)}
                     {/* پورتِ چیپ‌های بدهی به‌ازای هر ارز — بدهیِ چندارزی پشتِ یک عدد پنهان نمی‌ماند. */}
                     {m.byCurrency.length > 1 && (
@@ -493,7 +493,7 @@ export function ReportsView({
                   <TableNumericCell>{format(c.price)}</TableNumericCell>
                   <TableNumericCell>{format(c.expenses)}</TableNumericCell>
                   <TableNumericCell>{format(c.paid)}</TableNumericCell>
-                  <TableNumericCell className={Number(c.due) > 0 ? 'text-amber-600 dark:text-amber-500' : ''}>
+                  <TableNumericCell className={Number(c.due) > 0 ? 'text-amber-700 dark:text-amber-500' : ''}>
                     {format(c.due)}
                     {c.byCurrency.length > 1 && (
                       <span className="block text-[11px] font-normal text-muted-foreground">
@@ -784,7 +784,7 @@ export function ReportsView({
                   <TableCell>{u.name}</TableCell>
                   <TableNumericCell>{format(u.paid)}</TableNumericCell>
                   <TableNumericCell
-                    className={Number(u.unpaid) > 0 ? 'text-amber-600 dark:text-amber-500' : ''}
+                    className={Number(u.unpaid) > 0 ? 'text-amber-700 dark:text-amber-500' : ''}
                   >
                     {format(u.unpaid)}
                   </TableNumericCell>
@@ -893,7 +893,7 @@ export function ReportsView({
                     }`}
                   >
                     {d}
-                    {stale && <span className="ms-1 text-amber-600 dark:text-amber-500">({tr('کهنه')})</span>}
+                    {stale && <span className="ms-1 text-amber-700 dark:text-amber-500">({tr('کهنه')})</span>}
                   </Link>
                 );
               })}

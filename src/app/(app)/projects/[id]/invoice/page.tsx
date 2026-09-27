@@ -59,7 +59,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         <BackLink href={`/projects/${id}`}>{data.project.title}</BackLink>
         <div className="flex items-center gap-3">
           {!data.issuable && (
-            <span className="text-xs text-amber-600 dark:text-amber-500">
+            <span className="text-xs text-amber-700 dark:text-amber-500">
               {t("این پروژه کارفرما یا مبلغی ندارد؛ فاکتور صرفاً پیش‌نمایش است.")}
             </span>
           )}

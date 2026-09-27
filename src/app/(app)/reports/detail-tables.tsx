@@ -110,7 +110,7 @@ export function MemberProjectsTable({
               </TableCell>
               <TableNumericCell>{format(p.agreed)} {p.currencyCode ?? ''}</TableNumericCell>
               <TableNumericCell>{format(p.paid)} {p.currencyCode ?? ''}</TableNumericCell>
-              <TableNumericCell className={Number(p.remaining) > 0.001 ? 'font-semibold text-amber-600 dark:text-amber-500' : 'font-semibold'}>
+              <TableNumericCell className={Number(p.remaining) > 0.001 ? 'font-semibold text-amber-700 dark:text-amber-500' : 'font-semibold'}>
                 {format(p.remaining)} {p.currencyCode ?? ''}
               </TableNumericCell>
               <TableCell>
@@ -187,7 +187,7 @@ export function ClientProjectsTable({
               <TableNumericCell>{format(p.price)} {p.currencyCode ?? ''}</TableNumericCell>
               <TableNumericCell>{format(p.expenses)} {p.currencyCode ?? ''}</TableNumericCell>
               <TableNumericCell>{format(p.paid)} {p.currencyCode ?? ''}</TableNumericCell>
-              <TableNumericCell className={Number(p.remaining) > 0.001 ? 'font-semibold text-amber-600 dark:text-amber-500' : 'font-semibold'}>
+              <TableNumericCell className={Number(p.remaining) > 0.001 ? 'font-semibold text-amber-700 dark:text-amber-500' : 'font-semibold'}>
                 {format(p.remaining)} {p.currencyCode ?? ''}
               </TableNumericCell>
               <TableCell>

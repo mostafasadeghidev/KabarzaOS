@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.84.0]
+
+### Changed
+
+- **Dark mode, reviewed page by page.** Every page, and the project edit dialog, was measured for text contrast against its real, composited background in both themes. Red text in dark mode ("27 days late") reached only 3.8:1; the dark theme now uses shadcn's official dark red. Destructive buttons and badges already lighten it with `bg-destructive/60` and keep their look.
+- **Coloured status text is readable in the light theme.** Amber, orange and green text used the 600 shade, 3.2–3.8:1 on white, below the 4.5:1 small text needs. It now uses 700 everywhere, as a few places already did. Dark mode is unchanged, and icons keep the 600 shade, for which 3:1 is enough. The dashboard's review count used the raw warning colour at 2.3:1 and follows the same rule.
+- **The green badge** («default», «paid», «won») is readable: its token served only that badge and gave white text 3.4:1. **The client chip on project cards** moves from sky-600 to sky-700 for the same reason.
+- **The dashboard's «active members» and «on projects» tiles are no longer dimmed.** They were drawn at 60% opacity, as if disabled, only because they are not links.
+- **Both bars on the project card use shadcn `Progress`**, like the rest of the app, with the deadline colour passed through a new `indicatorClassName`. `Progress` now also hands its value to Radix, so screen readers announce the percentage instead of "indeterminate" — a gap in the official component.
+- **The accepted-bid note shows an icon instead of 🎉**, the last emoji in the interface.
+- **The account-transfer dialog scrolls on short screens**, like every other form dialog; its top used to be cut off.
+
+---
+
 ## [1.83.0]
 
 ### Fixed

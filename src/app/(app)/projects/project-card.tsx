@@ -6,6 +6,7 @@ import { ChevronDown, CornerDownLeft, MessageSquare, ListChecks } from 'lucide-r
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { format } from '@/domain/money/money';
 import { summarizeProject } from '@/domain/team-money/payments';
 import { deadlineBar, deadlineLabel, taskProgress } from '@/domain/projects/deadline';
@@ -25,9 +26,9 @@ import { useT } from '@/i18n/client';
 
 /** رنگِ نوارِ ددلاین بر پایهٔ فوریت — همان پله‌های نسخهٔ قبلی. */
 const URGENCY: Record<string, { bar: string; text: string }> = {
-  normal: { bar: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
-  warn: { bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-500' },
-  soon: { bar: 'bg-orange-500', text: 'text-orange-600 dark:text-orange-500' },
+  normal: { bar: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-400' },
+  warn: { bar: 'bg-amber-500', text: 'text-amber-700 dark:text-amber-500' },
+  soon: { bar: 'bg-orange-500', text: 'text-orange-700 dark:text-orange-500' },
   over: { bar: 'bg-destructive', text: 'text-destructive' },
 };
 
@@ -192,9 +193,12 @@ export function ProjectCard({
               <span className={urgency.text}>{deadlineLabel(bar.daysLeft, t)}</span>
               <span className="num text-muted-foreground">{project.deadline}</span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-              <div className={`h-full ${urgency.bar}`} style={{ width: `${bar.percent}%` }} />
-            </div>
+            <Progress
+              value={bar.percent}
+              className="h-1.5 bg-muted"
+              indicatorClassName={urgency.bar}
+              aria-label={t("ددلاین")}
+            />
           </div>
         ) : (
           <p className="text-[11px] text-muted-foreground">{t("بدون ددلاین")}</p>
@@ -230,8 +234,9 @@ export function ProjectCard({
           className="grid gap-1"
           title={t("مشاهدهٔ تسک‌ها")}
         >
-          <div className="relative h-4 overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-primary/70" style={{ width: `${percent}%` }} />
+          {/* عدد روی نوار می‌نشیند، بیرونِ `Progress`: نوار در راست‌به‌چپ آینه می‌شود و متن نباید. */}
+          <div className="relative">
+            <Progress value={percent} className="h-4 bg-muted" indicatorClassName="bg-primary/70" aria-hidden />
             <b className="num absolute inset-0 flex items-center justify-center text-[10px] font-semibold">
               {percent}%
             </b>
@@ -254,7 +259,7 @@ export function ProjectCard({
           ) : (
             <div className="flex flex-wrap gap-1">
               {project.clients.map((c, i) => (
-                <Badge key={`c${i}`} className="bg-sky-600 text-white hover:bg-sky-600">
+                <Badge key={`c${i}`} className="bg-sky-700 text-white hover:bg-sky-700">
                   {c.name}
                 </Badge>
               ))}

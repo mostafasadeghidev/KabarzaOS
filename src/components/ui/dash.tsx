@@ -88,7 +88,9 @@ export function CompactCard({
    * یک عدد.
    */
   const base = 'flex min-w-28 flex-1 flex-col rounded-md p-2.5';
-  if (!href) return <div className={cn(base, 'opacity-60')}>{body}</div>;
+  // ⚠️ کارتِ بی‌پیوند کم‌رنگ **نمی‌شود**: «عضوِ فعال» و «درگیرِ پروژه» خبرند،
+  // نه دکمهٔ غیرفعال. با `opacity-60` برچسبشان در هر دو حالت زیرِ حدِ خوانایی بود.
+  if (!href) return <div className={base}>{body}</div>;
   return <Link href={href} className={cn(base, 'transition-colors hover:bg-muted/60')}>{body}</Link>;
 }
 
@@ -155,7 +157,8 @@ export function RiskList({
             className={cn(
               'shrink-0 text-xs',
               tone === 'danger' && 'text-destructive',
-              tone === 'warning' && 'text-warning',
+              // ⚠️ نه `text-warning`: کهرباییِ روشن روی کارتِ سفید ۲٫۳ کنتراست داشت.
+              tone === 'warning' && 'text-amber-700 dark:text-amber-500',
               tone === 'muted' && 'text-muted-foreground',
             )}
           >

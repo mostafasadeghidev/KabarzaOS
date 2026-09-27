@@ -422,7 +422,7 @@ export function ProjectDialog({
 
                   {/* ⚠️ تیک بدونِ نقش، مناقصه نمی‌سازد — گاردش در سرویس است. */}
                   {tenderRows.every((r) => !r.roleTagId) && (
-                    <p className="text-xs text-amber-600 dark:text-amber-500">
+                    <p className="text-xs text-amber-700 dark:text-amber-500">
                       {tr("بدونِ دستِ‌کم یک نقش، پروژه مناقصه ثبت نمی‌شود.")}
                     </p>
                   )}

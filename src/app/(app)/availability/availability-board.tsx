@@ -221,7 +221,7 @@ export function AvailabilityBoard(props: BoardProps) {
                           }`}
                         >
                           {cell.state === 'leave' ? (
-                            <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-500">
+                            <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-500">
                               <TreePalm className="size-3.5 shrink-0" aria-hidden />
                               {tr("مرخصی")}
                               {cell.span && <span className="num"> {tr("تا")} {cell.span}</span>}

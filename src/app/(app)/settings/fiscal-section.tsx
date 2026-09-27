@@ -115,7 +115,7 @@ export function FiscalSection({
           (R-FISCAL-10) — و کاربر باید این را **پیش** از زدنِ دکمه بداند.
         */}
         {lockDate && (
-          <p className="text-xs text-amber-600 dark:text-amber-500">
+          <p className="text-xs text-amber-700 dark:text-amber-500">
             {tr('قفلِ فعلی روی {date} است؛ تاریخی قدیمی‌تر از آن، قفل را عقب نمی‌برد.', {
               date: lockDate,
             })}

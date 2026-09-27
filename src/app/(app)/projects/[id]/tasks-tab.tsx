@@ -163,7 +163,7 @@ function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boole
         این خط، کارتِ «در نوبت» می‌گفت دست نگه دار ولی نمی‌گفت منتظرِ چه.
       */}
       {task.blockedBy && (
-        <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-500">
+        <span className="flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-500">
           <Link2 className="size-3" />
           {tr('منتظرِ: {title}', { title: task.blockedBy })}
         </span>

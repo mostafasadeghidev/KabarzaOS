@@ -129,8 +129,8 @@ const REQUEST_TAB_LABELS: Record<RequestTab, string> = {
 
 const BUCKET_STYLE: Record<DueBucket, string> = {
   overdue: 'text-destructive',
-  week: 'text-orange-600 dark:text-orange-500',
-  month: 'text-amber-600 dark:text-amber-500',
+  week: 'text-orange-700 dark:text-orange-500',
+  month: 'text-amber-700 dark:text-amber-500',
   next_month: 'text-muted-foreground',
   later: 'text-muted-foreground',
 };

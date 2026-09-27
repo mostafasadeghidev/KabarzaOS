@@ -84,7 +84,7 @@ function MemberCards({ members, range }: { members: TeamData['members']; range: 
                 <span className="flex items-center gap-1.5 font-medium">
                   <span className="truncate">{m.name}</span>
                   {m.onLeave && (
-                    <Badge variant="outline" className="text-[10px] text-amber-600 dark:text-amber-500">
+                    <Badge variant="outline" className="text-[10px] text-amber-700 dark:text-amber-500">
                       <TreePalm aria-hidden />
                       {tr("مرخصی")}
                     </Badge>

@@ -1011,6 +1011,7 @@
   "پیشنهاد تأیید نشد.": "Das Angebot wurde nicht genehmigt.",
   "پیشنهاد ثبت نشد.": "Das Angebot wurde nicht gespeichert.",
   "پیشنهاد شما": "Ihr Gebot",
+  "پیشنهادِ شما برای نقش «{role}» تأیید شد.": "Ihr Angebot für die Rolle „{role}“ wurde angenommen.",
   "پیشنهادِ شما برای نقش «{role}» تأیید شد. 🎉": "Ihr Angebot für die Rolle „{role}“ wurde angenommen. 🎉",
   "پیشنهاد شما برای نقش «%s» تأیید شد. 🎉": "Ihr Gebot für die Rolle „%s“ wurde genehmigt. 🎉",
   "پیشنهادِ شما ثبت شد.": "Dein Angebot wurde gespeichert.",

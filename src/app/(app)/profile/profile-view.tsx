@@ -312,7 +312,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
             {!data.notify.mailerReady && (
               // ⚠️ حقیقت را می‌گوییم، نه گزینه‌ای که بی‌صدا کار نمی‌کند.
-              <p className="text-xs text-amber-600 dark:text-amber-500">
+              <p className="text-xs text-amber-700 dark:text-amber-500">
                 {tr("فرستندهٔ ایمیل روی این سامانه پیکربندی نشده است؛ فعلاً ایمیلی فرستاده نمی‌شود.")}
               </p>
             )}

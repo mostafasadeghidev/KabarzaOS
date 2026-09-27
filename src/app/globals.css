@@ -23,7 +23,8 @@
   --color-primary: oklch(0.55 0.18 264);
   --color-primary-foreground: oklch(0.985 0 0);
   --color-destructive: oklch(0.577 0.245 27.325);
-  --color-success: oklch(0.62 0.17 149);
+  /* ⚠️ تنها مصرف: نشانِ `success` با متنِ سفید. با ۰٫۶۲ کنتراستش ۳٫۴ بود — زیرِ حدِ متنِ ریز. */
+  --color-success: oklch(0.52 0.14 150);
   --color-warning: oklch(0.75 0.16 70);
 
   /* سایدبار — کمی سردتر و تیره‌تر از پس‌زمینه تا مرزش بدونِ خط دیده شود. */
@@ -102,6 +103,14 @@
   --color-border: oklch(0.29 0.009 55);
   --color-primary: oklch(0.62 0.17 264);
   --color-primary-foreground: oklch(0.99 0 0);
+
+  /*
+   * ⚠️ قرمزِ حالتِ روشن روی کارتِ تیره فقط ۳٫۸ کنتراست داشت و «۲۷ روز تأخیر»
+   * به‌زحمت خوانده می‌شد. این مقدارِ تیرهٔ رسمیِ shadcn است؛ دکمه و نشانِ
+   * «destructive» در حالتِ تیره `bg-destructive/60` می‌گیرند و با همین
+   * روشن‌تر حساب شده‌اند.
+   */
+  --color-destructive: oklch(0.704 0.191 22.216);
 
   --color-sidebar: oklch(0.185 0.009 55);
   --color-sidebar-foreground: oklch(0.93 0.006 55);

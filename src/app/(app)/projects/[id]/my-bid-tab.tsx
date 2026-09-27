@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Gavel } from 'lucide-react';
+import { Gavel, PartyPopper } from 'lucide-react';
 import { submitBidAction, type BidState } from '../_form/tab-actions';
 import { format, inputValue } from '@/domain/money/money';
 import { Button } from '@/components/ui/button';
@@ -94,9 +94,10 @@ export function MyBidTab({ data }: { data: MyBidData }) {
       {data.wonRoles.map((role) => (
         <p
           key={role}
-          className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400"
+          className="flex items-center gap-2 rounded-md bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-400"
         >
-          {tr('پیشنهادِ شما برای نقش «{role}» تأیید شد. 🎉', { role })}
+          <PartyPopper className="size-4 shrink-0" aria-hidden />
+          {tr('پیشنهادِ شما برای نقش «{role}» تأیید شد.', { role })}
         </p>
       ))}
 

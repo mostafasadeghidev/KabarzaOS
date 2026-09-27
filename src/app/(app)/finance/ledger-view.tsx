@@ -344,7 +344,7 @@ export function LedgerView({
                   </TableCell>
                   <TableCell>{e.description || '—'}</TableCell>
                   {/* پورتِ `amount_html`/`amount_color`: علامت و رنگ جهت را می‌گویند. */}
-                  <TableNumericCell className={e.direction === 'in' ? 'text-emerald-600 dark:text-emerald-500' : 'text-destructive'}>
+                  <TableNumericCell className={e.direction === 'in' ? 'text-emerald-700 dark:text-emerald-500' : 'text-destructive'}>
                     {e.direction === 'in' ? '+' : '−'}{format(e.amountAccount)}
                   </TableNumericCell>
                   <TableCell>{e.payerName || e.payerLabel || '—'}</TableCell>
@@ -458,7 +458,7 @@ export function LedgerView({
 
       {/* ---- انتقال ---- */}
       <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("انتقال بینِ حساب‌ها")}</DialogTitle>
             <DialogDescription>

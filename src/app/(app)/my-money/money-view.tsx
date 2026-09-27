@@ -29,9 +29,9 @@ const REQUEST_LABEL: Record<string, string> = {
 function StatusChip({ status }: { status: string }) {
   const t = useT();
   const tone = status === 'paid'
-    ? 'border-emerald-500/40 text-emerald-600 dark:text-emerald-500'
+    ? 'border-emerald-500/40 text-emerald-700 dark:text-emerald-500'
     : status === 'partial'
-      ? 'border-amber-500/40 text-amber-600 dark:text-amber-500'
+      ? 'border-amber-500/40 text-amber-700 dark:text-amber-500'
       : 'border-muted-foreground/30 text-muted-foreground';
   return <Badge variant="outline" className={tone}>{t(STATUS_LABEL[status] ?? status)}</Badge>;
 }
@@ -262,7 +262,7 @@ export function MyMoneyView({
                                   <TableNumericCell>{money(u.amount, p.currencyCode)}</TableNumericCell>
                                   <TableCell>
                                     {u.isPaid ? (
-                                      <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 dark:text-emerald-500">
+                                      <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-500">
                                         {t('پرداخت‌شده')}
                                       </Badge>
                                     ) : (

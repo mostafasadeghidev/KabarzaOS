@@ -1011,6 +1011,7 @@
   "پیشنهاد تأیید نشد.": "The bid was not approved.",
   "پیشنهاد ثبت نشد.": "The bid was not saved.",
   "پیشنهاد شما": "Your bid",
+  "پیشنهادِ شما برای نقش «{role}» تأیید شد.": "Your bid for the “{role}” role was accepted.",
   "پیشنهادِ شما برای نقش «{role}» تأیید شد. 🎉": "Your bid for the “{role}” role was accepted. 🎉",
   "پیشنهاد شما برای نقش «%s» تأیید شد. 🎉": "Your bid for the “%s” role was approved. 🎉",
   "پیشنهادِ شما ثبت شد.": "Your bid was saved.",

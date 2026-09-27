@@ -355,7 +355,7 @@ function QaTick({ row, canManage }: { row: QaRow; canManage: boolean }) {
   const [error, setError] = useState<string | null>(null);
 
   if (!canManage) {
-    return row.isDone ? <Check className="size-4 text-emerald-600" /> : null;
+    return row.isDone ? <Check className="size-4 text-emerald-600 dark:text-emerald-500" /> : null;
   }
 
   return (
@@ -373,7 +373,7 @@ function QaTick({ row, canManage }: { row: QaRow; canManage: boolean }) {
           })
         }
       >
-        {row.isDone ? <Check className="size-3.5 text-emerald-600" /> : <Square className="size-3.5" />}
+        {row.isDone ? <Check className="size-3.5 text-emerald-600 dark:text-emerald-500" /> : <Square className="size-3.5" />}
       </IconButton>
       {error && <span className="text-[11px] text-destructive">{t(error)}</span>}
     </span>

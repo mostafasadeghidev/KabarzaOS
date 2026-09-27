@@ -274,7 +274,7 @@ export default async function DashboardPage({
                 {today.online.map((u) => (
                   <li key={u.id} className="flex items-center justify-between gap-3">
                     <span className="truncate">{u.name}</span>
-                    <span className={`shrink-0 text-xs ${u.state === 'active' ? 'text-emerald-600 dark:text-emerald-500' : 'text-muted-foreground'}`}>
+                    <span className={`shrink-0 text-xs ${u.state === 'active' ? 'text-emerald-700 dark:text-emerald-500' : 'text-muted-foreground'}`}>
                       {u.state === 'active' ? t('فعال') : t('بی‌کار')}
                     </span>
                   </li>

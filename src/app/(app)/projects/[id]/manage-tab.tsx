@@ -87,7 +87,7 @@ export function TeamMatrix({ rows, dayLabels }: { rows: MatrixRowView[]; dayLabe
               {r.cells.map((c, i) => (
                 <TableCell key={i} title={c.tip} className={`num text-xs ${c.isToday ? 'bg-primary/5' : ''}`}>
                   {c.state === 'leave' ? (
-                    <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-500">
+                    <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-500">
                       <TreePalm className="size-3.5 shrink-0" aria-hidden />
                       {t("مرخصی")}{c.span ? ` ${t("تا")} ${c.span}` : ''}
                     </span>

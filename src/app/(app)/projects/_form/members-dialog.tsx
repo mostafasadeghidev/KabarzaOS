@@ -182,7 +182,7 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                         </SearchableSelect>
                       )}
                       {row.isOwed && (
-                        <span className="mt-0.5 block text-[11px] text-amber-600 dark:text-amber-500">
+                        <span className="mt-0.5 block text-[11px] text-amber-700 dark:text-amber-500">
                           {tr("تسویه‌نشده — با حذف از فهرست هم ردیفش می‌ماند")}
                         </span>
                       )}

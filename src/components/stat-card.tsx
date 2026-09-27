@@ -46,7 +46,7 @@ export function StatCard({
           className={cn(
             numeric && 'num',
             emphasis === 'strong' ? 'text-xl font-semibold' : 'text-base font-medium',
-            tone === 'warning' && 'text-amber-600 dark:text-amber-500',
+            tone === 'warning' && 'text-amber-700 dark:text-amber-500',
             tone === 'danger' && 'text-destructive',
           )}
         >
