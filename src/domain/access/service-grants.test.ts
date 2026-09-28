@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   AccessError, accessMessage, assertRevocable, assertServiceName, countByService,
-  countByUser, isOpen, normalizeKind, normalizeLevel, openGrants, openRisks, planGrant,
+  countByUser, isOpen, normalizeLevel, openGrants, openRisks, planGrant,
   type GrantLike,
 } from './service-grants';
 import type { MemberState } from '@/domain/people/offboarding';
@@ -11,11 +11,6 @@ const grant = (over: Partial<GrantLike> = {}): GrantLike => ({
 });
 
 describe('نرمال‌سازیِ ورودی', () => {
-  it('دستهٔ ناشناخته به «سایر» می‌افتد، نه خطا', () => {
-    expect(normalizeKind('ai')).toBe('ai');
-    expect(normalizeKind('quantum')).toBe('other');
-  });
-
   it('سطحِ ناشناخته به «کاربر» می‌افتد', () => {
     expect(normalizeLevel('admin')).toBe('admin');
     expect(normalizeLevel('root')).toBe('member');

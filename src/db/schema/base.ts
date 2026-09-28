@@ -51,10 +51,13 @@ export const vendors = pgTable('vendors', {
 
 /**
  * تگ‌ها — چندریختی (D-014 §۳).
- * یک جدول برای: نقشِ عضو، دستهٔ هزینه، وضعیتِ پروژه، وضعیت و اولویتِ تسک.
+ * یک جدول برای: نقشِ عضو، دستهٔ هزینه، وضعیتِ پروژه، وضعیت و اولویتِ تسک،
+ * و دستهٔ سرویس‌های دفترِ دسترسی (مهاجرتِ ۰۰۳۲).
  * R-PROJ-16 — منطق باید به status_group تکیه کند، نه به نام.
  */
-export const TAG_TYPES = ['member_role', 'ledger_category', 'project_status', 'task_status', 'task_priority'] as const;
+export const TAG_TYPES = [
+  'member_role', 'ledger_category', 'project_status', 'task_status', 'task_priority', 'service_category',
+] as const;
 export type TagType = (typeof TAG_TYPES)[number];
 
 export const tags = pgTable('tags', {
@@ -74,7 +77,7 @@ export const tags = pgTable('tags', {
   ...stamps,
 }, (t) => [
   // G9 — enum به‌صورتِ text + check.
-  check('tags_type_ck', sql`${t.type} in ('member_role','ledger_category','project_status','task_status','task_priority')`),
+  check('tags_type_ck', sql`${t.type} in ('member_role','ledger_category','project_status','task_status','task_priority','service_category')`),
   index('tags_type_ix').on(t.type, t.sortOrder),
   // مهاجرتِ 0031 — یک اسلاگ، یک تگ. خالی مجاز است: تگِ تازه اول درج می‌شود و
   // بلافاصله `type-id` می‌گیرد.

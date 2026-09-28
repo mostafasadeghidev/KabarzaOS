@@ -2,11 +2,13 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
-  currencies, notifications, recurringExpenses, serviceGrants, services, userRoles, users,
+  currencies, notifications, recurringExpenses, serviceGrants, services, tags, userRoles, users,
 } from '../schema';
 import * as access from '@/server/access/service';
+import * as settings from '@/server/settings/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { AccessError } from '@/domain/access/service-grants';
+import { CatalogError } from '@/domain/settings/catalogs';
 import type { Actor, Permission } from '@/domain/access/permissions';
 
 /**
@@ -26,10 +28,19 @@ const cfo = () =>
 let boss: number, dev: number, gone: number, buyer: number;
 let ai: number, voip: number;
 let eur: number, sub: number;
+/** دو دستهٔ سرویس و یک تگِ نقش — برای آزمونِ «فقط دستهٔ سرویس پذیرفته می‌شود». */
+let aiCat: number, voipCat: number, roleTag: number;
 
 beforeAll(async () => {
   await sql`truncate table audit_log, notifications, service_grants, services,
-    recurring_expenses, currencies, user_roles, users restart identity cascade`;
+    recurring_expenses, currencies, user_roles, users, tags restart identity cascade`;
+
+  const cats = await db.insert(tags).values([
+    { name: 'هوش مصنوعی', type: 'service_category', color: '#8b5cf6', sortOrder: 2, nameI18n: { en: 'AI' } },
+    { name: 'ویپ و تلفن', type: 'service_category', sortOrder: 1 },
+    { name: 'طراح', type: 'member_role' },
+  ]).returning({ id: tags.id });
+  [aiCat, voipCat, roleTag] = cats.map((r) => r.id) as [number, number, number];
 
   const rows = await db.insert(users).values([
     { email: 'boss@t', name: 'مدیر' },
@@ -59,11 +70,11 @@ beforeAll(async () => {
   sub = rec[0]!.id;
 
   ai = await access.saveService(manager(), {
-    id: null, name: 'ChatGPT', kind: 'ai', ownerUserId: boss,
+    id: null, name: 'ChatGPT', categoryTagId: aiCat, ownerUserId: boss,
     adminUrl: 'https://chat.example', note: '', isActive: true,
   });
   voip = await access.saveService(manager(), {
-    id: null, name: 'VoIP', kind: 'voip', ownerUserId: null,
+    id: null, name: 'VoIP', categoryTagId: voipCat, ownerUserId: null,
     adminUrl: '', note: '', isActive: true,
   });
 });
@@ -77,7 +88,7 @@ describe('گاردِ دسترسی', () => {
 
   it('⚠️ دیدن کافی نیست — نوشتن members.manage می‌خواهد', async () => {
     await expect(access.saveService(viewer(), {
-      id: null, name: 'X', kind: 'other', ownerUserId: null,
+      id: null, name: 'X', categoryTagId: null, ownerUserId: null,
       adminUrl: '', note: '', isActive: true,
     })).rejects.toThrow(ForbiddenError);
     await expect(access.grantAccess(viewer(), {
@@ -120,7 +131,7 @@ describe('اعطای دسترسی', () => {
 
   it('سرویسِ غیرفعال دسترسیِ تازه نمی‌دهد', async () => {
     const dead = await access.saveService(manager(), {
-      id: null, name: 'مرده', kind: 'other', ownerUserId: null,
+      id: null, name: 'مرده', categoryTagId: null, ownerUserId: null,
       adminUrl: '', note: '', isActive: false,
     });
     await expect(access.grantAccess(manager(), {
@@ -257,7 +268,7 @@ describe('هزینهٔ سرویس — گاردِ مالی', () => {
   it('⚠️ ویرایشِ سرویس توسطِ مدیرِ اعضا اتصالِ مالی را پاک نمی‌کند', async () => {
     // فرمِ او این فیلد را ندارد، پس null می‌رسد؛ مقدارِ قبلی باید بماند.
     await access.saveService(manager(), {
-      id: ai, name: 'ChatGPT', kind: 'ai', ownerUserId: boss,
+      id: ai, name: 'ChatGPT', categoryTagId: aiCat, ownerUserId: boss,
       adminUrl: '', note: 'ویرایشِ ساده', isActive: true, recurringExpenseId: null,
     });
 
@@ -267,7 +278,7 @@ describe('هزینهٔ سرویس — گاردِ مالی', () => {
 
   it('کسی که مالی را می‌بیند می‌تواند اتصال را بردارد', async () => {
     await access.saveService(cfo(), {
-      id: ai, name: 'ChatGPT', kind: 'ai', ownerUserId: boss,
+      id: ai, name: 'ChatGPT', categoryTagId: aiCat, ownerUserId: boss,
       adminUrl: '', note: '', isActive: true, recurringExpenseId: null,
     });
 
@@ -275,6 +286,66 @@ describe('هزینهٔ سرویس — گاردِ مالی', () => {
     expect(row!.recurringExpenseId).toBeNull();
 
     await db.update(services).set({ recurringExpenseId: sub }).where(eq(services.id, ai));
+  });
+});
+
+describe('دستهٔ سرویس — تگی که در تنظیمات اداره می‌شود', () => {
+  it('نام و رنگِ دسته از خودِ تگ می‌آید؛ گزینه‌ها به ترتیبِ تنظیمات‌اند', async () => {
+    const board = await access.accessBoard(viewer());
+    const row = board.services.find((s) => s.id === ai)!;
+    expect(row.categoryTagId).toBe(aiCat);
+    expect(row.categoryName).toBe('هوش مصنوعی');
+    expect(row.categoryColor).toBe('#8b5cf6');
+    // ⚠️ فقط نوعِ service_category، به ترتیبِ sortOrder — نقشِ عضو گزینه نیست.
+    expect(board.categories.map((c) => c.id)).toEqual([voipCat, aiCat]);
+  });
+
+  it('سرویسِ بی‌دسته در فهرست می‌ماند', async () => {
+    const id = await access.saveService(manager(), {
+      id: null, name: 'بی‌دسته', categoryTagId: null, ownerUserId: null,
+      adminUrl: '', note: '', isActive: true,
+    });
+    const row = (await access.accessBoard(viewer())).services.find((s) => s.id === id)!;
+    expect(row.categoryTagId).toBeNull();
+    expect(row.categoryName).toBeNull();
+  });
+
+  it('⚠️ تگی از نوعِ دیگر دسته نمی‌شود — بی‌دسته ذخیره می‌شود', async () => {
+    const id = await access.saveService(manager(), {
+      id: null, name: 'نقش به‌جای دسته', categoryTagId: roleTag, ownerUserId: null,
+      adminUrl: '', note: '', isActive: true,
+    });
+    const [row] = await db.select().from(services).where(eq(services.id, id));
+    expect(row!.categoryTagId).toBeNull();
+  });
+
+  it('⚠️ دسته‌ای که سرویسی دارد حذف نمی‌شود؛ دستهٔ خالی حذف می‌شود', async () => {
+    const admin = actor({ id: 1, permissions: ['settings.manage'] as Permission[] });
+    await expect(settings.deleteTag(admin, aiCat)).rejects.toThrow(CatalogError);
+
+    const [spare] = await db.insert(tags).values({ name: 'موقت', type: 'service_category' })
+      .returning({ id: tags.id });
+    await settings.deleteTag(admin, spare!.id);
+    expect(await db.select().from(tags).where(eq(tags.id, spare!.id))).toHaveLength(0);
+  });
+
+  it('⚠️ سرویسِ غیرفعال هم دسته‌اش را نگه می‌دارد و جلوی حذفِ آن را می‌گیرد', async () => {
+    const admin = actor({ id: 1, permissions: ['settings.manage'] as Permission[] });
+    const [cat] = await db.insert(tags).values({ name: 'قدیمی', type: 'service_category' })
+      .returning({ id: tags.id });
+    const id = await access.saveService(manager(), {
+      id: null, name: 'کنارگذاشته', categoryTagId: cat!.id, ownerUserId: null,
+      adminUrl: '', note: '', isActive: true,
+    });
+    await access.deleteService(manager(), id);
+
+    await expect(settings.deleteTag(admin, cat!.id)).rejects.toThrow(CatalogError);
+  });
+
+  it('پیوندِ «مدیریتِ دسته‌ها» فقط برای کسی است که تنظیمات را اداره می‌کند', async () => {
+    expect((await access.accessBoard(viewer())).canManageCategories).toBe(false);
+    const both = actor({ id: 1, permissions: ['members.view', 'settings.manage'] as Permission[] });
+    expect((await access.accessBoard(both)).canManageCategories).toBe(true);
   });
 });
 

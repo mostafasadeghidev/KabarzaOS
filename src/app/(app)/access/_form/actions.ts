@@ -45,7 +45,7 @@ export async function saveServiceAction(_prev: AccessState, formData: FormData) 
   return run((actor) => access.saveService(actor, {
     id: num(formData.get('id')),
     name: String(formData.get('name') ?? ''),
-    kind: String(formData.get('kind') ?? 'other'),
+    categoryTagId: num(formData.get('categoryTagId')),
     ownerUserId: num(formData.get('ownerUserId')),
     adminUrl: String(formData.get('adminUrl') ?? ''),
     note: String(formData.get('note') ?? ''),

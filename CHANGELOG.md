@@ -2,6 +2,22 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.86.0]
+
+### Changed
+
+- **Service categories are managed in Settings → Tags.** The categories on the Access page's Services tab (AI, VoIP & phone, Storage, …) were a fixed list of nine in the code and in a database check, so adding, renaming or removing one needed a new release. They are now a sixth tag type, «Service category», beside member roles and ledger categories: add, rename, recolour, reorder and translate them there, like any other tag.
+- **Migration 0032 keeps every service's category.** The nine existing categories become tags with all their translations, and each service is linked to its own. The migration stops and rolls back if any service would be left without its category, before the old column is dropped.
+- A category that a service still uses cannot be deleted — including a deactivated service, which still shows its category in the register. A tag of another type is not accepted as a category.
+- The service form lists the categories in their Settings order and in the viewer's language, and allows «No category». The services table shows each category with its colour dot, and the CSV export uses the translated name.
+
+### Added
+
+- **«Manage categories»** beside the category field opens Settings on that list. It is shown only to those who can manage settings.
+- Settings opens on the tab and tag type named in the address, e.g. `/settings?tab=tags&type=service_category`.
+
+---
+
 ## [1.85.0]
 
 ### Changed

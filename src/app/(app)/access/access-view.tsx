@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
+import Link from 'next/link';
 import { Download, KeyRound, ListChecks, Pencil, Plus, ShieldAlert, XCircle } from 'lucide-react';
 import { CatalogSection } from '../settings/catalog-section';
 import {
@@ -9,10 +10,7 @@ import {
   saveServiceAction, type AccessState,
 } from './_form/actions';
 import { format as formatMoney } from '@/domain/money/money';
-import {
-  GRANT_LEVELS, KIND_LABELS, LEVEL_LABELS, SERVICE_KINDS,
-  type GrantLevel, type ServiceKind,
-} from '@/domain/access/service-grants';
+import { GRANT_LEVELS, LEVEL_LABELS, type GrantLevel } from '@/domain/access/service-grants';
 import type { MemberState } from '@/domain/people/offboarding';
 import { stateLabel } from '@/domain/people/offboarding';
 import { Badge } from '@/components/ui/badge';
@@ -46,7 +44,10 @@ import { useT, useTimeZone } from '@/i18n/client';
 export interface ServiceRow {
   id: number;
   name: string;
-  kind: ServiceKind;
+  /** دسته — تگی از نوعِ `service_category`؛ نام به زبانِ بیننده. */
+  categoryTagId: number | null;
+  categoryName: string | null;
+  categoryColor: string | null;
   ownerUserId: number | null;
   adminUrl: string;
   note: string;
@@ -83,6 +84,9 @@ export interface GrantRow {
 
 export interface AccessData {
   services: ServiceRow[];
+  /** دسته‌های سرویس از «تنظیمات ← تگ‌ها»، به ترتیبِ خودشان. */
+  categories: Array<{ id: number; name: string; color: string }>;
+  canManageCategories: boolean;
   grants: GrantRow[];
   people: Array<{ id: number; name: string; memberState: MemberState }>;
   risks: Array<{ userId: number; memberState: MemberState; grantIds: number[] }>;
@@ -370,7 +374,19 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
           rows={data.services}
           columns={[
             { header: 'نام', cell: (s) => s.name },
-            { header: 'دسته', cell: (s) => tr(KIND_LABELS[s.kind]) },
+            {
+              header: 'دسته',
+              // همان نقطهٔ رنگیِ منوهای وضعیت؛ نام از خودِ تگ می‌آید و ترجمه‌شده است.
+              cell: (s) => (s.categoryName ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className="size-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: s.categoryColor || 'var(--color-muted-foreground)' }}
+                  />
+                  {s.categoryName}
+                </span>
+              ) : '—'),
+            },
             { header: 'مسئول', cell: (s) => (s.ownerUserId ? personName(s.ownerUserId) : '—') },
             { header: 'کاربران', cell: (s) => s.openCount, numeric: true },
             /**
@@ -420,10 +436,32 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                 <Input id="s-name" name="name" defaultValue={edit?.name ?? ''} required />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="s-kind">{tr("دسته")}</Label>
-                <NativeSelect id="s-kind" name="kind" defaultValue={edit?.kind ?? 'other'}>
-                  {SERVICE_KINDS.map((k) => (
-                    <NativeSelectOption key={k} value={k}>{tr(KIND_LABELS[k])}</NativeSelectOption>
+                {/*
+                  ⚠️ پاسخِ «این دسته‌ها از کجا می‌آیند»: فهرست در «تنظیمات ←
+                  تگ‌ها» اداره می‌شود؛ پیوند فقط برای کسی است که آنجا راه دارد.
+                  در ردیفِ عنوان است، نه زیرِ فهرست: سطرِ سوم این خانه را بلندتر
+                  می‌کرد و فیلدِ «نام» ِ کنارش از تراز می‌افتاد.
+                */}
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="s-category">{tr("دسته")}</Label>
+                  {data.canManageCategories && (
+                    <Link
+                      href="/settings?tab=tags&type=service_category"
+                      className="text-xs leading-none text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                    >
+                      {tr("مدیریتِ دسته‌ها")}
+                    </Link>
+                  )}
+                </div>
+                <NativeSelect
+                  id="s-category"
+                  name="categoryTagId"
+                  defaultValue={edit?.categoryTagId ? String(edit.categoryTagId) : ''}
+                  containerClassName="w-full"
+                >
+                  <NativeSelectOption value="">{tr("— بدونِ دسته —")}</NativeSelectOption>
+                  {data.categories.map((c) => (
+                    <NativeSelectOption key={c.id} value={String(c.id)}>{c.name}</NativeSelectOption>
                   ))}
                 </NativeSelect>
               </div>

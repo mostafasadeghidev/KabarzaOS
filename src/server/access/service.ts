@@ -1,13 +1,15 @@
-import { and, asc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, getTableColumns, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
-  auditLog, currencies, recurringExpenses, serviceGrants, services, userRoles, users,
+  auditLog, currencies, recurringExpenses, serviceGrants, services, tags, userRoles, users,
 } from '@/db/schema';
+import { tagName } from '@/db/tag-name';
+import { currentLocale } from '@/i18n/server';
 import { can, canManageSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView } from '@/domain/access/guard';
 import {
-  assertRevocable, assertServiceName, countByService, normalizeKind, normalizeLevel,
-  openRisks, planGrant, type GrantLevel, type ServiceKind,
+  assertRevocable, assertServiceName, countByService, normalizeLevel,
+  openRisks, planGrant, type GrantLevel,
 } from '@/domain/access/service-grants';
 import {
   monthlyEquivalent, perUserCost, totalsByCurrency, type IntervalUnit,
@@ -44,9 +46,21 @@ async function audit(
 
 export async function accessBoard(actor: Actor) {
   assertCanView(actor, 'members');
+  const locale = await currentLocale();
 
-  const [serviceRows, grantRows, peopleRows] = await Promise.all([
-    db.select().from(services).orderBy(asc(services.name)),
+  const [serviceRows, grantRows, peopleRows, categoryRows] = await Promise.all([
+    /**
+     * دسته از تگ می‌آید (نوعِ `service_category`)، به زبانِ بیننده.
+     * ⚠️ `leftJoin`: سرویسِ بی‌دسته هم باید در فهرست بماند.
+     */
+    db.select({
+      ...getTableColumns(services),
+      categoryName: sql<string | null>`${tagName(locale)}`,
+      categoryColor: tags.color,
+    })
+      .from(services)
+      .leftJoin(tags, eq(tags.id, services.categoryTagId))
+      .orderBy(asc(services.name)),
 
     db.select({
       id: serviceGrants.id,
@@ -80,6 +94,12 @@ export async function accessBoard(actor: Actor) {
       .innerJoin(userRoles, eq(userRoles.userId, users.id))
       .where(and(isNull(users.deletedAt), ne(userRoles.role, 'client')))
       .orderBy(asc(users.name)),
+
+    // گزینه‌های «دسته» در فرمِ سرویس — به ترتیبی که در تنظیمات چیده شده.
+    db.select({ id: tags.id, name: tagName(locale), color: tags.color })
+      .from(tags)
+      .where(eq(tags.type, 'service_category'))
+      .orderBy(asc(tags.sortOrder), asc(tags.id)),
   ]);
 
   const stateOf = new Map<number, MemberState>(
@@ -143,6 +163,9 @@ export async function accessBoard(actor: Actor) {
 
   return {
     services: serviceViews,
+    categories: categoryRows,
+    /** پیوندِ «مدیریتِ دسته‌ها» فقط برای کسی که تنظیمات را اداره می‌کند. */
+    canManageCategories: can(actor, 'settings.manage'),
     grants: grantRows,
     people: peopleRows,
     /** عضوِ سابقی که هنوز دسترسیِ باز دارد — همان کارِ نیمه‌تمام. */
@@ -164,7 +187,6 @@ export async function myGrants(actor: Actor) {
   return db.select({
     id: serviceGrants.id,
     serviceName: services.name,
-    kind: services.kind,
     level: serviceGrants.level,
     accountRef: serviceGrants.accountRef,
     grantedAt: serviceGrants.grantedAt,
@@ -204,7 +226,8 @@ export async function openGrantCounts(
 export interface ServiceInput {
   id: number | null;
   name: string;
-  kind: string;
+  /** تگی از نوعِ `service_category`؛ `null` یعنی بی‌دسته. */
+  categoryTagId: number | null;
   ownerUserId: number | null;
   adminUrl: string;
   note: string;
@@ -228,9 +251,19 @@ export async function saveService(actor: Actor, input: ServiceInput) {
       .from(services).where(eq(services.id, input.id))
     : [];
 
+  /**
+   * ⚠️ فقط تگی از نوعِ «دستهٔ سرویس» پذیرفته می‌شود و شناسهٔ دیگر بی‌دسته
+   * می‌شود — مثلِ دستهٔ ناشناخته که پیش‌تر «سایر» می‌شد. اگر مثلاً یک نقشِ
+   * عضو اینجا می‌نشست، آن نقش هم دیگر در تنظیمات حذف‌شدنی نبود.
+   */
+  const [category] = input.categoryTagId
+    ? await db.select({ id: tags.id }).from(tags)
+      .where(and(eq(tags.id, input.categoryTagId), eq(tags.type, 'service_category')))
+    : [];
+
   const values = {
     name,
-    kind: normalizeKind(input.kind) as ServiceKind,
+    categoryTagId: category?.id ?? null,
     ownerUserId: input.ownerUserId,
     adminUrl: input.adminUrl.trim(),
     note: input.note.trim(),

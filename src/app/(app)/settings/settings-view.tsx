@@ -83,13 +83,17 @@ export interface SettingsData {
   }>;
 }
 
-/** نوعِ تگ‌ها — همان پنج نوعِ نسخهٔ قبلی. */
+/**
+ * نوعِ تگ‌ها — پنج نوعِ نسخهٔ قبلی، به‌علاوهٔ دستهٔ سرویس‌های دفترِ دسترسی
+ * (۱.۸۶.۰) که پیش از آن فهرستی ثابت در کد بود.
+ */
 const TAG_TYPES: Array<{ key: TagType; label: string }> = [
   { key: 'member_role', label: 'نقشِ عضو' },
   { key: 'project_status', label: 'وضعیتِ پروژه' },
   { key: 'task_status', label: 'وضعیتِ تسک' },
   { key: 'task_priority', label: 'اولویتِ تسک' },
   { key: 'ledger_category', label: 'دستهٔ دفتر' },
+  { key: 'service_category', label: 'دستهٔ سرویس' },
 ];
 
 const TABS = [
@@ -110,11 +114,28 @@ const TABS = [
 ] as const;
 
 
-export function SettingsView({ data }: { data: SettingsData }) {
+type SettingsTab = (typeof TABS)[number]['key'];
+
+/**
+ * تبِ آغازین از نشانی (`?tab=tags&type=service_category`) — تا پیوندی مثلِ
+ * «مدیریتِ دسته‌ها» در فرمِ سرویس مستقیم روی همان فهرست باز شود. مقدارِ
+ * ناشناخته، یا تبِ مالکانه برای غیرمالک، به پیش‌فرض برمی‌گردد.
+ */
+function startTab(key: string | undefined, isOwner: boolean): SettingsTab {
+  return TABS.find((t) => t.key === key && (!t.ownerOnly || isOwner))?.key ?? 'currencies';
+}
+
+function startTagType(key: string | undefined): TagType {
+  return TAG_TYPES.find((t) => t.key === key)?.key ?? 'member_role';
+}
+
+export function SettingsView({
+  data, open = {},
+}: { data: SettingsData; open?: { tab?: string; type?: string } }) {
   const tr = useT();
-  const [tab, setTab] = useState<(typeof TABS)[number]['key']>('currencies');
+  const [tab, setTab] = useState<SettingsTab>(() => startTab(open.tab, data.isOwner));
   const locale = useLocale();
-  const [tagType, setTagType] = useState<TagType>('member_role');
+  const [tagType, setTagType] = useState<TagType>(() => startTagType(open.type));
   const [pending, startTransition] = useTransition();
 
   const currencyName = (id: number | null) =>
@@ -272,7 +293,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
             addLabel="افزودن تگ"
             rows={data.tags.filter((t) => t.type === tagType)}
             /*
-              ⚠️ هر پنج نوعِ تگ **یک** مجموعه ستون دارند، با پهنای ثابت: پیش از این
+              ⚠️ همهٔ نوع‌های تگ **یک** مجموعه ستون دارند، با پهنای ثابت: پیش از این
               هر نوع ستون‌های خودش را داشت (گروه، دسترسی، تمام‌شده) و جدول با هر
               تعویضِ نوع سرستون‌هایش را جابه‌جا می‌کرد. آنچه مخصوصِ یک نوع است
               حالا نشانی در ستونِ «ویژگی‌ها»ست؛ راهنمای هر نشان نامِ فیلدِ آن است.

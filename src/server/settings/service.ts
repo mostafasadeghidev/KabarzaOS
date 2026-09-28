@@ -246,13 +246,18 @@ export async function saveTag(
 export async function deleteTag(actor: Actor, id: number) {
   assertSettings(actor);
 
-  // ⚠️ شمارشِ استفاده در همهٔ جاهایی که یک تگ می‌تواند بنشیند.
+  /**
+   * ⚠️ شمارشِ استفاده در همهٔ جاهایی که یک تگ می‌تواند بنشیند — از جمله
+   * دستهٔ سرویس‌ها. سرویسِ غیرفعال هم می‌شمارد: غیرفعال‌شدن حذف نیست و
+   * سرویس هنوز در دفتر با همان دسته دیده می‌شود.
+   */
   const used = await db.execute(sql`
     select
       (select count(*) from tag_relations where tag_id = ${id})
       + (select count(*) from projects where status_tag_id = ${id})
       + (select count(*) from tasks where status_tag_id = ${id} or priority_tag_id = ${id})
-      + (select count(*) from project_members where role_tag_id = ${id}) as n
+      + (select count(*) from project_members where role_tag_id = ${id})
+      + (select count(*) from services where category_tag_id = ${id}) as n
   `);
   const [tag] = await db.select({ isProtected: tags.isProtected })
     .from(tags).where(eq(tags.id, id));

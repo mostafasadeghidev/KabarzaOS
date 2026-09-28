@@ -20,7 +20,12 @@ import { PageHeader, PageShell } from '@/components/page-shell';
  * تنظیمات — فهرست‌های پایه.
  * ⚠️ مالک‌محور است: مجوزِ `settings.manage` هم برای دیدن لازم است، مثلِ نسخهٔ قبلی.
  */
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  /** `?tab=&type=` — تب و نوعِ تگِ آغازین؛ مثلاً از پیوندِ «مدیریتِ دسته‌ها». */
+  searchParams: Promise<{ tab?: string; type?: string }>;
+}) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
    * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
@@ -85,7 +90,7 @@ export default async function SettingsPage() {
         )}
       />
 
-      <SettingsView data={data} />
+      <SettingsView data={data} open={await searchParams} />
     </PageShell>
   );
 }

@@ -225,6 +225,13 @@
       "when": 1788661200014,
       "tag": "0031_tag_slug_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1788661200015,
+      "tag": "0032_service_category_tags",
+      "breakpoints": true
     }
   ]
 }

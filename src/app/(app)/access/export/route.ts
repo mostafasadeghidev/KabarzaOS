@@ -3,7 +3,7 @@ import { getT } from '@/i18n/server';
 import { accessBoard } from '@/server/access/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { csvDocument } from '@/domain/access/office-scope';
-import { KIND_LABELS, LEVEL_LABELS } from '@/domain/access/service-grants';
+import { LEVEL_LABELS } from '@/domain/access/service-grants';
 import { stateLabel } from '@/domain/people/offboarding';
 
 /**
@@ -59,7 +59,8 @@ export async function GET(request: Request) {
         g.userName,
         g.memberState === 'active' ? t('فعال') : t(stateLabel(g.memberState) ?? ''),
         svc?.name ?? '',
-        svc ? t(KIND_LABELS[svc.kind]) : '',
+        // نامِ دسته از خودِ تگ و به زبانِ بیننده می‌آید (`tagName`)، نه از `t()`.
+        svc?.categoryName ?? '',
         nameOf(svc?.ownerUserId ?? null),
         t(LEVEL_LABELS[g.level]),
         g.accountRef,

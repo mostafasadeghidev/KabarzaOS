@@ -13,27 +13,10 @@
 
 import type { MemberState } from '@/domain/people/offboarding';
 
-export const SERVICE_KINDS = [
-  'ai', 'voip', 'storage', 'email', 'design', 'dev', 'social', 'finance', 'other',
-] as const;
-export type ServiceKind = (typeof SERVICE_KINDS)[number];
-
 export const GRANT_LEVELS = ['admin', 'member', 'viewer'] as const;
 export type GrantLevel = (typeof GRANT_LEVELS)[number];
 
 /** برچسبِ فارسیِ مبدأ — کلیدِ ترجمه است، نه متنِ نهایی (R-I18N-01). */
-export const KIND_LABELS: Record<ServiceKind, string> = {
-  ai: 'هوش مصنوعی',
-  voip: 'ویپ و تلفن',
-  storage: 'ذخیره‌سازی',
-  email: 'ایمیل',
-  design: 'طراحی',
-  dev: 'توسعه و زیرساخت',
-  social: 'شبکه‌های اجتماعی',
-  finance: 'مالی و پرداخت',
-  other: 'سایر',
-};
-
 export const LEVEL_LABELS: Record<GrantLevel, string> = {
   admin: 'مدیر',
   member: 'کاربر',
@@ -66,10 +49,6 @@ export function accessMessage(code: AccessError['code']): string {
     case 'already_revoked': return 'این دسترسی پیش‌تر قطع شده بود.';
     case 'not_found': return 'این دسترسی پیدا نشد.';
   }
-}
-
-export function normalizeKind(raw: string): ServiceKind {
-  return (SERVICE_KINDS as readonly string[]).includes(raw) ? (raw as ServiceKind) : 'other';
 }
 
 export function normalizeLevel(raw: string): GrantLevel {

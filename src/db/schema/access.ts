@@ -1,6 +1,7 @@
 import { boolean, index, text, uniqueIndex, pgTable, jsonb, check, integer } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { pk, fk, ts, stamps, softDelete } from './_shared';
+import { tags } from './base';
 
 /** گروه ۲ — کاربران و دسترسی */
 
@@ -156,15 +157,6 @@ export const auditLog = pgTable('audit_log', {
  * ------------------------------------------------------------------ */
 
 /**
- * دستهٔ سرویس — فقط برای گروه‌بندی و فیلتر؛ هیچ منطقی به آن گره نخورده.
- * `other` عمداً هست تا سرویسِ تازه بی‌مهاجرت ثبت شود.
- */
-export const SERVICE_KINDS = [
-  'ai', 'voip', 'storage', 'email', 'design', 'dev', 'social', 'finance', 'other',
-] as const;
-export type ServiceKind = (typeof SERVICE_KINDS)[number];
-
-/**
  * سامانه‌های بیرونِ KabarzaOS که تیم به آن‌ها دسترسی می‌گیرد.
  *
  * ⚠️ هیچ اعتبارنامه‌ای اینجا ذخیره نمی‌شود — نه رمز، نه توکن، نه کلید.
@@ -173,7 +165,12 @@ export type ServiceKind = (typeof SERVICE_KINDS)[number];
 export const services = pgTable('services', {
   id: pk(),
   name: text('name').notNull(),
-  kind: text('kind').notNull().default('other').$type<ServiceKind>(),
+  /**
+   * دستهٔ سرویس — تگی از نوعِ `service_category` که در «تنظیمات ← تگ‌ها»
+   * اداره می‌شود (مهاجرتِ ۰۰۳۲). فقط برای نمایش و گروه‌بندی است؛ هیچ منطقی
+   * به آن گره نخورده. اختیاری است: سرویسِ تازه می‌تواند بی‌دسته ثبت شود.
+   */
+  categoryTagId: fk('category_tag_id').references(() => tags.id),
   /** مسئولِ اعطا و قطعِ دسترسی — کسی که پنلِ مدیریتِ سرویس دستِ اوست. */
   ownerUserId: fk('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
   adminUrl: text('admin_url').notNull().default(''),
@@ -190,8 +187,8 @@ export const services = pgTable('services', {
   isActive: boolean('is_active').notNull().default(true),
   ...stamps,
 }, (t) => [
-  check('services_kind_ck', sql`${t.kind} in ('ai','voip','storage','email','design','dev','social','finance','other')`),
   index('services_name_lower_ix').on(sql`lower(${t.name})`),
+  index('services_category_ix').on(t.categoryTagId),
 ]);
 
 /** سطحِ دسترسی — فهرستِ ثابت تا گزارش‌ها قابلِ جمع‌بستن بمانند. */
