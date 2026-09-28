@@ -10,12 +10,12 @@ import {
   type HoursState,
 } from './_form/actions';
 import { hoursLabel } from '@/domain/timelogs/timer';
-import { hoursQuery } from '@/domain/timelogs/hours-filter';
+import { HOURS_PER_PAGE, hoursQuery } from '@/domain/timelogs/hours-filter';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
@@ -28,6 +28,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { StatCard } from '@/components/stat-card';
 import { Panel } from '@/components/page-shell';
 import { IconButton } from '@/components/ui/icon-button';
+import { Pager } from '@/components/ui/pager';
 
 export interface LogRow {
   id: number;
@@ -156,22 +157,22 @@ export function HoursView({ data }: { data: HoursData }) {
           </p>
 
           <form action={confirm} className="flex flex-wrap items-end gap-2">
-            <div className="grid gap-1.5">
-              <Label htmlFor="pc-h">{t("ساعت")}</Label>
+            <Field>
+              <FieldLabel htmlFor="pc-h">{t("ساعت")}</FieldLabel>
               <Input
                 id="pc-h" name="hours" type="number" min={0}
                 className="num w-20"
                 defaultValue={Math.floor(data.pending.minutes / 60)}
               />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="pc-m">{t("دقیقه")}</Label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="pc-m">{t("دقیقه")}</FieldLabel>
               <Input
                 id="pc-m" name="minutes" type="number" min={0} max={59}
                 className="num w-20"
                 defaultValue={data.pending.minutes % 60}
               />
-            </div>
+            </Field>
             <Submit>{t("ثبتِ این مدت")}</Submit>
             <Button type="button" size="sm" variant="outline" onClick={() => resumePendingAction()}>
               <Play className="size-3.5" />
@@ -194,10 +195,10 @@ export function HoursView({ data }: { data: HoursData }) {
                 <Badge variant="secondary">{data.running.projectTitle ?? t('کارِ عمومی')}</Badge>
               </div>
               <div className="flex flex-wrap items-end gap-2">
-                <div className="grid flex-1 gap-1.5">
-                  <Label htmlFor="stop-desc">{t("توضیح (اختیاری)")}</Label>
+                <Field className="flex-1">
+                  <FieldLabel htmlFor="stop-desc">{t("توضیح (اختیاری)")}</FieldLabel>
                   <Input id="stop-desc" name="description" placeholder={t("روی چه کار کردید؟")} />
-                </div>
+                </Field>
                 <Submit variant="outline">
                   <Pause className="size-3.5" />
                   {tr("توقف و ثبت")}
@@ -206,10 +207,10 @@ export function HoursView({ data }: { data: HoursData }) {
             </form>
           ) : (
             <form action={start} className="flex flex-wrap items-end gap-2">
-              <div className="grid flex-1 gap-1.5">
-                <Label htmlFor="start-project">{t("پروژه")}</Label>
+              <Field className="flex-1">
+                <FieldLabel htmlFor="start-project">{t("پروژه")}</FieldLabel>
                 <ProjectSelect projects={data.projects} id="start-project" allowGeneral={data.canLogGeneral} />
-              </div>
+              </Field>
               <Submit>
                 <Play className="size-3.5" />
                 {tr("شروع")}
@@ -224,30 +225,30 @@ export function HoursView({ data }: { data: HoursData }) {
         <Panel title={t("ثبتِ دستی")}>
           <form action={log} className="grid gap-3">
             <div className="grid gap-2 @xl/main:grid-cols-4">
-              <div className="grid gap-1.5 @xl/main:col-span-2">
-                <Label htmlFor="log-project">{t("پروژه")}</Label>
+              <Field className="@xl/main:col-span-2">
+                <FieldLabel htmlFor="log-project">{t("پروژه")}</FieldLabel>
                 <ProjectSelect projects={data.projects} id="log-project" allowGeneral={data.canLogGeneral} />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="log-date">{t("تاریخ")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="log-date">{t("تاریخ")}</FieldLabel>
                 <DatePicker id="log-date" name="logDate" defaultValue={data.today} required />
-              </div>
+              </Field>
               <div className="flex items-end gap-2">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="log-h">{t("ساعت")}</Label>
+                <Field>
+                  <FieldLabel htmlFor="log-h">{t("ساعت")}</FieldLabel>
                   <Input id="log-h" name="hours" type="number" min={0} className="num w-16" defaultValue={0} />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="log-m">{t("دقیقه")}</Label>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="log-m">{t("دقیقه")}</FieldLabel>
                   <Input id="log-m" name="minutes" type="number" min={0} max={59} className="num w-16" defaultValue={0} />
-                </div>
+                </Field>
               </div>
             </div>
             <div className="flex flex-wrap items-end gap-2">
-              <div className="grid flex-1 gap-1.5">
-                <Label htmlFor="log-desc">{t("توضیح")}</Label>
+              <Field className="flex-1">
+                <FieldLabel htmlFor="log-desc">{t("توضیح")}</FieldLabel>
                 <Input id="log-desc" name="description" />
-              </div>
+              </Field>
               <Submit>{t("ثبت")}</Submit>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -264,16 +265,16 @@ export function HoursView({ data }: { data: HoursData }) {
       {/* ⚠️ همان نوارِ فیلترِ دفترکل و گزارش‌ها: قابِ ساده، برچسبِ ریز، کنترل‌های `sm`. */}
       <div className="grid gap-2">
         <form method="get" action="/hours" className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3">
-          <div className="grid gap-1.5">
-            <Label htmlFor="f-from" className="text-xs">{t("از تاریخ")}</Label>
+          <Field>
+            <FieldLabel htmlFor="f-from" className="text-xs">{t("از تاریخ")}</FieldLabel>
             <DatePicker id="f-from" name="from" size="sm" className="w-[9.5rem]" defaultValue={data.filter.from} />
-          </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="f-to" className="text-xs">{t("تا تاریخ")}</Label>
+          </Field>
+            <Field>
+              <FieldLabel htmlFor="f-to" className="text-xs">{t("تا تاریخ")}</FieldLabel>
               <DatePicker id="f-to" name="to" size="sm" className="w-[9.5rem]" defaultValue={data.filter.to} />
-            </div>
-            <div className="grid flex-1 gap-1.5">
-              <Label htmlFor="f-project" className="text-xs">{t("پروژه")}</Label>
+            </Field>
+            <Field className="flex-1">
+              <FieldLabel htmlFor="f-project" className="text-xs">{t("پروژه")}</FieldLabel>
               <Input
                 id="f-project" name="project" list="hours-project-list" autoComplete="off"
                 placeholder={t("نام پروژه…")} defaultValue={data.filter.project} className="h-8"
@@ -281,7 +282,7 @@ export function HoursView({ data }: { data: HoursData }) {
               <datalist id="hours-project-list">
                 {data.projectTitles.map((title) => <NativeSelectOption key={title} value={title} />)}
               </datalist>
-            </div>
+            </Field>
             <Button type="submit" size="sm">{t("فیلتر")}</Button>
             {filtered && (
               <Link href="/hours" className="text-xs text-muted-foreground underline">{t("پاک‌کردن")}</Link>
@@ -350,54 +351,48 @@ export function HoursView({ data }: { data: HoursData }) {
         </Table>
       )}
 
-      {/* پورتِ pager ِ افزونه: ۱۵تایی با حفظِ فیلترها. */}
-      {data.pager.pages > 1 && (
-        <nav className="flex flex-wrap items-center gap-1 text-sm">
-          {Array.from({ length: data.pager.pages }, (_, i) => i + 1).map((p) => (
-            <Link
-              key={p}
-              href={pageHref(p)}
-              className={`num rounded-md border px-2.5 py-1 ${p === data.pager.page ? 'border-primary font-medium' : 'text-muted-foreground hover:bg-muted'}`}
-            >
-              {p}
-            </Link>
-          ))}
-          <span className="ms-2 text-xs text-muted-foreground">{t('{n} ثبت', { n: data.pager.total })}</span>
-        </nav>
-      )}
+      {/* پورتِ pager ِ افزونه: ۱۵تایی با حفظِ فیلترها — صفحه در آدرس است، پس پیوند. */}
+      <Pager
+        page={data.pager.page}
+        totalPages={data.pager.pages}
+        total={data.pager.total}
+        perPage={HOURS_PER_PAGE}
+        hrefOf={pageHref}
+        label={t('{n} ثبت', { n: data.pager.total })}
+      />
 
       {editing && (
         <Panel title={tr('ویرایشِ ثبتِ {date}', { date: ltr(editing.logDate) })}>
           {/* پورتِ ویرایشِ درون‌خطیِ افزونه: تاریخ، پروژه، ساعت، دقیقه، توضیح. */}
           <form action={edit} className="flex flex-wrap items-end gap-2">
             <input type="hidden" name="logId" value={editing.id} />
-            <div className="grid gap-1.5">
-              <Label htmlFor="e-date">{t("تاریخ")}</Label>
+            <Field>
+              <FieldLabel htmlFor="e-date">{t("تاریخ")}</FieldLabel>
               <DatePicker id="e-date" name="logDate" className="w-[9.5rem]" defaultValue={editing.logDate} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="e-project">{t("پروژه")}</Label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="e-project">{t("پروژه")}</FieldLabel>
               <ProjectSelect
                 projects={data.projects}
                 id="e-project"
                 allowGeneral={data.canLogGeneral}
                 defaultValue={editing.projectId === null ? '' : String(editing.projectId)}
               />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="e-h">{t("ساعت")}</Label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="e-h">{t("ساعت")}</FieldLabel>
               <Input id="e-h" name="hours" type="number" min={0} className="num w-16"
                 defaultValue={Math.floor(editing.minutes / 60)} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="e-m">{t("دقیقه")}</Label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="e-m">{t("دقیقه")}</FieldLabel>
               <Input id="e-m" name="minutes" type="number" min={0} max={59} className="num w-16"
                 defaultValue={editing.minutes % 60} />
-            </div>
-            <div className="grid flex-1 gap-1.5">
-              <Label htmlFor="e-desc">{t("توضیح")}</Label>
+            </Field>
+            <Field className="flex-1">
+              <FieldLabel htmlFor="e-desc">{t("توضیح")}</FieldLabel>
               <Input id="e-desc" name="description" defaultValue={editing.description} />
-            </div>
+            </Field>
             <Submit>{t("ذخیره")}</Submit>
             <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(null)}>{t("بستن")}</Button>
           </form>

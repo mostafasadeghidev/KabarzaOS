@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
+import { Hint } from '@/components/ui/tooltip';
 import { useT } from '@/i18n/client';
 
 /**
@@ -75,9 +76,12 @@ export const FileInput = React.forwardRef<
         <Upload className="size-3.5" aria-hidden />
         {multiple ? tr('انتخاب فایل‌ها') : tr('انتخاب فایل')}
       </label>
-      <span className="min-w-0 truncate text-xs text-muted-foreground" title={shown.join(tr('، '))}>
-        {label}
-      </span>
+      {/* نامِ کامل (و فهرستِ چندتایی) در راهنمای شناور — متنِ کوتاه‌شده به‌تنهایی کافی نیست. */}
+      <Hint label={shown.length > 0 ? shown.join(tr('، ')) : undefined}>
+        <span className="min-w-0 truncate text-xs text-muted-foreground">
+          {label}
+        </span>
+      </Hint>
     </div>
   );
 });

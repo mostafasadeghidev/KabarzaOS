@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -771,28 +771,28 @@ export function PayoutsView({
                 {payTarget.userName} — <span className="num">{format(payTarget.amount)}</span>
               </p>
 
-              <div className="grid gap-1.5">
-                <Label htmlFor="pay-account">{t("حساب")}</Label>
+              <Field>
+                <FieldLabel htmlFor="pay-account">{t("حساب")}</FieldLabel>
                 <SearchableSelect id="pay-account" name="accountId" containerClassName="w-full" defaultValue={accounts[0]?.id ?? ''}>
                   {accounts.map((a) => (
                     <NativeSelectOption key={a.id} value={a.id}>{a.name} ({a.currencyCode})</NativeSelectOption>
                   ))}
                 </SearchableSelect>
-              </div>
+              </Field>
 
-              <div className="grid gap-1.5">
-                <Label htmlFor="pay-date">{t("تاریخ")}</Label>
+              <Field>
+                <FieldLabel htmlFor="pay-date">{t("تاریخ")}</FieldLabel>
                 <DatePicker id="pay-date" name="entryDate" defaultValue={today} required />
-              </div>
+              </Field>
 
               {/* پورتِ `record_payment_url`: مبلغِ درخواست معادلِ تعهد است؛ مبلغِ واقعی از حساب اختیاری. */}
-              <div className="grid gap-1.5">
-                <Label htmlFor="pay-amount">{t("مبلغِ واقعی از حساب (اختیاری)")}</Label>
+              <Field>
+                <FieldLabel htmlFor="pay-amount">{t("مبلغِ واقعی از حساب (اختیاری)")}</FieldLabel>
                 <Input id="pay-amount" name="amount" inputMode="decimal" className="num" placeholder={payTarget.amount} />
-                <p className="text-xs text-muted-foreground">
+                <FieldDescription>
                   {tr("در ارزِ حساب؛ خالی یعنی همان مبلغِ درخواست. مبلغِ درخواست به‌عنوانِ معادلِ تعهدِ عضو ثبت می‌شود.")}
-                </p>
-              </div>
+                </FieldDescription>
+              </Field>
 
               {payState.error && (
                 <Alert variant="destructive">
@@ -827,22 +827,22 @@ export function PayoutsView({
               <p className="text-sm">
                 {unitTarget.userName} — {unitTarget.projectTitle} — <span className="num">{format(unitTarget.amount)} {unitTarget.currencyCode ?? ''}</span>
               </p>
-              <div className="grid gap-1.5">
-                <Label htmlFor="unit-account">{t("حساب")}</Label>
+              <Field>
+                <FieldLabel htmlFor="unit-account">{t("حساب")}</FieldLabel>
                 <SearchableSelect id="unit-account" name="accountId" containerClassName="w-full" defaultValue={accounts[0]?.id ?? ''}>
                   {accounts.map((a) => (
                     <NativeSelectOption key={a.id} value={a.id}>{a.name} ({a.currencyCode})</NativeSelectOption>
                   ))}
                 </SearchableSelect>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="unit-date">{t("تاریخ")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="unit-date">{t("تاریخ")}</FieldLabel>
                 <DatePicker id="unit-date" name="entryDate" defaultValue={today} required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="unit-amount">{t("مبلغِ واقعی از حساب (اختیاری)")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="unit-amount">{t("مبلغِ واقعی از حساب (اختیاری)")}</FieldLabel>
                 <Input id="unit-amount" name="amount" inputMode="decimal" className="num" placeholder={unitTarget.amount} />
-              </div>
+              </Field>
               {unitState.error && (
                 <Alert variant="destructive">
                   <CircleAlert />
@@ -874,55 +874,55 @@ export function PayoutsView({
             {editing && <input type="hidden" name="id" value={editing.id} />}
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="grid gap-1.5 sm:col-span-2">
-                <Label htmlFor="e-title">{t("عنوان")}</Label>
+              <Field className="sm:col-span-2">
+                <FieldLabel htmlFor="e-title">{t("عنوان")}</FieldLabel>
                 <Input id="e-title" name="title" defaultValue={editing?.title ?? ''} required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-amount">{t("مبلغ")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="e-amount">{t("مبلغ")}</FieldLabel>
                 <Input id="e-amount" name="amount" inputMode="decimal" className="num" defaultValue={editing?.amount ?? ''} required />
-              </div>
+              </Field>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-4">
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-cur">{t("ارز")}</Label>
+              <Field>
+                <FieldLabel htmlFor="e-cur">{t("ارز")}</FieldLabel>
                 <NativeSelect id="e-cur" name="currencyId" containerClassName="w-full" defaultValue={editing?.currencyId ?? currencies.find((c) => c.isDefault)?.id ?? ''}>
                   {currencies.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>)}
                 </NativeSelect>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-kind">{t("نوع")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="e-kind">{t("نوع")}</FieldLabel>
                 <NativeSelect id="e-kind" name="kind" containerClassName="w-full" defaultValue={editing?.kind ?? 'recurring'}>
                   <NativeSelectOption value="recurring">{t("دوره‌ای")}</NativeSelectOption>
                   <NativeSelectOption value="once">{t("یک‌بار")}</NativeSelectOption>
                 </NativeSelect>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-unit">{t("دوره")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="e-unit">{t("دوره")}</FieldLabel>
                 <NativeSelect id="e-unit" name="intervalUnit" containerClassName="w-full" defaultValue={editing?.intervalUnit ?? 'month'}>
                   {(Object.keys(UNIT_LABELS) as IntervalUnit[]).map((u) => (
                     <NativeSelectOption key={u} value={u}>{t(UNIT_LABELS[u])}</NativeSelectOption>
                   ))}
                 </NativeSelect>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-count">{t("هر چند دوره")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="e-count">{t("هر چند دوره")}</FieldLabel>
                 <Input id="e-count" name="intervalCount" type="number" className="num" defaultValue={editing?.intervalCount ?? 1} />
-              </div>
+              </Field>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-4">
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-start">{t("تاریخ شروع")}</Label>
+              <Field>
+                <FieldLabel htmlFor="e-start">{t("تاریخ شروع")}</FieldLabel>
                 <DatePicker id="e-start" name="startDate" defaultValue={editing?.nextDueDate ?? today} required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-next">{t("سررسیدِ بعدی")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="e-next">{t("سررسیدِ بعدی")}</FieldLabel>
                 <DatePicker id="e-next" name="nextDueDate" defaultValue={editing?.nextDueDate ?? ''} />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-account">{t("حسابِ پرداخت")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="e-account">{t("حسابِ پرداخت")}</FieldLabel>
                 <SearchableSelect
                   id="e-account"
                   name="accountId"
@@ -932,30 +932,30 @@ export function PayoutsView({
                   <NativeSelectOption value="">{t("— بدونِ حساب —")}</NativeSelectOption>
                   {accounts.map((a) => <NativeSelectOption key={a.id} value={a.id}>{a.name}</NativeSelectOption>)}
                 </SearchableSelect>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-vendor">{t("طرف‌حساب")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="e-vendor">{t("طرف‌حساب")}</FieldLabel>
                 <SearchableSelect id="e-vendor" name="vendorId" containerClassName="w-full" defaultValue={editing?.vendorId ? String(editing.vendorId) : ''}>
                   <NativeSelectOption value="">{t("بدون طرف‌حساب")}</NativeSelectOption>
                   {vendors.map((v) => <NativeSelectOption key={v.id} value={v.id}>{v.name}</NativeSelectOption>)}
                 </SearchableSelect>
                 {/* پورتِ `find_or_create`: طرف‌حسابِ تازه همین‌جا ساخته می‌شود. */}
                 <Input name="vendorName" placeholder={tr('یا طرف‌حسابِ تازه…')} className="h-8 text-xs" />
-              </div>
+              </Field>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-cat">{t("دسته")}</Label>
+              <Field>
+                <FieldLabel htmlFor="e-cat">{t("دسته")}</FieldLabel>
                 <SearchableSelect id="e-cat" name="categoryTagId" containerClassName="w-full" defaultValue={editing?.categoryTagId ? String(editing.categoryTagId) : ''}>
                   <NativeSelectOption value="">{t("— بدونِ دسته —")}</NativeSelectOption>
                   {categories.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.name ?? ''}</NativeSelectOption>)}
                 </SearchableSelect>
-              </div>
-              <div className="grid gap-1.5 sm:col-span-2">
-                <Label htmlFor="e-note">{t("یادداشت")}</Label>
+              </Field>
+              <Field className="sm:col-span-2">
+                <FieldLabel htmlFor="e-note">{t("یادداشت")}</FieldLabel>
                 <Input id="e-note" name="note" defaultValue={editing?.note ?? ''} />
-              </div>
+              </Field>
             </div>
             {/* ⚠️ پیش از این ویرایش، طرف‌حساب و ارز را بی‌صدا پاک می‌کرد و دسته/یادداشت/فعال ذخیره نمی‌شدند. */}
             <label className="flex items-center gap-2 text-sm">

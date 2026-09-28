@@ -21,7 +21,7 @@ import {
   Message, MessageAvatar, MessageContent, MessageFooter, MessageGroup, MessageHeader,
 } from '@/components/ui/message';
 import { Spinner } from '@/components/ui/spinner';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -43,6 +43,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { SearchInput } from '@/components/ui/search-input';
+import { Hint } from '@/components/ui/tooltip';
+import { Item, ItemContent, ItemMedia } from '@/components/ui/item';
 
 export interface InboxRow {
   id: number;
@@ -103,42 +105,40 @@ function InboxRowButton({
 }) {
   const tr = useT();
   const unread = row.unread > 0;
+  // ردیفِ Item ِ shadcn: رسانه (آواتار) + محتوا؛ زمانِ دقیق در راهنمای شناور، نه title ِ مرورگر.
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(row.id)}
-      aria-current={open ? 'true' : undefined}
-      className={cn(
-        'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start transition-colors',
-        open ? 'bg-accent' : 'hover:bg-accent/60',
-      )}
-    >
-      <ChatAvatar label={row.label} size="lg" />
-      <span className="grid min-w-0 flex-1 gap-0.5">
-        <span className="flex items-center gap-1.5">
-          <span className={cn('truncate text-sm', unread ? 'font-semibold' : 'font-medium')}>
-            {row.label || '—'}
+    <Item asChild size="xs" className={cn('w-full gap-3 py-2.5 text-start', open ? 'bg-accent' : 'hover:bg-accent/60')}>
+      <button
+        type="button"
+        onClick={() => onOpen(row.id)}
+        aria-current={open ? 'true' : undefined}
+      >
+        <ItemMedia><ChatAvatar label={row.label} size="lg" /></ItemMedia>
+        <ItemContent className="gap-0.5">
+          <span className="flex items-center gap-1.5">
+            <span className={cn('truncate text-sm', unread ? 'font-semibold' : 'font-medium')}>
+              {row.label || '—'}
+            </span>
+            {!row.allowReply && (
+              <Megaphone className="size-3.5 shrink-0 text-muted-foreground" aria-label={tr('اعلان یک‌طرفه')} />
+            )}
+            <Hint label={formatDateTime(row.lastAt, tz)}>
+              <span className={cn('num ms-auto shrink-0 text-xs', unread ? 'font-medium text-primary' : 'text-muted-foreground')}>
+                {formatCompact(row.lastAt, tz)}
+              </span>
+            </Hint>
           </span>
-          {!row.allowReply && (
-            <Megaphone className="size-3.5 shrink-0 text-muted-foreground" aria-label={tr('اعلان یک‌طرفه')} />
-          )}
-          <span
-            className={cn('num ms-auto shrink-0 text-xs', unread ? 'font-medium text-primary' : 'text-muted-foreground')}
-            title={formatDateTime(row.lastAt, tz)}
-          >
-            {formatCompact(row.lastAt, tz)}
+          <span className="flex items-center gap-2">
+            <span className={cn('min-w-0 flex-1 truncate text-xs', unread ? 'text-foreground' : 'text-muted-foreground')}>
+              {row.lastBody}
+            </span>
+            {unread && (
+              <Badge className="num h-5 min-w-5 shrink-0 rounded-full px-1.5">{row.unread}</Badge>
+            )}
           </span>
-        </span>
-        <span className="flex items-center gap-2">
-          <span className={cn('min-w-0 flex-1 truncate text-xs', unread ? 'text-foreground' : 'text-muted-foreground')}>
-            {row.lastBody}
-          </span>
-          {unread && (
-            <Badge className="num h-5 min-w-5 shrink-0 rounded-full px-1.5">{row.unread}</Badge>
-          )}
-        </span>
-      </span>
-    </button>
+        </ItemContent>
+      </button>
+    </Item>
   );
 }
 
@@ -667,17 +667,18 @@ export function MessagesView({
                                     <BubbleContent className="whitespace-pre-wrap">{m.body}</BubbleContent>
                                   </Bubble>
                                   <MessageFooter className="gap-1 font-normal">
-                                    <span className="num" title={formatDateTime(m.createdAt, tz)}>
-                                      {formatDateTime(m.createdAt, tz).slice(11)}
-                                    </span>
+                                    <Hint label={formatDateTime(m.createdAt, tz)}>
+                                      <span className="num">{formatDateTime(m.createdAt, tz).slice(11)}</span>
+                                    </Hint>
                                     {mine && thread.thread.showReceipts && (
-                                      <span
-                                        className={cn('inline-flex', read && 'text-primary')}
-                                        title={read ? tr('خوانده شد') : tr('تحویل شد')}
-                                        aria-label={read ? tr('خوانده شد') : tr('تحویل شد')}
-                                      >
-                                        {read ? <CheckCheck className="size-3.5" /> : <Check className="size-3.5" />}
-                                      </span>
+                                      <Hint label={read ? tr('خوانده شد') : tr('تحویل شد')}>
+                                        <span
+                                          className={cn('inline-flex', read && 'text-primary')}
+                                          aria-label={read ? tr('خوانده شد') : tr('تحویل شد')}
+                                        >
+                                          {read ? <CheckCheck className="size-3.5" /> : <Check className="size-3.5" />}
+                                        </span>
+                                      </Hint>
                                     )}
                                   </MessageFooter>
                                 </MessageContent>
@@ -744,10 +745,10 @@ export function MessagesView({
           </DialogHeader>
 
           <form action={mgmtFormAction} className="grid gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="mgmt-body">{tr("متنِ پیام")}</Label>
+            <Field>
+              <FieldLabel htmlFor="mgmt-body">{tr("متنِ پیام")}</FieldLabel>
               <Textarea id="mgmt-body" name="body" rows={5} required />
-            </div>
+            </Field>
             {mgmtState.error && (
               <p className="text-xs text-destructive">{tr(mgmtState.error)}</p>
             )}
@@ -772,8 +773,8 @@ export function MessagesView({
 
           <form action={composeFormAction} className="grid gap-3">
             {canBroadcast && (
-              <div className="grid gap-1.5">
-                <Label htmlFor="msg-audience">{tr("مخاطب")}</Label>
+              <Field>
+                <FieldLabel htmlFor="msg-audience">{tr("مخاطب")}</FieldLabel>
                 <NativeSelect
                   id="msg-audience"
                   name="audience"
@@ -786,12 +787,12 @@ export function MessagesView({
                     <NativeSelectOption key={key} value={key}>{tr(AUDIENCE_LABELS[key])}</NativeSelectOption>
                   ))}
                 </NativeSelect>
-              </div>
+              </Field>
             )}
 
             {audience === '' && (
-              <fieldset className="grid gap-1.5 rounded-lg border p-3">
-                <legend className="px-1 text-sm font-medium">{tr("گیرندگان")}</legend>
+              <FieldSet variant="box">
+                <FieldLegend>{tr("گیرندگان")}</FieldLegend>
 
                 {/*
                   فیلترِ زنده. ⚠️ فقط منویِ انتخاب‌شدنی را کوچک می‌کند؛
@@ -851,13 +852,13 @@ export function MessagesView({
                     {tr("پاک کردن همه")}
                   </Button>
                 )}
-              </fieldset>
+              </FieldSet>
             )}
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="msg-body">{tr("متن پیام")}</Label>
+            <Field>
+              <FieldLabel htmlFor="msg-body">{tr("متن پیام")}</FieldLabel>
               <Textarea id="msg-body" name="body" rows={4} required />
-            </div>
+            </Field>
 
             <label className="flex items-start gap-2 text-sm">
               <Checkbox

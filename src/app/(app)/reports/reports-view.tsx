@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,7 @@ import { StatCard } from '@/components/stat-card';
 import { Progress } from '@/components/ui/progress';
 import { Section } from '@/components/page-shell';
 import { TagChip } from '@/components/ui/tag-chip';
+import { cn } from '@/lib/utils';
 
 /** «دورهٔ بسته» هم خروجی دارد ولی تبِ صادرشدنی نیست — تاریخ لازم دارد. */
 function isExportable(tab: string): boolean {
@@ -874,12 +875,12 @@ export function ReportsView({
                 // پورتِ نشانِ «کهنه»: قفل خالی یا کوتاه‌تر از تاریخِ بستن — دوره دوباره باز شده.
                 const stale = !data.closings.lockDate || data.closings.lockDate < d;
                 return (
+                  // پیش‌تنظیمِ فعال `secondary` و بقیه outline — قاعدهٔ انتخابِ قطعه‌ای (DESIGN.md §۷).
                   <Link
                     key={d}
                     href={`/reports?tab=closings&date=${d}`}
-                    className={`rounded-md border px-3 py-1 text-xs ${
-                      d === data.closings.active ? 'border-primary font-medium' : 'hover:bg-muted'
-                    }`}
+                    aria-current={d === data.closings.active ? 'page' : undefined}
+                    className={cn(buttonVariants({ variant: d === data.closings.active ? 'secondary' : 'outline', size: 'sm' }), 'font-normal')}
                   >
                     <span className="num">{d}</span>
                     {stale && <span className="ms-1 text-amber-700 dark:text-amber-500">({tr('کهنه')})</span>}

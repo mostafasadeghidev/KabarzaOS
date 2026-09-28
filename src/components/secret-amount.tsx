@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useT } from '@/i18n/client';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * مبلغی که پیش‌فرض پوشیده است و با کلیک باز می‌شود.
@@ -23,18 +24,20 @@ export function SecretAmount({
   const t = useT();
   const [shown, setShown] = useState(false);
 
+  const label = shown ? t('پنهان‌کردن') : t('نمایشِ مبلغ');
   return (
-    <button
-      type="button"
-      // ⚠️ کلیک نباید کارتِ زیرین را هم باز کند.
-      onClick={(e) => { e.stopPropagation(); setShown((v) => !v); }}
-      title={shown ? t('پنهان‌کردن') : t('نمایشِ مبلغ')}
-      aria-label={shown ? t('پنهان‌کردن') : t('نمایشِ مبلغ')}
-      className={`rounded outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
-        shown ? '' : 'text-muted-foreground'
-      } ${className}`}
-    >
-      {shown ? value : '•••'}
-    </button>
+    <Hint label={label}>
+      <button
+        type="button"
+        // ⚠️ کلیک نباید کارتِ زیرین را هم باز کند.
+        onClick={(e) => { e.stopPropagation(); setShown((v) => !v); }}
+        aria-label={label}
+        className={`rounded outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
+          shown ? '' : 'text-muted-foreground'
+        } ${className}`}
+      >
+        {shown ? value : '•••'}
+      </button>
+    </Hint>
   );
 }

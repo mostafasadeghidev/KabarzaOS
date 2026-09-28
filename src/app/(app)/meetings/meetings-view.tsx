@@ -17,7 +17,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
@@ -231,14 +231,14 @@ export function MeetingsView({
             </p>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="r-at">{t("تاریخ و ساعت")}</Label>
+              <Field>
+                <FieldLabel htmlFor="r-at">{t("تاریخ و ساعت")}</FieldLabel>
                 <DateTimePicker id="r-at" name="remindAt" required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="r-body">{t("متن یادآور")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="r-body">{t("متن یادآور")}</FieldLabel>
                 <Input id="r-body" name="body" placeholder={t("مثلاً: تماس با کارفرما")} required />
-              </div>
+              </Field>
             </div>
 
             <fieldset className="grid gap-1.5">

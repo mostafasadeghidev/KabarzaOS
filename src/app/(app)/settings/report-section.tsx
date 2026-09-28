@@ -10,7 +10,7 @@ import { REPORT_SECTIONS, type ReportConfig } from '@/domain/scheduler/daily-rep
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -63,18 +63,18 @@ export function ReportSection({ config }: { config: ReportConfig }) {
           </fieldset>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5">
-              <Label htmlFor="r-time">{t("ساعتِ ارسال")}</Label>
+            <Field>
+              <FieldLabel htmlFor="r-time">{t("ساعتِ ارسال")}</FieldLabel>
               <Input id="r-time" name="time" type="time" className="num" defaultValue={config.time} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="r-offset">{t("گزارشِ چند روزِ قبل")}</Label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="r-offset">{t("گزارشِ چند روزِ قبل")}</FieldLabel>
               <Input
                 id="r-offset" name="offset" type="number" min={0} max={7}
                 className="num" defaultValue={config.offset}
               />
-              <p className="text-xs text-muted-foreground">{t("۱ یعنی دیروز.")}</p>
-            </div>
+              <FieldDescription>{t("۱ یعنی دیروز.")}</FieldDescription>
+            </Field>
           </div>
         </Panel>
 

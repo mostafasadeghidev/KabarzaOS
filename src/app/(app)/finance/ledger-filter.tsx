@@ -5,11 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Download, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Combobox } from '@/components/ui/combobox';
 import { useT } from '@/i18n/client';
-import { ltr } from '@/i18n/bidi';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { NativeSelectOption } from '@/components/ui/native-select';
+import { Pager } from '@/components/ui/pager';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
 
@@ -91,25 +91,25 @@ export function LedgerFilter({
         onSubmit={(e) => { e.preventDefault(); submit(e.currentTarget); }}
         className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3"
       >
-        <div className="grid gap-1.5">
-          <Label htmlFor="lf-from" className="text-xs">{tr('از تاریخ')}</Label>
+        <Field>
+          <FieldLabel htmlFor="lf-from" className="text-xs">{tr('از تاریخ')}</FieldLabel>
           <DatePicker id="lf-from" name="from" size="sm" className="w-[9.5rem]" defaultValue={value('from')} />
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="lf-to" className="text-xs">{tr('تا تاریخ')}</Label>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="lf-to" className="text-xs">{tr('تا تاریخ')}</FieldLabel>
           <DatePicker id="lf-to" name="to" size="sm" className="w-[9.5rem]" defaultValue={value('to')} />
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="lf-tag" className="text-xs">{tr('دسته')}</Label>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="lf-tag" className="text-xs">{tr('دسته')}</FieldLabel>
           <SearchableSelect id="lf-tag" name="tag" size="sm" containerClassName="w-40" defaultValue={value('tag')}>
             <NativeSelectOption value="">{tr('همه')}</NativeSelectOption>
             {options.categories.map((c) => (
               <NativeSelectOption key={c.id} value={c.id}>{c.name}</NativeSelectOption>
             ))}
           </SearchableSelect>
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="lf-project" className="text-xs">{tr('پروژه')}</Label>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="lf-project" className="text-xs">{tr('پروژه')}</FieldLabel>
           {/*
             ⚠️ جستجوی زنده، نه فهرستِ بازشونده: فهرست همهٔ پروژه‌ها را
             می‌آورد و روی یک آژانسِ چندساله می‌شود صدها ردیف که پیداکردنِ
@@ -124,14 +124,14 @@ export function LedgerFilter({
             onChange={setProject}
             placeholder={tr('همه')}
           />
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="lf-party" className="text-xs">{tr('طرف‌حساب')}</Label>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="lf-party" className="text-xs">{tr('طرف‌حساب')}</FieldLabel>
           <Input
             id="lf-party" name="party" defaultValue={value('party')}
             placeholder={tr('نامِ پرداخت‌کننده یا گیرنده')} className="h-8 w-52"
           />
-        </div>
+        </Field>
 
         <Button type="submit" size="sm" className="gap-1.5">
           <Search className="size-3.5" />
@@ -159,42 +159,16 @@ export function LedgerFilter({
         </Button>
       </form>
 
-      {paging.totalPages > 1 && (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span className="tabular-nums">
-            {tr('{shown} از {total} ردیف', {
-              shown: ltr(`${(paging.page - 1) * paging.perPage + 1}–${Math.min(paging.page * paging.perPage, paging.total)}`),
-              total: paging.total,
-            })}
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              size="sm" variant="outline" className="h-7 px-2"
-              disabled={paging.page <= 1}
-              onClick={() => go({ page: String(paging.page - 1) })}
-            >
-              {tr('قبلی')}
-            </Button>
-            <span className="num px-1">{paging.page} / {paging.totalPages}</span>
-            <Button
-              size="sm" variant="outline" className="h-7 px-2"
-              disabled={paging.page >= paging.totalPages}
-              onClick={() => go({ page: String(paging.page + 1) })}
-            >
-              {tr('بعدی')}
-            </Button>
-          </div>
-          <NativeSelect
-            value={String(paging.perPage)}
-            onChange={(e) => go({ per: e.target.value, page: '1' })}
-            size="sm" className="h-7 text-xs"
-          >
-            {[25, 50, 100, 200].map((n) => (
-              <NativeSelectOption key={n} value={n}>{n}</NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </div>
-      )}
+      {/* صفحه در آدرس است (go)، پس `onPage` همان `router.push` را می‌زند؛ تعداد در صفحه هم همین‌جا. */}
+      <Pager
+        page={paging.page}
+        totalPages={paging.totalPages}
+        total={paging.total}
+        perPage={paging.perPage}
+        onPage={(p) => go({ page: String(p) })}
+        perPageOptions={[25, 50, 100, 200]}
+        onPerPage={(n) => go({ per: String(n), page: '1' })}
+      />
     </div>
   );
 }

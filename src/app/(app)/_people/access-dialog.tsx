@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { FieldDescription, FieldLegend, FieldSet } from '@/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -81,8 +82,8 @@ export function AccessDialog({
         ) : (
           <div className="grid gap-4">
             {SECTION_ACCESS.map((section) => (
-              <fieldset key={section.key} className="grid gap-1.5">
-                <legend className="text-sm font-medium">{tr(section.label)}</legend>
+              <FieldSet key={section.key}>
+                <FieldLegend>{tr(section.label)}</FieldLegend>
                 <RadioGroup
                   name={`access-${section.key}`}
                   value={levels[section.key] ?? 'none'}
@@ -100,18 +101,18 @@ export function AccessDialog({
                 </RadioGroup>
 
                 {section.key === 'finance' && (
-                  <p className="text-xs text-muted-foreground">
+                  <FieldDescription>
                     {tr("بخشِ «مالی» فقط حالتِ مدیریت دارد؛ دادنِ آن یعنی دسترسیِ کاملِ مالی مانندِ حسابدار.")}
-                  </p>
+                  </FieldDescription>
                 )}
                 {section.key === 'messages' && (
-                  <p className="text-xs text-muted-foreground">
+                  <FieldDescription>
                     {tr("«فقط ارسال» یعنی می‌تواند پیام/اطلاعیه بفرستد ولی صندوق و گفتگوها را نمی‌بیند؛ «ارسال و خواندن» صندوقِ خودش را هم نشان می‌دهد. گفتگوهای خصوصیِ مدیرِ کل هیچ‌گاه دیده نمی‌شوند.")}
-                  </p>
+                  </FieldDescription>
                 )}
 
                 {section.key === 'reports' && (
-                  <div className="mt-1 grid gap-1.5 rounded-lg border p-3">
+                  <div className="mt-1 grid gap-1.5 rounded-lg bg-muted/60 p-3">
                     <p className="text-xs text-muted-foreground">
                       {tr("اگر «دسترسی» به گزارش‌ها بدهید، تعیین کنید کدام تب‌ها را ببیند (تیک = نمایش):")}
                     </p>
@@ -135,7 +136,7 @@ export function AccessDialog({
                     </div>
                   </div>
                 )}
-              </fieldset>
+              </FieldSet>
             ))}
           </div>
         )}

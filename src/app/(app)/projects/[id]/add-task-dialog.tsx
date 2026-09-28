@@ -7,7 +7,7 @@ import { createTaskAction, type TaskFormState } from '../_form/task-actions';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -102,22 +102,22 @@ export function AddTaskDialog({
         <form action={formAction} className="grid gap-3">
           <input type="hidden" name="projectId" value={projectId} />
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="nt-title">{t("عنوان تسک")}</Label>
+          <Field>
+            <FieldLabel htmlFor="nt-title">{t("عنوان تسک")}</FieldLabel>
             <Input id="nt-title" name="title" defaultValue={keep('title')} required autoFocus />
             {state.fieldErrors?.title && (
-              <p className="text-xs text-destructive">{tr(state.fieldErrors.title)}</p>
+              <FieldError>{tr(state.fieldErrors.title)}</FieldError>
             )}
-          </div>
+          </Field>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="nt-desc">{t("توضیحات")}</Label>
+          <Field>
+            <FieldLabel htmlFor="nt-desc">{t("توضیحات")}</FieldLabel>
             <Textarea id="nt-desc" name="description" rows={2} defaultValue={keep('description')} />
-          </div>
+          </Field>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5">
-              <Label htmlFor="nt-status">{t("وضعیت")}</Label>
+            <Field>
+              <FieldLabel htmlFor="nt-status">{t("وضعیت")}</FieldLabel>
               {/*
                 ⚠️ تسکِ تازه پیش‌فرض «شروع نشده» است، نه بی‌وضعیت: سرور هم
                 همین را می‌گذارد (`defaultTaskStatusId`) و نشان‌دادنِ
@@ -132,7 +132,7 @@ export function AddTaskDialog({
                   <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>
                 ))}
               </NativeSelect>
-            </div>
+            </Field>
 
             {/*
               ⚠️ کارفرمای خالص فهرستِ اشخاص را **خالی** می‌گیرد (سرور نامِ
@@ -146,8 +146,8 @@ export function AddTaskDialog({
               («یکی از دولوپرها برش می‌دارد»).
             */}
             {options.assignees.length > 0 && (
-              <div className="grid gap-1.5">
-                <Label htmlFor="nt-assignee">{t("تخصیص به…")}</Label>
+              <Field>
+                <FieldLabel htmlFor="nt-assignee">{t("تخصیص به…")}</FieldLabel>
                 <Combobox
                   id="nt-assignee"
                   name="assignedTo"
@@ -156,12 +156,12 @@ export function AddTaskDialog({
                   onChange={setAssignee}
                   placeholder={t("نامِ عضو را تایپ کنید…")}
                 />
-              </div>
+              </Field>
             )}
 
             {options.roles.length > 0 && (
-              <div className="grid gap-1.5">
-                <Label htmlFor="nt-roles">{t("تخصیص به نقش")}</Label>
+              <Field>
+                <FieldLabel htmlFor="nt-roles">{t("تخصیص به نقش")}</FieldLabel>
                 {/*
                   ⚠️ وقتی تسک به **شخص** سپرده شده، نقش معنا ندارد: صاحبش
                   معلوم است. فیلد جای خود را به یادداشت می‌دهد تا تسک
@@ -181,31 +181,31 @@ export function AddTaskDialog({
                     placeholder={t("نقش‌ها…")}
                   />
                 )}
-              </div>
+              </Field>
             )}
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="nt-priority">{t("اولویت…")}</Label>
+            <Field>
+              <FieldLabel htmlFor="nt-priority">{t("اولویت…")}</FieldLabel>
               <NativeSelect id="nt-priority" name="priorityTagId" containerClassName="w-full" defaultValue={keep('priorityTagId')}>
                 <NativeSelectOption value="">—</NativeSelectOption>
                 {options.priorities.map((p) => (
                   <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>
                 ))}
               </NativeSelect>
-            </div>
+            </Field>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="nt-due">{t("ددلاین")}</Label>
+            <Field>
+              <FieldLabel htmlFor="nt-due">{t("ددلاین")}</FieldLabel>
               <DatePicker id="nt-due" name="dueDate" defaultValue={keep('dueDate')} />
               {state.fieldErrors?.dueDate && (
-                <p className="text-xs text-destructive">{tr(state.fieldErrors.dueDate)}</p>
+                <FieldError>{tr(state.fieldErrors.dueDate)}</FieldError>
               )}
-            </div>
+            </Field>
 
             {/* پورتِ انتخابگرِ «وابسته به» — تسک‌های همین پروژه. */}
             {(options.tasks?.length ?? 0) > 0 && (
-              <div className="grid gap-1.5">
-                <Label htmlFor="nt-depends">{t("وابسته به")}</Label>
+              <Field>
+                <FieldLabel htmlFor="nt-depends">{t("وابسته به")}</FieldLabel>
                 <Combobox
                   id="nt-depends"
                   name="dependsOn"
@@ -214,7 +214,7 @@ export function AddTaskDialog({
                   onChange={setDependsOn}
                   placeholder={t("عنوانِ تسک را تایپ کنید…")}
                 />
-              </div>
+              </Field>
             )}
           </div>
 

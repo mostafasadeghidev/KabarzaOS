@@ -19,6 +19,8 @@ import {
 import { KIND_LABEL, kindOf, structuredBody } from '@/domain/notifications/display';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
+import { cn } from '@/lib/utils';
+import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from '@/components/ui/item';
 
 export interface NotificationItem {
   id: number;
@@ -36,14 +38,14 @@ function when(value: Date | string | null | undefined, tz: string): string {
 }
 
 
-function KindIcon({ type }: { type: string }) {
+function KindIcon({ type, className = 'size-3' }: { type: string; className?: string }) {
   const kind = kindOf(type);
-  if (kind === 'task') return <ListChecks className="size-3" />;
-  if (kind === 'comment') return <MessageSquare className="size-3" />;
-  if (kind === 'meeting') return <CalendarDays className="size-3" />;
-  if (kind === 'money') return <Wallet className="size-3" />;
-  if (kind === 'message') return <Mail className="size-3" />;
-  return <FolderKanban className="size-3" />;
+  if (kind === 'task') return <ListChecks className={className} />;
+  if (kind === 'comment') return <MessageSquare className={className} />;
+  if (kind === 'meeting') return <CalendarDays className={className} />;
+  if (kind === 'money') return <Wallet className={className} />;
+  if (kind === 'message') return <Mail className={className} />;
+  return <FolderKanban className={className} />;
 }
 
 /**
@@ -166,35 +168,38 @@ export function NotificationBell({
           <ul>
             {items.map((n) => (
               <li key={n.id}>
-                <button
-                  type="button"
-                  onClick={() => openNotification(n)}
-                  className={`block w-full rounded-md px-2 py-2 text-start hover:bg-muted ${n.isRead ? '' : 'bg-primary/5'}`}
-                >
-                  {/*
-                    ⚠️ عنوانِ ذخیره‌شده **خودش کلیدِ ترجمه است** (R-I18N-01):
-                    متنِ فارسی در دیتابیس می‌نشیند و اینجا ترجمه می‌شود. پیش
-                    از این خام رندر می‌شد، پس کاربرِ انگلیسی همهٔ اعلان‌ها را
-                    فارسی می‌دید — با اینکه ترجمه‌شان در فایلِ زبان بود.
-                    بدنه داده است (نامِ پروژه، مبلغ)، پس دست‌نخورده می‌ماند.
-                  */}
-                  <p className={`text-sm ${n.isRead ? '' : 'font-medium'}`}>{tr(n.title)}</p>
-                  {n.body && (
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">{n.body}</p>
-                  )}
-                  {/*
-                    ⚠️ دسته در خودِ فهرست: عنوانِ ذخیره‌شده برای یک رویداد چند
-                    شکل دارد — «پیام جدید از سارا» و «پاسخِ تازه از سارا» هر دو
-                    پیام‌اند — و کاربر از روی عنوان نمی‌فهمید با چه چیزی طرف
-                    است. دسته از `type` می‌آید، پس هر دو «پیام» را نشان می‌دهند.
-                  */}
-                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <KindIcon type={n.type} />
-                    {tr(KIND_LABEL[kindOf(n.type)])}
-                    <span aria-hidden>·</span>
-                    <span className="num">{when(n.createdAt, tz)}</span>
-                  </p>
-                </button>
+                {/* ردیفِ Item ِ shadcn: آیکونِ دسته در جایگاهِ رسانه، عنوان، بدنه و متادیتا. */}
+                <Item asChild size="xs" className={cn('w-full text-start hover:bg-muted', !n.isRead && 'bg-primary/5')}>
+                  <button type="button" onClick={() => openNotification(n)}>
+                    <ItemMedia variant="icon">
+                      <KindIcon type={n.type} className="size-4" />
+                    </ItemMedia>
+                    <ItemContent className="gap-0.5">
+                      {/*
+                        ⚠️ عنوانِ ذخیره‌شده **خودش کلیدِ ترجمه است** (R-I18N-01):
+                        متنِ فارسی در دیتابیس می‌نشیند و اینجا ترجمه می‌شود. پیش
+                        از این خام رندر می‌شد، پس کاربرِ انگلیسی همهٔ اعلان‌ها را
+                        فارسی می‌دید — با اینکه ترجمه‌شان در فایلِ زبان بود.
+                        بدنه داده است (نامِ پروژه، مبلغ)، پس دست‌نخورده می‌ماند.
+                      */}
+                      <ItemTitle className={n.isRead ? 'font-normal' : undefined}>{tr(n.title)}</ItemTitle>
+                      {n.body && (
+                        <ItemDescription className="line-clamp-1 text-xs">{n.body}</ItemDescription>
+                      )}
+                      {/*
+                        ⚠️ دسته در خودِ فهرست: عنوانِ ذخیره‌شده برای یک رویداد چند
+                        شکل دارد — «پیام جدید از سارا» و «پاسخِ تازه از سارا» هر دو
+                        پیام‌اند — و کاربر از روی عنوان نمی‌فهمید با چه چیزی طرف
+                        است. دسته از `type` می‌آید، پس هر دو «پیام» را نشان می‌دهند.
+                      */}
+                      <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        {tr(KIND_LABEL[kindOf(n.type)])}
+                        <span aria-hidden>·</span>
+                        <span className="num">{when(n.createdAt, tz)}</span>
+                      </p>
+                    </ItemContent>
+                  </button>
+                </Item>
               </li>
             ))}
           </ul>

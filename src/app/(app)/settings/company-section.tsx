@@ -6,7 +6,7 @@ import { removeCompanyLogoAction, saveCompanyAction, setCompanyLogoAction, type 
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
@@ -77,40 +77,40 @@ export function CompanySection({ company, isOwner }: {
       <Panel title={tr('مشخصاتِ شرکت')} description={tr("این مشخصات روی فاکتورها چاپ می‌شود.")}>
         <form action={saveCompany} className="grid gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5">
-              <Label htmlFor="c-name">{tr("نامِ شرکت")}</Label>
+            <Field>
+              <FieldLabel htmlFor="c-name">{tr("نامِ شرکت")}</FieldLabel>
               <Input id="c-name" name="name" defaultValue={data.company.name} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="c-tax">{tr("شناسهٔ مالیاتی")}</Label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="c-tax">{tr("شناسهٔ مالیاتی")}</FieldLabel>
               <Input id="c-tax" name="taxId" className="num" defaultValue={data.company.taxId} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="c-email">{tr("ایمیل")}</Label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="c-email">{tr("ایمیل")}</FieldLabel>
               <Input id="c-email" name="email" type="email" defaultValue={data.company.email} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="c-phone">{tr("تلفن")}</Label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="c-phone">{tr("تلفن")}</FieldLabel>
               <Input id="c-phone" name="phone" className="num" defaultValue={data.company.phone} />
-            </div>
-            <div className="grid gap-1.5 sm:col-span-2">
-              <Label htmlFor="c-web">{tr("وب‌سایت")}</Label>
+            </Field>
+            <Field className="sm:col-span-2">
+              <FieldLabel htmlFor="c-web">{tr("وب‌سایت")}</FieldLabel>
               {/* ⚠️ متنِ ساده، نه type=url — اجبارِ https:// آدرس را روی فاکتور شلوغ می‌کند. */}
               <Input id="c-web" name="website" defaultValue={data.company.website} placeholder="example.com" />
-            </div>
+            </Field>
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="c-address">{tr("نشانی")}</Label>
+          <Field>
+            <FieldLabel htmlFor="c-address">{tr("نشانی")}</FieldLabel>
             <Textarea id="c-address" name="address" rows={2} defaultValue={data.company.address} />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="c-bank">{tr("اطلاعاتِ حسابِ شرکت")}</Label>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="c-bank">{tr("اطلاعاتِ حسابِ شرکت")}</FieldLabel>
             <Textarea id="c-bank" name="bank" rows={2} defaultValue={data.company.bank} />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="c-footer">{tr("پانویسِ فاکتور")}</Label>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="c-footer">{tr("پانویسِ فاکتور")}</FieldLabel>
             <Textarea id="c-footer" name="invoiceFooter" rows={2} defaultValue={data.company.invoiceFooter} />
-          </div>
+          </Field>
           <div className="flex items-center gap-3">
             <Submit>{tr("ذخیره مشخصات")}</Submit>
           </div>

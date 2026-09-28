@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { useT } from '@/i18n/client';
-import { ltr } from '@/i18n/bidi';
+import { Pager } from '@/components/ui/pager';
 
 /**
  * صفحه‌بندی برای فهرست‌های **کارتی** — پروژه‌ها، اعضا، کارفرمایان.
@@ -56,32 +54,15 @@ export function CardPager({
   total: number;
   perPage: number;
 }) {
-  const t = useT();
-  if (totalPages <= 1) return null;
-
-  const from = (page - 1) * perPage + 1;
-  const to = Math.min(page * perPage, total);
-
+  // همان `Pager` ِ مشترک؛ زیرِ فهرستِ کارتی وسط‌چین می‌نشیند.
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
-      <span className="tabular-nums">
-        {t('{shown} از {total} ردیف', { shown: ltr(`${from}–${to}`), total })}
-      </span>
-      <Button
-        size="sm" variant="outline" className="h-7 px-2"
-        disabled={page <= 1}
-        onClick={() => setPage(page - 1)}
-      >
-        {t('قبلی')}
-      </Button>
-      <span className="num px-1">{page} / {totalPages}</span>
-      <Button
-        size="sm" variant="outline" className="h-7 px-2"
-        disabled={page >= totalPages}
-        onClick={() => setPage(page + 1)}
-      >
-        {t('بعدی')}
-      </Button>
-    </div>
+    <Pager
+      page={page}
+      totalPages={totalPages}
+      total={total}
+      perPage={perPage}
+      onPage={setPage}
+      className="justify-center"
+    />
   );
 }

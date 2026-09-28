@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { PRESENCE_DEFAULTS, PRESENCE_LABELS, type PresenceState } from '@/domain/people/presence';
 import { useT } from '@/i18n/client';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * ضربانِ حضور.
@@ -72,10 +73,11 @@ export function PresenceDot({
 }) {
   const t = useT();
   return (
-    <span
-      title={t(PRESENCE_LABELS[state])}
-      aria-label={t(PRESENCE_LABELS[state])}
-      className={`inline-block size-2 shrink-0 rounded-full ${DOT_CLASS[state]} ${className}`}
-    />
+    <Hint label={t(PRESENCE_LABELS[state])}>
+      <span
+        aria-label={t(PRESENCE_LABELS[state])}
+        className={`inline-block size-2 shrink-0 rounded-full ${DOT_CLASS[state]} ${className}`}
+      />
+    </Hint>
   );
 }

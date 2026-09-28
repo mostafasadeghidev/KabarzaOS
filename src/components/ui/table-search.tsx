@@ -1,10 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { useT } from '@/i18n/client';
-import { ltr } from '@/i18n/bidi';
 import { SearchInput } from '@/components/ui/search-input';
+import { Pager } from '@/components/ui/pager';
 
 /**
  * جستجوی زنده + صفحه‌بندیِ کلاینتیِ جدول.
@@ -83,33 +82,15 @@ export function TableSearch({
   );
 }
 
+/** صفحه‌بندِ جدول — همان `Pager` ِ مشترک روی state ِ کلاینت. */
 export function TablePager({ view }: { view: TableView<unknown> }) {
-  const tr = useT();
-  if (view.totalPages <= 1) return null;
-
   return (
-    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-      <span className="tabular-nums">
-        {tr('{shown} از {total} ردیف', {
-          shown: ltr(`${(view.page - 1) * view.perPage + 1}–${Math.min(view.page * view.perPage, view.matched)}`),
-          total: view.matched,
-        })}
-      </span>
-      <Button
-        size="sm" variant="outline" className="h-7 px-2"
-        disabled={view.page <= 1}
-        onClick={() => view.setPage(view.page - 1)}
-      >
-        {tr('قبلی')}
-      </Button>
-      <span className="num px-1">{view.page} / {view.totalPages}</span>
-      <Button
-        size="sm" variant="outline" className="h-7 px-2"
-        disabled={view.page >= view.totalPages}
-        onClick={() => view.setPage(view.page + 1)}
-      >
-        {tr('بعدی')}
-      </Button>
-    </div>
+    <Pager
+      page={view.page}
+      totalPages={view.totalPages}
+      total={view.matched}
+      perPage={view.perPage}
+      onPage={view.setPage}
+    />
   );
 }

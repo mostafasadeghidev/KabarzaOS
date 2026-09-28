@@ -7,7 +7,7 @@ import type { Candidate } from '@/domain/meetings/attendees';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldDescription, FieldError, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { Combobox } from '@/components/ui/combobox';
 import {
@@ -172,8 +172,8 @@ export function MeetingForm({
         <form key={`${meeting?.id ?? 'new'}-${formKey}`} action={formAction} className="grid gap-3">
           {isEdit && <input type="hidden" name="meetingId" value={meeting.id} />}
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="m-kind">{t("نوع جلسه")}</Label>
+          <Field>
+            <FieldLabel htmlFor="m-kind">{t("نوع جلسه")}</FieldLabel>
             {/* ⚠️ نوع و پروژه/دفتر پس از ساخت عوض نمی‌شوند (پورتِ `Meetings::update()`) —
                 سرور هم آن‌ها را نادیده می‌گیرد؛ اینجا فقط قفل نشان داده می‌شود. */}
             <NativeSelect
@@ -189,15 +189,15 @@ export function MeetingForm({
               )}
             </NativeSelect>
             {isEdit && (
-              <p className="text-xs text-muted-foreground">
+              <FieldDescription>
                 {tr("نوعِ جلسه و پروژه/دفترِ آن پس از ساخت تغییر نمی‌کند.")}
-              </p>
+              </FieldDescription>
             )}
-          </div>
+          </Field>
 
           {kind === 'project' ? (
-            <div className="grid gap-1.5">
-              <Label htmlFor="m-project">{t("پروژه")}</Label>
+            <Field>
+              <FieldLabel htmlFor="m-project">{t("پروژه")}</FieldLabel>
               {/*
                 ⚠️ جستجوی زنده، نه فهرستِ کشویی: تیمِ واقعی ده‌ها پروژه دارد و
                 پیمایشِ یک select ِ بلند عملاً غیرقابلِ استفاده است.
@@ -222,10 +222,10 @@ export function MeetingForm({
                 placeholder={t("نامِ پروژه را تایپ کنید…")}
                 disabled={isEdit}
               />
-            </div>
+            </Field>
           ) : (
-            <div className="grid gap-1.5">
-              <Label htmlFor="m-office">{t("دفتر (برای جلسهٔ عمومی)")}</Label>
+            <Field>
+              <FieldLabel htmlFor="m-office">{t("دفتر (برای جلسهٔ عمومی)")}</FieldLabel>
               <NativeSelect
                 id="m-office"
                 name="officeId"
@@ -239,11 +239,11 @@ export function MeetingForm({
                   <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>
                 ))}
               </NativeSelect>
-            </div>
+            </Field>
           )}
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="m-title">{t("موضوع جلسه")}</Label>
+          <Field>
+            <FieldLabel htmlFor="m-title">{t("موضوع جلسه")}</FieldLabel>
             <Input
               id="m-title"
               name="title"
@@ -252,13 +252,13 @@ export function MeetingForm({
               required
             />
             {state.fieldErrors?.title && (
-              <p className="text-xs text-destructive">{tr(state.fieldErrors.title)}</p>
+              <FieldError>{tr(state.fieldErrors.title)}</FieldError>
             )}
-          </div>
+          </Field>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5">
-              <Label htmlFor="m-at">{t("تاریخ و ساعت")}</Label>
+            <Field>
+              <FieldLabel htmlFor="m-at">{t("تاریخ و ساعت")}</FieldLabel>
               <DateTimePicker
                 id="m-at"
                 name="meetAt"
@@ -266,33 +266,33 @@ export function MeetingForm({
                 required
               />
               {state.fieldErrors?.meetAt && (
-                <p className="text-xs text-destructive">{tr(state.fieldErrors.meetAt)}</p>
+                <FieldError>{tr(state.fieldErrors.meetAt)}</FieldError>
               )}
-            </div>
+            </Field>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="m-loc">{t("مکان")}</Label>
+            <Field>
+              <FieldLabel htmlFor="m-loc">{t("مکان")}</FieldLabel>
               <Input
                 id="m-loc"
                 name="location"
                 defaultValue={state.values?.location ?? meeting?.location ?? ''}
                 placeholder={t("مثلاً: meet.google.com/…")}
               />
-            </div>
+            </Field>
           </div>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="m-desc">{t("توضیحات (اختیاری)")}</Label>
+          <Field>
+            <FieldLabel htmlFor="m-desc">{t("توضیحات (اختیاری)")}</FieldLabel>
             <Textarea
               id="m-desc"
               name="description"
               rows={2}
               defaultValue={state.values?.description ?? meeting?.description ?? ''}
             />
-          </div>
+          </Field>
 
-          <fieldset className="grid gap-1.5 rounded-lg border p-3">
-            <legend className="px-1 text-sm font-medium">{t("دعوت‌شدگان")}</legend>
+          <FieldSet variant="box">
+            <FieldLegend>{t("دعوت‌شدگان")}</FieldLegend>
             {candidates === null ? (
               <p className="text-xs text-muted-foreground">
                 {tr("برای انتخابِ دعوت‌شدگان، ابتدا پروژه (یا نوعِ جلسه) را مشخص کنید.")}
@@ -341,7 +341,7 @@ export function MeetingForm({
                 </div>
               </>
             )}
-          </fieldset>
+          </FieldSet>
 
 
           <DialogFooter>

@@ -12,7 +12,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Combobox } from '@/components/ui/combobox';
-import { Label } from '@/components/ui/label';
+import { Field, FieldDescription, FieldError, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
@@ -70,7 +70,7 @@ function AvatarPicker({ person }: { person: PersonView }) {
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-lg border p-3">
+    <div className="flex flex-wrap items-end gap-3 rounded-lg bg-muted/60 p-3">
       <Thumb
         id={person.id}
         title={person.name}
@@ -78,13 +78,13 @@ function AvatarPicker({ person }: { person: PersonView }) {
         size={56}
         className="rounded-full"
       />
-      <div className="grid flex-1 gap-1.5">
-        <Label htmlFor="p-avatar">{tr("تصویر پروفایل")}</Label>
+      <Field className="flex-1">
+        <FieldLabel htmlFor="p-avatar">{tr("تصویر پروفایل")}</FieldLabel>
         <FileInput id="p-avatar" ref={inputRef} accept="image/*" />
-        <p className="text-xs text-muted-foreground">
+        <FieldDescription>
           {tr('JPEG، PNG، GIF یا WebP — تا {size}.', { size: humanSize(MAX_SIZE.avatar, tr) })}
-        </p>
-      </div>
+        </FieldDescription>
+      </Field>
       <Button type="button" size="sm" variant="outline" disabled={pending} onClick={upload}>
         {pending ? <><Spinner />{tr('در حالِ ارسال…')}</> : tr('ذخیره تصویر')}
       </Button>
@@ -183,10 +183,10 @@ export function PersonDialog({
             ساخت آپلودش می‌کند (شناسه لازم است).
           */}
           {!isEdit && (
-            <div className="grid gap-1.5">
-              <Label htmlFor="p-new-avatar">{tr("تصویر پروفایل")}</Label>
+            <Field>
+              <FieldLabel htmlFor="p-new-avatar">{tr("تصویر پروفایل")}</FieldLabel>
               <FileInput id="p-new-avatar" name="avatar" accept="image/*" />
-            </div>
+            </Field>
           )}
 
           {/*
@@ -195,8 +195,8 @@ export function PersonDialog({
             نقش را دارد در فهرست نیست، چون انتخابش هیچ اثری ندارد.
           */}
           {!isEdit && options.candidates.length > 0 && (
-            <div className="grid gap-1.5 rounded-lg border border-dashed p-3">
-              <Label htmlFor="p-existing">{tr("کاربرِ موجودِ سامانه")}</Label>
+            <Field className="rounded-lg bg-muted/60 p-3">
+              <FieldLabel htmlFor="p-existing">{tr("کاربرِ موجودِ سامانه")}</FieldLabel>
               <Combobox
                 id="p-existing"
                 options={options.candidates.map((c) => ({
@@ -209,16 +209,16 @@ export function PersonDialog({
                 placeholder={tr("نام یا ایمیل را تایپ کنید…")}
               />
               {picked && <input type="hidden" name="existingUserId" value={picked.id} />}
-              <p className="text-xs text-muted-foreground">
+              <FieldDescription>
                 {picked
                   ? tr('این کاربر با همان نام و ایمیلِ فعلی‌اش به این بخش اضافه می‌شود.')
                   : tr('یک کاربرِ ثبت‌شده را انتخاب کنید، یا فیلدهای زیر را برای ساختِ کاربرِ نو پر کنید.')}
-              </p>
-            </div>
+              </FieldDescription>
+            </Field>
           )}
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="p-name">{tr("نام")}</Label>
+          <Field>
+            <FieldLabel htmlFor="p-name">{tr("نام")}</FieldLabel>
             {/* ⚠️ با انتخابِ کاربرِ موجود، نام و ایمیل از خودِ او می‌آید و
                 دست نمی‌خورد — پس نه پر می‌شود نه اجباری است. */}
             <Input
@@ -229,13 +229,13 @@ export function PersonDialog({
               required={picked === null}
             />
             {state.fieldErrors?.name && (
-              <p className="text-xs text-destructive">{tr(state.fieldErrors.name)}</p>
+              <FieldError>{tr(state.fieldErrors.name)}</FieldError>
             )}
-          </div>
+          </Field>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5">
-              <Label htmlFor="p-email">{tr("ایمیل")}</Label>
+            <Field>
+              <FieldLabel htmlFor="p-email">{tr("ایمیل")}</FieldLabel>
               <Input
                 id="p-email"
                 name="email"
@@ -247,12 +247,12 @@ export function PersonDialog({
                 required={picked === null}
               />
               {state.fieldErrors?.email && (
-                <p className="text-xs text-destructive">{tr(state.fieldErrors.email)}</p>
+                <FieldError>{tr(state.fieldErrors.email)}</FieldError>
               )}
-            </div>
+            </Field>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="p-phone">{tr("تلفن")}</Label>
+            <Field>
+              <FieldLabel htmlFor="p-phone">{tr("تلفن")}</FieldLabel>
               <Input
                 id="p-phone"
                 name="phone"
@@ -260,7 +260,7 @@ export function PersonDialog({
                 className="num"
                 defaultValue={keep('phone', person?.phone ?? '')}
               />
-            </div>
+            </Field>
           </div>
 
           {/*
@@ -279,8 +279,8 @@ export function PersonDialog({
             بدونِ نامِ کاربری ساخته شده بود برای همیشه بی‌نام می‌ماند.
             دیدنِ مقدارِ فعلی خودش همان هشدار است.
           */}
-          <div className="grid gap-1.5">
-            <Label htmlFor="p-username">{tr("نامِ کاربری (اختیاری)")}</Label>
+          <Field>
+            <FieldLabel htmlFor="p-username">{tr("نامِ کاربری (اختیاری)")}</FieldLabel>
             <Input
               id="p-username"
               name="username"
@@ -289,19 +289,19 @@ export function PersonDialog({
               dir="ltr"
               placeholder="ali_ahmadi"
             />
-            <p className="text-xs text-muted-foreground">
+            <FieldDescription>
               {person
                 ? tr("عوض‌کردنش یعنی نامِ کاربریِ قبلی دیگر برای ورود کار نمی‌کند.")
                 : tr("با ایمیل هم می‌تواند وارد شود؛ این فقط راهِ دوم است.")}
-            </p>
+            </FieldDescription>
             {state.fieldErrors?.username && (
-              <p className="text-xs text-destructive">{tr(state.fieldErrors.username)}</p>
+              <FieldError>{tr(state.fieldErrors.username)}</FieldError>
             )}
-          </div>
+          </Field>
 
           {!person && (
-            <div className="grid gap-1.5">
-              <Label htmlFor="p-password">{tr("رمزِ ورود (اختیاری)")}</Label>
+            <Field>
+              <FieldLabel htmlFor="p-password">{tr("رمزِ ورود (اختیاری)")}</FieldLabel>
               <Input
                 id="p-password"
                 name="password"
@@ -310,13 +310,13 @@ export function PersonDialog({
                 minLength={8}
                 placeholder={tr("دستِ‌کم ۸ نویسه")}
               />
-              <p className="text-xs text-muted-foreground">
+              <FieldDescription>
                 {tr("خالی بگذارید و بعداً از دکمهٔ «رمزِ ورود» تعیینش کنید؛ تا آن موقع این فرد نمی‌تواند وارد شود.")}
-              </p>
+              </FieldDescription>
               {state.fieldErrors?.password && (
-                <p className="text-xs text-destructive">{tr(state.fieldErrors.password)}</p>
+                <FieldError>{tr(state.fieldErrors.password)}</FieldError>
               )}
-            </div>
+            </Field>
           )}
 
           {/*
@@ -325,23 +325,23 @@ export function PersonDialog({
             خودش را دارد.
           */}
           {options.canGrantPrivate && (
-            <fieldset className="grid gap-1.5 rounded-lg border border-dashed p-3">
-              <legend className="px-1 text-sm font-medium">{tr("دسترسیِ ویژه")}</legend>
+            <FieldSet variant="box">
+              <FieldLegend>{tr("دسترسیِ ویژه")}</FieldLegend>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox name="privateAccess" value="1"
                   defaultChecked={person?.privateAccess ?? false}
                 />
                 {tr("دیدنِ پروژه‌های خصوصی")}
               </label>
-              <p className="text-xs text-muted-foreground">
+              <FieldDescription>
                 {tr("جدا از نقش است، پس پس‌گرفتنش تنزلِ نقشِ فرد نیست.")}
-              </p>
-            </fieldset>
+              </FieldDescription>
+            </FieldSet>
           )}
 
           {section.supportsTags && (
-          <fieldset className="grid gap-1.5 rounded-lg border border-dashed p-3">
-            <legend className="px-1 text-sm font-medium">{tr("نقش‌ها")}</legend>
+          <FieldSet variant="box">
+            <FieldLegend>{tr("نقش‌ها")}</FieldLegend>
             <MultiSelect
               name="tagIds"
               options={options.roleTags.map((t) => ({ id: t.id, label: t.name }))}
@@ -350,14 +350,14 @@ export function PersonDialog({
               placeholder={tr("انتخابِ نقش‌ها…")}
               emptyText={tr("هنوز نقشی تعریف نشده.")}
             />
-          </fieldset>
+          </FieldSet>
           )}
 
           {section.supportsOffices && (
-          <fieldset className="grid gap-3 rounded-lg border border-dashed p-3">
-            <legend className="px-1 text-sm font-medium">{tr("دفاتر")}</legend>
-            <div className="grid gap-1.5">
-              <Label className="text-xs text-muted-foreground">{tr("عضوِ این دفاتر")}</Label>
+          <FieldSet variant="box" className="gap-3">
+            <FieldLegend>{tr("دفاتر")}</FieldLegend>
+            <Field>
+              <FieldLabel className="text-xs text-muted-foreground">{tr("عضوِ این دفاتر")}</FieldLabel>
               <MultiSelect
                 name="officeIds"
                 options={options.offices.map((o) => ({ id: o.id, label: o.name }))}
@@ -365,7 +365,7 @@ export function PersonDialog({
                 placeholder={tr("انتخابِ دفاتر…")}
                 emptyText={tr("هنوز دفتری تعریف نشده.")}
               />
-            </div>
+            </Field>
             {/*
               ⚠️ «مدیرِ این دفاتر» فقط برای کسی که نقشِ **مدیرِ تیم** دارد:
               کارفرما اصلاً دفتری را نمی‌گرداند، و عضوِ معمولی هم نه. پیش از
@@ -377,13 +377,13 @@ export function PersonDialog({
               چه چیزِ دیگری را هم برمی‌دارد.
             */}
             {managedWillClear && (
-              <p className="rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+              <p className="text-xs text-amber-700 dark:text-amber-500">
                 {tr("با برداشتنِ نقشِ «مدیرِ تیم»، دفاترِ تحتِ مدیریتِ این فرد هم با ذخیره برداشته می‌شوند.")}
               </p>
             )}
             {showsManagedOffices && (
-            <div className="grid gap-1.5">
-              <Label className="text-xs text-muted-foreground">{tr("مدیرِ این دفاتر")}</Label>
+            <Field>
+              <FieldLabel className="text-xs text-muted-foreground">{tr("مدیرِ این دفاتر")}</FieldLabel>
               <MultiSelect
                 name="managedOfficeIds"
                 options={options.offices.map((o) => ({ id: o.id, label: o.name }))}
@@ -391,12 +391,12 @@ export function PersonDialog({
                 placeholder={tr("هیچ‌کدام")}
                 emptyText={tr("هنوز دفتری تعریف نشده.")}
               />
-              <p className="text-xs text-muted-foreground">
+              <FieldDescription>
                 {tr("مدیریت جداست از عضویت — می‌تواند دفتری را بگرداند بی‌آنکه عضوش باشد.")}
-              </p>
-            </div>
+              </FieldDescription>
+            </Field>
             )}
-          </fieldset>
+          </FieldSet>
           )}
 
           {/* پورتِ چک‌باکسِ «ارسالِ دعوت‌نامه»: تازه → لینکِ تعیینِ رمزِ ۳روزه؛ موجود → آدرسِ داشبورد. */}

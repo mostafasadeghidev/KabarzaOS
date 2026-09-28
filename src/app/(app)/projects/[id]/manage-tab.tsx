@@ -10,7 +10,7 @@ import { format } from '@/domain/money/money';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
@@ -335,10 +335,10 @@ function DeleteBox({
 
               <form action={formAction} className="grid gap-3">
                 <input type="hidden" name="projectId" value={projectId} />
-                <div className="grid gap-1.5">
-                  <Label htmlFor="del-confirm">
+                <Field>
+                  <FieldLabel htmlFor="del-confirm">
                     {tr('برای تأیید، نامِ پروژه را تایپ کنید:')}
-                  </Label>
+                  </FieldLabel>
                   <Input
                     id="del-confirm"
                     autoComplete="off"
@@ -346,7 +346,7 @@ function DeleteBox({
                     onChange={(e) => setTyped(e.target.value)}
                     placeholder={title}
                   />
-                </div>
+                </Field>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>
                     {t("انصراف")}
@@ -372,15 +372,15 @@ function DeleteBox({
             {tr("این پروژه داده‌ی مالی/کاری دارد. برای حذف، نامِ پروژه را عیناً تایپ کنید و روش را انتخاب کنید:")}
           </p>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="del-title">{t("نام پروژه:")}</Label>
+          <Field>
+            <FieldLabel htmlFor="del-title">{t("نام پروژه:")}</FieldLabel>
             <Input
               id="del-title"
               name="confirmTitle"
               placeholder={title}
               autoComplete="off"
             />
-          </div>
+          </Field>
 
           <div className="flex flex-wrap gap-2">
             <DeleteSubmit

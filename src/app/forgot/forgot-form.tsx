@@ -6,40 +6,45 @@ import { requestResetAction, type ForgotState } from './actions';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CircleAlert } from 'lucide-react';
+import { CircleAlert, CircleCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
-/** فرمِ «رمزم را فراموش کرده‌ام». */
+/** فرمِ «رمزم را فراموش کرده‌ام» — همان کارتِ صفحهٔ ورود؛ پوسته از `PublicShell`. */
 export function ForgotForm() {
   const t = useT();
   const [state, formAction, pending] = useActionState<ForgotState, FormData>(requestResetAction, {});
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>{t("بازنشانیِ رمزِ عبور")}</CardTitle>
-          <CardDescription>{t("ایمیل یا نامِ کاربری‌تان را بنویسید تا لینکِ تعیینِ رمزِ تازه برایتان فرستاده شود.")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {state.done ? (
-            <div className="space-y-4">
-              <p className="rounded-[--radius] bg-emerald-500/10 px-3 py-2 text-sm">
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("بازنشانیِ رمزِ عبور")}</CardTitle>
+        <CardDescription>{t("ایمیل یا نامِ کاربری‌تان را بنویسید تا لینکِ تعیینِ رمزِ تازه برایتان فرستاده شود.")}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {state.done ? (
+          <FieldGroup>
+            <Alert>
+              <CircleCheck />
+              <AlertDescription>
                 {t("اگر حسابی با این نشانی باشد، لینکِ بازنشانی فرستاده شد؛ صندوقِ ایمیل را ببینید (تا ۲۴ ساعت معتبر است).")}
-              </p>
-              <Link href="/login" className="text-sm underline">{t("بازگشت به ورود")}</Link>
-            </div>
-          ) : (
-            <form action={formAction} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="email">{t("ایمیل یا نام کاربری")}</Label>
+              </AlertDescription>
+            </Alert>
+            <FieldDescription className="text-center">
+              <Link href="/login">{t("بازگشت به ورود")}</Link>
+            </FieldDescription>
+          </FieldGroup>
+        ) : (
+          <form action={formAction}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="email">{t("ایمیل یا نام کاربری")}</FieldLabel>
                 <Input
                   id="email" name="email" type="text" required autoComplete="username" dir="ltr"
                 />
-              </div>
+              </Field>
               {state.error && (
                 <Alert variant="destructive">
                   <CircleAlert />
@@ -48,16 +53,18 @@ export function ForgotForm() {
                   </AlertDescription>
                 </Alert>
               )}
-              <Button type="submit" className="w-full" disabled={pending}>
-                {pending ? <><Spinner />{t('در حالِ ارسال…')}</> : t('ارسالِ لینک')}
-              </Button>
-              <Link href="/login" className="block text-center text-sm text-muted-foreground underline">
-                {t("بازگشت به ورود")}
-              </Link>
-            </form>
-          )}
-        </CardContent>
-      </Card>
-    </main>
+              <Field>
+                <Button type="submit" disabled={pending}>
+                  {pending ? <><Spinner />{t('در حالِ ارسال…')}</> : t('ارسالِ لینک')}
+                </Button>
+                <FieldDescription className="text-center">
+                  <Link href="/login">{t("بازگشت به ورود")}</Link>
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
+          </form>
+        )}
+      </CardContent>
+    </Card>
   );
 }

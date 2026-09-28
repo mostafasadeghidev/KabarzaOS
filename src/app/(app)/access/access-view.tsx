@@ -21,6 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -193,8 +194,8 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
       {tab === 'grants' && (
         <section className="grid gap-3">
           <div className="flex flex-wrap items-end gap-2">
-            <div className="grid gap-1.5">
-              <Label htmlFor="f-person" className="text-xs text-muted-foreground">{tr("شخص")}</Label>
+            <Field>
+              <FieldLabel htmlFor="f-person" className="text-xs text-muted-foreground">{tr("شخص")}</FieldLabel>
               <SearchableSelect
                 id="f-person"
                 value={person}
@@ -208,10 +209,10 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                   <NativeSelectOption key={p.id} value={String(p.id)}>{p.name}</NativeSelectOption>
                 ))}
               </SearchableSelect>
-            </div>
+            </Field>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="f-service" className="text-xs text-muted-foreground">{tr("سرویس")}</Label>
+            <Field>
+              <FieldLabel htmlFor="f-service" className="text-xs text-muted-foreground">{tr("سرویس")}</FieldLabel>
               <SearchableSelect
                 id="f-service"
                 value={service}
@@ -225,10 +226,10 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                   <NativeSelectOption key={s.id} value={String(s.id)}>{s.name}</NativeSelectOption>
                 ))}
               </SearchableSelect>
-            </div>
+            </Field>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="f-status" className="text-xs text-muted-foreground">{tr("وضعیت")}</Label>
+            <Field>
+              <FieldLabel htmlFor="f-status" className="text-xs text-muted-foreground">{tr("وضعیت")}</FieldLabel>
               <NativeSelect
                 id="f-status"
                 className="h-8 w-32 text-xs"
@@ -239,7 +240,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                 <NativeSelectOption value="revoked">{tr("قطع‌شده")}</NativeSelectOption>
                 <NativeSelectOption value="all">{tr("همه")}</NativeSelectOption>
               </NativeSelect>
-            </div>
+            </Field>
 
             <label className="flex h-8 items-center gap-2 text-xs">
               <Checkbox
@@ -431,10 +432,10 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
           canDelete={(s) => s.isActive}
           renderForm={(edit) => (
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="s-name">{tr("نام")}</Label>
+              <Field>
+                <FieldLabel htmlFor="s-name">{tr("نام")}</FieldLabel>
                 <Input id="s-name" name="name" defaultValue={edit?.name ?? ''} required />
-              </div>
+              </Field>
               <div className="grid gap-1.5">
                 {/*
                   ⚠️ پاسخِ «این دسته‌ها از کجا می‌آیند»: فهرست در «تنظیمات ←
@@ -465,8 +466,8 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                   ))}
                 </NativeSelect>
               </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="s-owner">{tr("مسئولِ اعطای دسترسی")}</Label>
+              <Field>
+                <FieldLabel htmlFor="s-owner">{tr("مسئولِ اعطای دسترسی")}</FieldLabel>
                 <SearchableSelect
                   id="s-owner"
                   name="ownerUserId"
@@ -478,14 +479,14 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                     <NativeSelectOption key={p.id} value={String(p.id)}>{p.name}</NativeSelectOption>
                   ))}
                 </SearchableSelect>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="s-url">{tr("پنلِ مدیریت")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="s-url">{tr("پنلِ مدیریت")}</FieldLabel>
                 <Input id="s-url" name="adminUrl" dir="ltr" defaultValue={edit?.adminUrl ?? ''} placeholder="https://" />
-              </div>
+              </Field>
               {data.canSeeCost && (
-                <div className="grid gap-1.5 sm:col-span-2">
-                  <Label htmlFor="s-sub">{tr("اشتراکِ مالی")}</Label>
+                <Field className="sm:col-span-2">
+                  <FieldLabel htmlFor="s-sub">{tr("اشتراکِ مالی")}</FieldLabel>
                   <SearchableSelect
                     id="s-sub"
                     name="recurringExpenseId"
@@ -499,15 +500,15 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                       </NativeSelectOption>
                     ))}
                   </SearchableSelect>
-                  <p className="text-xs text-muted-foreground">
+                  <FieldDescription>
                     {tr("مبلغ و دوره از همان هزینهٔ دوره‌ای خوانده می‌شود؛ اینجا چیزی ذخیره نمی‌شود.")}
-                  </p>
-                </div>
+                  </FieldDescription>
+                </Field>
               )}
-              <div className="grid gap-1.5 sm:col-span-2">
-                <Label htmlFor="s-note">{tr("یادداشت")}</Label>
+              <Field className="sm:col-span-2">
+                <FieldLabel htmlFor="s-note">{tr("یادداشت")}</FieldLabel>
                 <Input id="s-note" name="note" defaultValue={edit?.note ?? ''} />
-              </div>
+              </Field>
               <label className="flex items-center gap-2 text-sm sm:col-span-2">
                 <Checkbox name="isActive" defaultChecked={edit?.isActive ?? true} />
                 {tr("فعال (در فرمِ اعطای دسترسی پیشنهاد می‌شود)")}
@@ -610,7 +611,7 @@ function ChecklistDialog({
                 <Badge variant="outline">{tr(stateLabel(group.state) ?? '')}</Badge>
               </h3>
               {group.rows.map((row) => (
-                <label key={row.id} className="flex items-start gap-2 rounded-lg border p-2 text-sm">
+                <label key={row.id} className="flex items-start gap-2 rounded-lg bg-muted/60 p-2 text-sm">
                   <Checkbox
                     className="mt-0.5"
                     checked={picked.includes(row.id)}
@@ -691,8 +692,8 @@ function GrantDialog({
         </DialogHeader>
 
         <form key={editing?.id ?? 'new'} action={formAction} className="grid gap-3 sm:grid-cols-2">
-          <div className="grid gap-1.5">
-            <Label htmlFor="g-service">{tr("سرویس")}</Label>
+          <Field>
+            <FieldLabel htmlFor="g-service">{tr("سرویس")}</FieldLabel>
             <SearchableSelect
               id="g-service"
               name="serviceId"
@@ -704,10 +705,10 @@ function GrantDialog({
                 <NativeSelectOption key={s.id} value={String(s.id)}>{s.name}</NativeSelectOption>
               ))}
             </SearchableSelect>
-          </div>
+          </Field>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="g-user">{tr("شخص")}</Label>
+          <Field>
+            <FieldLabel htmlFor="g-user">{tr("شخص")}</FieldLabel>
             <SearchableSelect
               id="g-user"
               name="userId"
@@ -719,19 +720,19 @@ function GrantDialog({
                 <NativeSelectOption key={p.id} value={String(p.id)}>{p.name}</NativeSelectOption>
               ))}
             </SearchableSelect>
-          </div>
+          </Field>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="g-level">{tr("سطحِ دسترسی")}</Label>
+          <Field>
+            <FieldLabel htmlFor="g-level">{tr("سطحِ دسترسی")}</FieldLabel>
             <NativeSelect id="g-level" name="level" defaultValue={editing?.level ?? 'member'}>
               {GRANT_LEVELS.map((l) => (
                 <NativeSelectOption key={l} value={l}>{tr(LEVEL_LABELS[l])}</NativeSelectOption>
               ))}
             </NativeSelect>
-          </div>
+          </Field>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="g-account">{tr("شناسهٔ حساب")}</Label>
+          <Field>
+            <FieldLabel htmlFor="g-account">{tr("شناسهٔ حساب")}</FieldLabel>
             <Input
               id="g-account"
               name="accountRef"
@@ -739,22 +740,22 @@ function GrantDialog({
               defaultValue={editing?.accountRef ?? ''}
               placeholder={tr("ایمیل، نامِ کاربری یا شمارهٔ داخلی")}
             />
-          </div>
+          </Field>
 
-          <div className="grid gap-1.5 sm:col-span-2">
-            <Label htmlFor="g-vault">{tr("ارجاعِ محفظهٔ رمز")}</Label>
+          <Field className="sm:col-span-2">
+            <FieldLabel htmlFor="g-vault">{tr("ارجاعِ محفظهٔ رمز")}</FieldLabel>
             <Input
               id="g-vault"
               name="vaultRef"
               defaultValue={editing?.vaultRef ?? ''}
               placeholder={tr("نامِ آیتم در password manager — نه خودِ رمز")}
             />
-          </div>
+          </Field>
 
-          <div className="grid gap-1.5 sm:col-span-2">
-            <Label htmlFor="g-note">{tr("یادداشت")}</Label>
+          <Field className="sm:col-span-2">
+            <FieldLabel htmlFor="g-note">{tr("یادداشت")}</FieldLabel>
             <Input id="g-note" name="note" defaultValue={editing?.note ?? ''} />
-          </div>
+          </Field>
 
           <DialogFooter className="sm:col-span-2">
             <Button type="button" size="sm" variant="outline" onClick={() => onOpenChange(false)}>

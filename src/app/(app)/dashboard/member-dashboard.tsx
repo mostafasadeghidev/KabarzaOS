@@ -11,6 +11,7 @@ import { formatDateTime } from '@/i18n/datetime';
 import { StatCard } from '@/components/stat-card';
 import { ArrowLeft } from 'lucide-react';
 import { Panel } from '@/components/page-shell';
+import { Item, ItemContent, ItemDescription, ItemTitle } from '@/components/ui/item';
 
 /**
  * داشبوردِ عضو و کارفرما — پورتِ `member_overview()` / `client_overview()`.
@@ -248,12 +249,16 @@ export function MemberDashboardView({ data, timezone = '' }: { data: MemberDashb
     >
         <ul className="grid gap-2 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
           {data.meetings.map((m) => (
-            <li key={m.id} className="rounded-lg border p-3 text-sm">
-              <p className="font-medium">{m.title}</p>
-              <p className="num text-xs text-muted-foreground">{formatDateTime(m.meetAt, timezone)}</p>
-              {m.location && <p className="text-xs text-muted-foreground">{m.location}</p>}
-              {m.projectTitle && <Badge variant="secondary" className="mt-1">{m.projectTitle}</Badge>}
-            </li>
+            <Item key={m.id} asChild variant="muted" size="sm" className="px-3">
+              <li>
+                <ItemContent className="gap-0.5">
+                  <ItemTitle>{m.title}</ItemTitle>
+                  <ItemDescription className="num text-xs">{formatDateTime(m.meetAt, timezone)}</ItemDescription>
+                  {m.location && <ItemDescription className="text-xs">{m.location}</ItemDescription>}
+                  {m.projectTitle && <Badge variant="secondary" className="mt-1 w-fit">{m.projectTitle}</Badge>}
+                </ItemContent>
+              </li>
+            </Item>
           ))}
         </ul>
         </Panel>

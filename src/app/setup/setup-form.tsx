@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
@@ -16,6 +16,8 @@ import { CircleAlert } from 'lucide-react';
  *
  * ⚠️ یک گام، نه چند گام: پنج فیلد آن‌قدر کم است که شکستنش به چند صفحه
  * فقط کلیک اضافه می‌کند. کاربر همه را یک‌جا می‌بیند و یک بار می‌فرستد.
+ *
+ * همان کارتِ صفحهٔ ورود (پوسته از `PublicShell`)، فقط پهن‌تر: دو ستون فیلد.
  */
 export function SetupForm() {
   const t = useT();
@@ -23,64 +25,64 @@ export function SetupForm() {
   const keep = (key: string) => state.values?.[key] ?? '';
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle>{t("به KabarzaOS خوش آمدید")}</CardTitle>
-          <CardDescription>
-            {t("این سامانه هنوز حسابی ندارد. حسابِ مدیرِ کل را بسازید تا شروع کنیم.")}
-          </CardDescription>
-        </CardHeader>
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("به KabarzaOS خوش آمدید")}</CardTitle>
+        <CardDescription>
+          {t("این سامانه هنوز حسابی ندارد. حسابِ مدیرِ کل را بسازید تا شروع کنیم.")}
+        </CardDescription>
+      </CardHeader>
 
-        <CardContent>
-          <form action={formAction} className="grid gap-4">
+      <CardContent>
+        <form action={formAction}>
+          <FieldGroup>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="s-first">{t("نام")}</Label>
+              <Field>
+                <FieldLabel htmlFor="s-first">{t("نام")}</FieldLabel>
                 <Input id="s-first" name="firstName" required autoComplete="given-name" defaultValue={keep('firstName')} />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="s-last">{t("نام خانوادگی")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="s-last">{t("نام خانوادگی")}</FieldLabel>
                 <Input id="s-last" name="lastName" autoComplete="family-name" defaultValue={keep('lastName')} />
-              </div>
+              </Field>
             </div>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="s-email">{t("ایمیل")}</Label>
+            <Field>
+              <FieldLabel htmlFor="s-email">{t("ایمیل")}</FieldLabel>
               <Input
                 id="s-email" name="email" type="email" required dir="ltr"
                 autoComplete="email" defaultValue={keep('email')}
               />
-            </div>
+            </Field>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="s-username">{t("نام کاربری")}</Label>
+            <Field>
+              <FieldLabel htmlFor="s-username">{t("نام کاربری")}</FieldLabel>
               <Input
                 id="s-username" name="username" required dir="ltr"
                 autoComplete="username" defaultValue={keep('username')}
                 placeholder="mostafa"
               />
               {/* ⚠️ هر دو شناسه کار می‌کنند؛ کاربر باید بداند مجبور نیست انتخاب کند. */}
-              <p className="text-xs text-muted-foreground">
+              <FieldDescription>
                 {t("برای ورود می‌توانید از ایمیل یا نام کاربری استفاده کنید.")}
-              </p>
-            </div>
+              </FieldDescription>
+            </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="s-pass">{t("رمز عبور")}</Label>
+              <Field>
+                <FieldLabel htmlFor="s-pass">{t("رمز عبور")}</FieldLabel>
                 <Input
                   id="s-pass" name="password" type="password" required minLength={8}
                   autoComplete="new-password" placeholder={t("دستِ‌کم ۸ نویسه")}
                 />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="s-pass2">{t("تکرارِ رمز عبور")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="s-pass2">{t("تکرارِ رمز عبور")}</FieldLabel>
                 <Input
                   id="s-pass2" name="passwordRepeat" type="password" required minLength={8}
                   autoComplete="new-password"
                 />
-              </div>
+              </Field>
             </div>
 
             {state.error && (
@@ -92,12 +94,14 @@ export function SetupForm() {
               </Alert>
             )}
 
-            <Button type="submit" disabled={pending} className="w-full">
-              {pending ? <><Spinner />{t("در حالِ ساخت…")}</> : t("ساختِ حساب و ورود")}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </main>
+            <Field>
+              <Button type="submit" disabled={pending}>
+                {pending ? <><Spinner />{t("در حالِ ساخت…")}</> : t("ساختِ حساب و ورود")}
+              </Button>
+            </Field>
+          </FieldGroup>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

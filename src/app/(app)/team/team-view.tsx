@@ -17,6 +17,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { Section } from '@/components/page-shell';
+import { Item } from '@/components/ui/item';
 
 export interface TeamData {
   projects: Array<{
@@ -73,11 +74,8 @@ function MemberCards({ members, range }: { members: TeamData['members']; range: 
       {list.length === 0 ? <p className="text-sm text-muted-foreground">{tr("موردی پیدا نشد.")}</p> : (
         <div className="grid gap-2 @xl/main:grid-cols-2 @4xl/main:grid-cols-3">
           {list.map((m) => (
-            <Link
-              key={m.id}
-              href={`/team/${m.id}?range=${range}`}
-              className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted"
-            >
+            <Item key={m.id} asChild variant="outline" size="sm" className="gap-3 p-3">
+            <Link href={`/team/${m.id}?range=${range}`}>
               <Thumb id={m.id} title={m.name} fileId={m.avatarFileId} size={44} />
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1.5 font-medium">
@@ -101,6 +99,7 @@ function MemberCards({ members, range }: { members: TeamData['members']; range: 
                 </span>
               </span>
             </Link>
+            </Item>
           ))}
         </div>
       )}

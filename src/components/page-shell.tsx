@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
+import { PageCrumb } from '@/components/page-crumb';
 
 /**
  * پوسته و سرصفحهٔ مشترکِ همهٔ صفحه‌ها.
@@ -75,6 +76,12 @@ export function PageHeader({
 }) {
   return (
     <header className="grid gap-2">
+      {/* عنوان به نوارِ بالای محتوا هم می‌رود («بخش › عنوان») — فقط عنوانِ رشته‌ای. */}
+      <PageCrumb
+        title={typeof title === 'string' ? title : undefined}
+        backHref={back?.href}
+        backLabel={typeof back?.label === 'string' ? back.label : undefined}
+      />
       {back && <BackLink href={back.href}>{back.label}</BackLink>}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">

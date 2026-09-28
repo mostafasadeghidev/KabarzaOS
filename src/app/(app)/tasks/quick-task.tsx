@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Combobox, MultiSelect } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useActionToast } from '@/components/ui/toast';
@@ -107,8 +107,8 @@ export function QuickTaskForm({
       >
         <input type="hidden" name="projectId" value={project.id ?? ''} />
 
-        <div className="grid gap-1.5">
-          <Label htmlFor="q-project">{t("پروژه")}</Label>
+        <Field>
+          <FieldLabel htmlFor="q-project">{t("پروژه")}</FieldLabel>
           <Combobox
             id="q-project"
             options={projects.map((p) => ({ value: p.id, label: p.title }))}
@@ -116,10 +116,10 @@ export function QuickTaskForm({
             onChange={setProject}
             placeholder={t("نامِ پروژه را تایپ کنید…")}
           />
-        </div>
+        </Field>
 
-        <div className="grid gap-1.5">
-          <Label htmlFor="q-title">{t("عنوانِ تسک")}</Label>
+        <Field>
+          <FieldLabel htmlFor="q-title">{t("عنوانِ تسک")}</FieldLabel>
           <Input
             id="q-title"
             name="title"
@@ -129,26 +129,26 @@ export function QuickTaskForm({
             required
           />
           {state.fieldErrors?.title && (
-            <p className="text-xs text-destructive">{tr(state.fieldErrors.title)}</p>
+            <FieldError>{tr(state.fieldErrors.title)}</FieldError>
           )}
-        </div>
+        </Field>
 
         {/* ⚠️ تا پروژه انتخاب نشده، گزینه‌ای برای نشان‌دادن نیست. */}
         {project.id !== null && (
           <>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="q-assignee">{t("مسئول")}</Label>
+              <Field>
+                <FieldLabel htmlFor="q-assignee">{t("مسئول")}</FieldLabel>
                 <SearchableSelect id="q-assignee" name="assignedTo" containerClassName="w-full" disabled={loading}>
                   <NativeSelectOption value="">{t("— بدونِ مسئول —")}</NativeSelectOption>
                   {(options?.assignees ?? []).map((a) => (
                     <NativeSelectOption key={a.id} value={a.id}>{a.label}</NativeSelectOption>
                   ))}
                 </SearchableSelect>
-              </div>
+              </Field>
 
-              <div className="grid gap-1.5">
-                <Label htmlFor="q-roles">{t("نقش‌ها")}</Label>
+              <Field>
+                <FieldLabel htmlFor="q-roles">{t("نقش‌ها")}</FieldLabel>
                 <MultiSelect
                   id="q-roles"
                   name="roleTagIds"
@@ -157,28 +157,28 @@ export function QuickTaskForm({
                   onChange={setRoleTagIds}
                   placeholder={t("نقش‌ها…")}
                 />
-              </div>
+              </Field>
 
-              <div className="grid gap-1.5">
-                <Label htmlFor="q-priority">{t("اولویت")}</Label>
+              <Field>
+                <FieldLabel htmlFor="q-priority">{t("اولویت")}</FieldLabel>
                 <NativeSelect id="q-priority" name="priorityTagId" containerClassName="w-full" disabled={loading}>
                   <NativeSelectOption value="">{t("— انتخاب —")}</NativeSelectOption>
                   {(options?.priorities ?? []).map((p) => (
                     <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>
                   ))}
                 </NativeSelect>
-              </div>
+              </Field>
 
-              <div className="grid gap-1.5">
-                <Label htmlFor="q-due">{t("ددلاین")}</Label>
+              <Field>
+                <FieldLabel htmlFor="q-due">{t("ددلاین")}</FieldLabel>
                 <DatePicker id="q-due" name="dueDate" min={today} />
-              </div>
+              </Field>
             </div>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="q-desc">{t("توضیحات")}</Label>
+            <Field>
+              <FieldLabel htmlFor="q-desc">{t("توضیحات")}</FieldLabel>
               <Textarea id="q-desc" name="description" rows={2} />
-            </div>
+            </Field>
 
             <label className="flex items-center gap-1.5 text-xs">
               <Checkbox name="isPrivate" />

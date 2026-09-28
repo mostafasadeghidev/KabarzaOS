@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { LOCALES, LOCALE_NAMES } from '@/i18n/config';
@@ -137,15 +138,15 @@ export function SystemSection({ config, health, isOwner, telegram }: {
       {/* هر گروهِ فیلد یک پنل است؛ فیلدِ آزاد روی زمینه کنارِ پنل‌ها ناهمسان بود. */}
       <Panel title={t("عمومی")}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="grid gap-1.5">
-            <Label htmlFor="s-brand">{t("نامِ برند")}</Label>
+          <Field>
+            <FieldLabel htmlFor="s-brand">{t("نامِ برند")}</FieldLabel>
             <Input id="s-brand" name="brandName" defaultValue={config.brandName} placeholder={t("کبرزا")} />
-            <p className="text-xs text-muted-foreground">
+            <FieldDescription>
               {tr("اگر مشخصاتِ شرکت خالی باشد، روی فاکتور همین نام می‌نشیند.")}
-            </p>
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="s-locale">{t("زبانِ پیش‌فرضِ پنل")}</Label>
+            </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="s-locale">{t("زبانِ پیش‌فرضِ پنل")}</FieldLabel>
             <NativeSelect
               id="s-locale"
               name="defaultLocale"
@@ -155,12 +156,12 @@ export function SystemSection({ config, health, isOwner, telegram }: {
                 <NativeSelectOption key={code} value={code}>{LOCALE_NAMES[code]}</NativeSelectOption>
               ))}
             </NativeSelect>
-            <p className="text-xs text-muted-foreground">
+            <FieldDescription>
               {tr("زبانِ کسانی که خودشان زبانی انتخاب نکرده‌اند. انتخابِ هر کاربر همیشه بر این مقدم است.")}
-            </p>
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="s-week">{t("روزِ شروعِ هفته")}</Label>
+            </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="s-week">{t("روزِ شروعِ هفته")}</FieldLabel>
             <NativeSelect
               id="s-week"
               name="weekStart"
@@ -170,12 +171,12 @@ export function SystemSection({ config, health, isOwner, telegram }: {
                 <NativeSelectOption key={label} value={i}>{tr(label)}</NativeSelectOption>
               ))}
             </NativeSelect>
-            <p className="text-xs text-muted-foreground">
+            <FieldDescription>
               {tr("جدولِ در دسترس‌بودن و نمای هفتگی از همین روز شروع می‌شوند.")}
-            </p>
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="s-tz">{t("منطقهٔ زمانیِ سامانه")}</Label>
+            </FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="s-tz">{t("منطقهٔ زمانیِ سامانه")}</FieldLabel>
             <SearchableSelect
               id="s-tz"
               name="timezone"
@@ -186,10 +187,10 @@ export function SystemSection({ config, health, isOwner, telegram }: {
                 <NativeSelectOption key={zone} value={zone}>{zone}</NativeSelectOption>
               ))}
             </SearchableSelect>
-            <p className="text-xs text-muted-foreground">
+            <FieldDescription>
               {tr("ساعتِ ارسالِ گزارشِ روزانه و یادآوریِ جلسات با همین منطقه سنجیده می‌شود.")}
-            </p>
-          </div>
+            </FieldDescription>
+          </Field>
         </div>
 
         {/*
@@ -215,18 +216,18 @@ export function SystemSection({ config, health, isOwner, telegram }: {
           {tr("نمایشِ «چه کسی آنلاین است»")}
         </label>
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="grid gap-1.5">
-            <Label htmlFor="s-ping">{t("فاصلهٔ ضربان")}</Label>
+          <Field>
+            <FieldLabel htmlFor="s-ping">{t("فاصلهٔ ضربان")}</FieldLabel>
             <Seconds id="s-ping" name="presencePing" value={config.presencePing} choices={PING_CHOICES} />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="s-idle">{t("فعال ← بی‌فعالیت")}</Label>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="s-idle">{t("فعال ← بی‌فعالیت")}</FieldLabel>
             <Seconds id="s-idle" name="presenceIdle" value={config.presenceIdle} choices={IDLE_CHOICES} />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="s-off">{t("← آفلاین")}</Label>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="s-off">{t("← آفلاین")}</FieldLabel>
             <Seconds id="s-off" name="presenceOffline" value={config.presenceOffline} choices={OFFLINE_CHOICES} />
-          </div>
+          </Field>
         </div>
       </Panel>
 
@@ -255,17 +256,17 @@ export function SystemSection({ config, health, isOwner, telegram }: {
       </Panel>
 
       <Panel title={t("پیام‌ها")}>
-        <div className="grid max-w-xs gap-1.5">
-          <Label htmlFor="s-purge">{t("پاک‌سازیِ خودکارِ پیام‌ها (روز)")}</Label>
+        <Field className="max-w-xs">
+          <FieldLabel htmlFor="s-purge">{t("پاک‌سازیِ خودکارِ پیام‌ها (روز)")}</FieldLabel>
           <Input
             id="s-purge" name="msgPurgeDays" type="number" min={0} max={MAX_PURGE_DAYS}
             className="num" defaultValue={config.msgPurgeDays}
           />
           {/* ⚠️ صفر یعنی هرگز — تا کسی ندانسته تاریخچه را نبازد. */}
-          <p className="text-xs text-muted-foreground">
+          <FieldDescription>
             {tr("۰ یعنی پیام‌ها برای همیشه می‌مانند.")}
-          </p>
-        </div>
+          </FieldDescription>
+        </Field>
       </Panel>
 
       {/* ⚠️ توکنِ بات رازِ مشترک است — فقط مالک، مثلِ تبِ «اطلاع‌رسانی» نسخهٔ قبلی. */}

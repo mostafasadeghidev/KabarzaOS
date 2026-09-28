@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { useT } from '@/i18n/client';
 import { monthRange, weekRange, yearRange } from '@/domain/reports/filters';
 import { NativeSelectOption } from '@/components/ui/native-select';
@@ -81,22 +81,22 @@ export function HoursFilter({
         ))}
       </div>
 
-      <div className="grid gap-1.5">
-        <Label htmlFor="hf-project" className="text-xs">{tr('پروژه')}</Label>
+      <Field>
+        <FieldLabel htmlFor="hf-project" className="text-xs">{tr('پروژه')}</FieldLabel>
         <SearchableSelect id="hf-project" name="project" size="sm" containerClassName="w-44" defaultValue={value('project')}>
           <NativeSelectOption value="">{tr('همهٔ پروژه‌ها')}</NativeSelectOption>
           {projects.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>)}
         </SearchableSelect>
-      </div>
+      </Field>
 
-      <div className="grid gap-1.5">
-        <Label htmlFor="hf-from" className="text-xs">{tr('از')}</Label>
+      <Field>
+        <FieldLabel htmlFor="hf-from" className="text-xs">{tr('از')}</FieldLabel>
         <DatePicker id="hf-from" name="from" size="sm" className="w-[9.5rem]" defaultValue={value('from')} />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="hf-to" className="text-xs">{tr('تا')}</Label>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="hf-to" className="text-xs">{tr('تا')}</FieldLabel>
         <DatePicker id="hf-to" name="to" size="sm" className="w-[9.5rem]" defaultValue={value('to')} />
-      </div>
+      </Field>
 
       <Button type="submit" size="sm">{tr('اعمال')}</Button>
     </form>

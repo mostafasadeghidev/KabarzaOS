@@ -14,6 +14,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Lightbox } from '@/components/lightbox';
+import { Hint } from '@/components/ui/tooltip';
 import { formatDateTime } from '@/i18n/datetime';
 import { useT, useTimeZone } from '@/i18n/client';
 
@@ -32,27 +33,32 @@ export function ReceiptThumb({
   size?: number;
   onZoom: (src: string) => void;
 }) {
+  const name = receipt.originalName || `#${index}`;
   if (receipt.kind === 'image') {
     return (
-      <button
-        type="button"
-        onClick={() => onZoom(receipt.href)}
-        title={receipt.originalName || `#${index}`}
-        className="shrink-0 overflow-hidden rounded-md border"
-        style={{ width: size, height: size }}
-      >
-        {/* نسخهٔ کوچک — اصلِ چندمگابایتی فقط در بزرگ‌نمایی می‌آید (R-FILE-16). */}
-        <img src={`${receipt.href}?thumb`} alt="" loading="lazy" className="size-full object-cover" />
-      </button>
+      <Hint label={name}>
+        <button
+          type="button"
+          onClick={() => onZoom(receipt.href)}
+          aria-label={name}
+          className="shrink-0 overflow-hidden rounded-md border"
+          style={{ width: size, height: size }}
+        >
+          {/* نسخهٔ کوچک — اصلِ چندمگابایتی فقط در بزرگ‌نمایی می‌آید (R-FILE-16). */}
+          <img src={`${receipt.href}?thumb`} alt="" loading="lazy" className="size-full object-cover" />
+        </button>
+      </Hint>
     );
   }
   return (
-    <a
-      href={receipt.href} target="_blank" rel="noopener noreferrer" title={receipt.originalName}
-      className="inline-flex items-center gap-0.5 text-muted-foreground hover:text-foreground"
-    >
-      <Paperclip className="size-3" /><span className="num text-xs">{index}</span>
-    </a>
+    <Hint label={name}>
+      <a
+        href={receipt.href} target="_blank" rel="noopener noreferrer" aria-label={name}
+        className="inline-flex items-center gap-0.5 text-muted-foreground hover:text-foreground"
+      >
+        <Paperclip className="size-3" /><span className="num text-xs">{index}</span>
+      </a>
+    </Hint>
   );
 }
 

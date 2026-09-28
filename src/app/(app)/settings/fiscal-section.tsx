@@ -6,7 +6,7 @@ import { Lock, Unlock } from 'lucide-react';
 import { closePeriodAction, reopenPeriodAction, type FiscalState } from './_form/actions';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { ltr } from '@/i18n/bidi';
@@ -113,10 +113,10 @@ export function FiscalSection({
       >
         <form action={close} className="grid gap-3">
 
-          <div className="grid gap-1.5 sm:max-w-xs">
-            <Label htmlFor="f-date">{t("تاریخِ بستن")}</Label>
+          <Field className="sm:max-w-xs">
+            <FieldLabel htmlFor="f-date">{t("تاریخِ بستن")}</FieldLabel>
             <DatePicker id="f-date" name="lockDate" defaultValue={today} required />
-          </div>
+          </Field>
 
           {/*
             ⚠️ اگر قفلی جلوتر از این تاریخ وجود دارد، بستن آن را عقب نمی‌برد

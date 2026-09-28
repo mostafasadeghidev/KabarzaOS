@@ -2,6 +2,27 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.89.0]
+
+### Added
+
+- **Page path in the header bar.** The strip above the content now shows where you are, the way the shadcn sidebar demo does: «پروژه‌ها › طراحی وب‌سایت شرکت آلفا», «گزارش‌ها › نامِ عضو», «نمای کلی › ددلاینِ نزدیک». The section comes from the menu and the page from its own header; a top-level page shows only its section, and on phones only the last part is shown. It replaces the fixed «KabarzaOS» label, which the sidebar already carries.
+- **Company brand on the sign-in pages.** Sign-in, forgotten password, reset and setup show the company logo (or its monogram) and the company name above the card, laid out like the shadcn login block, with the «رمزم را فراموش کرده‌ام» link next to the password label. The logo is inlined into the page, so the gated file route stays closed to visitors.
+- shadcn `Pagination`, `Breadcrumb`, `Field`, `Item` and `Input Group` are now part of the UI kit, together with a `Hint` tooltip helper and one shared `Pager`.
+
+### Changed
+
+- **One pager everywhere.** Tables, card lists, the ledger, team tasks, the activity feed and the hours log each had their own pager: five designs and two wordings («قبلی/بعدی» here, «تازه‌تر/قدیمی‌تر» there, a row of page numbers elsewhere). They all use one `Pager` now: «۱–۲۰ از ۵۷ ردیف», previous, page numbers with an ellipsis, next. The ledger keeps its rows-per-page select. Where the page lives in the URL (ledger, activity, hours) the numbers are links, so the browser's back button and shared links still work.
+- **One field layout everywhere.** 207 label-and-control pairs in 32 forms are shadcn `Field`s, with the help line and the error line in their own slots. Groups of fields are `FieldSet`s with the legend inside the box. The search box and the exchange-rate field («1 EUR = … IRR») are `InputGroup`s, with the icon or the currency codes as part of the field instead of floating beside it.
+- **List rows are `Item`s:** notifications (with the kind's icon in the media slot), the inbox, this week's meetings on the member dashboard, member cards in «تیمِ من» and the rows of the focus lists.
+- **Hover help is the app's tooltip**, not the browser's `title` attribute: read receipts and full timestamps in messages, the lock on a closed period, receipt thumbnails, presence dots, the hidden-amount buttons, file names in the file picker, the availability cells and the palette dots.
+
+### Fixed
+
+- **Framed boxes inside dialogs.** The design rule says a box inside a surface is a soft fill, not another frame, but the checks had only ever run with the dialogs closed. Twenty-three boxes in the entry form, the person, meeting, message, account, access, task, project and tag dialogs and the access checklist are muted fills now. The member and client views were checked signed in as those roles: the dashboard's meeting rows and the team's member cards no longer read as empty frames.
+- The closing-date chips in Reports → Closings are proper segmented buttons (the active one `secondary`) instead of hand-drawn frames.
+- The audit scripts scan the whole document now, so open dialogs are covered, and they run for every role.
+
 ## [1.88.1]
 
 ### Fixed

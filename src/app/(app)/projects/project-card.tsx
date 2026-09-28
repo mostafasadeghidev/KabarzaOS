@@ -15,6 +15,7 @@ import { Thumb } from '@/components/thumb';
 import { StatusPicker, type StatusOption } from './status-picker';
 import { CardQuickAdd, type CardOptions } from './card-quick-add';
 import { useT } from '@/i18n/client';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * کارتِ پروژه — بازسازیِ.
@@ -41,14 +42,16 @@ function MaskedPrice({ value }: { value: string }) {
   const t = useT();
   const [shown, setShown] = useState(false);
   return (
-    <button
-      type="button"
-      onClick={() => setShown((s) => !s)}
-      title={t("برای نمایش/پنهان‌کردن کلیک کنید")}
-      className="num font-semibold tracking-wider text-foreground tabular-nums"
-    >
-      {shown ? value : '•••••'}
-    </button>
+    <Hint label={t("برای نمایش/پنهان‌کردن کلیک کنید")}>
+      <button
+        type="button"
+        onClick={() => setShown((s) => !s)}
+        aria-label={t("برای نمایش/پنهان‌کردن کلیک کنید")}
+        className="num font-semibold tracking-wider text-foreground tabular-nums"
+      >
+        {shown ? value : '•••••'}
+      </button>
+    </Hint>
   );
 }
 

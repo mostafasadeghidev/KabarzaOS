@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldDescription, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -177,12 +177,12 @@ export function AccountsView({
             {editing && <input type="hidden" name="id" value={editing.id} />}
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="grid gap-1.5 sm:col-span-2">
-                <Label htmlFor="a-name">{t("نام حساب")}</Label>
+              <Field className="sm:col-span-2">
+                <FieldLabel htmlFor="a-name">{t("نام حساب")}</FieldLabel>
                 <Input id="a-name" name="name" defaultValue={editing?.name ?? ''} required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="a-cur">{t("ارز")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="a-cur">{t("ارز")}</FieldLabel>
                 <NativeSelect
                   id="a-cur"
                   name="currencyId"
@@ -191,19 +191,19 @@ export function AccountsView({
                 >
                   {options.currencies.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>)}
                 </NativeSelect>
-              </div>
+              </Field>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-4">
-              <div className="grid gap-1.5">
-                <Label htmlFor="a-type">{t("نوع")}</Label>
+              <Field>
+                <FieldLabel htmlFor="a-type">{t("نوع")}</FieldLabel>
                 <NativeSelect id="a-type" name="type" containerClassName="w-full" defaultValue={editing?.type ?? 'business'}>
                   <NativeSelectOption value="business">{t("کاری")}</NativeSelectOption>
                   <NativeSelectOption value="personal">{t("شخصی")}</NativeSelectOption>
                 </NativeSelect>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="a-office">{t("دفتر")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="a-office">{t("دفتر")}</FieldLabel>
                 <NativeSelect
                   id="a-office"
                   name="officeId"
@@ -213,9 +213,9 @@ export function AccountsView({
                   <NativeSelectOption value="">{t("— هیچ‌کدام —")}</NativeSelectOption>
                   {options.offices.map((o) => <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>)}
                 </NativeSelect>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="a-opening">{t("مانده اولیه")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="a-opening">{t("مانده اولیه")}</FieldLabel>
                 <Input
                   id="a-opening"
                   name="openingBalance"
@@ -223,24 +223,24 @@ export function AccountsView({
                   className="num"
                   defaultValue={editing?.openingBalance ?? '0'}
                 />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="a-sort">{t("ترتیب")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="a-sort">{t("ترتیب")}</FieldLabel>
                 <Input id="a-sort" name="sortOrder" type="number" className="num" defaultValue={editing?.sortOrder ?? 0} />
-              </div>
+              </Field>
             </div>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="a-note">{t("یادداشت")}</Label>
+            <Field>
+              <FieldLabel htmlFor="a-note">{t("یادداشت")}</FieldLabel>
               {/* ⚠️ پیش از این یادداشت و ترتیب در ویرایش پر نمی‌شدند و با هر ذخیره پاک می‌شدند. */}
               <Input id="a-note" name="note" defaultValue={editing?.note ?? ''} />
-            </div>
+            </Field>
 
-            <fieldset className="grid gap-1.5 rounded-lg border p-3">
-              <legend className="px-1 text-sm font-medium">{t("حسابدارانِ این حساب")}</legend>
-              <p className="text-xs text-muted-foreground">
+            <FieldSet variant="box">
+              <FieldLegend>{t("حسابدارانِ این حساب")}</FieldLegend>
+              <FieldDescription>
                 {tr("کسی که فقط مجوزِ دیدنِ مالی دارد، **تنها** حساب‌هایی را می‌بیند که اینجا به او تخصیص یافته‌اند.")}
-              </p>
+              </FieldDescription>
               <div className="grid max-h-40 gap-1 overflow-y-auto">
                 {options.people.map((p) => (
                   <label key={p.id} className="flex items-center gap-2 text-sm">
@@ -253,7 +253,7 @@ export function AccountsView({
                   </label>
                 ))}
               </div>
-            </fieldset>
+            </FieldSet>
 
             <div className="flex flex-wrap items-center gap-4">
               <label className="flex items-center gap-2 text-sm">

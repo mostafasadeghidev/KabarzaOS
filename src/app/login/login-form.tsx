@@ -7,32 +7,37 @@ import type { LoginState } from './schema';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CircleAlert } from 'lucide-react';
+import { CircleAlert, CircleCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
+/**
+ * فرمِ ورود — بلوکِ login ِ shadcn: کارت، `FieldGroup`، پیوندِ «فراموشی» کنارِ
+ * برچسبِ رمز. پوسته و نشانِ برند از `PublicShell` می‌آید (صفحه آن را می‌سازد).
+ */
 export function LoginForm({ notice }: { notice?: string } = {}) {
   const t = useT();
   const [state, formAction, pending] = useActionState<LoginState, FormData>(login, {});
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>{t("ورود به KabarzaOS")}</CardTitle>
-          <CardDescription>{t("برای ادامه وارد شوید")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={formAction} className="space-y-4">
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("ورود به حساب")}</CardTitle>
+        <CardDescription>{t("برای ادامه وارد شوید")}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction}>
+          <FieldGroup>
             {notice && (
-              <p className="rounded-[--radius] bg-emerald-500/10 px-3 py-2 text-sm">{t(notice)}</p>
+              <Alert>
+                <CircleCheck />
+                <AlertDescription>{t(notice)}</AlertDescription>
+              </Alert>
             )}
-            <div className="space-y-1.5">
-              <Label htmlFor="email">
-                {t("ایمیل یا نام کاربری")}
-              </Label>
+            <Field>
+              <FieldLabel htmlFor="email">{t("ایمیل یا نام کاربری")}</FieldLabel>
               {/*
                 ⚠️ `type="text"` نه `email`: اعتبارسنجیِ مرورگر نامِ کاربری
                 را رد می‌کرد و کاربر بدونِ پیام گیر می‌افتاد.
@@ -40,13 +45,19 @@ export function LoginForm({ notice }: { notice?: string } = {}) {
               <Input
                 id="email" name="email" type="text" required autoComplete="username" dir="ltr"
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">{t("رمز عبور")}</Label>
+            </Field>
+            <Field>
+              <div className="flex items-center">
+                <FieldLabel htmlFor="password">{t("رمز عبور")}</FieldLabel>
+                {/* پورتِ `wp_lostpassword_url`: راهِ خودخدمتِ بازنشانی. */}
+                <Link href="/forgot" className="ms-auto text-sm underline-offset-4 hover:underline">
+                  {t("رمزم را فراموش کرده‌ام")}
+                </Link>
+              </div>
               <Input
                 id="password" name="password" type="password" required autoComplete="current-password" dir="ltr"
               />
-            </div>
+            </Field>
 
             {state.error && (
               <Alert variant="destructive">
@@ -57,16 +68,14 @@ export function LoginForm({ notice }: { notice?: string } = {}) {
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? <><Spinner />{t('در حال ورود…')}</> : t('ورود')}
-            </Button>
-            {/* پورتِ `wp_lostpassword_url`: راهِ خودخدمتِ بازنشانی. */}
-            <Link href="/forgot" className="block text-center text-sm text-muted-foreground underline">
-              {t("رمزم را فراموش کرده‌ام")}
-            </Link>
-          </form>
-        </CardContent>
-      </Card>
-    </main>
+            <Field>
+              <Button type="submit" disabled={pending}>
+                {pending ? <><Spinner />{t('در حال ورود…')}</> : t('ورود')}
+              </Button>
+            </Field>
+          </FieldGroup>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

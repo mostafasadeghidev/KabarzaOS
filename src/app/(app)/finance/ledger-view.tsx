@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -37,6 +37,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DatePicker } from '@/components/ui/date-picker';
 import { StatCard } from '@/components/stat-card';
 import { FileInput } from '@/components/ui/file-input';
+import { Hint } from '@/components/ui/tooltip';
 
 /** یک حساب — همان شکلی که `listAccounts` برمی‌گرداند. */
 export interface AccountOption {
@@ -368,9 +369,11 @@ export function LedgerView({
                 {canManage && (
                   <TableActionsCell>
                     {isLocked(e.entryDate) ? (
-                      <span className="flex size-8 items-center justify-center text-muted-foreground" title={t('دورهٔ قفل‌شده')}>
-                        <Lock className="size-3.5" />
-                      </span>
+                      <Hint label={t('دورهٔ قفل‌شده')}>
+                        <span className="flex size-8 items-center justify-center text-muted-foreground" aria-label={t('دورهٔ قفل‌شده')}>
+                          <Lock className="size-3.5" />
+                        </span>
+                      </Hint>
                     ) : (
                     <>
                       <IconButton
@@ -468,55 +471,55 @@ export function LedgerView({
 
           <form action={transferFormAction} className="grid gap-3">
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="t-from">{t("از حساب")}</Label>
+              <Field>
+                <FieldLabel htmlFor="t-from">{t("از حساب")}</FieldLabel>
                 <SearchableSelect id="t-from" name="fromAccountId" containerClassName="w-full" defaultValue={accountId}>
                   {accounts.map((a) => (
                     <NativeSelectOption key={a.id} value={a.id}>{accountLabel(a)}</NativeSelectOption>
                   ))}
                 </SearchableSelect>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="t-to">{t("به حساب")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="t-to">{t("به حساب")}</FieldLabel>
                 <SearchableSelect id="t-to" name="toAccountId" containerClassName="w-full" defaultValue={String(accounts.find((a) => a.id !== accountId)?.id ?? '')}>
                   <NativeSelectOption value="">{t("— انتخاب —")}</NativeSelectOption>
                   {accounts.map((a) => (
                     <NativeSelectOption key={a.id} value={a.id}>{accountLabel(a)}</NativeSelectOption>
                   ))}
                 </SearchableSelect>
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="t-famount">{t("مبلغِ خروجی")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="t-famount">{t("مبلغِ خروجی")}</FieldLabel>
                 <Input id="t-famount" name="fromAmount" inputMode="decimal" className="num" required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="t-tamount">{t("مبلغِ رسیده")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="t-tamount">{t("مبلغِ رسیده")}</FieldLabel>
                 <Input id="t-tamount" name="toAmount" inputMode="decimal" className="num" required />
-              </div>
+              </Field>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="t-date">{t("تاریخ")}</Label>
+              <Field>
+                <FieldLabel htmlFor="t-date">{t("تاریخ")}</FieldLabel>
                 <DatePicker id="t-date" name="entryDate" defaultValue={today} required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="t-desc">{t("توضیحات")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="t-desc">{t("توضیحات")}</FieldLabel>
                 <Input id="t-desc" name="description" placeholder={tr("مثلاً: شارژِ حسابِ دلاری")} />
-              </div>
+              </Field>
             </div>
 
             {/* رسیدِ انتقال (یک فایل) — روی هر دو لِگ می‌نشیند (پورتِ فیلدِ رسیدِ فرمِ انتقال). */}
-            <div className="grid gap-1.5">
-              <Label htmlFor="t-receipt" className="flex items-center gap-1.5">
+            <Field>
+              <FieldLabel htmlFor="t-receipt" className="flex items-center gap-1.5">
                 <Paperclip className="size-3.5" />
                 {t("رسید")}
-              </Label>
+              </FieldLabel>
               <FileInput id="t-receipt" name="receipt" accept="image/*,application/pdf" />
-              <p className="text-xs text-muted-foreground">
+              <FieldDescription>
                 {tr('روی هر دو لِگِ انتقال می‌نشیند — تصویر یا PDF تا {size}.', { size: humanSize(MAX_SIZE.receipt, tr) })}
-              </p>
-            </div>
+              </FieldDescription>
+            </Field>
 
             {transferState.error && (
               <Alert variant="destructive">

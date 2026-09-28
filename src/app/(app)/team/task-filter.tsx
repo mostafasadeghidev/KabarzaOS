@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/i18n/client';
-import { ltr } from '@/i18n/bidi';
+import { Pager } from '@/components/ui/pager';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 
@@ -115,31 +115,13 @@ export function TaskFilter({
         )}
       </div>
 
-      {paging.totalPages > 1 && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="tabular-nums">
-            {tr('{shown} از {total} ردیف', {
-              shown: ltr(`${(paging.page - 1) * paging.perPage + 1}–${Math.min(paging.page * paging.perPage, paging.total)}`),
-              total: paging.total,
-            })}
-          </span>
-          <Button
-            size="sm" variant="outline" className="h-7 px-2"
-            disabled={paging.page <= 1}
-            onClick={() => go({ tpage: String(paging.page - 1) })}
-          >
-            {tr('قبلی')}
-          </Button>
-          <span className="num">{paging.page} / {paging.totalPages}</span>
-          <Button
-            size="sm" variant="outline" className="h-7 px-2"
-            disabled={paging.page >= paging.totalPages}
-            onClick={() => go({ tpage: String(paging.page + 1) })}
-          >
-            {tr('بعدی')}
-          </Button>
-        </div>
-      )}
+      <Pager
+        page={paging.page}
+        totalPages={paging.totalPages}
+        total={paging.total}
+        perPage={paging.perPage}
+        onPage={(p) => go({ tpage: String(p) })}
+      />
     </div>
   );
 }

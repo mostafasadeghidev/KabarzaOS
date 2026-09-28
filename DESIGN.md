@@ -124,6 +124,12 @@ translated sentence ends up inside `num`.
 
 ## 7. Components
 
+- **Header bar:** the strip above the content holds the sidebar trigger, the
+  page path and the global actions. The path is the shadcn Breadcrumb:
+  «section › page», where the section comes from the navigation list and the
+  page from `PageHeader`'s title (`PageCrumb` registers it). A top-level page
+  shows only its section; a detail page adds its back link and its title. On
+  phones only the last crumb is shown, truncated.
 - **PageHeader:** 24/700 title, one muted line under it, and the page's
   actions at the end edge.
 - **SectionHeader:** 16/700 title, a 13 px muted description, and actions on
@@ -142,7 +148,25 @@ translated sentence ends up inside `num`.
   surface (`rounded-xl border bg-card p-3`). An instant toolbar (search, quick
   chips, selects that filter as you type) sits directly on the canvas.
 - **Fields:** inputs, selects and textareas are white in light mode, on the
-  canvas and inside surfaces alike.
+  canvas and inside surfaces alike. Every label, control and help or error
+  line is a shadcn `Field` (`FieldLabel`, `FieldDescription`, `FieldError`),
+  with 6 px between label and control. A group of fields is a `FieldSet` with
+  a `FieldLegend`; inside a surface it is `variant="box"`: a `muted` fill with
+  the legend inside the box, never a framed fieldset. A field with a prefix,
+  suffix or icon (the search box, `1 EUR = … IRR`) is an `InputGroup`.
+- **Pager:** one `Pager` under every paged list: «{shown} از {total} ردیف»,
+  previous, the page numbers with an ellipsis, next, and the rows-per-page
+  select where the ledger needs it. `onPage` when the page is client state,
+  `hrefOf` when it lives in the URL. It is the shadcn Pagination underneath;
+  no view builds its own previous/next pair.
+- **Item:** a list row with media, title, description and actions
+  (notifications, the inbox, dashboard meeting rows, member cards, focus rows)
+  is a shadcn `Item`: `outline` (white) on the canvas, `muted` inside a
+  surface. Files and links stay `Attachment`.
+- **Hover help:** `Hint` (the shadcn Tooltip) on any control whose meaning is
+  an icon or a truncated text: read receipts, the lock on a closed period,
+  the full date behind a compact time, palette dots. Never the browser's
+  `title` attribute.
 - **Pickers:** one family, all with the same field (`border-input`, 36 px,
   32 px as `sm` in toolbars) and the same list (shadcn Popover + Command):
   `NativeSelect` for a short fixed list, `SearchableSelect` for a long one,
@@ -189,6 +213,11 @@ translated sentence ends up inside `num`.
   empty.
 - **Documents:** a printable document such as the invoice is a white sheet on
   the canvas, without the frame in print.
+- **Public pages:** sign-in, forgotten password, reset and setup share
+  `PublicShell`: the brand (the company logo or its monogram, and the company
+  name) above one centred card with a `FieldGroup`, the way the shadcn login
+  block is laid out. The logo is inlined as a `data:` URL because the file
+  route stays behind the sign-in.
 
 ## 8. Do and don't
 
@@ -207,9 +236,14 @@ translated sentence ends up inside `num`.
 - Don't dim content with opacity to make it look secondary; use
   `muted-foreground`, or a dashed border for something inactive.
 - Don't letter-space Persian text.
+- Don't use the `title` attribute for hover help, and don't hand-build a
+  pager, a label row or a list row: `Hint`, `Pager`, `Field` and `Item` exist.
 
 ## 9. Checking a change
 
 Every page and tab is checked in both themes with scripts in the browser:
 text contrast of 4.5:1 or better, no transparent bordered box on the canvas,
 no bordered surface inside another, and no horizontal overflow at 375 px.
+The scripts scan the whole document, so every dialog is checked **open**, and
+the pages are checked signed in as each role (owner, member, client), not
+only as the owner.

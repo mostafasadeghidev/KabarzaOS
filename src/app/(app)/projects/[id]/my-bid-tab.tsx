@@ -8,7 +8,7 @@ import { format, inputValue } from '@/domain/money/money';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { SectionHeader } from '@/components/page-shell';
@@ -53,8 +53,8 @@ function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['open
       </h4>
 
       <div className="flex flex-wrap items-end gap-2">
-        <div className="grid gap-1.5">
-          <Label htmlFor={`bid-${role.roleTagId}`}>{t("قیمت پیشنهادی شما")}</Label>
+        <Field>
+          <FieldLabel htmlFor={`bid-${role.roleTagId}`}>{t("قیمت پیشنهادی شما")}</FieldLabel>
           <Input
             id={`bid-${role.roleTagId}`}
             name="amount"
@@ -66,11 +66,11 @@ function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['open
             defaultValue={inputValue(role.myAmount)}
             required
           />
-        </div>
-        <div className="grid flex-1 gap-1.5">
-          <Label htmlFor={`note-${role.roleTagId}`}>{t("توضیحات")}</Label>
+        </Field>
+        <Field className="flex-1">
+          <FieldLabel htmlFor={`note-${role.roleTagId}`}>{t("توضیحات")}</FieldLabel>
           <Input id={`note-${role.roleTagId}`} name="note" defaultValue={role.myNote} />
-        </div>
+        </Field>
         <Submit label={role.hasBid ? t('به‌روزرسانی') : t('ثبت')} />
       </div>
 

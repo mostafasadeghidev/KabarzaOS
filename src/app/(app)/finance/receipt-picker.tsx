@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FileText, Paperclip, X } from 'lucide-react';
-import { Label } from '@/components/ui/label';
+import { FieldDescription, FieldLabel, FieldSet } from '@/components/ui/field';
 import { Lightbox } from '@/components/lightbox';
 import { useT } from '@/i18n/client';
 import { FileInput } from '@/components/ui/file-input';
@@ -69,11 +69,11 @@ export function ReceiptPicker({
   }, [files, multiple]);
 
   return (
-    <div className="grid gap-2 rounded-lg border p-3">
-      <Label htmlFor={inputId} className="flex items-center gap-1.5">
+    <FieldSet variant="box">
+      <FieldLabel htmlFor={inputId} className="flex items-center gap-1.5">
         <Paperclip className="size-3.5" />
         {multiple ? tr('رسیدها') : tr('رسید')}
-      </Label>
+      </FieldLabel>
       {children}
       {/* `selected`: فایلِ چسبانده یا حذف‌شده از رویدادِ change رد نمی‌شود؛ برچسب از همین فهرست می‌خواند. */}
       <FileInput
@@ -118,12 +118,12 @@ export function ReceiptPicker({
           ))}
         </ul>
       )}
-      <p className="text-xs text-muted-foreground">
+      <FieldDescription>
         {hint ? `${hint} ` : ''}
         {tr('چسباندنِ تصویر از کلیپ‌بورد (Ctrl+V) هم کار می‌کند.')}
-      </p>
+      </FieldDescription>
       <Lightbox src={zoom} onClose={() => setZoom(null)} />
-    </div>
+    </FieldSet>
   );
 }
 

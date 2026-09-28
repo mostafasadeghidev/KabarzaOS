@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AvailabilityView, type AvailabilityData } from './availability-view';
 import { AbsencePanel, type AbsencePanelData } from './absence-panel';
-import Link from 'next/link';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
@@ -13,7 +12,7 @@ import { useSearchParams } from 'next/navigation';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+import { Pager } from '@/components/ui/pager';
 import { Section } from '@/components/page-shell';
 
 export interface EventRow {
@@ -47,6 +46,7 @@ function when(value: Date | string | null | undefined, tz: string): string {
 
 export interface Paging {
   page: number;
+  perPage: number;
   totalPages: number;
   total: number;
 }
@@ -131,32 +131,17 @@ export function ActivityView({
       )}
 
       {/*
-        صفحه‌بندی — پیوندِ ساده، نه دکمهٔ کلاینتی: نشانیِ صفحه باید قابلِ
-        اشتراک و بازگشت‌پذیر بماند.
-        ⚠️ فقط وقتی نشان داده می‌شود که واقعاً بیش از یک صفحه باشد.
+        صفحه‌بندی — پیوند، نه دکمهٔ کلاینتی: نشانیِ صفحه باید قابلِ اشتراک و
+        بازگشت‌پذیر بماند. همان صفحه‌بندِ مشترکِ اپ؛ خودش با یک صفحه پنهان می‌شود.
       */}
-      {tab === 'events' && paging.totalPages > 1 && (
-        <div className="flex items-center justify-between gap-3 text-sm">
-          <span className="text-xs text-muted-foreground">
-            {tr('صفحهٔ {page} از {total} · {count} رویداد', {
-              page: paging.page,
-              total: paging.totalPages,
-              count: paging.total,
-            })}
-          </span>
-          <div className="flex gap-1">
-            {paging.page > 1 && (
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/activity?page=${paging.page - 1}`}>{tr("تازه‌تر")}</Link>
-              </Button>
-            )}
-            {paging.page < paging.totalPages && (
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/activity?page=${paging.page + 1}`}>{tr("قدیمی‌تر")}</Link>
-              </Button>
-            )}
-          </div>
-        </div>
+      {tab === 'events' && (
+        <Pager
+          page={paging.page}
+          totalPages={paging.totalPages}
+          total={paging.total}
+          perPage={paging.perPage}
+          hrefOf={(n) => `/activity?page=${n}`}
+        />
       )}
 
       {tab === 'absences' && (

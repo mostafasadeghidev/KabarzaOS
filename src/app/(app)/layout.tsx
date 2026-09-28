@@ -5,6 +5,8 @@ import { currentSession } from '@/server/auth';
 import { can, canViewSection, type Permission, type Role, type Section } from '@/domain/access/permissions';
 import { AppSidebar, type NavItem } from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
+import { HeaderBreadcrumb } from '@/components/header-breadcrumb';
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette';
 import { OffboardedShell } from './offboarded-shell';
 import { PresenceHeartbeat } from '@/components/presence';
@@ -228,7 +230,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <SidebarInset>
         <header className="flex h-12 items-center gap-2 border-b px-4">
           <SidebarTrigger />
-          <span className="text-sm font-medium">KabarzaOS</span>
+          <Separator orientation="vertical" className="me-1 data-[orientation=vertical]:h-4" />
+          {/*
+            مسیرِ صفحه به‌جای نامِ ثابتِ برند (که در سرِ سایدبار هست): «بخش ›
+            عنوانِ صفحه». فهرستِ بخش‌ها همان منوی فیلترشدهٔ سرور است، به‌علاوهٔ
+            دو صفحه‌ای که در منو نیستند و از منوی حساب باز می‌شوند.
+          */}
+          <HeaderBreadcrumb
+            pages={[
+              ...items.map(({ href, label }) => ({ href, label })),
+              { href: '/settings', label: t('تنظیمات') },
+              { href: '/profile', label: t('پروفایلِ من') },
+            ]}
+          />
           <div className="ms-auto flex items-center gap-2">
             <CommandPaletteTrigger />
             <NotificationBell

@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox, MultiSelect as SearchableMultiSelect } from '@/components/ui/combobox';
@@ -275,37 +275,37 @@ export function TaskDialog({
             )}
 
             {editing && options && (
-              <form action={saveAction} className="grid gap-3 rounded-lg border p-3">
+              <form action={saveAction} className="grid gap-3 rounded-lg bg-muted/60 p-3">
                 <input type="hidden" name="taskId" value={task.id} />
 
-                <div className="grid gap-1.5">
-                  <Label htmlFor="t-title">{t("عنوان")}</Label>
+                <Field>
+                  <FieldLabel htmlFor="t-title">{t("عنوان")}</FieldLabel>
                   <Input id="t-title" name="title" defaultValue={task.title} required />
                   {saveState.fieldErrors?.title && (
-                    <p className="text-xs text-destructive">{t(saveState.fieldErrors.title)}</p>
+                    <FieldError>{t(saveState.fieldErrors.title)}</FieldError>
                   )}
-                </div>
+                </Field>
 
-                <div className="grid gap-1.5">
-                  <Label htmlFor="t-desc">{t("توضیحات")}</Label>
+                <Field>
+                  <FieldLabel htmlFor="t-desc">{t("توضیحات")}</FieldLabel>
                   <Textarea id="t-desc" name="description" rows={3} defaultValue={task.description} />
-                </div>
+                </Field>
 
                 {(options.tasks?.filter((x) => x.id !== task.id).length ?? 0) > 0 && (
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="t-depends">{t("وابسته به")}</Label>
+                  <Field>
+                    <FieldLabel htmlFor="t-depends">{t("وابسته به")}</FieldLabel>
                     <SearchableSelect id="t-depends" name="dependsOn" containerClassName="w-full" defaultValue={task.dependsOn ? String(task.dependsOn) : ''}>
                       <NativeSelectOption value="">—</NativeSelectOption>
                       {options.tasks!.filter((x) => x.id !== task.id).map((x) => (
                         <NativeSelectOption key={x.id} value={x.id}>{x.title}</NativeSelectOption>
                       ))}
                     </SearchableSelect>
-                  </div>
+                  </Field>
                 )}
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="t-status">{t("وضعیت")}</Label>
+                  <Field>
+                    <FieldLabel htmlFor="t-status">{t("وضعیت")}</FieldLabel>
                     <NativeSelect
                       id="t-status"
                       name="statusTagId"
@@ -317,11 +317,11 @@ export function TaskDialog({
                         <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>
                       ))}
                     </NativeSelect>
-                  </div>
+                  </Field>
 
                   {/* جستجوی زنده — همان دلیلِ فرمِ افزودن: فهرستِ بلند. */}
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="t-assignee">{t("تخصیص به…")}</Label>
+                  <Field>
+                    <FieldLabel htmlFor="t-assignee">{t("تخصیص به…")}</FieldLabel>
                     <Combobox
                       id="t-assignee"
                       name="assignedTo"
@@ -330,7 +330,7 @@ export function TaskDialog({
                       onChange={setAssignee}
                       placeholder={t("نامِ عضو را تایپ کنید…")}
                     />
-                  </div>
+                  </Field>
 
                   {/*
                     ⚠️ نقش‌ها در ویرایش — پیش از این فرمِ ویرایش انتخابگرِ نقش نداشت و
@@ -338,12 +338,12 @@ export function TaskDialog({
                     و وقتی تسک به شخص سپرده شده، نقش کنار می‌رود (همان قاعدهٔ فرمِ افزودن).
                   */}
                   {options.roles.length > 0 && (
-                    <div className="grid gap-1.5">
-                      <Label htmlFor="t-roles">{t("تخصیص به نقش")}</Label>
+                    <Field>
+                      <FieldLabel htmlFor="t-roles">{t("تخصیص به نقش")}</FieldLabel>
                       {assignee.id !== null ? (
-                        <div className="flex h-9 items-center rounded-md border border-dashed px-3 text-xs text-muted-foreground">
+                        <p className="flex h-9 items-center text-xs text-muted-foreground">
                           {tr("به شخص سپرده شده — نقش لازم نیست")}
-                        </div>
+                        </p>
                       ) : (
                         <SearchableMultiSelect
                           id="t-roles"
@@ -354,11 +354,11 @@ export function TaskDialog({
                           placeholder={t("نقش‌ها…")}
                         />
                       )}
-                    </div>
+                    </Field>
                   )}
 
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="t-priority">{t("اولویت…")}</Label>
+                  <Field>
+                    <FieldLabel htmlFor="t-priority">{t("اولویت…")}</FieldLabel>
                     <NativeSelect
                       id="t-priority"
                       name="priorityTagId"
@@ -370,16 +370,16 @@ export function TaskDialog({
                         <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>
                       ))}
                     </NativeSelect>
-                  </div>
+                  </Field>
 
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="t-due">{t("ددلاین")}</Label>
+                  <Field>
+                    <FieldLabel htmlFor="t-due">{t("ددلاین")}</FieldLabel>
                     <DatePicker
                       id="t-due"
                       name="dueDate"
                       defaultValue={task.dueDate ?? ''}
                     />
-                  </div>
+                  </Field>
                 </div>
 
                 <label className="flex items-center gap-2 text-sm">
@@ -401,7 +401,7 @@ export function TaskDialog({
               ) : (
                 <ul className="grid gap-2">
                   {data.detail.notes.map((n) => (
-                    <li key={n.id} className="rounded-lg border p-2.5">
+                    <li key={n.id} className="rounded-lg bg-muted/60 p-2.5">
                       <p className="text-sm whitespace-pre-wrap">{n.body}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {n.userName ?? '—'} · <span className="num">{when(n.createdAt, tz)}</span>

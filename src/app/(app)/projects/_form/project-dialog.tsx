@@ -9,7 +9,7 @@ import { BootstrapSections, FilePicker, type BootstrapOptions } from './bootstra
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -71,8 +71,8 @@ export interface ProjectDefaults {
   thumbnailFileId: number | null;
 }
 
-/** یک ردیفِ فیلد با برچسب و خطای زیرِ آن — قالبِ مشترکِ همهٔ فرم‌ها. */
-function Field({
+/** یک ردیفِ فیلد با برچسب و خطای زیرِ آن — روی Field ِ shadcn؛ شناسه را خودش می‌سازد. */
+function LabeledField({
   label, name, error, hint, children,
 }: {
   label: string;
@@ -84,16 +84,16 @@ function Field({
   const tr = useT();
   const id = useId();
   return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>{tr(label)}</Label>
+    <Field>
+      <FieldLabel htmlFor={id}>{tr(label)}</FieldLabel>
       {children(id)}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {hint && <FieldDescription>{hint}</FieldDescription>}
       {error && (
-        <p className="text-xs text-destructive" data-field-error={name}>
+        <FieldError data-field-error={name}>
           {tr(error)}
-        </p>
+        </FieldError>
       )}
-    </div>
+    </Field>
   );
 }
 
@@ -217,13 +217,13 @@ export function ProjectDialog({
 
           <div className={formTab === 'info' ? 'grid gap-4' : 'hidden'}>
 
-          <Field label={tr("عنوان")} name="title" error={fe.title}>
+          <LabeledField label={tr("عنوان")} name="title" error={fe.title}>
             {(id) => <Input id={id} name="title" defaultValue={keep('title')} required autoFocus />}
-          </Field>
+          </LabeledField>
 
-          <Field label={tr("توضیحات")} name="description" error={fe.description}>
+          <LabeledField label={tr("توضیحات")} name="description" error={fe.description}>
             {(id) => <Textarea id={id} name="description" defaultValue={keep('description')} rows={2} />}
-          </Field>
+          </LabeledField>
 
           {/*
             ⚠️ تصویرِ شاخص کنارِ عنوان و توضیحات می‌نشیند، نه در تبِ فایل‌ها:
@@ -263,17 +263,17 @@ export function ProjectDialog({
 
           {/* فیلدهای فشرده — در نسخهٔ قبلی سه‌تا در هر ردیف. */}
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label={tr("تاریخ ثبت")} name="regDate" error={fe.regDate}>
+            <LabeledField label={tr("تاریخ ثبت")} name="regDate" error={fe.regDate}>
               {(id) => (
                 <DatePicker id={id} name="regDate" defaultValue={keep('regDate', options.today)} />
               )}
-            </Field>
+            </LabeledField>
 
-            <Field label={tr("ددلاین")} name="deadline" error={fe.deadline}>
+            <LabeledField label={tr("ددلاین")} name="deadline" error={fe.deadline}>
               {(id) => <DatePicker id={id} name="deadline" defaultValue={keep('deadline')} />}
-            </Field>
+            </LabeledField>
 
-            <Field label={tr("وضعیت پروژه")} name="statusTagId" error={fe.statusTagId}>
+            <LabeledField label={tr("وضعیت پروژه")} name="statusTagId" error={fe.statusTagId}>
               {(id) => (
                 <NativeSelect id={id} name="statusTagId" containerClassName="w-full" defaultValue={keep('statusTagId')}>
                   <NativeSelectOption value="">{tr("— انتخاب —")}</NativeSelectOption>
@@ -282,18 +282,18 @@ export function ProjectDialog({
                   ))}
                 </NativeSelect>
               )}
-            </Field>
+            </LabeledField>
 
             {canEditMoney && (
-              <Field label={tr("مبلغ پروژه")} name="price" error={fe.price}>
+              <LabeledField label={tr("مبلغ پروژه")} name="price" error={fe.price}>
                 {(id) => (
                   <Input id={id} name="price" inputMode="decimal" defaultValue={keep('price', '0')} className="num" />
                 )}
-              </Field>
+              </LabeledField>
             )}
 
             {canEditMoney && (
-              <Field label={tr("ارز")} name="currencyId" error={fe.currencyId}>
+              <LabeledField label={tr("ارز")} name="currencyId" error={fe.currencyId}>
                 {(id) => (
                   <NativeSelect
                     id={id}
@@ -306,10 +306,10 @@ export function ProjectDialog({
                     ))}
                   </NativeSelect>
                 )}
-              </Field>
+              </LabeledField>
             )}
 
-            <Field label={tr("دفتر")} name="officeId" error={fe.officeId}>
+            <LabeledField label={tr("دفتر")} name="officeId" error={fe.officeId}>
               {(id) => (
                 <NativeSelect id={id} name="officeId" containerClassName="w-full" defaultValue={keep('officeId')}>
                   <NativeSelectOption value="">{tr("— هیچ‌کدام —")}</NativeSelectOption>
@@ -318,11 +318,11 @@ export function ProjectDialog({
                   ))}
                 </NativeSelect>
               )}
-            </Field>
+            </LabeledField>
           </div>
 
 
-          <Field
+          <LabeledField
             label={tr("پروژهٔ والد (زیرپروژه؟)")}
             name="parentId"
             error={fe.parentId}
@@ -336,9 +336,9 @@ export function ProjectDialog({
                 ))}
               </SearchableSelect>
             )}
-          </Field>
+          </LabeledField>
 
-          <div className="rounded-lg border p-3">
+          <div className="rounded-lg bg-muted/60 p-3">
             <label className="flex items-start gap-2 text-sm font-medium">
               <Checkbox
                 key={`unit-${formKey}`}
@@ -356,7 +356,7 @@ export function ProjectDialog({
           </div>
 
           {canEditMoney && (
-            <div className="rounded-lg border p-3">
+            <div className="rounded-lg bg-muted/60 p-3">
               <label className="flex items-start gap-2 text-sm font-medium">
                 <Checkbox
                   key={`tender-${formKey}`}
@@ -433,7 +433,7 @@ export function ProjectDialog({
 
           {/* پروژهٔ خصوصی فقط برای کسی که خودش دسترسیِ خصوصی دارد — گاردِ اصلی در سرویس. */}
           {options.canUsePrivate && (
-            <Field
+            <LabeledField
               label={tr("دامنهٔ دسترسی")}
               name="scope"
               error={fe.scope}
@@ -445,7 +445,7 @@ export function ProjectDialog({
                   <NativeSelectOption value="private">{tr("خصوصی")}</NativeSelectOption>
                 </NativeSelect>
               )}
-            </Field>
+            </LabeledField>
           )}
 
           {/*

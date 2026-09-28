@@ -16,7 +16,7 @@ import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
@@ -117,20 +117,20 @@ export function FilesTab({
           >
             <input type="hidden" name="projectId" value={projectId} />
             <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
-              <div className="grid gap-1.5">
-                <Label htmlFor="att-file">{t("فایل‌ها")}</Label>
+              <Field>
+                <FieldLabel htmlFor="att-file">{t("فایل‌ها")}</FieldLabel>
                 {/* چند فایل هم‌زمان — مثلِ داشبوردِ نسخهٔ قبلی. */}
                 <FileInput id="att-file" name="file" multiple required />
-              </div>
+              </Field>
               <SubmitButton>
                 <Upload className="size-3.5" />
                 {tr("بارگذاری")}
               </SubmitButton>
             </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="att-label">{t("برچسب (اختیاری)")}</Label>
+            <Field>
+              <FieldLabel htmlFor="att-label">{t("برچسب (اختیاری)")}</FieldLabel>
               <Input id="att-label" name="label" placeholder={t("مثلاً: قرارداد امضاشده")} />
-            </div>
+            </Field>
             <p className="text-xs text-muted-foreground">
               {tr('تصویر، ویدیو، PDF و سند — تا {size} برای هر فایل.', { size: humanSize(MAX_SIZE.attachment, tr) })}
             </p>
@@ -196,14 +196,14 @@ export function FilesTab({
           <form action={addLink} className="grid gap-2 rounded-xl border bg-card p-3">
             <input type="hidden" name="projectId" value={projectId} />
             <div className="grid gap-2 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
-              <div className="grid gap-1.5">
-                <Label htmlFor="link-url">{t("نشانی")}</Label>
+              <Field>
+                <FieldLabel htmlFor="link-url">{t("نشانی")}</FieldLabel>
                 <Input id="link-url" name="url" type="url" placeholder="https://…" required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="link-label">{t("برچسب")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="link-label">{t("برچسب")}</FieldLabel>
                 <Input id="link-label" name="label" placeholder={t("گوگل‌درایو")} />
-              </div>
+              </Field>
               <SubmitButton>{t("افزودن")}</SubmitButton>
             </div>
             {/* ⚠️ هیچ فایلی از این نشانی گرفته نمی‌شود — فقط ذخیره می‌شود. */}

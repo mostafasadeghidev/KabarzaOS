@@ -16,7 +16,7 @@ import { BankCard } from './bank-card';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { useActionToast } from '@/components/ui/toast';
 import { useSearchParams } from 'next/navigation';
@@ -149,18 +149,18 @@ export function ProfileView({ data }: { data: ProfileData }) {
         <div className="grid max-w-2xl grid-cols-1 gap-4">
           <Panel title={tr("حساب کاربری")}>
             <form action={saveAccount} className="grid gap-3">
-              <div className="grid gap-1.5">
-                <Label htmlFor="acc-name">{tr("نام")}</Label>
+              <Field>
+                <FieldLabel htmlFor="acc-name">{tr("نام")}</FieldLabel>
                 <Input id="acc-name" name="name" defaultValue={data.name} required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="acc-email">{tr("ایمیل")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="acc-email">{tr("ایمیل")}</FieldLabel>
                 <Input id="acc-email" name="email" type="email" defaultValue={data.email} required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="acc-phone">{tr("تلفن")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="acc-phone">{tr("تلفن")}</FieldLabel>
                 <Input id="acc-phone" name="phone" defaultValue={data.phone} />
-              </div>
+              </Field>
               {data.username && (
                 <p className="text-xs text-muted-foreground">
                   {tr("نامِ کاربری")}: <span className="num">{data.username}</span>
@@ -244,8 +244,8 @@ export function ProfileView({ data }: { data: ProfileData }) {
       {tab === 'prefs' && (
         <Panel title={tr("ترجیحات")} className="max-w-2xl">
           <form action={saveTz} className="grid gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="p-tz">{tr("منطقهٔ زمانی")}</Label>
+            <Field>
+              <FieldLabel htmlFor="p-tz">{tr("منطقهٔ زمانی")}</FieldLabel>
               {/*
                 ⚠️ `datalist` خودش جستجوی زنده است: مرورگر با هر حرفی که تایپ
                 شود فهرست را فیلتر می‌کند — بدونِ جاوااسکریپتِ ما و بدونِ
@@ -260,10 +260,10 @@ export function ProfileView({ data }: { data: ProfileData }) {
               <datalist id="tz-list">
                 {timezones.map((tz) => <option key={tz} value={tz} />)}
               </datalist>
-              <p className="text-xs text-muted-foreground">
+              <FieldDescription>
                 {tr("ساعت‌ها بر مبنای ساعتِ دیواریِ شما نشان داده می‌شوند. خالی یعنی پیش‌فرضِ سامانه.")}
-              </p>
-            </div>
+              </FieldDescription>
+            </Field>
             <div className="flex items-center gap-3">
               <Submit>{tr("ذخیره")}</Submit>
             </div>
@@ -274,34 +274,34 @@ export function ProfileView({ data }: { data: ProfileData }) {
       {tab === 'password' && (
         <Panel title={tr("رمزِ ورود")} className="max-w-2xl">
           <form action={changePw} className="grid gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="pw-current">{tr("رمزِ فعلی")}</Label>
+            <Field>
+              <FieldLabel htmlFor="pw-current">{tr("رمزِ فعلی")}</FieldLabel>
               <Input id="pw-current" name="current" type="password" autoComplete="current-password" />
               {/*
                 ⚠️ رمزِ فعلی لازم است حتی وقتی وارد شده‌اید: نشستِ
                 دزدیده‌شده نباید بتواند رمز را عوض کند و شما را بیرون بگذارد.
               */}
-              <p className="text-xs text-muted-foreground">
+              <FieldDescription>
                 {tr("اگر مدیر برایتان حساب ساخته و هنوز رمزی نگذاشته‌اید، این را خالی بگذارید.")}
-              </p>
-            </div>
+              </FieldDescription>
+            </Field>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="pw-next">{tr("رمزِ تازه")}</Label>
+            <Field>
+              <FieldLabel htmlFor="pw-next">{tr("رمزِ تازه")}</FieldLabel>
               <Input
                 id="pw-next" name="next" type="password" minLength={8}
                 autoComplete="new-password" required
                 placeholder={tr("دستِ‌کم ۸ نویسه")}
               />
-            </div>
+            </Field>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="pw-repeat">{tr("تکرارِ رمزِ تازه")}</Label>
+            <Field>
+              <FieldLabel htmlFor="pw-repeat">{tr("تکرارِ رمزِ تازه")}</FieldLabel>
               <Input
                 id="pw-repeat" name="repeat" type="password" minLength={8}
                 autoComplete="new-password" required
               />
-            </div>
+            </Field>
 
             <div className="flex items-center gap-3">
               <Submit>{tr("تغییرِ رمز")}</Submit>
@@ -331,16 +331,16 @@ export function ProfileView({ data }: { data: ProfileData }) {
               {tr("دریافتِ اعلان با ایمیل")}
             </label>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="n-email">{tr("ایمیلِ اختصاصیِ اعلان")}</Label>
+            <Field>
+              <FieldLabel htmlFor="n-email">{tr("ایمیلِ اختصاصیِ اعلان")}</FieldLabel>
               <Input
                 id="n-email" name="notifyEmail" type="email" className="num"
                 defaultValue={data.notify.email} placeholder={data.email}
               />
-              <p className="text-xs text-muted-foreground">
+              <FieldDescription>
                 {tr("خالی یعنی همان ایمیلِ ورود.")}
-              </p>
-            </div>
+              </FieldDescription>
+            </Field>
 
             <fieldset className="grid gap-2">
               <legend className="text-xs text-muted-foreground">

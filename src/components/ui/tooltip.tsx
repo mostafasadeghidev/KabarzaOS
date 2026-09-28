@@ -54,4 +54,31 @@ function TooltipContent({
   )
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+/**
+ * ⚠️ افزودهٔ ما: راهنمای شناورِ ساده به‌جای `title` ِ خامِ مرورگر — که دیر
+ * می‌آید، قلم و رنگِ اپ را نمی‌گیرد و روی لمس اصلاً نیست. وقتی `label`
+ * خالی است همان فرزند برمی‌گردد. پرووایدرِ خودش را همراه دارد تا بیرونِ
+ * چیدمانِ اپ (پوستهٔ عضوِ سابق، صفحه‌های عمومی) هم کار کند — همان دلیلِ
+ * `IconButton`.
+ */
+function Hint({
+  label,
+  side,
+  children,
+}: {
+  label?: React.ReactNode
+  side?: "top" | "right" | "bottom" | "left"
+  children: React.ReactElement
+}) {
+  if (!label) return children
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent side={side}>{label}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, Hint }

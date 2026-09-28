@@ -28,6 +28,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import { useLocale, useT } from '@/i18n/client';
 import { GRANTABLE_CAPS } from '@/domain/access/project-scope';
 import type { SchedulerHealth } from '@/domain/scheduler/health';
@@ -195,22 +196,22 @@ export function SettingsView({
             }
             renderForm={(editing) => (
               <div className="grid gap-3 sm:grid-cols-4">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="c-code">{tr("کد")}</Label>
+                <Field>
+                  <FieldLabel htmlFor="c-code">{tr("کد")}</FieldLabel>
                   <Input id="c-code" name="code" className="num" defaultValue={editing?.code ?? ''} required />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="c-name">{tr("نام")}</Label>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="c-name">{tr("نام")}</FieldLabel>
                   <Input id="c-name" name="name" defaultValue={editing?.name ?? ''} required />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="c-symbol">{tr("نماد")}</Label>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="c-symbol">{tr("نماد")}</FieldLabel>
                   <Input id="c-symbol" name="symbol" defaultValue={editing?.symbol ?? ''} />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="c-dec">{tr("اعشار")}</Label>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="c-dec">{tr("اعشار")}</FieldLabel>
                   <Input id="c-dec" name="decimals" type="number" className="num" defaultValue={editing?.decimals ?? 2} />
-                </div>
+                </Field>
                 <label className="flex items-center gap-2 text-sm sm:col-span-4">
                   <Checkbox name="isActive" defaultChecked={editing?.isActive ?? true} />
                   {tr("فعال (در فرم‌ها پیشنهاد می‌شود)")}
@@ -234,36 +235,36 @@ export function SettingsView({
             deleteAction={(r) => deleteRateAction(r.fromCurrencyId, r.toCurrencyId)}
             renderForm={(editing) => (
               <div className="grid gap-3 sm:grid-cols-4">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="r-from">{tr("از ارز")}</Label>
+                <Field>
+                  <FieldLabel htmlFor="r-from">{tr("از ارز")}</FieldLabel>
                   <NativeSelect id="r-from" name="fromCurrencyId" containerClassName="w-full" defaultValue={editing ? String(editing.fromCurrencyId) : ''}>
                     <NativeSelectOption value="">{tr("— انتخاب —")}</NativeSelectOption>
                     {data.currencies.map((c) => (
                       <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>
                     ))}
                   </NativeSelect>
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="r-to">{tr("به ارز")}</Label>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="r-to">{tr("به ارز")}</FieldLabel>
                   <NativeSelect id="r-to" name="toCurrencyId" containerClassName="w-full" defaultValue={editing ? String(editing.toCurrencyId) : ''}>
                     <NativeSelectOption value="">{tr("— انتخاب —")}</NativeSelectOption>
                     {data.currencies.map((c) => (
                       <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>
                     ))}
                   </NativeSelect>
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="r-rate">{tr("نرخ")}</Label>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="r-rate">{tr("نرخ")}</FieldLabel>
                   <Input id="r-rate" name="rate" inputMode="decimal" className="num" defaultValue={editing ? trimRate(editing.rate) : ''} required />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="r-date">{tr("تاریخ")}</Label>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="r-date">{tr("تاریخ")}</FieldLabel>
                   <DatePicker
                     id="r-date"
                     name="effectiveDate"
                     defaultValue={editing?.effectiveDate ?? new Date().toISOString().slice(0, 10)}
                   />
-                </div>
+                </Field>
               </div>
             )}
           />
@@ -343,21 +344,21 @@ export function SettingsView({
               <>
                 <input type="hidden" name="type" value={tagType} />
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="grid gap-1.5">
+                  <Field>
                     {/* پورتِ «نام (پایه — فارسی)»: زبانِ نامِ پایه همان زبانِ پیش‌فرضِ سامانه است. */}
-                    <Label htmlFor="t-name">{tr('نام (پایه — {lang})', { lang: LOCALE_NAMES[DEFAULT_LOCALE] })}</Label>
+                    <FieldLabel htmlFor="t-name">{tr('نام (پایه — {lang})', { lang: LOCALE_NAMES[DEFAULT_LOCALE] })}</FieldLabel>
                     <Input id="t-name" name="name" defaultValue={editing?.name ?? ''} required />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="t-sort">{tr("ترتیب")}</Label>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="t-sort">{tr("ترتیب")}</FieldLabel>
                     <Input id="t-sort" name="sortOrder" type="number" className="num" defaultValue={editing?.sortOrder ?? 0} />
-                  </div>
+                  </Field>
                 </div>
 
-                <div className="grid gap-1.5">
-                  <Label htmlFor="t-color">{tr("رنگ")}</Label>
+                <Field>
+                  <FieldLabel htmlFor="t-color">{tr("رنگ")}</FieldLabel>
                   <ColorPicker id="t-color" name="color" defaultValue={editing?.color || '#6c5ce7'} />
-                </div>
+                </Field>
 
                 {/*
                   ⚠️ `status_group` معنایش با نوعِ تگ عوض می‌شود: ستونِ کانبان،
@@ -366,8 +367,8 @@ export function SettingsView({
                   می‌بود — عملاً غیرقابلِ استفاده.
                 */}
                 {groupChoices(tagType).length > 0 && (
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="t-group">{tr(groupFieldLabel(tagType))}</Label>
+                  <Field>
+                    <FieldLabel htmlFor="t-group">{tr(groupFieldLabel(tagType))}</FieldLabel>
                     <NativeSelect
                       id="t-group" name="statusGroup" containerClassName="w-full"
                       defaultValue={editing?.statusGroup ?? ''}
@@ -376,11 +377,11 @@ export function SettingsView({
                         <NativeSelectOption key={c.value || 'none'} value={c.value}>{tr(c.label)}</NativeSelectOption>
                       ))}
                     </NativeSelect>
-                  </div>
+                  </Field>
                 )}
 
                 {(supportsClosed(tagType) || supportsReview(tagType)) && (
-                  <div className="grid gap-2 rounded-lg border p-3">
+                  <div className="grid gap-2 rounded-lg bg-muted/60 p-3">
                     {supportsClosed(tagType) && (
                       <label className="flex items-center gap-2 text-sm">
                         <Checkbox name="isClosed" value="1"
@@ -456,8 +457,8 @@ export function SettingsView({
                   «مدیرِ پروژه» از همان‌جا می‌آید (R-RBAC-12).
                 */}
                 {supportsGrant(tagType) && (
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="t-cap">{tr("دسترسی‌ای که این نقش می‌دهد")}</Label>
+                  <Field>
+                    <FieldLabel htmlFor="t-cap">{tr("دسترسی‌ای که این نقش می‌دهد")}</FieldLabel>
                     <NativeSelect
                       id="t-cap"
                       name="grantsCap"
@@ -468,10 +469,10 @@ export function SettingsView({
                         <NativeSelectOption key={c.value || 'none'} value={c.value}>{tr(c.label)}</NativeSelectOption>
                       ))}
                     </NativeSelect>
-                    <p className="text-xs text-muted-foreground">
+                    <FieldDescription>
                       {tr("دسترسی را اضافه می‌کند؛ هرگز چیزی را پس نمی‌گیرد.")}
-                    </p>
-                  </div>
+                    </FieldDescription>
+                  </Field>
                 )}
               </>
             )}
@@ -498,16 +499,16 @@ export function SettingsView({
           deleteAction={(o) => deleteOfficeAction(o.id)}
           renderForm={(editing) => (
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="grid gap-1.5">
-                <Label htmlFor="o-name">{tr("نام")}</Label>
+              <Field>
+                <FieldLabel htmlFor="o-name">{tr("نام")}</FieldLabel>
                 <Input id="o-name" name="name" defaultValue={editing?.name ?? ''} required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="o-loc">{tr("مکان")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="o-loc">{tr("مکان")}</FieldLabel>
                 <Input id="o-loc" name="location" defaultValue={editing?.location ?? ''} />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="o-cur">{tr("ارزِ پیش‌فرض")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="o-cur">{tr("ارزِ پیش‌فرض")}</FieldLabel>
                 <NativeSelect
                   id="o-cur"
                   name="defaultCurrencyId"
@@ -519,7 +520,7 @@ export function SettingsView({
                     <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>
                   ))}
                 </NativeSelect>
-              </div>
+              </Field>
               <label className="flex items-center gap-2 text-sm sm:col-span-3">
                 <Checkbox name="isActive"
                   defaultChecked={editing ? editing.isActive : true}
@@ -545,14 +546,14 @@ export function SettingsView({
           deleteAction={(v) => deleteVendorAction(v.id)}
           renderForm={(editing) => (
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="v-name">{tr("نام")}</Label>
+              <Field>
+                <FieldLabel htmlFor="v-name">{tr("نام")}</FieldLabel>
                 <Input id="v-name" name="name" defaultValue={editing?.name ?? ''} required />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="v-note">{tr("یادداشت")}</Label>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="v-note">{tr("یادداشت")}</FieldLabel>
                 <Input id="v-note" name="note" defaultValue={editing?.note ?? ''} />
-              </div>
+              </Field>
             </div>
           )}
         />
@@ -584,12 +585,12 @@ export function SettingsView({
           renderForm={(editing) => (
             <>
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="grid gap-1.5 sm:col-span-2">
-                  <Label htmlFor="q-title">{tr("عنوان")}</Label>
+                <Field className="sm:col-span-2">
+                  <FieldLabel htmlFor="q-title">{tr("عنوان")}</FieldLabel>
                   <Input id="q-title" name="title" defaultValue={editing?.title ?? ''} required />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="q-role">{tr("نقش")}</Label>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="q-role">{tr("نقش")}</FieldLabel>
                   <NativeSelect
                     id="q-role"
                     name="roleTagId"
@@ -602,17 +603,17 @@ export function SettingsView({
                       <NativeSelectOption key={t.id} value={t.id}>{t.nameI18n?.[locale] || t.nameI18n?.en || t.name}</NativeSelectOption>
                     ))}
                   </NativeSelect>
-                </div>
+                </Field>
               </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="q-desc">{tr("توضیحات")}</Label>
+              <Field>
+                <FieldLabel htmlFor="q-desc">{tr("توضیحات")}</FieldLabel>
                 {/*
                   ⚠️ چندخطی: توضیحِ آیتمِ QA یک دستورالعملِ بررسی است («این را
                   باز کن، آن را بزن…») و در یک خط جا نمی‌شد. حالا در تبِ QA
                   هم با حفظِ شکستِ خط نشان داده می‌شود.
                 */}
                 <Textarea id="q-desc" name="description" rows={3} defaultValue={editing?.description ?? ''} />
-              </div>
+              </Field>
               <div className="flex flex-wrap items-center gap-4">
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox

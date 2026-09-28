@@ -504,3 +504,28 @@ export async function setCompanyLogo(
   if (old) await removeFile(old);
   return fileId;
 }
+
+/* ------------------------------------------------------------------ *
+ * لوگوی عمومیِ شرکت
+ * ------------------------------------------------------------------ */
+
+/**
+ * لوگوی شرکت برای صفحه‌های **بیرونِ** ورود (ورود، بازنشانیِ رمز، نصب).
+ *
+ * ⚠️ نه یک مسیرِ بی‌گارد: R-FILE-01 می‌گوید هیچ آدرسی بدونِ احراز هویت بایت
+ * بیرون نمی‌دهد، و همین‌طور می‌ماند. به‌جایش خودِ صفحه نسخهٔ کوچک را می‌خواند
+ * و به‌شکلِ `data:` داخلِ HTML می‌گذارد — فقط همان یک فایلی که در تنظیماتِ
+ * شرکت به‌عنوانِ لوگو ثبت شده (اطلاعاتِ عمومی، مثلِ نام روی سربرگِ فاکتور).
+ * فقط تصویرِ غیرِ SVG (R-FILE-04)؛ چیزِ دیگری اگر ثبت شده باشد، بی‌لوگو می‌ماند.
+ */
+export async function companyLogoDataUrl(): Promise<string | null> {
+  const [row] = await db.select({ logoFileId: company.logoFileId }).from(company).where(eq(company.id, 1));
+  if (!row?.logoFileId) return null;
+  const [file] = await db.select().from(files).where(eq(files.id, row.logoFileId));
+  if (!file || !file.mime.startsWith('image/')) return null;
+  const usePreview = file.previewKey !== null;
+  const mime = usePreview ? PREVIEW_MIME : file.mime;
+  if (mime === 'image/svg+xml') return null;
+  const bytes = await getObject(usePreview ? file.previewKey! : file.storageKey);
+  return `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
+}

@@ -14,7 +14,9 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Combobox, MultiSelect, type Option } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/components/ui/input-group';
 import { Label } from '@/components/ui/label';
+import { Field, FieldDescription, FieldError, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useT } from '@/i18n/client';
@@ -221,18 +223,18 @@ export function EntryForm({
       <input type="hidden" name="direction" value={direction} />
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="grid gap-1.5">
-          <Label htmlFor="l-date">{tr("تاریخ")}</Label>
+        <Field>
+          <FieldLabel htmlFor="l-date">{tr("تاریخ")}</FieldLabel>
           <DatePicker
             id="l-date" name="entryDate"
             defaultValue={keep('entryDate', editing?.entryDate ?? today)}
             required
           />
-          {fieldErrors?.entryDate && <p className="text-xs text-destructive">{tr(fieldErrors.entryDate)}</p>}
-        </div>
+          {fieldErrors?.entryDate && <FieldError>{tr(fieldErrors.entryDate)}</FieldError>}
+        </Field>
 
-        <div className="grid gap-1.5">
-          <Label htmlFor="l-dir">{tr("جهت")}</Label>
+        <Field>
+          <FieldLabel htmlFor="l-dir">{tr("جهت")}</FieldLabel>
           <NativeSelect
             id="l-dir"
             containerClassName="w-full"
@@ -242,10 +244,10 @@ export function EntryForm({
             <NativeSelectOption value="out">{tr("برداشت / هزینه")}</NativeSelectOption>
             <NativeSelectOption value="in">{tr("واریز / درآمد")}</NativeSelectOption>
           </NativeSelect>
-        </div>
+        </Field>
 
-        <div className="grid gap-1.5">
-          <Label htmlFor="l-project">{tr("بابت (پروژه)")}</Label>
+        <Field>
+          <FieldLabel htmlFor="l-project">{tr("بابت (پروژه)")}</FieldLabel>
           <Combobox
             id="l-project"
             options={projectOptions}
@@ -253,23 +255,23 @@ export function EntryForm({
             onChange={(v) => { setProjectId(v.id); setProjectLabel(v.label); }}
             placeholder={tr("جستجوی پروژه…")}
           />
-        </div>
+        </Field>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="grid gap-1.5">
-          <Label htmlFor="l-amount">{tr("مبلغ")}</Label>
+        <Field>
+          <FieldLabel htmlFor="l-amount">{tr("مبلغ")}</FieldLabel>
           <Input
             id="l-amount" name="amount" inputMode="decimal" className="num"
             value={amount}
             onChange={(e) => onAmountChange(e.target.value)}
             required
           />
-          {fieldErrors?.amount && <p className="text-xs text-destructive">{tr(fieldErrors.amount)}</p>}
-        </div>
+          {fieldErrors?.amount && <FieldError>{tr(fieldErrors.amount)}</FieldError>}
+        </Field>
 
-        <div className="grid gap-1.5">
-          <Label htmlFor="l-cur">{tr("ارز")}</Label>
+        <Field>
+          <FieldLabel htmlFor="l-cur">{tr("ارز")}</FieldLabel>
           <NativeSelect
             id="l-cur" name="currencyId" containerClassName="w-full"
             value={currencyId}
@@ -277,22 +279,22 @@ export function EntryForm({
           >
             {options.currencies.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>)}
           </NativeSelect>
-        </div>
+        </Field>
 
-        <div className="grid gap-1.5">
-          <Label htmlFor="l-real">{tr("مبلغِ واقعیِ رسیده (اختیاری)")}</Label>
+        <Field>
+          <FieldLabel htmlFor="l-real">{tr("مبلغِ واقعیِ رسیده (اختیاری)")}</FieldLabel>
           <Input
             id="l-real" name="amountAccountOverride" inputMode="decimal" className="num"
             placeholder={tr("با کارمزد")} defaultValue={keep('amountAccountOverride', editing?.amountAccountOverride ?? '')}
           />
-        </div>
+        </Field>
       </div>
 
       {/* ── R-FORM-01 — فقط طرفِ متناسب با جهت ── */}
       <div className="grid gap-3 sm:grid-cols-2">
         {shown === 'payer' ? (
-          <div className="grid gap-1.5">
-            <Label htmlFor="l-payer">{tr("پرداخت‌کننده")}</Label>
+          <Field>
+            <FieldLabel htmlFor="l-payer">{tr("پرداخت‌کننده")}</FieldLabel>
             <Combobox
               id="l-payer"
               name="payerUserId"
@@ -303,10 +305,10 @@ export function EntryForm({
               allowFreeText
             />
             <input type="hidden" name="payerLabel" value={party.payer.label} />
-          </div>
+          </Field>
         ) : (
-          <div className="grid gap-1.5">
-            <Label htmlFor="l-receiver">{tr("دریافت‌کننده")}</Label>
+          <Field>
+            <FieldLabel htmlFor="l-receiver">{tr("دریافت‌کننده")}</FieldLabel>
             <Combobox
               id="l-receiver"
               name="receiverUserId"
@@ -317,11 +319,11 @@ export function EntryForm({
               allowFreeText
             />
             <input type="hidden" name="receiverLabel" value={party.receiver.label} />
-          </div>
+          </Field>
         )}
 
-        <div className="grid gap-1.5">
-          <Label htmlFor="l-tags">{tr("دسته‌ها")}</Label>
+        <Field>
+          <FieldLabel htmlFor="l-tags">{tr("دسته‌ها")}</FieldLabel>
           <MultiSelect
             id="l-tags"
             name="categoryTagId"
@@ -330,16 +332,16 @@ export function EntryForm({
             onChange={setTagIds}
             placeholder={tr("افزودنِ دسته…")}
           />
-          <p className="text-xs text-muted-foreground">
+          <FieldDescription>
             {tr('فقط دسته‌های متناسب با «{kind}» پیشنهاد می‌شوند.',
               { kind: direction === 'out' ? tr('برداشت') : tr('واریز') })}
-          </p>
-        </div>
+          </FieldDescription>
+        </Field>
       </div>
 
       {/* ── R-FORM-02 — بازپرداخت از کارفرما ── */}
       {billableVisible && (
-        <label className="flex items-start gap-2 rounded-lg border p-3 text-sm">
+        <label className="flex items-start gap-2 rounded-lg bg-muted/60 p-3 text-sm">
           {/* ⚠️ پیش‌فرض تیک‌خورده — هزینهٔ پروژه معمولاً به کارفرما می‌خورد. */}
           <Checkbox name="billable" value="1" defaultChecked={editing ? editing.billable : true} className="mt-0.5"
           />
@@ -354,8 +356,8 @@ export function EntryForm({
 
       {/* ── R-FORM-05 — بلوکِ معادل + نرخِ دوطرفه ── */}
       {settledVisible && (
-        <div className="grid gap-2 rounded-lg border p-3">
-          <Label>{tr("معادل برای محاسبهٔ پروژه/عضو")}</Label>
+        <FieldSet variant="box">
+          <FieldLegend>{tr("معادل برای محاسبهٔ پروژه/عضو")}</FieldLegend>
           <div className="flex flex-wrap items-center gap-2">
             <Input
               name="amountSettled" inputMode="decimal" className="num w-40"
@@ -371,26 +373,30 @@ export function EntryForm({
               {options.currencies.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>)}
             </NativeSelect>
 
-            <span className="flex items-center gap-1 text-sm" dir="ltr">
-              {/* پورتِ «۱ EUR = … IRR»: کدهای دو سرِ نرخ. */}
-              <span className="num">1 {settledCode} =</span>
-              <Input
-                name="fxRate" inputMode="decimal" className="num w-28"
-                placeholder={tr("نرخ")} value={rate}
+            {/* پورتِ «۱ EUR = … IRR»: کدهای دو سرِ نرخ، پیشوند و پسوندِ همان فیلد (InputGroup). */}
+            <InputGroup className="w-60" dir="ltr">
+              <InputGroupAddon>
+                <InputGroupText className="num">1 {settledCode} =</InputGroupText>
+              </InputGroupAddon>
+              <InputGroupInput
+                name="fxRate" inputMode="decimal" className="num"
+                placeholder={tr("نرخ")} value={rate} aria-label={tr("نرخ")}
                 onChange={(e) => onRateChange(e.target.value)}
               />
-              <span className="num">{entryCode}</span>
-            </span>
+              <InputGroupAddon align="inline-end">
+                <InputGroupText className="num">{entryCode}</InputGroupText>
+              </InputGroupAddon>
+            </InputGroup>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <FieldDescription>
             {tr("معادلِ این پرداخت در ارزِ قرارداد — نرخ را بنویسید تا مبلغ خودکار پر شود، یا برعکس.")}
-          </p>
-        </div>
+          </FieldDescription>
+        </FieldSet>
       )}
 
       {/* ── R-FORM-06 — انتخابگرِ کارکرد (پورتِ unitPicker / from_unit) ── */}
       {unitRows.length > 0 && (
-        <div className="grid gap-2 rounded-lg border border-dashed p-3">
+        <div className="grid gap-2 rounded-lg bg-muted/60 p-3">
           <p className="text-xs text-muted-foreground">
             {tr("کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، معادل و ارز پر می‌شود و پس از ذخیره «پرداخت‌شده» می‌گردد.")}
           </p>
@@ -416,8 +422,8 @@ export function EntryForm({
         </div>
       )}
 
-      <div className="grid gap-1.5">
-        <Label htmlFor="l-desc">{tr("توضیحات")}</Label>
+      <Field>
+        <FieldLabel htmlFor="l-desc">{tr("توضیحات")}</FieldLabel>
         <Textarea
           id="l-desc" name="description" rows={2}
           value={description}
@@ -425,11 +431,11 @@ export function EntryForm({
         />
         {/* ⚠️ پیامِ فارسی، نه تولتیپِ انگلیسیِ required ِ مرورگر. */}
         {descMissing && descTouched && (
-          <p className="text-xs text-destructive">
+          <FieldError>
             {tr("برای تراکنش‌های مرتبط با پروژه، نوشتن توضیحات الزامی است.")}
-          </p>
+          </FieldError>
         )}
-      </div>
+      </Field>
 
       <ReceiptPicker
         name="receipt"
@@ -477,7 +483,7 @@ export function EntryForm({
 
       {/* ── R-FORM-03 — هزینهٔ دوره‌ای فقط برای برداشت ── */}
       {recurringVisible && (
-        <div className="grid gap-2 rounded-lg border p-3 text-sm">
+        <div className="grid gap-2 rounded-lg bg-muted/60 p-3 text-sm">
           <label className="flex items-start gap-2">
             <Checkbox name="makeRecurring" value="1" className="mt-0.5" />
             <span>

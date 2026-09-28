@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 import { isInstalled } from '@/server/setup/service';
+import { publicBrand } from '@/server/setup/public-brand';
+import { PublicShell } from '@/components/public-shell';
 import { SetupForm } from './setup-form';
 
 /**
@@ -9,7 +11,13 @@ import { SetupForm } from './setup-form';
  */
 export default async function SetupPage() {
   if (await isInstalled()) redirect('/login');
-  return <SetupForm />;
+  // پیش از نصب شرکتی ثبت نشده؛ برندِ پیش‌فرض (KabarzaOS) می‌آید.
+  const brand = await publicBrand();
+  return (
+    <PublicShell brand={brand} width="lg">
+      <SetupForm />
+    </PublicShell>
+  );
 }
 
 export const dynamic = 'force-dynamic';

@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
@@ -139,26 +139,26 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
 
             {/* مدیر برای هر عضوی ثبت می‌کند؛ عضو فقط برای خودش. */}
             {data.canManage && (
-              <div className="grid gap-1.5">
-                <Label htmlFor="u-user">{t("عضو")}</Label>
+              <Field>
+                <FieldLabel htmlFor="u-user">{t("عضو")}</FieldLabel>
                 <SearchableSelect id="u-user" name="userId" containerClassName="w-44" required>
                   {data.members.map((m) => <NativeSelectOption key={m.id} value={m.id}>{m.name}</NativeSelectOption>)}
                 </SearchableSelect>
-              </div>
+              </Field>
             )}
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="u-date">{t("تاریخ")}</Label>
+            <Field>
+              <FieldLabel htmlFor="u-date">{t("تاریخ")}</FieldLabel>
               <DatePicker id="u-date" name="entryDate" className="w-40" defaultValue={data.today} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="u-qty">{t("تعداد")}</Label>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="u-qty">{t("تعداد")}</FieldLabel>
               <Input id="u-qty" name="quantity" type="number" min={1} className="num w-24" required />
-            </div>
-            <div className="grid flex-1 gap-1.5">
-              <Label htmlFor="u-note">{t("توضیح")}</Label>
+            </Field>
+            <Field className="flex-1">
+              <FieldLabel htmlFor="u-note">{t("توضیح")}</FieldLabel>
               <Input id="u-note" name="note" placeholder={t("اختیاری")} />
-            </div>
+            </Field>
             <Submit>{t("ثبت")}</Submit>
           </form>
         )}
@@ -338,17 +338,17 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
           {data.canManage ? null : Number(data.available) > 0 ? (
             <form action={requestPayment} className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3">
               <input type="hidden" name="projectId" value={data.projectId} />
-              <div className="grid gap-1.5">
-                <Label htmlFor="r-amount">{t("مبلغ")}</Label>
+              <Field>
+                <FieldLabel htmlFor="r-amount">{t("مبلغ")}</FieldLabel>
                 <Input
                   id="r-amount" name="amount" inputMode="decimal" className="num w-36" required
                   placeholder={format(data.available)}
                 />
-              </div>
-              <div className="grid flex-1 gap-1.5">
-                <Label htmlFor="r-note">{t("توضیح")}</Label>
+              </Field>
+              <Field className="flex-1">
+                <FieldLabel htmlFor="r-note">{t("توضیح")}</FieldLabel>
                 <Input id="r-note" name="note" placeholder={t("اختیاری")} />
-              </div>
+              </Field>
               <Submit>{t("ثبتِ درخواست")}</Submit>
             </form>
           ) : (

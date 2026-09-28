@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
-import { actionLabel, listAbsences, listActivity } from '@/server/activity/service';
+import { ACTIVITY_PER_PAGE, actionLabel, listAbsences, listActivity } from '@/server/activity/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { getWeek } from '@/server/availability/service';
@@ -89,6 +89,7 @@ export default async function ActivityPage({
           page: feed?.page ?? 1,
           totalPages: feed?.totalPages ?? 1,
           total: feed?.total ?? 0,
+          perPage: feed?.perPage ?? ACTIVITY_PER_PAGE,
         }}
         canSeeFeed={feed !== null}
         absences={absences}

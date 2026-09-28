@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
@@ -71,8 +71,8 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
 
         <div className="grid gap-3 @md/main:grid-cols-4">
           {canPickPerson ? (
-            <div className="grid gap-1.5">
-              <Label htmlFor="a-user">{tr('برای')}</Label>
+            <Field>
+              <FieldLabel htmlFor="a-user">{tr('برای')}</FieldLabel>
               <SearchableSelect
                 id="a-user"
                 name="userId"
@@ -84,23 +84,23 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
                   </NativeSelectOption>
                 ))}
               </SearchableSelect>
-            </div>
+            </Field>
           ) : (
             <input type="hidden" name="userId" value={data.meId} />
           )}
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="a-from">{tr('از تاریخ')}</Label>
+          <Field>
+            <FieldLabel htmlFor="a-from">{tr('از تاریخ')}</FieldLabel>
             <DatePicker id="a-from" name="from" defaultValue={data.today} required />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="a-to">{tr('تا تاریخ')}</Label>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="a-to">{tr('تا تاریخ')}</FieldLabel>
             <DatePicker id="a-to" name="to" defaultValue={data.today} required />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="a-note">{tr('توضیح (اختیاری)')}</Label>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="a-note">{tr('توضیح (اختیاری)')}</FieldLabel>
             <Input id="a-note" name="note" placeholder={tr('سفر، بیماری…')} />
-          </div>
+          </Field>
         </div>
 
         {/* ⚠️ ادغام رفتارِ عمدی است، نه خطا — کاربر باید بداند چرا دو ردیف یکی شد. */}

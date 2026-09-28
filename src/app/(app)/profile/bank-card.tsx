@@ -7,7 +7,7 @@ import { maskCard } from '@/domain/people/profile';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { ltr } from '@/i18n/bidi';
@@ -46,21 +46,21 @@ export function BankCard({
     <form action={save} className="grid gap-3">
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="grid gap-1.5">
-          <Label htmlFor="b-account">{t("شماره حساب")}</Label>
+        <Field>
+          <FieldLabel htmlFor="b-account">{t("شماره حساب")}</FieldLabel>
           <Input id="b-account" name="account" className="num" autoComplete="off"
             defaultValue={bank.account} />
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="b-iban">{t("شماره شبا")}</Label>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="b-iban">{t("شماره شبا")}</FieldLabel>
           <Input id="b-iban" name="iban" className="num" autoComplete="off"
             placeholder="IR…" defaultValue={bank.iban} />
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="b-card">{t("شماره کارت")}</Label>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="b-card">{t("شماره کارت")}</FieldLabel>
           <Input id="b-card" name="card" className="num" inputMode="numeric" autoComplete="off"
             defaultValue={bank.card} />
-        </div>
+        </Field>
       </div>
 
       {card && (

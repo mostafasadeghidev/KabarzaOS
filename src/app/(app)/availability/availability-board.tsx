@@ -18,6 +18,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { SearchInput } from '@/components/ui/search-input';
 import { Panel } from '@/components/page-shell';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Hint } from '@/components/ui/tooltip';
 
 interface Cell {
   state: CellState;
@@ -211,9 +212,8 @@ export function AvailabilityBoard(props: BoardProps) {
                       )}
                     </TableCell>
                     {row.cells.map((cell, i) => (
+                      <Hint key={i} label={cell.tip || undefined}>
                       <TableCell
-                        key={i}
-                        title={cell.tip || undefined}
                         className={`text-xs whitespace-nowrap ${cell.isToday ? 'bg-primary/5' : ''}`}
                       >
                         {cell.state === 'leave' ? (
@@ -228,6 +228,7 @@ export function AvailabilityBoard(props: BoardProps) {
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
+                      </Hint>
                     ))}
                   </TableRow>
                 ))}

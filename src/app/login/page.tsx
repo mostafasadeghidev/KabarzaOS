@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 import { isInstalled } from '@/server/setup/service';
+import { publicBrand } from '@/server/setup/public-brand';
+import { PublicShell } from '@/components/public-shell';
 import { LoginForm } from './login-form';
 
 /**
@@ -9,8 +11,12 @@ import { LoginForm } from './login-form';
  */
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ reset?: string }> }) {
   if (!(await isInstalled())) redirect('/setup');
-  const { reset } = await searchParams;
-  return <LoginForm notice={reset === '1' ? 'رمزِ تازه ذخیره شد؛ اکنون وارد شوید.' : undefined} />;
+  const [{ reset }, brand] = await Promise.all([searchParams, publicBrand()]);
+  return (
+    <PublicShell brand={brand}>
+      <LoginForm notice={reset === '1' ? 'رمزِ تازه ذخیره شد؛ اکنون وارد شوید.' : undefined} />
+    </PublicShell>
+  );
 }
 
 export const dynamic = 'force-dynamic';

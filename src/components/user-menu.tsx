@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Button } from '@/components/ui/button';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * منویِ کاربر در فوترِ سایدبار.
@@ -181,20 +182,20 @@ export function UserMenu({
             <span className="text-sm text-muted-foreground">{t("پالت")}</span>
             <div className="flex gap-1">
               {PALETTES.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPalette(p)}
-                  title={t(PALETTE_LABEL[p])}
-                  aria-label={t(PALETTE_LABEL[p])}
-                  aria-pressed={palette === p}
-                  className={`size-4 rounded-full border transition ${
-                    palette === p
-                      ? 'border-foreground/60 ring-2 ring-foreground/20'
-                      : 'border-border hover:scale-110'
-                  }`}
-                  style={{ backgroundColor: PALETTE_SWATCH[p] }}
-                />
+                <Hint key={p} label={t(PALETTE_LABEL[p])}>
+                  <button
+                    type="button"
+                    onClick={() => setPalette(p)}
+                    aria-label={t(PALETTE_LABEL[p])}
+                    aria-pressed={palette === p}
+                    className={`size-4 rounded-full border transition ${
+                      palette === p
+                        ? 'border-foreground/60 ring-2 ring-foreground/20'
+                        : 'border-border hover:scale-110'
+                    }`}
+                    style={{ backgroundColor: PALETTE_SWATCH[p] }}
+                  />
+                </Hint>
               ))}
             </div>
           </div>
