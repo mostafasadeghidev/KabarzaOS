@@ -96,7 +96,7 @@ export function QuickTaskForm({
     <div className="grid gap-4 @3xl/main:grid-cols-[minmax(0,32rem)_minmax(0,20rem)]">
       <form
         action={formAction}
-        className="grid gap-3 rounded-lg border p-4"
+        className="grid gap-3 rounded-xl border bg-card p-4"
         onSubmit={() => {
           lastSubmit.current = {
             title,
@@ -201,7 +201,7 @@ export function QuickTaskForm({
       </form>
 
       {added.length > 0 && (
-        <section className="grid content-start gap-2 rounded-lg border border-dashed p-4">
+        <section className="grid content-start gap-2 rounded-xl border border-dashed bg-card p-4">
           <h3 className="text-sm font-semibold">{t("ثبت‌شده در این نشست")}</h3>
           <ul className="grid gap-1 text-sm">
             {added.map((row, i) => (

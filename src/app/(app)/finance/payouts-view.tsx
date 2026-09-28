@@ -401,7 +401,7 @@ export function PayoutsView({
                             </Button>
                           )}
                           {(r.status === 'approved' || (isOwner && r.status === 'pending')) && (
-                            <Button size="sm" disabled={pending} onClick={() => setPayTarget(r)}>
+                            <Button size="sm" variant="outline" disabled={pending} onClick={() => setPayTarget(r)}>
                               <Banknote className="size-3.5" />
                               {tr("ثبت پرداخت در حسابداری")}
                             </Button>
@@ -461,7 +461,7 @@ export function PayoutsView({
                   <TableNumericCell>{format(u.amount)} {u.currencyCode ?? ''}</TableNumericCell>
                   {canManage && (
                     <TableActionsCell>
-                      <Button size="sm" disabled={pending} onClick={() => setUnitTarget(u)}>
+                      <Button size="sm" variant="outline" disabled={pending} onClick={() => setUnitTarget(u)}>
                         <Banknote className="size-3.5" />
                         {tr("ثبت در حسابداری")}
                       </Button>

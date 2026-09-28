@@ -33,7 +33,7 @@ export function matches(option: Option, query: string): boolean {
 // ⚠️ `data-[size=sm]:h-8` همان قاعدهٔ `NativeSelect` و `SearchableSelect`: در نوارِ فیلتر
 // همهٔ کنترل‌ها `sm` اند تا ردیف یک خط باشد.
 const boxClass =
-  'flex h-9 w-full items-center gap-1 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs data-[size=sm]:h-8';
+  'flex h-9 w-full items-center gap-1 rounded-md border border-input bg-card px-3 text-sm shadow-xs data-[size=sm]:h-8';
 
 /**
  * جای‌گیریِ فهرستِ بازشو **بیرونِ** جریانِ صفحه.

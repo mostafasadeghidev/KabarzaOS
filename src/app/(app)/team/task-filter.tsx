@@ -50,7 +50,6 @@ export function TaskFilter({
     router.push(`/team?${next.toString()}`);
   };
 
-  const cell = 'h-9 rounded-md border bg-background px-2 text-sm';
 
   return (
     <div className="grid gap-2">

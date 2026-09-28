@@ -26,7 +26,7 @@ import { ProjectStatus } from '../project-status';
 import { primeTranslations, t } from '@/i18n/server';
 import { deadlineLabel, taskProgress } from '@/domain/projects/deadline';
 import { StatusPicker } from '../status-picker';
-import { chipStyle } from '@/domain/ui/contrast';
+import { TagChip } from '@/components/ui/tag-chip';
 import { countOpenThreads } from '@/domain/projects/threads';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
@@ -450,15 +450,8 @@ export default async function ProjectDetailPage({
                           )}
                         </TableCell>
                         <TableCell>
-                          {/* پورتِ `role_color`: چیپِ نقش به رنگِ تگ. */}
-                          {m.roleName ? (
-                            <Badge
-                              variant="outline"
-                              style={chipStyle(m.roleColor)}
-                            >
-                              {m.roleName}
-                            </Badge>
-                          ) : '—'}
+                          {/* پورتِ `role_color`: رنگِ تگِ نقش، به شکلِ نقطه (DESIGN.md §۲). */}
+                          {m.roleName ? <TagChip color={m.roleColor}>{m.roleName}</TagChip> : '—'}
                         </TableCell>
                         {canSeeAgreedAmounts && (
                           <TableNumericCell>{format(m.agreedAmount)}</TableNumericCell>

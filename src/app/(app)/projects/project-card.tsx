@@ -71,9 +71,8 @@ export function ProjectCard({
   const urgency = bar ? URGENCY[bar.urgency]! : null;
 
   /*
-   * ⚠️ سایهٔ واقعی، نه `shadow-xs`: با پس‌زمینهٔ کاغذیِ تازه، کارت باید از
-   * صفحه بلند شود. `hover:shadow-md` بازخوردِ لمسی می‌دهد بی‌آنکه رنگی
-   * اضافه کند.
+   * ⚠️ بی‌سایه (DESIGN.md §۵): سطحِ سفید روی کاغذِ زمینه خودش جداست.
+   * بازخوردِ «کلیک‌خور» مرزِ پررنگ‌تر در hover است، نه سایهٔ بزرگ‌شونده.
    *
    * ⚠️ هم‌ترازی با کارت‌های کناری — subgrid: کارت ۹ ردیف از شبکهٔ والد را
    * می‌گیرد (`row-span-9`) و ردیف‌هایش را از همان‌جا برمی‌دارد
@@ -88,7 +87,7 @@ export function ProjectCard({
    *     دلیل `mb-3` است نه `gap-y` ِ شبکه (← project-grid).
    */
   return (
-    <Card className="relative row-span-9 mb-3 grid grid-rows-subgrid gap-0 overflow-clip px-4 py-4 shadow-sm transition-all hover:border-border/80 hover:shadow-md">
+    <Card className="relative row-span-9 mb-3 grid grid-rows-subgrid gap-0 overflow-clip px-4 py-4 transition-colors hover:border-input">
       {/* نوارهای گوشه — بایگانی و مناقصه، مثلِ ribbonهای نسخهٔ قبلی. absolute است و ردیفی نمی‌گیرد. */}
       <div className="absolute top-0 end-0 flex">
         {project.isArchived && (
@@ -100,7 +99,7 @@ export function ProjectCard({
         )}
         {/* فقط مناقصهٔ **باز** روبان دارد — مناقصهٔ بسته/کنسل‌شده نه. */}
         {project.tenderOpen && (
-          <span className="bg-violet-600 px-2 py-0.5 text-[10px] text-white">
+          <span className="bg-violet-50 px-2 py-0.5 text-[10px] text-violet-800 dark:bg-violet-500/15 dark:text-violet-300">
             {t('مناقصه')}
             {project.bidCount > 0 && <> · <span className="num">{project.bidCount}</span></>}
           </span>
@@ -249,17 +248,18 @@ export function ProjectCard({
 
       {/*
         ۷ · جعبهٔ چیپ‌ها — کارفرمایان بالا، اعضا پایین.
-        ⚠️ جعبه تا تهِ ردیف کش می‌آید تا کادرهای خط‌چینِ یک ردیف هم‌قد باشند،
-        نه یکی کوتاه‌تر از کناری‌اش.
+        ⚠️ جعبه تا تهِ ردیف کش می‌آید تا جعبه‌های یک ردیف هم‌قد باشند، نه یکی
+        کوتاه‌تر از کناری‌اش. زمینهٔ ملایم است، نه قابِ خط‌چین: قاب داخلِ کارت
+        «جعبه در جعبه» می‌ساخت (DESIGN.md §۵).
       */}
       <div className="flex flex-col pt-3">
-        <div className="flex-1 rounded-lg border border-dashed p-2.5">
+        <div className="flex-1 rounded-lg bg-muted/60 p-2.5">
           {project.clients.length === 0 && project.members.length === 0 ? (
             <span className="text-xs text-muted-foreground">{t("هنوز کسی ساین نشده")}</span>
           ) : (
             <div className="flex flex-wrap gap-1">
               {project.clients.map((c, i) => (
-                <Badge key={`c${i}`} className="bg-sky-700 text-white hover:bg-sky-700">
+                <Badge key={`c${i}`} className="bg-sky-50 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300">
                   {c.name}
                 </Badge>
               ))}

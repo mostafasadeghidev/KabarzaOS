@@ -76,10 +76,12 @@ function Seconds({
  */
 function HealthCard({ health }: { health: SchedulerHealth }) {
   const tr = useT();
+  // ⚠️ همان رنگ‌های ملایمِ نشان‌های معنایی (badge.tsx): متنِ قرمزِ پایه روی
+  // زمینهٔ قرمزِ کم‌رنگ فقط ۴٫۰ کنتراست داشت؛ ۷۰۰/۸۰۰ روی ۵۰ بالای ۵ است.
   const tone = {
-    ok: 'border-emerald-500/40 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400',
-    warn: 'border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-500',
-    bad: 'border-destructive/40 bg-destructive/5 text-destructive',
+    ok: 'border-emerald-500/40 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300',
+    warn: 'border-amber-500/40 bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300',
+    bad: 'border-red-500/40 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300',
   }[health.tone];
 
   const ago = health.minutesAgo === null ? null : agoParts(health.minutesAgo);
@@ -88,7 +90,7 @@ function HealthCard({ health }: { health: SchedulerHealth }) {
   }[ago.unit];
 
   return (
-    <div className={`grid gap-1.5 rounded-lg border p-3 ${tone}`}>
+    <div className={`grid gap-1.5 rounded-xl border p-3 ${tone}`}>
       <p className="flex items-center gap-1.5 text-sm font-medium">
         <Activity className="size-4" />
         {tr('زمان‌بند')}
@@ -99,11 +101,11 @@ function HealthCard({ health }: { health: SchedulerHealth }) {
           : tr('آخرین اجرا: {value} {unit} پیش', { value: ago.value, unit: unitLabel ?? '' })}
       </p>
       {health.tone !== 'ok' && (
-        <p className="text-xs opacity-90">
+        <p className="text-xs">
           {tr('یادآورها، گزارشِ روزانه و پاک‌سازیِ خودکار به این اجرا وابسته‌اند. یک زمان‌بندِ بیرونی باید هر ۵ دقیقه مسیرِ تیک را با هدرِ رازِ مشترک صدا بزند.')}
         </p>
       )}
-      <code className="num overflow-x-auto rounded bg-background/60 px-2 py-1 text-[0.7rem]" dir="ltr">
+      <code className="num overflow-x-auto rounded bg-card/70 px-2 py-1 text-[0.7rem]" dir="ltr">
         curl -H &quot;x-cron-secret: $CRON_SECRET&quot; {'<app-url>'}/api/cron/tick
       </code>
     </div>
@@ -133,76 +135,79 @@ export function SystemSection({ config, health, isOwner, telegram }: {
       {/* ⚠️ بالای صفحه، پیش از تنظیمات: خرابیِ زمان‌بند باید اول دیده شود. فقط مالک (پورتِ تبِ Health). */}
       {isOwner && <HealthCard health={health} />}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="grid gap-1.5">
-          <Label htmlFor="s-brand">{t("نامِ برند")}</Label>
-          <Input id="s-brand" name="brandName" defaultValue={config.brandName} placeholder={t("کبرزا")} />
-          <p className="text-xs text-muted-foreground">
-            {tr("اگر مشخصاتِ شرکت خالی باشد، روی فاکتور همین نام می‌نشیند.")}
-          </p>
+      {/* هر گروهِ فیلد یک پنل است؛ فیلدِ آزاد روی زمینه کنارِ پنل‌ها ناهمسان بود. */}
+      <Panel title={t("عمومی")}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-1.5">
+            <Label htmlFor="s-brand">{t("نامِ برند")}</Label>
+            <Input id="s-brand" name="brandName" defaultValue={config.brandName} placeholder={t("کبرزا")} />
+            <p className="text-xs text-muted-foreground">
+              {tr("اگر مشخصاتِ شرکت خالی باشد، روی فاکتور همین نام می‌نشیند.")}
+            </p>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="s-locale">{t("زبانِ پیش‌فرضِ پنل")}</Label>
+            <NativeSelect
+              id="s-locale"
+              name="defaultLocale"
+              defaultValue={config.defaultLocale}
+            >
+              {LOCALES.map((code) => (
+                <NativeSelectOption key={code} value={code}>{LOCALE_NAMES[code]}</NativeSelectOption>
+              ))}
+            </NativeSelect>
+            <p className="text-xs text-muted-foreground">
+              {tr("زبانِ کسانی که خودشان زبانی انتخاب نکرده‌اند. انتخابِ هر کاربر همیشه بر این مقدم است.")}
+            </p>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="s-week">{t("روزِ شروعِ هفته")}</Label>
+            <NativeSelect
+              id="s-week"
+              name="weekStart"
+              defaultValue={config.weekStart}
+            >
+              {WEEKDAYS.map((label, i) => (
+                <NativeSelectOption key={label} value={i}>{tr(label)}</NativeSelectOption>
+              ))}
+            </NativeSelect>
+            <p className="text-xs text-muted-foreground">
+              {tr("جدولِ در دسترس‌بودن و نمای هفتگی از همین روز شروع می‌شوند.")}
+            </p>
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="s-tz">{t("منطقهٔ زمانیِ سامانه")}</Label>
+            <SearchableSelect
+              id="s-tz"
+              name="timezone"
+              defaultValue={config.timezone}
+            >
+              <NativeSelectOption value="">{tr("پیش‌فرضِ سرور")}</NativeSelectOption>
+              {allTimezones().map((zone) => (
+                <NativeSelectOption key={zone} value={zone}>{zone}</NativeSelectOption>
+              ))}
+            </SearchableSelect>
+            <p className="text-xs text-muted-foreground">
+              {tr("ساعتِ ارسالِ گزارشِ روزانه و یادآوریِ جلسات با همین منطقه سنجیده می‌شود.")}
+            </p>
+          </div>
         </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="s-locale">{t("زبانِ پیش‌فرضِ پنل")}</Label>
-          <NativeSelect
-            id="s-locale"
-            name="defaultLocale"
-            defaultValue={config.defaultLocale}
-          >
-            {LOCALES.map((code) => (
-              <NativeSelectOption key={code} value={code}>{LOCALE_NAMES[code]}</NativeSelectOption>
-            ))}
-          </NativeSelect>
-          <p className="text-xs text-muted-foreground">
-            {tr("زبانِ کسانی که خودشان زبانی انتخاب نکرده‌اند. انتخابِ هر کاربر همیشه بر این مقدم است.")}
-          </p>
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="s-week">{t("روزِ شروعِ هفته")}</Label>
-          <NativeSelect
-            id="s-week"
-            name="weekStart"
-            defaultValue={config.weekStart}
-          >
-            {WEEKDAYS.map((label, i) => (
-              <NativeSelectOption key={label} value={i}>{tr(label)}</NativeSelectOption>
-            ))}
-          </NativeSelect>
-          <p className="text-xs text-muted-foreground">
-            {tr("جدولِ در دسترس‌بودن و نمای هفتگی از همین روز شروع می‌شوند.")}
-          </p>
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="s-tz">{t("منطقهٔ زمانیِ سامانه")}</Label>
-          <SearchableSelect
-            id="s-tz"
-            name="timezone"
-            defaultValue={config.timezone}
-          >
-            <NativeSelectOption value="">{tr("پیش‌فرضِ سرور")}</NativeSelectOption>
-            {allTimezones().map((zone) => (
-              <NativeSelectOption key={zone} value={zone}>{zone}</NativeSelectOption>
-            ))}
-          </SearchableSelect>
-          <p className="text-xs text-muted-foreground">
-            {tr("ساعتِ ارسالِ گزارشِ روزانه و یادآوریِ جلسات با همین منطقه سنجیده می‌شود.")}
-          </p>
-        </div>
-      </div>
 
-      {/*
-        ⚠️ برای همهٔ کسانی که این فرم را ذخیره می‌کنند دیده می‌شود، نه فقط مالک:
-        کلیدِ خاموش در FormData نیست، پس اگر برای همکارِ ادمین پنهان بود، ذخیرهٔ
-        او بی‌صدا خاموشش می‌کرد.
-      */}
-      <div className="grid gap-1">
-        <label className="flex items-center gap-1.5 text-sm">
-          <Switch name="ownerTeamView" defaultChecked={config.ownerTeamView} />
-          {tr("«تیمِ من» برای مدیرِ کل")}
-        </label>
-        <p className="text-xs text-muted-foreground">
-          {tr("مدیرِ کل بدونِ اینکه مدیرِ دفتری باشد، منوی «تیمِ من» را با همهٔ دفاتر می‌بیند.")}
-        </p>
-      </div>
+        {/*
+          ⚠️ برای همهٔ کسانی که این فرم را ذخیره می‌کنند دیده می‌شود، نه فقط مالک:
+          کلیدِ خاموش در FormData نیست، پس اگر برای همکارِ ادمین پنهان بود، ذخیرهٔ
+          او بی‌صدا خاموشش می‌کرد.
+        */}
+        <div className="grid gap-1">
+          <label className="flex items-center gap-1.5 text-sm">
+            <Switch name="ownerTeamView" defaultChecked={config.ownerTeamView} />
+            {tr("«تیمِ من» برای مدیرِ کل")}
+          </label>
+          <p className="text-xs text-muted-foreground">
+            {tr("مدیرِ کل بدونِ اینکه مدیرِ دفتری باشد، منوی «تیمِ من» را با همهٔ دفاتر می‌بیند.")}
+          </p>
+        </div>
+      </Panel>
 
       <Panel title={t("حضورِ زنده")}>
         <label className="flex items-center gap-1.5 text-sm">
@@ -250,17 +255,19 @@ export function SystemSection({ config, health, isOwner, telegram }: {
         </div>
       </Panel>
 
-      <div className="grid max-w-xs gap-1.5">
-        <Label htmlFor="s-purge">{t("پاک‌سازیِ خودکارِ پیام‌ها (روز)")}</Label>
-        <Input
-          id="s-purge" name="msgPurgeDays" type="number" min={0} max={MAX_PURGE_DAYS}
-          className="num" defaultValue={config.msgPurgeDays}
-        />
-        {/* ⚠️ صفر یعنی هرگز — تا کسی ندانسته تاریخچه را نبازد. */}
-        <p className="text-xs text-muted-foreground">
-          {tr("۰ یعنی پیام‌ها برای همیشه می‌مانند.")}
-        </p>
-      </div>
+      <Panel title={t("پیام‌ها")}>
+        <div className="grid max-w-xs gap-1.5">
+          <Label htmlFor="s-purge">{t("پاک‌سازیِ خودکارِ پیام‌ها (روز)")}</Label>
+          <Input
+            id="s-purge" name="msgPurgeDays" type="number" min={0} max={MAX_PURGE_DAYS}
+            className="num" defaultValue={config.msgPurgeDays}
+          />
+          {/* ⚠️ صفر یعنی هرگز — تا کسی ندانسته تاریخچه را نبازد. */}
+          <p className="text-xs text-muted-foreground">
+            {tr("۰ یعنی پیام‌ها برای همیشه می‌مانند.")}
+          </p>
+        </div>
+      </Panel>
 
       {/* ⚠️ توکنِ بات رازِ مشترک است — فقط مالک، مثلِ تبِ «اطلاع‌رسانی» نسخهٔ قبلی. */}
 

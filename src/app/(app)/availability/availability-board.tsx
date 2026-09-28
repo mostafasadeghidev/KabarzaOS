@@ -312,7 +312,7 @@ function Stat({ label, value, accent }: { label: string; value: number; accent?:
   return (
     <span
       className={`rounded-lg border px-3 py-1.5 text-sm ${
-        accent ? 'border-primary/40 bg-primary/5' : ''
+        accent ? 'border-primary/40 bg-[color-mix(in_oklab,var(--color-primary)_6%,var(--color-card))]' : 'bg-card'
       }`}
     >
       <b className="num">{value}</b> <span className="text-muted-foreground">{label}</span>
@@ -357,7 +357,7 @@ function BoardColumns({ order, todayIdx, rows }: BoardProps) {
           <div
             key={d}
             className={`grid content-start gap-1.5 rounded-lg border p-2 ${
-              isToday ? 'border-primary/40 bg-primary/5' : ''
+              isToday ? 'border-primary/40 bg-[color-mix(in_oklab,var(--color-primary)_6%,var(--color-card))]' : 'bg-card'
             }`}
           >
             <h3 className="flex items-center justify-between text-xs font-medium">

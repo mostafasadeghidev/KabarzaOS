@@ -134,7 +134,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
       >
 
         {!data.isFrozen && (
-          <form action={addUnit} className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+          <form action={addUnit} className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3">
             <input type="hidden" name="projectId" value={data.projectId} />
 
             {/* مدیر برای هر عضوی ثبت می‌کند؛ عضو فقط برای خودش. */}
@@ -276,7 +276,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
           {data.requests.length > 0 && (
             <ul className="grid gap-1">
               {data.requests.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+                <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
                   <b className="num">{format(r.amount)}</b>
                   <span className="num text-xs text-muted-foreground">{formatDate(r.createdAt, tz)}</span>
                   <Badge variant={r.status === 'paid' ? 'success' : 'outline'}>
@@ -319,7 +319,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
             ) : (
               <ul className="grid gap-1">
                 {data.payouts.map((p) => (
-                  <li key={p.id} className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+                  <li key={p.id} className="flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
                     <span className="num text-xs text-muted-foreground">{p.paidAt ?? '—'}</span>
                     <b className="num">{format(p.amountSettled ?? p.amount)} {p.currencyCode ?? ''}</b>
                     {p.note && <span className="text-xs text-muted-foreground">{p.note}</span>}
@@ -336,7 +336,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
 
           {/* فرمِ درخواست فقط برای عضو — مدیر پرداخت را خودش در حسابداری ثبت می‌کند. */}
           {data.canManage ? null : Number(data.available) > 0 ? (
-            <form action={requestPayment} className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+            <form action={requestPayment} className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3">
               <input type="hidden" name="projectId" value={data.projectId} />
               <div className="grid gap-1.5">
                 <Label htmlFor="r-amount">{t("مبلغ")}</Label>

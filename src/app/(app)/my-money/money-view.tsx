@@ -28,14 +28,11 @@ const REQUEST_LABEL: Record<string, string> = {
   paid: 'پرداخت‌شده',
 };
 
+/** وضعیتِ تسویه — همان نشان‌های معناییِ ملایم (DESIGN.md §۲)، نه قابِ رنگیِ دستی. */
 function StatusChip({ status }: { status: string }) {
   const t = useT();
-  const tone = status === 'paid'
-    ? 'border-emerald-500/40 text-emerald-700 dark:text-emerald-500'
-    : status === 'partial'
-      ? 'border-amber-500/40 text-amber-700 dark:text-amber-500'
-      : 'border-muted-foreground/30 text-muted-foreground';
-  return <Badge variant="outline" className={tone}>{t(STATUS_LABEL[status] ?? status)}</Badge>;
+  const variant = status === 'paid' ? 'success' : status === 'partial' ? 'warning' : 'outline';
+  return <Badge variant={variant}>{t(STATUS_LABEL[status] ?? status)}</Badge>;
 }
 
 function money(value: string, code: string | null) {
@@ -115,7 +112,7 @@ function Row({
   const t = useT();
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-lg border">
+    <div className="rounded-lg border bg-card">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3">
         <button
           type="button"
@@ -265,13 +262,9 @@ export function MyMoneyView({
                                 <TableNumericCell>{money(u.amount, p.currencyCode)}</TableNumericCell>
                                 <TableCell>
                                   {u.isPaid ? (
-                                    <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-500">
-                                      {t('پرداخت‌شده')}
-                                    </Badge>
+                                    <Badge variant="success">{t('پرداخت‌شده')}</Badge>
                                   ) : (
-                                    <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
-                                      {t('پرداخت‌نشده')}
-                                    </Badge>
+                                    <Badge variant="outline">{t('پرداخت‌نشده')}</Badge>
                                   )}
                                 </TableCell>
                               </TableRow>

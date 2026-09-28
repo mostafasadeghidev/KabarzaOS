@@ -100,7 +100,7 @@ export function FilesTab({
           <form
             ref={uploadForm}
             action={(data) => { upload(data); uploadForm.current?.reset(); }}
-            className="grid gap-2 rounded-lg border p-3"
+            className="grid gap-2 rounded-xl border bg-card p-3"
           >
             <input type="hidden" name="projectId" value={projectId} />
             <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
@@ -131,7 +131,7 @@ export function FilesTab({
             {attachments.map((f) => {
               const Icon = KIND_ICON[f.kind as keyof typeof KIND_ICON] ?? FileText;
               return (
-                <li key={f.id} className="flex items-center gap-3 rounded-lg border p-2">
+                <li key={f.id} className="flex items-center gap-3 rounded-lg border bg-card p-2">
                   {f.kind === 'image' ? (
                     // پیش‌نمایش هم از همان مسیرِ گیت‌شده می‌آید.
                     <img
@@ -189,7 +189,7 @@ export function FilesTab({
       <Section icon={<Link2 />} title={tr("لینک‌های خارجی")}>
 
         {canUpload && (
-          <form action={addLink} className="grid gap-2 rounded-lg border p-3">
+          <form action={addLink} className="grid gap-2 rounded-xl border bg-card p-3">
             <input type="hidden" name="projectId" value={projectId} />
             <div className="grid gap-2 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
               <div className="grid gap-1.5">
@@ -216,7 +216,7 @@ export function FilesTab({
         ) : (
           <ul className="grid gap-1">
             {links.map((f) => (
-              <li key={f.id} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+              <li key={f.id} className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
                 <a
                   href={f.href}
                   target="_blank"

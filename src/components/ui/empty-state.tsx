@@ -24,7 +24,7 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <Empty className={cn('border p-6 md:p-10', className)}>
+    <Empty className={cn('rounded-xl border bg-card p-6 md:p-10', className)}>
       <EmptyHeader>
         {icon && <EmptyMedia variant="icon">{icon}</EmptyMedia>}
         <EmptyTitle className="text-base">{title}</EmptyTitle>

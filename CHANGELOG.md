@@ -2,6 +2,35 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.87.0]
+
+### Changed
+
+- **A calmer design language, written down in DESIGN.md.** One visual rulebook now sits on top of shadcn/ui and reaches every page through the shared tokens and components:
+  - A warm paper canvas with white surfaces. Cards, panels, tables, filter forms, dialogs and fields are white, and the sidebar shares the canvas. Separation comes from the change of colour instead of lines: panel titles lost their divider, cards and tables their shadow, and badges their outline.
+  - A clearer hierarchy: page titles are 24/700, section titles 16/700 and descriptions 13 px muted. Letter-spacing was removed from Persian titles, where it breaks the joined letters.
+  - One accent. Tag colours (project and task status, priority, member role, service category) show as a dot on a neutral chip instead of a solid badge with white text. Success, warning and destructive badges are soft tints with dark text. Workflow buttons in finance table rows are outline buttons, and an active date preset is grey rather than a second blue button.
+  - Dark mode is a warm grey instead of near-black, and its blue carries dark text: button labels go from 3.5:1 to 6.3:1.
+  - All six palettes follow the same canvas and surface steps. The ocean and sunset accents were darkened to reach 4.5:1 on the new canvas.
+- **Every page and every tab was reviewed** as owner, member and client:
+  - Bordered boxes that sat transparent on the canvas are white surfaces now: filter forms, upload and link forms, file and QA rows, reminders, the weekly schedule, board cards and empty states.
+  - A box nested inside a surface became a soft fill (the people box on project cards), and comment threads no longer draw a box around boxes.
+  - Loose fields in Settings → System and in the daily report moved into panels.
+- **The invoice** is a white sheet on screen and prints without its frame.
+
+### Fixed
+
+- **Avatar initials of a name with brackets showed the bracket:** «سارا (دولوپر)» gave «س(».
+- **A comment whose status has no label showed an empty green badge.**
+- **A former member's card was dimmed with opacity,** which put its email and phone at 3.6:1. It is now marked with a dashed border.
+- **The scheduler health card in Settings → System** was 3.9–4.2:1 (red on red). It now uses the soft semantic colours.
+
+### Removed
+
+- `chipStyle`, the helper for solid tag-colour badges, and its tests. Nothing uses it any more.
+
+---
+
 ## [1.86.0]
 
 ### Changed

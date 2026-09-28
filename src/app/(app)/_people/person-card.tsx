@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
+import { TagChip } from '@/components/ui/tag-chip';
 
 export interface PersonView {
   id: number;
@@ -117,7 +118,8 @@ export function PersonCard({
     });
 
   return (
-    <Card className={`gap-2 py-4 ${isFormer ? 'opacity-75' : ''}`}>
+    // ⚠️ عضوِ سابق با قابِ نقطه‌چین، نه `opacity`: کم‌رنگیِ کلِ کارت ایمیل و تلفن را به ۳٫۶ کنتراست می‌رساند.
+    <Card className={`gap-2 py-4 ${isFormer ? 'border-dashed' : ''}`}>
       <CardContent className="grid gap-2 px-4">
         <div className="flex items-start gap-3">
           <Thumb id={person.id} title={person.name} fileId={person.avatarFileId} className="rounded-full" />
@@ -261,13 +263,7 @@ export function PersonCard({
         {section.supportsTags && person.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {person.tags.map((t) => (
-              <Badge
-                key={t.id}
-                className="text-white"
-                style={{ backgroundColor: t.color ?? 'oklch(0.55 0.13 280)' }}
-              >
-                {t.name}
-              </Badge>
+              <TagChip key={t.id} color={t.color}>{t.name}</TagChip>
             ))}
           </div>
         )}

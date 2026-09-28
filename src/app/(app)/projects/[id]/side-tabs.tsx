@@ -21,10 +21,10 @@ import { removeQaRoleAction } from '../_form/tab-actions';
 import { useConfirm } from '@/components/ui/confirm';
 import { summarizeProject } from '@/domain/team-money/payments';
 import { PAY_STATUS_LABELS } from './my-money-tab';
-import { chipStyle } from '@/domain/ui/contrast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { StatCard } from '@/components/stat-card';
 import { Panel, Section } from '@/components/page-shell';
+import { TagChip } from '@/components/ui/tag-chip';
 
 /* ------------------------------------------------------------------ *
  * تبِ مالی — `finance` panel ِ مودالِ نسخهٔ قبلی.
@@ -418,7 +418,7 @@ export function QaTab({
       <Section title={t(title)}>
         <ul className="grid gap-1">
           {rows.map((q) => (
-            <li key={q.id} className="flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-sm">
+            <li key={q.id} className="flex items-start justify-between gap-3 rounded-lg border bg-card px-3 py-2 text-sm">
               {/*
                 ⚠️ توضیح زیرِ عنوان می‌آید. آیتمِ کتابخانه دو بخش دارد — «چه
                 چیزی» و «چه‌طور بررسی شود» — و تا امروز فقط اولی دیده می‌شد؛
@@ -433,13 +433,9 @@ export function QaTab({
               <span className="flex shrink-0 items-center gap-2">
                 {q.roleName && <Badge variant="secondary">{q.roleName}</Badge>}
                 {q.taskId && (
-                  <Badge
-                    variant="outline"
-                    className="text-[10px]"
-                    style={chipStyle(q.taskStatusColor)}
-                  >
+                  <TagChip color={q.taskStatusColor}>
                     {t('تسک')}{q.taskStatusName ? `: ${q.taskStatusName}` : ''}
-                  </Badge>
+                  </TagChip>
                 )}
                 {q.isDone && q.doneByName && (
                   <span className="text-xs text-muted-foreground">{t('توسط {name}', { name: q.doneByName })}</span>
@@ -477,7 +473,7 @@ export function QaTab({
       ) : (
         <>
           {canManage && roleGroups.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1 rounded-lg border p-2">
+            <div className="flex flex-wrap items-center gap-1 rounded-xl border bg-card p-2">
               <span className="me-1 text-xs text-muted-foreground">{t('برداشتنِ گروهی:')}</span>
               {roleGroups.map((g) => (
                 <QaRoleRemove

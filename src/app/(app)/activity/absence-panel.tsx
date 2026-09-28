@@ -66,7 +66,7 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
 
   return (
     <div className="grid gap-4">
-      <form action={formAction} className="grid gap-3 rounded-lg border p-3">
+      <form action={formAction} className="grid gap-3 rounded-xl border bg-card p-3">
         <SectionHeader as="h3" title={tr('ثبتِ مرخصی')} />
 
         <div className="grid gap-3 @md/main:grid-cols-4">

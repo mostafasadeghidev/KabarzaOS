@@ -8,9 +8,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { chipStyle } from '@/domain/ui/contrast';
 import { groupLabels, TASK_STATUS_GROUPS } from '@/domain/tags/groups';
 import { useT } from '@/i18n/client';
+import { TagChip } from '@/components/ui/tag-chip';
 
 /**
  * چیپِ وضعیتِ تسک — و اگر اجازه باشد، انتخابگرش.
@@ -58,17 +58,13 @@ export function TaskStatusPicker({
 
   /**
    * ⚠️ رنگ از **خودِ تگِ وضعیت** می‌آید — همان رنگی که مدیر در تنظیمات
-   * انتخاب کرده — و متن با قاعدهٔ کنتراست سیاه یا سفید می‌شود. تگِ بی‌رنگ
-   * به ظاهرِ پیش‌فرض برمی‌گردد (و «نیاز به ریویو» زردِ خودش را می‌گیرد).
+   * انتخاب کرده — ولی به شکلِ نقطه روی چیپِ خنثی (DESIGN.md §۲)، نه بجِ
+   * توپر. تگِ بی‌رنگ نقطهٔ خاکستری می‌گیرد و «نیاز به ریویو» زردِ هشدار را.
    */
-  const statusStyle = chipStyle(task.statusColor);
   const chip = task.statusName ? (
-    <Badge
-      variant={statusStyle ? 'outline' : (task.isReview ? 'warning' : 'secondary')}
-      style={statusStyle}
-    >
+    <TagChip color={task.statusColor || (task.isReview ? 'var(--color-warning)' : null)}>
       {task.statusName}
-    </Badge>
+    </TagChip>
   ) : (
     <Badge variant="outline">{tr("بدون وضعیت")}</Badge>
   );

@@ -225,7 +225,7 @@ export function MeetingsView({
         )
       ) : (
         <div className="grid max-w-3xl gap-4">
-          <form action={reminderAction} className="grid gap-3 rounded-lg border p-3">
+          <form action={reminderAction} className="grid gap-3 rounded-xl border bg-card p-3">
             <p className="text-xs text-muted-foreground">
               {tr("یک یادداشت برای زمانی در آینده تنظیم کنید؛ سرِ موعد به شما یادآوری می‌شود.")}
             </p>
@@ -270,7 +270,7 @@ export function MeetingsView({
           ) : (
             <ul className="grid gap-2">
               {reminders.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
+                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3">
                   <div className="min-w-0">
                     <p className="text-sm">{r.body}</p>
                     <p className="num mt-0.5 text-xs text-muted-foreground">{when(r.remindAt, tz)}</p>

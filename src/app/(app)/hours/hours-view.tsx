@@ -262,7 +262,7 @@ export function HoursView({ data }: { data: HoursData }) {
       {/* ── فیلترها (پورتِ view_hours): بازه و نامِ پروژه؛ فرمِ GET تا لینک قابلِ اشتراک بماند ── */}
       {/* ⚠️ همان نوارِ فیلترِ دفترکل و گزارش‌ها: قابِ ساده، برچسبِ ریز، کنترل‌های `sm`. */}
       <div className="grid gap-2">
-        <form method="get" action="/hours" className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+        <form method="get" action="/hours" className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3">
           <div className="grid gap-1.5">
             <Label htmlFor="f-from" className="text-xs">{t("از تاریخ")}</Label>
             <DatePicker id="f-from" name="from" size="sm" className="w-[9.5rem]" defaultValue={data.filter.from} />

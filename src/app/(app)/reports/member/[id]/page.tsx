@@ -120,7 +120,7 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
       <Section title={t("تسک‌ها")}>
         <div className="grid gap-3 @2xl/main:grid-cols-3">
           {taskSections.map((sec) => (
-            <div key={sec.key} className="rounded-lg border p-3">
+            <div key={sec.key} className="rounded-xl border bg-card p-3">
               <p className="mb-2 text-xs font-medium text-muted-foreground">
                 {t(sec.label)} <span className="num">{sec.groups.reduce((n, g) => n + g.tasks.length, 0)}</span>
               </p>
@@ -149,7 +149,7 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
         ) : (
           <ul className="grid gap-1 text-sm @md/main:grid-cols-2">
             {data.ops.availability.map((d) => (
-              <li key={d.day} className="flex justify-between rounded-lg border px-3 py-1.5">
+              <li key={d.day} className="flex justify-between rounded-lg border bg-card px-3 py-1.5">
                 <span>{t(d.day)}</span>
                 <span className="num text-muted-foreground">{formatSlots(d.slots, t)}</span>
               </li>

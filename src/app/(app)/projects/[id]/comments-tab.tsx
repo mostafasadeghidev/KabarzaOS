@@ -84,7 +84,7 @@ function StatusToggle({ comment, canToggle }: { comment: CommentItem; canToggle:
   const open = isOpen(comment.status);
   const label = statusLabel(comment.type as CommentType, comment.status);
 
-  const chip = <Badge variant={open ? 'warning' : 'success'}>{t(label)}</Badge>;
+  const chip = label ? <Badge variant={open ? 'warning' : 'success'}>{t(label)}</Badge> : null;
   if (!canToggle) return chip;
 
   return (
@@ -177,8 +177,8 @@ function Node({
     <div
       className={
         depth > 0
-          ? 'rounded-md border border-s-2 border-s-primary/40 bg-muted/30 p-3'
-          : 'rounded-md border bg-background p-3'
+          ? 'rounded-lg border border-s-2 border-s-primary/40 bg-card p-3'
+          : 'rounded-xl border bg-card p-3'
       }
       style={depth > 0 ? { marginInlineStart: Math.min(depth, 4) * 14 } : undefined}
     >
@@ -295,7 +295,7 @@ function ThreadList({
         // باید از مرزِ دو پیامِ یک گفتگو پررنگ‌تر باشد.
         <ul className="grid gap-5">
           {list.map((thread) => (
-            <li key={thread.root.id} className="grid gap-2 rounded-lg border border-dashed p-3">
+            <li key={thread.root.id} className="grid gap-2">
               <Node
                 comment={thread.root}
                 thread={thread}

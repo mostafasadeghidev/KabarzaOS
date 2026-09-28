@@ -17,10 +17,10 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useT } from '@/i18n/client';
-import { chipStyle } from '@/domain/ui/contrast';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { TagChip } from '@/components/ui/tag-chip';
 
 /**
  * تبِ تسک‌ها — بازسازیِ `edit_tasks_subtabs()` + `edit_task_li()`.
@@ -171,13 +171,7 @@ function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boole
       {(task.priorityName || (task.notesCount ?? 0) > 0) && (
         <div className="flex flex-wrap items-center gap-1.5">
           {task.priorityName && (
-            <Badge
-              variant="outline"
-              className="text-[10px]"
-              style={chipStyle(task.priorityColor)}
-            >
-              {task.priorityName}
-            </Badge>
+            <TagChip color={task.priorityColor}>{task.priorityName}</TagChip>
           )}
           {(task.notesCount ?? 0) > 0 && (
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -263,7 +257,7 @@ function KanbanBoard({
               if (id) move(id, s.id);
             }}
             // ستونِ باریک‌تر و فاصله‌های کمتر — چند کارت با هم دیده شوند.
-            className={`grid w-60 shrink-0 content-start gap-1.5 rounded-md border-t-4 bg-muted/40 p-1.5 ${over === s.id ? 'ring-2 ring-primary/40' : ''}`}
+            className={`grid w-60 shrink-0 content-start gap-1.5 rounded-lg border-t-4 bg-muted/60 p-1.5 ${over === s.id ? 'ring-2 ring-primary/40' : ''}`}
             style={{ borderTopColor: s.color || 'var(--color-primary)' }}
           >
             <h4 className="flex items-center justify-between px-1 text-xs font-medium">
@@ -280,7 +274,7 @@ function KanbanBoard({
                   setDragging(t.id);
                 }}
                 onDragEnd={() => setDragging(null)}
-                className={`grid gap-1 rounded-lg border bg-background p-2 ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''} ${dragging === t.id || pending ? 'opacity-60' : ''}`}
+                className={`grid gap-1 rounded-lg border bg-card p-2 ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''} ${dragging === t.id || pending ? 'opacity-60' : ''}`}
               >
                 <button
                   type="button"
@@ -450,7 +444,7 @@ export function TasksTab({
           <li
             key={t.id}
             onClick={() => setOpenTask(t.id)}
-            className="cursor-pointer rounded-lg border p-3 transition-colors hover:border-primary/40 hover:bg-muted/40"
+            className="cursor-pointer rounded-lg border bg-card p-3 transition-colors hover:border-primary/40"
           >
             <div
               className="flex flex-wrap items-center justify-between gap-2"

@@ -29,7 +29,10 @@ import { Button } from '@/components/ui/button';
 
 /** حروفِ اولِ نام برای آواتار — با فارسی و لاتین کار می‌کند. */
 function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
+  // ⚠️ فقط حرف و رقم: «سارا (دولوپر)» پیش از این «س(» می‌شد.
+  const parts = name.trim().split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, ''))
+    .filter(Boolean);
   if (parts.length === 0) return '؟';
   if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
   return ((parts[0]![0] ?? '') + (parts[1]![0] ?? '')).toUpperCase();
@@ -76,7 +79,8 @@ export function UserMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary/15 text-primary">
+          {/* حروفِ تیره روی رنگِ ملایم: آبی روی آبیِ کم‌رنگ فقط ۳٫۹ کنتراست داشت. */}
+          <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary/15 text-foreground">
             <span className="text-xs font-semibold">{initials(userName)}</span>
           </div>
           <div className="grid flex-1 text-start leading-tight">

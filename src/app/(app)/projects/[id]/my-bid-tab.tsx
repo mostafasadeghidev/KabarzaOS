@@ -40,7 +40,7 @@ function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['open
   const cap = Number(role.cap ?? 0);
 
   return (
-    <form action={action} className="grid gap-2 rounded-lg border p-3">
+    <form action={action} className="grid gap-2 rounded-xl border bg-card p-3">
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="roleTagId" value={role.roleTagId} />
 

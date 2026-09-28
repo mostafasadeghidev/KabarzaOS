@@ -103,7 +103,7 @@ export function ReceiptPicker({
                 type="button"
                 aria-label={tr('حذف')}
                 onClick={() => sync(files.filter((_, j) => j !== i))}
-                className="absolute -top-1 -end-1 rounded-full border bg-background p-0.5 text-muted-foreground hover:text-destructive"
+                className="absolute -top-1 -end-1 rounded-full border bg-card p-0.5 text-muted-foreground hover:text-destructive"
               >
                 <X className="size-3" />
               </button>

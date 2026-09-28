@@ -8,10 +8,10 @@ import { cn } from '@/lib/utils';
  * غلط است. اینجا `text-start` استفاده شده تا جهت از زبان بیاید.
  * REQUIREMENTS هـ-۱۳ — چگالیِ بالا: padding کمتر تا ردیفِ بیشتر دیده شود.
  *
- * ⚠️ قاعدهٔ قاب، یک‌جا: جدولِ مستقل (مستقیم در صفحه یا تب) قابِ گرد و
- * سرستونِ زمینه‌دار می‌گیرد؛ جدولی که داخلِ کارت یا پنل است `frame={false}`
- * می‌گیرد، چون کارت خودش قاب است و قابِ دوم دو خطِ موازی می‌کشید. پیش از
- * این هر جدول به سلیقهٔ صفحه‌اش بود: یکی بی‌قاب، یکی با حاشیه، یکی در کارت.
+ * ⚠️ قاعدهٔ قاب، یک‌جا: جدولِ مستقل (مستقیم در صفحه یا تب) سطحِ سفیدِ
+ * گرد می‌گیرد؛ جدولی که داخلِ کارت یا پنل است `frame={false}` می‌گیرد، چون
+ * کارت خودش قاب است و قابِ دوم دو خطِ موازی می‌کشید. پیش از این هر جدول به
+ * سلیقهٔ صفحه‌اش بود: یکی بی‌قاب، یکی با حاشیه، یکی در کارت.
  */
 export function Table({
   className,
@@ -19,13 +19,18 @@ export function Table({
   ...props
 }: React.HTMLAttributes<HTMLTableElement> & { frame?: boolean }) {
   return (
+    /*
+      ⚠️ جدولِ مستقل همان سطحِ سفیدِ کارت است (DESIGN.md §۷): گوشهٔ ۱۲ و زمینهٔ
+      سفید روی کاغذ؛ سرستون دیگر زمینهٔ رنگی ندارد — برچسبِ کم‌رنگ و یک خطِ مو
+      کافی است.
+    */
     <div
       data-slot="table-container"
-      className={cn('relative w-full overflow-x-auto', frame && 'rounded-lg border')}
+      className={cn('relative w-full overflow-x-auto', frame && 'rounded-xl border bg-card')}
     >
       <table
         data-slot="table"
-        className={cn('w-full caption-bottom text-sm', frame && '[&>thead]:bg-muted/40', className)}
+        className={cn('w-full caption-bottom text-sm', className)}
         {...props}
       />
     </div>

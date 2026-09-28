@@ -80,7 +80,7 @@ export async function OffboardedShell({ actor }: { actor: Actor }) {
         <Section title={t("دریافتی‌های بدون پروژه")}>
           <ul className="grid gap-1">
             {settlement.noProjectPayouts.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 rounded-lg border px-3 py-2 text-sm">
+              <li key={p.id} className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 text-sm">
                 <span className="num font-medium">{format(p.amount)}</span>
                 {p.paidAt && <span className="num text-xs text-muted-foreground">{p.paidAt}</span>}
                 {p.note && <span className="text-xs text-muted-foreground">{p.note}</span>}

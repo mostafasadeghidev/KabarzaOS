@@ -45,36 +45,38 @@ export function ReportSection({ config }: { config: ReportConfig }) {
       />
 
       <form action={save} className="grid max-w-4xl gap-4">
-        <fieldset className="grid gap-2">
-          <legend className="text-sm font-medium">{t("بخش‌ها")}</legend>
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {REPORT_SECTIONS.map((s) => (
-              <label key={s.key} className="flex items-center gap-1.5 text-sm">
-                <Checkbox
-                  name="sections"
-                  value={String(s.key)}
-                  defaultChecked={config.sections.includes(s.key)}
-                />
-                {s.icon} {t(s.label)}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <Panel title={t("محتوا و زمان‌بندی")}>
+          <fieldset className="grid gap-2">
+            <legend className="text-sm font-medium">{t("بخش‌ها")}</legend>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {REPORT_SECTIONS.map((s) => (
+                <label key={s.key} className="flex items-center gap-1.5 text-sm">
+                  <Checkbox
+                    name="sections"
+                    value={String(s.key)}
+                    defaultChecked={config.sections.includes(s.key)}
+                  />
+                  {s.icon} {t(s.label)}
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="grid gap-1.5">
-            <Label htmlFor="r-time">{t("ساعتِ ارسال")}</Label>
-            <Input id="r-time" name="time" type="time" className="num" defaultValue={config.time} />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="r-time">{t("ساعتِ ارسال")}</Label>
+              <Input id="r-time" name="time" type="time" className="num" defaultValue={config.time} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="r-offset">{t("گزارشِ چند روزِ قبل")}</Label>
+              <Input
+                id="r-offset" name="offset" type="number" min={0} max={7}
+                className="num" defaultValue={config.offset}
+              />
+              <p className="text-xs text-muted-foreground">{t("۱ یعنی دیروز.")}</p>
+            </div>
           </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="r-offset">{t("گزارشِ چند روزِ قبل")}</Label>
-            <Input
-              id="r-offset" name="offset" type="number" min={0} max={7}
-              className="num" defaultValue={config.offset}
-            />
-            <p className="text-xs text-muted-foreground">{t("۱ یعنی دیروز.")}</p>
-          </div>
-        </div>
+        </Panel>
 
         <Panel title={t("مقصدها")}>
 

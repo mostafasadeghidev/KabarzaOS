@@ -221,7 +221,7 @@ export function TeamView({ data }: { data: TeamData }) {
               <Section title={tr("تسک‌های نیازمندِ ریویو")}>
                 <ul className="grid gap-1">
                   {review.map((t) => (
-                    <li key={t.id} className="rounded-lg border px-3 py-2 text-sm">
+                    <li key={t.id} className="rounded-lg border bg-card px-3 py-2 text-sm">
                       {t.title}
                       <span className="ms-2 text-xs text-muted-foreground">{t.projectTitle}</span>
                     </li>
@@ -234,7 +234,7 @@ export function TeamView({ data }: { data: TeamData }) {
               <Section title={tr("کامنت‌های باز")}>
                 <ul className="grid gap-1">
                   {data.comments.map((c) => (
-                    <li key={c.id} className="rounded-lg border px-3 py-2 text-sm">
+                    <li key={c.id} className="rounded-lg border bg-card px-3 py-2 text-sm">
                       <p className="line-clamp-2">{c.body}</p>
                       <span className="text-xs text-muted-foreground">
                         {c.authorName ?? '—'} · {c.projectTitle}

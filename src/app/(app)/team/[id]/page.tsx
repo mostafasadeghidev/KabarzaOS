@@ -184,7 +184,7 @@ export default async function TeamMemberPage({
         ) : (
           <ul className="grid gap-1">
             {data.openTasks.map((task) => (
-              <li key={task.id} className="rounded-lg border px-3 py-2 text-sm">
+              <li key={task.id} className="rounded-lg border bg-card px-3 py-2 text-sm">
                 {task.title}
                 <span className="ms-2 text-xs text-muted-foreground">{task.projectTitle}</span>
                 {task.dueDate && <span className="num ms-2 text-xs text-muted-foreground">{task.dueDate}</span>}

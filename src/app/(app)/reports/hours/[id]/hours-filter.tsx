@@ -54,7 +54,6 @@ export function HoursFilter({
   const active = (p: { from: string; to: string }) =>
     p.from === '' ? allTime : value('from') === p.from && value('to') === p.to;
 
-  const cell = 'h-9 rounded-md border bg-background px-2 text-sm';
 
   return (
     <form
@@ -65,7 +64,7 @@ export function HoursFilter({
         const to = String(data.get('to') ?? '');
         go({ from, to, project: String(data.get('project') ?? '') }, from === '' && to === '');
       }}
-      className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
+      className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3"
     >
       <div className="flex flex-wrap gap-1">
         {presets.map((p) => (

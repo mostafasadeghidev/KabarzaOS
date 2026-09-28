@@ -37,7 +37,7 @@ export function ColorPicker({
         value={color}
         onChange={(event) => setColor(event.target.value)}
         aria-label={t('رنگِ دلخواه')}
-        className="size-9 cursor-pointer rounded-md border border-input bg-transparent p-0.5"
+        className="size-9 cursor-pointer rounded-md border border-input bg-card p-0.5"
       />
       <Input
         value={color}

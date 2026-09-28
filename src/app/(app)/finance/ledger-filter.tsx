@@ -83,13 +83,12 @@ export function LedgerFilter({
     });
   };
 
-  const cell = 'h-9 rounded-md border bg-background px-2 text-sm';
 
   return (
     <div className="grid gap-2">
       <form
         onSubmit={(e) => { e.preventDefault(); submit(e.currentTarget); }}
-        className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
+        className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3"
       >
         <div className="grid gap-1.5">
           <Label htmlFor="lf-from" className="text-xs">{tr('از تاریخ')}</Label>

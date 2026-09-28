@@ -28,7 +28,7 @@ export function BidderView({ data }: { data: BidderData }) {
       />
 
       {data.project.description && (
-        <section className="rounded-lg border p-3 text-sm whitespace-pre-line">
+        <section className="rounded-xl border bg-card p-3 text-sm whitespace-pre-line">
           {data.project.description}
         </section>
       )}
@@ -43,7 +43,7 @@ export function BidderView({ data }: { data: BidderData }) {
         >
           <ul className="grid gap-2">
             {data.tasks.map((t) => (
-              <li key={t.id} className="rounded-lg border p-3">
+              <li key={t.id} className="rounded-lg border bg-card p-3">
                 <p className="text-sm font-medium">{t.title}</p>
                 {t.description && (
                   <p className="mt-1 text-xs whitespace-pre-line text-muted-foreground">
@@ -60,7 +60,7 @@ export function BidderView({ data }: { data: BidderData }) {
         <Section title={t("فایل‌ها")}>
           <ul className="grid gap-1">
             {data.files.map((f) => (
-              <li key={f.id} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+              <li key={f.id} className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
                 <FileText className="size-3.5 shrink-0 text-muted-foreground" />
                 <a
                   href={f.href}

@@ -39,7 +39,7 @@ function DayEditor({ weekday, initial }: { weekday: number; initial: Slot[] | un
   const [slots, setSlots] = useState<Slot[]>(initial ?? []);
 
   return (
-    <div className="grid gap-2 rounded-lg border p-3">
+    <div className="grid gap-2 rounded-xl border bg-card p-3">
       <div className="flex items-center gap-2">
         <Checkbox
           id={`day-${weekday}`}

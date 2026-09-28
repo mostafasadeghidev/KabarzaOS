@@ -17,8 +17,9 @@ import { Card } from '@/components/ui/card';
  *               چون خطِ بلندتر از ~۷۵ نویسه خواندن را سخت می‌کند.
  * همان قاعده‌ای که خودِ shadcn در نمونه‌هایش به کار می‌برد.
  *
- * ⚠️ مقیاسِ فاصله: `gap-4` بینِ بخش‌های صفحه (و `md:gap-6` روی نمایشگرِ
- * بزرگ، مثلِ داشبوردِ رسمیِ shadcn). داخلِ یک بخش `gap-2`.
+ * ⚠️ مقیاسِ فاصله (DESIGN.md §۴): بینِ بخش‌های صفحه ۲۴ و روی نمایشگرِ بزرگ
+ * ۳۲ پیکسل؛ حاشیهٔ صفحه ۱۶ / ۲۴ / ۳۲. فضای خالی کارِ جداکردن را می‌کند —
+ * بخش‌ها با فاصله از هم جدا می‌شوند، نه با خط یا قابِ اضافه.
  */
 export function PageShell({
   width = 'full',
@@ -32,7 +33,7 @@ export function PageShell({
   return (
     <main
       className={cn(
-        '@container/main flex flex-1 flex-col gap-4 p-4 md:gap-6 lg:p-6',
+        '@container/main flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6 lg:p-8',
         width === 'reading' && 'mx-auto w-full max-w-4xl',
         className,
       )}
@@ -79,7 +80,8 @@ export function PageHeader({
         <div className="flex min-w-0 items-center gap-3">
           {media}
           <div className="grid min-w-0 gap-1">
-            <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+            {/* ⚠️ بی `tracking-tight`: فشرده‌کردنِ فاصلهٔ حروف اتصالِ حروفِ فارسی را می‌شکند. */}
+            <h1 className="text-2xl font-bold">{title}</h1>
             {description && (
               <div className="text-sm text-muted-foreground">{description}</div>
             )}
@@ -144,7 +146,9 @@ export function TabPanel({
  * ⚠️ چرا لازم شد: عنوانِ بخش‌ها یازده شکلِ مختلف داشت — `text-sm font-semibold`،
  * `text-sm font-medium`، `text-xs` با حاشیهٔ پایین، `<p>` به‌جای عنوان، و دکمهٔ
  * «افزودن» گاهی کنارِ عنوان، گاهی زیرش. همان سلسله‌مراتبِ `PageHeader`، یک
- * پله کوچک‌تر: عنوانِ صفحه `text-xl`، عنوانِ بخش `text-sm`.
+ * پله کوچک‌تر (DESIGN.md §۳): عنوانِ صفحه ۲۴/۷۰۰، عنوانِ بخش ۱۶/۷۰۰،
+ * زیربخشِ `h3` ۱۴/۶۰۰. سلسله‌مراتب با وزن ساخته می‌شود: عنوانِ پررنگ در
+ * برابرِ متنِ آرام تا روشن باشد مهم‌ترین چیزِ صفحه کجاست.
  */
 export function SectionHeader({
   title,
@@ -165,11 +169,16 @@ export function SectionHeader({
   return (
     <div className={cn('flex flex-wrap items-center justify-between gap-x-4 gap-y-2', className)}>
       <div className="grid min-w-0 gap-0.5">
-        <Heading className="flex items-center gap-1.5 text-sm font-semibold [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground">
+        <Heading
+          className={cn(
+            'flex items-center gap-1.5 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground',
+            Heading === 'h2' ? 'text-base font-bold' : 'text-sm font-semibold',
+          )}
+        >
           {icon}
           {title}
         </Heading>
-        {description && <div className="text-xs text-muted-foreground">{description}</div>}
+        {description && <div className="text-[13px] text-muted-foreground">{description}</div>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -177,7 +186,10 @@ export function SectionHeader({
 }
 
 /**
- * پنل — کارتِ عنوان‌دار: نوارِ سرِ فشرده با خطِ جداکننده، دکمه‌ها در همان نوار.
+ * پنل — کارتِ عنوان‌دار: سطحِ سفید با عنوان و دکمه‌ها در یک ردیف.
+ *
+ * ⚠️ سرِ پنل خطِ جداکننده ندارد (DESIGN.md §۵): فاصله عنوان را از محتوا جدا
+ * می‌کند. با خطِ زیرِ هر عنوان، صفحه‌ای با ده پنل بیست خطِ افقی داشت.
  *
  * ⚠️ چرا لازم شد: کارتِ عنوان‌دار پنج شکل داشت — پنلِ داشبورد (همین شکل)،
  * `CardHeader` با عنوانِ ۱۶ پیکسلی که دکمه‌اش زیرِ عنوان می‌افتاد (`CardHeader`
@@ -209,28 +221,38 @@ export function Panel({
   return (
     <Card
       className={cn(
-        'gap-0 py-0 shadow-xs',
+        'gap-0 py-0',
         tone === 'danger' && 'border-destructive/40',
         tone === 'warning' && 'border-amber-500/50',
         className,
       )}
     >
-      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-2.5">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 pt-3.5">
         <div className="grid min-w-0 gap-0.5">
           <h3
             className={cn(
-              'flex items-center gap-1.5 text-sm font-semibold [&>svg]:size-4 [&>svg]:shrink-0',
+              'flex items-center gap-1.5 text-sm font-semibold [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground',
               tone === 'danger' && 'text-destructive',
             )}
           >
             {icon}
             {title}
           </h3>
-          {description && <div className="text-xs text-muted-foreground">{description}</div>}
+          {description && <div className="text-[13px] text-muted-foreground">{description}</div>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </header>
-      <div className={flush ? undefined : 'grid grid-cols-1 gap-3 p-4'}>{children}</div>
+      {/*
+        ⚠️ جدولِ بی‌حاشیه: سلولِ اول و آخر همان تورفتگیِ عنوان را می‌گیرند تا
+        متنِ ستون‌ها زیرِ عنوانِ پنل بیفتد، نه چهار پیکسل بیرون‌تر.
+      */}
+      <div
+        className={flush
+          ? 'pt-1.5 pb-1 [&_td:first-child]:ps-4 [&_td:last-child]:pe-4 [&_th:first-child]:ps-4 [&_th:last-child]:pe-4'
+          : 'grid grid-cols-1 gap-3 px-4 pt-3 pb-4'}
+      >
+        {children}
+      </div>
     </Card>
   );
 }

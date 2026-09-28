@@ -19,13 +19,13 @@ import { OfficeFilter, RangeBar, type OfficeOption } from './report-filters';
 import {
   TablePager, TableSearch, useTableView, type TableView,
 } from '@/components/ui/table-search';
-import { chipStyle } from '@/domain/ui/contrast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Toggle } from '@/components/ui/toggle';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StatCard } from '@/components/stat-card';
 import { Progress } from '@/components/ui/progress';
 import { Section } from '@/components/page-shell';
+import { TagChip } from '@/components/ui/tag-chip';
 
 /** «دورهٔ بسته» هم خروجی دارد ولی تبِ صادرشدنی نیست — تاریخ لازم دارد. */
 function isExportable(tab: string): boolean {
@@ -331,7 +331,7 @@ export function ReportsView({
         {/* ⚠️ نبودِ نرخ بی‌صدا ۱ نمی‌شود (R-MONEY-06) — ولی بی‌صدا هم نمی‌ماند. */}
         {/* پورتِ `rate_banner_html`: نرخ‌هایی که ارقام بر آن‌ها تکیه دارند + هشدارِ کهنه/غایب. */}
         {data.overall.rates.visible && data.overall.rates.shown.length > 0 && (
-          <div className="flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2 text-xs">
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card px-3 py-2 text-xs">
             <span className="num" dir="ltr">{data.overall.rates.shown.join('  ·  ')}</span>
           </div>
         )}
@@ -731,12 +731,7 @@ export function ReportsView({
                   </TableCell>
                   <TableCell>
                     {p.statusName ? (
-                      <Badge
-                        variant="outline"
-                        style={chipStyle(p.statusColor)}
-                      >
-                        {p.statusName}
-                      </Badge>
+                      <TagChip color={p.statusColor}>{p.statusName}</TagChip>
                     ) : '—'}
                   </TableCell>
                   <TableNumericCell>{format(p.price)}</TableNumericCell>

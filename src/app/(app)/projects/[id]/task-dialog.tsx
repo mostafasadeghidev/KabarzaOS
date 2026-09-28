@@ -9,7 +9,6 @@ import {
   addTaskNoteAction, deleteTaskAction, loadTaskAction, referTaskAction, updateTaskAction,
   type TaskFormState,
 } from '../_form/task-actions';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
@@ -25,11 +24,11 @@ import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { useConfirm } from '@/components/ui/confirm';
 import { ClaimTaskButton } from '@/app/(app)/tasks/inbox-claim';
-import { chipStyle } from '@/domain/ui/contrast';
 import { TaskStatusPicker } from './task-status-picker';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { TagChip } from '@/components/ui/tag-chip';
 
 /**
  * مودالِ تسک — بازسازیِ `task_admin_html()`:
@@ -144,7 +143,7 @@ export function TaskDialog({
           <div className="grid gap-4">
             <div className="flex flex-wrap items-center gap-2">
               {task.priorityName && (
-                <Badge variant="outline" style={chipStyle(task.priorityColor)}>{task.priorityName}</Badge>
+                <TagChip color={task.priorityColor}>{task.priorityName}</TagChip>
               )}
               {/*
                 ⚠️ وضعیت اینجا **عوض می‌شود**، نه فقط دیده. مودال از صندوقِ

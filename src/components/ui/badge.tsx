@@ -1,6 +1,16 @@
 /**
  * ⚠️ افزودهٔ ما به کدِ رسمی: واریانت‌های success و warning
  * (وضعیتِ پروژه و تسک به آن‌ها نیاز دارند).
+ *
+ * ⚠️ success، warning و destructive **ملایم**اند (DESIGN.md §۲): زمینهٔ
+ * کم‌رنگ با متنِ تیرهٔ همان رنگ. نسخهٔ توپر (سبز با متنِ سفید، زرد با متنِ
+ * سیاه) کنارِ هم در یک فهرست، صفحه را پرسروصدا می‌کرد. کنتراستِ متن در هر
+ * سه بالای ۵:۱ است.
+ *
+ * ⚠️ `outline` با وجودِ نامش **قاب ندارد** (DESIGN.md §۶): چیپِ خنثیِ ملایم
+ * است. ده‌ها بجِ قاب‌دار («سیستمی»، ویژگی‌ها، روند) هرکدام یک خطِ دورِ دیگر
+ * به صفحه اضافه می‌کردند. نام عوض نشد تا جای استفاده‌ها دست نخورد. مقدارِ
+ * رنگ‌دارِ تگ اینجا نمی‌آید؛ آن `TagChip` است (نقطهٔ رنگی روی چیپِ خنثی).
  */
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -17,13 +27,13 @@ const badgeVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
         destructive:
-          "bg-destructive text-white focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90",
+          "bg-red-50 text-red-700 focus-visible:ring-destructive/20 dark:bg-red-500/15 dark:text-red-300 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-red-100",
         success:
-          "border-transparent bg-success text-white [a&]:hover:bg-success/90",
+          "bg-emerald-50 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300 [a&]:hover:bg-emerald-100",
         warning:
-          "border-transparent bg-warning text-black [a&]:hover:bg-warning/90",
+          "bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 [a&]:hover:bg-amber-100",
         outline:
-          "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+          "bg-muted text-foreground [a&]:hover:bg-border [a&]:hover:text-accent-foreground",
         ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         link: "text-primary underline-offset-4 [a&]:hover:underline",
       },

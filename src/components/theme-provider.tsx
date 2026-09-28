@@ -33,10 +33,10 @@ export const PALETTE_LABEL: Record<Palette, string> = {
 
 /** نقطهٔ رنگیِ هر پالت در فهرست — رنگِ اصلیِ همان پالت. */
 export const PALETTE_SWATCH: Record<Palette, string> = {
-  stone: 'oklch(0.55 0.18 264)',
-  ocean: 'oklch(0.55 0.13 220)',
+  stone: 'oklch(0.54 0.17 254)',
+  ocean: 'oklch(0.52 0.12 220)',
   forest: 'oklch(0.52 0.12 155)',
-  sunset: 'oklch(0.58 0.16 40)',
+  sunset: 'oklch(0.55 0.16 40)',
   violet: 'oklch(0.55 0.19 300)',
   slate: 'oklch(0.45 0 0)',
 };

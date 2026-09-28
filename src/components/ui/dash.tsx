@@ -31,11 +31,16 @@ export function MetricCard({
   const dir = trend === undefined ? null : trend > 0 ? 'up' : trend < 0 ? 'down' : 'flat';
   const TrendIcon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : Minus;
 
+  /*
+    ⚠️ بی‌گرادیان و بی‌کم‌رنگی (DESIGN.md §۷): سطحِ سفیدِ ساده، برچسبِ کم‌رنگ و
+    عددِ پررنگ. گرادیانِ «از رنگِ اصلی به کارت» تزئین بود و `opacity-90` ِ کارتِ
+    بی‌پیوند کلِ متن را از حدِ خوانایی پایین می‌کشید.
+  */
   const card = (
-    <Card className="@container/card h-full bg-gradient-to-t from-primary/5 to-card shadow-xs dark:bg-card">
+    <Card className="@container/card h-full">
       <CardHeader>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="num text-2xl font-semibold @[250px]/card:text-3xl">{value}</CardTitle>
+        <CardDescription className="text-[13px]">{label}</CardDescription>
+        <CardTitle className="num text-2xl font-bold @[250px]/card:text-3xl">{value}</CardTitle>
         {dir && (
           <CardAction>
             <Badge variant="outline" className="gap-1">
@@ -59,9 +64,10 @@ export function MetricCard({
     </Card>
   );
 
-  if (!href) return <div className="h-full opacity-90">{card}</div>;
+  if (!href) return <div className="h-full">{card}</div>;
+  // نشانِ «کلیک‌خور» مرزِ پررنگ‌تر است، نه کم‌رنگ‌شدنِ کلِ کارت.
   return (
-    <Link href={href} className="block h-full transition-opacity hover:opacity-90">
+    <Link href={href} className="block h-full rounded-xl [&>[data-slot=card]]:transition-colors [&>[data-slot=card]]:hover:border-input">
       {card}
     </Link>
   );
@@ -95,16 +101,17 @@ export function CompactCard({
   return <Link href={href} className={cn(base, 'transition-colors hover:bg-muted/60')}>{body}</Link>;
 }
 
+/** عنوانِ گروه‌های داشبورد — همان عنوانِ بخشِ `SectionHeader` (۱۶/۷۰۰). */
 export function DashHeading({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-sm font-semibold text-muted-foreground">{children}</h2>;
+  return <h2 className="text-base font-bold">{children}</h2>;
 }
 
 /** گروهِ کارت‌ها با عنوانِ کوچک — مثلِ `. نسخهٔ قبلی. */
 export function CardGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card className="gap-1 py-3 shadow-xs">
+    <Card className="gap-1 py-3">
       <CardHeader className="px-4">
-        <CardDescription className="text-xs font-medium">{title}</CardDescription>
+        <CardDescription className="text-[13px] font-semibold text-foreground">{title}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-1 px-1.5">{children}</CardContent>
     </Card>

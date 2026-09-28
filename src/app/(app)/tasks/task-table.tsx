@@ -4,8 +4,6 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Lock } from 'lucide-react';
 import type { InboxTask } from '@/server/projects/service';
-import { Badge } from '@/components/ui/badge';
-import { chipStyle } from '@/domain/ui/contrast';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
 import { ClaimTaskButton } from './inbox-claim';
@@ -13,6 +11,7 @@ import { TaskDialog } from '../projects/[id]/task-dialog';
 import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { SearchInput } from '@/components/ui/search-input';
+import { TagChip } from '@/components/ui/tag-chip';
 
 /**
  * فهرستِ تسک‌های صندوق — **جدول**، نه ردیفِ درهم.
@@ -144,19 +143,14 @@ export function TaskTable({
 
                 <TableCell>
                   {task.priorityName
-                    ? <Badge variant="outline" style={chipStyle(task.priorityColor)}>{task.priorityName}</Badge>
+                    ? <TagChip color={task.priorityColor}>{task.priorityName}</TagChip>
                     : <span className="text-muted-foreground">—</span>}
                 </TableCell>
 
                 <TableCell>
                   {task.statusName
                     ? (
-                      <Badge
-                        variant={chipStyle(task.statusColor) ? 'outline' : 'secondary'}
-                        style={chipStyle(task.statusColor)}
-                      >
-                        {task.statusName}
-                      </Badge>
+                      <TagChip color={task.statusColor}>{task.statusName}</TagChip>
                     )
                     : <span className="text-muted-foreground">—</span>}
                 </TableCell>

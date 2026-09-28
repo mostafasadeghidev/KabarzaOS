@@ -78,7 +78,7 @@ export function MultiSelect({
         data-size={size}
         className={cn(
           'flex min-h-9 w-full items-center justify-between gap-2 rounded-md border border-input',
-          'bg-transparent px-3 py-1.5 text-start text-sm data-[size=sm]:min-h-8 data-[size=sm]:py-1',
+          'bg-card px-3 py-1.5 text-start text-sm data-[size=sm]:min-h-8 data-[size=sm]:py-1 dark:bg-input/30',
           'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
         )}
       >

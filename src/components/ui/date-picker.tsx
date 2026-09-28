@@ -240,7 +240,7 @@ export function DateTimePicker({
         onChange={(e) => setParts((p) => ({ ...p, time: e.target.value }))}
         required={required}
         disabled={disabled}
-        className="num w-28 shrink-0 appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+        className="num w-28 shrink-0 appearance-none bg-transparent [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
       />
       {name && <input type="hidden" name={name} value={combined} />}
     </div>

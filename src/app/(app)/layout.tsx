@@ -225,7 +225,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         onLocaleChange={setLocale}
         brand={{ name: brand.name?.trim() || 'KabarzaOS', logoFileId: brand.logoFileId }}
       />
-      <SidebarInset>
+      {/*
+        ⚠️ قاب و محتوا هم‌رنگ‌اند (کاغذِ زمینه، DESIGN.md §۲)؛ سایهٔ دورِ محتوا
+        فقط یک لبهٔ اضافه روی همان کاغذ می‌کشید.
+      */}
+      <SidebarInset className="md:peer-data-[variant=inset]:shadow-none">
         <header className="flex h-12 items-center gap-2 border-b px-4">
           <SidebarTrigger />
           <span className="text-sm font-medium">KabarzaOS</span>
