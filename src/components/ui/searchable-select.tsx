@@ -19,6 +19,9 @@
  *
  * ⚠️ `modal` روی Popover: داخلِ Dialog، قفلِ اسکرولِ دیالوگ چرخِ ماوس را روی
  * فهرستِ پرتال‌شده می‌بلعید و فهرستِ بلند اسکرول نمی‌شد.
+ *
+ * ⚠️ هم‌چهره و هم‌رفتار با `Combobox` و `MultiSelect` (combobox.tsx): مرزِ
+ * `border-input` ِ فیلدها، و تایپ روی دکمهٔ بسته فهرست را با همان حرف باز می‌کند.
  */
 
 import * as React from 'react';
@@ -29,6 +32,7 @@ import {
 } from '@/components/ui/command';
 import { NativeSelectOptGroup } from '@/components/ui/native-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { focusAtEnd, typeToSearch } from '@/components/ui/combobox';
 import { useT } from '@/i18n/client';
 import { cn } from '@/lib/utils';
 
@@ -137,8 +141,10 @@ export function SearchableSelect({
   const [inner, setInner] = React.useState(initial);
   const [open, setOpen] = React.useState(false);
   const [active, setActive] = React.useState('');
+  const [search, setSearch] = React.useState('');
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const groups = readChoices(children);
   const choices = groups.flatMap((g) => g.choices);
@@ -162,8 +168,9 @@ export function SearchableSelect({
   const current = selected?.value ?? '';
 
   // ⚠️ با باز شدن، ردیفِ انتخاب‌شده برجسته و در دیدرس است — نه ردیفِ اولِ فهرستِ بلند.
+  // اگر با تایپ باز شده باشد، اولین ردیفِ جورشده برجسته است (cmdk خودش می‌گذارد).
   React.useEffect(() => {
-    if (!open) return;
+    if (!open || search) return;
     setActive(selected?.key ?? '');
     const frame = requestAnimationFrame(() => {
       listRef.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: 'nearest' });
@@ -181,7 +188,7 @@ export function SearchableSelect({
 
   return (
     <div data-slot="searchable-select" className={cn('relative w-fit', containerClassName)}>
-      <Popover open={open} onOpenChange={setOpen} modal>
+      <Popover open={open} onOpenChange={(next) => { if (next) setSearch(''); setOpen(next); }} modal>
         <PopoverTrigger asChild>
           <Button
             ref={triggerRef}
@@ -194,8 +201,11 @@ export function SearchableSelect({
             aria-invalid={ariaInvalid}
             disabled={disabled}
             data-size={size}
+            onKeyDown={(e) => {
+              if (!open) typeToSearch(e, (q) => { setSearch(q); setOpen(true); });
+            }}
             className={cn(
-              'h-9 w-full min-w-0 justify-between gap-2 px-3 font-normal data-[size=sm]:h-8',
+              'h-9 w-full min-w-0 justify-between gap-2 border-input px-3 font-normal data-[size=sm]:h-8',
               className,
             )}
           >
@@ -216,14 +226,23 @@ export function SearchableSelect({
             <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-(--radix-popover-trigger-width) min-w-56 p-0">
+        <PopoverContent
+          align="start"
+          className="w-(--radix-popover-trigger-width) min-w-56 p-0"
+          onOpenAutoFocus={(e) => { e.preventDefault(); focusAtEnd(inputRef.current); }}
+        >
           <Command
             value={active}
             onValueChange={setActive}
-            filter={(_value, search, keywords) =>
-              normalize((keywords ?? []).join(' ')).includes(normalize(search)) ? 1 : 0}
+            filter={(_value, query, keywords) =>
+              normalize((keywords ?? []).join(' ')).includes(normalize(query)) ? 1 : 0}
           >
-            <CommandInput placeholder={searchPlaceholder ?? t('جستجو…')} />
+            <CommandInput
+              ref={inputRef}
+              value={search}
+              onValueChange={setSearch}
+              placeholder={searchPlaceholder ?? t('جستجو…')}
+            />
             <CommandList ref={listRef}>
               <CommandEmpty>{t('نتیجه‌ای نیست')}</CommandEmpty>
               {groups.map((group, gi) => (

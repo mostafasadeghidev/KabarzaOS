@@ -21,7 +21,11 @@ import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CircleAlert } from 'lucide-react';
+import { CircleAlert, FileText } from 'lucide-react';
+import {
+  Attachment, AttachmentActions, AttachmentContent, AttachmentDescription, AttachmentMedia,
+  AttachmentTitle, AttachmentTrigger,
+} from '@/components/ui/attachment';
 import { Toggle } from '@/components/ui/toggle';
 import { DatePicker } from '@/components/ui/date-picker';
 
@@ -432,19 +436,41 @@ export function EntryForm({
         inputId="l-receipt"
         hint={tr('تصویر یا PDF — تا {size} برای هر رسید.', { size: humanSize(MAX_SIZE.receipt, tr) })}
       >
+        {/*
+          رسیدهای ذخیره‌شده: تیکِ «حذف» فقط علامت می‌زند و با «ذخیره» پاک می‌شود؛
+          کارتِ علامت‌خورده قرمزِ کم‌رنگ می‌شود تا پیش از ذخیره دیده شود.
+        */}
         {editing && editing.receipts.length > 0 && (
-          <ul className="grid gap-1">
-            {editing.receipts.map((r) => (
-              <li key={r.id} className="flex items-center gap-2 text-sm">
-                <Checkbox id={`rm-${r.id}`} name="removeReceipt" value={String(r.id)} className="data-[state=checked]:border-destructive data-[state=checked]:bg-destructive"
-                />
-                <Label htmlFor={`rm-${r.id}`} className="text-xs font-normal text-muted-foreground">{tr("حذف")}</Label>
-                <a href={r.href} target="_blank" rel="noopener noreferrer" className="flex-1 truncate hover:underline">
-                  {r.originalName || `#${r.id}`}
-                </a>
-                <span className="num shrink-0 text-xs text-muted-foreground">{humanSize(r.size, tr)}</span>
-              </li>
-            ))}
+          <ul className="grid gap-2">
+            {editing.receipts.map((r) => {
+              const name = r.originalName || `#${r.id}`;
+              return (
+                <li key={r.id}>
+                  <Attachment
+                    size="sm"
+                    className="w-full has-[[data-slot=checkbox][data-state=checked]]:border-destructive/40 has-[[data-slot=checkbox][data-state=checked]]:bg-destructive/5"
+                  >
+                    <AttachmentMedia variant={r.kind === 'image' ? 'image' : 'icon'}>
+                      {r.kind === 'image' ? <img src={`${r.href}?thumb`} alt="" loading="lazy" /> : <FileText />}
+                    </AttachmentMedia>
+                    <AttachmentContent>
+                      <AttachmentTitle>{name}</AttachmentTitle>
+                      <AttachmentDescription>{humanSize(r.size, tr)}</AttachmentDescription>
+                    </AttachmentContent>
+                    <AttachmentActions className="gap-1.5 pe-1">
+                      <Checkbox
+                        id={`rm-${r.id}`} name="removeReceipt" value={String(r.id)}
+                        className="data-[state=checked]:border-destructive data-[state=checked]:bg-destructive"
+                      />
+                      <Label htmlFor={`rm-${r.id}`} className="text-xs font-normal text-muted-foreground">{tr("حذف")}</Label>
+                    </AttachmentActions>
+                    <AttachmentTrigger asChild>
+                      <a href={r.href} target="_blank" rel="noopener noreferrer" aria-label={name} />
+                    </AttachmentTrigger>
+                  </Attachment>
+                </li>
+              );
+            })}
           </ul>
         )}
       </ReceiptPicker>

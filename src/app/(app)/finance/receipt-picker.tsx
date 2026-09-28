@@ -6,6 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Lightbox } from '@/components/lightbox';
 import { useT } from '@/i18n/client';
 import { FileInput } from '@/components/ui/file-input';
+import {
+  Attachment, AttachmentAction, AttachmentActions, AttachmentContent, AttachmentDescription,
+  AttachmentMedia, AttachmentTitle, AttachmentTrigger,
+} from '@/components/ui/attachment';
+import { humanSize } from '@/domain/files/upload';
 
 /**
  * انتخابِ رسید — پورتِ dropzone ِ نسخهٔ قبلی: پیش‌نمایشِ بندانگشتیِ فایل‌های
@@ -80,33 +85,35 @@ export function ReceiptPicker({
         selected={files.map((f) => f.name)}
         onChange={(e) => sync(Array.from(e.target.files ?? []))}
       />
+      {/*
+        ⚠️ `idle` = انتخاب‌شده ولی هنوز فرستاده نشده (قابِ خط‌چین)؛ با «ذخیره»
+        همراهِ فرم می‌رود. کلیک روی تصویر بزرگش می‌کند، × فقط از فهرست برش می‌دارد.
+      */}
       {files.length > 0 && (
-        <ul className="flex flex-wrap gap-3">
+        <ul className="flex flex-wrap gap-2">
           {files.map((f, i) => (
-            <li key={`${f.name}-${f.size}-${i}`} className="relative flex w-24 flex-col items-center gap-1 text-center">
-              {previews[i] ? (
-                <button
-                  type="button"
-                  onClick={() => setZoom(previews[i]!)}
-                  className="size-16 overflow-hidden rounded-md border"
-                  title={f.name}
-                >
-                  <img src={previews[i]} alt="" className="size-full object-cover" />
-                </button>
-              ) : (
-                <span className="flex size-16 items-center justify-center rounded-md border text-muted-foreground">
-                  <FileText className="size-6" />
-                </span>
-              )}
-              <span className="w-full truncate text-[11px] text-muted-foreground" title={f.name}>{f.name}</span>
-              <button
-                type="button"
-                aria-label={tr('حذف')}
-                onClick={() => sync(files.filter((_, j) => j !== i))}
-                className="absolute -top-1 -end-1 rounded-full border bg-card p-0.5 text-muted-foreground hover:text-destructive"
-              >
-                <X className="size-3" />
-              </button>
+            <li key={`${f.name}-${f.size}-${i}`}>
+              <Attachment orientation="vertical" state="idle">
+                <AttachmentMedia variant={previews[i] ? 'image' : 'icon'}>
+                  {previews[i] ? <img src={previews[i]} alt="" /> : <FileText />}
+                </AttachmentMedia>
+                <AttachmentContent>
+                  <AttachmentTitle title={f.name}>{f.name}</AttachmentTitle>
+                  <AttachmentDescription>{humanSize(f.size, tr)}</AttachmentDescription>
+                </AttachmentContent>
+                <AttachmentActions>
+                  <AttachmentAction
+                    variant="outline"
+                    aria-label={`${tr('حذف')} — ${f.name}`}
+                    onClick={() => sync(files.filter((_, j) => j !== i))}
+                  >
+                    <X />
+                  </AttachmentAction>
+                </AttachmentActions>
+                {previews[i] && (
+                  <AttachmentTrigger aria-label={f.name} onClick={() => setZoom(previews[i]!)} />
+                )}
+              </Attachment>
             </li>
           ))}
         </ul>

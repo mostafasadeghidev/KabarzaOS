@@ -11,6 +11,9 @@ import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+  Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
+import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
@@ -144,23 +147,26 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
         <form action={formAction} className="grid gap-4">
           <input type="hidden" name="projectId" value={data.projectId} />
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-xs text-muted-foreground">
-                <tr className="border-b">
-                  <th className="py-2 text-start font-normal">{t("عضو")}</th>
-                  <th className="py-2 text-start font-normal">{t("نقش")}</th>
-                  <th className="py-2 text-start font-normal">
+          {/* جدولِ داخلِ دیالوگ: بی‌قاب، و ستون‌های اول و آخر هم‌لبهٔ متنِ دیالوگ. */}
+          <Table
+            frame={false}
+            className="[&_td]:px-1.5 [&_td]:py-1.5 [&_td:first-child]:ps-0 [&_td:last-child]:pe-0 [&_th]:px-1.5 [&_th:first-child]:ps-0 [&_th:last-child]:pe-0"
+          >
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>{t("عضو")}</TableHead>
+                  <TableHead>{t("نقش")}</TableHead>
+                  <TableHead>
                     {data.isUnitBased ? tr('نرخِ هر واحد') : tr('مبلغ توافقی')}
-                  </th>
-                  <th className="py-2 text-start font-normal">{t("ارز")}</th>
-                  <th className="w-8" />
-                </tr>
-              </thead>
-              <tbody>
+                  </TableHead>
+                  <TableHead>{t("ارز")}</TableHead>
+                  <TableActionsHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {rows.map((row, i) => (
-                  <tr key={i} className="border-b last:border-0">
-                    <td className="py-1.5 pe-2">
+                  <TableRow key={i} className="hover:bg-transparent">
+                    <TableCell>
                       {row.isFormer ? (
                         // عضوِ سابق دوباره انتخاب‌شدنی نیست، ولی ردیفش می‌ماند (R-PROJ-11).
                         <div className="flex items-center gap-2">
@@ -186,9 +192,9 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                           {tr("تسویه‌نشده — با حذف از فهرست هم ردیفش می‌ماند")}
                         </span>
                       )}
-                    </td>
+                    </TableCell>
 
-                    <td className="py-1.5 pe-2">
+                    <TableCell>
                       <NativeSelect
                         name="memberRole"
                         size="sm" containerClassName="w-full"
@@ -200,9 +206,9 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                           <NativeSelectOption key={r.id} value={r.id}>{r.name}</NativeSelectOption>
                         ))}
                       </NativeSelect>
-                    </td>
+                    </TableCell>
 
-                    <td className="py-1.5 pe-2">
+                    <TableCell>
                       {/* هر دو فیلد همیشه فرستاده می‌شوند تا آرایه‌ها هم‌طول بمانند. */}
                       <Input
                         className="num h-8"
@@ -220,9 +226,9 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                         name={data.isUnitBased ? 'memberAmount' : 'memberUnitRate'}
                         value={data.isUnitBased ? row.agreedAmount : row.unitRate}
                       />
-                    </td>
+                    </TableCell>
 
-                    <td className="py-1.5 pe-2">
+                    <TableCell>
                       <NativeSelect
                         name="memberCurrency"
                         size="sm" containerClassName="w-full"
@@ -233,9 +239,9 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                           <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>
                         ))}
                       </NativeSelect>
-                    </td>
+                    </TableCell>
 
-                    <td className="py-1.5">
+                    <TableActionsCell>
                       <IconButton
                         type="button"
                         variant="ghost"
@@ -245,12 +251,11 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                       >
                         <X className="size-4" />
                       </IconButton>
-                    </td>
-                  </tr>
+                    </TableActionsCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+          </Table>
 
           {state.rowErrors && (
             <ul className="text-xs text-destructive">

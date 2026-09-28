@@ -1,8 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Paperclip, Plus, X } from 'lucide-react';
+import { FileText, ImageIcon, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Attachment, AttachmentAction, AttachmentActions, AttachmentContent, AttachmentDescription,
+  AttachmentMedia, AttachmentTitle,
+} from '@/components/ui/attachment';
+import { humanSize } from '@/domain/files/upload';
 import { Input } from '@/components/ui/input';
 import { Combobox, MultiSelect, type Option as ComboOption } from '@/components/ui/combobox';
 import type { Option } from './project-dialog';
@@ -148,14 +153,26 @@ export function FilePicker({
         <img src={previewUrl} alt="" className="size-20 rounded-md object-cover" />
       )}
 
+      {/* `idle` = انتخاب‌شده، هنوز فرستاده نشده؛ همراهِ فرم بارگذاری می‌شود. */}
       {files.length > 0 && (
-        <ul className="grid gap-1">
+        <ul className="grid gap-2 sm:grid-cols-2">
           {files.map((f, i) => (
-            <li key={`${f.name}-${i}`} className="flex items-center gap-2 text-xs">
-              <Paperclip className="size-3 shrink-0 text-muted-foreground" />
-              <span className="flex-1 truncate">{f.name}</span>
-              <span className="num shrink-0 text-muted-foreground">{Math.ceil(f.size / 1024)} {tr('کیلوبایت')}</span>
-              <RemoveButton onClick={() => sync(files.filter((_, j) => j !== i))} />
+            <li key={`${f.name}-${i}`}>
+              <Attachment size="sm" state="idle" className="w-full">
+                <AttachmentMedia>{f.type.startsWith('image/') ? <ImageIcon /> : <FileText />}</AttachmentMedia>
+                <AttachmentContent>
+                  <AttachmentTitle title={f.name}>{f.name}</AttachmentTitle>
+                  <AttachmentDescription>{humanSize(f.size, tr)}</AttachmentDescription>
+                </AttachmentContent>
+                <AttachmentActions>
+                  <AttachmentAction
+                    aria-label={`${tr('حذف')} — ${f.name}`}
+                    onClick={() => sync(files.filter((_, j) => j !== i))}
+                  >
+                    <X />
+                  </AttachmentAction>
+                </AttachmentActions>
+              </Attachment>
             </li>
           ))}
         </ul>

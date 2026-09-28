@@ -18,6 +18,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -727,8 +728,8 @@ export function PayoutsView({
               <p className="text-sm">
                 {rejectTarget.userName} — <span className="num">{format(rejectTarget.amount)}</span>
               </p>
-              <textarea
-                className="min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+              <Textarea
+                aria-label={tr("دلیل رد (اختیاری)")}
                 placeholder={tr("دلیل رد (اختیاری)")}
                 value={rejectNote}
                 onChange={(e) => setRejectNote(e.target.value)}

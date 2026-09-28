@@ -12,6 +12,7 @@ import { groupInbox } from '@/domain/messaging/labels';
 import { monogram } from '@/domain/files/monogram';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
@@ -148,6 +149,50 @@ function SubmitButton({ label }: { label: string }) {
     <Button type="submit" size="sm" disabled={pending}>
       {pending ? <Spinner /> : label}
     </Button>
+  );
+}
+
+/**
+ * آکاردئونِ یک ارسالِ همگانی در صندوقِ فرستنده (R-MSG-01).
+ *
+ * ⚠️ Collapsible ِ shadcn به‌جای `<details>` ِ خام: همان رفتار (کلیک باز و
+ * بسته می‌کند)، ولی حالتِ باز در React است — پس وقتی یکی از گفتگوهای داخلش
+ * باز می‌شود گروه هم خودش باز می‌شود، و بستنِ دستیِ کاربر هم سرِ جایش می‌ماند.
+ */
+function BroadcastGroup({
+  threads, unread, openId, onOpen, tz,
+}: {
+  threads: InboxRow[]; unread: number; openId: number | null; onOpen: (id: number) => void; tz: string;
+}) {
+  const tr = useT();
+  const holdsOpen = threads.some((t) => t.id === openId);
+  const [expanded, setExpanded] = useState(holdsOpen);
+  useEffect(() => { if (holdsOpen) setExpanded(true); }, [holdsOpen]);
+
+  return (
+    <Collapsible open={expanded} onOpenChange={setExpanded} className="group/bc">
+      <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-start transition-colors outline-none hover:bg-accent/60 focus-visible:ring-[3px] focus-visible:ring-ring/50">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <Megaphone className="size-4" />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+          {tr('ارسالِ همگانی به {n} نفر', { n: threads.length })}
+        </span>
+        {unread > 0 && (
+          <Badge className="num h-5 min-w-5 shrink-0 rounded-full px-1.5">{unread}</Badge>
+        )}
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/bc:rotate-180" />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <ul className="ms-8 grid gap-0.5 border-s ps-2">
+          {threads.map((t) => (
+            <li key={t.id}>
+              <InboxRowButton row={t} open={openId === t.id} onOpen={onOpen} tz={tz} />
+            </li>
+          ))}
+        </ul>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -513,27 +558,13 @@ export function MessagesView({
                   </li>
                 ) : (
                   <li key={`g${entry.broadcastId}`}>
-                    <details className="group/bc" open={entry.threads.some((t) => t.id === openId)}>
-                      <summary className="flex cursor-pointer list-none items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-accent/60 [&::-webkit-details-marker]:hidden">
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                          <Megaphone className="size-4" />
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                          {tr('ارسالِ همگانی به {n} نفر', { n: entry.threads.length })}
-                        </span>
-                        {entry.unread > 0 && (
-                          <Badge className="num h-5 min-w-5 shrink-0 rounded-full px-1.5">{entry.unread}</Badge>
-                        )}
-                        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open/bc:rotate-180" />
-                      </summary>
-                      <ul className="ms-8 grid gap-0.5 border-s ps-2">
-                        {entry.threads.map((t) => (
-                          <li key={t.id}>
-                            <InboxRowButton row={t} open={openId === t.id} onOpen={setOpenId} tz={tz} />
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
+                    <BroadcastGroup
+                      threads={entry.threads}
+                      unread={entry.unread}
+                      openId={openId}
+                      onOpen={setOpenId}
+                      tz={tz}
+                    />
                   </li>
                 )))}
               </ul>

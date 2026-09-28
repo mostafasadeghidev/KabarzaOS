@@ -1,9 +1,34 @@
 'use client';
 
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+/**
+ * انتخابگرهای جستجودار — تک‌مقداری (`Combobox`) و چندمقداری (`MultiSelect`).
+ *
+ * ⚠️ روی همان الگوی Combobox ِ shadcn سوارند که `SearchableSelect`: Popover +
+ * Command. پیش از این هر کدام فهرستِ دست‌سازِ خودشان را داشتند (portal و
+ * مختصاتِ fixed ِ دستی، کلیدهای جهت‌دارِ دستی)؛ در یک دیالوگ سه انتخابگر کنارِ
+ * هم بودند که هر کدام جای دیگری باز می‌شد و با کیبورد جورِ دیگری کار می‌کرد.
+ * حالا هر سه یک فهرست‌اند: همان جای‌گیری (Radix)، همان جستجو، همان کلیدها.
+ *
+ * ⚠️ امضاها دست‌نخورده‌اند — هیچ‌کدام از فرم‌ها عوض نشدند:
+ *  · مقدار مثلِ قبل در `<input type="hidden" name>` فرستاده می‌شود.
+ *  · `Combobox` همچنان مقدارِ دوتایی دارد: شناسه (شاید null) + متن؛ با
+ *    `allowFreeText` نامِ بیرون از فهرست هم پذیرفته می‌شود.
+ *  · گزینهٔ غیرفعال در فهرست نمی‌آید، ولی اگر از قبل انتخاب شده باشد نامش
+ *    (یا چیپش) می‌ماند و کاربر خودش برش می‌دارد (R-FORM-04).
+ *
+ * ⚠️ `modal` روی Popover — همان دلیلِ SearchableSelect: داخلِ Dialog، قفلِ
+ * اسکرولِ دیالوگ چرخِ ماوس را روی فهرستِ پرتال‌شده می‌بلعید.
+ */
+
+import * as React from 'react';
+import { CheckIcon, ChevronsUpDownIcon, PlusIcon, XIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from '@/components/ui/command';
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useT } from '@/i18n/client';
+import { cn } from '@/lib/utils';
 
 export interface Option {
   value: number;
@@ -11,6 +36,8 @@ export interface Option {
   /** متنِ کمکیِ ردیف — مثلاً ایمیل یا نامِ دفتر. */
   hint?: string;
   disabled?: boolean;
+  /** نقطهٔ رنگی کنارِ گزینه و چیپ — برای تگ‌ها. */
+  color?: string;
 }
 
 /** جستجوی ساده و بی‌طرف نسبت به فاصله و «ی/ک» عربی. */
@@ -30,58 +57,42 @@ export function matches(option: Option, query: string): boolean {
   return normalize(option.label).includes(q) || normalize(option.hint ?? '').includes(q);
 }
 
-// ⚠️ `data-[size=sm]:h-8` همان قاعدهٔ `NativeSelect` و `SearchableSelect`: در نوارِ فیلتر
-// همهٔ کنترل‌ها `sm` اند تا ردیف یک خط باشد.
-const boxClass =
-  'flex h-9 w-full items-center gap-1 rounded-md border border-input bg-card px-3 text-sm shadow-xs data-[size=sm]:h-8';
-
-/**
- * جای‌گیریِ فهرستِ بازشو **بیرونِ** جریانِ صفحه.
- *
- * ⚠️ چرا portal و نه `absolute`: این فیلد داخلِ مودالی است که خودش
- * `overflow-y-auto` دارد — فهرستِ absolute زیرِ لبهٔ مودال بریده می‌شد و
- * کاربر باید مودال را اسکرول می‌کرد تا گزینه‌ها را ببیند. با portal روی
- * `body` و مختصاتِ fixed، فهرست **روی** مودال می‌نشیند.
- */
-function useFloatingList(open: boolean, anchorRef: React.RefObject<HTMLElement | null>) {
-  const [box, setBox] = useState<{ top: number; left: number; width: number } | null>(null);
-
-  const measure = useCallback(() => {
-    const el = anchorRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const below = window.innerHeight - r.bottom;
-    // اگر پایین جا نبود، فهرست بالای فیلد باز می‌شود.
-    const height = Math.min(224, Math.max(120, below - 12));
-    const openUp = below < 160 && r.top > below;
-    setBox({
-      top: openUp ? Math.max(8, r.top - height - 4) : r.bottom + 4,
-      left: r.left,
-      width: r.width,
-    });
-  }, [anchorRef]);
-
-  useLayoutEffect(() => {
-    if (!open) return;
-    measure();
-    window.addEventListener('scroll', measure, true);
-    window.addEventListener('resize', measure);
-    return () => {
-      window.removeEventListener('scroll', measure, true);
-      window.removeEventListener('resize', measure);
-    };
-  }, [open, measure]);
-
-  return box;
+/** صافیِ cmdk: هر ردیف با برچسب و متنِ کمکی‌اش (keywords) سنجیده می‌شود. */
+function filter(_value: string, search: string, keywords?: string[]): number {
+  return normalize((keywords ?? []).join(' ')).includes(normalize(search)) ? 1 : 0;
 }
 
 /**
- * انتخابگرِ **تک‌مقداریِ** جستجوی زنده.
+ * ⚠️ «تایپ کن تا پیدا کنی» روی دکمهٔ بسته: نسخهٔ قبلی خودش ورودیِ متن بود و
+ * کاربر مستقیم تایپ می‌کرد. حالا اولین حرف فهرست را باز می‌کند و جستجو را با
+ * همان حرف شروع می‌کند. فاصله و Enter کارِ عادیِ دکمه را می‌کنند (باز کردن).
+ */
+export function typeToSearch(e: React.KeyboardEvent, start: (query: string) => void): void {
+  if (e.key.length !== 1 || e.key === ' ' || e.ctrlKey || e.metaKey || e.altKey) return;
+  e.preventDefault();
+  start(e.key);
+}
+
+/** نشانگر پس از بازشدن در انتهای متنِ آغازینِ جستجو — وگرنه حرفِ بعدی پیش از اولی می‌نشست. */
+export function focusAtEnd(input: HTMLInputElement | null) {
+  if (!input) return;
+  input.focus();
+  const end = input.value.length;
+  input.setSelectionRange(end, end);
+}
+
+// ⚠️ همان چهرهٔ `SearchableSelect`: دکمهٔ outline با مرزِ فیلدها (`border-input`)،
+// و `data-[size=sm]:h-8` در نوارِ فیلتر تا ردیف یک خط بماند.
+const triggerClass =
+  'h-9 w-full min-w-0 justify-between gap-2 border-input px-3 font-normal data-[size=sm]:h-8';
+
+/**
+ * انتخابگرِ **تک‌مقداری**.
  *
- * ⚠️ دو رفتارِ نسخهٔ قبلی که بدونشان فیلد آزاردهنده می‌شود:
- *  ۱. **نامِ آزاد** هم پذیرفته می‌شود؛ هر طرف‌حسابی کاربرِ سامانه نیست.
- *     پس مقدار همیشه دوتایی است: شناسه (شاید null) + متن.
- *  ۲. بستنِ فهرست نباید متنِ تایپ‌شده را پاک کند.
+ * ⚠️ نامِ آزاد (`allowFreeText`): هر طرف‌حسابی کاربرِ سامانه نیست. متنِ
+ * جستجو اگر با هیچ گزینه‌ای یکی نباشد، ردیفِ «همین نام» بالای فهرست می‌آید.
+ * و مثلِ نسخهٔ قبلی — که متنِ تایپ‌شده همان‌جا می‌ماند — بستنِ فهرست با کلیک
+ * بیرون هم متن را نگه می‌دارد؛ فقط Escape بی‌تغییر می‌بندد.
  */
 export function Combobox({
   options,
@@ -107,130 +118,138 @@ export function Combobox({
   size?: 'sm' | 'default';
 }) {
   const t = useT();
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(0);
-  const boxRef = useRef<HTMLDivElement>(null);
-  const listId = useId();
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  // ردیفِ برجسته (مقدارِ cmdk) — با باز شدن روی گزینهٔ انتخاب‌شده می‌نشیند، نه روی «پاک‌کردن».
+  const [active, setActive] = React.useState('');
+  const escaped = React.useRef(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const visible = useMemo(
-    () => options.filter((o) => !o.disabled && matches(o, value.label)).slice(0, 50),
-    [options, value.label],
-  );
+  const typed = query.trim();
+  const listed = options.filter((o) => !o.disabled);
+  const exact = typed ? listed.filter((o) => normalize(o.label) === normalize(typed)) : [];
+  const showFree = allowFreeText && typed !== '' && exact.length === 0;
+  const hasValue = value.id !== null || value.label !== '';
 
-  useEffect(() => {
-    const onOutside = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onOutside);
-    return () => document.removeEventListener('mousedown', onOutside);
-  }, []);
+  const start = (initial: string) => {
+    escaped.current = false;
+    setQuery(initial);
+    // با متنِ آغازین، cmdk خودش اولین ردیفِ جورشده را برجسته می‌کند.
+    setActive(!initial && value.id !== null ? String(value.id) : '');
+    setOpen(true);
+  };
 
-  useEffect(() => { setActive(0); }, [value.label]);
-
-  const fieldRef = useRef<HTMLDivElement>(null);
-  const listBox = useFloatingList(open, fieldRef);
-
-  const pick = (option: Option) => {
-    onChange({ id: option.value, label: option.label });
+  const pick = (next: { id: number | null; label: string }) => {
+    onChange(next);
     setOpen(false);
   };
 
-  const onKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setOpen(true);
-      setActive((a) => (a + 1) % Math.max(1, visible.length));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActive((a) => (a - 1 + visible.length) % Math.max(1, visible.length));
-    } else if (e.key === 'Enter' && open && visible[active]) {
-      e.preventDefault();
-      pick(visible[active]!);
-    } else if (e.key === 'Escape') {
-      setOpen(false);
-    }
+  /** متنِ تایپ‌شده ← گزینهٔ هم‌نام اگر دقیقاً یکی باشد، وگرنه نامِ آزاد. */
+  const commitTyped = () => {
+    if (!allowFreeText || typed === '') return;
+    if (exact.length === 1) onChange({ id: exact[0]!.value, label: exact[0]!.label });
+    else if (typed !== value.label || value.id !== null) onChange({ id: null, label: typed });
   };
 
   return (
-    <div ref={boxRef} className="relative">
+    <div data-slot="combobox" className="relative w-full min-w-0">
       {name && <input type="hidden" name={name} value={value.id ?? ''} />}
-
-      <div ref={fieldRef} data-size={size} className={boxClass}>
-        <input
-          id={id}
-          type="text"
-          autoComplete="off"
-          disabled={disabled}
-          className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
-          placeholder={placeholder ?? t('جستجو…')}
-          value={value.label}
-          role="combobox"
-          aria-expanded={open}
-          aria-controls={listId}
-          onFocus={() => setOpen(true)}
-          onKeyDown={onKey}
-          onChange={(e) => {
-            // ⚠️ تایپ‌کردن شناسه را باطل می‌کند — وگرنه متنِ «سارا» با شناسهٔ
-            // «مالک» ذخیره می‌شد. نامِ آزاد فقط اگر مجاز باشد می‌ماند.
-            onChange({ id: null, label: allowFreeText ? e.target.value : e.target.value });
-            setOpen(true);
-          }}
-        />
-        {(value.label || value.id) && !disabled && (
-          <button
+      <Popover
+        open={open}
+        modal
+        onOpenChange={(next) => {
+          if (next) {
+            // نامِ آزادِ فعلی در جستجو می‌نشیند تا ویرایش شود، نه اینکه از نو تایپ شود.
+            start(value.id === null ? value.label : '');
+            return;
+          }
+          if (!escaped.current) commitTyped();
+          setOpen(false);
+        }}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
             type="button"
-            aria-label={t("پاک‌کردن")}
-            onClick={() => { onChange({ id: null, label: '' }); setOpen(false); }}
-            className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            disabled={disabled}
+            data-size={size}
+            onKeyDown={(e) => { if (!open) typeToSearch(e, start); }}
+            className={triggerClass}
           >
-            <X className="size-3.5" />
-          </button>
-        )}
-        <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-      </div>
-
-      {open && listBox && createPortal(
-        <ul
-          id={listId}
-          role="listbox"
-          // ⚠️ همان دلیلِ MultiSelect: فهرست باید **روی** مودال بنشیند.
-          className="fixed z-[100] max-h-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-md"
-          /**
-           * ⚠️ `pointerEvents: 'auto'` حیاتی است: مودالِ Radix تا وقتی باز است
-           * روی `body` مقدارِ `pointer-events: none` می‌گذارد و چون این فهرست
-           * با portal **بیرونِ** مودال رندر می‌شود، همان را به ارث می‌برد —
-           * یعنی کلیکِ واقعیِ ماوس از رویش رد می‌شد و هیچ گزینه‌ای انتخاب
-           * نمی‌شد (رویدادِ ساختگیِ تست این را نشان نمی‌دهد، چون
-           * pointer-events فقط روی ورودیِ واقعی اثر دارد).
-           */
-          style={{ top: listBox.top, left: listBox.left, width: listBox.width, pointerEvents: 'auto' }}
+            <span className={cn('min-w-0 flex-1 truncate text-start', !value.label && 'text-muted-foreground')}>
+              {value.label || placeholder || t('جستجو…')}
+            </span>
+            <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="w-(--radix-popover-trigger-width) min-w-56 p-0"
+          onEscapeKeyDown={() => { escaped.current = true; }}
+          onOpenAutoFocus={(e) => { e.preventDefault(); focusAtEnd(inputRef.current); }}
         >
-          {visible.length === 0 ? (
-            <li className="px-2 py-1.5 text-xs text-muted-foreground">
-              {allowFreeText ? t('در فهرست نیست — همین نام ثبت می‌شود.') : t('موردی پیدا نشد.')}
-            </li>
-          ) : visible.map((o, i) => (
-            <li key={o.value}>
-              <button
-                type="button"
-                role="option"
-                aria-selected={o.value === value.id}
-                onMouseEnter={() => setActive(i)}
-                // mousedown چون blur ِ ورودی زودتر از click اتفاق می‌افتد.
-                onMouseDown={(e) => { e.preventDefault(); pick(o); }}
-                className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-start text-sm ${
-                  i === active ? 'bg-muted' : ''
-                }`}
-              >
-                <Check className={`size-3.5 shrink-0 ${o.value === value.id ? '' : 'invisible'}`} />
-                <span className="flex-1 truncate">{o.label}</span>
-                {o.hint && <span className="shrink-0 text-xs text-muted-foreground">{o.hint}</span>}
-              </button>
-            </li>
-          ))}
-        </ul>,
-        document.body,
-      )}
+          <Command filter={filter} value={active} onValueChange={setActive}>
+            <CommandInput
+              ref={inputRef}
+              value={query}
+              onValueChange={setQuery}
+              placeholder={placeholder ?? t('جستجو…')}
+            />
+            <CommandList>
+              {/* ردیفِ «همین نام» خودش می‌گوید چیزی پیدا نشد؛ پیامِ خالی دوبار نمی‌آید. */}
+              {!showFree && <CommandEmpty>{t('موردی پیدا نشد.')}</CommandEmpty>}
+              {/*
+                ⚠️ پاک‌کردن هم یک ردیف است، نه دکمه‌ای روی فیلد: دکمه در دکمه نامعتبر است.
+                ⚠️ `forceMount` روی این ردیف و ردیفِ «همین نام» — و روی گروهشان، که
+                وگرنه چون ردیفِ ثبت‌شده‌ای ندارد پنهان می‌شد: صافیِ cmdk با keywords ِ
+                رندرِ **قبلی** می‌سنجد، پس ردیفی که متنش با خودِ جستجو عوض می‌شود با
+                حرفِ دوم پنهان می‌ماند.
+              */}
+              {hasValue && !typed && (
+                <CommandGroup forceMount>
+                  <CommandItem forceMount value="__clear__" onSelect={() => pick({ id: null, label: '' })}>
+                    <XIcon />
+                    <span className="text-muted-foreground">{t('پاک‌کردن')}</span>
+                  </CommandItem>
+                </CommandGroup>
+              )}
+              <CommandGroup>
+                {listed.map((o) => (
+                  <CommandItem
+                    key={o.value}
+                    value={String(o.value)}
+                    keywords={[o.label, o.hint ?? '']}
+                    onSelect={() => pick({ id: o.value, label: o.label })}
+                  >
+                    <span className="min-w-0 truncate">{o.label}</span>
+                    <span className="ms-auto flex shrink-0 items-center gap-2">
+                      {o.hint && <span className="text-xs text-muted-foreground">{o.hint}</span>}
+                      <CheckIcon className={o.value === value.id ? 'opacity-100' : 'opacity-0'} />
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              {/* پایینِ فهرست: Enter اول کاربرِ جورشده را برمی‌دارد، نه نامِ آزاد را. */}
+              {showFree && (
+                <CommandGroup forceMount>
+                  <CommandItem forceMount value="__free__" onSelect={() => pick({ id: null, label: typed })}>
+                    <PlusIcon />
+                    <span className="grid min-w-0">
+                      <span className="truncate">«{typed}»</span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {t('در فهرست نیست — همین نام ثبت می‌شود.')}
+                      </span>
+                    </span>
+                  </CommandItem>
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
@@ -238,8 +257,14 @@ export function Combobox({
 /**
  * انتخابگرِ **چندمقداری** با چیپ.
  *
- * ⚠️ گزینهٔ غیرفعال از منو پنهان می‌شود ولی اگر **انتخاب‌شده** باشد چیپش
- * می‌ماند؛ کاربر خودش با × برش می‌دارد (R-FORM-04).
+ * ⚠️ چیپ‌ها و دکمهٔ بازکردن **کنارِ هم** در یک قاب‌اند، نه چیپ داخلِ دکمه:
+ * دکمهٔ × داخلِ دکمهٔ دیگر HTML ِ نامعتبر است و کلیکش به دکمهٔ بیرونی هم
+ * می‌رسید. قاب لنگرِ فهرست است (`PopoverAnchor`)، پس فهرست هم‌عرضِ کلِ فیلد باز
+ * می‌شود.
+ *
+ * ⚠️ فهرست همهٔ گزینه‌ها را با تیک نشان می‌دهد و کلیک روشن/خاموش می‌کند؛
+ * انتخاب‌شده‌ها در فهرست گم نمی‌شوند. Backspace در جستجوی خالی آخرین چیپ را
+ * برمی‌دارد، مثلِ نسخهٔ قبلی.
  */
 export function MultiSelect({
   options,
@@ -248,6 +273,9 @@ export function MultiSelect({
   placeholder,
   name,
   id,
+  size = 'default',
+  emptyText,
+  disabled,
 }: {
   options: Option[];
   selected: number[];
@@ -255,99 +283,142 @@ export function MultiSelect({
   placeholder?: string;
   name?: string;
   id?: string;
+  /** `sm` در نوارِ فیلتر — هم‌قدِ بقیهٔ کنترل‌های `sm` (۳۲ پیکسل). */
+  size?: 'sm' | 'default';
+  /** وقتی اصلاً گزینه‌ای تعریف نشده. */
+  emptyText?: string;
+  disabled?: boolean;
 }) {
   const t = useT();
-  const [query, setQuery] = useState('');
-  const [open, setOpen] = useState(false);
-  const boxRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const byId = React.useMemo(() => new Map(options.map((o) => [o.value, o])), [options]);
+  const listed = options.filter((o) => !o.disabled);
 
-  const byId = useMemo(() => new Map(options.map((o) => [o.value, o])), [options]);
+  const toggle = (v: number) =>
+    onChange(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]);
 
-  const available = useMemo(
-    () => options.filter((o) => !o.disabled && !selected.includes(o.value) && matches(o, query)).slice(0, 50),
-    [options, selected, query],
-  );
-
-  useEffect(() => {
-    const onOutside = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', onOutside);
-    return () => document.removeEventListener('mousedown', onOutside);
-  }, []);
-
-  const fieldRef = useRef<HTMLDivElement>(null);
-  const listBox = useFloatingList(open, fieldRef);
+  const start = (initial: string) => {
+    setQuery(initial);
+    setOpen(true);
+  };
 
   return (
-    <div ref={boxRef} className="relative">
+    <div data-slot="multi-select" className="relative w-full min-w-0">
       {/* هر انتخاب یک ورودیِ جدا، تا FormData آرایه بگیرد. */}
       {name && selected.map((v) => <input key={v} type="hidden" name={name} value={v} />)}
-
-      <div ref={fieldRef} className={`${boxClass} h-auto min-h-9 flex-wrap py-1`}>
-        {selected.map((v) => (
-          <span
-            key={v}
-            className="flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-xs"
+      <Popover open={open} onOpenChange={(next) => (next ? start('') : setOpen(false))} modal>
+        <PopoverAnchor asChild>
+          <div
+            data-size={size}
+            // کلیک روی فضای خالیِ قاب (نه چیپ) هم فهرست را باز می‌کند.
+            onClick={(e) => { if (e.target === e.currentTarget && !disabled) start(''); }}
+            className={cn(
+              'flex min-h-9 w-full min-w-0 flex-wrap items-center gap-1 rounded-md border border-input bg-card py-1 ps-1.5 pe-3 text-sm shadow-xs transition-[color,box-shadow] dark:bg-input/30',
+              'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
+              'data-[size=sm]:min-h-8 data-[size=sm]:py-0.5',
+              disabled && 'pointer-events-none opacity-50',
+            )}
           >
-            {byId.get(v)?.label ?? `#${v}`}
-            <button
-              type="button"
-              aria-label={t("برداشتن")}
-              onClick={() => onChange(selected.filter((s) => s !== v))}
-              className="rounded hover:text-destructive"
-            >
-              <X className="size-3" />
-            </button>
-          </span>
-        ))}
-
-        <input
-          id={id}
-          type="text"
-          autoComplete="off"
-          className="min-w-24 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
-          placeholder={selected.length === 0 ? (placeholder ?? t('افزودن…')) : ''}
-          value={query}
-          onFocus={() => setOpen(true)}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-          onKeyDown={(e) => {
-            // Backspace روی ورودیِ خالی، آخرین چیپ را برمی‌دارد.
-            if (e.key === 'Backspace' && !query && selected.length > 0) {
-              onChange(selected.slice(0, -1));
-            }
-          }}
-        />
-      </div>
-
-      {open && available.length > 0 && listBox && createPortal(
-        <ul
-          role="listbox"
-          // ⚠️ z بالاتر از مودال (z-50) تا فهرست رویش بنشیند، نه زیرش؛ و
-          // `pointer-events: auto` تا کلیکِ ماوس در مودالِ باز به آن برسد
-          // (Radix روی body مقدارِ none می‌گذارد و portal آن را ارث می‌برد).
-          className="fixed z-[100] max-h-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-md"
-          style={{ top: listBox.top, left: listBox.left, width: listBox.width, pointerEvents: 'auto' }}
-        >
-          {available.map((o) => (
-            <li key={o.value}>
+            {selected.map((v) => {
+              const o = byId.get(v);
+              const label = o?.label ?? `#${v}`;
+              return (
+                <span
+                  key={v}
+                  data-slot="multi-select-chip"
+                  className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-md bg-muted py-0.5 ps-1.5 pe-0.5 text-xs"
+                >
+                  {o?.color && (
+                    <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ backgroundColor: o.color }} />
+                  )}
+                  <span className="truncate">{label}</span>
+                  <button
+                    type="button"
+                    aria-label={`${t('برداشتن')} ${label}`}
+                    onClick={() => toggle(v)}
+                    className="rounded-sm p-0.5 text-muted-foreground outline-none hover:bg-background hover:text-foreground focus-visible:ring-[2px] focus-visible:ring-ring/50"
+                  >
+                    <XIcon className="size-3" />
+                  </button>
+                </span>
+              );
+            })}
+            <PopoverTrigger asChild>
               <button
+                id={id}
                 type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  onChange([...selected, o.value]);
-                  setQuery('');
-                }}
-                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-start text-sm hover:bg-muted"
+                role="combobox"
+                aria-expanded={open}
+                disabled={disabled}
+                onKeyDown={(e) => { if (!open) typeToSearch(e, start); }}
+                className="flex min-h-6 min-w-16 flex-1 items-center justify-between gap-2 ps-1 text-start outline-none"
               >
-                <span className="flex-1 truncate">{o.label}</span>
-                {o.hint && <span className="text-xs text-muted-foreground">{o.hint}</span>}
+                <span className="truncate text-muted-foreground">
+                  {selected.length === 0 ? (placeholder ?? t('افزودن…')) : ''}
+                </span>
+                <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground opacity-50" />
               </button>
-            </li>
-          ))}
-        </ul>,
-        document.body,
-      )}
+            </PopoverTrigger>
+          </div>
+        </PopoverAnchor>
+        <PopoverContent
+          align="start"
+          className="w-(--radix-popover-trigger-width) min-w-56 p-0"
+          onOpenAutoFocus={(e) => { e.preventDefault(); focusAtEnd(inputRef.current); }}
+        >
+          <Command filter={filter}>
+            <CommandInput
+              ref={inputRef}
+              value={query}
+              onValueChange={setQuery}
+              placeholder={t('جستجو…')}
+              onKeyDown={(e) => {
+                if (e.key === 'Backspace' && query === '' && selected.length > 0) {
+                  onChange(selected.slice(0, -1));
+                }
+              }}
+            />
+            <CommandList>
+              <CommandEmpty>
+                {listed.length === 0 ? (emptyText ?? t('موردی نیست')) : t('موردی پیدا نشد.')}
+              </CommandEmpty>
+              <CommandGroup>
+                {listed.map((o) => {
+                  const on = selected.includes(o.value);
+                  return (
+                    <CommandItem
+                      key={o.value}
+                      value={String(o.value)}
+                      keywords={[o.label, o.hint ?? '']}
+                      data-checked={on}
+                      // فوکوس در جستجو بماند تا بعد از کلیک هم بشود تایپ کرد (و Backspace چیپ بردارد).
+                      onMouseDown={(e) => e.preventDefault()}
+                      onSelect={() => toggle(o.value)}
+                    >
+                      <span
+                        aria-hidden
+                        className={cn(
+                          'flex size-4 shrink-0 items-center justify-center rounded-[4px] border shadow-xs',
+                          on ? 'border-primary bg-primary' : 'border-input bg-card',
+                        )}
+                      >
+                        {on && <CheckIcon className="size-3 text-primary-foreground" />}
+                      </span>
+                      {o.color && (
+                        <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ backgroundColor: o.color }} />
+                      )}
+                      <span className="min-w-0 truncate">{o.label}</span>
+                      {o.hint && <span className="ms-auto shrink-0 text-xs text-muted-foreground">{o.hint}</span>}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

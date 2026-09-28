@@ -1,6 +1,9 @@
 /**
  * ⚠️ اصلاحاتِ RTL روی کدِ رسمیِ shadcn (R-I18N-05):
  *   right-4 -> end-4 (دکمهٔ بستن) · sm:text-left -> sm:text-start (سرصفحه)
+ *
+ * پس‌زمینهٔ تیره‌کن همانِ سبکِ nova است (کم‌رنگ + کمی مات)، یکی با AlertDialog
+ * و Sheet: دیالوگِ تأییدی که روی یک دیالوگِ باز می‌نشیند دو لایهٔ ناهمسان نسازد.
  */
 "use client"
 
@@ -43,7 +46,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0",
+        "fixed inset-0 z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
         className
       )}
       {...props}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Star } from 'lucide-react';
+import { ChevronDown, Star } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 const tagSelectClass =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none'
   + ' focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
@@ -411,17 +412,26 @@ export function SettingsView({
                   بازکردنِ همیشگیِ هشت ورودی، کارِ روزمره (ساختِ یک تگ) را
                   زیرِ چیزی دفن می‌کرد که کمتر لازم می‌شود.
                 */}
-                <details className="rounded-lg border p-2">
-                  <summary className="cursor-pointer text-sm">
-                    {tr("ترجمهٔ نام به زبان‌های دیگر")}
-                    <span className="num ms-2 text-xs text-muted-foreground">
+                {/*
+                  ⚠️ `forceMount`: ورودی‌های بسته‌شده هم باید در DOM بمانند و با فرم
+                  بروند (مثلِ `<details>` ِ قبلی). بدونِ آن، Radix محتوای بسته را
+                  حذف می‌کند و ذخیرهٔ تگی که بخشش باز نشده بود ترجمه‌ها را پاک می‌کرد.
+                  ⚠️ شمارنده `num` نیست: `direction: ltr` روی «۳ از ۸ ترجمه شده»
+                  ترتیبِ کلمه‌های فارسی را برعکس می‌کرد.
+                */}
+                <Collapsible className="group/i18n rounded-lg bg-muted/60">
+                  <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-sm outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50">
+                    <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/i18n:rotate-180" />
+                    <span className="min-w-0 flex-1">{tr("ترجمهٔ نام به زبان‌های دیگر")}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                       {tr('{done} از {total} ترجمه شده', {
                         done: LOCALES.filter((l) => l !== DEFAULT_LOCALE && Boolean(editing?.nameI18n?.[l])).length,
                         total: LOCALES.filter((l) => l !== DEFAULT_LOCALE).length,
                       })}
                     </span>
-                  </summary>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  </CollapsibleTrigger>
+                  <CollapsibleContent forceMount className="px-3 pb-3 data-[state=closed]:hidden">
+                  <div className="grid gap-2 sm:grid-cols-2">
                     {LOCALES.filter((l) => l !== DEFAULT_LOCALE).map((code) => (
                       <div key={code} className="grid gap-1">
                         {/* «✓» یعنی ترجمه دارد — پورتِ نشانه‌گذاریِ ویرایشگرِ ترجمه. */}
@@ -441,7 +451,8 @@ export function SettingsView({
                   <p className="mt-2 text-xs text-muted-foreground">
                     {tr("خالی یعنی همان نامِ اصلی دیده می‌شود.")}
                   </p>
-                </details>
+                  </CollapsibleContent>
+                </Collapsible>
 
                 {/*
                   ⚠️ فقط تگِ **نقشِ عضو** می‌تواند دسترسی بدهد: این تگ همان

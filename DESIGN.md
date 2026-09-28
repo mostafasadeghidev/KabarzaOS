@@ -133,7 +133,33 @@ Weight is the main lever: 700 for titles, 600 for panel titles and emphasis,
   chips, selects that filter as you type) sits directly on the canvas.
 - **Fields:** inputs, selects and textareas are white in light mode, on the
   canvas and inside surfaces alike.
-- **Dialogs and sheets:** white (`popover`) surfaces with a 12 px radius.
+- **Pickers:** one family, all with the same field (`border-input`, 36 px,
+  32 px as `sm` in toolbars) and the same list (shadcn Popover + Command):
+  `NativeSelect` for a short fixed list, `SearchableSelect` for a long one,
+  `Combobox` for one person or project (optionally a free name, offered as
+  the last row), `MultiSelect` for several values as chips. Search ignores
+  Arabic ی/ک and half-spaces, and typing on a closed picker starts the
+  search. Clearing is a row at the top of the list, not a button on the field.
+- **Dialogs and sheets:** white (`popover`) surfaces with a 12 px radius. Every
+  modal (Dialog, AlertDialog, Sheet) shares one backdrop: a light dim with a
+  slight blur.
+- **Confirmation:** anything irreversible asks through `useConfirm()`, which is
+  the shadcn AlertDialog: an icon (red warning for destructive actions, a
+  question mark otherwise), the title and an optional description, and the
+  buttons in a pale band at the bottom. Focus starts on Cancel.
+- **Toast:** the shadcn Toast. A neutral card at the bottom, on the end side
+  (left in Persian); only its icon carries the colour. `useActionToast(state)`
+  for a form, `useToast().show(text, kind)` for anything else, and
+  `toast.add({ …, actionProps })` when the message needs a button.
+- **Attachment:** every file, image or link shown as an item is an `Attachment`
+  card: thumbnail or icon, the name, a muted line (who and size, or the
+  link's site) and its actions. The whole card opens the file
+  (`AttachmentTrigger`); actions stay separate buttons on it. A file chosen
+  but not saved yet is `state="idle"` (dashed frame).
+- **Collapsible sections:** shadcn `Collapsible`, never a raw `<details>`.
+  Inside a surface it is a `muted` fill without a border. When it holds form
+  fields, keep them mounted while closed (`forceMount`), or the form stops
+  sending them.
 - **Tabs:** page sections use line tabs, with the underline in `foreground`.
   Filters use pill tabs, where the active pill is a white surface.
 - **Buttons:** one primary (blue) button per view, for the main action.

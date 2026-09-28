@@ -1,9 +1,11 @@
 'use client';
 
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { CircleHelpIcon, TriangleAlertIcon } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogMedia,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useT } from '@/i18n/client';
 
@@ -67,12 +69,23 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     setOptions(null);
   };
 
+  /**
+   * ⚠️ آیکون همان چیزی را می‌گوید که رنگِ دکمه می‌گوید: هشدارِ قرمز برای کارِ
+   * مخرب، علامتِ پرسش برای کارِ عادی — تا پیش از خواندنِ متن معلوم باشد.
+   */
+  const destructive = options?.destructive !== false;
+
   return (
     <ConfirmContext.Provider value={ask}>
       {children}
       <AlertDialog open={options !== null} onOpenChange={(open) => { if (!open) settle(false); }}>
-        <AlertDialogContent className="sm:max-w-sm">
+        <AlertDialogContent>
           <AlertDialogHeader>
+            <AlertDialogMedia
+              className={destructive ? 'bg-destructive/10 text-destructive dark:bg-destructive/20' : undefined}
+            >
+              {destructive ? <TriangleAlertIcon /> : <CircleHelpIcon />}
+            </AlertDialogMedia>
             <AlertDialogTitle>{options?.title ?? ''}</AlertDialogTitle>
             {options?.description ? (
               <AlertDialogDescription>{options.description}</AlertDialogDescription>
@@ -87,7 +100,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               {tr('انصراف')}
             </AlertDialogCancel>
             <AlertDialogAction
-              variant={options?.destructive === false ? 'default' : 'destructive'}
+              variant={destructive ? 'destructive' : 'default'}
               onClick={() => settle(true)}
             >
               {options?.confirmLabel ?? tr('بله، انجام بده')}

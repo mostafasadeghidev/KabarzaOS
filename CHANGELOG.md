@@ -2,6 +2,63 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.88.0]
+
+### Added
+
+- **Toast from shadcn.** Notifications are now the official shadcn Toast, which is built on Base UI:
+  - Toasts stack at the bottom on the end side (left in Persian, right in English).
+  - Hovering over them expands the stack and pauses the timer. A toast can be swiped away.
+  - A toast can carry an action button.
+  - The card is neutral and only the icon carries the colour.
+  - Errors stay on screen longer and are announced to screen readers at once.
+  - The 34 forms that show a toast work unchanged.
+- **Attachment from shadcn.** Every file, image and link shown as an item is now an Attachment card with:
+  - a thumbnail or icon;
+  - the name;
+  - a muted line with the uploader and size, or the link's site;
+  - its actions.
+
+  The whole card opens the file, and download and delete stay separate buttons on it. A file that has been chosen but not saved yet has a dashed frame. The cards are used in:
+  - a project's files and links;
+  - the bidder view;
+  - a ledger entry's receipts;
+  - the entry form, for new receipts and saved ones (a saved receipt marked for removal turns pale red);
+  - the new-project form.
+
+### Changed
+
+- **Confirmation dialogs** use the newer shadcn AlertDialog:
+  - a compact card with an icon: a red warning for a destructive action, a question mark otherwise;
+  - the title and description beside the icon;
+  - the buttons in a pale band at the bottom.
+
+  Focus still starts on Cancel.
+- **One backdrop for every modal.** Dialogs, confirmation dialogs and the mobile sidebar now dim the page lightly and blur it slightly. Before, the backdrop was 50% black.
+- **One family of pickers.** The person/project picker (`Combobox`) and both multi-selects were hand-made lists with their own positioning. They now use the same shadcn Popover and Command as the searchable select, so every picker opens, searches and responds to the keyboard in the same way.
+  - Typing on a closed picker opens it and starts the search.
+  - The multi-select list shows every option with a checkbox. Backspace in its search removes the last chip, and clicking an option keeps the focus in the search.
+  - Free names, such as the payer or receiver in the ledger, are the last row of the list, so Enter picks a real user when one matches.
+  - Clearing a picker is a row at the top of its list.
+  - Every picker field uses the field border colour.
+- **Raw HTML replaced by shadcn parts:**
+  - The payout rejection reason is a `Textarea`. The old box had no focus ring.
+  - The broadcast groups in Messages and the tag-name translations in Settings are `Collapsible`. The translation fields stay in the form while the section is closed.
+  - The project members dialog uses the shared `Table`.
+- Project file thumbnails load the small version (`?thumb`) instead of the full image.
+- DESIGN.md describes the pickers, modals, confirmation, toast, attachment and collapsible sections.
+
+### Fixed
+
+- **The "3 of 8 translated" counter in the tag form** was forced left-to-right, so in Persian its first number was read last.
+
+### Removed
+
+- The unused Radix `Select` component.
+- Four `@radix-ui/react-*` packages that nothing imported. Every component uses the unified `radix-ui` package.
+
+---
+
 ## [1.87.1]
 
 ### Changed

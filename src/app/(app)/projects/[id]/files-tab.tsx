@@ -3,8 +3,12 @@
 import { useActionState, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
-  Download, ExternalLink, FileText, Film, ImageIcon, Link2, Paperclip, Trash2, Upload,
+  Download, FileText, Film, ImageIcon, Link2, Paperclip, Trash2, Upload,
 } from 'lucide-react';
+import {
+  Attachment, AttachmentAction, AttachmentActions, AttachmentContent, AttachmentDescription,
+  AttachmentMedia, AttachmentTitle, AttachmentTrigger,
+} from '@/components/ui/attachment';
 import {
   addLinkAction, deleteAttachmentAction, uploadAttachmentAction, type FileFormState,
 } from './_form/file-actions';
@@ -37,6 +41,15 @@ const KIND_ICON = {
   video: Film,
   file: FileText,
 } as const;
+
+/** دامنهٔ لینک («drive.google.com») — زیرِ نامِ لینک، تا پیش از باز کردن معلوم باشد کجا می‌رود. */
+function hostOf(href: string): string {
+  try {
+    return new URL(href).host;
+  } catch {
+    return '';
+  }
+}
 
 function SubmitButton({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
@@ -127,57 +140,48 @@ export function FilesTab({
         {attachments.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("پیوستی ثبت نشده.")}</p>
         ) : (
+          /*
+            ⚠️ کلِ کارت پیوندِ «باز کردن» است (`AttachmentTrigger`)؛ دانلود و حذف
+            دکمه‌های جدای رویش‌اند و کلیکشان فایل را باز نمی‌کند.
+          */
           <ul className="grid gap-2 @xl/main:grid-cols-2">
             {attachments.map((f) => {
               const Icon = KIND_ICON[f.kind as keyof typeof KIND_ICON] ?? FileText;
+              const title = f.title || `#${f.id}`;
               return (
-                <li key={f.id} className="flex items-center gap-3 rounded-lg border bg-card p-2">
-                  {f.kind === 'image' ? (
-                    // پیش‌نمایش هم از همان مسیرِ گیت‌شده می‌آید.
-                    <img
-                      src={f.href}
-                      alt={f.title}
-                      className="size-12 shrink-0 rounded object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="flex size-12 shrink-0 items-center justify-center rounded bg-muted">
-                      <Icon className="size-5 text-muted-foreground" />
-                    </div>
-                  )}
-
-                  <div className="min-w-0 flex-1">
-                    <a
-                      href={f.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block truncate text-sm hover:underline"
-                    >
-                      {f.title || `#${f.id}`}
-                    </a>
-                    <p className="text-xs text-muted-foreground">
-                      {f.uploaderName ?? '—'}
-                      {f.size ? ` · ${humanSize(f.size, tr)}` : ''}
-                    </p>
-                  </div>
-
-                  <a
-                    href={`${f.href}?dl`}
-                    className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"
-                    aria-label={t("دانلود")}
-                  >
-                    <Download className="size-4" />
-                  </a>
-                  {canDelete(f) && (
-                    <Button
-                      type="button"
-                      onClick={() => remove(f.id)}
-                      disabled={removing} variant="ghost" size="icon-sm" className="text-muted-foreground"
-                      aria-label={t("حذف")}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  )}
+                <li key={f.id}>
+                  <Attachment className="w-full">
+                    <AttachmentMedia variant={f.kind === 'image' ? 'image' : 'icon'}>
+                      {f.kind === 'image'
+                        // نسخهٔ کوچک از همان مسیرِ گیت‌شده؛ نبودنش خطا نیست و اصل می‌آید (R-FILE-16).
+                        ? <img src={`${f.href}?thumb`} alt="" loading="lazy" />
+                        : <Icon />}
+                    </AttachmentMedia>
+                    <AttachmentContent>
+                      <AttachmentTitle>{title}</AttachmentTitle>
+                      <AttachmentDescription>
+                        {f.uploaderName ?? '—'}
+                        {f.size ? ` · ${humanSize(f.size, tr)}` : ''}
+                      </AttachmentDescription>
+                    </AttachmentContent>
+                    <AttachmentActions>
+                      <AttachmentAction asChild aria-label={`${t("دانلود")} — ${title}`}>
+                        <a href={`${f.href}?dl`}><Download /></a>
+                      </AttachmentAction>
+                      {canDelete(f) && (
+                        <AttachmentAction
+                          onClick={() => remove(f.id)}
+                          disabled={removing}
+                          aria-label={`${t("حذف")} — ${title}`}
+                        >
+                          <Trash2 />
+                        </AttachmentAction>
+                      )}
+                    </AttachmentActions>
+                    <AttachmentTrigger asChild>
+                      <a href={f.href} target="_blank" rel="noopener noreferrer" aria-label={title} />
+                    </AttachmentTrigger>
+                  </Attachment>
                 </li>
               );
             })}
@@ -214,31 +218,37 @@ export function FilesTab({
             {tr("لینکِ گوگل‌درایو/دراپ‌باکس و … اینجا دیده می‌شوند.")}
           </p>
         ) : (
-          <ul className="grid gap-1">
-            {links.map((f) => (
-              <li key={f.id} className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
-                <a
-                  href={f.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex min-w-0 flex-1 items-center gap-1 truncate hover:underline"
-                >
-                  <span className="truncate">{f.title}</span>
-                  <ExternalLink className="size-3 shrink-0" />
-                </a>
-                <span className="shrink-0 text-xs text-muted-foreground">{f.uploaderName ?? '—'}</span>
-                {canDelete(f) && (
-                  <Button
-                    type="button"
-                    onClick={() => remove(f.id)}
-                    disabled={removing} variant="ghost" size="icon-xs" className="text-muted-foreground"
-                    aria-label={t("حذف")}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                )}
-              </li>
-            ))}
+          <ul className="grid gap-2 @xl/main:grid-cols-2">
+            {links.map((f) => {
+              const host = hostOf(f.href);
+              return (
+                <li key={f.id}>
+                  <Attachment className="w-full">
+                    <AttachmentMedia><Link2 /></AttachmentMedia>
+                    <AttachmentContent>
+                      <AttachmentTitle>{f.title}</AttachmentTitle>
+                      <AttachmentDescription>
+                        {host ? `${host} · ` : ''}{f.uploaderName ?? '—'}
+                      </AttachmentDescription>
+                    </AttachmentContent>
+                    {canDelete(f) && (
+                      <AttachmentActions>
+                        <AttachmentAction
+                          onClick={() => remove(f.id)}
+                          disabled={removing}
+                          aria-label={`${t("حذف")} — ${f.title}`}
+                        >
+                          <Trash2 />
+                        </AttachmentAction>
+                      </AttachmentActions>
+                    )}
+                    <AttachmentTrigger asChild>
+                      <a href={f.href} target="_blank" rel="noopener noreferrer" aria-label={f.title} />
+                    </AttachmentTrigger>
+                  </Attachment>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Section>

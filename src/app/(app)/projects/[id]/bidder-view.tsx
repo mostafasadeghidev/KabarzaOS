@@ -1,7 +1,11 @@
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Link2 } from 'lucide-react';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
 import { t } from '@/i18n/server';
 import { PageHeader, PageShell, Section } from '@/components/page-shell';
+import {
+  Attachment, AttachmentAction, AttachmentActions, AttachmentContent, AttachmentMedia,
+  AttachmentTitle, AttachmentTrigger,
+} from '@/components/ui/attachment';
 
 export interface BidderData {
   project: { id: number; title: string; description: string | null };
@@ -58,23 +62,25 @@ export function BidderView({ data }: { data: BidderData }) {
 
       {data.files.length > 0 && (
         <Section title={t("فایل‌ها")}>
-          <ul className="grid gap-1">
+          <ul className="grid gap-2">
             {data.files.map((f) => (
-              <li key={f.id} className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
-                <FileText className="size-3.5 shrink-0 text-muted-foreground" />
-                <a
-                  href={f.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 truncate hover:underline"
-                >
-                  {f.title}
-                </a>
-                {!f.isLink && (
-                  <a href={`${f.href}?dl`} aria-label={t("دانلود")} className="text-muted-foreground">
-                    <Download className="size-3.5" />
-                  </a>
-                )}
+              <li key={f.id}>
+                <Attachment size="sm" className="w-full">
+                  <AttachmentMedia>{f.isLink ? <Link2 /> : <FileText />}</AttachmentMedia>
+                  <AttachmentContent>
+                    <AttachmentTitle>{f.title}</AttachmentTitle>
+                  </AttachmentContent>
+                  {!f.isLink && (
+                    <AttachmentActions>
+                      <AttachmentAction asChild aria-label={`${t("دانلود")} — ${f.title}`}>
+                        <a href={`${f.href}?dl`}><Download /></a>
+                      </AttachmentAction>
+                    </AttachmentActions>
+                  )}
+                  <AttachmentTrigger asChild>
+                    <a href={f.href} target="_blank" rel="noopener noreferrer" aria-label={f.title} />
+                  </AttachmentTrigger>
+                </Attachment>
               </li>
             ))}
           </ul>

@@ -1,10 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Paperclip } from 'lucide-react';
+import { FileText, Paperclip } from 'lucide-react';
 import type { EntryRow, ReceiptView } from './ledger-view';
 import { format } from '@/domain/money/money';
+import { humanSize } from '@/domain/files/upload';
 import { Badge } from '@/components/ui/badge';
+import {
+  Attachment, AttachmentContent, AttachmentDescription, AttachmentMedia, AttachmentTitle,
+  AttachmentTrigger,
+} from '@/components/ui/attachment';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -120,19 +125,33 @@ export function LedgerDetail({
               {entry.receipts.length > 0 && (
                 <div className="grid gap-2">
                   <h4 className="text-sm font-semibold">{t('رسیدها')}</h4>
-                  <ul className="flex flex-wrap gap-3">
-                    {entry.receipts.map((r, n) => (
-                      <li key={r.id} className="flex w-24 flex-col items-center gap-1 text-center">
-                        <ReceiptThumb receipt={r} index={n + 1} size={72} onZoom={setZoom} />
-                        <a
-                          href={r.href} target="_blank" rel="noopener noreferrer"
-                          className="w-full truncate text-[11px] text-muted-foreground hover:underline"
-                          title={r.originalName}
-                        >
-                          {r.originalName || `#${r.id}`}
-                        </a>
-                      </li>
-                    ))}
+                  {/* تصویر در همین‌جا بزرگ می‌شود؛ PDF و فایلِ دیگر در تبِ تازه باز می‌شود. */}
+                  <ul className="flex flex-wrap gap-2">
+                    {entry.receipts.map((r) => {
+                      const name = r.originalName || `#${r.id}`;
+                      return (
+                        <li key={r.id}>
+                          <Attachment orientation="vertical">
+                            <AttachmentMedia variant={r.kind === 'image' ? 'image' : 'icon'}>
+                              {r.kind === 'image'
+                                ? <img src={`${r.href}?thumb`} alt="" loading="lazy" />
+                                : <FileText />}
+                            </AttachmentMedia>
+                            <AttachmentContent>
+                              <AttachmentTitle title={name}>{name}</AttachmentTitle>
+                              <AttachmentDescription>{humanSize(r.size, t)}</AttachmentDescription>
+                            </AttachmentContent>
+                            {r.kind === 'image' ? (
+                              <AttachmentTrigger aria-label={name} onClick={() => setZoom(r.href)} />
+                            ) : (
+                              <AttachmentTrigger asChild>
+                                <a href={r.href} target="_blank" rel="noopener noreferrer" aria-label={name} />
+                              </AttachmentTrigger>
+                            )}
+                          </Attachment>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
