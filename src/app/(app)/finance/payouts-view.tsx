@@ -379,9 +379,9 @@ export function PayoutsView({
                     <TableCell className="text-xs text-muted-foreground">
                       {r.bankCard || r.bankIban || r.bankAccount ? (
                         <span className="grid">
-                          {r.bankCard && <span className="num">{t("کارت")}: {r.bankCard}</span>}
-                          {r.bankIban && <span className="num">{t("شبا")}: {r.bankIban}</span>}
-                          {r.bankAccount && <span className="num">{t("حساب")}: {r.bankAccount}</span>}
+                          {r.bankCard && <span>{t("کارت")}: <span className="num">{r.bankCard}</span></span>}
+                          {r.bankIban && <span>{t("شبا")}: <span className="num">{r.bankIban}</span></span>}
+                          {r.bankAccount && <span>{t("حساب")}: <span className="num">{r.bankAccount}</span></span>}
                         </span>
                       ) : '—'}
                     </TableCell>

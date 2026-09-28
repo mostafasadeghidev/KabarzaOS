@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/i18n/client';
+import { ltr } from '@/i18n/bidi';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 
@@ -116,9 +117,9 @@ export function TaskFilter({
 
       {paging.totalPages > 1 && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="num">
+          <span className="tabular-nums">
             {tr('{shown} از {total} ردیف', {
-              shown: `${(paging.page - 1) * paging.perPage + 1}–${Math.min(paging.page * paging.perPage, paging.total)}`,
+              shown: ltr(`${(paging.page - 1) * paging.perPage + 1}–${Math.min(paging.page * paging.perPage, paging.total)}`),
               total: paging.total,
             })}
           </span>

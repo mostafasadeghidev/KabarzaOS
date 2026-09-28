@@ -305,7 +305,7 @@ export default async function ProjectDetailPage({
           <dt className="text-xs text-muted-foreground">{t("درصد پیشرفت")}</dt>
           <dd className="font-medium">
             <span className="num">{percent}%</span>
-            <span className="num ms-1 text-xs font-normal text-muted-foreground">
+            <span className="ms-1 text-xs font-normal text-muted-foreground tabular-nums">
               ({detail.meta.doneTasks}/{detail.meta.totalTasks} {t("تسک")})
             </span>
           </dd>

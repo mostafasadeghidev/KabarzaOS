@@ -107,7 +107,7 @@ export default async function FocusPage({
               <header className="flex flex-wrap items-center gap-2 border-b bg-muted/40 px-3 py-2 text-sm">
                 <Link href={focusHref(view, g.id)} className="font-semibold hover:underline">{g.title}</Link>
                 <ProjectStatus name={g.statusName} group={g.statusGroup} />
-                <span className="num text-xs text-muted-foreground">{t('{n} مورد', { n: g.items.length })}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">{t('{n} مورد', { n: g.items.length })}</span>
               </header>
               <ul>
                 {g.items.map((it, i) => (

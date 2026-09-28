@@ -6,6 +6,8 @@
  * فراخوان می‌دهد تا دامنه به ساعتِ سرور وابسته نباشد.
  */
 
+import { ltr } from '@/i18n/bidi';
+
 export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** تاریخِ معتبرِ YYYY-MM-DD، وگرنه null. */
@@ -158,5 +160,9 @@ export function rangeLabel(
   t: (key: string, params?: Record<string, string | number>) => string,
 ): string {
   if (range.from === '' && range.to === '') return t('کل دوره');
-  return t('از {from} تا {to}', { from: range.from || '—', to: range.to || '—' });
+  // تاریخ‌ها جدا از جمله: در فارسی «2026-08-01» می‌ماند، نه «01-08-2026».
+  return t('از {from} تا {to}', {
+    from: range.from ? ltr(range.from) : '—',
+    to: range.to ? ltr(range.to) : '—',
+  });
 }

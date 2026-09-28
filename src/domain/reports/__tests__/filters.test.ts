@@ -65,6 +65,6 @@ describe('فیلترهای گزارش — پورتِ office_ids_req / hours_week
   it('برچسبِ بازه', () => {
     const t = (k: string, p?: Record<string, string | number>) => (p ? `${k}|${p.from}|${p.to}` : k);
     expect(rangeLabel({ from: '', to: '' }, t)).toBe('کل دوره');
-    expect(rangeLabel({ from: '2026-08-01', to: '' }, t)).toBe('از {from} تا {to}|2026-08-01|—');
+    expect(rangeLabel({ from: '2026-08-01', to: '' }, t)).toBe('از {from} تا {to}|\u20662026-08-01\u2069|—');
   });
 });

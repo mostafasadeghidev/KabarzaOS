@@ -220,10 +220,10 @@ export function AvailabilityBoard(props: BoardProps) {
                           <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-500">
                             <TreePalm className="size-3.5 shrink-0" aria-hidden />
                             {tr("مرخصی")}
-                            {cell.span && <span className="num"> {tr("تا")} {cell.span}</span>}
+                            {cell.span && <> {tr("تا")} <span className="num">{cell.span}</span></>}
                           </span>
                         ) : cell.state === 'avail' ? (
-                          <span className="num">{cell.span === 'تمام روز' ? tr('تمام روز') : cell.span}</span>
+                          (cell.span === 'تمام روز' ? tr('تمام روز') : <span className="num">{cell.span}</span>)
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -249,7 +249,7 @@ export function AvailabilityBoard(props: BoardProps) {
                   <TreePalm className="size-3.5 shrink-0 text-amber-600 dark:text-amber-500" aria-hidden />
                   <span>{a.name}</span>
                   {a.until && (
-                    <span className="num text-xs text-muted-foreground">{tr("تا")} {a.until}</span>
+                    <span className="text-xs text-muted-foreground">{tr("تا")} <span className="num">{a.until}</span></span>
                   )}
                 </li>
               ))}

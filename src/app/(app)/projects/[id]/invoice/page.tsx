@@ -5,6 +5,7 @@ import { ForbiddenError } from '@/domain/access/guard';
 import { format, type Currency } from '@/domain/money/money';
 import { EmptyState } from '@/components/ui/empty-state';
 import { primeTranslations, t } from '@/i18n/server';
+import { ltr } from '@/i18n/bidi';
 import { PrintButton } from '@/components/print-button';
 import { BackLink, PageHeader, PageShell, Section } from '@/components/page-shell';
 
@@ -98,7 +99,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
               <p className="text-xs whitespace-pre-line text-muted-foreground">{data.issuer.address}</p>
             )}
             {data.issuer.taxId && (
-              <p className="num text-xs text-muted-foreground">{t('شناسهٔ مالیاتی: {id}', { id: data.issuer.taxId })}</p>
+              <p className="text-xs text-muted-foreground">{t('شناسهٔ مالیاتی: {id}', { id: ltr(data.issuer.taxId) })}</p>
             )}
             {(data.issuer.phone || data.issuer.email) && (
               <p className="text-xs text-muted-foreground">

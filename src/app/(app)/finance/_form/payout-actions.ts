@@ -12,6 +12,7 @@ import { LedgerValidationError } from '@/domain/ledger/amounts';
 import { AccountError, accountMessage } from '@/domain/finance/accounts';
 import { RecurringPayError, type ExpenseKind } from '@/domain/finance/recurring';
 import { getT } from '@/i18n/server';
+import { ltr } from '@/i18n/bidi';
 
 /** اقدام‌های پرداخت‌ها و هزینه‌های دوره‌ای. */
 
@@ -23,7 +24,7 @@ export interface PayoutState {
 async function explain(error: unknown, fallback: string): Promise<string> {
   const t = await getT();
   if (error instanceof FiscalPeriodLockedError) {
-    return t('این دوره تا تاریخ {date} قفل (بسته) شده و قابل تغییر نیست.', { date: error.lockDate });
+    return t('این دوره تا تاریخ {date} قفل (بسته) شده و قابل تغییر نیست.', { date: ltr(error.lockDate) });
   }
   if (error instanceof RecurringPayError) {
     return error.code === 'already_paid'

@@ -2,6 +2,40 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.88.1]
+
+### Fixed
+
+- **Phrases with numbers were read backwards in Persian.** The `num` class makes its whole element left-to-right, and it sat around 23 translated sentences instead of around their values. A sentence that starts with a number was scrambled. For example, the pager under every paged table read «از ۵۷ ردیف ۱–۲۰» instead of «۱–۲۰ از ۵۷ ردیف», and task counts showed «تسک ۰/۴». The affected places were:
+  - the table and card pagers, and the pagers in the ledger and team filters;
+  - task counts on project cards, the project page and the task table;
+  - «{n} مورد» on the focus dashboard and the seconds choices in Settings → System.
+
+  `num` now sits on the value only.
+- **Bank card numbers and IBANs in member payouts** had their groups in reverse order. The label and the number are now separate, and the number stays in one piece.
+- **Dates inside Persian sentences** showed as «01-10-2026», unlike everywhere else in the app. They now show as «2026-10-01» through a new `ltr()` helper, which isolates a value inside a translated string. This covers:
+  - task deadlines;
+  - the closed-period notices in the ledger, reports and Settings;
+  - the hours log;
+  - the "last edited" line on tasks;
+  - the fiscal "last change" line;
+  - the invoice's tax ID;
+  - the saved-card line in the profile;
+  - the report's date range.
+- The availability tables in the Availability page and in a project's Manage tab keep their times left-to-right without flipping the whole cell.
+- The date picker field has the same border as the other fields and pickers.
+- The expandable rows in «امور مالی» (member and client money) use the shadcn `Collapsible` instead of a hand-made toggle.
+
+### Added
+
+- A test fails if a translated sentence is put inside `num` again. DESIGN.md records the rule under Typography.
+
+### Removed
+
+- An unused select class in Settings.
+
+---
+
 ## [1.88.0]
 
 ### Added

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/i18n/client';
+import { ltr } from '@/i18n/bidi';
 import { SearchInput } from '@/components/ui/search-input';
 
 /**
@@ -88,9 +89,9 @@ export function TablePager({ view }: { view: TableView<unknown> }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-      <span className="num">
+      <span className="tabular-nums">
         {tr('{shown} از {total} ردیف', {
-          shown: `${(view.page - 1) * view.perPage + 1}–${Math.min(view.page * view.perPage, view.matched)}`,
+          shown: ltr(`${(view.page - 1) * view.perPage + 1}–${Math.min(view.page * view.perPage, view.matched)}`),
           total: view.matched,
         })}
       </span>

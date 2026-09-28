@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { ltr } from '@/i18n/bidi';
 import { Panel } from '@/components/page-shell';
 
 function Submit() {
@@ -63,7 +64,7 @@ export function BankCard({
       </div>
 
       {card && (
-        <p className="num text-xs text-muted-foreground">{tr('کارتِ ثبت‌شده: {card}', { card: maskCard(card) })}</p>
+        <p className="text-xs text-muted-foreground">{tr('کارتِ ثبت‌شده: {card}', { card: ltr(maskCard(card)) })}</p>
       )}
 
       <div className="flex items-center gap-3">

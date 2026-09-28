@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
+import { ltr } from '@/i18n/bidi';
 import { Download, TriangleAlert, CircleAlert } from 'lucide-react';
 import { isExportableTab } from '@/domain/reports/export';
 import { monthlyAverage, reportQuery, withBars, type RangePreset } from '@/domain/reports/filters';
@@ -864,7 +865,7 @@ export function ReportsView({
             {/* پورتِ اعلانِ قفل: «دوره تا تاریخ … قفل است». */}
             <p className="text-xs text-muted-foreground">
               {data.closings.lockDate
-                ? tr('دوره تا تاریخ {date} قفل است.', { date: data.closings.lockDate })
+                ? tr('دوره تا تاریخ {date} قفل است.', { date: ltr(data.closings.lockDate) })
                 : tr('در حالِ حاضر هیچ دوره‌ای قفل نیست؛ خلاصه‌های زیر ممکن است با دفترِ فعلی نخوانند.')}
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -876,11 +877,11 @@ export function ReportsView({
                   <Link
                     key={d}
                     href={`/reports?tab=closings&date=${d}`}
-                    className={`num rounded-md border px-3 py-1 text-xs ${
+                    className={`rounded-md border px-3 py-1 text-xs ${
                       d === data.closings.active ? 'border-primary font-medium' : 'hover:bg-muted'
                     }`}
                   >
-                    {d}
+                    <span className="num">{d}</span>
                     {stale && <span className="ms-1 text-amber-700 dark:text-amber-500">({tr('کهنه')})</span>}
                   </Link>
                 );

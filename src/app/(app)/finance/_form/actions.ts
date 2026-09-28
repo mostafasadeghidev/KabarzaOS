@@ -12,6 +12,7 @@ import { LedgerValidationError, TransferValidationError } from '@/domain/ledger/
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { removeFiles, storeReceipt } from '@/server/files/service';
 import { getT } from '@/i18n/server';
+import { ltr } from '@/i18n/bidi';
 import { MissingRateError } from '@/domain/ledger/amounts';
 import { assertUnitPayable, markUnitPaid, makeRecurringFromEntry, PayoutError } from '@/server/finance/payouts';
 
@@ -72,7 +73,7 @@ async function explain(error: unknown, fallback: string): Promise<string> {
   // دلیلِ ردِ فایل به کاربر گفته می‌شود، نه یک پیامِ کلی.
   if (error instanceof FileRejected) return rejectMessage(error.reason);
   if (error instanceof FiscalPeriodLockedError) {
-    return t('این دوره تا تاریخ {date} قفل (بسته) شده و قابل تغییر نیست.', { date: error.lockDate });
+    return t('این دوره تا تاریخ {date} قفل (بسته) شده و قابل تغییر نیست.', { date: ltr(error.lockDate) });
   }
   if (error instanceof LedgerValidationError) {
     if (error.code === 'note_required') {

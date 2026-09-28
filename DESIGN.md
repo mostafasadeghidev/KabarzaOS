@@ -76,6 +76,16 @@ tracking breaks the joined letters. Hierarchy comes from size and weight.
 Weight is the main lever: 700 for titles, 600 for panel titles and emphasis,
 500 for labels and buttons, 400 for reading.
 
+**Numbers inside sentences.** `num` makes its element left-to-right, so it goes
+on the value alone, never on a sentence. A Persian phrase inside `num` is read
+backwards: «۱–۲۰ از ۵۷ ردیف» became «از ۵۷ ردیف ۱–۲۰». A value that is
+interpolated into a translated string and has separators inside it (a range,
+a date, a date and time, a card number or IBAN) is wrapped with `ltr()` from
+`@/i18n/bidi`, so the sentence keeps the language's direction and the value
+stays in one piece. A single number needs neither; use `tabular-nums` when the
+digits should line up. `src/i18n/__tests__/bidi.test.ts` fails if a
+translated sentence ends up inside `num`.
+
 ## 4. Space
 
 - 4 px base unit.

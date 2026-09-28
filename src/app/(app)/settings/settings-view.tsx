@@ -3,10 +3,6 @@
 import { useState, useTransition } from 'react';
 import { ChevronDown, Star } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-const tagSelectClass =
-  'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none'
-  + ' focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
-
 import { CatalogSection } from './catalog-section';
 import { CompanySection } from './company-section';
 import { Separator } from '@/components/ui/separator';

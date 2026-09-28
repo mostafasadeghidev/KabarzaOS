@@ -90,7 +90,7 @@ export function TaskTable({
               ))}
             </SearchableSelect>
           )}
-          <span className="num text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground tabular-nums">
             {tr('{n} تسک', { n: visible.length })}
           </span>
         </div>

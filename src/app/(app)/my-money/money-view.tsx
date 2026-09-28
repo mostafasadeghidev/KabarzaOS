@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ChevronDown, ChevronLeft, Paperclip } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { MyClientProject, MyMemberProject, MyPaymentLine } from '@/server/finance/my-money';
 import { format } from '@/domain/money/money';
 import { Badge } from '@/components/ui/badge';
@@ -110,19 +110,16 @@ function Row({
   children: React.ReactNode;
 }) {
   const t = useT();
-  const [open, setOpen] = useState(false);
+  // ⚠️ Collapsible ِ shadcn، نه دکمهٔ دست‌سازِ `aria-expanded`: همان رفتار، و
+  // aria-controls و حالتِ باز/بسته را خودش درست می‌گذارد.
   return (
-    <div className="rounded-lg border bg-card">
+    <Collapsible className="group/row rounded-lg border bg-card">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 text-sm font-medium hover:text-primary"
-          aria-expanded={open}
-        >
-          {open ? <ChevronDown className="size-4" /> : <ChevronLeft className="size-4 ltr:rotate-180" />}
+        <CollapsibleTrigger className="flex items-center gap-1.5 rounded-sm text-sm font-medium outline-none hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50">
+          <ChevronDown className="hidden size-4 group-data-[state=open]/row:block" />
+          <ChevronLeft className="size-4 ltr:rotate-180 group-data-[state=open]/row:hidden" />
           {title}
-        </button>
+        </CollapsibleTrigger>
         <StatusChip status={status} />
         <div className="ms-auto flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
           {chips.map((c) => (
@@ -137,8 +134,8 @@ function Row({
           </Link>
         </div>
       </div>
-      {open && <div className="grid gap-3 border-t bg-muted/30 p-3">{children}</div>}
-    </div>
+      <CollapsibleContent className="grid gap-3 border-t bg-muted/30 p-3">{children}</CollapsibleContent>
+    </Collapsible>
   );
 }
 

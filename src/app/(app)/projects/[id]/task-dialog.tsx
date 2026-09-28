@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
+import { ltr } from '@/i18n/bidi';
 import { formatDateTime } from '@/i18n/datetime';
 import { useConfirm } from '@/components/ui/confirm';
 import { ClaimTaskButton } from '@/app/(app)/tasks/inbox-claim';
@@ -161,7 +162,7 @@ export function TaskDialog({
                 <span className="text-xs text-muted-foreground">{tr('مسئول: {name}', { name: task.assigneeName })}</span>
               )}
               {task.dueDate && (
-                <span className="num text-xs text-muted-foreground">{tr('ددلاین {date}', { date: task.dueDate })}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">{tr('ددلاین {date}', { date: ltr(task.dueDate) })}</span>
               )}
             </div>
 
@@ -188,7 +189,7 @@ export function TaskDialog({
               <p className="text-xs text-muted-foreground">
                 {tr('آخرین ویرایش توسط {name} · {at}', {
                   name: task.updatedByName ?? '',
-                  at: when(task.updatedAt, tz),
+                  at: ltr(when(task.updatedAt, tz)),
                 })}
               </p>
             )}

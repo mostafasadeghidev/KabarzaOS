@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { ltr } from '@/i18n/bidi';
 import { useConfirm } from '@/components/ui/confirm';
 import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
@@ -149,7 +150,7 @@ export function HoursView({ data }: { data: HoursData }) {
             {t('{hours} روی «{project}» شمرده شد ({date}).', {
               hours: hoursLabel(data.pending.minutes),
               project: data.pending.projectTitle ?? t('کارِ عمومی'),
-              date: data.pending.logDate,
+              date: ltr(data.pending.logDate),
             })}
             {' '}{t('چون بیش از ۵ ساعت است خودکار ثبت نشده — شاید یادتان رفته متوقفش کنید.')}
           </p>
@@ -366,7 +367,7 @@ export function HoursView({ data }: { data: HoursData }) {
       )}
 
       {editing && (
-        <Panel title={tr('ویرایشِ ثبتِ {date}', { date: editing.logDate })}>
+        <Panel title={tr('ویرایشِ ثبتِ {date}', { date: ltr(editing.logDate) })}>
           {/* پورتِ ویرایشِ درون‌خطیِ افزونه: تاریخ، پروژه، ساعت، دقیقه، توضیح. */}
           <form action={edit} className="flex flex-wrap items-end gap-2">
             <input type="hidden" name="logId" value={editing.id} />

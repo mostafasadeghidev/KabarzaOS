@@ -140,7 +140,8 @@ export function DatePicker({
             size={size}
             disabled={disabled}
             aria-label={ariaLabel}
-            className={cn('w-full justify-between font-normal', !current && 'text-muted-foreground')}
+            // `border-input`: همان مرزِ فیلدها و انتخابگرها (DESIGN.md §۷)، نه مرزِ کم‌رنگ‌ترِ دکمهٔ outline.
+            className={cn('w-full justify-between border-input font-normal', !current && 'text-muted-foreground')}
           >
             <span className={cn('truncate', current && 'num')}>{current || placeholder || '—'}</span>
             <CalendarIcon className="opacity-60" />

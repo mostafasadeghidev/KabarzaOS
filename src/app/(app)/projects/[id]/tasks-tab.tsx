@@ -17,6 +17,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useT } from '@/i18n/client';
+import { ltr } from '@/i18n/bidi';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -463,7 +464,7 @@ export function TasksTab({
             <div className="mt-1.5 flex flex-wrap items-center gap-3">
               <Assignee task={t} />
               {t.dueDate && (
-                <span className="num text-xs text-muted-foreground">{tr('ددلاین {date}', { date: t.dueDate })}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">{tr('ددلاین {date}', { date: ltr(t.dueDate) })}</span>
               )}
               <span data-stop onClick={(e) => e.stopPropagation()}>
                 <ClaimButton

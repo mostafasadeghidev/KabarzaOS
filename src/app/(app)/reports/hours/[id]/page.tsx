@@ -92,7 +92,7 @@ export default async function MemberHoursPage({
           <>
             {data.member.email}
             {/* پورتِ برچسبِ بازه زیرِ نام: «از … تا …» / «کل دوره». */}
-            <span className="num ms-2">· {rangeLabel(range, t)}</span>
+            <span className="ms-2">· {rangeLabel(range, t)}</span>
           </>
         )}
       />

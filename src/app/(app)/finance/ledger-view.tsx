@@ -27,6 +27,7 @@ import {
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { ltr } from '@/i18n/bidi';
 import { LedgerFilter, type LedgerPaging } from './ledger-filter';
 import { TableSearch, useTableView } from '@/components/ui/table-search';
 import { useConfirm } from '@/components/ui/confirm';
@@ -267,7 +268,7 @@ export function LedgerView({
           <Lock />
           <AlertDescription>
             {tr('دورهٔ مالی تا {date} بسته است؛ ردیف‌های آن بازه تغییر نمی‌کنند.', {
-              date: lockDate,
+              date: ltr(lockDate),
             })}
             {periodScoped && (
               <a href={`/finance?account=${accountId}&all=1`} className="ms-auto underline">

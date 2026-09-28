@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/i18n/client';
+import { ltr } from '@/i18n/bidi';
 
 /**
  * صفحه‌بندی برای فهرست‌های **کارتی** — پروژه‌ها، اعضا، کارفرمایان.
@@ -63,8 +64,8 @@ export function CardPager({
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
-      <span className="num">
-        {t('{shown} از {total} ردیف', { shown: `${from}–${to}`, total })}
+      <span className="tabular-nums">
+        {t('{shown} از {total} ردیف', { shown: ltr(`${from}–${to}`), total })}
       </span>
       <Button
         size="sm" variant="outline" className="h-7 px-2"

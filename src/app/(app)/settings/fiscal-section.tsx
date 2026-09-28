@@ -9,6 +9,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
+import { ltr } from '@/i18n/bidi';
 import { formatDateTime } from '@/i18n/datetime';
 import { format } from '@/domain/money/money';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -65,7 +66,7 @@ export function FiscalSection({
         {lockDate ? (
           <p className="text-sm">
             {tr('دوره تا {date} بسته است؛ ردیف‌های آن بازه تغییر نمی‌کنند.', {
-              date: lockDate,
+              date: ltr(lockDate),
             })}
           </p>
         ) : (
@@ -124,7 +125,7 @@ export function FiscalSection({
           {lockDate && (
             <p className="text-xs text-amber-700 dark:text-amber-500">
               {tr('قفلِ فعلی روی {date} است؛ تاریخی قدیمی‌تر از آن، قفل را عقب نمی‌برد.', {
-                date: lockDate,
+                date: ltr(lockDate),
               })}
             </p>
           )}
@@ -133,9 +134,9 @@ export function FiscalSection({
             <Submit />
           </div>
           {closing?.lastChange && (
-            <p className="num text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {tr('آخرین تغییر: {date} — {who}', {
-                date: formatDateTime(closing.lastChange.at, tz),
+                date: ltr(formatDateTime(closing.lastChange.at, tz)),
                 who: closing.lastChange.by || '—',
               })}
             </p>

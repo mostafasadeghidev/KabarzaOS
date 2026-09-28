@@ -240,7 +240,7 @@ export function ProjectCard({
               {percent}%
             </b>
           </div>
-          <small className="num text-[11px] text-muted-foreground">
+          <small className="text-[11px] text-muted-foreground tabular-nums">
             {tr('{done}/{total} تسک', { done: project.doneTaskCount, total: project.totalTaskCount })}
           </small>
         </Link>

@@ -49,7 +49,6 @@ function Seconds({
       id={id}
       name={name}
       defaultValue={value}
-      className="num"
     >
       {choices.map((c) => (
         <NativeSelectOption key={c} value={c}>{tr('{n} ثانیه', { n: c })}</NativeSelectOption>
@@ -95,7 +94,7 @@ function HealthCard({ health }: { health: SchedulerHealth }) {
         <Activity className="size-4" />
         {tr('زمان‌بند')}
       </p>
-      <p className="num text-sm">
+      <p className="text-sm tabular-nums">
         {ago === null
           ? tr('تا حالا اجرا نشده است.')
           : tr('آخرین اجرا: {value} {unit} پیش', { value: ago.value, unit: unitLabel ?? '' })}
