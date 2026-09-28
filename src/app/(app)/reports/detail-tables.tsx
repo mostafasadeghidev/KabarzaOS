@@ -34,31 +34,32 @@ export interface PaymentLine {
 function Lines({ lines, showNote }: { lines: PaymentLine[]; showNote: boolean }) {
   const t = useT();
   if (lines.length === 0) return null;
+  // جدولِ مشترکِ بی‌قاب (زیرِ ردیفِ پروژه)، نه جدولِ خام — همان سرستون و فاصله‌ها، ریزتر.
   return (
-    <table className="mt-1 w-full text-xs text-muted-foreground">
-      <thead>
-        <tr>
-          <th className="text-start font-normal">{t("تاریخ")}</th>
-          <th className="text-start font-normal">{t("مبلغ")}</th>
-          {showNote && <th className="text-start font-normal">{t("شرح")}</th>}
-          <th className="text-start font-normal">{t("رسید")}</th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table frame={false} className="mt-1 text-xs">
+      <TableHeader>
+        <TableRow>
+          <TableHead>{t("تاریخ")}</TableHead>
+          <TableHead>{t("مبلغ")}</TableHead>
+          {showNote && <TableHead>{t("شرح")}</TableHead>}
+          <TableHead>{t("رسید")}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {lines.map((l, i) => (
-          <tr key={i}>
-            <td className="num" dir="ltr">{l.date ?? '—'}</td>
-            <td className="num">{format(l.amount)} {l.currencyCode ?? ''}</td>
-            {showNote && <td>{l.note || '—'}</td>}
-            <td>
+          <TableRow key={i}>
+            <TableCell className="num text-muted-foreground" dir="ltr">{l.date ?? '—'}</TableCell>
+            <TableCell className="num text-muted-foreground">{format(l.amount)} {l.currencyCode ?? ''}</TableCell>
+            {showNote && <TableCell className="text-muted-foreground">{l.note || '—'}</TableCell>}
+            <TableCell className="text-muted-foreground">
               {(l.receiptIds?.length ?? 0) > 0
                 ? <a href={`/api/files/${l.receiptIds![0]}`} target="_blank" rel="noopener noreferrer" className="underline">{t("مشاهده")}</a>
                 : '—'}
-            </td>
-          </tr>
+            </TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }
 

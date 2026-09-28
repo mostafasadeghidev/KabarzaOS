@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.89.1]
+
+### Changed
+
+- The last hand-made list rows are `Item`s too: the reminders list in Meetings and the read-only task list in the bidder view.
+- The last two raw tables in the app use the shared `Table`: the field/value list in the ledger entry dialog and the payment lines under a project in the member and client reports. The invoice keeps its own tables because it is a printed document.
+- Two internal links (the closed-period rows in the ledger, «مرور کامل در حسابداری» in Settings → Fiscal) navigate in place instead of reloading the page.
+
 ## [1.89.0]
 
 ### Added

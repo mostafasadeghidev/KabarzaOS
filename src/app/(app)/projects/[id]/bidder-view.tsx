@@ -2,6 +2,7 @@ import { Download, FileText, Link2 } from 'lucide-react';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
 import { t } from '@/i18n/server';
 import { PageHeader, PageShell, Section } from '@/components/page-shell';
+import { Item, ItemContent, ItemDescription, ItemTitle } from '@/components/ui/item';
 import {
   Attachment, AttachmentAction, AttachmentActions, AttachmentContent, AttachmentMedia,
   AttachmentTitle, AttachmentTrigger,
@@ -47,14 +48,18 @@ export function BidderView({ data }: { data: BidderData }) {
         >
           <ul className="grid gap-2">
             {data.tasks.map((t) => (
-              <li key={t.id} className="rounded-lg border bg-card p-3">
-                <p className="text-sm font-medium">{t.title}</p>
-                {t.description && (
-                  <p className="mt-1 text-xs whitespace-pre-line text-muted-foreground">
-                    {t.description}
-                  </p>
-                )}
-              </li>
+              <Item key={t.id} asChild variant="outline" size="sm" className="p-3">
+                <li>
+                  <ItemContent>
+                    <ItemTitle>{t.title}</ItemTitle>
+                    {t.description && (
+                      <ItemDescription className="line-clamp-none text-xs whitespace-pre-line">
+                        {t.description}
+                      </ItemDescription>
+                    )}
+                  </ItemContent>
+                </li>
+              </Item>
             ))}
           </ul>
         </Section>

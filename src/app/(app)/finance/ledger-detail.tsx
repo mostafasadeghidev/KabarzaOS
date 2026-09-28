@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Lightbox } from '@/components/lightbox';
 import { Hint } from '@/components/ui/tooltip';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { formatDateTime } from '@/i18n/datetime';
 import { useT, useTimeZone } from '@/i18n/client';
 
@@ -117,16 +118,17 @@ export function LedgerDetail({
 
           {entry && (
             <div className="grid gap-4 text-sm">
-              <table className="w-full">
-                <tbody>
+              {/* جدولِ مشترک (بی‌قاب، داخلِ دیالوگ)، نه جدولِ خام — همان خط‌ها و فاصله‌ها. */}
+              <Table frame={false}>
+                <TableBody>
                   {rows.map(([label, value]) => (
-                    <tr key={label} className="border-t first:border-t-0">
-                      <th className="w-36 py-1.5 pe-3 text-start font-normal text-muted-foreground">{label}</th>
-                      <td className="py-1.5 break-words">{value}</td>
-                    </tr>
+                    <TableRow key={label}>
+                      <TableCell className="w-36 ps-0 text-muted-foreground">{label}</TableCell>
+                      <TableCell className="pe-0 break-words whitespace-normal">{value}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
 
               {entry.receipts.length > 0 && (
                 <div className="grid gap-2">

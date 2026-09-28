@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from '@/components/ui/item';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -269,32 +270,35 @@ export function MeetingsView({
             <EmptyState title={t("یادآوری ندارید.")} />
           ) : (
             <ul className="grid gap-2">
+              {/* ردیفِ Item ِ shadcn — سطحِ سفید روی زمینه؛ متن، زمان، و دکمه‌ها در جایگاهِ خودشان. */}
               {reminders.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3">
-                  <div className="min-w-0">
-                    <p className="text-sm">{r.body}</p>
-                    <p className="num mt-0.5 text-xs text-muted-foreground">{when(r.remindAt, tz)}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {(r.leadMinutes ?? [0]).map((m) => leadLabel(m, tr)).join(tr('، '))}
-                    </span>
-                    <Badge variant={r.isSent ? 'success' : 'secondary'}>
-                      {r.isSent ? tr('ارسال‌شده') : tr('در انتظار')}
-                    </Badge>
-                    <IconButton
-                      variant="ghost"
-                      className="size-7 text-muted-foreground hover:text-destructive"
-                      label={t("حذفِ یادآور")}
-                      disabled={pending}
-                      onClick={async () => {
-                        if (await confirm({ title: t('این یادآور حذف شود؟') })) run(() => deleteReminderAction(r.id));
-                      }}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </IconButton>
-                  </div>
-                </li>
+                <Item key={r.id} asChild variant="outline" size="sm" className="gap-3 p-3">
+                  <li>
+                    <ItemContent className="gap-0.5">
+                      <ItemTitle className="font-normal">{r.body}</ItemTitle>
+                      <ItemDescription className="num text-xs">{when(r.remindAt, tz)}</ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <span className="text-xs text-muted-foreground">
+                        {(r.leadMinutes ?? [0]).map((m) => leadLabel(m, tr)).join(tr('، '))}
+                      </span>
+                      <Badge variant={r.isSent ? 'success' : 'secondary'}>
+                        {r.isSent ? tr('ارسال‌شده') : tr('در انتظار')}
+                      </Badge>
+                      <IconButton
+                        variant="ghost"
+                        className="size-7 text-muted-foreground hover:text-destructive"
+                        label={t("حذفِ یادآور")}
+                        disabled={pending}
+                        onClick={async () => {
+                          if (await confirm({ title: t('این یادآور حذف شود؟') })) run(() => deleteReminderAction(r.id));
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </IconButton>
+                    </ItemActions>
+                  </li>
+                </Item>
               ))}
             </ul>
           )}

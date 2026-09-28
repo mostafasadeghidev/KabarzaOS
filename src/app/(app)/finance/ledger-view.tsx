@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { ArrowLeftRight, CircleAlert, Lock, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -272,9 +273,9 @@ export function LedgerView({
               date: ltr(lockDate),
             })}
             {periodScoped && (
-              <a href={`/finance?account=${accountId}&all=1`} className="ms-auto underline">
+              <Link href={`/finance?account=${accountId}&all=1`} className="ms-auto underline">
                 {tr('نمایشِ ردیف‌های دورهٔ بسته')}
-              </a>
+              </Link>
             )}
           </AlertDescription>
         </Alert>

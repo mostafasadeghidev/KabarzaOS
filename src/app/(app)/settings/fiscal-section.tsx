@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Lock, Unlock } from 'lucide-react';
@@ -81,7 +82,7 @@ export function FiscalSection({
         <Panel
           title={t("ماندهٔ فعلیِ حساب‌ها")}
           description={tr("با بستنِ دوره، همین ارقام برای هر حساب منجمد و در «گزارش‌ها» نگه داشته می‌شوند.")}
-          actions={<a href="/finance" className="text-xs text-muted-foreground hover:text-foreground">{t("مرور کامل در حسابداری")}</a>}
+          actions={<Link href="/finance" className="text-xs text-muted-foreground hover:text-foreground">{t("مرور کامل در حسابداری")}</Link>}
         >
           {closing.accounts.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("حسابی تعریف نشده.")}</p>
