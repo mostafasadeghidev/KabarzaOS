@@ -36,14 +36,15 @@
   --color-warning: oklch(0.75 0.16 70);
 
   /*
-   * سایدبار — همان کاغذِ زمینه: قاب و محتوا یک سطح‌اند و فقط کارت‌های سفید
-   * از آن بلند می‌شوند. سایدبارِ هم‌رنگ یعنی یک مرزِ کمتر.
+   * سایدبار — یک پله **تیره‌تر** از کاغذ، با خطی در لبهٔ داخلی: ابزار عقب
+   * می‌نشیند و محتوا جلو می‌آید (کارتِ سفید > کاغذ > سایدبار).
+   * ⚠️ هم‌رنگِ کاغذ بود (۱.۸۷.۰) و سایدبار و محتوا یک تکه دیده می‌شدند.
    */
-  --color-sidebar: oklch(0.971 0.003 70);
+  --color-sidebar: oklch(0.952 0.004 70);
   --color-sidebar-foreground: oklch(0.33 0.008 70);
   --color-sidebar-primary: oklch(0.54 0.17 254);
   --color-sidebar-primary-foreground: oklch(0.985 0 0);
-  --color-sidebar-accent: oklch(0.935 0.005 70);
+  --color-sidebar-accent: oklch(0.92 0.006 70);
   --color-sidebar-accent-foreground: oklch(0.21 0.004 70);
   --color-sidebar-border: oklch(0.918 0.005 70);
   --color-sidebar-ring: oklch(0.54 0.17 254);
@@ -85,17 +86,46 @@
 /*
  * سقفِ پهنای پوستهٔ برنامه — روی مانیتورهای بزرگ، صفحه از ۱۹۲۰ پیکسل
  * پهن‌تر نمی‌شود و وسط می‌نشیند.
- *
- * ⚠️ چرا یک متغیرِ جدا برای «تورفتگی»: سایدبار `position: fixed` است و به
- * لبهٔ پنجره می‌چسبد، نه به پوسته. اگر فقط به پوسته max-width می‌دادیم،
- * محتوا وسط می‌رفت و سایدبار کنارِ پنجره می‌ماند — با یک شکافِ خالی
- * بینشان. پس همان فاصله‌ای که پوسته را وسط می‌آورد، به سایدبار هم داده
- * می‌شود. روی پنجرهٔ باریک‌تر از سقف، `max(0px, …)` صفر می‌شود و هیچ‌چیز
- * عوض نمی‌شود.
  */
 :root {
   --shell-max: 1920px;
-  --shell-inset: max(0px, calc((100vw - var(--shell-max)) / 2));
+}
+
+/*
+ * سایدبارِ fixed کنارِ پوستهٔ وسط‌چین.
+ *
+ * ⚠️ سایدبار `position: fixed` است و به پنجره می‌چسبد، نه به پوسته. پس همان
+ * فاصله‌ای که پوسته را وسط می‌آورد به سایدبار هم داده می‌شود؛ روی پنجرهٔ
+ * باریک‌تر از سقف صفر است.
+ *
+ * ⚠️ قفلِ اسکرول (منوی حساب، دیالوگ، …): Radix نوارِ اسکرول را برمی‌دارد و
+ * جایش به `body` حاشیهٔ راست می‌دهد (`--removed-body-scroll-bar-size`) تا
+ * محتوا نپرد. ولی عنصرِ fixed از آن حاشیه خبر ندارد: کروم نوارِ صفحه را در
+ * راست‌چین هم سمتِ **راست** می‌کشد، پس سایدبارِ راست‌چین با برداشتنِ نوار
+ * ۱۵ پیکسل به راست می‌پرید. سایدبارِ راست همان حاشیه را خودش می‌گیرد.
+ *
+ * ⚠️ `margin` و نه `left`/`right`: آن دو در transition ِ جمع‌شدن‌اند و هر
+ * تغییرشان سُر می‌خورد. درصد در margin ِ عنصرِ fixed پهنای پنجره بدونِ نوار
+ * است؛ منهای حاشیهٔ قفل، در هر دو حالت همان پهنای `body` می‌شود.
+ *
+ * سایهٔ توپر رنگِ سایدبار را تا لبهٔ پنجره می‌کشد: هم کنارِ پوستهٔ وسط‌چین،
+ * هم نواری که نوارِ اسکرول هنگامِ قفل خالی می‌گذارد. آفست = پخش، پس چیزی
+ * به سمتِ محتوا نمی‌ریزد.
+ */
+[data-slot='sidebar'][data-side='left'] > [data-slot='sidebar-container'] {
+  margin-left: max(0px, calc((100% - var(--removed-body-scroll-bar-size, 0px) - var(--shell-max)) / 2));
+}
+[data-slot='sidebar'][data-side='right'] > [data-slot='sidebar-container'] {
+  margin-right: calc(
+    max(0px, calc((100% - var(--removed-body-scroll-bar-size, 0px) - var(--shell-max)) / 2))
+    + var(--removed-body-scroll-bar-size, 0px)
+  );
+}
+[data-slot='sidebar'][data-variant='sidebar'][data-side='left'] > [data-slot='sidebar-container'] {
+  box-shadow: -50vw 0 0 50vw var(--color-sidebar);
+}
+[data-slot='sidebar'][data-variant='sidebar'][data-side='right'] > [data-slot='sidebar-container'] {
+  box-shadow: 50vw 0 0 50vw var(--color-sidebar);
 }
 
 /*
@@ -135,11 +165,12 @@
    */
   --color-destructive: oklch(0.704 0.191 22.216);
 
-  --color-sidebar: oklch(0.205 0.003 70);
+  /* همان قاعده: سایدبار یک پله زیرِ زمینه، کارت یک پله رویش. */
+  --color-sidebar: oklch(0.18 0.003 70);
   --color-sidebar-foreground: oklch(0.88 0.005 70);
   --color-sidebar-primary: oklch(0.68 0.14 254);
   --color-sidebar-primary-foreground: oklch(0.2 0.004 70);
-  --color-sidebar-accent: oklch(0.275 0.005 70);
+  --color-sidebar-accent: oklch(0.25 0.005 70);
   --color-sidebar-accent-foreground: oklch(0.935 0.003 70);
   --color-sidebar-border: oklch(0.3 0.005 70);
   --color-sidebar-ring: oklch(0.68 0.14 254);
@@ -266,20 +297,20 @@
 
 /* ── دریا: خنثیِ سرد، فیروزه‌ای ──────────────────────────────────────── */
 [data-palette='ocean'] {
-  --color-background: oklch(0.971 0.005 240); --color-sidebar: oklch(0.971 0.005 240);
+  --color-background: oklch(0.971 0.005 240); --color-sidebar: oklch(0.952 0.006 240);
   --color-foreground: oklch(0.21 0.01 240); --color-muted: oklch(0.953 0.006 240);
   --color-muted-foreground: oklch(0.49 0.014 240); --color-border: oklch(0.918 0.007 240);
-  --color-accent: oklch(0.953 0.006 240); --color-sidebar-accent: oklch(0.935 0.008 240);
+  --color-accent: oklch(0.953 0.006 240); --color-sidebar-accent: oklch(0.92 0.009 240);
   --color-sidebar-border: oklch(0.918 0.007 240);
   --color-primary: oklch(0.52 0.12 220); --color-ring: oklch(0.52 0.12 220);
   --color-sidebar-primary: oklch(0.52 0.12 220);
 }
 .dark[data-palette='ocean'] {
-  --color-background: oklch(0.205 0.006 240); --color-sidebar: oklch(0.205 0.006 240);
+  --color-background: oklch(0.205 0.006 240); --color-sidebar: oklch(0.18 0.006 240);
   --color-foreground: oklch(0.935 0.004 240); --color-muted: oklch(0.275 0.007 240);
   --color-muted-foreground: oklch(0.715 0.012 240); --color-border: oklch(0.31 0.008 240);
   --color-card: oklch(0.24 0.007 240); --color-popover: oklch(0.265 0.007 240);
-  --color-accent: oklch(0.275 0.007 240); --color-sidebar-accent: oklch(0.275 0.008 240);
+  --color-accent: oklch(0.275 0.007 240); --color-sidebar-accent: oklch(0.25 0.008 240);
   --color-sidebar-border: oklch(0.3 0.008 240);
   --color-primary: oklch(0.68 0.12 220); --color-ring: oklch(0.68 0.12 220);
   --color-sidebar-primary: oklch(0.68 0.12 220);
@@ -287,20 +318,20 @@
 
 /* ── جنگل: خنثیِ سبزفام، سبزِ خاموش ──────────────────────────────────── */
 [data-palette='forest'] {
-  --color-background: oklch(0.971 0.005 150); --color-sidebar: oklch(0.971 0.005 150);
+  --color-background: oklch(0.971 0.005 150); --color-sidebar: oklch(0.952 0.006 150);
   --color-foreground: oklch(0.21 0.01 150); --color-muted: oklch(0.953 0.006 150);
   --color-muted-foreground: oklch(0.49 0.014 150); --color-border: oklch(0.918 0.007 150);
-  --color-accent: oklch(0.953 0.006 150); --color-sidebar-accent: oklch(0.935 0.008 150);
+  --color-accent: oklch(0.953 0.006 150); --color-sidebar-accent: oklch(0.92 0.009 150);
   --color-sidebar-border: oklch(0.918 0.007 150);
   --color-primary: oklch(0.52 0.12 155); --color-ring: oklch(0.52 0.12 155);
   --color-sidebar-primary: oklch(0.52 0.12 155);
 }
 .dark[data-palette='forest'] {
-  --color-background: oklch(0.205 0.006 150); --color-sidebar: oklch(0.205 0.006 150);
+  --color-background: oklch(0.205 0.006 150); --color-sidebar: oklch(0.18 0.006 150);
   --color-foreground: oklch(0.935 0.004 150); --color-muted: oklch(0.275 0.007 150);
   --color-muted-foreground: oklch(0.715 0.012 150); --color-border: oklch(0.31 0.008 150);
   --color-card: oklch(0.24 0.007 150); --color-popover: oklch(0.265 0.007 150);
-  --color-accent: oklch(0.275 0.007 150); --color-sidebar-accent: oklch(0.275 0.008 150);
+  --color-accent: oklch(0.275 0.007 150); --color-sidebar-accent: oklch(0.25 0.008 150);
   --color-sidebar-border: oklch(0.3 0.008 150);
   --color-primary: oklch(0.66 0.13 155); --color-ring: oklch(0.66 0.13 155);
   --color-sidebar-primary: oklch(0.66 0.13 155);
@@ -308,20 +339,20 @@
 
 /* ── غروب: خنثیِ گرم‌تر، نارنجیِ سوخته ───────────────────────────────── */
 [data-palette='sunset'] {
-  --color-background: oklch(0.971 0.007 40); --color-sidebar: oklch(0.971 0.007 40);
+  --color-background: oklch(0.971 0.007 40); --color-sidebar: oklch(0.952 0.009 40);
   --color-foreground: oklch(0.21 0.014 40); --color-muted: oklch(0.953 0.008 40);
   --color-muted-foreground: oklch(0.49 0.02 40); --color-border: oklch(0.918 0.01 40);
-  --color-accent: oklch(0.953 0.008 40); --color-sidebar-accent: oklch(0.935 0.011 40);
+  --color-accent: oklch(0.953 0.008 40); --color-sidebar-accent: oklch(0.92 0.012 40);
   --color-sidebar-border: oklch(0.918 0.01 40);
   --color-primary: oklch(0.55 0.16 40); --color-ring: oklch(0.55 0.16 40);
   --color-sidebar-primary: oklch(0.55 0.16 40);
 }
 .dark[data-palette='sunset'] {
-  --color-background: oklch(0.205 0.008 40); --color-sidebar: oklch(0.205 0.008 40);
+  --color-background: oklch(0.205 0.008 40); --color-sidebar: oklch(0.18 0.008 40);
   --color-foreground: oklch(0.935 0.006 40); --color-muted: oklch(0.275 0.01 40);
   --color-muted-foreground: oklch(0.715 0.017 40); --color-border: oklch(0.31 0.011 40);
   --color-card: oklch(0.24 0.01 40); --color-popover: oklch(0.265 0.01 40);
-  --color-accent: oklch(0.275 0.01 40); --color-sidebar-accent: oklch(0.275 0.011 40);
+  --color-accent: oklch(0.275 0.01 40); --color-sidebar-accent: oklch(0.25 0.011 40);
   --color-sidebar-border: oklch(0.3 0.011 40);
   --color-primary: oklch(0.7 0.15 45); --color-ring: oklch(0.7 0.15 45);
   --color-sidebar-primary: oklch(0.7 0.15 45);
@@ -329,20 +360,20 @@
 
 /* ── ارغوان: خنثیِ بنفش‌فام، بنفش ────────────────────────────────────── */
 [data-palette='violet'] {
-  --color-background: oklch(0.971 0.006 300); --color-sidebar: oklch(0.971 0.006 300);
+  --color-background: oklch(0.971 0.006 300); --color-sidebar: oklch(0.952 0.008 300);
   --color-foreground: oklch(0.21 0.012 300); --color-muted: oklch(0.953 0.007 300);
   --color-muted-foreground: oklch(0.49 0.017 300); --color-border: oklch(0.918 0.008 300);
-  --color-accent: oklch(0.953 0.007 300); --color-sidebar-accent: oklch(0.935 0.01 300);
+  --color-accent: oklch(0.953 0.007 300); --color-sidebar-accent: oklch(0.92 0.011 300);
   --color-sidebar-border: oklch(0.918 0.008 300);
   --color-primary: oklch(0.55 0.19 300); --color-ring: oklch(0.55 0.19 300);
   --color-sidebar-primary: oklch(0.55 0.19 300);
 }
 .dark[data-palette='violet'] {
-  --color-background: oklch(0.205 0.007 300); --color-sidebar: oklch(0.205 0.007 300);
+  --color-background: oklch(0.205 0.007 300); --color-sidebar: oklch(0.18 0.007 300);
   --color-foreground: oklch(0.935 0.005 300); --color-muted: oklch(0.275 0.008 300);
   --color-muted-foreground: oklch(0.715 0.014 300); --color-border: oklch(0.31 0.01 300);
   --color-card: oklch(0.24 0.008 300); --color-popover: oklch(0.265 0.008 300);
-  --color-accent: oklch(0.275 0.008 300); --color-sidebar-accent: oklch(0.275 0.01 300);
+  --color-accent: oklch(0.275 0.008 300); --color-sidebar-accent: oklch(0.25 0.01 300);
   --color-sidebar-border: oklch(0.3 0.01 300);
   --color-primary: oklch(0.68 0.17 300); --color-ring: oklch(0.68 0.17 300);
   --color-sidebar-primary: oklch(0.68 0.17 300);
@@ -350,20 +381,20 @@
 
 /* ── خاکستری: بی‌طرفِ کامل، بدونِ هیچ زاویهٔ رنگی ────────────────────── */
 [data-palette='slate'] {
-  --color-background: oklch(0.971 0 0); --color-sidebar: oklch(0.971 0 0);
+  --color-background: oklch(0.971 0 0); --color-sidebar: oklch(0.952 0 0);
   --color-foreground: oklch(0.21 0 0); --color-muted: oklch(0.953 0 0);
   --color-muted-foreground: oklch(0.49 0 0); --color-border: oklch(0.918 0 0);
-  --color-accent: oklch(0.953 0 0); --color-sidebar-accent: oklch(0.935 0 0);
+  --color-accent: oklch(0.953 0 0); --color-sidebar-accent: oklch(0.92 0 0);
   --color-sidebar-border: oklch(0.918 0 0);
   --color-primary: oklch(0.35 0 0); --color-ring: oklch(0.35 0 0);
   --color-sidebar-primary: oklch(0.35 0 0);
 }
 .dark[data-palette='slate'] {
-  --color-background: oklch(0.205 0 0); --color-sidebar: oklch(0.205 0 0);
+  --color-background: oklch(0.205 0 0); --color-sidebar: oklch(0.18 0 0);
   --color-foreground: oklch(0.935 0 0); --color-muted: oklch(0.275 0 0);
   --color-muted-foreground: oklch(0.715 0 0); --color-border: oklch(0.31 0 0);
   --color-card: oklch(0.24 0 0); --color-popover: oklch(0.265 0 0);
-  --color-accent: oklch(0.275 0 0); --color-sidebar-accent: oklch(0.275 0 0);
+  --color-accent: oklch(0.275 0 0); --color-sidebar-accent: oklch(0.25 0 0);
   --color-sidebar-border: oklch(0.3 0 0);
   --color-primary: oklch(0.87 0 0); --color-primary-foreground: oklch(0.16 0 0);
   --color-ring: oklch(0.87 0 0); --color-sidebar-primary: oklch(0.87 0 0);

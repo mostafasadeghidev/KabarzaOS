@@ -30,6 +30,10 @@ import { Badge } from '@/components/ui/badge';
  * از آنجا شروع می‌کند؛ سایدبارِ سمتِ راست در رابطِ چپ‌به‌راست حس می‌دهد
  * صفحه وارونه است (R-I18N-11).
  *
+ * ⚠️ `variant="sidebar"` (نه `inset`): سایدبار ستونی با رنگِ خودش و یک خط
+ * در لبهٔ داخلی است، کنارِ محتوا — نه قابی که محتوا داخلش بنشیند. با قابِ
+ * هم‌رنگ، سایدبار و محتوا یک تکه دیده می‌شدند.
+ *
  * R-RBAC-05 لایهٔ اول — فهرست روی سرور فیلتر می‌شود، نه در کلاینت.
  */
 
@@ -219,7 +223,7 @@ export function AppSidebar({
     .filter((g) => g.items.length > 0);
 
   return (
-    <Sidebar side={isRtl(locale) ? 'right' : 'left'} collapsible="icon" variant="inset">
+    <Sidebar side={isRtl(locale) ? 'right' : 'left'} collapsible="icon" variant="sidebar">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.87.1]
+
+### Changed
+
+- **The sidebar is its own column again.** Since 1.87.0 it had the same colour as the page canvas, so navigation and content read as one piece. It now sits one step below the canvas (`#f1efec` light, `#121110` dark) with a hairline on its inner edge. It is a full-height column beside the content instead of a frame around it, and it still collapses to icons. On screens wider than the 1920 px shell, its colour reaches the window edge. All six palettes follow the same steps, and sidebar text stays at 4.5:1 or better in both themes.
+- DESIGN.md describes the order of depth, from back to front: sidebar, canvas, surface, floating.
+
+### Fixed
+
+- **In right-to-left languages the sidebar jumped 15 px when a menu or dialog opened on a scrolling page**, for example the account menu at the bottom of the sidebar on the dashboard. Opening it hides the scrollbar. The content was compensated for the missing scrollbar but the fixed sidebar was not, because Chrome draws the page scrollbar on the right even in right-to-left. The sidebar now gets the same compensation, and the space the scrollbar leaves is filled with the sidebar colour, so nothing on the page moves.
+- On screens wider than 1935 px the sidebar sat 7.5 px off the edge of the centred content. Its offset was measured from the full window width, including the scrollbar.
+
+---
+
 ## [1.87.0]
 
 ### Changed

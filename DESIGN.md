@@ -30,7 +30,8 @@ reading.
 
 | Token | Light | Dark | Role |
 |---|---|---|---|
-| `background` | `#f7f5f3` warm paper | `#181716` | Page canvas, sidebar, app frame |
+| `background` | `#f7f5f3` warm paper | `#181716` | Page canvas behind the content |
+| `sidebar` | `#f1efec` | `#121110` | The sidebar, one step below the canvas |
 | `card`, `popover` | `#ffffff` | `#201f1d`, `#262523` | Every surface that holds content |
 | `foreground` | `#191816` | `#ebe9e7` | Titles and body text |
 | `muted-foreground` | `#645f5b` | `#a6a29e` | Descriptions, labels, metadata |
@@ -91,6 +92,11 @@ Weight is the main lever: 700 for titles, 600 for panel titles and emphasis,
 | 0 | White surface, 1 px hairline, no shadow | Cards, panels, framed tables, filter forms |
 | 1 | The component's own shadcn shadow | Only what floats: menus, popovers, dialogs, toasts |
 
+- Depth runs sidebar < canvas < surface < floating, in both themes. The
+  sidebar is its own column: one step darker than the canvas, with a hairline
+  on its inner edge, and its colour reaches the window edge on wide screens.
+  It is never the same colour as the canvas, because then the navigation and
+  the content read as one piece.
 - No gradients. No shadow on a flat card. No coloured borders except a
   panel's `tone="danger"` or `tone="warning"`.
 - A panel's title needs no divider line; padding separates it from the

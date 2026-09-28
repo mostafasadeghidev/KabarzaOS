@@ -197,8 +197,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     // ⚠️ سقفِ پهنا روی همین پوسته، نه روی هر صفحه: ۱۹۲۰ پیکسل و وسط‌چین
-    // (`--shell-max` در globals.css). سایدبارِ fixed هم با `--shell-inset`
-    // همان‌قدر جابه‌جا می‌شود — وگرنه محتوا وسط می‌رفت و سایدبار به لبهٔ
+    // (`--shell-max` در globals.css). سایدبارِ fixed هم همان‌جا همان‌قدر از
+    // لبهٔ پنجره فاصله می‌گیرد — وگرنه محتوا وسط می‌رفت و سایدبار به لبهٔ
     // پنجره می‌چسبید.
     <SidebarProvider className="mx-auto max-w-(--shell-max)">
       {/* R-I18N-14 — زبانِ **مؤثر** پاس می‌شود: انتخابِ خودِ کاربر، وگرنه
@@ -225,11 +225,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         onLocaleChange={setLocale}
         brand={{ name: brand.name?.trim() || 'KabarzaOS', logoFileId: brand.logoFileId }}
       />
-      {/*
-        ⚠️ قاب و محتوا هم‌رنگ‌اند (کاغذِ زمینه، DESIGN.md §۲)؛ سایهٔ دورِ محتوا
-        فقط یک لبهٔ اضافه روی همان کاغذ می‌کشید.
-      */}
-      <SidebarInset className="md:peer-data-[variant=inset]:shadow-none">
+      <SidebarInset>
         <header className="flex h-12 items-center gap-2 border-b px-4">
           <SidebarTrigger />
           <span className="text-sm font-medium">KabarzaOS</span>

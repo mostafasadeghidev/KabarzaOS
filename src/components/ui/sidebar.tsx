@@ -239,14 +239,13 @@ function Sidebar({
         className={cn(
           "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
           /**
-           * ⚠️ `--shell-inset` به‌جای صفر: پوستهٔ برنامه سقفِ پهنا دارد و
-           * وسط می‌نشیند، ولی این عنصر fixed است و به پنجره می‌چسبد. همان
-           * فاصله‌ای که پوسته را وسط می‌آورد اینجا هم اعمال می‌شود؛ روی
-           * پنجرهٔ معمولی صفر است و رفتار عوض نمی‌شود.
+           * ⚠️ فاصله از لبهٔ پنجره (پوستهٔ وسط‌چین و قفلِ اسکرول) با
+           * `margin` در globals.css ساخته می‌شود، نه این‌جا: `left`/`right`
+           * در transition هستند و هر تغییرشان ۲۰۰ میلی‌ثانیه سُر می‌خورد.
            */
           side === "left"
-            ? "left-(--shell-inset) group-data-[collapsible=offcanvas]:left-[calc(var(--shell-inset)-var(--sidebar-width))]" // rtl-physical
-            : "right-(--shell-inset) group-data-[collapsible=offcanvas]:right-[calc(var(--shell-inset)-var(--sidebar-width))]", // rtl-physical
+            ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]" // rtl-physical
+            : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]", // rtl-physical
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
