@@ -12,8 +12,11 @@ import {
 } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+  Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader,
+  TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import { Section } from '@/components/page-shell';
+import { cn } from '@/lib/utils';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
@@ -44,6 +47,8 @@ export interface Column<T> {
   header: string;
   cell: (row: T) => React.ReactNode;
   numeric?: boolean;
+  /** پهنای ستون (مثلاً `w-20`) — فقط در جدولِ `fixed` معنا دارد. */
+  className?: string;
 }
 
 export function CatalogSection<T extends { id: number }>({
@@ -57,6 +62,7 @@ export function CatalogSection<T extends { id: number }>({
   addLabel,
   rowActions,
   canDelete,
+  fixed = false,
 }: {
   title: string;
   description?: string;
@@ -71,6 +77,12 @@ export function CatalogSection<T extends { id: number }>({
   rowActions?: (row: T) => React.ReactNode;
   /** ردیفی که حذف ندارد (مثلاً تگِ سیستمی) — دکمه اصلاً کشیده نمی‌شود (پورتِ «delete link hidden for protected»). */
   canDelete?: (row: T) => boolean;
+  /**
+   * پهنای ثابتِ ستون‌ها. ⚠️ برای جدولی که محتوایش جا عوض می‌کند و خودِ جدول
+   * سرِ جایش می‌ماند (تگ‌ها: پنج نوع در یک جا): با چیدمانِ خودکار هر نوع
+   * پهنای ستون‌های خودش را می‌گرفت و با هر تعویض، سرستون‌ها جا عوض می‌کردند.
+   */
+  fixed?: boolean;
 }) {
   const tr = useT();
   const { show } = useToast();
@@ -87,12 +99,10 @@ export function CatalogSection<T extends { id: number }>({
   }, [state]);
 
   return (
-    <section className="grid gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold">{tr(title)}</h2>
-          {description && <p className="text-xs text-muted-foreground">{tr(description)}</p>}
-        </div>
+    <Section
+      title={tr(title)}
+      description={description ? tr(description) : undefined}
+      actions={(
         <Button
           size="sm"
           onClick={() => { setEditing(null); setOpen(true); }}
@@ -100,7 +110,8 @@ export function CatalogSection<T extends { id: number }>({
           <Plus className="size-4" />
           {tr(addLabel)}
         </Button>
-      </div>
+      )}
+    >
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
@@ -124,68 +135,67 @@ export function CatalogSection<T extends { id: number }>({
       {rows.length === 0 ? (
         <EmptyState title={t("موردی ثبت نشده")} />
       ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {/*
-                  ⚠️ سرستونِ عددی هم `numeric` می‌گیرد؛ بدونِ آن سرستون
-                  `text-start` می‌ماند و در رابطِ چپ‌به‌راست، عدد و عنوانش به
-                  دو لبهٔ ستون می‌رفتند — همان چیزی که در ۱.۷۴.۰ همه‌جا اصلاح شد.
-                */}
-                {columns.map((c) => (
-                  <TableHead key={c.header} numeric={c.numeric}>{tr(c.header)}</TableHead>
-                ))}
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow key={row.id}>
-                  {columns.map((c) => (c.numeric ? (
-                    <TableNumericCell key={c.header}>{c.cell(row)}</TableNumericCell>
-                  ) : (
-                    <TableCell key={c.header}>{c.cell(row)}</TableCell>
-                  )))}
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      {rowActions?.(row)}
-                      <IconButton
-                        variant="ghost"
-                        className="size-8"
-                        label={t("ویرایش")}
-                        onClick={() => { setEditing(row); setOpen(true); }}
-                      >
-                        <Pencil className="size-3.5" />
-                      </IconButton>
-                      {(canDelete?.(row) ?? true) && (
-                        <IconButton
-                          variant="ghost"
-                          className="size-8 text-muted-foreground hover:text-destructive"
-                          label={t("حذف")}
-                          disabled={pending}
-                          onClick={async () => {
-                            // پورتِ `confirm('حذف شود؟')` ِ هر ردیفِ کاتالوگ — حذفِ یک‌کلیکی نه.
-                            if (!(await confirm({ title: t('حذف شود؟') }))) return;
-                            startTransition(async () => {
-                              const result = await deleteAction(row);
-                              if (result.error) show(t(result.error), 'error');
-                              else show(t('حذف شد.'), 'success');
-                            });
-                          }}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </IconButton>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
+        // ⚠️ `min-w` فقط در حالتِ ثابت: ستونِ نام باقیِ عرض را می‌گیرد و روی
+        // موبایل به صفر می‌رسید؛ حالا جدول پیمایش می‌خورد و نام دیده می‌ماند.
+        <Table className={fixed ? 'min-w-[40rem] table-fixed' : undefined}>
+          <TableHeader>
+            <TableRow>
+              {/*
+                ⚠️ سرستونِ عددی هم `numeric` می‌گیرد؛ بدونِ آن سرستون
+                `text-start` می‌ماند و در رابطِ چپ‌به‌راست، عدد و عنوانش به
+                دو لبهٔ ستون می‌رفتند — همان چیزی که در ۱.۷۴.۰ همه‌جا اصلاح شد.
+              */}
+              {columns.map((c) => (
+                <TableHead key={c.header} numeric={c.numeric} className={c.className}>{tr(c.header)}</TableHead>
               ))}
-            </TableBody>
-          </Table>
-        </div>
+              {/* در حالتِ ثابت `w-px` یعنی یک پیکسل؛ پهنا باید صریح باشد. */}
+              <TableActionsHead className={fixed ? (rowActions ? 'w-32' : 'w-24') : undefined} />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.id}>
+                {columns.map((c) => (c.numeric ? (
+                  <TableNumericCell key={c.header}>{c.cell(row)}</TableNumericCell>
+                ) : (
+                  <TableCell key={c.header} className={cn(fixed && 'truncate')}>{c.cell(row)}</TableCell>
+                )))}
+                <TableActionsCell>
+                  {rowActions?.(row)}
+                  <IconButton
+                    variant="ghost"
+                    className="size-8"
+                    label={t("ویرایش")}
+                    onClick={() => { setEditing(row); setOpen(true); }}
+                  >
+                    <Pencil className="size-3.5" />
+                  </IconButton>
+                  {(canDelete?.(row) ?? true) && (
+                    <IconButton
+                      variant="ghost"
+                      className="size-8 text-muted-foreground hover:text-destructive"
+                      label={t("حذف")}
+                      disabled={pending}
+                      onClick={async () => {
+                        // پورتِ `confirm('حذف شود؟')` ِ هر ردیفِ کاتالوگ — حذفِ یک‌کلیکی نه.
+                        if (!(await confirm({ title: t('حذف شود؟') }))) return;
+                        startTransition(async () => {
+                          const result = await deleteAction(row);
+                          if (result.error) show(t(result.error), 'error');
+                          else show(t('حذف شد.'), 'success');
+                        });
+                      }}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </IconButton>
+                  )}
+                </TableActionsCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
-    </section>
+    </Section>
   );
 }
 

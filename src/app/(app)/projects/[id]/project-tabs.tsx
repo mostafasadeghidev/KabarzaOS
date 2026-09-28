@@ -18,7 +18,8 @@ import { MyMoneyTab, type MyMoneyData } from './my-money-tab';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
 import { useT } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TabPanel } from '@/components/page-shell';
+import { SectionHeader, TabPanel } from '@/components/page-shell';
+import { Separator } from '@/components/ui/separator';
 
 /**
  * هشت تبِ صفحهٔ پروژه — همان تب‌های مودالِ ویرایشِ نسخهٔ قبلی و به همان ترتیب:
@@ -256,12 +257,13 @@ export function ProjectTabs({
             />
           )}
           {data.myMoney && (
-            <section className="grid gap-3">
+            <section className="grid grid-cols-1 gap-3">
               {/* وقتی هر دو بخش هست، مرز لازم است: بالا پولِ پروژه، پایین پولِ من. */}
               {data.canSeePrice && (
-                <h3 className="border-t border-dashed pt-4 text-sm font-semibold">
-                  {tr(data.myMoney.isUnitBased ? 'کارکرد و پرداختِ من' : 'پرداختِ من')}
-                </h3>
+                <>
+                  <Separator />
+                  <SectionHeader title={tr(data.myMoney.isUnitBased ? 'کارکرد و پرداختِ من' : 'پرداختِ من')} />
+                </>
               )}
               <MyMoneyTab data={data.myMoney} />
             </section>

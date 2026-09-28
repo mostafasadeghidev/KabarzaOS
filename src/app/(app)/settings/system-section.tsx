@@ -25,6 +25,7 @@ import { Activity } from 'lucide-react';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Switch } from '@/components/ui/switch';
+import { Panel } from '@/components/page-shell';
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -87,7 +88,7 @@ function HealthCard({ health }: { health: SchedulerHealth }) {
   }[ago.unit];
 
   return (
-    <div className={`grid gap-1.5 rounded-md border p-3 ${tone}`}>
+    <div className={`grid gap-1.5 rounded-lg border p-3 ${tone}`}>
       <p className="flex items-center gap-1.5 text-sm font-medium">
         <Activity className="size-4" />
         {tr('زمان‌بند')}
@@ -128,7 +129,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
 
   return (
     <>
-    <form action={save} className="grid max-w-2xl gap-5">
+    <form action={save} className="grid max-w-4xl gap-4">
       {/* ⚠️ بالای صفحه، پیش از تنظیمات: خرابیِ زمان‌بند باید اول دیده شود. فقط مالک (پورتِ تبِ Health). */}
       {isOwner && <HealthCard health={health} />}
 
@@ -146,7 +147,6 @@ export function SystemSection({ config, health, isOwner, telegram }: {
             id="s-locale"
             name="defaultLocale"
             defaultValue={config.defaultLocale}
-            
           >
             {LOCALES.map((code) => (
               <NativeSelectOption key={code} value={code}>{LOCALE_NAMES[code]}</NativeSelectOption>
@@ -162,7 +162,6 @@ export function SystemSection({ config, health, isOwner, telegram }: {
             id="s-week"
             name="weekStart"
             defaultValue={config.weekStart}
-            
           >
             {WEEKDAYS.map((label, i) => (
               <NativeSelectOption key={label} value={i}>{tr(label)}</NativeSelectOption>
@@ -178,7 +177,6 @@ export function SystemSection({ config, health, isOwner, telegram }: {
             id="s-tz"
             name="timezone"
             defaultValue={config.timezone}
-            
           >
             <NativeSelectOption value="">{tr("پیش‌فرضِ سرور")}</NativeSelectOption>
             {allTimezones().map((zone) => (
@@ -206,8 +204,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
         </p>
       </div>
 
-      <fieldset className="grid gap-3 rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">{t("حضورِ زنده")}</legend>
+      <Panel title={t("حضورِ زنده")}>
         <label className="flex items-center gap-1.5 text-sm">
           <Switch name="presenceEnabled" defaultChecked={config.presenceEnabled}
           />
@@ -227,10 +224,9 @@ export function SystemSection({ config, health, isOwner, telegram }: {
             <Seconds id="s-off" name="presenceOffline" value={config.presenceOffline} choices={OFFLINE_CHOICES} />
           </div>
         </div>
-      </fieldset>
+      </Panel>
 
-      <fieldset className="grid gap-3 rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">{t("به‌روزرسانیِ زنده")}</legend>
+      <Panel title={t("به‌روزرسانیِ زنده")}>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-1.5">
             <label className="flex items-center gap-1.5 text-sm">
@@ -252,7 +248,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
             />
           </div>
         </div>
-      </fieldset>
+      </Panel>
 
       <div className="grid max-w-xs gap-1.5">
         <Label htmlFor="s-purge">{t("پاک‌سازیِ خودکارِ پیام‌ها (روز)")}</Label>
@@ -274,8 +270,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
     </form>
 
       {isOwner && (
-  <fieldset className="grid gap-2 rounded-md border p-3">
-          <legend className="px-1 text-sm font-medium">{t("باتِ تلگرام")}</legend>
+        <Panel title={t("باتِ تلگرام")} className="max-w-4xl">
           {/*
             ⚠️ توکن **هرگز** به کلاینت نمی‌آید؛ فقط می‌دانیم هست یا نه. پس
             فیلدِ خالی یعنی «دست نزن»، نه «پاک کن» — وگرنه هر بار ذخیرهٔ
@@ -345,7 +340,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
               {tr("ارسالِ گزارش به چتِ من")}
             </Button>
           </div>
-        </fieldset>
+        </Panel>
       )}
     </>
   );

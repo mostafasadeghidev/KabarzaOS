@@ -2,10 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import {
-  ArrowDown, ArrowRight, Check, CheckCheck, ChevronDown, CircleAlert, Inbox, Megaphone,
-  MessagesSquare, Plus, Search, SendHorizontal, ShieldQuestion, Trash2,
-} from 'lucide-react';
+import { ArrowDown, ArrowRight, Check, CheckCheck, ChevronDown, CircleAlert, Inbox, Megaphone, MessagesSquare, Plus, SendHorizontal, ShieldQuestion, Trash2 } from 'lucide-react';
 import {
   composeAction, contactManagementAction, deleteThreadAction, leaveThreadAction, openThreadAction,
   replyAction, type MessageState,
@@ -18,7 +15,6 @@ import { Badge } from '@/components/ui/badge';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
-import { Input } from '@/components/ui/input';
 import { Marker, MarkerContent } from '@/components/ui/marker';
 import {
   Message, MessageAvatar, MessageContent, MessageFooter, MessageGroup, MessageHeader,
@@ -45,6 +41,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { SearchInput } from '@/components/ui/search-input';
 
 export interface InboxRow {
   id: number;
@@ -478,17 +475,13 @@ export function MessagesView({
           className={cn('flex min-h-0 flex-col @3xl/main:border-e', openId !== null && 'hidden @3xl/main:flex')}
         >
           <div className="grid gap-3 border-b p-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={tr('جستجوی گفتگو…')}
-                aria-label={tr('جستجوی گفتگو…')}
-                className="ps-8"
-              />
-            </div>
+            <SearchInput
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={tr('جستجوی گفتگو…')}
+              aria-label={tr('جستجوی گفتگو…')}
+              containerClassName="sm:w-full"
+            />
             <Tabs value={box} onValueChange={(v) => setBox(v as typeof box)}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="all">{tr('همه')}</TabsTrigger>
@@ -766,7 +759,7 @@ export function MessagesView({
             )}
 
             {audience === '' && (
-              <fieldset className="grid gap-1.5 rounded-md border p-3">
+              <fieldset className="grid gap-1.5 rounded-lg border p-3">
                 <legend className="px-1 text-sm font-medium">{tr("گیرندگان")}</legend>
 
                 {/*

@@ -338,7 +338,7 @@ export function ProjectDialog({
             )}
           </Field>
 
-          <div className="rounded-md border p-3">
+          <div className="rounded-lg border p-3">
             <label className="flex items-start gap-2 text-sm font-medium">
               <Checkbox
                 key={`unit-${formKey}`}
@@ -356,7 +356,7 @@ export function ProjectDialog({
           </div>
 
           {canEditMoney && (
-            <div className="rounded-md border p-3">
+            <div className="rounded-lg border p-3">
               <label className="flex items-start gap-2 text-sm font-medium">
                 <Checkbox
                   key={`tender-${formKey}`}

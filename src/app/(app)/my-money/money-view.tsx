@@ -10,7 +10,9 @@ import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
+import { formatDate } from '@/i18n/datetime';
+import { Section } from '@/components/page-shell';
 
 /** برچسبِ وضعیتِ پرداخت — همان سه حالتِ `Payments::status_label`. */
 const STATUS_LABEL: Record<string, string> = {
@@ -42,53 +44,57 @@ function money(value: string, code: string | null) {
 
 /** جدولِ ردیف‌های پرداخت — تاریخ، مبلغ، معادلِ محاسبه‌شده، توضیح، رسید. */
 function PaymentLines({
-  lines, currencyCode, showCounted = true,
-}: { lines: MyPaymentLine[]; currencyCode: string | null; showCounted?: boolean }) {
+  lines, currencyCode, showCounted = true, frame = true,
+}: {
+  lines: MyPaymentLine[];
+  currencyCode: string | null;
+  showCounted?: boolean;
+  /** داخلِ جعبهٔ بازشوندهٔ ردیف بی‌قاب — جعبه خودش قاب است. */
+  frame?: boolean;
+}) {
   const t = useT();
   if (lines.length === 0) {
-    return <p className="text-xs text-muted-foreground">{t('ردیفی ثبت نشده.')}</p>;
+    return <p className="text-sm text-muted-foreground">{t('ردیفی ثبت نشده.')}</p>;
   }
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead numeric>{t('تاریخ')}</TableHead>
-            <TableHead numeric>{t('مبلغ')}</TableHead>
-            {showCounted && <TableHead numeric>{t('معادل (محاسبه)')}</TableHead>}
-            <TableHead>{t('توضیحات')}</TableHead>
-            <TableHead>{t('رسید')}</TableHead>
+    <Table frame={frame}>
+      <TableHeader>
+        <TableRow>
+          <TableHead numeric>{t('تاریخ')}</TableHead>
+          <TableHead numeric>{t('مبلغ')}</TableHead>
+          {showCounted && <TableHead numeric>{t('معادل (محاسبه)')}</TableHead>}
+          <TableHead>{t('توضیحات')}</TableHead>
+          <TableHead>{t('رسید')}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {lines.map((l) => (
+          <TableRow key={l.id}>
+            <TableNumericCell>{l.paidAt}</TableNumericCell>
+            <TableNumericCell>{money(l.amount, l.currencyCode)}</TableNumericCell>
+            {showCounted && (
+              <TableNumericCell className="text-muted-foreground">
+                {l.counted ? money(l.counted, currencyCode) : '—'}
+              </TableNumericCell>
+            )}
+            <TableCell>{l.note || '—'}</TableCell>
+            <TableCell>
+              {l.receiptId ? (
+                <a
+                  href={`/api/files/${l.receiptId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  <Paperclip className="size-3" />
+                  {t('مشاهده')}
+                </a>
+              ) : '—'}
+            </TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {lines.map((l) => (
-            <TableRow key={l.id}>
-              <TableNumericCell>{l.paidAt}</TableNumericCell>
-              <TableNumericCell>{money(l.amount, l.currencyCode)}</TableNumericCell>
-              {showCounted && (
-                <TableNumericCell className="text-muted-foreground">
-                  {l.counted ? money(l.counted, currencyCode) : '—'}
-                </TableNumericCell>
-              )}
-              <TableCell>{l.note || '—'}</TableCell>
-              <TableCell>
-                {l.receiptId ? (
-                  <a
-                    href={`/api/files/${l.receiptId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-primary hover:underline"
-                  >
-                    <Paperclip className="size-3" />
-                    {t('مشاهده')}
-                  </a>
-                ) : '—'}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -109,7 +115,7 @@ function Row({
   const t = useT();
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-md border">
+    <div className="rounded-lg border">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3">
         <button
           type="button"
@@ -152,6 +158,7 @@ export function MyMoneyView({
 }) {
   const t = useT();
   const tr = useT();
+  const tz = useTimeZone();
 
   if (!isMember && !isClient) {
     return <EmptyState title={t('اطلاعات مالی‌ای برای نمایش نیست')} />;
@@ -160,10 +167,9 @@ export function MyMoneyView({
   return (
     <div className="grid gap-4 md:gap-6">
       {isClient && (
-        <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">{t('صورت‌حسابِ پروژه‌های شما (کارفرما)')}</h2>
+        <Section title={t('صورت‌حسابِ پروژه‌های شما (کارفرما)')}>
           {clientProjects.length === 0 ? (
-            <EmptyState title={t('پروژه‌ای ندارید')} />
+            <p className="text-sm text-muted-foreground">{t('پروژه‌ای ندارید')}</p>
           ) : (
             <div className="grid gap-2">
               {clientProjects.map((p) => (
@@ -181,44 +187,42 @@ export function MyMoneyView({
                   ]}
                 >
                   <div>
-                    <h3 className="mb-1 text-xs font-semibold">{t('پرداخت‌های شما')}</h3>
-                    <PaymentLines lines={p.payments} currencyCode={p.currencyCode} />
+                    <h4 className="mb-1 text-xs font-semibold text-muted-foreground">{t('پرداخت‌های شما')}</h4>
+                    <PaymentLines lines={p.payments} currencyCode={p.currencyCode} frame={false} />
                   </div>
                   {/* جدولِ جدا، نه ستونِ «نوع» — پورتِ «هزینه‌های انجام‌شده برای این پروژه». */}
                   {p.expenses.length > 0 && (
                     <div>
-                      <h3 className="mb-1 text-xs font-semibold">{t('هزینه‌های انجام‌شده برای این پروژه')}</h3>
-                      <PaymentLines lines={p.expenses} currencyCode={p.currencyCode} />
+                      <h4 className="mb-1 text-xs font-semibold text-muted-foreground">{t('هزینه‌های انجام‌شده برای این پروژه')}</h4>
+                      <PaymentLines lines={p.expenses} currencyCode={p.currencyCode} frame={false} />
                     </div>
                   )}
                 </Row>
               ))}
             </div>
           )}
-        </section>
+        </Section>
       )}
 
       {isClient && noProjectIncoming.length > 0 && (
-        <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">{t('پرداخت‌های بدون پروژه')}</h2>
+        <Section title={t('پرداخت‌های بدون پروژه')}>
           <PaymentLines lines={noProjectIncoming} currencyCode={null} showCounted={false} />
-        </section>
+        </Section>
       )}
 
       {isMember && (
-        <section className="grid gap-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-sm font-semibold">{t('دریافتی‌های شما (عضوِ تیم)')}</h2>
+        <Section
+          title={t('دریافتی‌های شما (عضوِ تیم)')}
+          description={tr('برای پروژه‌هایی که هنوز کامل پرداخت نشده‌اند می‌توانید از صفحهٔ پروژه درخواستِ پرداخت ثبت کنید (حداکثر تا ماندهٔ خودتان).')}
+          actions={(
             <Link href={bankHref} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
               {t('اطلاعاتِ حسابِ بانکی')}
               <ArrowLeft className="size-3 ltr:rotate-180" aria-hidden />
             </Link>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {tr('برای پروژه‌هایی که هنوز کامل پرداخت نشده‌اند می‌توانید از صفحهٔ پروژه درخواستِ پرداخت ثبت کنید (حداکثر تا ماندهٔ خودتان).')}
-          </p>
+          )}
+        >
           {memberProjects.length === 0 ? (
-            <EmptyState title={t('پروژه‌ای ندارید')} />
+            <p className="text-sm text-muted-foreground">{t('پروژه‌ای ندارید')}</p>
           ) : (
             <div className="grid gap-2">
               {memberProjects.map((p) => (
@@ -240,59 +244,57 @@ export function MyMoneyView({
                 >
                   {p.isUnitBased && (
                     <div>
-                      <h3 className="mb-1 text-xs font-semibold">{t('کارکردِ تعدادی')}</h3>
+                      <h4 className="mb-1 text-xs font-semibold text-muted-foreground">{t('کارکردِ تعدادی')}</h4>
                       {p.units.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">{t('هنوز ردیفی ثبت نشده.')}</p>
+                        <p className="text-sm text-muted-foreground">{t('هنوز ردیفی ثبت نشده.')}</p>
                       ) : (
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead numeric>{t('تاریخ')}</TableHead>
-                                <TableHead numeric>{t('تعداد')}</TableHead>
-                                <TableHead numeric>{t('مبلغ')}</TableHead>
-                                <TableHead>{t('وضعیت')}</TableHead>
+                        <Table frame={false}>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead numeric>{t('تاریخ')}</TableHead>
+                              <TableHead numeric>{t('تعداد')}</TableHead>
+                              <TableHead numeric>{t('مبلغ')}</TableHead>
+                              <TableHead>{t('وضعیت')}</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {p.units.map((u) => (
+                              <TableRow key={u.id}>
+                                <TableNumericCell>{u.entryDate}</TableNumericCell>
+                                <TableNumericCell>{u.quantity}</TableNumericCell>
+                                <TableNumericCell>{money(u.amount, p.currencyCode)}</TableNumericCell>
+                                <TableCell>
+                                  {u.isPaid ? (
+                                    <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-500">
+                                      {t('پرداخت‌شده')}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
+                                      {t('پرداخت‌نشده')}
+                                    </Badge>
+                                  )}
+                                </TableCell>
                               </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {p.units.map((u) => (
-                                <TableRow key={u.id}>
-                                  <TableNumericCell>{u.entryDate}</TableNumericCell>
-                                  <TableNumericCell>{u.quantity}</TableNumericCell>
-                                  <TableNumericCell>{money(u.amount, p.currencyCode)}</TableNumericCell>
-                                  <TableCell>
-                                    {u.isPaid ? (
-                                      <Badge variant="outline" className="border-emerald-500/40 text-emerald-700 dark:text-emerald-500">
-                                        {t('پرداخت‌شده')}
-                                      </Badge>
-                                    ) : (
-                                      <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
-                                        {t('پرداخت‌نشده')}
-                                      </Badge>
-                                    )}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
+                            ))}
+                          </TableBody>
+                        </Table>
                       )}
                     </div>
                   )}
 
                   <div>
-                    <h3 className="mb-1 text-xs font-semibold">{t('پرداختی‌های شما')}</h3>
-                    <PaymentLines lines={p.payouts} currencyCode={p.currencyCode} />
+                    <h4 className="mb-1 text-xs font-semibold text-muted-foreground">{t('پرداختی‌های شما')}</h4>
+                    <PaymentLines lines={p.payouts} currencyCode={p.currencyCode} frame={false} />
                   </div>
 
                   {p.requests.length > 0 && (
                     <div>
-                      <h3 className="mb-1 text-xs font-semibold">{t('درخواست‌های پرداخت')}</h3>
+                      <h4 className="mb-1 text-xs font-semibold text-muted-foreground">{t('درخواست‌های پرداخت')}</h4>
                       <ul className="grid gap-1 text-xs">
                         {p.requests.map((r) => (
                           <li key={r.id} className="flex flex-wrap items-center gap-2">
                             <b className="num">{money(r.amount, r.currencyCode)}</b>
-                            <span className="num text-muted-foreground">{r.createdAt.slice(0, 10)}</span>
+                            <span className="num text-muted-foreground">{formatDate(r.createdAt, tz)}</span>
                             <Badge variant="outline">{t(REQUEST_LABEL[r.status] ?? r.status)}</Badge>
                           </li>
                         ))}
@@ -303,14 +305,13 @@ export function MyMoneyView({
               ))}
             </div>
           )}
-        </section>
+        </Section>
       )}
 
       {isMember && noProjectPayouts.length > 0 && (
-        <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">{t('دریافتی‌های بدون پروژه')}</h2>
+        <Section title={t('دریافتی‌های بدون پروژه')}>
           <PaymentLines lines={noProjectPayouts} currencyCode={null} showCounted={false} />
-        </section>
+        </Section>
       )}
     </div>
   );

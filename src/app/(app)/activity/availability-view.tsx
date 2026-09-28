@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Section } from '@/components/page-shell';
 
 export interface AvailabilityData {
   /** برنامهٔ خودِ کاربر. */
@@ -38,7 +39,7 @@ function DayEditor({ weekday, initial }: { weekday: number; initial: Slot[] | un
   const [slots, setSlots] = useState<Slot[]>(initial ?? []);
 
   return (
-    <div className="grid gap-2 rounded-md border p-3">
+    <div className="grid gap-2 rounded-lg border p-3">
       <div className="flex items-center gap-2">
         <Checkbox
           id={`day-${weekday}`}
@@ -112,8 +113,7 @@ export function AvailabilityView({ data }: { data: AvailabilityData }) {
 
   return (
     <div className="grid gap-4">
-      <section className="grid gap-2">
-        <h3 className="text-sm font-semibold">{t("برنامهٔ هفتگیِ من")}</h3>
+      <Section title={t("برنامهٔ هفتگیِ من")}>
         <p className="text-xs text-muted-foreground">
           {tr("روزهایی که معمولاً کار می‌کنید را تیک بزنید. بازهٔ ساعتی اختیاری است — بدونِ آن یعنی تمامِ روز.")}
         </p>
@@ -129,7 +129,7 @@ export function AvailabilityView({ data }: { data: AvailabilityData }) {
             <Submit />
           </div>
         </form>
-      </section>
+      </Section>
 
       {/*
         ⚠️ ماتریسِ تیم از اینجا به صفحهٔ مستقلِ /availability رفت.

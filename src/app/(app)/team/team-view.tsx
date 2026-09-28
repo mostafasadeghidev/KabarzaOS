@@ -13,9 +13,10 @@ import {
 import { useT } from '@/i18n/client';
 import { TaskFilter, type TaskFilterOptions, type TaskPaging } from './task-filter';
 import { Thumb } from '@/components/thumb';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { SearchInput } from '@/components/ui/search-input';
+import { Section } from '@/components/page-shell';
 
 export interface TeamData {
   projects: Array<{
@@ -64,12 +65,10 @@ function MemberCards({ members, range }: { members: TeamData['members']; range: 
   const list = needle === '' ? members : members.filter((m) => m.name.toLowerCase().includes(needle));
   return (
     <div className="grid gap-3">
-      <Input
-        type="search"
+      <SearchInput
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder={tr("جستجوی کارمند…")}
-        className="max-w-xs"
       />
       {list.length === 0 ? <p className="text-sm text-muted-foreground">{tr("موردی پیدا نشد.")}</p> : (
         <div className="grid gap-2 @xl/main:grid-cols-2 @4xl/main:grid-cols-3">
@@ -77,7 +76,7 @@ function MemberCards({ members, range }: { members: TeamData['members']; range: 
             <Link
               key={m.id}
               href={`/team/${m.id}?range=${range}`}
-              className="flex items-center gap-3 rounded-md border p-3 transition-colors hover:bg-muted"
+              className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted"
             >
               <Thumb id={m.id} title={m.name} fileId={m.avatarFileId} size={44} />
               <span className="min-w-0 flex-1">
@@ -219,25 +218,23 @@ export function TeamView({ data }: { data: TeamData }) {
         ) : (
           <div className="grid gap-4">
             {review.length > 0 && (
-              <section className="grid gap-2">
-                <h3 className="text-sm font-semibold">{tr("تسک‌های نیازمندِ ریویو")}</h3>
+              <Section title={tr("تسک‌های نیازمندِ ریویو")}>
                 <ul className="grid gap-1">
                   {review.map((t) => (
-                    <li key={t.id} className="rounded-md border px-3 py-2 text-sm">
+                    <li key={t.id} className="rounded-lg border px-3 py-2 text-sm">
                       {t.title}
                       <span className="ms-2 text-xs text-muted-foreground">{t.projectTitle}</span>
                     </li>
                   ))}
                 </ul>
-              </section>
+              </Section>
             )}
 
             {data.comments.length > 0 && (
-              <section className="grid gap-2">
-                <h3 className="text-sm font-semibold">{tr("کامنت‌های باز")}</h3>
+              <Section title={tr("کامنت‌های باز")}>
                 <ul className="grid gap-1">
                   {data.comments.map((c) => (
-                    <li key={c.id} className="rounded-md border px-3 py-2 text-sm">
+                    <li key={c.id} className="rounded-lg border px-3 py-2 text-sm">
                       <p className="line-clamp-2">{c.body}</p>
                       <span className="text-xs text-muted-foreground">
                         {c.authorName ?? '—'} · {c.projectTitle}
@@ -245,7 +242,7 @@ export function TeamView({ data }: { data: TeamData }) {
                     </li>
                   ))}
                 </ul>
-              </section>
+              </Section>
             )}
           </div>
         )

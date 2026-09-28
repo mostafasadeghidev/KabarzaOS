@@ -2,11 +2,10 @@ import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { myTasks, taskableProjects } from '@/server/projects/service';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { primeTranslations, t } from '@/i18n/server';
 import { TaskTable } from './task-table';
 import { TasksTabs } from './tasks-tabs';
-import { PageHeader, PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell, Panel } from '@/components/page-shell';
 
 /**
  * «تسک‌های شما» — پورتِ `view_tasks()` ِ داشبوردِ نسخهٔ قبلی.
@@ -59,20 +58,10 @@ export default async function MyTasksPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {inbox.active.length > 0 && (
-              <Card className="gap-2 py-4">
-                <CardHeader className="px-4 pb-0">
-                  <CardTitle className="text-sm">{t("سپرده‌شده به شما")}</CardTitle>
-                </CardHeader>
-                <CardContent className="px-0 pb-0"><TaskTable rows={inbox.active} empty="" /></CardContent>
-              </Card>
+              <Panel title={t("سپرده‌شده به شما")}><TaskTable rows={inbox.active} empty="" /></Panel>
             )}
             {inbox.review.length > 0 && (
-              <Card className="gap-2 py-4">
-                <CardHeader className="px-4 pb-0">
-                  <CardTitle className="text-sm">{t("در انتظارِ بررسی")}</CardTitle>
-                </CardHeader>
-                <CardContent className="px-0 pb-0"><TaskTable rows={inbox.review} empty="" /></CardContent>
-              </Card>
+              <Panel title={t("در انتظارِ بررسی")}><TaskTable rows={inbox.review} empty="" /></Panel>
             )}
           </div>
         )}
@@ -98,26 +87,21 @@ export default async function MyTasksPage() {
          * زیرِ هم و تمام‌عرض‌اند تا هر ستون جای خودش را داشته باشد.
          */
         <div className="grid grid-cols-1 gap-4">
-          <Card className="gap-2 py-4">
-            <CardHeader className="px-4 pb-0"><CardTitle className="text-sm">{t("تسک‌های جاری شما")}</CardTitle></CardHeader>
-            <CardContent className="px-0 pb-0"><TaskTable rows={active} empty={t("تسکِ جاری ندارید.")} filterable /></CardContent>
-          </Card>
-          <Card className="gap-2 py-4">
-            <CardHeader className="px-4 pb-0"><CardTitle className="text-sm">{t("در انتظارِ بررسی")}</CardTitle></CardHeader>
-            <CardContent className="px-0 pb-0"><TaskTable rows={waiting} empty={t("موردی در انتظارِ بررسی نیست.")} /></CardContent>
-          </Card>
+          <Panel title={t("تسک‌های جاری شما")}>
+            <TaskTable rows={active} empty={t("تسکِ جاری ندارید.")} filterable />
+          </Panel>
+          <Panel title={t("در انتظارِ بررسی")}>
+            <TaskTable rows={waiting} empty={t("موردی در انتظارِ بررسی نیست.")} />
+          </Panel>
           {/*
             ⚠️ فقط برای مدیر پر می‌شود (سرور تصمیم می‌گیرد): کارهایی که تیم
             روی پروژه‌های تحتِ مدیریتِ او برای بررسی فرستاده. تا امروز تنها
             راهِ دیدنشان بازکردنِ تک‌تکِ پروژه‌ها بود.
           */}
           {review.length > 0 && (
-            <Card className="gap-2 py-4">
-              <CardHeader className="px-4 pb-0">
-                <CardTitle className="text-sm">{t("فرستاده‌شده برای بررسیِ شما")}</CardTitle>
-              </CardHeader>
-              <CardContent className="px-0 pb-0"><TaskTable rows={review} empty="" /></CardContent>
-            </Card>
+            <Panel title={t("فرستاده‌شده برای بررسیِ شما")}>
+              <TaskTable rows={review} empty="" />
+            </Panel>
           )}
         </div>
       )}

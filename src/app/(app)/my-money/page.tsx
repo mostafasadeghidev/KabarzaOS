@@ -24,6 +24,7 @@ export default async function MyMoneyPage() {
   if (!hasPersonalMoney(actor)) {
     return (
       <PageShell>
+        <PageHeader title={t("امور مالی")} />
         <EmptyState
           title={t("اطلاعات مالی‌ای برای نمایش نیست")}
           description={t("این صفحه صورت‌حسابِ کارفرما و دریافتی‌های عضوِ تیم را نشان می‌دهد.")}

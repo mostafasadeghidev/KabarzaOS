@@ -93,6 +93,7 @@ export default async function TeamPage({
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader title={t("تیمِ من")} />
           <EmptyState
             title={t("دفترِ تحتِ مدیریتی ندارید")}
             description={t("این بخش برای مدیرانِ دفتر است.")}

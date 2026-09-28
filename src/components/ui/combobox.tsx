@@ -30,8 +30,10 @@ export function matches(option: Option, query: string): boolean {
   return normalize(option.label).includes(q) || normalize(option.hint ?? '').includes(q);
 }
 
+// ⚠️ `data-[size=sm]:h-8` همان قاعدهٔ `NativeSelect` و `SearchableSelect`: در نوارِ فیلتر
+// همهٔ کنترل‌ها `sm` اند تا ردیف یک خط باشد.
 const boxClass =
-  'flex h-9 w-full items-center gap-1 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs';
+  'flex h-9 w-full items-center gap-1 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs data-[size=sm]:h-8';
 
 /**
  * جای‌گیریِ فهرستِ بازشو **بیرونِ** جریانِ صفحه.
@@ -90,6 +92,7 @@ export function Combobox({
   name,
   id,
   disabled,
+  size = 'default',
 }: {
   options: Option[];
   value: { id: number | null; label: string };
@@ -101,6 +104,7 @@ export function Combobox({
   name?: string;
   id?: string;
   disabled?: boolean;
+  size?: 'sm' | 'default';
 }) {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -151,7 +155,7 @@ export function Combobox({
     <div ref={boxRef} className="relative">
       {name && <input type="hidden" name={name} value={value.id ?? ''} />}
 
-      <div ref={fieldRef} className={boxClass}>
+      <div ref={fieldRef} data-size={size} className={boxClass}>
         <input
           id={id}
           type="text"

@@ -9,12 +9,11 @@ import { SECTION_ACCESS, type Level } from '@/domain/access/staff-levels';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
 import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { SectionHeader } from '@/components/page-shell';
 
 export interface StaffRow {
   id: number;
@@ -67,13 +66,15 @@ export function StaffSection({
       setPick('');
     });
 
+  // ⚠️ «افزودن» در لبهٔ سرِ بخش، مثلِ دکمهٔ «افزودن» ِ بقیهٔ تب‌ها — نه قابِ خط‌چینِ جدا.
   const adder = candidates.length > 0 && (
-    <div className="flex flex-wrap items-center gap-2 rounded-md border border-dashed p-3">
-      <span className="text-sm text-muted-foreground">{tr('افزودنِ همکارِ ادمین')}</span>
+    <div className="flex flex-wrap items-center gap-2">
       <SearchableSelect
+        size="sm"
         value={pick}
         onValueChange={(v) => setPick(v)}
-        containerClassName="min-w-56 flex-1"
+        containerClassName="w-full sm:w-64"
+        aria-label={tr('افزودنِ همکارِ ادمین')}
       >
         <NativeSelectOption value="">{t('— انتخابِ کاربر —')}</NativeSelectOption>
         {candidates.map((c) => (
@@ -92,10 +93,18 @@ export function StaffSection({
     </div>
   );
 
+  const header = (
+    <SectionHeader
+      title={t('دسترسی همکاران')}
+      description={tr("برای هر بخش تعیین کنید این همکار دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند. کارهای حساس (تنظیمات، حذف، بستنِ مالی) همیشه فقط برای مدیرِ کل است.")}
+      actions={adder || undefined}
+    />
+  );
+
   if (staff.length === 0) {
     return (
-      <div className="grid gap-3">
-        {adder}
+      <div className="grid grid-cols-1 gap-3">
+        {header}
         <EmptyState
           title={t("همکارِ ادمینی ثبت نشده")}
           description={t("همکارِ ادمین کسی است که بخشی از پنل را می‌بیند یا مدیریت می‌کند، بدونِ اینکه مدیرِ کل باشد.")}
@@ -105,19 +114,15 @@ export function StaffSection({
   }
 
   return (
-    <div className="grid gap-3">
-      {adder}
-      <p className="text-sm text-muted-foreground">
-        {tr("برای هر بخش تعیین کنید این همکار دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند. کارهای حساس (تنظیمات، حذف، بستنِ مالی) همیشه فقط برای مدیرِ کل است.")}
-      </p>
-
+    <div className="grid grid-cols-1 gap-3">
+      {header}
 
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>{t("همکار")}</TableHead>
             <TableHead>{t("دسترسی‌های فعلی")}</TableHead>
-            <TableHead />
+            <TableActionsHead />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -141,7 +146,7 @@ export function StaffSection({
                     </div>
                   )}
                 </TableCell>
-                <TableCell className="text-end">
+                <TableActionsCell>
                   <Button
                     type="button"
                     size="sm"
@@ -156,14 +161,14 @@ export function StaffSection({
                     type="button"
                     size="sm"
                     variant="ghost"
-                    className="ms-1 text-muted-foreground hover:text-destructive"
+                    className="text-muted-foreground hover:text-destructive"
                     disabled={pending}
                     onClick={() => setStaff(s.id, false)}
                   >
                     <UserMinus className="size-3.5" />
                     {tr("برداشتن")}
                   </Button>
-                </TableCell>
+                </TableActionsCell>
               </TableRow>
             );
           })}

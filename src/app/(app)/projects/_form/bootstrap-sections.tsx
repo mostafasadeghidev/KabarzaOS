@@ -50,7 +50,7 @@ interface LinkRow {
 function SectionTitle({ children, hint }: { children: React.ReactNode; hint?: string }) {
   return (
     <div>
-      <h3 className="text-sm font-medium">{children}</h3>
+      <h3 className="text-sm font-semibold">{children}</h3>
       {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
@@ -234,7 +234,7 @@ export function BootstrapSections({
         <SectionTitle hint={tr("نقش و مبلغِ توافقیِ هر عضو. مبلغ خالی یعنی صفر.")}>{tr("اعضا")}</SectionTitle>
 
         {members.map((row, i) => (
-          <div key={i} className="grid gap-2 rounded-md border border-dashed p-3 sm:grid-cols-[1fr_auto]">
+          <div key={i} className="grid gap-2 rounded-lg border border-dashed p-3 sm:grid-cols-[1fr_auto]">
             <div className="grid gap-2 sm:grid-cols-2">
               <Combobox
                 options={options.people}
@@ -255,7 +255,6 @@ export function BootstrapSections({
                 value={row.roleTagId}
                 onChange={(e) => setMembers((rows) => rows.map((r, j) =>
                   (j === i ? { ...r, roleTagId: e.target.value } : r)))}
-                
               >
                 <NativeSelectOption value="">{tr("— نقش —")}</NativeSelectOption>
                 {/*
@@ -311,7 +310,6 @@ export function BootstrapSections({
                 value={row.currencyId}
                 onChange={(e) => setMembers((rows) => rows.map((r, j) =>
                   (j === i ? { ...r, currencyId: e.target.value } : r)))}
-                
               >
                 <NativeSelectOption value="">{tr("— ارز —")}</NativeSelectOption>
                 {options.currencies.map((c) => (
@@ -363,7 +361,7 @@ export function BootstrapSections({
         </SectionTitle>
 
         {tasks.map((row, i) => (
-          <div key={i} className="grid gap-2 rounded-md border border-dashed p-3">
+          <div key={i} className="grid gap-2 rounded-lg border border-dashed p-3">
             <div className="flex items-start gap-2">
               <Input
                 name="taskTitle"
@@ -406,7 +404,6 @@ export function BootstrapSections({
                 value={row.priorityTagId}
                 onChange={(e) => setTasks((rows) => rows.map((r, j) =>
                   (j === i ? { ...r, priorityTagId: e.target.value } : r)))}
-                
               >
                 <NativeSelectOption value="">{tr("— اولویت —")}</NativeSelectOption>
                 {options.priorities.map((p) => (

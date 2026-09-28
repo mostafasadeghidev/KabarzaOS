@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { SectionHeader } from '@/components/page-shell';
 
 export interface MyBidData {
   projectId: number;
@@ -39,7 +40,7 @@ function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['open
   const cap = Number(role.cap ?? 0);
 
   return (
-    <form action={action} className="grid gap-2 rounded-md border p-3">
+    <form action={action} className="grid gap-2 rounded-lg border p-3">
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="roleTagId" value={role.roleTagId} />
 
@@ -86,10 +87,7 @@ export function MyBidTab({ data }: { data: MyBidData }) {
   const t = useT();
   return (
     <div className="grid gap-4">
-      <h3 className="flex items-center gap-1.5 text-sm font-semibold">
-        <Gavel className="size-4" />
-        {tr("پیشنهادِ من")}
-      </h3>
+      <SectionHeader icon={<Gavel />} title={tr("پیشنهادِ من")} />
 
       {data.wonRoles.map((role) => (
         <p
@@ -108,7 +106,7 @@ export function MyBidTab({ data }: { data: MyBidData }) {
       )}
 
       {data.openRoles.length === 0 ? (
-        <p className="text-xs text-muted-foreground">{t("مناقصهٔ بازی برای نقش‌های شما نیست.")}</p>
+        <p className="text-sm text-muted-foreground">{t("مناقصهٔ بازی برای نقش‌های شما نیست.")}</p>
       ) : (
         <>
           <p className="text-xs text-muted-foreground">

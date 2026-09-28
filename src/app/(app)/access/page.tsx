@@ -36,6 +36,7 @@ export default async function AccessPage({
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader title={t("دسترسی‌ها")} />
           <EmptyState
             title={t("دسترسی ندارید")}
             description={t("دفترِ دسترسی‌ها برای کسی باز است که اعضا را می‌بیند.")}

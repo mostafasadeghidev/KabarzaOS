@@ -14,6 +14,7 @@ import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Section } from '@/components/page-shell';
 
 export interface EventRow {
   id: number;
@@ -163,9 +164,8 @@ export function ActivityView({
           <AbsencePanel data={leave} />
 
           {/* جدولِ تیمی — فقط با مجوزِ اعضا پر می‌شود (سرور تصمیم می‌گیرد). */}
-          <div className="grid gap-2">
-            <p className="text-sm font-medium">{tr("مرخصی‌های تیم (۳۰ روزِ اخیر)")}</p>
-            {absences.length === 0 ? <EmptyState title={tr("مرخصی‌ای در این بازه نیست")} /> : (
+          <Section title={tr("مرخصی‌های تیم (۳۰ روزِ اخیر)")}>
+            {absences.length === 0 ? <p className="text-sm text-muted-foreground">{tr("مرخصی‌ای در این بازه نیست")}</p> : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -187,7 +187,7 @@ export function ActivityView({
             </TableBody>
           </Table>
             )}
-          </div>
+          </Section>
         </div>
       )}
 

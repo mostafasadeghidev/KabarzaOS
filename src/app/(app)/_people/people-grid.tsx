@@ -6,7 +6,6 @@ import { PersonCard, type PersonView, type SectionConfig } from './person-card';
 import { PersonDialog, type PersonFormOptions } from './person-dialog';
 import { AccessDialog } from './access-dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardPager, useCardPage } from '@/components/ui/card-pager';
 import { useToast } from '@/components/ui/toast';
@@ -14,6 +13,7 @@ import { useT } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Toggle } from '@/components/ui/toggle';
 import { Badge } from '@/components/ui/badge';
+import { SearchInput } from '@/components/ui/search-input';
 
 /**
  * شبکهٔ افراد — بازسازیِ `tab_panel_html()`:
@@ -107,12 +107,10 @@ export function PeopleGrid({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Input
-          type="search"
+        <SearchInput
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("جستجوی نام یا ایمیل…")}
-          className="max-w-xs"
         />
         {section.supportsOffices && offices.map((o) => (
           <Toggle

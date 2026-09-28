@@ -119,7 +119,7 @@ export function LedgerDetail({
 
               {entry.receipts.length > 0 && (
                 <div className="grid gap-2">
-                  <h4 className="font-medium">{t('رسیدها')}</h4>
+                  <h4 className="text-sm font-semibold">{t('رسیدها')}</h4>
                   <ul className="flex flex-wrap gap-3">
                     {entry.receipts.map((r, n) => (
                       <li key={r.id} className="flex w-24 flex-col items-center gap-1 text-center">
@@ -138,7 +138,7 @@ export function LedgerDetail({
               )}
 
               <div className="grid gap-2">
-                <h4 className="font-medium">{t('تاریخچهٔ تغییرات')}</h4>
+                <h4 className="text-sm font-semibold">{t('تاریخچهٔ تغییرات')}</h4>
                 {entry.timeline.length === 0 ? (
                   <p className="text-muted-foreground">—</p>
                 ) : (

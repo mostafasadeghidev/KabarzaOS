@@ -12,6 +12,8 @@ import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { format } from '@/domain/money/money';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Panel } from '@/components/page-shell';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -58,88 +60,93 @@ export function FiscalSection({
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <div className="grid max-w-2xl gap-5">
-      <div className="rounded-md border p-3">
-        <h3 className="text-sm font-medium">{t("وضعیتِ فعلی")}</h3>
+    <div className="grid max-w-4xl grid-cols-1 gap-4">
+      <Panel title={t("وضعیتِ فعلی")}>
         {lockDate ? (
-          <p className="mt-1 text-sm">
+          <p className="text-sm">
             {tr('دوره تا {date} بسته است؛ ردیف‌های آن بازه تغییر نمی‌کنند.', {
               date: lockDate,
             })}
           </p>
         ) : (
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {tr("هیچ دوره‌ای بسته نشده — همهٔ ردیف‌ها قابلِ ویرایش‌اند.")}
           </p>
         )}
-      </div>
+      </Panel>
 
       {/* ماندهٔ فعلیِ حساب‌ها — همان ارقامی که با بستن منجمد می‌شوند (پورتِ جدولِ تبِ بستن). */}
       {closing && (
-        <div className="rounded-md border p-3">
-          <h3 className="text-sm font-medium">{t("ماندهٔ فعلیِ حساب‌ها")}</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {tr("با بستنِ دوره، همین ارقام برای هر حساب منجمد و در «گزارش‌ها» نگه داشته می‌شوند.")}
-          </p>
+        <Panel
+          title={t("ماندهٔ فعلیِ حساب‌ها")}
+          description={tr("با بستنِ دوره، همین ارقام برای هر حساب منجمد و در «گزارش‌ها» نگه داشته می‌شوند.")}
+          actions={<a href="/finance" className="text-xs text-muted-foreground hover:text-foreground">{t("مرور کامل در حسابداری")}</a>}
+        >
           {closing.accounts.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">{t("حسابی تعریف نشده.")}</p>
+            <p className="text-sm text-muted-foreground">{t("حسابی تعریف نشده.")}</p>
           ) : (
-            <table className="mt-2 w-full max-w-md text-sm">
-              <tbody>
+            // جدولِ مشترک، نه جدولِ خامِ خودش — همان سرستون و فاصله‌ها.
+            <Table frame={false}>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("حساب")}</TableHead>
+                  <TableHead numeric>{t("مانده")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {closing.accounts.map((a) => (
-                  <tr key={a.id} className="border-t">
-                    <td className="py-1">{a.label}</td>
-                    <td className="num py-1 text-end">{format(a.balance)} {a.currencyCode ?? ''}</td>
-                  </tr>
+                  <TableRow key={a.id}>
+                    <TableCell>{a.label}</TableCell>
+                    <TableNumericCell>{format(a.balance)} {a.currencyCode ?? ''}</TableNumericCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
-          <a href="/finance" className="mt-2 inline-block text-xs underline">{t("مرور کامل در حسابداری")}</a>
-        </div>
+        </Panel>
       )}
 
-      <form action={close} className="grid gap-3 rounded-md border p-3">
-        <h3 className="text-sm font-medium">{t("بستنِ دوره")}</h3>
-        <p className="text-xs text-muted-foreground">
-          {tr("برای هر حساب یک خلاصهٔ ثابت (گردش و موجودیِ پایانی) ذخیره می‌شود و دوره تا این تاریخ قفل می‌گردد. ردیف‌ها پاک نمی‌شوند، فقط فقط‌خواندنی می‌شوند.")}
-        </p>
+      <Panel
+        title={t("بستنِ دوره")}
+        description={tr("برای هر حساب یک خلاصهٔ ثابت (گردش و موجودیِ پایانی) ذخیره می‌شود و دوره تا این تاریخ قفل می‌گردد. ردیف‌ها پاک نمی‌شوند، فقط فقط‌خواندنی می‌شوند.")}
+      >
+        <form action={close} className="grid gap-3">
 
-        <div className="grid gap-1.5 sm:max-w-xs">
-          <Label htmlFor="f-date">{t("تاریخِ بستن")}</Label>
-          <DatePicker id="f-date" name="lockDate" defaultValue={today} required />
-        </div>
+          <div className="grid gap-1.5 sm:max-w-xs">
+            <Label htmlFor="f-date">{t("تاریخِ بستن")}</Label>
+            <DatePicker id="f-date" name="lockDate" defaultValue={today} required />
+          </div>
 
-        {/*
-          ⚠️ اگر قفلی جلوتر از این تاریخ وجود دارد، بستن آن را عقب نمی‌برد
-          (R-FISCAL-10) — و کاربر باید این را **پیش** از زدنِ دکمه بداند.
-        */}
-        {lockDate && (
-          <p className="text-xs text-amber-700 dark:text-amber-500">
-            {tr('قفلِ فعلی روی {date} است؛ تاریخی قدیمی‌تر از آن، قفل را عقب نمی‌برد.', {
-              date: lockDate,
-            })}
-          </p>
-        )}
+          {/*
+            ⚠️ اگر قفلی جلوتر از این تاریخ وجود دارد، بستن آن را عقب نمی‌برد
+            (R-FISCAL-10) — و کاربر باید این را **پیش** از زدنِ دکمه بداند.
+          */}
+          {lockDate && (
+            <p className="text-xs text-amber-700 dark:text-amber-500">
+              {tr('قفلِ فعلی روی {date} است؛ تاریخی قدیمی‌تر از آن، قفل را عقب نمی‌برد.', {
+                date: lockDate,
+              })}
+            </p>
+          )}
 
-        <div className="flex items-center gap-3">
-          <Submit />
-        </div>
-        {closing?.lastChange && (
-          <p className="num text-xs text-muted-foreground">
-            {tr('آخرین تغییر: {date} — {who}', {
-              date: formatDateTime(closing.lastChange.at, tz),
-              who: closing.lastChange.by || '—',
-            })}
-          </p>
-        )}
-      </form>
+          <div className="flex items-center gap-3">
+            <Submit />
+          </div>
+          {closing?.lastChange && (
+            <p className="num text-xs text-muted-foreground">
+              {tr('آخرین تغییر: {date} — {who}', {
+                date: formatDateTime(closing.lastChange.at, tz),
+                who: closing.lastChange.by || '—',
+              })}
+            </p>
+          )}
+        </form>
+      </Panel>
 
-      <div className="grid gap-2 rounded-md border border-dashed p-3">
-        <h3 className="text-sm font-medium">{t("بازگشاییِ دوره")}</h3>
-        <p className="text-xs text-muted-foreground">
-          {tr("قفل برداشته می‌شود و ردیف‌ها دوباره قابلِ تغییر می‌شوند. خلاصه‌های ثبت‌شده پاک نمی‌شوند.")}
-        </p>
+      <Panel
+        title={t("بازگشاییِ دوره")}
+        description={tr("قفل برداشته می‌شود و ردیف‌ها دوباره قابلِ تغییر می‌شوند. خلاصه‌های ثبت‌شده پاک نمی‌شوند.")}
+      >
 
         <div className="flex items-center gap-3">
           {/* ⚠️ تأییدِ دومرحله‌ای — بازکردن یعنی دادهٔ بسته دوباره قابلِ تغییر است. */}
@@ -170,7 +177,7 @@ export function FiscalSection({
             </Button>
           )}
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }

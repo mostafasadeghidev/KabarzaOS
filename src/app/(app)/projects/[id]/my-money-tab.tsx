@@ -14,14 +14,15 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
-} from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
+import { formatDate } from '@/i18n/datetime';
 import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Section } from '@/components/page-shell';
+import { IconButton } from '@/components/ui/icon-button';
 
 export interface UnitRow {
   id: number;
@@ -112,6 +113,7 @@ function Submit({ children }: { children: React.ReactNode }) {
 export function MyMoneyTab({ data }: { data: MyMoneyData }) {
   const tr = useT();
   const t = useT();
+  const tz = useTimeZone();
   const [unitState, addUnit] = useActionState(addUnitAction, {} as MoneyState);
   useActionToast(unitState);
   const [reqState, requestPayment] = useActionState(requestPaymentAction, {} as MoneyState);
@@ -125,17 +127,14 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
   return (
     <div className="grid gap-4">
       {data.isUnitBased && (
-      <section className="grid gap-2">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold">
-          <Package className="size-4" />
-          {tr("کارکردِ تعدادی")}
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          {tr("تعدادِ کارِ هر تاریخ را ثبت کنید؛ مبلغ = تعداد × نرخِ هر واحدِ شما (خودکار) و حسابدار هنگامِ پرداخت می‌تواند اصلاحش کند.")}
-        </p>
+      <Section
+        icon={<Package />}
+        title={tr("کارکردِ تعدادی")}
+        description={tr("تعدادِ کارِ هر تاریخ را ثبت کنید؛ مبلغ = تعداد × نرخِ هر واحدِ شما (خودکار) و حسابدار هنگامِ پرداخت می‌تواند اصلاحش کند.")}
+      >
 
         {!data.isFrozen && (
-          <form action={addUnit} className="flex flex-wrap items-end gap-2 rounded-md border p-3">
+          <form action={addUnit} className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
             <input type="hidden" name="projectId" value={data.projectId} />
 
             {/* مدیر برای هر عضوی ثبت می‌کند؛ عضو فقط برای خودش. */}
@@ -165,7 +164,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
         )}
 
         {data.units.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{t("هنوز ردیفی ثبت نشده.")}</p>
+          <p className="text-sm text-muted-foreground">{t("هنوز ردیفی ثبت نشده.")}</p>
         ) : (
           <Table>
             <TableHeader>
@@ -175,7 +174,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
                 <TableHead numeric>{t("تعداد")}</TableHead>
                 <TableHead numeric>{t("مبلغ")}</TableHead>
                 <TableHead>{t("وضعیت")}</TableHead>
-                <TableHead />
+                <TableActionsHead />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -192,10 +191,10 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
                         {t(UNIT_STATUS_LABELS[u.status] ?? u.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-end">
+                    <TableActionsCell>
                       {/* ⚠️ ردیفِ پرداخت‌شده هیچ اقدامی ندارد — سندِ انجام‌شده است. */}
                       {!paid && !data.isFrozen && (
-                        <div className="flex justify-end gap-1">
+                        <>
                           {u.isMine && !data.canManage && (
                             u.openRequest ? (
                               u.openRequest.status === 'pending' ? (
@@ -218,18 +217,19 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
                             )
                           )}
                           {(data.canManage || u.isMine) && (
-                            <Button
-                              type="button"
+                            <IconButton
+                              variant="ghost"
+                              className="size-8 text-muted-foreground hover:text-destructive"
+                              label={t("حذف")}
                               disabled={pending}
-                              onClick={() => run(() => deleteUnitAction(u.id, data.projectId))} variant="ghost" size="icon-sm" className="text-muted-foreground"
-                              aria-label={t("حذف")}
+                              onClick={() => run(() => deleteUnitAction(u.id, data.projectId))}
                             >
-                              <Trash2 className="size-4" />
-                            </Button>
+                              <Trash2 className="size-3.5" />
+                            </IconButton>
                           )}
-                        </div>
+                        </>
                       )}
-                    </TableCell>
+                    </TableActionsCell>
                   </TableRow>
                 );
               })}
@@ -247,7 +247,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
           </p>
         )}
         {rowError && <p className="text-xs text-destructive">{rowError}</p>}
-      </section>
+      </Section>
       )}
 
       {/*
@@ -258,8 +258,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
         «درخواستِ پرداخت» برای مدیر نمی‌آید — او پرداخت را خودش ثبت می‌کند.
       */}
       {(
-        <section className="grid gap-2">
-          <h3 className="text-sm font-semibold">{t("درخواستِ پرداخت")}</h3>
+        <Section title={t("درخواستِ پرداخت")}>
 
           <div className="flex flex-wrap gap-4 text-sm">
             <span>{t("مبلغ توافقی شما:")} <b className="num">{format(data.agreed)} {data.currencyCode}</b></span>
@@ -277,9 +276,9 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
           {data.requests.length > 0 && (
             <ul className="grid gap-1">
               {data.requests.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm">
                   <b className="num">{format(r.amount)}</b>
-                  <span className="num text-xs text-muted-foreground">{String(r.createdAt).slice(0, 10)}</span>
+                  <span className="num text-xs text-muted-foreground">{formatDate(r.createdAt, tz)}</span>
                   <Badge variant={r.status === 'paid' ? 'success' : 'outline'}>
                     {t(REQUEST_STATUS_LABELS[r.status] ?? r.status)}
                   </Badge>
@@ -316,11 +315,11 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
           <div className="grid gap-1">
             <h4 className="text-xs font-semibold text-muted-foreground">{t("پرداختی‌های شما")}</h4>
             {data.payouts.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t("هنوز پرداختی برای شما ثبت نشده.")}</p>
+              <p className="text-sm text-muted-foreground">{t("هنوز پرداختی برای شما ثبت نشده.")}</p>
             ) : (
               <ul className="grid gap-1">
                 {data.payouts.map((p) => (
-                  <li key={p.id} className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                  <li key={p.id} className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm">
                     <span className="num text-xs text-muted-foreground">{p.paidAt ?? '—'}</span>
                     <b className="num">{format(p.amountSettled ?? p.amount)} {p.currencyCode ?? ''}</b>
                     {p.note && <span className="text-xs text-muted-foreground">{p.note}</span>}
@@ -337,9 +336,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
 
           {/* فرمِ درخواست فقط برای عضو — مدیر پرداخت را خودش در حسابداری ثبت می‌کند. */}
           {data.canManage ? null : Number(data.available) > 0 ? (
-            // ⚠️ پهنای محدود: فرم دو فیلد و یک دکمه دارد و کش‌آمدنش تا لبهٔ
-            // نمایشگر، فاصلهٔ برچسب تا ورودی را بی‌معنا می‌کرد.
-            <form action={requestPayment} className="flex max-w-2xl flex-wrap items-end gap-2 rounded-md border p-3">
+            <form action={requestPayment} className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
               <input type="hidden" name="projectId" value={data.projectId} />
               <div className="grid gap-1.5">
                 <Label htmlFor="r-amount">{t("مبلغ")}</Label>
@@ -359,7 +356,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
               {tr("مبلغِ قابلِ درخواستی ندارید — یا مانده صفر است یا درخواستِ بازی دارید.")}
             </p>
           )}
-        </section>
+        </Section>
       )}
     </div>
   );

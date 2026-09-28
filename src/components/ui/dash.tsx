@@ -3,6 +3,7 @@ import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { Panel } from '@/components/page-shell';
 import { t } from '@/i18n/server';
 
 /**
@@ -110,7 +111,10 @@ export function CardGroup({ title, children }: { title: string; children: React.
   );
 }
 
-/** پنل — عنوان + محتوا، مثلِ `. نسخهٔ قبلی. */
+/**
+ * پنلِ داشبورد — همان `Panel` ِ مشترک؛ اینجا فقط پیوندِ «همه» را می‌سازد.
+ * ⚠️ خودِ ظاهر در `Panel` است تا پنل‌های صفحه‌های دیگر عیناً همین شکل را بگیرند.
+ */
 export function DashPanel({
   title,
   action,
@@ -121,17 +125,16 @@ export function DashPanel({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="gap-0 py-0 shadow-xs">
-      <header className="flex items-center justify-between border-b px-4 py-2.5">
-        <h3 className="text-sm font-semibold">{title}</h3>
-        {action && (
-          <Link href={action.href} className="text-xs text-muted-foreground hover:text-foreground">
-            {t(action.label)}
-          </Link>
-        )}
-      </header>
-      <div className="p-4">{children}</div>
-    </Card>
+    <Panel
+      title={title}
+      actions={action && (
+        <Link href={action.href} className="text-xs text-muted-foreground hover:text-foreground">
+          {t(action.label)}
+        </Link>
+      )}
+    >
+      {children}
+    </Panel>
   );
 }
 

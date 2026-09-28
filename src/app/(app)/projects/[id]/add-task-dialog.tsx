@@ -85,8 +85,9 @@ export function AddTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+      {/* دکمهٔ «افزودن» همه‌جا دکمهٔ اصلی است — اینجا outline بود. */}
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
+        <Button size="sm">
           <Plus className="size-4" />
           {tr("افزودن تسک")}
         </Button>

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { ArrowLeftRight, Lock, Paperclip, Plus, Trash2, CircleAlert } from 'lucide-react';
+import { ArrowLeftRight, CircleAlert, Lock, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   deleteEntryAction, saveEntryAction, transferAction, type FinanceState,
 } from './_form/actions';
@@ -24,9 +24,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
-} from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { LedgerFilter, type LedgerPaging } from './ledger-filter';
@@ -37,6 +35,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DatePicker } from '@/components/ui/date-picker';
 import { StatCard } from '@/components/stat-card';
+import { FileInput } from '@/components/ui/file-input';
 
 /** یک حساب — همان شکلی که `listAccounts` برمی‌گرداند. */
 export interface AccountOption {
@@ -227,7 +226,8 @@ export function LedgerView({
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <SearchableSelect
-          containerClassName="w-full max-w-xs"
+          size="sm"
+          containerClassName="w-full sm:w-64"
           value={accountId}
           onValueChange={(v) => onSelectAccount(Number(v))}
         >
@@ -302,109 +302,108 @@ export function LedgerView({
       {entries.length === 0 ? (
         <EmptyState title={t("ردیفی ثبت نشده")} />
       ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead numeric>#</TableHead>
-                <TableHead numeric>{t("تاریخ")}</TableHead>
-                <TableHead>{t("تگ‌ها")}</TableHead>
-                <TableHead>{t("توضیحات")}</TableHead>
-                <TableHead numeric>{t("مبلغ")}</TableHead>
-                <TableHead>{t("پرداخت‌کننده")}</TableHead>
-                <TableHead>{t("دریافت‌کننده")}</TableHead>
-                <TableHead>{t("بابت")}</TableHead>
-                <TableHead>{t("توسط")}</TableHead>
-                {showEur && <TableHead numeric>{t("معادل یورو")}</TableHead>}
-                <TableHead>{t("رسید")}</TableHead>
-                {canManage && <TableHead />}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {entriesView.rows.map((e, i) => (
-                <TableRow key={e.id}>
-                  {/* # و تاریخ جزئیاتِ ردیف را باز می‌کنند (پورتِ کلیک روی #/تاریخ). */}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead numeric>#</TableHead>
+              <TableHead numeric>{t("تاریخ")}</TableHead>
+              <TableHead>{t("تگ‌ها")}</TableHead>
+              <TableHead>{t("توضیحات")}</TableHead>
+              <TableHead numeric>{t("مبلغ")}</TableHead>
+              <TableHead>{t("پرداخت‌کننده")}</TableHead>
+              <TableHead>{t("دریافت‌کننده")}</TableHead>
+              <TableHead>{t("بابت")}</TableHead>
+              <TableHead>{t("توسط")}</TableHead>
+              {showEur && <TableHead numeric>{t("معادل یورو")}</TableHead>}
+              <TableHead>{t("رسید")}</TableHead>
+              {canManage && <TableActionsHead />}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {entriesView.rows.map((e, i) => (
+              <TableRow key={e.id}>
+                {/* # و تاریخ جزئیاتِ ردیف را باز می‌کنند (پورتِ کلیک روی #/تاریخ). */}
+                <TableNumericCell className="text-muted-foreground">
+                  <button type="button" className="underline-offset-2 hover:underline" onClick={() => setDetail(e)}>
+                    {rowNumber(i)}
+                  </button>
+                </TableNumericCell>
+                <TableNumericCell>
+                  <button type="button" className="underline-offset-2 hover:underline" onClick={() => setDetail(e)}>
+                    {e.entryDate}
+                  </button>
+                </TableNumericCell>
+                <TableCell>
+                  <span className="flex flex-wrap gap-1">
+                    {e.isTransfer && <Badge variant="secondary">{t("انتقال")}</Badge>}
+                    {e.tagIds.map((id) => tagName.get(id)).filter((n): n is string => Boolean(n)).map((name) => (
+                      <Badge key={name} variant="outline">{name}</Badge>
+                    ))}
+                  </span>
+                </TableCell>
+                <TableCell>{e.description || '—'}</TableCell>
+                {/* پورتِ `amount_html`/`amount_color`: علامت و رنگ جهت را می‌گویند. */}
+                <TableNumericCell className={e.direction === 'in' ? 'text-emerald-700 dark:text-emerald-500' : 'text-destructive'}>
+                  {e.direction === 'in' ? '+' : '−'}{format(e.amountAccount)}
+                </TableNumericCell>
+                <TableCell>{e.payerName || e.payerLabel || '—'}</TableCell>
+                <TableCell>{e.receiverName || e.receiverLabel || '—'}</TableCell>
+                <TableCell>{e.projectTitle ? <Badge variant="secondary">{e.projectTitle}</Badge> : '—'}</TableCell>
+                <TableCell className="text-muted-foreground">{e.lastActor ?? '—'}</TableCell>
+                {showEur && (
                   <TableNumericCell className="text-muted-foreground">
-                    <button type="button" className="underline-offset-2 hover:underline" onClick={() => setDetail(e)}>
-                      {rowNumber(i)}
-                    </button>
+                    {e.eurDisplay === null ? '—' : format(e.eurDisplay)}
                   </TableNumericCell>
-                  <TableNumericCell>
-                    <button type="button" className="underline-offset-2 hover:underline" onClick={() => setDetail(e)}>
-                      {e.entryDate}
-                    </button>
-                  </TableNumericCell>
-                  <TableCell>
+                )}
+                <TableCell>
+                  {e.receipts.length === 0 ? '—' : (
                     <span className="flex flex-wrap gap-1">
-                      {e.isTransfer && <Badge variant="secondary">{t("انتقال")}</Badge>}
-                      {e.tagIds.map((id) => tagName.get(id)).filter((n): n is string => Boolean(n)).map((name) => (
-                        <Badge key={name} variant="outline">{name}</Badge>
+                      {e.receipts.map((r, n) => (
+                        <ReceiptThumb key={r.id} receipt={r} index={n + 1} size={28} onZoom={setZoom} />
                       ))}
                     </span>
-                  </TableCell>
-                  <TableCell>{e.description || '—'}</TableCell>
-                  {/* پورتِ `amount_html`/`amount_color`: علامت و رنگ جهت را می‌گویند. */}
-                  <TableNumericCell className={e.direction === 'in' ? 'text-emerald-700 dark:text-emerald-500' : 'text-destructive'}>
-                    {e.direction === 'in' ? '+' : '−'}{format(e.amountAccount)}
-                  </TableNumericCell>
-                  <TableCell>{e.payerName || e.payerLabel || '—'}</TableCell>
-                  <TableCell>{e.receiverName || e.receiverLabel || '—'}</TableCell>
-                  <TableCell>{e.projectTitle ? <Badge variant="secondary">{e.projectTitle}</Badge> : '—'}</TableCell>
-                  <TableCell className="text-muted-foreground">{e.lastActor ?? '—'}</TableCell>
-                  {showEur && (
-                    <TableNumericCell className="text-muted-foreground">
-                      {e.eurDisplay === null ? '—' : format(e.eurDisplay)}
-                    </TableNumericCell>
                   )}
-                  <TableCell>
-                    {e.receipts.length === 0 ? '—' : (
-                      <span className="flex flex-wrap gap-1">
-                        {e.receipts.map((r, n) => (
-                          <ReceiptThumb key={r.id} receipt={r} index={n + 1} size={28} onZoom={setZoom} />
-                        ))}
+                </TableCell>
+                {canManage && (
+                  <TableActionsCell>
+                    {isLocked(e.entryDate) ? (
+                      <span className="flex size-8 items-center justify-center text-muted-foreground" title={t('دورهٔ قفل‌شده')}>
+                        <Lock className="size-3.5" />
                       </span>
+                    ) : (
+                    <>
+                      <IconButton
+                        variant="ghost"
+                        className="size-8"
+                        label={t("ویرایش")}
+                        onClick={() => { setEditing(e); setFormOpen(true); }}
+                      >
+                        <Pencil className="size-3.5" />
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        className="size-8 text-muted-foreground hover:text-destructive"
+                        label={t("حذفِ ردیف")}
+                        disabled={pending}
+                        onClick={async () => {
+                          if (!(await confirm({ title: t('این ردیفِ دفتر حذف شود؟') }))) return;
+                          startTransition(async () => {
+                            const result = await deleteEntryAction(e.id);
+                            if (result.error) show(tr(result.error), 'error');
+                            else show(tr('حذف شد.'), 'success');
+                          });
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </IconButton>
+                    </>
                     )}
-                  </TableCell>
-                  {canManage && (
-                    <TableCell>
-                      {isLocked(e.entryDate) ? (
-                        <span className="flex justify-end text-muted-foreground" title={t('دورهٔ قفل‌شده')}>
-                          <Lock className="size-3.5" />
-                        </span>
-                      ) : (
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => { setEditing(e); setFormOpen(true); }}
-                        >
-                          {tr("ویرایش")}
-                        </Button>
-                        <IconButton
-                          variant="ghost"
-                          className="size-8 text-muted-foreground hover:text-destructive"
-                          label={t("حذفِ ردیف")}
-                          disabled={pending}
-                          onClick={async () => {
-                            if (!(await confirm({ title: t('این ردیفِ دفتر حذف شود؟') }))) return;
-                            startTransition(async () => {
-                              const result = await deleteEntryAction(e.id);
-                              if (result.error) show(tr(result.error), 'error');
-                              else show(tr('حذف شد.'), 'success');
-                            });
-                          }}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </IconButton>
-                      </div>
-                      )}
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                  </TableActionsCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       {/* ---- جزئیاتِ ردیف ---- */}
@@ -512,7 +511,7 @@ export function LedgerView({
                 <Paperclip className="size-3.5" />
                 {t("رسید")}
               </Label>
-              <Input id="t-receipt" name="receipt" type="file" accept="image/*,application/pdf" />
+              <FileInput id="t-receipt" name="receipt" accept="image/*,application/pdf" />
               <p className="text-xs text-muted-foreground">
                 {tr('روی هر دو لِگِ انتقال می‌نشیند — تصویر یا PDF تا {size}.', { size: humanSize(MAX_SIZE.receipt, tr) })}
               </p>

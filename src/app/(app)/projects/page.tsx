@@ -41,6 +41,7 @@ export default async function ProjectsPage({
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader title={t("پروژه‌ها")} />
           <EmptyState title={t("دسترسی ندارید")} description={t("برای دیدنِ پروژه‌ها از مدیر دسترسی بگیرید.")} />
         </PageShell>
       );

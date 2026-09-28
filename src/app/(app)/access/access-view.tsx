@@ -28,14 +28,12 @@ import {
 } from '@/components/ui/dialog';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm';
-import { formatDateTime } from '@/i18n/datetime';
-import { useT } from '@/i18n/client';
+import { formatDate } from '@/i18n/datetime';
+import { useT, useTimeZone } from '@/i18n/client';
 
 /**
  * دفترِ دسترسی‌های بیرونی.
@@ -101,6 +99,7 @@ type StatusFilter = 'open' | 'revoked' | 'all';
 
 export function AccessView({ data, focusUser }: { data: AccessData; focusUser: number | null }) {
   const tr = useT();
+  const tz = useTimeZone();
   const { show } = useToast();
   const confirm = useConfirm();
   const [tab, setTab] = useState<'grants' | 'services'>('grants');
@@ -178,10 +177,13 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
       )}
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList variant="line" className="w-max">
-          <TabsTrigger value="grants">{tr("دسترسی‌ها")}</TabsTrigger>
-          <TabsTrigger value="services">{tr("سرویس‌ها")}</TabsTrigger>
-        </TabsList>
+        {/* همان نوارِ تبِ صفحه‌های دیگر: پیمایشِ افقی، دکمه‌های بی‌کش. */}
+        <div className="overflow-x-auto pb-1.5">
+          <TabsList variant="line" className="w-max">
+            <TabsTrigger value="grants" className="flex-none">{tr("دسترسی‌ها")}</TabsTrigger>
+            <TabsTrigger value="services" className="flex-none">{tr("سرویس‌ها")}</TabsTrigger>
+          </TabsList>
+        </div>
       </Tabs>
 
       {tab === 'grants' && (
@@ -267,86 +269,84 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
               icon={<KeyRound className="size-5" />}
             />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{tr("شخص")}</TableHead>
-                    <TableHead>{tr("سرویس")}</TableHead>
-                    <TableHead>{tr("سطح")}</TableHead>
-                    <TableHead>{tr("شناسهٔ حساب")}</TableHead>
-                    <TableHead>{tr("از تاریخ")}</TableHead>
-                    <TableHead>{tr("وضعیت")}</TableHead>
-                    <TableHead />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((row) => {
-                    const former = stateLabel(row.memberState);
-                    return (
-                      <TableRow key={row.id}>
-                        <TableCell>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{tr("شخص")}</TableHead>
+                  <TableHead>{tr("سرویس")}</TableHead>
+                  <TableHead>{tr("سطح")}</TableHead>
+                  <TableHead>{tr("شناسهٔ حساب")}</TableHead>
+                  <TableHead>{tr("از تاریخ")}</TableHead>
+                  <TableHead>{tr("وضعیت")}</TableHead>
+                  <TableActionsHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => {
+                  const former = stateLabel(row.memberState);
+                  return (
+                    <TableRow key={row.id}>
+                      <TableCell>
+                        <span className="flex flex-wrap items-center gap-1">
+                          {row.userName}
+                          {former && <Badge variant="outline">{tr(former)}</Badge>}
+                        </span>
+                      </TableCell>
+                      <TableCell>{serviceName(row.serviceId)}</TableCell>
+                      <TableCell>
+                        <Badge variant={row.level === 'admin' ? 'default' : 'secondary'}>
+                          {tr(LEVEL_LABELS[row.level])}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="num text-xs" dir="ltr">{row.accountRef || '—'}</TableCell>
+                      <TableCell className="num text-xs">
+                        {formatDate(row.grantedAt, tz)}
+                      </TableCell>
+                      <TableCell>
+                        {row.revokedAt === null ? (
+                          <Badge variant="success">{tr("باز")}</Badge>
+                        ) : (
                           <span className="flex flex-wrap items-center gap-1">
-                            {row.userName}
-                            {former && <Badge variant="outline">{tr(former)}</Badge>}
-                          </span>
-                        </TableCell>
-                        <TableCell>{serviceName(row.serviceId)}</TableCell>
-                        <TableCell>
-                          <Badge variant={row.level === 'admin' ? 'default' : 'secondary'}>
-                            {tr(LEVEL_LABELS[row.level])}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="num text-xs" dir="ltr">{row.accountRef || '—'}</TableCell>
-                        <TableCell className="num text-xs">
-                          {formatDateTime(row.grantedAt).slice(0, 10)}
-                        </TableCell>
-                        <TableCell>
-                          {row.revokedAt === null ? (
-                            <Badge variant="success">{tr("باز")}</Badge>
-                          ) : (
-                            <span className="flex flex-wrap items-center gap-1">
-                              <Badge variant="outline">{tr("قطع‌شده")}</Badge>
-                              <span className="num text-xs text-muted-foreground">
-                                {formatDateTime(row.revokedAt).slice(0, 10)}
-                              </span>
+                            <Badge variant="outline">{tr("قطع‌شده")}</Badge>
+                            <span className="num text-xs text-muted-foreground">
+                              {formatDate(row.revokedAt, tz)}
                             </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {data.canManage && row.revokedAt === null && (
-                            <div className="flex items-center justify-end gap-1">
-                              <IconButton
-                                variant="ghost"
-                                className="size-8"
-                                label={tr("ویرایش")}
-                                onClick={() => openGrant(row)}
-                              >
-                                <Pencil className="size-3.5" />
-                              </IconButton>
-                              <IconButton
-                                variant="ghost"
-                                className="size-8 text-muted-foreground hover:text-destructive"
-                                label={tr("قطعِ دسترسی")}
-                                disabled={pending}
-                                onClick={async () => {
-                                  if (await confirm({
-                                    title: tr('این دسترسی قطع شود؟'),
-                                    description: tr('ردیف پاک نمی‌شود؛ تاریخِ قطع رویش ثبت می‌شود. قطعِ واقعی را در خودِ سرویس انجام دهید.'),
-                                  })) revoke(row);
-                                }}
-                              >
-                                <XCircle className="size-3.5" />
-                              </IconButton>
-                            </div>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableActionsCell>
+                        {data.canManage && row.revokedAt === null && (
+                          <>
+                            <IconButton
+                              variant="ghost"
+                              className="size-8"
+                              label={tr("ویرایش")}
+                              onClick={() => openGrant(row)}
+                            >
+                              <Pencil className="size-3.5" />
+                            </IconButton>
+                            <IconButton
+                              variant="ghost"
+                              className="size-8 text-muted-foreground hover:text-destructive"
+                              label={tr("قطعِ دسترسی")}
+                              disabled={pending}
+                              onClick={async () => {
+                                if (await confirm({
+                                  title: tr('این دسترسی قطع شود؟'),
+                                  description: tr('ردیف پاک نمی‌شود؛ تاریخِ قطع رویش ثبت می‌شود. قطعِ واقعی را در خودِ سرویس انجام دهید.'),
+                                })) revoke(row);
+                              }}
+                            >
+                              <XCircle className="size-3.5" />
+                            </IconButton>
+                          </>
+                        )}
+                      </TableActionsCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           )}
         </section>
       )}
@@ -572,7 +572,7 @@ function ChecklistDialog({
                 <Badge variant="outline">{tr(stateLabel(group.state) ?? '')}</Badge>
               </h3>
               {group.rows.map((row) => (
-                <label key={row.id} className="flex items-start gap-2 rounded-md border p-2 text-sm">
+                <label key={row.id} className="flex items-start gap-2 rounded-lg border p-2 text-sm">
                   <Checkbox
                     className="mt-0.5"
                     checked={picked.includes(row.id)}

@@ -11,16 +11,14 @@ import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { EmptyState } from '@/components/ui/empty-state';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
-} from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Section, SectionHeader } from '@/components/page-shell';
 
 export interface MyAbsence {
   id: number;
@@ -68,8 +66,8 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
 
   return (
     <div className="grid gap-4">
-      <form action={formAction} className="grid gap-3 rounded-md border p-3">
-        <p className="text-sm font-medium">{tr('ثبتِ مرخصی')}</p>
+      <form action={formAction} className="grid gap-3 rounded-lg border p-3">
+        <SectionHeader as="h3" title={tr('ثبتِ مرخصی')} />
 
         <div className="grid gap-3 @md/main:grid-cols-4">
           {canPickPerson ? (
@@ -79,7 +77,6 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
                 id="a-user"
                 name="userId"
                 defaultValue={data.meId}
-                
               >
                 {data.targets.map((p) => (
                   <NativeSelectOption key={p.id} value={p.id}>
@@ -117,10 +114,13 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
         </div>
       </form>
 
-      <div className="grid gap-2">
-        <p className="text-sm font-medium">{tr(data.listTitle ?? 'مرخصی‌های من')}</p>
+      <Section title={tr(data.listTitle ?? 'مرخصی‌های من')}>
         {data.mine.length === 0 ? (
-          <EmptyState title={tr('مرخصی‌ای ثبت نکرده‌اید')} />
+          // ⚠️ یک خطِ متن، مثلِ بخش‌های کناری‌اش — نه جعبهٔ خالیِ بزرگ. و «ثبت نکرده‌اید»
+          // فقط وقتی فهرست مالِ خودِ کاربر است؛ روی صفحهٔ عضوِ دیگر غلط بود.
+          <p className="text-sm text-muted-foreground">
+            {data.listTitle ? tr('مرخصی‌ای ثبت نشده.') : tr('مرخصی‌ای ثبت نکرده‌اید')}
+          </p>
         ) : (
           <Table>
             <TableHeader>
@@ -128,7 +128,7 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
                 <TableHead numeric>{tr('از')}</TableHead>
                 <TableHead numeric>{tr('تا')}</TableHead>
                 <TableHead>{tr('توضیح')}</TableHead>
-                <TableHead />
+                <TableActionsHead />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -137,8 +137,7 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
                   <TableNumericCell>{a.fromDate}</TableNumericCell>
                   <TableNumericCell>{a.toDate}</TableNumericCell>
                   <TableCell>{a.note || '—'}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-end">
+                  <TableActionsCell>
                       <IconButton
                         variant="ghost"
                         className="size-8 text-muted-foreground hover:text-destructive"
@@ -152,14 +151,13 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
                       >
                         <Trash2 className="size-3.5" />
                       </IconButton>
-                    </div>
-                  </TableCell>
+                  </TableActionsCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
-      </div>
+      </Section>
     </div>
   );
 }

@@ -32,6 +32,7 @@ export async function PeopleSectionPage({ section }: { section: SectionConfig })
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader title={t(section.title)} />
           <EmptyState
             title={t("دسترسی ندارید")}
             description={t('برای دیدنِ {section} از مدیر دسترسی بگیرید.', {

@@ -32,13 +32,14 @@ export function OfficeFilter({
   const tr = useT();
   const clearHref = `/reports?${new URLSearchParams({ tab, ...extra }).toString()}`;
   return (
-    <form method="get" action="/reports" className="flex flex-wrap items-end gap-2 rounded-md border p-3">
+    <form method="get" action="/reports" className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
       <input type="hidden" name="tab" value={tab} />
       {Object.entries(extra).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       <div className="grid min-w-[14rem] gap-1.5">
         <span className="text-xs text-muted-foreground">{tr('دفتر:')}</span>
         <MultiSelect
           name="office"
+          size="sm"
           options={offices.map((o) => ({ id: o.id, label: o.name }))}
           defaultSelected={selected}
           placeholder={tr('همهٔ دفاتر')}
@@ -80,7 +81,7 @@ export function RangeBar({
   )}`;
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-md border p-3">
+    <div className="flex flex-wrap items-end gap-3 rounded-lg border p-3">
       <div className="flex flex-wrap gap-1">
         {presets.map((p) => (
           <Button
@@ -105,7 +106,8 @@ export function RangeBar({
           {tr('تا')}
           <DatePicker name={toName} defaultValue={range.to} size="sm" className="w-[9.5rem]" />
         </label>
-        <Button type="submit" size="sm" variant="outline" className="h-8">{tr('اعمال')}</Button>
+        {/* ⚠️ «اعمال» همه‌جا دکمهٔ اصلی است — در فیلترِ دفتر اصلی بود و اینجا outline. */}
+        <Button type="submit" size="sm">{tr('اعمال')}</Button>
       </form>
     </div>
   );

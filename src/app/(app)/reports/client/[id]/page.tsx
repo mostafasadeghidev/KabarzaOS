@@ -32,6 +32,7 @@ export default async function ClientReportPage({ params }: { params: Promise<{ i
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader back={{ href: '/reports?tab=clients', label: t("گزارش‌ها") }} title={t("گزارش‌ها")} />
           <EmptyState title={t("دسترسی ندارید")} description={t("دیدنِ گزارش‌ها مجوزِ جداگانه دارد.")} />
         </PageShell>
       );
@@ -42,6 +43,7 @@ export default async function ClientReportPage({ params }: { params: Promise<{ i
   if (!data) {
     return (
       <PageShell>
+        <PageHeader back={{ href: '/reports?tab=clients', label: t("گزارش‌ها") }} title={t("گزارش‌ها")} />
         <EmptyState title={t("کارفرما پیدا نشد")} />
       </PageShell>
     );

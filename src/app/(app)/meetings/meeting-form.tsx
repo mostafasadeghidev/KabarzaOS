@@ -291,14 +291,14 @@ export function MeetingForm({
             />
           </div>
 
-          <fieldset className="grid gap-1.5 rounded-md border p-3">
+          <fieldset className="grid gap-1.5 rounded-lg border p-3">
             <legend className="px-1 text-sm font-medium">{t("دعوت‌شدگان")}</legend>
             {candidates === null ? (
               <p className="text-xs text-muted-foreground">
                 {tr("برای انتخابِ دعوت‌شدگان، ابتدا پروژه (یا نوعِ جلسه) را مشخص کنید.")}
               </p>
             ) : candidates.length === 0 ? (
-              <p className="text-xs text-muted-foreground">{t("فرد قابلِ دعوتی یافت نشد.")}</p>
+              <p className="text-sm text-muted-foreground">{t("فرد قابلِ دعوتی یافت نشد.")}</p>
             ) : (
               <>
                 <div className="flex gap-2 text-xs">

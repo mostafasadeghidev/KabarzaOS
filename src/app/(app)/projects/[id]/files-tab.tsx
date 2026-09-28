@@ -16,6 +16,8 @@ import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
+import { Section } from '@/components/page-shell';
+import { FileInput } from '@/components/ui/file-input';
 
 export interface FileRow {
   id: number;
@@ -92,24 +94,20 @@ export function FilesTab({
 
   return (
     <div className="grid gap-4">
-      <section className="grid gap-2">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold">
-          <Paperclip className="size-4" />
-          {tr("پیوست‌ها")}
-        </h3>
+      <Section icon={<Paperclip />} title={tr("پیوست‌ها")}>
 
         {canUpload && (
           <form
             ref={uploadForm}
             action={(data) => { upload(data); uploadForm.current?.reset(); }}
-            className="grid gap-2 rounded-md border p-3"
+            className="grid gap-2 rounded-lg border p-3"
           >
             <input type="hidden" name="projectId" value={projectId} />
             <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
               <div className="grid gap-1.5">
                 <Label htmlFor="att-file">{t("فایل‌ها")}</Label>
                 {/* چند فایل هم‌زمان — مثلِ داشبوردِ نسخهٔ قبلی. */}
-                <Input id="att-file" name="file" type="file" multiple required />
+                <FileInput id="att-file" name="file" multiple required />
               </div>
               <SubmitButton>
                 <Upload className="size-3.5" />
@@ -127,13 +125,13 @@ export function FilesTab({
         )}
 
         {attachments.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{t("پیوستی ثبت نشده.")}</p>
+          <p className="text-sm text-muted-foreground">{t("پیوستی ثبت نشده.")}</p>
         ) : (
           <ul className="grid gap-2 @xl/main:grid-cols-2">
             {attachments.map((f) => {
               const Icon = KIND_ICON[f.kind as keyof typeof KIND_ICON] ?? FileText;
               return (
-                <li key={f.id} className="flex items-center gap-3 rounded-md border p-2">
+                <li key={f.id} className="flex items-center gap-3 rounded-lg border p-2">
                   {f.kind === 'image' ? (
                     // پیش‌نمایش هم از همان مسیرِ گیت‌شده می‌آید.
                     <img
@@ -186,16 +184,12 @@ export function FilesTab({
           </ul>
         )}
         {removeError && <p className="text-xs text-destructive">{tr(removeError)}</p>}
-      </section>
+      </Section>
 
-      <section className="grid gap-2">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold">
-          <Link2 className="size-4" />
-          {tr("لینک‌های خارجی")}
-        </h3>
+      <Section icon={<Link2 />} title={tr("لینک‌های خارجی")}>
 
         {canUpload && (
-          <form action={addLink} className="grid gap-2 rounded-md border p-3">
+          <form action={addLink} className="grid gap-2 rounded-lg border p-3">
             <input type="hidden" name="projectId" value={projectId} />
             <div className="grid gap-2 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
               <div className="grid gap-1.5">
@@ -216,13 +210,13 @@ export function FilesTab({
         )}
 
         {links.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {tr("لینکِ گوگل‌درایو/دراپ‌باکس و … اینجا دیده می‌شوند.")}
           </p>
         ) : (
           <ul className="grid gap-1">
             {links.map((f) => (
-              <li key={f.id} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+              <li key={f.id} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
                 <a
                   href={f.href}
                   target="_blank"
@@ -247,7 +241,7 @@ export function FilesTab({
             ))}
           </ul>
         )}
-      </section>
+      </Section>
     </div>
   );
 }

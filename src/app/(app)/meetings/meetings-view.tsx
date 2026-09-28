@@ -113,14 +113,17 @@ export function MeetingsView({
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
+        {/* ⚠️ تبِ سطحِ صفحه (جلسات / یادآورها)، پس خطی — مثلِ صفحه‌های دیگر. */}
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-          <TabsList>
-            {(['meetings', 'reminders'] as const).map((key) => (
-              <TabsTrigger key={key} value={key} className="flex-none px-3">
-                {key === 'meetings' ? tr('جلسات') : tr('یادآورهای من')}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="overflow-x-auto pb-1.5">
+            <TabsList variant="line" className="w-max">
+              {(['meetings', 'reminders'] as const).map((key) => (
+                <TabsTrigger key={key} value={key} className="flex-none">
+                  {key === 'meetings' ? tr('جلسات') : tr('یادآورهای من')}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
         </Tabs>
 
         {tab === 'meetings' && canManage && (
@@ -222,7 +225,7 @@ export function MeetingsView({
         )
       ) : (
         <div className="grid max-w-3xl gap-4">
-          <form action={reminderAction} className="grid gap-3 rounded-md border p-3">
+          <form action={reminderAction} className="grid gap-3 rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">
               {tr("یک یادداشت برای زمانی در آینده تنظیم کنید؛ سرِ موعد به شما یادآوری می‌شود.")}
             </p>
@@ -267,7 +270,7 @@ export function MeetingsView({
           ) : (
             <ul className="grid gap-2">
               {reminders.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
+                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
                   <div className="min-w-0">
                     <p className="text-sm">{r.body}</p>
                     <p className="num mt-0.5 text-xs text-muted-foreground">{when(r.remindAt, tz)}</p>

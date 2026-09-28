@@ -10,9 +10,7 @@ import { hoursLabel } from '@/domain/reports/summary';
 import { REPORT_TABS } from '@/domain/access/staff-levels';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
-} from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
 import { Download, TriangleAlert, CircleAlert } from 'lucide-react';
 import { isExportableTab } from '@/domain/reports/export';
@@ -27,6 +25,7 @@ import { Toggle } from '@/components/ui/toggle';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StatCard } from '@/components/stat-card';
 import { Progress } from '@/components/ui/progress';
+import { Section } from '@/components/page-shell';
 
 /** «دورهٔ بسته» هم خروجی دارد ولی تبِ صادرشدنی نیست — تاریخ لازم دارد. */
 function isExportable(tab: string): boolean {
@@ -332,7 +331,7 @@ export function ReportsView({
         {/* ⚠️ نبودِ نرخ بی‌صدا ۱ نمی‌شود (R-MONEY-06) — ولی بی‌صدا هم نمی‌ماند. */}
         {/* پورتِ `rate_banner_html`: نرخ‌هایی که ارقام بر آن‌ها تکیه دارند + هشدارِ کهنه/غایب. */}
         {data.overall.rates.visible && data.overall.rates.shown.length > 0 && (
-          <div className="flex flex-wrap items-center gap-3 rounded-md border px-3 py-2 text-xs">
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2 text-xs">
             <span className="num" dir="ltr">{data.overall.rates.shown.join('  ·  ')}</span>
           </div>
         )}
@@ -365,8 +364,7 @@ export function ReportsView({
           </Alert>
         )}
         {cardGroups.map((group) => (
-          <section key={group.title} className="grid gap-2">
-            <h3 className="text-sm font-semibold">{tr(group.title)}</h3>
+          <Section key={group.title} title={tr(group.title)}>
             <div className="grid gap-4 @xl/main:grid-cols-2 @3xl/main:grid-cols-4">
               {group.cards.map((c) => (
                 <StatCard
@@ -378,7 +376,7 @@ export function ReportsView({
                 />
               ))}
             </div>
-          </section>
+          </Section>
         ))}
         <p className="text-xs text-muted-foreground">
           {tr("سودِ تخمینی = ارزشِ پروژه‌ها − تعهد به اعضا؛ پروژه‌محور است و هزینه‌های عمومی (دوره‌ای/بی‌پروژه) در آن نیست.")}
@@ -528,8 +526,7 @@ export function ReportsView({
             {tr("مجموعِ خروجی‌های واقعی (برداشت‌های دفترکل، بدونِ انتقال‌های داخلی و پرداخت به اعضا)، نرمال‌شده به یورو.")}
           </p>
 
-          <section className="grid gap-2">
-            <h3 className="text-sm font-semibold">{tr("به تفکیک طرف‌حساب")}</h3>
+          <Section title={tr("به تفکیک طرف‌حساب")}>
             {data.expenses.byVendor.length >= 2 && (
               <div className="flex flex-wrap items-center gap-1">
                 {data.expenses.byVendor.map((v) => {
@@ -574,10 +571,9 @@ export function ReportsView({
                 </TableBody>
               </Table>
             )}
-          </section>
+          </Section>
 
-          <section className="grid gap-2">
-            <h3 className="text-sm font-semibold">{tr("به تفکیک ماه")}</h3>
+          <Section title={tr("به تفکیک ماه")}>
             {expenseStats.byMonth.length === 0 ? <p className="text-sm text-muted-foreground">{tr("موردی پیدا نشد.")}</p> : (
               <Table>
                 <TableHeader>
@@ -601,11 +597,10 @@ export function ReportsView({
                 </TableBody>
               </Table>
             )}
-          </section>
+          </Section>
 
-          <section className="grid gap-2">
-            <h3 className="text-sm font-semibold">{tr("ردیف‌های دفتر")}</h3>
-            {expenseStats.rows.length === 0 ? <EmptyState title={tr("ردیفی نیست")} /> : (
+          <Section title={tr("ردیف‌های دفتر")}>
+            {expenseStats.rows.length === 0 ? <p className="text-sm text-muted-foreground">{tr("ردیفی نیست")}</p> : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -629,7 +624,7 @@ export function ReportsView({
                 </TableBody>
               </Table>
             )}
-          </section>
+          </Section>
         </div>
       )}
 
@@ -682,7 +677,7 @@ export function ReportsView({
                   <TableHead numeric>{tr("ساعتِ پروژه")}</TableHead>
                   <TableHead numeric>{tr("ساعتِ عمومی")}</TableHead>
                   <TableHead numeric>{tr("مجموع")}</TableHead>
-                  <TableHead />
+                  <TableActionsHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -692,7 +687,7 @@ export function ReportsView({
                     <TableNumericCell>{hoursLabel(h.project)}</TableNumericCell>
                     <TableNumericCell>{hoursLabel(h.general)}</TableNumericCell>
                     <TableNumericCell className="font-semibold">{hoursLabel(h.total)}</TableNumericCell>
-                    <TableCell>
+                    <TableActionsCell>
                       {/* ریزِ عضو با همان بازه — پورتِ `detail_url`. */}
                       <Link
                         href={`/reports/hours/${h.userId}?${filters.hours.allTime ? 'from=&to=' : reportQuery({ from: filters.hours.range.from, to: filters.hours.range.to })}`}
@@ -700,7 +695,7 @@ export function ReportsView({
                       >
                         {tr("جزئیات")}
                       </Link>
-                    </TableCell>
+                    </TableActionsCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -810,8 +805,7 @@ export function ReportsView({
             می‌کنند، ولی نداشتنِ برنامه بی‌سروصدا می‌ماند و همان است که
             «کِی در دسترس است؟» را بی‌جواب می‌گذارد.
           */}
-          <section className="grid gap-2">
-            <h3 className="text-sm font-semibold">{tr("اعضای بدونِ برنامهٔ هفتگی")}</h3>
+          <Section title={tr("اعضای بدونِ برنامهٔ هفتگی")}>
             {data.attendance.withoutSchedule.length === 0 ? (
               <p className="text-sm text-muted-foreground">{tr("همهٔ اعضا برنامهٔ هفتگی داده‌اند.")}</p>
             ) : (
@@ -823,10 +817,9 @@ export function ReportsView({
                 ))}
               </ul>
             )}
-          </section>
+          </Section>
 
-          <section className="grid gap-2">
-            <h3 className="text-sm font-semibold">{tr("مرخصی‌های ثبت‌شده")}</h3>
+          <Section title={tr("مرخصی‌های ثبت‌شده")}>
             {data.attendance.leaves.length === 0 ? (
               <p className="text-sm text-muted-foreground">{tr("مرخصی‌ای ثبت نشده.")}</p>
             ) : (
@@ -851,7 +844,7 @@ export function ReportsView({
                 </TableBody>
               </Table>
             )}
-          </section>
+          </Section>
         </div>
       )}
 

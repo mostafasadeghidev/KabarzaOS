@@ -98,6 +98,7 @@ export default async function DashboardPage({
       }
       return (
         <PageShell>
+          <PageHeader title={t("داشبورد")} />
           <EmptyState title={t("دسترسی ندارید")} description={t("برای دیدنِ داشبورد از مدیر دسترسی بگیرید.")} />
         </PageShell>
       );
@@ -172,7 +173,7 @@ export default async function DashboardPage({
                 <NativeSelectOption value="">{t("همهٔ دفترها")}</NativeSelectOption>
                 {charts.offices.map((o) => <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>)}
               </NativeSelect>
-              <Button type="submit" variant="outline" size="sm">{t("اعمال")}</Button>
+              <Button type="submit" size="sm">{t("اعمال")}</Button>
             </form>
           )}
         </div>

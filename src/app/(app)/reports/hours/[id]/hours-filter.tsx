@@ -65,7 +65,7 @@ export function HoursFilter({
         const to = String(data.get('to') ?? '');
         go({ from, to, project: String(data.get('project') ?? '') }, from === '' && to === '');
       }}
-      className="flex flex-wrap items-end gap-2 rounded-md border p-3"
+      className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
     >
       <div className="flex flex-wrap gap-1">
         {presets.map((p) => (
@@ -84,7 +84,7 @@ export function HoursFilter({
 
       <div className="grid gap-1.5">
         <Label htmlFor="hf-project" className="text-xs">{tr('پروژه')}</Label>
-        <SearchableSelect id="hf-project" name="project" defaultValue={value('project')} >
+        <SearchableSelect id="hf-project" name="project" size="sm" containerClassName="w-44" defaultValue={value('project')}>
           <NativeSelectOption value="">{tr('همهٔ پروژه‌ها')}</NativeSelectOption>
           {projects.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>)}
         </SearchableSelect>
@@ -92,11 +92,11 @@ export function HoursFilter({
 
       <div className="grid gap-1.5">
         <Label htmlFor="hf-from" className="text-xs">{tr('از')}</Label>
-        <DatePicker id="hf-from" name="from" className="w-[9.5rem]" defaultValue={value('from')} />
+        <DatePicker id="hf-from" name="from" size="sm" className="w-[9.5rem]" defaultValue={value('from')} />
       </div>
       <div className="grid gap-1.5">
         <Label htmlFor="hf-to" className="text-xs">{tr('تا')}</Label>
-        <DatePicker id="hf-to" name="to" className="w-[9.5rem]" defaultValue={value('to')} />
+        <DatePicker id="hf-to" name="to" size="sm" className="w-[9.5rem]" defaultValue={value('to')} />
       </div>
 
       <Button type="submit" size="sm">{tr('اعمال')}</Button>

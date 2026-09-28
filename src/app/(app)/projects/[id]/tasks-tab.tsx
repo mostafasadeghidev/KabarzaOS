@@ -280,7 +280,7 @@ function KanbanBoard({
                   setDragging(t.id);
                 }}
                 onDragEnd={() => setDragging(null)}
-                className={`grid gap-1 rounded-md border bg-background p-2 ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''} ${dragging === t.id || pending ? 'opacity-60' : ''}`}
+                className={`grid gap-1 rounded-lg border bg-background p-2 ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''} ${dragging === t.id || pending ? 'opacity-60' : ''}`}
               >
                 <button
                   type="button"
@@ -405,16 +405,16 @@ export function TasksTab({
       {/* زیرتب‌ها — «نیاز به ریویو» اول، ولی گروهِ اول پیش‌فرضِ فعال است. */}
       <div className={`overflow-x-auto overflow-y-hidden ${tasks.length === 0 || view === 'board' ? 'hidden' : ''}`}>
         <Tabs value={tab} onValueChange={setTab}>
-          {/* ⚠️ نامِ گروه سرفصل است نه عنوان: `text-xs`، ریزتر از تبِ معمولی. */}
+          {/* همان قرصِ فیلترِ بقیهٔ اپ — اندازه و وزن یکی، نه نسخهٔ ریزِ خودش. */}
           <TabsList className="w-max">
             {review.length > 0 && (
-              <TabsTrigger value="review" className="flex-none px-3 text-xs">
+              <TabsTrigger value="review" className="flex-none px-3">
                 {tr('نیاز به ریویو')}
                 <Badge variant="warning" className="num px-1.5 py-0 text-[10px]">{review.length}</Badge>
               </TabsTrigger>
             )}
             {groupKeys.map((k) => (
-              <TabsTrigger key={k} value={k} className="flex-none px-3 text-xs font-normal">
+              <TabsTrigger key={k} value={k} className="flex-none px-3">
                 {tr(GROUP_LABEL[k] ?? k)}
                 <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{buckets.get(k)!.length}</Badge>
               </TabsTrigger>
@@ -450,7 +450,7 @@ export function TasksTab({
           <li
             key={t.id}
             onClick={() => setOpenTask(t.id)}
-            className="cursor-pointer rounded-md border p-3 transition-colors hover:border-primary/40 hover:bg-muted/40"
+            className="cursor-pointer rounded-lg border p-3 transition-colors hover:border-primary/40 hover:bg-muted/40"
           >
             <div
               className="flex flex-wrap items-center justify-between gap-2"

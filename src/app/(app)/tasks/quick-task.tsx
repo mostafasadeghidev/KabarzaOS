@@ -202,7 +202,7 @@ export function QuickTaskForm({
 
       {added.length > 0 && (
         <section className="grid content-start gap-2 rounded-lg border border-dashed p-4">
-          <h3 className="text-sm font-medium">{t("ثبت‌شده در این نشست")}</h3>
+          <h3 className="text-sm font-semibold">{t("ثبت‌شده در این نشست")}</h3>
           <ul className="grid gap-1 text-sm">
             {added.map((row, i) => (
               <li key={i} className="flex items-center justify-between gap-2">

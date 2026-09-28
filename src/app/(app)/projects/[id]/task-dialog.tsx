@@ -218,7 +218,7 @@ export function TaskDialog({
               می‌گیرد (`referTask`).
             */}
             {canManage && referring && (
-              <form action={referAction} className="grid gap-2 rounded-md border border-dashed p-3">
+              <form action={referAction} className="grid gap-2 rounded-lg border border-dashed p-3">
                 <input type="hidden" name="taskId" value={task.id} />
                 <input type="hidden" name="toUserId" value={referTo.id ?? ''} />
                 <span className="text-sm font-medium">{tr("ارجاعِ تسک به شخصِ دیگر")}</span>
@@ -275,7 +275,7 @@ export function TaskDialog({
             )}
 
             {editing && options && (
-              <form action={saveAction} className="grid gap-3 rounded-md border p-3">
+              <form action={saveAction} className="grid gap-3 rounded-lg border p-3">
                 <input type="hidden" name="taskId" value={task.id} />
 
                 <div className="grid gap-1.5">
@@ -397,11 +397,11 @@ export function TaskDialog({
             <section className="grid gap-2">
               <h4 className="text-sm font-semibold">{t("گفتگوی تسک")}</h4>
               {data.detail.notes.length === 0 ? (
-                <p className="text-xs text-muted-foreground">{t("هنوز گفتگویی نیست.")}</p>
+                <p className="text-sm text-muted-foreground">{t("هنوز گفتگویی نیست.")}</p>
               ) : (
                 <ul className="grid gap-2">
                   {data.detail.notes.map((n) => (
-                    <li key={n.id} className="rounded-md border p-2.5">
+                    <li key={n.id} className="rounded-lg border p-2.5">
                       <p className="text-sm whitespace-pre-wrap">{n.body}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {n.userName ?? '—'} · <span className="num">{when(n.createdAt, tz)}</span>

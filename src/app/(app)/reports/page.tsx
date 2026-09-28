@@ -117,6 +117,7 @@ export default async function ReportsPage({
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader title={t("گزارش‌ها")} />
           <EmptyState title={t("دسترسی ندارید")} description={t("برای دیدنِ گزارش‌ها از مدیر دسترسی بگیرید.")} />
         </PageShell>
       );

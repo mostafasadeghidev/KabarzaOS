@@ -36,6 +36,17 @@ export function formatDateTime(value: Date | string | null | undefined, timeZone
 }
 
 /**
+ * `YYYY-MM-DD` در منطقهٔ زمانیِ داده‌شده — ستونِ «تاریخ» ِ یک لحظه (زمانِ ثبت).
+ *
+ * ⚠️ نه `String(date).slice(0, 10)`: رشتهٔ `Date` انگلیسی است و ده نویسهٔ
+ * اولش «Fri Aug 28» می‌شد — وسطِ جدولِ فارسی. نه `toISOString()` هم: UTC است
+ * و ثبتِ ساعتِ یکِ بامدادِ تهران را روزِ قبل نشان می‌داد.
+ */
+export function formatDate(value: Date | string | null | undefined, timeZone?: string): string {
+  return formatDateTime(value, timeZone).slice(0, 10);
+}
+
+/**
  * زمانِ فشرده برای فهرست‌ها و حباب‌های گفتگو — همان رقمِ لاتین.
  *
  * ⚠️ چرا: «2026-08-28 23:04» کنارِ هر ردیفِ صندوق و زیرِ هر پیام شلوغ است و

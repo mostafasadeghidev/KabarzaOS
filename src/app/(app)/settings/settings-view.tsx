@@ -258,7 +258,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
             <Tabs value={tagType} onValueChange={(v) => setTagType(v as TagType)}>
               <TabsList className="w-max">
                 {TAG_TYPES.map((t) => (
-                  <TabsTrigger key={t.key} value={t.key} className="flex-none px-3 text-xs">
+                  <TabsTrigger key={t.key} value={t.key} className="flex-none px-3">
                     {tr(t.label)}
                   </TabsTrigger>
                 ))}
@@ -271,19 +271,21 @@ export function SettingsView({ data }: { data: SettingsData }) {
             description={tr("تگِ در حالِ استفاده حذف نمی‌شود.")}
             addLabel="افزودن تگ"
             rows={data.tags.filter((t) => t.type === tagType)}
+            /*
+              ⚠️ هر پنج نوعِ تگ **یک** مجموعه ستون دارند، با پهنای ثابت: پیش از این
+              هر نوع ستون‌های خودش را داشت (گروه، دسترسی، تمام‌شده) و جدول با هر
+              تعویضِ نوع سرستون‌هایش را جابه‌جا می‌کرد. آنچه مخصوصِ یک نوع است
+              حالا نشانی در ستونِ «ویژگی‌ها»ست؛ راهنمای هر نشان نامِ فیلدِ آن است.
+            */
+            fixed
             columns={[
               /*
                 ⚠️ نامِ تگ **به زبانِ جاری**، نه ستونِ خام. بقیهٔ اپ ترجمه را
                 نشان می‌دهد؛ اگر این جدول تنها جایی باشد که نامِ پایه را
                 می‌دهد، کاربر فکر می‌کند ترجمه کار نکرده.
-                نامِ پایه وقتی با ترجمه فرق دارد به‌عنوانِ راهنما می‌آید،
-                چون همان است که در فرم ویرایش می‌شود.
               */
               {
                 header: 'نام',
-                // ⚠️ فقط نامِ زبانِ جاری. نامِ پایه زیرش نمی‌آید: ستون را
-                // شلوغ می‌کرد و کاربر آن را «ترجمه‌نشده» می‌خواند، نه راهنما.
-                // نامِ پایه در فرمِ ویرایش دیده می‌شود، که جای درستش است.
                 // انگلیسی پلِ میان‌زبانی است (R-I18N-15) — همان قاعدهٔ tagName().
                 cell: (t) => (
                   <span className="inline-flex items-center gap-1.5">
@@ -295,46 +297,26 @@ export function SettingsView({ data }: { data: SettingsData }) {
               },
               {
                 header: 'رنگ',
+                className: 'w-20',
                 cell: (t) => t.color
                   ? <span className="inline-block size-4 rounded" style={{ backgroundColor: t.color }} />
                   : '—',
               },
-              /*
-                ⚠️ برچسبِ خوانا، نه کلیدِ خام: ستون پیش‌تر `in_progress` نشان
-                می‌داد، که برای کسی که اسکیما را ندیده هیچ معنایی ندارد.
-                عنوانِ ستون هم با نوعِ تگ عوض می‌شود، چون معنای مقدار
-                عوض می‌شود.
-              */
-              // ⚠️ نقشِ عضو و اولویت گروه ندارند؛ ستون برایشان کشیده نمی‌شود
-              // به‌جای اینکه سرستونِ بی‌معنا و ستونی پر از «—» بگیرد.
-              ...(groupChoices(tagType).length > 0
-                ? [{
-                    header: groupFieldLabel(tagType),
-                    // ⚠️ برچسب‌های `groups.ts` ثابتِ فارسی‌اند — کلیدِ ترجمه‌اند،
-                    // نه متنِ نهایی.
-                    cell: (t: { statusGroup: string }) => {
-                      const found = groupChoices(tagType).find((c) => c.value === t.statusGroup);
-                      return found ? tr(found.label) : (t.statusGroup || '—');
-                    },
-                  }]
-                : []),
-              ...(supportsGrant(tagType)
-                ? [{
-                    header: 'دسترسی',
-                    // ⚠️ برچسبِ ثابتِ فارسی است؛ بدونِ tr() در هر زبانی فارسی می‌ماند.
-                    cell: (t: { grantsCap: string }) => {
-                      const found = GRANTABLE_CAPS.find((c) => c.value === t.grantsCap);
-                      return found ? tr(found.label) : '—';
-                    },
-                  }]
-                : []),
-              ...(supportsClosed(tagType)
-                ? [{
-                    header: 'تمام‌شده',
-                    cell: (t: { isClosed: boolean }) => (t.isClosed ? '✓' : '—'),
-                  }]
-                : []),
-              { header: 'ترتیب', cell: (t) => t.sortOrder, numeric: true },
+              {
+                header: 'ویژگی‌ها',
+                className: 'w-80',
+                cell: (t) => {
+                  const traits = tagTraits(t, tr);
+                  return traits.length === 0 ? '—' : (
+                    <span className="flex flex-wrap gap-1">
+                      {traits.map((b) => (
+                        <Badge key={b.label} variant="outline" className="font-normal" title={b.hint}>{b.label}</Badge>
+                      ))}
+                    </span>
+                  );
+                },
+              },
+              { header: 'ترتیب', className: 'w-20', cell: (t) => t.sortOrder, numeric: true },
             ]}
             saveAction={saveTagAction}
             deleteAction={(t) => deleteTagAction(t.id)}
@@ -380,7 +362,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
                 )}
 
                 {(supportsClosed(tagType) || supportsReview(tagType)) && (
-                  <div className="grid gap-2 rounded-md border p-3">
+                  <div className="grid gap-2 rounded-lg border p-3">
                     {supportsClosed(tagType) && (
                       <label className="flex items-center gap-2 text-sm">
                         <Checkbox name="isClosed" value="1"
@@ -408,7 +390,7 @@ export function SettingsView({ data }: { data: SettingsData }) {
                   بازکردنِ همیشگیِ هشت ورودی، کارِ روزمره (ساختِ یک تگ) را
                   زیرِ چیزی دفن می‌کرد که کمتر لازم می‌شود.
                 */}
-                <details className="rounded-md border p-2">
+                <details className="rounded-lg border p-2">
                   <summary className="cursor-pointer text-sm">
                     {tr("ترجمهٔ نام به زبان‌های دیگر")}
                     <span className="num ms-2 text-xs text-muted-foreground">
@@ -558,7 +540,10 @@ export function SettingsView({ data }: { data: SettingsData }) {
             { header: 'عنوان', cell: (q) => q.title },
             {
               header: 'نقش',
-              cell: (q) => data.tags.find((t) => t.id === q.roleTagId)?.name ?? tr('کارفرما'),
+              cell: (q) => {
+                const role = data.tags.find((t) => t.id === q.roleTagId);
+                return role ? (role.nameI18n?.[locale] || role.nameI18n?.en || role.name) : tr('کارفرما');
+              },
             },
             {
               header: 'نوع',
@@ -649,4 +634,28 @@ export function SettingsView({ data }: { data: SettingsData }) {
       {tab === 'fiscal' && <FiscalSection lockDate={data.lockDate} today={data.today} closing={data.closing} />}
     </div>
   );
+}
+
+/**
+ * نشان‌های ستونِ «ویژگی‌ها» ی جدولِ تگ — همان فیلدهایی که فرم برای این نوع
+ * نشان می‌دهد. ⚠️ برچسب‌های `groups.ts` و `GRANTABLE_CAPS` ثابتِ فارسی‌اند،
+ * یعنی کلیدِ ترجمه‌اند نه متنِ نهایی.
+ */
+function tagTraits(
+  t: SettingsData['tags'][number],
+  tr: (key: string) => string,
+): Array<{ label: string; hint?: string }> {
+  const out: Array<{ label: string; hint?: string }> = [];
+  // ⚠️ مقدارِ خالی همیشه «هیچ» نیست: در دستهٔ دفتر یعنی «هردو (واریز و برداشت)».
+  const group = groupChoices(t.type).find((c) => c.value === t.statusGroup);
+  if (group) out.push({ label: tr(group.label), hint: tr(groupFieldLabel(t.type)) });
+  if (supportsGrant(t.type)) {
+    const cap = GRANTABLE_CAPS.find((c) => c.value === t.grantsCap && c.value !== '');
+    // برچسبِ دسترسی «نام — توضیح» است؛ در نشان فقط نام، توضیح در راهنما.
+    const full = cap ? tr(cap.label) : '';
+    if (cap) out.push({ label: full.split(' — ')[0]!, hint: full });
+  }
+  if (supportsClosed(t.type) && t.isClosed) out.push({ label: tr('تمام‌شده') });
+  if (supportsReview(t.type) && t.isReview) out.push({ label: tr('نیازمند بررسی') });
+  return out;
 }

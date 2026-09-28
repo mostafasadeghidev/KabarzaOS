@@ -253,7 +253,7 @@ export function ProjectCard({
         نه یکی کوتاه‌تر از کناری‌اش.
       */}
       <div className="flex flex-col pt-3">
-        <div className="flex-1 rounded-md border border-dashed p-2.5">
+        <div className="flex-1 rounded-lg border border-dashed p-2.5">
           {project.clients.length === 0 && project.members.length === 0 ? (
             <span className="text-xs text-muted-foreground">{t("هنوز کسی ساین نشده")}</span>
           ) : (

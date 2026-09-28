@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCompact, formatDateTime, formatForDateTimeInput, parseInZone } from '../datetime';
+import { formatCompact, formatDate, formatDateTime, formatForDateTimeInput, parseInZone } from '../datetime';
 
 describe('formatDateTime — به وقتِ بیننده، نه UTC', () => {
   const instant = new Date('2026-09-02T10:30:00Z');
@@ -68,3 +68,20 @@ describe('parseInZone — ساعتِ دیواریِ کاربر → لحظهٔ م
     expect(parseInZone('2026-09-02', 'Asia/Tehran')).toBeNull();
   });
 });
+
+describe('formatDate — ستونِ تاریخِ یک لحظه', () => {
+  it('روز در منطقهٔ بیننده: ۲۲:۳۰ ِ UTC در تهران فرداست', () => {
+    expect(formatDate(new Date('2026-08-28T22:30:00Z'), 'Asia/Tehran')).toBe('2026-08-29');
+    expect(formatDate(new Date('2026-08-28T22:30:00Z'), 'UTC')).toBe('2026-08-28');
+  });
+
+  it('هرگز رشتهٔ انگلیسیِ Date نیست', () => {
+    expect(formatDate(new Date('2026-08-28T10:00:00Z'), 'UTC')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('خالی و نامعتبر هیچ', () => {
+    expect(formatDate(null)).toBe('');
+    expect(formatDate('not a date')).toBe('');
+  });
+});
+

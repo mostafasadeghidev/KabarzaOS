@@ -9,14 +9,15 @@ import type { PresenceState } from '@/domain/people/presence';
 import { PRESENCE_LABELS } from '@/domain/people/presence';
 import { PresenceDot } from '@/components/presence';
 import { Thumb } from '@/components/thumb';
-import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Toggle } from '@/components/ui/toggle';
 import { buttonVariants } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { SearchInput } from '@/components/ui/search-input';
+import { Panel } from '@/components/page-shell';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface Cell {
   state: CellState;
@@ -128,12 +129,10 @@ export function AvailabilityBoard(props: BoardProps) {
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <Input
-              type="search"
+            <SearchInput
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={tr('جستجوی نام عضو…')}
-              className="h-8 w-48"
             />
             {props.offices.length > 0 && (
               <div className="flex flex-wrap items-center gap-1">
@@ -173,71 +172,67 @@ export function AvailabilityBoard(props: BoardProps) {
           {shown.length === 0 ? (
             <EmptyState title={t("موردی با این فیلترها پیدا نشد.")} />
           ) : (
-            <div className="overflow-x-auto rounded-md border">
-              <table className="w-full text-sm">
-                <thead className="text-xs text-muted-foreground">
-                  <tr className="border-b">
-                    <th className="p-2 text-start font-normal">{t("عضو")}</th>
-                    {props.order.map((d) => (
-                      <th
-                        key={d}
-                        className={`p-2 text-start font-normal ${
-                          d === props.todayIdx ? 'bg-primary/10 font-medium text-foreground' : ''
-                        }`}
-                      >
-                        {tr(WEEKDAYS[d] ?? '')}
-                        {d === props.todayIdx && (
-                          <span className="ms-1 rounded bg-primary/20 px-1 text-[10px]">{tr("امروز")}</span>
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {shown.map((row) => (
-                    <tr key={row.id} className="border-b last:border-0">
-                      <td className="p-2">
-                        <PersonName row={row} />
-                        {row.roleNames.length > 0 && (
-                          <span className="ms-1 inline-flex gap-1">
-                            {row.roleNames.map((n) => (
-                              <span key={n} className="rounded bg-muted px-1 text-[10px] text-muted-foreground">
-                                {n}
-                              </span>
-                            ))}
-                          </span>
-                        )}
-                        {/* ⚠️ «برنامه نداده» با «هیچ روزی آزاد نیست» فرق دارد. */}
-                        {!row.hasSchedule && (
-                          <span className="ms-2 text-xs text-muted-foreground">{t("برنامه نداده")}</span>
-                        )}
-                      </td>
-                      {row.cells.map((cell, i) => (
-                        <td
-                          key={i}
-                          title={cell.tip || undefined}
-                          className={`p-2 text-xs whitespace-nowrap ${
-                            cell.isToday ? 'bg-primary/5' : ''
-                          }`}
-                        >
-                          {cell.state === 'leave' ? (
-                            <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-500">
-                              <TreePalm className="size-3.5 shrink-0" aria-hidden />
-                              {tr("مرخصی")}
-                              {cell.span && <span className="num"> {tr("تا")} {cell.span}</span>}
-                            </span>
-                          ) : cell.state === 'avail' ? (
-                            <span className="num">{cell.span === 'تمام روز' ? tr('تمام روز') : cell.span}</span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </td>
-                      ))}
-                    </tr>
+            // ⚠️ همان جدولِ مشترک (قاب، سرستون، فاصله) — پیش از این جدولِ خامِ
+            // خودش را با خانه‌های p-2 و سرستونِ کم‌رنگ‌تر داشت.
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("عضو")}</TableHead>
+                  {props.order.map((d) => (
+                    <TableHead
+                      key={d}
+                      className={d === props.todayIdx ? 'bg-primary/10 text-foreground' : undefined}
+                    >
+                      {tr(WEEKDAYS[d] ?? '')}
+                      {d === props.todayIdx && (
+                        <span className="ms-1 rounded bg-primary/20 px-1 text-[10px]">{tr("امروز")}</span>
+                      )}
+                    </TableHead>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {shown.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell>
+                      <PersonName row={row} />
+                      {row.roleNames.length > 0 && (
+                        <span className="ms-1 inline-flex gap-1">
+                          {row.roleNames.map((n) => (
+                            <span key={n} className="rounded bg-muted px-1 text-[10px] text-muted-foreground">
+                              {n}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                      {/* ⚠️ «برنامه نداده» با «هیچ روزی آزاد نیست» فرق دارد. */}
+                      {!row.hasSchedule && (
+                        <span className="ms-2 text-xs text-muted-foreground">{t("برنامه نداده")}</span>
+                      )}
+                    </TableCell>
+                    {row.cells.map((cell, i) => (
+                      <TableCell
+                        key={i}
+                        title={cell.tip || undefined}
+                        className={`text-xs whitespace-nowrap ${cell.isToday ? 'bg-primary/5' : ''}`}
+                      >
+                        {cell.state === 'leave' ? (
+                          <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-500">
+                            <TreePalm className="size-3.5 shrink-0" aria-hidden />
+                            {tr("مرخصی")}
+                            {cell.span && <span className="num"> {tr("تا")} {cell.span}</span>}
+                          </span>
+                        ) : cell.state === 'avail' ? (
+                          <span className="num">{cell.span === 'تمام روز' ? tr('تمام روز') : cell.span}</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </>
       )}
@@ -246,7 +241,7 @@ export function AvailabilityBoard(props: BoardProps) {
       <div className="grid gap-3 @3xl/main:grid-cols-2">
         <Panel icon={<CalendarDays className="size-4" />} title={t("مرخصیِ امروز")}>
           {props.away.length === 0 ? (
-            <p className="text-xs text-muted-foreground">{t("امروز کسی مرخصی نیست.")}</p>
+            <p className="text-sm text-muted-foreground">{t("امروز کسی مرخصی نیست.")}</p>
           ) : (
             <ul className="grid gap-1 text-sm">
               {props.away.map((a) => (
@@ -264,7 +259,7 @@ export function AvailabilityBoard(props: BoardProps) {
 
         <Panel icon={<Timer className="size-4" />} title={t("تایمرهای در حالِ اجرا")}>
           {props.running.length === 0 ? (
-            <p className="text-xs text-muted-foreground">{t("الان کسی تایمر روشن ندارد.")}</p>
+            <p className="text-sm text-muted-foreground">{t("الان کسی تایمر روشن ندارد.")}</p>
           ) : (
             <ul className="grid gap-1 text-sm">
               {props.running.map((r) => (
@@ -283,7 +278,7 @@ export function AvailabilityBoard(props: BoardProps) {
 
         <Panel icon={<Users className="size-4" />} title={t("آنلاین اکنون")}>
           {props.online.length === 0 ? (
-            <p className="text-xs text-muted-foreground">{t("کسی آنلاین نیست.")}</p>
+            <p className="text-sm text-muted-foreground">{t("کسی آنلاین نیست.")}</p>
           ) : (
             <ul className="grid gap-1 text-sm">
               {props.online.map((o) => (
@@ -301,7 +296,7 @@ export function AvailabilityBoard(props: BoardProps) {
 
         <Panel icon={<CalendarDays className="size-4" />} title={t("بدونِ برنامه")}>
           {props.none.length === 0 ? (
-            <p className="text-xs text-muted-foreground">{t("همه برنامه‌شان را ثبت کرده‌اند.")}</p>
+            <p className="text-sm text-muted-foreground">{t("همه برنامه‌شان را ثبت کرده‌اند.")}</p>
           ) : (
             <ul className="grid gap-1 text-sm">
               {props.none.map((n) => <li key={n.id}>{n.name}</li>)}
@@ -316,7 +311,7 @@ export function AvailabilityBoard(props: BoardProps) {
 function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
     <span
-      className={`rounded-md border px-3 py-1.5 text-sm ${
+      className={`rounded-lg border px-3 py-1.5 text-sm ${
         accent ? 'border-primary/40 bg-primary/5' : ''
       }`}
     >
@@ -341,19 +336,6 @@ function ViewLink({
   );
 }
 
-function Panel({
-  icon, title, children,
-}: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
-  return (
-    <Card className="gap-2 py-3 shadow-xs">
-      <CardHeader className="px-3">
-        <h2 className="flex items-center gap-1.5 text-sm leading-none font-semibold">{icon}{title}</h2>
-      </CardHeader>
-      <CardContent className="grid gap-2 px-3">{children}</CardContent>
-    </Card>
-  );
-}
-
 /**
  * نمای بُرد — یک ستون به‌ازای هر روز، با فهرستِ افرادِ آن روز.
  *
@@ -374,7 +356,7 @@ function BoardColumns({ order, todayIdx, rows }: BoardProps) {
         return (
           <div
             key={d}
-            className={`grid content-start gap-1.5 rounded-md border p-2 ${
+            className={`grid content-start gap-1.5 rounded-lg border p-2 ${
               isToday ? 'border-primary/40 bg-primary/5' : ''
             }`}
           >

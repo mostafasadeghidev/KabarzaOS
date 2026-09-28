@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FileText, Paperclip, X } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lightbox } from '@/components/lightbox';
 import { useT } from '@/i18n/client';
+import { FileInput } from '@/components/ui/file-input';
 
 /**
  * انتخابِ رسید — پورتِ dropzone ِ نسخهٔ قبلی: پیش‌نمایشِ بندانگشتیِ فایل‌های
@@ -64,19 +64,20 @@ export function ReceiptPicker({
   }, [files, multiple]);
 
   return (
-    <div className="grid gap-2 rounded-md border p-3">
+    <div className="grid gap-2 rounded-lg border p-3">
       <Label htmlFor={inputId} className="flex items-center gap-1.5">
         <Paperclip className="size-3.5" />
         {multiple ? tr('رسیدها') : tr('رسید')}
       </Label>
       {children}
-      <Input
+      {/* `selected`: فایلِ چسبانده یا حذف‌شده از رویدادِ change رد نمی‌شود؛ برچسب از همین فهرست می‌خواند. */}
+      <FileInput
         ref={inputRef}
         id={inputId}
         name={name}
-        type="file"
         accept="image/*,application/pdf"
         multiple={multiple}
+        selected={files.map((f) => f.name)}
         onChange={(e) => sync(Array.from(e.target.files ?? []))}
       />
       {files.length > 0 && (

@@ -20,15 +20,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useActionToast } from '@/components/ui/toast';
 import { useSearchParams } from 'next/navigation';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { LEVEL_LABELS, type GrantLevel } from '@/domain/access/service-grants';
-import { formatDateTime } from '@/i18n/datetime';
+import { formatDate } from '@/i18n/datetime';
 import { Switch } from '@/components/ui/switch';
+import { Panel } from '@/components/page-shell';
+import { FileInput } from '@/components/ui/file-input';
 
 export interface ProfileData {
   id: number;
@@ -82,6 +84,7 @@ function Submit({ children }: { children: React.ReactNode }) {
 /** پروفایلِ من — حساب بانکی، ترجیحات، تلگرام، و (برای مالک) مشخصاتِ شرکت. */
 export function ProfileView({ data }: { data: ProfileData }) {
   const tr = useT();
+  const tz = useTimeZone();
   // ⚠️ یک بار محاسبه می‌شود؛ چهارصد رشته است و هر رندر ساختنش بیهوده است.
   const timezones = useMemo(() => allTimezones(), []);
   /**
@@ -142,55 +145,59 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
       {/* پورتِ پنلِ «حساب» ِ داشبورد: نام، ایمیل و تلفن به دستِ خودِ کاربر. */}
       {tab === 'account' && (
-        <div className="grid max-w-xl gap-4">
-          <form action={saveAccount} className="grid gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="acc-name">{tr("نام")}</Label>
-              <Input id="acc-name" name="name" defaultValue={data.name} required />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="acc-email">{tr("ایمیل")}</Label>
-              <Input id="acc-email" name="email" type="email" defaultValue={data.email} required />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="acc-phone">{tr("تلفن")}</Label>
-              <Input id="acc-phone" name="phone" defaultValue={data.phone} />
-            </div>
-            {data.username && (
-              <p className="text-xs text-muted-foreground">
-                {tr("نامِ کاربری")}: <span className="num">{data.username}</span>
-              </p>
-            )}
-            <div className="flex items-center gap-3">
-              <Submit>{tr("ذخیره")}</Submit>
-            </div>
-          </form>
-
-          <div className="flex flex-wrap items-end gap-3 rounded-md border p-3">
-            <Thumb id={data.id} title={data.name} fileId={data.avatarFileId} size={56} className="rounded-full" />
-            <form
-              className="grid flex-1 gap-1.5"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const form = new FormData(e.currentTarget);
-                startTransition(async () => setAvatarState(await setMyAvatarAction(form)));
-              }}
-            >
-              <Label htmlFor="acc-avatar">{tr("تصویر پروفایل")}</Label>
-              <div className="flex flex-wrap items-center gap-2">
-                <Input id="acc-avatar" name="avatar" type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="max-w-xs" />
-                <Button type="submit" size="sm" variant="outline" disabled={pending}>{tr("ذخیره تصویر")}</Button>
-                {data.avatarFileId && (
-                  <Button
-                    type="button" size="sm" variant="ghost" disabled={pending}
-                    onClick={() => startTransition(async () => setAvatarState(await removeMyAvatarAction()))}
-                  >
-                    {tr("حذفِ تصویر")}
-                  </Button>
-                )}
+        // ⚠️ همهٔ تب‌های پروفایل یک پهنا دارند (پیش از این xl و md) و هر گروه یک پنل است.
+        <div className="grid max-w-2xl grid-cols-1 gap-4">
+          <Panel title={tr("حساب کاربری")}>
+            <form action={saveAccount} className="grid gap-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="acc-name">{tr("نام")}</Label>
+                <Input id="acc-name" name="name" defaultValue={data.name} required />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="acc-email">{tr("ایمیل")}</Label>
+                <Input id="acc-email" name="email" type="email" defaultValue={data.email} required />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="acc-phone">{tr("تلفن")}</Label>
+                <Input id="acc-phone" name="phone" defaultValue={data.phone} />
+              </div>
+              {data.username && (
+                <p className="text-xs text-muted-foreground">
+                  {tr("نامِ کاربری")}: <span className="num">{data.username}</span>
+                </p>
+              )}
+              <div className="flex items-center gap-3">
+                <Submit>{tr("ذخیره")}</Submit>
               </div>
             </form>
-          </div>
+          </Panel>
+
+          <Panel title={tr("تصویر پروفایل")}>
+            <div className="flex flex-wrap items-end gap-3">
+              <Thumb id={data.id} title={data.name} fileId={data.avatarFileId} size={56} className="rounded-full" />
+              <form
+                className="grid flex-1 gap-1.5"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = new FormData(e.currentTarget);
+                  startTransition(async () => setAvatarState(await setMyAvatarAction(form)));
+                }}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <FileInput id="acc-avatar" name="avatar" accept="image/jpeg,image/png,image/gif,image/webp" aria-label={tr("تصویر پروفایل")} />
+                  <Button type="submit" size="sm" variant="outline" disabled={pending}>{tr("ذخیره تصویر")}</Button>
+                  {data.avatarFileId && (
+                    <Button
+                      type="button" size="sm" variant="ghost" disabled={pending}
+                      onClick={() => startTransition(async () => setAvatarState(await removeMyAvatarAction()))}
+                    >
+                      {tr("حذفِ تصویر")}
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </div>
+          </Panel>
         </div>
       )}
 
@@ -199,116 +206,117 @@ export function ProfileView({ data }: { data: ProfileData }) {
         ⚠️ هیچ رمزی اینجا نیست؛ فقط فهرستِ «به چه چیزهایی دسترسی دارم».
       */}
       {tab === 'access' && (
-        <div className="grid max-w-xl gap-3">
+        <div className="grid max-w-2xl grid-cols-1 gap-3">
           <p className="text-sm text-muted-foreground">
             {tr("سامانه‌هایی که به تو دسترسی داده شده. اگر چیزی اینجا درست نیست، به مدیر بگو.")}
           </p>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{tr("سرویس")}</TableHead>
-                  <TableHead>{tr("سطح")}</TableHead>
-                  <TableHead>{tr("شناسهٔ حساب")}</TableHead>
-                  <TableHead>{tr("از تاریخ")}</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{tr("سرویس")}</TableHead>
+                <TableHead>{tr("سطح")}</TableHead>
+                <TableHead>{tr("شناسهٔ حساب")}</TableHead>
+                <TableHead>{tr("از تاریخ")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.myAccess.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>{row.serviceName}</TableCell>
+                  <TableCell>{tr(LEVEL_LABELS[row.level])}</TableCell>
+                  <TableCell className="num text-xs" dir="ltr">{row.accountRef || '—'}</TableCell>
+                  <TableCell className="num text-xs">
+                    {formatDate(row.grantedAt, tz)}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.myAccess.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{row.serviceName}</TableCell>
-                    <TableCell>{tr(LEVEL_LABELS[row.level])}</TableCell>
-                    <TableCell className="num text-xs" dir="ltr">{row.accountRef || '—'}</TableCell>
-                    <TableCell className="num text-xs">
-                      {formatDateTime(row.grantedAt).slice(0, 10)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 
       {tab === 'bank' && (
-        <div className="max-w-xl">
+        <div className="max-w-2xl">
           <BankCard bank={data.bank} card={data.bank.card} />
         </div>
       )}
 
       {tab === 'prefs' && (
-        <form action={saveTz} className="grid max-w-md gap-3">
-          <div className="grid gap-1.5">
-            <Label htmlFor="p-tz">{tr("منطقهٔ زمانی")}</Label>
-            {/*
-              ⚠️ `datalist` خودش جستجوی زنده است: مرورگر با هر حرفی که تایپ
-              شود فهرست را فیلتر می‌کند — بدونِ جاوااسکریپتِ ما و بدونِ
-              کامپوننتِ اضافه. فهرست حالا **همهٔ** مناطقِ دنیاست، با
-              پرکاربردها در بالا؛ پیش از این فقط هفت‌تا بود و کاربرِ توکیو
-              باید نامِ منطقه‌اش را از حفظ می‌نوشت.
-            */}
-            <Input
-              id="p-tz" name="timezone" list="tz-list"
-              placeholder={tr("پیش‌فرضِ سامانه")} defaultValue={data.timezone}
-            />
-            <datalist id="tz-list">
-              {timezones.map((tz) => <option key={tz} value={tz} />)}
-            </datalist>
-            <p className="text-xs text-muted-foreground">
-              {tr("ساعت‌ها بر مبنای ساعتِ دیواریِ شما نشان داده می‌شوند. خالی یعنی پیش‌فرضِ سامانه.")}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Submit>{tr("ذخیره")}</Submit>
-          </div>
-        </form>
+        <Panel title={tr("ترجیحات")} className="max-w-2xl">
+          <form action={saveTz} className="grid gap-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="p-tz">{tr("منطقهٔ زمانی")}</Label>
+              {/*
+                ⚠️ `datalist` خودش جستجوی زنده است: مرورگر با هر حرفی که تایپ
+                شود فهرست را فیلتر می‌کند — بدونِ جاوااسکریپتِ ما و بدونِ
+                کامپوننتِ اضافه. فهرست حالا **همهٔ** مناطقِ دنیاست، با
+                پرکاربردها در بالا؛ پیش از این فقط هفت‌تا بود و کاربرِ توکیو
+                باید نامِ منطقه‌اش را از حفظ می‌نوشت.
+              */}
+              <Input
+                id="p-tz" name="timezone" list="tz-list"
+                placeholder={tr("پیش‌فرضِ سامانه")} defaultValue={data.timezone}
+              />
+              <datalist id="tz-list">
+                {timezones.map((tz) => <option key={tz} value={tz} />)}
+              </datalist>
+              <p className="text-xs text-muted-foreground">
+                {tr("ساعت‌ها بر مبنای ساعتِ دیواریِ شما نشان داده می‌شوند. خالی یعنی پیش‌فرضِ سامانه.")}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Submit>{tr("ذخیره")}</Submit>
+            </div>
+          </form>
+        </Panel>
       )}
 
       {tab === 'password' && (
-        <form action={changePw} className="grid max-w-md gap-3">
-          <div className="grid gap-1.5">
-            <Label htmlFor="pw-current">{tr("رمزِ فعلی")}</Label>
-            <Input id="pw-current" name="current" type="password" autoComplete="current-password" />
-            {/*
-              ⚠️ رمزِ فعلی لازم است حتی وقتی وارد شده‌اید: نشستِ
-              دزدیده‌شده نباید بتواند رمز را عوض کند و شما را بیرون بگذارد.
-            */}
-            <p className="text-xs text-muted-foreground">
-              {tr("اگر مدیر برایتان حساب ساخته و هنوز رمزی نگذاشته‌اید، این را خالی بگذارید.")}
-            </p>
-          </div>
+        <Panel title={tr("رمزِ ورود")} className="max-w-2xl">
+          <form action={changePw} className="grid gap-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="pw-current">{tr("رمزِ فعلی")}</Label>
+              <Input id="pw-current" name="current" type="password" autoComplete="current-password" />
+              {/*
+                ⚠️ رمزِ فعلی لازم است حتی وقتی وارد شده‌اید: نشستِ
+                دزدیده‌شده نباید بتواند رمز را عوض کند و شما را بیرون بگذارد.
+              */}
+              <p className="text-xs text-muted-foreground">
+                {tr("اگر مدیر برایتان حساب ساخته و هنوز رمزی نگذاشته‌اید، این را خالی بگذارید.")}
+              </p>
+            </div>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="pw-next">{tr("رمزِ تازه")}</Label>
-            <Input
-              id="pw-next" name="next" type="password" minLength={8}
-              autoComplete="new-password" required
-              placeholder={tr("دستِ‌کم ۸ نویسه")}
-            />
-          </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="pw-next">{tr("رمزِ تازه")}</Label>
+              <Input
+                id="pw-next" name="next" type="password" minLength={8}
+                autoComplete="new-password" required
+                placeholder={tr("دستِ‌کم ۸ نویسه")}
+              />
+            </div>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="pw-repeat">{tr("تکرارِ رمزِ تازه")}</Label>
-            <Input
-              id="pw-repeat" name="repeat" type="password" minLength={8}
-              autoComplete="new-password" required
-            />
-          </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="pw-repeat">{tr("تکرارِ رمزِ تازه")}</Label>
+              <Input
+                id="pw-repeat" name="repeat" type="password" minLength={8}
+                autoComplete="new-password" required
+              />
+            </div>
 
-          <div className="flex items-center gap-3">
-            <Submit>{tr("تغییرِ رمز")}</Submit>
-          </div>
-        </form>
+            <div className="flex items-center gap-3">
+              <Submit>{tr("تغییرِ رمز")}</Submit>
+            </div>
+          </form>
+        </Panel>
       )}
 
       {tab === 'notify' && (
-        <form action={saveNotify} className="grid max-w-xl gap-4">
+        <form action={saveNotify} className="grid max-w-2xl grid-cols-1 gap-4">
           <p className="text-sm text-muted-foreground">
             {tr("زنگِ داخلِ اپ همیشه روشن است. این تنظیمات فقط کانال‌های بیرونی را تعیین می‌کنند.")}
           </p>
 
-          <fieldset className="grid gap-3 rounded-md border p-3">
-            <legend className="px-1 text-sm font-medium">{tr("ایمیل")}</legend>
+          <Panel title={tr("ایمیل")}>
 
             {!data.notify.mailerReady && (
               // ⚠️ حقیقت را می‌گوییم، نه گزینه‌ای که بی‌صدا کار نمی‌کند.
@@ -349,10 +357,9 @@ export function ProfileView({ data }: { data: ProfileData }) {
                 ))}
               </div>
             </fieldset>
-          </fieldset>
+          </Panel>
 
-          <fieldset className="grid gap-2 rounded-md border p-3">
-            <legend className="px-1 text-sm font-medium">{tr("تلگرام")}</legend>
+          <Panel title={tr("تلگرام")}>
             <label className="flex items-center gap-1.5 text-sm">
               <Switch name="telegramOn" defaultChecked={data.notify.telegramOn}
               />
@@ -364,7 +371,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
                 ? tr('تلگرام همهٔ رویدادها را می‌گیرد؛ دسته‌بندیِ بالا فقط ایمیل را ساکت می‌کند.')
                 : tr('برای این گزینه، ابتدا از تبِ «تلگرام» حساب را وصل کنید.')}
             </p>
-          </fieldset>
+          </Panel>
 
           <div className="flex items-center gap-3">
             <Submit>{tr("ذخیره")}</Submit>
@@ -373,7 +380,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
       )}
 
       {tab === 'telegram' && (
-        <div className="grid max-w-xl gap-3">
+        <Panel title={tr("تلگرام")} className="max-w-2xl">
           {/* ⚠️ بدونِ توکنِ بات، دکمه‌ای که همیشه شکست بخورد نشان نمی‌دهیم. */}
           {data.telegram === 'unavailable' ? (
             <p className="text-sm text-muted-foreground">
@@ -456,7 +463,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
               )}
             </div>
           )}
-        </div>
+        </Panel>
       )}
 
     </div>

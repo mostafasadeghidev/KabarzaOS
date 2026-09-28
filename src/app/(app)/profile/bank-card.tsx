@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
+import { Panel } from '@/components/page-shell';
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -40,13 +41,8 @@ export function BankCard({
   useActionToast(state);
 
   return (
-    <form action={save} className="grid gap-3 rounded-md border p-3">
-      <div>
-        <h2 className="text-sm font-semibold">{t("اطلاعات حساب بانکی")}</h2>
-        <p className="text-xs text-muted-foreground">
-          {tr("این اطلاعات برای پرداخت به شما استفاده می‌شود.")}
-        </p>
-      </div>
+    <Panel title={t("اطلاعات حساب بانکی")} description={tr("این اطلاعات برای پرداخت به شما استفاده می‌شود.")}>
+    <form action={save} className="grid gap-3">
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="grid gap-1.5">
@@ -74,5 +70,6 @@ export function BankCard({
         <Submit />
       </div>
     </form>
+    </Panel>
   );
 }

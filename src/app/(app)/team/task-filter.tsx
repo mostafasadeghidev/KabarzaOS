@@ -56,7 +56,9 @@ export function TaskFilter({
     <div className="grid gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <NativeSelect
-          value={value('tstatus')} 
+          size="sm"
+          containerClassName="w-full sm:w-44"
+          value={value('tstatus')}
           onChange={(e) => go({ tstatus: e.target.value })}
           aria-label={tr('وضعیت')}
         >
@@ -65,7 +67,9 @@ export function TaskFilter({
         </NativeSelect>
 
         <SearchableSelect
-          value={value('tassignee')} 
+          size="sm"
+          containerClassName="w-full sm:w-44"
+          value={value('tassignee')}
           onValueChange={(v) => go({ tassignee: v })}
           aria-label={tr('مسئول')}
         >
@@ -76,7 +80,9 @@ export function TaskFilter({
         </SearchableSelect>
 
         <NativeSelect
-          value={value('tprio')} 
+          size="sm"
+          containerClassName="w-full sm:w-44"
+          value={value('tprio')}
           onChange={(e) => go({ tprio: e.target.value })}
           aria-label={tr('اولویت')}
         >
@@ -85,7 +91,9 @@ export function TaskFilter({
         </NativeSelect>
 
         <NativeSelect
-          value={value('tdue')} 
+          size="sm"
+          containerClassName="w-full sm:w-44"
+          value={value('tdue')}
           onChange={(e) => go({ tdue: e.target.value })}
           aria-label={tr('ددلاین')}
         >

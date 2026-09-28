@@ -2,6 +2,32 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.85.0]
+
+### Changed
+
+- **One layout contract for every page.** The shared shell now provides the pieces each page used to build its own way:
+  - `Section` / `SectionHeader` — a small semibold title, one line of description, and its actions on the same row. Section titles had eleven different styles, and «Add» buttons sat beside the title in some places and under it in others.
+  - `Panel` — a titled card with a compact header bar and a divider, the dashboard's panel. Titled cards came in five forms. On the project page, «Manage members» and «Edit clients» used to drop below the title; they now sit on the title row.
+  - Tables — a standalone table gets a rounded frame and a tinted header row; a table inside a panel has no frame of its own. The actions column shrinks to its buttons and always comes last. Numbers, dates and headers no longer wrap.
+- **Settings → Tags: every tag type has the same columns.** Each type had its own columns at automatic widths, so switching types moved every header; the actions column ranged from 107 to 357 pixels. All five types now show «Name, Color, Properties, Order» at fixed widths. What is specific to a type (kanban column, pipeline tab, accounting direction, access, done, review) is a badge under «Properties», with the field name as its tooltip. Ledger categories that take both directions now say so.
+- **Row actions:** edit and delete are icons everywhere; bank accounts, the ledger, expenses and hours used a text «Edit» button.
+- **Toolbars:** search boxes, selects, date pickers and buttons in a filter row are all 32 px high. Search boxes were built five different ways, one of them with a class Tailwind does not have. Filter bars share one frame, and «Apply» is always the primary button.
+- **Tabs:** page sections use line tabs everywhere (Tasks and Meetings used pills), and filter tabs share one size.
+- **Expenses:** the due-date buckets are one table with one header row and a group row per bucket. Each bucket used to be its own header-less table, so its columns did not line up with the next.
+- **File pickers** are the app's own control, in the interface language (company logo, attachments, avatars, receipts). The browser's native input said «Choose File / No file chosen» in English.
+- **Empty states:** an empty page or tab shows the empty box; an empty section among others shows one line of text. Forbidden and not-found pages keep their page header instead of a lone box filling the screen.
+- **Widths:** panels in a tab share one width (the manage tab mixed 2xl and 5xl cards), and settings forms and profile tabs each use a single width.
+- The availability matrix and the fiscal-period balances use the shared table instead of their own raw tables.
+
+### Fixed
+
+- **Payment-request dates showed as «Fri Aug 28»** — the English form of the date cut to ten characters — in the payouts table and the project money tab. They, access-grant dates and the requests list in «My money» now show the date in the viewer's time zone.
+- **The QA library showed a role's base name** instead of its translation.
+- **A member's leave list said "you haven't registered any leave"** when a manager viewed someone else.
+
+---
+
 ## [1.84.0]
 
 ### Changed

@@ -1,8 +1,8 @@
 'use client';
 
-import { useActionState, useEffect, useState, useTransition } from 'react';
+import { Fragment, useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Banknote, Check, Plus, Trash2, X, CircleAlert } from 'lucide-react';
+import { Banknote, Check, CircleAlert, Pencil, Plus, Trash2, X } from 'lucide-react';
 import {
   decideRequestAction, deleteRecurringAction, payRecurringAction,
   payRequestAction, payUnitAction, saveRecurringAction, type PayoutState,
@@ -23,10 +23,13 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+  Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader,
+  TableNumericCell, TableRow,
 } from '@/components/ui/table';
+import { Section } from '@/components/page-shell';
+import { formatDate } from '@/i18n/datetime';
 import { useActionToast, useToast } from '@/components/ui/toast';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
 import { TablePager, TableSearch, useTableView } from '@/components/ui/table-search';
 import { BankDirectory, type BankRow } from './bank-directory';
 import { useConfirm } from '@/components/ui/confirm';
@@ -36,6 +39,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DatePicker } from '@/components/ui/date-picker';
+import { SearchInput } from '@/components/ui/search-input';
 
 export interface RequestRow {
   id: number;
@@ -217,6 +221,7 @@ export function PayoutsView({
     tabRows, (r) => `${r.userName ?? ''} ${r.projectTitle ?? ''}`,
   );
   const t = useT();
+  const tz = useTimeZone();
   const confirm = useConfirm();
   const [rejectTarget, setRejectTarget] = useState<RequestRow | null>(null);
   const [rejectNote, setRejectNote] = useState('');
@@ -310,14 +315,13 @@ export function PayoutsView({
     <div className="grid gap-4 md:gap-6">
       {/* ---- درخواست‌های پرداخت ---- */}
       {section === 'members' && (
-      <section className="grid gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">{t("درخواست‌های پرداخت")}</h2>
-          {/* روی جدولِ درخواست‌ها. */}
-          {requests.length > 0 && (
-            <TableSearch view={requestsView} placeholder={tr('جستجوی عضو یا پروژه…')} />
-          )}
-        </div>
+      <Section
+        title={t("درخواست‌های پرداخت")}
+        // روی جدولِ درخواست‌ها.
+        actions={requests.length > 0
+          ? <TableSearch view={requestsView} placeholder={tr('جستجوی عضو یا پروژه…')} />
+          : undefined}
+      >
         <Tabs value={status} onValueChange={(v) => setStatus(v as typeof status)}>
           {/* روی صفحهٔ باریک پیمایشِ افقی، به‌جای بیرون‌زدن از صفحه — مثلِ بقیهٔ نوارهای تب. */}
           <div className="overflow-x-auto overflow-y-hidden">
@@ -334,98 +338,94 @@ export function PayoutsView({
           </div>
         </Tabs>
         {tabRows.length === 0 ? (
-          <EmptyState title={t("درخواستی در این وضعیت نیست")} />
+          <p className="text-sm text-muted-foreground">{t("درخواستی در این وضعیت نیست")}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("عضو")}</TableHead>
-                  <TableHead>{t("پروژه")}</TableHead>
-                  <TableHead numeric>{t("مبلغ")}</TableHead>
-                  <TableHead numeric>{t("ماندهٔ قرارداد")}</TableHead>
-                  <TableHead numeric>{t("تاریخ")}</TableHead>
-                  <TableHead>{t("وضعیت")}</TableHead>
-                  <TableHead>{t("اطلاعات بانکی")}</TableHead>
-                  {canManage && <TableHead />}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {requestsView.rows.map((r) => {
-                  const s = STATUS[r.status] ?? { label: r.status, variant: 'secondary' as const };
-                  return (
-                    <TableRow key={r.id}>
-                      <TableCell>
-                        {r.userName ?? '—'}
-                        {/* یادداشتِ خودِ عضو روی درخواست — پورتِ ستونِ «توضیح». */}
-                        {r.note && <span className="block text-xs text-muted-foreground">{r.note}</span>}
-                      </TableCell>
-                      <TableCell>{r.projectTitle ?? '—'}</TableCell>
-                      <TableNumericCell>{format(r.amount)} {r.currencyCode ?? ''}</TableNumericCell>
-                      <TableNumericCell className="text-muted-foreground">
-                        {r.remaining === null ? '—' : `${format(r.remaining)} ${r.remainingCurrencyCode ?? ''}`}
-                      </TableNumericCell>
-                      <TableNumericCell className="text-muted-foreground">{String(r.createdAt).slice(0, 10)}</TableNumericCell>
-                      <TableCell>
-                        <Badge variant={s.variant}>{t(s.label)}</Badge>
-                        {r.decisionNote && (
-                          <span className="ms-2 text-xs text-muted-foreground">{r.decisionNote}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {r.bankCard || r.bankIban || r.bankAccount ? (
-                          <span className="grid">
-                            {r.bankCard && <span className="num">{t("کارت")}: {r.bankCard}</span>}
-                            {r.bankIban && <span className="num">{t("شبا")}: {r.bankIban}</span>}
-                            {r.bankAccount && <span className="num">{t("حساب")}: {r.bankAccount}</span>}
-                          </span>
-                        ) : '—'}
-                      </TableCell>
-                      {canManage && (
-                        <TableCell>
-                          {/*
-                            پورتِ `request_actions()`: مالک → تأیید (در انتظار)، پرداخت
-                            (در انتظار یا تأییدشده)، رد با دلیل (در انتظار/تأییدشده)؛
-                            حسابدار → فقط پرداختِ تأییدشده.
-                          */}
-                          <div className="flex justify-end gap-1">
-                            {isOwner && r.status === 'pending' && (
-                              <Button
-                                size="sm" variant="outline" disabled={pending}
-                                onClick={() => act(() => decideRequestAction(r.id, 'approved'))}
-                              >
-                                <Check className="size-3.5" />
-                                {tr("تأیید")}
-                              </Button>
-                            )}
-                            {(r.status === 'approved' || (isOwner && r.status === 'pending')) && (
-                              <Button size="sm" disabled={pending} onClick={() => setPayTarget(r)}>
-                                <Banknote className="size-3.5" />
-                                {tr("ثبت پرداخت در حسابداری")}
-                              </Button>
-                            )}
-                            {isOwner && (r.status === 'pending' || r.status === 'approved') && (
-                              <Button
-                                size="sm" variant="ghost"
-                                className="text-destructive hover:text-destructive"
-                                disabled={pending}
-                                onClick={() => { setRejectNote(''); setRejectTarget(r); }}
-                              >
-                                <X className="size-3.5" />
-                                {tr("رد")}
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("عضو")}</TableHead>
+                <TableHead>{t("پروژه")}</TableHead>
+                <TableHead numeric>{t("مبلغ")}</TableHead>
+                <TableHead numeric>{t("ماندهٔ قرارداد")}</TableHead>
+                <TableHead numeric>{t("تاریخ")}</TableHead>
+                <TableHead>{t("وضعیت")}</TableHead>
+                <TableHead>{t("اطلاعات بانکی")}</TableHead>
+                {canManage && <TableActionsHead />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {requestsView.rows.map((r) => {
+                const s = STATUS[r.status] ?? { label: r.status, variant: 'secondary' as const };
+                return (
+                  <TableRow key={r.id}>
+                    <TableCell>
+                      {r.userName ?? '—'}
+                      {/* یادداشتِ خودِ عضو روی درخواست — پورتِ ستونِ «توضیح». */}
+                      {r.note && <span className="block text-xs text-muted-foreground">{r.note}</span>}
+                    </TableCell>
+                    <TableCell>{r.projectTitle ?? '—'}</TableCell>
+                    <TableNumericCell>{format(r.amount)} {r.currencyCode ?? ''}</TableNumericCell>
+                    <TableNumericCell className="text-muted-foreground">
+                      {r.remaining === null ? '—' : `${format(r.remaining)} ${r.remainingCurrencyCode ?? ''}`}
+                    </TableNumericCell>
+                    <TableNumericCell className="text-muted-foreground">{formatDate(r.createdAt, tz)}</TableNumericCell>
+                    <TableCell>
+                      <Badge variant={s.variant}>{t(s.label)}</Badge>
+                      {r.decisionNote && (
+                        <span className="ms-2 text-xs text-muted-foreground">{r.decisionNote}</span>
                       )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {r.bankCard || r.bankIban || r.bankAccount ? (
+                        <span className="grid">
+                          {r.bankCard && <span className="num">{t("کارت")}: {r.bankCard}</span>}
+                          {r.bankIban && <span className="num">{t("شبا")}: {r.bankIban}</span>}
+                          {r.bankAccount && <span className="num">{t("حساب")}: {r.bankAccount}</span>}
+                        </span>
+                      ) : '—'}
+                    </TableCell>
+                    {canManage && (
+                      <TableActionsCell>
+                        {/*
+                          پورتِ `request_actions()`: مالک → تأیید (در انتظار)، پرداخت
+                          (در انتظار یا تأییدشده)، رد با دلیل (در انتظار/تأییدشده)؛
+                          حسابدار → فقط پرداختِ تأییدشده.
+                        */}
+                          {isOwner && r.status === 'pending' && (
+                            <Button
+                              size="sm" variant="outline" disabled={pending}
+                              onClick={() => act(() => decideRequestAction(r.id, 'approved'))}
+                            >
+                              <Check className="size-3.5" />
+                              {tr("تأیید")}
+                            </Button>
+                          )}
+                          {(r.status === 'approved' || (isOwner && r.status === 'pending')) && (
+                            <Button size="sm" disabled={pending} onClick={() => setPayTarget(r)}>
+                              <Banknote className="size-3.5" />
+                              {tr("ثبت پرداخت در حسابداری")}
+                            </Button>
+                          )}
+                          {isOwner && (r.status === 'pending' || r.status === 'approved') && (
+                            <Button
+                              size="sm" variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              disabled={pending}
+                              onClick={() => { setRejectNote(''); setRejectTarget(r); }}
+                            >
+                              <X className="size-3.5" />
+                              {tr("رد")}
+                            </Button>
+                          )}
+                      </TableActionsCell>
+                    )}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
-      </section>
+      </Section>
       )}
 
       {/* ⚠️ صفحه‌بند به جدولِ درخواست‌ها تعلق دارد، نه به هزینه‌ها. */}
@@ -433,136 +433,121 @@ export function PayoutsView({
 
       {/* ---- کارکردهای پرداخت‌نشده — Flow 1: حسابدار ردیف را مستقیم می‌پردازد ---- */}
       {section === 'members' && (
-      <section className="grid gap-3">
-        <div>
-          <h2 className="text-sm font-semibold">{t("کارکردهای پرداخت‌نشده")}</h2>
-          <p className="text-xs text-muted-foreground">
-            {tr("ردیف‌های کارکردِ تعدادی که هنوز پرداخت نشده‌اند و درخواستِ بازی ندارند؛ «ثبت در حسابداری» ردیفِ برداشت را می‌نویسد و کارکرد «پرداخت‌شده» می‌شود.")}
-          </p>
-        </div>
+      <Section
+        title={t("کارکردهای پرداخت‌نشده")}
+        description={tr("ردیف‌های کارکردِ تعدادی که هنوز پرداخت نشده‌اند و درخواستِ بازی ندارند؛ «ثبت در حسابداری» ردیفِ برداشت را می‌نویسد و کارکرد «پرداخت‌شده» می‌شود.")}
+      >
         {unpaidUnits.length === 0 ? (
-          <EmptyState title={t("موردی نیست.")} />
+          <p className="text-sm text-muted-foreground">{t("موردی نیست.")}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead numeric>{t("تاریخ")}</TableHead>
-                  <TableHead>{t("عضو")}</TableHead>
-                  <TableHead>{t("پروژه")}</TableHead>
-                  <TableHead numeric>{t("تعداد")}</TableHead>
-                  <TableHead numeric>{t("مبلغ")}</TableHead>
-                  {canManage && <TableHead />}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {unpaidUnits.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableNumericCell>{u.entryDate}</TableNumericCell>
-                    <TableCell>{u.userName ?? '—'}</TableCell>
-                    <TableCell>{u.projectTitle ?? '—'}</TableCell>
-                    <TableNumericCell>{format(u.quantity)}</TableNumericCell>
-                    <TableNumericCell>{format(u.amount)} {u.currencyCode ?? ''}</TableNumericCell>
-                    {canManage && (
-                      <TableCell>
-                        <div className="flex justify-end">
-                          <Button size="sm" disabled={pending} onClick={() => setUnitTarget(u)}>
-                            <Banknote className="size-3.5" />
-                            {tr("ثبت در حسابداری")}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </section>
-      )}
-
-      {/* ---- پرداخت‌های بی‌پروژه — مانده از «جداسازی» ---- */}
-      {section === 'members' && detachedPayments.length > 0 && (
-      <section className="grid gap-3">
-        <div>
-          <h2 className="text-sm font-semibold">{t("پرداخت‌های بی‌پروژه")}</h2>
-          <p className="text-xs text-muted-foreground">
-            {tr("ردیف‌هایی که با «جداسازی» از پروژهٔ حذف‌شده مانده‌اند؛ پول در دفتر هست و نامِ پروژه در توضیحات.")}
-          </p>
-        </div>
-        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead numeric>{t("تاریخ")}</TableHead>
-                <TableHead>{t("طرف")}</TableHead>
-                <TableHead>{t("نوع")}</TableHead>
+                <TableHead>{t("عضو")}</TableHead>
+                <TableHead>{t("پروژه")}</TableHead>
+                <TableHead numeric>{t("تعداد")}</TableHead>
                 <TableHead numeric>{t("مبلغ")}</TableHead>
-                <TableHead>{t("توضیحات")}</TableHead>
-                <TableHead>{t("رسید")}</TableHead>
+                {canManage && <TableActionsHead />}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {detachedPayments.map((p) => (
-                <TableRow key={p.id}>
-                  <TableNumericCell>{p.paidAt ?? '—'}</TableNumericCell>
-                  <TableCell>{p.userName ?? '—'}</TableCell>
-                  <TableCell>{t(PAY_DIRECTION_LABELS[p.direction] ?? p.direction)}</TableCell>
-                  <TableNumericCell>{format(p.amount)} {p.currencyCode ?? ''}</TableNumericCell>
-                  <TableCell className="text-muted-foreground">{p.note || '—'}</TableCell>
-                  <TableCell>
-                    {p.receiptId ? (
-                      <a href={`/api/files/${p.receiptId}`} target="_blank" rel="noopener noreferrer" className="underline">
-                        {t("رسید")}
-                      </a>
-                    ) : '—'}
-                  </TableCell>
+              {unpaidUnits.map((u) => (
+                <TableRow key={u.id}>
+                  <TableNumericCell>{u.entryDate}</TableNumericCell>
+                  <TableCell>{u.userName ?? '—'}</TableCell>
+                  <TableCell>{u.projectTitle ?? '—'}</TableCell>
+                  <TableNumericCell>{format(u.quantity)}</TableNumericCell>
+                  <TableNumericCell>{format(u.amount)} {u.currencyCode ?? ''}</TableNumericCell>
+                  {canManage && (
+                    <TableActionsCell>
+                      <Button size="sm" disabled={pending} onClick={() => setUnitTarget(u)}>
+                        <Banknote className="size-3.5" />
+                        {tr("ثبت در حسابداری")}
+                      </Button>
+                    </TableActionsCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </div>
-      </section>
+        )}
+      </Section>
+      )}
+
+      {/* ---- پرداخت‌های بی‌پروژه — مانده از «جداسازی» ---- */}
+      {section === 'members' && detachedPayments.length > 0 && (
+      <Section
+        title={t("پرداخت‌های بی‌پروژه")}
+        description={tr("ردیف‌هایی که با «جداسازی» از پروژهٔ حذف‌شده مانده‌اند؛ پول در دفتر هست و نامِ پروژه در توضیحات.")}
+      >
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead numeric>{t("تاریخ")}</TableHead>
+              <TableHead>{t("طرف")}</TableHead>
+              <TableHead>{t("نوع")}</TableHead>
+              <TableHead numeric>{t("مبلغ")}</TableHead>
+              <TableHead>{t("توضیحات")}</TableHead>
+              <TableHead>{t("رسید")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {detachedPayments.map((p) => (
+              <TableRow key={p.id}>
+                <TableNumericCell>{p.paidAt ?? '—'}</TableNumericCell>
+                <TableCell>{p.userName ?? '—'}</TableCell>
+                <TableCell>{t(PAY_DIRECTION_LABELS[p.direction] ?? p.direction)}</TableCell>
+                <TableNumericCell>{format(p.amount)} {p.currencyCode ?? ''}</TableNumericCell>
+                <TableCell className="text-muted-foreground">{p.note || '—'}</TableCell>
+                <TableCell>
+                  {p.receiptId ? (
+                    <a href={`/api/files/${p.receiptId}`} target="_blank" rel="noopener noreferrer" className="underline">
+                      {t("رسید")}
+                    </a>
+                  ) : '—'}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Section>
       )}
 
       {/* ---- هزینه‌های دوره‌ای ---- */}
       {section === 'expenses' && (
-      <section className="grid gap-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">{t("هزینه‌های دوره‌ای")}</h2>
-          {canManage && (
-            <Button size="sm" onClick={() => { setEditing(null); setExpenseOpen(true); }}>
-              <Plus className="size-4" />
-              {tr("افزودن هزینه")}
-            </Button>
-          )}
-        </div>
+      <Section
+        title={t("هزینه‌های دوره‌ای")}
+        actions={canManage ? (
+          <Button size="sm" onClick={() => { setEditing(null); setExpenseOpen(true); }}>
+            <Plus className="size-4" />
+            {tr("افزودن هزینه")}
+          </Button>
+        ) : undefined}
+      >
 
         {recurring.filter((r) => r.isActive).length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full max-w-xs">
-              <Input
-                type="search"
-                value={expenseQuery}
-                onChange={(e) => setExpenseQuery(e.target.value)}
-                placeholder={tr('جستجوی عنوان، طرف‌حساب یا دسته…')}
-                className="h-9"
-              />
-            </div>
+            <SearchInput
+              value={expenseQuery}
+              onChange={(e) => setExpenseQuery(e.target.value)}
+              placeholder={tr('جستجوی عنوان، طرف‌حساب یا دسته…')}
+            />
             <SearchableSelect
+              size="sm"
+              containerClassName="w-full sm:w-44"
               value={expenseVendor}
               onValueChange={(v) => setExpenseVendor(v)}
-              
               aria-label={tr('طرف‌حساب')}
             >
               <NativeSelectOption value="">{tr('همهٔ طرف‌حساب‌ها')}</NativeSelectOption>
               {vendors.map((v) => <NativeSelectOption key={v.id} value={v.name}>{v.name}</NativeSelectOption>)}
             </SearchableSelect>
             <NativeSelect
+              size="sm"
+              containerClassName="w-full sm:w-44"
               value={expenseKind}
               onChange={(e) => setExpenseKind(e.target.value)}
-              
               aria-label={tr('نوع')}
             >
               <NativeSelectOption value="">{tr('هر نوع')}</NativeSelectOption>
@@ -570,7 +555,8 @@ export function PayoutsView({
               <NativeSelectOption value="once">{tr('یک‌بار')}</NativeSelectOption>
             </NativeSelect>
             <NativeSelect
-              containerClassName="w-full sm:w-40"
+              size="sm"
+              containerClassName="w-full sm:w-44"
               value={expenseStatus}
               onChange={(e) => setExpenseStatus(e.target.value as 'active' | 'inactive' | 'all')}
               aria-label={tr('وضعیت')}
@@ -580,7 +566,8 @@ export function PayoutsView({
               <NativeSelectOption value="all">{tr('همه')}</NativeSelectOption>
             </NativeSelect>
             <SearchableSelect
-              containerClassName="w-full sm:w-40"
+              size="sm"
+              containerClassName="w-full sm:w-44"
               value={expenseCategory}
               onValueChange={(v) => setExpenseCategory(v)}
               aria-label={tr('دسته')}
@@ -589,6 +576,7 @@ export function PayoutsView({
               {categories.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.name ?? ''}</NativeSelectOption>)}
             </SearchableSelect>
             <SearchableSelect
+              size="sm"
               containerClassName="w-full sm:w-44"
               value={expenseAccount}
               onValueChange={(v) => setExpenseAccount(v)}
@@ -597,8 +585,8 @@ export function PayoutsView({
               <NativeSelectOption value="">{tr('همهٔ حساب‌ها')}</NativeSelectOption>
               {accounts.map((a) => <NativeSelectOption key={a.id} value={a.id}>{a.name}</NativeSelectOption>)}
             </SearchableSelect>
-            <DatePicker value={dueFrom} onChange={(v) => setDueFrom(v)} className="w-36" aria-label={tr('سررسید از')} />
-            <DatePicker value={dueTo} onChange={(v) => setDueTo(v)} className="w-36" aria-label={tr('سررسید تا')} />
+            <DatePicker size="sm" value={dueFrom} onChange={(v) => setDueFrom(v)} className="w-36" aria-label={tr('سررسید از')} />
+            <DatePicker size="sm" value={dueTo} onChange={(v) => setDueTo(v)} className="w-36" aria-label={tr('سررسید تا')} />
             <Button size="sm" variant="ghost" onClick={clearExpenseFilters}>{tr('پاک‌کردنِ فیلترها')}</Button>
           </div>
         )}
@@ -625,91 +613,104 @@ export function PayoutsView({
           </div>
         )}
 
+        {/*
+          ⚠️ یک جدول با یک سرستون، نه یک جدولِ بی‌سرستون برای هر سبد: هر سبد
+          پهنای ستون‌های خودش را می‌گرفت و مبلغ و سررسیدِ «معوق» زیرِ مبلغ و
+          سررسیدِ «این هفته» نمی‌افتاد. حالا نامِ سبد ردیفِ گروه است.
+        */}
         {visibleRecurring.length === 0 ? (
           <EmptyState title={t("هزینهٔ دوره‌ای ثبت نشده")} />
         ) : (
-          bucketOrder.filter((b) => buckets.has(b)).map((bucket) => (
-            <div key={bucket} className="grid gap-1.5">
-              <h3 className={`text-sm font-medium ${BUCKET_STYLE[bucket]}`}>
-                {t(BUCKET_LABELS[bucket])}
-              </h3>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableBody>
-                    {buckets.get(bucket)!.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell>
-                          {r.title}
-                          <span className="ms-2 text-xs text-muted-foreground">
-                            {t(KIND_LABELS[r.kind as 'recurring'] ?? r.kind)}
-                            {r.kind === 'recurring' && ` · ${intervalLabel(r.intervalUnit as IntervalUnit, r.intervalCount, t)}`}
-                            {!r.isActive && ` · ${t('غیرفعال')}`}
-                          </span>
-                          {r.vendorName && (
-                            <Badge variant="secondary" className="ms-2">{r.vendorName}</Badge>
-                          )}
-                          {r.categoryName && (
-                            <Badge variant="outline" className="ms-1">{r.categoryName}</Badge>
-                          )}
-                          {r.accountName && (
-                            <span className="ms-2 text-xs text-muted-foreground">{r.accountName}</span>
-                          )}
-                        </TableCell>
-                        <TableNumericCell>{format(r.amount)} {r.currencyCode ?? ''}</TableNumericCell>
-                        <TableNumericCell className="text-muted-foreground">
-                          {r.amountEur === null ? '—' : format(r.amountEur)}
-                        </TableNumericCell>
-                        <TableNumericCell>{r.nextDueDate}</TableNumericCell>
-                        {canManage && (
-                          <TableCell>
-                            <div className="flex justify-end gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={pending}
-                                title={r.accountId === null ? tr('بدونِ حساب فقط سررسید جلو می‌رود') : undefined}
-                                onClick={async () => {
-                                  // پورتِ `pay()`: بدونِ حساب هیچ ردیفی نوشته نمی‌شود، فقط نوبت می‌گذرد.
-                                  if (r.accountId === null && !(await confirm({
-                                    title: t('پرداخت بدونِ ثبت در دفتر؟'),
-                                    description: t('این هزینه حسابِ پرداخت ندارد؛ فقط سررسیدش جلو می‌رود و ردیفی در دفتر نوشته نمی‌شود.'),
-                                  }))) return;
-                                  act(() => payRecurringAction(r.id, r.nextDueDate));
-                                }}
-                              >
-                                <Banknote className="size-3.5" />
-                                {tr("ثبت پرداخت")}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => { setEditing(r); setExpenseOpen(true); }}
-                              >
-                                {tr("ویرایش")}
-                              </Button>
-                              <IconButton
-                                variant="ghost"
-                                className="size-8 text-muted-foreground hover:text-destructive"
-                                label={t("حذف")}
-                                disabled={pending}
-                                onClick={async () => {
-                                  if (await confirm({ title: t('این هزینه حذف شود؟') })) act(() => deleteRecurringAction(r.id));
-                                }}
-                              >
-                                <Trash2 className="size-3.5" />
-                              </IconButton>
-                            </div>
-                          </TableCell>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("هزینه")}</TableHead>
+                <TableHead numeric>{t("مبلغ")}</TableHead>
+                <TableHead numeric>{t("معادل یورو")}</TableHead>
+                <TableHead numeric>{t("سررسیدِ بعدی")}</TableHead>
+                {canManage && <TableActionsHead />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {bucketOrder.filter((b) => buckets.has(b)).map((bucket) => (
+                <Fragment key={bucket}>
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={canManage ? 5 : 4} className={`bg-muted/30 py-1.5 text-xs font-semibold ${BUCKET_STYLE[bucket]}`}>
+                      {t(BUCKET_LABELS[bucket])}
+                    </TableCell>
+                  </TableRow>
+                  {buckets.get(bucket)!.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>
+                        {r.title}
+                        <span className="ms-2 text-xs text-muted-foreground">
+                          {t(KIND_LABELS[r.kind as 'recurring'] ?? r.kind)}
+                          {r.kind === 'recurring' && ` · ${intervalLabel(r.intervalUnit as IntervalUnit, r.intervalCount, t)}`}
+                          {!r.isActive && ` · ${t('غیرفعال')}`}
+                        </span>
+                        {r.vendorName && (
+                          <Badge variant="secondary" className="ms-2">{r.vendorName}</Badge>
                         )}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          ))
+                        {r.categoryName && (
+                          <Badge variant="outline" className="ms-1">{r.categoryName}</Badge>
+                        )}
+                        {r.accountName && (
+                          <span className="ms-2 text-xs text-muted-foreground">{r.accountName}</span>
+                        )}
+                      </TableCell>
+                      <TableNumericCell>{format(r.amount)} {r.currencyCode ?? ''}</TableNumericCell>
+                      <TableNumericCell className="text-muted-foreground">
+                        {r.amountEur === null ? '—' : format(r.amountEur)}
+                      </TableNumericCell>
+                      <TableNumericCell>{r.nextDueDate}</TableNumericCell>
+                      {canManage && (
+                        <TableActionsCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={pending}
+                            title={r.accountId === null ? tr('بدونِ حساب فقط سررسید جلو می‌رود') : undefined}
+                            onClick={async () => {
+                              // پورتِ `pay()`: بدونِ حساب هیچ ردیفی نوشته نمی‌شود، فقط نوبت می‌گذرد.
+                              if (r.accountId === null && !(await confirm({
+                                title: t('پرداخت بدونِ ثبت در دفتر؟'),
+                                description: t('این هزینه حسابِ پرداخت ندارد؛ فقط سررسیدش جلو می‌رود و ردیفی در دفتر نوشته نمی‌شود.'),
+                              }))) return;
+                              act(() => payRecurringAction(r.id, r.nextDueDate));
+                            }}
+                          >
+                            <Banknote className="size-3.5" />
+                            {tr("ثبت پرداخت")}
+                          </Button>
+                          <IconButton
+                            variant="ghost"
+                            className="size-8"
+                            label={t("ویرایش")}
+                            onClick={() => { setEditing(r); setExpenseOpen(true); }}
+                          >
+                            <Pencil className="size-3.5" />
+                          </IconButton>
+                          <IconButton
+                            variant="ghost"
+                            className="size-8 text-muted-foreground hover:text-destructive"
+                            label={t("حذف")}
+                            disabled={pending}
+                            onClick={async () => {
+                              if (await confirm({ title: t('این هزینه حذف شود؟') })) act(() => deleteRecurringAction(r.id));
+                            }}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </IconButton>
+                        </TableActionsCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </Fragment>
+              ))}
+            </TableBody>
+          </Table>
         )}
-      </section>
+      </Section>
       )}
 
       {/* ---- مودالِ ردِ درخواست با دلیل (پورتِ فرمِ inline ِ «رد کردن») ---- */}
@@ -996,9 +997,7 @@ export function PayoutsView({
         دوره‌ای ربطی به آن ندارد.
       */}
       {section === 'members' && (
-        <div className="rounded-md border p-3">
-          <BankDirectory rows={directory.rows} showPhone={directory.showPhone} />
-        </div>
+        <BankDirectory rows={directory.rows} showPhone={directory.showPhone} />
       )}
     </div>
   );

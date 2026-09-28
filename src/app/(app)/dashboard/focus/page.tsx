@@ -59,6 +59,7 @@ export default async function FocusPage({
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader back={{ href: '/dashboard', label: t('داشبورد') }} title={t(META[view].title)} />
           <EmptyState title={t('دسترسی کافی ندارید.')} />
         </PageShell>
       );
@@ -85,7 +86,7 @@ export default async function FocusPage({
             <li key={p.id}>
               <Link
                 href={focusHref(view, p.id)}
-                className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm transition-colors hover:bg-muted"
+                className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted"
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="truncate font-medium">{p.title}</span>

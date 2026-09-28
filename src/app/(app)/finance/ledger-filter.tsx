@@ -89,19 +89,19 @@ export function LedgerFilter({
     <div className="grid gap-2">
       <form
         onSubmit={(e) => { e.preventDefault(); submit(e.currentTarget); }}
-        className="flex flex-wrap items-end gap-2 rounded-md border p-3"
+        className="flex flex-wrap items-end gap-2 rounded-lg border p-3"
       >
         <div className="grid gap-1.5">
           <Label htmlFor="lf-from" className="text-xs">{tr('از تاریخ')}</Label>
-          <DatePicker id="lf-from" name="from" className="w-[9.5rem]" defaultValue={value('from')} />
+          <DatePicker id="lf-from" name="from" size="sm" className="w-[9.5rem]" defaultValue={value('from')} />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="lf-to" className="text-xs">{tr('تا تاریخ')}</Label>
-          <DatePicker id="lf-to" name="to" className="w-[9.5rem]" defaultValue={value('to')} />
+          <DatePicker id="lf-to" name="to" size="sm" className="w-[9.5rem]" defaultValue={value('to')} />
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="lf-tag" className="text-xs">{tr('دسته')}</Label>
-          <SearchableSelect id="lf-tag" name="tag" defaultValue={value('tag')} >
+          <SearchableSelect id="lf-tag" name="tag" size="sm" containerClassName="w-40" defaultValue={value('tag')}>
             <NativeSelectOption value="">{tr('همه')}</NativeSelectOption>
             {options.categories.map((c) => (
               <NativeSelectOption key={c.id} value={c.id}>{c.name}</NativeSelectOption>
@@ -118,6 +118,7 @@ export function LedgerFilter({
           <Combobox
             id="lf-project"
             name="project"
+            size="sm"
             options={options.projects.map((p) => ({ value: p.id, label: p.title }))}
             value={project}
             onChange={setProject}
@@ -128,7 +129,7 @@ export function LedgerFilter({
           <Label htmlFor="lf-party" className="text-xs">{tr('طرف‌حساب')}</Label>
           <Input
             id="lf-party" name="party" defaultValue={value('party')}
-            placeholder={tr('نامِ پرداخت‌کننده یا گیرنده')} className="h-9 w-52"
+            placeholder={tr('نامِ پرداخت‌کننده یا گیرنده')} className="h-8 w-52"
           />
         </div>
 

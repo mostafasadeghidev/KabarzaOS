@@ -335,7 +335,7 @@ export function EntryForm({
 
       {/* ── R-FORM-02 — بازپرداخت از کارفرما ── */}
       {billableVisible && (
-        <label className="flex items-start gap-2 rounded-md border p-3 text-sm">
+        <label className="flex items-start gap-2 rounded-lg border p-3 text-sm">
           {/* ⚠️ پیش‌فرض تیک‌خورده — هزینهٔ پروژه معمولاً به کارفرما می‌خورد. */}
           <Checkbox name="billable" value="1" defaultChecked={editing ? editing.billable : true} className="mt-0.5"
           />
@@ -350,7 +350,7 @@ export function EntryForm({
 
       {/* ── R-FORM-05 — بلوکِ معادل + نرخِ دوطرفه ── */}
       {settledVisible && (
-        <div className="grid gap-2 rounded-md border p-3">
+        <div className="grid gap-2 rounded-lg border p-3">
           <Label>{tr("معادل برای محاسبهٔ پروژه/عضو")}</Label>
           <div className="flex flex-wrap items-center gap-2">
             <Input
@@ -386,7 +386,7 @@ export function EntryForm({
 
       {/* ── R-FORM-06 — انتخابگرِ کارکرد (پورتِ unitPicker / from_unit) ── */}
       {unitRows.length > 0 && (
-        <div className="grid gap-2 rounded-md border border-dashed p-3">
+        <div className="grid gap-2 rounded-lg border border-dashed p-3">
           <p className="text-xs text-muted-foreground">
             {tr("کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، معادل و ارز پر می‌شود و پس از ذخیره «پرداخت‌شده» می‌گردد.")}
           </p>
@@ -451,7 +451,7 @@ export function EntryForm({
 
       {/* ── R-FORM-03 — هزینهٔ دوره‌ای فقط برای برداشت ── */}
       {recurringVisible && (
-        <div className="grid gap-2 rounded-md border p-3 text-sm">
+        <div className="grid gap-2 rounded-lg border p-3 text-sm">
           <label className="flex items-start gap-2">
             <Checkbox name="makeRecurring" value="1" className="mt-0.5" />
             <span>

@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { Clock, Lock, Pause, Play, Trash2 } from 'lucide-react';
+import { Clock, Lock, Pause, Pencil, Play, Trash2 } from 'lucide-react';
 import {
   confirmPendingAction, deleteLogAction, discardPendingAction, logHoursAction,
   resumePendingAction, startTimerAction, stopTimerAction, updateLogAction,
@@ -14,13 +14,10 @@ import { hoursQuery } from '@/domain/timelogs/hours-filter';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
-} from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
@@ -28,6 +25,8 @@ import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { StatCard } from '@/components/stat-card';
+import { Panel } from '@/components/page-shell';
+import { IconButton } from '@/components/ui/icon-button';
 
 export interface LogRow {
   id: number;
@@ -145,165 +144,144 @@ export function HoursView({ data }: { data: HoursData }) {
 
       {/* ── تایمرِ پارک‌شده: مهم‌ترین حالت، پس بالاتر از همه ── */}
       {data.pending && (
-        <Card className="border-amber-500/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">{t("تایمرِ طولانی — تأیید کنید")}</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <p className="text-sm text-muted-foreground">
-              {t('{hours} روی «{project}» شمرده شد ({date}).', {
-                hours: hoursLabel(data.pending.minutes),
-                project: data.pending.projectTitle ?? t('کارِ عمومی'),
-                date: data.pending.logDate,
-              })}
-              {' '}{t('چون بیش از ۵ ساعت است خودکار ثبت نشده — شاید یادتان رفته متوقفش کنید.')}
-            </p>
+        <Panel tone="warning" title={t("تایمرِ طولانی — تأیید کنید")}>
+          <p className="text-sm text-muted-foreground">
+            {t('{hours} روی «{project}» شمرده شد ({date}).', {
+              hours: hoursLabel(data.pending.minutes),
+              project: data.pending.projectTitle ?? t('کارِ عمومی'),
+              date: data.pending.logDate,
+            })}
+            {' '}{t('چون بیش از ۵ ساعت است خودکار ثبت نشده — شاید یادتان رفته متوقفش کنید.')}
+          </p>
 
-            <form action={confirm} className="flex flex-wrap items-end gap-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="pc-h">{t("ساعت")}</Label>
-                <Input
-                  id="pc-h" name="hours" type="number" min={0}
-                  className="num w-20"
-                  defaultValue={Math.floor(data.pending.minutes / 60)}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="pc-m">{t("دقیقه")}</Label>
-                <Input
-                  id="pc-m" name="minutes" type="number" min={0} max={59}
-                  className="num w-20"
-                  defaultValue={data.pending.minutes % 60}
-                />
-              </div>
-              <Submit>{t("ثبتِ این مدت")}</Submit>
-              <Button type="button" size="sm" variant="outline" onClick={() => resumePendingAction()}>
-                <Play className="size-3.5" />
-                {tr("ادامهٔ تایمر")}
-              </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => discardPendingAction()}>
-                {tr("دور بینداز")}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+          <form action={confirm} className="flex flex-wrap items-end gap-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="pc-h">{t("ساعت")}</Label>
+              <Input
+                id="pc-h" name="hours" type="number" min={0}
+                className="num w-20"
+                defaultValue={Math.floor(data.pending.minutes / 60)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="pc-m">{t("دقیقه")}</Label>
+              <Input
+                id="pc-m" name="minutes" type="number" min={0} max={59}
+                className="num w-20"
+                defaultValue={data.pending.minutes % 60}
+              />
+            </div>
+            <Submit>{t("ثبتِ این مدت")}</Submit>
+            <Button type="button" size="sm" variant="outline" onClick={() => resumePendingAction()}>
+              <Play className="size-3.5" />
+              {tr("ادامهٔ تایمر")}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => discardPendingAction()}>
+              {tr("دور بینداز")}
+            </Button>
+          </form>
+        </Panel>
       )}
 
       {/* ── تایمرِ در حالِ اجرا / شروعِ تایمر ── */}
       {!data.pending && canLogSomething && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-1.5 text-sm">
-              <Clock className="size-4" />
-              {tr("تایمر")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {data.running ? (
-              <form action={stop} className="grid gap-3">
-                <div className="flex items-center gap-3">
-                  <LiveMinutes from={data.running.minutes} />
-                  <Badge variant="secondary">{data.running.projectTitle ?? t('کارِ عمومی')}</Badge>
-                </div>
-                <div className="flex flex-wrap items-end gap-2">
-                  <div className="grid flex-1 gap-1.5">
-                    <Label htmlFor="stop-desc">{t("توضیح (اختیاری)")}</Label>
-                    <Input id="stop-desc" name="description" placeholder={t("روی چه کار کردید؟")} />
-                  </div>
-                  <Submit variant="outline">
-                    <Pause className="size-3.5" />
-                    {tr("توقف و ثبت")}
-                  </Submit>
-                </div>
-              </form>
-            ) : (
-              <form action={start} className="flex flex-wrap items-end gap-2">
+        <Panel icon={<Clock />} title={tr("تایمر")}>
+          {data.running ? (
+            <form action={stop} className="grid gap-3">
+              <div className="flex items-center gap-3">
+                <LiveMinutes from={data.running.minutes} />
+                <Badge variant="secondary">{data.running.projectTitle ?? t('کارِ عمومی')}</Badge>
+              </div>
+              <div className="flex flex-wrap items-end gap-2">
                 <div className="grid flex-1 gap-1.5">
-                  <Label htmlFor="start-project">{t("پروژه")}</Label>
-                  <ProjectSelect projects={data.projects} id="start-project" allowGeneral={data.canLogGeneral} />
+                  <Label htmlFor="stop-desc">{t("توضیح (اختیاری)")}</Label>
+                  <Input id="stop-desc" name="description" placeholder={t("روی چه کار کردید؟")} />
                 </div>
-                <Submit>
-                  <Play className="size-3.5" />
-                  {tr("شروع")}
+                <Submit variant="outline">
+                  <Pause className="size-3.5" />
+                  {tr("توقف و ثبت")}
                 </Submit>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+              </div>
+            </form>
+          ) : (
+            <form action={start} className="flex flex-wrap items-end gap-2">
+              <div className="grid flex-1 gap-1.5">
+                <Label htmlFor="start-project">{t("پروژه")}</Label>
+                <ProjectSelect projects={data.projects} id="start-project" allowGeneral={data.canLogGeneral} />
+              </div>
+              <Submit>
+                <Play className="size-3.5" />
+                {tr("شروع")}
+              </Submit>
+            </form>
+          )}
+        </Panel>
       )}
 
       {/* ── ثبتِ دستی ── */}
       {canLogSomething ? (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">{t("ثبتِ دستی")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form action={log} className="grid gap-3">
-              <div className="grid gap-2 @xl/main:grid-cols-4">
-                <div className="grid gap-1.5 @xl/main:col-span-2">
-                  <Label htmlFor="log-project">{t("پروژه")}</Label>
-                  <ProjectSelect projects={data.projects} id="log-project" allowGeneral={data.canLogGeneral} />
+        <Panel title={t("ثبتِ دستی")}>
+          <form action={log} className="grid gap-3">
+            <div className="grid gap-2 @xl/main:grid-cols-4">
+              <div className="grid gap-1.5 @xl/main:col-span-2">
+                <Label htmlFor="log-project">{t("پروژه")}</Label>
+                <ProjectSelect projects={data.projects} id="log-project" allowGeneral={data.canLogGeneral} />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="log-date">{t("تاریخ")}</Label>
+                <DatePicker id="log-date" name="logDate" defaultValue={data.today} required />
+              </div>
+              <div className="flex items-end gap-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="log-h">{t("ساعت")}</Label>
+                  <Input id="log-h" name="hours" type="number" min={0} className="num w-16" defaultValue={0} />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label htmlFor="log-date">{t("تاریخ")}</Label>
-                  <DatePicker id="log-date" name="logDate" defaultValue={data.today} required />
-                </div>
-                <div className="flex items-end gap-2">
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="log-h">{t("ساعت")}</Label>
-                    <Input id="log-h" name="hours" type="number" min={0} className="num w-16" defaultValue={0} />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="log-m">{t("دقیقه")}</Label>
-                    <Input id="log-m" name="minutes" type="number" min={0} max={59} className="num w-16" defaultValue={0} />
-                  </div>
+                  <Label htmlFor="log-m">{t("دقیقه")}</Label>
+                  <Input id="log-m" name="minutes" type="number" min={0} max={59} className="num w-16" defaultValue={0} />
                 </div>
               </div>
-              <div className="flex flex-wrap items-end gap-2">
-                <div className="grid flex-1 gap-1.5">
-                  <Label htmlFor="log-desc">{t("توضیح")}</Label>
-                  <Input id="log-desc" name="description" />
-                </div>
-                <Submit>{t("ثبت")}</Submit>
+            </div>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="grid flex-1 gap-1.5">
+                <Label htmlFor="log-desc">{t("توضیح")}</Label>
+                <Input id="log-desc" name="description" />
               </div>
-              <p className="text-xs text-muted-foreground">
-                {tr("ثبتِ همان روز و همان پروژه با ثبتِ قبلی ادغام می‌شود، نه ردیفِ تازه.")}
-              </p>
-            </form>
-          </CardContent>
-        </Card>
+              <Submit>{t("ثبت")}</Submit>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {tr("ثبتِ همان روز و همان پروژه با ثبتِ قبلی ادغام می‌شود، نه ردیفِ تازه.")}
+            </p>
+          </form>
+        </Panel>
       ) : (
         // پورتِ افزونه: بدونِ پروژهٔ باز و بدونِ مجوزِ ساعتِ عمومی، فرمی نیست.
         <p className="text-sm text-muted-foreground">{t("پروژهٔ بازی برای ثبتِ ساعت ندارید.")}</p>
       )}
 
       {/* ── فیلترها (پورتِ view_hours): بازه و نامِ پروژه؛ فرمِ GET تا لینک قابلِ اشتراک بماند ── */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">{t("فیلترها")}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-2">
-          <form method="get" action="/hours" className="flex flex-wrap items-end gap-2">
+      {/* ⚠️ همان نوارِ فیلترِ دفترکل و گزارش‌ها: قابِ ساده، برچسبِ ریز، کنترل‌های `sm`. */}
+      <div className="grid gap-2">
+        <form method="get" action="/hours" className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+          <div className="grid gap-1.5">
+            <Label htmlFor="f-from" className="text-xs">{t("از تاریخ")}</Label>
+            <DatePicker id="f-from" name="from" size="sm" className="w-[9.5rem]" defaultValue={data.filter.from} />
+          </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="f-from">{t("از تاریخ")}</Label>
-              <DatePicker id="f-from" name="from" className="w-[9.5rem]" defaultValue={data.filter.from} />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="f-to">{t("تا تاریخ")}</Label>
-              <DatePicker id="f-to" name="to" className="w-[9.5rem]" defaultValue={data.filter.to} />
+              <Label htmlFor="f-to" className="text-xs">{t("تا تاریخ")}</Label>
+              <DatePicker id="f-to" name="to" size="sm" className="w-[9.5rem]" defaultValue={data.filter.to} />
             </div>
             <div className="grid flex-1 gap-1.5">
-              <Label htmlFor="f-project">{t("پروژه")}</Label>
+              <Label htmlFor="f-project" className="text-xs">{t("پروژه")}</Label>
               <Input
                 id="f-project" name="project" list="hours-project-list" autoComplete="off"
-                placeholder={t("نام پروژه…")} defaultValue={data.filter.project}
+                placeholder={t("نام پروژه…")} defaultValue={data.filter.project} className="h-8"
               />
               <datalist id="hours-project-list">
                 {data.projectTitles.map((title) => <NativeSelectOption key={title} value={title} />)}
               </datalist>
             </div>
-            <Button type="submit" size="sm" variant="outline">{t("فیلتر")}</Button>
+            <Button type="submit" size="sm">{t("فیلتر")}</Button>
             {filtered && (
               <Link href="/hours" className="text-xs text-muted-foreground underline">{t("پاک‌کردن")}</Link>
             )}
@@ -314,8 +292,7 @@ export function HoursView({ data }: { data: HoursData }) {
               {t("مجموع در این بازه")}: <b className="num">{hoursLabel(data.rangeMinutes ?? 0)}</b>
             </p>
           )}
-        </CardContent>
-      </Card>
+      </div>
 
       {/* ── فهرستِ ثبت‌ها ── */}
       {data.logs.length === 0 ? (
@@ -331,7 +308,7 @@ export function HoursView({ data }: { data: HoursData }) {
               <TableHead>{t("پروژه")}</TableHead>
               <TableHead>{t("توضیح")}</TableHead>
               <TableHead numeric>{t("مدت")}</TableHead>
-              <TableHead />
+              <TableActionsHead />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -341,31 +318,31 @@ export function HoursView({ data }: { data: HoursData }) {
                 <TableCell>{l.projectTitle ?? <span className="text-muted-foreground">{t("عمومی")}</span>}</TableCell>
                 <TableCell className="max-w-64 truncate">{l.description || '—'}</TableCell>
                 <TableNumericCell>{hoursLabel(l.minutes)}</TableNumericCell>
-                <TableCell className="text-end">
+                <TableActionsCell>
                   {/* ⚠️ بعد از دو هفته ثبت قفل می‌شود — دکمه هم پنهان. */}
                   {l.editable ? (
-                    <div className="flex justify-end gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(l)}>{t("ویرایش")}</Button>
-                      <Button
-                        type="button"
+                    <>
+                      <IconButton variant="ghost" className="size-8" label={t("ویرایش")} onClick={() => setEditing(l)}>
+                        <Pencil className="size-3.5" />
+                      </IconButton>
+                      <IconButton
                         variant="ghost"
-                        size="icon-sm"
+                        className="size-8 text-muted-foreground hover:text-destructive"
+                        label={t("حذف")}
                         onClick={async () => {
                           if (await ask({ title: t('این ساعت حذف شود؟') })) await deleteLogAction(l.id);
                         }}
-                        className="text-muted-foreground"
-                        aria-label={t("حذف")}
                       >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
+                        <Trash2 className="size-3.5" />
+                      </IconButton>
+                    </>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                       <Lock className="size-3" aria-hidden />
                       {t("قفل‌شده")}
                     </span>
                   )}
-                </TableCell>
+                </TableActionsCell>
               </TableRow>
             ))}
           </TableBody>
@@ -389,46 +366,41 @@ export function HoursView({ data }: { data: HoursData }) {
       )}
 
       {editing && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">{tr('ویرایشِ ثبتِ {date}', { date: editing.logDate })}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* پورتِ ویرایشِ درون‌خطیِ افزونه: تاریخ، پروژه، ساعت، دقیقه، توضیح. */}
-            <form action={edit} className="flex flex-wrap items-end gap-2">
-              <input type="hidden" name="logId" value={editing.id} />
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-date">{t("تاریخ")}</Label>
-                <DatePicker id="e-date" name="logDate" className="w-[9.5rem]" defaultValue={editing.logDate} />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-project">{t("پروژه")}</Label>
-                <ProjectSelect
-                  projects={data.projects}
-                  id="e-project"
-                  allowGeneral={data.canLogGeneral}
-                  defaultValue={editing.projectId === null ? '' : String(editing.projectId)}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-h">{t("ساعت")}</Label>
-                <Input id="e-h" name="hours" type="number" min={0} className="num w-16"
-                  defaultValue={Math.floor(editing.minutes / 60)} />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="e-m">{t("دقیقه")}</Label>
-                <Input id="e-m" name="minutes" type="number" min={0} max={59} className="num w-16"
-                  defaultValue={editing.minutes % 60} />
-              </div>
-              <div className="grid flex-1 gap-1.5">
-                <Label htmlFor="e-desc">{t("توضیح")}</Label>
-                <Input id="e-desc" name="description" defaultValue={editing.description} />
-              </div>
-              <Submit>{t("ذخیره")}</Submit>
-              <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(null)}>{t("بستن")}</Button>
-            </form>
-          </CardContent>
-        </Card>
+        <Panel title={tr('ویرایشِ ثبتِ {date}', { date: editing.logDate })}>
+          {/* پورتِ ویرایشِ درون‌خطیِ افزونه: تاریخ، پروژه، ساعت، دقیقه، توضیح. */}
+          <form action={edit} className="flex flex-wrap items-end gap-2">
+            <input type="hidden" name="logId" value={editing.id} />
+            <div className="grid gap-1.5">
+              <Label htmlFor="e-date">{t("تاریخ")}</Label>
+              <DatePicker id="e-date" name="logDate" className="w-[9.5rem]" defaultValue={editing.logDate} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="e-project">{t("پروژه")}</Label>
+              <ProjectSelect
+                projects={data.projects}
+                id="e-project"
+                allowGeneral={data.canLogGeneral}
+                defaultValue={editing.projectId === null ? '' : String(editing.projectId)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="e-h">{t("ساعت")}</Label>
+              <Input id="e-h" name="hours" type="number" min={0} className="num w-16"
+                defaultValue={Math.floor(editing.minutes / 60)} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="e-m">{t("دقیقه")}</Label>
+              <Input id="e-m" name="minutes" type="number" min={0} max={59} className="num w-16"
+                defaultValue={editing.minutes % 60} />
+            </div>
+            <div className="grid flex-1 gap-1.5">
+              <Label htmlFor="e-desc">{t("توضیح")}</Label>
+              <Input id="e-desc" name="description" defaultValue={editing.description} />
+            </div>
+            <Submit>{t("ذخیره")}</Submit>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(null)}>{t("بستن")}</Button>
+          </form>
+        </Panel>
       )}
     </div>
   );

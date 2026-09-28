@@ -15,6 +15,7 @@ import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
+import { Panel, SectionHeader } from '@/components/page-shell';
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -37,12 +38,13 @@ export function ReportSection({ config }: { config: ReportConfig }) {
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="grid gap-4">
-      <p className="text-sm text-muted-foreground">
-        {tr("خلاصهٔ یک‌روزهٔ فعالیت که به کانالِ تیم فرستاده می‌شود. این گزارشِ گروهی است، نه اعلانِ شخصی.")}
-      </p>
+    <div className="grid grid-cols-1 gap-4">
+      <SectionHeader
+        title={t("گزارش روزانه")}
+        description={tr("خلاصهٔ یک‌روزهٔ فعالیت که به کانالِ تیم فرستاده می‌شود. این گزارشِ گروهی است، نه اعلانِ شخصی.")}
+      />
 
-      <form action={save} className="grid max-w-2xl gap-4">
+      <form action={save} className="grid max-w-4xl gap-4">
         <fieldset className="grid gap-2">
           <legend className="text-sm font-medium">{t("بخش‌ها")}</legend>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -74,8 +76,7 @@ export function ReportSection({ config }: { config: ReportConfig }) {
           </div>
         </div>
 
-        <fieldset className="grid gap-2 rounded-md border p-3">
-          <legend className="px-1 text-sm font-medium">{t("مقصدها")}</legend>
+        <Panel title={t("مقصدها")}>
 
           <label className="flex items-center gap-1.5 text-sm">
             <Switch name="discord" defaultChecked={config.discord}
@@ -96,7 +97,7 @@ export function ReportSection({ config }: { config: ReportConfig }) {
           <p className="text-xs text-muted-foreground">
             {tr("تلگرام فقط وقتی کار می‌کند که باتِ سامانه پیکربندی شده باشد.")}
           </p>
-        </fieldset>
+        </Panel>
 
         <div className="flex flex-wrap items-center gap-3">
           <Submit />
@@ -123,7 +124,7 @@ export function ReportSection({ config }: { config: ReportConfig }) {
       </form>
 
       {aux.preview && (
-        <pre className="max-h-96 overflow-auto rounded-md border bg-muted/40 p-3 text-xs whitespace-pre-wrap">
+        <pre className="max-h-96 overflow-auto rounded-lg border bg-muted/40 p-3 text-xs whitespace-pre-wrap">
           {aux.preview}
         </pre>
       )}

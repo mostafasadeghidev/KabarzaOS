@@ -6,7 +6,7 @@ import { format, type Currency } from '@/domain/money/money';
 import { EmptyState } from '@/components/ui/empty-state';
 import { primeTranslations, t } from '@/i18n/server';
 import { PrintButton } from '@/components/print-button';
-import { BackLink, PageShell } from '@/components/page-shell';
+import { BackLink, PageHeader, PageShell, Section } from '@/components/page-shell';
 
 /**
  * فاکتورِ پروژه — سندِ قابلِ چاپ.
@@ -37,10 +37,11 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     if (error instanceof ForbiddenError) {
       // پورتِ افزونه: شناسهٔ ناموجود «پروژه یافت نشد» می‌گوید، نه «دسترسی ندارید».
       if (error.message === 'project.not_found') {
-        return <PageShell><EmptyState title={t("پروژه یافت نشد")} /></PageShell>;
+        return <PageShell><PageHeader back={{ href: `/projects/${id}`, label: t('پروژه') }} title={t('فاکتور')} /><EmptyState title={t("پروژه یافت نشد")} /></PageShell>;
       }
       return (
         <PageShell>
+          <PageHeader back={{ href: `/projects/${id}`, label: t('پروژه') }} title={t('فاکتور')} />
           <EmptyState title={t("دسترسی ندارید")} description={t("دیدنِ فاکتور مجوزِ مالی می‌خواهد.")} />
         </PageShell>
       );
@@ -154,8 +155,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       </section>
 
       {data.receipts.length > 0 && (
-        <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">{t("پرداخت‌های دریافت‌شده")}</h2>
+        <Section title={t("پرداخت‌های دریافت‌شده")}>
           <table className="w-full text-sm">
             <tbody>
               {data.receipts.map((line, i) => (
@@ -167,7 +167,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
               ))}
             </tbody>
           </table>
-        </section>
+        </Section>
       )}
 
       <section className="flex justify-end">

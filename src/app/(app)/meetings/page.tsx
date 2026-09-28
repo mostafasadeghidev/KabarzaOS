@@ -34,6 +34,7 @@ export default async function MeetingsPage({
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader title={t("جلسات")} />
           <EmptyState title={t("دسترسی ندارید")} description={t("برای دیدنِ جلسات از مدیر دسترسی بگیرید.")} />
         </PageShell>
       );

@@ -3,14 +3,13 @@ import { getMyProfile } from '@/server/people/profile-service';
 import { format } from '@/domain/money/money';
 import type { Actor } from '@/domain/access/permissions';
 import { BankCard } from './profile/bank-card';
-import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { logout } from '@/app/login/actions';
 import { t } from '@/i18n/server';
 import { Button } from '@/components/ui/button';
-import { PageHeader, PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { LogOut } from 'lucide-react';
 
 /**
@@ -47,10 +46,9 @@ export async function OffboardedShell({ actor }: { actor: Actor }) {
 
       <BankCard bank={me.bank} card={me.bank.card} />
 
-      <section className="grid gap-2">
-        <h2 className="text-sm font-semibold">{t("وضعیت دریافتی‌های شما")}</h2>
+      <Section title={t("وضعیت دریافتی‌های شما")}>
         {settlement.rows.length === 0 ? (
-          <EmptyState title={t("موردی برای نمایش نیست")} />
+          <p className="text-sm text-muted-foreground">{t("موردی برای نمایش نیست")}</p>
         ) : (
           <Table>
             <TableHeader>
@@ -76,21 +74,20 @@ export async function OffboardedShell({ actor }: { actor: Actor }) {
             </TableBody>
           </Table>
         )}
-      </section>
+      </Section>
 
       {settlement.noProjectPayouts.length > 0 && (
-        <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">{t("دریافتی‌های بدون پروژه")}</h2>
+        <Section title={t("دریافتی‌های بدون پروژه")}>
           <ul className="grid gap-1">
             {settlement.noProjectPayouts.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
+              <li key={p.id} className="flex items-center gap-3 rounded-lg border px-3 py-2 text-sm">
                 <span className="num font-medium">{format(p.amount)}</span>
                 {p.paidAt && <span className="num text-xs text-muted-foreground">{p.paidAt}</span>}
                 {p.note && <span className="text-xs text-muted-foreground">{p.note}</span>}
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
       )}
     </PageShell>
   );

@@ -111,7 +111,7 @@ export function AccessDialog({
                 )}
 
                 {section.key === 'reports' && (
-                  <div className="mt-1 grid gap-1.5 rounded-md border p-3">
+                  <div className="mt-1 grid gap-1.5 rounded-lg border p-3">
                     <p className="text-xs text-muted-foreground">
                       {tr("اگر «دسترسی» به گزارش‌ها بدهید، تعیین کنید کدام تب‌ها را ببیند (تیک = نمایش):")}
                     </p>

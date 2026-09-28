@@ -1,10 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useT } from '@/i18n/client';
+import { SearchInput } from '@/components/ui/search-input';
 
 /**
  * جستجوی زنده + صفحه‌بندیِ کلاینتیِ جدول.
@@ -75,16 +74,11 @@ export function TableSearch({
 }) {
   const tr = useT();
   return (
-    <div className="relative w-full max-w-xs">
-      <Search className="pointer-events-none absolute inset-inline-start-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-      <Input
-        type="search"
-        value={view.query}
-        onChange={(e) => view.setQuery(e.target.value)}
-        placeholder={placeholder ?? tr('جستجوی زنده')}
-        className="h-9 ps-8"
-      />
-    </div>
+    <SearchInput
+      value={view.query}
+      onChange={(e) => view.setQuery(e.target.value)}
+      placeholder={placeholder ?? tr('جستجوی زنده')}
+    />
   );
 }
 

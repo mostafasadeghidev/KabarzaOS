@@ -42,6 +42,7 @@ export default async function Finance({
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader title={t("مالی")} />
           <EmptyState title={t("دسترسی ندارید")} description={t("برای دیدنِ بخشِ مالی از مدیر دسترسی بگیرید.")} />
         </PageShell>
       );
@@ -61,6 +62,7 @@ export default async function Finance({
     if (!canManage) {
       return (
         <PageShell>
+          <PageHeader title={t("مالی")} />
           <EmptyState
             title={t("حسابی تعریف نشده")}
             description={t("هنوز حسابی ساخته نشده. از مدیرِ مالی بخواهید یکی بسازد.")}

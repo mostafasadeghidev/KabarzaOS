@@ -14,9 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
-} from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { removeQaRoleAction } from '../_form/tab-actions';
@@ -26,6 +24,7 @@ import { PAY_STATUS_LABELS } from './my-money-tab';
 import { chipStyle } from '@/domain/ui/contrast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { StatCard } from '@/components/stat-card';
+import { Panel, Section } from '@/components/page-shell';
 
 /* ------------------------------------------------------------------ *
  * تبِ مالی — `finance` panel ِ مودالِ نسخهٔ قبلی.
@@ -131,44 +130,42 @@ export function FinanceTab({
           description={t("هزینه‌ها و پرداخت‌ها از صفحهٔ «حسابداری» ثبت می‌شوند.")}
         />
       ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("شرح")}</TableHead>
-                <TableHead>{t("نوع")}</TableHead>
-                <TableHead numeric>{t("تاریخ")}</TableHead>
-                <TableHead numeric>{t("مبلغ")}</TableHead>
-                <TableHead numeric>{t("معادل (محاسبه)")}</TableHead>
-                <TableHead>{t("رسید")}</TableHead>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("شرح")}</TableHead>
+              <TableHead>{t("نوع")}</TableHead>
+              <TableHead numeric>{t("تاریخ")}</TableHead>
+              <TableHead numeric>{t("مبلغ")}</TableHead>
+              <TableHead numeric>{t("معادل (محاسبه)")}</TableHead>
+              <TableHead>{t("رسید")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {payments.map((p) => (
+              <TableRow key={p.id}>
+                <TableCell>{p.note || p.userName || '—'}</TableCell>
+                <TableCell>{t(DIRECTION_LABEL[p.direction] ?? p.direction)}</TableCell>
+                <TableNumericCell>{day(p.paidAt)}</TableNumericCell>
+                <TableNumericCell>{format(settled(p))}</TableNumericCell>
+                {/* پورتِ ستونِ «معادل (محاسبه)»: ارزشِ ردیف در ارزِ پروژه، نه مبلغِ خام. */}
+                <TableNumericCell className="text-muted-foreground">{p.countedValue ? money(p.countedValue) : '—'}</TableNumericCell>
+                <TableCell>
+                  {(p.receiptIds?.length ?? 0) > 0 ? (
+                    <a
+                      href={`/api/files/${p.receiptIds![0]}`}
+                      target="_blank"
+                      rel="noopener"
+                      className="text-primary hover:underline"
+                    >
+                      {t('مشاهده')}
+                    </a>
+                  ) : '—'}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>{p.note || p.userName || '—'}</TableCell>
-                  <TableCell>{t(DIRECTION_LABEL[p.direction] ?? p.direction)}</TableCell>
-                  <TableNumericCell>{day(p.paidAt)}</TableNumericCell>
-                  <TableNumericCell>{format(settled(p))}</TableNumericCell>
-                  {/* پورتِ ستونِ «معادل (محاسبه)»: ارزشِ ردیف در ارزِ پروژه، نه مبلغِ خام. */}
-                  <TableNumericCell className="text-muted-foreground">{p.countedValue ? money(p.countedValue) : '—'}</TableNumericCell>
-                  <TableCell>
-                    {(p.receiptIds?.length ?? 0) > 0 ? (
-                      <a
-                        href={`/api/files/${p.receiptIds![0]}`}
-                        target="_blank"
-                        rel="noopener"
-                        className="text-primary hover:underline"
-                      >
-                        {t('مشاهده')}
-                      </a>
-                    ) : '—'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       )}
       <p className="text-xs text-muted-foreground">
         {tr("هزینه‌ها و پرداخت‌ها از صفحهٔ «حسابداری» ثبت می‌شوند.")}
@@ -237,50 +234,51 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
   useEffect(() => { if (state.ok) setPicked(new Set()); }, [state]);
 
   return (
-    <form action={formAction} className="grid max-w-3xl gap-2 rounded-md border p-3">
-      <input type="hidden" name="projectId" value={projectId} />
-      <h3 className="text-sm font-semibold">{t("افزودن چک‌لیست QA")}</h3>
-      <p className="text-xs text-muted-foreground">
-        {tr("آیتم‌های کتابخانهٔ QA برای نقش‌های انتخاب‌شده روی این پروژه می‌نشینند. آیتمِ تکراری دوباره اعمال نمی‌شود.")}
-      </p>
+    <Panel
+      title={t("افزودن چک‌لیست QA")}
+      description={tr("آیتم‌های کتابخانهٔ QA برای نقش‌های انتخاب‌شده روی این پروژه می‌نشینند. آیتمِ تکراری دوباره اعمال نمی‌شود.")}
+    >
+      <form action={formAction} className="grid gap-3">
+        <input type="hidden" name="projectId" value={projectId} />
 
-      <div className="flex flex-wrap gap-3">
-        {roles.map((r) => (
-          <label key={r.id} className="flex items-center gap-1.5 text-sm">
+        <div className="flex flex-wrap gap-3">
+          {roles.map((r) => (
+            <label key={r.id} className="flex items-center gap-1.5 text-sm">
+              <Checkbox
+                name="audience"
+                value={String(r.id)}
+                checked={picked.has(String(r.id))}
+                onCheckedChange={(v) => toggleAudience(String(r.id), v === true)}
+              />
+              {r.name}
+            </label>
+          ))}
+          {/* R-QA-02 — مخاطبِ «کارفرما» یک نقشِ واقعی نیست؛ توکنِ خودش را دارد. */}
+          <label className="flex items-center gap-1.5 text-sm">
             <Checkbox
               name="audience"
-              value={String(r.id)}
-              checked={picked.has(String(r.id))}
-              onCheckedChange={(v) => toggleAudience(String(r.id), v === true)}
+              value="client"
+              checked={picked.has('client')}
+              onCheckedChange={(v) => toggleAudience('client', v === true)}
             />
-            {r.name}
+            {tr("کارفرما")}
           </label>
-        ))}
-        {/* R-QA-02 — مخاطبِ «کارفرما» یک نقشِ واقعی نیست؛ توکنِ خودش را دارد. */}
-        <label className="flex items-center gap-1.5 text-sm">
-          <Checkbox
-            name="audience"
-            value="client"
-            checked={picked.has('client')}
-            onCheckedChange={(v) => toggleAudience('client', v === true)}
-          />
-          {tr("کارفرما")}
-        </label>
-      </div>
+        </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? <><Spinner />{t('در حالِ اعمال…')}</> : t('اعمالِ چک‌لیست')}
-        </Button>
-        {/* چک‌لیستِ QA اغلب برای **همهٔ** نقش‌ها لازم است؛ تیک‌زدنِ ده‌تایی کارِ تکراری بود. */}
-        <Button type="button" size="sm" variant="outline" onClick={() => setAll(true)}>
-          {t('انتخابِ همه')}
-        </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={() => setAll(false)}>
-          {t('پاک‌کردنِ همه')}
-        </Button>
-      </div>
-    </form>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="submit" size="sm" disabled={pending}>
+            {pending ? <><Spinner />{t('در حالِ اعمال…')}</> : t('اعمالِ چک‌لیست')}
+          </Button>
+          {/* چک‌لیستِ QA اغلب برای **همهٔ** نقش‌ها لازم است؛ تیک‌زدنِ ده‌تایی کارِ تکراری بود. */}
+          <Button type="button" size="sm" variant="outline" onClick={() => setAll(true)}>
+            {t('انتخابِ همه')}
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setAll(false)}>
+            {t('پاک‌کردنِ همه')}
+          </Button>
+        </div>
+      </form>
+    </Panel>
   );
 }
 
@@ -417,11 +415,10 @@ export function QaTab({
 
   const section = (title: string, rows: QaRow[]) =>
     rows.length > 0 && (
-      <section className="grid gap-2">
-        <h3 className="text-sm font-semibold">{t(title)}</h3>
+      <Section title={t(title)}>
         <ul className="grid gap-1">
           {rows.map((q) => (
-            <li key={q.id} className="flex items-start justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+            <li key={q.id} className="flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-sm">
               {/*
                 ⚠️ توضیح زیرِ عنوان می‌آید. آیتمِ کتابخانه دو بخش دارد — «چه
                 چیزی» و «چه‌طور بررسی شود» — و تا امروز فقط اولی دیده می‌شد؛
@@ -453,13 +450,14 @@ export function QaTab({
             </li>
           ))}
         </ul>
-      </section>
+      </Section>
     );
 
   return (
-    // ⚠️ پهنای خواندنی: ردیفِ چک‌لیست یک عنوان و چند چیپ است و کش‌آمدنش تا
-    // لبهٔ نمایشگر، تیک و عنوان را ده‌ها سانتی‌متر از هم دور می‌کرد.
-    <div className="grid max-w-4xl gap-4">
+    // ⚠️ پهنای خواندنی را خودِ تب (`TabPanel width="reading"`) می‌دهد: ردیفِ
+    // چک‌لیست یک عنوان و چند چیپ است و کش‌آمدنش تا لبهٔ نمایشگر، تیک و عنوان را
+    // دور می‌کرد. فرمِ بالا دیگر عرضِ سومی (`3xl`) ندارد.
+    <div className="grid grid-cols-1 gap-4">
       {form && <ApplyQaForm projectId={projectId} roles={form.roles} />}
       {/*
         ⚠️ آیتمِ «تسک‌ساز» در جدولِ چک‌لیست **نمی‌نشیند** — مستقیم تسک می‌شود.
@@ -479,7 +477,7 @@ export function QaTab({
       ) : (
         <>
           {canManage && roleGroups.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1 rounded-md border p-2">
+            <div className="flex flex-wrap items-center gap-1 rounded-lg border p-2">
               <span className="me-1 text-xs text-muted-foreground">{t('برداشتنِ گروهی:')}</span>
               {roleGroups.map((g) => (
                 <QaRoleRemove
@@ -598,37 +596,35 @@ export function BidsTab({
           {tr("مناقصه بسته است — برنده پس از شروعِ کار عوض نمی‌شود.")}
         </p>
       )}
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("پیشنهاددهنده")}</TableHead>
-              <TableHead>{t("نقش")}</TableHead>
-              <TableHead numeric>{t("مبلغ")}</TableHead>
-              <TableHead>{t("وضعیت")}</TableHead>
-              {canManage && <TableHead />}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {bids.map((b) => {
-              const s = BID_STATUS[b.status] ?? { label: b.status, variant: 'secondary' as const };
-              return (
-                <TableRow key={b.id}>
-                  <TableCell>{b.userName ?? '—'}</TableCell>
-                  <TableCell>{b.roleName ?? '—'}</TableCell>
-                  <TableNumericCell>{format(b.amount)}</TableNumericCell>
-                  <TableCell><Badge variant={s.variant}>{t(s.label)}</Badge></TableCell>
-                  {canManage && (
-                    <TableCell>
-                      <BidActions bid={b} projectId={projectId} isOpen={isOpen} />
-                    </TableCell>
-                  )}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("پیشنهاددهنده")}</TableHead>
+            <TableHead>{t("نقش")}</TableHead>
+            <TableHead numeric>{t("مبلغ")}</TableHead>
+            <TableHead>{t("وضعیت")}</TableHead>
+            {canManage && <TableActionsHead />}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {bids.map((b) => {
+            const s = BID_STATUS[b.status] ?? { label: b.status, variant: 'secondary' as const };
+            return (
+              <TableRow key={b.id}>
+                <TableCell>{b.userName ?? '—'}</TableCell>
+                <TableCell>{b.roleName ?? '—'}</TableCell>
+                <TableNumericCell>{format(b.amount)}</TableNumericCell>
+                <TableCell><Badge variant={s.variant}>{t(s.label)}</Badge></TableCell>
+                {canManage && (
+                  <TableActionsCell>
+                    <BidActions bid={b} projectId={projectId} isOpen={isOpen} />
+                  </TableActionsCell>
+                )}
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }

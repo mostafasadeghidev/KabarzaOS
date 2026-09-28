@@ -11,7 +11,7 @@ import { AvailabilityBoard } from './availability-board';
 import { primeTranslations, t } from '@/i18n/server';
 import { leaveTargets, listAbsences } from '@/server/availability/absence-service';
 import { AbsencePanel } from '../activity/absence-panel';
-import { PageHeader, PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell, Section } from '@/components/page-shell';
 
 /**
  * «در دسترس بودن اعضا» — پورتِ صفحهٔ مستقلِ `Admin\Availability_Page`.
@@ -93,10 +93,9 @@ export default async function AvailabilityPage({
         />
       )}
       {targets.length > 1 && (
-        <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">{t("ثبت مرخصی برای عضو")}</h2>
+        <Section title={t("ثبت مرخصی برای عضو")}>
           <AbsencePanel data={{ mine, targets, meId: actor.id, today }} />
-        </section>
+        </Section>
       )}
     </PageShell>
   );

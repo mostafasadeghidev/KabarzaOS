@@ -20,13 +20,13 @@ import {
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { TablePager, useTableView } from '@/components/ui/table-search';
-import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DateRangePicker, type DateRangeValue } from '@/components/ui/date-picker';
 import { filterLogs, localIsoDate, logMembers, totalMinutes } from '@/domain/projects/log-filter';
 import { monthRange, weekRange } from '@/domain/reports/filters';
+import { Panel } from '@/components/page-shell';
 
 /**
  * تبِ مدیریت — بازسازیِ `manage_tab_html()`:
@@ -61,44 +61,51 @@ export interface MatrixRowView {
 }
 
 /** پورتِ `availability_matrix_html`: اعضا در سطرها، روزهای هفته (از روزِ آغازِ تنظیمات) در ستون‌ها. */
-export function TeamMatrix({ rows, dayLabels }: { rows: MatrixRowView[]; dayLabels: string[] }) {
+export function TeamMatrix({
+  rows,
+  dayLabels,
+  frame = true,
+}: {
+  rows: MatrixRowView[];
+  dayLabels: string[];
+  /** داخلِ پنل بی‌قاب — پنل خودش قاب است. */
+  frame?: boolean;
+}) {
   const t = useT();
-  if (rows.length === 0) return <p className="text-xs text-muted-foreground">{t("عضوی برای نمایش نیست.")}</p>;
+  if (rows.length === 0) return <p className="text-sm text-muted-foreground">{t("عضوی برای نمایش نیست.")}</p>;
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("عضو")}</TableHead>
-            {dayLabels.map((d, i) => (
-              <TableHead key={d} className={rows[0]?.cells[i]?.isToday ? 'text-primary' : ''}>
-                {t(d)}{rows[0]?.cells[i]?.isToday ? <span className="ms-1 text-[10px]">{t("امروز")}</span> : null}
-              </TableHead>
+    <Table frame={frame}>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{t("عضو")}</TableHead>
+          {dayLabels.map((d, i) => (
+            <TableHead key={d} className={rows[0]?.cells[i]?.isToday ? 'text-primary' : ''}>
+              {t(d)}{rows[0]?.cells[i]?.isToday ? <span className="ms-1 text-[10px]">{t("امروز")}</span> : null}
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((r) => (
+          <TableRow key={r.id}>
+            <TableCell>
+              <span className="font-medium">{r.name}</span>
+              {r.roles.length > 0 && <span className="block text-[11px] text-muted-foreground">{r.roles.join('، ')}</span>}
+            </TableCell>
+            {r.cells.map((c, i) => (
+              <TableCell key={i} title={c.tip} className={`num text-xs ${c.isToday ? 'bg-primary/5' : ''}`}>
+                {c.state === 'leave' ? (
+                  <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-500">
+                    <TreePalm className="size-3.5 shrink-0" aria-hidden />
+                    {t("مرخصی")}{c.span ? ` ${t("تا")} ${c.span}` : ''}
+                  </span>
+                ) : c.state === 'avail' ? (c.span || t("تمام روز")) : '·'}
+              </TableCell>
             ))}
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((r) => (
-            <TableRow key={r.id}>
-              <TableCell>
-                <span className="font-medium">{r.name}</span>
-                {r.roles.length > 0 && <span className="block text-[11px] text-muted-foreground">{r.roles.join('، ')}</span>}
-              </TableCell>
-              {r.cells.map((c, i) => (
-                <TableCell key={i} title={c.tip} className={`num text-xs ${c.isToday ? 'bg-primary/5' : ''}`}>
-                  {c.state === 'leave' ? (
-                    <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-500">
-                      <TreePalm className="size-3.5 shrink-0" aria-hidden />
-                      {t("مرخصی")}{c.span ? ` ${t("تا")} ${c.span}` : ''}
-                    </span>
-                  ) : c.state === 'avail' ? (c.span || t("تمام روز")) : '·'}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -136,10 +143,10 @@ function LogDetail({ logs, weekStart }: { logs: LogRow[]; weekStart: number }) {
   ];
 
   return (
-    <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">{t("جزئیاتِ ثبت‌ها")}</h3>
-        <div className="flex flex-wrap items-center gap-2">
+    <Panel
+      title={t("جزئیاتِ ثبت‌ها")}
+      actions={(
+        <>
           <SearchableSelect
             size="sm"
             aria-label={t("عضو")}
@@ -174,15 +181,16 @@ function LogDetail({ logs, weekStart }: { logs: LogRow[]; weekStart: number }) {
               {t("پاک کردن")}
             </Button>
           )}
-        </div>
-      </div>
+        </>
+      )}
+    >
       {/*
         ⚠️ `table-fixed` با پهنای درصدی: ستون‌ها در کلِ عرضِ کارت پخش می‌شوند،
         مستقل از طولِ محتوا. چیدمانِ خودکار فضا را به نسبتِ متن پخش می‌کرد
         (تاریخ وسطِ ستونی پهن)، و ستونِ توضیحاتِ `w-full` همه را در ابتدای ردیف
         به هم می‌چسباند. ستونِ آخر باقیِ عرض را می‌گیرد.
       */}
-      <Table className="table-fixed">
+      <Table frame={false} className="table-fixed">
         <TableHeader>
           <TableRow>
             <TableHead numeric className="w-[20%]">{t("تاریخ")}</TableHead>
@@ -220,7 +228,7 @@ function LogDetail({ logs, weekStart }: { logs: LogRow[]; weekStart: number }) {
           )}
         </div>
       )}
-    </Card>
+    </Panel>
   );
 }
 
@@ -277,18 +285,16 @@ function DeleteBox({
 
   if (state === 'locked') {
     return (
-      <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs border-destructive/40">
-        <h3 className="text-sm font-semibold text-destructive">{t("حذف پروژه")}</h3>
+      <Panel tone="danger" title={t("حذف پروژه")}>
         <p className="text-xs text-muted-foreground">
           {tr("این پروژه پرداختِ ناقص (ماندهٔ باز) دارد. تا وقتی ماندهٔ کارفرما/عضو تسویه نشود، حذف تحت هیچ شرایطی ممکن نیست.")}
         </p>
-      </Card>
+      </Panel>
     );
   }
 
   return (
-    <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs border-destructive/40">
-      <h3 className="text-sm font-semibold text-destructive">{t("حذف پروژه")}</h3>
+    <Panel tone="danger" title={t("حذف پروژه")}>
 
       {state === 'clean' ? (
         <>
@@ -401,7 +407,7 @@ function DeleteBox({
           )}
         </form>
       )}
-    </Card>
+    </Panel>
   );
 }
 
@@ -422,8 +428,7 @@ function LightenBox({
 
   if (summary) {
     return (
-      <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs">
-        <h3 className="text-sm font-semibold">{t("سبک‌سازی دیتابیس")}</h3>
+      <Panel title={t("سبک‌سازی دیتابیس")}>
         <p className="text-xs text-muted-foreground">{t("این پروژه سبک شده است. خلاصهٔ ثابت‌شده:")}</p>
         <dl className="grid gap-1 text-xs sm:grid-cols-2">
           <div className="flex gap-1">
@@ -444,13 +449,12 @@ function LightenBox({
           </div>
         </dl>
         {summary.wasTender && <Badge variant="outline">{t("پیش‌تر مناقصه بوده")}</Badge>}
-      </Card>
+      </Panel>
     );
   }
 
   return (
-    <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs">
-      <h3 className="text-sm font-semibold">{t("سبک‌سازی دیتابیس")}</h3>
+    <Panel title={t("سبک‌سازی دیتابیس")}>
       <p className="text-xs text-muted-foreground">
         {tr("فایل‌ها، تسک‌ها، کامنت‌ها، چک‌لیست QA و جزئیات ساعت کاری پاک می‌شوند تا دیتابیس سبک شود. سوابق مالی، اعضا، کارفرمایان و یک خلاصه می‌مانند. این کار برگشت‌ناپذیر است.")}
       </p>
@@ -488,7 +492,7 @@ function LightenBox({
           <AlertDescription>{t(error)}</AlertDescription>
         </Alert>
       )}
-    </Card>
+    </Panel>
   );
 }
 
@@ -532,22 +536,21 @@ export function ManageTab({
      * تصویرِ شاخص از ۱.۷۴.۰ در فرمِ «ویرایش» ِ پروژه است، نه اینجا.
      * خط‌چین عمدی است: مرزِ نرم، تا از کادرِ **قرمزِ توپرِ** حذف تفکیک شود.
      */
-    <div className="grid max-w-5xl grid-cols-1 gap-4">
+    // ⚠️ همهٔ پنل‌ها هم‌عرض‌اند: پیش از این ماتریس ۵xl بود و بقیه ۲xl، و تب دو لبهٔ
+    // ناهمسان داشت. عرض را خودِ تب (`TabPanel`) تعیین می‌کند، مثلِ بقیهٔ تب‌ها.
+    <div className="grid grid-cols-1 gap-4">
       {/* ترتیبِ کارت‌ها: در دسترس بودن ← ساعت ← ثبت‌ها ← بایگانی ← سبک‌سازی ← حذف. */}
       {canManage && (
-        <Card className="gap-2 px-4 py-4 shadow-xs">
-          <h3 className="text-sm font-semibold">{t("در دسترس بودنِ اعضای پروژه")}</h3>
-          <TeamMatrix rows={matrix} dayLabels={dayLabels} />
-        </Card>
+        <Panel title={t("در دسترس بودنِ اعضای پروژه")}>
+          <TeamMatrix rows={matrix} dayLabels={dayLabels} frame={false} />
+        </Panel>
       )}
 
-      {/* ساعت و ثبت‌ها هم‌عرضِ بایگانی و سبک‌سازی‌اند: جدولِ کم‌ستون در تمامِ عرضِ صفحه پراکنده می‌شد. */}
-      <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs">
-        <h3 className="text-sm font-semibold">{t("ساعت کاری اعضا")}</h3>
+      <Panel title={t("ساعت کاری اعضا")}>
         {hours.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{t("ساعتِ کاری‌ای ثبت نشده.")}</p>
+          <p className="text-sm text-muted-foreground">{t("ساعتِ کاری‌ای ثبت نشده.")}</p>
         ) : (
-          <Table>
+          <Table frame={false}>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("عضو")}</TableHead>
@@ -573,14 +576,13 @@ export function ManageTab({
             </TableBody>
           </Table>
         )}
-      </Card>
+      </Panel>
 
       {canManage && <LogDetail logs={logs} weekStart={weekStart} />}
 
       {canManage && (
         <>
-          <Card className="max-w-2xl gap-2 px-4 py-4 shadow-xs">
-            <h3 className="text-sm font-semibold">{t("بایگانی")}</h3>
+          <Panel title={t("بایگانی")}>
             <p className="text-xs text-muted-foreground">
               {tr("بایگانی برگشت‌پذیر است؛ پروژهٔ بایگانی‌شده فقط در تبِ بایگانی دیده می‌شود.")}
             </p>
@@ -607,7 +609,7 @@ export function ManageTab({
           <AlertDescription>{t(error)}</AlertDescription>
         </Alert>
       )}
-          </Card>
+          </Panel>
 
           <LightenBox projectId={projectId} isArchived={isArchived} summary={lightenSummary} />
           <DeleteBox projectId={projectId} title={title} state={deleteState} />

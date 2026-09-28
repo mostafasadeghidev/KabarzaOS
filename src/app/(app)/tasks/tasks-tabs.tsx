@@ -32,7 +32,7 @@ export function TasksTabs({
   const [tab, setTab] = useState<'inbox' | 'quick'>('inbox');
 
   const item = (key: 'inbox' | 'quick', label: string, icon: React.ReactNode, count?: number) => (
-    <TabsTrigger key={key} value={key} className="flex-none px-3">
+    <TabsTrigger key={key} value={key} className="flex-none">
       {icon}
       {label}
       {count !== undefined && count > 0 && (
@@ -43,11 +43,14 @@ export function TasksTabs({
 
   return (
     <>
+      {/* ⚠️ تبِ سطحِ صفحه (دو بخشِ جدا)، پس خطی — مثلِ همهٔ صفحه‌های دیگر، نه قرصیِ فیلتر. */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList>
-          {item('inbox', tr('سپرده‌شده به من'), <Inbox className="size-3.5" />, inboxCount)}
-          {item('quick', tr('افزودنِ سریع'), <Plus className="size-3.5" />)}
-        </TabsList>
+        <div className="overflow-x-auto pb-1.5">
+          <TabsList variant="line" className="w-max">
+            {item('inbox', tr('سپرده‌شده به من'), <Inbox className="size-3.5" />, inboxCount)}
+            {item('quick', tr('افزودنِ سریع'), <Plus className="size-3.5" />)}
+          </TabsList>
+        </div>
       </Tabs>
 
       <div className={tab === 'inbox' ? 'contents' : 'hidden'}>{inbox}</div>

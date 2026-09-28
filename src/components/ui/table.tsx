@@ -7,11 +7,27 @@ import { cn } from '@/lib/utils';
  * ⚠️ R-I18N-05 — نسخهٔ اصلیِ shadcn سلول‌ها را `text-left` می‌کند که در RTL
  * غلط است. اینجا `text-start` استفاده شده تا جهت از زبان بیاید.
  * REQUIREMENTS هـ-۱۳ — چگالیِ بالا: padding کمتر تا ردیفِ بیشتر دیده شود.
+ *
+ * ⚠️ قاعدهٔ قاب، یک‌جا: جدولِ مستقل (مستقیم در صفحه یا تب) قابِ گرد و
+ * سرستونِ زمینه‌دار می‌گیرد؛ جدولی که داخلِ کارت یا پنل است `frame={false}`
+ * می‌گیرد، چون کارت خودش قاب است و قابِ دوم دو خطِ موازی می‌کشید. پیش از
+ * این هر جدول به سلیقهٔ صفحه‌اش بود: یکی بی‌قاب، یکی با حاشیه، یکی در کارت.
  */
-export function Table({ className, ...props }: React.HTMLAttributes<HTMLTableElement>) {
+export function Table({
+  className,
+  frame = true,
+  ...props
+}: React.HTMLAttributes<HTMLTableElement> & { frame?: boolean }) {
   return (
-    <div className="relative w-full overflow-x-auto">
-      <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
+    <div
+      data-slot="table-container"
+      className={cn('relative w-full overflow-x-auto', frame && 'rounded-lg border')}
+    >
+      <table
+        data-slot="table"
+        className={cn('w-full caption-bottom text-sm', frame && '[&>thead]:bg-muted/40', className)}
+        {...props}
+      />
     </div>
   );
 }
@@ -54,7 +70,7 @@ export function TableHead({
   return (
     <th
       className={cn(
-        'h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground',
+        'h-9 px-3 text-start align-middle text-xs font-medium whitespace-nowrap text-muted-foreground',
         numeric && NUMERIC_ALIGN,
         className,
       )}
@@ -73,14 +89,37 @@ export function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTa
  * ⚠️ `num` روی یک `<span>` ِ درونی می‌نشیند، نه روی خودِ سلول: `num` جهت را
  * LTR می‌کند و روی سلول، جهتِ خودِ سلول را هم عوض می‌کرد.
  *
+ * ⚠️ `whitespace-nowrap` (سرستون و سلولِ عددی): نسخهٔ رسمیِ shadcn دارد و اینجا جا
+ * افتاده بود؛ در ستونِ باریک تاریخ دو تکه می‌شد («2026» و «08-28») و مبلغ از
+ * واحدش جدا. سلولِ متنی عمداً می‌شکند — توضیحِ بلند باید بپیچد.
+ *
  * ⚠️ سرستونِ همین ستون باید `<TableHead numeric>` باشد — `TableHead` پیش‌فرض
  * `text-start` است و بدونِ آن سرستون و عدد به دو لبهٔ ستون می‌رفتند (۹۸
  * سرستون تا ۱.۷۳.۰ همین‌طور بودند).
  */
 export function TableNumericCell({ className, children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={cn('px-3 py-2 align-middle', NUMERIC_ALIGN, className)} {...props}>
+    <td className={cn('px-3 py-2 align-middle whitespace-nowrap', NUMERIC_ALIGN, className)} {...props}>
       <span className="num">{children}</span>
+    </td>
+  );
+}
+
+/**
+ * ستونِ دکمه‌های ردیف — همیشه آخرین ستون، سرستونش بی‌عنوان.
+ *
+ * ⚠️ `w-px` یعنی «به اندازهٔ محتوا»: ستونِ دکمه‌ها پیش از این سهمی از عرضِ
+ * جدول می‌گرفت که با محتوای ستون‌های دیگر عوض می‌شد (در تنظیمات از ۱۰۷ تا
+ * ۳۵۷ پیکسل)، و دکمه‌ها هر بار جای دیگری می‌نشستند.
+ */
+export function TableActionsHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+  return <TableHead className={cn('w-px', className)} {...props} />;
+}
+
+export function TableActionsCell({ className, children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <td className={cn('w-px px-3 py-2 align-middle whitespace-nowrap', className)} {...props}>
+      <div className="flex items-center justify-end gap-1">{children}</div>
     </td>
   );
 }

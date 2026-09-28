@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Plus, Trash2, TriangleAlert } from 'lucide-react';
+import { Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react';
 import {
   deleteAccountAction, saveAccountAction, type PayoutState,
 } from './_form/payout-actions';
@@ -18,15 +18,14 @@ import { EmptyState } from '@/components/ui/empty-state';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
-} from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { SectionHeader } from '@/components/page-shell';
 
 // همان شکلِ `listAccounts` — یک تعریف برای هر دو تب.
 export type { AccountOption as AccountRow } from './ledger-view';
@@ -79,15 +78,15 @@ export function AccountsView({
 
   return (
     <div className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">{t("حساب‌های بانکی")}</h2>
-        {canManage && (
+      <SectionHeader
+        title={t("حساب‌های بانکی")}
+        actions={canManage ? (
           <Button size="sm" onClick={() => { setEditing(null); setOpen(true); }}>
             <Plus className="size-4" />
             {tr("افزودن حساب")}
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* پورتِ اخطارِ «ابتدا ارز تعریف کنید» — پیش از این فقط هنگامِ ذخیره خطا می‌داد. */}
       {options.currencies.length === 0 && (
@@ -102,70 +101,67 @@ export function AccountsView({
       {accounts.length === 0 ? (
         <EmptyState title={t("حسابی تعریف نشده")} />
       ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("نام")}</TableHead>
-                <TableHead>{t("ارز")}</TableHead>
-                <TableHead>{t("دفتر")}</TableHead>
-                <TableHead numeric>{t("مانده اولیه")}</TableHead>
-                <TableHead numeric>{t("مانده")}</TableHead>
-                <TableHead>{t("وضعیت")}</TableHead>
-                {canManage && <TableHead />}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {accounts.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell>
-                    {a.name}
-                    {a.type === 'personal' && (
-                      <Badge variant="outline" className="ms-2">{t("شخصی")}</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="num">{a.currencyCode ?? '—'}</TableCell>
-                  <TableCell>{a.officeName ?? '—'}</TableCell>
-                  <TableNumericCell>{format(a.openingBalance)}</TableNumericCell>
-                  {/* ماندهٔ فعلی — پورتِ `balance_fmt`؛ پیش از این فقط ماندهٔ اولیه دیده می‌شد. */}
-                  <TableNumericCell className="font-medium">{format(a.balance)}</TableNumericCell>
-                  <TableCell>
-                    {a.isActive ? null : <Badge variant="outline">{t("غیرفعال")}</Badge>}
-                  </TableCell>
-                  {canManage && (
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => { setEditing(a); setOpen(true); }}
-                        >
-                          {tr("ویرایش")}
-                        </Button>
-                        <IconButton
-                          variant="ghost"
-                          className="size-8 text-muted-foreground hover:text-destructive"
-                          label={t("حذف")}
-                          disabled={pending}
-                          onClick={async () => {
-                            if (!(await confirm({ title: t('این حساب حذف شود؟') }))) return;
-                            startTransition(async () => {
-                              const result = await deleteAccountAction(a.id);
-                              if (result.error) show(t(result.error), 'error');
-                              else show(t('حذف شد.'), 'success');
-                            });
-                          }}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </IconButton>
-                      </div>
-                    </TableCell>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("نام")}</TableHead>
+              <TableHead>{t("ارز")}</TableHead>
+              <TableHead>{t("دفتر")}</TableHead>
+              <TableHead numeric>{t("مانده اولیه")}</TableHead>
+              <TableHead numeric>{t("مانده")}</TableHead>
+              <TableHead>{t("وضعیت")}</TableHead>
+              {canManage && <TableActionsHead />}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {accounts.map((a) => (
+              <TableRow key={a.id}>
+                <TableCell>
+                  {a.name}
+                  {a.type === 'personal' && (
+                    <Badge variant="outline" className="ms-2">{t("شخصی")}</Badge>
                   )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                </TableCell>
+                <TableCell className="num">{a.currencyCode ?? '—'}</TableCell>
+                <TableCell>{a.officeName ?? '—'}</TableCell>
+                <TableNumericCell>{format(a.openingBalance)}</TableNumericCell>
+                {/* ماندهٔ فعلی — پورتِ `balance_fmt`؛ پیش از این فقط ماندهٔ اولیه دیده می‌شد. */}
+                <TableNumericCell className="font-medium">{format(a.balance)}</TableNumericCell>
+                <TableCell>
+                  {a.isActive ? null : <Badge variant="outline">{t("غیرفعال")}</Badge>}
+                </TableCell>
+                {canManage && (
+                  <TableActionsCell>
+                      <IconButton
+                        variant="ghost"
+                        className="size-8"
+                        label={t("ویرایش")}
+                        onClick={() => { setEditing(a); setOpen(true); }}
+                      >
+                        <Pencil className="size-3.5" />
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        className="size-8 text-muted-foreground hover:text-destructive"
+                        label={t("حذف")}
+                        disabled={pending}
+                        onClick={async () => {
+                          if (!(await confirm({ title: t('این حساب حذف شود؟') }))) return;
+                          startTransition(async () => {
+                            const result = await deleteAccountAction(a.id);
+                            if (result.error) show(t(result.error), 'error');
+                            else show(t('حذف شد.'), 'success');
+                          });
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </IconButton>
+                  </TableActionsCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -240,7 +236,7 @@ export function AccountsView({
               <Input id="a-note" name="note" defaultValue={editing?.note ?? ''} />
             </div>
 
-            <fieldset className="grid gap-1.5 rounded-md border p-3">
+            <fieldset className="grid gap-1.5 rounded-lg border p-3">
               <legend className="px-1 text-sm font-medium">{t("حسابدارانِ این حساب")}</legend>
               <p className="text-xs text-muted-foreground">
                 {tr("کسی که فقط مجوزِ دیدنِ مالی دارد، **تنها** حساب‌هایی را می‌بیند که اینجا به او تخصیص یافته‌اند.")}

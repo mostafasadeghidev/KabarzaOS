@@ -2,19 +2,17 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Lock, Search } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import type { InboxTask } from '@/server/projects/service';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { chipStyle } from '@/domain/ui/contrast';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
-} from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
 import { ClaimTaskButton } from './inbox-claim';
 import { TaskDialog } from '../projects/[id]/task-dialog';
 import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { SearchInput } from '@/components/ui/search-input';
 
 /**
  * فهرستِ تسک‌های صندوق — **جدول**، نه ردیفِ درهم.
@@ -66,29 +64,26 @@ export function TaskTable({
   }, [rows, query, projectId]);
 
   if (rows.length === 0) {
-    return <p className="px-4 pb-4 text-sm text-muted-foreground">{empty}</p>;
+    // ⚠️ بی‌حاشیه: جدول داخلِ `Panel` می‌نشیند که خودش حاشیه دارد.
+    return <p className="text-sm text-muted-foreground">{empty}</p>;
   }
 
   return (
     <>
       {filterable && (
-        <div className="flex flex-wrap items-center gap-2 px-4 pb-3">
-          <div className="relative min-w-48 flex-1">
-            <Search className="pointer-events-none absolute top-1/2 start-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={tr('جستجو در تسک‌ها…')}
-              className="ps-9"
-            />
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <SearchInput
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={tr('جستجو در تسک‌ها…')}
+          />
           {/* انتخابِ پروژه — وقتی بیش از یک پروژه در فهرست باشد معنا دارد. */}
           {projects.length > 1 && (
             <SearchableSelect
+              size="sm"
+              containerClassName="w-full sm:w-44"
               value={projectId}
               onValueChange={(v) => setProjectId(v)}
-              
             >
               <NativeSelectOption value="">{t('همهٔ پروژه‌ها')}</NativeSelectOption>
               {projects.map((p) => (
@@ -102,91 +97,89 @@ export function TaskTable({
         </div>
       )}
 
-      <div className="overflow-x-auto px-4 pb-4">
-        {visible.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('نتیجه‌ای نیست.')}</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("تسک")}</TableHead>
-                <TableHead>{t("اولویت")}</TableHead>
-                <TableHead>{t("وضعیت")}</TableHead>
-                <TableHead>{t("پروژه")}</TableHead>
-                <TableHead numeric>{t("ددلاین")}</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visible.map((task) => (
-                /**
-                 * ⚠️ **کلِ سطر** باز می‌شود، نه فقط عنوان: هدفِ کلیک به اندازهٔ
-                 * یک خطِ متن بود و کاربر روی ستونِ وضعیت یا پروژه کلیک می‌کرد و
-                 * هیچ اتفاقی نمی‌افتاد. نشانگر هم `pointer` می‌شود تا معلوم باشد
-                 * سطر کلیک‌پذیر است.
-                 */
-                <TableRow
-                  key={task.id}
-                  onClick={() => setOpenTask(task.id)}
-                  className="cursor-pointer"
-                >
-                  <TableCell>
-                    <span className="flex items-center gap-1.5">
-                      {/* پورتِ چیپِ 🔒 «خصوصی». */}
-                      {task.isPrivate && (
-                        <Lock className="size-3.5 shrink-0 text-muted-foreground" aria-label={t('خصوصی')} />
-                      )}
-                      <span className="font-medium">{task.title}</span>
-                    </span>
-                    {/* نقش‌ها زیرِ عنوان می‌نشینند تا ستون‌ها به‌هم نریزند. */}
-                    {task.roles.length > 0 && (
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {task.roles
-                          .map((r) => (r.claimedByName ? `${r.roleName ?? ''} (${r.claimedByName})` : (r.roleName ?? '')))
-                          .join(t('، '))}
-                      </span>
+      {visible.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t('نتیجه‌ای نیست.')}</p>
+      ) : (
+        <Table frame={false}>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("تسک")}</TableHead>
+              <TableHead>{t("اولویت")}</TableHead>
+              <TableHead>{t("وضعیت")}</TableHead>
+              <TableHead>{t("پروژه")}</TableHead>
+              <TableHead numeric>{t("ددلاین")}</TableHead>
+              <TableActionsHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visible.map((task) => (
+              /**
+               * ⚠️ **کلِ سطر** باز می‌شود، نه فقط عنوان: هدفِ کلیک به اندازهٔ
+               * یک خطِ متن بود و کاربر روی ستونِ وضعیت یا پروژه کلیک می‌کرد و
+               * هیچ اتفاقی نمی‌افتاد. نشانگر هم `pointer` می‌شود تا معلوم باشد
+               * سطر کلیک‌پذیر است.
+               */
+              <TableRow
+                key={task.id}
+                onClick={() => setOpenTask(task.id)}
+                className="cursor-pointer"
+              >
+                <TableCell>
+                  <span className="flex items-center gap-1.5">
+                    {/* پورتِ چیپِ 🔒 «خصوصی». */}
+                    {task.isPrivate && (
+                      <Lock className="size-3.5 shrink-0 text-muted-foreground" aria-label={t('خصوصی')} />
                     )}
-                  </TableCell>
+                    <span className="font-medium">{task.title}</span>
+                  </span>
+                  {/* نقش‌ها زیرِ عنوان می‌نشینند تا ستون‌ها به‌هم نریزند. */}
+                  {task.roles.length > 0 && (
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {task.roles
+                        .map((r) => (r.claimedByName ? `${r.roleName ?? ''} (${r.claimedByName})` : (r.roleName ?? '')))
+                        .join(t('، '))}
+                    </span>
+                  )}
+                </TableCell>
 
-                  <TableCell>
-                    {task.priorityName
-                      ? <Badge variant="outline" style={chipStyle(task.priorityColor)}>{task.priorityName}</Badge>
-                      : <span className="text-muted-foreground">—</span>}
-                  </TableCell>
+                <TableCell>
+                  {task.priorityName
+                    ? <Badge variant="outline" style={chipStyle(task.priorityColor)}>{task.priorityName}</Badge>
+                    : <span className="text-muted-foreground">—</span>}
+                </TableCell>
 
-                  <TableCell>
-                    {task.statusName
-                      ? (
-                        <Badge
-                          variant={chipStyle(task.statusColor) ? 'outline' : 'secondary'}
-                          style={chipStyle(task.statusColor)}
-                        >
-                          {task.statusName}
-                        </Badge>
-                      )
-                      : <span className="text-muted-foreground">—</span>}
-                  </TableCell>
+                <TableCell>
+                  {task.statusName
+                    ? (
+                      <Badge
+                        variant={chipStyle(task.statusColor) ? 'outline' : 'secondary'}
+                        style={chipStyle(task.statusColor)}
+                      >
+                        {task.statusName}
+                      </Badge>
+                    )
+                    : <span className="text-muted-foreground">—</span>}
+                </TableCell>
 
-                  {/* ⚠️ لینک و دکمه کارِ خودشان را می‌کنند، نه بازکردنِ مودال. */}
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <Link
-                      href={`/projects/${task.projectId}?tab=tasks&view=${task.isReview ? 'review' : 'cur'}`}
-                      className="text-muted-foreground hover:text-foreground hover:underline"
-                    >
-                      {task.projectTitle}
-                    </Link>
-                  </TableCell>
-                  <TableNumericCell className="text-muted-foreground">{task.dueDate ?? '—'}</TableNumericCell>
+                {/* ⚠️ لینک و دکمه کارِ خودشان را می‌کنند، نه بازکردنِ مودال. */}
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Link
+                    href={`/projects/${task.projectId}?tab=tasks&view=${task.isReview ? 'review' : 'cur'}`}
+                    className="text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    {task.projectTitle}
+                  </Link>
+                </TableCell>
+                <TableNumericCell className="text-muted-foreground">{task.dueDate ?? '—'}</TableNumericCell>
 
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    {task.claimable && <ClaimTaskButton taskId={task.id} projectId={task.projectId} />}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+                <TableActionsCell onClick={(e) => e.stopPropagation()}>
+                  {task.claimable && <ClaimTaskButton taskId={task.id} projectId={task.projectId} />}
+                </TableActionsCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
       {/* نگاهِ سریع — همان مودالِ صفحهٔ پروژه، با دکمهٔ رفتن به پروژه. */}
       <TaskDialog

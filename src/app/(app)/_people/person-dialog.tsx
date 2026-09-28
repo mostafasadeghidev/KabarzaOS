@@ -21,6 +21,7 @@ import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { OFFICE_MANAGER_CAP } from '@/domain/access/project-scope';
 import { Checkbox } from '@/components/ui/checkbox';
+import { FileInput } from '@/components/ui/file-input';
 
 export interface PersonFormOptions {
   /** `grantsCap` تعیین می‌کند کدام نقش «مدیرِ تیم» است. */
@@ -69,7 +70,7 @@ function AvatarPicker({ person }: { person: PersonView }) {
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-md border p-3">
+    <div className="flex flex-wrap items-end gap-3 rounded-lg border p-3">
       <Thumb
         id={person.id}
         title={person.name}
@@ -79,7 +80,7 @@ function AvatarPicker({ person }: { person: PersonView }) {
       />
       <div className="grid flex-1 gap-1.5">
         <Label htmlFor="p-avatar">{tr("تصویر پروفایل")}</Label>
-        <Input id="p-avatar" ref={inputRef} type="file" accept="image/*" />
+        <FileInput id="p-avatar" ref={inputRef} accept="image/*" />
         <p className="text-xs text-muted-foreground">
           {tr('JPEG، PNG، GIF یا WebP — تا {size}.', { size: humanSize(MAX_SIZE.avatar, tr) })}
         </p>
@@ -184,7 +185,7 @@ export function PersonDialog({
           {!isEdit && (
             <div className="grid gap-1.5">
               <Label htmlFor="p-new-avatar">{tr("تصویر پروفایل")}</Label>
-              <Input id="p-new-avatar" name="avatar" type="file" accept="image/*" />
+              <FileInput id="p-new-avatar" name="avatar" accept="image/*" />
             </div>
           )}
 
@@ -194,7 +195,7 @@ export function PersonDialog({
             نقش را دارد در فهرست نیست، چون انتخابش هیچ اثری ندارد.
           */}
           {!isEdit && options.candidates.length > 0 && (
-            <div className="grid gap-1.5 rounded-md border border-dashed p-3">
+            <div className="grid gap-1.5 rounded-lg border border-dashed p-3">
               <Label htmlFor="p-existing">{tr("کاربرِ موجودِ سامانه")}</Label>
               <Combobox
                 id="p-existing"
@@ -324,7 +325,7 @@ export function PersonDialog({
             خودش را دارد.
           */}
           {options.canGrantPrivate && (
-            <fieldset className="grid gap-1.5 rounded-md border border-dashed p-3">
+            <fieldset className="grid gap-1.5 rounded-lg border border-dashed p-3">
               <legend className="px-1 text-sm font-medium">{tr("دسترسیِ ویژه")}</legend>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox name="privateAccess" value="1"
@@ -339,7 +340,7 @@ export function PersonDialog({
           )}
 
           {section.supportsTags && (
-          <fieldset className="grid gap-1.5 rounded-md border border-dashed p-3">
+          <fieldset className="grid gap-1.5 rounded-lg border border-dashed p-3">
             <legend className="px-1 text-sm font-medium">{tr("نقش‌ها")}</legend>
             <MultiSelect
               name="tagIds"
@@ -353,7 +354,7 @@ export function PersonDialog({
           )}
 
           {section.supportsOffices && (
-          <fieldset className="grid gap-3 rounded-md border border-dashed p-3">
+          <fieldset className="grid gap-3 rounded-lg border border-dashed p-3">
             <legend className="px-1 text-sm font-medium">{tr("دفاتر")}</legend>
             <div className="grid gap-1.5">
               <Label className="text-xs text-muted-foreground">{tr("عضوِ این دفاتر")}</Label>
@@ -376,7 +377,7 @@ export function PersonDialog({
               چه چیزِ دیگری را هم برمی‌دارد.
             */}
             {managedWillClear && (
-              <p className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+              <p className="rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
                 {tr("با برداشتنِ نقشِ «مدیرِ تیم»، دفاترِ تحتِ مدیریتِ این فرد هم با ذخیره برداشته می‌شوند.")}
               </p>
             )}

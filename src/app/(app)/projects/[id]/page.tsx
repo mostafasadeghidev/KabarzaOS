@@ -12,8 +12,7 @@ import { ForbiddenError } from '@/domain/access/guard';
 import { format } from '@/domain/money/money';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui/empty-state';
+import { CardHeader } from '@/components/ui/card';
 import { MembersDialog } from '../_form/members-dialog';
 import { ClientsDialog } from '../_form/clients-dialog';
 import { MemberAccessToggle } from '../_form/member-access';
@@ -22,9 +21,7 @@ import { canManageSection } from '@/domain/access/permissions';
 import { ProjectDialog } from '../_form/project-dialog';
 import { ProjectTabs } from './project-tabs';
 import { BidderView } from './bidder-view';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
-} from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { ProjectStatus } from '../project-status';
 import { primeTranslations, t } from '@/i18n/server';
 import { deadlineLabel, taskProgress } from '@/domain/projects/deadline';
@@ -33,7 +30,7 @@ import { chipStyle } from '@/domain/ui/contrast';
 import { countOpenThreads } from '@/domain/projects/threads';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
-import { PageHeader, PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell, Panel } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
 
 export default async function ProjectDetailPage({
@@ -418,106 +415,93 @@ export default async function ProjectDetailPage({
         }}
         info={
           <div className="grid grid-cols-1 gap-4">
-            <Card>
-              <CardHeader className="flex-row items-center justify-between">
-                <CardTitle className="text-base">{t("اعضای پروژه")}</CardTitle>
-                {membersForm && <MembersDialog data={membersForm} />}
-              </CardHeader>
-              <CardContent>
-                {members.length === 0 ? (
-                  <EmptyState title={t("عضوی ثبت نشده")} />
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("عضو")}</TableHead>
-                        <TableHead>{t("نقش")}</TableHead>
-                        {/*
-                          ⚠️ دستمزدِ توافقیِ اعضا پول است و فقط مالک/مدیرِ
-                          سراسریِ پروژه‌ها و مدیرِ مالی می‌بینندش —
-                          `$hide_amounts` ِ نسخهٔ قبلی. حتی کارفرما هم نه:
-                          او قیمتِ پروژه را می‌بیند، نه تقسیمِ داخلیِ تیم.
-                          پیش از این ستون برای همه رندر می‌شد.
-                        */}
+            {/* ⚠️ `Panel`: دکمهٔ «مدیریتِ اعضا» در نوارِ عنوان، نه زیرِ آن (`CardHeader` grid بود و `flex-row` بی‌اثر). */}
+            <Panel title={t("اعضای پروژه")} actions={membersForm && <MembersDialog data={membersForm} />}>
+              {members.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("عضوی ثبت نشده")}</p>
+              ) : (
+                <Table frame={false}>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("عضو")}</TableHead>
+                      <TableHead>{t("نقش")}</TableHead>
+                      {/*
+                        ⚠️ دستمزدِ توافقیِ اعضا پول است و فقط مالک/مدیرِ
+                        سراسریِ پروژه‌ها و مدیرِ مالی می‌بینندش —
+                        `$hide_amounts` ِ نسخهٔ قبلی. حتی کارفرما هم نه:
+                        او قیمتِ پروژه را می‌بیند، نه تقسیمِ داخلیِ تیم.
+                        پیش از این ستون برای همه رندر می‌شد.
+                      */}
+                      {canSeeAgreedAmounts && (
+                        <TableHead numeric>{t("مبلغ توافقی")}</TableHead>
+                      )}
+                      {canManage && <TableActionsHead />}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {members.map((m) => (
+                      <TableRow key={m.id}>
+                        <TableCell className="font-medium">
+                          {m.userName}
+                          {m.accessBlocked && (
+                            <Badge variant="outline" className="ms-1.5 text-[10px]">
+                              {t("دسترسی قطع")}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {/* پورتِ `role_color`: چیپِ نقش به رنگِ تگ. */}
+                          {m.roleName ? (
+                            <Badge
+                              variant="outline"
+                              style={chipStyle(m.roleColor)}
+                            >
+                              {m.roleName}
+                            </Badge>
+                          ) : '—'}
+                        </TableCell>
                         {canSeeAgreedAmounts && (
-                          <TableHead numeric>{t("مبلغ توافقی")}</TableHead>
+                          <TableNumericCell>{format(m.agreedAmount)}</TableNumericCell>
                         )}
-                        {canManage && <TableHead />}
+                        {canManage && (
+                          <TableActionsCell>
+                              <MemberAccessToggle
+                                projectId={project.id}
+                                userId={m.userId}
+                                blocked={m.accessBlocked}
+                              />
+                              {/* پورتِ `remove_member`: حذفِ صریحِ ردیف، حتی برای عضوِ طلبکار/سابق. */}
+                              <MemberRemoveButton
+                                projectId={project.id}
+                                memberRowId={m.id}
+                                name={m.userName ?? `#${m.userId}`}
+                              />
+                          </TableActionsCell>
+                        )}
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {members.map((m) => (
-                        <TableRow key={m.id}>
-                          <TableCell className="font-medium">
-                            {m.userName}
-                            {m.accessBlocked && (
-                              <Badge variant="outline" className="ms-1.5 text-[10px]">
-                                {t("دسترسی قطع")}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {/* پورتِ `role_color`: چیپِ نقش به رنگِ تگ. */}
-                            {m.roleName ? (
-                              <Badge
-                                variant="outline"
-                                style={chipStyle(m.roleColor)}
-                              >
-                                {m.roleName}
-                              </Badge>
-                            ) : '—'}
-                          </TableCell>
-                          {canSeeAgreedAmounts && (
-                            <TableNumericCell>{format(m.agreedAmount)}</TableNumericCell>
-                          )}
-                          {canManage && (
-                            <TableCell>
-                              <span className="flex items-center justify-end gap-1">
-                                <MemberAccessToggle
-                                  projectId={project.id}
-                                  userId={m.userId}
-                                  blocked={m.accessBlocked}
-                                />
-                                {/* پورتِ `remove_member`: حذفِ صریحِ ردیف، حتی برای عضوِ طلبکار/سابق. */}
-                                <MemberRemoveButton
-                                  projectId={project.id}
-                                  memberRowId={m.id}
-                                  name={m.userName ?? `#${m.userId}`}
-                                />
-                              </span>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Panel>
 
             {/* کارفرمایان — پورتِ چیپ‌های کارفرما؛ اولی «کارفرمای اصلی» (قدیمی‌ترین انتساب). */}
-            <Card>
-              <CardHeader className="flex-row items-center justify-between">
-                <CardTitle className="text-base">{t("کارفرمایان")}</CardTitle>
-                {clientsForm && <ClientsDialog data={clientsForm} />}
-              </CardHeader>
-              <CardContent>
-                {detail.clients.length === 0 ? (
-                  <EmptyState title={t("کارفرمایی ثبت نشده")} />
-                ) : (
-                  <ul className="grid gap-1 text-sm">
-                    {detail.clients.map((c, i) => (
-                      <li key={c.userId} className="flex items-center gap-2">
-                        {c.name}
-                        {i === 0 && detail.clients.length > 1 && (
-                          <Badge variant="outline" className="text-[10px]">{t("کارفرمای اصلی")}</Badge>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
+            <Panel title={t("کارفرمایان")} actions={clientsForm && <ClientsDialog data={clientsForm} />}>
+              {detail.clients.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("کارفرمایی ثبت نشده")}</p>
+              ) : (
+                <ul className="grid gap-1 text-sm">
+                  {detail.clients.map((c, i) => (
+                    <li key={c.userId} className="flex items-center gap-2">
+                      {c.name}
+                      {i === 0 && detail.clients.length > 1 && (
+                        <Badge variant="outline" className="text-[10px]">{t("کارفرمای اصلی")}</Badge>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
           </div>
         }
       />

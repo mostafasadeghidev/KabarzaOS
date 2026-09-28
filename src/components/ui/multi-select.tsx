@@ -31,6 +31,7 @@ export function MultiSelect({
   placeholder,
   emptyText,
   onChange,
+  size = 'default',
 }: {
   name: string;
   options: MultiOption[];
@@ -39,6 +40,8 @@ export function MultiSelect({
   emptyText?: string;
   /** برای فیلدهایی که به انتخابِ این یکی وابسته‌اند (مثلِ «مدیرِ این دفاتر»). */
   onChange?: (selected: number[]) => void;
+  /** `sm` در نوارِ فیلتر — هم‌قدِ بقیهٔ کنترل‌های `sm` (۳۲ پیکسل). */
+  size?: 'sm' | 'default';
 }) {
   const t = useT();
   const [selected, setSelected] = useState<number[]>(defaultSelected);
@@ -72,9 +75,10 @@ export function MultiSelect({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        data-size={size}
         className={cn(
           'flex min-h-9 w-full items-center justify-between gap-2 rounded-md border border-input',
-          'bg-transparent px-3 py-1.5 text-start text-sm',
+          'bg-transparent px-3 py-1.5 text-start text-sm data-[size=sm]:min-h-8 data-[size=sm]:py-1',
           'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none',
         )}
       >

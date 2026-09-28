@@ -12,7 +12,7 @@ import { primeTranslations, t } from '@/i18n/server';
 import { HoursFilter } from './hours-filter';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { hoursRange, rangeLabel, reportQuery } from '@/domain/reports/filters';
-import { PageHeader, PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
 
 /**
@@ -61,6 +61,7 @@ export default async function MemberHoursPage({
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader back={{ href: '/reports?tab=hours', label: t("گزارش‌ها") }} title={t('ساعت کاری')} />
           <EmptyState title={t('دسترسی ندارید')} />
         </PageShell>
       );
@@ -71,6 +72,7 @@ export default async function MemberHoursPage({
   if (!data) {
     return (
       <PageShell>
+        <PageHeader back={{ href: '/reports?tab=hours', label: t("گزارش‌ها") }} title={t('ساعت کاری')} />
         <EmptyState title={t('عضو یافت نشد')} />
       </PageShell>
     );
@@ -152,8 +154,7 @@ export default async function MemberHoursPage({
         data.entries.length === 0 ? (
           <EmptyState title={t('در این بازه ساعتی ثبت نشده')} />
         ) : (
-          <div className="grid gap-2">
-            <p className="text-sm font-medium">{data.selectedProject ?? ''}</p>
+          <Section title={data.selectedProject ?? ''}>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -172,7 +173,7 @@ export default async function MemberHoursPage({
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </Section>
         )
       )}
     </PageShell>

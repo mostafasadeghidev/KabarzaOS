@@ -12,7 +12,7 @@ import { Thumb } from '@/components/thumb';
 import { MemberProjectsTable } from '../../detail-tables';
 import { primeTranslations, t } from '@/i18n/server';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { PageHeader, PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
 
 /**
@@ -35,6 +35,7 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader back={{ href: '/reports?tab=members', label: t("گزارش‌ها") }} title={t("گزارش‌ها")} />
           <EmptyState title={t("دسترسی ندارید")} description={t("دیدنِ گزارش‌ها مجوزِ جداگانه دارد.")} />
         </PageShell>
       );
@@ -45,6 +46,7 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
   if (!data) {
     return (
       <PageShell>
+        <PageHeader back={{ href: '/reports?tab=members', label: t("گزارش‌ها") }} title={t("گزارش‌ها")} />
         <EmptyState title={t("عضو پیدا نشد")} />
       </PageShell>
     );
@@ -115,15 +117,14 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
         <MemberProjectsTable rows={data.projects} lines={data.lines} canOpen={canOpen} />
       )}
 
-      <section className="grid gap-3">
-        <h2 className="text-sm font-semibold">{t("تسک‌ها")}</h2>
+      <Section title={t("تسک‌ها")}>
         <div className="grid gap-3 @2xl/main:grid-cols-3">
           {taskSections.map((sec) => (
-            <div key={sec.key} className="rounded-md border p-3">
+            <div key={sec.key} className="rounded-lg border p-3">
               <p className="mb-2 text-xs font-medium text-muted-foreground">
                 {t(sec.label)} <span className="num">{sec.groups.reduce((n, g) => n + g.tasks.length, 0)}</span>
               </p>
-              {sec.groups.length === 0 ? <p className="text-xs text-muted-foreground">—</p> : (
+              {sec.groups.length === 0 ? <p className="text-sm text-muted-foreground">—</p> : (
                 <ul className="grid gap-2">
                   {sec.groups.map((g) => (
                     <li key={g.projectId}>
@@ -140,23 +141,22 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
             </div>
           ))}
         </div>
-      </section>
+      </Section>
 
-      <section className="grid gap-2">
-        <h2 className="text-sm font-semibold">{t("در دسترسیِ هفتگی")}</h2>
+      <Section title={t("در دسترسیِ هفتگی")}>
         {data.ops.availability.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{t("برنامهٔ هفتگی ثبت نشده.")}</p>
+          <p className="text-sm text-muted-foreground">{t("برنامهٔ هفتگی ثبت نشده.")}</p>
         ) : (
           <ul className="grid gap-1 text-sm @md/main:grid-cols-2">
             {data.ops.availability.map((d) => (
-              <li key={d.day} className="flex justify-between rounded-md border px-3 py-1.5">
+              <li key={d.day} className="flex justify-between rounded-lg border px-3 py-1.5">
                 <span>{t(d.day)}</span>
                 <span className="num text-muted-foreground">{formatSlots(d.slots, t)}</span>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </Section>
     </PageShell>
   );
 }

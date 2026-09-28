@@ -2,9 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { matchesTab, type TabInfo, type TabKey } from '@/domain/projects/tabs';
 import type { VisibleProjectRow } from '@/server/projects/service';
@@ -16,6 +14,7 @@ import { CardPager, useCardPage } from '@/components/ui/card-pager';
 import { useT } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/page-shell';
+import { SearchInput } from '@/components/ui/search-input';
 
 /**
  * شبکهٔ کارتِ پروژه‌ها با تب و جستجو.
@@ -88,16 +87,11 @@ export function ProjectGrid({
         description={header.description}
         actions={(
           <>
-            <div className="relative w-56 sm:w-64">
-              <Search className="pointer-events-none absolute top-1/2 start-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={tr("جستجوی نام پروژه…")}
-                className="ps-9"
-              />
-            </div>
+            <SearchInput
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={tr("جستجوی نام پروژه…")}
+            />
             {header.actions}
           </>
         )}

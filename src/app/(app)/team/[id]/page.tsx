@@ -12,7 +12,7 @@ import {
 import { TeamMatrix } from '../../projects/[id]/manage-tab';
 import { AbsencePanel } from '../../activity/absence-panel';
 import { primeTranslations, t } from '@/i18n/server';
-import { PageHeader, PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
 import { Progress } from '@/components/ui/progress';
 
@@ -50,6 +50,7 @@ export default async function TeamMemberPage({
     if (error instanceof ForbiddenError) {
       return (
         <PageShell>
+          <PageHeader back={{ href: '/team', label: t("تیمِ من") }} title={t("تیمِ من")} />
           <EmptyState title={t("دسترسی ندارید")} description={t("این عضو در دامنهٔ مدیریتِ شما نیست.")} />
         </PageShell>
       );
@@ -90,10 +91,9 @@ export default async function TeamMemberPage({
       </div>
 
       {/* پروژه‌های در حال اجرا: نقش، پیشرفت، ساعتِ خودش، تسکِ باز. */}
-      <section className="grid gap-2">
-        <h2 className="text-sm font-semibold">{t("پروژه‌های در حال اجرا")}</h2>
+      <Section title={t("پروژه‌های در حال اجرا")}>
         {data.openProjects.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{t("پروژهٔ بازی ندارد.")}</p>
+          <p className="text-sm text-muted-foreground">{t("پروژهٔ بازی ندارد.")}</p>
         ) : (
           <Table>
             <TableHeader>
@@ -123,12 +123,11 @@ export default async function TeamMemberPage({
             </TableBody>
           </Table>
         )}
-      </section>
+      </Section>
 
-      <section className="grid gap-2">
-        <h2 className="text-sm font-semibold">{t("کارکرد به تفکیک پروژه")}</h2>
+      <Section title={t("کارکرد به تفکیک پروژه")}>
         {data.hoursAllTime.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{t("هنوز ساعتی ثبت نشده.")}</p>
+          <p className="text-sm text-muted-foreground">{t("هنوز ساعتی ثبت نشده.")}</p>
         ) : (
           <Table>
             <TableHeader>
@@ -153,20 +152,20 @@ export default async function TeamMemberPage({
             </TableBody>
           </Table>
         )}
-      </section>
+      </Section>
 
       {data.matrix.length > 0 && (
-        <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">{t("در دسترس بودن")}</h2>
+        <Section title={t("در دسترس بودن")}>
           <TeamMatrix rows={data.matrix} dayLabels={data.dayLabels} />
-        </section>
+        </Section>
       )}
 
       {/* پورتِ کارتِ مرخصی: مدیرِ دفتر برای این عضو مرخصی ثبت/حذف می‌کند. */}
       {data.canLeave && data.person && (
-        <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">{t("مرخصی / غیبت")}</h2>
-          <p className="text-xs text-muted-foreground">{t("برای این عضو مرخصی ثبت کنید؛ به او اطلاع داده می‌شود و در بُردِ تیم دیده می‌شود.")}</p>
+        <Section
+          title={t("مرخصی / غیبت")}
+          description={t("برای این عضو مرخصی ثبت کنید؛ به او اطلاع داده می‌شود و در بُردِ تیم دیده می‌شود.")}
+        >
           <AbsencePanel
             data={{
               mine: data.absences,
@@ -176,17 +175,16 @@ export default async function TeamMemberPage({
               listTitle: 'مرخصی‌های عضو',
             }}
           />
-        </section>
+        </Section>
       )}
 
-      <section className="grid gap-2">
-        <h2 className="text-sm font-semibold">{t("تسک‌های بازِ این عضو")}</h2>
+      <Section title={t("تسک‌های بازِ این عضو")}>
         {data.openTasks.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{t("تسکِ بازی ندارد.")}</p>
+          <p className="text-sm text-muted-foreground">{t("تسکِ بازی ندارد.")}</p>
         ) : (
           <ul className="grid gap-1">
             {data.openTasks.map((task) => (
-              <li key={task.id} className="rounded-md border px-3 py-2 text-sm">
+              <li key={task.id} className="rounded-lg border px-3 py-2 text-sm">
                 {task.title}
                 <span className="ms-2 text-xs text-muted-foreground">{task.projectTitle}</span>
                 {task.dueDate && <span className="num ms-2 text-xs text-muted-foreground">{task.dueDate}</span>}
@@ -194,7 +192,7 @@ export default async function TeamMemberPage({
             ))}
           </ul>
         )}
-      </section>
+      </Section>
     </PageShell>
   );
 }

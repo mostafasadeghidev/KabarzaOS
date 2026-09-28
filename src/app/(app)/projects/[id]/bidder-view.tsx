@@ -1,7 +1,7 @@
 import { Download, FileText } from 'lucide-react';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
 import { t } from '@/i18n/server';
-import { PageHeader, PageShell } from '@/components/page-shell';
+import { PageHeader, PageShell, Section } from '@/components/page-shell';
 
 export interface BidderData {
   project: { id: number; title: string; description: string | null };
@@ -28,7 +28,7 @@ export function BidderView({ data }: { data: BidderData }) {
       />
 
       {data.project.description && (
-        <section className="rounded-md border p-3 text-sm whitespace-pre-line">
+        <section className="rounded-lg border p-3 text-sm whitespace-pre-line">
           {data.project.description}
         </section>
       )}
@@ -37,14 +37,13 @@ export function BidderView({ data }: { data: BidderData }) {
       <MyBidTab data={data.bid} />
 
       {data.tasks.length > 0 && (
-        <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">{t("تسک‌های نقشِ شما")}</h2>
-          <p className="text-xs text-muted-foreground">
-            {t("فقط‌خواندنی — برای برآوردِ کار پیش از قیمت‌دادن.")}
-          </p>
+        <Section
+          title={t("تسک‌های نقشِ شما")}
+          description={t("فقط‌خواندنی — برای برآوردِ کار پیش از قیمت‌دادن.")}
+        >
           <ul className="grid gap-2">
             {data.tasks.map((t) => (
-              <li key={t.id} className="rounded-md border p-3">
+              <li key={t.id} className="rounded-lg border p-3">
                 <p className="text-sm font-medium">{t.title}</p>
                 {t.description && (
                   <p className="mt-1 text-xs whitespace-pre-line text-muted-foreground">
@@ -54,15 +53,14 @@ export function BidderView({ data }: { data: BidderData }) {
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
       )}
 
       {data.files.length > 0 && (
-        <section className="grid gap-2">
-          <h2 className="text-sm font-semibold">{t("فایل‌ها")}</h2>
+        <Section title={t("فایل‌ها")}>
           <ul className="grid gap-1">
             {data.files.map((f) => (
-              <li key={f.id} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+              <li key={f.id} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
                 <FileText className="size-3.5 shrink-0 text-muted-foreground" />
                 <a
                   href={f.href}
@@ -80,7 +78,7 @@ export function BidderView({ data }: { data: BidderData }) {
               </li>
             ))}
           </ul>
-        </section>
+        </Section>
       )}
     </PageShell>
   );
