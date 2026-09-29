@@ -274,3 +274,72 @@ describe('تگ بدونِ دسترسی، اختیار نمی‌دهد', () => {
     await db.delete(projectMembers).where(eq(projectMembers.projectId, projectB));
   });
 });
+
+describe('ساختِ پروژه توسطِ مدیرِ دفتر — پورتِ handle_create_project', () => {
+  const input = (over: Partial<service.CreateProjectData> = {}): service.CreateProjectData => ({
+    title: 'پروژهٔ دفتری', description: '', regDate: null, deadline: null, statusTagId: null,
+    price: '5000000', currencyId: null, officeId: tehran, parentId: null,
+    isUnitBased: false, isTender: false, scope: 'company', ...over,
+  });
+
+  it('در دفترِ خودش می‌سازد و بعد مدیرِ همان پروژه است', async () => {
+    const id = await service.createProject(actor(officeBoss), input());
+    const row = (await db.select().from(projects).where(eq(projects.id, id)))[0]!;
+    expect(row.officeId).toBe(tehran);
+    expect(await canManageProject(actor(officeBoss), id)).toBe(true);
+    await db.delete(projects).where(eq(projects.id, id));
+  });
+
+  it('⚠️ قیمت و مناقصه‌ای که فرستاده، ثبت نمی‌شود', async () => {
+    const id = await service.createProject(actor(officeBoss), input({
+      isTender: true, tenderRoles: [{ roleTagId: devTag, cap: '100' }],
+    }));
+    const row = (await db.select().from(projects).where(eq(projects.id, id)))[0]!;
+    expect(Number(row.price)).toBe(0);
+    expect(row.isTender).toBe(false);
+    await db.delete(projects).where(eq(projects.id, id));
+  });
+
+  it('⚠️ برای دفترِ دیگر یا بی‌دفتر نمی‌سازد', async () => {
+    await expect(service.createProject(actor(officeBoss), input({ officeId: shiraz })))
+      .rejects.toBeInstanceOf(service.OfficeRequiredError);
+    await expect(service.createProject(actor(officeBoss), input({ officeId: null })))
+      .rejects.toBeInstanceOf(service.OfficeRequiredError);
+  });
+
+  it('⚠️ زیرِ پروژهٔ دفترِ دیگر نمی‌سازد', async () => {
+    await expect(service.createProject(actor(officeBoss), input({ parentId: projectB })))
+      .rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('⚠️ کسی که نه مجوزِ سراسری دارد نه دفتری را اداره می‌کند، رد می‌شود', async () => {
+    await expect(service.createProject(actor(pm), input()))
+      .rejects.toBeInstanceOf(ForbiddenError);
+    await expect(service.getProjectFormOptions(actor(pm)))
+      .rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it('فرمِ ساخت فقط دفاتر و والدهای خودش را نشان می‌دهد', async () => {
+    const options = await service.getProjectFormOptions(actor(officeBoss));
+    expect(options.offices.map((o) => o.id)).toEqual([tehran]);
+    expect(options.parents.map((p) => p.id)).toEqual([projectA]);
+    expect(options.officeRequired).toBe(true);
+    expect(options.canSetMoney).toBe(false);
+  });
+
+  it('مدیرِ سراسری همچنان بی‌دفتر و با قیمت می‌سازد', async () => {
+    const id = await service.createProject(actor(owner, globalManage), input({ officeId: null }));
+    const row = (await db.select().from(projects).where(eq(projects.id, id)))[0]!;
+    expect(Number(row.price)).toBe(5000000);
+    await db.delete(projects).where(eq(projects.id, id));
+  });
+
+  it('⚠️ ویرایش پروژه را به دفتری که اداره نمی‌کند نمی‌برد', async () => {
+    const before = (await db.select().from(projects).where(eq(projects.id, projectA)))[0]!;
+    await expect(service.updateProject(actor(officeBoss), projectA, input({
+      title: before.title, officeId: shiraz,
+    }))).rejects.toBeInstanceOf(service.OfficeRequiredError);
+    const after = (await db.select().from(projects).where(eq(projects.id, projectA)))[0]!;
+    expect(after.officeId).toBe(tehran);
+  });
+});

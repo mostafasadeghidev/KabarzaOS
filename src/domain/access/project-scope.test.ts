@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  canManageProject, isGrantableCap, isOfficeManagerOfProject, PM_CAP, type ProjectAuthority,
+  canCreateProject, canManageProject, isGrantableCap, isOfficeManagerOfProject, mayCreateProjects, PM_CAP,
+  type ProjectAuthority,
 } from './project-scope';
 
 const base = (over: Partial<ProjectAuthority> = {}): ProjectAuthority => ({
@@ -66,5 +67,28 @@ describe('دسترسیِ تگ', () => {
     expect(isGrantableCap(PM_CAP)).toBe(true);
     expect(isGrantableCap('')).toBe(true);
     expect(isGrantableCap('some_unknown_cap')).toBe(false);
+  });
+});
+
+describe('ساختِ پروژه', () => {
+  it('مدیرِ سراسری در هر دفتری و بی‌دفتر می‌سازد', () => {
+    expect(canCreateProject({ hasGlobalManage: true, managedOfficeIds: [], officeId: null })).toBe(true);
+    expect(canCreateProject({ hasGlobalManage: true, managedOfficeIds: [], officeId: 7 })).toBe(true);
+  });
+
+  it('مدیرِ دفتر فقط برای دفترِ خودش می‌سازد', () => {
+    expect(canCreateProject({ hasGlobalManage: false, managedOfficeIds: [2, 3], officeId: 3 })).toBe(true);
+  });
+
+  it('⚠️ مدیرِ دفتر برای دفترِ دیگر یا بی‌دفتر نمی‌سازد', () => {
+    // وگرنه پروژه‌ای می‌ساخت که خودش دیگر مدیرش نیست و نمی‌بیندش.
+    expect(canCreateProject({ hasGlobalManage: false, managedOfficeIds: [2], officeId: 5 })).toBe(false);
+    expect(canCreateProject({ hasGlobalManage: false, managedOfficeIds: [2], officeId: null })).toBe(false);
+  });
+
+  it('عضوِ بی‌دفترِ تحتِ مدیریت هرگز نمی‌سازد', () => {
+    expect(canCreateProject({ hasGlobalManage: false, managedOfficeIds: [], officeId: 2 })).toBe(false);
+    expect(mayCreateProjects({ hasGlobalManage: false, managedOfficeIds: [] })).toBe(false);
+    expect(mayCreateProjects({ hasGlobalManage: false, managedOfficeIds: [4] })).toBe(true);
   });
 });

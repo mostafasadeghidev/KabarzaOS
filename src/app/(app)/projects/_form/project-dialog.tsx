@@ -43,6 +43,11 @@ export interface FormOptions {
    * سرور هم برای او مقدارِ قبلی را نگه می‌دارد. پیش‌فرض: دارد (فرمِ ساخت).
    */
   canEditMoney?: boolean;
+  /**
+   * مدیرِ دفتر بی‌مجوزِ سراسری — دفتر اجباری و فقط از دفاترِ خودش (`offices`
+   * از پیش محدود شده). گزینهٔ «هیچ‌کدام» ندارد؛ سرویس هم پروژهٔ بی‌دفتر را رد می‌کند.
+   */
+  officeRequired?: boolean;
   today: string;
   /** تگ‌های نقشِ عضو — برای جدولِ نقشِ مناقصه. */
   roleTags: Option[];
@@ -311,8 +316,14 @@ export function ProjectDialog({
 
             <LabeledField label={tr("دفتر")} name="officeId" error={fe.officeId}>
               {(id) => (
-                <NativeSelect id={id} name="officeId" containerClassName="w-full" defaultValue={keep('officeId')}>
-                  <NativeSelectOption value="">{tr("— هیچ‌کدام —")}</NativeSelectOption>
+                <NativeSelect
+                  id={id}
+                  name="officeId"
+                  containerClassName="w-full"
+                  required={options.officeRequired}
+                  defaultValue={keep('officeId', options.officeRequired && options.offices[0] ? String(options.offices[0].id) : '')}
+                >
+                  {!options.officeRequired && <NativeSelectOption value="">{tr("— هیچ‌کدام —")}</NativeSelectOption>}
                   {options.offices.map((o) => (
                     <NativeSelectOption key={o.id} value={o.id}>{o.label}</NativeSelectOption>
                   ))}

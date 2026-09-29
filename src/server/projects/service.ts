@@ -35,7 +35,7 @@ import {
 } from './authority';
 import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
 import { visiblePayments } from '@/domain/access/project-payments';
-import { canManageProject as decideManage, PM_CAP } from '@/domain/access/project-scope';
+import { canCreateProject, canManageProject as decideManage, mayCreateProjects, PM_CAP } from '@/domain/access/project-scope';
 import {
   assignableToPeople, ASSISTANT_LABEL, FALLBACK_MEMBER_LABEL, nameForViewer, type ViewerContext, CLIENT_LABEL,
 } from '@/domain/access/viewer-names';
@@ -818,8 +818,39 @@ async function currencyOrDefault(currencyId: number | null): Promise<number | nu
   return rows[0]?.id ?? null;
 }
 
+/**
+ * دامنهٔ ساختِ پروژهٔ بازیگر — مجوزِ سراسری، یا دفاترِ تحتِ مدیریتش.
+ * (برای مدیرِ سراسری دفاتر خوانده نمی‌شوند؛ لازمش ندارد.)
+ */
+async function createAuthority(actor: Actor) {
+  const hasGlobalManage = canManageSection(actor, 'projects');
+  const managedOfficeIds = hasGlobalManage ? [] : await repo.managedOfficeIds(actor.id);
+  return { hasGlobalManage, managedOfficeIds };
+}
+
+/** دکمهٔ «افزودنِ پروژه» دیده شود؟ — مدیرِ سراسری یا مدیرِ دفتر. */
+export async function canCreateProjects(actor: Actor): Promise<boolean> {
+  return mayCreateProjects(await createAuthority(actor));
+}
+
+/** دفترِ پروژه برای مدیرِ دفتر اجباری است و باید از دفاترِ خودش باشد. */
+export class OfficeRequiredError extends Error {
+  constructor() {
+    super('project office must be one of the offices the actor manages');
+    this.name = 'OfficeRequiredError';
+  }
+}
+
 export async function createProject(actor: Actor, input: CreateProjectData): Promise<number> {
-  assertCanManage(actor, 'projects');
+  /**
+   * ⚠️ دو راه (`canCreateProject`): مجوزِ سراسری، یا مدیرِ دفتر با دفتری که
+   * خودش اداره می‌کند — پورتِ `handle_create_project`. کسی که هیچ‌کدام نیست
+   * Forbidden می‌گیرد؛ مدیرِ دفتری که دفترِ دیگر (یا هیچ دفتری) فرستاده،
+   * خطای دفتر — تا فرم بگوید کدام فیلد مشکل دارد.
+   */
+  const authority = await createAuthority(actor);
+  if (!mayCreateProjects(authority)) throw new ForbiddenError('projects.manage');
+  if (!canCreateProject({ ...authority, officeId: input.officeId })) throw new OfficeRequiredError();
 
   if (input.scope === 'private' && !canSeeScope(actor, 'private')) {
     throw new ForbiddenError('scope.private');
@@ -831,19 +862,31 @@ export async function createProject(actor: Actor, input: CreateProjectData): Pro
     if (!parent || !canSeeScope(actor, parent.scope as 'company' | 'private') || parent.parentId !== null) {
       throw new NotFoundError();
     }
+    // ⚠️ مدیرِ دفتر فقط زیرِ پروژه‌های دفاترِ خودش — همان فهرستی که فرمش نشان می‌دهد.
+    if (!authority.hasGlobalManage
+      && (parent.officeId === null || !authority.managedOfficeIds.includes(parent.officeId))) {
+      throw new NotFoundError();
+    }
   }
+
+  /**
+   * ⚠️ پول — قیمت، ارز و مناقصه (سقف‌ها پول‌اند) — فقط با مجوزِ سراسری؛ همان
+   * قاعدهٔ `updateProject`. فرمِ مدیرِ دفتر این فیلدها را ندارد و درخواستِ
+   * دستی هم این‌جا بی‌اثر می‌شود: پروژه بی‌قیمت و با ارزِ پیش‌فرض ساخته می‌شود.
+   */
+  const moneyOk = authority.hasGlobalManage || canManageSection(actor, 'finance');
 
   // وضعیتِ پیش‌فرض — مناقصه «احتمالِ عقد قرارداد»، وگرنه «شروع نشده» (`default_status_id`).
   // پیش از این پروژهٔ بی‌وضعیت در هیچ تبِ پایپ‌لاین نبود و مناقصه بسته حساب می‌شد.
-  const statusTagId = input.statusTagId ?? defaultProjectStatusId(await repo.statusTags(), input.isTender);
+  const statusTagId = input.statusTagId ?? defaultProjectStatusId(await repo.statusTags(), moneyOk && input.isTender);
   const rows = await db.insert(projects).values({
     title: input.title,
     description: input.description,
     regDate: input.regDate,
     deadline: input.deadline,
     statusTagId,
-    price: input.price,
-    currencyId: await currencyOrDefault(input.currencyId),
+    price: moneyOk ? input.price : '0',
+    currencyId: await currencyOrDefault(moneyOk ? input.currencyId : null),
     officeId: input.officeId,
     parentId: input.parentId,
     isUnitBased: input.isUnitBased,
@@ -854,11 +897,13 @@ export async function createProject(actor: Actor, input: CreateProjectData): Pro
 
   const id = rows[0]!.id;
 
-  await saveTenderRoles(actor, id, {
-    checked: input.isTender,
-    rows: input.tenderRoles ?? [],
-    previouslyAnnounced: [],
-  });
+  if (moneyOk) {
+    await saveTenderRoles(actor, id, {
+      checked: input.isTender,
+      rows: input.tenderRoles ?? [],
+      previouslyAnnounced: [],
+    });
+  }
 
   await audit(actor, 'project.create', id, null, input);
   return id;
@@ -874,8 +919,19 @@ export async function createProject(actor: Actor, input: CreateProjectData): Pro
  * کافی است — همان قاعدهٔ `getMembersForm` و `getQaForm`.
  */
 export async function getProjectFormOptions(actor: Actor, excludeId?: number) {
-  if (excludeId === undefined) assertCanManage(actor, 'projects');
-  else await assertCanManageProject(actor, excludeId);
+  /**
+   * ⚠️ فرمِ ساخت برای مدیرِ دفتر هم باز است، ولی فقط با دفاترِ خودش در فهرستِ
+   * دفتر و والد (`createAuthority`) — همان دامنه‌ای که سرویسِ ساخت می‌پذیرد.
+   */
+  const authority = await createAuthority(actor);
+  if (excludeId === undefined) {
+    if (!mayCreateProjects(authority)) throw new ForbiddenError('projects.manage');
+  } else {
+    await assertCanManageProject(actor, excludeId);
+  }
+  const scopedOffices = excludeId === undefined && !authority.hasGlobalManage
+    ? authority.managedOfficeIds
+    : undefined;
   const [
     statuses, currencyRows, officeRows, parents, roleTagRows,
     people, clientPeople, priorities, qaRows, memberRoles,
@@ -883,7 +939,7 @@ export async function getProjectFormOptions(actor: Actor, excludeId?: number) {
     repo.statusTags(),
     repo.currencyOptions(),
     repo.officeOptions(),
-    repo.parentOptions(visibleScopes(actor), excludeId),
+    repo.parentOptions(visibleScopes(actor), excludeId, scopedOffices),
     // تگ‌های نقشِ عضو — جدولِ نقشِ مناقصه از همین‌ها پر می‌شود.
     db.select({ id: tags.id, label: tagName(await currentLocale()) })
       .from(tags).where(eq(tags.type, 'member_role')).orderBy(tags.sortOrder, tags.id),
@@ -897,7 +953,13 @@ export async function getProjectFormOptions(actor: Actor, excludeId?: number) {
   return {
     statuses,
     currencies: currencyRows,
-    offices: officeRows,
+    offices: scopedOffices ? officeRows.filter((o) => scopedOffices.includes(o.id)) : officeRows,
+    /**
+     * ⚠️ مدیرِ دفتر بی‌مجوزِ سراسری: دفتر اجباری است و بخشِ پول (قیمت، ارز،
+     * مناقصه) پنهان — سرویس هم همین را اعمال می‌کند؛ این فقط برای فرم است.
+     */
+    officeRequired: scopedOffices !== undefined,
+    canSetMoney: authority.hasGlobalManage || canManageSection(actor, 'finance'),
     parents,
     roleTags: roleTagRows,
     canUsePrivate: canSeeScope(actor, 'private'),
@@ -985,6 +1047,16 @@ export async function updateProject(actor: Actor, id: number, input: CreateProje
    * اینجا هم مقدارِ قبلی می‌ماند، وگرنه درخواستِ دستی قیمت را عوض می‌کرد.
    */
   const moneyOk = canManageSection(actor, 'projects') || canManageSection(actor, 'finance');
+
+  /**
+   * ⚠️ جابه‌جاییِ دفتر بی‌مجوزِ سراسری فقط به دفتری که خودش اداره می‌کند —
+   * وگرنه مدیرِ دفتر (یا مدیرِ پروژه) پروژه را به شعبهٔ دیگری می‌برد، یا
+   * بی‌دفتر می‌کرد، و بیرون از دامنهٔ مدیریتِ خودش می‌انداخت.
+   */
+  if (input.officeId !== before.officeId) {
+    const authority = await createAuthority(actor);
+    if (!canCreateProject({ ...authority, officeId: input.officeId })) throw new OfficeRequiredError();
+  }
 
   await db.update(projects).set({
     title: input.title,

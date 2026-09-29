@@ -9,7 +9,7 @@ import {
   projects, projectMembers, projectClients, tasks, taskRoles,
   timelogs, ledger, projectPayments, paymentRequests, users, tags,
   currencies, offices, tagRelations, userRoles, comments, tenderBids,
-  projectQa, qaItems, attachments, files, meetings, meetingAttendees,
+  projectQa, qaItems, attachments, files, meetings, meetingAttendees, userOffices,
 } from '@/db/schema';
 import type { ProjectImpact } from '@/domain/projects/lifecycle';
 import { isOverdueProject, isFrozenProject } from '@/domain/projects/lifecycle';
@@ -471,6 +471,16 @@ export async function currencyOptions() {
     .orderBy(currencies.id);
 }
 
+/**
+ * دفاترِ تحتِ مدیریتِ یک نفر — دامنهٔ ساختِ پروژهٔ مدیرِ دفتر.
+ * (همان پرس‌وجوی «تیمِ من»؛ این‌جا تکرار شده تا سرویسِ پروژه به ماژولِ تیم وابسته نشود.)
+ */
+export async function managedOfficeIds(userId: number): Promise<number[]> {
+  const rows = await db.select({ officeId: userOffices.officeId }).from(userOffices)
+    .where(and(eq(userOffices.userId, userId), eq(userOffices.manages, true)));
+  return rows.map((r) => r.officeId);
+}
+
 export async function officeOptions() {
   return db
     .select({ id: offices.id, name: offices.name })
@@ -483,11 +493,22 @@ export async function officeOptions() {
  * پروژه‌هایی که می‌توانند والد باشند — R-PROJ-20: خودشان زیرپروژه نباشند.
  * در حالتِ ویرایش، خودِ پروژه و فرزندانش هم کنار گذاشته می‌شوند تا حلقه ساخته نشود.
  */
-export async function parentOptions(scopes: Array<'company' | 'private'>, excludeId?: number) {
+export async function parentOptions(
+  scopes: Array<'company' | 'private'>,
+  excludeId?: number,
+  /**
+   * ⚠️ مدیرِ دفتر فقط پروژه‌های دفاترِ خودش را به‌عنوانِ والد می‌بیند — فهرستِ
+   * کامل، عنوانِ پروژه‌های شعبه‌های دیگر را به کسی نشان می‌داد که آن‌ها را نمی‌بیند.
+   */
+  onlyOffices?: readonly number[],
+) {
   const rows = await db
     .select({ id: projects.id, title: projects.title })
     .from(projects)
-    .where(and(isNull(projects.deletedAt), isNull(projects.parentId), inArray(projects.scope, scopes)))
+    .where(and(
+      isNull(projects.deletedAt), isNull(projects.parentId), inArray(projects.scope, scopes),
+      onlyOffices ? (onlyOffices.length > 0 ? inArray(projects.officeId, [...onlyOffices]) : sql`false`) : undefined,
+    ))
     .orderBy(projects.title);
 
   if (!excludeId) return rows;

@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.91.0]
+
+### Added
+
+- **Office managers can create projects.** An office manager without the global project permission could not start a project at all, although the previous version gave them their own form. They now get «افزودن پروژه» on the projects page. The office field is required and lists only the offices they manage, the parent list shows only those offices' projects, and price, currency and tender are hidden. The project is created without a price and opens with them as its manager.
+
+### Fixed
+
+- **Editing a project could move it out of the editor's reach.** A project or office manager without the global permission could change the office to any other office, or to none, and lose the project. The office can now change only to an office the editor manages; the global permission is unchanged.
+- The server enforces the same limits whatever the form sends: another office, no office, a parent from another office, a price or a tender from an office manager are refused or ignored.
+
 ## [1.90.0]
 
 ### Added

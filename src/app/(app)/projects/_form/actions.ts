@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireActor } from '@/server/auth';
 import {
-  bootstrapProject, createProject, InvalidParentError, NotFoundError, updateProject,
+  bootstrapProject, createProject, InvalidParentError, NotFoundError, OfficeRequiredError, updateProject,
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
@@ -60,6 +60,16 @@ export async function createProjectAction(_prev: FormState, formData: FormData):
     await bootstrapProject(actor, id, await readBootstrap(formData));
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ساختِ پروژه ندارید.', values };
+    if (error instanceof OfficeRequiredError) {
+      return {
+        error: 'لطفاً خطاهای فرم را برطرف کنید.',
+        fieldErrors: { officeId: 'یکی از دفترهایی را انتخاب کنید که مدیرشان هستید.' },
+        values,
+      };
+    }
+    if (error instanceof NotFoundError) {
+      return { error: 'لطفاً خطاهای فرم را برطرف کنید.', fieldErrors: { parentId: 'والدِ انتخاب‌شده معتبر نیست.' }, values };
+    }
     throw error;
   }
 
@@ -119,6 +129,13 @@ export async function updateProjectAction(_prev: FormState, formData: FormData):
   } catch (error) {
     if (error instanceof FileRejected) return { error: rejectMessage(error.reason), values };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ویرایشِ پروژه ندارید.', values };
+    if (error instanceof OfficeRequiredError) {
+      return {
+        error: 'لطفاً خطاهای فرم را برطرف کنید.',
+        fieldErrors: { officeId: 'یکی از دفترهایی را انتخاب کنید که مدیرشان هستید.' },
+        values,
+      };
+    }
     if (error instanceof InvalidParentError) {
       return {
         error: 'والدِ انتخاب‌شده معتبر نیست.',

@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
-import { getCardOptions, getProjectFormOptions, getStatusOptions, listProjects } from '@/server/projects/service';
+import {
+  canCreateProjects, getCardOptions, getProjectFormOptions, getStatusOptions, listProjects,
+} from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { canManageSection, canViewSection } from '@/domain/access/permissions';
 import { activeTab, buildTabs } from '@/domain/projects/tabs';
@@ -53,10 +55,14 @@ export default async function ProjectsPage({
   const tabs = buildTabs(projects, requested);
   const canManage = canManageSection(actor, 'projects');
 
-  // گزینه‌های فرم فقط وقتی خوانده می‌شوند که دکمه‌اش هم دیده شود.
+  /**
+   * گزینه‌های فرم فقط وقتی خوانده می‌شوند که دکمه‌اش هم دیده شود.
+   * ⚠️ مدیرِ دفتر بی‌مجوزِ سراسری هم فرمِ ساخت دارد (فقط دفاترِ خودش)، ولی
+   * کارتِ قابلِ ویرایش نه — `cardOptions` همچنان فقط برای مدیرِ سراسری است.
+   */
   const [formOptions, cardOptions] = canManage
     ? await Promise.all([getProjectFormOptions(actor), getCardOptions(actor)])
-    : [null, null];
+    : [await canCreateProjects(actor) ? await getProjectFormOptions(actor) : null, null];
 
   /**
    * وضعیت‌ها فقط خوراکِ منوی چیپِ **قابلِ تغییر**اند و آن منو فقط برای مدیر
@@ -89,6 +95,8 @@ export default async function ProjectsPage({
           defaultCurrencyId: formOptions.currencies.find((c) => c.isDefault)?.id ?? null,
           roleTags: formOptions.roleTags,
           canUsePrivate: formOptions.canUsePrivate,
+          officeRequired: formOptions.officeRequired,
+          canEditMoney: formOptions.canSetMoney,
           today: new Date().toISOString().slice(0, 10),
           // بخش‌های اولیه فقط در همین فرمِ ساخت لازم‌اند.
           bootstrap: {

@@ -77,3 +77,30 @@ export function canManageProject(input: ProjectAuthority): boolean {
   if (input.isPmOnProject) return true;
   return isOfficeManagerOfProject(input);
 }
+
+/**
+ * ساختِ پروژه — پورتِ `handle_create_project` (مدیرِ دفتر) در کنارِ مسیرِ سراسری.
+ *
+ * ⚠️ دو راه، هر دو با شرطِ روشن:
+ *   ۱. مجوزِ سراسریِ `projects.manage` — هر دفتری، یا بی‌دفتر.
+ *   ۲. مدیرِ دفتر — فقط با دفتری که **خودش** اداره می‌کند. پروژهٔ بی‌دفتر یا
+ *      پروژه برای دفترِ دیگر رد می‌شود؛ وگرنه مدیرِ یک شعبه می‌توانست برای
+ *      شعبهٔ دیگر پروژه بسازد و بعد، چون مدیرِ دفترِ آن نیست، دیگر نبیندش.
+ *
+ * پیش از این فقط راهِ اول بود: مدیرِ دفتر در نسخهٔ جدید اصلاً نمی‌توانست
+ * پروژه بسازد، در حالی که نسخهٔ قبلی برایش فرمِ جدا داشت.
+ */
+export function canCreateProject(input: {
+  hasGlobalManage: boolean;
+  managedOfficeIds: readonly number[];
+  officeId: number | null;
+}): boolean {
+  if (input.hasGlobalManage) return true;
+  if (input.managedOfficeIds.length === 0 || input.officeId === null) return false;
+  return input.managedOfficeIds.includes(input.officeId);
+}
+
+/** آیا دکمهٔ «افزودن پروژه» اصلاً دیده شود؟ — همان دو راه، بی‌دفترِ مشخص. */
+export function mayCreateProjects(input: { hasGlobalManage: boolean; managedOfficeIds: readonly number[] }): boolean {
+  return input.hasGlobalManage || input.managedOfficeIds.length > 0;
+}
