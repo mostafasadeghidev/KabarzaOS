@@ -25,8 +25,8 @@ import { ltr } from '@/i18n/bidi';
 import { formatDateTime } from '@/i18n/datetime';
 import { useConfirm } from '@/components/ui/confirm';
 import { ClaimTaskButton } from '@/app/(app)/tasks/inbox-claim';
-import { TaskStatusPicker } from './task-status-picker';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { GROUP_LABEL, TaskStatusPicker } from './task-status-picker';
+import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { TagChip } from '@/components/ui/tag-chip';
@@ -55,7 +55,7 @@ function SubmitButton({ label, busy }: { label: string; busy: string }) {
 }
 
 export function TaskDialog({
-  taskId,
+  taskId: requestedId,
   open,
   onOpenChange,
 }: {
@@ -63,6 +63,13 @@ export function TaskDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  /**
+   * تسکِ نمایش‌داده‌شده — معمولاً همان که فراخوان خواسته، ولی «وابسته به»
+   * می‌تواند درجا به تسکِ پیش‌نیاز برود (dash-1 #18). با هر درخواستِ تازه یا
+   * بازشدنِ دوباره، به تسکِ خواسته‌شده برمی‌گردد.
+   */
+  const [taskId, setTaskId] = useState<number | null>(requestedId);
+  useEffect(() => { setTaskId(requestedId); }, [requestedId, open]);
   const tr = useT();
   const tz = useTimeZone();
   const t = useT();
@@ -176,7 +183,18 @@ export function TaskDialog({
               </p>
             )}
             {data?.detail.dependsOnTitle && (
-              <p className="text-xs text-muted-foreground">{tr('وابسته به: {title}', { title: data.detail.dependsOnTitle })}</p>
+              <p className="text-xs text-muted-foreground">
+                {/* ⚠️ فقط وقتی بیننده پیش‌نیاز را می‌بیند عنوانش آمده؛ پس بازکردنش هم مجاز است. */}
+                {data.detail.task.dependsOn ? (
+                  <button
+                    type="button"
+                    className="underline-offset-4 hover:text-foreground hover:underline"
+                    onClick={() => setTaskId(data.detail.task.dependsOn)}
+                  >
+                    {tr('وابسته به: {title}', { title: data.detail.dependsOnTitle })}
+                  </button>
+                ) : tr('وابسته به: {title}', { title: data.detail.dependsOnTitle })}
+              </p>
             )}
             {data?.detail.claimable && (
               <ClaimTaskButton
@@ -317,9 +335,17 @@ export function TaskDialog({
                       defaultValue={task.statusTagId ? String(task.statusTagId) : ''}
                     >
                       <NativeSelectOption value="">{t("— بدون وضعیت —")}</NativeSelectOption>
-                      {options.statuses.map((s) => (
-                        <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>
-                      ))}
+                      {/* گروه‌بندی با گروهِ وضعیت — همان سرگروه‌های تبِ تسک‌ها و منوی وضعیت (dash-1 #22). */}
+                      {['todo', 'in_progress', 'complete', 'other'].map((g) => {
+                        const inGroup = options.statuses.filter((s) => (s.group && GROUP_LABEL[s.group] ? s.group : 'other') === g);
+                        return inGroup.length === 0 ? null : (
+                          <NativeSelectOptGroup key={g} label={tr(GROUP_LABEL[g] ?? g)}>
+                            {inGroup.map((s) => (
+                              <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>
+                            ))}
+                          </NativeSelectOptGroup>
+                        );
+                      })}
                     </NativeSelect>
                   </Field>
 

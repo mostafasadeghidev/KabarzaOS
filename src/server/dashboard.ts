@@ -432,7 +432,7 @@ export async function getDashboard(actor: Actor, opts: { officeId?: number | nul
       activeTeam, assignedMembers,
       timers: liveTimers,
       online: liveOnline,
-      activity: liveActivity.map((a) => ({ id: a.id, label: actionLabel(a.action), actorName: a.actorName, at: a.createdAt })),
+      activity: liveActivity.map((a) => ({ id: a.id, label: actionLabel(a.action), actorId: a.actorId, actorName: a.actorName, at: a.createdAt })),
     },
     risk: { overdue, soon, stalled, openTenders, reviewStuck, expenseDues },
     charts: { statusDistribution, memberHours, weeklyTrend, offices: officeRows, officeId },

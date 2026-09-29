@@ -78,7 +78,8 @@ function Assignee({ task }: { task: TaskItem }) {
       </span>
     );
   }
-  if (task.roles.length === 0) return null;
+  // پورتِ «تخصیص‌نیافته» — نه نفر، نه نقش: کارتی که هیچ نمی‌گفت، بی‌صاحب بودنش را پنهان می‌کرد.
+  if (task.roles.length === 0) return <span className="text-xs text-muted-foreground">{t('تخصیص‌نیافته')}</span>;
   return (
     <div className="flex flex-wrap gap-1">
       {task.roles.map((r, i) => (
@@ -356,9 +357,27 @@ export function TasksTab({
     return { buckets: b, review: tasks.filter((t) => t.isReview) };
   }, [tasks]);
 
-  const groupKeys = GROUP_ORDER.filter((k) => (buckets.get(k)?.length ?? 0) > 0);
+  /**
+   * «من» — تسک‌هایی که مستقیم به بیننده سپرده شده یا نقشش را برداشته (پورتِ
+   * `$show_mine`). برای مدیر و کارفرما که کلِ تخته را می‌بینند، کارِ خودشان را
+   * جدا می‌کند؛ فقط وقتی چیزی دارد نشان داده می‌شود.
+   */
+  const mine = useMemo(
+    () => tasks.filter((t) => t.assignedTo === currentUserId || t.roles.some((r) => r.claimedBy === currentUserId)),
+    [tasks, currentUserId],
+  );
+
+  /**
+   * ⚠️ «شروع نشده» همیشه هست و پیش‌فرض است (همان زیرتبِ `todo` ِ نسخهٔ
+   * قبلی)؛ گروه‌های دیگر فقط وقتی تسکی دارند. پیش از این صفحه روی اولین
+   * گروهِ **غیرخالی** باز می‌شد و جای تب‌ها با هر تغییرِ وضعیت عوض می‌شد.
+   */
+  const groupKeys = GROUP_ORDER.filter((k) => k === 'todo' || (buckets.get(k)?.length ?? 0) > 0);
   const [tab, setTab] = useState<string>(
-    initialGroup === 'review' && review.length > 0 ? 'review' : (groupKeys[0] ?? 'other'),
+    initialGroup === 'review' && review.length > 0 ? 'review'
+      : initialGroup === 'mine' ? 'mine'
+      : initialGroup && GROUP_ORDER.includes(initialGroup) ? initialGroup
+      : 'todo',
   );
   const [view, setView] = useState<'list' | 'board'>('list');
 
@@ -368,7 +387,7 @@ export function TasksTab({
   );
 
 
-  const list = tab === 'review' ? review : (buckets.get(tab) ?? []);
+  const list = tab === 'review' ? review : tab === 'mine' ? mine : (buckets.get(tab) ?? []);
 
   return (
     <div className="grid gap-4">
@@ -411,9 +430,15 @@ export function TasksTab({
             {groupKeys.map((k) => (
               <TabsTrigger key={k} value={k} className="flex-none px-3">
                 {tr(GROUP_LABEL[k] ?? k)}
-                <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{buckets.get(k)!.length}</Badge>
+                <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{buckets.get(k)?.length ?? 0}</Badge>
               </TabsTrigger>
             ))}
+            {mine.length > 0 && (
+              <TabsTrigger value="mine" className="flex-none px-3">
+                {tr('من')}
+                <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{mine.length}</Badge>
+              </TabsTrigger>
+            )}
           </TabsList>
         </Tabs>
       </div>
@@ -434,6 +459,10 @@ export function TasksTab({
         />
       ) : (
       // ⚠️ کارتِ تسک تا لبهٔ صفحه کش نمی‌آید: روی نمایشگرِ پهن تا چهار ستون.
+      // سطلی که خالی مانده (مثلاً پس از تغییرِ وضعیت) «تسکی نیست.» می‌گوید، نه صفحهٔ سفید.
+      tasks.length > 0 && list.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{tr('تسکی نیست.')}</p>
+      ) : (
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {list.map((t) => (
           /**
@@ -454,7 +483,8 @@ export function TasksTab({
               <span className="flex items-center gap-1.5 text-start text-sm font-medium">
                 {/* R-PROJ-17 — تسکِ خصوصی نشانِ خودش را دارد. */}
                 {t.isPrivate && <Lock className="size-3.5 text-muted-foreground" />}
-                {t.title}
+                {/* تسکِ انجام‌شده کم‌رنگ و خط‌خورده (`kteam-done`) — در نگاهِ اول از کارِ باز جدا شود. */}
+                <span className={t.statusGroup === 'complete' ? 'text-muted-foreground line-through' : undefined}>{t.title}</span>
               </span>
               <span data-stop onClick={(e) => e.stopPropagation()}>
                 <TaskStatusPicker task={t} options={statuses} canManage={(canManage || canInteract) && !isFrozen && statuses.length > 0} />
@@ -479,6 +509,7 @@ export function TasksTab({
           </li>
         ))}
       </ul>
+      )
       )}
 
       <TaskDialog

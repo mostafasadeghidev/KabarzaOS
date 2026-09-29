@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Lock } from 'lucide-react';
+import { Lock, MessageSquare } from 'lucide-react';
 import type { InboxTask } from '@/server/projects/service';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
@@ -131,12 +131,24 @@ export function TaskTable({
                     )}
                     <span className="font-medium">{task.title}</span>
                   </span>
+                  {/* پورتِ آیتمِ 👤 ِ ردیفِ صندوق: تسکی که مستقیم به خودِ شماست. */}
+                  {task.mine && (
+                    <span className="mt-0.5 block text-xs text-muted-foreground">{t('👤 به نامِ شما')}</span>
+                  )}
                   {/* نقش‌ها زیرِ عنوان می‌نشینند تا ستون‌ها به‌هم نریزند. */}
                   {task.roles.length > 0 && (
                     <span className="mt-0.5 block text-xs text-muted-foreground">
                       {task.roles
                         .map((r) => (r.claimedByName ? `${r.roleName ?? ''} (${r.claimedByName})` : (r.roleName ?? '')))
                         .join(t('، '))}
+                    </span>
+                  )}
+                  {/* پورتِ `task_notes_summary`: شمار و آخرین یادداشت — بی‌بازکردنِ تسک معلوم شود گفتگو کجاست. */}
+                  {task.notesCount > 0 && (
+                    <span className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                      <MessageSquare className="size-3 shrink-0" aria-hidden />
+                      <span className="num">{task.notesCount}</span>
+                      {task.lastNote && <span className="truncate">· {task.lastNote}</span>}
                     </span>
                   )}
                 </TableCell>

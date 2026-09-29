@@ -134,6 +134,8 @@ export function SettingsView({
 }: { data: SettingsData; open?: { tab?: string; type?: string } }) {
   const tr = useT();
   const [tab, setTab] = useState<SettingsTab>(() => startTab(open.tab, data.isOwner));
+  /** زیرتبِ نقش در کتابخانهٔ QA — `all`، شناسهٔ نقش، یا `client` (core #360). */
+  const [qaRole, setQaRole] = useState<string>('all');
   const locale = useLocale();
   const [tagType, setTagType] = useState<TagType>(() => startTagType(open.type));
   const [pending, startTransition] = useTransition();
@@ -535,11 +537,42 @@ export function SettingsView({
       )}
 
       {tab === 'qa' && (
+        <div className="grid gap-3">
+        {/*
+          پورتِ زیرتب‌های نقشِ کتابخانهٔ QA: یک تب برای هر نقشِ عضو و یکی برای
+          کارفرما، تا فهرستِ بلند یک‌جا ریخته نشود. بی‌نقشِ عضو، آیتمِ نقش‌دار
+          ساختنی نیست — پیامِ راهنما همان‌جا گفته می‌شود.
+        */}
+        {data.tags.every((t) => t.type !== 'member_role') ? (
+          <p className="text-sm text-muted-foreground">
+            {tr('هنوز نقشِ عضوی تعریف نشده؛ برای آیتم‌های نقش‌دار اول در تبِ «تگ‌ها» نقش بسازید. آیتمِ کارفرما همین حالا هم ساختنی است.')}
+          </p>
+        ) : (
+          <div className="overflow-x-auto pb-1.5">
+            <Tabs value={qaRole} onValueChange={setQaRole}>
+              <TabsList className="w-max">
+                <TabsTrigger value="all" className="flex-none gap-1.5 px-3">
+                  {tr('همه')}<span className="num text-xs text-muted-foreground">{data.qaItems.length}</span>
+                </TabsTrigger>
+                {data.tags.filter((t) => t.type === 'member_role').map((t) => (
+                  <TabsTrigger key={t.id} value={String(t.id)} className="flex-none gap-1.5 px-3">
+                    {t.nameI18n?.[locale] || t.nameI18n?.en || t.name}
+                    <span className="num text-xs text-muted-foreground">{data.qaItems.filter((q) => q.roleTagId === t.id).length}</span>
+                  </TabsTrigger>
+                ))}
+                <TabsTrigger value="client" className="flex-none gap-1.5 px-3">
+                  {tr('کارفرما')}<span className="num text-xs text-muted-foreground">{data.qaItems.filter((q) => !q.roleTagId).length}</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        )}
         <CatalogSection
           title={tr("کتابخانهٔ QA")}
           description={tr("آیتمِ «تسک‌ساز» هنگامِ اعمال یک تسکِ واقعی می‌سازد (R-PROJ-18).")}
           addLabel="افزودن آیتم"
-          rows={data.qaItems}
+          rows={data.qaItems.filter((q) => qaRole === 'all'
+            || (qaRole === 'client' ? !q.roleTagId : q.roleTagId === Number(qaRole)))}
           columns={[
             { header: 'عنوان', cell: (q) => q.title },
             {
@@ -611,6 +644,7 @@ export function SettingsView({
             </>
           )}
         />
+        </div>
       )}
 
       {tab === 'staff' && <StaffSection staff={data.staff} candidates={data.staffCandidates} />}

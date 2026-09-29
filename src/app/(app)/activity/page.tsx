@@ -7,7 +7,7 @@ import { getWeek } from '@/server/availability/service';
 import {
   leaveTargets, listAbsences as listMyAbsences,
 } from '@/server/availability/absence-service';
-import { weekOrder, type Slot } from '@/domain/availability/weekly';
+import { weekdayIndex, weekOrder, type Slot } from '@/domain/availability/weekly';
 import { can } from '@/domain/access/permissions';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { ActivityView } from './activity-view';
@@ -97,6 +97,8 @@ export default async function ActivityPage({
         availability={{
           mine: toRecord(mineMap),
           order: weekOrder(system.weekStart),
+          // روزِ امروز از **سرور** — تا نشانِ «امروز» در هیدریشن نپرد.
+          today: weekdayIndex(new Date()),
         }}
       />
     </PageShell>

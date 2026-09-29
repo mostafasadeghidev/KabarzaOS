@@ -39,6 +39,8 @@ export interface HourRow {
   minutes: number;
   /** تعدادِ ثبت‌های ساعت. */
   entries: number;
+  /** نقش‌های این نفر روی همین پروژه (بی‌نقش یا غیرعضو = null). */
+  roleNames?: string | null;
 }
 
 /** یک ثبتِ ساعت — پورتِ «جزئیاتِ ثبت‌ها» (`Timelogs::for_project`). */
@@ -558,6 +560,7 @@ export function ManageTab({
             <TableHeader>
               <TableRow>
                 <TableHead>{t("عضو")}</TableHead>
+                <TableHead>{t("نقش در پروژه")}</TableHead>
                 <TableHead numeric>{t("ساعت کاری")}</TableHead>
                 <TableHead numeric>{t("تعداد ثبت")}</TableHead>
               </TableRow>
@@ -566,12 +569,14 @@ export function ManageTab({
               {hours.map((h) => (
                 <TableRow key={h.userId}>
                   <TableCell>{h.userName ?? String(h.userId)}</TableCell>
+                  <TableCell className="text-muted-foreground">{h.roleNames || '—'}</TableCell>
                   <TableNumericCell>{hhmm(h.minutes)}</TableNumericCell>
                   <TableNumericCell>{h.entries}</TableNumericCell>
                 </TableRow>
               ))}
               <TableRow>
                 <TableCell className="font-semibold">{t("مجموع ساعت کاری")}</TableCell>
+                <TableCell />
                 <TableNumericCell className="font-semibold">{hhmm(totalMinutes)}</TableNumericCell>
                 <TableNumericCell className="font-semibold">
                   {hours.reduce((sum, h) => sum + h.entries, 0)}

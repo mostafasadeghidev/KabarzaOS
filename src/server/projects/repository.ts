@@ -947,6 +947,7 @@ export async function listPayments(projectId: number) {
 
 /** ساعتِ کاریِ اعضا روی پروژه — تبِ مدیریت. */
 export async function memberHours(projectId: number) {
+  const locale = await currentLocale();
   return db
     .select({
       userId: timelogs.userId,
@@ -954,6 +955,12 @@ export async function memberHours(projectId: number) {
       minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int`,
       /** «تعداد ثبت» — ستونِ جدولِ ساعتِ اعضای نسخهٔ قبلی. */
       entries: sql<number>`count(*)::int`,
+      /** «نقش در پروژه» — نقش‌های همین نفر روی همین پروژه (ستونِ جدولِ نسخهٔ قبلی). */
+      roleNames: sql<string | null>`(
+        select string_agg(coalesce(nullif(rt.name_i18n ->> ${locale}, ''), rt.name), '، ' order by rt.sort_order, rt.id)
+        from project_members pm join tags rt on rt.id = pm.role_tag_id
+        where pm.project_id = ${projectId} and pm.user_id = ${timelogs.userId}
+      )`,
     })
     .from(timelogs)
     .leftJoin(users, eq(users.id, timelogs.userId))
@@ -978,10 +985,13 @@ export async function listBids(projectId: number) {
       createdAt: tenderBids.createdAt,
       userName: users.name,
       roleName: tagName(await currentLocale()),
+      // کدِ ارزِ پیشنهاد — عددِ بی‌ارز در جدولِ مدیر معلوم نمی‌کرد یورو است یا ریال.
+      currencyCode: currencies.code,
     })
     .from(tenderBids)
     .leftJoin(users, eq(users.id, tenderBids.userId))
     .leftJoin(tags, eq(tags.id, tenderBids.roleTagId))
+    .leftJoin(currencies, eq(currencies.id, tenderBids.currencyId))
     .where(eq(tenderBids.projectId, projectId))
     // پورتِ `Bids::for_project`: نقش → برنده اول → ارزان‌تر اول → شناسه.
     .orderBy(
@@ -1324,6 +1334,9 @@ export async function openTasksForUser(userId: number, scopes: Array<'company' |
       priorityName: tagName(await currentLocale(), priority),
       priorityColor: priority.color,
       prioritySort: priority.sortOrder,
+      // پورتِ `task_notes_summary` روی ردیفِ صندوق: شمار و آخرین یادداشتِ گفتگو.
+      notesCount: sql<number>`(select count(*) from comments c where c.task_id = ${tasks.id})::int`,
+      lastNote: sql<string | null>`(select c.body from comments c where c.task_id = ${tasks.id} order by c.id desc limit 1)`,
     })
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))
@@ -1383,6 +1396,8 @@ export async function reviewTasksForProjects(projectIds: number[], scopes: Array
       priorityName: tagName(await currentLocale(), priority),
       priorityColor: priority.color,
       prioritySort: priority.sortOrder,
+      notesCount: sql<number>`(select count(*) from comments c where c.task_id = ${tasks.id})::int`,
+      lastNote: sql<string | null>`(select c.body from comments c where c.task_id = ${tasks.id} order by c.id desc limit 1)`,
     })
     .from(tasks)
     .innerJoin(projects, eq(projects.id, tasks.projectId))

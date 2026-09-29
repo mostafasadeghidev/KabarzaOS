@@ -338,7 +338,12 @@ export async function setProjectThumbnail(
   projectId: number,
   blob: { name: string; mime: string; bytes: Uint8Array },
 ) {
-  if (!canManageSection(actor, 'projects')) throw new ForbiddenError('projects.manage');
+  /**
+   * ⚠️ مدیرِ **همین پروژه** (سراسری، مدیرِ پروژه، مدیرِ دفتر) — همان کسی که فرمِ
+   * ویرایش و ساخت را دارد. پیش از این مجوزِ سراسری لازم بود: فرم برای مدیرِ
+   * دفتر انتخابگرِ تصویر نشان می‌داد و ذخیره بی‌صدا شکست می‌خورد.
+   */
+  if (!(await canManageProject(actor, projectId))) throw new ForbiddenError('projects.manage');
   await assertProjectAccess(actor, projectId);
 
   const previous = await db.select({ fileId: projects.thumbnailFileId })
@@ -352,6 +357,19 @@ export async function setProjectThumbnail(
   const old = previous[0]?.fileId;
   if (old) await removeFile(old);
   return fileId;
+}
+
+/**
+ * برداشتنِ تصویرِ شاخص — پروژه به تک‌نگارِ رنگی برمی‌گردد (admin #99؛ پیش از
+ * این تصویر فقط جایگزین می‌شد). فایل هم پاک می‌شود؛ به چیزِ دیگری وصل نیست.
+ */
+export async function removeProjectThumbnail(actor: Actor, projectId: number) {
+  if (!(await canManageProject(actor, projectId))) throw new ForbiddenError('projects.manage');
+  await assertProjectAccess(actor, projectId);
+  const [row] = await db.select({ fileId: projects.thumbnailFileId }).from(projects).where(eq(projects.id, projectId));
+  if (!row?.fileId) return;
+  await db.update(projects).set({ thumbnailFileId: null, updatedAt: new Date() }).where(eq(projects.id, projectId));
+  await removeFile(row.fileId);
 }
 
 export async function setAvatar(

@@ -8,7 +8,7 @@ import {
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
-import { setProjectThumbnail } from '@/server/files/service';
+import { removeProjectThumbnail, setProjectThumbnail } from '@/server/files/service';
 import { createProjectSchema, type FormState } from './schema';
 
 /** فیلدهای متنی‌ای که در صورتِ خطا باید به فرم برگردند. */
@@ -128,6 +128,8 @@ export async function updateProjectAction(_prev: FormState, formData: FormData):
      */
     const thumbnail = await readBlob(formData.get('thumbnailFile'));
     if (thumbnail) await setProjectThumbnail(actor, id, thumbnail);
+    // «حذفِ تصویر» — فقط وقتی تصویرِ تازه‌ای انتخاب نشده (تصویرِ تازه خودش جایگزین است).
+    else if (formData.get('removeThumbnail') !== null) await removeProjectThumbnail(actor, id);
     await updateProject(actor, id, parsed.data);
   } catch (error) {
     if (error instanceof FileRejected) return { error: rejectMessage(error.reason), values };

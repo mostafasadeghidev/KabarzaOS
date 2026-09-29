@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import { accounts, currencies, files, ledger, projectMembers, projects, users, userRoles } from '../schema';
 import { createEntry, deleteEntry, getLedger, updateEntry } from '@/server/finance/service';
-import { removeFiles, setAvatar, setProjectThumbnail, storeReceipt } from '@/server/files/service';
+import { removeFiles, removeProjectThumbnail, setAvatar, setProjectThumbnail, storeReceipt } from '@/server/files/service';
 import { getObject } from '@/server/files/storage';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FileRejected } from '@/domain/files/upload';
@@ -170,6 +170,15 @@ describe('تصویرِ شاخص و آواتار', () => {
     expect(rows[0]!.fileId).toBe(second);
     // ⚠️ تصویرِ قبلی نباید در باکت بماند.
     expect(await db.select().from(files).where(eq(files.id, first))).toHaveLength(0);
+  });
+
+  it('تصویرِ شاخص برداشته می‌شود و فایلش هم می‌رود (admin #99)', async () => {
+    const fileId = await setProjectThumbnail(owner, projectId, blob({ name: 'c.png' }));
+    await removeProjectThumbnail(owner, projectId);
+    const rows = await db.select({ fileId: projects.thumbnailFileId })
+      .from(projects).where(eq(projects.id, projectId));
+    expect(rows[0]!.fileId).toBeNull();
+    expect(await db.select().from(files).where(eq(files.id, fileId))).toHaveLength(0);
   });
 
   it('⚠️ اسکریپتِ جازده‌شده به‌عنوانِ تصویرِ شاخص رد می‌شود', async () => {

@@ -18,6 +18,8 @@ export interface AvailabilityData {
   /** برنامهٔ خودِ کاربر. */
   mine: Record<number, Slot[]>;
   order: number[];
+  /** ایندکسِ امروز (۰ = شنبه) — نشانِ «امروز» مثلِ ماتریسِ تیم (dash-1 #86). */
+  today?: number;
 }
 
 function Submit() {
@@ -31,7 +33,7 @@ function Submit() {
 }
 
 /** ویرایشگرِ یک روز — تیکِ روز و بازه‌های ساعتی‌اش. */
-function DayEditor({ weekday, initial }: { weekday: number; initial: Slot[] | undefined }) {
+function DayEditor({ weekday, initial, isToday = false }: { weekday: number; initial: Slot[] | undefined; isToday?: boolean }) {
   const tr = useT();
   const t = useT();
   const enabled = initial !== undefined;
@@ -39,7 +41,7 @@ function DayEditor({ weekday, initial }: { weekday: number; initial: Slot[] | un
   const [slots, setSlots] = useState<Slot[]>(initial ?? []);
 
   return (
-    <div className="grid gap-2 rounded-xl border bg-card p-3">
+    <div className={`grid gap-2 rounded-xl border bg-card p-3${isToday ? ' border-primary/40' : ''}`}>
       <div className="flex items-center gap-2">
         <Checkbox
           id={`day-${weekday}`}
@@ -49,6 +51,7 @@ function DayEditor({ weekday, initial }: { weekday: number; initial: Slot[] | un
           onCheckedChange={(c) => setOn(c === true)}
         />
         <Label htmlFor={`day-${weekday}`} className="font-medium">{tr(WEEKDAYS[weekday] ?? '')}</Label>
+        {isToday && <span className="text-xs font-medium text-primary">{tr('امروز')}</span>}
 
         {on && (
           <Button
@@ -121,7 +124,7 @@ export function AvailabilityView({ data }: { data: AvailabilityData }) {
         <form action={save} className="grid gap-2">
           <div className="grid gap-2 @2xl/main:grid-cols-2">
             {data.order.map((weekday) => (
-              <DayEditor key={weekday} weekday={weekday} initial={data.mine[weekday]} />
+              <DayEditor key={weekday} weekday={weekday} initial={data.mine[weekday]} isToday={weekday === data.today} />
             ))}
           </div>
 

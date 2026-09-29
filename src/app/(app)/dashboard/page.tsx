@@ -15,6 +15,8 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import Link from 'next/link';
+import { canViewSection } from '@/domain/access/permissions';
 import { hasTeamScope, teamOverview } from '@/server/team/service';
 import { TeamOverviewCards } from '../team/overview-cards';
 
@@ -301,7 +303,18 @@ export default async function DashboardPage({
               <ul className="space-y-1.5 text-sm">
                 {today.activity.map((a) => (
                   <li key={a.id} className="flex items-center justify-between gap-3">
-                    <span className="truncate">{t(a.label)}{a.actorName ? <span className="text-muted-foreground"> · {a.actorName}</span> : null}</span>
+                    <span className="truncate">
+                      {t(a.label)}
+                      {/* نامِ کننده به گزارشِ عضو می‌رود (core #388) — فقط برای کسی که گزارش‌ها را می‌بیند. */}
+                      {a.actorName ? (
+                        <span className="text-muted-foreground">
+                          {' · '}
+                          {a.actorId && canViewSection(actor, 'reports')
+                            ? <Link href={`/reports/member/${a.actorId}`} className="hover:text-foreground hover:underline">{a.actorName}</Link>
+                            : a.actorName}
+                        </span>
+                      ) : null}
+                    </span>
                     <span className="num shrink-0 text-xs text-muted-foreground">{timeLabel(a.at)}</span>
                   </li>
                 ))}

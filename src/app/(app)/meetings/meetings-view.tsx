@@ -86,6 +86,12 @@ export function MeetingsView({
   const t = useT();
   const confirm = useConfirm();
   const [tab, setTab] = useState<'meetings' | 'reminders'>(initialTab);
+  /**
+   * «اکنون» فقط پس از سوارشدن — برای نشانِ «در حال ارسال…» (یادآورِ سررسیده‌ای
+   * که زمان‌بند هنوز نفرستاده). ⚠️ روی سرور ساخته نمی‌شود تا هیدریشن نپرد.
+   */
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => { setNow(Date.now()); }, []);
   const [editing, setEditing] = useState<MeetingView | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   /** جلسه‌ای که جزئیاتش باز است. */
@@ -285,7 +291,11 @@ export function MeetingsView({
                         {(r.leadMinutes ?? [0]).map((m) => leadLabel(m, tr)).join(tr('، '))}
                       </span>
                       <Badge variant={r.isSent ? 'success' : 'secondary'}>
-                        {r.isSent ? tr('ارسال‌شده') : tr('در انتظار')}
+                        {r.isSent
+                          ? tr('ارسال‌شده')
+                          : now !== null && new Date(r.remindAt).getTime() <= now
+                            ? tr('در حال ارسال…')
+                            : tr('در انتظار')}
                       </Badge>
                       <IconButton
                         variant="ghost"

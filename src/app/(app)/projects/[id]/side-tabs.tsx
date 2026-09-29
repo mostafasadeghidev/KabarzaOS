@@ -581,6 +581,7 @@ export interface BidRow {
   amount: string;
   status: string;
   note: string | null;
+  currencyCode?: string | null;
   userName: string | null;
   roleName: string | null;
 }
@@ -678,6 +679,8 @@ export function BidsTab({
             <TableHead>{t("نقش")}</TableHead>
             <TableHead numeric>{t("مبلغ")}</TableHead>
             <TableHead>{t("وضعیت")}</TableHead>
+            {/* پورتِ ستونِ «یادداشت» ِ جدولِ پیشنهادهای مدیر — توضیحِ پیشنهاددهنده. */}
+            <TableHead>{t("یادداشت")}</TableHead>
             {canManage && <TableActionsHead />}
           </TableRow>
         </TableHeader>
@@ -688,8 +691,9 @@ export function BidsTab({
               <TableRow key={b.id}>
                 <TableCell>{b.userName ?? '—'}</TableCell>
                 <TableCell>{b.roleName ?? '—'}</TableCell>
-                <TableNumericCell>{format(b.amount)}</TableNumericCell>
+                <TableNumericCell>{format(b.amount)}{b.currencyCode ? ` ${b.currencyCode}` : ''}</TableNumericCell>
                 <TableCell><Badge variant={s.variant}>{t(s.label)}</Badge></TableCell>
+                <TableCell className="max-w-64 text-xs whitespace-pre-wrap text-muted-foreground">{b.note || '—'}</TableCell>
                 {canManage && (
                   <TableActionsCell>
                     <BidActions bid={b} projectId={projectId} isOpen={isOpen} />

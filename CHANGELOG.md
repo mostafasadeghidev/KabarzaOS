@@ -2,6 +2,32 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.97.0]
+
+### Added
+
+- **A «من» sub-tab on a project's tasks** lists the tasks assigned to the viewer or whose role they took, as in the previous version. It appears when the viewer has any.
+- **«وابسته به» opens the prerequisite task** inside the task dialog, when the viewer can see it.
+- **Inbox rows show the task conversation:** the number of notes and the latest one under the title, plus «👤 به نامِ شما» for tasks assigned to the viewer by name.
+- **The bids table shows each bid's note and currency.**
+- **The per-member hours table on a project's manage tab shows each member's role on the project.**
+- **A featured image can be removed** from the project's edit form, not only replaced.
+- **The QA library in settings has a tab per role and one for clients,** with counts, and says to create member roles first when none exist.
+- **The weekly availability editor marks today,** like the team matrix.
+- **A reminder whose time has passed but that has not gone out yet shows «در حال ارسال…».**
+- **The actor's name in the dashboard's latest events links to their member report** for viewers who can see reports.
+
+### Changed
+
+- **The tasks sub-tabs always start on «شروع نشده».** The tab is always there, even when empty. Before, the page opened on the first non-empty group and the tabs moved with every status change. Other empty groups stay hidden, and a group emptied by a status change says «تسکی نیست.» instead of going blank. Any sub-tab can be opened from the address.
+- **Completed tasks are muted and struck through** on the task cards.
+- **The status list in the task edit form is grouped** by status group.
+- **Task cards say «تخصیص‌نیافته»** when a task has neither a person nor a role.
+
+### Fixed
+
+- **Only global managers could set a project's featured image.** An office manager's or project manager's edit and create forms offered the picker, but saving the image failed silently. Anyone who manages the project can now set or remove it.
+
 ## [1.96.0]
 
 ### Added

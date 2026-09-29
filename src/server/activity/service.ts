@@ -44,6 +44,7 @@ export async function listActivity(
         objectType: auditLog.objectType,
         objectId: auditLog.objectId,
         createdAt: auditLog.createdAt,
+        actorId: auditLog.actorId,
         actorName: users.name,
       })
       .from(auditLog)

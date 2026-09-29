@@ -3255,9 +3255,9 @@ export async function myTasks(actor: Actor) {
       kind: 'client' as const,
       active: own
         .filter((t) => !reviewIds.has(t.id))
-        .map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false })),
+        .map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false, mine: t.assignedTo === actor.id })),
       waiting: [] as InboxTask[],
-      review: review.map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false })),
+      review: review.map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false, mine: t.assignedTo === actor.id })),
     };
   }
 
@@ -3280,6 +3280,7 @@ export async function myTasks(actor: Actor) {
     const taskRolesList = rolesByTask.get(t.id) ?? [];
     return {
       ...t,
+      mine: t.assignedTo === actor.id,
       roles: taskRolesList.map((r) => ({
         roleName: r.roleName,
         claimedBy: r.claimedBy,
@@ -3323,7 +3324,7 @@ export async function myTasks(actor: Actor) {
     waiting: decorated.filter((t) => t.isReview),
     review: managerReview
       .filter((t) => !ownIds.has(t.id))
-      .map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false })),
+      .map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false, mine: t.assignedTo === actor.id })),
   };
 }
 
@@ -3337,4 +3338,6 @@ export interface InboxRole {
 export type InboxTask = Awaited<ReturnType<typeof repo.openTasksForUser>>[number] & {
   roles: InboxRole[];
   claimable: boolean;
+  /** مستقیم به نامِ خودِ بیننده — آیتمِ 👤 ِ ردیفِ صندوق. */
+  mine: boolean;
 };

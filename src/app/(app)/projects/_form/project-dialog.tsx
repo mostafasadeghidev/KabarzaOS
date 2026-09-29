@@ -252,7 +252,7 @@ export function ProjectDialog({
                 {isEdit && (
                   <Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} size={56} />
                 )}
-                <div className="min-w-0 flex-1">
+                <div className="grid min-w-0 flex-1 gap-2">
                   <FilePicker
                     name="thumbnailFile"
                     accept="image/*"
@@ -261,6 +261,13 @@ export function ProjectDialog({
                     addLabel={tr("انتخابِ تصویر")}
                     emptyLabel={tr("تصویری انتخاب نشده")}
                   />
+                  {/* برداشتنِ تصویرِ فعلی — پیش از این فقط جایگزین‌کردن ممکن بود. */}
+                  {project?.thumbnailFileId && (
+                    <label className="flex items-center gap-2 text-xs">
+                      <Checkbox name="removeThumbnail" value="1" />
+                      {tr("حذفِ تصویرِ فعلی")}
+                    </label>
+                  )}
                 </div>
               </div>
             </div>
