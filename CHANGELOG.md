@@ -2,6 +2,27 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.92.0]
+
+### Added
+
+- **Team cards for office managers.** The member dashboard of an office manager shows five counts under their own cards: managed projects, staff, open team tasks, tasks in review and comment threads waiting for review, each linking to its tab in «تیمِ من». The same cards head the team page.
+- **«تیمِ من» follows the previous version's team pages.** The page has five tabs, and the tab is part of the address, so links from the dashboard and from a member's profile open the right one. Before, the page always opened on the members tab.
+  - **Members and hours:** a from/to date range next to «this week / this month / all», a table of everyone who logged time on the offices' projects (projects, hours, open tasks, details) with a bar chart, the staff cards (now with a project count) and the team availability matrix.
+  - **Projects:** status-group tabs with counts, the office, registration date, task count, progress and total time columns, paging with 10/25/50/100 rows, and «افزودن پروژه» for office managers.
+  - **Open tasks:** status tabs whose counts follow the other filters, a member-or-role filter, priority and status chips, the assigned person and roles, paging with a page-size choice, and the task dialog on the title. It lists open tasks, as the previous version did; a checkbox adds closed tasks and tasks in review.
+  - **Tasks in review:** live search, project link, assignment, status chip and the task dialog.
+  - **Comments needing review:** one row per open thread with its latest message, a link to the project's comments and a quick reply that posts into the thread.
+- **Member profile drill-downs.** The profile shows the member's picture. «پروژه‌ها» opens every project of the member in the managed offices, with status tabs, their roles, progress, hours and open tasks. «تسک باز» opens the task board filtered to them. Task titles on the profile open the task dialog.
+
+### Fixed
+
+- **Staff cards listed people from other offices.** Anyone who had once logged time on an office project appeared as managed staff. The cards now list the offices' own members. Others still appear in the hours table and can be opened from there.
+- **Comment review listed every message instead of every thread.** A thread with several open replies appeared several times, and a thread closed by its latest message could still appear. The list and its count now follow each thread's latest message and skip frozen projects.
+- **The member profile's open tasks included closed ones.** The list now shows only open tasks, matching its title and the count above it.
+- **The member profile's project count missed archived projects,** so it did not match the list behind it.
+- The team hours CSV now exports the on-screen hours table, with a project count.
+
 ## [1.91.0]
 
 ### Added

@@ -72,7 +72,9 @@ function MoneyStat({
   );
 }
 
-function MemberBlock({ data, unread, money }: { data: MemberSection; unread: number; money: MoneyLines }) {
+function MemberBlock({
+  data, unread, money, afterStats,
+}: { data: MemberSection; unread: number; money: MoneyLines; afterStats?: React.ReactNode }) {
   return (
     <>
       <div className="grid gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
@@ -82,6 +84,9 @@ function MemberBlock({ data, unread, money }: { data: MemberSection; unread: num
         <StatCard value={unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" />
         <MoneyStat lines={money} label={t('ماندهٔ دریافتیِ شما')} />
       </div>
+
+      {/* مدیرِ دفتر: کارتِ تیم درست زیرِ کارت‌های خودش (همان جای `team_overview_cards`). */}
+      {afterStats}
 
       {/* پورتِ «پروژه‌های باز شما» — فقط بازها؛ بخش وقتی خالی است پنهان می‌ماند. */}
       {data.rows.length > 0 && (
@@ -186,12 +191,16 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
   );
 }
 
-export function MemberDashboardView({ data, timezone = '' }: { data: MemberDashboard; timezone?: string }) {
+export function MemberDashboardView({
+  data, timezone = '', teamCards,
+}: { data: MemberDashboard; timezone?: string; teamCards?: React.ReactNode }) {
   return (
     <div className="grid gap-4 md:gap-6">
       {data.member && (
-        <MemberBlock data={data.member} unread={data.unread} money={data.money?.member ?? []} />
+        <MemberBlock data={data.member} unread={data.unread} money={data.money?.member ?? []} afterStats={teamCards} />
       )}
+      {/* کارفرمای بی‌نقشِ عضو که دفتری را اداره می‌کند — کارت همچنان دیده شود. */}
+      {!data.member && teamCards}
       {data.client && (
         <ClientBlock
           data={data.client}

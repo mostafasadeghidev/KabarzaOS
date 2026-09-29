@@ -15,6 +15,8 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { hasTeamScope, teamOverview } from '@/server/team/service';
+import { TeamOverviewCards } from '../team/overview-cards';
 
 /**
  * داشبورد.
@@ -85,14 +87,22 @@ export default async function DashboardPage({
       const isMember = actor.roles.includes('member');
       if (isClient || isMember) {
         // پورتِ داشبوردِ نسخهٔ قبلی: عضو **و** کارفرما هر دو بخش را می‌بینند اگر هر دو نقش را دارند.
-        const [own, session] = await Promise.all([
+        const [own, session, managesTeam] = await Promise.all([
           getMemberDashboard(actor),
           currentSession(),
+          hasTeamScope(actor),
         ]);
+        /**
+         * کارت‌های «تیمِ تحتِ مدیریتِ شما» — پورتِ `team_overview_cards`. ⚠️ فقط
+         * روی داشبوردِ عضو (`member_overview`)، همان‌جا که نسخهٔ قبلی می‌گذاشت.
+         */
+        const teamCards = managesTeam
+          ? <TeamOverviewCards counts={await teamOverview(actor)} withLink />
+          : null;
         return (
           <PageShell>
             <PageHeader title={t("سلام، {name}", { name: session?.name ?? '' })} />
-            <MemberDashboardView data={own} />
+            <MemberDashboardView data={own} teamCards={teamCards} />
           </PageShell>
         );
       }

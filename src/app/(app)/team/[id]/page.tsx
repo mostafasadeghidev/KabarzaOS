@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { currentActor } from '@/server/auth';
-import { teamMember } from '@/server/team/service';
+import { teamMember, teamMemberProjects } from '@/server/team/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { hoursLabel } from '@/domain/timelogs/timer';
 import { RANGE_LABELS, type RangeKey } from '@/domain/access/office-scope';
@@ -15,6 +15,9 @@ import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
 import { Progress } from '@/components/ui/progress';
+import { Thumb } from '@/components/thumb';
+import { ProjectBoard } from '../project-board';
+import { OpenTaskList } from './open-task-list';
 
 /**
  * پروفایلِ کاریِ یک عضو برای مدیرِ دفتر — پورتِ `view_team_member`: آمار،
@@ -26,7 +29,7 @@ export default async function TeamMemberPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ range?: string }>;
+  searchParams: Promise<{ range?: string; from?: string; to?: string; show?: string }>;
 }) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
@@ -42,6 +45,28 @@ export default async function TeamMemberPage({
 
   const userId = Number((await params).id);
   const query = await searchParams;
+
+  /**
+   * دریل‌داون‌های کارت‌های آمار — پورتِ `show=tasks` / `show=projects`.
+   * تسک‌ها همان بردِ کاملِ تیم است با فیلترِ همین نفر (نه فهرستِ جدا)؛
+   * پروژه‌ها بردِ پروژه در حالتِ «عضو».
+   */
+  if (query.show === 'tasks') redirect(`/team?tab=tasks&tassignee=u:${userId}`);
+  if (query.show === 'projects') {
+    try {
+      const drill = await teamMemberProjects(actor, userId);
+      const name = drill.person?.name ?? `#${userId}`;
+      return (
+        <PageShell>
+          <PageHeader back={{ href: `/team/${userId}`, label: name }} title={t('پروژه‌های {name}', { name })} />
+          <ProjectBoard mode="member" projects={drill.projects} empty={t('پروژه‌ای ندارد.')} />
+        </PageShell>
+      );
+    } catch (error) {
+      if (!(error instanceof ForbiddenError)) throw error;
+      // ادامه: همان پیغامِ «دسترسی ندارید» ِ پایین.
+    }
+  }
 
   let data;
   try {
@@ -61,11 +86,12 @@ export default async function TeamMemberPage({
   const total = data.logs.reduce((sum, l) => sum + l.minutes, 0);
   const today = new Date().toISOString().slice(0, 10);
   const stats = [
-    { label: 'پروژه‌ها', value: String(data.stats.projects), href: null },
+    // پورتِ افزونه: کارتِ «پروژه‌ها» به همهٔ پروژه‌های این نفر (هر وضعیتی) می‌رود.
+    { label: 'پروژه‌ها', value: String(data.stats.projects), href: `/team/${userId}?show=projects` },
     { label: 'در حال اجرا', value: String(data.stats.openProjects), href: null },
     { label: 'مجموع ساعت کاری', value: hoursLabel(data.stats.minutes), href: null },
     // پورتِ افزونه: کارتِ «تسک باز» به بردِ تسک‌های همین نفر می‌رود.
-    { label: 'تسک باز', value: String(data.stats.openTasks), href: `/team?tab=tasks&tassignee=${userId}` },
+    { label: 'تسک باز', value: String(data.stats.openTasks), href: `/team?tab=tasks&tassignee=u:${userId}` },
   ];
 
   return (
@@ -73,6 +99,9 @@ export default async function TeamMemberPage({
       <PageHeader
         back={{ href: '/team', label: t("تیمِ من") }}
         title={data.person?.name ?? `#${userId}`}
+        media={data.person && (
+          <Thumb id={data.person.id} title={data.person.name} fileId={data.person.avatarFileId} size={56} />
+        )}
         description={(
           <>
             {data.person?.roleNames.length ? data.person.roleNames.join('، ') : t('عضو')}
@@ -179,19 +208,7 @@ export default async function TeamMemberPage({
       )}
 
       <Section title={t("تسک‌های بازِ این عضو")}>
-        {data.openTasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("تسکِ بازی ندارد.")}</p>
-        ) : (
-          <ul className="grid gap-1">
-            {data.openTasks.map((task) => (
-              <li key={task.id} className="rounded-lg border bg-card px-3 py-2 text-sm">
-                {task.title}
-                <span className="ms-2 text-xs text-muted-foreground">{task.projectTitle}</span>
-                {task.dueDate && <span className="num ms-2 text-xs text-muted-foreground">{task.dueDate}</span>}
-              </li>
-            ))}
-          </ul>
-        )}
+        <OpenTaskList tasks={data.openTasks} />
       </Section>
     </PageShell>
   );

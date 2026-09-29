@@ -29,8 +29,9 @@ export async function GET(request: Request) {
   }
 
   const csv = csvDocument(
-    [t('عضو'), t('ایمیل'), t('دقیقه'), t('ساعت کاری')],
-    data.members.map((m) => [m.name, m.email, m.minutes, hoursLabel(m.minutes)]),
+    // ⚠️ همان جدولِ «ساعت کاری تیم در این بازه» ِ صفحه — هر کسی که روی پروژه‌های دفتر ساعت ثبت کرده.
+    [t('عضو'), t('ایمیل'), t('پروژه‌ها'), t('دقیقه'), t('ساعت کاری')],
+    data.hours.map((m) => [m.name, m.email, m.projects, m.minutes, hoursLabel(m.minutes)]),
   );
 
   return new Response(csv, {

@@ -1,24 +1,37 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import {
-  teamComments, teamMembers, teamProjects, teamTasks, teamTaskCount, taskFilterOptions, TEAM_PER_PAGE, teamReviewTasks,
+  taskFilterOptions, teamComments, teamMembers, teamOverview, teamProjects, teamReviewTasks, teamTasks,
 } from '@/server/team/service';
+import { canCreateProjects, getProjectFormOptions } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import type { RangeKey } from '@/domain/access/office-scope';
+import { parseAssignee, TEAM_TABS, type TeamTab } from '@/domain/team/boards';
 import { EmptyState } from '@/components/ui/empty-state';
-import { TeamView } from './team-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { TeamOverviewCards } from './overview-cards';
+import { TeamTabs } from './team-tabs';
+import { MembersPanel } from './members-panel';
+import { ProjectBoard } from './project-board';
+import { TaskBoard } from './task-board';
+import { CommentThreads, ReviewTasks } from './review-panel';
+import { ProjectDialog } from '../projects/_form/project-dialog';
 
-/** «تیمِ من» — نمای مدیرِ دفتر. عملیاتی، نه مالی. */
-export default async function TeamPage({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    range?: string; tstatus?: string; tassignee?: string;
-    tprio?: string; tdue?: string; tpage?: string;
-  }>;
-}) {
+type Params = {
+  tab?: string; range?: string; from?: string; to?: string;
+  tstatus?: string; tassignee?: string; tprio?: string; tdue?: string; tpage?: string; tper?: string; tall?: string;
+};
+
+/**
+ * «تیمِ من» — نمای مدیرِ دفتر: کارت‌های تیم بالا، و پنج تبِ همان صفحه‌های
+ * نسخهٔ قبلی (`view_office_report` و `view_team_*`). عملیاتی، نه مالی.
+ *
+ * ⚠️ تب در **آدرس** است (`?tab=`)، نه state: کارت‌های داشبورد و پروفایلِ عضو
+ * مستقیم به یک تب پیوند می‌دهند («تسک باز» → `?tab=tasks&tassignee=u:7`)، و
+ * با state صفحه همیشه روی «اعضا» باز می‌شد. هر تب فقط دادهٔ خودش را می‌خواند.
+ */
+export default async function TeamPage({ searchParams }: { searchParams: Promise<Params> }) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
    * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
@@ -32,61 +45,92 @@ export default async function TeamPage({
   if (!actor) redirect('/login');
 
   const params = await searchParams;
-
-  /**
-   * فیلترهای بردِ تسک از آدرس — همان `tstatus`/`tassignee`/`tprio`/`tdue` ِ
-   * نسخهٔ قبلی، با پیشوندِ `t` تا با فیلترِ بازهٔ اعضا (`range`) قاطی نشوند.
-   */
-  const perPage = 50;
-  const taskFilter = {
-    statusTagId: Number(params.tstatus) || null,
-    // ⚠️ `'0'` معتبر است و معنایش «بدونِ مسئول» — پس `Number(...) || null` غلط بود.
-    assigneeId: params.tassignee === '' || params.tassignee === undefined
-      ? null
-      : Number(params.tassignee),
-    priorityTagId: Number(params.tprio) || null,
-    due: params.tdue || null,
-    page: Number(params.tpage) || 1,
-    perPage,
-  };
+  const tab: TeamTab = (TEAM_TABS as readonly string[]).includes(params.tab ?? '')
+    ? params.tab as TeamTab
+    : 'members';
 
   try {
-    const [projects, tasks, taskTotal, taskOptions, comments, members, reviewTasks] = await Promise.all([
-      teamProjects(actor),
-      teamTasks(actor, taskFilter),
-      teamTaskCount(actor, taskFilter),
-      taskFilterOptions(actor),
-      teamComments(actor),
-      teamMembers(actor, params),
-      teamReviewTasks(actor),
-    ]);
+    const counts = await teamOverview(actor);
+
+    let body: React.ReactNode;
+    if (tab === 'projects') {
+      const [projects, mayCreate] = await Promise.all([teamProjects(actor), canCreateProjects(actor)]);
+      const form = mayCreate ? await getProjectFormOptions(actor) : null;
+      body = (
+        <ProjectBoard
+          mode="manage"
+          projects={projects}
+          empty={t('هنوز پروژه‌ای در دفاتر شما نیست.')}
+          action={form && (
+            <ProjectDialog
+              options={{
+                statuses: form.statuses.map((s) => ({ id: s.id, label: s.name })),
+                currencies: form.currencies.map((c) => ({ id: c.id, label: c.code })),
+                offices: form.offices.map((o) => ({ id: o.id, label: o.name })),
+                parents: form.parents.map((p) => ({ id: p.id, label: p.title })),
+                defaultCurrencyId: form.currencies.find((c) => c.isDefault)?.id ?? null,
+                roleTags: form.roleTags,
+                canUsePrivate: form.canUsePrivate,
+                officeRequired: form.officeRequired,
+                canEditMoney: form.canSetMoney,
+                today: new Date().toISOString().slice(0, 10),
+                bootstrap: {
+                  people: form.people.map((p) => ({ value: p.id, label: p.name })),
+                  clients: form.clientPeople.map((c) => ({ value: c.id, label: c.name })),
+                  memberRoles: form.memberRoles,
+                  roleTags: form.roleTags,
+                  priorities: form.priorities.map((p) => ({ id: p.id, label: p.name })),
+                  currencies: form.currencies.map((c) => ({ id: c.id, label: c.code })),
+                  defaultCurrencyId: form.currencies.find((c) => c.isDefault)?.id ?? null,
+                  hasQaLibrary: form.hasQaLibrary,
+                },
+              }}
+            />
+          )}
+        />
+      );
+    } else if (tab === 'tasks') {
+      const filter = {
+        statusTagId: Number(params.tstatus) || null,
+        assignee: parseAssignee(params.tassignee),
+        priorityTagId: Number(params.tprio) || null,
+        due: params.tdue || null,
+        openOnly: params.tall !== '1',
+        page: Number(params.tpage) || 1,
+        perPage: Number(params.tper) || undefined,
+      };
+      const [board, options] = await Promise.all([teamTasks(actor, filter), taskFilterOptions(actor)]);
+      body = <TaskBoard board={board} options={options} />;
+    } else if (tab === 'review') {
+      body = <ReviewTasks tasks={await teamReviewTasks(actor)} />;
+    } else if (tab === 'comments') {
+      body = <CommentThreads threads={await teamComments(actor)} />;
+    } else {
+      const data = await teamMembers(actor, params);
+      body = (
+        <MembersPanel
+          data={{
+            members: data.members,
+            hours: data.hours,
+            matrix: data.matrix,
+            dayLabels: data.dayLabels,
+            range: (data.period.range ?? 'week') as RangeKey,
+            from: data.period.from ?? '',
+            to: data.period.to ?? '',
+          }}
+        />
+      );
+    }
 
     return (
       <PageShell>
         <PageHeader
           title={t("تیمِ من")}
-          description={(
-            <>{t("پروژه‌ها، تسک‌ها و ساعتِ کاریِ دفاترِ تحتِ مدیریتِ شما.")}</>
-          )}
+          description={t("پروژه‌ها، تسک‌ها و ساعتِ کاریِ دفاترِ تحتِ مدیریتِ شما.")}
         />
-
-        <TeamView
-          data={{
-            projects,
-            tasks,
-            reviewTasks,
-            comments,
-            taskOptions,
-            taskPaging: {
-              page: taskFilter.page,
-              perPage,
-              total: taskTotal,
-              totalPages: Math.max(1, Math.ceil(taskTotal / perPage)),
-            },
-            members: members.members,
-            range: (members.period.range ?? 'week') as RangeKey,
-          }}
-        />
+        <TeamOverviewCards counts={counts} />
+        <TeamTabs tab={tab} />
+        {body}
       </PageShell>
     );
   } catch (error) {
