@@ -201,8 +201,14 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
 }
 
 export function MemberDashboardView({
-  data, timezone = '', teamCards,
-}: { data: MemberDashboard; timezone?: string; teamCards?: React.ReactNode }) {
+  data, timezone = '', teamCards, timeLog,
+}: {
+  data: MemberDashboard;
+  timezone?: string;
+  teamCards?: React.ReactNode;
+  /** کارتِ «ثبتِ ساعت» — زیرِ مناقصه‌ها، همان جای نسخهٔ قبلی. */
+  timeLog?: React.ReactNode;
+}) {
   return (
     <div className="grid gap-4 md:gap-6">
       {data.member && (
@@ -253,6 +259,8 @@ export function MemberDashboardView({
           </Table>
         </Panel>
       )}
+
+      {timeLog}
 
       {/* پورتِ «جلسات این هفته» — برای هر نقش؛ وقتی خالی است پنهان می‌ماند. */}
       {data.meetings.length > 0 && (

@@ -11,7 +11,7 @@ import {
   type QaFormData, type QaRow, type QaTaskRow,
 } from './side-tabs';
 import {
-  ManageTab, type HourRow, type LightenSummaryView, type LogRow, type MatrixRowView,
+  ManageTab, type HourRow, type ImpactCounts, type LightenSummaryView, type LogRow, type MatrixRowView,
 } from './manage-tab';
 import { FilesTab, type FileRow } from './files-tab';
 import { MyMoneyTab, type MyMoneyData } from './my-money-tab';
@@ -80,6 +80,7 @@ export interface ProjectTabsData {
   hours: HourRow[];
   /** سه‌حالتیِ حذف — R-PROJ-01. */
   deleteState: 'clean' | 'confirm' | 'locked';
+  impactCounts: ImpactCounts | null;
   /** حذفِ پروژه — فقط مالک. */
   canDelete: boolean;
   /** سبک‌سازی — مجوزِ سراسریِ پروژه‌ها. */
@@ -309,6 +310,7 @@ export function ProjectTabs({
           weekStart={data.weekStart}
           canManage={data.canManage}
           deleteState={data.deleteState}
+          impactCounts={data.impactCounts}
           canDelete={data.canDelete}
           canLighten={data.canLighten}
           lightenSummary={data.lightenSummary}

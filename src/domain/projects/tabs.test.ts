@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { matchesTab, buildTabs, activeTab, relationCounts, type TabbableProject } from './tabs';
+import {
+  matchesTab, buildTabs, activeTab, relationCounts, otherHitsTarget, bidderTab, type TabbableProject,
+} from './tabs';
 
 const project = (over: Partial<TabbableProject> = {}): TabbableProject => ({
   statusGroup: 'in_progress', isTender: false, isArchived: false,
@@ -120,5 +122,41 @@ describe('رابطهٔ بیننده با پروژه', () => {
 
   it('رابطهٔ بی‌پروژه دیده نمی‌شود', () => {
     expect(relationCounts([{ relations: ['client'] }])).toEqual([{ key: 'client', count: 1 }]);
+  });
+});
+
+describe('پرش به نتیجهٔ جستجو در تبِ دیگر', () => {
+  it('بدونِ نتیجه، مقصدی نیست', () => {
+    expect(otherHitsTarget('in_progress', [])).toBeNull();
+  });
+
+  it('نتیجهٔ بایگانی‌نشده → «همه»', () => {
+    expect(otherHitsTarget('in_progress', [project({ statusGroup: 'completed' })])).toBe('all');
+  });
+
+  it('فقط بایگانی‌شده → «بایگانی»', () => {
+    expect(otherHitsTarget('in_progress', [project({ isArchived: true })])).toBe('archived');
+  });
+
+  it('از خودِ «همه» فقط بایگانی می‌ماند', () => {
+    expect(otherHitsTarget('all', [project({ isArchived: true })])).toBe('archived');
+  });
+});
+
+describe('تبِ نمای مناقصه‌گر', () => {
+  const all = ['tender', 'about', 'tasks', 'files'] as const;
+
+  it('لینکِ «پیشنهادِ من» ِ داشبورد به تندر می‌رسد', () => {
+    expect(bidderTab('my-bid', all)).toBe('tender');
+  });
+
+  it('تبِ موجود همان می‌ماند', () => {
+    expect(bidderTab('files', all)).toBe('files');
+  });
+
+  it('تبِ خالی/ناموجود یا بی‌پارامتر → تندر', () => {
+    expect(bidderTab('files', ['tender', 'about'])).toBe('tender');
+    expect(bidderTab('comments', all)).toBe('tender');
+    expect(bidderTab(undefined, all)).toBe('tender');
   });
 });

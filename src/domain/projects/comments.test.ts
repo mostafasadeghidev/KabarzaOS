@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { closedStatus, isOpen, statusLabel, toggleStatus } from './comments';
+import { closedStatus, commentAuthor, isOpen, statusLabel, toggleStatus } from './comments';
 
 /**
  * ⚠️ نوعِ «بازبینی» برداشته شد (مهاجرتِ 0026) — یک واژگان برای هر رشته.
@@ -39,5 +39,28 @@ describe('تیکِ جابه‌جاکننده', () => {
     expect(isOpen('needs_review')).toBe(true);
     expect(isOpen('done')).toBe(false);
     expect(isOpen('resolved')).toBe(false);
+  });
+});
+
+describe('نوعِ نویسندهٔ کامنت (رنگِ قاب)', () => {
+  const members = [
+    { userId: 1, roleColor: null },
+    { userId: 1, roleColor: '#6c5ce7' },
+    { userId: 2, roleColor: null },
+  ];
+  const clients = new Set([2, 3]);
+
+  it('عضو با نخستین رنگِ نقشش', () => {
+    expect(commentAuthor(1, members, clients)).toEqual({ kind: 'member', color: '#6c5ce7' });
+  });
+
+  it('عضوی که کارفرما هم هست رنگِ عضو می‌گیرد', () => {
+    expect(commentAuthor(2, members, clients)).toEqual({ kind: 'member', color: null });
+  });
+
+  it('کارفرما و کادر', () => {
+    expect(commentAuthor(3, members, clients).kind).toBe('client');
+    expect(commentAuthor(9, members, clients).kind).toBe('staff');
+    expect(commentAuthor(null, members, clients).kind).toBe('staff');
   });
 });

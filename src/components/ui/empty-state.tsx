@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils';
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
+import {
+  Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle,
+} from '@/components/ui/empty';
 
 /**
  * حالتِ خالی — به‌جای صفحهٔ سفید، توضیحِ روشن.
@@ -16,12 +18,15 @@ export function EmptyState({
   description,
   icon,
   className,
+  children,
 }: {
   title: string;
   description?: string;
   /** آیکونِ اختیاری — در قابِ گردِ `EmptyMedia`. */
   icon?: React.ReactNode;
   className?: string;
+  /** کنشِ اختیاری زیرِ متن (دکمه، پیوند) — در `EmptyContent`. */
+  children?: React.ReactNode;
 }) {
   return (
     <Empty className={cn('rounded-xl border bg-card p-6 md:p-10', className)}>
@@ -30,6 +35,7 @@ export function EmptyState({
         <EmptyTitle className="text-base">{title}</EmptyTitle>
         {description && <EmptyDescription>{description}</EmptyDescription>}
       </EmptyHeader>
+      {children && <EmptyContent>{children}</EmptyContent>}
     </Empty>
   );
 }

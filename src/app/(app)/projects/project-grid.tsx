@@ -3,9 +3,10 @@
 import { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
-  buildTabs, matchesTab, RELATION_LABELS, relationCounts, type RelationKey, type TabInfo, type TabKey,
+  buildTabs, matchesTab, otherHitsTarget, RELATION_LABELS, relationCounts, type RelationKey, type TabInfo, type TabKey,
 } from '@/domain/projects/tabs';
 import type { VisibleProjectRow } from '@/server/projects/service';
 import { ProjectCard } from './project-card';
@@ -82,11 +83,12 @@ export function ProjectGrid({
   const pager = useCardPage(visible);
 
   /** نتیجه‌های جستجو در تب‌های دیگر — تا کاربر گم نشود. */
-  const otherHits = useMemo(() => {
+  const otherMatches = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return 0;
-    return scoped.filter((p) => !matchesTab(tab, p) && p.title.toLowerCase().includes(q)).length;
+    if (!q) return [];
+    return scoped.filter((p) => !matchesTab(tab, p) && p.title.toLowerCase().includes(q));
   }, [scoped, tab, query]);
+  const otherTarget = otherHitsTarget(tab, otherMatches);
 
   const selectRelation = (key: RelationKey | 'all') => {
     setRelation(key);
@@ -159,12 +161,11 @@ export function ProjectGrid({
       {visible.length === 0 ? (
         <EmptyState
           title={query ? tr('نتیجه‌ای نیست') : tr('پروژه‌ای در این دسته نیست')}
-          description={
-            otherHits > 0
-              ? tr('{n} نتیجه در تب‌های دیگر پیدا شد.', { n: otherHits })
-              : undefined
-          }
-        />
+        >
+          {otherTarget && (
+            <OtherHits matches={otherMatches} onJump={() => selectTab(otherTarget)} />
+          )}
+        </EmptyState>
       ) : (
         <>
           {/*
@@ -185,14 +186,34 @@ export function ProjectGrid({
             ))}
           </div>
           <CardPager {...pager} />
-          {otherHits > 0 && (
-            <p className="text-xs text-muted-foreground">
-              <span className="num">{otherHits}</span>
-              {tr("نتیجهٔ دیگر در تب‌های دیگر هست.")}
-            </p>
+          {otherTarget && (
+            <OtherHits matches={otherMatches} onJump={() => selectTab(otherTarget)} />
           )}
         </>
       )}
     </>
+  );
+}
+
+/** پیش‌نمایشِ تا ۸ نام + دکمهٔ پرش — کاربر می‌بیند پروژه‌اش آنجاست، بعد می‌رود. */
+const OTHER_PREVIEW = 8;
+
+function OtherHits({ matches, onJump }: {
+  matches: VisibleProjectRow[];
+  onJump: () => void;
+}) {
+  const tr = useT();
+  const names = matches.slice(0, OTHER_PREVIEW).map((p) => p.title);
+  const rest = matches.length - names.length;
+  return (
+    <div className="flex flex-col items-center gap-2 text-center">
+      <Button type="button" size="sm" variant="outline" onClick={onJump}>
+        {tr('نمایش {n} نتیجه در تب‌های دیگر', { n: matches.length })}
+      </Button>
+      <p className="text-xs text-muted-foreground">
+        {names.join('، ')}
+        {rest > 0 && ` ${tr('و {n} مورد دیگر', { n: rest })}`}
+      </p>
+    </div>
   );
 }

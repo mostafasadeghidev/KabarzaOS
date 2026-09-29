@@ -36,6 +36,7 @@ import { BankDirectory, type BankRow } from './bank-directory';
 import { useConfirm } from '@/components/ui/confirm';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { MultiSelect } from '@/components/ui/combobox';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -263,7 +264,16 @@ export function PayoutsView({
   const [expenseQuery, setExpenseQuery] = useState('');
   // پیوندِ «هزینه‌ها» ی تبِ طرف‌حساب‌ها با `?vendor=` می‌آید (پورتِ `exp_url`).
   const searchParams = useSearchParams();
-  const [expenseVendor, setExpenseVendor] = useState(() => searchParams.get('vendor') ?? '');
+  /**
+   * چند طرف‌حساب با هم — پورتِ فیلترِ چندتاییِ نسخهٔ قبلی. ⚠️ با شناسه، نه نام:
+   * دو طرف‌حسابِ هم‌نام دیگر با هم قاطی نمی‌شوند. `?vendor=` نام است و یک‌بار
+   * به شناسه برگردانده می‌شود.
+   */
+  const [expenseVendors, setExpenseVendors] = useState<number[]>(() => {
+    const name = searchParams.get('vendor');
+    const hit = name ? vendors.find((v) => v.name === name) : undefined;
+    return hit ? [hit.id] : [];
+  });
   const [expenseKind, setExpenseKind] = useState('');
   // پورتِ فیلترِ زندهٔ صفحهٔ هزینه‌ها: دسته، حساب، بازهٔ سررسید.
   const [expenseCategory, setExpenseCategory] = useState('');
@@ -271,7 +281,7 @@ export function PayoutsView({
   const [dueFrom, setDueFrom] = useState('');
   const [dueTo, setDueTo] = useState('');
   const clearExpenseFilters = () => {
-    setExpenseQuery(''); setExpenseVendor(''); setExpenseKind('');
+    setExpenseQuery(''); setExpenseVendors([]); setExpenseKind('');
     setExpenseCategory(''); setExpenseAccount(''); setDueFrom(''); setDueTo('');
   };
 
@@ -280,8 +290,7 @@ export function PayoutsView({
     // ⚠️ غیرفعال‌ها هم دیدنی‌اند — هزینهٔ یک‌بارِ پرداخت‌شده پیش از این برای همیشه گم می‌شد.
     if (expenseStatus === 'active' && !x.isActive) return false;
     if (expenseStatus === 'inactive' && x.isActive) return false;
-    // ⚠️ نامِ طرف‌حساب ملاک است، نه شناسه: ردیف فقط نام را حمل می‌کند.
-    if (expenseVendor && (x.vendorName ?? '') !== expenseVendor) return false;
+    if (expenseVendors.length > 0 && (x.vendorId === null || !expenseVendors.includes(x.vendorId))) return false;
     if (expenseKind && x.kind !== expenseKind) return false;
     if (expenseCategory && String(x.categoryTagId ?? '') !== expenseCategory) return false;
     if (expenseAccount && String(x.accountId ?? '') !== expenseAccount) return false;
@@ -304,15 +313,17 @@ export function PayoutsView({
   const eurMissing = visibleRecurring.filter((r) => r.amountEur === null).length;
   // پورتِ `by_vendor`: جمعِ هزینه‌های فعال به‌ازای هر طرف‌حساب و ارز؛ کلیک = فیلتر.
   const vendorSummary = (() => {
-    const m = new Map<string, { vendor: string; code: string; total: number }>();
+    const m = new Map<string, { vendor: string; vendorId: number | null; code: string; total: number }>();
     for (const r of recurring) {
       if (!r.isActive || !r.vendorName) continue;
       const key = `${r.vendorName}|${r.currencyCode ?? ''}`;
-      const cur = m.get(key) ?? { vendor: r.vendorName, code: r.currencyCode ?? '', total: 0 };
+      const cur = m.get(key) ?? { vendor: r.vendorName, vendorId: r.vendorId, code: r.currencyCode ?? '', total: 0 };
       cur.total += Number(r.amount);
       m.set(key, cur);
     }
-    return [...m.entries()].map(([key, v]) => ({ key, vendor: v.vendor, code: v.code, total: v.total.toFixed(2) }));
+    return [...m.entries()].map(([key, v]) => ({
+      key, vendor: v.vendor, vendorId: v.vendorId, code: v.code, total: v.total.toFixed(2),
+    }));
   })();
 
   return (
@@ -537,16 +548,15 @@ export function PayoutsView({
               onChange={(e) => setExpenseQuery(e.target.value)}
               placeholder={tr('جستجوی عنوان، طرف‌حساب یا دسته…')}
             />
-            <SearchableSelect
-              size="sm"
-              containerClassName="w-full sm:w-44"
-              value={expenseVendor}
-              onValueChange={(v) => setExpenseVendor(v)}
-              aria-label={tr('طرف‌حساب')}
-            >
-              <NativeSelectOption value="">{tr('همهٔ طرف‌حساب‌ها')}</NativeSelectOption>
-              {vendors.map((v) => <NativeSelectOption key={v.id} value={v.name}>{v.name}</NativeSelectOption>)}
-            </SearchableSelect>
+            <div className="w-full sm:w-56" aria-label={tr('طرف‌حساب')}>
+              <MultiSelect
+                size="sm"
+                options={vendors.map((v) => ({ value: v.id, label: v.name }))}
+                selected={expenseVendors}
+                onChange={setExpenseVendors}
+                placeholder={tr('همهٔ طرف‌حساب‌ها')}
+              />
+            </div>
             <NativeSelect
               size="sm"
               containerClassName="w-full sm:w-44"
@@ -605,9 +615,15 @@ export function PayoutsView({
               <Button
                 key={v.key}
                 type="button"
-                variant="outline"
+                variant={v.vendorId !== null && expenseVendors.includes(v.vendorId) ? 'secondary' : 'outline'}
                 size="xs"
-                onClick={() => setExpenseVendor(v.vendor)}
+                // کلیک طرف‌حساب را به انتخاب‌ها می‌افزاید/برمی‌دارد — چند چیپ با هم.
+                onClick={() => {
+                  const id = v.vendorId;
+                  if (id === null) return;
+                  setExpenseVendors((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+                }}
+                aria-pressed={v.vendorId !== null && expenseVendors.includes(v.vendorId)}
                 className="rounded-full font-normal"
                 title={tr('فیلتر بر اساسِ طرف‌حساب')}
               >

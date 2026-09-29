@@ -92,6 +92,76 @@ function ProjectSelect({
 }
 
 /**
+ * فرمِ «شروعِ تایمر» — جدا تا داشبوردِ عضو هم همین را بگذارد (پورتِ
+ * `time_logging_section()` که نسخهٔ قبلی روی داشبورد هم رندر می‌کرد).
+ */
+export function StartTimerForm({ projects, canLogGeneral }: {
+  projects: HoursData['projects'];
+  canLogGeneral: boolean;
+}) {
+  const t = useT();
+  const [state, start] = useActionState(startTimerAction, {});
+  useActionToast(state);
+  return (
+    <form action={start} className="flex flex-wrap items-end gap-2">
+      <Field className="flex-1">
+        <FieldLabel htmlFor="start-project">{t("پروژه")}</FieldLabel>
+        <ProjectSelect projects={projects} id="start-project" allowGeneral={canLogGeneral} />
+      </Field>
+      <Submit>
+        <Play className="size-3.5" />
+        {t("شروع")}
+      </Submit>
+    </form>
+  );
+}
+
+/** فرمِ «ثبتِ دستی» — همان جداسازیِ بالا. */
+export function ManualLogForm({ projects, canLogGeneral, today }: {
+  projects: HoursData['projects'];
+  canLogGeneral: boolean;
+  today: string;
+}) {
+  const t = useT();
+  const [state, log] = useActionState(logHoursAction, {});
+  useActionToast(state);
+  return (
+    <form action={log} className="grid gap-3">
+      <div className="grid gap-2 @xl/main:grid-cols-4">
+        <Field className="@xl/main:col-span-2">
+          <FieldLabel htmlFor="log-project">{t("پروژه")}</FieldLabel>
+          <ProjectSelect projects={projects} id="log-project" allowGeneral={canLogGeneral} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="log-date">{t("تاریخ")}</FieldLabel>
+          <DatePicker id="log-date" name="logDate" defaultValue={today} required />
+        </Field>
+        <div className="flex items-end gap-2">
+          <Field>
+            <FieldLabel htmlFor="log-h">{t("ساعت")}</FieldLabel>
+            <Input id="log-h" name="hours" type="number" min={0} className="num w-16" defaultValue={0} />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="log-m">{t("دقیقه")}</FieldLabel>
+            <Input id="log-m" name="minutes" type="number" min={0} max={59} className="num w-16" defaultValue={0} />
+          </Field>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-end gap-2">
+        <Field className="flex-1">
+          <FieldLabel htmlFor="log-desc">{t("توضیح")}</FieldLabel>
+          <Input id="log-desc" name="description" />
+        </Field>
+        <Submit>{t("ثبت")}</Submit>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {t("ثبتِ همان روز و همان پروژه با ثبتِ قبلی ادغام می‌شود، نه ردیفِ تازه.")}
+      </p>
+    </form>
+  );
+}
+
+/**
  * تایمرِ زنده — عددِ روی صفحه هر دقیقه جلو می‌رود.
  * ⚠️ فقط نمایش است؛ مدتِ واقعی را سرور از لحظهٔ شروع حساب می‌کند، پس بستنِ
  * تب چیزی را از بین نمی‌برد.
@@ -116,14 +186,10 @@ export function HoursView({ data }: { data: HoursData }) {
   const tr = useT();
   const ask = useConfirm();
   const t = useT();
-  const [startState, start] = useActionState(startTimerAction, {});
-  useActionToast(startState);
   const [stopState, stop] = useActionState(stopTimerAction, {});
   useActionToast(stopState);
   const [confirmState, confirm] = useActionState(confirmPendingAction, {});
   useActionToast(confirmState);
-  const [logState, log] = useActionState(logHoursAction, {});
-  useActionToast(logState);
   const [editing, setEditing] = useState<LogRow | null>(null);
   const [editState, edit] = useActionState<HoursState, FormData>(async (prev, form) => {
     const result = await updateLogAction(prev, form);
@@ -206,16 +272,7 @@ export function HoursView({ data }: { data: HoursData }) {
               </div>
             </form>
           ) : (
-            <form action={start} className="flex flex-wrap items-end gap-2">
-              <Field className="flex-1">
-                <FieldLabel htmlFor="start-project">{t("پروژه")}</FieldLabel>
-                <ProjectSelect projects={data.projects} id="start-project" allowGeneral={data.canLogGeneral} />
-              </Field>
-              <Submit>
-                <Play className="size-3.5" />
-                {tr("شروع")}
-              </Submit>
-            </form>
+            <StartTimerForm projects={data.projects} canLogGeneral={data.canLogGeneral} />
           )}
         </Panel>
       )}
@@ -223,38 +280,7 @@ export function HoursView({ data }: { data: HoursData }) {
       {/* ── ثبتِ دستی ── */}
       {canLogSomething ? (
         <Panel title={t("ثبتِ دستی")}>
-          <form action={log} className="grid gap-3">
-            <div className="grid gap-2 @xl/main:grid-cols-4">
-              <Field className="@xl/main:col-span-2">
-                <FieldLabel htmlFor="log-project">{t("پروژه")}</FieldLabel>
-                <ProjectSelect projects={data.projects} id="log-project" allowGeneral={data.canLogGeneral} />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="log-date">{t("تاریخ")}</FieldLabel>
-                <DatePicker id="log-date" name="logDate" defaultValue={data.today} required />
-              </Field>
-              <div className="flex items-end gap-2">
-                <Field>
-                  <FieldLabel htmlFor="log-h">{t("ساعت")}</FieldLabel>
-                  <Input id="log-h" name="hours" type="number" min={0} className="num w-16" defaultValue={0} />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="log-m">{t("دقیقه")}</FieldLabel>
-                  <Input id="log-m" name="minutes" type="number" min={0} max={59} className="num w-16" defaultValue={0} />
-                </Field>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-end gap-2">
-              <Field className="flex-1">
-                <FieldLabel htmlFor="log-desc">{t("توضیح")}</FieldLabel>
-                <Input id="log-desc" name="description" />
-              </Field>
-              <Submit>{t("ثبت")}</Submit>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {tr("ثبتِ همان روز و همان پروژه با ثبتِ قبلی ادغام می‌شود، نه ردیفِ تازه.")}
-            </p>
-          </form>
+          <ManualLogForm projects={data.projects} canLogGeneral={data.canLogGeneral} today={data.today} />
         </Panel>
       ) : (
         // پورتِ افزونه: بدونِ پروژهٔ باز و بدونِ مجوزِ ساعتِ عمومی، فرمی نیست.

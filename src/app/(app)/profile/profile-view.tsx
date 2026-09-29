@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useMemo, useState, useTransition } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Bell, Building2, CreditCard, Clock, KeyRound, Send, Lock, UserRound } from 'lucide-react';
 import { Thumb } from '@/components/thumb';
@@ -119,6 +119,21 @@ export function ProfileView({ data }: { data: ProfileData }) {
   useActionToast(accountState);
   const [avatarState, setAvatarState] = useState<ProfileState>({});
   useActionToast(avatarState);
+  /**
+   * پیش‌نمایشِ فوریِ تصویرِ انتخاب‌شده، پیش از ذخیره — پورتِ FileReader ِ نسخهٔ
+   * قبلی. با `createObjectURL` (بی‌خواندنِ کلِ فایل در حافظه) و آزادسازیِ نشانی
+   * در هر تعویض، تا حافظه نشت نکند.
+   */
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarForm = useRef<HTMLFormElement>(null);
+  useEffect(() => () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview); }, [avatarPreview]);
+  // ذخیره شد → تصویرِ واقعی از سرور می‌آید؛ پیش‌نمایش و فایلِ انتخاب‌شده پاک شوند.
+  useEffect(() => {
+    if (avatarState.message) {
+      setAvatarPreview(null);
+      avatarForm.current?.reset();
+    }
+  }, [avatarState]);
   const [pwState, changePw] = useActionState(changePasswordAction, {} as ProfileState);
   useActionToast(pwState);
   const [notifyState, saveNotify] = useActionState(saveNotifyAction, {} as ProfileState);
@@ -177,8 +192,18 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
           <Panel title={tr("تصویر پروفایل")}>
             <div className="flex flex-wrap items-end gap-3">
-              <Thumb id={data.id} title={data.name} fileId={data.avatarFileId} size={56} className="rounded-full" />
+              {avatarPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarPreview}
+                  alt={tr("پیش‌نمایش")}
+                  className="size-14 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
+                />
+              ) : (
+                <Thumb id={data.id} title={data.name} fileId={data.avatarFileId} size={56} className="rounded-full" />
+              )}
               <form
+                ref={avatarForm}
                 className="grid flex-1 gap-1.5"
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -187,8 +212,16 @@ export function ProfileView({ data }: { data: ProfileData }) {
                 }}
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <FileInput id="acc-avatar" name="avatar" accept="image/jpeg,image/png,image/gif,image/webp" aria-label={tr("تصویر پروفایل")} />
-                  <Button type="submit" size="sm" variant="outline" disabled={pending}>{tr("ذخیره تصویر")}</Button>
+                  <FileInput
+                    id="acc-avatar" name="avatar" accept="image/jpeg,image/png,image/gif,image/webp"
+                    aria-label={tr("تصویر پروفایل")}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      // فقط تصویر پیش‌نمایش دارد؛ بقیه را خودِ سرور رد می‌کند.
+                      setAvatarPreview(file && file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+                    }}
+                  />
+                  <Button type="submit" size="sm" variant="outline" disabled={pending || !avatarPreview}>{tr("ذخیره تصویر")}</Button>
                   {data.avatarFileId && (
                     <Button
                       type="button" size="sm" variant="ghost" disabled={pending}

@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Archive, ArchiveRestore, CircleAlert, Trash2, TreePalm, TriangleAlert, X } from 'lucide-react';
+import { Archive, ArchiveRestore, CircleAlert, CircleCheck, Trash2, TreePalm, TriangleAlert, X } from 'lucide-react';
 import {
   deleteProjectAction, lightenAction, setArchivedAction, type DeleteActionState,
 } from '../_form/tab-actions';
@@ -229,6 +229,65 @@ function LogDetail({ logs, weekStart }: { logs: LogRow[]; weekStart: number }) {
             </p>
           )}
         </div>
+      )}
+    </Panel>
+  );
+}
+
+/** شمارش‌های اثرِ پروژه — همان‌هایی که تصمیمِ حذف رویشان گرفته می‌شود. */
+export interface ImpactCounts {
+  ledgerRows: number;
+  paymentRows: number;
+  timelogRows: number;
+  openRequests: number;
+}
+
+/**
+ * «وضعیت پروژه» در بالای تبِ مدیریت — پورتِ `kteam-manage-stats` + یادداشتِ
+ * حالت. مدیر پیش از رسیدن به جعبهٔ حذف (تهِ تب) می‌بیند پروژه چقدر دادهٔ
+ * مالی/کاری دارد و حذفش قفل است یا نه.
+ */
+function ImpactPanel({ counts, state, totalMinutes }: {
+  counts: ImpactCounts;
+  state: 'clean' | 'confirm' | 'locked';
+  totalMinutes: number;
+}) {
+  const t = useT();
+  const stats: Array<[string, string]> = [
+    [t('تراکنش‌های مالی'), String(counts.ledgerRows)],
+    [t('پرداخت‌های ثبت‌شده'), String(counts.paymentRows)],
+    [t('ساعت کاری'), `${counts.timelogRows} · ${hhmm(totalMinutes)}`],
+  ];
+  if (counts.openRequests > 0) stats.push([t('درخواست پرداختِ باز'), String(counts.openRequests)]);
+
+  return (
+    <Panel title={t('وضعیت پروژه')}>
+      <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {stats.map(([label, value]) => (
+          <div key={label} className="rounded-lg border bg-card px-3 py-2">
+            <dt className="text-xs text-muted-foreground">{label}</dt>
+            <dd className="num text-base font-semibold">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      {state === 'locked' ? (
+        <Alert variant="destructive">
+          <CircleAlert />
+          <AlertDescription>
+            <strong>{t('این پروژه پرداختِ ناقص (ماندهٔ باز) دارد.')}</strong>{' '}
+            {t('تا وقتی ماندهٔ کارفرما/عضو تسویه نشود، حذف تحت هیچ شرایطی ممکن نیست.')}
+          </AlertDescription>
+        </Alert>
+      ) : state === 'confirm' ? (
+        <Alert variant="warning">
+          <TriangleAlert />
+          <AlertDescription>{t('این پروژه داده‌ی مالی/کاری دارد؛ حذف فقط با تأیید صریح ممکن است.')}</AlertDescription>
+        </Alert>
+      ) : (
+        <Alert>
+          <CircleCheck />
+          <AlertDescription>{t('این پروژه داده‌ی مالی یا ساعت کاری ندارد و آزادانه قابل حذف است.')}</AlertDescription>
+        </Alert>
       )}
     </Panel>
   );
@@ -505,6 +564,7 @@ export function ManageTab({
   hours,
   canManage,
   deleteState,
+  impactCounts = null,
   canDelete = false,
   canLighten = false,
   lightenSummary,
@@ -519,6 +579,7 @@ export function ManageTab({
   hours: HourRow[];
   canManage: boolean;
   deleteState: 'clean' | 'confirm' | 'locked';
+  impactCounts?: ImpactCounts | null;
   canDelete?: boolean;
   canLighten?: boolean;
   lightenSummary: LightenSummaryView | null;
@@ -545,7 +606,10 @@ export function ManageTab({
     // ⚠️ همهٔ پنل‌ها هم‌عرض‌اند: پیش از این ماتریس ۵xl بود و بقیه ۲xl، و تب دو لبهٔ
     // ناهمسان داشت. عرض را خودِ تب (`TabPanel`) تعیین می‌کند، مثلِ بقیهٔ تب‌ها.
     <div className="grid grid-cols-1 gap-4">
-      {/* ترتیبِ کارت‌ها: در دسترس بودن ← ساعت ← ثبت‌ها ← بایگانی ← سبک‌سازی ← حذف. */}
+      {/* ترتیبِ کارت‌ها: وضعیت ← در دسترس بودن ← ساعت ← ثبت‌ها ← بایگانی ← سبک‌سازی ← حذف. */}
+      {canManage && impactCounts && (
+        <ImpactPanel counts={impactCounts} state={deleteState} totalMinutes={totalMinutes} />
+      )}
       {canManage && (
         <Panel title={t("در دسترس بودنِ اعضای پروژه")}>
           <TeamMatrix rows={matrix} dayLabels={dayLabels} frame={false} />

@@ -2,6 +2,26 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.100.0]
+
+### Added
+
+- **The project's manage tab opens with a «project status» summary:** the number of ledger rows, recorded payments, work-hour entries (with the total) and open payment requests, followed by what that means for deletion — locked while a client or member balance is open, confirmation needed when the project has financial or work data, or free to delete. Before, the state was only visible inside the delete box at the bottom of the tab.
+- **Project search points to results on other tabs.** When the query matches projects outside the current tab, a «show N results on other tabs» button switches to «all» (or «archived» when every match is archived), with up to eight of the matching names listed under it.
+- **The member dashboard has a time-logging card:** start a timer or log hours by hand without leaving the dashboard. It hides while a timer is running or waiting for confirmation, since the timer bar at the top already handles that.
+- **The bidder view is split into tabs** — tender, description, tasks and files, each shown only when it has content — and `?tab=` opens a tab directly. The dashboard's «my bid» link lands on the tender tab.
+- **Recurring expenses can be filtered by several vendors at once.** The vendor totals above the list toggle a vendor in or out of the filter.
+- **Videos in a project's files play inline** from a play button, through the same access-checked route with range support.
+- **The profile picture shows a preview as soon as a file is picked,** before it is saved.
+- **The daily report can be sent to Discord alone,** next to «send now», which sends to every enabled destination.
+- **The new-project form has a «tender bids» tab** once the project is marked as a tender, explaining where bids will appear.
+
+### Changed
+
+- **Comments are tinted by who wrote them:** a project member's comment takes their role colour, a client's comment a fixed teal, and staff comments stay neutral.
+- **Task cards carry a light tint of their priority colour** in both the list and the board.
+- **Links to project files and external links carry `nofollow`.**
+
 ## [1.99.0]
 
 ### Fixed

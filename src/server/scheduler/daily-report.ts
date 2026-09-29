@@ -195,10 +195,16 @@ async function postToDiscord(webhook: string, text: string): Promise<boolean> {
 }
 
 /**
- * تلگرام → هر مدیری (مالک یا همکارِ ادمین) که چتی وصل کرده **و** کانالش روشن
- * است — پورتِ `send_telegram_admins()`. متن روی مرزِ خط تکه می‌شود، وگرنه
- * گزارشِ بلندتر از ۴۰۹۶ نویسه بی‌صدا رد می‌شد.
+ * ارسالِ گزارشِ یک روز **فقط** به وب‌هوکِ دیسکورد — پورتِ دکمهٔ «ارسال» ِ
+ * بخشِ دیسکورد. «ارسالِ فوری» به همهٔ مقصدها می‌رود؛ این یکی تلگرامِ مدیران
+ * را بی‌دلیل پر نمی‌کند. false = گزارش خالی است یا دیسکورد نپذیرفت.
  */
+export async function sendReportToDiscord(webhook: string, date: string): Promise<boolean> {
+  const text = await previewReport(date);
+  if (text === '') return false;
+  return postToDiscord(webhook, text);
+}
+
 /**
  * ارسالِ گزارشِ یک روز به **یک** چتِ تلگرام — پورتِ «ارسالِ گزارش به چتِ من»:
  * مالک پیش از روشن‌کردنِ ارسالِ روزانه، خودش خروجی را می‌بیند. تکه‌تکه مثلِ
@@ -222,6 +228,11 @@ export async function sendReportToChat(chatId: string, date: string): Promise<bo
   return true;
 }
 
+/**
+ * تلگرام → هر مدیری (مالک یا همکارِ ادمین) که چتی وصل کرده **و** کانالش روشن
+ * است — پورتِ `send_telegram_admins()`. متن روی مرزِ خط تکه می‌شود، وگرنه
+ * گزارشِ بلندتر از ۴۰۹۶ نویسه بی‌صدا رد می‌شد.
+ */
 async function sendToAdmins(text: string): Promise<void> {
   const admins = await db
     .selectDistinct({ chatId: users.telegramChatId })

@@ -75,7 +75,7 @@ export default async function ProjectDetailPage({
        * پیشنهاد) — وگرنه هر کسی با یک تگِ نقش داخلِ پروژه‌ها را می‌دید.
        */
       const bidder = await getBidderView(actor, id);
-      if (bidder) return <BidderView data={bidder} />;
+      if (bidder) return <BidderView data={bidder} tab={query.tab} />;
 
       // پروژهٔ خصوصیِ خارج از دسترس هم «یافت نشد» می‌دهد، نه «ممنوع».
       notFound();
@@ -402,6 +402,7 @@ export default async function ProjectDetailPage({
           bids: detail.bids,
           hours: detail.hours,
           deleteState: detail.deleteState,
+          impactCounts: detail.impactCounts,
           /**
            * ⚠️ حذف فقط مالک (`deleteProject` → `assertOwner`) و سبک‌سازی فقط مجوزِ
            * سراسری (`lightenProject`). پیش از این هر دو جعبه برای هر مدیری دیده

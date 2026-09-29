@@ -3,7 +3,7 @@
 import { useActionState, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
-  Download, FileText, Film, ImageIcon, Link2, Paperclip, Trash2, Upload,
+  Download, FileText, Film, ImageIcon, Link2, Paperclip, Play, Square, Trash2, Upload,
 } from 'lucide-react';
 import {
   Attachment, AttachmentAction, AttachmentActions, AttachmentContent, AttachmentDescription,
@@ -94,6 +94,8 @@ export function FilesTab({
   const [removing, startRemove] = useTransition();
   const confirm = useConfirm();
   const [removeError, setRemoveError] = useState<string | null>(null);
+  /** ویدئویی که همین‌جا پخش می‌شود — یکی در هر لحظه، تا چند پخش‌کننده هم‌زمان بار نشوند. */
+  const [playing, setPlaying] = useState<number | null>(null);
   const uploadForm = useRef<HTMLFormElement>(null);
 
   const remove = async (id: number) => {
@@ -165,6 +167,15 @@ export function FilesTab({
                       </AttachmentDescription>
                     </AttachmentContent>
                     <AttachmentActions>
+                      {f.kind === 'video' && (
+                        <AttachmentAction
+                          onClick={() => setPlaying(playing === f.id ? null : f.id)}
+                          aria-label={`${playing === f.id ? t('بستنِ پخش') : t('پخش')} — ${title}`}
+                          aria-pressed={playing === f.id}
+                        >
+                          {playing === f.id ? <Square /> : <Play />}
+                        </AttachmentAction>
+                      )}
                       <AttachmentAction asChild aria-label={`${t("دانلود")} — ${title}`}>
                         <a href={`${f.href}?dl`}><Download /></a>
                       </AttachmentAction>
@@ -179,9 +190,23 @@ export function FilesTab({
                       )}
                     </AttachmentActions>
                     <AttachmentTrigger asChild>
-                      <a href={f.href} target="_blank" rel="noopener noreferrer" aria-label={title} />
+                      <a href={f.href} target="_blank" rel="noopener noreferrer nofollow" aria-label={title} />
                     </AttachmentTrigger>
                   </Attachment>
+                  {/*
+                    پخشِ درون‌خطی — پورتِ `<video>` ِ نسخهٔ قبلی. از همان مسیرِ گیت‌شده
+                    و با Range (۱.۹۴.۰)، پس جلو/عقب رفتن کلِ فایل را دوباره نمی‌کشد.
+                    ⚠️ پخش‌کننده فقط بعد از کلیک ساخته می‌شود، پس فهرست پیش از پخش هیچ بایتی از ویدئو نمی‌کشد.
+                  */}
+                  {playing === f.id && (
+                    <video
+                      src={f.href}
+                      controls
+                      autoPlay
+                      preload="metadata"
+                      className="mt-2 max-h-80 w-full rounded-lg border bg-black"
+                    />
+                  )}
                 </li>
               );
             })}
@@ -243,7 +268,7 @@ export function FilesTab({
                       </AttachmentActions>
                     )}
                     <AttachmentTrigger asChild>
-                      <a href={f.href} target="_blank" rel="noopener noreferrer" aria-label={f.title} />
+                      <a href={f.href} target="_blank" rel="noopener noreferrer nofollow" aria-label={f.title} />
                     </AttachmentTrigger>
                   </Attachment>
                 </li>

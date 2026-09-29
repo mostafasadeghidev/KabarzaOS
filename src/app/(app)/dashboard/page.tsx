@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { canViewSection } from '@/domain/access/permissions';
 import { hasTeamScope, teamOverview } from '@/server/team/service';
 import { TeamOverviewCards } from '../team/overview-cards';
+import { DashboardTimeLog } from './time-log-card';
 
 /**
  * داشبورد.
@@ -104,7 +105,11 @@ export default async function DashboardPage({
         return (
           <PageShell>
             <PageHeader title={t("سلام، {name}", { name: session?.name ?? '' })} />
-            <MemberDashboardView data={own} teamCards={teamCards} />
+            <MemberDashboardView
+              data={own}
+              teamCards={teamCards}
+              timeLog={isMember ? <DashboardTimeLog actor={actor} /> : null}
+            />
           </PageShell>
         );
       }

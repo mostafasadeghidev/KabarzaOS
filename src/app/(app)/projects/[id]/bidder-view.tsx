@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { format } from '@/domain/money/money';
 import { ltr } from '@/i18n/bidi';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
+import { BidderTabs } from './bidder-tabs';
+import { bidderTab, type BidderTab } from '@/domain/projects/tabs';
 import { t } from '@/i18n/server';
 import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { Item, ItemContent, ItemDescription, ItemTitle } from '@/components/ui/item';
@@ -35,7 +37,17 @@ export interface BidderData {
  * (فقط‌خواندنی)، فایل‌ها، و فرمِ پیشنهاد. نه کامنت، نه مالی، نه اعضا، نه
  * تسکِ بقیه. این تنها راهی است که یک غیرعضو به پروژه می‌رسد.
  */
-export function BidderView({ data }: { data: BidderData }) {
+export function BidderView({ data, tab: requested }: { data: BidderData; tab?: string }) {
+  /**
+   * تب‌ها — پورتِ «تندر / توضیحات / تسک‌ها / فایل‌ها» ِ نسخهٔ قبلی. تبِ خالی
+   * نمی‌آید؛ `?tab=` لینکِ مستقیم است (`my-bid` ِ داشبورد → تندر).
+   */
+  const tabs: BidderTab[] = ['tender'];
+  if (data.project.description) tabs.push('about');
+  if (data.tasks.length > 0) tabs.push('tasks');
+  if (data.files.length > 0) tabs.push('files');
+  const tab = bidderTab(requested, tabs);
+
   return (
     // ⚠️ عرضِ خواندنی: همان قاعدهٔ تبِ «پیشنهادِ من» — متن و فرم، نه جدول.
     <PageShell width="reading">
@@ -51,11 +63,15 @@ export function BidderView({ data }: { data: BidderData }) {
         )}
       />
 
+      {tabs.length > 1 && (
+        <BidderTabs tab={tab} tabs={tabs} counts={{ tasks: data.tasks.length, files: data.files.length }} />
+      )}
+
       {/*
         همهٔ نقش‌های مناقصه با سقف — «واگذار شد» برای نقشی که به دیگری رسید
         (dash-2 #159). مناقصه‌گر می‌بیند کلِ کار چیست، نه فقط سهمِ خودش.
       */}
-      {data.roles && data.roles.length > 0 && (
+      {tab === 'tender' && data.roles && data.roles.length > 0 && (
         <Section title={t("نقش‌های مناقصه")}>
           <ul className="flex flex-wrap gap-2">
             {data.roles.map((r) => (
@@ -73,16 +89,16 @@ export function BidderView({ data }: { data: BidderData }) {
         </Section>
       )}
 
-      {data.project.description && (
+      {tab === 'about' && data.project.description && (
         <section className="rounded-xl border bg-card p-3 text-sm whitespace-pre-line">
           {data.project.description}
         </section>
       )}
 
       {/* ⚠️ بی‌قابِ بیرونی: خودِ فرمِ پیشنهاد قاب دارد و دو مرزِ تودرتو شلوغ بود. */}
-      <MyBidTab data={data.bid} />
+      {tab === 'tender' && <MyBidTab data={data.bid} />}
 
-      {data.tasks.length > 0 && (
+      {tab === 'tasks' && data.tasks.length > 0 && (
         <Section
           title={t("تسک‌های نقشِ شما")}
           description={t("فقط‌خواندنی — برای برآوردِ کار پیش از قیمت‌دادن.")}
@@ -109,7 +125,7 @@ export function BidderView({ data }: { data: BidderData }) {
         </Section>
       )}
 
-      {data.files.length > 0 && (
+      {tab === 'files' && data.files.length > 0 && (
         <Section title={t("فایل‌ها")}>
           <ul className="grid gap-2">
             {data.files.map((f) => (
@@ -133,7 +149,7 @@ export function BidderView({ data }: { data: BidderData }) {
                     </AttachmentActions>
                   )}
                   <AttachmentTrigger asChild>
-                    <a href={f.href} target="_blank" rel="noopener noreferrer" aria-label={f.title} />
+                    <a href={f.href} target="_blank" rel="noopener noreferrer nofollow" aria-label={f.title} />
                   </AttachmentTrigger>
                 </Attachment>
               </li>

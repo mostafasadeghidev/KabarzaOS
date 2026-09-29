@@ -44,3 +44,28 @@ export function toggleStatus(type: CommentType = 'comment', current: string = OP
   if (isOpen(current)) return { status: closedStatus(type), stampCloser: true };
   return { status: OPEN_STATUS, stampCloser: false };
 }
+
+/**
+ * نوعِ نویسندهٔ کامنت — برای رنگِ قابِ کامنت (پورتِ `kteam-by-member` /
+ * `kteam-by-client` / `kteam-by-staff`). عضو با رنگِ تگِ نقشش در همین پروژه،
+ * کارفرما با رنگِ ثابت، و بقیه (مدیر، کادر) خنثی.
+ *
+ * ⚠️ عضویت پیش از کارفرما: کسی که هر دو است، مثلِ نسخهٔ قبلی رنگِ عضو می‌گیرد.
+ */
+export type CommentAuthorKind = 'member' | 'client' | 'staff';
+
+export function commentAuthor(
+  userId: number | null,
+  members: ReadonlyArray<{ userId: number; roleColor: string | null }>,
+  clientIds: ReadonlySet<number>,
+): { kind: CommentAuthorKind; color: string | null } {
+  if (userId === null) return { kind: 'staff', color: null };
+  const member = members.find((m) => m.userId === userId);
+  if (member) {
+    // نخستین نقشی که رنگ دارد — عضوِ چندنقشی یک رنگِ پایدار می‌گیرد.
+    const colored = members.find((m) => m.userId === userId && m.roleColor);
+    return { kind: 'member', color: colored?.roleColor ?? null };
+  }
+  if (clientIds.has(userId)) return { kind: 'client', color: null };
+  return { kind: 'staff', color: null };
+}

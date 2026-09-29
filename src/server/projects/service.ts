@@ -22,7 +22,7 @@ import {
   assertCanLighten, canSetParent, impactState, planDelete,
   type LightenSummary, type ProjectImpact, isFrozenProject,
 } from '@/domain/projects/lifecycle';
-import { OPEN_STATUS, toggleStatus, type CommentType } from '@/domain/projects/comments';
+import { commentAuthor, OPEN_STATUS, toggleStatus, type CommentType } from '@/domain/projects/comments';
 import { assigneeOptions } from '@/domain/projects/assignees';
 import { claimableRoleIds, canClaimTask } from '@/domain/projects/claim';
 import { planQaApply, qaToggle, type QaAudience } from '@/domain/projects/qa';
@@ -1374,6 +1374,8 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
 
   const comments = commentRows.map((c) => ({
     ...c,
+    // رنگِ قابِ کامنت از نقشِ نویسنده — نه از نامش، پس با ماسک هم درست است.
+    author: commentAuthor(c.userId, detail.members, detail.viewer.clientIds),
     userName: mask(c.userId, c.userName),
     closedByName: mask(c.closedBy, c.closedByName),
   }));
@@ -1390,9 +1392,10 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
    * خواندنی هم دکمه‌اش را نمی‌بیند.
    */
   // ⚠️ از دادهٔ واقعی — با false ِ هاردکد، بنر هرگز «قفل» نمی‌گفت در حالی که حذف رد می‌شد.
-  const deleteState = detail.canManage
-    ? impactState(await repo.projectImpact(projectId, await repo.openBalances(projectId)))
-    : 'clean';
+  const impact = detail.canManage
+    ? await repo.projectImpact(projectId, await repo.openBalances(projectId))
+    : null;
+  const deleteState = impact ? impactState(impact) : 'clean';
 
   // نقش ← دارندگانش؛ لازمِ قاعدهٔ «برداشتنِ تسک» در UI و سرور.
   const memberRoleRows = await db
@@ -1532,6 +1535,15 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     /** «کار کردن» روی پروژه — تیکِ کامنت و یادداشت برای عضو/کارفرما، نه بینندهٔ فقط‌خواندنی. */
     canInteract: await canInteractWithProject(actor, projectId),
     deleteState,
+    /** شمارش‌های «وضعیتِ پروژه» در بالای تبِ مدیریت — فقط برای مدیر. */
+    impactCounts: impact
+      ? {
+          ledgerRows: impact.ledgerRows,
+          paymentRows: impact.paymentRows,
+          timelogRows: impact.timelogRows,
+          openRequests: impact.openRequests,
+        }
+      : null,
   };
 }
 

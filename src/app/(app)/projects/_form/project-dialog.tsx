@@ -132,7 +132,7 @@ export function ProjectDialog({
   const isEdit = project !== undefined;
   const canEditMoney = options.canEditMoney !== false;
   const [open, setOpen] = useState(false);
-  const [formTab, setFormTab] = useState<'info' | 'tasks' | 'files' | 'qa'>('info');
+  const [formTab, setFormTab] = useState<'info' | 'tasks' | 'files' | 'qa' | 'tender'>('info');
   /** بخش‌های اولیه فقط هنگامِ ساخت وجود دارند. */
   const showBootstrap = !isEdit && Boolean(options.bootstrap);
   const [state, formAction] = useActionState<FormState, FormData>(
@@ -212,6 +212,8 @@ export function ProjectDialog({
                 ...(showBootstrap
                   ? ([['tasks', tr('تسک‌ها')], ['files', tr('فایل‌ها')], ['qa', 'QA']] as const)
                   : []),
+                // پورتِ تبِ «پیشنهادهای مناقصه» ِ فرمِ ساخت — فقط وقتی مناقصه تیک خورده.
+                ...(showBootstrap && isTender ? ([['tender', tr('پیشنهادهای مناقصه')]] as const) : []),
               ] as ReadonlyArray<readonly [typeof formTab, string]>).map(([key, label]) => (
                 <TabsTrigger key={key} value={key} className="flex-none">
                   {label}
@@ -382,7 +384,11 @@ export function ProjectDialog({
                   value="1"
                   className="mt-0.5"
                   checked={isTender}
-                  onCheckedChange={(v) => setIsTender(v === true)}
+                  onCheckedChange={(v) => {
+                    setIsTender(v === true);
+                    // تبِ مناقصه با برداشتنِ تیک می‌رود — روی تبِ ناموجود نمانیم.
+                    if (v !== true && formTab === 'tender') setFormTab('info');
+                  }}
                 />
                 {tr("این پروژه یک مناقصه است")}
               </label>
@@ -492,6 +498,12 @@ export function ProjectDialog({
               <div className={formTab === 'qa' ? 'grid gap-4' : 'hidden'}>
                 <BootstrapSections options={options.bootstrap!} isUnitBased={isUnitBased} only="qa" />
               </div>
+              {/* فقط توضیح است، ورودی ندارد — نقش‌ها و سقف‌ها در تبِ «اطلاعات»‌اند. */}
+              {formTab === 'tender' && (
+                <p className="rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground">
+                  {tr('پس از ذخیره، اعضای دارای این نقش می‌توانند پیشنهاد قیمت بدهند؛ پیشنهادها در صفحهٔ پروژه (تب مناقصه) برای شما نمایش داده می‌شوند.')}
+                </p>
+              )}
             </>
           )}
 

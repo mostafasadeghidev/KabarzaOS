@@ -6,7 +6,8 @@ import { Check, Reply, RotateCcw, Trash2 } from 'lucide-react';
 import {
   addCommentAction, deleteCommentAction, toggleCommentAction, type TabActionState,
 } from '../_form/tab-actions';
-import { isOpen, statusLabel, type CommentType } from '@/domain/projects/comments';
+import { isOpen, statusLabel, type CommentAuthorKind, type CommentType } from '@/domain/projects/comments';
+import { cn } from '@/lib/utils';
 import { buildThreads, type Thread } from '@/domain/projects/threads';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,30 @@ export interface CommentItem {
   closedByName: string | null;
   /** پاسخ زیرِ والدش می‌نشیند (پورتِ `parent_id`). */
   parentId?: number | null;
+  /** نوعِ نویسنده برای رنگِ قاب — عضو (با رنگِ نقش) / کارفرما / کادر. */
+  author?: { kind: CommentAuthorKind; color: string | null };
+}
+
+/**
+ * رنگِ قابِ کامنت بر اساسِ نویسنده — پورتِ `kteam-by-*`: عضو با رنگِ نقشش
+ * (زمینهٔ ۷٪، مرزِ ۴۵٪)، کارفرما سبزآبیِ ثابت، کادر خنثی. با color-mix روی
+ * `--card` تا در حالتِ تیره هم زمینه تیره بماند.
+ */
+function authorTone(author: CommentItem['author']): { className: string; style?: React.CSSProperties } {
+  if (author?.kind === 'member' && author.color) {
+    return {
+      className: '',
+      style: {
+        backgroundColor: `color-mix(in oklab, ${author.color} 7%, var(--color-card))`,
+        borderColor: `color-mix(in oklab, ${author.color} 45%, var(--color-border))`,
+      },
+    };
+  }
+  if (author?.kind === 'client') {
+    return { className: 'border-teal-500/40 bg-[color-mix(in_oklab,var(--color-teal-500)_7%,var(--color-card))]' };
+  }
+  if (author?.kind === 'staff') return { className: 'bg-muted/40' };
+  return { className: 'bg-card' };
 }
 
 type ThreadItem = CommentItem & { parentId: number | null };
@@ -166,6 +191,7 @@ function Node({
   const isLatest = comment.id === thread.latest.id;
   const closed = !isOpen(thread.status);
   const hasReplies = thread.replies.some((r) => r.node.parentId === comment.id);
+  const tone = authorTone(comment.author);
 
   return (
     /**
@@ -175,12 +201,12 @@ function Node({
      * موبایل ستون به صفر می‌رسد) و یک خطِ عمودی رشته را نشان می‌دهد.
      */
     <div
-      className={
-        depth > 0
-          ? 'rounded-lg border border-s-2 border-s-primary/40 bg-card p-3'
-          : 'rounded-xl border bg-card p-3'
-      }
-      style={depth > 0 ? { marginInlineStart: Math.min(depth, 4) * 14 } : undefined}
+      className={cn(
+        depth > 0 ? 'rounded-lg border border-s-2 border-s-primary/40 p-3' : 'rounded-xl border p-3',
+        tone.className,
+      )}
+      style={{ ...tone.style, ...(depth > 0 ? { marginInlineStart: Math.min(depth, 4) * 14 } : {}) }}
+      data-author={comment.author?.kind}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1">

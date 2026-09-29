@@ -8,7 +8,7 @@ import { requireActor } from '@/server/auth';
 import * as settings from '@/server/settings/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import {
-  dispatchReport, getReportConfig, previewReport, saveReportConfig, testDiscordWebhook,
+  dispatchReport, getReportConfig, previewReport, saveReportConfig, sendReportToDiscord, testDiscordWebhook,
 } from '@/server/scheduler/daily-report';
 import { hasDestination, reportDate, normalizeReportConfig } from '@/domain/scheduler/daily-report';
 import { CatalogError, catalogMessage } from '@/domain/settings/catalogs';
@@ -224,6 +224,23 @@ export async function testDiscordAction(): Promise<ReportState> {
     if (!config.webhook) return { error: 'وب‌هوکی ذخیره نشده است.' };
     const ok = await testDiscordWebhook(config.webhook);
     return ok ? { message: 'پیامِ آزمایشی فرستاده شد.' } : { error: 'دیسکورد پیام را نپذیرفت.' };
+  } catch (error) {
+    if (error instanceof ForbiddenError) return { error: 'فقط مدیرِ کل.' };
+    return { error: 'ارسال نشد.' };
+  }
+}
+
+/** گزارش فقط به دیسکورد — پورتِ دکمهٔ «ارسال» ِ بخشِ دیسکوردِ نسخهٔ قبلی. */
+export async function sendReportToDiscordAction(): Promise<ReportState> {
+  try {
+    await assertOwner();
+    const config = await getReportConfig();
+    if (!config.webhook) return { error: 'وب‌هوکی ذخیره نشده است.' };
+    const today = new Date().toISOString().slice(0, 10);
+    const ok = await sendReportToDiscord(config.webhook, reportDate(today, config.offset));
+    return ok
+      ? { message: 'گزارش به دیسکورد فرستاده شد.' }
+      : { error: 'ارسال به دیسکورد ناموفق بود؛ وب‌هوک و بخش‌های فعالِ گزارش را بررسی کنید.' };
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'فقط مدیرِ کل.' };
     return { error: 'ارسال نشد.' };

@@ -155,6 +155,19 @@ function ClaimButton({
  * می‌نشینند و باید چند تا با هم دیده شوند؛ در نمای فهرست جا هست و کارت
  * می‌تواند راحت‌تر نفس بکشد.
  */
+/**
+ * رنگِ خیلی کمِ اولویت روی کلِ کارت — پورتِ `hex_to_rgba(.03/.16)` ِ نسخهٔ
+ * قبلی: کارِ فوری در نگاه از بقیه جدا شود بی‌آنکه فهرست رنگارنگ شود.
+ * color-mix روی `--card` تا در حالتِ تیره هم زمینه تیره بماند.
+ */
+function priorityTint(color: string | null | undefined): React.CSSProperties | undefined {
+  if (!color) return undefined;
+  return {
+    backgroundColor: `color-mix(in oklab, ${color} 4%, var(--color-card))`,
+    borderColor: `color-mix(in oklab, ${color} 22%, var(--color-border))`,
+  };
+}
+
 function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boolean }) {
   const tr = useT();
   if (!task.priorityName && !task.description && !task.notesCount && !task.blockedBy) return null;
@@ -276,6 +289,7 @@ function KanbanBoard({
                   setDragging(t.id);
                 }}
                 onDragEnd={() => setDragging(null)}
+                style={priorityTint(t.priorityColor)}
                 className={`grid gap-1 rounded-lg border bg-card p-2 ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''} ${dragging === t.id || pending ? 'opacity-60' : ''}`}
               >
                 <button
@@ -474,6 +488,7 @@ export function TasksTab({
           <li
             key={t.id}
             onClick={() => setOpenTask(t.id)}
+            style={priorityTint(t.priorityColor)}
             className="cursor-pointer rounded-lg border bg-card p-3 transition-colors hover:border-primary/40"
           >
             <div
