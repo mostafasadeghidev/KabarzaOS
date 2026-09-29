@@ -419,6 +419,11 @@ export default async function ProjectDetailPage({
         info={
           <div className="grid grid-cols-1 gap-4">
             {/* ⚠️ `Panel`: دکمهٔ «مدیریتِ اعضا» در نوارِ عنوان، نه زیرِ آن (`CardHeader` grid بود و `flex-row` بی‌اثر). */}
+            {/*
+              ⚠️ فهرستِ تیم فقط برای مدیرِ پروژه — نسخهٔ قبلی تبِ «تیم» را فقط با
+              `$can_manage` می‌ساخت (D#84). عضو و کارفرما کارِ خودشان را در تسک‌ها دارند.
+            */}
+            {canManage && (
             <Panel title={t("اعضای پروژه")} actions={membersForm && <MembersDialog data={membersForm} />}>
               {members.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("عضوی ثبت نشده")}</p>
@@ -480,6 +485,7 @@ export default async function ProjectDetailPage({
                 </Table>
               )}
             </Panel>
+            )}
 
             {/* کارفرمایان — پورتِ چیپ‌های کارفرما؛ اولی «کارفرمای اصلی» (قدیمی‌ترین انتساب). */}
             <Panel title={t("کارفرمایان")} actions={clientsForm && <ClientsDialog data={clientsForm} />}>

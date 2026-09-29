@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.99.0]
+
+### Fixed
+
+- **Project cards showed Persian masking labels to non-Persian users.** A member with an English interface saw «کارفرما» for the client and «عضو تیم» for a member without a role on the project cards. The cards now use the viewer's language, like the project page.
+- **Tag names in the settings catalogue and the QA role picker skipped the base language.** A tag saved from the form has no Persian entry in its translation map, so a Persian viewer saw its English name. Both now use the same label rule as the rest of the app.
+- **The Telegram test message from settings was always Persian;** it now uses the sender's language.
+- **The period-closing CSV had a Persian file name for every user;** the name now follows the user's language.
+- **The meeting calendar download answered errors in Persian plain text;** it now uses the user's language.
+
+### Changed
+
+- **A project's team list shows only to people who manage the project,** as in the previous version. Members and clients see their work on the tasks tab; the client list stays.
+
 ## [1.98.0]
 
 ### Fixed

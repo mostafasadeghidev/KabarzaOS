@@ -30,6 +30,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import { useLocale, useT } from '@/i18n/client';
+// ⚠️ `tagLabel` نه ترکیبِ دستی: پلهٔ زبانِ پایه را هم دارد — تگی که از فرم ذخیره شده
+// ترجمهٔ فارسی در نقشه ندارد و بینندهٔ فارسی نامِ انگلیسی می‌دید (B6).
+import { tagLabel } from '@/domain/settings/tag-label';
 import { GRANTABLE_CAPS } from '@/domain/access/project-scope';
 import type { SchedulerHealth } from '@/domain/scheduler/health';
 import type { BucketCheck } from '@/server/files/bucket-probe';
@@ -312,7 +315,7 @@ export function SettingsView({
                 // انگلیسی پلِ میان‌زبانی است (R-I18N-15) — همان قاعدهٔ tagName().
                 cell: (t) => (
                   <span className="inline-flex items-center gap-1.5">
-                    {t.nameI18n?.[locale] || t.nameI18n?.en || t.name}
+                    {tagLabel(t, locale)}
                     {/* پورتِ نشانِ «سیستمی»: تگِ محافظت‌شده حذف نمی‌شود. */}
                     {t.isProtected && <Badge variant="outline" className="font-normal">{tr("سیستمی")}</Badge>}
                   </span>
@@ -556,7 +559,7 @@ export function SettingsView({
                 </TabsTrigger>
                 {data.tags.filter((t) => t.type === 'member_role').map((t) => (
                   <TabsTrigger key={t.id} value={String(t.id)} className="flex-none gap-1.5 px-3">
-                    {t.nameI18n?.[locale] || t.nameI18n?.en || t.name}
+                    {tagLabel(t, locale)}
                     <span className="num text-xs text-muted-foreground">{data.qaItems.filter((q) => q.roleTagId === t.id).length}</span>
                   </TabsTrigger>
                 ))}
@@ -579,7 +582,7 @@ export function SettingsView({
               header: 'نقش',
               cell: (q) => {
                 const role = data.tags.find((t) => t.id === q.roleTagId);
-                return role ? (role.nameI18n?.[locale] || role.nameI18n?.en || role.name) : tr('کارفرما');
+                return role ? tagLabel(role, locale) : tr('کارفرما');
               },
             },
             {
@@ -608,7 +611,7 @@ export function SettingsView({
                     {/* R-QA-02 — نقشِ خالی یعنی مخاطبِ «کارفرما». */}
                     <NativeSelectOption value="">{tr("کارفرما")}</NativeSelectOption>
                     {data.tags.filter((t) => t.type === 'member_role').map((t) => (
-                      <NativeSelectOption key={t.id} value={t.id}>{t.nameI18n?.[locale] || t.nameI18n?.en || t.name}</NativeSelectOption>
+                      <NativeSelectOption key={t.id} value={t.id}>{tagLabel(t, locale)}</NativeSelectOption>
                     ))}
                   </NativeSelect>
                 </Field>

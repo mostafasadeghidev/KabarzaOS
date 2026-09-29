@@ -134,6 +134,12 @@ async function maskNames<T extends repo.ProjectListRow>(actor: Actor, rows: T[])
   const pmOn = new Set(pmRows.map((r) => r.projectId));
   const managedOfficeIds = managedOffices.map((r) => r.officeId);
   const assistantIds = new Set(assistants);
+  /**
+   * ⚠️ برچسب‌های ماسک به زبانِ بیننده — همان کاری که صفحهٔ پروژه می‌کند (B7).
+   * پیش از این کارتِ پروژه برای عضوِ انگلیسی‌زبان «کارفرما» ِ فارسی می‌نوشت.
+   */
+  const t = await getT();
+  const labels = { member: t(FALLBACK_MEMBER_LABEL), client: t(CLIENT_LABEL), assistant: t(ASSISTANT_LABEL) };
 
   return rows.map((r) => {
     const viewerIsMember = r.members.some((m) => m.userId === actor.id);
@@ -150,10 +156,11 @@ async function maskNames<T extends repo.ProjectListRow>(actor: Actor, rows: T[])
       }),
       viewerIsClient,
       viewerIsMember,
-      roleByUser: new Map(r.members.map((m) => [m.userId, m.roleName ?? FALLBACK_MEMBER_LABEL])),
+      roleByUser: new Map(r.members.map((m) => [m.userId, m.roleName ?? labels.member])),
       clientIds: new Set(r.clients.map((c) => c.userId)),
       assistantIds,
       viewerId: actor.id,
+      labels,
     };
 
     return {

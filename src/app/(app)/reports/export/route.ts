@@ -46,10 +46,12 @@ export async function GET(request: Request) {
       const date = params.get('date') ?? '';
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return new Response(null, { status: 400 });
 
+      const t = await getT();
       return csvResponse(
-        buildClosingCsv(await reportClosingRows(actor, date), await getT()),
+        buildClosingCsv(await reportClosingRows(actor, date), t),
         `kabarza-closing-${date}.csv`,
-        `بستنِ-دوره-${date}.csv`,
+        // نامِ خوانا به زبانِ کاربر (B2) — پیش از این برای همه فارسی بود.
+        t('بستنِ-دوره-{date}.csv', { date }),
       );
     }
 

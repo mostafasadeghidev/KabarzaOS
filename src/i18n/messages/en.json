@@ -814,6 +814,7 @@
   "بستنِ دوره": "Close period",
   "بستن دورهٔ مالی": "Close fiscal period",
   "بستنِ دورهٔ مالی": "Close fiscal period",
+  "بستنِ-دوره-{date}.csv": "period-closing-{date}.csv",
   "بسته‌ها و ریویوها هم": "Include closed and in review",
   "بعداً": "Later",
   "بعدتر": "Later",

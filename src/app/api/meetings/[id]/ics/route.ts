@@ -1,6 +1,7 @@
 import { currentActor } from '@/server/auth';
 import { getMeetingForCalendar } from '@/server/meetings/service';
 import { buildIcs, icsFilename } from '@/domain/meetings/ics';
+import { getT } from '@/i18n/server';
 
 /**
  * فایلِ تقویمِ یک جلسه — پورتِ `handle_meeting_ics()`.
@@ -13,14 +14,16 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  // پاسخِ خطا به زبانِ کاربر (B7) — پیش از این همیشه فارسی بود.
+  const t = await getT();
   const actor = await currentActor();
-  if (!actor) return new Response('ورود لازم است', { status: 401 });
+  if (!actor) return new Response(t('ورود لازم است'), { status: 401 });
 
   const id = Number((await params).id);
-  if (!Number.isInteger(id) || id <= 0) return new Response('یافت نشد', { status: 404 });
+  if (!Number.isInteger(id) || id <= 0) return new Response(t('یافت نشد'), { status: 404 });
 
   const meeting = await getMeetingForCalendar(actor, id);
-  if (!meeting) return new Response('یافت نشد', { status: 404 });
+  if (!meeting) return new Response(t('یافت نشد'), { status: 404 });
 
   const body = buildIcs(
     {
