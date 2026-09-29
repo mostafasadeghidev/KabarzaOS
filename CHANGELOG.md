@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.101.0]
+
+### Changed
+
+- **Project search looks through every project, not just the open tab.** Typing a name used to filter only the current tab, so a completed project could not be found from «in progress». The search now covers all projects the user can see — archived ones included, listed last with a badge — and hides the tabs while a query is typed; clearing it brings them back.
+- **Search results open the project directly.** Results are a compact list (picture, name, status); clicking a row opens that project's page, and Enter opens the first result. This replaces the «show N results on other tabs» button from 1.100.0.
+
 ## [1.100.1]
 
 ### Fixed

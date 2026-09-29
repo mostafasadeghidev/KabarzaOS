@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  matchesTab, buildTabs, activeTab, relationCounts, otherHitsTarget, bidderTab, type TabbableProject,
+  matchesTab, buildTabs, activeTab, relationCounts, bidderTab, type TabbableProject,
 } from './tabs';
 
 const project = (over: Partial<TabbableProject> = {}): TabbableProject => ({
@@ -122,24 +122,6 @@ describe('رابطهٔ بیننده با پروژه', () => {
 
   it('رابطهٔ بی‌پروژه دیده نمی‌شود', () => {
     expect(relationCounts([{ relations: ['client'] }])).toEqual([{ key: 'client', count: 1 }]);
-  });
-});
-
-describe('پرش به نتیجهٔ جستجو در تبِ دیگر', () => {
-  it('بدونِ نتیجه، مقصدی نیست', () => {
-    expect(otherHitsTarget('in_progress', [])).toBeNull();
-  });
-
-  it('نتیجهٔ بایگانی‌نشده → «همه»', () => {
-    expect(otherHitsTarget('in_progress', [project({ statusGroup: 'completed' })])).toBe('all');
-  });
-
-  it('فقط بایگانی‌شده → «بایگانی»', () => {
-    expect(otherHitsTarget('in_progress', [project({ isArchived: true })])).toBe('archived');
-  });
-
-  it('از خودِ «همه» فقط بایگانی می‌ماند', () => {
-    expect(otherHitsTarget('all', [project({ isArchived: true })])).toBe('archived');
   });
 });
 

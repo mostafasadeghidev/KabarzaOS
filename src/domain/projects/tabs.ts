@@ -68,17 +68,6 @@ export function matchesTab(tab: TabKey, project: TabbableProject): boolean {
   }
 }
 
-/**
- * نتیجهٔ جستجو در تبِ دیگر — کاربر با یک کلیک به کجا برود؟
- * «همه» اگر دست‌کم یکی بایگانی‌نشده است (همه همهٔ بایگانی‌نشده‌ها را دارد)،
- * وگرنه «بایگانی». پورتِ دکمهٔ «نمایش N نتیجه در تب‌های دیگر» ِ نسخهٔ قبلی.
- */
-export function otherHitsTarget(current: TabKey, hits: readonly TabbableProject[]): TabKey | null {
-  if (hits.length === 0) return null;
-  if (current !== 'all' && hits.some((p) => !p.isArchived)) return 'all';
-  return 'archived';
-}
-
 /** تب‌های نمای مناقصه‌گر — پورتِ «تندر / توضیحات / تسک‌ها / فایل‌ها». */
 export const BIDDER_TABS = ['tender', 'about', 'tasks', 'files'] as const;
 export type BidderTab = (typeof BIDDER_TABS)[number];
