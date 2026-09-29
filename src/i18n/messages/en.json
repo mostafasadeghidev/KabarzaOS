@@ -2231,6 +2231,7 @@
   "کارکردهای پرداخت‌نشدهٔ این عضو — یکی را برای ثبتِ پرداخت انتخاب کنید:": "This member's unpaid work rows — pick one to record the payment:",
   "کارکردهای پرداخت‌نشدهٔ این عضو روی این پروژه، پس از ذخیره در بخشِ مالیِ پروژه قابلِ تسویه‌اند.": "This member’s unpaid work on this project can be settled from the project’s finance section after saving.",
   "کارکنان تحت مدیریت": "Managed staff",
+  "کارهای {name}": "Work of {name}",
   "کارهای حساس (تنظیمات، حذف، بستنِ مالی) همیشه فقط برای مدیرِ کل است.": "Sensitive actions (settings, deletion, closing a fiscal period) always stay with the owner.",
   "کاری": "Business",
   "کامنت": "Comments",

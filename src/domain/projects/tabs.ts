@@ -109,3 +109,29 @@ export function buildTabs(projects: TabbableProject[], requested?: string | null
 export function activeTab(tabs: TabInfo[]): TabKey {
   return tabs.find((t) => t.active)?.key ?? 'all';
 }
+
+/**
+ * رابطهٔ بیننده با پروژه — پورتِ سه بخشِ «همهٔ پروژه‌های شما» (`view_projects`):
+ * پروژه‌هایی که عضوش هستم، کارفرمایش هستم، یا در دفترِ تحتِ مدیریتم است.
+ * فقط مسیرِ عضویتی آن را دارد؛ مدیرِ سراسری همه را یک‌جا می‌بیند.
+ */
+export type RelationKey = 'member' | 'client' | 'managed';
+
+export const RELATION_LABELS: Record<RelationKey, string> = {
+  member: 'پروژه‌های شما',
+  client: 'پروژه‌های شما (به‌عنوان کارفرما)',
+  managed: 'پروژه‌های دفاتر تحت مدیریت شما',
+};
+
+const RELATION_ORDER: RelationKey[] = ['member', 'client', 'managed'];
+
+/**
+ * رابطه‌هایی که در فهرست هست، با شمار. ⚠️ پروژه‌ای که هم عضوش هستم هم
+ * کارفرمایش، در هر دو شمرده می‌شود — همان‌طور که نسخهٔ قبلی در هر دو بخش
+ * نشانش می‌داد.
+ */
+export function relationCounts(projects: ReadonlyArray<{ relations?: readonly RelationKey[] }>) {
+  return RELATION_ORDER
+    .map((key) => ({ key, count: projects.filter((p) => p.relations?.includes(key)).length }))
+    .filter((r) => r.count > 0);
+}

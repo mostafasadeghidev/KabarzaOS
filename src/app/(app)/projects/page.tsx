@@ -108,6 +108,7 @@ export default async function ProjectsPage({
             currencies: formOptions.currencies.map((c) => ({ id: c.id, label: c.code })),
             defaultCurrencyId: formOptions.currencies.find((c) => c.isDefault)?.id ?? null,
             hasQaLibrary: formOptions.hasQaLibrary,
+            qaItems: formOptions.qaItems,
           },
         }}
       />

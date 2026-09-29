@@ -15,6 +15,8 @@ import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatePicker } from '@/components/ui/date-picker';
+import { TagChip } from '@/components/ui/tag-chip';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export interface BootstrapOptions {
   /** اعضای قابلِ افزودن — نامِ فرد به‌علاوهٔ ایمیل برای تفکیکِ هم‌نام‌ها. */
@@ -26,6 +28,11 @@ export interface BootstrapOptions {
   defaultCurrencyId: number | null;
   /** آیا کتابخانهٔ QA چیزی دارد؟ تبِ خالی نشان داده نمی‌شود. */
   hasQaLibrary: boolean;
+  /**
+   * آیتم‌های کتابخانه — فقط برای پیش‌نمایشِ «چه چیزی اضافه می‌شود» (پورتِ
+   * پیش‌نمایشِ فرمِ ساختِ نسخهٔ قبلی). `roleTagId` صفر یعنی «کارفرما».
+   */
+  qaItems?: Array<{ id: number; title: string; roleTagId: number; isTask: boolean }>;
   /** نقش‌های امضاشده روی هر عضو — `{ userId: tagId[] }`. */
   memberRoles: Record<number, number[]>;
 }
@@ -511,6 +518,12 @@ export function BootstrapSections({
             />
             {tr("آیتم‌های کارفرما هم اضافه شوند")}
           </label>
+          <QaPreview
+            items={options.qaItems ?? []}
+            roles={qaRoles}
+            client={qaClient}
+            roleName={(id) => (id === 0 ? tr('کارفرما') : roleOptions.find((o) => o.value === id)?.label ?? '')}
+          />
         </section>
       )}
 
@@ -576,6 +589,58 @@ export function BootstrapSections({
       </section>
       </div>
 
+    </div>
+  );
+}
+
+/**
+ * پیش‌نمایشِ چک‌لیستِ QA پیش از ساخت — کدام آیتم‌ها برای نقش‌های انتخاب‌شده
+ * اضافه می‌شوند، جدا در «تسک‌ها» (کارِ واقعی روی تخته) و «چک‌لیست».
+ * ⚠️ پیش از این فقط انتخابِ نقش بود و کاربر تا بعد از ساخت نمی‌دید چه چیزی
+ * و چند تسک به پروژه اضافه می‌شود.
+ */
+function QaPreview({
+  items,
+  roles,
+  client,
+  roleName,
+}: {
+  items: NonNullable<BootstrapOptions['qaItems']>;
+  roles: number[];
+  client: boolean;
+  roleName: (id: number) => string;
+}) {
+  const tr = useT();
+  const picked = items.filter((i) => (i.roleTagId === 0 ? client : roles.includes(i.roleTagId)));
+  const taskItems = picked.filter((i) => i.isTask);
+  const checkItems = picked.filter((i) => !i.isTask);
+  const [view, setView] = useState<'tasks' | 'checklist'>('tasks');
+  if (picked.length === 0) return null;
+  const list = view === 'tasks' ? taskItems : checkItems;
+  return (
+    <div className="grid gap-2 rounded-lg bg-muted/60 p-3">
+      <Tabs value={view} onValueChange={(v) => setView(v as typeof view)}>
+        <TabsList className="w-max">
+          <TabsTrigger value="tasks" className="flex-none gap-1.5 px-3">
+            {tr('تسک‌ها')}
+            <span className="num text-xs text-muted-foreground">{taskItems.length}</span>
+          </TabsTrigger>
+          <TabsTrigger value="checklist" className="flex-none gap-1.5 px-3">
+            {tr('چک‌لیست')}
+            <span className="num text-xs text-muted-foreground">{checkItems.length}</span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+      {list.length === 0 ? <p className="text-xs text-muted-foreground">{tr('موردی نیست.')}</p> : (
+        <ul className="grid max-h-56 gap-1 overflow-y-auto">
+          {list.map((i) => (
+            <li key={i.id} className="flex items-center justify-between gap-2 text-sm">
+              <span className="min-w-0 truncate">{i.title}</span>
+              <TagChip>{roleName(i.roleTagId)}</TagChip>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

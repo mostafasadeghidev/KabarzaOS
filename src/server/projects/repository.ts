@@ -384,6 +384,8 @@ export interface TaskRow {
   description: string;
   notesCount: number;
   lastNote: string | null;
+  /** آیتمِ QA ای که این تسک را ساخته — تبِ QA تسک‌هایش را با همین پیدا می‌کند. */
+  qaItemId: number | null;
 }
 
 /** تسک‌های یک پروژه — دو کوئریِ ثابت (R-PERF-01). */
@@ -416,6 +418,7 @@ export async function listTasks(projectId: number): Promise<TaskRow[]> {
       // پورتِ `task_notes_summary`: شمار و آخرین یادداشتِ گفتگو روی کارت.
       notesCount: sql<number>`(select count(*) from comments c where c.task_id = ${tasks.id})::int`,
       lastNote: sql<string | null>`(select c.body from comments c where c.task_id = ${tasks.id} order by c.id desc limit 1)`,
+      qaItemId: tasks.qaItemId,
     })
     .from(tasks)
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))

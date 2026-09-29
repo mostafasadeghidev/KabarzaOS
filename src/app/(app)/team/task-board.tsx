@@ -35,6 +35,8 @@ export interface BoardTask {
 
 export interface TaskBoardData {
   rows: BoardTask[];
+  /** فیلترِ «کارهای این عضو» (`m:`) — نامش برای انتخابگر. */
+  forMember: { id: number; name: string } | null;
   total: number;
   allCount: number;
   statusCounts: Array<{ id: number; name: string; color: string; n: number }>;
@@ -129,6 +131,11 @@ export function TaskBoard({ board, options }: { board: TaskBoardData; options: T
           <NativeSelectOption value="">{tr('همهٔ اعضا و نقش‌ها')}</NativeSelectOption>
           {/* ⚠️ صفر معنایش «بدونِ مسئول» است، نه «همه». */}
           <NativeSelectOption value="0">{tr('بدونِ مسئول')}</NativeSelectOption>
+          {board.forMember && (
+            <NativeSelectOption value={`m:${board.forMember.id}`}>
+              {tr('کارهای {name}', { name: board.forMember.name })}
+            </NativeSelectOption>
+          )}
           {options.assignees.length > 0 && (
             <NativeSelectOptGroup label={tr('اعضا')}>
               {options.assignees.map((a) => <NativeSelectOption key={a.id} value={`u:${a.id}`}>{a.name}</NativeSelectOption>)}

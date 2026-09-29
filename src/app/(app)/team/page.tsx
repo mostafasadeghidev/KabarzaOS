@@ -83,6 +83,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
                   currencies: form.currencies.map((c) => ({ id: c.id, label: c.code })),
                   defaultCurrencyId: form.currencies.find((c) => c.isDefault)?.id ?? null,
                   hasQaLibrary: form.hasQaLibrary,
+                  qaItems: form.qaItems,
                 },
               }}
             />

@@ -5,7 +5,7 @@ import {
   userOffices, userRoles, users,
 } from '../schema';
 import {
-  taskFilterOptions, teamComments, teamMemberProjects, teamMembers, teamOverview, teamProjects, teamTasks,
+  taskFilterOptions, teamComments, teamMember, teamMemberProjects, teamMembers, teamOverview, teamProjects, teamTasks,
 } from '@/server/team/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import type { Actor } from '@/domain/access/permissions';
@@ -200,5 +200,31 @@ describe('پروژه‌های یک عضو', () => {
 
   it('⚠️ کسی بیرون از دامنهٔ پایش رد می‌شود', async () => {
     await expect(teamMemberProjects(manager(), OUT)).rejects.toThrow(ForbiddenError);
+  });
+});
+
+describe('تسکِ نقشی جزوِ کارِ عضو است (visible_to_user)', () => {
+  it('عضوی که نقشِ تسکِ بی‌مسئول را دارد، آن را در شمار و دریل‌داون می‌بیند', async () => {
+    await db.insert(projectMembers).values({ projectId: PA1, userId: M1, roleTagId: designer, agreedAmount: '0' });
+
+    const d = await teamMembers(manager(), { range: 'week' });
+    expect(d.members.find((m) => m.id === M1)!.openTasks).toBe(2);
+
+    const board = await teamTasks(manager(), { assignee: { kind: 'member', id: M1 } });
+    expect(board.rows.map((r) => r.title).sort()).toEqual(['باز-سارا', 'نقشی'].sort());
+    expect(board.forMember).toEqual({ id: M1, name: 'سارا' });
+
+    // «مستقیم به نامش» (u:) همچنان فقط تسکِ خودش است.
+    const direct = await teamTasks(manager(), { assignee: { kind: 'user', id: M1 } });
+    expect(direct.rows.map((r) => r.title)).toEqual(['باز-سارا']);
+
+    const profile = await teamMember(manager(), M1, { range: 'all' });
+    expect(profile.stats.openTasks).toBe(2);
+    expect(profile.openTasks.map((t) => t.title).sort()).toEqual(['باز-سارا', 'نقشی'].sort());
+  });
+
+  it('⚠️ نامِ کسی بیرون از دامنهٔ پایش لو نمی‌رود', async () => {
+    const board = await teamTasks(manager(), { assignee: { kind: 'member', id: OUT } });
+    expect(board.forMember).toBeNull();
   });
 });

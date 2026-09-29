@@ -8,7 +8,7 @@ import { CommentsTab, type CommentItem } from './comments-tab';
 import {
   BidsTab, FinanceTab, QaTab,
   type BidRow, type FinanceSummary, type PaymentRow,
-  type QaFormData, type QaRow,
+  type QaFormData, type QaRow, type QaTaskRow,
 } from './side-tabs';
 import {
   ManageTab, type HourRow, type LightenSummaryView, type LogRow, type MatrixRowView,
@@ -72,8 +72,8 @@ export interface ProjectTabsData {
   qa: QaRow[];
   /** حاضر بودنش یعنی کاربر می‌تواند چک‌لیست اعمال کند. */
   qaForm: QaFormData | null;
-  /** چند تسکِ پروژه از چک‌لیستِ QA ساخته شده — برای پیامِ تبِ QA. */
-  qaTaskCount: number;
+  /** تسک‌هایی که چک‌لیستِ QA ساخته (پورتِ `QA::project_tasks`). */
+  qaTasks: QaTaskRow[];
   bids: BidRow[];
   /** مناقصه هنوز باز است؟ (R-TENDER-01) */
   tenderIsOpen: boolean;
@@ -276,7 +276,7 @@ export function ProjectTabs({
           projectId={data.projectId}
           qa={data.qa}
           form={data.qaForm}
-          taskCount={data.qaTaskCount}
+          tasks={data.qaTasks}
           canManage={data.canManage}
           canInteract={data.canInteract && !data.isFrozen}
         /></TabPanel>

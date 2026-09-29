@@ -23,6 +23,7 @@ import { weekOrder, weekdayIndex, WEEKDAYS } from '@/domain/availability/weekly'
 import { getSystemConfig } from '@/server/settings/system-service';
 import { canManageLeave, listAbsences } from '@/server/availability/absence-service';
 import { alias } from 'drizzle-orm/pg-core';
+import { visibleToUserSql } from '@/server/projects/repository';
 
 /**
  * «تیمِ من» — دامنهٔ مدیرِ دفتر.
@@ -162,6 +163,45 @@ async function nonFrozenIds(projectIds: number[]): Promise<number[]> {
   return rows.filter((r) => !isFrozenProject(r)).map((r) => r.id);
 }
 
+/**
+ * شمارِ تسک‌های بازِ هر نفر — پورتِ `count_open_for_user_in_projects`: همان
+ * قاعدهٔ `visibleToUserSql` (مسئولِ مستقیم، تسکِ خصوصیِ خودش، تسکِ نقشیِ
+ * بی‌مسئولِ نقشی که روی همان پروژه دارد و ادعانشده یا ادعای خودش است)، برای
+ * همه یک‌جا.
+ * ⚠️ پیش از این فقط `assigned_to` شمرده می‌شد: عضوی که کارش نقشی بود «۰ تسکِ
+ * باز» نشان می‌داد در حالی که صندوقِ خودش پر بود.
+ */
+async function openTaskCounts(userIds: number[], projectIds: number[]): Promise<Array<{ userId: number; n: number }>> {
+  if (userIds.length === 0 || projectIds.length === 0) return [];
+  const users_ = sql.join(userIds.map((id) => sql`${id}`), sql`, `);
+  const projects_ = sql.join(projectIds.map((id) => sql`${id}`), sql`, `);
+  const open = sql`coalesce(g.is_closed, false) = false and coalesce(g.is_review, false) = false`;
+  const rows = await db.execute(sql`
+    select v.user_id, count(distinct v.task_id)::int as n from (
+      select t.assigned_to as user_id, t.id as task_id
+        from tasks t left join tags g on g.id = t.status_tag_id
+        where t.project_id in (${projects_}) and t.deleted_at is null and ${open}
+          and t.assigned_to in (${users_})
+      union all
+      select t.created_by, t.id
+        from tasks t left join tags g on g.id = t.status_tag_id
+        where t.project_id in (${projects_}) and t.deleted_at is null and ${open}
+          and t.is_private = true and t.created_by in (${users_})
+      union all
+      select pm.user_id, t.id
+        from tasks t
+        join task_roles tr on tr.task_id = t.id
+        join project_members pm on pm.project_id = t.project_id and pm.role_tag_id = tr.role_tag_id
+        left join tags g on g.id = t.status_tag_id
+        where t.project_id in (${projects_}) and t.deleted_at is null and ${open}
+          and t.is_private = false and t.assigned_to is null
+          and (tr.claimed_by is null or tr.claimed_by = pm.user_id)
+          and pm.user_id in (${users_})
+    ) v group by v.user_id
+  `) as unknown as Array<{ user_id: number; n: number }>;
+  return rows.map((r) => ({ userId: Number(r.user_id), n: Number(r.n) }));
+}
+
 /* ------------------------------------------------------------------ *
  * نماها
  * ------------------------------------------------------------------ */
@@ -282,7 +322,7 @@ export interface TeamTaskFilter {
 export async function teamTasks(actor: Actor, filter: TeamTaskFilter = {}) {
   const scope = await teamScope(actor);
   const perPage = perPageOf(filter.perPage);
-  const none = { rows: [], total: 0, allCount: 0, statusCounts: [], page: 1, perPage, totalPages: 1 };
+  const none = { rows: [], forMember: null, total: 0, allCount: 0, statusCounts: [], page: 1, perPage, totalPages: 1 };
   if (scope.projectIds.length === 0) return none;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -339,8 +379,17 @@ export async function teamTasks(actor: Actor, filter: TeamTaskFilter = {}) {
     .offset((page - 1) * perPage);
 
   const roles = await roleNamesOfTasks(rows.map((r) => r.id));
+  /**
+   * نامِ عضوِ فیلترِ «کارهای این عضو» — انتخابگر بدونِ آن گزینه‌ای برای نشان‌دادن
+   * نداشت. ⚠️ فقط برای کسی در دامنهٔ پایش؛ شناسهٔ دست‌کاری‌شده نامی لو نمی‌دهد.
+   */
+  const who = filter.assignee;
+  const forMember = who?.kind === 'member' && canMonitor(who.id, scope.monitorable)
+    ? (await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, who.id)))[0] ?? null
+    : null;
   return {
     rows: rows.map((r) => ({ ...r, roleNames: roles.get(r.id) ?? [] })),
+    forMember,
     total,
     allCount: allRows[0]?.n ?? 0,
     statusCounts: statusRows.map(({ id, name, color, n }) => ({ id, name, color, n })),
@@ -381,7 +430,7 @@ function taskFilterConditions(filter: TeamTaskFilter, today: string) {
   else if (who?.kind === 'user') out.push(eq(tasks.assignedTo, who.id));
   else if (who?.kind === 'role') {
     out.push(sql`exists (select 1 from ${taskRoles} where ${taskRoles.taskId} = ${tasks.id} and ${taskRoles.roleTagId} = ${who.id})`);
-  }
+  } else if (who?.kind === 'member') out.push(visibleToUserSql(who.id));
 
   if (filter.due === 'none') out.push(isNull(tasks.dueDate));
   else if (filter.due === 'overdue') out.push(lt(tasks.dueDate, today));
@@ -533,17 +582,7 @@ export async function teamMembers(actor: Actor, input: { range?: string; from?: 
       .orderBy(tags.sortOrder, tags.id),
     db.select({ userId: absences.userId }).from(absences)
       .where(and(inArray(absences.userId, everyone), lte(absences.fromDate, today), gte(absences.toDate, today))),
-    scope.projectIds.length === 0 ? Promise.resolve([]) : db
-      .select({ userId: tasks.assignedTo, n: sql<number>`count(*)::int` })
-      .from(tasks)
-      .leftJoin(tags, eq(tags.id, tasks.statusTagId))
-      .where(and(
-        inArray(tasks.projectId, scope.projectIds),
-        isNull(tasks.deletedAt),
-        inArray(tasks.assignedTo, everyone),
-        OPEN_TASK,
-      ))
-      .groupBy(tasks.assignedTo),
+    openTaskCounts(everyone, scope.projectIds),
     avatarsFor(scope.officeMembers),
   ]);
 
@@ -626,7 +665,8 @@ export async function teamMember(
       .innerJoin(projects, eq(projects.id, tasks.projectId))
       .leftJoin(tags, eq(tags.id, tasks.statusTagId))
       .where(and(
-        eq(tasks.assignedTo, userId),
+        // پورتِ `open_for_user_in_projects`: تسکِ نقشیِ او هم، نه فقط مستقیم.
+        visibleToUserSql(userId),
         inArray(tasks.projectId, scope.projectIds),
         isNull(tasks.deletedAt),
         // ⚠️ فقط بازها — عنوانِ بخش «تسک‌های باز» است و پیش از این بسته‌ها را هم می‌آورد.
@@ -677,7 +717,7 @@ export async function teamMember(
       .select({ projectId: tasks.projectId, n: sql<number>`count(*)::int` })
       .from(tasks)
       .leftJoin(tags, eq(tags.id, tasks.statusTagId))
-      .where(and(eq(tasks.assignedTo, userId), inArray(tasks.projectId, scope.projectIds), notClosed))
+      .where(and(visibleToUserSql(userId), inArray(tasks.projectId, scope.projectIds), notClosed))
       .groupBy(tasks.projectId),
   ]);
 
@@ -775,7 +815,7 @@ export async function teamMemberProjects(actor: Actor, userId: number) {
     db.select({ projectId: tasks.projectId, n: sql<number>`count(*)::int` })
       .from(tasks)
       .leftJoin(tags, eq(tags.id, tasks.statusTagId))
-      .where(and(eq(tasks.assignedTo, userId), inArray(tasks.projectId, ids), isNull(tasks.deletedAt), OPEN_TASK))
+      .where(and(visibleToUserSql(userId), inArray(tasks.projectId, ids), isNull(tasks.deletedAt), OPEN_TASK))
       .groupBy(tasks.projectId),
   ]);
   const totalOf = new Map(totals.map((r) => [r.projectId, r]));

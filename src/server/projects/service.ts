@@ -10,6 +10,8 @@ import {
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, canSeeScope, filterVisible, ForbiddenError, visibleScopes, assertOwner, filterVisibleFor } from '@/domain/access/guard';
 import { visibleTasksForMember } from '@/domain/projects/task-visibility';
+import type { RelationKey } from '@/domain/projects/tabs';
+import { excerptWords, openThreads } from '@/domain/dashboard/focus';
 /** برچسبِ کنارِ نامِ مدیران در فهرستِ «تخصیص به». */
 const MANAGER_ROLE_LABEL = 'مدیریت';
 import { handoverPlan, tasksToAutoAssign } from '@/domain/projects/role-assignment';
@@ -60,7 +62,7 @@ import { getSystemConfig } from '@/server/settings/system-service';
  */
 
 /** فهرستِ پروژه‌ها — فقط scopeهایی که بازیگر اجازه دارد. */
-export async function listProjects(actor: Actor) {
+export async function listProjects(actor: Actor): Promise<VisibleProjectRow[]> {
   if (canViewSection(actor, 'projects')) {
     return maskNames(actor, await maskPrices(actor, await repo.listProjects(visibleScopes(actor))));
   }
@@ -70,11 +72,26 @@ export async function listProjects(actor: Actor) {
    * مقدم است (کسی که روی پروژهٔ خصوصی امضا شده، می‌بیندش).
    */
   // عضویت‌ها + پروژه‌های دفاترِ تحتِ مدیریت (پورتِ سه بخشِ «همهٔ پروژه‌ها»).
-  const ids = [...new Set([
-    ...(await membershipProjectIds(actor.id)),
-    ...(await managedOfficeProjectIds(actor.id)),
-  ])];
-  return maskNames(actor, await maskPrices(actor, await repo.listProjects(['company', 'private'], ids)));
+  const [asMember, asClient, managed] = await Promise.all([
+    membershipProjectIds(actor.id, ['member', 'tender']),
+    membershipProjectIds(actor.id, ['client']),
+    managedOfficeProjectIds(actor.id),
+  ]);
+  const ids = [...new Set([...asMember, ...asClient, ...managed])];
+  const rows = await maskNames(actor, await maskPrices(actor, await repo.listProjects(['company', 'private'], ids)));
+  /**
+   * رابطهٔ من با هر پروژه — شبکه با آن سه بخشِ نسخهٔ قبلی را جدا می‌کند
+   * («پروژه‌های شما / به‌عنوان کارفرما / دفاترِ تحتِ مدیریت»). پیش از این
+   * همه در یک شبکه بودند و معلوم نبود کدام پروژه با کدام نقش آمده.
+   */
+  return rows.map((r) => ({
+    ...r,
+    relations: ([
+      asMember.includes(r.id) && 'member',
+      asClient.includes(r.id) && 'client',
+      managed.includes(r.id) && 'managed',
+    ] as const).filter((k): k is RelationKey => k !== false),
+  }));
 }
 
 /**
@@ -160,7 +177,11 @@ async function maskNames<T extends repo.ProjectListRow>(actor: Actor, rows: T[])
  * ردیفِ پروژه آن‌طور که به فهرست می‌رسد — با پرچمِ حقِ دیدنِ قیمت.
  * کارت باید بداند «قیمت را ندارم» با «قیمت صفر است» فرق دارد.
  */
-export type VisibleProjectRow = repo.ProjectListRow & { canSeePrice: boolean };
+export type VisibleProjectRow = repo.ProjectListRow & {
+  canSeePrice: boolean;
+  /** فقط مسیرِ عضویتی — رابطهٔ بیننده با پروژه (`domain/projects/tabs`). */
+  relations?: RelationKey[];
+};
 
 async function maskPrices<T extends { id: number; price: string; billableExpenses: string }>(
   actor: Actor,
@@ -966,8 +987,9 @@ export async function getProjectFormOptions(actor: Actor, excludeId?: number) {
     people,
     clientPeople,
     priorities,
-    // ⚠️ فقط «خالی نبودن» مهم است؛ خودِ آیتم‌ها به مرورگر فرستاده نمی‌شوند.
     hasQaLibrary: qaRows.length > 0,
+    // پیش‌نمایشِ فرم — فقط عنوان و نقش و نوع؛ توضیحِ «چه‌طور بررسی شود» لازم نیست.
+    qaItems: qaRows.map(({ id, title, roleTagId, isTask }) => ({ id, title, roleTagId, isTask })),
     /** نقش‌های هر عضو — فرم فقط همان‌ها را پیشنهاد می‌دهد. */
     memberRoles,
   };
@@ -1436,8 +1458,27 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     ? (await repo.statusTags()).find((tag) => tag.id === detail.project.statusTagId)?.name ?? null
     : null;
 
+  /**
+   * تسک‌هایی که QA ساخته — پورتِ `QA::project_tasks` + `qa_tasks_subtabs`:
+   * گروه‌بندی با نقش، هر کدام بازشدنی در مودالِ تسک.
+   * ⚠️ از `qaItemId` ِ خودِ تسک، نه تطبیقِ عنوان: آیتمِ تسک‌ساز ردیفِ
+   * `project_qa` نمی‌سازد، پس بخشِ «تسک‌ها» ی تبِ QA پیش از این هرگز پر نمی‌شد.
+   * فهرست همان تسک‌های دیدنیِ این بیننده است (قاعدهٔ تخته).
+   */
+  const qaTasks = detail.tasks
+    .filter((t) => t.qaItemId !== null)
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      statusName: t.statusName,
+      statusColor: t.statusColor,
+      roleNames: t.roles.map((r) => r.roleName).filter((n): n is string => Boolean(n)),
+      assigneeName: t.assigneeName,
+    }));
+
   return {
     ...detail,
+    qaTasks,
     currencyCode,
     logs,
     matrix,
@@ -1632,6 +1673,86 @@ async function releaseDependents(actor: Actor, taskId: number, projectId: number
  * تیکِ وضعیتِ کامنت — R-PROJ-27: حالتِ بسته به نوعِ رشته بستگی دارد و
  * «انجام شد توسط X» فقط هنگامِ بستن مهر می‌خورد.
  */
+/**
+ * رشته‌های کامنتِ بازِ پروژه‌های من — پورتِ `view_thread_list( 'comment' )`:
+ * هر رشته‌ای که **تازه‌ترین** پیامش هنوز «نیازمند بررسی» است، روی پروژه‌هایی
+ * که عضو یا کارفرمایشم. مقصدِ کارتِ «کامنت‌های نیازمند بررسی» ِ داشبوردِ عضو
+ * و کارفرما — پیش از این آن کارت به فهرستِ پروژه‌ها می‌رفت.
+ *
+ * ⚠️ نامِ نویسنده با همان ماسکِ صفحهٔ پروژه (`author_for_viewer`): کارفرما
+ * نامِ عضو را نمی‌بیند و عضو نامِ کارفرما را — هر پروژه زمینهٔ خودش را دارد.
+ * ⚠️ پروژهٔ منجمد بیرون است؛ همان دامنهٔ شمارِ کارت، تا عدد با فهرست بخواند.
+ */
+export async function myOpenCommentThreads(actor: Actor) {
+  const ids = await repo.nonFrozenProjectIds(await membershipProjectIds(actor.id, ['member', 'client']));
+  if (ids.length === 0) return [];
+
+  const rows = await db
+    .select({
+      id: comments.id, parentId: comments.parentId, status: comments.status, body: comments.body,
+      projectId: comments.projectId, userId: comments.userId, userName: users.name, createdAt: comments.createdAt,
+    })
+    .from(comments)
+    .leftJoin(users, eq(users.id, comments.userId))
+    .where(and(inArray(comments.projectId, ids), eq(comments.type, 'comment'), isNull(comments.taskId)))
+    .orderBy(asc(comments.id));
+  const threads = openThreads(rows);
+  if (threads.length === 0) return [];
+
+  const pids = [...new Set(threads.map((t) => t.root.projectId!))];
+  const locale = await currentLocale();
+  const [memberRows, clientRows, assistants, titles, pmIds, officeIds, t] = await Promise.all([
+    db.select({ projectId: projectMembers.projectId, userId: projectMembers.userId, roleName: tagName(locale) })
+      .from(projectMembers)
+      .leftJoin(tags, eq(tags.id, projectMembers.roleTagId))
+      .where(inArray(projectMembers.projectId, pids))
+      .orderBy(projectMembers.id),
+    db.select({ projectId: projectClients.projectId, userId: projectClients.userId })
+      .from(projectClients).where(inArray(projectClients.projectId, pids)),
+    repo.assistantUserIds(),
+    db.select({ id: projects.id, title: projects.title }).from(projects).where(inArray(projects.id, pids)),
+    pmProjectIds(actor.id),
+    managedOfficeProjectIds(actor.id),
+    getT(),
+  ]);
+  const labels = { member: t(FALLBACK_MEMBER_LABEL), client: t(CLIENT_LABEL), assistant: t(ASSISTANT_LABEL) };
+  const global = canManageSection(actor, 'projects');
+  const titleOf = new Map(titles.map((p) => [p.id, p.title]));
+
+  const contexts = new Map<number, ViewerContext>();
+  for (const pid of pids) {
+    const members = memberRows.filter((m) => m.projectId === pid);
+    const clients = clientRows.filter((c) => c.projectId === pid).map((c) => c.userId);
+    const roleByUser = new Map<number, string>();
+    for (const m of members) if (!roleByUser.has(m.userId)) roleByUser.set(m.userId, m.roleName ?? labels.member);
+    contexts.set(pid, {
+      managesProject: global || pmIds.includes(pid) || officeIds.includes(pid),
+      viewerIsClient: clients.includes(actor.id),
+      viewerIsMember: members.some((m) => m.userId === actor.id),
+      roleByUser,
+      clientIds: new Set(clients),
+      assistantIds: new Set(assistants),
+      viewerId: actor.id,
+      labels,
+    });
+  }
+
+  return threads
+    .map(({ root, latest }) => ({
+      rootId: root.id,
+      id: latest.id,
+      projectId: root.projectId!,
+      projectTitle: titleOf.get(root.projectId!) ?? '',
+      authorName: latest.userId === null || latest.userName === null
+        ? latest.userName
+        : nameForViewer(latest.userId, latest.userName, contexts.get(root.projectId!)!),
+      createdAt: latest.createdAt,
+      // پورتِ `wp_trim_words( …, 30 )`.
+      excerpt: excerptWords(latest.body, 30),
+    }))
+    .sort((a, b) => b.id - a.id);
+}
+
 export async function toggleCommentStatus(actor: Actor, commentId: number) {
   const row = await repo.getComment(commentId);
   if (!row || row.projectId === null) throw new NotFoundError();

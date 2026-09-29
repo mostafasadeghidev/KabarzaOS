@@ -47,24 +47,33 @@ export function paginate<T>(items: readonly T[], page: number, perPage: number) 
 export type AssigneeFilter =
   | { kind: 'none' }
   | { kind: 'user'; id: number }
-  | { kind: 'role'; id: number };
+  | { kind: 'role'; id: number }
+  /**
+   * «کارهای این عضو» (`m:`) — دریل‌داونِ پروفایل: هر تسکی که او می‌بیند و باید
+   * انجام دهد، از جمله تسکِ نقشیِ ادعانشده (`open_for_user_in_projects`)؛ نه
+   * فقط آنچه مستقیم به نامش است (`u:`).
+   */
+  | { kind: 'member'; id: number };
 
 export function parseAssignee(raw: string | null | undefined): AssigneeFilter | null {
   const value = (raw ?? '').trim();
   if (value === '') return null;
   if (value === '0') return { kind: 'none' };
-  const match = /^(?:([ur]):)?(\d+)$/.exec(value);
+  const match = /^(?:([urm]):)?(\d+)$/.exec(value);
   if (!match) return null;
   const id = Number(match[2]);
   if (!Number.isInteger(id) || id <= 0) return null;
-  return match[1] === 'r' ? { kind: 'role', id } : { kind: 'user', id };
+  if (match[1] === 'r') return { kind: 'role', id };
+  if (match[1] === 'm') return { kind: 'member', id };
+  return { kind: 'user', id };
 }
 
 /** شکلِ آدرسیِ فیلتر — برعکسِ `parseAssignee`. */
 export function assigneeParam(filter: AssigneeFilter | null): string {
   if (!filter) return '';
   if (filter.kind === 'none') return '0';
-  return `${filter.kind === 'role' ? 'r' : 'u'}:${filter.id}`;
+  const prefix = { user: 'u', role: 'r', member: 'm' }[filter.kind];
+  return `${prefix}:${filter.id}`;
 }
 
 /**

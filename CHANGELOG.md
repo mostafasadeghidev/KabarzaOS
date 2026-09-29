@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.93.0]
+
+### Added
+
+- **A list of comments waiting for review, for members and clients.** The «کامنت‌های نیازمند بررسی» card on the member and client dashboards opened the projects list. It now opens a page with one row per open thread on the viewer's projects: its latest message, the author, the date and a link to the project's comments. Names follow the project page's masking: a client sees a member's role, and a member sees «کارفرما».
+- **The projects page separates your projects by relation.** Someone who is a member of some projects, a client of others or manages an office now gets a row of tabs above the status tabs: your projects, your projects as a client, and projects of the offices you manage. Status counts follow the chosen tab. With a single relation nothing changes.
+- **QA preview in the create form.** After picking roles in the QA step, the form lists the library items that will be added, split into tasks and checklist, each with its role.
+
+### Fixed
+
+- **The QA tab never listed the tasks QA created.** A task item becomes a real task and no checklist row, so the tab's task section stayed empty. The tab now has two tabs, tasks and checklist. The tasks are grouped by role and open in the task dialog.
+- **The comment review count counted messages, not threads.** A thread with three open replies counted three, and a thread closed by its latest message still counted. The dashboard card now counts open threads and matches the new list.
+- **An office manager's view of a member ignored role tasks.** Open-task counts on the staff cards, the hours table and the profile, the profile's task list and the member's projects counted only tasks assigned to the member by name. They now also count the role tasks the member can take on their projects, as the previous version did. «تسک باز» on the profile opens the board filtered to all of that member's work; the member filter still shows only tasks in their name.
+
 ## [1.92.0]
 
 ### Added

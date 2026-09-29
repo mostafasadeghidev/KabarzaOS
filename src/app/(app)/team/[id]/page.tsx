@@ -51,7 +51,7 @@ export default async function TeamMemberPage({
    * تسک‌ها همان بردِ کاملِ تیم است با فیلترِ همین نفر (نه فهرستِ جدا)؛
    * پروژه‌ها بردِ پروژه در حالتِ «عضو».
    */
-  if (query.show === 'tasks') redirect(`/team?tab=tasks&tassignee=u:${userId}`);
+  if (query.show === 'tasks') redirect(`/team?tab=tasks&tassignee=m:${userId}`);
   if (query.show === 'projects') {
     try {
       const drill = await teamMemberProjects(actor, userId);
@@ -91,7 +91,7 @@ export default async function TeamMemberPage({
     { label: 'در حال اجرا', value: String(data.stats.openProjects), href: null },
     { label: 'مجموع ساعت کاری', value: hoursLabel(data.stats.minutes), href: null },
     // پورتِ افزونه: کارتِ «تسک باز» به بردِ تسک‌های همین نفر می‌رود.
-    { label: 'تسک باز', value: String(data.stats.openTasks), href: `/team?tab=tasks&tassignee=u:${userId}` },
+    { label: 'تسک باز', value: String(data.stats.openTasks), href: `/team?tab=tasks&tassignee=m:${userId}` },
   ];
 
   return (

@@ -25,6 +25,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { StatCard } from '@/components/stat-card';
 import { Panel, Section } from '@/components/page-shell';
 import { TagChip } from '@/components/ui/tag-chip';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Item, ItemActions, ItemContent, ItemGroup } from '@/components/ui/item';
+import { useRouter } from 'next/navigation';
+import { TaskDialog } from './task-dialog';
 
 /* ------------------------------------------------------------------ *
  * تبِ مالی — `finance` panel ِ مودالِ نسخهٔ قبلی.
@@ -194,6 +198,70 @@ export interface QaRow {
   taskId?: number | null;
   taskStatusName?: string | null;
   taskStatusColor?: string | null;
+}
+
+/** تسکی که از آیتمِ QA ساخته شده — ردیفِ تبِ «تسک‌ها» ی QA. */
+export interface QaTaskRow {
+  id: number;
+  title: string;
+  statusName: string | null;
+  statusColor: string | null;
+  roleNames: string[];
+  assigneeName: string | null;
+}
+
+/**
+ * تسک‌های QA با زیرتبِ نقش — پورتِ `qa_tasks_subtabs`: هر تسکِ QA یک نقش
+ * دارد؛ بی‌نقش‌ها (تسکِ کارفرما) کنارِ هم. عنوان مودالِ تسک را باز می‌کند.
+ */
+function QaTaskGroups({ tasks, onOpen }: { tasks: QaTaskRow[]; onOpen: (id: number) => void }) {
+  const t = useT();
+  const groups = [...tasks.reduce((map, task) => {
+    const name = task.roleNames[0] ?? t('بدون نقش');
+    map.set(name, [...(map.get(name) ?? []), task]);
+    return map;
+  }, new Map<string, QaTaskRow[]>())];
+  const [active, setActive] = useState(groups[0]?.[0] ?? '');
+  const current = groups.find(([name]) => name === active)?.[1] ?? groups[0]?.[1] ?? [];
+
+  if (tasks.length === 0) return <p className="text-sm text-muted-foreground">{t('هنوز تسکی از QA اضافه نشده.')}</p>;
+  return (
+    <div className="grid gap-3">
+      {groups.length > 1 && (
+        <div className="overflow-x-auto pb-1.5">
+          <Tabs value={active} onValueChange={setActive}>
+            <TabsList className="w-max">
+              {groups.map(([name, list]) => (
+                <TabsTrigger key={name} value={name} className="flex-none gap-1.5 px-3">
+                  {name}
+                  <span className="num text-xs text-muted-foreground">{list.length}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
+      <ItemGroup className="gap-1.5">
+        {current.map((task) => (
+          <Item key={task.id} variant="outline" size="sm" className="px-3 py-2">
+            <ItemContent>
+              <button
+                type="button"
+                className="text-start text-sm font-medium hover:underline focus-visible:underline focus-visible:outline-none"
+                onClick={() => onOpen(task.id)}
+              >
+                {task.title}
+              </button>
+              {task.assigneeName && <span className="text-xs text-muted-foreground">{task.assigneeName}</span>}
+            </ItemContent>
+            {task.statusName && (
+              <ItemActions><TagChip color={task.statusColor}>{task.statusName}</TagChip></ItemActions>
+            )}
+          </Item>
+        ))}
+      </ItemGroup>
+    </div>
+  );
 }
 
 export interface QaFormData {
@@ -383,7 +451,7 @@ export function QaTab({
   qa,
   form,
   canManage,
-  taskCount = 0,
+  tasks = [],
   canInteract = false,
 }: {
   projectId: number;
@@ -391,15 +459,19 @@ export function QaTab({
   /** حاضر بودنش یعنی کاربر می‌تواند چک‌لیست اعمال کند. */
   form: QaFormData | null;
   canManage: boolean;
-  /** چند تسکِ پروژه از همین چک‌لیست ساخته شده. */
-  taskCount?: number;
+  /** تسک‌هایی که همین چک‌لیست ساخته (دیدنی برای این بیننده). */
+  tasks?: QaTaskRow[];
   /** عضو/کارفرما آیتم‌های **خودشان** را تیک می‌زنند — فهرست از سرور به‌ازای بیننده فیلتر شده. */
   canInteract?: boolean;
 }) {
   const t = useT();
-  // R-PROJ-18 — آیتمِ «تسک‌ساز» از آیتمِ چک‌لیستِ ساده جداست.
-  const asTasks = qa.filter((q) => q.isTask === true);
-  const checklist = qa.filter((q) => q.isTask !== true);
+  const router = useRouter();
+  /**
+   * دو تب، مثلِ نسخهٔ قبلی: «تسک‌ها» (کارِ واقعی که QA روی تخته ساخته) و
+   * «چک‌لیست» (ردیف‌های `project_qa`). پیش‌فرض تبی است که چیزی دارد.
+   */
+  const [view, setView] = useState<'tasks' | 'checklist'>(tasks.length > 0 ? 'tasks' : 'checklist');
+  const [openTask, setOpenTask] = useState<number | null>(null);
 
   /**
    * نقش‌هایی که روی این پروژه آیتم دارند — برای دکمهٔ حذفِ گروهی.
@@ -455,20 +527,7 @@ export function QaTab({
     // دور می‌کرد. فرمِ بالا دیگر عرضِ سومی (`3xl`) ندارد.
     <div className="grid grid-cols-1 gap-4">
       {form && <ApplyQaForm projectId={projectId} roles={form.roles} />}
-      {/*
-        ⚠️ آیتمِ «تسک‌ساز» در جدولِ چک‌لیست **نمی‌نشیند** — مستقیم تسک می‌شود.
-        پس تبِ QA هیچ ردی از آن نداشت و مدیر بعدِ اعمال نمی‌فهمید کارِ واقعی
-        روی تخته ساخته شده. این خط تنها جای ماندگارِ آن خبر است.
-      */}
-      {taskCount > 0 && (
-        <p className="text-xs text-muted-foreground">
-          {t('{n} تسکِ این پروژه از همین چک‌لیست ساخته شده است.', { n: taskCount })}{' '}
-          <Link href={`/projects/${projectId}?tab=tasks`} className="underline hover:text-foreground">
-            {t('دیدنِ تسک‌ها')}
-          </Link>
-        </p>
-      )}
-      {qa.length === 0 ? (
+      {qa.length === 0 && tasks.length === 0 ? (
         <EmptyState title={t("هنوز آیتم چک‌لیستی روی این پروژه نیست.")} />
       ) : (
         <>
@@ -485,10 +544,30 @@ export function QaTab({
               ))}
             </div>
           )}
-          {section('تسک‌ها', asTasks)}
-          {section('چک‌لیست', checklist)}
+          <Tabs value={view} onValueChange={(v) => setView(v as typeof view)}>
+            <TabsList variant="line">
+              <TabsTrigger value="tasks" className="flex-none gap-1.5">
+                {t('تسک‌ها')}
+                <span className="num text-xs text-muted-foreground">{tasks.length}</span>
+              </TabsTrigger>
+              <TabsTrigger value="checklist" className="flex-none gap-1.5">
+                {t('چک‌لیست')}
+                <span className="num text-xs text-muted-foreground">{qa.length}</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {view === 'tasks'
+            ? <QaTaskGroups tasks={tasks} onOpen={setOpenTask} />
+            : (qa.length === 0
+              ? <p className="text-sm text-muted-foreground">{t('هنوز آیتم چک‌لیستی روی این پروژه نیست.')}</p>
+              : section('چک‌لیست', qa))}
         </>
       )}
+      <TaskDialog
+        taskId={openTask}
+        open={openTask !== null}
+        onOpenChange={(open) => { if (!open) { setOpenTask(null); router.refresh(); } }}
+      />
     </div>
   );
 }

@@ -177,20 +177,6 @@ export default async function ProjectDetailPage({
     : [null, null, null];
   const openTasks = tasks.filter((t) => t.statusGroup !== 'complete');
 
-  /**
-   * چند تا از تسک‌های این پروژه از چک‌لیستِ QA آمده‌اند.
-   *
-   * ⚠️ آیتمِ «تسک‌ساز» در `project_qa` **نمی‌نشیند** — مستقیم تسک می‌شود. پس
-   * تبِ QA هیچ ردی از آن نداشت و مدیر بعدِ اعمال نمی‌فهمید کارِ واقعی ساخته
-   * شده. همان قاعدهٔ تطبیقِ عنوان که `getProjectTabs` برای چیپِ «تسک» به کار
-   * می‌برد (پورتِ `find_task_item`).
-   */
-  const qaTaskTitles = new Set(
-    (qaForm?.library ?? []).filter((i) => i.isTask).map((i) => i.title),
-  );
-  const qaTaskCount = qaTaskTitles.size === 0
-    ? 0
-    : tasks.filter((t) => qaTaskTitles.has(t.title)).length;
   // رشته‌های بازِ کامنت — همان شمارشی که داشبورد دارد (`countOpenThreads`).
   const openComments = countOpenThreads(detail.comments);
   // متای جزئیات — پورتِ `kteam-detail-meta`.
@@ -398,7 +384,8 @@ export default async function ProjectDetailPage({
           })),
           taskFormOptions,
           qaForm: qaForm ? { roles: qaForm.roles } : null,
-          qaTaskCount,
+          // تسک‌هایی که QA ساخته — تبِ QA گروه‌بندی‌شده با نقش نشانشان می‌دهد.
+          qaTasks: detail.qaTasks,
           tenderIsOpen: detail.tenderIsOpen,
           comments: detail.comments,
           files: detail.files,

@@ -92,7 +92,14 @@ export interface CommentThread {
  * «کامنت‌های نیازمند بررسی تیم» — پورتِ `view_team_comments`: آخرین پیامِ هر
  * رشتهٔ باز، پیوند به تبِ کامنت‌های پروژه، و پاسخِ سریع بی‌ترکِ فهرست.
  */
-export function CommentThreads({ threads }: { threads: CommentThread[] }) {
+export function CommentThreads({
+  threads,
+  reply = true,
+}: {
+  threads: CommentThread[];
+  /** پاسخِ سریع — فقط فهرستِ تیمِ مدیرِ دفتر (`view_team_comments`)؛ فهرستِ عضو و کارفرما ندارد. */
+  reply?: boolean;
+}) {
   const tr = useT();
   const tz = useTimeZone();
   if (threads.length === 0) return <EmptyState title={tr('موردی برای بررسی نیست.')} />;
@@ -111,7 +118,7 @@ export function CommentThreads({ threads }: { threads: CommentThread[] }) {
               <Link href={href} className="text-sm whitespace-pre-wrap hover:underline">
                 {c.excerpt || tr('(بدون متن)')}
               </Link>
-              <QuickReply projectId={c.projectId} parentId={c.rootId} />
+              {reply && <QuickReply projectId={c.projectId} parentId={c.rootId} />}
             </ItemContent>
           </Item>
         );

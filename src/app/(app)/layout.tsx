@@ -244,6 +244,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               { href: '/settings', label: t('تنظیمات') },
               { href: '/profile', label: t('پروفایلِ من') },
               { href: '/notifications', label: t('اعلان‌ها') },
+              { href: '/comments', label: t('کامنت‌های نیازمند بررسی') },
             ]}
           />
           <div className="ms-auto flex items-center gap-2">

@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { comments, currencies } from '@/db/schema';
 import { hasPersonalMoney, myMoneyTotals, type MyMoneyTotals } from '@/server/finance/my-money';
@@ -6,6 +6,7 @@ import type { Actor } from '@/domain/access/permissions';
 import { isFrozenProject, isOpenProject } from '@/domain/projects/lifecycle';
 import { taskProgress } from '@/domain/projects/deadline';
 import { isOpenTask } from '@/domain/projects/visibility';
+import { openThreads } from '@/domain/dashboard/focus';
 import { summarizeProject, type PaymentStatus } from '@/domain/team-money/payments';
 import { membershipProjectIds } from '@/server/projects/authority';
 import * as repo from '@/server/projects/repository';
@@ -88,17 +89,24 @@ export interface MemberDashboard {
   money: MyMoneyTotals | null;
 }
 
+/**
+ * شمارِ **رشته‌های** باز — پورتِ `count_needs_review`: رشته‌ای که تازه‌ترین
+ * پیامش «نیازمند بررسی» است. ⚠️ پیش از این ردیف‌ها شمرده می‌شدند: رشته‌ای با
+ * سه پاسخِ باز «۳» بود و رشته‌ای که آخرین پیامش بسته‌اش کرده بود هم حساب
+ * می‌شد — و عدد با فهرستِ `/comments` نمی‌خواند.
+ */
 async function commentsNeedingReview(projectIds: number[]): Promise<number> {
   if (projectIds.length === 0) return 0;
   const rows = await db
-    .select({ count: sql<number>`count(*)::int` })
+    .select({ id: comments.id, parentId: comments.parentId, status: comments.status })
     .from(comments)
     .where(and(
       inArray(comments.projectId, projectIds),
       eq(comments.type, 'comment'),
-      eq(comments.status, 'needs_review'),
-    ));
-  return rows[0]?.count ?? 0;
+      isNull(comments.taskId),
+    ))
+    .orderBy(comments.id);
+  return openThreads(rows).length;
 }
 
 async function memberSection(actor: Actor): Promise<MemberSection> {

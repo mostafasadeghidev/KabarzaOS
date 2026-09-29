@@ -9,6 +9,10 @@ describe('فیلترِ عضو / نقش', () => {
     expect(parseAssignee('r:3')).toEqual({ kind: 'role', id: 3 });
   });
 
+  it('«کارهای این عضو» برای دریل‌داونِ پروفایل', () => {
+    expect(parseAssignee('m:5')).toEqual({ kind: 'member', id: 5 });
+  });
+
   it('لینک‌های قدیمیِ خودمان نمی‌شکنند', () => {
     expect(parseAssignee('7')).toEqual({ kind: 'user', id: 7 });
     expect(parseAssignee('0')).toEqual({ kind: 'none' });
@@ -23,7 +27,7 @@ describe('فیلترِ عضو / نقش', () => {
   });
 
   it('رفت‌وبرگشت با آدرس', () => {
-    for (const raw of ['u:4', 'r:9', '0']) expect(assigneeParam(parseAssignee(raw))).toBe(raw);
+    for (const raw of ['u:4', 'r:9', 'm:3', '0']) expect(assigneeParam(parseAssignee(raw))).toBe(raw);
     expect(assigneeParam(null)).toBe('');
   });
 });

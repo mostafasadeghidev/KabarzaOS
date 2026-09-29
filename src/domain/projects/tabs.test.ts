@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { matchesTab, buildTabs, activeTab, type TabbableProject } from './tabs';
+import { matchesTab, buildTabs, activeTab, relationCounts, type TabbableProject } from './tabs';
 
 const project = (over: Partial<TabbableProject> = {}): TabbableProject => ({
   statusGroup: 'in_progress', isTender: false, isArchived: false,
@@ -106,5 +106,19 @@ describe('ساختِ تب‌ها', () => {
 
   it('تبِ نامعتبر نادیده گرفته می‌شود', () => {
     expect(activeTab(buildTabs(projects, 'nonsense'))).toBe('in_progress');
+  });
+});
+
+describe('رابطهٔ بیننده با پروژه', () => {
+  it('شمارِ هر رابطه؛ پروژهٔ دو-رابطه‌ای در هر دو', () => {
+    expect(relationCounts([
+      { relations: ['member'] }, { relations: ['member', 'client'] }, { relations: ['managed'] }, {},
+    ])).toEqual([
+      { key: 'member', count: 2 }, { key: 'client', count: 1 }, { key: 'managed', count: 1 },
+    ]);
+  });
+
+  it('رابطهٔ بی‌پروژه دیده نمی‌شود', () => {
+    expect(relationCounts([{ relations: ['client'] }])).toEqual([{ key: 'client', count: 1 }]);
   });
 });

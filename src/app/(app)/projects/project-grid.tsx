@@ -4,7 +4,9 @@ import { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { matchesTab, type TabInfo, type TabKey } from '@/domain/projects/tabs';
+import {
+  buildTabs, matchesTab, RELATION_LABELS, relationCounts, type RelationKey, type TabInfo, type TabKey,
+} from '@/domain/projects/tabs';
 import type { VisibleProjectRow } from '@/server/projects/service';
 import { ProjectCard } from './project-card';
 import type { StatusOption } from './status-picker';
@@ -50,12 +52,31 @@ export function ProjectGrid({
   const [tab, setTab] = useState<TabKey>(initialTab);
   const [query, setQuery] = useState('');
 
+  /**
+   * بخشِ رابطه — فقط وقتی بیننده بیش از یک رابطه دارد (عضو + کارفرما، یا
+   * عضو + مدیرِ دفتر). با یک رابطه، فیلتر چیزی را جدا نمی‌کند و فقط شلوغی است.
+   */
+  const relations = useMemo(() => relationCounts(projects), [projects]);
+  const requestedRel = params.get('rel') as RelationKey | null;
+  const [relation, setRelation] = useState<RelationKey | 'all'>(
+    requestedRel && relations.some((r) => r.key === requestedRel) ? requestedRel : 'all',
+  );
+  const scoped = useMemo(
+    () => (relation === 'all' ? projects : projects.filter((p) => p.relations?.includes(relation))),
+    [projects, relation],
+  );
+  // ⚠️ شمارِ تب‌های وضعیت درونِ همان بخش — شمارِ سرور برای کلِ فهرست است.
+  const shownTabs = useMemo(
+    () => (relation === 'all' ? tabs : buildTabs(scoped, tab)),
+    [relation, tabs, scoped, tab],
+  );
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return projects
+    return scoped
       .filter((p) => matchesTab(tab, p))
       .filter((p) => (q ? p.title.toLowerCase().includes(q) : true));
-  }, [projects, tab, query]);
+  }, [scoped, tab, query]);
 
   // ⚠️ کوئریِ پروژه‌ها `LIMIT` ندارد؛ بریدن اینجا اتفاق می‌افتد.
   const pager = useCardPage(visible);
@@ -64,8 +85,16 @@ export function ProjectGrid({
   const otherHits = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return 0;
-    return projects.filter((p) => !matchesTab(tab, p) && p.title.toLowerCase().includes(q)).length;
-  }, [projects, tab, query]);
+    return scoped.filter((p) => !matchesTab(tab, p) && p.title.toLowerCase().includes(q)).length;
+  }, [scoped, tab, query]);
+
+  const selectRelation = (key: RelationKey | 'all') => {
+    setRelation(key);
+    const next = new URLSearchParams(params.toString());
+    if (key === 'all') next.delete('rel');
+    else next.set('rel', key);
+    router.replace(`/projects?${next.toString()}`, { scroll: false });
+  };
 
   const selectTab = (key: TabKey) => {
     setTab(key);
@@ -97,11 +126,27 @@ export function ProjectGrid({
         )}
       />
 
+      {relations.length > 1 && (
+        <div className="overflow-x-auto overflow-y-hidden">
+          <Tabs value={relation} onValueChange={(v) => selectRelation(v as typeof relation)}>
+            <TabsList variant="line" className="w-max">
+              <TabsTrigger value="all" className="flex-none">{tr('همه')}</TabsTrigger>
+              {relations.map((r) => (
+                <TabsTrigger key={r.key} value={r.key} className="flex-none">
+                  {tr(RELATION_LABELS[r.key])}
+                  <span className="num text-xs text-muted-foreground">{r.count}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
+
       {/* shadcn Tabs — روی صفحهٔ باریک پیمایشِ افقی، به‌جای شکستنِ خط. */}
       <div className="overflow-x-auto overflow-y-hidden">
         <Tabs value={tab} onValueChange={(v) => selectTab(v as typeof tab)}>
           <TabsList className="w-max">
-            {tabs.filter((t) => !t.hidden || t.key === tab).map((t) => (
+            {shownTabs.filter((t) => !t.hidden || t.key === tab).map((t) => (
               <TabsTrigger key={t.key} value={t.key} className="flex-none px-3">
                 {tr(t.label)}
                 <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{t.count}</Badge>

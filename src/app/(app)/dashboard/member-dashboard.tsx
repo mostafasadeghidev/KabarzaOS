@@ -80,7 +80,7 @@ function MemberBlock({
       <div className="grid gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         <StatCard value={data.stats.projects} label={t('پروژه‌ها')} href="/projects" />
         <StatCard value={data.stats.openTasks} label={t('تسک‌های باز')} href="/tasks" />
-        <StatCard value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/projects?tab=review" />
+        <StatCard value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/comments" />
         <StatCard value={unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" />
         <MoneyStat lines={money} label={t('ماندهٔ دریافتیِ شما')} />
       </div>
@@ -133,7 +133,7 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
       <div className="grid gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         <StatCard value={data.stats.projects} label={t('پروژه‌ها (به‌عنوان کارفرما)')} href="/projects" />
         <StatCard value={data.stats.reviewTasks} label={t('تسک‌های نیازمند بررسی')} href="/tasks" />
-        <StatCard value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/projects?tab=review" />
+        <StatCard value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/comments" />
         {showUnread && <StatCard value={unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" />}
         <MoneyStat lines={money} label={t('ماندهٔ پرداختیِ شما')} />
       </div>
