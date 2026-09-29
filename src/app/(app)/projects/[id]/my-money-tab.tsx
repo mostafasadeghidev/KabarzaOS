@@ -351,7 +351,8 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
               </Field>
               <Submit>{t("ثبتِ درخواست")}</Submit>
             </form>
-          ) : (
+          ) : data.requests.some((r) => r.status === 'pending' || r.status === 'approved') ? null : (
+            /* ⚠️ با درخواستِ باز پیام لازم نیست — خودِ درخواست بالاتر دیده می‌شود (نسخهٔ قبلی هم پنهانش می‌کرد). */
             <p className="text-xs text-muted-foreground">
               {tr("مبلغِ قابلِ درخواستی ندارید — یا مانده صفر است یا درخواستِ بازی دارید.")}
             </p>

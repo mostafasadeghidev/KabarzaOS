@@ -281,10 +281,14 @@ async function runCleanup(now: Date): Promise<boolean> {
   // ⚠️ مهر **پیش از** اجرا زده می‌شود تا خطای وسطِ کار حلقه نسازد.
   await writeStamp('cleanup', today);
 
-  await db.delete(reminders).where(and(
-    eq(reminders.isSent, true),
+  /**
+   * یادآور یک هفته پس از موعد پاک می‌شود، فرستاده‌شده یا نه — پورتِ
+   * `Reminders::purge_old`. ⚠️ پیش از این فقط فرستاده‌ها پاک می‌شدند و یادآوری
+   * که هرگز فرستاده نشد (مثلاً چون زمان‌بند خاموش بود) تا ابد در فهرست می‌ماند.
+   */
+  await db.delete(reminders).where(
     lt(reminders.remindAt, new Date(`${retentionCutoff(now, RETENTION_DAYS.reminders)}T00:00:00Z`)),
-  ));
+  );
   await db.delete(meetings).where(
     lt(meetings.meetAt, new Date(`${retentionCutoff(now, RETENTION_DAYS.meetings)}T00:00:00Z`)),
   );

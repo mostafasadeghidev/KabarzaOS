@@ -69,7 +69,12 @@ export function ProjectCard({
 }) {
   const tr = useT();
   const t = useT();
-  const bar = deadlineBar(project.deadline, project.regDate, today);
+  /**
+   * ⚠️ پروژهٔ تمام‌شده یا کنسل‌شده نوارِ ددلاین ندارد (نسخهٔ قبلی هم نداشت):
+   * «۴۰ روز گذشته» ِ قرمز روی کاری که تحویل شده، هشدارِ دروغ بود. تاریخ می‌ماند.
+   */
+  const finished = project.statusGroup === 'completed' || project.statusGroup === 'cancelled';
+  const bar = finished ? null : deadlineBar(project.deadline, project.regDate, today);
   const percent = taskProgress(project.doneTaskCount, project.totalTaskCount);
   const urgency = bar ? URGENCY[bar.urgency]! : null;
 
@@ -202,6 +207,11 @@ export function ProjectCard({
               aria-label={t("ددلاین")}
             />
           </div>
+        ) : finished && project.deadline ? (
+          <p className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>{t("ددلاین")}</span>
+            <span className="num">{project.deadline}</span>
+          </p>
         ) : (
           <p className="text-[11px] text-muted-foreground">{t("بدون ددلاین")}</p>
         )}

@@ -6,7 +6,7 @@ import { Bell, Building2, CreditCard, Clock, KeyRound, Send, Lock, UserRound } f
 import { Thumb } from '@/components/thumb';
 import {
   changePasswordAction, completeTelegramAction, connectTelegramAction,
-  disconnectTelegramAction, setCompanyLogoAction,
+  disconnectTelegramAction, sendMyTelegramTestAction, setCompanyLogoAction,
   saveCompanyAction, saveNotifyAction, saveTimezoneAction, type ProfileState,
   removeMyAvatarAction, saveAccountAction, setMyAvatarAction,
 } from './_form/actions';
@@ -91,7 +91,10 @@ export function ProfileView({ data }: { data: ProfileData }) {
    * ⚠️ تبِ «دسترسی‌های من» فقط وقتی هست که چیزی برای نشان‌دادن باشد؛
    * تبِ همیشه‌خالی فقط سؤال می‌سازد.
    */
-  const visible = data.myAccess.length > 0 ? TABS : TABS.filter((x) => x.key !== 'access');
+  // ⚠️ بی‌باتِ تلگرام تبش هم نیست (نسخهٔ قبلی هم پنهانش می‌کرد) — تبی که فقط «پیکربندی نشده» بگوید، شلوغی است.
+  const visible = TABS
+    .filter((x) => x.key !== 'access' || data.myAccess.length > 0)
+    .filter((x) => x.key !== 'telegram' || data.telegram !== 'unavailable');
 
   /**
    * تبِ آغازین از نشانی خوانده می‌شود.
@@ -389,7 +392,13 @@ export function ProfileView({ data }: { data: ProfileData }) {
           ) : data.telegram === 'connected' ? (
             <div className="grid gap-2">
               <p className="text-sm">{tr("اعلان‌های شما به تلگرام هم فرستاده می‌شود.")}</p>
-              <div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button" size="sm" variant="outline" disabled={pending}
+                  onClick={() => startTransition(async () => setTgState(await sendMyTelegramTestAction()))}
+                >
+                  {tr("ارسال پیام تست")}
+                </Button>
                 <Button
                   type="button" size="sm" variant="destructive" disabled={pending}
                   onClick={() => startTransition(async () => setTgState(await disconnectTelegramAction()))}

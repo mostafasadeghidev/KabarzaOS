@@ -29,6 +29,7 @@ import { StatusPicker } from '../status-picker';
 import { TagChip } from '@/components/ui/tag-chip';
 import { countOpenThreads } from '@/domain/projects/threads';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CreatedNotice } from './created-notice';
 import { CircleAlert } from 'lucide-react';
 import { PageHeader, PageShell, Panel } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
@@ -44,7 +45,7 @@ export default async function ProjectDetailPage({
    * قبلی هم همین را سمتِ سرور حل می‌کند تا صفحه از فریمِ اول روی تبِ درست
    * بنشیند و تبِ پیش‌فرض یک‌لحظه چشمک نزند.
    */
-  searchParams: Promise<{ tab?: string; view?: string }>;
+  searchParams: Promise<{ tab?: string; view?: string; created?: string; incomplete?: string }>;
 }) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
@@ -347,6 +348,11 @@ export default async function ProjectDetailPage({
         <StatCard label={t("تسکِ باز")} value={openTasks.length} />
         <StatCard label={t("کامنتِ باز")} value={openComments} />
       </div>
+
+      <CreatedNotice
+        created={query.created === '1'}
+        incomplete={(query.incomplete ?? '').split(',').filter(Boolean)}
+      />
 
       <ProjectTabs
         initialTab={query.tab ?? null}

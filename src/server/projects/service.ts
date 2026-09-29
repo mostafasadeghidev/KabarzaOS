@@ -1010,12 +1010,14 @@ export async function getMembersForm(actor: Actor, projectId: number) {
   const project = await getProject(actor, projectId); // گاردِ scope
   await assertCanManageProject(actor, projectId);
 
-  const [rows, team, roles, currencyRows, owed] = await Promise.all([
+  const [rows, team, roles, currencyRows, owed, roleMap] = await Promise.all([
     repo.listMembers(projectId),
     repo.memberCandidates(),
     repo.memberRoleTags(),
     repo.currencyOptions(),
     repo.owedUserIds(projectId),
+    // نقش‌های هر نفر — فهرستِ نقشِ هر ردیف به نقش‌های همان نفر محدود می‌شود.
+    repo.memberRoleMap(),
   ]);
 
   // R-PROJ-11 — عضوِ غیرفعال در فهرستِ انتخاب نیست، ولی ردیفِ موجودش دیده می‌شود.
@@ -1039,6 +1041,8 @@ export async function getMembersForm(actor: Actor, projectId: number) {
     })),
     team,
     roles,
+    /** `userId → نقش‌هایش` — همان محدودیتِ افزودنِ سریع و فرمِ ساخت (D#90). */
+    memberRoles: roleMap,
     currencies: currencyRows,
   };
 }
@@ -1341,7 +1345,8 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
      * عضو فقط پیشنهادِ خودِ او را می‌دهد (`getMemberTender`) — «دیدنِ
      * قیمتِ رقبا یعنی مناقصهٔ بی‌معنا».
      */
-    detail.project.isTender && detail.canManage
+    // ⚠️ حتی وقتی مناقصه خاموش شده: تاریخچهٔ پیشنهادها فقط‌خواندنی می‌ماند (D#64).
+    detail.canManage
       ? repo.listBids(projectId)
       : Promise.resolve([]),
     detail.canManage ? repo.memberHours(projectId) : Promise.resolve([]),
@@ -3061,16 +3066,26 @@ export interface ProjectBootstrap {
  * ⚠️ هر بخش مستقل `try` می‌شود: خطای یک تسکِ اولیه نباید کلِ ساختِ پروژه را
  * باطل کند — پروژه ساخته شده و کاربر باید ببیندش.
  */
+/** بخش‌های اولیهٔ فرمِ ساخت — نامِ بخشِ شکست‌خورده در نشانیِ پروژه می‌آید. */
+export type BootstrapStep = 'members' | 'clients' | 'tasks' | 'qa' | 'links' | 'attachments' | 'thumbnail';
+
 export async function bootstrapProject(
   actor: Actor,
   projectId: number,
   input: Partial<ProjectBootstrap>,
-): Promise<void> {
-  const step = async (name: string, run: () => Promise<unknown>) => {
+): Promise<BootstrapStep[]> {
+  /**
+   * ⚠️ شکستِ یک بخش ساختِ پروژه را برنمی‌گرداند (پروژهٔ ساخته‌شده بی‌صاحب
+   * نمی‌ماند)، ولی **پنهان** هم نمی‌ماند: نامِ بخش‌های شکست‌خورده برمی‌گردد تا
+   * سازنده پس از ساخت بفهمد پروژه کدام بخش را ندارد (F#81).
+   */
+  const failed: BootstrapStep[] = [];
+  const step = async (name: BootstrapStep, run: () => Promise<unknown>) => {
     try {
       await run();
     } catch (error) {
       console.error(`[bootstrap] ${name}`, error);
+      failed.push(name);
     }
   };
 
@@ -3133,6 +3148,7 @@ export async function bootstrapProject(
       await setProjectThumbnail(actor, projectId, input.thumbnail!);
     });
   }
+  return failed;
 }
 
 /* ------------------------------------------------------------------ *

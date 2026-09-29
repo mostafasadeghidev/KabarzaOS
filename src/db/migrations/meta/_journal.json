@@ -239,6 +239,13 @@
       "when": 1788661200016,
       "tag": "0033_user_appearance",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1788661200017,
+      "tag": "0034_status_default_names",
+      "breakpoints": true
     }
   ]
 }

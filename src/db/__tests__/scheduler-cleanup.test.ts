@@ -72,3 +72,16 @@ describe('پاک‌سازیِ لاگِ ممیزی', () => {
     expect(await db.select().from(auditLog)).toHaveLength(1);
   });
 });
+
+describe('پاک‌سازیِ یادآورها — Reminders::purge_old', () => {
+  it('⚠️ یادآورِ یک هفته گذشته پاک می‌شود، فرستاده یا نه؛ یادآورِ تازه می‌ماند', async () => {
+    const { reminders } = await import('../schema');
+    await db.insert(reminders).values([
+      { userId, body: 'کهنهٔ فرستاده', remindAt: daysAgo(RETENTION_DAYS.reminders + 2), isSent: true },
+      { userId, body: 'کهنهٔ فرستاده‌نشده', remindAt: daysAgo(RETENTION_DAYS.reminders + 2), isSent: false },
+      { userId, body: 'تازه', remindAt: daysAgo(1), isSent: false },
+    ]);
+    await runTick(new Date());
+    expect((await db.select().from(reminders)).map((r) => r.body)).toEqual(['تازه']);
+  });
+});

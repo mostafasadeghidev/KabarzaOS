@@ -127,9 +127,20 @@ export function ProjectTabs({
      * چون پولِ خودش است.
      */
     ...(data.canSeePrice || data.myMoney ? [{ key: 'finance', label: 'مالی' }] : []),
-    { key: 'qa', label: 'QA', badge: data.qa.length },
+    /**
+     * QA فقط وقتی چیزی برای این بیننده دارد (`qa_visible_items`)، یا بیننده مدیر
+     * است — فرمِ اعمالِ چک‌لیست همین تب است. پیش از این عضوی که هیچ آیتمی نداشت
+     * تبِ خالی می‌دید (D#67).
+     */
+    ...(data.canManage || data.qa.length > 0 || data.qaTasks.length > 0
+      ? [{ key: 'qa', label: 'QA', badge: data.qa.length }] : []),
     ...(data.canManage ? [{ key: 'manage', label: 'مدیریت' }] : []),
-    ...(data.isTender && data.canManage
+    /**
+     * ⚠️ تب تا وقتی پیشنهادی ثبت شده می‌ماند، حتی اگر پرچمِ مناقصه خاموش شود —
+     * نسخهٔ قبلی هم تبِ فقط‌خواندنی را نگه می‌داشت؛ پیش از این تاریخچهٔ
+     * پیشنهادها با برداشتنِ یک تیک ناپدید می‌شد. دکمه‌ها با `tenderIsOpen` پنهان‌اند.
+     */
+    ...((data.isTender || data.bids.length > 0) && data.canManage
       ? [{ key: 'bids', label: 'پیشنهادهای مناقصه', badge: data.bids.length }] : []),
     ...(data.myBid ? [{ key: 'my-bid', label: 'پیشنهادِ من' }] : []),
   ];

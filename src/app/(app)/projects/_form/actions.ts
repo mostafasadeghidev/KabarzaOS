@@ -52,12 +52,14 @@ export async function createProjectAction(_prev: FormState, formData: FormData):
   }
 
   let id: number;
+  let failed: string[] = [];
   try {
     const actor = await requireActor();
     id = await createProject(actor, parsed.data);
     // ⚠️ **بعد از** ساخت — همه به شناسهٔ پروژه نیاز دارند. خطای هر بخش
-    // داخلِ خودِ سرویس بلعیده می‌شود تا پروژهٔ ساخته‌شده بی‌صاحب نماند.
-    await bootstrapProject(actor, id, await readBootstrap(formData));
+    // داخلِ خودِ سرویس گرفته می‌شود تا پروژهٔ ساخته‌شده بی‌صاحب نماند؛ نامِ
+    // بخش‌های شکست‌خورده به صفحهٔ پروژه می‌رود تا سازنده ببیند.
+    failed = await bootstrapProject(actor, id, await readBootstrap(formData));
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ساختِ پروژه ندارید.', values };
     if (error instanceof OfficeRequiredError) {
@@ -74,7 +76,8 @@ export async function createProjectAction(_prev: FormState, formData: FormData):
   }
 
   revalidatePath('/projects');
-  redirect(`/projects/${id}`);
+  // «پروژه ساخته شد.» + هشدارِ بخش‌های ناقص روی صفحهٔ پروژه (F#23، F#81).
+  redirect(`/projects/${id}?created=1${failed.length > 0 ? `&incomplete=${failed.join(',')}` : ''}`);
 }
 
 /**

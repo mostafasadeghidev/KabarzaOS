@@ -181,6 +181,24 @@ async function sendTelegram(chatId: string, text: string): Promise<void> {
   });
 }
 
+/**
+ * پیامِ آزمایشی به تلگرامِ **خودِ کاربر** — پورتِ دکمهٔ «ارسال پیام تست» ِ
+ * تبِ تلگرامِ پروفایل. برخلافِ `sendTelegram` بی‌صدا نیست: کاربر می‌خواهد
+ * بداند اتصالش کار می‌کند، پس نتیجه برمی‌گردد.
+ */
+export async function sendTelegramTestToSelf(actor: Actor, text: string): Promise<boolean> {
+  const [row] = await db.select({ chatId: users.telegramChatId }).from(users).where(eq(users.id, actor.id));
+  const { token } = await telegramCredentials();
+  if (!token || !row?.chatId) return false;
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ chat_id: row.chatId, text, disable_web_page_preview: true }),
+    signal: AbortSignal.timeout(15_000),
+  }).catch(() => null);
+  return res?.ok === true;
+}
+
 /** زنگِ کاربر — آخرین اعلان‌ها و شمارِ خوانده‌نشده. */
 export async function listNotifications(actor: Actor, limit = 30) {
   const [rows, unread] = await Promise.all([

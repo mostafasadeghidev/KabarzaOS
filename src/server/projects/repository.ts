@@ -703,6 +703,8 @@ export async function memberRoleMap(): Promise<Record<number, number[]>> {
     .select({ userId: tagRelations.objectId, tagId: tagRelations.tagId })
     .from(tagRelations)
     .innerJoin(tags, eq(tags.id, tagRelations.tagId))
+    // پورتِ `People::member_role_map`: فقط اعضای **فعال** — همان فهرستِ انتخابگرها.
+    .innerJoin(users, and(eq(users.id, tagRelations.objectId), eq(users.memberState, 'active'), isNull(users.deletedAt)))
     .where(and(eq(tagRelations.objectType, 'user'), eq(tags.type, 'member_role')));
 
   const out: Record<number, number[]> = {};

@@ -266,6 +266,8 @@ export function MeetingsView({
             </div>
           </form>
 
+          {/* پورتِ یادداشتِ زیرِ فهرستِ افزونه — کاربر نباید از ناپدیدشدنِ یادآورِ کهنه غافلگیر شود. */}
+          <p className="text-xs text-muted-foreground">{t("یادآورها یک هفته پس از موعدشان به‌صورت خودکار پاک می‌شوند.")}</p>
           {reminders.length === 0 ? (
             <EmptyState title={t("یادآوری ندارید.")} />
           ) : (

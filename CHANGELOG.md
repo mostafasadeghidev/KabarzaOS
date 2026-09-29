@@ -2,6 +2,28 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.96.0]
+
+### Added
+
+- **«پروژه ساخته شد.» after creating a project,** and a warning that stays until closed if part of the creation form could not be saved: members, clients, tasks, the QA checklist, links, files or the featured image. Before, a failed part left the project silently incomplete.
+- **«ارسال پیام تست» on the profile's Telegram tab.** A connected user can send a test message to their own chat and see whether it arrived.
+
+### Changed
+
+- **Finished projects show no deadline bar.** A completed or cancelled project showed «N روز گذشته» in red; it now shows only the date, as the previous version did.
+- **The bids tab stays while bids exist.** Turning the tender flag off hid the whole bid history. The tab now stays read-only as long as bids were placed.
+- **The QA tab shows only when it has something for the viewer.** A member with no checklist items saw an empty tab. Managers still see it, because the apply form lives there.
+- **The members dialog offers each person's own roles.** The role list of a row now lists only the roles the chosen person holds, like quick add and the create form. A row's current role is always kept, and a person with no roles still sees all of them.
+- **The Telegram tab is hidden when no bot is configured,** instead of a tab that only said so.
+- **The zero-balance note in «مالیِ من» is hidden while a payment request is open;** the request itself is shown above it.
+- **Reminders are removed a week after their time, sent or not,** as in the previous version, and the list says so. Reminders that were never sent, for example while the scheduler was down, stayed forever.
+- The role map used by the member pickers ignores off-boarded people.
+
+### Fixed
+
+- **Two project statuses kept older names on fresh installs.** Migration 0034 renames «متوقف» to «نگه‌داشته‌شده» and «لغو شده» to «کنسل شده» where the name is still the untouched default, matching the project tabs. A status a manager renamed is left alone.
+
 ## [1.95.0]
 
 ### Fixed
