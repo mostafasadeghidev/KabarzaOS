@@ -253,20 +253,25 @@ function ImpactPanel({ counts, state, totalMinutes }: {
   totalMinutes: number;
 }) {
   const t = useT();
-  const stats: Array<[string, string]> = [
-    [t('تراکنش‌های مالی'), String(counts.ledgerRows)],
-    [t('پرداخت‌های ثبت‌شده'), String(counts.paymentRows)],
-    [t('ساعت کاری'), `${counts.timelogRows} · ${hhmm(totalMinutes)}`],
+  /**
+   * ⚠️ ساعتِ کاری دو عدد دارد: جمعِ ساعت (عددِ اصلی) و شمارِ ثبت‌ها (زیرنویس).
+   * پیش از این «۵۴ · ۱۷۹:۰۰» کنارِ هم و بی‌برچسب بود و معلوم نبود ۵۴ چیست.
+   */
+  const stats: Array<{ label: string; value: string; hint?: string }> = [
+    { label: t('تراکنش‌های مالی'), value: String(counts.ledgerRows) },
+    { label: t('پرداخت‌های ثبت‌شده'), value: String(counts.paymentRows) },
+    { label: t('ساعت کاری'), value: hhmm(totalMinutes), hint: t('{n} ثبت', { n: counts.timelogRows }) },
   ];
-  if (counts.openRequests > 0) stats.push([t('درخواست پرداختِ باز'), String(counts.openRequests)]);
+  if (counts.openRequests > 0) stats.push({ label: t('درخواست پرداختِ باز'), value: String(counts.openRequests) });
 
   return (
     <Panel title={t('وضعیت پروژه')}>
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {stats.map(([label, value]) => (
+        {stats.map(({ label, value, hint }) => (
           <div key={label} className="rounded-lg border bg-card px-3 py-2">
             <dt className="text-xs text-muted-foreground">{label}</dt>
             <dd className="num text-base font-semibold">{value}</dd>
+            {hint && <dd className="text-xs text-muted-foreground">{hint}</dd>}
           </div>
         ))}
       </dl>

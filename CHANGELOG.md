@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.100.1]
+
+### Fixed
+
+- **The work-hours figure in the manage tab's project status read as two unlabelled numbers** («54 · 179:00»). The total hours are now the main figure, with the number of entries on a line of its own under it («54 entries»).
+
 ## [1.100.0]
 
 ### Added
