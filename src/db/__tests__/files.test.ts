@@ -319,3 +319,23 @@ describe('گیتِ فایل = همان تصمیمِ دسترسیِ پروژه، 
     expect(await canViewFile(actorOf(outsiderId, ['member']), fileId)).toBe(false);
   });
 });
+
+describe('مناقصه‌گر فایل‌های پروژهٔ مناقصه را می‌بیند', () => {
+  it('⚠️ غیرعضوی که نقشِ بازِ مناقصه دارد فایل را باز می‌کند؛ بی‌آن نقش نه', async () => {
+    const { tags, tagRelations } = await import('../schema');
+    const [role] = await db.insert(tags).values({ name: 'طراحِ مناقصه', type: 'member_role' }).returning({ id: tags.id });
+    const fileId = await addAttachment(owner, projectId, blob(), 'بریف');
+    // بی‌مناقصه: بیگانه است.
+    expect(await canViewFile(actorOf(outsiderId, ['member']), fileId)).toBe(false);
+
+    await db.update(projects).set({ isTender: true, tenderRoles: { [String(role!.id)]: null } }).where(eq(projects.id, projectId));
+    await db.insert(tagRelations).values({ objectType: 'user', objectId: outsiderId, tagId: role!.id });
+    try {
+      expect(await canViewFile(actorOf(outsiderId, ['member']), fileId)).toBe(true);
+    } finally {
+      await db.delete(tagRelations).where(eq(tagRelations.objectId, outsiderId));
+      await db.update(projects).set({ isTender: false, tenderRoles: null }).where(eq(projects.id, projectId));
+      await db.delete(tags).where(eq(tags.id, role!.id));
+    }
+  });
+});

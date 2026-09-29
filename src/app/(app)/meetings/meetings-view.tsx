@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { CalendarDays, MapPin, Plus, Trash2, Users } from 'lucide-react';
@@ -31,6 +32,8 @@ import { DateTimePicker } from '@/components/ui/date-picker';
 
 export interface MeetingRow extends MeetingView {
   projectTitle: string | null;
+  /** زمانِ ثبتِ جلسه — در جزئیات (dash-2 #65). */
+  createdAt?: Date | string;
   officeName: string | null;
   meetingScope: 'project' | 'general';
   /** سازنده، مدیرِ پروژه‌اش، یا مدیرِ سراسری — از سرور. */
@@ -333,7 +336,12 @@ export function MeetingsView({
           <DialogHeader>
             <DialogTitle>{detail?.title ?? ''}</DialogTitle>
             <DialogDescription>
-              {detail?.meetingScope === 'project'
+              {/* نامِ پروژه پیوند است، نه متنِ خام (dash-2 #65). */}
+              {detail?.meetingScope === 'project' && detail.projectId ? (
+                <Link href={`/projects/${detail.projectId}`} className="hover:text-foreground hover:underline">
+                  {tr('جلسهٔ پروژه: {name}', { name: detail.projectTitle ?? tr('بدونِ نام') })}
+                </Link>
+              ) : detail?.meetingScope === 'project'
                 ? tr('جلسهٔ پروژه: {name}', { name: detail?.projectTitle ?? tr('بدونِ نام') })
                 : tr('جلسهٔ عمومی: {name}', { name: detail?.officeName ?? tr('همهٔ دفاتر') })}
             </DialogDescription>
@@ -347,6 +355,11 @@ export function MeetingsView({
                   {t('تاریخ و ساعت')}
                 </dt>
                 <dd className="num">{when(detail.meetAt, tz)}</dd>
+                {detail.createdAt && (
+                  <dd className="text-xs text-muted-foreground">
+                    {tr('ثبت‌شده در {date}', { date: when(detail.createdAt, tz) })}
+                  </dd>
+                )}
               </div>
 
               <div className="grid gap-1">

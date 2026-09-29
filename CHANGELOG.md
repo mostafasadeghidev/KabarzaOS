@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.98.0]
+
+### Fixed
+
+- **Bidders could not open a tender project's files.** The bidder view lists the project's files so a bidder can study the work before quoting, but the file gate admitted only members, clients and managers, so every link returned 403. In the previous version project files were public media. A user who can bid on the project — an open tender role, or a bid already placed — can now open its attachments. Receipts and other files keep their own rules.
+
+### Added
+
+- **The bidder view shows every tender role** with its cap, marked «واگذار شد» when awarded to someone else or «برنده» when awarded to the viewer.
+- **The bidder view's header shows the project's picture and status,** its task cards show the priority, and its files show image previews and a video icon.
+- **The project page shows the project's picture next to the title.**
+- **The member and client dashboards show each project's picture** next to its name.
+- **A meeting's details link to its project** and show when the meeting was created.
+
 ## [1.97.0]
 
 ### Added

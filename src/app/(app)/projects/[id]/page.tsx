@@ -30,6 +30,7 @@ import { TagChip } from '@/components/ui/tag-chip';
 import { countOpenThreads } from '@/domain/projects/threads';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CreatedNotice } from './created-notice';
+import { Thumb } from '@/components/thumb';
 import { CircleAlert } from 'lucide-react';
 import { PageHeader, PageShell, Panel } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
@@ -197,6 +198,8 @@ export default async function ProjectDetailPage({
       <PageHeader
         back={{ href: '/projects', label: t("پروژه‌ها") }}
         title={project.title}
+        // تصویرِ شاخص کنارِ عنوان (dash-3 #56) — بی‌تصویر، تک‌نگارِ رنگی.
+        media={<Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} size={56} />}
         description={project.description ? (
           // توضیحِ پروژه — پیش از این فقط داخلِ فرمِ ویرایش دیده می‌شد.
           <p className="max-w-3xl whitespace-pre-wrap">{project.description}</p>

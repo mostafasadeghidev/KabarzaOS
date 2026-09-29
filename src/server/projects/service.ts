@@ -1,4 +1,5 @@
 import { tagName } from '@/db/tag-name';
+import { alias } from 'drizzle-orm/pg-core';
 import { currentLocale, getT } from '@/i18n/server';
 import { notInArray, and, eq, inArray, isNull, asc, like, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
@@ -2942,7 +2943,16 @@ export class BidError extends Error {
  * فایل‌ها، و فرمِ پیشنهاد. نه کامنت، نه مالی، نه اعضا، نه تسکِ بقیه —
  * وگرنه هر کسی با یک تگِ نقش می‌توانست داخلِ پروژه‌های شرکت را ببیند.
  */
-export async function getBidderView(actor: Actor, projectId: number) {
+/**
+ * آیا این کاربر مناقصه‌گرِ این پروژه است؟ — همان شرطِ نمای مناقصه‌گر: پروژه
+ * مناقصه است، در دامنهٔ او، و نقشِ بازی برای او دارد یا از قبل پیشنهاد داده.
+ * گیتِ فایل برای پیوست‌های پروژه از همین استفاده می‌کند.
+ */
+export async function isTenderBidder(actor: Actor, projectId: number): Promise<boolean> {
+  return (await bidderContext(actor, projectId)) !== null;
+}
+
+async function bidderContext(actor: Actor, projectId: number) {
   const rows = await db
     .select({
       id: projects.id,
@@ -2952,8 +2962,13 @@ export async function getBidderView(actor: Actor, projectId: number) {
       isTender: projects.isTender,
       tenderRoles: projects.tenderRoles,
       currencyId: projects.currencyId,
+      // سرِ نمای مناقصه‌گر — تصویرِ شاخص و وضعیت (dash-3 #44).
+      thumbnailFileId: projects.thumbnailFileId,
+      statusName: tagName(await currentLocale()),
+      statusColor: tags.color,
     })
     .from(projects)
+    .leftJoin(tags, eq(tags.id, projects.statusTagId))
     .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)));
 
   const project = rows[0];
@@ -2981,6 +2996,14 @@ export async function getBidderView(actor: Actor, projectId: number) {
 
   const mine = bids.filter((b) => b.userId === actor.id);
   if (open.length === 0 && mine.length === 0) return null;
+  return { project, roleIds, bids, statusGroup, open, mine };
+}
+
+export async function getBidderView(actor: Actor, projectId: number) {
+  const context = await bidderContext(actor, projectId);
+  if (!context) return null;
+  const { project, roleIds, bids, statusGroup, open, mine } = context;
+  const bidPriority = alias(tags, 'bidder_priority_tag');
 
   // تسک‌هایی که نقششان با نقشِ بازِ این کاربر می‌خورد — نه بیشتر.
   const scopedTasks = open.length === 0 ? [] : await db
@@ -2988,9 +3011,13 @@ export async function getBidderView(actor: Actor, projectId: number) {
       id: tasks.id,
       title: tasks.title,
       description: tasks.description,
+      // چیپِ اولویت روی کارتِ تسکِ مناقصه‌گر (dash-2 #156).
+      priorityName: tagName(await currentLocale(), bidPriority),
+      priorityColor: bidPriority.color,
     })
     .from(tasks)
     .innerJoin(taskRoles, eq(taskRoles.taskId, tasks.id))
+    .leftJoin(bidPriority, eq(bidPriority.id, tasks.priorityTagId))
     .where(and(
       eq(tasks.projectId, projectId),
       isNull(tasks.deletedAt),
@@ -3004,8 +3031,24 @@ export async function getBidderView(actor: Actor, projectId: number) {
   const roleNameOf = new Map(tagRows.map((t) => [t.id, t.name]));
   const roles = (project.tenderRoles ?? {}) as Record<string, string | null>;
 
+  /**
+   * همهٔ نقش‌های مناقصه با سقف — و «واگذار شد» برای نقشی که به دیگری رسیده
+   * (dash-2 #159). ⚠️ نامِ برنده نمی‌آید؛ مناقصه‌گر فقط می‌فهمد نقش دیگر باز نیست.
+   */
+  const awardedTo = new Map(bids.filter((b) => b.status === 'approved').map((b) => [b.roleTagId, b.userId]));
+  const allRoles = roleIds.map((rid) => ({
+    roleTagId: rid,
+    roleName: roleNameOf.get(rid) ?? `#${rid}`,
+    cap: roles[String(rid)] ?? null,
+    state: !awardedTo.has(rid) ? 'open' as const : awardedTo.get(rid) === actor.id ? 'mine' as const : 'awarded' as const,
+  }));
+
   return {
-    project: { id: project.id, title: project.title, description: project.description },
+    project: {
+      id: project.id, title: project.title, description: project.description,
+      thumbnailFileId: project.thumbnailFileId, statusName: project.statusName, statusColor: project.statusColor,
+    },
+    roles: allRoles,
     tasks: scopedTasks,
     files: await repo.listAttachments(projectId),
     bid: {

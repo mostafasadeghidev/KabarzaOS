@@ -135,6 +135,7 @@ export async function listMeetings(actor: Actor) {
       officeName: offices.name,
       createdBy: meetings.createdBy,
       scope: meetings.scope,
+      createdAt: meetings.createdAt,
     })
     .from(meetings)
     .leftJoin(projects, eq(projects.id, meetings.projectId))

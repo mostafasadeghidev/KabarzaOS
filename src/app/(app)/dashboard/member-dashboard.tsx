@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Thumb } from '@/components/thumb';
 import type { ClientSection, MemberDashboard, MemberSection } from '@/server/dashboard-member';
 import { format } from '@/domain/money/money';
 import { SecretAmount } from '@/components/secret-amount';
@@ -108,7 +109,11 @@ function MemberBlock({
               {data.rows.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">
-                    <Link href={`/projects/${p.id}`} className="hover:underline">{p.title}</Link>
+                    {/* بندانگشتیِ پروژه کنارِ نام — `Projects::thumb_html` (dash-3 #3/#8). */}
+                    <Link href={`/projects/${p.id}`} className="inline-flex items-center gap-2 hover:underline">
+                      <Thumb id={p.id} title={p.title} fileId={p.thumbnailFileId} size={32} />
+                      {p.title}
+                    </Link>
                   </TableCell>
                   <TableCell>{p.myRoles.length > 0 ? p.myRoles.join(t('، ')) : '—'}</TableCell>
                   <TableNumericCell>{p.regDate ?? '—'}</TableNumericCell>
@@ -163,7 +168,11 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
               {data.rows.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">
-                    <Link href={`/projects/${p.id}`} className="hover:underline">{p.title}</Link>
+                    {/* بندانگشتیِ پروژه کنارِ نام — `Projects::thumb_html` (dash-3 #3/#8). */}
+                    <Link href={`/projects/${p.id}`} className="inline-flex items-center gap-2 hover:underline">
+                      <Thumb id={p.id} title={p.title} fileId={p.thumbnailFileId} size={32} />
+                      {p.title}
+                    </Link>
                   </TableCell>
                   <TableNumericCell>{p.regDate ?? '—'}</TableNumericCell>
                   <TableNumericCell>

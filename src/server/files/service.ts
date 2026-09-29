@@ -134,6 +134,16 @@ export async function canViewFile(actor: Actor, fileId: number): Promise<boolean
     .from(attachments).where(eq(attachments.fileId, fileId));
   for (const row of attached) {
     if (row.projectId && await canAccessProject(actor, row.projectId)) return true;
+    /**
+     * ⚠️ مناقصه‌گر (غیرعضوی که نقشِ بازِ مناقصه دارد) فایل‌های پروژه را می‌بیند —
+     * نمای مناقصه‌گر همین فهرست را نشانش می‌دهد تا پیش از قیمت‌دادن کار را
+     * ببیند. پیش از این پیوندها ۴۰۳ می‌گرفتند (در نسخهٔ قبلی فایلِ پروژه
+     * رسانهٔ عمومیِ وردپرس بود و باز می‌شد). رسیدها و بقیه همان گارد را دارند.
+     */
+    if (row.projectId) {
+      const { isTenderBidder } = await import('@/server/projects/service');
+      if (await isTenderBidder(actor, row.projectId)) return true;
+    }
   }
 
   // تصویرِ شاخصِ پروژه ← همان قاعده.

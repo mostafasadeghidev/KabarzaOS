@@ -24,6 +24,8 @@ import * as repo from '@/server/projects/repository';
 export interface MemberDashboardRow {
   id: number;
   title: string;
+  /** تصویرِ شاخص — بندانگشتیِ ۳۲ پیکسلیِ کنارِ نام (dash-3 #8). */
+  thumbnailFileId: number | null;
   deadline: string | null;
   regDate: string | null;
   statusName: string | null;
@@ -44,6 +46,7 @@ export interface MemberSection {
 export interface ClientRow {
   id: number;
   title: string;
+  thumbnailFileId: number | null;
   regDate: string | null;
   deadline: string | null;
   statusName: string | null;
@@ -138,6 +141,7 @@ async function memberSection(actor: Actor): Promise<MemberSection> {
     .map((p) => ({
       id: p.id,
       title: p.title,
+      thumbnailFileId: p.thumbnailFileId,
       deadline: p.deadline,
       regDate: p.regDate,
       statusName: p.statusName,
@@ -180,6 +184,7 @@ async function clientSection(actor: Actor): Promise<ClientSection> {
     return {
       id: p.id,
       title: p.title,
+      thumbnailFileId: p.thumbnailFileId,
       regDate: p.regDate,
       deadline: p.deadline,
       statusName: p.statusName,
