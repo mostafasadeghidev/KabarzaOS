@@ -209,7 +209,7 @@ export async function savePersonAction(
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return {
-        error: error.message === 'email.taken'
+        error: error.required === 'email.taken'
           ? 'این ایمیل قبلاً ثبت شده است.'
           : 'اجازهٔ تغییرِ اعضا ندارید.',
         values,
@@ -313,7 +313,7 @@ export async function setPersonPasswordAction(
     }
     if (error instanceof ForbiddenError) {
       return {
-        error: error.message === 'password.use_profile'
+        error: error.required === 'password.use_profile'
           ? 'رمزِ خودتان را از «پروفایلِ من» عوض کنید.'
           : 'اجازهٔ تغییرِ اعضا ندارید.',
       };

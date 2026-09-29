@@ -123,6 +123,7 @@ export function FinancePage({
       {tab === 'ledger' && (
         <LedgerView
           {...props}
+          isOwner={isOwner}
           onSelectAccount={(id) => router.push(`/finance?account=${id}`)}
         />
       )}

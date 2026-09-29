@@ -153,7 +153,10 @@ export function LedgerView({
   periodScoped = false,
   accountProjectIds,
   onSelectAccount,
+  isOwner = false,
 }: {
+  /** مالک — پیوندِ «مدیریتِ دوره» در بنرِ قفل (تبِ «دورهٔ مالی» ِ تنظیمات). */
+  isOwner?: boolean;
   accountId: number;
   accounts: AccountOption[];
   entries: EntryRow[];
@@ -275,6 +278,12 @@ export function LedgerView({
             {periodScoped && (
               <Link href={`/finance?account=${accountId}&all=1`} className="ms-auto underline">
                 {tr('نمایشِ ردیف‌های دورهٔ بسته')}
+              </Link>
+            )}
+            {/* پورتِ پیوندِ «مدیریت در تنظیمات» — بستن/بازکردنِ دوره فقط کارِ مالک است. */}
+            {isOwner && (
+              <Link href="/settings?tab=fiscal" className={periodScoped ? 'ms-3 underline' : 'ms-auto underline'}>
+                {tr('مدیریتِ دورهٔ مالی')}
               </Link>
             )}
           </AlertDescription>

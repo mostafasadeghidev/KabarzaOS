@@ -44,9 +44,10 @@ export async function addMemberAction(_prev: CardActionState, formData: FormData
   if (amount !== '' && !/^\d+(\.\d{1,4})?$/.test(amount)) return { error: 'مبلغ معتبر نیست.' };
   if (unitRate !== '' && !/^\d+(\.\d{1,4})?$/.test(unitRate)) return { error: 'مبلغ معتبر نیست.' };
 
+  let plan: Awaited<ReturnType<typeof addProjectMember>>;
   try {
     const actor = await requireActor();
-    await addProjectMember(actor, projectId, {
+    plan = await addProjectMember(actor, projectId, {
       userId,
       roleTagId: Number.isInteger(roleRaw) && roleRaw > 0 ? roleRaw : null,
       agreedAmount: amount === '' ? '0' : amount,
@@ -54,9 +55,17 @@ export async function addMemberAction(_prev: CardActionState, formData: FormData
       currencyId: Number.isInteger(currencyRaw) && currencyRaw > 0 ? currencyRaw : null,
     });
   } catch (error) {
-    if (error instanceof ForbiddenError) return { error: 'اجازهٔ افزودنِ عضو ندارید.' };
+    if (error instanceof ForbiddenError) {
+      if (error.required === 'member.inactive') return { error: 'این عضو غیرفعال است و دوباره به پروژه اضافه نمی‌شود.' };
+      return { error: 'اجازهٔ افزودنِ عضو ندارید.' };
+    }
     return { error: 'عضو اضافه نشد.' };
   }
+  /**
+   * ⚠️ همین نفر با همین نقش و مبلغِ برابر یا بیشتر از پیش هست (`planAddMember` → keep):
+   * چیزی ساخته نشد، پس «موفق» گفتن دروغ بود — پیامِ نسخهٔ قبلی را می‌دهیم.
+   */
+  if (plan.action === 'keep') return { error: 'ردیفِ تکراری ساخته نشد؛ این نفر با همین نقش و این مبلغ روی پروژه هست.' };
   revalidatePath('/projects');
   revalidatePath(`/projects/${projectId}`);
   return { ok: true };

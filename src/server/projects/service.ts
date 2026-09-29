@@ -589,8 +589,18 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
           .where(eq(projectPayments.id, row.id));
       }
 
-      // ردیف‌های دفترکل فقط پیوندشان قطع می‌شود؛ برچسبِ طرف و شرحشان می‌ماند.
-      await tx.update(ledger).set({ projectId: null }).where(eq(ledger.projectId, projectId));
+      /**
+       * ردیف‌های دفترکل هم همان برچسب را در **شرح** می‌گیرند و بعد پیوندشان قطع
+       * می‌شود — پورتِ `detach_financial`. ⚠️ پیش از این فقط پیوند قطع می‌شد و
+       * ردیفِ دفتر بی‌هیچ ردی از پروژه می‌ماند. برچسبِ تکراری اضافه نمی‌شود.
+       */
+      await tx.update(ledger).set({
+        description: sql`case
+          when trim(${ledger.description}) = '' then ${tag}
+          when position(${tag} in ${ledger.description}) > 0 then ${ledger.description}
+          else ${ledger.description} || ' — ' || ${tag} end`,
+        projectId: null,
+      }).where(eq(ledger.projectId, projectId));
     }
 
     /**
@@ -2058,7 +2068,12 @@ export async function createTask(
     ).onConflictDoNothing();
   }
 
-  await audit(actor, 'task.create', projectId, null, input);
+  /**
+   * ⚠️ تسکِ بی‌صدا (تسک‌های اولیهٔ فرمِ ساخت و QA) ردیفِ فعالیت نمی‌گیرد — نسخهٔ
+   * قبلی `Activity::log` را هم با `silent` رد می‌کرد. خودِ ساختِ پروژه یا اعمالِ
+   * QA یک ردیف دارد؛ بیست ردیفِ «تسک ساخته شد» پشتِ سرِ هم فیدِ فعالیت را پر می‌کرد.
+   */
+  if (!options.silent) await audit(actor, 'task.create', projectId, null, input);
 
   /**
    * R-NOTIF-01 — مسئولِ مستقیم، و اگر تسک **نقشی** است دارندگانِ آن نقش.
@@ -2426,6 +2441,12 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
      */
     claimable: claimable && canInteract && !frozen,
     canManage: canManage && !frozen,
+    /**
+     * ویرایش و حذف — مدیرِ پروژه **یا سازندهٔ تسک** (`may_edit`)، همان گاردِ
+     * `updateTask`/`deleteTask`. ⚠️ پیش از این دکمه‌ها فقط با `canManage` دیده
+     * می‌شدند و قاعدهٔ سرور برای سازنده (کارفرما یا عضو) در UI مرده بود.
+     */
+    canEdit: (canManage || task.createdBy === actor.id) && !frozen,
     canInteract: canInteract && !frozen,
   };
 }

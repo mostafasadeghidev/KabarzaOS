@@ -343,3 +343,28 @@ describe('ساختِ پروژه توسطِ مدیرِ دفتر — پورتِ ha
     expect(after.officeId).toBe(tehran);
   });
 });
+
+describe('کارکردِ تعدادی — مدیرِ همین پروژه برای عضو ثبت می‌کند (handle_add_unit)', () => {
+  it('مدیرِ دفتر (غیرعضو) برای عضوِ پروژهٔ دفترش ثبت و حذف می‌کند', async () => {
+    const { addUnitEntry, deleteUnitEntry } = await import('@/server/finance/member-service');
+    const { unitEntries } = await import('../schema');
+    const { currencies } = await import('../schema');
+    const [cur] = await db.select({ id: currencies.id }).from(currencies).limit(1);
+    const currencyId = cur?.id ?? (await db.insert(currencies).values({ code: 'EUR', name: 'یورو', symbol: '€', isDefault: true }).returning({ id: currencies.id }))[0]!.id;
+    await db.update(projects).set({ isUnitBased: true, currencyId }).where(eq(projects.id, projectA));
+
+    const id = await addUnitEntry(actor(officeBoss), {
+      projectId: projectA, userId: plainMember, entryDate: '2026-09-01', quantity: 2, note: '',
+    });
+    const [row] = await db.select().from(unitEntries).where(eq(unitEntries.id, id));
+    expect(row!.userId).toBe(plainMember);
+    await deleteUnitEntry(actor(officeBoss), id);
+    expect(await db.select().from(unitEntries).where(eq(unitEntries.id, id))).toHaveLength(0);
+
+    // ⚠️ بیگانه نه ثبت می‌کند نه برای کسی.
+    await expect(addUnitEntry(actor(stranger), {
+      projectId: projectA, userId: plainMember, entryDate: '2026-09-01', quantity: 1, note: '',
+    })).rejects.toThrow();
+    await db.update(projects).set({ isUnitBased: false }).where(eq(projects.id, projectA));
+  });
+});

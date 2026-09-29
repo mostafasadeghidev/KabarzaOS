@@ -17,7 +17,12 @@ import './globals.css';
  */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
-  return { title: 'KabarzaOS', description: t('سیستمِ مدیریتِ آژانس') };
+  return {
+    title: 'KabarzaOS',
+    description: t('سیستمِ مدیریتِ آژانس'),
+    // ⚠️ اپِ داخلی است — هیچ صفحه‌ای (فاکتور، ورود) نباید در موتورِ جستجو بنشیند.
+    robots: { index: false, follow: false },
+  };
 }
 
 /**

@@ -503,6 +503,8 @@ export function ManageTab({
   hours,
   canManage,
   deleteState,
+  canDelete = false,
+  canLighten = false,
   lightenSummary,
   logs = [],
   matrix = [],
@@ -515,6 +517,8 @@ export function ManageTab({
   hours: HourRow[];
   canManage: boolean;
   deleteState: 'clean' | 'confirm' | 'locked';
+  canDelete?: boolean;
+  canLighten?: boolean;
   lightenSummary: LightenSummaryView | null;
   logs?: LogRow[];
   matrix?: MatrixRowView[];
@@ -611,8 +615,8 @@ export function ManageTab({
       )}
           </Panel>
 
-          <LightenBox projectId={projectId} isArchived={isArchived} summary={lightenSummary} />
-          <DeleteBox projectId={projectId} title={title} state={deleteState} />
+          {canLighten && <LightenBox projectId={projectId} isArchived={isArchived} summary={lightenSummary} />}
+          {canDelete && <DeleteBox projectId={projectId} title={title} state={deleteState} />}
         </>
       )}
     </div>

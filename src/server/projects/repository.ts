@@ -13,6 +13,7 @@ import {
 } from '@/db/schema';
 import type { ProjectImpact } from '@/domain/projects/lifecycle';
 import { isOverdueProject, isFrozenProject } from '@/domain/projects/lifecycle';
+import { openThreads } from '@/domain/dashboard/focus';
 
 /**
  * لایهٔ داده — فقط خواندن و نوشتن، بدونِ قاعدهٔ کسب‌وکار.
@@ -127,7 +128,11 @@ export async function listProjects(
     .where(inArray(projectMembers.projectId, ids))
     .groupBy(projectMembers.projectId);
 
-  // ۳) شمارشِ تسکِ باز — گروهِ وضعیت، نه نام (R-PROJ-16).
+  /**
+   * ۳) شمارشِ تسکِ باز — پرچمِ وضعیت، نه نام (R-PROJ-16). ⚠️ «باز» یعنی نه بسته
+   * و نه در ریویو (`count_open`): پیش از این تسکِ منتظرِ بررسی هم «باز» شمرده
+   * می‌شد و عددِ کارت با شمارِ «نیازمند بررسی» ِ کنارش هم‌پوشانی داشت.
+   */
   const taskCounts = await db
     .select({ projectId: tasks.projectId, count: sql<number>`count(*)::int` })
     .from(tasks)
@@ -136,6 +141,8 @@ export async function listProjects(
       inArray(tasks.projectId, ids),
       isNull(tasks.deletedAt),
       sql`coalesce(${tags.statusGroup}, '') <> 'complete'`,
+      sql`coalesce(${tags.isClosed}, false) = false`,
+      sql`coalesce(${tags.isReview}, false) = false`,
     ))
     .groupBy(tasks.projectId);
 
@@ -159,17 +166,25 @@ export async function listProjects(
     .where(and(inArray(tasks.projectId, ids), isNull(tasks.deletedAt)))
     .groupBy(tasks.projectId);
 
-  // ۶) کامنت‌های نیازمندِ بررسی — نوعِ `comment` با وضعیتِ `needs_review`
-  // (؛ ریویو و یادداشتِ تسک شمرده نمی‌شوند).
-  const commentReviews = await db
-    .select({ projectId: comments.projectId, count: sql<number>`count(*)::int` })
+  /**
+   * ۶) کامنت‌های نیازمندِ بررسی — **رشته‌های** باز (`count_needs_review`):
+   * رشته‌ای که تازه‌ترین پیامش «نیازمند بررسی» است. ⚠️ پیش از این ردیف‌ها شمرده
+   * می‌شدند؛ ریشهٔ بسته با پاسخِ باز صفر بود و رشته با سه پاسخِ باز سه.
+   */
+  const commentRows = await db
+    .select({ id: comments.id, parentId: comments.parentId, status: comments.status, projectId: comments.projectId })
     .from(comments)
     .where(and(
       inArray(comments.projectId, ids),
       eq(comments.type, 'comment'),
-      eq(comments.status, 'needs_review'),
+      isNull(comments.taskId),
     ))
-    .groupBy(comments.projectId);
+    .orderBy(comments.id);
+  const threadCount = new Map<number, number>();
+  for (const { root } of openThreads(commentRows)) {
+    threadCount.set(root.projectId!, (threadCount.get(root.projectId!) ?? 0) + 1);
+  }
+  const commentReviews = [...threadCount].map(([projectId, count]) => ({ projectId, count }));
 
   // ۷) پیشنهادهای مناقصه.
   const bids = await db

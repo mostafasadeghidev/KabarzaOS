@@ -24,8 +24,12 @@ import { REPORT_TABS } from '../src/domain/access/staff-levels';
 const BASE = (process.env.SMOKE_BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
 const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|[^/]+\.localhost|[^/]+\.test)(:\d+)?$/i;
 
-/** نشانه‌های خطای رندر در HTML ِ Next (مرزِ خطا یا صفحهٔ خطای ما). */
-const ERROR_MARKERS = ['data-dgst=', '__next_error__', 'چیزی درست پیش نرفت'];
+/**
+ * نشانه‌های خطای رندر در HTML ِ Next (مرزِ خطا). ⚠️ متنِ صفحهٔ خطای خودمان
+ * («چیزی درست پیش نرفت») نشانه نیست: برای کاربرِ غیرفارسی کاتالوگِ ترجمه در
+ * صفحه جاسازی می‌شود و کلیدهایش همین متن را دارند — هر صفحه خطا شمرده می‌شد.
+ */
+const ERROR_MARKERS = ['data-dgst=', '__next_error__'];
 
 function pages(projectId: number | null): string[] {
   const list = [

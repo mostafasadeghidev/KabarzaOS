@@ -442,3 +442,17 @@
     display: none;
   }
 }
+
+/*
+ * چاپ — فقط محتوای صفحه (فاکتور، گزارش)، نه پوستهٔ اپ. ⚠️ پیش از این سایدبار،
+ * نوارِ بالا و بنرها روی کاغذِ فاکتور هم می‌آمدند؛ `print:hidden` ِ خودِ صفحه فقط
+ * دکمهٔ چاپ را پنهان می‌کرد.
+ */
+@media print {
+  [data-slot="sidebar"],
+  [data-slot="sidebar-gap"],
+  [data-slot="sidebar-container"],
+  [data-app-chrome] {
+    display: none !important;
+  }
+}

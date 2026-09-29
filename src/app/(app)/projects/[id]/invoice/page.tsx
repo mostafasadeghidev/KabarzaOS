@@ -37,7 +37,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   } catch (error) {
     if (error instanceof ForbiddenError) {
       // پورتِ افزونه: شناسهٔ ناموجود «پروژه یافت نشد» می‌گوید، نه «دسترسی ندارید».
-      if (error.message === 'project.not_found') {
+      if (error.required === 'project.not_found') {
         return <PageShell><PageHeader back={{ href: `/projects/${id}`, label: t('پروژه') }} title={t('فاکتور')} /><EmptyState title={t("پروژه یافت نشد")} /></PageShell>;
       }
       return (

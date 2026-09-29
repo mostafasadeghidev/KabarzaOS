@@ -11,7 +11,7 @@ import {
 import { primeTranslations, t } from '@/i18n/server';
 import { HoursFilter } from './hours-filter';
 import { getSystemConfig } from '@/server/settings/system-service';
-import { hoursRange, rangeLabel, reportQuery } from '@/domain/reports/filters';
+import { hoursRange, parseIds, rangeLabel, reportQuery } from '@/domain/reports/filters';
 import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
 
@@ -27,7 +27,7 @@ export default async function MemberHoursPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ from?: string; to?: string; project?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; project?: string; office?: string | string[] }>;
 }) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
@@ -48,7 +48,14 @@ export default async function MemberHoursPage({
   const today = new Date().toISOString().slice(0, 10);
   const { weekStart } = await getSystemConfig();
   const range = hoursRange({ from: query.from, to: query.to }, today, weekStart);
-  const rangeParams = range.allTime ? 'from=&to=' : reportQuery({ from: range.from, to: range.to });
+  /**
+   * ⚠️ فیلترِ دفتر از تبِ «ساعت کاری» تا ریزِ هر نفر حمل می‌شود — پیش از این در
+   * همین گام گم می‌شد و ریز، ساعتِ همهٔ دفترها را نشان می‌داد.
+   */
+  const officeIds = parseIds(query.office);
+  const officeParams = reportQuery({ office: officeIds });
+  const rangeParams = [range.allTime ? 'from=&to=' : reportQuery({ from: range.from, to: range.to }), officeParams]
+    .filter(Boolean).join('&');
 
   let data;
   try {
@@ -56,6 +63,7 @@ export default async function MemberHoursPage({
       from: range.from || null,
       to: range.to || null,
       projectId: Number(query.project) || null,
+      officeIds,
     });
   } catch (error) {
     if (error instanceof ForbiddenError) {

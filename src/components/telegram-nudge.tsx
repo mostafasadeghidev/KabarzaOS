@@ -25,7 +25,7 @@ export function TelegramNudge() {
   if (hidden) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-b bg-muted/40 px-4 py-2 text-sm">
+    <div data-app-chrome className="flex flex-wrap items-center gap-2 border-b bg-muted/40 px-4 py-2 text-sm">
       <Send className="size-3.5 shrink-0 text-primary" />
       <span className="min-w-0 flex-1">
         {tr('برای اینکه هیچ اعلانی را از دست ندهید، تلگرامتان را وصل کنید.')}

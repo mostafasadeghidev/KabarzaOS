@@ -576,6 +576,18 @@ async function normalizeParty(input: EntryInput): Promise<EntryInput> {
   };
 }
 
+/**
+ * شرحِ ردیفِ دفتر با برچسبِ «بابت پروژه: …» — پورتِ `Ledger::with_project_tag`
+ * که هم `add()` و هم `update()` به شرح می‌زدند. ⚠️ پیش از این فقط یادداشتِ
+ * پرداختِ آینه برچسب داشت و شرحِ خودِ ردیف نه: در دفترِ کل معلوم نبود ردیف بابتِ
+ * کدام پروژه است، مگر ستونِ پیوند — که با حذف یا جداسازیِ پروژه خالی می‌شود.
+ */
+async function ledgerDescription(description: string, projectId: number | null): Promise<string> {
+  if (!projectId) return description.trim();
+  const [row] = await db.select({ title: projects.title }).from(projects).where(eq(projects.id, projectId));
+  return paymentNote(description, row?.title ?? null);
+}
+
 /** ثبتِ ردیفِ دفتر. */
 export async function createEntry(actor: Actor, rawInput: EntryInput): Promise<number> {
   await assertCanBook(actor);
@@ -613,7 +625,7 @@ export async function createEntry(actor: Actor, rawInput: EntryInput): Promise<n
     officeId,
     entryDate: input.entryDate,
     direction: input.direction,
-    description: input.description,
+    description: await ledgerDescription(input.description, input.projectId),
     amount: input.amount,
     currencyId: input.currencyId,
     amountAccount: amounts.amountAccount,
@@ -720,7 +732,7 @@ export async function updateEntry(actor: Actor, entryId: number, rawInput: Entry
     officeId,
     entryDate: input.entryDate,
     direction: input.direction,
-    description: input.description,
+    description: await ledgerDescription(input.description, input.projectId),
     amount: input.amount,
     currencyId: input.currencyId,
     amountAccount: amounts.amountAccount,

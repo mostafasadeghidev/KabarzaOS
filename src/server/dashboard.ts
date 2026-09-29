@@ -217,9 +217,15 @@ export async function getDashboard(actor: Actor, opts: { officeId?: number | nul
       .where(and(inProjects, isNull(tasks.deletedAt), eq(tags.statusGroup, 'complete'),
         between(sql`${tasks.updatedAt}::date`, from, to))));
 
+  /**
+   * «کامنتِ حل‌شده» — پورتِ `resolved_between`: هر ردیفی که در بازه **بسته شده**
+   * (`closed_at`)، بی‌توجه به وضعیتِ امروزش. ⚠️ پیش از این وضعیتِ فعلیِ `done`
+   * هم شرط بود و کامنتی که این هفته حل و بعد با پاسخی دوباره باز شد، از کارِ
+   * انجام‌شدهٔ هفته حذف می‌شد.
+   */
   const resolvedComments = (from: string, to: string) =>
     one(db.select({ n }).from(comments)
-      .where(and(inComments, eq(comments.status, 'done'),
+      .where(and(inComments,
         between(sql`${comments.closedAt}::date`, from, to))));
 
   const loggedMinutes = async (from: string, to: string) => {

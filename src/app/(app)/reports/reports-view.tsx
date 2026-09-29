@@ -692,7 +692,7 @@ export function ReportsView({
                     <TableActionsCell>
                       {/* ریزِ عضو با همان بازه — پورتِ `detail_url`. */}
                       <Link
-                        href={`/reports/hours/${h.userId}?${filters.hours.allTime ? 'from=&to=' : reportQuery({ from: filters.hours.range.from, to: filters.hours.range.to })}`}
+                        href={`/reports/hours/${h.userId}?${filters.hours.allTime ? `from=&to=&${reportQuery({ office: filters.officeIds })}` : reportQuery({ from: filters.hours.range.from, to: filters.hours.range.to, office: filters.officeIds })}`}
                         className="text-xs text-muted-foreground hover:underline"
                       >
                         {tr("جزئیات")}

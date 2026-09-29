@@ -393,6 +393,13 @@ export default async function ProjectDetailPage({
           bids: detail.bids,
           hours: detail.hours,
           deleteState: detail.deleteState,
+          /**
+           * ⚠️ حذف فقط مالک (`deleteProject` → `assertOwner`) و سبک‌سازی فقط مجوزِ
+           * سراسری (`lightenProject`). پیش از این هر دو جعبه برای هر مدیری دیده
+           * می‌شد و کلیک به «اجازه ندارید» می‌خورد.
+           */
+          canDelete: actor.roles.includes('owner'),
+          canLighten: canManageSection(actor, 'projects'),
           lightenSummary: (project.lightenSummary as {
             minutes: number; price: string; clientPaidEur: string;
             memberPaidEur: string; wasTender: boolean;

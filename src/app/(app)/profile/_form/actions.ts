@@ -18,7 +18,7 @@ export interface ProfileState {
 
 function message(error: unknown): string {
   if (error instanceof ForbiddenError) {
-    return error.message === 'company.owner_only'
+    return error.required === 'company.owner_only'
       ? 'مشخصاتِ شرکت را فقط مدیرِ کل تغییر می‌دهد.'
       : 'دسترسی ندارید.';
   }
@@ -114,7 +114,7 @@ export async function saveNotifyAction(
     });
   } catch (error) {
     if (error instanceof ForbiddenError) {
-      return { error: error.message === 'email.invalid' ? 'ایمیل معتبر نیست.' : 'ذخیره نشد.' };
+      return { error: error.required === 'email.invalid' ? 'ایمیل معتبر نیست.' : 'ذخیره نشد.' };
     }
     return { error: 'ذخیره نشد.' };
   }

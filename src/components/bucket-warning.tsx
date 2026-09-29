@@ -15,6 +15,7 @@ export function BucketWarning({ status }: { status: Exclude<BucketStatus, 'prote
   return (
     <div
       role="alert"
+      data-app-chrome
       className={exposed
         ? 'flex flex-wrap items-center gap-2 border-b border-red-500/40 bg-red-50 px-4 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300'
         : 'flex flex-wrap items-center gap-2 border-b border-amber-500/40 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300'}

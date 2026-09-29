@@ -123,4 +123,13 @@ describe('صفحهٔ ساعت (پورتِ view_hours)', () => {
     await expect(updateLog(m, row!.id, { minutes: 45, description: '', projectId: ONHOLD }, new Date('2026-09-03T00:00:00')))
       .rejects.toBeInstanceOf(ForbiddenError);
   });
+
+  it('⚠️ ویرایش مدتِ صفر یا منفی را نمی‌پذیرد — همان قاعدهٔ ثبت', async () => {
+    const m = actor(M1, ['member']);
+    const [row] = await db.select({ id: timelogs.id }).from(timelogs).where(eq(timelogs.description, 'الف۲'));
+    for (const minutes of [0, -30]) {
+      await expect(updateLog(m, row!.id, { minutes, description: '' }, new Date('2026-09-03T00:00:00')))
+        .rejects.toMatchObject({ required: 'timelog.minutes' });
+    }
+  });
 });

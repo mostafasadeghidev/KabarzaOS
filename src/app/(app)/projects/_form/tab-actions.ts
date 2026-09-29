@@ -9,6 +9,10 @@ import {
   toggleCommentStatus, removeProjectMember,
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
+import { FrozenProjectError } from '@/server/projects/authority';
+
+/** پیامِ ردِ کار روی پروژهٔ منجمد (بایگانی، کنسل، نگه‌داشته). */
+const FROZEN_MESSAGE = 'این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.';
 import { LightenError, ProjectDeleteError } from '@/domain/projects/lifecycle';
 import { BID_MESSAGES } from '@/domain/projects/tender';
 import { getT } from '@/i18n/server';
@@ -32,6 +36,8 @@ export async function setTaskStatusAction(taskId: number, statusTagId: number | 
     revalidatePath(`/projects/${projectId}`);
     revalidatePath('/projects');
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ تغییرِ وضعیتِ تسک ندارید.' };
     return { error: 'وضعیتِ تسک ثبت نشد.' };
   }
@@ -45,6 +51,8 @@ export async function toggleCommentAction(commentId: number): Promise<TabActionS
     revalidatePath(`/projects/${projectId}`);
     revalidatePath('/projects');
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ تغییرِ وضعیتِ کامنت ندارید.' };
     return { error: 'وضعیتِ کامنت ثبت نشد.' };
   }
@@ -63,6 +71,8 @@ export async function addCommentAction(_prev: TabActionState, formData: FormData
     const actor = await requireActor();
     await addComment(actor, projectId, body, parentId);
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ثبتِ کامنت ندارید.' };
     return { error: 'کامنت ثبت نشد.' };
   }
@@ -76,6 +86,8 @@ export async function setArchivedAction(projectId: number, archived: boolean): P
     const actor = await requireActor();
     await setArchived(actor, projectId, archived);
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ بایگانی ندارید.' };
     return { error: 'بایگانی ثبت نشد.' };
   }
@@ -90,6 +102,8 @@ export async function lightenAction(projectId: number): Promise<TabActionState> 
     const actor = await requireActor();
     await lightenProject(actor, projectId);
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof LightenError) {
       return {
         error: error.code === 'not_archived'
@@ -126,6 +140,8 @@ export async function deleteProjectAction(
     const actor = await requireActor();
     await deleteProject(actor, projectId, { mode, confirmTitle });
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof ProjectDeleteError) {
       const messages = {
         locked: 'به‌دلیل ماندهٔ بازِ کارفرما/عضو، حذف ممکن نیست. ابتدا تسویه یا برگردانید.',
@@ -150,9 +166,11 @@ export async function claimTaskAction(taskId: number, projectId: number) {
   try {
     await claimTask(await requireActor(), taskId);
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof ForbiddenError) {
       return {
-        error: error.message === 'task.not_claimable'
+        error: error.required === 'task.not_claimable'
           ? 'این تسک قابلِ برداشتن نیست.'
           : 'دسترسی ندارید.',
       };
@@ -184,6 +202,8 @@ export async function submitBidAction(_prev: BidState, formData: FormData): Prom
       note: String(formData.get('note') ?? ''),
     });
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof BidError) {
       // پورتِ افزونه: خطای سقف، خودِ سقف را می‌گوید.
       if (error.detail) {
@@ -205,6 +225,8 @@ export async function deleteCommentAction(commentId: number) {
     const projectId = await deleteComment(await requireActor(), commentId);
     revalidatePath(`/projects/${projectId}`);
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof ForbiddenError) return { error: 'دسترسی ندارید.' };
     return { error: 'حذف نشد.' };
   }
@@ -217,6 +239,8 @@ export async function deleteQaItemAction(itemId: number) {
     const projectId = await deleteQaItem(await requireActor(), itemId);
     revalidatePath(`/projects/${projectId}`);
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof ForbiddenError) return { error: 'دسترسی ندارید.' };
     return { error: 'حذف نشد.' };
   }
@@ -229,6 +253,8 @@ export async function removeQaRoleAction(projectId: number, roleTagId: number | 
     await removeQaRole(await requireActor(), projectId, roleTagId);
     revalidatePath(`/projects/${projectId}`);
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof ForbiddenError) return { error: 'دسترسی ندارید.' };
     return { error: 'حذف نشد.' };
   }
@@ -243,6 +269,8 @@ export async function removeMemberAction(projectId: number, memberRowId: number)
     revalidatePath(`/projects/${projectId}`);
     revalidatePath('/projects');
   } catch (error) {
+    // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
+    if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ حذفِ عضو ندارید.' };
     return { error: 'حذف نشد.' };
   }

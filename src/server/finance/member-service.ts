@@ -15,6 +15,7 @@ import {
 } from '@/domain/finance/member-money';
 import { contractBalance, paymentStatus } from '@/domain/team-money/payments';
 import { myPayoutsOn } from '@/server/projects/repository';
+import { canManageProject } from '@/server/projects/authority';
 
 /**
  * پولِ عضو از نگاهِ خودش — کارکردِ تعدادی و درخواستِ پرداخت.
@@ -40,7 +41,16 @@ async function audit(actor: Actor, action: string, objectId: number, after?: unk
 }
 
 /** آیا کاربر می‌تواند این پروژه را مدیریت کند؟ */
-async function projectContext(actor: Actor, projectId: number) {
+async function projectContext(
+  actor: Actor,
+  projectId: number,
+  /**
+   * ثبت/حذفِ کارکرد برای دیگران — مدیرِ **همین پروژه** (مدیرِ پروژهٔ تگ‌دار یا
+   * مدیرِ دفتر) هم، مثلِ `handle_add_unit` که `can_manage_project` می‌خواست.
+   * ⚠️ فقط این دو مسیر؛ دیدنِ مبالغِ دیگران همچنان مجوزِ سراسری می‌خواهد.
+   */
+  options: { projectManager?: boolean } = {},
+) {
   const rows = await db
     .select({
       id: projects.id,
@@ -59,7 +69,8 @@ async function projectContext(actor: Actor, projectId: number) {
   if (!project) throw new ForbiddenError('project.not_found');
   if (!visibleScopes(actor).includes(project.scope)) throw new ForbiddenError('project.forbidden');
 
-  const canManage = canManageSection(actor, 'projects');
+  const canManage = canManageSection(actor, 'projects')
+    || (options.projectManager === true && await canManageProject(actor, projectId));
   if (!canManage) {
     const member = await db.select({ id: projectMembers.id }).from(projectMembers)
       .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, actor.id)));
@@ -142,7 +153,7 @@ export async function addUnitEntry(
   actor: Actor,
   input: { projectId: number; userId: number; entryDate: string; quantity: number; note: string },
 ) {
-  const { canManage, isFrozen, project } = await projectContext(actor, input.projectId);
+  const { canManage, isFrozen, project } = await projectContext(actor, input.projectId, { projectManager: true });
   if (isFrozen) throw new MemberMoneyError('frozen');
   // پورتِ `handle_add_unit`: فقط پروژهٔ **تعدادی** ردیفِ کارکرد می‌پذیرد.
   if (!project.isUnitBased) throw new MemberMoneyError('not_unit_based');
@@ -191,7 +202,7 @@ export async function deleteUnitEntry(actor: Actor, entryId: number) {
   const row = rows[0];
   if (!row) return;
 
-  const { canManage, isFrozen } = await projectContext(actor, row.projectId);
+  const { canManage, isFrozen } = await projectContext(actor, row.projectId, { projectManager: true });
   if (!canManage && row.userId !== actor.id) throw new MemberMoneyError('not_yours');
   if (!canDeleteUnit(row.status, isFrozen)) throw new MemberMoneyError('frozen');
 

@@ -244,7 +244,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         brand={{ name: brand.name?.trim() || 'KabarzaOS', logoFileId: brand.logoFileId }}
       />
       <SidebarInset>
-        <header className="flex h-12 items-center gap-2 border-b px-4">
+        <header data-app-chrome className="flex h-12 items-center gap-2 border-b px-4">
           <SidebarTrigger />
           <Separator orientation="vertical" className="me-1 data-[orientation=vertical]:h-4" />
           {/*

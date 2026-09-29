@@ -2,6 +2,31 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.95.0]
+
+### Fixed
+
+- **Specific error messages never reached the user.** A permission error carries its reason in a separate field, but fifteen actions compared the message text instead, so the comparison never matched. Users saw a generic «دسترسی ندارید» or «انجام نشد» instead of the real reason. Affected messages include: the e-mail is already registered, the hours edit window has closed, the link is not http(s), only the uploader can delete a file, the task cannot be taken, the date is invalid, the project was not found on an invoice, a message is empty, and only the owner can change access. A test now fails if the pattern returns.
+- **Actions on a frozen project said «انجام نشد».** Comments, files, task status, taking a task and editing hours on an archived, cancelled or on-hold project now say the project is closed to changes.
+- **Hours could be edited to zero or a negative duration.** Editing now applies the same rule as logging.
+- **The project card's open-task count included tasks in review,** overlapping the «needs review» count beside it. It now counts only tasks that are neither closed nor in review.
+- **The project card's comment count counted messages, not threads.** It now counts open threads, matching the review list.
+- **A task's creator could not edit or delete it.** The server allowed a client or member to edit their own task, but the dialog showed the buttons only to managers. Referring a task stays manager-only.
+- **Project managers and office managers could not log piecework for a member** unless they were members themselves, although the previous version allowed it. Seeing other members' amounts still needs the global permission.
+- **Adding the same member twice reported success.** Adding a person with the same role and no higher amount now says that no duplicate row was created. Adding an inactive member says so.
+- **Delete and «lighten» showed to people who cannot use them.** A project's manage tab offered deletion to every manager and lightening to project-scoped managers; both failed on click. Delete now shows to the owner only, and lighten to holders of the global project permission.
+- **Ledger rows did not record their project in the description.** Saving a ledger row linked to a project now appends «بابت پروژه: …» to its description, as the previous version did. Detaching a project's finances also writes the tag into the ledger rows before unlinking them, so detached money keeps its origin.
+- **«Resolved comments» on the dashboard missed comments reopened later.** The weekly count now includes every comment closed in the period, as the previous version did.
+- **Tasks created by the project form or by QA each wrote an activity row.** Creating a project with twenty starter tasks filled the activity feed. Those tasks no longer write their own rows; the project creation and the QA apply still do.
+
+### Changed
+
+- **The hours drill-down keeps the office filter.** Opening a member from the hours report with an office selected now shows only that office's projects, and the filter carries through the drill-down's own links.
+- **The owner gets a link to manage the fiscal period** from the ledger's lock notice.
+- **Printing shows only the page.** The sidebar, the top bar and notice bars no longer print on invoices and reports.
+- **Pages are marked `noindex`.** The app is internal and no page should appear in search engines.
+- The page smoke test no longer mistakes a non-Persian user's embedded translations for an error page.
+
 ## [1.94.0]
 
 ### Added

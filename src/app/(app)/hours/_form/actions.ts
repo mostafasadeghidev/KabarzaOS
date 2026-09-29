@@ -7,6 +7,7 @@ import {
   startTimer, stopTimer, TimerError, updateLog,
 } from '@/server/timelogs/service';
 import { ForbiddenError } from '@/domain/access/guard';
+import { FrozenProjectError } from '@/server/projects/authority';
 import { minutesFrom } from '@/domain/timelogs/timer';
 
 /**
@@ -20,14 +21,17 @@ export interface HoursState {
 }
 
 function message(error: unknown): string {
+  // ⚠️ ثبت و ویرایشِ ساعت روی پروژهٔ منجمد پیامِ خودش را دارد (F#9).
+  if (error instanceof FrozenProjectError) return 'این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.';
   if (error instanceof TimerError) {
     if (error.code === 'already_running') return 'یک تایمر در جریان است؛ اول تعیینِ تکلیفش کنید.';
     if (error.code === 'not_running') return 'تایمری در جریان نیست.';
     return 'تایمرِ منتظرِ تأییدی وجود ندارد.';
   }
   if (error instanceof ForbiddenError) {
-    if (error.message === 'timelog.not_yours') return 'فقط صاحبِ ثبت می‌تواند تغییرش دهد.';
-    if (error.message === 'timelog.window_closed') return 'پنجرهٔ ویرایشِ این ثبت (دو هفته) بسته شده است.';
+    if (error.required === 'timelog.not_yours') return 'فقط صاحبِ ثبت می‌تواند تغییرش دهد.';
+    if (error.required === 'timelog.window_closed') return 'پنجرهٔ ویرایشِ این ثبت (دو هفته) بسته شده است.';
+    if (error.required === 'timelog.minutes') return 'مدت را وارد کنید.';
     return 'روی این پروژه اجازهٔ ثبتِ ساعت ندارید.';
   }
   return 'انجام نشد.';
@@ -119,6 +123,7 @@ export async function logHoursAction(_prev: HoursState, formData: FormData): Pro
 
 export async function updateLogAction(_prev: HoursState, formData: FormData): Promise<HoursState> {
   const minutes = minutesFrom(Number(formData.get('hours') ?? 0), Number(formData.get('minutes') ?? 0));
+  if (minutes <= 0) return { error: 'مدت را وارد کنید.' };
   try {
     await updateLog(await requireActor(), Number(formData.get('logId')), {
       minutes,

@@ -57,7 +57,7 @@ export function TimerBanner({
   if (running) {
     // Alert ِ shadcn به شکلِ نوار زیرِ سربرگ: بی‌گوشه و فقط مرزِ پایین.
     return (
-      <Alert className="items-center rounded-none border-x-0 border-t-0 bg-primary/5 [&>svg]:translate-y-0">
+      <Alert data-app-chrome className="items-center rounded-none border-x-0 border-t-0 bg-primary/5 [&>svg]:translate-y-0">
         <Timer />
         <AlertDescription className="flex flex-wrap items-center gap-3 text-foreground">
           <span>{t('تایمر روشن')}: <b>{running.projectTitle ?? t('کارِ عمومی')}</b> · <LiveClock from={running.minutes} /></span>

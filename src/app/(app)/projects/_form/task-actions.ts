@@ -152,7 +152,7 @@ export async function referTaskAction(_prev: TaskFormState, formData: FormData):
     }
     if (error instanceof ForbiddenError) {
       return {
-        error: error.message === 'task.refer.stranger'
+        error: error.required === 'task.refer.stranger'
           ? 'گیرنده عضو یا کارفرمای این پروژه نیست.'
           : 'اجازهٔ ارجاعِ تسک ندارید.',
       };
@@ -206,7 +206,7 @@ export async function loadTaskAction(taskId: number) {
    * فقط یک چیپِ خواندنی داشت و کاربر باید به صفحهٔ پروژه می‌رفت.
    */
   const [options, statuses] = await Promise.all([
-    detail.canManage
+    detail.canEdit
       ? getTaskFormOptions(actor, detail.task.projectId, detail.task.assignedTo)
       : Promise.resolve(null),
     detail.canInteract

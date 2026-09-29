@@ -80,6 +80,10 @@ export interface ProjectTabsData {
   hours: HourRow[];
   /** سه‌حالتیِ حذف — R-PROJ-01. */
   deleteState: 'clean' | 'confirm' | 'locked';
+  /** حذفِ پروژه — فقط مالک. */
+  canDelete: boolean;
+  /** سبک‌سازی — مجوزِ سراسریِ پروژه‌ها. */
+  canLighten: boolean;
   lightenSummary: LightenSummaryView | null;
   finance: FinanceSummary | null;
   payments: PaymentRow[];
@@ -294,6 +298,8 @@ export function ProjectTabs({
           weekStart={data.weekStart}
           canManage={data.canManage}
           deleteState={data.deleteState}
+          canDelete={data.canDelete}
+          canLighten={data.canLighten}
           lightenSummary={data.lightenSummary}
         /></TabPanel>
       )}

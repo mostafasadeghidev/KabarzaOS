@@ -330,7 +330,7 @@ export async function closePeriodAction(
     return { message: (await getT())('دوره بسته شد؛ خلاصهٔ {n} حساب ذخیره و دوره قفل شد.', { n }) };
   } catch (error) {
     if (error instanceof ForbiddenError) {
-      if (error.message === 'fiscal.bad_date') return { error: 'تاریخ معتبر نیست.' };
+      if (error.required === 'fiscal.bad_date') return { error: 'تاریخ معتبر نیست.' };
       return { error: 'فقط مدیرِ کل می‌تواند دوره را ببندد.' };
     }
     return { error: 'دوره بسته نشد.' };

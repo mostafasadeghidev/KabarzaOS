@@ -27,11 +27,11 @@ async function explain(error: unknown, fallback: string): Promise<string> {
   }
   if (error instanceof ThreadNotFoundError) return 'این گفتگو در دسترس نیست.';
   if (error instanceof ForbiddenError) {
-    if (error.message === 'message.empty') return 'متنِ پیام خالی است.';
-    if (error.message === 'message.no_recipients') return 'مخاطبی برای ارسال نیست.';
-    if (error.message === 'thread.no_reply') return 'این یک اعلانِ یک‌طرفه است و امکان پاسخ ندارد.';
-    if (error.message === 'messages.broadcast') return 'ارسالِ همگانی فقط از مدیر ممکن است.';
-    if (error.message === 'thread.delete') return 'فقط سازندهٔ گفتگو یا مدیر می‌تواند آن را حذف کند.';
+    if (error.required === 'message.empty') return 'متنِ پیام خالی است.';
+    if (error.required === 'message.no_recipients') return 'مخاطبی برای ارسال نیست.';
+    if (error.required === 'thread.no_reply') return 'این یک اعلانِ یک‌طرفه است و امکان پاسخ ندارد.';
+    if (error.required === 'messages.broadcast') return 'ارسالِ همگانی فقط از مدیر ممکن است.';
+    if (error.required === 'thread.delete') return 'فقط سازندهٔ گفتگو یا مدیر می‌تواند آن را حذف کند.';
     return 'اجازهٔ ارسالِ پیام ندارید.';
   }
   return fallback;

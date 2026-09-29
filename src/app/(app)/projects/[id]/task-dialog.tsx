@@ -96,6 +96,8 @@ export function TaskDialog({
 
   const task = data?.detail.task;
   const canManage = data?.detail.canManage ?? false;
+  // ویرایش/حذف: مدیر یا سازندهٔ تسک؛ ارجاع فقط مدیر.
+  const canEdit = data?.detail.canEdit ?? false;
   const options = data?.options ?? null;
 
   /**
@@ -239,21 +241,23 @@ export function TaskDialog({
               </form>
             )}
 
-            {canManage && (
+            {canEdit && (
               <div className="flex gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => setEditing((e) => !e)}>
                   <Pencil className="size-3.5" />
                   {tr("ویرایش تسک")}
                 </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => { setReferring((v) => !v); setEditing(false); }}
-                >
-                  <Share2 className="size-3.5" />
-                  {tr("ارجاع")}
-                </Button>
+                {canManage && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => { setReferring((v) => !v); setEditing(false); }}
+                  >
+                    <Share2 className="size-3.5" />
+                    {tr("ارجاع")}
+                  </Button>
+                )}
                 <Button
                   type="button"
                   size="sm"

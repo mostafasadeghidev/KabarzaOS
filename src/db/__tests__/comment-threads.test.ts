@@ -107,3 +107,10 @@ describe('بخش‌های «همهٔ پروژه‌های شما»', () => {
     expect(byId.get(OTHER)).toEqual(['client']);
   });
 });
+
+describe('شمارنده‌های کارتِ پروژه', () => {
+  it('⚠️ کامنتِ کارت رشته‌های باز را می‌شمارد، نه پیام‌ها — همان عددِ فهرست', async () => {
+    const rows = await listProjects({ id: M, roles: ['member'], permissions: [], privateAccess: false });
+    expect(rows.find((r) => r.id === P)!.commentReviewCount).toBe(2);
+  });
+});

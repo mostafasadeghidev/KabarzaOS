@@ -6,6 +6,7 @@ import {
   addAttachment, addLink, deleteAttachment,
 } from '@/server/files/service';
 import { ForbiddenError } from '@/domain/access/guard';
+import { FrozenProjectError } from '@/server/projects/authority';
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { getT } from '@/i18n/server';
 
@@ -23,9 +24,11 @@ export interface FileFormState {
 function message(error: unknown): string {
   // دلیلِ ردِ فایل به کاربر گفته می‌شود — «انجام نشد» او را سردرگم می‌کند.
   if (error instanceof FileRejected) return rejectMessage(error.reason);
+  // ⚠️ پروژهٔ منجمد فایلِ تازه نمی‌گیرد — پیامِ روشن، نه «دسترسی ندارید» (F#9).
+  if (error instanceof FrozenProjectError) return 'این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.';
   if (error instanceof ForbiddenError) {
-    if (error.message === 'link.invalid') return 'نشانی معتبر نیست؛ فقط http و https پذیرفته می‌شوند.';
-    if (error.message === 'attachment.not_yours') return 'فقط بارگذارنده یا مدیرِ پروژه می‌تواند حذف کند.';
+    if (error.required === 'link.invalid') return 'نشانی معتبر نیست؛ فقط http و https پذیرفته می‌شوند.';
+    if (error.required === 'attachment.not_yours') return 'فقط بارگذارنده یا مدیرِ پروژه می‌تواند حذف کند.';
     return 'برای این کار دسترسی ندارید.';
   }
   return 'انجام نشد.';

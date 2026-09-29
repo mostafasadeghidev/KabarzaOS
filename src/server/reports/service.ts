@@ -1074,19 +1074,23 @@ export async function getClientDetail(actor: Actor, userId: number) {
 export async function getMemberHours(
   actor: Actor,
   userId: number,
-  input: { from?: string | null; to?: string | null; projectId?: number | null } = {},
+  input: { from?: string | null; to?: string | null; projectId?: number | null; officeIds?: readonly number[] } = {},
 ) {
   assertCanView(actor, 'reports');
 
   const [member] = await db.select({ id: users.id, name: users.name, email: users.email })
     .from(users).where(eq(users.id, userId));
   if (!member) return null;
+  // پورتِ `office_scope()` در ریزِ ساعت: با فیلترِ دفتر فقط پروژه‌های همان دفترها.
+  const officePids = await officeProjectIds(input.officeIds);
 
   const window = [eq(timelogs.userId, userId)];
   if (input.from) window.push(gte(timelogs.logDate, input.from));
   if (input.to) window.push(lte(timelogs.logDate, input.to));
 
-  const scoped = inArray(projects.scope, visibleScopes(actor));
+  const scoped = officePids === null
+    ? inArray(projects.scope, visibleScopes(actor))
+    : and(inArray(projects.scope, visibleScopes(actor)), officePids.length > 0 ? inArray(projects.id, officePids) : sql`false`)!;
 
   const [byProject, generalRow, entries, projectOptions] = await Promise.all([
     db.select({

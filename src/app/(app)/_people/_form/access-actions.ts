@@ -17,8 +17,8 @@ import { ForbiddenError } from '@/domain/access/guard';
 
 function message(error: unknown): string {
   if (error instanceof ForbiddenError) {
-    if (error.message === 'rbac.owner_only') return 'فقط مدیرِ کل می‌تواند دسترسی‌ها را تغییر دهد.';
-    if (error.message === 'rbac.not_staff') return 'این کاربر «همکارِ ادمین» نیست و دسترسیِ پیکربندی‌شدنی ندارد.';
+    if (error.required === 'rbac.owner_only') return 'فقط مدیرِ کل می‌تواند دسترسی‌ها را تغییر دهد.';
+    if (error.required === 'rbac.not_staff') return 'این کاربر «همکارِ ادمین» نیست و دسترسیِ پیکربندی‌شدنی ندارد.';
   }
   return 'انجام نشد.';
 }
