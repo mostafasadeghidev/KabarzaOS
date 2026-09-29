@@ -13,7 +13,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuLabel,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { KIND_LABEL, kindOf, structuredBody } from '@/domain/notifications/display';
@@ -38,7 +38,7 @@ function when(value: Date | string | null | undefined, tz: string): string {
 }
 
 
-function KindIcon({ type, className = 'size-3' }: { type: string; className?: string }) {
+export function KindIcon({ type, className = 'size-3' }: { type: string; className?: string }) {
   const kind = kindOf(type);
   if (kind === 'task') return <ListChecks className={className} />;
   if (kind === 'comment') return <MessageSquare className={className} />;
@@ -204,6 +204,15 @@ export function NotificationBell({
             ))}
           </ul>
         )}
+
+        {/*
+          راه به فهرستِ کامل — زنگوله فقط ۳۰ ردیفِ آخر را دارد (پورتِ پیوندِ
+          زنگولهٔ نسخهٔ قبلی به `view=notifications`).
+        */}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="justify-center text-xs text-muted-foreground">
+          <Link href="/notifications">{t('همهٔ اعلان‌ها')}</Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
 

@@ -37,6 +37,10 @@ const CATEGORY_OF: Record<string, NotifyCategory> = {
   // مالی
   'payment': 'money',
   'payment.requested': 'money',
+  'payment.approved': 'money',
+  'payment.rejected': 'money',
+  'payment.paid': 'money',
+  // ⚠️ نوعِ قدیمیِ مشترک — ردیف‌های پیش از ۱.۹۰ هنوز آن را دارند و باید در همان دسته بمانند.
   'payment.decided': 'money',
 
   // جلسه و یادآور

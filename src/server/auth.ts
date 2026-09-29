@@ -8,6 +8,7 @@ import { readSessionToken, SESSION_COOKIE } from '@/domain/auth/session';
 import type { Actor, Permission, Role } from '@/domain/access/permissions';
 import { tagPermissionsFor } from '@/server/people/tag-caps';
 import { ForbiddenError } from '@/domain/access/guard';
+import { storedAppearance } from '@/domain/people/appearance';
 
 /**
  * پلِ بینِ دیتابیس و لایهٔ دامنه.
@@ -35,7 +36,11 @@ function sessionSecret(): string {
  * چیزهای نمایشی جدا برمی‌گردند، بدونِ کوئریِ دوم.
  */
 export async function currentSession(): Promise<
-  { actor: Actor; name: string; locale: Locale | null; timezone: string; memberState: MemberState } | null
+  {
+    actor: Actor; name: string; locale: Locale | null; timezone: string; memberState: MemberState;
+    /** ظاهرِ ذخیره‌شده روی کاربر؛ خالی = «انتخابی نکرده» (مهاجرتِ 0033). */
+    appearance: ReturnType<typeof storedAppearance>;
+  } | null
 > {
   const store = await cookies();
   const session = await readSessionToken(store.get(SESSION_COOKIE)?.value, sessionSecret());
@@ -68,6 +73,7 @@ export async function currentSession(): Promise<
     timezone: user.timezone ?? '',
     /** برای تشخیصِ عضوِ سابقِ «فقط مالی» در چیدمان (R-PEOPLE-01). */
     memberState: user.memberState as MemberState,
+    appearance: storedAppearance(user),
   };
 }
 

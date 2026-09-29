@@ -163,6 +163,14 @@ translated sentence ends up inside `num`.
   (notifications, the inbox, dashboard meeting rows, member cards, focus rows)
   is a shadcn `Item`: `outline` (white) on the canvas, `muted` inside a
   surface. Files and links stay `Attachment`.
+- **Notifications:** the bell shows the latest 30 and links to the
+  notifications page, which lists up to 200 as `Item` rows, unread by
+  default with a toggle to all. The kind's icon sits in the media slot and is
+  the only coloured part: green when a payment was approved or paid, red when
+  it was rejected. An unread row has a small primary dot before its title.
+- **Appearance:** light, dark or system, and the palette, are saved on the
+  user, so every device shows the same. The browser only remembers them for
+  the public pages and until the user picks something.
 - **Hover help:** `Hint` (the shadcn Tooltip) on any control whose meaning is
   an icon or a truncated text: read receipts, the lock on a closed period,
   the full date behind a compact time, palette dots. Never the browser's

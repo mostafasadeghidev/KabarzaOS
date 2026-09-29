@@ -195,6 +195,32 @@ export async function listNotifications(actor: Actor, limit = 30) {
   return { items: rows, unread: unread[0]?.n ?? 0 };
 }
 
+/** سقفِ فهرستِ صفحهٔ اعلان‌ها — همان ۲۰۰ ِ نسخهٔ قبلی (`for_user`/`unread`). */
+export const FEED_LIMIT = 200;
+
+/**
+ * صفحهٔ اعلان‌ها — پورتِ `view_notifications`.
+ *
+ * پیش‌فرض فقط خوانده‌نشده‌ها (همان نسخهٔ قبلی)؛ `showAll` خوانده‌شده‌ها را هم
+ * می‌آورد. ⚠️ زنگوله فقط ۳۰ ردیفِ آخر را دارد؛ بدونِ این صفحه اعلانِ قدیمی‌تر
+ * هیچ راهی برای دیده‌شدن نداشت.
+ *
+ * ⚠️ شرطِ «مالِ خودم» در خودِ کوئری است؛ شناسهٔ کاربر از نشست می‌آید، نه از آدرس.
+ */
+export async function listNotificationFeed(actor: Actor, options: { showAll: boolean }) {
+  const mine = eq(notifications.userId, actor.id);
+  const [rows, unread] = await Promise.all([
+    db.select().from(notifications)
+      .where(options.showAll ? mine : and(mine, eq(notifications.isRead, false)))
+      .orderBy(desc(notifications.id))
+      .limit(FEED_LIMIT),
+    db.select({ n: sql<number>`count(*)::int` })
+      .from(notifications)
+      .where(and(mine, eq(notifications.isRead, false))),
+  ]);
+  return { items: rows, unread: unread[0]?.n ?? 0 };
+}
+
 export async function markRead(actor: Actor, notificationId: number) {
   await db.update(notifications)
     .set({ isRead: true })

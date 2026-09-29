@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import { ChevronsUpDown, LogOut, Moon, Sun, Monitor, Settings, User } from 'lucide-react';
+import { Bell, ChevronsUpDown, LogOut, Moon, Sun, Monitor, Settings, User } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -17,6 +17,7 @@ import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Button } from '@/components/ui/button';
 import { Hint } from '@/components/ui/tooltip';
+import { TagChip } from '@/components/ui/tag-chip';
 
 /**
  * منویِ کاربر در فوترِ سایدبار.
@@ -56,7 +57,9 @@ const THEME_ICON = { light: Sun, dark: Moon, system: Monitor } as const;
 export function UserMenu({
   userName,
   userRole,
-  userRoles = [],
+  baseRoles = [],
+  roleTags = [],
+  avatarFileId = null,
   locale,
   onLogout,
   canManageSettings = false,
@@ -64,8 +67,12 @@ export function UserMenu({
 }: {
   userName: string;
   userRole: string;
-  /** همهٔ نقش‌های کاربر — زیرِ نام در منو. */
-  userRoles?: string[];
+  /** همهٔ نقش‌های سامانه‌ای — چیپِ خنثی زیرِ نام (پورتِ `kteam-acct-roles`). */
+  baseRoles?: string[];
+  /** نقش‌های کاری با رنگِ تگ — چیپِ نقطه‌دار (پورتِ `kteam-acct-roletag`). */
+  roleTags?: Array<{ name: string; color: string }>;
+  /** تصویرِ پروفایل؛ `null` = حروفِ اولِ نام. */
+  avatarFileId?: number | null;
   locale: Locale;
   onLogout: () => void;
   /** آیتمِ تنظیمات فقط برای کسی که اجازه دارد. */
@@ -80,10 +87,24 @@ export function UserMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
-          {/* حروفِ تیره روی رنگِ ملایم: آبی روی آبیِ کم‌رنگ فقط ۳٫۹ کنتراست داشت. */}
-          <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary/15 text-foreground">
-            <span className="text-xs font-semibold">{initials(userName)}</span>
-          </div>
+          {/*
+            تصویرِ پروفایل، اگر گذاشته شده (پورتِ `get_avatar` ِ دکمهٔ حساب)؛
+            وگرنه حروفِ اولِ نام. ⚠️ پیش از این همیشه حروف بود و تصویری که
+            کاربر در پروفایل گذاشته بود فقط در همان صفحه دیده می‌شد.
+            حروفِ تیره روی رنگِ ملایم: آبی روی آبیِ کم‌رنگ فقط ۳٫۹ کنتراست داشت.
+          */}
+          {avatarFileId ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/api/files/${avatarFileId}?thumb`}
+              alt=""
+              className="aspect-square size-8 shrink-0 rounded-md object-cover"
+            />
+          ) : (
+            <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary/15 text-foreground">
+              <span className="text-xs font-semibold">{initials(userName)}</span>
+            </div>
+          )}
           <div className="grid flex-1 text-start leading-tight">
             <span className="truncate text-sm font-medium">{userName}</span>
             <span className="truncate text-xs text-muted-foreground">{userRole}</span>
@@ -104,14 +125,22 @@ export function UserMenu({
           کسی که هم مالک است هم عضوِ تیم، دو دستهٔ کاملاً متفاوت از صفحه‌ها
           را می‌بیند؛ فهرستِ نقش‌ها همان‌جا معلومش می‌کند.
         */}
-        <DropdownMenuLabel className="grid gap-1 text-sm font-medium">
+        {/*
+          ⚠️ همهٔ نقش‌ها، نه فقط اولی: کسی که هم مالک است هم عضو، پیش از این
+          فقط یکی را می‌دید. نقشِ سامانه‌ای چیپِ خنثی است و نقشِ کاری چیپِ
+          نقطه‌دار با رنگِ تگ (DESIGN.md: رنگِ تگ فقط به‌شکلِ نقطه).
+        */}
+        <DropdownMenuLabel className="grid gap-1.5 text-sm font-medium">
           {userName}
-          {userRoles.length > 0 && (
+          {(baseRoles.length > 0 || roleTags.length > 0) && (
             <span className="flex flex-wrap gap-1">
-              {userRoles.map((role) => (
-                <span key={role} className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">
+              {baseRoles.map((role) => (
+                <span key={`r-${role}`} className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
                   {role}
                 </span>
+              ))}
+              {roleTags.map((tag) => (
+                <TagChip key={`t-${tag.name}`} color={tag.color}>{tag.name}</TagChip>
               ))}
             </span>
           )}
@@ -212,6 +241,14 @@ export function UserMenu({
           <Link href="/profile">
             <User className="size-4" />
             <span>{t("پروفایلِ من")}</span>
+          </Link>
+        </DropdownMenuItem>
+
+        {/* پورتِ آیتمِ «🔔 اعلان‌ها» ِ منوی حساب — فهرستِ کامل، نه فقط زنگوله. */}
+        <DropdownMenuItem asChild>
+          <Link href="/notifications">
+            <Bell className="size-4" />
+            <span>{t("اعلان‌ها")}</span>
           </Link>
         </DropdownMenuItem>
 

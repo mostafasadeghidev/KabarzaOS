@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { KIND_LABEL, kindOf, structuredBody } from './display';
+import { KIND_LABEL, kindOf, structuredBody, toneOf } from './display';
 
 describe('kindOf', () => {
   it('همهٔ نوع‌های واقعیِ سامانه دستهٔ درست می‌گیرند', () => {
@@ -12,6 +12,9 @@ describe('kindOf', () => {
     expect(kindOf('meeting_soon')).toBe('meeting');
     expect(kindOf('payment.requested')).toBe('money');
     expect(kindOf('payment.decided')).toBe('money');
+    expect(kindOf('payment.approved')).toBe('money');
+    expect(kindOf('payment.rejected')).toBe('money');
+    expect(kindOf('payment.paid')).toBe('money');
     expect(kindOf('message.received')).toBe('message');
     expect(kindOf('tender_opened')).toBe('project');
   });
@@ -70,5 +73,18 @@ describe('structuredBody', () => {
 
   it('برچسبِ خیلی بلند برچسب نیست — یعنی جمله است', () => {
     expect(structuredBody('meeting.invited', 'این یک جملهٔ بلند و کاملاً عادی است: بله')).toBeNull();
+  });
+});
+
+describe('toneOf', () => {
+  it('تأیید و پرداخت سبز، رد قرمز', () => {
+    expect(toneOf('payment.approved')).toBe('good');
+    expect(toneOf('payment.paid')).toBe('good');
+    expect(toneOf('payment.rejected')).toBe('bad');
+  });
+
+  it('⚠️ نوعِ قدیمیِ مشترک بی‌رنگ است — تأیید یا رد بودنش معلوم نیست', () => {
+    expect(toneOf('payment.decided')).toBeNull();
+    expect(toneOf('task.assigned')).toBeNull();
   });
 });

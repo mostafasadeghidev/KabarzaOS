@@ -395,14 +395,21 @@ export async function decideRequest(
    *
    * ⚠️ توضیحِ تصمیم داخلِ متن می‌آید: «رد شد» بدونِ دلیل، کاربر را به یک
    * پیامِ دیگر وامی‌دارد.
+   *
+   * ⚠️ نوعِ تأیید و رد جداست (پورتِ `payment_approved` / `payment_rejected`):
+   * فهرستِ اعلان‌ها تأیید را سبز و رد را قرمز نشان می‌دهد؛ با یک نوعِ مشترک
+   * این دو از هم قابلِ تشخیص نبودند.
+   *
+   * ⚠️ نشانی `/my-money` است، نه `/finance`: درخواست‌دهنده عضو است و
+   * حسابداری را نمی‌بیند — کلیک روی اعلان «دسترسی ندارید» نشان می‌داد.
    */
   if (request.userId !== actor.id) {
     await notify([request.userId], {
-      type: 'payment.decided',
+      type: decision === 'approved' ? 'payment.approved' : 'payment.rejected',
       title: decision === 'approved' ? 'درخواست پرداخت شما تأیید شد' : 'درخواست پرداخت شما رد شد',
       body: note.trim() === '' ? '' : 'توضیح: {note}',
       params: { note: note.trim() },
-      url: '/finance',
+      url: '/my-money',
     });
   }
 }
@@ -494,14 +501,14 @@ export async function payRequest(
 
   await audit(actor, 'request.paid', requestId, request.status, { ledgerId, result });
 
-  // پورتِ شاخهٔ `paid` ِ `payment_decided` — عضو باید بداند پولش رفته.
+  // پورتِ `payment_paid` — عضو باید بداند پولش رفته. نشانی مثلِ تصمیم: `/my-money`.
   if (request.userId !== actor.id) {
     await notify([request.userId], {
-      type: 'payment.decided',
+      type: 'payment.paid',
       title: 'پرداختِ شما ثبت شد',
       body: '{amount} — «{project}»',
       params: { amount: request.amount, project: project?.title ?? '' },
-      url: '/finance',
+      url: '/my-money',
     });
   }
 

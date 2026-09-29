@@ -34,6 +34,13 @@ export const users = pgTable('users', {
    */
   locale: text('locale'),
   /**
+   * ظاهرِ اپ — پورتِ `_kteam_theme` (مهاجرتِ 0033). روی کاربر، نه مرورگر، تا
+   * روی هر دستگاهی یکسان باشد. خالی = «انتخابی نکرده»؛ آن‌وقت ترجیحِ مرورگر.
+   */
+  theme: text('theme').notNull().default('').$type<'' | 'system' | 'light' | 'dark'>(),
+  /** پالتِ رنگ — محورِ دوم کنارِ روشن/تیره؛ خالی = ترجیحِ مرورگر. */
+  palette: text('palette').notNull().default(''),
+  /**
    * درزِ گرنتِ دسترسیِ خصوصی (D-014).
    * PRD: دیدنِ دادهٔ خصوصی یک گرنت است، نه یک نقش — تا بشود بدونِ تنزلِ نقش پسش گرفت.
    */
@@ -78,6 +85,8 @@ export const users = pgTable('users', {
 }, (t) => [
   uniqueIndex('users_email_uq').on(t.email),
   check('users_member_state_ck', sql`${t.memberState} in ('active','finance','locked')`),
+  check('users_theme_ck', sql`${t.theme} in ('','system','light','dark')`),
+  check('users_palette_ck', sql`${t.palette} in ('','stone','ocean','forest','sunset','violet','slate')`),
 ]);
 
 /** دفاترِ یک نفر — چندتایی است (`People::office_ids()`). */

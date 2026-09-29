@@ -124,3 +124,42 @@ describe('R-NOTIF-06 — پاک‌سازی فقط خوانده‌شده‌ها �
       .toEqual(['خوانده‌شدهٔ تازه', 'خوانده‌نشدهٔ قدیمی'].sort());
   });
 });
+
+describe('صفحهٔ اعلان‌ها — خوانده‌نشده‌ها و همه', () => {
+  it('پیش‌فرض فقط خوانده‌نشده‌ها؛ «همه» خوانده‌شده‌ها را هم می‌آورد', async () => {
+    await db.delete(notifications);
+    await db.insert(notifications).values([
+      { userId: active, type: 'payment.approved', title: 'تأیید', isRead: false },
+      { userId: active, type: 'payment.rejected', title: 'رد', isRead: true },
+      { userId: financeOnly, type: 'payment.paid', title: 'مالِ دیگری', isRead: false },
+    ]);
+
+    const unreadOnly = await service.listNotificationFeed(actor(active), { showAll: false });
+    expect(unreadOnly.items.map((n) => n.title)).toEqual(['تأیید']);
+    expect(unreadOnly.unread).toBe(1);
+
+    const all = await service.listNotificationFeed(actor(active), { showAll: true });
+    expect(all.items.map((n) => n.title).sort()).toEqual(['تأیید', 'رد'].sort());
+    // شمارِ خوانده‌نشده به حالتِ نمایش وابسته نیست.
+    expect(all.unread).toBe(1);
+  });
+
+  it('⚠️ اعلانِ دیگری هرگز در فهرستِ من نیست', async () => {
+    const all = await service.listNotificationFeed(actor(active), { showAll: true });
+    expect(all.items.every((n) => n.userId === active)).toBe(true);
+  });
+
+  it('سقفِ فهرست ۲۰۰ است و تازه‌ترها اول می‌آیند', async () => {
+    await db.delete(notifications);
+    await db.insert(notifications).values(
+      Array.from({ length: service.FEED_LIMIT + 5 }, (_, i) => ({
+        userId: active, type: 'x', title: `n${i}`, isRead: false,
+      })),
+    );
+    const feed = await service.listNotificationFeed(actor(active), { showAll: false });
+    expect(feed.items).toHaveLength(service.FEED_LIMIT);
+    expect(feed.items[0]!.title).toBe(`n${service.FEED_LIMIT + 4}`);
+    // شمارِ خوانده‌نشده کل را می‌گوید، نه برش را.
+    expect(feed.unread).toBe(service.FEED_LIMIT + 5);
+  });
+});

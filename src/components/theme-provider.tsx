@@ -1,26 +1,25 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import {
+  isPalette, isTheme, PALETTE_STORAGE_KEY, PALETTES, THEME_STORAGE_KEY, type Palette, type ThemePreference,
+} from '@/domain/people/appearance';
+import { saveAppearanceAction } from '@/app/(app)/_actions/appearance';
 
 /**
- * تم — روشن / تیره / مطابق سیستم.
+ * تم — روشن / تیره / مطابق سیستم، و پالتِ رنگ.
  *
- * ترجیح در localStorage می‌ماند و روی `<html>` به‌صورتِ کلاسِ `dark` اعمال
- * می‌شود. اسکریپتِ کوچکی در layout قبل از رندر اجرا می‌شود تا صفحه با
- * رنگِ اشتباه چشمک نزند.
+ * ترجیح **روی کاربر** ذخیره می‌شود (مهاجرتِ 0033، پورتِ `_kteam_theme`) و
+ * localStorage فقط حافظهٔ مرورگر است: برای صفحه‌های عمومی (ورود) و برای
+ * کاربری که هنوز انتخابی نکرده. کلاسِ `dark` روی `<html>` می‌نشیند؛ اسکریپتِ
+ * کوچکی در layout قبل از رندر اجرا می‌شود تا صفحه با رنگِ اشتباه چشمک نزند.
+ *
+ * ⚠️ پیش از این فقط localStorage بود: «تیره» روی لپ‌تاپ روی گوشی «روشن»
+ * می‌ماند و با پاک‌کردنِ دادهٔ مرورگر گم می‌شد.
  */
 
-export type ThemePreference = 'light' | 'dark' | 'system';
-
-/**
- * پالت — محورِ **دوم** کنارِ روشن/تیره، نه جایگزینش.
- *
- * ⚠️ هر پالت در هر دو حالتِ روشن و تیره تعریف شده است، پس این دو انتخاب
- * در هم ضرب می‌شوند: «دریا + تیره» یعنی دریای تیره، نه اینکه یکی دیگری
- * را باطل کند.
- */
-export const PALETTES = ['stone', 'ocean', 'forest', 'sunset', 'violet', 'slate'] as const;
-export type Palette = (typeof PALETTES)[number];
+export { PALETTES };
+export type { Palette, ThemePreference };
 
 export const PALETTE_LABEL: Record<Palette, string> = {
   stone: 'سنگ',
@@ -41,12 +40,8 @@ export const PALETTE_SWATCH: Record<Palette, string> = {
   slate: 'oklch(0.45 0 0)',
 };
 
-function isPalette(value: string | null): value is Palette {
-  return value !== null && (PALETTES as readonly string[]).includes(value);
-}
-
-const STORAGE_KEY = 'kabarza-theme';
-const PALETTE_KEY = 'kabarza-palette';
+const STORAGE_KEY = THEME_STORAGE_KEY;
+const PALETTE_KEY = PALETTE_STORAGE_KEY;
 
 interface ThemeContextValue {
   theme: ThemePreference;
@@ -69,22 +64,45 @@ function apply(theme: ThemePreference): void {
   document.documentElement.classList.toggle('dark', dark);
 }
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemePreference>('system');
-  const [palette, setPaletteState] = useState<Palette>('stone');
+/** localStorage در حالتِ خصوصیِ مرورگر خطا می‌دهد؛ ظاهر نباید صفحه را بشکند. */
+function readStored(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function writeStored(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch { /* بی‌خیال */ }
+}
+
+export function ThemeProvider({
+  initial,
+  signedIn = false,
+  children,
+}: {
+  /** ترجیحِ ذخیره‌شده روی کاربر؛ خالی = انتخابی نکرده (ترجیحِ مرورگر). */
+  initial?: { theme: ThemePreference | ''; palette: Palette | '' };
+  /** کاربرِ واردشده؟ فقط آن‌وقت تغییر روی سرور هم ذخیره می‌شود. */
+  signedIn?: boolean;
+  children: React.ReactNode;
+}) {
+  const [theme, setThemeState] = useState<ThemePreference>(initial?.theme || 'system');
+  const [palette, setPaletteState] = useState<Palette>(initial?.palette || 'stone');
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as ThemePreference | null;
-    if (stored === 'light' || stored === 'dark' || stored === 'system') {
+    /**
+     * ⚠️ ترجیحِ سرور بر مرورگر مقدم است؛ مرورگر فقط وقتی حرف می‌زند که
+     * کاربر روی حسابش چیزی انتخاب نکرده باشد. اسکریپتِ پیش از رندر همین
+     * ترتیب را دارد، پس این‌جا فقط state با صفحه هم‌گام می‌شود.
+     */
+    const stored = initial?.theme || readStored(STORAGE_KEY);
+    if (isTheme(stored)) {
       setThemeState(stored);
       apply(stored);
     }
-    const storedPalette = localStorage.getItem(PALETTE_KEY);
+    const storedPalette = initial?.palette || readStored(PALETTE_KEY);
     if (isPalette(storedPalette)) {
       setPaletteState(storedPalette);
       document.documentElement.dataset.palette = storedPalette;
     }
-  }, []);
+  }, [initial?.theme, initial?.palette]);
 
   // وقتی «مطابق سیستم» است، تغییرِ تنظیمِ سیستم باید بلافاصله اثر کند.
   useEffect(() => {
@@ -97,15 +115,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = useCallback((next: ThemePreference) => {
     setThemeState(next);
-    localStorage.setItem(STORAGE_KEY, next);
+    writeStored(STORAGE_KEY, next);
     apply(next);
-  }, []);
+    // ⚠️ شکستِ ذخیره روی سرور ظاهرِ همین صفحه را برنمی‌گرداند؛ فقط دستگاهِ دیگر آن را نمی‌بیند.
+    if (signedIn) void saveAppearanceAction({ theme: next }).catch(() => {});
+  }, [signedIn]);
 
   const setPalette = useCallback((next: Palette) => {
     setPaletteState(next);
-    localStorage.setItem(PALETTE_KEY, next);
+    writeStored(PALETTE_KEY, next);
     document.documentElement.dataset.palette = next;
-  }, []);
+    if (signedIn) void saveAppearanceAction({ palette: next }).catch(() => {});
+  }, [signedIn]);
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, palette, setPalette }}>
@@ -117,17 +138,3 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme(): ThemeContextValue {
   return useContext(ThemeContext);
 }
-
-/** جلوگیری از چشمکِ رنگِ اشتباه — قبل از رندرِ صفحه اجرا می‌شود. */
-/**
- * ⚠️ پیش از رندر اجرا می‌شود تا صفحه با رنگِ اشتباه چشمک نزند — و **پالت
- * هم** باید همین‌جا بنشیند، نه فقط حالتِ روشن/تیره: بدونِ آن، صفحه یک
- * لحظه با پالتِ پیش‌فرض ظاهر می‌شود و بعد می‌پرد.
- */
-export const themeScript = `(function(){try{`
-  + `var t=localStorage.getItem('${STORAGE_KEY}')||'system';`
-  + `var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);`
-  + `document.documentElement.classList.toggle('dark',d);`
-  + `var p=localStorage.getItem('${PALETTE_KEY}');`
-  + `if(p)document.documentElement.setAttribute('data-palette',p);`
-  + `}catch(e){}})()`;

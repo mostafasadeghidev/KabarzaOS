@@ -20,7 +20,8 @@ import { hasTeamScope } from '@/server/team/service';
 import { hasTeamAvailability } from '@/server/availability/service';
 import { NotificationBell } from '@/components/notification-bell';
 import { getSystemConfig } from '@/server/settings/system-service';
-import { roleTagNamesOf } from '@/server/people/repository';
+import { roleTagsOf } from '@/server/people/repository';
+import { avatarsFor } from '@/server/files/service';
 import { hasPersonalMoney } from '@/server/finance/my-money';
 import { t } from '@/i18n/server';
 import { canUseTimesheet, timerState } from '@/server/timelogs/service';
@@ -181,9 +182,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const primaryRole = actor.roles[0];
-  // نقش‌های تگیِ خودِ کاربر — «دولوپر»، «مدیرِ تیم»… (نه نقشِ سامانه‌ای).
-  const roleTagNames = await roleTagNamesOf(actor.id);
-  const [bell, system, unreadMessages, showTgNudge, timer, brand] = await Promise.all([
+  const [bell, system, unreadMessages, showTgNudge, timer, brand, roleTags, avatars] = await Promise.all([
     listNotifications(actor),
     getSystemConfig(),
     unreadMessageCount(actor),
@@ -195,6 +194,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
      * اطلاعاتِ عمومیِ شرکت‌اند و همان چیزی که روی سربرگِ فاکتور هم می‌آید.
      */
     getCompany(),
+    // نقش‌های تگیِ خودِ کاربر — «دولوپر»، «مدیرِ تیم»… (نه نقشِ سامانه‌ای)، با رنگِ تگ.
+    roleTagsOf(actor.id),
+    // تصویرِ پروفایل برای دکمهٔ حساب (پورتِ `get_avatar` ِ منوی حساب).
+    avatarsFor([actor.id]),
   ]);
 
   return (
@@ -215,10 +218,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
          * چه اختیاری دارد، ولی «دولوپر / مدیرِ پروژه» می‌گوید چه‌کاره است.
          * کاربر انتظار دارد نقشی را ببیند که خودش برای او انتخاب شده.
          */
-        userRoles={[
-          ...actor.roles.map((role) => t(ROLE_LABELS[role])),
-          ...roleTagNames,
-        ]}
+        baseRoles={actor.roles.map((role) => t(ROLE_LABELS[role]))}
+        roleTags={roleTags}
+        avatarFileId={avatars.get(actor.id) ?? null}
         locale={session.locale ?? system.defaultLocale}
         pulse={{ enabled: system.pulseEnabled, interval: system.pulseInterval }}
         unreadMessages={unreadMessages}
@@ -241,6 +243,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               ...items.map(({ href, label }) => ({ href, label })),
               { href: '/settings', label: t('تنظیمات') },
               { href: '/profile', label: t('پروفایلِ من') },
+              { href: '/notifications', label: t('اعلان‌ها') },
             ]}
           />
           <div className="ms-auto flex items-center gap-2">

@@ -3,7 +3,8 @@ import { currentSession } from '@/server/auth';
 import { direction } from '@/i18n/config';
 import { primeTranslations, getT } from '@/i18n/server';
 import { TranslationProvider } from '@/i18n/client';
-import { ThemeProvider, themeScript } from '@/components/theme-provider';
+import { ThemeProvider } from '@/components/theme-provider';
+import { themeScript } from '@/components/theme-script';
 import { ToastProvider } from '@/components/ui/toast';
 import { ConfirmProvider } from '@/components/ui/confirm';
 import { DirectionProvider } from '@/components/ui/direction';
@@ -32,14 +33,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // ⚠️ باید **اینجا** انجام شود: چیدمانِ ریشه پیش از هر فرزندی رندر می‌شود،
   // پس ترجمه برای کلِ درخت آماده است بی‌آنکه چیزی پاس داده شود.
   const { locale, messages } = await primeTranslations();
+  const session = await currentSession();
   // منطقهٔ زمانیِ کاربرِ واردشده — تاریخ‌ها به وقتِ او نشان داده می‌شوند، نه UTC.
-  const timeZone = (await currentSession())?.timezone ?? '';
+  const timeZone = session?.timezone ?? '';
+  // ظاهرِ ذخیره‌شده روی کاربر (مهاجرتِ 0033) — روی هر دستگاهی یکسان.
+  const appearance = session?.appearance ?? { theme: '' as const, palette: '' as const };
 
   return (
     <html lang={locale} dir={direction(locale)} suppressHydrationWarning>
       <head>
         {/* قبل از رندر اجرا می‌شود تا صفحه با رنگِ اشتباه چشمک نزند. */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: themeScript(appearance) }} />
       </head>
       <body className="min-h-screen antialiased">
         {/*
@@ -48,7 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           دیالوگ‌ها و توست‌هایی که پورتال می‌شوند هم جهت را بگیرند.
         */}
         <DirectionProvider dir={direction(locale)}>
-          <ThemeProvider>
+          <ThemeProvider initial={appearance} signedIn={session !== null}>
             <TranslationProvider locale={locale} messages={messages} timeZone={timeZone}>
               {/*
                 ⚠️ توست در **ریشه** سوار می‌شود، نه در چیدمانِ اپ: صفحهٔ ورود،

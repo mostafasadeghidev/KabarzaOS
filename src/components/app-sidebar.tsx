@@ -178,7 +178,9 @@ export function AppSidebar({
   items,
   userName,
   userRole,
-  userRoles = [],
+  baseRoles = [],
+  roleTags = [],
+  avatarFileId = null,
   locale,
   pulse,
   unreadMessages,
@@ -195,7 +197,12 @@ export function AppSidebar({
   brand: { name: string; logoFileId: number | null };
   userName: string;
   userRole: string;
-  userRoles?: string[];
+  /** همهٔ نقش‌های سامانه‌ای (مالک، عضو، کارفرما…) — ترجمه‌شده. */
+  baseRoles?: string[];
+  /** نقش‌های کاری (تگِ نقشِ عضو) با رنگِ تگ. */
+  roleTags?: Array<{ name: string; color: string }>;
+  /** تصویرِ پروفایل؛ `null` = حروفِ اولِ نام. */
+  avatarFileId?: number | null;
   locale: Locale;
   /** نبضِ زنده — همان تنظیمی که زنگِ اعلان می‌گیرد. */
   pulse: { enabled: boolean; interval: number };
@@ -274,7 +281,9 @@ export function AppSidebar({
             <UserMenu
               userName={userName}
               userRole={userRole}
-              userRoles={userRoles}
+              baseRoles={baseRoles}
+              roleTags={roleTags}
+              avatarFileId={avatarFileId}
               locale={locale}
               onLogout={onLogout}
               canManageSettings={canManageSettings}

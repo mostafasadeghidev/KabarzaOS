@@ -62,3 +62,20 @@ export function structuredBody(type: string, body: string): BodyRow[] | null {
   }
   return rows.length > 0 ? rows : null;
 }
+
+/**
+ * رنگِ معناییِ یک اعلان — پورتِ `kteam-notif-good` / `kteam-notif-bad`.
+ *
+ * تأیید و پرداختِ درخواست سبز، ردِ آن قرمز؛ بقیه بی‌رنگ. فقط آیکونِ ردیف رنگ
+ * می‌گیرد (DESIGN.md: رنگِ معنایی فقط برای معنا، نه تزیین).
+ *
+ * ⚠️ نوعِ قدیمیِ مشترکِ `payment.decided` بی‌رنگ می‌ماند: از روی آن نمی‌شود
+ * فهمید تأیید بوده یا رد، و حدس‌زدن بدتر از بی‌رنگی است.
+ */
+export type NotificationTone = 'good' | 'bad' | null;
+
+export function toneOf(type: string): NotificationTone {
+  if (type === 'payment.approved' || type === 'payment.paid') return 'good';
+  if (type === 'payment.rejected') return 'bad';
+  return null;
+}

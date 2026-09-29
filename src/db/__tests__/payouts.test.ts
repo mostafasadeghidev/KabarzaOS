@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
   currencies, users, accounts, projects, ledger, paymentRequests,
-  recurringExpenses, fiscalLocks, vendors, unitEntries,
+  recurringExpenses, fiscalLocks, vendors, unitEntries, notifications,
 } from '../schema';
 import * as payouts from '@/server/finance/payouts';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -112,6 +112,12 @@ describe('⚠️ R-TEAM-07/10 — پرداختِ درخواست', () => {
     expect(entry.direction).toBe('out');
     expect(Number(entry.amount)).toBe(500);
     expect(entry.projectId).toBe(project);
+
+    // پورتِ `payment_paid` — نوعِ جدا (سبز در فهرستِ اعلان‌ها) و نشانیِ مالیِ **شخصی**:
+    // درخواست‌دهنده عضو است و `/finance` برایش «دسترسی ندارید» بود.
+    const note = (await db.select().from(notifications).where(eq(notifications.userId, member)))
+      .find((n) => n.type === 'payment.paid');
+    expect(note?.url).toBe('/my-money');
   });
 
   it('⚠️ پرداختِ دوباره رد می‌شود', async () => {
@@ -209,5 +215,23 @@ describe('R-TEAM-08 — پرداختِ درخواست، ردیفِ کارِ تع
     const row = (await db.select().from(unitEntries).where(eq(unitEntries.id, ue!.id)))[0]!;
     expect(row.status).toBe('paid');
     expect(row.ledgerId).toBe(result.ledgerId);
+  });
+});
+
+describe('اعلانِ تصمیمِ درخواست', () => {
+  it('⚠️ تأیید و رد نوعِ جدا دارند و به امورِ مالیِ شخصی می‌برند', async () => {
+    const r = await db.insert(paymentRequests).values([
+      { projectId: project, userId: member, amount: '100', currencyId: eur, status: 'pending' },
+      { projectId: project, userId: member, amount: '120', currencyId: eur, status: 'pending' },
+    ]).returning({ id: paymentRequests.id });
+    await payouts.decideRequest(owner(), r[0]!.id, 'approved', '');
+    await payouts.decideRequest(owner(), r[1]!.id, 'rejected', 'مبلغ اشتباه است');
+
+    const rows = await db.select().from(notifications).where(eq(notifications.userId, member));
+    const approved = rows.find((n) => n.type === 'payment.approved');
+    const rejectedNote = rows.find((n) => n.type === 'payment.rejected');
+    expect(approved?.url).toBe('/my-money');
+    expect(rejectedNote?.url).toBe('/my-money');
+    expect(rejectedNote?.body).toContain('مبلغ اشتباه است');
   });
 });

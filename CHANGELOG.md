@@ -2,6 +2,23 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.90.0]
+
+### Added
+
+- **A notifications page.** The bell only holds the latest 30 notifications, so anything older could not be reached. The new page lists up to 200, unread ones by default with a tab for all of them. It has «خواندنِ همه», a «خوانده شد» button on each unread row, and «مشاهده», which marks the notification read and then opens its target. The bell and the account menu link to it.
+- **Payment notifications carry their meaning.** An approved or paid payment request shows a green icon and a rejected one a red icon, on the page and wherever the notification appears.
+- **The account menu shows the profile picture and every role.** The account button uses the uploaded picture instead of initials. The menu lists every system role as a chip and each job role as a chip with its tag's colour dot.
+
+### Changed
+
+- **Light/dark mode and the palette are saved on the user.** They were kept only in the browser, so a choice made on one device did not reach another and was lost when the browser data was cleared. They now follow the account to every device. The browser still remembers them for the sign-in page and for users who have not picked anything. Migration 0033 adds the two columns.
+
+### Fixed
+
+- **Payment decision notifications opened a forbidden page.** Approving, rejecting or paying a member's request sent a notification that linked to Finance, which a member cannot open. It now opens «امور مالی», the member's own finance page.
+- Tests that scan the whole source tree got a longer time limit. Under load they sometimes passed the five-second default and failed at random.
+
 ## [1.89.1]
 
 ### Changed

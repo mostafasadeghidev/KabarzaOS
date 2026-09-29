@@ -265,8 +265,16 @@ export { users, userRoles, userOffices, tagRelations, projectMembers, projectPay
  * نشان می‌دهد، چون «عضو تیم» به‌تنهایی چیزی از کارِ او نمی‌گوید.
  */
 export async function roleTagNamesOf(userId: number): Promise<string[]> {
+  return (await roleTagsOf(userId)).map((r) => r.name);
+}
+
+/**
+ * همان نقش‌های تگی، با **رنگِ** تگ — منوی حساب آن‌ها را چیپِ نقطه‌دار نشان
+ * می‌دهد (پورتِ `kteam-acct-roletag` که رنگِ خودِ تگ را داشت).
+ */
+export async function roleTagsOf(userId: number): Promise<Array<{ name: string; color: string }>> {
   const rows = await db
-    .select({ name: tagName(await currentLocale()) })
+    .select({ name: tagName(await currentLocale()), color: tags.color })
     .from(tagRelations)
     .innerJoin(tags, eq(tags.id, tagRelations.tagId))
     .where(and(
@@ -275,5 +283,7 @@ export async function roleTagNamesOf(userId: number): Promise<string[]> {
       eq(tags.type, 'member_role'),
     ))
     .orderBy(tags.sortOrder, tags.id);
-  return rows.map((r) => r.name).filter((n): n is string => Boolean(n));
+  return rows
+    .filter((r): r is { name: string; color: string } => Boolean(r.name))
+    .map((r) => ({ name: r.name, color: r.color ?? '' }));
 }
