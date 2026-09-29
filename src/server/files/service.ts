@@ -94,7 +94,11 @@ async function storeFile(
  * ------------------------------------------------------------------ */
 
 export interface ServedFile {
-  bytes: Uint8Array;
+  /**
+   * کلیدِ شیئی که باید فرستاده شود (اصل یا نسخهٔ کوچک). ⚠️ بایت‌ها این‌جا
+   * خوانده نمی‌شوند؛ مسیرِ فایل با `openObject` جریانش را مستقیم می‌فرستد.
+   */
+  key: string;
   mime: string;
   downloadName: string;
   disposition: 'inline' | 'attachment';
@@ -244,7 +248,7 @@ export async function serveFile(
   const usePreview = wantPreview && !forceDownload && file.previewKey !== null;
 
   return {
-    bytes: await getObject(usePreview ? file.previewKey! : file.storageKey),
+    key: usePreview ? file.previewKey! : file.storageKey,
     mime: usePreview ? PREVIEW_MIME : file.mime,
     downloadName: safeDownloadName(file.originalName, file.mime),
     // ⚠️ R-FILE-04 — SVG/HTML هرگز inline باز نمی‌شوند.

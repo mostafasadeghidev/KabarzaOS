@@ -890,7 +890,8 @@ export async function getEntryFormOptions(actor: Actor) {
         .from(projects)
         .where(and(isNull(projects.deletedAt), inArray(projects.scope, visibleScopes(actor))))
         .orderBy(projects.title),
-      db.select({ id: vendors.id, name: vendors.name })
+      // `isActive` — انتخابگرهای تازه فقط فعال‌ها را پیشنهاد می‌کنند (فیلترِ فهرست همه را دارد).
+      db.select({ id: vendors.id, name: vendors.name, isActive: vendors.isActive })
         .from(vendors).orderBy(vendors.name),
       db.select({ id: users.id, name: users.name, email: users.email })
         .from(users).where(isNull(users.deletedAt)).orderBy(users.name),

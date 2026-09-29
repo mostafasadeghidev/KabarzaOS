@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  assertCurrencyDeletable, assertName, assertRateValid, assertTagDeletable,
+  assertCurrencyDeletable, assertName, assertRateValid, assertTagDeletable, assertVendorDeletable,
   catalogMessage, CatalogError, planSetDefaultCurrency,
 } from './catalogs';
 
@@ -68,5 +68,16 @@ describe('نام', () => {
 
   it('فاصله‌های اضافه بریده می‌شوند', () => {
     expect(assertName(' دفتر تهران ')).toBe('دفتر تهران');
+  });
+});
+
+describe('حذفِ طرف‌حساب — Vendors::delete', () => {
+  it('بی‌استفاده حذف می‌شود', () => {
+    expect(() => assertVendorDeletable({ ledger: 0, expenses: 0 })).not.toThrow();
+  });
+
+  it('⚠️ طرف‌حسابِ ردیفِ دفتر یا هزینه حذف نمی‌شود', () => {
+    expect(() => assertVendorDeletable({ ledger: 1, expenses: 0 })).toThrow(CatalogError);
+    expect(() => assertVendorDeletable({ ledger: 0, expenses: 2 })).toThrow(CatalogError);
   });
 });

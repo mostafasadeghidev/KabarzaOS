@@ -3,8 +3,8 @@
 import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
-  saveSystemAction, saveTelegramAction, sendReportTestAction, sendTelegramTestAction, testTelegramAction,
-  type SystemState,
+  recheckBucketAction, saveSystemAction, saveTelegramAction, sendReportTestAction, sendTelegramTestAction,
+  testTelegramAction, type SystemState,
 } from './_form/actions';
 import {
   CHATPOLL_CHOICES, MAX_PURGE_DAYS, PULSE_CHOICES, type SystemConfig,
@@ -22,7 +22,8 @@ import { useT } from '@/i18n/client';
 import { LOCALES, LOCALE_NAMES } from '@/i18n/config';
 import { agoParts, type SchedulerHealth } from '@/domain/scheduler/health';
 import type { TelegramSettingsView } from '@/server/settings/telegram-service';
-import { Activity } from 'lucide-react';
+import { Activity, HardDrive, RefreshCw } from 'lucide-react';
+import type { BucketCheck } from '@/server/files/bucket-probe';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Switch } from '@/components/ui/switch';
@@ -112,9 +113,54 @@ function HealthCard({ health }: { health: SchedulerHealth }) {
   );
 }
 
-export function SystemSection({ config, health, isOwner, telegram }: {
+/**
+ * کارتِ «فایل‌های خصوصی» — پورتِ کارتِ سلامتِ `Private_Files`: باکت به روی
+ * درخواستِ بی‌احراز بسته است؟ با «بررسی دوباره» (`handle_recheck`).
+ */
+function BucketCard({ bucket }: { bucket: BucketCheck }) {
+  const tr = useT();
+  const [pending, start] = useTransition();
+  const [state, setState] = useState<SystemState>({});
+  useActionToast(state);
+  const view = {
+    protected: { label: 'محافظت‌شده', tone: 'border-emerald-500/40 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300' },
+    exposed: { label: 'در معرض دسترسی!', tone: 'border-red-500/40 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300' },
+    unknown: { label: 'نامشخص', tone: 'border-amber-500/40 bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300' },
+  }[bucket.status];
+  return (
+    <div className={`grid gap-1.5 rounded-xl border p-3 ${view.tone}`}>
+      <p className="flex items-center gap-1.5 text-sm font-medium">
+        <HardDrive className="size-4" />
+        {tr('فایل‌های خصوصی')}
+        <span className="ms-auto">{tr(view.label)}</span>
+      </p>
+      {bucket.status === 'exposed' && (
+        <p className="text-xs">
+          {tr('باکتِ فایل‌ها بدونِ ورود هم خوانده می‌شود: هر رسید یا قرارداد با حدسِ نشانی‌اش دیده می‌شود. سیاستِ دسترسیِ باکت را در سرویسِ ذخیره‌سازی خصوصی کنید (دسترسیِ ناشناس را بردارید) و دوباره بررسی کنید.')}
+        </p>
+      )}
+      {bucket.status === 'unknown' && (
+        <p className="text-xs">
+          {tr('درخواستِ آزمایشی به سرویسِ ذخیره‌سازی نرسید. دستی بررسی کنید که باکت بدونِ اعتبارنامه خوانده نشود.')}
+        </p>
+      )}
+      <div>
+        <Button
+          type="button" size="sm" variant="outline" disabled={pending}
+          onClick={() => start(async () => setState(await recheckBucketAction()))}
+        >
+          {pending ? <Spinner /> : <RefreshCw />}
+          {tr('بررسی دوباره')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export function SystemSection({ config, health, bucket, isOwner, telegram }: {
   config: SystemConfig;
   health: SchedulerHealth;
+  bucket: BucketCheck | null;
   /** بلوکِ بات فقط برای مالک. */
   isOwner: boolean;
   /** ⚠️ توکن در این شیء **نیست** — فقط «هست یا نه». */
@@ -134,6 +180,7 @@ export function SystemSection({ config, health, isOwner, telegram }: {
     <form action={save} className="grid max-w-4xl gap-4">
       {/* ⚠️ بالای صفحه، پیش از تنظیمات: خرابیِ زمان‌بند باید اول دیده شود. فقط مالک (پورتِ تبِ Health). */}
       {isOwner && <HealthCard health={health} />}
+      {isOwner && bucket && <BucketCard bucket={bucket} />}
 
       {/* هر گروهِ فیلد یک پنل است؛ فیلدِ آزاد روی زمینه کنارِ پنل‌ها ناهمسان بود. */}
       <Panel title={t("عمومی")}>

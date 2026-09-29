@@ -7,6 +7,7 @@ import { getReportConfig } from '@/server/scheduler/daily-report';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { getTelegramSettings } from '@/server/settings/telegram-service';
 import { lastTickAt } from '@/server/scheduler/service';
+import { bucketCheck } from '@/server/files/bucket-probe';
 import { schedulerHealth } from '@/domain/scheduler/health';
 import { currentLockDate } from '@/server/finance/service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -67,6 +68,8 @@ export default async function SettingsPage({
       },
       isOwner: actor.roles.includes('owner'),
       health: schedulerHealth(tick, new Date()),
+      // خودآزماییِ باکت — فقط مالک؛ اگر نتیجه کهنه بود همین حالا آزمون می‌شود.
+      bucket: actor.roles.includes('owner') ? await bucketCheck().catch(() => null) : null,
       today: new Date().toISOString().slice(0, 10),
     };
   } catch (error) {

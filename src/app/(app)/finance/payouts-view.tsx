@@ -41,6 +41,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DatePicker } from '@/components/ui/date-picker';
 import { SearchInput } from '@/components/ui/search-input';
+import { useSearchParams } from 'next/navigation';
 
 export interface RequestRow {
   id: number;
@@ -193,7 +194,7 @@ export function PayoutsView({
   recurring: RecurringRow[];
   accounts: Array<{ id: number; name: string; currencyCode: string | null }>;
   currencies: Array<{ id: number; code: string; isDefault: boolean }>;
-  vendors: Array<{ id: number; name: string }>;
+  vendors: Array<{ id: number; name: string; isActive?: boolean }>;
   today: string;
   canManage: boolean;
   /** دفترچهٔ بانکی — سرور تصمیم گرفته چه کسی و چه ستونی دیده شود. */
@@ -260,7 +261,9 @@ export function PayoutsView({
    * دسته‌ای که همهٔ ردیف‌هایش فیلتر شده‌اند، سرصفحهٔ خالی نشان می‌داد.
    */
   const [expenseQuery, setExpenseQuery] = useState('');
-  const [expenseVendor, setExpenseVendor] = useState('');
+  // پیوندِ «هزینه‌ها» ی تبِ طرف‌حساب‌ها با `?vendor=` می‌آید (پورتِ `exp_url`).
+  const searchParams = useSearchParams();
+  const [expenseVendor, setExpenseVendor] = useState(() => searchParams.get('vendor') ?? '');
   const [expenseKind, setExpenseKind] = useState('');
   // پورتِ فیلترِ زندهٔ صفحهٔ هزینه‌ها: دسته، حساب، بازهٔ سررسید.
   const [expenseCategory, setExpenseCategory] = useState('');
@@ -937,7 +940,10 @@ export function PayoutsView({
                 <FieldLabel htmlFor="e-vendor">{t("طرف‌حساب")}</FieldLabel>
                 <SearchableSelect id="e-vendor" name="vendorId" containerClassName="w-full" defaultValue={editing?.vendorId ? String(editing.vendorId) : ''}>
                   <NativeSelectOption value="">{t("بدون طرف‌حساب")}</NativeSelectOption>
-                  {vendors.map((v) => <NativeSelectOption key={v.id} value={v.id}>{v.name}</NativeSelectOption>)}
+                  {/* ⚠️ غیرفعال پیشنهاد نمی‌شود، مگر همانی که این هزینه دارد — وگرنه ویرایش آن را پاک می‌کرد. */}
+                  {vendors
+                    .filter((v) => v.isActive !== false || v.id === editing?.vendorId)
+                    .map((v) => <NativeSelectOption key={v.id} value={v.id}>{v.name}</NativeSelectOption>)}
                 </SearchableSelect>
                 {/* پورتِ `find_or_create`: طرف‌حسابِ تازه همین‌جا ساخته می‌شود. */}
                 <Input name="vendorName" placeholder={tr('یا طرف‌حسابِ تازه…')} className="h-8 text-xs" />

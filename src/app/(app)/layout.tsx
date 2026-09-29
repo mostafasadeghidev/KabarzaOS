@@ -26,6 +26,10 @@ import { hasPersonalMoney } from '@/server/finance/my-money';
 import { t } from '@/i18n/server';
 import { canUseTimesheet, timerState } from '@/server/timelogs/service';
 import { TimerBanner } from '@/components/timer-banner';
+import { after } from 'next/server';
+import { BucketWarning } from '@/components/bucket-warning';
+import { bucketCheck, cachedBucketCheck } from '@/server/files/bucket-probe';
+import { isFresh } from '@/domain/files/probe';
 
 /**
  * چیدمانِ اپ — سایدبار + محتوا.
@@ -181,6 +185,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     });
   }
 
+  /**
+   * خودآزماییِ باکت برای مالک — فقط نتیجهٔ ذخیره‌شده خوانده می‌شود؛ اگر کهنه
+   * یا نبود، آزمون **پس از** پاسخ اجرا می‌شود (`after`) تا صفحه منتظرِ
+   * درخواستِ بیرونی نماند.
+   */
+  const bucket = actor.roles.includes('owner') ? await cachedBucketCheck().catch(() => null) : null;
+  if (actor.roles.includes('owner') && !isFresh(bucket?.checkedAt ?? null, new Date())) {
+    after(() => bucketCheck().catch(() => undefined));
+  }
+
   const primaryRole = actor.roles[0];
   const [bell, system, unreadMessages, showTgNudge, timer, brand, roleTags, avatars] = await Promise.all([
     listNotifications(actor),
@@ -259,6 +273,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
         {showTgNudge && <TelegramNudge />}
+        {bucket && bucket.status !== 'protected' && <BucketWarning status={bucket.status} />}
         {timer && (timer.running || timer.pending) && (
           <TimerBanner
             running={timer.running ? { projectTitle: timer.running.projectTitle, minutes: timer.running.minutes } : null}

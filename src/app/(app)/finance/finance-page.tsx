@@ -8,6 +8,7 @@ import { LedgerView } from './ledger-view';
 import type { AccountOption, EntryRow, FormOptions } from './ledger-view';
 import { PayoutsView, type RecurringRow, type RequestRow , type UnitRow, type DetachedRow } from './payouts-view';
 import { AccountsView, type AccountFormOptions } from './accounts-view';
+import { VendorsView, type VendorRow } from './vendors-view';
 import { useT } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -28,6 +29,11 @@ const TABS = [
    * تبِ خالی — بدونِ جدول، بدونِ پیام — از نبودنش بدتر بود.
    */
   { key: 'accounts', label: 'حساب‌های بانکی', ownerOnly: true },
+  /**
+   * طرف‌حساب‌ها — پورتِ `Vendors_Page` که تبی از مرکزِ مالی بود. فقط برای
+   * مدیرِ مالی (`vendorRows` برای بقیه null است).
+   */
+  { key: 'vendors', label: 'طرف‌حساب‌ها', ownerOnly: false },
 ] as const;
 
 /**
@@ -44,6 +50,7 @@ export function FinancePage({
   directory,
   recurring,
   vendors,
+  vendorRows,
   today,
   accountOptions,
   ...props
@@ -69,7 +76,9 @@ export function FinancePage({
   directory: { showPhone: boolean; rows: BankRow[] };
   requests: RequestRow[];
   recurring: RecurringRow[];
-  vendors: Array<{ id: number; name: string }>;
+  vendors: Array<{ id: number; name: string; isActive?: boolean }>;
+  /** تبِ «طرف‌حساب‌ها» — فقط با مجوزِ مدیریتِ مالی (null یعنی تب نیست). */
+  vendorRows: VendorRow[] | null;
   today: string;
   accountOptions: AccountFormOptions | null;
 }) {
@@ -92,7 +101,9 @@ export function FinancePage({
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>(
     TABS.some((x) => x.key === asked) ? (asked as (typeof TABS)[number]['key']) : 'ledger',
   );
-  const visible = TABS.filter((t) => !t.ownerOnly || accountOptions !== null);
+  const visible = TABS.filter((t) => (t.key === 'vendors'
+    ? vendorRows !== null
+    : !t.ownerOnly || accountOptions !== null));
 
   return (
     <div className="grid gap-4">
@@ -115,6 +126,8 @@ export function FinancePage({
           onSelectAccount={(id) => router.push(`/finance?account=${id}`)}
         />
       )}
+
+      {tab === 'vendors' && vendorRows && <VendorsView rows={vendorRows} />}
 
       {tab === 'accounts' && accountOptions && (
         <AccountsView

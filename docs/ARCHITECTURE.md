@@ -77,6 +77,7 @@ already primed it.
 |---|---|
 | `pnpm test` | Unit — domain logic, no database |
 | `pnpm test:db` | Integration — against a real Postgres |
+| `pnpm smoke` | Page smoke — every page and tab per role, against the running local server; signs a short session with the local secret, so it refuses non-local addresses |
 
 Domain tests are cheap because `Actor` carries only identity and
 permissions. Integration tests cover the paths where the wiring, not the

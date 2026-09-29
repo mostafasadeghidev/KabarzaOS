@@ -6,7 +6,7 @@ import { attachments, files, offices, projects, projectMembers, userOffices, use
 import {
   addAttachment, addLink, canViewFile, deleteAttachment, listAttachments, serveFile,
 } from '@/server/files/service';
-import { getObject } from '@/server/files/storage';
+import { getObject, openObject } from '@/server/files/storage';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FileRejected } from '@/domain/files/upload';
 import type { Actor } from '@/domain/access/permissions';
@@ -121,9 +121,24 @@ describe('R-FILE-03 — گیت یعنی این فایل، این کاربر', ()
 
   it('سرو کردن برای کاربرِ مجاز بایت و نامِ درست می‌دهد', async () => {
     const served = await serveFile(member, fileId);
-    expect(Array.from(served.bytes)).toEqual(Array.from(PNG));
+    expect(Array.from(await getObject(served.key))).toEqual(Array.from(PNG));
     expect(served.downloadName).toBe('shot.png');
     expect(served.disposition).toBe('inline');
+  });
+
+  it('جریان و Range — پورتِ F#285: بازه همان بایت‌های اصل را می‌دهد', async () => {
+    const served = await serveFile(member, fileId);
+    const full = await openObject(served.key);
+    expect(full.contentRange).toBeNull();
+    expect(Array.from(new Uint8Array(await new Response(full.body).arrayBuffer()))).toEqual(Array.from(PNG));
+
+    const part = await openObject(served.key, 'bytes=1-3');
+    expect(part.length).toBe(3);
+    expect(part.contentRange).toBe(`bytes 1-3/${PNG.byteLength}`);
+    expect(Array.from(new Uint8Array(await new Response(part.body).arrayBuffer()))).toEqual(Array.from(PNG.slice(1, 4)));
+
+    // ⚠️ بازهٔ بیرون از فایل → ۴۱۶ با اندازهٔ واقعی، نه خطای خامِ S3.
+    await expect(openObject(served.key, `bytes=${PNG.byteLength + 10}-`)).rejects.toMatchObject({ name: 'RangeNotSatisfiable', size: PNG.byteLength });
   });
 
   it('درخواستِ دانلود، inline را کنار می‌زند', async () => {
@@ -236,7 +251,7 @@ describe('R-FILE-16 — پیش‌نمایشِ کوچک', () => {
 
     const full = await serveFile(owner, fileId, false, false);
     expect(full.mime).toBe('image/png');
-    expect(Array.from(full.bytes)).toEqual(Array.from(realPng));
+    expect(Array.from(await getObject(full.key))).toEqual(Array.from(realPng));
   });
 
   it('⚠️ دانلودِ اجباری همیشه اصلِ فایل را می‌دهد، نه نسخهٔ فشرده', async () => {
@@ -268,7 +283,7 @@ describe('R-FILE-16 — پیش‌نمایشِ کوچک', () => {
     // و درخواستِ نسخهٔ کوچک بی‌سروصدا به اصل برمی‌گردد، نه خطا.
     const served = await serveFile(owner, fileId, false, true);
     expect(served.mime).toBe('image/png');
-    expect(Array.from(served.bytes)).toEqual(Array.from(PNG));
+    expect(Array.from(await getObject(served.key))).toEqual(Array.from(PNG));
   });
 });
 

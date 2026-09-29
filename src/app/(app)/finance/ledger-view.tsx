@@ -117,7 +117,7 @@ export interface FormOptions {
   memberCurrency: Record<string, number>;
   defaultCurrencyId: number | null;
   /** فروشندگان — کاندیدای گیرندهٔ برداشت (پورتِ کاندیدای طرف‌حساب). */
-  vendors?: Array<{ id: number; name: string }>;
+  vendors?: Array<{ id: number; name: string; isActive?: boolean }>;
   /** «projectId:userId» ← کارکردهای پرداخت‌نشده (پورتِ `unitUnpaid`) — انتخابگرِ داخلِ فرم. */
   unitUnpaid?: Record<string, Array<{ id: number; amount: string; currencyId: number | null; text: string }>>;
 }

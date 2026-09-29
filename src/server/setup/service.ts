@@ -1,6 +1,6 @@
-import { sql as raw } from 'drizzle-orm';
+import { asc, desc, eq, sql as raw } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { userRoles, users } from '@/db/schema';
+import { accounts, currencies, offices, userRoles, users } from '@/db/schema';
 import { hashPassword, checkPasswordPolicy } from '@/domain/auth/password';
 import { isValidUsername, normalizeIdentifier } from '@/domain/auth/login';
 
@@ -92,6 +92,51 @@ export async function installOwner(input: SetupInput): Promise<number> {
     }).returning({ id: users.id });
 
     await tx.insert(userRoles).values({ userId: row!.id, role: 'owner' });
+    await seedStarterOffice(tx);
     return row!.id;
+  });
+}
+
+/** نامِ دفترِ آغازین — مدیر بعداً از تنظیمات عوضش می‌کند. */
+export const STARTER_OFFICE_NAME = 'دفتر مرکزی';
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * دفترِ آغازین + حسابِ پیش‌فرضش — پورتِ بخشِ دفترِ `Activator`: نصبِ تازه
+ * باید دست‌کم یک دفتر و یک حساب داشته باشد تا دفترِ کل چیزی برای ثبت داشته
+ * باشد (حساب، نه دفتر، واحدِ واقعیِ دفترِ کل است). حساب هم‌نامِ دفتر، کاری،
+ * و به ارزِ پیش‌فرضِ شرکت است.
+ *
+ * ⚠️ فقط وقتی هیچ دفتر و هیچ حسابی نیست — نصبی که داده‌اش را از جای دیگر
+ * آورده (ایمپورت پیش از نصب) دفترِ اضافه نمی‌گیرد. ساختِ دفتر از تنظیمات
+ * حساب نمی‌سازد؛ نسخهٔ قبلی هم نمی‌ساخت.
+ */
+async function seedStarterOffice(tx: Tx): Promise<void> {
+  const [officeCount, accountCount] = await Promise.all([
+    tx.select({ n: raw<number>`count(*)::int` }).from(offices),
+    tx.select({ n: raw<number>`count(*)::int` }).from(accounts),
+  ]);
+  if ((officeCount[0]?.n ?? 0) > 0 || (accountCount[0]?.n ?? 0) > 0) return;
+
+  // ارزِ پیش‌فرض؛ اگر نشانه نخورده بود، اولین ارزِ فعال (مهاجرتِ ۰۰۱۸ می‌کاردشان).
+  const [currency] = await tx.select({ id: currencies.id }).from(currencies)
+    .where(eq(currencies.isActive, true))
+    .orderBy(desc(currencies.isDefault), asc(currencies.id))
+    .limit(1);
+  if (!currency) return;
+
+  const [office] = await tx.insert(offices).values({
+    name: STARTER_OFFICE_NAME,
+    defaultCurrencyId: currency.id,
+    isActive: true,
+  }).returning({ id: offices.id });
+  await tx.insert(accounts).values({
+    name: STARTER_OFFICE_NAME,
+    type: 'business',
+    officeId: office!.id,
+    currencyId: currency.id,
+    isActive: true,
+    sortOrder: 0,
   });
 }

@@ -101,7 +101,9 @@ export function EntryForm({
   const receiverOptions: Option[] = useMemo(
     () => [
       ...peopleOptions,
-      ...(options.vendors ?? []).map((v) => ({ value: -v.id, label: v.name, hint: tr('فروشنده') })),
+      // طرف‌حسابِ غیرفعال پیشنهاد نمی‌شود؛ نامش را می‌شود دستی نوشت (برچسبِ آزاد است، نه شناسه).
+      ...(options.vendors ?? []).filter((v) => v.isActive !== false)
+        .map((v) => ({ value: -v.id, label: v.name, hint: tr('فروشنده') })),
     ],
     [peopleOptions, options.vendors, tr],
   );

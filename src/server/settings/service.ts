@@ -4,12 +4,12 @@ import { and, eq, inArray, isNull, sql, desc } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   accounts, auditLog, currencies, exchangeRates, ledger, offices, projects,
-  projectMembers, qaItems, tagRelations, tags, tasks, vendors,
+  projectMembers, qaItems, recurringExpenses, tagRelations, tags, tasks, vendors,
 } from '@/db/schema';
 import { can, type Actor } from '@/domain/access/permissions';
 import { ForbiddenError } from '@/domain/access/guard';
 import {
-  assertCurrencyDeletable, assertName, assertRateValid, assertTagDeletable,
+  assertCurrencyDeletable, assertName, assertRateValid, assertTagDeletable, assertVendorDeletable,
   planSetDefaultCurrency,
 } from '@/domain/settings/catalogs';
 import { isValidGroup, supportsClosed, supportsReview } from '@/domain/tags/groups';
@@ -51,7 +51,7 @@ async function audit(actor: Actor, action: string, objectId: number, before?: un
 export async function getSettings(actor: Actor) {
   assertSettings(actor);
 
-  const [currencyRows, rateRows, tagRows, officeRows, vendorRows, qaRows] = await Promise.all([
+  const [currencyRows, rateRows, tagRows, officeRows, qaRows] = await Promise.all([
     db.select().from(currencies).orderBy(currencies.id),
     // آخرین نرخِ هر جفت — پورتِ `latest_rates()`؛ تاریخچه می‌ماند ولی فهرست یکی‌یکی است.
     db.selectDistinctOn([exchangeRates.fromCurrencyId, exchangeRates.toCurrencyId], {
@@ -63,7 +63,6 @@ export async function getSettings(actor: Actor) {
       .orderBy(exchangeRates.fromCurrencyId, exchangeRates.toCurrencyId, desc(exchangeRates.effectiveDate)),
     db.select().from(tags).orderBy(tags.type, tags.sortOrder, tags.id),
     db.select().from(offices).orderBy(offices.name),
-    db.select().from(vendors).orderBy(vendors.name),
     db.select().from(qaItems).orderBy(qaItems.sortOrder, qaItems.id),
   ]);
 
@@ -72,7 +71,6 @@ export async function getSettings(actor: Actor) {
     rates: rateRows,
     tags: tagRows,
     offices: officeRows,
-    vendors: vendorRows,
     qaItems: qaRows,
     canManage: true,
   };
@@ -312,31 +310,61 @@ export async function deleteOffice(actor: Actor, id: number) {
   await audit(actor, 'office.deactivate', id);
 }
 
+/**
+ * طرف‌حساب‌ها برای تبِ «طرف‌حساب‌ها» ی امور مالی — پورتِ `Vendors_Page::body`:
+ * نام، یادداشت، فعال، و شمارِ هزینه‌های تکراری (پیوند به فهرستِ فیلترشده).
+ * ⚠️ گاردِ **مالی**، نه تنظیمات: نسخهٔ قبلی این فهرست را تبی از مرکزِ مالی
+ * (`kteam_manage_finance`) کرده بود. پیش از این زیرِ «تنظیمات» بود و مدیرِ
+ * مالیِ بی‌مجوزِ تنظیمات آن را نمی‌دید، در حالی که ذخیره فقط به او اجازه می‌داد.
+ */
+export async function listVendors(actor: Actor) {
+  if (!can(actor, 'finance.manage')) throw new ForbiddenError('finance.manage');
+  return db
+    .select({
+      id: vendors.id,
+      name: vendors.name,
+      note: vendors.note,
+      isActive: vendors.isActive,
+      expenseCount: sql<number>`(select count(*) from ${recurringExpenses} where ${recurringExpenses.vendorId} = ${vendors.id})::int`,
+    })
+    .from(vendors)
+    .orderBy(vendors.name);
+}
+
 export async function saveVendor(
   actor: Actor,
-  input: { id: number | null; name: string; note: string },
+  input: { id: number | null; name: string; note: string; isActive: boolean },
 ) {
-  // ⚠️ طرف‌حساب کاتالوگِ **مالی** است، نه تنظیمات: در نسخهٔ قبلی زیرِ
-  // بود، پس همکاری که فقط بستهٔ مالی دارد هم باید
-  // بتواند — با گاردِ تنظیمات، او بیرون می‌ماند.
+  // ⚠️ طرف‌حساب کاتالوگِ **مالی** است، نه تنظیمات: در نسخهٔ قبلی زیرِ مرکزِ
+  // مالی بود (`kteam_manage_finance`)، پس همکاری که فقط بستهٔ مالی دارد هم
+  // باید بتواند — با گاردِ تنظیمات، او بیرون می‌ماند.
   if (!can(actor, 'finance.manage')) throw new ForbiddenError('finance.manage');
   const name = assertName(input.name);
+  // ⚠️ «فعال» پیش از این ذخیره نمی‌شد، پس غیرفعال‌کردن — جایگزینِ حذفِ
+  // طرف‌حسابِ در حالِ استفاده — راهی نداشت.
+  const values = { name, note: input.note, isActive: input.isActive };
 
   if (input.id) {
-    await db.update(vendors).set({ name, note: input.note, updatedAt: new Date() })
+    await db.update(vendors).set({ ...values, updatedAt: new Date() })
       .where(eq(vendors.id, input.id));
     await audit(actor, 'vendor.update', input.id, null, input);
     return input.id;
   }
-  const rows = await db.insert(vendors).values({ name, note: input.note })
+  const rows = await db.insert(vendors).values(values)
     .returning({ id: vendors.id });
   await audit(actor, 'vendor.create', rows[0]!.id, null, input);
   return rows[0]!.id;
 }
 
 export async function deleteVendor(actor: Actor, id: number) {
-  // ⚠️ همان گاردِ ساخت — کاتالوگِ مالی ( در نسخهٔ قبلی).
+  // ⚠️ همان گاردِ ساخت — کاتالوگِ مالی.
   if (!can(actor, 'finance.manage')) throw new ForbiddenError('finance.manage');
+  const [ledgerRows, expenseRows] = await Promise.all([
+    db.select({ n: sql<number>`count(*)::int` }).from(ledger).where(eq(ledger.vendorId, id)),
+    db.select({ n: sql<number>`count(*)::int` }).from(recurringExpenses).where(eq(recurringExpenses.vendorId, id)),
+  ]);
+  // پورتِ `Vendors::delete`: در حالِ استفاده → پیامِ «غیرفعالش کنید»، نه خطای کلید.
+  assertVendorDeletable({ ledger: ledgerRows[0]?.n ?? 0, expenses: expenseRows[0]?.n ?? 0 });
   await db.delete(vendors).where(eq(vendors.id, id));
   await audit(actor, 'vendor.delete', id);
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
-import { currencies, exchangeRates, tags, projects, accounts, offices, vendors, users } from '../schema';
+import { currencies, exchangeRates, tags, projects, accounts, offices, recurringExpenses, vendors, users } from '../schema';
 import * as service from '@/server/settings/service';
 import { getSystemConfig, saveSystemConfig } from '@/server/settings/system-service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -143,12 +143,29 @@ describe('دفتر و طرف‌حساب', () => {
   });
 
   it('نامِ خالی رد می‌شود', async () => {
-    await expect(service.saveVendor(financeAdmin(), { id: null, name: '  ', note: '' }))
+    await expect(service.saveVendor(financeAdmin(), { id: null, name: '  ', note: '', isActive: true }))
       .rejects.toThrow(CatalogError);
   });
 
+  it('⚠️ طرف‌حسابِ در حالِ استفاده حذف نمی‌شود؛ غیرفعال می‌شود', async () => {
+    const id = await service.saveVendor(financeAdmin(), { id: null, name: 'اجاره‌دهنده', note: '', isActive: true });
+    const [cur] = await db.select({ id: currencies.id }).from(currencies).limit(1);
+    await db.insert(recurringExpenses).values({ title: 'اجاره', amount: '100', currencyId: cur!.id, vendorId: id, startDate: '2026-10-01', nextDueDate: '2026-10-01' });
+    await expect(service.deleteVendor(financeAdmin(), id)).rejects.toThrow(CatalogError);
+
+    const listed = (await service.listVendors(financeAdmin())).find((v) => v.id === id)!;
+    expect(listed).toMatchObject({ isActive: true, expenseCount: 1 });
+    await service.saveVendor(financeAdmin(), { id, name: 'اجاره‌دهنده', note: '', isActive: false });
+    expect((await service.listVendors(financeAdmin())).find((v) => v.id === id)!.isActive).toBe(false);
+    await db.delete(recurringExpenses).where(eq(recurringExpenses.vendorId, id));
+  });
+
+  it('فهرستِ طرف‌حساب‌ها فقط با مجوزِ مالی', async () => {
+    await expect(service.listVendors(admin())).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
   it('طرف‌حساب ساخته و حذف می‌شود', async () => {
-    const id = await service.saveVendor(financeAdmin(), { id: null, name: 'فروشنده', note: '' });
+    const id = await service.saveVendor(financeAdmin(), { id: null, name: 'فروشنده', note: '', isActive: true });
     await service.deleteVendor(financeAdmin(), id);
     expect(await db.select().from(vendors).where(eq(vendors.id, id))).toHaveLength(0);
   });
@@ -201,16 +218,15 @@ describe('ماتریسِ حسابدار (نقشِ finance)', () => {
   });
 
   it('حسابدار طرف‌حساب می‌سازد (کاتالوگِ مالی)', async () => {
-    const id = await service.saveVendor(accountant(), { id: null, name: 'هاست‌بان', note: '' });
+    const id = await service.saveVendor(accountant(), { id: null, name: 'هاست‌بان', note: '', isActive: true });
     expect(id).toBeGreaterThan(0);
     await service.deleteVendor(accountant(), id);
   });
 
   it('⚠️ همکار با بستهٔ مالی (بدونِ تنظیمات) طرف‌حساب آری، ارز نه', async () => {
-    // پورتِ تفکیکِ نسخهٔ قبلی: vendors زیرِ بود و
-    // currencies زیرِ
+    // پورتِ تفکیکِ نسخهٔ قبلی: طرف‌حساب زیرِ مرکزِ مالی بود و ارز زیرِ تنظیمات.
     const staffFinance = actor({ id: 1, permissions: ['finance.view', 'finance.manage'] as Permission[] });
-    const id = await service.saveVendor(staffFinance, { id: null, name: 'سرورچی', note: '' });
+    const id = await service.saveVendor(staffFinance, { id: null, name: 'سرورچی', note: '', isActive: true });
     expect(id).toBeGreaterThan(0);
     await service.deleteVendor(staffFinance, id);
 

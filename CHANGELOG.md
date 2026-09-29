@@ -2,6 +2,23 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.94.0]
+
+### Added
+
+- **A starter office on a fresh install.** Installing the app now creates one office, «دفتر مرکزی», with a business account of the same name in the default currency, as the previous version did on activation. The ledger has something to book against from the first minute. An install that already has offices or accounts gets nothing extra.
+- **Vendors moved to Finance.** Vendors are a tab of the finance page, as in the previous version, and need the finance permission. Before, they sat under Settings, where a finance manager without the settings permission could not see them. The tab shows each vendor's number of expenses, linking to the expenses list filtered to that vendor, and whether it is active. A vendor can be deactivated. Inactive vendors are no longer offered when picking a vendor for a new entry or expense; an expense that already uses one keeps it.
+- **A private-files self-test.** The app writes a probe with a random token to the file bucket and reads it back without credentials. If it comes back, the bucket is open to the outside and every receipt or contract could be read by guessing its address. The result is kept for 12 hours. The owner sees it as a card under Settings › System, with «بررسی دوباره». A warning bar appears on every page while the bucket is exposed or cannot be checked.
+- **Page smoke test.** `pnpm smoke` opens every page and tab as the owner, a member and a client against the running local server and reports any page that fails to render. It signs a short session with the local secret, stores no credentials, and refuses non-local addresses.
+
+### Changed
+
+- **Files are streamed and support ranges.** A file used to be read completely into server memory before it was sent. Files are now streamed straight from storage, and `Range` requests get `206 Partial Content`, so audio and video can be seeked and interrupted downloads resumed. An out-of-range request gets `416`. Access checks run before any byte is read.
+
+### Fixed
+
+- **Deleting a vendor in use failed with a generic error.** A vendor that ledger entries or expenses refer to now cannot be deleted, and the message says to deactivate it instead.
+
 ## [1.93.0]
 
 ### Added

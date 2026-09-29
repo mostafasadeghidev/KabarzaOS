@@ -138,6 +138,7 @@ export async function saveVendorAction(_prev: SettingsState, formData: FormData)
     id: num(formData.get('id')),
     name: String(formData.get('name') ?? ''),
     note: String(formData.get('note') ?? ''),
+    isActive: formData.get('isActive') !== null,
   }), 'طرف‌حساب ذخیره نشد.');
 }
 
@@ -253,6 +254,21 @@ export async function sendReportNowAction(): Promise<ReportState> {
 export interface SystemState {
   error?: string;
   message?: string;
+}
+
+/** «بررسی دوباره» ِ خودآزماییِ باکت — فقط مالک (گارد در سرویس). */
+export async function recheckBucketAction(): Promise<SystemState> {
+  try {
+    const { recheckBucket } = await import('@/server/files/bucket-probe');
+    const check = await recheckBucket(await requireActor());
+    revalidatePath('/', 'layout');
+    return check.status === 'protected'
+      ? { message: 'باکت بسته است؛ فایل‌ها فقط از مسیرِ اپ خوانده می‌شوند.' }
+      : { error: check.status === 'exposed' ? 'باکت هنوز به روی بیرون باز است.' : 'وضعیتِ باکت قابلِ بررسی نبود.' };
+  } catch (error) {
+    if (error instanceof ForbiddenError) return { error: 'دسترسی کافی ندارید.' };
+    return { error: 'بررسی انجام نشد.' };
+  }
 }
 
 /**

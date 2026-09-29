@@ -14,6 +14,7 @@ export class CatalogError extends Error {
       | 'rate_invalid'
       | 'tag_in_use'
       | 'tag_protected'
+      | 'vendor_in_use'
       | 'name_required',
   ) {
     super(`catalog rule violated: ${code}`);
@@ -79,6 +80,15 @@ export function assertTagDeletable(usageCount: number, isProtected = false): voi
   if (usageCount > 0) throw new CatalogError('tag_in_use');
 }
 
+/**
+ * حذفِ طرف‌حساب — پورتِ `Vendors::delete`: طرف‌حسابی که ردیفِ دفترِ کل یا
+ * هزینهٔ تکراری به آن اشاره می‌کند حذف نمی‌شود تا تاریخچه دست‌نخورده بماند؛
+ * به‌جایش غیرفعال می‌شود.
+ */
+export function assertVendorDeletable(usage: { ledger: number; expenses: number }): void {
+  if (usage.ledger > 0 || usage.expenses > 0) throw new CatalogError('vendor_in_use');
+}
+
 /** نامِ خالی برای هیچ‌کدام از این فهرست‌ها پذیرفته نیست. */
 export function assertName(name: string): string {
   const clean = name.trim();
@@ -100,6 +110,8 @@ export function catalogMessage(code: CatalogError['code']): string {
       return 'این تگ در حالِ استفاده است و حذف نمی‌شود.';
     case 'tag_protected':
       return 'این تگ محافظت‌شده است و حذف نمی‌شود.';
+    case 'vendor_in_use':
+      return 'این طرف‌حساب در ردیف‌ها یا هزینه‌ها استفاده شده و حذف نمی‌شود؛ به‌جای حذف، آن را غیرفعال کنید.';
     default:
       return 'نام الزامی است.';
   }

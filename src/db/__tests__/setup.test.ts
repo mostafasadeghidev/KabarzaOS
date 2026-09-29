@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { or, sql as raw } from 'drizzle-orm';
 import { db, sql } from '../client';
-import { users, userRoles } from '../schema';
-import { installOwner, isInstalled, SetupError } from '@/server/setup/service';
+import { accounts, offices, users, userRoles } from '../schema';
+import { installOwner, isInstalled, SetupError, STARTER_OFFICE_NAME } from '@/server/setup/service';
 import { attemptLogin, isValidUsername, type AuthUser } from '@/domain/auth/login';
 
 /**
@@ -177,3 +177,29 @@ describe('اکشنِ ورود — لایهٔ فرم', () => {
   });
 });
 
+
+describe('دفترِ آغازین — پورتِ Activator', () => {
+  it('نصبِ تازه یک دفتر و یک حسابِ کاریِ هم‌نام به ارزِ پیش‌فرض می‌گیرد', async () => {
+    await sql`truncate table accounts, offices restart identity cascade`;
+    const [row] = await sql`select id from currencies where is_active order by is_default desc, id limit 1`;
+    const cur = { id: Number(row!.id) };
+    await installOwner(base);
+
+    const officeRows = await db.select().from(offices);
+    const accountRows = await db.select().from(accounts);
+    expect(officeRows).toHaveLength(1);
+    expect(officeRows[0]).toMatchObject({ name: STARTER_OFFICE_NAME, defaultCurrencyId: cur!.id, isActive: true });
+    expect(accountRows).toHaveLength(1);
+    expect(accountRows[0]).toMatchObject({
+      name: STARTER_OFFICE_NAME, type: 'business', officeId: officeRows[0]!.id, currencyId: cur!.id,
+    });
+  });
+
+  it('⚠️ اگر دفتری از قبل هست، دفترِ دوم ساخته نمی‌شود', async () => {
+    await sql`truncate table accounts, offices restart identity cascade`;
+    await db.insert(offices).values({ name: 'موجود' });
+    await installOwner(base);
+    expect((await db.select().from(offices)).map((o) => o.name)).toEqual(['موجود']);
+    expect(await db.select().from(accounts)).toHaveLength(0);
+  });
+});

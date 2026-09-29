@@ -89,6 +89,7 @@ pnpm dev
 |---|---|
 | `pnpm test` | Unit tests |
 | `pnpm test:db` | Integration tests (requires the database) |
+| `pnpm smoke` | Opens every page and tab as owner, member and client against the running local server |
 | `pnpm typecheck` | Type checking |
 | `pnpm build` | Production build |
 

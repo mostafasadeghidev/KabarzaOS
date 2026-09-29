@@ -10,6 +10,7 @@ import { FinancePage } from './finance-page';
 import { primeTranslations, t } from '@/i18n/server';
 import { AccountsView } from './accounts-view';
 import { can } from '@/domain/access/permissions';
+import { listVendors } from '@/server/settings/service';
 import { PageHeader, PageShell } from '@/components/page-shell';
 
 /** حسابداری — دفترکلِ حساب‌ها. */
@@ -133,6 +134,8 @@ export default async function Finance({
     };
 
   const accountOptions = data.canManage ? await getAccountFormOptions(actor) : null;
+  // تبِ طرف‌حساب‌ها — گاردش در سرویس است؛ بی‌مجوزِ مالی تب ساخته نمی‌شود.
+  const vendorRows = can(actor, 'finance.manage') ? await listVendors(actor) : null;
 
   return (
     <PageShell>
@@ -171,6 +174,7 @@ export default async function Finance({
         categories={options.categories}
         recurring={recurring}
         vendors={options.vendors}
+        vendorRows={vendorRows}
         today={new Date().toISOString().slice(0, 10)}
         accountOptions={accountOptions ? {
           currencies: accountOptions.currencies,

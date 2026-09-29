@@ -13,8 +13,8 @@ import {
 import type { TagType } from '@/db/schema/base';
 import {
   deleteCurrencyAction, deleteOfficeAction, deleteQaItemAction, deleteRateAction,
-  deleteTagAction, deleteVendorAction, saveCurrencyAction, saveOfficeAction,
-  saveQaItemAction, saveRateAction, saveTagAction, saveVendorAction,
+  deleteTagAction, saveCurrencyAction, saveOfficeAction,
+  saveQaItemAction, saveRateAction, saveTagAction,
 } from './_form/actions';
 import { StaffSection, type StaffRow } from './staff-section';
 import { ReportSection } from './report-section';
@@ -32,6 +32,7 @@ import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import { useLocale, useT } from '@/i18n/client';
 import { GRANTABLE_CAPS } from '@/domain/access/project-scope';
 import type { SchedulerHealth } from '@/domain/scheduler/health';
+import type { BucketCheck } from '@/server/files/bucket-probe';
 import { DEFAULT_LOCALE, isRtl, LOCALE_NAMES, LOCALES } from '@/i18n/config';
 import { trimRate } from '@/domain/currency/rates';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
@@ -53,6 +54,8 @@ export interface SettingsData {
   reportConfig: ReportConfig;
   systemConfig: SystemConfig;
   health: SchedulerHealth;
+  /** خودآزماییِ باکت — فقط برای مالک (null برای بقیه). */
+  bucket: BucketCheck | null;
   lockDate: string | null;
   /** پیش‌نمایشِ بستنِ دوره — فقط مالک؛ برای بقیه null. */
   closing: ClosingPreview | null;
@@ -74,7 +77,6 @@ export interface SettingsData {
     id: number; name: string; location: string;
     defaultCurrencyId: number | null; isActive: boolean;
   }>;
-  vendors: Array<{ id: number; name: string; note: string }>;
   qaItems: Array<{
     id: number; title: string; description: string;
     roleTagId: number | null; isTask: boolean; sortOrder: number;
@@ -98,11 +100,11 @@ const TABS = [
   { key: 'currencies', label: 'ارزها و نرخ‌ها', ownerOnly: false },
   { key: 'tags', label: 'تگ‌ها', ownerOnly: false },
   { key: 'offices', label: 'دفاتر', ownerOnly: false },
-  { key: 'vendors', label: 'طرف‌حساب‌ها', ownerOnly: false },
+  // ⚠️ «طرف‌حساب‌ها» به امور مالی رفت (کاتالوگِ مالی، همان جای نسخهٔ قبلی).
   { key: 'qa', label: 'کتابخانهٔ QA', ownerOnly: false },
   /**
-   * ⚠️ سه تبِ مالکانه — همان تفکیکِ نسخهٔ قبلی: تب‌های کاتالوگی
-   * را باز می‌کرد و `manage_options` این‌ها را. حسابدار نباید حتی ببیندشان؛
+   * ⚠️ سه تبِ مالکانه — همان تفکیکِ نسخهٔ قبلی: تب‌های کاتالوگی را مجوزِ
+   * مدیریتِ تنظیمات باز می‌کرد و `manage_options` این‌ها را. حسابدار نباید حتی ببیندشان؛
    * دکمه‌ای که همیشه «فقط مدیرِ کل» جواب بدهد فقط اعتماد را می‌خورد.
    */
   { key: 'company', label: 'مشخصاتِ شرکت', ownerOnly: false },
@@ -532,33 +534,6 @@ export function SettingsView({
         />
       )}
 
-      {tab === 'vendors' && (
-        <CatalogSection
-          title={tr("طرف‌حساب‌ها")}
-          description={tr("فروشندگان و طرف‌حساب‌های هزینه.")}
-          addLabel="افزودن طرف‌حساب"
-          rows={data.vendors}
-          columns={[
-            { header: 'نام', cell: (v) => v.name },
-            { header: 'یادداشت', cell: (v) => v.note || '—' },
-          ]}
-          saveAction={saveVendorAction}
-          deleteAction={(v) => deleteVendorAction(v.id)}
-          renderForm={(editing) => (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="v-name">{tr("نام")}</FieldLabel>
-                <Input id="v-name" name="name" defaultValue={editing?.name ?? ''} required />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="v-note">{tr("یادداشت")}</FieldLabel>
-                <Input id="v-note" name="note" defaultValue={editing?.note ?? ''} />
-              </Field>
-            </div>
-          )}
-        />
-      )}
-
       {tab === 'qa' && (
         <CatalogSection
           title={tr("کتابخانهٔ QA")}
@@ -650,7 +625,7 @@ export function SettingsView({
       */}
       {tab === 'system' && (
         <div className="grid gap-6">
-          <SystemSection config={data.systemConfig} health={data.health} isOwner={data.isOwner} telegram={data.telegram} />
+          <SystemSection config={data.systemConfig} health={data.health} bucket={data.bucket} isOwner={data.isOwner} telegram={data.telegram} />
           {data.isOwner && (
             <>
               <Separator />
