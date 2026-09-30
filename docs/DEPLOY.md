@@ -1,8 +1,9 @@
 # Deploying KabarzaOS
 
 Three services are involved: the **app** (Next.js), **PostgreSQL 17** and
-an **S3-compatible object store** (MinIO). All three are defined in
-`docker-compose.yml`.
+an **S3-compatible object store** ([Silo](https://silo.pgsty.com/), a
+maintained fork of MinIO — see «The bundled file store» below). All three
+are defined in `docker-compose.yml`.
 
 These happen automatically — there is no manual step for any of them:
 
@@ -170,3 +171,27 @@ replace it without code changes.
 
 To go back, restore the previous `S3_*` values and run
 `docker compose up -d` again — the old files are still in MinIO.
+
+## The bundled file store
+
+MinIO stopped maintaining its free edition and removed the `minio/minio`
+image from Docker Hub on 11 September 2026, so a fresh install that still
+asks for it fails while pulling images. The bundled store is now
+`pgsty/silo`, a maintained fork that keeps MinIO's S3 API, its `MINIO_*`
+variables, its `mc` client and its on-disk data format. Everything in this
+guide that says «MinIO» applies to it unchanged.
+
+The image is pinned to a release tag rather than `latest`, so the file
+store is only upgraded on purpose.
+
+**Upgrading an install that still runs `minio/minio`:** no data is moved.
+
+1. Back up the database and the `storage_data` volume.
+2. `git pull`, then `docker compose up -d`. Only the `storage` container is
+   recreated on the new image, reading the same volume with the same login.
+3. Check Settings → System: the private-files card must say «protected»,
+   and an existing attachment must open.
+
+Until you upgrade, do not run `docker image prune -a` or
+`docker system prune -a` on such a server: the old image is no longer
+downloadable, and without it the file store cannot start.

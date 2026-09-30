@@ -92,7 +92,14 @@ services:
       retries: 10
 
   storage:
-    image: minio/minio:latest
+    # ⚠️ Silo (انشعابِ نگه‌داری‌شدهٔ MinIO از PGSTY)، نه `minio/minio`: MinIO
+    # نسخهٔ رایگان را رها کرد و در ۱۱ سپتامبر ۲۰۲۶ ایمیجش را از Docker Hub پاک
+    # کرد — نصبِ تازه با آن در مرحلهٔ pull می‌ایستاد. Silo همان API، همان
+    # متغیرهای MINIO_* و **همان قالبِ داده روی دیسک** را دارد؛ دادهٔ MinIO ِ
+    # قبلی بی‌جابه‌جایی خوانده می‌شود. دستورِ `server …` را اسکریپتِ شروعش
+    # خودش به `silo server …` برمی‌گرداند.
+    # ⚠️ نسخه قفل است، نه `latest`: ارتقای انبارِ فایل باید آگاهانه باشد.
+    image: pgsty/silo:RELEASE.2026-09-16T00-00-00Z
     restart: unless-stopped
     networks:
       default:

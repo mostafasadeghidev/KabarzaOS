@@ -25,10 +25,11 @@ services:
       timeout: 5s
       retries: 10
 
-  # D-009 — فایل‌ها روی S3، نه فایل‌سیستمِ کانتینر. MinIO همان APIِ S3 را
-  # می‌دهد، پس کدِ محلی و تولید یکی است و مسیرِ واقعی همین‌جا تست می‌شود.
+  # D-009 — فایل‌ها روی S3، نه فایل‌سیستمِ کانتینر. Silo (انشعابِ نگه‌داری‌شدهٔ
+  # MinIO) همان APIِ S3 را می‌دهد، پس کدِ محلی و تولید یکی است و مسیرِ واقعی
+  # همین‌جا تست می‌شود. ⚠️ همان نسخهٔ قفل‌شدهٔ docker-compose.yml — ← توضیحِ آنجا.
   storage:
-    image: minio/minio:latest
+    image: pgsty/silo:RELEASE.2026-09-16T00-00-00Z
     command: server /data --console-address ':9001'
     environment:
       MINIO_ROOT_USER: kabarza

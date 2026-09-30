@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.104.1]
+
+### Fixed
+
+- **A fresh install stopped at pulling the file store.** MinIO stopped maintaining its free edition (no releases or security patches since late 2025) and deleted the `minio/minio` image from Docker Hub on 11 September 2026, so `docker compose up` could no longer download it. The bundled file store is now `pgsty/silo`, a maintained fork of MinIO with the same S3 API, the same `MINIO_*` variables, the same `mc` client and the same on-disk data format — existing files are read as they are, with no migration. The image is pinned to `RELEASE.2026-09-16T00-00-00Z` instead of `latest`, so upgrades of the file store are deliberate. Both the production and the development compose files use it.
+
+### Upgrade note
+
+- On a server that still runs `minio/minio`: back up the database and the `storage_data` volume, then `git pull` and `docker compose up -d`. Only the storage container is recreated; it reads the same volume with the same login. Until then, do not run `docker image prune -a` or `docker system prune -a` there — the old image can no longer be downloaded. `docs/DEPLOY.md` has a new «The bundled file store» section.
+
 ## [1.104.0]
 
 ### Added
