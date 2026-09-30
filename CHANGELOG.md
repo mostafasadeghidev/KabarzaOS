@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.101.1]
+
+### Fixed
+
+- **Approving a second bid for an already-awarded role looked like it did nothing.** The approval did go through — the previous winner was removed from the project and the new bidder took the role — but there was no message, and the rows re-sorted so the clicked row still showed «approve». Approving now asks first when the role already has a winner, naming both people, and confirms the result with a message («bid approved» or «winner replaced»).
+- **The notifications and «my finances» pages were centred** while every other page starts next to the menu. They now use the full width like the rest; pages that keep a narrower reading width are aligned to the start instead of centred.
+
 ## [1.101.0]
 
 ### Changed

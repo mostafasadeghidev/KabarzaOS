@@ -15,7 +15,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { removeQaRoleAction } from '../_form/tab-actions';
 import { useConfirm } from '@/components/ui/confirm';
@@ -578,6 +578,8 @@ export function QaTab({
 
 export interface BidRow {
   id: number;
+  /** برای یافتنِ برندهٔ فعلیِ **همین نقش** پیش از جایگزینی. */
+  roleTagId?: number;
   amount: string;
   status: string;
   note: string | null;
@@ -598,13 +600,17 @@ function BidActions({
   bid,
   projectId,
   isOpen,
+  currentWinner = null,
 }: {
   bid: BidRow;
   projectId: number;
   isOpen: boolean;
+  /** برندهٔ فعلیِ همین نقش (اگر کسِ دیگری است) — تأیید یعنی جایگزینیِ او. */
+  currentWinner?: string | null;
 }) {
   const tr = useT();
   const confirm = useConfirm();
+  const { show } = useToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -621,7 +627,33 @@ function BidActions({
     <div className="flex flex-wrap items-center justify-end gap-1">
       {/* R-TENDER-01 — پس از شروعِ کار برنده عوض نمی‌شود، پس دکمه هم نمی‌آید. */}
       {isOpen && !gone && bid.status !== 'approved' && (
-        <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => run(() => approveBidAction(bid.id, projectId))}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={pending}
+          onClick={async () => {
+            /**
+             * ⚠️ نقش برنده دارد → تأیید یعنی **جایگزینی**: برندهٔ قبلی از پروژه
+             * برداشته می‌شود (پورتِ `Bids::approve`). پیش از این بی‌پرسش و
+             * بی‌پیام انجام می‌شد و ردیف‌ها جابه‌جا می‌شدند، پس به چشم «هیچ
+             * اتفاقی نیفتاد» دیده می‌شد.
+             */
+            if (currentWinner && !(await confirm({
+              title: tr('برندهٔ این نقش عوض شود؟'),
+              description: tr('«{winner}» الان برندهٔ این نقش است. با تأییدِ این پیشنهاد، او از پروژه برداشته می‌شود و «{name}» جایش می‌نشیند.', {
+                winner: currentWinner,
+                name: bid.userName ?? '—',
+              }),
+            }))) return;
+            startTransition(async () => {
+              setError(null);
+              const result = await approveBidAction(bid.id, projectId);
+              if (result.error) setError(result.error);
+              else show(currentWinner ? tr('برنده عوض شد.') : tr('پیشنهاد تأیید شد.'), 'success');
+            });
+          }}
+        >
           <Check className="size-3.5" />
           {tr("تأیید")}
         </Button>
@@ -696,7 +728,13 @@ export function BidsTab({
                 <TableCell className="max-w-64 text-xs whitespace-pre-wrap text-muted-foreground">{b.note || '—'}</TableCell>
                 {canManage && (
                   <TableActionsCell>
-                    <BidActions bid={b} projectId={projectId} isOpen={isOpen} />
+                    <BidActions
+                      bid={b}
+                      projectId={projectId}
+                      isOpen={isOpen}
+                      currentWinner={bids.find((x) => x.id !== b.id && x.status === 'approved'
+                        && (x.roleTagId ?? x.roleName) === (b.roleTagId ?? b.roleName))?.userName ?? null}
+                    />
                   </TableActionsCell>
                 )}
               </TableRow>

@@ -37,7 +37,7 @@ export default async function MyMoneyPage() {
 
   return (
     // ⚠️ عرضِ خواندنی — همان قاعدهٔ تبِ «پرداختِ من» ِ پروژه.
-    <PageShell width="reading">
+    <PageShell>
       <PageHeader
         title={t("امور مالی")}
         description={t("خلاصهٔ مالیِ شما روی همهٔ پروژه‌ها — برای جزئیاتِ هر پروژه واردِ خودِ پروژه شوید.")}

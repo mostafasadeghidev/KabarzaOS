@@ -35,7 +35,9 @@ export function PageShell({
     <main
       className={cn(
         '@container/main flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6 lg:p-8',
-        width === 'reading' && 'mx-auto w-full max-w-4xl',
+        // ⚠️ هم‌تراز با لبهٔ شروعِ صفحه‌های دیگر، نه وسط‌چین: صفحهٔ وسط‌چین در کنارِ
+        // بقیه که از کنارِ منو شروع می‌شوند، ناهمسان دیده می‌شد (همان قاعدهٔ TabPanel).
+        width === 'reading' && 'w-full max-w-4xl',
         className,
       )}
     >

@@ -28,7 +28,7 @@ export default async function NotificationsPage({
   const feed = await listNotificationFeed(actor, { showAll });
 
   return (
-    <PageShell width="reading">
+    <PageShell>
       <PageHeader
         title={t('اعلان‌ها')}
         description={feed.unread > 0
