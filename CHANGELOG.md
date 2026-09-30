@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.102.1]
+
+### Fixed
+
+- **A manual install with `.env` never reached the app, and the scheduler was refused on every tick.** `.env.example` says to copy it to `.env`, but the app container only read `.env.prod` (the file `install.sh` writes). `APP_URL`, `APP_TIMEZONE`, SMTP and Telegram settings from `.env` were ignored, while `CRON_SECRET` from `.env` did reach the cron container — so every tick was answered 403 and reminders, meeting notices, the daily report and cleanup never ran. The app now reads both `.env` and `.env.prod` (`.env.prod` wins), takes `CRON_SECRET` from the same source as the cron container, and the cron container ignores a secret shorter than 32 characters exactly as the app does.
+
+### Upgrade note
+
+- Apply with `git pull` and `docker compose up -d` (a restart alone does not reload env files). If `.env` sets `SESSION_SECRET`, the app starts using it instead of the generated one, which signs everyone out once; no data is lost.
+
 ## [1.102.0]
 
 ### Added

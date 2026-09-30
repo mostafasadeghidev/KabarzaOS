@@ -24,7 +24,14 @@ services:
       default:
         aliases: [kabarzaos-app]
     env_file:
-      # required:false تا اعتبارسنجیِ فایل پیش از ساختِ .env.prod هم کار کند
+      # ⚠️ هر دو فایل: `.env.example` می‌گوید «در .env کپی کن» و install.sh
+      # `.env.prod` می‌سازد (و .env را به آن پیوند می‌دهد). پیش از این اپ فقط
+      # `.env.prod` را می‌خواند؛ نصبِ دستی با `.env` یعنی APP_URL، منطقهٔ
+      # زمانی و CRON_SECRET هیچ‌کدام به اپ نمی‌رسیدند (ولی CRON_SECRET از راهِ
+      # جای‌گذاری به کانتینرِ cron می‌رسید → هر تیک 403). دومی بر اولی مقدم است.
+      # required:false تا نبودنِ هر کدام — یا هر دو — خطا ندهد.
+      - path: .env
+        required: false
       - path: .env.prod
         required: false
     environment:
@@ -34,6 +41,9 @@ services:
       S3_ENDPOINT: http://kabarzaos-storage:9000
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-kabarza}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-kabarza-internal-storage}
+      # ⚠️ از **همان** منبعِ کانتینرِ cron (جای‌گذاریِ compose)، تا دو طرف هرگز
+      # دو رازِ متفاوت نداشته باشند. خالی = اپ خودش می‌سازد و cron از فایل می‌خواند.
+      CRON_SECRET: ${CRON_SECRET:-}
     ports:
       # ⚠️ پیش‌فرض روی همهٔ رابط‌ها منتشر می‌شود، نه فقط 127.0.0.1: ابزارهای
       # استقرار پراکسی‌شان را در کانتینرِ دیگری اجرا می‌کنند و لوکال‌هاستِ
@@ -104,6 +114,8 @@ services:
     restart: unless-stopped
     environment:
       # خالی هم اشکالی ندارد: آن‌وقت راز از فایلِ ساختهٔ اپ خوانده می‌شود.
+      # ⚠️ کوتاه‌تر از ۳۲ نویسه هم مثلِ خالی: docker-entrypoint.sh ِ اپ رازِ کوتاه را
+      # نادیده می‌گیرد و از فایل می‌خواند، پس cron هم باید همین کار را بکند.
       CRON_SECRET: ${CRON_SECRET:-}
     volumes:
       # ⚠️ همان والیومِ اپ، فقط‌خواندنی: باید **همان** رازی را بفرستد که اپ
@@ -117,7 +129,7 @@ services:
     command: >
       sh -c 'while true; do
         S="$$CRON_SECRET";
-        [ -n "$$S" ] || S=$$(cat /secrets/cron_secret 2>/dev/null || true);
+        [ "$${#S}" -ge 32 ] || S=$$(cat /secrets/cron_secret 2>/dev/null || true);
         [ -n "$$S" ] && curl -fsS -m 30 -H "x-cron-secret: $$S" http://kabarzaos-app:3000/api/cron/tick >/dev/null || true;
         sleep 300;
       done'
