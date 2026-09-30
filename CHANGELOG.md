@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.103.0]
+
+### Added
+
+- **The file store can be switched from `.env`.** `S3_ENDPOINT` was fixed to the bundled MinIO inside `docker-compose.yml` and overrode any value in `.env`, so moving files to Amazon S3, Cloudflare R2, ArvanCloud or another S3-compatible store meant editing the deployment file. It now comes from `.env`; empty keeps the bundled MinIO, so existing installs change nothing.
+- **The bundled MinIO has its own login settings** (`MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`). They default to the `S3_*` keys as before, and let the old MinIO keep its login while files are copied out of it after the app has been pointed at a new store.
+- **A «Switching the file store» section in `docs/DEPLOY.md`** with the steps: create a private bucket, back up, pin the MinIO login, copy and verify the files, switch, check, and how to go back.
+
+### Fixed
+
+- **The instructions for opening the MinIO console ran a second MinIO on the live data volume.** They now stop the running store first and start it again afterwards.
+
 ## [1.102.1]
 
 ### Fixed

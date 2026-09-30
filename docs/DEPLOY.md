@@ -101,10 +101,11 @@ Everything required is generated. This table is for manual setups.
 | `CRON_SECRET` | — | Same; the `cron` service reads the same file |
 | `DB_PASSWORD` | — | Has an internal default. Changing it after the first boot does not work — Postgres fixes the password at initdb |
 | `S3_ACCESS_KEY` / `S3_SECRET_KEY` | — | Internal defaults; the store has no published port |
+| `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` | — | The bundled MinIO's login; empty = the `S3_*` keys |
 | `APP_PORT` | — | Host port, default `3000` |
 | `BIND` | — | Bind address, default `127.0.0.1`; use `0.0.0.0` without a proxy |
 | `DATABASE_URL` | — | Only outside compose; built automatically inside |
-| `S3_ENDPOINT` | — | Only outside compose; `http://storage:9000` inside |
+| `S3_ENDPOINT` | — | Empty = the bundled MinIO; set it to use an external S3-compatible store |
 | `S3_BUCKET` / `S3_REGION` | — | Default `kabarza` / `us-east-1` |
 | `APP_TIMEZONE` | — | Default `Asia/Tehran` |
 | `DEFAULT_LOCALE` | — | Default `fa` |
@@ -138,8 +139,34 @@ Gitea use.
   measures.
 - **Database and object store publish no ports**; they are reachable only
   from the compose network. The MinIO console is closed as well, since the
-  bucket is created automatically. To reach it temporarily:
+  bucket is created automatically. To reach it temporarily, stop the
+  running store first — two MinIO processes must not share one data volume:
   ```bash
+  docker compose stop storage
   docker compose run --rm -p 127.0.0.1:9001:9001 storage
+  docker compose start storage   # after closing the temporary one
   ```
 - **Language and calendar** are per-user; nothing is needed server-side.
+
+## Switching the file store
+
+Files live in an S3-compatible store — the bundled MinIO by default. Any
+S3-compatible service (Amazon S3, Cloudflare R2, ArvanCloud, Liara…) can
+replace it without code changes.
+
+1. Create a **private** bucket at the new store and note its endpoint,
+   access key, secret key, bucket name and region.
+2. Back up the database and the `storage_data` volume.
+3. In `.env`, copy the current `S3_ACCESS_KEY` / `S3_SECRET_KEY` into
+   `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`, so the old MinIO keeps its
+   login.
+4. Copy the files across (for example with `rclone copy`, then
+   `rclone check` until it reports no differences). The old MinIO is only
+   read, never changed.
+5. Set `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` and
+   `S3_REGION` to the new store and run `docker compose up -d`.
+6. Check Settings → System: the private-files card must say «protected»,
+   and an existing attachment must open.
+
+To go back, restore the previous `S3_*` values and run
+`docker compose up -d` again — the old files are still in MinIO.
