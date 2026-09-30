@@ -186,6 +186,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   /**
+   * «آنبوردینگ» — فقط وقتی در تنظیماتِ سامانه روشن است، و با همان گاردِ
+   * «اعضا» (پروندهٔ پرسنلی). عضوِ تازه چک‌لیستش را روی داشبورد می‌بیند، نه اینجا.
+   */
+  if (canViewSection(actor, 'members') && (await getSystemConfig()).onboardingEnabled) {
+    items.push({ href: '/onboarding', label: t("آنبوردینگ"), icon: 'onboarding', group: 'data' });
+  }
+
+  /**
    * خودآزماییِ باکت برای مالک — فقط نتیجهٔ ذخیره‌شده خوانده می‌شود؛ اگر کهنه
    * یا نبود، آزمون **پس از** پاسخ اجرا می‌شود (`after`) تا صفحه منتظرِ
    * درخواستِ بیرونی نماند.

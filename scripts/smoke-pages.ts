@@ -35,7 +35,7 @@ function pages(projectId: number | null): string[] {
   const list = [
     '/dashboard', '/projects', '/tasks', '/meetings', '/meetings?tab=reminders', '/messages', '/hours',
     '/notifications', '/notifications?show=all', '/comments', '/profile', '/my-money',
-    '/availability', '/activity', '/members', '/clients', '/access',
+    '/availability', '/activity', '/members', '/clients', '/access', '/onboarding',
     '/finance', '/finance?tab=members', '/finance?tab=expenses', '/finance?tab=accounts', '/finance?tab=vendors',
     '/team', '/team?tab=projects', '/team?tab=tasks', '/team?tab=review', '/team?tab=comments',
     ...REPORT_TABS.map((t) => `/reports?tab=${t.key}`),

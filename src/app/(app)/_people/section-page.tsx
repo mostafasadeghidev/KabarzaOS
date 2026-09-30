@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { listPeople } from '@/server/people/service';
+import { getSystemConfig } from '@/server/settings/system-service';
 import { canSeeScope, ForbiddenError } from '@/domain/access/guard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PeopleGrid } from './people-grid';
@@ -70,7 +71,10 @@ export async function PeopleSectionPage({ section }: { section: SectionConfig })
           // ⚠️ فقط کسی که خودش دیدِ خصوصی دارد می‌تواند بدهدش.
           canGrantPrivate: canSeeScope(actor, 'private'),
         }}
-        section={section}
+        section={{
+          ...section,
+          onboarding: section.role === 'member' && (await getSystemConfig()).onboardingEnabled,
+        }}
         canManage={data.canManage}
         canViewReports={data.canViewReports}
         isOwner={data.isOwner}

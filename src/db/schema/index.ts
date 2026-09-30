@@ -9,3 +9,4 @@ export * from './finance';
 export * from './payments';
 export * from './comms';
 export * from './kabarza';
+export * from './onboarding';

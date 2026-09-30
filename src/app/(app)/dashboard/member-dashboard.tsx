@@ -12,6 +12,7 @@ import { formatDateTime } from '@/i18n/datetime';
 import { StatCard } from '@/components/stat-card';
 import { ArrowLeft } from 'lucide-react';
 import { Panel } from '@/components/page-shell';
+import { OnboardingCard } from './onboarding-card';
 import { Item, ItemContent, ItemDescription, ItemTitle } from '@/components/ui/item';
 
 /**
@@ -201,9 +202,11 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
 }
 
 export function MemberDashboardView({
-  data, timezone = '', teamCards, timeLog,
+  data, timezone = '', teamCards, timeLog, memberId,
 }: {
   data: MemberDashboard;
+  /** خودِ کاربر — کارتِ آنبوردینگ کارِ خودش را «خودت» می‌نویسد. */
+  memberId?: number;
   timezone?: string;
   teamCards?: React.ReactNode;
   /** کارتِ «ثبتِ ساعت» — زیرِ مناقصه‌ها، همان جای نسخهٔ قبلی. */
@@ -224,6 +227,9 @@ export function MemberDashboardView({
           money={data.money?.client ?? []}
         />
       )}
+
+      {/* آنبوردینگ — بالای مناقصه‌ها: عضوِ تازه روزهای اول همین را لازم دارد. */}
+      {data.onboarding && <OnboardingCard data={data.onboarding} memberId={memberId ?? 0} />}
 
       {/* پورتِ «مناقصه‌ها»: پروژه‌هایی که می‌توانید برایشان پیشنهاد قیمت بدهید. */}
       {data.tenders.length > 0 && (

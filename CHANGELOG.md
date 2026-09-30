@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.104.0]
+
+### Added
+
+- **Role-based onboarding for new members**, switched on and off under Settings → System («Onboarding for new members»). It is off by default; turning it off hides the menu, the settings tab and the cards but deletes nothing.
+- **Onboarding library** (Settings → Onboarding library): first-days items per member role, plus «all roles» items that every new member gets. Each item has a kind (learning, task, access, meeting, document), who does it (the member, the member's office manager, a service's owner, or a specific person), a due day counted from the start, an optional link and a description.
+- **A checklist is built automatically when a member is added**, from the «all roles» items and the items of the member's own roles, with real due dates and a resolved person for each task. Items no one can be found for (an office without a manager, a service without an owner) fall to the member managers. The checklist is a snapshot: later library changes do not alter it, and «sync with library» adds only new items, never duplicates.
+- **Onboarding page** (for people who can see members): the tasks that are yours, every member in progress with progress and overdue counts, and a start button for members who joined before onboarding was on. Each person has a page with progress, overdue and recorded-access cards, the full task list, per-person extra items and deletion. The members list links to it from each card's menu.
+- **«Your onboarding» card on the member dashboard**, day by day. A member ticks their own tasks; tasks that belong to someone else show «waiting on owner». Tasks the member has to do for other people's onboarding appear below it.
+- **Access items are recorded in the access register when ticked**: the service's grant is opened for the new member (an existing open grant is linked, never duplicated). Unticking does not revoke it — revocation stays a deliberate step in the register. No password or key is stored.
+- **Notifications:** each responsible person gets one grouped notice when a checklist starts, the new member gets a welcome notice, and each overdue task is reminded once by the scheduler (unowned tasks go to the owners). All three are in the «tasks» email category.
+
 ## [1.103.0]
 
 ### Added

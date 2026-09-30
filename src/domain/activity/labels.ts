@@ -136,6 +136,16 @@ export const ACTION_LABELS: Record<string, string> = {
   'service_grant.create': 'اعطای دسترسیِ بیرونی',
   'service_grant.update': 'ویرایشِ دسترسیِ بیرونی',
   'service_grant.revoke': 'قطعِ دسترسیِ بیرونی',
+
+  // آنبوردینگ
+  'onboarding_item.create': 'آیتمِ جدیدِ آنبوردینگ',
+  'onboarding_item.update': 'ویرایشِ آیتمِ آنبوردینگ',
+  'onboarding_item.delete': 'حذفِ آیتمِ آنبوردینگ',
+  'onboarding.start': 'شروع یا همگام‌سازیِ آنبوردینگ',
+  'onboarding.add': 'آیتمِ ویژهٔ آنبوردینگ',
+  'onboarding.delete': 'حذفِ کارِ آنبوردینگ',
+  'onboarding.done': 'انجامِ کارِ آنبوردینگ',
+  'onboarding.undone': 'برداشتنِ تیکِ کارِ آنبوردینگ',
   'fiscal.close': 'بستنِ دورهٔ مالی',
   'fiscal.recompute': 'بازمحاسبهٔ معادلِ یورو',
   'fiscal.reopen': 'بازگشاییِ دورهٔ مالی',

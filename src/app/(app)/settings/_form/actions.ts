@@ -16,6 +16,9 @@ import { saveSystemConfig } from '@/server/settings/system-service';
 import { closePeriod, reopenPeriod } from '@/server/finance/service';
 import { saveTelegramSettings, telegramCredentials, telegramEnabled } from '@/server/settings/telegram-service';
 import { getT } from '@/i18n/server';
+import {
+  deleteLibraryItem, ONBOARDING_MESSAGES, OnboardingError, saveLibraryItem,
+} from '@/server/onboarding/service';
 
 /** اقدام‌های تنظیمات. گاردها در سرویس‌اند (R-ARCH-01). */
 
@@ -26,6 +29,7 @@ export interface SettingsState {
 
 function explain(error: unknown, fallback: string): string {
   if (error instanceof CatalogError) return catalogMessage(error.code);
+  if (error instanceof OnboardingError) return ONBOARDING_MESSAGES[error.code];
   if (error instanceof ForbiddenError) return 'دسترسی کافی ندارید.';
   return fallback;
 }
@@ -161,6 +165,28 @@ export async function saveQaItemAction(_prev: SettingsState, formData: FormData)
 
 export async function deleteQaItemAction(id: number) {
   return run((actor) => settings.deleteQaItem(actor, id), 'آیتم حذف نشد.');
+}
+
+/* ---- کتابخانهٔ آنبوردینگ ---- */
+
+export async function saveOnboardingItemAction(_prev: SettingsState, formData: FormData) {
+  return run((actor) => saveLibraryItem(actor, {
+    id: num(formData.get('id')),
+    roleTagId: num(formData.get('roleTagId')),
+    title: String(formData.get('title') ?? ''),
+    description: String(formData.get('description') ?? ''),
+    kind: String(formData.get('kind') ?? 'task'),
+    assignee: String(formData.get('assignee') ?? 'member'),
+    assigneeUserId: num(formData.get('assigneeUserId')),
+    serviceId: num(formData.get('serviceId')),
+    link: String(formData.get('link') ?? ''),
+    dueDay: Number(formData.get('dueDay') ?? 1) || 1,
+    sortOrder: Number(formData.get('sortOrder') ?? 0) || 0,
+  }), 'آیتم ذخیره نشد.');
+}
+
+export async function deleteOnboardingItemAction(id: number) {
+  return run((actor) => deleteLibraryItem(actor, id), 'آیتم حذف نشد.');
 }
 
 /* ------------------------------------------------------------------ *
@@ -314,6 +340,7 @@ export async function saveSystemAction(
       chatPollEnabled: formData.get('chatPollEnabled') !== null,
       chatPollInterval: formData.get('chatPollInterval'),
       ownerTeamView: formData.get('ownerTeamView') !== null,
+      onboardingEnabled: formData.get('onboardingEnabled') !== null,
     });
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'دسترسی ندارید.' };

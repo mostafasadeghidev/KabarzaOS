@@ -19,6 +19,7 @@ import {
 import { StaffSection, type StaffRow } from './staff-section';
 import { ReportSection } from './report-section';
 import { SystemSection, TelegramSection } from './system-section';
+import { OnboardingLibrary, type OnboardingLibraryData } from './onboarding-library';
 import type { TelegramSettingsView } from '@/server/settings/telegram-service';
 import { FiscalSection, type ClosingPreview } from './fiscal-section';
 import type { SystemConfig } from '@/domain/settings/system';
@@ -80,6 +81,8 @@ export interface SettingsData {
     id: number; name: string; location: string;
     defaultCurrencyId: number | null; isActive: boolean;
   }>;
+  /** کتابخانهٔ آنبوردینگ — `null` وقتی خاموش است یا مجوز نیست (تب پنهان). */
+  onboarding: OnboardingLibraryData | null;
   qaItems: Array<{
     id: number; title: string; description: string;
     roleTagId: number | null; isTask: boolean; sortOrder: number;
@@ -105,6 +108,8 @@ const TABS = [
   { key: 'offices', label: 'دفاتر', ownerOnly: false },
   // ⚠️ «طرف‌حساب‌ها» به امور مالی رفت (کاتالوگِ مالی، همان جای نسخهٔ قبلی).
   { key: 'qa', label: 'کتابخانهٔ QA', ownerOnly: false },
+  // فقط وقتی آنبوردینگ روشن است (← TabsList).
+  { key: 'onboarding', label: 'کتابخانهٔ آنبوردینگ', ownerOnly: false },
   /**
    * ⚠️ سه تبِ مالکانه — همان تفکیکِ نسخهٔ قبلی: تب‌های کاتالوگی را مجوزِ
    * مدیریتِ تنظیمات باز می‌کرد و `manage_options` این‌ها را. حسابدار نباید حتی ببیندشان؛
@@ -154,7 +159,7 @@ export function SettingsView({
         {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
         <div className="overflow-x-auto pb-1.5">
           <TabsList variant="line" className="w-max">
-            {TABS.filter((t) => !t.ownerOnly || data.isOwner).map((t) => (
+            {TABS.filter((t) => (!t.ownerOnly || data.isOwner) && (t.key !== 'onboarding' || data.onboarding)).map((t) => (
               <TabsTrigger key={t.key} value={t.key} className="flex-none">
                 {tr(t.label)}
               </TabsTrigger>
@@ -650,6 +655,13 @@ export function SettingsView({
           )}
         />
         </div>
+      )}
+
+      {tab === 'onboarding' && data.onboarding && (
+        <OnboardingLibrary
+          data={data.onboarding}
+          roles={data.tags.filter((t) => t.type === 'member_role').map((t) => ({ id: t.id, label: tagLabel(t, locale) }))}
+        />
       )}
 
       {tab === 'staff' && <StaffSection staff={data.staff} candidates={data.staffCandidates} />}

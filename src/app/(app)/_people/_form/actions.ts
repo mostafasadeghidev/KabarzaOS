@@ -13,6 +13,7 @@ import type { Role } from '@/domain/access/permissions';
 import { isValidUsername } from '@/domain/auth/login';
 import { assertAcceptable, FileRejected, rejectMessage } from '@/domain/files/upload';
 import { sendInvite, type InviteResult } from '@/server/auth/reset-service';
+import { autoStartOnboarding } from '@/server/onboarding/service';
 
 /**
  * اقدام‌های صفحهٔ افراد.و اقدام‌های ردیفِ نسخهٔ قبلی.
@@ -149,6 +150,8 @@ export async function savePersonAction(
       if (error instanceof PersonNotFoundError) return { error: 'کاربر یافت نشد.' };
       return { error: 'ذخیره نشد.' };
     }
+    // عضوِ تازه (حتی اگر کاربرِ موجود باشد) چک‌لیستِ آنبوردینگ می‌گیرد — اگر روشن باشد.
+    if (role === 'member') await autoStartOnboarding(await requireActor(), existingId);
     // پورتِ چک‌باکسِ «ارسالِ دعوت‌نامه»: کاربرِ موجود فقط آدرسِ داشبورد می‌گیرد.
     let message: string | undefined;
     if (formData.get('sendInvite') !== null) {
@@ -224,6 +227,11 @@ export async function savePersonAction(
    * پورتِ `send_invite()`: کاربرِ تازه لینکِ تعیینِ رمزِ ۳روزه می‌گیرد (پیش از
    * این هیچ ایمیلی نمی‌رفت و نمی‌توانست رمزِ خودش را انتخاب کند)؛ موجود آدرسِ داشبورد.
    */
+  /**
+   * آنبوردینگ فقط برای عضوِ **تازه** — ویرایشِ عضوِ قدیمی چک‌لیست نمی‌سازد.
+   * ⚠️ بی‌صدا: شکستش ساختِ عضو را خراب نمی‌کند (مدیر از صفحهٔ آنبوردینگ دوباره می‌سازد).
+   */
+  if (isNew && role === 'member' && savedId) await autoStartOnboarding(await requireActor(), savedId);
   let message: string | undefined;
   if (formData.get('sendInvite') !== null && savedId) {
     const sent = await sendInvite(await requireActor(), savedId, role, isNew).catch((): InviteResult => 'no_mail');

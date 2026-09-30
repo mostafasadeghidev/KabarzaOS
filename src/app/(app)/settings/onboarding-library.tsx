@@ -1,0 +1,216 @@
+'use client';
+
+import { useState } from 'react';
+import { CatalogSection } from './catalog-section';
+import { deleteOnboardingItemAction, saveOnboardingItemAction } from './_form/actions';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useT } from '@/i18n/client';
+import {
+  ASSIGNEES, ASSIGNEE_LABELS, KINDS, KIND_LABELS, MAX_DUE_DAY,
+  type AssigneeRule, type LibraryItem, type OnboardingKind,
+} from '@/domain/onboarding/plan';
+
+export interface OnboardingLibraryData {
+  items: LibraryItem[];
+  services: Array<{ id: number; name: string }>;
+  people: Array<{ id: number; name: string }>;
+}
+
+/**
+ * «کتابخانهٔ آنبوردینگ» — کارهای روزهای اولِ هر نقش. همان الگوی کتابخانهٔ QA:
+ * زیرتبِ هر نقش، و «همهٔ نقش‌ها» برای آیتمی که به هر عضوِ تازه‌ای می‌رسد.
+ */
+export function OnboardingLibrary({ data, roles }: {
+  data: OnboardingLibraryData;
+  roles: Array<{ id: number; label: string }>;
+}) {
+  const tr = useT();
+  const [role, setRole] = useState<string>('all');
+  const roleName = (id: number | null) => (id === null ? tr('همهٔ نقش‌ها') : roles.find((r) => r.id === id)?.label ?? '—');
+  const serviceName = (id: number | null) => data.services.find((s) => s.id === id)?.name;
+  const personName = (id: number | null) => data.people.find((p) => p.id === id)?.name;
+
+  const rows = data.items.filter((i) => role === 'all' || (role === 'any' ? i.roleTagId === null : i.roleTagId === Number(role)));
+
+  return (
+    <div className="grid gap-4">
+      <div className="overflow-x-auto pb-1.5">
+        <Tabs value={role} onValueChange={setRole}>
+          <TabsList className="w-max">
+            <TabsTrigger value="all" className="flex-none gap-1.5 px-3">
+              {tr('همه')}<span className="num text-xs text-muted-foreground">{data.items.length}</span>
+            </TabsTrigger>
+            <TabsTrigger value="any" className="flex-none gap-1.5 px-3">
+              {tr('همهٔ نقش‌ها')}
+              <span className="num text-xs text-muted-foreground">{data.items.filter((i) => i.roleTagId === null).length}</span>
+            </TabsTrigger>
+            {roles.map((r) => (
+              <TabsTrigger key={r.id} value={String(r.id)} className="flex-none gap-1.5 px-3">
+                {r.label}
+                <span className="num text-xs text-muted-foreground">{data.items.filter((i) => i.roleTagId === r.id).length}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <CatalogSection
+        title={tr('کتابخانهٔ آنبوردینگ')}
+        description={tr('آیتم‌های «همهٔ نقش‌ها» به هر عضوِ تازه می‌رسند و آیتم‌های هر نقش فقط به کسی که آن نقش را دارد. تغییرِ کتابخانه چک‌لیستِ کسانی را که شروع کرده‌اند عوض نمی‌کند.')}
+        addLabel="افزودن آیتم"
+        rows={rows}
+        columns={[
+          {
+            header: 'عنوان',
+            cell: (i) => (
+              <span className="grid gap-0.5">
+                <span className="font-medium">{i.title}</span>
+                {i.kind === 'access' && serviceName(i.serviceId) && (
+                  <span className="text-xs text-muted-foreground">{tr('سرویس: {name}', { name: serviceName(i.serviceId)! })}</span>
+                )}
+              </span>
+            ),
+          },
+          { header: 'نقش', cell: (i) => roleName(i.roleTagId) },
+          { header: 'نوع', cell: (i) => <Badge variant="secondary">{tr(KIND_LABELS[i.kind])}</Badge> },
+          {
+            header: 'انجام‌دهنده',
+            cell: (i) => (i.assignee === 'user' ? (personName(i.assigneeUserId) ?? '—') : tr(ASSIGNEE_LABELS[i.assignee])),
+          },
+          { header: 'موعد', cell: (i) => tr('روزِ {n}', { n: i.dueDay }) },
+        ]}
+        saveAction={saveOnboardingItemAction}
+        deleteAction={(i) => deleteOnboardingItemAction(i.id)}
+        renderForm={(editing) => (
+          <ItemFields
+            editing={editing}
+            defaultRole={role !== 'all' && role !== 'any' ? Number(role) : null}
+            roles={roles}
+            services={data.services}
+            people={data.people}
+          />
+        )}
+      />
+    </div>
+  );
+}
+
+/**
+ * فیلدهای فرم. ⚠️ سرویس و شخص فقط وقتی دیده می‌شوند که معنا دارند (آیتمِ
+ * «دسترسی»، «مسئولِ سرویس»، «شخصِ مشخص») — ولی پنهان‌بودن در UI گارد نیست؛
+ * سرور همین قاعده را خودش می‌سنجد.
+ */
+function ItemFields({ editing, defaultRole, roles, services, people }: {
+  editing: LibraryItem | null;
+  defaultRole: number | null;
+  roles: Array<{ id: number; label: string }>;
+  services: Array<{ id: number; name: string }>;
+  people: Array<{ id: number; name: string }>;
+}) {
+  const tr = useT();
+  const [kind, setKind] = useState<OnboardingKind>(editing?.kind ?? 'task');
+  const [assignee, setAssignee] = useState<AssigneeRule>(editing?.assignee ?? 'member');
+  const needsService = kind === 'access' || assignee === 'service_owner';
+
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field className="sm:col-span-2">
+          <FieldLabel htmlFor="ob-title">{tr('عنوان')}</FieldLabel>
+          <Input id="ob-title" name="title" defaultValue={editing?.title ?? ''} required />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="ob-role">{tr('نقش')}</FieldLabel>
+          <NativeSelect
+            id="ob-role"
+            name="roleTagId"
+            containerClassName="w-full"
+            defaultValue={String(editing ? (editing.roleTagId ?? '') : (defaultRole ?? ''))}
+          >
+            <NativeSelectOption value="">{tr('همهٔ نقش‌ها')}</NativeSelectOption>
+            {roles.map((r) => <NativeSelectOption key={r.id} value={r.id}>{r.label}</NativeSelectOption>)}
+          </NativeSelect>
+        </Field>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field>
+          <FieldLabel htmlFor="ob-kind">{tr('نوع')}</FieldLabel>
+          <NativeSelect
+            id="ob-kind" name="kind" containerClassName="w-full"
+            value={kind} onChange={(e) => setKind(e.target.value as OnboardingKind)}
+          >
+            {KINDS.map((k) => <NativeSelectOption key={k} value={k}>{tr(KIND_LABELS[k])}</NativeSelectOption>)}
+          </NativeSelect>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="ob-assignee">{tr('انجام‌دهنده')}</FieldLabel>
+          <NativeSelect
+            id="ob-assignee" name="assignee" containerClassName="w-full"
+            value={assignee} onChange={(e) => setAssignee(e.target.value as AssigneeRule)}
+          >
+            {ASSIGNEES.map((a) => <NativeSelectOption key={a} value={a}>{tr(ASSIGNEE_LABELS[a])}</NativeSelectOption>)}
+          </NativeSelect>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="ob-due">{tr('موعد (روزِ چندم)')}</FieldLabel>
+          <Input
+            id="ob-due" name="dueDay" type="number" min={1} max={MAX_DUE_DAY}
+            className="num" defaultValue={editing?.dueDay ?? 1}
+          />
+        </Field>
+      </div>
+
+      {(needsService || assignee === 'user') && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {needsService && (
+            <Field>
+              <FieldLabel htmlFor="ob-service">{tr('سرویس')}</FieldLabel>
+              <SearchableSelect
+                id="ob-service" name="serviceId" containerClassName="w-full" required
+                defaultValue={editing?.serviceId ? String(editing.serviceId) : ''}
+              >
+                <NativeSelectOption value="">{tr('انتخاب کنید')}</NativeSelectOption>
+                {services.map((s) => <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>)}
+              </SearchableSelect>
+              <FieldDescription>
+                {tr('از سیاههٔ دسترسی‌ها. با تیک‌خوردنِ این کار، دسترسی همان‌جا ثبت می‌شود — هیچ رمزی ذخیره نمی‌شود.')}
+              </FieldDescription>
+            </Field>
+          )}
+          {assignee === 'user' && (
+            <Field>
+              <FieldLabel htmlFor="ob-user">{tr('شخص')}</FieldLabel>
+              <SearchableSelect
+                id="ob-user" name="assigneeUserId" containerClassName="w-full" required
+                defaultValue={editing?.assigneeUserId ? String(editing.assigneeUserId) : ''}
+              >
+                <NativeSelectOption value="">{tr('انتخاب کنید')}</NativeSelectOption>
+                {people.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>)}
+              </SearchableSelect>
+            </Field>
+          )}
+        </div>
+      )}
+
+      <Field>
+        <FieldLabel htmlFor="ob-link">{tr('پیوند (اختیاری)')}</FieldLabel>
+        <Input id="ob-link" name="link" dir="ltr" placeholder="https://…" defaultValue={editing?.link ?? ''} />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="ob-desc">{tr('توضیحات')}</FieldLabel>
+        <Textarea id="ob-desc" name="description" rows={3} defaultValue={editing?.description ?? ''} />
+      </Field>
+      <div className="flex items-center gap-2">
+        <FieldLabel htmlFor="ob-sort" className="text-xs">{tr('ترتیب')}</FieldLabel>
+        <Input id="ob-sort" name="sortOrder" type="number" className="num w-20" defaultValue={editing?.sortOrder ?? 0} />
+      </div>
+    </>
+  );
+}

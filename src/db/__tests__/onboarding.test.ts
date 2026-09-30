@@ -1,0 +1,169 @@
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { and, eq, isNull } from 'drizzle-orm';
+import { db, sql } from '../client';
+import {
+  notifications, offices, onboardingTasks, serviceGrants, services, tagRelations, tags, userOffices,
+  userRoles, users,
+} from '../schema';
+import {
+  notifyOverdueOnboarding, OnboardingError, saveLibraryItem, startOnboarding, toggleTask,
+} from '@/server/onboarding/service';
+import { saveSystemConfig } from '@/server/settings/system-service';
+import { ForbiddenError } from '@/domain/access/guard';
+import type { Actor } from '@/domain/access/permissions';
+
+/**
+ * آنبوردینگِ نقش‌محور — شروع از کتابخانه، مسئولِ هر کار، تیک و سیاههٔ
+ * دسترسی، و یادآوریِ یک‌بارهٔ عقب‌افتاده.
+ */
+
+const OWNER = 1, MANAGER = 2, DEV = 3, KEEPER = 4, CLIENT = 5;
+const owner = (): Actor => ({ id: OWNER, roles: ['owner'], permissions: [], privateAccess: false });
+const member = (id: number): Actor => ({ id, roles: ['member'], permissions: [], privateAccess: false });
+
+let DEV_ROLE = 0, DESIGN_ROLE = 0, GITHUB = 0;
+const today = () => new Date().toISOString().slice(0, 10);
+const addDays = (n: number) => new Date(Date.parse(`${today()}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+
+const lib = (over: Partial<Parameters<typeof saveLibraryItem>[1]>) => saveLibraryItem(owner(), {
+  roleTagId: null, title: 'آیتم', description: '', kind: 'task', assignee: 'member',
+  assigneeUserId: null, serviceId: null, link: '', dueDay: 1, sortOrder: 0, ...over,
+});
+
+beforeAll(async () => {
+  await sql`truncate table onboarding_tasks, onboarding_items, service_grants, services, tag_relations,
+    user_offices, offices, audit_log, notifications, tags, user_roles, users restart identity cascade`;
+
+  await db.insert(users).values([
+    { email: 'o@t', name: 'مالک' }, { email: 'm@t', name: 'مدیرِ دفتر' }, { email: 'd@t', name: 'سارا' },
+    { email: 'k@t', name: 'علی' }, { email: 'c@t', name: 'کارفرما' },
+  ]);
+  await db.insert(userRoles).values([
+    { userId: OWNER, role: 'owner' }, { userId: MANAGER, role: 'member' }, { userId: DEV, role: 'member' },
+    { userId: KEEPER, role: 'member' }, { userId: CLIENT, role: 'client' },
+  ]);
+  const [office] = await db.insert(offices).values({ name: 'تهران' }).returning({ id: offices.id });
+  await db.insert(userOffices).values([
+    { userId: MANAGER, officeId: office!.id, manages: true },
+    { userId: DEV, officeId: office!.id },
+  ]);
+  const tg = await db.insert(tags).values([
+    { name: 'دولوپر', type: 'member_role' }, { name: 'دیزاینر', type: 'member_role' },
+  ]).returning({ id: tags.id });
+  [DEV_ROLE, DESIGN_ROLE] = tg.map((t) => t.id) as [number, number];
+  await db.insert(tagRelations).values({ tagId: DEV_ROLE, objectId: DEV, objectType: 'user' });
+  const [svc] = await db.insert(services).values({ name: 'GitHub', ownerUserId: KEEPER }).returning({ id: services.id });
+  GITHUB = svc!.id;
+
+  await lib({ title: 'راهنمای کدنویسی', kind: 'learn', dueDay: 1 });
+  await lib({ title: 'دسترسیِ گیت‌هاب', roleTagId: DEV_ROLE, kind: 'access', assignee: 'service_owner', serviceId: GITHUB });
+  await lib({ title: 'محیطِ توسعه', roleTagId: DEV_ROLE, assignee: 'office_manager', dueDay: 2 });
+  await lib({ title: 'فایلِ طراحی', roleTagId: DESIGN_ROLE });
+  await lib({ title: 'قرارداد', kind: 'document', assignee: 'user', assigneeUserId: OWNER, dueDay: 3 });
+});
+
+afterAll(async () => {
+  // ⚠️ تنظیمِ سامانه بینِ فایل‌های تست مشترک است — خاموش برمی‌گردد.
+  await saveSystemConfig(owner(), { onboardingEnabled: false });
+  await sql.end();
+});
+
+describe('روشن/خاموش', () => {
+  it('وقتی خاموش است چک‌لیستی ساخته نمی‌شود', async () => {
+    await saveSystemConfig(owner(), { onboardingEnabled: false });
+    await expect(startOnboarding(owner(), DEV)).rejects.toBeInstanceOf(OnboardingError);
+    await saveSystemConfig(owner(), { onboardingEnabled: true });
+  });
+});
+
+describe('شروع از کتابخانه', () => {
+  it('همهٔ نقش‌ها + نقشِ خودش؛ نه نقشِ دیگر — با مسئولِ واقعیِ هر کار', async () => {
+    expect(await startOnboarding(owner(), DEV)).toBe(4);
+    const rows = await db.select().from(onboardingTasks).where(eq(onboardingTasks.userId, DEV));
+    const by = new Map(rows.map((r) => [r.title, r]));
+    expect(by.has('فایلِ طراحی')).toBe(false);
+    expect(by.get('راهنمای کدنویسی')!.assigneeUserId).toBe(DEV);
+    expect(by.get('دسترسیِ گیت‌هاب')!.assigneeUserId).toBe(KEEPER);
+    expect(by.get('محیطِ توسعه')!.assigneeUserId).toBe(MANAGER);
+    expect(by.get('قرارداد')!.assigneeUserId).toBe(OWNER);
+    expect(by.get('محیطِ توسعه')!.dueDate).toBe(addDays(1));
+  });
+
+  it('دوباره‌زدن تکراری نمی‌سازد؛ آیتمِ تازهٔ کتابخانه با همگام‌سازی می‌آید', async () => {
+    expect(await startOnboarding(owner(), DEV)).toBe(0);
+    await lib({ title: 'آشنایی با تیم', roleTagId: DEV_ROLE, kind: 'meeting' });
+    expect(await startOnboarding(owner(), DEV)).toBe(1);
+  });
+
+  it('مسئول اعلانِ جمع‌بسته می‌گیرد', async () => {
+    const rows = await db.select().from(notifications)
+      .where(and(eq(notifications.userId, KEEPER), eq(notifications.type, 'onboarding.assigned')));
+    expect(rows.length).toBe(1);
+  });
+
+  it('کارفرما آنبوردینگ ندارد', async () => {
+    await expect(startOnboarding(owner(), CLIENT)).rejects.toMatchObject({ code: 'not_member' });
+  });
+
+  it('فقط مدیرِ اعضا شروع می‌کند', async () => {
+    await expect(startOnboarding(member(MANAGER), DEV)).rejects.toBeInstanceOf(ForbiddenError);
+  });
+});
+
+describe('تیک و سیاههٔ دسترسی', () => {
+  it('عضو کارِ دیگری را تیک نمی‌زند', async () => {
+    const [task] = await db.select().from(onboardingTasks)
+      .where(and(eq(onboardingTasks.userId, DEV), eq(onboardingTasks.title, 'دسترسیِ گیت‌هاب')));
+    await expect(toggleTask(member(DEV), task!.id, true)).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it('مسئولِ سرویس تیک می‌زند و دسترسی در سیاهه ثبت می‌شود — بی‌تکرار، و برداشتنِ تیک نمی‌بندد', async () => {
+    const [task] = await db.select().from(onboardingTasks)
+      .where(and(eq(onboardingTasks.userId, DEV), eq(onboardingTasks.title, 'دسترسیِ گیت‌هاب')));
+    await toggleTask(member(KEEPER), task!.id, true);
+    const open = await db.select().from(serviceGrants)
+      .where(and(eq(serviceGrants.userId, DEV), eq(serviceGrants.serviceId, GITHUB), isNull(serviceGrants.revokedAt)));
+    expect(open.length).toBe(1);
+    const [after] = await db.select().from(onboardingTasks).where(eq(onboardingTasks.id, task!.id));
+    expect(after!.grantId).toBe(open[0]!.id);
+    expect(after!.doneBy).toBe(KEEPER);
+
+    await toggleTask(member(KEEPER), task!.id, false);
+    await toggleTask(member(KEEPER), task!.id, true);
+    const again = await db.select().from(serviceGrants)
+      .where(and(eq(serviceGrants.userId, DEV), eq(serviceGrants.serviceId, GITHUB), isNull(serviceGrants.revokedAt)));
+    expect(again.length).toBe(1);
+  });
+
+  it('عضو کارِ خودش را تیک می‌زند', async () => {
+    const [task] = await db.select().from(onboardingTasks)
+      .where(and(eq(onboardingTasks.userId, DEV), eq(onboardingTasks.title, 'راهنمای کدنویسی')));
+    await toggleTask(member(DEV), task!.id, true);
+    const [row] = await db.select().from(onboardingTasks).where(eq(onboardingTasks.id, task!.id));
+    expect(row!.doneAt).not.toBeNull();
+  });
+});
+
+describe('کتابخانه', () => {
+  it('آیتمِ «دسترسی» بی‌سرویس پذیرفته نمی‌شود', async () => {
+    await expect(lib({ title: 'بی‌سرویس', kind: 'access' })).rejects.toMatchObject({ code: 'service_required' });
+  });
+
+  it('نقش باید تگِ member_role باشد', async () => {
+    const [other] = await db.insert(tags).values({ name: 'وضعیت', type: 'project_status', statusGroup: 'todo' })
+      .returning({ id: tags.id });
+    await expect(lib({ title: 'نقشِ نادرست', roleTagId: other!.id })).rejects.toMatchObject({ code: 'bad_role' });
+  });
+});
+
+describe('یادآوریِ عقب‌افتاده', () => {
+  it('هر کار فقط یک بار', async () => {
+    await db.update(onboardingTasks).set({ dueDate: addDays(-2) })
+      .where(and(eq(onboardingTasks.userId, DEV), eq(onboardingTasks.title, 'محیطِ توسعه')));
+    expect(await notifyOverdueOnboarding()).toBe(1);
+    expect(await notifyOverdueOnboarding()).toBe(0);
+    const rows = await db.select().from(notifications)
+      .where(and(eq(notifications.userId, MANAGER), eq(notifications.type, 'onboarding.overdue')));
+    expect(rows.length).toBe(1);
+  });
+});

@@ -107,6 +107,7 @@ export default async function DashboardPage({
             <PageHeader title={t("سلام، {name}", { name: session?.name ?? '' })} />
             <MemberDashboardView
               data={own}
+              memberId={actor.id}
               teamCards={teamCards}
               timeLog={isMember ? <DashboardTimeLog actor={actor} /> : null}
             />

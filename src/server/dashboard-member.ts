@@ -10,6 +10,7 @@ import { openThreads } from '@/domain/dashboard/focus';
 import { summarizeProject, type PaymentStatus } from '@/domain/team-money/payments';
 import { membershipProjectIds } from '@/server/projects/authority';
 import * as repo from '@/server/projects/repository';
+import { myOnboarding } from '@/server/onboarding/service';
 
 /**
  * داشبوردِ عضو / کارفرما — پورتِ `member_overview()` / `client_overview()` /
@@ -90,6 +91,8 @@ export interface MemberDashboard {
   unread: number;
   /** ماندهٔ بازِ کاربر به تفکیکِ ارز؛ null یعنی نه عضو است نه کارفرما. */
   money: MyMoneyTotals | null;
+  /** آنبوردینگِ خودش و کارهای آنبوردینگِ دیگران که با اوست؛ null = خاموش یا خالی. */
+  onboarding: Awaited<ReturnType<typeof myOnboarding>>;
 }
 
 /**
@@ -243,7 +246,7 @@ async function tenderSection(actor: Actor): Promise<TenderRow[]> {
 export async function getMemberDashboard(actor: Actor): Promise<MemberDashboard> {
   const isMember = actor.roles.includes('member');
   const isClient = actor.roles.includes('client');
-  const [member, client, tenders, meetings, unread, money] = await Promise.all([
+  const [member, client, tenders, meetings, unread, money, onboarding] = await Promise.all([
     isMember ? memberSection(actor) : Promise.resolve(null),
     isClient ? clientSection(actor) : Promise.resolve(null),
     isMember ? tenderSection(actor) : Promise.resolve([] as TenderRow[]),
@@ -252,8 +255,10 @@ export async function getMemberDashboard(actor: Actor): Promise<MemberDashboard>
     unreadFor(actor),
     // ماندهٔ باز — کارتی که به صفحهٔ «امور مالی» می‌برد (پورتِ کارتِ مالیِ داشبورد).
     hasPersonalMoney(actor) ? myMoneyTotals(actor) : Promise.resolve(null),
+    // ⚠️ خطای آنبوردینگ نباید کلِ داشبورد را بخواباند — کارت فقط نمی‌آید.
+    myOnboarding(actor).catch(() => null),
   ]);
-  return { member, client, tenders, meetings, unread, money };
+  return { member, client, tenders, meetings, unread, money, onboarding };
 }
 
 async function unreadFor(actor: Actor): Promise<number> {

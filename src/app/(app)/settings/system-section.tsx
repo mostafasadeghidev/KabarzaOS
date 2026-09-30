@@ -246,6 +246,15 @@ export function SystemSection({ config, health, bucket, isOwner }: {
             {tr("مدیرِ کل بدونِ اینکه مدیرِ دفتری باشد، منوی «تیمِ من» را با همهٔ دفاتر می‌بیند.")}
           </p>
         </div>
+        <div className="grid gap-1">
+          <label className="flex items-center gap-1.5 text-sm">
+            <Switch name="onboardingEnabled" defaultChecked={config.onboardingEnabled} />
+            {tr("آنبوردینگِ اعضای تازه")}
+          </label>
+          <p className="text-xs text-muted-foreground">
+            {tr("برای هر عضوِ تازه از «کتابخانهٔ آنبوردینگ» چک‌لیستِ روزهای اول ساخته می‌شود. خاموش‌کردن داده‌ها را پاک نمی‌کند؛ فقط منو و کارت‌ها پنهان می‌شوند.")}
+          </p>
+        </div>
       </Panel>
 
       <Panel title={t("حضورِ زنده")}>

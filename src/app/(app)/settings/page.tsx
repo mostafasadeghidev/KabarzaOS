@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SettingsView } from './settings-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { getCompany } from '@/server/people/profile-service';
+import { assignOptions, listLibrary } from '@/server/onboarding/service';
 import { PageHeader, PageShell } from '@/components/page-shell';
 
 /**
@@ -71,6 +72,15 @@ export default async function SettingsPage({
       // خودآزماییِ باکت — فقط مالک؛ اگر نتیجه کهنه بود همین حالا آزمون می‌شود.
       bucket: actor.roles.includes('owner') ? await bucketCheck().catch(() => null) : null,
       today: new Date().toISOString().slice(0, 10),
+      /**
+       * کتابخانهٔ آنبوردینگ — فقط وقتی روشن است. `listLibrary` خودش
+       * `settings.manage` می‌خواهد؛ بی‌آن مجوز تب اصلاً نمی‌آید.
+       */
+      onboarding: systemConfig.onboardingEnabled
+        ? await Promise.all([listLibrary(actor), assignOptions()])
+          .then(([items, options]) => ({ items, ...options }))
+          .catch(() => null)
+        : null,
     };
   } catch (error) {
     if (error instanceof ForbiddenError) {

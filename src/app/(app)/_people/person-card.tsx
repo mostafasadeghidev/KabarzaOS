@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import {
-  Building2, KeyRound, Lock, Mail, MoreVertical, Phone, RotateCcw, Trash2, Wallet, XCircle,
+  Building2, KeyRound, Lock, Mail, MoreVertical, Phone, RotateCcw, Sprout, Trash2, Wallet, XCircle,
 } from 'lucide-react';
 import {
   removePersonAction, setPersonPasswordAction, setStateAction, type PasswordState,
@@ -63,6 +63,8 @@ export interface SectionConfig {
   supportsOffices: boolean;
   /** زیرتبِ فعال/سابق و منوی سه‌حالتی دارد؟ */
   supportsOffboarding: boolean;
+  /** پیوندِ «آنبوردینگ» در منوی کارت — فقط اعضا و فقط وقتی روشن است. */
+  onboarding?: boolean;
 }
 
 /**
@@ -182,6 +184,14 @@ export function PersonCard({
                     <Link href={`/access?user=${person.id}`} prefetch={false}>
                       <KeyRound className="size-3.5" />
                       {tr("دسترسی‌های بیرونی")}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {section.onboarding && (
+                  <DropdownMenuItem asChild>
+                    <Link href={`/onboarding/${person.id}`} prefetch={false}>
+                      <Sprout className="size-3.5" />
+                      {tr("آنبوردینگ")}
                     </Link>
                   </DropdownMenuItem>
                 )}
