@@ -27,14 +27,31 @@ async function presenceConfig(): Promise<PresenceConfig> {
   });
 }
 
+/** روشن‌بودن و آستانه‌ها با **یک** خواندنِ تنظیمات — برای مسیرِ پرتکرارِ ضربان. */
+export async function presenceSettings(): Promise<{ enabled: boolean; config: PresenceConfig }> {
+  const system = await getSystemConfig();
+  return {
+    enabled: system.presenceEnabled,
+    config: normalizeConfig({
+      ping: system.presencePing,
+      idleAfter: system.presenceIdle,
+      offlineAfter: system.presenceOffline,
+    }),
+  };
+}
+
 /** آیا نمایشِ حضور اصلاً روشن است؟ */
 export async function presenceEnabled(): Promise<boolean> {
   return (await getSystemConfig()).presenceEnabled;
 }
 
-/** ثبتِ ضربان. `focused` یعنی تب همین حالا جلوی چشمِ کاربر است. */
-export async function touch(actor: Actor, focused: boolean): Promise<void> {
-  const config = await presenceConfig();
+/**
+ * ثبتِ ضربان. `focused` یعنی تب همین حالا جلوی چشمِ کاربر است.
+ * `config` اختیاری است: مسیرِ ضربان تنظیمات را یک بار می‌خواند و پاس می‌دهد،
+ * نه اینکه هر ضربان دو بار سراغِ دیتابیس برود.
+ */
+export async function touch(actor: Actor, focused: boolean, config?: PresenceConfig): Promise<void> {
+  config ??= await presenceConfig();
   const now = new Date();
 
   const rows = await db

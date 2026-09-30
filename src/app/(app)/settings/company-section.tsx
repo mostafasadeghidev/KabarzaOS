@@ -6,7 +6,7 @@ import { removeCompanyLogoAction, saveCompanyAction, setCompanyLogoAction, type 
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { Field, FieldLabel } from '@/components/ui/field';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
@@ -80,6 +80,7 @@ export function CompanySection({ company, isOwner }: {
             <Field>
               <FieldLabel htmlFor="c-name">{tr("نامِ شرکت")}</FieldLabel>
               <Input id="c-name" name="name" defaultValue={data.company.name} />
+              <FieldDescription>{tr("همین نام بالای منو، در صفحه‌های ورود و روی فاکتور دیده می‌شود.")}</FieldDescription>
             </Field>
             <Field>
               <FieldLabel htmlFor="c-tax">{tr("شناسهٔ مالیاتی")}</FieldLabel>

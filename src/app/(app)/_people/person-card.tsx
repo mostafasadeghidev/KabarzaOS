@@ -126,7 +126,7 @@ export function PersonCard({
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-1.5 text-sm font-semibold">
               {/* حضورِ خاموش ← بی‌نقطه، نه نقطهٔ خاکستریِ گمراه‌کننده. */}
-              {person.presence && <PresenceDot state={person.presence} />}
+              {person.presence && <PresenceDot state={person.presence} userId={person.id} />}
               {/*
                 پورتِ `profile_url`: نامِ عضو به تبِ «اعضا» و نامِ کارفرما به
                 تبِ «کارفرمایانِ» گزارش‌ها می‌رود — همان‌جا که نسخهٔ قبلی هم

@@ -44,7 +44,8 @@ export function ReportSection({ config }: { config: ReportConfig }) {
         description={tr("خلاصهٔ یک‌روزهٔ فعالیت که به کانالِ تیم فرستاده می‌شود. این گزارشِ گروهی است، نه اعلانِ شخصی.")}
       />
 
-      <form action={save} className="grid max-w-4xl gap-4">
+      {/* ⚠️ `key`: پس از ذخیره فرم با مقدارِ تازه سوار شود — ریستِ React کلیدها را به مقدارِ اولیه برمی‌گرداند (← system-section). */}
+      <form key={JSON.stringify(config)} action={save} className="grid max-w-4xl gap-4">
         <Panel title={t("محتوا و زمان‌بندی")}>
           <fieldset className="grid gap-2">
             <legend className="text-sm font-medium">{t("بخش‌ها")}</legend>

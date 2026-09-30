@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { HeaderBreadcrumb } from '@/components/header-breadcrumb';
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette';
 import { OffboardedShell } from './offboarded-shell';
-import { PresenceHeartbeat } from '@/components/presence';
+import { PresenceProvider } from '@/components/presence';
 import { logout } from '@/app/login/actions';
 import { setLocale } from './_actions/locale';
 import { markAllReadAction, markReadAction } from './_actions/notifications';
@@ -241,7 +241,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         onLogout={logout}
         canManageSettings={can(actor, 'settings.manage')}
         onLocaleChange={setLocale}
-        brand={{ name: brand.name?.trim() || 'KabarzaOS', logoFileId: brand.logoFileId }}
+        // نامِ شرکت؛ «نامِ برند» ِ قدیمیِ تنظیماتِ سامانه فقط وقتی نامِ شرکت خالی است.
+        brand={{ name: brand.name?.trim() || system.brandName || 'KabarzaOS', logoFileId: brand.logoFileId }}
       />
       <SidebarInset>
         <header data-app-chrome className="flex h-12 items-center gap-2 border-b px-4">
@@ -280,15 +281,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             pending={timer.pending ? { projectTitle: timer.pending.projectTitle, minutes: timer.pending.minutes } : null}
           />
         )}
-        {children}
+        {/*
+          حضورِ زنده — ضربانِ خودِ کاربر و تازه‌شدنِ نقطه‌های حضورِ صفحه.
+          ⚠️ وقتی حضور خاموش است هیچ درخواستی نمی‌فرستد؛ فقط فرزندان را رندر می‌کند.
+        */}
+        <PresenceProvider enabled={system.presenceEnabled} ping={system.presencePing}>
+          {children}
+        </PresenceProvider>
         {/* صفحه‌ها همان فهرستِ منو است — یعنی همان فیلترِ مجوزِ سمتِ سرور. */}
         <CommandPalette pages={items.map(({ href, label }) => ({ href, label }))} />
-        {/*
-          ضربانِ حضور — سبک و بی‌صدا.
-          ⚠️ وقتی حضور خاموش است اصلاً سوار نمی‌شود؛ نه اینکه بفرستد و
-          سرور دور بریزد. هزینهٔ درخواستِ بی‌مصرف روی مرورگرِ کاربر است.
-        */}
-        {system.presenceEnabled && <PresenceHeartbeat ping={system.presencePing} />}
       </SidebarInset>
     </SidebarProvider>
   );

@@ -301,7 +301,6 @@ export async function saveSystemAction(
   try {
     const actor = await requireActor();
     await saveSystemConfig(actor, {
-      brandName: formData.get('brandName'),
       defaultLocale: formData.get('defaultLocale'),
       weekStart: formData.get('weekStart'),
       timezone: formData.get('timezone'),

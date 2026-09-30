@@ -43,7 +43,12 @@ export async function saveSystemConfig(
   if (!can(actor, 'settings.manage')) throw new ForbiddenError('settings.manage');
 
   const before = await getSystemConfig();
-  const config = normalizeSystem(input);
+  /**
+   * ⚠️ کلیدی که فرم نفرستاده مقدارِ قبلی‌اش را نگه می‌دارد، نه پیش‌فرض: «نامِ
+   * برند» از فرمِ سامانه برداشته شد و بدونِ این، هر ذخیره پاکش می‌کرد.
+   */
+  const given = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined));
+  const config = normalizeSystem({ ...before, ...given });
 
   await db.insert(schedulerStamps)
     .values({ key: KEY, value: JSON.stringify(config) })

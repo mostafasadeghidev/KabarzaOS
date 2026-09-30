@@ -157,27 +157,26 @@ function BucketCard({ bucket }: { bucket: BucketCheck }) {
   );
 }
 
-export function SystemSection({ config, health, bucket, isOwner, telegram }: {
+export function SystemSection({ config, health, bucket, isOwner }: {
   config: SystemConfig;
   health: SchedulerHealth;
   bucket: BucketCheck | null;
-  /** بلوکِ بات فقط برای مالک. */
+  /** کارت‌های سلامتِ زمان‌بند و باکت فقط برای مالک. */
   isOwner: boolean;
-  /** ⚠️ توکن در این شیء **نیست** — فقط «هست یا نه». */
-  telegram: TelegramSettingsView;
 }) {
   const tr = useT();
   const t = useT();
   const [state, save] = useActionState(saveSystemAction, {} as SystemState);
   useActionToast(state);
-  const [botState, setBotState] = useState<SystemState>({});
-  useActionToast(botState);
-  const [tgState, saveTelegram] = useActionState(saveTelegramAction, {} as SystemState);
-  const [pending, startTransition] = useTransition();
 
   return (
-    <>
-    <form action={save} className="grid max-w-4xl gap-4">
+    /**
+     * ⚠️ `key` = مقدارِ ذخیره‌شده: React پس از هر ذخیرهٔ موفق فرم را «ریست»
+     * می‌کند و کلیدهای Radix (Switch) و `<select>` به مقدارِ **لحظهٔ بازشدنِ
+     * صفحه** برمی‌گشتند. «تیمِ من» روشن ذخیره می‌شد ولی خاموش دیده می‌شد، و
+     * ذخیرهٔ بعدی واقعاً خاموشش می‌کرد. با کلید، فرم با مقدارِ تازه از نو سوار می‌شود.
+     */
+    <form key={JSON.stringify(config)} action={save} className="grid max-w-4xl gap-4">
       {/* ⚠️ بالای صفحه، پیش از تنظیمات: خرابیِ زمان‌بند باید اول دیده شود. فقط مالک (پورتِ تبِ Health). */}
       {isOwner && <HealthCard health={health} />}
       {isOwner && bucket && <BucketCard bucket={bucket} />}
@@ -185,13 +184,6 @@ export function SystemSection({ config, health, bucket, isOwner, telegram }: {
       {/* هر گروهِ فیلد یک پنل است؛ فیلدِ آزاد روی زمینه کنارِ پنل‌ها ناهمسان بود. */}
       <Panel title={t("عمومی")}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field>
-            <FieldLabel htmlFor="s-brand">{t("نامِ برند")}</FieldLabel>
-            <Input id="s-brand" name="brandName" defaultValue={config.brandName} placeholder={t("کبرزا")} />
-            <FieldDescription>
-              {tr("اگر مشخصاتِ شرکت خالی باشد، روی فاکتور همین نام می‌نشیند.")}
-            </FieldDescription>
-          </Field>
           <Field>
             <FieldLabel htmlFor="s-locale">{t("زبانِ پیش‌فرضِ پنل")}</FieldLabel>
             <NativeSelect
@@ -316,14 +308,29 @@ export function SystemSection({ config, health, bucket, isOwner, telegram }: {
         </Field>
       </Panel>
 
-      {/* ⚠️ توکنِ بات رازِ مشترک است — فقط مالک، مثلِ تبِ «اطلاع‌رسانی» نسخهٔ قبلی. */}
-
       <div className="flex items-center gap-3">
         <Submit />
       </div>
     </form>
+  );
+}
 
-      {isOwner && (
+/**
+ * باتِ تلگرام — در تبِ «اطلاع‌رسانی»، کنارِ گزارشِ روزانه (نه زیرِ «سامانه»).
+ * ⚠️ توکنِ بات رازِ مشترک است — فقط مالک، مثلِ تبِ «اطلاع‌رسانی» نسخهٔ قبلی.
+ */
+export function TelegramSection({ telegram }: {
+  /** ⚠️ توکن در این شیء **نیست** — فقط «هست یا نه». */
+  telegram: TelegramSettingsView;
+}) {
+  const tr = useT();
+  const t = useT();
+  const [botState, setBotState] = useState<SystemState>({});
+  useActionToast(botState);
+  const [tgState, saveTelegram] = useActionState(saveTelegramAction, {} as SystemState);
+  const [pending, startTransition] = useTransition();
+
+  return (
         <Panel title={t("باتِ تلگرام")} className="max-w-4xl">
           {/*
             ⚠️ توکن **هرگز** به کلاینت نمی‌آید؛ فقط می‌دانیم هست یا نه. پس
@@ -395,7 +402,5 @@ export function SystemSection({ config, health, bucket, isOwner, telegram }: {
             </Button>
           </div>
         </Panel>
-      )}
-    </>
   );
 }

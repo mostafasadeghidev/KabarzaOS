@@ -76,7 +76,7 @@ function PersonName({ row }: { row: BoardRow }) {
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       {/* ⚠️ حضورِ خاموش ← بی‌نقطه، نه نقطهٔ خاکستریِ گمراه‌کننده. */}
-      {row.presence && <PresenceDot state={row.presence} />}
+      {row.presence && <PresenceDot state={row.presence} userId={row.id} />}
       <Thumb id={row.id} title={row.name} fileId={row.avatarFileId} size={22} className="rounded-full" />
       {/* ⚠️ /members/{id} وجود ندارد؛ پروفایلِ عضو در گزارش‌هاست — همان لینکِ کارتِ افراد. */}
       <Link href={`/reports/member/${row.id}`} className="hover:underline">{row.name}</Link>
@@ -284,7 +284,7 @@ export function AvailabilityBoard(props: BoardProps) {
             <ul className="grid gap-1 text-sm">
               {props.online.map((o) => (
                 <li key={o.id} className="flex items-center gap-1.5">
-                  <PresenceDot state={o.state} />
+                  <PresenceDot state={o.state} userId={o.id} />
                   <span>{o.name}</span>
                   <span className="ms-auto text-xs text-muted-foreground">
                     {tr(PRESENCE_LABELS[o.state])} · {ago(o.seen, tr)}

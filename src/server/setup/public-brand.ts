@@ -1,4 +1,5 @@
 import { getCompany } from '@/server/people/profile-service';
+import { getSystemConfig } from '@/server/settings/system-service';
 import { companyLogoDataUrl } from '@/server/files/service';
 import type { PublicBrand } from '@/components/public-shell';
 
@@ -11,11 +12,12 @@ import type { PublicBrand } from '@/components/public-shell';
  */
 export async function publicBrand(): Promise<PublicBrand> {
   try {
-    const [company, logo] = await Promise.all([
+    const [company, logo, system] = await Promise.all([
       getCompany(),
       companyLogoDataUrl().catch(() => null),
+      getSystemConfig().catch(() => null),
     ]);
-    return { name: company.name?.trim() || 'KabarzaOS', logo };
+    return { name: company.name?.trim() || system?.brandName || 'KabarzaOS', logo };
   } catch {
     return { name: 'KabarzaOS', logo: null };
   }

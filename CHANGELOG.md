@@ -2,6 +2,24 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.102.0]
+
+### Added
+
+- **Presence dots update without a reload.** The dots on the availability page, the «online now» panel and the member and client cards refresh with each heartbeat through a light request that returns only the people the viewer already sees there; clients and members without a team scope get nothing.
+- **A «notifications» tab in settings** holds the Telegram bot and the daily report, which used to sit under «system».
+
+### Fixed
+
+- **Settings switches and selects reverted after saving.** After a successful save the form reset to the values it had when the page opened, so «my team for the owner» showed as off right after being turned on — and the next save really turned it off. The system and daily-report forms now reload with the saved values.
+- **The system tab had three save buttons,** one per form (system settings, Telegram bot, daily report); changing a field in the first card and pressing the button at the bottom saved nothing. Each tab now has a single form and a single save button.
+- **Closing one of several open tabs marked the user offline** until another tab's next heartbeat. Tabs of the same browser now share a register, and only the last tab to close sends «offline»; background tabs also skip heartbeats another tab has just sent.
+
+### Changed
+
+- **The «brand name» field was removed from the system tab.** It only served as the invoice issuer when the company name was empty, so changing it had no visible effect. The company name (company tab) is what the menu, sign-in pages and invoices show; an existing brand name is kept and still used when the company name is empty.
+- **The heartbeat reads the system settings once per request** instead of twice.
+
 ## [1.101.1]
 
 ### Fixed

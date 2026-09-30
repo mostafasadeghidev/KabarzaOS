@@ -323,6 +323,32 @@ export async function runningTimers(actor: Actor, at: Date = new Date()): Promis
  * پنلِ «آنلاین اکنون» — فقط فعال و بی‌کار؛ آفلاین اصلاً ردیف نمی‌گیرد.
  * ⚠️ حضورِ خاموش یعنی فهرستِ خالی، نه فهرستِ کهنه.
  */
+/**
+ * حالتِ زندهٔ نقطه‌های حضور — برای تازه‌شدنِ نقطه‌ها بی‌رفرشِ صفحه.
+ *
+ * ⚠️ همان دامنهٔ «آنلاین اکنون» (`visiblePeople`): فقط شناسه‌هایی که بیننده
+ * همین حالا هم در صفحه‌اش می‌بیند برمی‌گردند؛ شناسهٔ بیرون از دامنه بی‌صدا
+ * کنار می‌رود. کسی که اصلاً دامنه ندارد (کارفرما، عضوِ عادی) نقشهٔ خالی
+ * می‌گیرد — نه خطا، چون این مسیر هر دقیقه صدا زده می‌شود.
+ */
+export async function livePresence(actor: Actor, ids: number[]): Promise<Record<number, PresenceState>> {
+  if (ids.length === 0) return {};
+  const system = await getSystemConfig();
+  if (!system.presenceEnabled) return {};
+
+  let people: Array<{ id: number }>;
+  try {
+    ({ people } = await visiblePeople(actor));
+  } catch (error) {
+    if (error instanceof ForbiddenError) return {};
+    throw error;
+  }
+  const allowed = new Set(people.map((p) => p.id));
+  const wanted = [...new Set(ids)].filter((id) => allowed.has(id));
+  const states = await presenceFor(wanted);
+  return Object.fromEntries(states);
+}
+
 export async function onlineNow(actor: Actor): Promise<Array<{
   id: number;
   name: string;

@@ -18,7 +18,7 @@ import {
 } from './_form/actions';
 import { StaffSection, type StaffRow } from './staff-section';
 import { ReportSection } from './report-section';
-import { SystemSection } from './system-section';
+import { SystemSection, TelegramSection } from './system-section';
 import type { TelegramSettingsView } from '@/server/settings/telegram-service';
 import { FiscalSection, type ClosingPreview } from './fiscal-section';
 import type { SystemConfig } from '@/domain/settings/system';
@@ -113,6 +113,8 @@ const TABS = [
   { key: 'company', label: 'مشخصاتِ شرکت', ownerOnly: false },
   { key: 'staff', label: 'دسترسی همکاران', ownerOnly: true },
   { key: 'system', label: 'سامانه', ownerOnly: false },
+  // باتِ تلگرام و گزارشِ روزانه — جدا از «سامانه» تا هر تب یک دکمهٔ ذخیره داشته باشد.
+  { key: 'notify', label: 'اطلاع‌رسانی', ownerOnly: true },
   { key: 'fiscal', label: 'دورهٔ مالی', ownerOnly: true },
 ] as const;
 
@@ -656,19 +658,19 @@ export function SettingsView({
       {tab === 'company' && data.company && <CompanySection company={data.company} isOwner={data.isOwner} />}
 
       {/*
-        ⚠️ گزارشِ روزانه زیرِ «سامانه» است، نه تبِ جدا: هر دو تنظیمِ خودِ
-        سامانه‌اند و هر دو به زمان‌بند وابسته‌اند — جداکردنشان یعنی کاربر
-        برای یک کار در دو تب می‌گشت.
+        ⚠️ پیش از این بات و گزارشِ روزانه زیرِ «سامانه» بودند و تب سه دکمهٔ ذخیره
+        داشت: کاربر کارتِ اول را عوض می‌کرد و دکمهٔ تهِ صفحه (مالِ گزارش) را
+        می‌زد و چیزی ذخیره نمی‌شد. حالا هر تب یک فرم و یک دکمه.
       */}
       {tab === 'system' && (
+        <SystemSection config={data.systemConfig} health={data.health} bucket={data.bucket} isOwner={data.isOwner} />
+      )}
+
+      {tab === 'notify' && data.isOwner && (
         <div className="grid gap-6">
-          <SystemSection config={data.systemConfig} health={data.health} bucket={data.bucket} isOwner={data.isOwner} telegram={data.telegram} />
-          {data.isOwner && (
-            <>
-              <Separator />
-              <ReportSection config={data.reportConfig} />
-            </>
-          )}
+          <TelegramSection telegram={data.telegram} />
+          <Separator />
+          <ReportSection config={data.reportConfig} />
         </div>
       )}
 
