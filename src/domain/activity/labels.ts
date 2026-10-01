@@ -146,6 +146,14 @@ export const ACTION_LABELS: Record<string, string> = {
   'onboarding.delete': 'حذفِ کارِ آنبوردینگ',
   'onboarding.done': 'انجامِ کارِ آنبوردینگ',
   'onboarding.undone': 'برداشتنِ تیکِ کارِ آنبوردینگ',
+
+  // پشتیبان‌گیری
+  'backup.create': 'پشتیبان‌گیری',
+  'backup.settings': 'تنظیماتِ پشتیبان‌گیری',
+  'backup.destination.create': 'مقصدِ جدیدِ پشتیبان',
+  'backup.destination.update': 'ویرایشِ مقصدِ پشتیبان',
+  'backup.destination.delete': 'حذفِ مقصدِ پشتیبان',
+  'backup.download': 'دانلودِ فایلِ پشتیبان',
   'fiscal.close': 'بستنِ دورهٔ مالی',
   'fiscal.recompute': 'بازمحاسبهٔ معادلِ یورو',
   'fiscal.reopen': 'بازگشاییِ دورهٔ مالی',

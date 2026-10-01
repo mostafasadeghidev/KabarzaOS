@@ -16,6 +16,7 @@ import { SettingsView } from './settings-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { getCompany } from '@/server/people/profile-service';
 import { assignOptions, listLibrary } from '@/server/onboarding/service';
+import { getBackupView } from '@/server/backup/service';
 import { PageHeader, PageShell } from '@/components/page-shell';
 
 /**
@@ -76,6 +77,8 @@ export default async function SettingsPage({
        * کتابخانهٔ آنبوردینگ — فقط وقتی روشن است. `listLibrary` خودش
        * `settings.manage` می‌خواهد؛ بی‌آن مجوز تب اصلاً نمی‌آید.
        */
+      // پشتیبان‌گیری — فقط مالک (`getBackupView` خودش `assertOwner` دارد).
+      backup: actor.roles.includes('owner') ? await getBackupView(actor).catch(() => null) : null,
       onboarding: systemConfig.onboardingEnabled
         ? await Promise.all([listLibrary(actor), assignOptions()])
           .then(([items, options]) => ({ items, ...options }))

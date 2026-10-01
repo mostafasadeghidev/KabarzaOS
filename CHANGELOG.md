@@ -2,6 +2,22 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.105.0]
+
+### Added
+
+- **Backups** under Settings → Backups (owner only). A backup is one encrypted file holding the database, every object in the file store and the internal secrets (session, cron and backup keys), plus the server's non-secret settings for reference — everything needed to bring the system back on another server without signing anyone out.
+- **Encryption before upload.** Each file is locked with a backup passphrase the owner chooses (AES-256-GCM, key derived with scrypt); the destination only ever sees ciphertext. A wrong passphrase or a modified file is rejected, never half-restored. Without the passphrase no backup can be opened, so the screen says to keep it outside the server.
+- **Daily schedule** at a chosen hour in the system time zone, run by the existing `cron` service, plus a «back up now» button. The last few backups also stay on the server for quick download; downloading asks for the owner's password again and is recorded in the activity log.
+- **Destinations, as many as needed, each with its own folder:** S3-compatible storage (Amazon S3, Hetzner Object Storage, Cloudflare R2, Backblaze, Wasabi, ArvanCloud, Liara…), SFTP (Hetzner Storage Box or any server), WebDAV (Nextcloud, ownCloud), Google Drive and Dropbox (by pasting the token printed by `rclone authorize` on your own computer), and a raw rclone configuration for every other rclone backend (OneDrive, pCloud, Mega, Box…). Each destination has a «test connection» button. A failing destination does not stop the others.
+- **Retention per destination** (default 7 daily, 4 weekly, 3 monthly). Only files named like our backups are ever deleted; anything else in the folder is left alone.
+- **Status card** with the last run, its size, the result for each destination and how many old copies were pruned, refreshing itself while a backup runs. A failed backup notifies the owners; this notification cannot be muted.
+- **Command-line tools:** `./scripts/backup.sh` makes a backup now, and `./scripts/restore.sh <file>` restores one on this server or a fresh one — it stops the app, asks for the passphrase, shows what the backup contains, waits for `yes`, restores the database, the files and the secrets, and starts everything again. It warns if the new server's `.env` overrides a restored secret. `docs/DEPLOY.md` has a new «Backups» section.
+
+### Changed
+
+- The app image now includes the PostgreSQL 17 client tools and rclone 1.75.1 (pinned and checksum-verified), and a `backups` volume. A `BACKUP_KEY` is generated on first boot next to the other secrets; it seals the passphrase and the destination credentials, which are never sent back to the browser.
+
 ## [1.104.1]
 
 ### Fixed

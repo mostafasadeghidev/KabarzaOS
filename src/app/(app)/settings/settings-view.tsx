@@ -20,6 +20,7 @@ import { StaffSection, type StaffRow } from './staff-section';
 import { ReportSection } from './report-section';
 import { SystemSection, TelegramSection } from './system-section';
 import { OnboardingLibrary, type OnboardingLibraryData } from './onboarding-library';
+import { BackupSection, type BackupView } from './backup-section';
 import type { TelegramSettingsView } from '@/server/settings/telegram-service';
 import { FiscalSection, type ClosingPreview } from './fiscal-section';
 import type { SystemConfig } from '@/domain/settings/system';
@@ -83,6 +84,8 @@ export interface SettingsData {
   }>;
   /** کتابخانهٔ آنبوردینگ — `null` وقتی خاموش است یا مجوز نیست (تب پنهان). */
   onboarding: OnboardingLibraryData | null;
+  /** پشتیبان‌گیری — فقط برای مالک؛ برای بقیه `null`. */
+  backup: BackupView | null;
   qaItems: Array<{
     id: number; title: string; description: string;
     roleTagId: number | null; isTask: boolean; sortOrder: number;
@@ -120,6 +123,7 @@ const TABS = [
   { key: 'system', label: 'سامانه', ownerOnly: false },
   // باتِ تلگرام و گزارشِ روزانه — جدا از «سامانه» تا هر تب یک دکمهٔ ذخیره داشته باشد.
   { key: 'notify', label: 'اطلاع‌رسانی', ownerOnly: true },
+  { key: 'backup', label: 'پشتیبان‌گیری', ownerOnly: true },
   { key: 'fiscal', label: 'دورهٔ مالی', ownerOnly: true },
 ] as const;
 
@@ -677,6 +681,8 @@ export function SettingsView({
       {tab === 'system' && (
         <SystemSection config={data.systemConfig} health={data.health} bucket={data.bucket} isOwner={data.isOwner} />
       )}
+
+      {tab === 'backup' && data.isOwner && data.backup && <BackupSection view={data.backup} />}
 
       {tab === 'notify' && data.isOwner && (
         <div className="grid gap-6">

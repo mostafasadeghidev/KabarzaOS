@@ -12,6 +12,7 @@ import {
 } from '@/domain/scheduler/tick';
 import { runDailyReport } from './daily-report';
 import { notifyOverdueOnboarding } from '@/server/onboarding/service';
+import { runBackupIfDue } from '@/server/backup/run';
 import { formatDateTime } from '@/i18n/datetime';
 
 /**
@@ -49,6 +50,8 @@ export interface TickReport {
   dailyReport: boolean;
   /** یادآوریِ کارهای آنبوردینگِ عقب‌افتاده — هر کار یک بار. */
   onboarding: number;
+  /** پشتیبانِ روزانه شروع شد؟ (کارِ واقعی بی‌انتظار در پس‌زمینه می‌رود.) */
+  backup: boolean;
 }
 
 /* ------------------------------------------------------------------ *
@@ -328,7 +331,7 @@ async function runCleanup(now: Date): Promise<boolean> {
 /** یک تیکِ کامل. هر کار مستقل است؛ خطای یکی بقیه را نمی‌خواباند. */
 export async function runTick(now = new Date()): Promise<TickReport> {
   const report: TickReport = {
-    reminders: 0, meetings: 0, timers: 0, nudges: 0, cleaned: false, dailyReport: false, onboarding: 0,
+    reminders: 0, meetings: 0, timers: 0, nudges: 0, cleaned: false, dailyReport: false, onboarding: 0, backup: false,
   };
 
   const jobs: Array<[keyof TickReport, () => Promise<number | boolean>]> = [
@@ -338,6 +341,7 @@ export async function runTick(now = new Date()): Promise<TickReport> {
     ['nudges', () => runTimelogNudges(now)],
     ['dailyReport', () => runDailyReport(now)],
     ['onboarding', () => notifyOverdueOnboarding(now)],
+    ['backup', () => runBackupIfDue(now)],
     ['cleaned', () => runCleanup(now)],
   ];
 

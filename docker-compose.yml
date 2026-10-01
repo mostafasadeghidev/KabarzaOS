@@ -57,6 +57,8 @@ services:
     volumes:
       # رازهای ساخته‌شده — بدونِ این، هر بازسازیِ کانتینر همه را بیرون می‌اندازد.
       - app_data:/app/data
+      # فایل‌های پشتیبانِ روی خودِ سرور — جدا از رازها، تا پشتیبان‌ها داخلِ پشتیبانِ بعدی نروند.
+      - backups:/app/backups
     depends_on:
       db: { condition: service_healthy }
       storage: { condition: service_started }
@@ -156,3 +158,4 @@ volumes:
   db_data:
   storage_data:
   app_data:
+  backups:

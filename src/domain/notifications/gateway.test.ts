@@ -48,6 +48,8 @@ describe('R-NOTIF-05 — دسته‌بندی و پیش‌فرضِ امن', () =>
       'no_timelog', 'timer_running', 'absence_set', 'user',
       // کارِ امنیتیِ مسئولِ سرویس — بستنِ دسترسیِ عضوی که رفته. خاموش‌شدنی نیست.
       'access.revoke_needed',
+      // پشتیبانِ ناموفق — مالک باید بداند؛ بی‌صداشدنش یعنی روزِ مبادا پشتیبانی نیست.
+      'backup.failed',
     ]);
     const unmapped = [...emitted]
       .filter((t) => !intentionallyOther.has(t) && categoryOf(t) === 'other');

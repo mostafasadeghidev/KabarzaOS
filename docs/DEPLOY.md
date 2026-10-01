@@ -130,11 +130,9 @@ Gitea use.
 
 ## Operations
 
-- **Backups — two things:** a Postgres dump and the S3 bucket
-  (attachments, receipts, avatars). The database alone is not enough.
-  ```bash
-  docker compose exec -T db pg_dump -U kabarza kabarza > backup.sql
-  ```
+- **Backups:** see «Backups» below — one encrypted file with the database,
+  every stored file and the internal secrets, sent to any number of
+  destinations.
 - **Logs:** `docker compose logs -f app`
 - **Health:** `GET /login` must return 200 — that is what the healthcheck
   measures.
@@ -195,3 +193,67 @@ store is only upgraded on purpose.
 Until you upgrade, do not run `docker image prune -a` or
 `docker system prune -a` on such a server: the old image is no longer
 downloadable, and without it the file store cannot start.
+
+## Backups
+
+Settings → Backups (owner only). A backup is **one encrypted file**
+(`kabarzaos-YYYY-MM-DD-HHMMSS.kbzbak`) holding everything needed to bring
+the system back on another server:
+
+- the database (`pg_dump`, custom format),
+- every object in the file store,
+- the internal secrets (`session_secret`, `cron_secret`, `backup_key`) — so
+  nobody is signed out after a move,
+- the server's settings (`APP_URL`, SMTP, Telegram…) for reference.
+
+The file is encrypted with a **backup passphrase** you choose
+(AES-256-GCM, key derived with scrypt) before it leaves the server; the
+destination only ever sees ciphertext. Keep the passphrase somewhere
+outside this server — without it no backup can be opened, and there is no
+recovery.
+
+**Schedule:** daily at a chosen hour (system time zone), triggered by the
+`cron` service. The last few backups also stay on the server (volume
+`backups`) for quick download; downloading one asks for the owner's
+password again and is recorded in the activity log.
+
+**Destinations** — any number, each with its own folder; old backups are
+pruned per destination (default: 7 daily, 4 weekly, 3 monthly). Only files
+named like our backups are ever deleted.
+
+| Type | For | You need |
+|---|---|---|
+| S3 | Amazon S3, Hetzner Object Storage, ArvanCloud, Liara, Cloudflare R2, Backblaze, Wasabi | endpoint (not for AWS), bucket, access key, secret key |
+| SFTP | Hetzner Storage Box (port 23), any server | host, port, user, password |
+| WebDAV | Nextcloud, ownCloud | URL, user, app password |
+| Google Drive / Dropbox | | the JSON printed by `rclone authorize "drive"` (or `"dropbox"`) run on your own computer |
+| rclone (advanced) | OneDrive, pCloud, Mega, Box and the other rclone backends | the output of `rclone config show NAME` from your own computer |
+
+Credentials are stored sealed with `BACKUP_KEY` (generated on first boot in
+the `app_data` volume) and are never sent back to the browser. Transfers
+use [rclone](https://rclone.org) v1.75.1, pinned and checksum-verified in
+the image.
+
+**From the command line:**
+
+```bash
+./scripts/backup.sh
+```
+
+**Restore — on this server or a new one:**
+
+1. New server: install Docker, `git clone` this repository, put your `.env`
+   next to `docker-compose.yml` (at least `APP_URL`).
+2. Copy the `.kbzbak` file to the server and run:
+   ```bash
+   ./scripts/restore.sh /path/to/kabarzaos-YYYY-MM-DD-HHMMSS.kbzbak
+   ```
+   It stops the app, asks for the backup passphrase, shows what the backup
+   contains, waits for `yes`, restores the database, the files and the
+   secrets, and starts everything again.
+3. Point the domain at the new server. Settings → System must show the
+   private-files card as «protected».
+
+For unattended use, pass the passphrase as `KBZ_PASSPHRASE` and add
+`--yes`. To only look inside a backup:
+`docker compose run --rm -v "$PWD/file.kbzbak:/b.kbzbak:ro" -v "$PWD/out:/out" app node scripts/kbz-backup.mjs decrypt /b.kbzbak /out` (the contents land in `./out`).

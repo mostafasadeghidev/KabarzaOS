@@ -34,5 +34,7 @@ ensure_secret() {
 
 ensure_secret SESSION_SECRET session_secret
 ensure_secret CRON_SECRET   cron_secret
+# کلیدِ مهروموم‌کردنِ رازهای پشتیبان‌گیری (رمزِ فایل و رمزهای مقصدها) — src/server/backup/config.ts
+ensure_secret BACKUP_KEY    backup_key
 
 exec "$@"
