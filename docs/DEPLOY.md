@@ -254,6 +254,23 @@ the image.
 3. Point the domain at the new server. Settings → System must show the
    private-files card as «protected».
 
+**Restore without a terminal (Coolify, Portainer…):** deploy as usual and
+open the address. Under the setup form, choose «Restore from a backup
+file», pick the `.kbzbak` file and enter its passphrase. The wizard
+uploads it in chunks (it works behind proxies with a request-size limit),
+shows what the backup contains, and restores after you confirm. The app
+then restarts itself — this needs the compose file's
+`restart: unless-stopped`; without it, start the app again by hand — and
+you sign in with the previous accounts. This option exists only while
+the system has no users, the same rule as the setup form; whoever starts
+an upload holds it until they finish or leave it idle for ten minutes.
+
+**What a restore does to the database:** the app's schemas are replaced
+entirely and the backup is loaded in a single transaction, so a failure
+leaves the database as it was. A backup from an older version is fine —
+migrations bring it up to date on the next start. A backup from a newer
+version than the app is refused; update the app first.
+
 For unattended use, pass the passphrase as `KBZ_PASSPHRASE` and add
 `--yes`. To only look inside a backup:
 `docker compose run --rm -v "$PWD/file.kbzbak:/b.kbzbak:ro" -v "$PWD/out:/out" app node scripts/kbz-backup.mjs decrypt /b.kbzbak /out` (the contents land in `./out`).

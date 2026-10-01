@@ -3,6 +3,7 @@ import { db } from '@/db/client';
 import { accounts, currencies, offices, userRoles, users } from '@/db/schema';
 import { hashPassword, checkPasswordPolicy } from '@/domain/auth/password';
 import { isValidUsername, normalizeIdentifier } from '@/domain/auth/login';
+import { isRestoring } from './restore';
 
 /**
  * نصبِ اولیه — ساختِ مالکِ اول روی دیتابیسِ خالی.
@@ -54,7 +55,8 @@ export interface SetupInput {
  * نتواند از وجود یا نبودِ داده چیزی لو بدهد.
  */
 export async function installOwner(input: SetupInput): Promise<number> {
-  if (await isInstalled()) throw new SetupError('already_installed');
+  // ⚠️ وسطِ بازگردانی از پشتیبان هنوز کاربری نیست، ولی دیتابیس در حالِ جایگزینی است.
+  if (isRestoring() || await isInstalled()) throw new SetupError('already_installed');
 
   const firstName = input.firstName.trim();
   const lastName = input.lastName.trim();

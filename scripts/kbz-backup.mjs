@@ -7,6 +7,7 @@
 //
 // استفاده (داخلِ کانتینرِ اپ؛ معمولاً از راهِ scripts/restore.sh و scripts/backup.sh):
 //   node scripts/kbz-backup.mjs restore <file.kbzbak> [--yes]
+//   node scripts/kbz-backup.mjs inspect <file.kbzbak>        (خلاصهٔ JSON، بی‌هیچ تغییری)
 //   node scripts/kbz-backup.mjs decrypt <file.kbzbak> <folder>
 //   node scripts/kbz-backup.mjs backup
 //
@@ -29,6 +30,25 @@ const IV = 12;
 const TAG = 16;
 const HEADER = MAGIC.length + SALT + IV;
 const KDF = { N: 2 ** 15, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
+
+/** نسخهٔ همین برنامه — کنارِ scripts/ (در ایمیج /app/package.json). */
+const APP_VERSION = await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')
+  .then((raw) => JSON.parse(raw).version ?? null, () => null);
+
+/**
+ * آیا نسخهٔ پشتیبان از نسخهٔ برنامه تازه‌تر است؟
+ *
+ * ⚠️ پشتیبانِ تازه‌تر یعنی جدول‌هایی که این برنامه نمی‌شناسد و مایگریشنی که
+ * هنوز ندارد — بازگردانی‌اش برنامه را بی‌صدا خراب می‌کند. قدیمی‌تر مشکلی
+ * ندارد: مایگریشن‌ها در راه‌اندازیِ بعدی آن را بالا می‌آورند.
+ */
+export function isNewerVersion(backup, app) {
+  if (!backup || !app) return false;
+  const a = String(backup).split('.').map((n) => Number.parseInt(n, 10) || 0);
+  const b = String(app).split('.').map((n) => Number.parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) > (b[i] ?? 0);
+  return false;
+}
 
 function deriveKey(passphrase, salt) {
   return new Promise((resolve, reject) => {
@@ -178,21 +198,73 @@ async function waitForDb() {
   throw new Error('دیتابیس در دو دقیقه آماده نشد.');
 }
 
-async function unpack(file, dir) {
+async function unpack(file, dir, { manifestOnly = false } = {}) {
   const pass = await askHidden('رمزِ فایلِ پشتیبان: ');
   const tgz = path.join(dir, 'payload.tgz');
   await decryptFile(file, tgz, pass);
   const out = path.join(dir, 'x');
   await fs.mkdir(out, { recursive: true });
-  await run('tar', ['-xzf', tgz, '-C', out]);
+  // بسته با «tar -C work .» ساخته شده، پس نامِ ورودی‌ها با ./ شروع می‌شود.
+  await run('tar', ['-xzf', tgz, '-C', out, ...(manifestOnly ? ['./manifest.json'] : [])]);
   await fs.rm(tgz, { force: true });
   const manifest = JSON.parse(await fs.readFile(path.join(out, 'manifest.json'), 'utf8'));
   return { out, manifest };
 }
 
+/**
+ * بازگردانیِ دیتابیس — **همه یا هیچ**.
+ *
+ * ⚠️ نه «pg_restore --clean»: آن فقط چیزهایی را پاک می‌کند که در پشتیبان هست.
+ * پشتیبانِ قدیمی روی نصبِ تازه‌تر جدول‌های نسخهٔ جدید را سرِ جا می‌گذاشت، و در
+ * راه‌اندازیِ بعدی مایگریشن‌ها می‌خواستند همان‌ها را دوباره بسازند و برنامه
+ * بالا نمی‌آمد. اینجا دو شِمای برنامه (public و drizzle ِ دفترِ مایگریشن) کامل
+ * پاک و از پشتیبان ساخته می‌شوند، و کلِ کار در یک تراکنش است: اگر جایی شکست
+ * بخورد، دیتابیس دست‌نخورده می‌ماند.
+ */
+function restoreDatabase(dump) {
+  const env = { ...process.env, ...pgEnv() };
+  return new Promise((resolve, reject) => {
+    const psql = spawn('psql', ['-X', '-q', '-1', '-v', 'ON_ERROR_STOP=1'], { env, stdio: ['pipe', 'ignore', 'pipe'] });
+    const dumpSql = spawn('pg_restore', ['--no-owner', '--no-privileges', '--file', '-', dump], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    let err = '';
+    const codes = {};
+    const done = (name) => (code) => {
+      codes[name] = code;
+      if (!('psql' in codes) || !('pg_restore' in codes)) return;
+      if (codes.psql === 0 && codes.pg_restore === 0) resolve();
+      else reject(new Error(`دیتابیس بازگردانده نشد (چیزی تغییر نکرد): ${err.trim().split('\n').slice(-3).join(' ').slice(0, 400)}`));
+    };
+    psql.stderr.on('data', (d) => { err += d; });
+    dumpSql.stderr.on('data', (d) => { err += d; });
+    psql.on('error', reject);
+    dumpSql.on('error', reject);
+    psql.on('close', done('psql'));
+    dumpSql.on('close', done('pg_restore'));
+    // psql زودتر بسته شود (خطا) → نوشتن EPIPE می‌دهد؛ خطای واقعی از کدِ خروج می‌آید.
+    psql.stdin.on('error', () => undefined);
+    psql.stdin.write('DROP SCHEMA IF EXISTS drizzle CASCADE;\nDROP SCHEMA IF EXISTS public CASCADE;\nCREATE SCHEMA public;\n');
+    dumpSql.stdout.pipe(psql.stdin);
+  });
+}
+
 /* ------------------------------------------------------------------ *
  * فرمان‌ها
  * ------------------------------------------------------------------ */
+
+/** خلاصهٔ پشتیبان به JSON — برای ویزاردِ نصب. چیزی را تغییر نمی‌دهد. */
+async function inspect(file) {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'kbz-inspect-'));
+  try {
+    const { manifest } = await unpack(file, dir, { manifestOnly: true });
+    console.log(JSON.stringify({
+      createdAt: manifest.createdAt, app: manifest.app, current: APP_VERSION,
+      dbBytes: manifest.dbBytes, fileCount: manifest.fileCount, fileBytes: manifest.fileBytes,
+      tooNew: isNewerVersion(manifest.app, APP_VERSION),
+    }));
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+}
 
 async function restore(file) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'kbz-restore-'));
@@ -200,6 +272,7 @@ async function restore(file) {
     const { out, manifest } = await unpack(file, dir);
     console.log(`\nپشتیبانِ ${manifest.createdAt} — نسخهٔ ${manifest.app}`);
     console.log(`  دیتابیس: ${(manifest.dbBytes / 1024 / 1024).toFixed(1)} MB · فایل‌ها: ${manifest.fileCount} (${(manifest.fileBytes / 1024 / 1024).toFixed(1)} MB)`);
+    if (isNewerVersion(manifest.app, APP_VERSION)) throw new Error('too_new');
     console.log('\n⚠️ دیتابیس و فایل‌های فعلیِ این سرور با محتوای پشتیبان جایگزین می‌شوند.');
     if (!(await askYes('برای ادامه «yes» بنویسید: '))) {
       console.log('لغو شد. چیزی تغییر نکرد.');
@@ -209,10 +282,7 @@ async function restore(file) {
     console.log('\n▸ انتظار برای دیتابیس');
     await waitForDb();
     console.log('▸ بازگردانیِ دیتابیس');
-    await run('pg_restore', [
-      '--clean', '--if-exists', '--no-owner', '--no-privileges', '--exit-on-error',
-      '--dbname', pgEnv().PGDATABASE, path.join(out, 'db.dump'),
-    ], { env: pgEnv() });
+    await restoreDatabase(path.join(out, 'db.dump'));
 
     const files = path.join(out, 'files');
     if (await fs.stat(files).then(() => true, () => false)) {
@@ -243,7 +313,10 @@ async function restore(file) {
       }
     }
 
-    console.log('\n✓ بازگردانی تمام شد. اپ را بالا بیاورید: docker compose up -d');
+    // از ویزاردِ نصب، خودِ برنامه پس از این دوباره راه می‌افتد.
+    console.log(process.env.KBZ_FROM_APP === '1'
+      ? '\n✓ بازگردانی تمام شد.'
+      : '\n✓ بازگردانی تمام شد. اپ را بالا بیاورید: docker compose up -d');
     if (overridden.length) {
       const effect = {
         SESSION_SECRET: 'همه باید دوباره وارد شوند',
@@ -299,10 +372,11 @@ async function main() {
   const [cmd, a, b] = process.argv.slice(2).filter((x) => x !== '--yes');
   try {
     if (cmd === 'restore' && a) await restore(a);
+    else if (cmd === 'inspect' && a) await inspect(a);
     else if (cmd === 'decrypt' && a && b) await decryptTo(a, b);
     else if (cmd === 'backup') await backupNow();
     else {
-      console.log('استفاده: restore <file> [--yes] | decrypt <file> <folder> | backup');
+      console.log('استفاده: restore <file> [--yes] | inspect <file> | decrypt <file> <folder> | backup');
       process.exit(2);
     }
   } catch (error) {
@@ -310,6 +384,7 @@ async function main() {
     const known = {
       bad_passphrase: 'رمز اشتباه است یا فایل دست‌کاری شده.',
       not_backup: 'این فایل پشتیبانِ KabarzaOS نیست.',
+      too_new: `این پشتیبان از نسخه‌ای تازه‌تر از این سرور (${APP_VERSION}) است؛ اول برنامه را به‌روز کنید.`,
       destination_failed: 'فایل ساخته شد ولی به همهٔ مقصدها نرسید (فهرستِ بالا).',
       busy: 'پشتیبانِ دیگری همین حالا در حالِ اجراست.',
       no_passphrase: 'رمزِ پشتیبان تعیین نشده — در تنظیمات ← پشتیبان‌گیری تعیینش کنید.',

@@ -56,3 +56,18 @@ describe('رمزگذاریِ پشتیبان', () => {
       .rejects.toMatchObject({ code: 'not_backup' });
   });
 });
+
+describe('نسخهٔ پشتیبان در برابرِ نسخهٔ برنامه', () => {
+  it('فقط پشتیبانِ تازه‌تر رد می‌شود', () => {
+    expect(tool.isNewerVersion('1.106.0', '1.105.0')).toBe(true);
+    expect(tool.isNewerVersion('2.0.0', '1.105.0')).toBe(true);
+    expect(tool.isNewerVersion('1.105.1', '1.105.0')).toBe(true);
+    expect(tool.isNewerVersion('1.105.0', '1.105.0')).toBe(false);
+    expect(tool.isNewerVersion('1.99.9', '1.105.0')).toBe(false);
+    // مقایسهٔ عددی، نه رشته‌ای: «1.9» از «1.10» کوچک‌تر است.
+    expect(tool.isNewerVersion('1.9.0', '1.10.0')).toBe(false);
+    // نسخهٔ نامعلوم مانع نمی‌شود.
+    expect(tool.isNewerVersion(undefined, '1.105.0')).toBe(false);
+    expect(tool.isNewerVersion('1.105.0', null)).toBe(false);
+  });
+});

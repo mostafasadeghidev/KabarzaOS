@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import { runTick } from '@/server/scheduler/service';
+import { isRestoring } from '@/server/setup/restore';
 
 /**
  * تیکِ زمان‌بند.
@@ -26,6 +27,8 @@ function authorized(request: Request): boolean {
 
 export async function GET(request: Request) {
   if (!authorized(request)) return new Response(null, { status: 403 });
+  // وسطِ بازگردانی از ویزارد دیتابیس در حالِ جایگزینی است — تیک صبر کند.
+  if (isRestoring()) return new Response(null, { status: 503 });
 
   const report = await runTick();
   return Response.json(report, {

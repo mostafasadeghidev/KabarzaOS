@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.106.0]
+
+### Added
+
+- **Restore from the setup wizard.** On a fresh server with no users yet, the setup page now offers «Restore from a backup file»: pick a `.kbzbak` file, enter its passphrase, check the summary (date, version, database size, file count) and confirm. Progress is shown live. When it finishes, the app restarts itself so the restored secrets take effect, and you sign in with the previous accounts — no terminal needed, which suits Coolify, Portainer and similar panels.
+- The upload goes in chunks and resumes from the right place after a dropped connection; if a proxy rejects large requests (HTTP 413) it switches to small chunks on its own.
+- Only one restore at a time: whoever starts an upload gets a one-time token that every later step requires, so a second visitor can neither see, interrupt nor replace it. An abandoned upload is released after ten minutes. The normal setup form and the scheduler stand aside while a restore runs.
+- `kbz-backup.mjs inspect <file>` prints a backup's summary as JSON without changing anything.
+
+### Fixed
+
+- **Restoring an older backup onto a newer install could leave the app unable to start.** The restore only dropped tables that existed in the backup, so tables added by newer versions stayed behind and the next start tried to create them again. The app's schemas are now replaced entirely, and the whole database restore runs in one transaction — a failure leaves the database as it was.
+- A backup from a newer version than the app is now refused with a clear message instead of being restored into a schema the app does not know.
+
 ## [1.105.0]
 
 ### Added

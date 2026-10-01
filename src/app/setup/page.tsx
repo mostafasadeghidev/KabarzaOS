@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { isInstalled } from '@/server/setup/service';
 import { publicBrand } from '@/server/setup/public-brand';
 import { PublicShell } from '@/components/public-shell';
-import { SetupForm } from './setup-form';
+import { SetupChooser } from './setup-chooser';
 
 /**
  * ⚠️ گاردِ سرور، نه فقط پنهان‌کردنِ لینک: اگر سامانه نصب شده باشد این
@@ -15,7 +15,7 @@ export default async function SetupPage() {
   const brand = await publicBrand();
   return (
     <PublicShell brand={brand} width="lg">
-      <SetupForm />
+      <SetupChooser />
     </PublicShell>
   );
 }
