@@ -1,5 +1,6 @@
 'use server';
 
+import { AccessError, accessMessage } from '@/domain/access/service-grants';
 import { db } from '@/db/client';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -30,6 +31,7 @@ export interface SettingsState {
 function explain(error: unknown, fallback: string): string {
   if (error instanceof CatalogError) return catalogMessage(error.code);
   if (error instanceof OnboardingError) return ONBOARDING_MESSAGES[error.code];
+  if (error instanceof AccessError) return accessMessage(error.code);
   if (error instanceof ForbiddenError) return 'دسترسی کافی ندارید.';
   return fallback;
 }
@@ -179,6 +181,8 @@ export async function saveOnboardingItemAction(_prev: SettingsState, formData: F
     assignee: String(formData.get('assignee') ?? 'member'),
     assigneeUserId: num(formData.get('assigneeUserId')),
     serviceId: num(formData.get('serviceId')),
+    // «+ ساختِ سرویسِ تازه» ِ انتخابگر: مقدار `__new__` و نام در فیلدِ جدا.
+    newServiceName: formData.get('serviceId') === '__new__' ? String(formData.get('newServiceName') ?? '') : '',
     link: String(formData.get('link') ?? ''),
     dueDay: Number(formData.get('dueDay') ?? 1) || 1,
     sortOrder: Number(formData.get('sortOrder') ?? 0) || 0,

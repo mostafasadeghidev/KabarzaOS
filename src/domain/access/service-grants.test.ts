@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   AccessError, accessMessage, assertRevocable, assertServiceName, countByService,
-  countByUser, isOpen, normalizeLevel, openGrants, openRisks, planGrant,
+  countByUser, isOpen, normalizeLevel, normalizeNewSubscription, openGrants, openRisks, planGrant,
   type GrantLike,
 } from './service-grants';
 import type { MemberState } from '@/domain/people/offboarding';
@@ -134,5 +134,28 @@ describe('شمارش‌ها فقط بازها را می‌شمارند', () => {
   it('به تفکیکِ شخص', () => {
     expect(countByUser(rows).get(100)).toBe(2);
     expect(countByUser(rows).get(200)).toBe(1);
+  });
+});
+
+describe('اشتراکِ تازه از فرمِ سرویس', () => {
+  const base = { amount: '15', currencyId: 2, intervalUnit: 'month', nextDueDate: '2026-11-01' };
+
+  it('ورودیِ درست، با رقمِ فارسی و جداکننده', () => {
+    expect(normalizeNewSubscription(base)).toEqual({ ...base, intervalUnit: 'month' });
+    expect(normalizeNewSubscription({ ...base, amount: '۱٬۲۰۰٫۵' }).amount).toBe('1200.5');
+    expect(normalizeNewSubscription({ ...base, amount: '1,200' }).amount).toBe('1200');
+    expect(normalizeNewSubscription({ ...base, intervalUnit: 'year' }).intervalUnit).toBe('year');
+    // واحدِ ناشناخته ماهانه می‌شود، نه خطا.
+    expect(normalizeNewSubscription({ ...base, intervalUnit: 'x' }).intervalUnit).toBe('month');
+  });
+
+  it('مبلغ، ارز و تاریخِ نادرست رد می‌شوند', () => {
+    const code = (fn: () => unknown) => { try { fn(); return null; } catch (e) { return (e as AccessError).code; } };
+    expect(code(() => normalizeNewSubscription({ ...base, amount: '0' }))).toBe('amount_invalid');
+    expect(code(() => normalizeNewSubscription({ ...base, amount: '-3' }))).toBe('amount_invalid');
+    expect(code(() => normalizeNewSubscription({ ...base, amount: 'abc' }))).toBe('amount_invalid');
+    expect(code(() => normalizeNewSubscription({ ...base, currencyId: null }))).toBe('currency_required');
+    expect(code(() => normalizeNewSubscription({ ...base, nextDueDate: '' }))).toBe('date_invalid');
+    expect(code(() => normalizeNewSubscription({ ...base, nextDueDate: '2026-13-45' }))).toBe('date_invalid');
   });
 });

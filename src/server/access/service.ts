@@ -1,4 +1,4 @@
-import { and, asc, eq, getTableColumns, inArray, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, getTableColumns, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   auditLog, currencies, recurringExpenses, serviceGrants, services, tags, userRoles, users,
@@ -6,11 +6,15 @@ import {
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
 import { can, canManageSection, type Actor } from '@/domain/access/permissions';
-import { assertCanManage, assertCanView } from '@/domain/access/guard';
+import { assertCan, assertCanManage, assertCanView } from '@/domain/access/guard';
 import {
-  assertRevocable, assertServiceName, countByService, normalizeLevel,
-  openRisks, planGrant, type GrantLevel,
+  assertRevocable, assertServiceName, countByService, normalizeLevel, normalizeNewSubscription,
+  openRisks, planGrant, type GrantLevel, type NewSubscriptionInput,
 } from '@/domain/access/service-grants';
+import { localParts } from '@/domain/scheduler/tick';
+import { saveRecurring } from '@/server/finance/payouts';
+import { saveTag } from '@/server/settings/service';
+import { getSystemConfig } from '@/server/settings/system-service';
 import {
   monthlyEquivalent, perUserCost, totalsByCurrency, type IntervalUnit,
 } from '@/domain/access/service-cost';
@@ -161,6 +165,16 @@ export async function accessBoard(actor: Actor) {
   );
   const codeOf = new Map(subscriptions.map((r) => [r.currencyId, r.currencyCode ?? '']));
 
+  /**
+   * «+ اشتراکِ تازه» در فرمِ سرویس یک هزینهٔ دوره‌ای می‌سازد، پس همان گاردِ
+   * ساختنش در مالی را دارد (`finance.manage`) — دیدنِ مبلغ کافی نیست.
+   */
+  const canCreateSubscription = canManageSection(actor, 'finance');
+  const currencyRows = canCreateSubscription
+    ? await db.select({ id: currencies.id, code: currencies.code, isDefault: currencies.isDefault })
+      .from(currencies).where(eq(currencies.isActive, true)).orderBy(asc(currencies.id))
+    : [];
+
   return {
     services: serviceViews,
     categories: categoryRows,
@@ -176,6 +190,10 @@ export async function accessBoard(actor: Actor) {
     costTotals: [...totals].map(([currencyId, monthly]) => ({
       currencyId, monthly, currencyCode: codeOf.get(currencyId) ?? '',
     })),
+    canCreateSubscription,
+    currencies: currencyRows,
+    /** پیش‌فرضِ «تمدیدِ بعدی» — امروز به منطقهٔ زمانیِ سامانه. */
+    today: localParts(new Date(), (await getSystemConfig()).timezone || 'UTC').date,
   };
 }
 
@@ -234,11 +252,97 @@ export interface ServiceInput {
   isActive: boolean;
   /** اشتراکِ متناظر در ماژولِ مالی؛ فقط با `finance.view` قابلِ تغییر. */
   recurringExpenseId?: number | null;
+  /** «+ دستهٔ تازه» — دسته با همین نام پیدا یا ساخته می‌شود (`settings.manage`). */
+  newCategoryName?: string;
+  /** «+ اشتراکِ تازه» — هزینهٔ دوره‌ای ساخته و وصل می‌شود (`finance.manage`). */
+  newSubscription?: NewSubscriptionInput | null;
+}
+
+/**
+ * نوعِ تگِ دستهٔ سرویس. ⚠️ ثابت، نه رشتهٔ درجا: تستِ نگاشتِ اعلان‌ها هر
+ * `type: '…'` ِ درجا در کدِ سرور را «نوعِ اعلان» می‌شمارد.
+ */
+const SERVICE_CATEGORY = 'service_category' as const;
+
+/**
+ * دستهٔ سرویس به نام: همان‌نامِ موجود، یا تازه.
+ * ⚠️ گاردِ خودِ «تگ‌ها» (`settings.manage`): این میان‌بر راهِ دوم به همان کار
+ * است، نه دری که کسِ دیگری را به تنظیمات راه بدهد.
+ */
+async function findOrCreateServiceCategory(actor: Actor, raw: string): Promise<number> {
+  assertCan(actor, 'settings.manage');
+  const name = raw.trim().slice(0, 100);
+  const [existing] = await db.select({ id: tags.id }).from(tags)
+    .where(and(eq(tags.type, SERVICE_CATEGORY), sql`lower(${tags.name}) = lower(${name})`))
+    .limit(1);
+  if (existing) return existing.id;
+  const [last] = await db.select({ n: sql<number>`coalesce(max(${tags.sortOrder}), 0)::int` }).from(tags)
+    .where(eq(tags.type, SERVICE_CATEGORY));
+  return saveTag(actor, {
+    id: null, name, type: SERVICE_CATEGORY, color: '', statusGroup: '',
+    isReview: false, isClosed: false, sortOrder: (last?.n ?? 0) + 1,
+  });
+}
+
+/**
+ * سرویس به نام — برای «+ ساختِ سرویسِ تازه» در کتابخانهٔ آنبوردینگ.
+ *
+ * ⚠️ نامِ تکراری سرویسِ دوم نمی‌سازد: همان‌نامِ موجود برگردانده می‌شود، و اگر
+ * غیرفعال بود دوباره فعال می‌شود (همان کسی که حالا به آن نیاز دارد). دو
+ * «Figma» یعنی دسترسی‌های یک سامانه در دو ردیف، و قطعِ دسترسی یکی را جا می‌انداخت.
+ */
+export async function findOrCreateService(actor: Actor, raw: string): Promise<number> {
+  assertCanManage(actor, 'members');
+  const name = assertServiceName(raw).slice(0, 200);
+  const [existing] = await db.select({ id: services.id, isActive: services.isActive }).from(services)
+    .where(sql`lower(${services.name}) = lower(${name})`)
+    .orderBy(desc(services.isActive), asc(services.id))
+    .limit(1);
+  if (existing) {
+    if (!existing.isActive) {
+      await db.update(services).set({ isActive: true, updatedAt: new Date() }).where(eq(services.id, existing.id));
+      await audit(actor, 'service.update', 'service', existing.id, { isActive: false }, { isActive: true });
+    }
+    return existing.id;
+  }
+  const [row] = await db.insert(services).values({ name }).returning({ id: services.id });
+  await audit(actor, 'service.create', 'service', row!.id, null, { name });
+  return row!.id;
 }
 
 export async function saveService(actor: Actor, input: ServiceInput) {
   assertCanManage(actor, 'members');
   const name = assertServiceName(input.name);
+
+  /*
+   * ⚠️ ترتیب: اول هر چه ممکن است رد شود سنجیده می‌شود (نام، گاردها، اشتراکِ
+   * تازه)، بعد ساختن. وگرنه مبلغِ نادرست پس از ساختنِ دسته رد می‌شد و دستهٔ
+   * بی‌سرویس جا می‌ماند.
+   */
+  const newCategory = input.newCategoryName?.trim() ?? '';
+  if (newCategory) assertCan(actor, 'settings.manage');
+  const newSub = input.newSubscription ? normalizeNewSubscription(input.newSubscription) : null;
+  if (newSub) assertCanManage(actor, 'finance');
+
+  if (newCategory) input = { ...input, categoryTagId: await findOrCreateServiceCategory(actor, newCategory) };
+  if (newSub) {
+    const recurringExpenseId = await saveRecurring(actor, {
+      id: null,
+      title: name,
+      amount: newSub.amount,
+      currencyId: newSub.currencyId,
+      kind: 'recurring',
+      intervalUnit: newSub.intervalUnit,
+      intervalCount: 1,
+      startDate: newSub.nextDueDate,
+      nextDueDate: newSub.nextDueDate,
+      accountId: null,
+      vendorId: null,
+      // فروشنده همان سرویس است — در گزارشِ هزینه‌ها با نامِ خودش می‌آید.
+      vendorName: name,
+    });
+    input = { ...input, recurringExpenseId };
+  }
 
   /**
    * ⚠️ کسی که هزینه را نمی‌بیند، فرمش هم این فیلد را ندارد؛ پس مقدارش

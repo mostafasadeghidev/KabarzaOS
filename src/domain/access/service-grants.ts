@@ -32,7 +32,10 @@ export class AccessError extends Error {
       | 'service_inactive'
       | 'member_inactive'
       | 'already_revoked'
-      | 'not_found',
+      | 'not_found'
+      | 'amount_invalid'
+      | 'currency_required'
+      | 'date_invalid',
   ) {
     super(`access rule violated: ${code}`);
     this.name = 'AccessError';
@@ -48,7 +51,40 @@ export function accessMessage(code: AccessError['code']): string {
     case 'member_inactive': return 'به عضوِ سابق دسترسیِ تازه داده نمی‌شود.';
     case 'already_revoked': return 'این دسترسی پیش‌تر قطع شده بود.';
     case 'not_found': return 'این دسترسی پیدا نشد.';
+    case 'amount_invalid': return 'مبلغِ اشتراک معتبر نیست.';
+    case 'currency_required': return 'ارزِ اشتراک را انتخاب کنید.';
+    case 'date_invalid': return 'تاریخِ تمدیدِ بعدی معتبر نیست.';
   }
+}
+
+export interface NewSubscriptionInput {
+  amount: string;
+  currencyId: number | null;
+  intervalUnit: string;
+  nextDueDate: string;
+}
+
+/**
+ * اشتراکِ تازه از فرمِ سرویس — پیش از **هر** نوشتنی سنجیده می‌شود، تا ورودیِ
+ * بد نیمه‌کاره چیزی (دسته، هزینه) نسازد و بعد سرویس شکست بخورد.
+ *
+ * ⚠️ رقمِ فارسی و عربی و جداکنندهٔ هزارگان پذیرفته می‌شوند: این فیلد را
+ * فارسی‌زبان با صفحه‌کلیدِ خودش پر می‌کند.
+ */
+export function normalizeNewSubscription(input: NewSubscriptionInput) {
+  const amount = input.amount
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[,،٬\s]/g, '')
+    .replace('٫', '.');
+  if (!/^\d+(\.\d{1,4})?$/.test(amount) || Number(amount) <= 0) throw new AccessError('amount_invalid');
+  if (!input.currencyId) throw new AccessError('currency_required');
+  const date = input.nextDueDate.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(`${date}T00:00:00Z`))) {
+    throw new AccessError('date_invalid');
+  }
+  const unit = (['day', 'week', 'month', 'year'] as const).find((u) => u === input.intervalUnit) ?? 'month';
+  return { amount, currencyId: input.currencyId, intervalUnit: unit, nextDueDate: date };
 }
 
 export function normalizeLevel(raw: string): GrantLevel {

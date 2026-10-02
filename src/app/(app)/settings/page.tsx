@@ -11,6 +11,7 @@ import { bucketCheck } from '@/server/files/bucket-probe';
 import { schedulerHealth } from '@/domain/scheduler/health';
 import { currentLockDate } from '@/server/finance/service';
 import { ForbiddenError } from '@/domain/access/guard';
+import { canManageSection } from '@/domain/access/permissions';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SettingsView } from './settings-view';
 import { primeTranslations, t } from '@/i18n/server';
@@ -81,7 +82,8 @@ export default async function SettingsPage({
       backup: actor.roles.includes('owner') ? await getBackupView(actor).catch(() => null) : null,
       onboarding: systemConfig.onboardingEnabled
         ? await Promise.all([listLibrary(actor), assignOptions()])
-          .then(([items, options]) => ({ items, ...options }))
+          // «+ ساختِ سرویسِ تازه» فقط برای کسی که دفترِ دسترسی‌ها را اداره می‌کند.
+          .then(([items, options]) => ({ items, ...options, canCreateService: canManageSection(actor, 'members') }))
           .catch(() => null)
         : null,
     };

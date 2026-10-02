@@ -16,6 +16,7 @@ import {
 } from '@/domain/onboarding/plan';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { notify } from '@/server/notifications/service';
+import { findOrCreateService } from '@/server/access/service';
 
 /**
  * آنبوردینگِ نقش‌محور.
@@ -103,6 +104,8 @@ export interface LibraryInput {
   assignee: string;
   assigneeUserId: number | null;
   serviceId: number | null;
+  /** «+ ساختِ سرویسِ تازه» ِ فرم — سرویس با همین نام پیدا یا ساخته می‌شود. */
+  newServiceName?: string;
   link: string;
   dueDay: number;
   sortOrder: number;
@@ -123,15 +126,23 @@ export async function saveLibraryItem(actor: Actor, input: LibraryInput): Promis
   if (!title) throw new OnboardingError('title_required');
   const kind: OnboardingKind = isKind(input.kind) ? input.kind : 'task';
   const assignee: AssigneeRule = isAssigneeRule(input.assignee) ? input.assignee : 'member';
-  const serviceId = input.serviceId || null;
+  const needsService = kind === 'access' || assignee === 'service_owner';
+  const newServiceName = needsService ? (input.newServiceName ?? '').trim() : '';
+  let serviceId = input.serviceId || null;
   // ⚠️ «دسترسی» و «مسئولِ سرویس» بی‌سرویس معنا ندارند: نه گرنتی ثبت می‌شود، نه کسی پیدا.
-  if ((kind === 'access' || assignee === 'service_owner') && !serviceId) {
+  if (needsService && !serviceId && !newServiceName) {
     throw new OnboardingError('service_required');
   }
   if (input.roleTagId) {
     const [tag] = await db.select({ type: tags.type }).from(tags).where(eq(tags.id, input.roleTagId));
     if (tag?.type !== 'member_role') throw new OnboardingError('bad_role');
   }
+  /*
+   * سرویسِ تازه پس از همهٔ سنجش‌ها ساخته می‌شود (نقشِ نادرست سرویسِ بی‌مصرف
+   * جا نگذارد). گاردش گاردِ خودِ دفترِ دسترسی‌هاست (`members.manage`) —
+   * مدیرِ تنظیمات بی‌آن حق، از این راه هم سرویس نمی‌سازد.
+   */
+  if (newServiceName) serviceId = await findOrCreateService(actor, newServiceName);
   const values = {
     roleTagId: input.roleTagId || null,
     title: title.slice(0, 200),
@@ -319,6 +330,8 @@ export interface CustomTaskInput {
   kind: string;
   assigneeUserId: number | null;
   serviceId: number | null;
+  /** «+ ساختِ سرویسِ تازه» — همان کتابخانه؛ گاردِ این مسیر (`members.manage`) همان گاردِ ساختنِ سرویس است. */
+  newServiceName?: string;
   dueDate: string;
   link: string;
 }
@@ -331,7 +344,9 @@ export async function addCustomTask(actor: Actor, userId: number, input: CustomT
   const title = input.title.trim();
   if (!title) throw new OnboardingError('title_required');
   const kind: OnboardingKind = isKind(input.kind) ? input.kind : 'task';
-  if (kind === 'access' && !input.serviceId) throw new OnboardingError('service_required');
+  const newServiceName = kind === 'access' ? (input.newServiceName ?? '').trim() : '';
+  if (kind === 'access' && !input.serviceId && !newServiceName) throw new OnboardingError('service_required');
+  const serviceId = newServiceName ? await findOrCreateService(actor, newServiceName) : input.serviceId;
   const due = /^\d{4}-\d{2}-\d{2}$/.test(input.dueDate) ? input.dueDate : await today();
   const [{ max } = { max: 0 }] = await db.select({ max: sql<number>`coalesce(max(${onboardingTasks.sortOrder}), 0)::int` })
     .from(onboardingTasks).where(eq(onboardingTasks.userId, userId));
@@ -343,7 +358,7 @@ export async function addCustomTask(actor: Actor, userId: number, input: CustomT
     description: input.description.trim().slice(0, 2000),
     kind,
     link: safeLink(input.link),
-    serviceId: kind === 'access' ? input.serviceId : null,
+    serviceId: kind === 'access' ? serviceId : null,
     assigneeUserId: input.assigneeUserId || null,
     dueDate: due,
     sortOrder: max + 1,

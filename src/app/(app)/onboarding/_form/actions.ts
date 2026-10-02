@@ -74,6 +74,7 @@ export async function addCustomTaskAction(_prev: OnboardingState, formData: Form
       kind: String(formData.get('kind') ?? 'task'),
       assigneeUserId: num(formData.get('assigneeUserId')),
       serviceId: num(formData.get('serviceId')),
+      newServiceName: formData.get('serviceId') === '__new__' ? String(formData.get('newServiceName') ?? '') : '',
       dueDate: String(formData.get('dueDate') ?? ''),
       link: String(formData.get('link') ?? ''),
     });

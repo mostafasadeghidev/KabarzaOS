@@ -241,7 +241,10 @@ export function AddTaskDialog({ userId, people, services, today }: {
             {kind === 'access' && (
               <Field>
                 <FieldLabel htmlFor="ot-service">{tr('سرویس')}</FieldLabel>
-                <SearchableSelect id="ot-service" name="serviceId" containerClassName="w-full" required defaultValue="">
+                <SearchableSelect
+                  id="ot-service" name="serviceId" containerClassName="w-full" required defaultValue=""
+                  createName="newServiceName" searchPlaceholder={tr('جستجو یا نامِ سرویسِ تازه…')}
+                >
                   <NativeSelectOption value="">{tr('انتخاب کنید')}</NativeSelectOption>
                   {services.map((s) => <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>)}
                 </SearchableSelect>

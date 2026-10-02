@@ -20,6 +20,8 @@ export interface OnboardingLibraryData {
   items: LibraryItem[];
   services: Array<{ id: number; name: string }>;
   people: Array<{ id: number; name: string }>;
+  /** «+ ساختِ سرویسِ تازه» — همان گاردِ دفترِ دسترسی‌ها (`members.manage`). */
+  canCreateService: boolean;
 }
 
 /**
@@ -94,6 +96,7 @@ export function OnboardingLibrary({ data, roles }: {
             roles={roles}
             services={data.services}
             people={data.people}
+            canCreateService={data.canCreateService}
           />
         )}
       />
@@ -106,12 +109,13 @@ export function OnboardingLibrary({ data, roles }: {
  * «دسترسی»، «مسئولِ سرویس»، «شخصِ مشخص») — ولی پنهان‌بودن در UI گارد نیست؛
  * سرور همین قاعده را خودش می‌سنجد.
  */
-function ItemFields({ editing, defaultRole, roles, services, people }: {
+function ItemFields({ editing, defaultRole, roles, services, people, canCreateService }: {
   editing: LibraryItem | null;
   defaultRole: number | null;
   roles: Array<{ id: number; label: string }>;
   services: Array<{ id: number; name: string }>;
   people: Array<{ id: number; name: string }>;
+  canCreateService: boolean;
 }) {
   const tr = useT();
   const [kind, setKind] = useState<OnboardingKind>(editing?.kind ?? 'task');
@@ -175,12 +179,16 @@ function ItemFields({ editing, defaultRole, roles, services, people }: {
               <SearchableSelect
                 id="ob-service" name="serviceId" containerClassName="w-full" required
                 defaultValue={editing?.serviceId ? String(editing.serviceId) : ''}
+                createName={canCreateService ? 'newServiceName' : undefined}
+                searchPlaceholder={canCreateService ? tr('جستجو یا نامِ سرویسِ تازه…') : undefined}
               >
                 <NativeSelectOption value="">{tr('انتخاب کنید')}</NativeSelectOption>
                 {services.map((s) => <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>)}
               </SearchableSelect>
               <FieldDescription>
-                {tr('از سیاههٔ دسترسی‌ها. با تیک‌خوردنِ این کار، دسترسی همان‌جا ثبت می‌شود — هیچ رمزی ذخیره نمی‌شود.')}
+                {canCreateService
+                  ? tr('از سیاههٔ دسترسی‌ها؛ اگر نیست، نامش را بنویسید تا همین‌جا ساخته شود. با تیک‌خوردنِ این کار، دسترسی همان‌جا ثبت می‌شود — هیچ رمزی ذخیره نمی‌شود.')
+                  : tr('از سیاههٔ دسترسی‌ها. با تیک‌خوردنِ این کار، دسترسی همان‌جا ثبت می‌شود — هیچ رمزی ذخیره نمی‌شود.')}
               </FieldDescription>
             </Field>
           )}

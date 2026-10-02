@@ -25,7 +25,7 @@
  */
 
 import * as React from 'react';
-import { CheckIcon, ChevronDownIcon } from 'lucide-react';
+import { CheckIcon, ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
@@ -114,10 +114,20 @@ export interface SearchableSelectProps {
   /** کلاسِ پوسته — مثلاً `w-full` برای فیلدِ تمام‌عرضِ فرم (همان قراردادِ NativeSelect). */
   containerClassName?: string;
   searchPlaceholder?: string;
+  /**
+   * «ساختنِ همین‌جا»: اگر داده شود و متنِ جستجو با هیچ گزینه‌ای یکی نباشد،
+   * ردیفِ «+ ساختِ «متن»» پیشنهاد می‌شود. با انتخابش مقدارِ فیلد
+   * `CREATE_VALUE` می‌شود و متن در فیلدِ پنهانی به همین نام می‌رود؛ خودِ
+   * ساختن با سرور است، هنگامِ ذخیرهٔ فرم — پس اگر فرم لغو شود چیزی ساخته نمی‌شود.
+   */
+  createName?: string;
   'aria-label'?: string;
   'aria-invalid'?: boolean;
   children?: React.ReactNode;
 }
+
+/** مقدارِ فیلد وقتی گزینهٔ تازه‌ای (`createName`) انتخاب شده است. */
+export const CREATE_VALUE = '__new__';
 
 export function SearchableSelect({
   id,
@@ -131,6 +141,7 @@ export function SearchableSelect({
   className,
   containerClassName,
   searchPlaceholder,
+  createName,
   'aria-label': ariaLabel,
   'aria-invalid': ariaInvalid,
   children,
@@ -146,8 +157,19 @@ export function SearchableSelect({
   const listRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
+  /** متنِ گزینهٔ تازه‌ای که کاربر خواسته بسازد (فقط با `createName`). */
+  const [created, setCreated] = React.useState('');
+
   const groups = readChoices(children);
+  if (created) {
+    groups.push({ label: null, choices: [{ key: 'created', value: CREATE_VALUE, label: t('{name} (تازه)', { name: created }), disabled: false }] });
+  }
   const choices = groups.flatMap((g) => g.choices);
+
+  // ردیفِ «ساختن» فقط وقتی متن با هیچ گزینهٔ موجودی یکی نیست — نامِ تکراری ساخته نشود.
+  const query = search.trim();
+  const canCreate = Boolean(createName) && query !== ''
+    && !choices.some((c) => c.value !== CREATE_VALUE && normalize(c.label) === normalize(query));
 
   // مقدارِ آغازینِ تازه (مثلاً مقدارِ برگشتی پس از خطای فرم) جایگزین می‌شود.
   React.useEffect(() => {
@@ -158,7 +180,7 @@ export function SearchableSelect({
   React.useEffect(() => {
     const form = triggerRef.current?.form;
     if (!form || controlled) return;
-    const onReset = () => setInner(initial);
+    const onReset = () => { setInner(initial); setCreated(''); };
     form.addEventListener('reset', onReset);
     return () => form.removeEventListener('reset', onReset);
   }, [controlled, initial]);
@@ -180,6 +202,8 @@ export function SearchableSelect({
   }, [open]);
 
   const pick = (next: string) => {
+    // انتخابِ گزینهٔ موجود، گزینهٔ تازهٔ قبلی را کنار می‌گذارد.
+    if (next !== CREATE_VALUE) setCreated('');
     if (!controlled) setInner(next);
     // مثلِ `<select>`: انتخابِ دوبارهٔ همان گزینه رویدادِ تغییر نمی‌دهد.
     if (next !== current) onValueChange?.(next);
@@ -244,7 +268,7 @@ export function SearchableSelect({
               placeholder={searchPlaceholder ?? t('جستجو…')}
             />
             <CommandList ref={listRef}>
-              <CommandEmpty>{t('نتیجه‌ای نیست')}</CommandEmpty>
+              {!canCreate && <CommandEmpty>{t('نتیجه‌ای نیست')}</CommandEmpty>}
               {groups.map((group, gi) => (
                 <CommandGroup key={gi} heading={group.label ?? undefined}>
                   {group.choices.map((choice) => (
@@ -263,11 +287,30 @@ export function SearchableSelect({
                   ))}
                 </CommandGroup>
               ))}
+              {/*
+                ⚠️ forceMount روی ردیف **و** گروهش: cmdk صافی را با متنِ رندرِ قبلی
+                می‌سنجد و ردیفی که متنش با هر حرف عوض می‌شود را پنهان می‌کرد.
+              */}
+              {canCreate && (
+                <CommandGroup forceMount>
+                  <CommandItem
+                    forceMount
+                    value="__create__"
+                    onSelect={() => { setCreated(query); pick(CREATE_VALUE); }}
+                  >
+                    <PlusIcon />
+                    <span className="truncate">{t('ساختِ «{name}»', { name: query })}</span>
+                  </CommandItem>
+                </CommandGroup>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
       {name && <input type="hidden" name={name} value={current} disabled={disabled} />}
+      {createName && current === CREATE_VALUE && (
+        <input type="hidden" name={createName} value={created} disabled={disabled} />
+      )}
       {required && (
         <input
           tabIndex={-1}

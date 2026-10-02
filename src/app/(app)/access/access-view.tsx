@@ -26,7 +26,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { CREATE_VALUE, SearchableSelect } from '@/components/ui/searchable-select';
+import { DatePicker } from '@/components/ui/date-picker';
+import { INTERVAL_UNITS, UNIT_LABELS } from '@/domain/finance/recurring';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useActionToast, useToast } from '@/components/ui/toast';
@@ -98,6 +100,11 @@ export interface AccessData {
     id: number; title: string; currencyCode: string | null; isActive: boolean;
   }>;
   costTotals: Array<{ currencyId: number; currencyCode: string; monthly: string }>;
+  /** «+ اشتراکِ تازه» — همان گاردِ ساختنِ هزینهٔ دوره‌ای (`finance.manage`). */
+  canCreateSubscription: boolean;
+  currencies: Array<{ id: number; code: string; isDefault: boolean }>;
+  /** امروز به منطقهٔ زمانیِ سامانه — پیش‌فرضِ «تمدیدِ بعدی». */
+  today: string;
 }
 
 type StatusFilter = 'open' | 'revoked' | 'all';
@@ -430,91 +437,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
           saveAction={saveServiceAction}
           deleteAction={(s) => deleteServiceAction(s.id)}
           canDelete={(s) => s.isActive}
-          renderForm={(edit) => (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="s-name">{tr("نام")}</FieldLabel>
-                <Input id="s-name" name="name" defaultValue={edit?.name ?? ''} required />
-              </Field>
-              <div className="grid gap-1.5">
-                {/*
-                  ⚠️ پاسخِ «این دسته‌ها از کجا می‌آیند»: فهرست در «تنظیمات ←
-                  تگ‌ها» اداره می‌شود؛ پیوند فقط برای کسی است که آنجا راه دارد.
-                  در ردیفِ عنوان است، نه زیرِ فهرست: سطرِ سوم این خانه را بلندتر
-                  می‌کرد و فیلدِ «نام» ِ کنارش از تراز می‌افتاد.
-                */}
-                <div className="flex items-center justify-between gap-2">
-                  <Label htmlFor="s-category">{tr("دسته")}</Label>
-                  {data.canManageCategories && (
-                    <Link
-                      href="/settings?tab=tags&type=service_category"
-                      className="text-xs leading-none text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                    >
-                      {tr("مدیریتِ دسته‌ها")}
-                    </Link>
-                  )}
-                </div>
-                <NativeSelect
-                  id="s-category"
-                  name="categoryTagId"
-                  defaultValue={edit?.categoryTagId ? String(edit.categoryTagId) : ''}
-                  containerClassName="w-full"
-                >
-                  <NativeSelectOption value="">{tr("— بدونِ دسته —")}</NativeSelectOption>
-                  {data.categories.map((c) => (
-                    <NativeSelectOption key={c.id} value={String(c.id)}>{c.name}</NativeSelectOption>
-                  ))}
-                </NativeSelect>
-              </div>
-              <Field>
-                <FieldLabel htmlFor="s-owner">{tr("مسئولِ اعطای دسترسی")}</FieldLabel>
-                <SearchableSelect
-                  id="s-owner"
-                  name="ownerUserId"
-                  defaultValue={edit?.ownerUserId ? String(edit.ownerUserId) : ''}
-                  containerClassName="w-full"
-                >
-                  <NativeSelectOption value="">{tr("تعیین‌نشده")}</NativeSelectOption>
-                  {data.people.map((p) => (
-                    <NativeSelectOption key={p.id} value={String(p.id)}>{p.name}</NativeSelectOption>
-                  ))}
-                </SearchableSelect>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="s-url">{tr("پنلِ مدیریت")}</FieldLabel>
-                <Input id="s-url" name="adminUrl" dir="ltr" defaultValue={edit?.adminUrl ?? ''} placeholder="https://" />
-              </Field>
-              {data.canSeeCost && (
-                <Field className="sm:col-span-2">
-                  <FieldLabel htmlFor="s-sub">{tr("اشتراکِ مالی")}</FieldLabel>
-                  <SearchableSelect
-                    id="s-sub"
-                    name="recurringExpenseId"
-                    defaultValue={edit?.recurringExpenseId ? String(edit.recurringExpenseId) : ''}
-                    containerClassName="w-full"
-                  >
-                    <NativeSelectOption value="">{tr("بدون اشتراک")}</NativeSelectOption>
-                    {data.subscriptions.map((sub) => (
-                      <NativeSelectOption key={sub.id} value={String(sub.id)}>
-                        {sub.title}{sub.currencyCode ? ` — ${sub.currencyCode}` : ''}
-                      </NativeSelectOption>
-                    ))}
-                  </SearchableSelect>
-                  <FieldDescription>
-                    {tr("مبلغ و دوره از همان هزینهٔ دوره‌ای خوانده می‌شود؛ اینجا چیزی ذخیره نمی‌شود.")}
-                  </FieldDescription>
-                </Field>
-              )}
-              <Field className="sm:col-span-2">
-                <FieldLabel htmlFor="s-note">{tr("یادداشت")}</FieldLabel>
-                <Input id="s-note" name="note" defaultValue={edit?.note ?? ''} />
-              </Field>
-              <label className="flex items-center gap-2 text-sm sm:col-span-2">
-                <Checkbox name="isActive" defaultChecked={edit?.isActive ?? true} />
-                {tr("فعال (در فرمِ اعطای دسترسی پیشنهاد می‌شود)")}
-              </label>
-            </div>
-          )}
+          renderForm={(edit) => <ServiceFields edit={edit} data={data} />}
         />
       )}
 
@@ -776,5 +699,141 @@ function SaveButton() {
     <Button type="submit" size="sm" disabled={pending}>
       {pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : tr('ذخیره')}
     </Button>
+  );
+}
+
+/**
+ * فیلدهای فرمِ سرویس.
+ *
+ * ⚠️ «+ دستهٔ تازه» و «+ اشتراکِ تازه» میان‌برند، نه راهِ دوم با قاعدهٔ دیگر:
+ * هر کدام فقط برای کسی می‌آید که همان کار را در جای اصلی‌اش هم می‌تواند
+ * (تگ‌ها با `settings.manage`، هزینهٔ دوره‌ای با `finance.manage`)، و سرور هم
+ * همان را جدا می‌سنجد. ساختن هنگامِ ذخیرهٔ فرم است — لغوِ فرم چیزی نمی‌سازد.
+ */
+function ServiceFields({ edit, data }: { edit: ServiceRow | null; data: AccessData }) {
+  const tr = useT();
+  const [sub, setSub] = useState(edit?.recurringExpenseId ? String(edit.recurringExpenseId) : '');
+  const defaultCurrency = data.currencies.find((c) => c.isDefault)?.id ?? data.currencies[0]?.id ?? '';
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Field>
+        <FieldLabel htmlFor="s-name">{tr("نام")}</FieldLabel>
+        <Input id="s-name" name="name" defaultValue={edit?.name ?? ''} required />
+      </Field>
+      <div className="grid gap-1.5">
+        {/*
+          ⚠️ پاسخِ «این دسته‌ها از کجا می‌آیند»: فهرست در «تنظیمات ←
+          تگ‌ها» اداره می‌شود؛ پیوند فقط برای کسی است که آنجا راه دارد.
+          در ردیفِ عنوان است، نه زیرِ فهرست: سطرِ سوم این خانه را بلندتر
+          می‌کرد و فیلدِ «نام» ِ کنارش از تراز می‌افتاد.
+        */}
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="s-category">{tr("دسته")}</Label>
+          {data.canManageCategories && (
+            <Link
+              href="/settings?tab=tags&type=service_category"
+              className="text-xs leading-none text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              {tr("مدیریتِ دسته‌ها")}
+            </Link>
+          )}
+        </div>
+        <SearchableSelect
+          id="s-category"
+          name="categoryTagId"
+          defaultValue={edit?.categoryTagId ? String(edit.categoryTagId) : ''}
+          containerClassName="w-full"
+          createName={data.canManageCategories ? 'newCategoryName' : undefined}
+          searchPlaceholder={data.canManageCategories ? tr('جستجو یا نامِ دستهٔ تازه…') : undefined}
+        >
+          <NativeSelectOption value="">{tr("— بدونِ دسته —")}</NativeSelectOption>
+          {data.categories.map((c) => (
+            <NativeSelectOption key={c.id} value={String(c.id)}>{c.name}</NativeSelectOption>
+          ))}
+        </SearchableSelect>
+      </div>
+      <Field>
+        <FieldLabel htmlFor="s-owner">{tr("مسئولِ اعطای دسترسی")}</FieldLabel>
+        <SearchableSelect
+          id="s-owner"
+          name="ownerUserId"
+          defaultValue={edit?.ownerUserId ? String(edit.ownerUserId) : ''}
+          containerClassName="w-full"
+        >
+          <NativeSelectOption value="">{tr("تعیین‌نشده")}</NativeSelectOption>
+          {data.people.map((p) => (
+            <NativeSelectOption key={p.id} value={String(p.id)}>{p.name}</NativeSelectOption>
+          ))}
+        </SearchableSelect>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="s-url">{tr("پنلِ مدیریت")}</FieldLabel>
+        <Input id="s-url" name="adminUrl" dir="ltr" defaultValue={edit?.adminUrl ?? ''} placeholder="https://" />
+      </Field>
+      {data.canSeeCost && (
+        <Field className="sm:col-span-2">
+          <FieldLabel htmlFor="s-sub">{tr("اشتراکِ مالی")}</FieldLabel>
+          <SearchableSelect
+            id="s-sub"
+            name="recurringExpenseId"
+            defaultValue={sub}
+            onValueChange={setSub}
+            containerClassName="w-full"
+          >
+            <NativeSelectOption value="">{tr("بدون اشتراک")}</NativeSelectOption>
+            {data.canCreateSubscription && (
+              <NativeSelectOption value={CREATE_VALUE}>{tr("+ اشتراکِ تازه…")}</NativeSelectOption>
+            )}
+            {data.subscriptions.map((s) => (
+              <NativeSelectOption key={s.id} value={String(s.id)}>
+                {s.title}{s.currencyCode ? ` — ${s.currencyCode}` : ''}
+              </NativeSelectOption>
+            ))}
+          </SearchableSelect>
+          <FieldDescription>
+            {sub === CREATE_VALUE
+              ? tr("یک هزینهٔ دوره‌ای به نامِ همین سرویس در «مالی» ساخته و به آن وصل می‌شود.")
+              : tr("مبلغ و دوره از همان هزینهٔ دوره‌ای خوانده می‌شود؛ اینجا چیزی ذخیره نمی‌شود.")}
+          </FieldDescription>
+        </Field>
+      )}
+      {sub === CREATE_VALUE && data.canCreateSubscription && (
+        <div className="grid gap-3 rounded-md border bg-muted/30 p-3 sm:col-span-2 sm:grid-cols-4">
+          <Field>
+            <FieldLabel htmlFor="s-sub-amount">{tr("مبلغ")}</FieldLabel>
+            <Input id="s-sub-amount" name="subAmount" inputMode="decimal" className="num" required />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="s-sub-cur">{tr("ارز")}</FieldLabel>
+            <NativeSelect id="s-sub-cur" name="subCurrencyId" containerClassName="w-full" defaultValue={String(defaultCurrency)}>
+              {data.currencies.map((c) => (
+                <NativeSelectOption key={c.id} value={String(c.id)}>{c.code}</NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="s-sub-unit">{tr("دوره")}</FieldLabel>
+            <NativeSelect id="s-sub-unit" name="subIntervalUnit" containerClassName="w-full" defaultValue="month">
+              {INTERVAL_UNITS.map((u) => (
+                <NativeSelectOption key={u} value={u}>{tr(UNIT_LABELS[u])}</NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="s-sub-next">{tr("تمدیدِ بعدی")}</FieldLabel>
+            <DatePicker id="s-sub-next" name="subNextDueDate" defaultValue={data.today} required />
+          </Field>
+        </div>
+      )}
+      <Field className="sm:col-span-2">
+        <FieldLabel htmlFor="s-note">{tr("یادداشت")}</FieldLabel>
+        <Input id="s-note" name="note" defaultValue={edit?.note ?? ''} />
+      </Field>
+      <label className="flex items-center gap-2 text-sm sm:col-span-2">
+        <Checkbox name="isActive" defaultChecked={edit?.isActive ?? true} />
+        {tr("فعال (در فرمِ اعطای دسترسی پیشنهاد می‌شود)")}
+      </label>
+    </div>
   );
 }

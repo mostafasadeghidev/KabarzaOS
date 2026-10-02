@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.107.0]
+
+### Added
+
+- **Create a service without leaving the onboarding library.** In the «Service» picker of an onboarding item (and of a person's extra item), type a name that is not in the list and choose «Create “…”». The service is created in the access register when the item is saved — cancelling the dialog creates nothing. An existing name is reused instead of duplicated (case-insensitive), and a deactivated service with that name is reactivated.
+- **Create a category from the service form.** The category picker in Access → Services now searches and offers «Create “…”»; the new category is the same service-category tag managed under Settings → Tags.
+- **Create the subscription from the service form.** The «Financial subscription» picker offers «+ New subscription…» with amount, currency, period and next renewal. Saving creates a recurring expense named after the service (vendor = the service) in Finance and links it. Persian and Arabic digits and thousands separators are accepted in the amount.
+
+### Security
+
+- Each shortcut keeps the permission of the place it replaces: creating a service needs members management, a category needs settings management, a subscription needs finance management (seeing finance is not enough). Users without the permission do not see the shortcut, and the server checks it independently.
+- Everything that can be rejected is checked before anything is written, so an invalid amount no longer leaves a half-created category or expense behind.
 ## [1.106.0]
 
 ### Added

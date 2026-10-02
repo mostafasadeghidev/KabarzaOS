@@ -167,3 +167,31 @@ describe('یادآوریِ عقب‌افتاده', () => {
     expect(rows.length).toBe(1);
   });
 });
+
+describe('ساختنِ سرویس از داخلِ کتابخانه', () => {
+  it('آیتمِ «دسترسی» با نامِ سرویسِ تازه: سرویس ساخته و به آیتم وصل می‌شود', async () => {
+    const id = await lib({ kind: 'access', title: 'دسترسیِ Linear', newServiceName: 'Linear' });
+    const [svc] = await db.select({ id: services.id }).from(services).where(eq(services.name, 'Linear'));
+    const { onboardingItems } = await import('../schema');
+    const [item] = await db.select({ serviceId: onboardingItems.serviceId }).from(onboardingItems)
+      .where(eq(onboardingItems.id, id));
+    expect(item?.serviceId).toBe(svc!.id);
+    // نامِ موجود دوباره ساخته نمی‌شود.
+    await lib({ kind: 'access', title: 'دوباره', newServiceName: 'linear' });
+    expect((await db.select().from(services).where(eq(services.name, 'Linear'))).length).toBe(1);
+  });
+
+  it('⚠️ مدیرِ تنظیمات بی‌حقِ دفترِ دسترسی‌ها، از این راه سرویس نمی‌سازد', async () => {
+    const settingsOnly: Actor = { id: OWNER, roles: [], permissions: ['settings.manage'], privateAccess: false };
+    await expect(saveLibraryItem(settingsOnly, {
+      roleTagId: null, title: 'x', description: '', kind: 'access', assignee: 'member',
+      assigneeUserId: null, serviceId: null, newServiceName: 'Jira', link: '', dueDay: 1, sortOrder: 0,
+    })).rejects.toBeInstanceOf(ForbiddenError);
+    expect((await db.select().from(services).where(eq(services.name, 'Jira'))).length).toBe(0);
+  });
+
+  it('برای آیتمِ بی‌نیاز به سرویس، نامِ تازه نادیده گرفته می‌شود', async () => {
+    await lib({ kind: 'task', title: 'خواندنِ راهنما', newServiceName: 'Ghost' });
+    expect((await db.select().from(services).where(eq(services.name, 'Ghost'))).length).toBe(0);
+  });
+});

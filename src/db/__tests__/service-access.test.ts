@@ -389,3 +389,81 @@ describe('دفتر', () => {
     expect(await access.myGrants(actor({ id: boss }))).toHaveLength(0);
   });
 });
+
+describe('ساختنِ همان‌جا — سرویس، دسته و اشتراک از داخلِ فرم', () => {
+  const full = () => actor({
+    id: 1, permissions: ['members.manage', 'settings.manage', 'finance.manage'] as Permission[],
+  });
+  const base = { id: null, categoryTagId: null, ownerUserId: null, adminUrl: '', note: '', isActive: true };
+  const sub = { amount: '۱۵', currencyId: 0, intervalUnit: 'month', nextDueDate: '2026-11-01' };
+  const count = async (table: typeof services | typeof tags | typeof recurringExpenses) =>
+    (await db.select({ id: table.id }).from(table)).length;
+
+  it('سرویس به نام: تکراری نمی‌سازد (بی‌توجه به بزرگی و کوچکیِ حروف)', async () => {
+    const id = await access.findOrCreateService(manager(), 'Figma');
+    expect(await access.findOrCreateService(manager(), '  figma ')).toBe(id);
+    expect(await access.findOrCreateService(manager(), 'ChatGPT')).toBe(ai);
+  });
+
+  it('⚠️ سرویسِ غیرفعالِ هم‌نام دوباره فعال می‌شود، نه ردیفِ دوم', async () => {
+    const id = await access.findOrCreateService(manager(), 'Trello');
+    await access.deleteService(manager(), id);
+    expect(await access.findOrCreateService(manager(), 'trello')).toBe(id);
+    const [row] = await db.select({ isActive: services.isActive }).from(services).where(eq(services.id, id));
+    expect(row?.isActive).toBe(true);
+  });
+
+  it('سرویس به نام هم گاردِ دفترِ دسترسی‌ها را دارد', async () => {
+    await expect(access.findOrCreateService(viewer(), 'X')).rejects.toBeInstanceOf(ForbiddenError);
+    await expect(access.findOrCreateService(manager(), '   ')).rejects.toBeInstanceOf(AccessError);
+  });
+
+  it('دستهٔ تازه ساخته می‌شود و هم‌نامِ موجود دوباره ساخته نمی‌شود', async () => {
+    const a = await access.saveService(full(), { ...base, name: 'Miro', newCategoryName: 'طراحی' });
+    const b = await access.saveService(full(), { ...base, name: 'Canva', newCategoryName: ' طراحی ' });
+    const rows = await db.select({ id: services.id, cat: services.categoryTagId }).from(services)
+      .where(eq(services.categoryTagId, (await db.select({ id: services.categoryTagId }).from(services).where(eq(services.id, a)))[0]!.id!));
+    expect(rows.map((r) => r.id).sort()).toEqual([a, b].sort());
+    const [tag] = await db.select({ type: tags.type }).from(tags).where(eq(tags.id, rows[0]!.cat!));
+    expect(tag?.type).toBe('service_category');
+  });
+
+  it('اشتراکِ تازه: هزینهٔ دوره‌ای با نامِ سرویس ساخته و وصل می‌شود', async () => {
+    const id = await access.saveService(full(), { ...base, name: 'Slack', newSubscription: { ...sub, currencyId: eur } });
+    const [svc] = await db.select({ rec: services.recurringExpenseId }).from(services).where(eq(services.id, id));
+    const [rec] = await db.select().from(recurringExpenses).where(eq(recurringExpenses.id, svc!.rec!));
+    expect(rec?.title).toBe('Slack');
+    expect(Number(rec?.amount)).toBe(15);
+    expect(rec?.intervalUnit).toBe('month');
+    expect(rec?.nextDueDate).toBe('2026-11-01');
+  });
+
+  it('⚠️ میان‌برها گاردِ جای اصلیِ خودشان را دارند', async () => {
+    // مدیرِ اعضا بی‌حقِ تنظیمات دسته نمی‌سازد؛ بی‌حقِ مدیریتِ مالی اشتراک نمی‌سازد (دیدنِ مالی کافی نیست).
+    await expect(access.saveService(manager(), { ...base, name: 'A1', newCategoryName: 'تازه' }))
+      .rejects.toBeInstanceOf(ForbiddenError);
+    await expect(access.saveService(cfo(), { ...base, name: 'A2', newSubscription: { ...sub, currencyId: eur } }))
+      .rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it('⚠️ ورودیِ نادرست پیش از هر نوشتنی رد می‌شود — نه دسته، نه هزینه، نه سرویسِ نیمه‌کاره', async () => {
+    const before = [await count(services), await count(tags), await count(recurringExpenses)];
+    await expect(access.saveService(full(), {
+      ...base, name: 'Broken', newCategoryName: 'دستهٔ یتیم', newSubscription: { ...sub, amount: '0', currencyId: eur },
+    })).rejects.toBeInstanceOf(AccessError);
+    await expect(access.saveService(full(), {
+      ...base, name: '', newCategoryName: 'دستهٔ یتیم',
+    })).rejects.toBeInstanceOf(AccessError);
+    expect([await count(services), await count(tags), await count(recurringExpenses)]).toEqual(before);
+  });
+
+  it('دفتر به فرم می‌گوید چه کسی اشتراک می‌سازد و با چه ارزی', async () => {
+    const plain = await access.accessBoard(cfo());
+    expect(plain.canCreateSubscription).toBe(false);
+    expect(plain.currencies).toEqual([]);
+    const board = await access.accessBoard(full());
+    expect(board.canCreateSubscription).toBe(true);
+    expect(board.currencies.map((c) => c.code)).toContain('EUR');
+    expect(board.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});

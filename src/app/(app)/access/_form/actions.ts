@@ -59,8 +59,22 @@ export async function saveServiceAction(_prev: AccessState, formData: FormData) 
      * این ورودی را ندارد. سرویس در آن حالت مقدارِ قبلی را نگه می‌دارد.
      */
     recurringExpenseId: num(formData.get('recurringExpenseId')),
+    // «+ دستهٔ تازه» ِ انتخابگر: مقدارِ فیلد `__new__` و نام در فیلدِ جدا.
+    newCategoryName: formData.get('categoryTagId') === NEW
+      ? String(formData.get('newCategoryName') ?? '') : '',
+    newSubscription: formData.get('recurringExpenseId') === NEW
+      ? {
+        amount: String(formData.get('subAmount') ?? ''),
+        currencyId: num(formData.get('subCurrencyId')),
+        intervalUnit: String(formData.get('subIntervalUnit') ?? 'month'),
+        nextDueDate: String(formData.get('subNextDueDate') ?? ''),
+      }
+      : null,
   }), 'سرویس ذخیره نشد.');
 }
+
+/** همان `CREATE_VALUE` ِ انتخابگر — رشتهٔ ساده، چون این فایل سرور است و آن کامپوننتِ کلاینت. */
+const NEW = '__new__';
 
 export async function deleteServiceAction(id: number) {
   return run((actor) => access.deleteService(actor, id), 'سرویس غیرفعال نشد.');
