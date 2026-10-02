@@ -8,6 +8,9 @@ import { primeTranslations, t } from '@/i18n/server';
 import { ltr } from '@/i18n/bidi';
 import { PrintButton } from '@/components/print-button';
 import { BackLink, PageHeader, PageShell, Section } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('فاکتور');
 
 /**
  * فاکتورِ پروژه — سندِ قابلِ چاپ.

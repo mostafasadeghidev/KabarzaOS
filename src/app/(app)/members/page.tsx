@@ -1,5 +1,8 @@
 import { PeopleSectionPage } from '../_people/section-page';
 import { primeTranslations, t } from '@/i18n/server';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('اعضا');
 
 /** اعضای تیم — معادلِ `Members_Page`: تگ، دفتر و off-boarding همه روشن. */
 /**

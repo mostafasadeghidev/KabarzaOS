@@ -10,6 +10,9 @@ import { hasHoursFilter, parseHoursFilter } from '@/domain/timelogs/hours-filter
 import { HoursView } from './hours-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('ساعت کاری');
 
 /** ساعتِ کاری — تایمر، ثبتِ دستی و فهرستِ ثبت‌های خودِ کاربر (پورتِ `view_hours`). */
 export default async function HoursPage({

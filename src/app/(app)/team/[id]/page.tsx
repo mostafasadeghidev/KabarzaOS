@@ -18,6 +18,9 @@ import { Progress } from '@/components/ui/progress';
 import { Thumb } from '@/components/thumb';
 import { ProjectBoard } from '../project-board';
 import { OpenTaskList } from './open-task-list';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('تیمِ من');
 
 /**
  * پروفایلِ کاریِ یک عضو برای مدیرِ دفتر — پورتِ `view_team_member`: آمار،

@@ -11,6 +11,9 @@ import { primeTranslations, t } from '@/i18n/server';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('گزارش‌ها');
 
 /**
  * ریزِ مطالباتِ یک کارفرما — پورتِ `client_detail` ِ افزونه: کارت‌های یورو،

@@ -6,6 +6,9 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { MeetingsView } from './meetings-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('جلسات');
 
 /** جلسات — دو تبِ `Meetings_Page`: «جلسات» و «یادآورهای من». */
 export default async function MeetingsPage({

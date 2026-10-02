@@ -3,6 +3,9 @@ import { isInstalled } from '@/server/setup/service';
 import { publicBrand } from '@/server/setup/public-brand';
 import { PublicShell } from '@/components/public-shell';
 import { LoginForm } from './login-form';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('ورود به حساب');
 
 /**
  * ⚠️ روی نصبِ تازه، به‌جای فرمِ ورود ویزارد باز می‌شود. بدونِ این، کاربر

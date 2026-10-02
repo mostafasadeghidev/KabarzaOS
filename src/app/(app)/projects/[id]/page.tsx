@@ -34,6 +34,9 @@ import { Thumb } from '@/components/thumb';
 import { CircleAlert } from 'lucide-react';
 import { PageHeader, PageShell, Panel } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('پروژه‌ها');
 
 export default async function ProjectDetailPage({
   params,

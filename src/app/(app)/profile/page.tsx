@@ -6,6 +6,9 @@ import { myGrants } from '@/server/access/service';
 import { ProfileView } from './profile-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('پروفایلِ من');
 
 /** پروفایلِ من — هر کاربرِ واردشده‌ای دارد؛ مجوزِ خاصی لازم نیست. */
 export default async function ProfilePage() {

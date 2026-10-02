@@ -9,6 +9,9 @@ import { StatCard } from '@/components/stat-card';
 import { PageHeader, PageShell, Panel } from '@/components/page-shell';
 import { primeTranslations, t } from '@/i18n/server';
 import { AddTaskDialog, StartButton, TaskRows } from '../onboarding-client';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('آنبوردینگ');
 
 /** آنبوردینگِ یک نفر — نمای مدیر: پیشرفت، عقب‌افتاده‌ها، و همهٔ کارها با مسئول. */
 export default async function OnboardingPersonPage({ params }: { params: Promise<{ id: string }> }) {

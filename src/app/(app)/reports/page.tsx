@@ -17,6 +17,9 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ReportsView } from './reports-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('گزارش‌ها');
 
 /** گزارش‌ها — همهٔ اعداد در ارزِ پایه و از ستون‌های منجمد. */
 export default async function ReportsPage({

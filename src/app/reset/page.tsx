@@ -5,6 +5,9 @@ import { primeTranslations } from '@/i18n/server';
 import { publicBrand } from '@/server/setup/public-brand';
 import { PublicShell } from '@/components/public-shell';
 import { Card, CardContent } from '@/components/ui/card';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('تعیینِ رمزِ عبور');
 
 /** تعیینِ رمز از راهِ لینکِ ایمیل — عمومی، مثلِ صفحهٔ ورود. */
 export default async function ResetPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {

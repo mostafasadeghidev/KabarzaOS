@@ -6,6 +6,9 @@ import { primeTranslations, t } from '@/i18n/server';
 import { TaskTable } from './task-table';
 import { TasksTabs } from './tasks-tabs';
 import { PageHeader, PageShell, Panel } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('تسک‌ها');
 
 /**
  * «تسک‌های شما» — پورتِ `view_tasks()` ِ داشبوردِ نسخهٔ قبلی.

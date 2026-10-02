@@ -17,6 +17,9 @@ import { ProjectBoard } from './project-board';
 import { TaskBoard } from './task-board';
 import { CommentThreads, ReviewTasks } from './review-panel';
 import { ProjectDialog } from '../projects/_form/project-dialog';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('تیمِ من');
 
 type Params = {
   tab?: string; range?: string; from?: string; to?: string;

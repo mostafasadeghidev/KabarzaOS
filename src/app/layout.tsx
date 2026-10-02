@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { currentSession } from '@/server/auth';
 import { direction } from '@/i18n/config';
 import { primeTranslations, getT } from '@/i18n/server';
+import { brandIdentity } from '@/server/setup/public-brand';
 import { TranslationProvider } from '@/i18n/client';
 import { ThemeProvider } from '@/components/theme-provider';
 import { themeScript } from '@/components/theme-script';
@@ -16,9 +17,20 @@ import './globals.css';
  * در هر زبانی فارسی می‌گذاشت.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
+  const [t, brand] = await Promise.all([getT(), brandIdentity()]);
+  // ⚠️ نسخه در نشانی: با عوض‌شدنِ لوگو یا نام، مرورگر آیکونِ تازه را می‌گیرد، نه کش را.
+  const icon = (size: number) => `/brand-icon?size=${size}&v=${brand.version}`;
   return {
-    title: 'KabarzaOS',
+    // عنوانِ تب: «پروژه‌ها — نامِ برند»؛ صفحه‌ای که عنوان ندارد فقط نامِ برند.
+    title: { default: brand.name, template: `%s — ${brand.name}` },
+    applicationName: brand.name,
+    icons: {
+      icon: [
+        { url: icon(32), sizes: '32x32', type: 'image/png' },
+        { url: icon(192), sizes: '192x192', type: 'image/png' },
+      ],
+      apple: [{ url: icon(180), sizes: '180x180', type: 'image/png' }],
+    },
     description: t('سیستمِ مدیریتِ آژانس'),
     // ⚠️ اپِ داخلی است — هیچ صفحه‌ای (فاکتور، ورود) نباید در موتورِ جستجو بنشیند.
     robots: { index: false, follow: false },

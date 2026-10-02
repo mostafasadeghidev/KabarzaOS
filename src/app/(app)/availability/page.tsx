@@ -12,6 +12,9 @@ import { primeTranslations, t } from '@/i18n/server';
 import { leaveTargets, listAbsences } from '@/server/availability/absence-service';
 import { AbsencePanel } from '../activity/absence-panel';
 import { PageHeader, PageShell, Section } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('در دسترس بودن');
 
 /**
  * «در دسترس بودن اعضا» — پورتِ صفحهٔ مستقلِ `Admin\Availability_Page`.

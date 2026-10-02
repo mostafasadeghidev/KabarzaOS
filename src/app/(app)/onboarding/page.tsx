@@ -14,6 +14,9 @@ import { PageHeader, PageShell, Panel } from '@/components/page-shell';
 import { primeTranslations, t } from '@/i18n/server';
 import { formatDate } from '@/i18n/datetime';
 import { StartPicker, TaskRows } from './onboarding-client';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('آنبوردینگ');
 
 /**
  * آنبوردینگ — نمای مدیرانِ اعضا: کارهایی که با خودشان است، اعضایی که

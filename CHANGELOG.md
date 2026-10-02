@@ -2,6 +2,21 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.109.0]
+
+### Added
+
+- **App icon (favicon).** The app had no icon at all — `/favicon.ico` returned 404 and browsers showed a generic one. The icon is now the company logo from Settings → Company profile, or, without a logo, the first letter of the brand name on the app's primary colour (the same mark as the sidebar and the sign-in page), drawn in Vazirmatn so Persian letters render too. Sizes: 32 (tab), 192 (Android), and a 180 apple-touch-icon on white for iPhone home screens. `/favicon.ico` answers with the same icon.
+- The icon address carries a version derived from the logo and the brand name, so changing either shows the new icon instead of a cached one.
+- **Tab titles.** Every page now has its own title followed by the brand name — for example «Projects — Kabarza» — instead of «KabarzaOS» everywhere. Single-item pages (a project, a member, a report) use their section name, so a name the viewer may not be allowed to see never appears in a tab.
+
+### Security
+
+- The icon is public because the sign-in page needs it, but it never serves a stored file: it takes no file id, knows only the logo set in the company profile (already shown on the sign-in page), and re-encodes it as a new PNG, which also drops hidden metadata such as EXIF location. SVG logos are not used.
+
+### Notes
+
+- Vazirmatn Bold (SIL Open Font License 1.1, licence text alongside) is bundled in `src/assets/fonts`, because the server image has no fonts.
 ## [1.108.0]
 
 ### Changed

@@ -4,6 +4,9 @@ import { myOpenCommentThreads } from '@/server/projects/service';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { CommentThreads } from '../team/review-panel';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('کامنت‌های نیازمند بررسی');
 
 /**
  * «کامنت‌های نیازمند بررسی» — پورتِ `view_thread_list( 'comment' )`: رشته‌های

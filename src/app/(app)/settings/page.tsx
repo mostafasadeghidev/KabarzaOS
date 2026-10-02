@@ -19,6 +19,9 @@ import { getCompany } from '@/server/people/profile-service';
 import { assignOptions, listLibrary } from '@/server/onboarding/service';
 import { getBackupView } from '@/server/backup/service';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('تنظیمات');
 
 /**
  * تنظیمات — فهرست‌های پایه.

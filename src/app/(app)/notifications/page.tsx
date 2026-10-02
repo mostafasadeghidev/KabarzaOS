@@ -4,6 +4,9 @@ import { listNotificationFeed } from '@/server/notifications/service';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { NotificationFeed, MarkAllReadButton } from './notification-feed';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('اعلان‌ها');
 
 /**
  * صفحهٔ اعلان‌ها — پورتِ `view_notifications`.

@@ -14,6 +14,9 @@ import { primeTranslations, t } from '@/i18n/server';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('گزارش‌ها');
 
 /**
  * ریزِ کارِ یک عضو در گزارش‌ها — پورتِ `member_detail` ِ افزونه: کارت‌های یورو،

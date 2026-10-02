@@ -14,6 +14,9 @@ import { getSystemConfig } from '@/server/settings/system-service';
 import { hoursRange, parseIds, rangeLabel, reportQuery } from '@/domain/reports/filters';
 import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { StatCard } from '@/components/stat-card';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('گزارش‌ها');
 
 /**
  * ریزِ ساعتِ کاریِ یک عضو — پورتِ نمای drill-down نسخهٔ قبلی.

@@ -5,6 +5,9 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { MyMoneyView } from './money-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('امور مالی');
 
 /**
  * «مالیِ من» — صورت‌حسابِ کارفرما و دریافتی‌های عضو، روی همهٔ پروژه‌ها

@@ -10,6 +10,9 @@ import { ProjectStatus } from '../../projects/project-status';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { Item } from '@/components/ui/item';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('نمای کلی');
 
 /**
  * فهرستِ متمرکزِ داشبورد — پورتِ `class-focus-page.php`: کارتِ «منتظرِ اقدام»

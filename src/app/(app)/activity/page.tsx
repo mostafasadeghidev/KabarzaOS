@@ -13,6 +13,9 @@ import { getSystemConfig } from '@/server/settings/system-service';
 import { ActivityView } from './activity-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('فعالیت');
 
 /** فعالیت و حضور — از همان لاگِ ممیزی که هر سرویس در آن می‌نویسد. */
 export default async function ActivityPage({

@@ -561,3 +561,24 @@ export async function companyLogoDataUrl(): Promise<string | null> {
   const bytes = await getObject(usePreview ? file.previewKey! : file.storageKey);
   return `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
 }
+
+/**
+ * بایت‌های لوگوی شرکت برای **ساختنِ** آیکونِ برنامه (فاوآیکون) — نه برای
+ * فرستادنِ مستقیم.
+ *
+ * ⚠️ مسیرِ آیکون (`/brand-icon`) هم مثلِ صفحهٔ ورود فقط همین یک لوگو را
+ * می‌شناسد، شناسه‌ای نمی‌گیرد و فایل را **دوباره می‌سازد** (PNG ِ کوچکِ تازه
+ * با sharp)؛ پس هیچ فایلِ ذخیره‌شده‌ای عیناً بی‌ورود بیرون نمی‌رود و اطلاعاتِ
+ * پنهانِ عکس (EXIF، موقعیت) هم با آن نمی‌رود. همان قیدهای `companyLogoDataUrl`:
+ * فقط تصویر و هرگز SVG.
+ * نسخهٔ اصلی بر پیش‌نمایش مقدم است: آیکونِ ۵۱۲ پیکسلی از پیش‌نمایشِ کوچک تار می‌شد.
+ */
+export async function companyLogoImage(): Promise<Buffer | null> {
+  const [row] = await db.select({ logoFileId: company.logoFileId }).from(company).where(eq(company.id, 1));
+  if (!row?.logoFileId) return null;
+  const [file] = await db.select().from(files).where(eq(files.id, row.logoFileId));
+  if (!file || !file.mime.startsWith('image/')) return null;
+  const original = file.mime !== 'image/svg+xml';
+  if (!original && !file.previewKey) return null;
+  return Buffer.from(await getObject(original ? file.storageKey : file.previewKey!));
+}

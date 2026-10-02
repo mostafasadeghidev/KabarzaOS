@@ -6,6 +6,9 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { AccessView } from './access-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('دسترسی‌ها');
 
 /**
  * دفترِ دسترسی‌های بیرونی — «چه کسی به چه سامانه‌ای دسترسی دارد».

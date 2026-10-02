@@ -20,6 +20,9 @@ import { canViewSection } from '@/domain/access/permissions';
 import { hasTeamScope, teamOverview } from '@/server/team/service';
 import { TeamOverviewCards } from '../team/overview-cards';
 import { DashboardTimeLog } from './time-log-card';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('نمای کلی');
 
 /**
  * داشبورد.

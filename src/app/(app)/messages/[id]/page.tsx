@@ -1,5 +1,8 @@
 import { notFound } from 'next/navigation';
 import { MessagesScreen } from '../messages-screen';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('پیام‌ها');
 
 /**
  * `/messages/{threadId}` — همان صندوق، با گفتگوی خواسته‌شده باز.

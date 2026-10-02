@@ -18,6 +18,13 @@ const nextConfig: NextConfig = {
    * کشِ ناوبری با `prefetch={false}` روی لینک‌های سایدبار خاموش می‌شود —
    * جایی که واقعاً اهمیت دارد.
    */
+  /**
+   * مرورگرها (و نمایشگرِ PDF) بی‌توجه به پیوندِ صفحه `/favicon.ico` را هم
+   * می‌خواهند؛ همان آیکونِ برند جواب می‌دهد، نه ۴۰۴.
+   */
+  async rewrites() {
+    return [{ source: '/favicon.ico', destination: '/brand-icon?size=32' }];
+  },
   experimental: {
     staleTimes: { dynamic: 0 },
     cpus: 4,

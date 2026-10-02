@@ -11,6 +11,9 @@ import { ProjectGrid } from './project-grid';
 import { ProjectDialog } from './_form/project-dialog';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('پروژه‌ها');
 
 /**
  * نمای کارتِ پروژه‌ها — ساختار از نسخهٔ قبلی:

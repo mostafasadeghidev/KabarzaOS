@@ -12,6 +12,9 @@ import { AccountsView } from './accounts-view';
 import { can } from '@/domain/access/permissions';
 import { listVendors } from '@/server/settings/service';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { pageTitle } from '@/i18n/page-title';
+
+export const generateMetadata = pageTitle('مالی');
 
 /** حسابداری — دفترکلِ حساب‌ها. */
 export default async function Finance({
