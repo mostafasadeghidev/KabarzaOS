@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   AccessError, accessMessage, assertRevocable, assertServiceName, countByService,
-  countByUser, isOpen, normalizeLevel, normalizeNewSubscription, openGrants, openRisks, planGrant,
+  countByUser, historyByService, isOpen, normalizeLevel, normalizeNewSubscription, openGrants, openRisks,
+  planGrant, planServiceRemoval,
   type GrantLike,
 } from './service-grants';
 import type { MemberState } from '@/domain/people/offboarding';
@@ -157,5 +158,28 @@ describe('اشتراکِ تازه از فرمِ سرویس', () => {
     expect(code(() => normalizeNewSubscription({ ...base, currencyId: null }))).toBe('currency_required');
     expect(code(() => normalizeNewSubscription({ ...base, nextDueDate: '' }))).toBe('date_invalid');
     expect(code(() => normalizeNewSubscription({ ...base, nextDueDate: '2026-13-45' }))).toBe('date_invalid');
+  });
+});
+
+describe('حذفِ سرویس — پاک یا غیرفعال', () => {
+  it('بی‌تاریخچه: واقعاً پاک می‌شود، فعال یا غیرفعال', () => {
+    expect(planServiceRemoval({ isActive: true, grantCount: 0, onboardingCount: 0 })).toBe('delete');
+    expect(planServiceRemoval({ isActive: false, grantCount: 0, onboardingCount: 0 })).toBe('delete');
+  });
+
+  it('⚠️ با تاریخچه فقط غیرفعال می‌شود — گرنتِ بسته‌شده هم تاریخچه است', () => {
+    expect(planServiceRemoval({ isActive: true, grantCount: 1, onboardingCount: 0 })).toBe('deactivate');
+    expect(planServiceRemoval({ isActive: true, grantCount: 0, onboardingCount: 2 })).toBe('deactivate');
+    expect(planServiceRemoval({ isActive: false, grantCount: 3, onboardingCount: 0 })).toBe('none');
+  });
+
+  it('شمارِ تاریخچه بسته‌شده‌ها را هم می‌شمارد', () => {
+    const g = (id: number, serviceId: number, revoked: boolean): GrantLike => ({
+      id, serviceId, userId: id, level: 'member', revokedAt: revoked ? '2026-01-01' : null,
+    });
+    const map = historyByService([g(1, 7, false), g(2, 7, true), g(3, 8, true)]);
+    expect(map.get(7)).toBe(2);
+    expect(map.get(8)).toBe(1);
+    expect(map.get(9)).toBeUndefined();
   });
 });

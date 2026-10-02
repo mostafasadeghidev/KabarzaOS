@@ -19,7 +19,7 @@ import { Section } from '@/components/page-shell';
 import { cn } from '@/lib/utils';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
-import { useConfirm } from '@/components/ui/confirm';
+import { useConfirm, type ConfirmOptions } from '@/components/ui/confirm';
 
 /**
  * الگوی مشترکِ هر فهرستِ پایه: جدول + فرم در دیالوگ + حذف.
@@ -62,6 +62,7 @@ export function CatalogSection<T extends { id: number }>({
   addLabel,
   rowActions,
   canDelete,
+  deleteConfirm,
   fixed = false,
 }: {
   title: string;
@@ -77,6 +78,8 @@ export function CatalogSection<T extends { id: number }>({
   rowActions?: (row: T) => React.ReactNode;
   /** ردیفی که حذف ندارد (مثلاً تگِ سیستمی) — دکمه اصلاً کشیده نمی‌شود (پورتِ «delete link hidden for protected»). */
   canDelete?: (row: T) => boolean;
+  /** متنِ پنجرهٔ تأییدِ حذفِ هر ردیف (ترجمه‌شده) — پیش‌فرض «حذف شود؟». */
+  deleteConfirm?: (row: T) => ConfirmOptions;
   /**
    * پهنای ثابتِ ستون‌ها. ⚠️ برای جدولی که محتوایش جا عوض می‌کند و خودِ جدول
    * سرِ جایش می‌ماند (تگ‌ها: پنج نوع در یک جا): با چیدمانِ خودکار هر نوع
@@ -178,11 +181,11 @@ export function CatalogSection<T extends { id: number }>({
                       disabled={pending}
                       onClick={async () => {
                         // پورتِ `confirm('حذف شود؟')` ِ هر ردیفِ کاتالوگ — حذفِ یک‌کلیکی نه.
-                        if (!(await confirm({ title: t('حذف شود؟') }))) return;
+                        if (!(await confirm(deleteConfirm?.(row) ?? { title: t('حذف شود؟') }))) return;
                         startTransition(async () => {
                           const result = await deleteAction(row);
                           if (result.error) show(t(result.error), 'error');
-                          else show(t('حذف شد.'), 'success');
+                          else show(t(result.message ?? 'حذف شد.'), 'success');
                         });
                       }}
                     >

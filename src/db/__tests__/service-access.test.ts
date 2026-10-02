@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
-  currencies, notifications, recurringExpenses, serviceGrants, services, tags, userRoles, users,
+  currencies, notifications, onboardingItems, recurringExpenses, serviceGrants, services, tags, userRoles, users,
 } from '../schema';
 import * as access from '@/server/access/service';
 import * as settings from '@/server/settings/service';
@@ -174,13 +174,64 @@ describe('R-ACCESS-01 — قطع یعنی مهرِ زمان، نه حذف', () =
   });
 });
 
+/** یک دسترسیِ **بسته‌شده** — کمترین تاریخچه‌ای که سرویس را از پاک‌شدن نگه می‌دارد. */
+const withHistory = (serviceId: number) => db.insert(serviceGrants).values({
+  serviceId, userId: boss, accountRef: 'old', level: 'member', vaultRef: '', note: '',
+  revokedAt: new Date('2026-01-01'),
+});
+
 describe('سرویس‌ها', () => {
-  it('⚠️ حذف نمی‌شود، غیرفعال می‌شود — تاریخچه با cascade نمی‌رود', async () => {
-    await access.deleteService(manager(), voip);
+  it('⚠️ با تاریخچه حذف نمی‌شود، غیرفعال می‌شود — تاریخچه با cascade نمی‌رود', async () => {
+    await withHistory(voip);
+    expect(await access.deleteService(manager(), voip)).toBe('deactivate');
 
     const [row] = await db.select().from(services).where(eq(services.id, voip));
     expect(row).toBeDefined();
     expect(row!.isActive).toBe(false);
+    expect((await db.select().from(serviceGrants).where(eq(serviceGrants.serviceId, voip))).length).toBe(1);
+  });
+
+  it('بی‌تاریخچه واقعاً پاک می‌شود — فعال یا غیرفعال', async () => {
+    const a = await access.findOrCreateService(manager(), 'آزمایشیِ ۱');
+    expect(await access.deleteService(manager(), a)).toBe('delete');
+    expect((await db.select().from(services).where(eq(services.id, a))).length).toBe(0);
+
+    const b = await access.findOrCreateService(manager(), 'آزمایشیِ ۲');
+    await db.update(services).set({ isActive: false }).where(eq(services.id, b));
+    expect(await access.deleteService(manager(), b)).toBe('delete');
+    expect((await db.select().from(services).where(eq(services.id, b))).length).toBe(0);
+  });
+
+  it('⚠️ اشتراکِ مالیِ وصل‌شده با حذفِ سرویس نمی‌رود', async () => {
+    const id = await access.saveService(cfo(), {
+      id: null, name: 'با اشتراک', categoryTagId: null, ownerUserId: null, adminUrl: '', note: '',
+      isActive: true, recurringExpenseId: sub,
+    });
+    expect(await access.deleteService(manager(), id)).toBe('delete');
+    expect((await db.select().from(recurringExpenses).where(eq(recurringExpenses.id, sub))).length).toBe(1);
+  });
+
+  it('⚠️ استفاده در آنبوردینگ هم تاریخچه است', async () => {
+    const id = await access.findOrCreateService(manager(), 'در آنبوردینگ');
+    await db.insert(onboardingItems).values({ title: 'دسترسی', kind: 'access', assignee: 'member', serviceId: id });
+    expect(await access.deleteService(manager(), id)).toBe('deactivate');
+    expect((await db.select().from(services).where(eq(services.id, id))).length).toBe(1);
+  });
+
+  it('سرویسِ غیرفعالِ دارای تاریخچه کاری ندارد و پاک نمی‌شود', async () => {
+    await expect(access.deleteService(manager(), voip)).rejects.toBeInstanceOf(AccessError);
+    expect((await db.select().from(services).where(eq(services.id, voip))).length).toBe(1);
+  });
+
+  it('دفتر شمارِ تاریخچه را به صفحه می‌دهد', async () => {
+    const board = await access.accessBoard(manager());
+    const row = board.services.find((x) => x.id === voip)!;
+    expect(row.grantCount).toBeGreaterThanOrEqual(1);
+    expect(row.onboardingCount).toBe(0);
+  });
+
+  it('حذف هم گاردِ دفتر را دارد', async () => {
+    await expect(access.deleteService(viewer(), ai)).rejects.toBeInstanceOf(ForbiddenError);
   });
 });
 
@@ -337,6 +388,7 @@ describe('دستهٔ سرویس — تگی که در تنظیمات اداره �
       id: null, name: 'کنارگذاشته', categoryTagId: cat!.id, ownerUserId: null,
       adminUrl: '', note: '', isActive: true,
     });
+    await withHistory(id);
     await access.deleteService(manager(), id);
 
     await expect(settings.deleteTag(admin, cat!.id)).rejects.toThrow(CatalogError);
@@ -407,6 +459,7 @@ describe('ساختنِ همان‌جا — سرویس، دسته و اشتراک
 
   it('⚠️ سرویسِ غیرفعالِ هم‌نام دوباره فعال می‌شود، نه ردیفِ دوم', async () => {
     const id = await access.findOrCreateService(manager(), 'Trello');
+    await withHistory(id);
     await access.deleteService(manager(), id);
     expect(await access.findOrCreateService(manager(), 'trello')).toBe(id);
     const [row] = await db.select({ isActive: services.isActive }).from(services).where(eq(services.id, id));

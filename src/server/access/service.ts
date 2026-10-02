@@ -1,15 +1,17 @@
 import { and, asc, desc, eq, getTableColumns, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
-  auditLog, currencies, recurringExpenses, serviceGrants, services, tags, userRoles, users,
+  auditLog, currencies, onboardingItems, onboardingTasks, recurringExpenses, serviceGrants, services, tags,
+  userRoles, users,
 } from '@/db/schema';
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
 import { can, canManageSection, type Actor } from '@/domain/access/permissions';
 import { assertCan, assertCanManage, assertCanView } from '@/domain/access/guard';
 import {
-  assertRevocable, assertServiceName, countByService, normalizeLevel, normalizeNewSubscription,
-  openRisks, planGrant, type GrantLevel, type NewSubscriptionInput,
+  AccessError, assertRevocable, assertServiceName, countByService, historyByService, normalizeLevel,
+  normalizeNewSubscription, openRisks, planGrant, planServiceRemoval,
+  type GrantLevel, type NewSubscriptionInput, type ServiceRemoval,
 } from '@/domain/access/service-grants';
 import { localParts } from '@/domain/scheduler/tick';
 import { saveRecurring } from '@/server/finance/payouts';
@@ -133,14 +135,22 @@ export async function accessBoard(actor: Actor) {
 
   const subById = new Map(subscriptions.map((r) => [r.id, r]));
 
+  // تاریخچهٔ هر سرویس — دکمهٔ «حذف» با آن می‌داند پاک می‌کند یا غیرفعال (planServiceRemoval).
+  const history = historyByService(grantRows);
+  const onboardingUse = await onboardingUseByService();
+
   const serviceViews = serviceRows.map((s) => {
     const openCount = counts.get(s.id) ?? 0;
+    const grantCount = history.get(s.id) ?? 0;
+    const onboardingCount = onboardingUse.get(s.id) ?? 0;
     const sub = s.recurringExpenseId ? subById.get(s.recurringExpenseId) : undefined;
-    if (!sub) return { ...s, openCount, cost: null };
+    if (!sub) return { ...s, openCount, grantCount, onboardingCount, cost: null };
     const monthly = monthlyEquivalent(sub.amount, sub.intervalUnit as IntervalUnit, sub.intervalCount);
     return {
       ...s,
       openCount,
+      grantCount,
+      onboardingCount,
       cost: {
         subscriptionId: sub.id,
         title: sub.title,
@@ -388,18 +398,45 @@ export async function saveService(actor: Actor, input: ServiceInput) {
   return rows[0]!.id;
 }
 
+/** شمارِ استفادهٔ هر سرویس در آنبوردینگ (آیتمِ کتابخانه + کارِ اعضا). */
+async function onboardingUseByService(serviceId?: number): Promise<Map<number, number>> {
+  const out = new Map<number, number>();
+  for (const table of [onboardingItems, onboardingTasks]) {
+    const rows = await db.select({ id: table.serviceId, n: sql<number>`count(*)::int` }).from(table)
+      .where(serviceId ? eq(table.serviceId, serviceId) : sql`${table.serviceId} is not null`)
+      .groupBy(table.serviceId);
+    for (const r of rows) if (r.id) out.set(r.id, (out.get(r.id) ?? 0) + r.n);
+  }
+  return out;
+}
+
 /**
- * ⚠️ سرویس حذف نمی‌شود، غیرفعال می‌شود — مثلِ دفتر.
+ * «حذف» ِ سرویس: بی‌تاریخچه پاک می‌شود، با تاریخچه غیرفعال (`planServiceRemoval`).
  *
- * چرا: گرنت‌ها با `on delete cascade` به سرویس بسته‌اند، پس حذفِ یک سرویس
- * کلِ تاریخچهٔ «چه کسی به آن دسترسی داشت» را هم می‌برد — همان پرسشی که این
- * ماژول برای پاسخش ساخته شده.
+ * ⚠️ شمارش و پاک‌کردن در یک تراکنش، با قفلِ ردیفِ سرویس: گرنتِ تازه برای
+ * کلیدِ خارجی‌اش همان ردیف را قفل می‌کند، پس میانِ «تاریخچه ندارد» و «پاک شد»
+ * کسی نمی‌تواند دسترسی‌ای ثبت کند که بی‌صدا با cascade برود.
+ *
+ * اشتراکِ مالیِ وصل‌شده دست نمی‌خورد: هزینهٔ دوره‌ای در «مالی» می‌ماند.
  */
-export async function deleteService(actor: Actor, id: number) {
+export async function deleteService(actor: Actor, id: number): Promise<ServiceRemoval> {
   assertCanManage(actor, 'members');
-  await db.update(services).set({ isActive: false, updatedAt: new Date() })
-    .where(eq(services.id, id));
-  await audit(actor, 'service.deactivate', 'service', id);
+  const outcome = await db.transaction(async (tx) => {
+    const [svc] = await tx.select({ isActive: services.isActive }).from(services)
+      .where(eq(services.id, id)).for('update');
+    if (!svc) throw new AccessError('not_found');
+    const [{ n: grantCount } = { n: 0 }] = await tx.select({ n: sql<number>`count(*)::int` })
+      .from(serviceGrants).where(eq(serviceGrants.serviceId, id));
+    const onboardingCount = (await onboardingUseByService(id)).get(id) ?? 0;
+
+    const plan = planServiceRemoval({ isActive: svc.isActive, grantCount, onboardingCount });
+    if (plan === 'none') throw new AccessError('has_history');
+    if (plan === 'delete') await tx.delete(services).where(eq(services.id, id));
+    else await tx.update(services).set({ isActive: false, updatedAt: new Date() }).where(eq(services.id, id));
+    return plan;
+  });
+  await audit(actor, outcome === 'delete' ? 'service.delete' : 'service.deactivate', 'service', id);
+  return outcome;
 }
 
 /* ------------------------------------------------------------------ *

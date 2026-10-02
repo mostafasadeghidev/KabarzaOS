@@ -26,6 +26,8 @@ import {
 export interface SettingsState {
   error?: string;
   ok?: boolean;
+  /** پیامِ موفقیتِ ویژه به‌جای پیامِ پیش‌فرض. */
+  message?: string;
 }
 
 function explain(error: unknown, fallback: string): string {

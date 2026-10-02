@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.108.0]
+
+### Changed
+
+- **Deleting a service now deletes it when it has no history.** Until now the delete button in Access → Services only ever deactivated the service, even one created by mistake that nobody had access to, and an inactive service could not be removed at all. Now:
+  - a service with no recorded access (open or revoked) that is not used in onboarding is deleted completely — active or inactive;
+  - a service with a history is deactivated as before, so the record of who had access is kept; once inactive, it has no delete button.
+- The confirmation says which of the two will happen before you confirm («Delete the service “…”?» or «Deactivate the service “…”?» with the number of recorded accesses), and the message afterwards says which one did.
+- A subscription linked to a deleted service stays in Finance.
+- Deletion is recorded in the activity log as «Delete service».
+
+### Fixed
+
+- Counting the history and deleting happen in one transaction with the service row locked, so an access granted at the same moment cannot be silently removed with the service.
 ## [1.107.0]
 
 ### Added

@@ -133,6 +133,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'service.create': 'سرویسِ جدید',
   'service.update': 'ویرایشِ سرویس',
   'service.deactivate': 'غیرفعال‌سازیِ سرویس',
+  'service.delete': 'حذفِ سرویس',
   'service_grant.create': 'اعطای دسترسیِ بیرونی',
   'service_grant.update': 'ویرایشِ دسترسیِ بیرونی',
   'service_grant.revoke': 'قطعِ دسترسیِ بیرونی',

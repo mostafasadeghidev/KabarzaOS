@@ -10,7 +10,7 @@ import {
   saveServiceAction, type AccessState,
 } from './_form/actions';
 import { format as formatMoney } from '@/domain/money/money';
-import { GRANT_LEVELS, LEVEL_LABELS, type GrantLevel } from '@/domain/access/service-grants';
+import { GRANT_LEVELS, LEVEL_LABELS, planServiceRemoval, type GrantLevel } from '@/domain/access/service-grants';
 import type { MemberState } from '@/domain/people/offboarding';
 import { stateLabel } from '@/domain/people/offboarding';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +57,10 @@ export interface ServiceRow {
   isActive: boolean;
   /** شمارِ دسترسیِ بازِ همین سرویس. */
   openCount: number;
+  /** همهٔ دسترسی‌های ثبت‌شده، بسته‌شده هم — «تاریخچه». */
+  grantCount: number;
+  /** شمارِ استفاده در آنبوردینگ (کتابخانه و کارِ اعضا). */
+  onboardingCount: number;
   /** اشتراکِ متناظر در ماژولِ مالی. */
   recurringExpenseId: number | null;
   /** هزینه — فقط برای کسی که `finance.view` دارد؛ وگرنه همیشه null. */
@@ -377,7 +381,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
       {tab === 'services' && (
         <CatalogSection
           title={tr("سرویس‌ها")}
-          description={tr("سامانه‌های بیرونی که تیم به آن‌ها دسترسی می‌گیرد. سرویس حذف نمی‌شود؛ غیرفعال می‌شود تا تاریخچه بماند.")}
+          description={tr("سامانه‌های بیرونی که تیم به آن‌ها دسترسی می‌گیرد. سرویسی که هنوز دسترسی‌ای ندارد حذف می‌شود؛ سرویسِ دارای تاریخچه فقط غیرفعال می‌شود تا تاریخچه بماند.")}
           addLabel="افزودن سرویس"
           rows={data.services}
           columns={[
@@ -436,7 +440,23 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
           ]}
           saveAction={saveServiceAction}
           deleteAction={(s) => deleteServiceAction(s.id)}
-          canDelete={(s) => s.isActive}
+          // پاک یا غیرفعال، بسته به تاریخچه — قاعده در planServiceRemoval است.
+          canDelete={(s) => planServiceRemoval(s) !== 'none'}
+          deleteConfirm={(s) => (planServiceRemoval(s) === 'delete'
+            ? {
+              title: tr('سرویسِ «{name}» حذف شود؟', { name: s.name }),
+              description: tr('هیچ دسترسی‌ای برایش ثبت نشده و در آنبوردینگ هم به کار نرفته، پس کامل پاک می‌شود. اشتراکِ مالیِ وصل‌شده در «مالی» می‌ماند.'),
+              confirmLabel: tr('حذف کن'),
+            }
+            : {
+              title: tr('سرویسِ «{name}» غیرفعال شود؟', { name: s.name }),
+              description: `${s.grantCount > 0 && s.onboardingCount > 0
+                ? tr('برای این سرویس {n} دسترسی ثبت شده و در آنبوردینگ هم به کار رفته.', { n: s.grantCount })
+                : s.grantCount > 0
+                  ? tr('برای این سرویس {n} دسترسی ثبت شده.', { n: s.grantCount })
+                  : tr('این سرویس در آنبوردینگ به کار رفته.')} ${tr('برای اینکه این تاریخچه بماند پاک نمی‌شود و فقط غیرفعال می‌شود؛ هر وقت خواستید دوباره فعالش کنید.')}`,
+              confirmLabel: tr('غیرفعال کن'),
+            })}
           renderForm={(edit) => <ServiceFields edit={edit} data={data} />}
         />
       )}

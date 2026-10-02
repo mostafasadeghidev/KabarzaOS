@@ -35,7 +35,8 @@ export class AccessError extends Error {
       | 'not_found'
       | 'amount_invalid'
       | 'currency_required'
-      | 'date_invalid',
+      | 'date_invalid'
+      | 'has_history',
   ) {
     super(`access rule violated: ${code}`);
     this.name = 'AccessError';
@@ -54,6 +55,7 @@ export function accessMessage(code: AccessError['code']): string {
     case 'amount_invalid': return 'مبلغِ اشتراک معتبر نیست.';
     case 'currency_required': return 'ارزِ اشتراک را انتخاب کنید.';
     case 'date_invalid': return 'تاریخِ تمدیدِ بعدی معتبر نیست.';
+    case 'has_history': return 'این سرویس تاریخچهٔ دسترسی دارد و پاک نمی‌شود؛ پیش‌تر غیرفعال شده است.';
   }
 }
 
@@ -186,6 +188,34 @@ export function openRisks(
 }
 
 /** شمارِ دسترسیِ بازِ هر سرویس — ستونِ «کاربران» در فهرستِ سرویس‌ها. */
+/**
+ * «حذف» ِ سرویس چه می‌کند.
+ *
+ * ⚠️ سرویسِ دارای تاریخچه **پاک نمی‌شود**، غیرفعال می‌شود: گرنت‌ها با
+ * `on delete cascade` به سرویس بسته‌اند و پاک‌شدنش کلِ «چه کسی از کی به آن
+ * دسترسی داشت» را می‌برد — همان پرسشی که این دفتر برای پاسخش هست. تاریخچه
+ * یعنی **هر** گرنتی (بسته‌شده هم) یا استفاده در آنبوردینگ (آیتمِ «دسترسی» ِ
+ * بی‌سرویس بی‌معنا می‌شد).
+ *
+ * سرویسِ بی‌تاریخچه (ساختهٔ اشتباهی یا آزمایشی) واقعاً پاک می‌شود؛ پیش از
+ * ۱.۱۰۸ این هم فقط غیرفعال می‌شد و دکمهٔ «حذف» کارِ دیگری می‌کرد.
+ *
+ * `none`: سرویسِ غیرفعالِ دارای تاریخچه — کاری نمانده، دکمه نمی‌آید.
+ */
+export type ServiceRemoval = 'delete' | 'deactivate' | 'none';
+
+export function planServiceRemoval(s: { isActive: boolean; grantCount: number; onboardingCount: number }): ServiceRemoval {
+  if (s.grantCount === 0 && s.onboardingCount === 0) return 'delete';
+  return s.isActive ? 'deactivate' : 'none';
+}
+
+/** شمارِ **همهٔ** گرنت‌های هر سرویس، بسته‌شده هم — «تاریخچه» برای `planServiceRemoval`. */
+export function historyByService(grants: readonly GrantLike[]): Map<number, number> {
+  const out = new Map<number, number>();
+  for (const grant of grants) out.set(grant.serviceId, (out.get(grant.serviceId) ?? 0) + 1);
+  return out;
+}
+
 export function countByService(grants: readonly GrantLike[]): Map<number, number> {
   const out = new Map<number, number>();
   for (const grant of openGrants(grants)) {

@@ -11,6 +11,8 @@ import { ForbiddenError } from '@/domain/access/guard';
 export interface AccessState {
   error?: string;
   ok?: boolean;
+  /** پیامِ موفقیتِ ویژه — مثلاً «غیرفعال شد» به‌جای «حذف شد». */
+  message?: string;
 }
 
 function explain(error: unknown, fallback: string): string {
@@ -76,8 +78,12 @@ export async function saveServiceAction(_prev: AccessState, formData: FormData) 
 /** همان `CREATE_VALUE` ِ انتخابگر — رشتهٔ ساده، چون این فایل سرور است و آن کامپوننتِ کلاینت. */
 const NEW = '__new__';
 
-export async function deleteServiceAction(id: number) {
-  return run((actor) => access.deleteService(actor, id), 'سرویس غیرفعال نشد.');
+export async function deleteServiceAction(id: number): Promise<AccessState> {
+  let outcome: Awaited<ReturnType<typeof access.deleteService>> = 'delete';
+  const result = await run(async (actor) => { outcome = await access.deleteService(actor, id); }, 'سرویس حذف نشد.');
+  if (result.error) return result;
+  // ⚠️ پیامِ درست: سرویسِ دارای تاریخچه فقط غیرفعال شده، نه حذف.
+  return { ...result, message: outcome === 'delete' ? 'سرویس حذف شد.' : 'سرویس غیرفعال شد؛ تاریخچه‌اش ماند.' };
 }
 
 /* ---- اعطا و قطع ---- */
