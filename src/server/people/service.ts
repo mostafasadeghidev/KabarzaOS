@@ -14,6 +14,7 @@ import {
   normalizeState, planRemovePerson, removeMessage,
   type MemberState, type RemoveOutcome,
 } from '@/domain/people/offboarding';
+import { redactSnapshot } from '@/domain/activity/details';
 import { notifyRevocationNeeded, openGrantCounts } from '@/server/access/service';
 import * as repo from './repository';
 
@@ -29,6 +30,11 @@ export class PersonNotFoundError extends Error {
   }
 }
 
+/**
+ * ⚠️ «ویرایش» و «حذفِ» فرد کلِ ردیفِ کاربر را به‌عنوانِ حالتِ قبل می‌فرستند؛
+ * هشِ رمز، رازِ دومرحله‌ای، توکن‌ها و اطلاعاتِ بانکی پیش از نوشتن حذف
+ * می‌شوند. لاگ را مدیرِ مالی هم می‌بیند و در پشتیبان هم می‌رود.
+ */
 async function audit(actor: Actor, action: string, objectId: number, before?: unknown, after?: unknown) {
   await db.insert(auditLog).values({
     actorType: 'user',
@@ -36,8 +42,8 @@ async function audit(actor: Actor, action: string, objectId: number, before?: un
     action,
     objectType: 'user',
     objectId,
-    before: before ?? null,
-    after: after ?? null,
+    before: redactSnapshot(before ?? null),
+    after: redactSnapshot(after ?? null),
   });
 }
 

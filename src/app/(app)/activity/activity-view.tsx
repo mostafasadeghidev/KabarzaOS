@@ -14,6 +14,9 @@ import { formatDateTime } from '@/i18n/datetime';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Pager } from '@/components/ui/pager';
 import { Section } from '@/components/page-shell';
+import { ChevronLeft } from 'lucide-react';
+import type { EventSubject } from '@/server/activity/service';
+import { EventDialog, SubjectText } from './event-dialog';
 
 export interface EventRow {
   id: number;
@@ -23,6 +26,9 @@ export interface EventRow {
   objectId: number | null;
   createdAt: Date | string;
   actorName: string | null;
+  actorType: string;
+  /** «مورد» به زبانِ آدم — نه `user #2`. */
+  subject: EventSubject;
 }
 
 export interface AbsenceRow {
@@ -86,6 +92,8 @@ export function ActivityView({
       ? (asked as (typeof TABS)[number]['key'])
       : visible[0]!.key,
   );
+  /** رویدادی که دیالوگِ جزئیاتش باز است. */
+  const [openEvent, setOpenEvent] = useState<number | null>(null);
 
   return (
     <div className="grid gap-4">
@@ -111,18 +119,36 @@ export function ActivityView({
                 <TableHead>{tr("مورد")}</TableHead>
                 <TableHead>{tr("کاربر")}</TableHead>
                 <TableHead numeric>{tr("زمان")}</TableHead>
+                <TableHead className="w-8"><span className="sr-only">{tr("جزئیات")}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/*
+                ⚠️ کلِ ردیف کلیک‌خور است و با Enter/فاصله هم باز می‌شود؛ ستونِ
+                آخر فقط نشانهٔ دیدنی است که «جزئیات دارد».
+              */}
               {events.map((e) => (
-                <TableRow key={e.id}>
+                <TableRow
+                  key={e.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={tr('جزئیاتِ رویداد')}
+                  className="cursor-pointer"
+                  onClick={() => setOpenEvent(e.id)}
+                  onKeyDown={(ev) => {
+                    if (ev.key === 'Enter' || ev.key === ' ') {
+                      ev.preventDefault();
+                      setOpenEvent(e.id);
+                    }
+                  }}
+                >
                   <TableCell><Badge variant="secondary">{tr(e.label)}</Badge></TableCell>
-                  <TableCell className="num">
-                    {e.objectType}
-                    {e.objectId ? ` #${e.objectId}` : ''}
-                  </TableCell>
-                  <TableCell>{e.actorName ?? '—'}</TableCell>
+                  <TableCell className="whitespace-normal"><SubjectText subject={e.subject} /></TableCell>
+                  <TableCell>{e.actorName ?? (e.actorType === 'system' ? tr('سامانه') : '—')}</TableCell>
                   <TableNumericCell>{when(e.createdAt, tz)}</TableNumericCell>
+                  <TableCell className="w-8 text-muted-foreground">
+                    <ChevronLeft aria-hidden className="size-4 ltr:-scale-x-100" />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -177,6 +203,8 @@ export function ActivityView({
       )}
 
       {tab === 'availability' && <AvailabilityView data={availability} />}
+
+      <EventDialog eventId={openEvent} onClose={() => setOpenEvent(null)} />
     </div>
   );
 }

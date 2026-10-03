@@ -4,6 +4,12 @@ import { absences, auditLog, users } from '@/db/schema';
 import { can, type Actor } from '@/domain/access/permissions';
 import { ForbiddenError } from '@/domain/access/guard';
 import { actionLabel } from '@/domain/activity/labels';
+import {
+  collectRefs, describeChanges, isSingleton, snapshotName, subjectKind, SUBJECT_LABELS,
+  type ChangeSet, type SubjectKind,
+} from '@/domain/activity/details';
+import { currentLocale } from '@/i18n/server';
+import { namesOf } from './names';
 
 /**
  * فعالیت و حضور.
@@ -45,7 +51,13 @@ export async function listActivity(
         objectId: auditLog.objectId,
         createdAt: auditLog.createdAt,
         actorId: auditLog.actorId,
+        actorType: auditLog.actorType,
         actorName: users.name,
+        // نامِ عکس‌گرفته — برای موردی که بعداً حذف شده و دیگر در جدولش نیست.
+        // ⚠️ روی مقدارِ تنها (عدد/فهرست) `->>` بی‌خطا `null` می‌دهد.
+        snapshot: sql<string | null>`coalesce(
+          ${auditLog.before}->>'title', ${auditLog.before}->>'name',
+          ${auditLog.after}->>'title', ${auditLog.after}->>'name')`,
       })
       .from(auditLog)
       .leftJoin(users, eq(users.id, auditLog.actorId))
@@ -56,12 +68,119 @@ export async function listActivity(
   ]);
 
   const total = totalRows[0]?.n ?? 0;
+  const subjects = await subjectsOf(rows);
   return {
-    rows,
+    rows: rows.map(({ snapshot: _snapshot, ...r }, i) => ({ ...r, subject: subjects[i]! })),
     page,
     perPage,
     total,
     totalPages: Math.max(1, Math.ceil(total / perPage)),
+  };
+}
+
+/**
+ * «مورد»ِ رویداد به زبانِ آدم — «پروژه: طراحی سایت» به‌جای «project #12».
+ * `name: null` یعنی مورد پیدا نشد (حذف شده و نامی هم در رویداد نبود).
+ */
+export interface EventSubject {
+  kind: SubjectKind | null;
+  /** برچسبِ نوع («پروژه»)؛ برای نوعِ ناشناخته همان `object_type` ِ خام. */
+  kindLabel: string;
+  name: string | null;
+  id: number | null;
+  /** موردی که هنوز وجود دارد — فقط آن پیوند می‌گیرد. */
+  live: boolean;
+  /** پروژهٔ مادر، برای تسک و کارکرد و … */
+  projectId: number | null;
+  projectTitle: string | null;
+}
+
+async function subjectsOf(rows: Array<{
+  action: string; objectType: string; objectId: number | null; snapshot: string | null;
+}>): Promise<EventSubject[]> {
+  const kinds = rows.map((r) => subjectKind(r.action, r.objectType));
+  const names = await namesOf(
+    rows.flatMap((r, i) => (kinds[i] && r.objectId ? [{ kind: kinds[i]!, id: r.objectId }] : [])),
+    await currentLocale(),
+  );
+  return rows.map((r, i) => {
+    const kind = kinds[i]!;
+    const single = kind !== null && isSingleton(kind);
+    const found = kind && r.objectId ? names.get(`${kind}:${r.objectId}`) : undefined;
+    /**
+     * ⚠️ رویدادهای تسک با شناسهٔ **پروژه** ثبت می‌شوند؛ ولی «ویرایشِ تسک — پروژهٔ
+     * X» نمی‌گوید کدام تسک. اگر عنوانِ تسک در خودِ رویداد هست، مورد همان تسک است.
+     */
+    if (kind === 'project' && r.action.startsWith('task.') && r.snapshot) {
+      return {
+        kind: 'task' as const,
+        kindLabel: SUBJECT_LABELS.task,
+        name: r.snapshot,
+        id: null,
+        live: false,
+        projectId: found ? r.objectId : null,
+        projectTitle: found?.name ?? null,
+      };
+    }
+    return {
+      kind,
+      kindLabel: kind ? SUBJECT_LABELS[kind] : r.objectType,
+      name: single ? null : found?.name || r.snapshot || null,
+      id: single ? null : r.objectId,
+      live: !!found,
+      projectId: kind === 'project' ? (found ? r.objectId : null) : found?.projectId ?? null,
+      projectTitle: found?.projectTitle ?? null,
+    };
+  });
+}
+
+/** جزئیاتِ کاملِ یک رویداد — برای دیالوگِ «چه چیزی عوض شد». */
+export interface ActivityEventDetail {
+  id: number;
+  action: string;
+  label: string;
+  createdAt: Date;
+  actorName: string | null;
+  actorType: string;
+  subject: EventSubject;
+  changes: ChangeSet;
+  /** نامِ شناسه‌های داخلِ تغییرات: `user:3` → «سارا». */
+  refs: Record<string, string>;
+}
+
+export async function getActivityEvent(actor: Actor, id: number): Promise<ActivityEventDetail | null> {
+  assertActivity(actor);
+  const [row] = await db
+    .select({
+      id: auditLog.id,
+      action: auditLog.action,
+      objectType: auditLog.objectType,
+      objectId: auditLog.objectId,
+      before: auditLog.before,
+      after: auditLog.after,
+      createdAt: auditLog.createdAt,
+      actorType: auditLog.actorType,
+      actorName: users.name,
+    })
+    .from(auditLog)
+    .leftJoin(users, eq(users.id, auditLog.actorId))
+    .where(eq(auditLog.id, id));
+  if (!row) return null;
+
+  const [subject] = await subjectsOf([{ ...row, snapshot: snapshotName(row.before, row.after) }]);
+  const names = await namesOf(collectRefs(row.action, row.before, row.after), await currentLocale());
+
+  return {
+    id: row.id,
+    action: row.action,
+    label: actionLabel(row.action),
+    createdAt: row.createdAt,
+    actorName: row.actorName,
+    actorType: row.actorType,
+    subject: subject!,
+    // ⚠️ `describeChanges` رازها را دوباره حذف می‌کند — ردیف‌های پیش از مهاجرتِ ۰۰۳۷ هم امن‌اند.
+    changes: describeChanges(row.action, row.before, row.after),
+    refs: Object.fromEntries([...names].map(([key, v]) => [key, v.name])),
   };
 }
 

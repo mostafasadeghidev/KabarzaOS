@@ -34,6 +34,10 @@ function staticActionKeys(): string[] {
     // خانواده بی‌صدا از دیدِ گارد می‌افتاد و کلیدِ خام به صفحهٔ فعالیت می‌رفت.
     /audit\(\s*actor\s*,\s*'([a-z._]+)'/g,
     /\baction:\s*'([a-z][a-z._]*\.[a-z._]+)'/g,
+    // ⚠️ کلیدِ سه‌تایی (`input.id ? 'account.update' : 'account.create'`) از دیدِ
+    // دو الگوی بالا پنهان بود و «account.create» خام به صفحهٔ فعالیت می‌رفت.
+    /audit\([\s\S]{0,120}?\?\s*'([a-z_]+\.[a-z._]+)'\s*:\s*'[a-z_]+\.[a-z._]+'/g,
+    /audit\([\s\S]{0,120}?\?\s*'[a-z_]+\.[a-z._]+'\s*:\s*'([a-z_]+\.[a-z._]+)'/g,
   ];
   for (const file of walk(join(process.cwd(), 'src', 'server'))) {
     const source = readFileSync(file, 'utf8');
@@ -54,6 +58,10 @@ describe('برچسبِ رویدادها', () => {
     // اگر الگوی regex روزی بی‌صدا خراب شود، تستِ بالا الکی سبز می‌ماند.
     expect(staticActionKeys().length).toBeGreaterThan(20);
     expect(staticActionKeys()).toContain('ledger.create');
+    // هر دو شاخهٔ کلیدِ سه‌تایی.
+    expect(staticActionKeys()).toEqual(expect.arrayContaining([
+      'account.create', 'account.update', 'project.access.block', 'project.access.unblock',
+    ]));
   });
 
   it('خانواده‌های پویا هم پوشش دارند', () => {
@@ -64,6 +72,7 @@ describe('برچسبِ رویدادها', () => {
       // ⚠️ همان مقادیری که lifecycle.ts واقعاً می‌نویسد — نه soft/hard که هرگز نوشته نمی‌شد.
       'project.delete.none', 'project.delete.detach', 'project.delete.purge',
       'request.approved', 'request.rejected',
+      'settings.telegram.save', 'settings.telegram.clear',
     ]) {
       expect(ACTION_LABELS[key], key).toBeDefined();
     }

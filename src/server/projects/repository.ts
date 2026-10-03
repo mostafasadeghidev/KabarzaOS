@@ -1086,6 +1086,9 @@ export async function getTask(id: number) {
       isPrivate: tasks.isPrivate, createdBy: tasks.createdBy, assignedTo: tasks.assignedTo,
       // عنوان برای متنِ اعلانِ ریویو و برگشت از ریویو لازم است.
       title: tasks.title,
+      // حالتِ قبلِ «ویرایشِ تسک» در لاگ — بدونِ این‌ها جزئیاتِ رویداد «ثبت نشده» می‌گفت.
+      description: tasks.description, dueDate: tasks.dueDate,
+      priorityTagId: tasks.priorityTagId, dependsOn: tasks.dependsOn,
     })
     .from(tasks).where(and(eq(tasks.id, id), isNull(tasks.deletedAt)));
   return rows[0] ?? null;

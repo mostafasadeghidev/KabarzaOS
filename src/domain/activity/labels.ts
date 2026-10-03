@@ -27,6 +27,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'project.status': 'تغییرِ وضعیتِ پروژه',
   'project.archive': 'بایگانی',
   'project.lighten': 'سبک‌سازیِ پروژه',
+  'project.access.block': 'قطعِ دسترسیِ عضو به پروژه',
+  'project.access.unblock': 'بازگرداندنِ دسترسیِ عضو به پروژه',
   // ⚠️ حذف `project.delete.${plan.financial}` می‌نویسد — none/detach/purge —
   // نه soft/hard. با دو کلیدِ قبلی، هر سه گونهٔ واقعی خام رندر می‌شدند.
   'project.delete.none': 'حذفِ پروژه',
@@ -73,6 +75,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'ledger.delete': 'حذفِ ردیفِ دفتر',
   'ledger.transfer': 'انتقالِ داخلی',
   'account.save': 'ذخیرهٔ حساب',
+  'account.create': 'حسابِ جدید',
+  'account.update': 'ویرایشِ حساب',
   'account.delete': 'حذفِ حساب',
   'request.paid': 'پرداختِ درخواست',
   'unit.paid': 'پرداختِ مستقیمِ کارکرد',
@@ -128,6 +132,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'vendor.update': 'ویرایشِ طرف‌حساب',
   'vendor.delete': 'حذفِ طرف‌حساب',
   'settings.system': 'تنظیماتِ سامانه',
+  'settings.telegram.save': 'تنظیمِ ربات تلگرام',
+  'settings.telegram.clear': 'حذفِ ربات تلگرام',
 
   // دفترِ دسترسی‌های بیرونی
   'service.create': 'سرویسِ جدید',

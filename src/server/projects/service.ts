@@ -2257,6 +2257,8 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
   const before = await repo.getTask(taskId);
   if (!before) throw new NotFoundError();
   await getProject(actor, before.projectId);
+  const beforeRoleIds = (await db.select({ id: taskRoles.roleTagId }).from(taskRoles)
+    .where(eq(taskRoles.taskId, taskId))).map((r) => r.id);
 
   /**
    * ⚠️ «مدیرِ پروژه **یا** سازندهٔ تسک» — پورتِ `may_edit` ِ نسخهٔ قبلی.
@@ -2318,7 +2320,8 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
     });
   }
 
-  await audit(actor, 'task.update', before.projectId, before, input);
+  // نقش‌های پیشین هم در حالتِ قبل — تا جزئیاتِ رویداد تغییرِ نقش را نشان دهد.
+  await audit(actor, 'task.update', before.projectId, { ...before, roleTagIds: beforeRoleIds }, input);
 
   /**
    * پورتِ `task_assignment_changed` — فقط کسانی که **تازه** مسئول شده‌اند.

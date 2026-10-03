@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { db, sql } from '../client';
-import { users, userRoles, projectMembers, projects, currencies, offices, tags, userOffices } from '../schema';
+import {
+  auditLog, users, userRoles, projectMembers, projects, currencies, offices, tags, userOffices,
+} from '../schema';
 import * as service from '@/server/people/service';
+import * as activity from '@/server/activity/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { verifyPassword } from '@/domain/auth/password';
 import type { Actor, Permission, Role } from '@/domain/access/permissions';
@@ -407,5 +410,57 @@ describe('چه کسی از صفحهٔ افراد ویرایش می‌شود — 
     await service.updatePerson(manager(), id, { ...input, name: 'تازهٔ ویرایش‌شده', email: 'fresh@t' });
     const row = await db.select({ name: users.name }).from(users).where(eq(users.id, id));
     expect(row[0]!.name).toBe('تازهٔ ویرایش‌شده');
+  });
+});
+
+/**
+ * لاگِ رویدادِ «ویرایشِ فرد» — ۱.۱۱۳.۰.
+ * ⚠️ پیش از این کلِ ردیفِ کاربر با هشِ رمز و رازِ دومرحله‌ای در `before` می‌رفت.
+ */
+describe('رویدادِ ویرایشِ فرد', () => {
+  let target: number;
+
+  beforeAll(async () => {
+    const [row] = await db.insert(users).values({
+      email: 'audit@t', name: 'پیش از ویرایش', passwordHash: 'secret-hash', twoFactorSecret: 'totp-secret',
+      bankIban: 'IR000',
+    }).returning({ id: users.id });
+    target = row!.id;
+    await db.insert(userRoles).values({ userId: target, role: 'member' });
+    await service.updatePerson(manager(), target, {
+      name: 'پس از ویرایش', email: 'audit@t', phone: '', tagIds: [devRole], officeIds: [], managedOfficeIds: [],
+    });
+  });
+
+  const lastEvent = async () => (await db.select().from(auditLog)
+    .where(and(eq(auditLog.action, 'person.update'), eq(auditLog.objectId, target))))[0]!;
+
+  it('⚠️ راز در لاگ نوشته نمی‌شود', async () => {
+    const event = await lastEvent();
+    const stored = JSON.stringify(event.before) + JSON.stringify(event.after);
+    expect(stored).not.toContain('secret-hash');
+    expect(stored).not.toContain('totp-secret');
+    expect(stored).not.toContain('IR000');
+    expect((event.before as Record<string, unknown>).name).toBe('پیش از ویرایش');
+  });
+
+  it('جزئیات: مورد با نام، تغییرِ نام و نامِ نقش‌ها', async () => {
+    const event = await lastEvent();
+    const owner = actor({ id: ownerUser, roles: ['owner'] });
+    const detail = (await activity.getActivityEvent(owner, event.id))!;
+    expect(detail.subject).toMatchObject({ kind: 'user', name: 'پس از ویرایش', live: true });
+    expect(detail.changes.mode).toBe('diff');
+    expect(detail.changes.rows).toContainEqual({
+      field: 'name', before: 'پیش از ویرایش', after: 'پس از ویرایش', ref: null,
+    });
+    expect(detail.refs[`tag:${devRole}`]).toBe('دولوپر');
+
+    const page = await activity.listActivity(owner);
+    expect(page.rows.find((r) => r.id === event.id)!.subject.name).toBe('پس از ویرایش');
+  });
+
+  it('بی‌مجوزِ «فعالیت» جزئیات را نمی‌بیند', async () => {
+    const event = await lastEvent();
+    await expect(activity.getActivityEvent(viewer(), event.id)).rejects.toThrow(ForbiddenError);
   });
 });

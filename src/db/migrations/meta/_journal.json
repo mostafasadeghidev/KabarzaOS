@@ -260,6 +260,13 @@
       "when": 1788747600018,
       "tag": "0036_channels",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1788834000018,
+      "tag": "0037_audit_redact",
+      "breakpoints": true
     }
   ]
 }

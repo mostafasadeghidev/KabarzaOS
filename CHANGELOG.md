@@ -2,6 +2,31 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.113.0]
+
+### Added
+
+- **Event details in Activity.** Every row in Activity → Events opens a dialog showing who did what, when, on which item, and exactly what changed:
+  - edits list only the fields that actually changed, with the old and new value side by side, plus a count of fields that were saved unchanged;
+  - creations show the recorded values, and deletions show the state just before the item was removed.
+  - IDs are shown as names: people, projects, tasks, tags, offices, currencies, accounts, services and vendors. Statuses, roles and yes/no values are shown as labels, and times use the viewer's time zone. A referenced item that no longer exists shows as «Deleted #id».
+  - Where an older event didn't keep a field's previous value, the dialog says «Not recorded» instead of implying the field was empty.
+  - The dialog links to the project when the item belongs to one that still exists.
+- **Readable «Item» column.** It now shows the item by name, e.g. «Person: Sara» or «Task: Home page in project "Alpha website"», instead of `user #2`. Items deleted since keep the name stored in the event. Task events with a project ID now name the task when its title was recorded, and events whose ID pointed to a task or bid are no longer shown as a project.
+
+### Security
+
+- **Secrets removed from the activity log.** Editing or deleting a person used to store the full user record as the "before" state in the log, including the password hash, the two-factor secret, the password-reset token, the Telegram link token and personal bank details. The log is visible to finance managers and is included in backups. These fields are now stripped before writing, migration `0037_audit_redact` removes them from existing log rows, and the details dialog strips them again as a safeguard.
+
+### Changed
+
+- A task edit now records the task's previous description, due date, priority, dependency and roles, so its details show a real before/after comparison.
+- Missing labels were added for events that showed raw keys: new or edited finance accounts, blocking or restoring a member's project access, and setting up or removing the Telegram bot. The label guard test now also catches event names chosen with a conditional.
+
+### Upgrade note
+
+- Migration `0037_audit_redact` runs automatically on start. It only removes secret fields from existing log entries; the rest of the history is unchanged.
+
 ## [1.112.0]
 
 ### Changed
