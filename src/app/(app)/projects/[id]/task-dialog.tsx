@@ -30,6 +30,9 @@ import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from '@/compon
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { TagChip } from '@/components/ui/tag-chip';
+import { RichText } from '@/components/media/rich-text';
+import { MediaGallery } from '@/components/media/media-gallery';
+import { MediaPicker } from '@/components/media/media-picker';
 
 /**
  * مودالِ تسک — بازسازیِ `task_admin_html()`:
@@ -214,8 +217,16 @@ export function TaskDialog({
               </p>
             )}
 
-            {task.description && (
-              <p className="rounded-md bg-muted/40 p-3 text-sm whitespace-pre-wrap">{task.description}</p>
+            {/* توضیح با پیوندِ کلیک‌پذیر و ویدئوی لوم/یوتیوب، و تصویرهای تسک زیرش. */}
+            {(task.description || data.detail.media.length > 0) && (
+              <div className="grid gap-3 rounded-md bg-muted/40 p-3">
+                <RichText text={task.description} />
+                <MediaGallery
+                  items={data.detail.media}
+                  projectId={task.projectId}
+                  onChanged={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
+                />
+              </div>
             )}
 
             {/*
@@ -308,10 +319,13 @@ export function TaskDialog({
                   )}
                 </Field>
 
-                <Field>
-                  <FieldLabel htmlFor="t-desc">{t("توضیحات")}</FieldLabel>
-                  <Textarea id="t-desc" name="description" rows={3} defaultValue={task.description} />
-                </Field>
+                {/* تصویرِ تازه به تصویرهای قبلی **افزوده** می‌شود؛ حذفِ قبلی‌ها از خودِ گالری است. */}
+                <MediaPicker>
+                  <Field>
+                    <FieldLabel htmlFor="t-desc">{t("توضیحات")}</FieldLabel>
+                    <Textarea id="t-desc" name="description" rows={3} defaultValue={task.description} />
+                  </Field>
+                </MediaPicker>
 
                 {(options.tasks?.filter((x) => x.id !== task.id).length ?? 0) > 0 && (
                   <Field>
@@ -431,9 +445,15 @@ export function TaskDialog({
               ) : (
                 <ul className="grid gap-2">
                   {data.detail.notes.map((n) => (
-                    <li key={n.id} className="rounded-lg bg-muted/60 p-2.5">
-                      <p className="text-sm whitespace-pre-wrap">{n.body}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                    <li key={n.id} className="grid gap-2 rounded-lg bg-muted/60 p-2.5">
+                      <RichText text={n.body} />
+                      <MediaGallery
+                        items={n.media}
+                        projectId={task.projectId}
+                        size="sm"
+                        onChanged={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
+                      />
+                      <p className="text-xs text-muted-foreground">
                         {n.userName ?? '—'} · <span className="num">{when(n.createdAt, tz)}</span>
                       </p>
                     </li>
@@ -445,7 +465,10 @@ export function TaskDialog({
               {(data?.detail.canInteract ?? true) && (
               <form action={noteAction} className="grid gap-2">
                 <input type="hidden" name="taskId" value={task.id} />
-                <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} required />
+                {/* ⚠️ متن اجباری نیست: یادداشتِ فقط‌اسکرین‌شات هم یادداشت است (سرور هر دو خالی را رد می‌کند). */}
+                <MediaPicker>
+                  <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} />
+                </MediaPicker>
                 {noteState.error && <p className="text-xs text-destructive">{tr(noteState.error)}</p>}
                 <div className="flex justify-end">
                   <SubmitButton label={t("ارسال")} busy={t('در حال ارسال…')} />

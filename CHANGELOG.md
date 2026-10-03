@@ -2,6 +2,31 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.115.0]
+
+### Added
+
+- **Images and files in tasks, task notes and comments.** The new-task form, the task edit form, the task conversation and project comments can now take attachments:
+  - add them with a button, paste a screenshot with Ctrl+V, or drag and drop files onto the form;
+  - several at once (up to 10 per submit), with thumbnails that can be removed before sending;
+  - images show as thumbnails and open in a full-screen viewer with previous/next and arrow keys; uploaded videos play in place; other files show as download cards;
+  - a note or comment can be just an image, without text.
+  - The uploader or a projects manager can delete an item. Deleting a comment also deletes the files of the comment and its replies.
+  - Task cards show a paperclip with the number of attached files.
+- **Clickable links and inline video.** Links in task descriptions, notes, comments, the project description and the bidder view are clickable. Loom, YouTube and Vimeo links in tasks, notes and comments play inside the page, with a link to open them on the original site.
+
+### Changed
+
+- The Files tab lists only the project's own files. Task and comment media stay with their task or comment.
+
+### Fixed
+
+- Uploads larger than 1 MB failed with an unclear error because of the default request size limit. The limit now matches the 50 MB attachment limit.
+
+### Security
+
+- Media of a private task is visible only to people who can see that task. Other project members, clients and bidders can't open it by its address.
+
 ## [1.114.0]
 
 ### Added

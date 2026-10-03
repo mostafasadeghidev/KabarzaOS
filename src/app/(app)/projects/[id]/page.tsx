@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { RichText } from '@/components/media/rich-text';
 import { notFound, redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { projectGroupSummary } from '@/server/messaging/service';
@@ -208,7 +209,8 @@ export default async function ProjectDetailPage({
         media={<Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} size={56} />}
         description={project.description ? (
           // توضیحِ پروژه — پیش از این فقط داخلِ فرمِ ویرایش دیده می‌شد.
-          <p className="max-w-3xl whitespace-pre-wrap">{project.description}</p>
+          // پیوندهای توضیح (فیگما، سایتِ آزمایشی) کلیک‌پذیرند؛ پخش‌کنندهٔ ویدئو در سربرگ جا نمی‌شود.
+          <RichText text={project.description} embeds={false} className="max-w-3xl text-[length:inherit]" />
         ) : undefined}
         actions={formOptions && (
           <ProjectDialog

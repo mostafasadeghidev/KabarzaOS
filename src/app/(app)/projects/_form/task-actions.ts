@@ -9,6 +9,7 @@ import {
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FrozenProjectError } from '@/server/projects/authority';
+import { mediaError, mediaFrom } from './media-form';
 
 /**
  * اقدام‌های تسک (op = load/save/add/delete/note).
@@ -95,8 +96,10 @@ export async function createTaskAction(_prev: TaskFormState, formData: FormData)
 
   try {
     const actor = await requireActor();
-    await createTask(actor, projectId, parsed.data);
+    await createTask(actor, projectId, parsed.data, { media: await mediaFrom(formData) });
   } catch (error) {
+    const rejected = mediaError(error);
+    if (rejected) return { error: rejected, values };
     // ⚠️ انجماد پیامِ خودش را دارد؛ پیش از این زیرِ «ثبت نشد» گم می‌شد.
     if (error instanceof FrozenProjectError) {
       return { error: 'این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.', values };
@@ -120,10 +123,12 @@ export async function updateTaskAction(_prev: TaskFormState, formData: FormData)
 
   try {
     const actor = await requireActor();
-    const projectId = await updateTask(actor, taskId, parsed.data);
+    const projectId = await updateTask(actor, taskId, parsed.data, await mediaFrom(formData));
     revalidatePath(`/projects/${projectId}`);
     revalidatePath('/projects');
   } catch (error) {
+    const rejected = mediaError(error);
+    if (rejected) return { error: rejected, values };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ویرایشِ تسک ندارید.', values };
     return { error: 'تغییرات ذخیره نشد.', values };
   }
@@ -179,13 +184,17 @@ export async function addTaskNoteAction(_prev: TaskFormState, formData: FormData
   const taskId = Number(formData.get('taskId'));
   const body = String(formData.get('body') ?? '');
   if (!Number.isInteger(taskId) || taskId <= 0) return { error: 'تسک معتبر نیست.' };
-  if (body.trim() === '') return { error: 'متنِ یادداشت خالی است.' };
+  const media = await mediaFrom(formData);
+  // یادداشتِ فقط‌عکس هم یادداشت است.
+  if (body.trim() === '' && media.length === 0) return { error: 'متنِ یادداشت خالی است.' };
 
   try {
     const actor = await requireActor();
-    const projectId = await addTaskNote(actor, taskId, body);
+    const projectId = await addTaskNote(actor, taskId, body, media);
     revalidatePath(`/projects/${projectId}`);
   } catch (error) {
+    const rejected = mediaError(error);
+    if (rejected) return { error: rejected };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ثبتِ یادداشت ندارید.' };
     return { error: 'یادداشت ثبت نشد.' };
   }

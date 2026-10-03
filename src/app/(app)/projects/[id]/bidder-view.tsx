@@ -1,4 +1,5 @@
 import { Download, FileText, Link2, Video } from 'lucide-react';
+import { RichText } from '@/components/media/rich-text';
 import { Thumb } from '@/components/thumb';
 import { TagChip } from '@/components/ui/tag-chip';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,7 @@ import { BidderTabs } from './bidder-tabs';
 import { bidderTab, type BidderTab } from '@/domain/projects/tabs';
 import { t } from '@/i18n/server';
 import { PageHeader, PageShell, Section } from '@/components/page-shell';
-import { Item, ItemContent, ItemDescription, ItemTitle } from '@/components/ui/item';
+import { Item, ItemContent, ItemTitle } from '@/components/ui/item';
 import {
   Attachment, AttachmentAction, AttachmentActions, AttachmentContent, AttachmentMedia,
   AttachmentTitle, AttachmentTrigger,
@@ -90,8 +91,8 @@ export function BidderView({ data, tab: requested }: { data: BidderData; tab?: s
       )}
 
       {tab === 'about' && data.project.description && (
-        <section className="rounded-xl border bg-card p-3 text-sm whitespace-pre-line">
-          {data.project.description}
+        <section className="rounded-xl border bg-card p-3">
+          <RichText text={data.project.description} />
         </section>
       )}
 
@@ -113,9 +114,7 @@ export function BidderView({ data, tab: requested }: { data: BidderData; tab?: s
                       {t.priorityName && <TagChip color={t.priorityColor}>{t.priorityName}</TagChip>}
                     </ItemTitle>
                     {t.description && (
-                      <ItemDescription className="line-clamp-none text-xs whitespace-pre-line">
-                        {t.description}
-                      </ItemDescription>
+                      <RichText text={t.description} className="text-xs text-muted-foreground" />
                     )}
                   </ItemContent>
                 </li>

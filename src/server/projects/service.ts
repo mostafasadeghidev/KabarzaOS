@@ -49,7 +49,7 @@ import {
 } from '@/server/notifications/audience';
 import * as repo from './repository';
 import { defaultProjectStatusId, defaultTaskStatusId } from '@/domain/projects/defaults';
-import { removeFiles } from '@/server/files/service';
+import { discardUploads, removeFiles, storeUploads, type StoredUpload, type UploadBlob } from '@/server/files/service';
 import { rowValueIn } from '@/domain/team-money/payments';
 import { rateSource } from '@/server/finance/service';
 import { matrixForIds, rowCells } from '@/server/availability/service';
@@ -1376,8 +1376,10 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
   const mask = (id: number | null, name: string | null) =>
     (id === null || name === null ? name : nameForViewer(id, name, detail.viewer));
 
+  const commentMedia = await repo.mediaFor({ commentIds: commentRows.map((c) => c.id) });
   const comments = commentRows.map((c) => ({
     ...c,
+    media: shapeMedia(actor, commentMedia.filter((m) => m.commentId === c.id), false),
     // رنگِ قابِ کامنت از نقشِ نویسنده — نه از نامش، پس با ماسک هم درست است.
     author: commentAuthor(c.userId, detail.members, detail.viewer.clientIds),
     userName: mask(c.userId, c.userName),
@@ -1787,7 +1789,8 @@ export async function myOpenCommentThreads(actor: Actor) {
         : nameForViewer(latest.userId, latest.userName, contexts.get(root.projectId!)!),
       createdAt: latest.createdAt,
       // پورتِ `wp_trim_words( …, 30 )`.
-      excerpt: excerptWords(latest.body, 30),
+      // کامنتِ فقط‌عکس متنی ندارد؛ نشانهٔ تصویر جایش می‌نشیند.
+      excerpt: excerptWords(latest.body, 30) || '🖼',
     }))
     .sort((a, b) => b.id - a.id);
 }
@@ -1823,6 +1826,7 @@ export async function addComment(
   projectId: number,
   body: string,
   parentId: number | null = null,
+  media: readonly UploadBlob[] = [],
 ) {
   // عضو و کارفرمای پروژه هم کامنت می‌گذارند (مخاطبِ comment_added ِ نسخهٔ قبلی).
   await assertCanInteractWithProject(actor, projectId);
@@ -1831,7 +1835,7 @@ export async function addComment(
   await assertNotFrozen(projectId, actor);
 
   const text = body.trim();
-  if (text === '') throw new ForbiddenError('comment.empty');
+  if (text === '' && media.length === 0) throw new ForbiddenError('comment.empty');
 
   // پاسخ (پورتِ `parent_id`): والد باید از همین پروژه و از رشتهٔ کامنت باشد.
   if (parentId !== null) {
@@ -1839,14 +1843,21 @@ export async function addComment(
     if (!parent || parent.projectId !== projectId || parent.type !== 'comment') throw new NotFoundError();
   }
 
-  await db.insert(comments).values({
-    projectId,
-    userId: actor.id,
-    parentId,
-    type: 'comment',
-    // ⚠️ پاسخِ تازه با «نیازمند بررسی» می‌آید — وضعیتِ رشته از تازه‌ترین پیام است، پس رشتهٔ بسته باز می‌شود.
-    status: OPEN_STATUS,
-    body: text,
+  const uploads = await storeUploads(actor, media);
+  await db.transaction(async (tx) => {
+    const [comment] = await tx.insert(comments).values({
+      projectId,
+      userId: actor.id,
+      parentId,
+      type: 'comment',
+      // ⚠️ پاسخِ تازه با «نیازمند بررسی» می‌آید — وضعیتِ رشته از تازه‌ترین پیام است، پس رشتهٔ بسته باز می‌شود.
+      status: OPEN_STATUS,
+      body: text,
+    }).returning({ id: comments.id });
+    await linkMedia(actor, { projectId, commentId: comment!.id }, uploads, tx);
+  }).catch(async (error: unknown) => {
+    await discardUploads(uploads);
+    throw error;
   });
   await audit(actor, 'comment.add', projectId, null, { length: text.length });
 
@@ -1862,7 +1873,8 @@ export async function addComment(
     // ⚠️ عنوان **ثابت** است تا کلیدِ ترجمه بماند؛ دادهٔ متغیر در بدنه
     // می‌نشیند (R-NOTIF-06). همین الگو در بقیهٔ اعلان‌ها هم هست.
     title: 'کامنت جدید در پروژه',
-    body: `«${project?.title ?? ''}» — ${text.slice(0, 140)}`,
+    // کامنتِ فقط‌عکس متنی ندارد؛ نشانهٔ تصویر جایش می‌نشیند.
+    body: `«${project?.title ?? ''}» — ${text.slice(0, 140) || '🖼'}`,
     url: `/projects/${projectId}?tab=comments`,
   });
 }
@@ -2029,7 +2041,7 @@ export async function createTask(
   actor: Actor,
   projectId: number,
   input: TaskInput,
-  options: { silent?: boolean } = {},
+  options: { silent?: boolean; media?: readonly UploadBlob[] } = {},
 ): Promise<number> {
   const project = await getProject(actor, projectId);
   /**
@@ -2069,6 +2081,9 @@ export async function createTask(
    */
   const assignment = await resolveTaskAssignment(actor, projectId, canManage, input);
 
+  // ⚠️ رسانه پیش از ردیف: فایلِ ردشده نباید تسکی بی‌عکس جا بگذارد که کاربر دوباره بسازدش.
+  const uploads = await storeUploads(actor, options.media ?? []);
+
   const rows = await db.insert(tasks).values({
     projectId,
     title: input.title,
@@ -2087,9 +2102,13 @@ export async function createTask(
     isPrivate: canManage ? input.isPrivate : false,
     createdBy: actor.id,
     scope: project.scope,
-  }).returning({ id: tasks.id });
+  }).returning({ id: tasks.id }).catch(async (error: unknown) => {
+    await discardUploads(uploads);
+    throw error;
+  });
 
   const id = rows[0]!.id;
+  await linkMedia(actor, { projectId, taskId: id }, uploads);
 
   if (assignment.roleTagIds.length > 0) {
     await db.insert(taskRoles).values(
@@ -2253,7 +2272,13 @@ async function resolveTaskAssignment(
 }
 
 /** ویرایشِ تسک. */
-export async function updateTask(actor: Actor, taskId: number, input: TaskInput): Promise<number> {
+export async function updateTask(
+  actor: Actor,
+  taskId: number,
+  input: TaskInput,
+  /** رسانهٔ تازه برای توضیحِ تسک — به رسانهٔ قبلی اضافه می‌شود. */
+  media: readonly UploadBlob[] = [],
+): Promise<number> {
   const before = await repo.getTask(taskId);
   if (!before) throw new NotFoundError();
   await getProject(actor, before.projectId);
@@ -2274,6 +2299,7 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
   await assertTaskTags(input);
 
   const assignment = await resolveTaskAssignment(actor, before.projectId, canManage, input);
+  const uploads = await storeUploads(actor, media);
 
   // همان قاعدهٔ ساخت: وابستگیِ باز، تسکِ نشروع را به صف می‌برد.
   const nextDependsOn = await validDependency(before.projectId, input.dependsOn ?? null, taskId);
@@ -2299,7 +2325,11 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
     isPrivate: canManage ? input.isPrivate : before.isPrivate,
     updatedBy: actor.id,
     updatedAt: new Date(),
-  }).where(eq(tasks.id, taskId));
+  }).where(eq(tasks.id, taskId)).catch(async (error: unknown) => {
+    await discardUploads(uploads);
+    throw error;
+  });
+  await linkMedia(actor, { projectId: before.projectId, taskId }, uploads);
 
   /**
    * نقش‌های تسک — پورتِ `Tasks::set_roles()`: مجموعه جایگزین می‌شود ولی
@@ -2363,6 +2393,52 @@ export async function updateTask(actor: Actor, taskId: number, input: TaskInput)
 }
 
 /**
+ * رسانه برای کلاینت — فقط آنچه گالری لازم دارد، با اجازهٔ حذفِ همین بیننده.
+ * ⚠️ حذف همان قاعدهٔ `deleteAttachment` است: بارگذارنده یا مدیرِ بخشِ
+ * پروژه‌ها، و نه روی پروژهٔ منجمد.
+ */
+export type MediaView = ReturnType<typeof shapeMedia>[number];
+function shapeMedia(actor: Actor, items: readonly repo.MediaItem[], frozen: boolean) {
+  const manager = canManageSection(actor, 'projects');
+  return items.map((m) => ({
+    id: m.id,
+    fileId: m.fileId,
+    kind: m.kind,
+    mime: m.mime,
+    size: m.size,
+    name: m.name,
+    canDelete: !frozen && (m.userId === actor.id || manager),
+  }));
+}
+
+/**
+ * ردیف‌های پیوستِ رسانهٔ تازه — داخلِ همان تراکنشِ یادداشت/کامنت وقتی هست.
+ * ⚠️ `projectId` همیشه پر است تا حذف و «سبک‌کردنِ» پروژه این فایل‌ها را هم ببرند.
+ */
+async function linkMedia(
+  actor: Actor,
+  target: { projectId: number; taskId?: number | null; commentId?: number | null },
+  uploads: readonly StoredUpload[],
+  executor: Pick<typeof db, 'insert'> = db,
+): Promise<void> {
+  if (uploads.length === 0) return;
+  try {
+    await executor.insert(attachments).values(uploads.map((u) => ({
+      projectId: target.projectId,
+      taskId: target.taskId ?? null,
+      commentId: target.commentId ?? null,
+      fileId: u.fileId,
+      kind: u.kind,
+      userId: actor.id,
+    })));
+  } catch (error) {
+    // داخلِ تراکنش، فراخوان پس می‌گیرد؛ بیرونش همین‌جا.
+    if (executor === db) await discardUploads(uploads);
+    throw error;
+  }
+}
+
+/**
  * حذفِ تسک — نرم، نه سخت.
  * گفتگو و ساعتِ کاریِ مرتبط می‌مانند؛ حذفِ سخت آن‌ها را هم می‌برد.
  */
@@ -2389,7 +2465,12 @@ export async function deleteTask(actor: Actor, taskId: number): Promise<number> 
 }
 
 /** یادداشتِ گفتگوی تسک. */
-export async function addTaskNote(actor: Actor, taskId: number, body: string): Promise<number> {
+export async function addTaskNote(
+  actor: Actor,
+  taskId: number,
+  body: string,
+  media: readonly UploadBlob[] = [],
+): Promise<number> {
   const task = await repo.getTask(taskId);
   if (!task) throw new NotFoundError();
   await getProject(actor, task.projectId);
@@ -2399,16 +2480,24 @@ export async function addTaskNote(actor: Actor, taskId: number, body: string): P
   if (!noteVisible) throw new NotFoundError();
   await assertNotFrozen(task.projectId, actor);
 
+  // ⚠️ یادداشتِ فقط‌عکس مجاز است — «این را ببین» با یک اسکرین‌شات.
   const text = body.trim();
-  if (text === '') throw new ForbiddenError('note.empty');
+  if (text === '' && media.length === 0) throw new ForbiddenError('note.empty');
 
-  await db.insert(comments).values({
-    projectId: task.projectId,
-    taskId,
-    userId: actor.id,
-    type: 'task_note',
-    status: OPEN_STATUS,
-    body: text,
+  const uploads = await storeUploads(actor, media);
+  await db.transaction(async (tx) => {
+    const [note] = await tx.insert(comments).values({
+      projectId: task.projectId,
+      taskId,
+      userId: actor.id,
+      type: 'task_note',
+      status: OPEN_STATUS,
+      body: text,
+    }).returning({ id: comments.id });
+    await linkMedia(actor, { projectId: task.projectId, taskId, commentId: note!.id }, uploads, tx);
+  }).catch(async (error: unknown) => {
+    await discardUploads(uploads);
+    throw error;
   });
   await audit(actor, 'task.note', task.projectId, null, { taskId });
   return task.projectId;
@@ -2427,11 +2516,13 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
   // یادداشت‌نویسی «کار کردن» است: همکارِ فقط‌خواندنی فرمش را نمی‌بیند.
   const canInteract = await canInteractWithProject(actor, task.projectId);
   const frozen = !canManageSection(actor, 'projects') && await isProjectFrozen(task.projectId);
-  const [notes, roles, members, dependency] = await Promise.all([
+  const [notes, roles, members, dependency, media] = await Promise.all([
     repo.taskNotes(taskId),
     repo.taskRolesFor([taskId]),
     repo.listMembers(task.projectId),
     task.dependsOn ? repo.getTask(task.dependsOn) : Promise.resolve(null),
+    // رسانهٔ توضیح و همهٔ یادداشت‌ها — یک کوئری.
+    repo.mediaFor({ taskIds: [taskId] }),
   ]);
   // «برمی‌دارم» در مودال (پورتِ `can_claim`): دارندگانِ هر نقش از اعضای پروژه.
   const holders = new Map<number, number[]>();
@@ -2462,7 +2553,13 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
       assigneeName: mask(task.assignedTo, task.assigneeName),
       updatedByName: mask(task.updatedBy, task.updatedByName),
     },
-    notes: notes.map((n) => ({ ...n, userName: mask(n.userId, n.userName) })),
+    /** رسانهٔ خودِ تسک (زیرِ توضیح) — رسانهٔ یادداشت‌ها کنارِ هر یادداشت است. */
+    media: shapeMedia(actor, media.filter((m) => m.commentId === null), frozen),
+    notes: notes.map((n) => ({
+      ...n,
+      userName: mask(n.userId, n.userName),
+      media: shapeMedia(actor, media.filter((m) => m.commentId === n.id), frozen),
+    })),
     roles: roles.map((r) => ({ ...r, claimedByName: mask(r.claimedBy, r.claimedByName) })),
     /** عنوانِ تسکِ وابسته — فقط اگر خودِ بیننده آن را می‌بیند. */
     dependsOnTitle: dependency && filterVisibleFor(actor, [dependency], canManage).length > 0 ? dependency.title : null,
@@ -3238,11 +3335,21 @@ export async function deleteComment(actor: Actor, commentId: number): Promise<nu
   await assertCanManageProject(actor, row.projectId);
 
   // پورتِ `Comments::delete`: گره و **همهٔ** پاسخ‌های زیرِ آن می‌روند، نه فقط یک ردیف.
-  await db.execute(sql`with recursive sub as (
-      select id from comments where id = ${commentId}
-      union all
-      select c.id from comments c join sub on c.parent_id = sub.id
-    ) delete from comments where id in (select id from sub)`);
+  // ⚠️ ردیفِ پیوست با cascade می‌رود ولی فایل نه؛ شناسه‌ها پیش از حذف جمع می‌شوند (R-FILE-10).
+  const orphanFileIds = await db.transaction(async (tx) => {
+    const media = await tx.execute<{ file_id: number }>(sql`with recursive sub as (
+        select id from comments where id = ${commentId}
+        union all
+        select c.id from comments c join sub on c.parent_id = sub.id
+      ) select a.file_id from attachments a where a.comment_id in (select id from sub) and a.file_id is not null`);
+    await tx.execute(sql`with recursive sub as (
+        select id from comments where id = ${commentId}
+        union all
+        select c.id from comments c join sub on c.parent_id = sub.id
+      ) delete from comments where id in (select id from sub)`);
+    return [...media].map((r) => Number(r.file_id));
+  });
+  await removeFiles(orphanFileIds);
   await audit(actor, 'comment.delete', row.projectId, row, null);
   return row.projectId;
 }

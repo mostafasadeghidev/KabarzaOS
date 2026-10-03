@@ -6,9 +6,9 @@ import {
   attachments, company, files, ledger, projectClients, projectMembers, projectPayments, projects, userAvatars, users,
 } from '@/db/schema';
 import { can, canManageSection, type Actor } from '@/domain/access/permissions';
-import { ForbiddenError, visibleScopes } from '@/domain/access/guard';
+import { filterVisibleFor, ForbiddenError, visibleScopes } from '@/domain/access/guard';
 import {
-  assertAcceptable, disposition, FileRejected, kindOf, normalizeExternalUrl,
+  assertAcceptable, disposition, FileRejected, kindOf, MAX_MEDIA, MAX_MEDIA_TOTAL, normalizeExternalUrl,
   safeDownloadName, storageKey, type Purpose,
 } from '@/domain/files/upload';
 import { deleteObject, ensureBucket, getObject, putObject } from './storage';
@@ -130,10 +130,23 @@ export async function canViewFile(actor: Actor, fileId: number): Promise<boolean
   if (own.length > 0) return true;
 
   // پیوستِ پروژه ← هر کس به آن پروژه دسترسی دارد.
-  const attached = await db.select({ projectId: attachments.projectId })
-    .from(attachments).where(eq(attachments.fileId, fileId));
+  const attached = await db.select({
+    projectId: attachments.projectId, taskId: attachments.taskId, commentId: attachments.commentId,
+  }).from(attachments).where(eq(attachments.fileId, fileId));
   for (const row of attached) {
+    /**
+     * ⚠️ رسانهٔ تسک (و یادداشتِ تسک) قاعدهٔ **خودِ تسک** را دارد، نه پروژه:
+     * عکسِ تسکِ خصوصی را فقط کسی می‌بیند که آن تسک را می‌بیند. اگر این شاخه
+     * نبود، هر عضو و کارفرمای پروژه با حدسِ شناسه عکسِ تسکِ خصوصی را می‌گرفت.
+     * مناقصه‌گر هم رسانهٔ تسک را نمی‌بیند — نمای او فقط فایل‌های پروژه را دارد.
+     */
+    if (row.taskId) {
+      if (await canSeeTask(actor, row.taskId)) return true;
+      continue;
+    }
     if (row.projectId && await canAccessProject(actor, row.projectId)) return true;
+    // کامنتِ پروژه برای مناقصه‌گر نیست؛ فقط فایلِ خودِ پروژه.
+    if (row.commentId) continue;
     /**
      * ⚠️ مناقصه‌گر (غیرعضوی که نقشِ بازِ مناقصه دارد) فایل‌های پروژه را می‌بیند —
      * نمای مناقصه‌گر همین فهرست را نشانش می‌دهد تا پیش از قیمت‌دادن کار را
@@ -234,6 +247,17 @@ async function canAccessProject(actor: Actor, projectId: number): Promise<boolea
   return canManageProject(actor, projectId);
 }
 
+/**
+ * آیا این بیننده این تسک را می‌بیند؟ همان دو گاردِ مودالِ تسک
+ * (`getTaskDetail`): دسترسی به پروژه + قاعدهٔ تسکِ خصوصی (R-PROJ-14).
+ */
+async function canSeeTask(actor: Actor, taskId: number): Promise<boolean> {
+  const task = await projectRepo.getTask(taskId);
+  if (!task) return false;
+  if (!await canAccessProject(actor, task.projectId)) return false;
+  return filterVisibleFor(actor, [task], await canManageProject(actor, task.projectId)).length > 0;
+}
+
 /** فایل را برای سرو کردن آماده می‌کند — یا ۴۰۳ می‌دهد. */
 export async function serveFile(
   actor: Actor,
@@ -299,6 +323,54 @@ export async function addAttachment(
     label: label.trim().slice(0, 200),
   });
   return fileId;
+}
+
+/* ------------------------------------------------------------------ *
+ * رسانهٔ تسک و کامنت
+ * ------------------------------------------------------------------ */
+
+export type UploadBlob = { name: string; mime: string; bytes: Uint8Array };
+export interface StoredUpload { fileId: number; kind: 'image' | 'video' | 'file' }
+
+/**
+ * ذخیرهٔ رسانهٔ یک ارسال — **همه یا هیچ**.
+ *
+ * ⚠️ گاردی اینجا نیست: فراخوان (سرویسِ پروژه) پیش از این گاردِ تسک یا
+ * کامنتِ خودش را گذرانده و پس از این، ردیفِ `attachments` را در همان
+ * تراکنشی می‌نویسد که خودِ یادداشت یا کامنت را. اگر آن تراکنش شکست خورد،
+ * `discardUploads` فایل‌ها را پس می‌گیرد تا هیچ فایلِ بی‌صاحبی نماند.
+ *
+ * ⚠️ همهٔ فایل‌ها **پیش از** ذخیرهٔ اولی سنجیده می‌شوند؛ وگرنه عکسِ سوم که
+ * رد می‌شد، دو عکسِ اول را یتیم در باکت جا می‌گذاشت.
+ */
+export async function storeUploads(actor: Actor, blobs: readonly UploadBlob[]): Promise<StoredUpload[]> {
+  if (blobs.length === 0) return [];
+  if (blobs.length > MAX_MEDIA) throw new FileRejected('file.too_many');
+  const total = blobs.reduce((sum, b) => sum + b.bytes.byteLength, 0);
+  if (total > MAX_MEDIA_TOTAL) throw new FileRejected('file.too_large');
+  for (const blob of blobs) {
+    const mime = blob.mime.toLowerCase().split(';')[0]!.trim();
+    assertAcceptable(
+      { name: blob.name, mime, size: blob.bytes.byteLength, head: blob.bytes.subarray(0, 32) },
+      'attachment',
+    );
+  }
+
+  const stored: StoredUpload[] = [];
+  try {
+    for (const blob of blobs) {
+      stored.push({ fileId: await storeFile(actor, blob, 'attachment'), kind: kindOf(blob.mime.toLowerCase()) });
+    }
+  } catch (error) {
+    await discardUploads(stored);
+    throw error;
+  }
+  return stored;
+}
+
+/** پس‌گرفتنِ فایل‌هایی که ردیفشان نوشته نشد. */
+export async function discardUploads(uploads: readonly StoredUpload[]): Promise<void> {
+  for (const u of uploads) await removeFile(u.fileId).catch(() => {});
 }
 
 /** ⚠️ R-FILE-08 — هیچ فایلی گرفته نمی‌شود؛ فقط نشانی. پس SSRF ندارد. */

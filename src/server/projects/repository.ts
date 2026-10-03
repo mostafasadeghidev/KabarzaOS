@@ -398,6 +398,7 @@ export interface TaskRow {
   priorityColor: string | null;
   description: string;
   notesCount: number;
+  mediaCount: number;
   lastNote: string | null;
   /** آیتمِ QA ای که این تسک را ساخته — تبِ QA تسک‌هایش را با همین پیدا می‌کند. */
   qaItemId: number | null;
@@ -432,6 +433,8 @@ export async function listTasks(projectId: number): Promise<TaskRow[]> {
       description: tasks.description,
       // پورتِ `task_notes_summary`: شمار و آخرین یادداشتِ گفتگو روی کارت.
       notesCount: sql<number>`(select count(*) from comments c where c.task_id = ${tasks.id})::int`,
+      // تصویر و فایلِ تسک و یادداشت‌هایش — نشانِ «پیوست دارد» روی کارت.
+      mediaCount: sql<number>`(select count(*) from attachments a where a.task_id = ${tasks.id})::int`,
       lastNote: sql<string | null>`(select c.body from comments c where c.task_id = ${tasks.id} order by c.id desc limit 1)`,
       qaItemId: tasks.qaItemId,
     })
@@ -1057,7 +1060,8 @@ export async function listAttachments(projectId: number) {
     .from(attachments)
     .leftJoin(users, eq(users.id, attachments.userId))
     .leftJoin(files, eq(files.id, attachments.fileId))
-    .where(eq(attachments.projectId, projectId))
+    // ⚠️ فقط فایلِ خودِ پروژه — رسانهٔ تسک و کامنت گاردِ خودش را دارد (تسکِ خصوصی).
+    .where(and(eq(attachments.projectId, projectId), isNull(attachments.taskId), isNull(attachments.commentId)))
     .orderBy(desc(attachments.id));
 
   return rows.map((r) => ({
@@ -1076,6 +1080,51 @@ export async function listAttachments(projectId: number) {
       ? (r.label || r.externalUrl!)
       : (r.label || r.originalName || `#${r.id}`),
   }));
+}
+
+/** یک قلمِ رسانهٔ تسک یا کامنت — همان شکلی که گالری می‌خواهد. */
+export interface MediaItem {
+  id: number;
+  fileId: number;
+  taskId: number | null;
+  commentId: number | null;
+  userId: number;
+  kind: string;
+  mime: string;
+  size: number;
+  name: string;
+}
+
+/**
+ * رسانهٔ چند تسک و/یا کامنت — یک کوئری (R-PERF-01).
+ * ⚠️ گاردی اینجا نیست؛ فراخوان فقط شناسهٔ تسک‌ها و کامنت‌هایی را می‌دهد که
+ * بیننده می‌بیند. `/api/files` هم برای هر فایل جدا گارد دارد.
+ */
+export async function mediaFor(filter: { taskIds?: readonly number[]; commentIds?: readonly number[] }): Promise<MediaItem[]> {
+  const taskIds = [...(filter.taskIds ?? [])];
+  const commentIds = [...(filter.commentIds ?? [])];
+  const conditions = [
+    ...(taskIds.length > 0 ? [inArray(attachments.taskId, taskIds)] : []),
+    ...(commentIds.length > 0 ? [inArray(attachments.commentId, commentIds)] : []),
+  ];
+  if (conditions.length === 0) return [];
+  const rows = await db
+    .select({
+      id: attachments.id,
+      fileId: attachments.fileId,
+      taskId: attachments.taskId,
+      commentId: attachments.commentId,
+      userId: attachments.userId,
+      kind: attachments.kind,
+      mime: files.mime,
+      size: files.size,
+      name: files.originalName,
+    })
+    .from(attachments)
+    .innerJoin(files, eq(files.id, attachments.fileId))
+    .where(conditions.length === 1 ? conditions[0] : or(...conditions))
+    .orderBy(attachments.id);
+  return rows.map((r) => ({ ...r, fileId: r.fileId!, name: r.name ?? '' }));
 }
 
 /** یک تسک — برای گاردِ پروژهٔ صاحبش. */

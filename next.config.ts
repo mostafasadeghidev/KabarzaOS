@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
   experimental: {
     staleTimes: { dynamic: 0 },
     cpus: 4,
+    /**
+     * ⚠️ سقفِ پیش‌فرضِ بدنهٔ server action یک مگابایت است، ولی پیوست تا
+     * ۵۰ مگ مجاز است (files/upload). بی‌این، آپلودِ بزرگ‌تر از ۱ مگ پیش از
+     * رسیدن به اعتبارسنجیِ ما با خطای مبهم می‌شکست. Caddy ِ سرور ۶۴ مگ می‌پذیرد.
+     */
+    serverActions: { bodySizeLimit: '60mb' },
   },
 };
 

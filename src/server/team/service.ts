@@ -493,7 +493,8 @@ export async function teamComments(actor: Actor) {
       authorName: latest.userName,
       createdAt: latest.createdAt,
       // پورتِ `wp_trim_words( …, 30 )`.
-      excerpt: excerptWords(latest.body, 30),
+      // کامنتِ فقط‌عکس متنی ندارد؛ نشانهٔ تصویر جایش می‌نشیند.
+      excerpt: excerptWords(latest.body, 30) || '🖼',
     }))
     .sort((a, b) => b.id - a.id);
 }

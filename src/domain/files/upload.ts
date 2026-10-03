@@ -22,7 +22,8 @@ export type RejectReason =
   | 'file.too_large'
   | 'file.type_not_allowed'
   | 'file.signature_mismatch'
-  | 'file.name_missing';
+  | 'file.name_missing'
+  | 'file.too_many';
 
 export const REJECT_MESSAGES: Record<RejectReason, string> = {
   'file.empty': 'فایلی انتخاب نشده است.',
@@ -30,6 +31,7 @@ export const REJECT_MESSAGES: Record<RejectReason, string> = {
   'file.type_not_allowed': 'این نوعِ فایل پذیرفته نمی‌شود.',
   'file.signature_mismatch': 'محتوای فایل با نوعِ اعلام‌شده‌اش نمی‌خواند.',
   'file.name_missing': 'نامِ فایل خوانده نشد.',
+  'file.too_many': 'در هر بار حداکثر ۱۰ فایل.',
 };
 
 export function rejectMessage(reason: RejectReason): string {
@@ -50,6 +52,16 @@ export const MAX_SIZE = {
 } as const;
 
 export type Purpose = keyof typeof MAX_SIZE;
+
+/**
+ * سقفِ شمارِ رسانه در یک ارسال (تسک، یادداشت، کامنت). ده عکس با سقفِ ۵۰ مگ
+ * می‌تواند از سقفِ بدنهٔ درخواست (۶۰ مگ) بگذرد؛ آن را سرور با پیامِ خودش رد
+ * می‌کند و انتخابگر هم پیش از ارسال جمعِ حجم را می‌سنجد.
+ */
+export const MAX_MEDIA = 10;
+
+/** سقفِ جمعِ حجمِ یک ارسال — کمی زیرِ `bodySizeLimit` ِ next.config. */
+export const MAX_MEDIA_TOTAL = 55 * MB;
 
 /* ------------------------------------------------------------------ *
  * فهرستِ سفیدِ نوع

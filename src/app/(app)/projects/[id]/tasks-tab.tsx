@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { Check, ChevronDown, Columns3, Hand, Link2, List as ListIcon, Lock, User, MessageSquare } from 'lucide-react';
+import { Check, ChevronDown, Columns3, Hand, Link2, List as ListIcon, Lock, User, MessageSquare, Paperclip } from 'lucide-react';
 import { claimTaskAction, setTaskStatusAction } from '../_form/tab-actions';
 import { canClaimTask } from '@/domain/projects/claim';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,8 @@ export interface TaskItem {
   priorityColor?: string | null;
   description?: string;
   notesCount?: number;
+  /** تصویر و فایلِ تسک و یادداشت‌هایش. */
+  mediaCount?: number;
   lastNote?: string | null;
   /** عنوانِ تسکی که این یکی منتظرش است؛ null یعنی راه باز است. */
   blockedBy?: string | null;
@@ -170,7 +172,7 @@ function priorityTint(color: string | null | undefined): React.CSSProperties | u
 
 function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boolean }) {
   const tr = useT();
-  if (!task.priorityName && !task.description && !task.notesCount && !task.blockedBy) return null;
+  if (!task.priorityName && !task.description && !task.notesCount && !task.mediaCount && !task.blockedBy) return null;
   return (
     <div className={compact ? 'grid gap-0.5' : 'mt-1 grid gap-1'}>
       {/*
@@ -183,7 +185,7 @@ function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boole
           {tr('منتظرِ: {title}', { title: task.blockedBy })}
         </span>
       )}
-      {(task.priorityName || (task.notesCount ?? 0) > 0) && (
+      {(task.priorityName || (task.notesCount ?? 0) > 0 || (task.mediaCount ?? 0) > 0) && (
         <div className="flex flex-wrap items-center gap-1.5">
           {task.priorityName && (
             <TagChip color={task.priorityColor}>{task.priorityName}</TagChip>
@@ -192,6 +194,12 @@ function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boole
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <MessageSquare className="size-3" />
               <span className="num">{task.notesCount}</span>
+            </span>
+          )}
+          {(task.mediaCount ?? 0) > 0 && (
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground" title={tr('تصویر و فایل')}>
+              <Paperclip className="size-3" />
+              <span className="num">{task.mediaCount}</span>
             </span>
           )}
         </div>

@@ -20,6 +20,9 @@ import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { useConfirm } from '@/components/ui/confirm';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RichText } from '@/components/media/rich-text';
+import { MediaGallery, type MediaEntry } from '@/components/media/media-gallery';
+import { MediaPicker } from '@/components/media/media-picker';
 
 export interface CommentItem {
   id: number;
@@ -34,6 +37,8 @@ export interface CommentItem {
   parentId?: number | null;
   /** نوعِ نویسنده برای رنگِ قاب — عضو (با رنگِ نقش) / کارفرما / کادر. */
   author?: { kind: CommentAuthorKind; color: string | null };
+  /** تصویر و فایلِ پیوستِ همین پیام. */
+  media?: MediaEntry[];
 }
 
 /**
@@ -161,7 +166,10 @@ function Composer({
     <form action={formAction} className="grid gap-2">
       <input type="hidden" name="projectId" value={projectId} />
       {parentId !== null && <input type="hidden" name="parentId" value={parentId} />}
-      <Textarea name="body" rows={rows} required placeholder={placeholder} />
+      {/* ⚠️ متن اجباری نیست: کامنتِ فقط‌اسکرین‌شات هم کامنت است (سرور هر دو خالی را رد می‌کند). */}
+      <MediaPicker>
+        <Textarea name="body" rows={rows} placeholder={placeholder} />
+      </MediaPicker>
       <div className="flex justify-end"><SendButton label={buttonLabel} /></div>
     </form>
   );
@@ -209,9 +217,16 @@ function Node({
       data-author={comment.author?.kind}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm whitespace-pre-wrap">{comment.body}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
+        <div className="grid min-w-0 flex-1 gap-2">
+          <RichText text={comment.body} />
+          {comment.media && comment.media.length > 0 && (
+            <MediaGallery
+              items={isFrozen ? comment.media.map((m) => ({ ...m, canDelete: false })) : comment.media}
+              projectId={projectId}
+              size="sm"
+            />
+          )}
+          <p className="text-xs text-muted-foreground">
             {comment.userName ?? '—'} · <span className="num">{when(comment.createdAt, tz)}</span>
           </p>
           {/* «انجام شد توسط X» — فقط روی تازه‌ترین پیام و فقط وقتی واقعاً بسته شده باشد. */}

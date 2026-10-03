@@ -161,8 +161,19 @@ export const attachments = pgTable('attachments', {
   label: text('label').notNull().default(''),
   kind: text('kind').notNull().default('file'),
   userId: fk('user_id').notNull().references(() => users.id),
+  /**
+   * رسانهٔ تسک یا کامنت (۱.۱۱۵.۰). هر دو تهی = فایلِ پروژه (تبِ فایل‌ها).
+   * ⚠️ رسانهٔ یادداشتِ تسک هر دو را دارد: کامنت برای جایش، تسک برای گاردش.
+   */
+  taskId: fk('task_id').references(() => tasks.id, { onDelete: 'cascade' }),
+  commentId: fk('comment_id').references(() => comments.id, { onDelete: 'cascade' }),
   ...stamps,
-}, (t) => [index('attachments_project_ix').on(t.projectId)]);
+}, (t) => [
+  index('attachments_project_ix').on(t.projectId),
+  index('attachments_task_ix').on(t.taskId).where(sql`${t.taskId} is not null`),
+  index('attachments_comment_ix').on(t.commentId).where(sql`${t.commentId} is not null`),
+  index('attachments_file_ix').on(t.fileId),
+]);
 
 export const timelogs = pgTable('timelogs', {
   id: pk(),

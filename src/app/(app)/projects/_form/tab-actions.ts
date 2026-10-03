@@ -10,6 +10,7 @@ import {
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FrozenProjectError } from '@/server/projects/authority';
+import { mediaError, mediaFrom } from './media-form';
 
 /** پیامِ ردِ کار روی پروژهٔ منجمد (بایگانی، کنسل، نگه‌داشته). */
 const FROZEN_MESSAGE = 'این پروژه بایگانی/بسته است و تغییر نمی‌پذیرد.';
@@ -65,12 +66,16 @@ export async function addCommentAction(_prev: TabActionState, formData: FormData
   const parentId = Number(formData.get('parentId') ?? 0) || null;
 
   if (!Number.isInteger(projectId) || projectId <= 0) return { error: 'پروژه معتبر نیست.' };
-  if (body.trim() === '') return { error: 'متنِ کامنت خالی است.' };
+  const media = await mediaFrom(formData);
+  // کامنتِ فقط‌عکس هم کامنت است — «این قسمت را ببینید» با یک اسکرین‌شات.
+  if (body.trim() === '' && media.length === 0) return { error: 'متنِ کامنت خالی است.' };
 
   try {
     const actor = await requireActor();
-    await addComment(actor, projectId, body, parentId);
+    await addComment(actor, projectId, body, parentId, media);
   } catch (error) {
+    const rejected = mediaError(error);
+    if (rejected) return { error: rejected };
     // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
     if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ثبتِ کامنت ندارید.' };
