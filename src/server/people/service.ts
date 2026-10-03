@@ -267,6 +267,7 @@ export async function updatePerson(actor: Actor, userId: number, input: PersonIn
   const before = await repo.getPerson(userId);
   if (!before) throw new PersonNotFoundError();
   await assertEditableTarget(actor, userId);
+  const relationsBefore = await relationsOf(userId);
 
   /**
    * ⚠️ ایمیل و نامِ کاربری با هم و بی‌اعتنا به حروف بررسی می‌شوند — همان
@@ -302,7 +303,28 @@ export async function updatePerson(actor: Actor, userId: number, input: PersonIn
     await writeOffices(tx, userId, input.officeIds, managedOffices);
   });
 
-  await audit(actor, 'person.update', userId, before, input);
+  await audit(actor, 'person.update', userId, { ...before, ...relationsBefore }, input);
+}
+
+/**
+ * نقش‌ها و دفترهای فعلیِ فرد — همان شکلِ فیلدهای فرم.
+ *
+ * ⚠️ این‌ها در جدول‌های جدا (`tag_relations`, `user_offices`) هستند، نه در ردیفِ
+ * کاربر؛ بدونِ این عکس، جزئیاتِ رویداد هر ویرایشی را «تغییرِ نقش و دفتر» نشان
+ * می‌داد چون فرم همیشه آنها را دوباره می‌فرستد و حالتِ قبل معلوم نبود.
+ */
+async function relationsOf(userId: number) {
+  const [tagRows, officeRows] = await Promise.all([
+    db.select({ id: tagRelations.tagId }).from(tagRelations)
+      .where(and(eq(tagRelations.objectType, 'user'), eq(tagRelations.objectId, userId))),
+    db.select({ id: userOffices.officeId, manages: userOffices.manages }).from(userOffices)
+      .where(eq(userOffices.userId, userId)),
+  ]);
+  return {
+    tagIds: tagRows.map((r) => r.id),
+    officeIds: officeRows.map((r) => r.id),
+    managedOfficeIds: officeRows.filter((r) => r.manages).map((r) => r.id),
+  };
 }
 
 /** تغییرِ حالتِ off-boarding — فعال / فقط مالی / قطع‌شده (R-PEOPLE-01). */

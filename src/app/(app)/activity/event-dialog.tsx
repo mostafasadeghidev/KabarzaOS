@@ -15,6 +15,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
+import { cn } from '@/lib/utils';
 
 type Tr = ReturnType<typeof useT>;
 
@@ -125,43 +126,104 @@ function ChangeList({ detail, tr, tz }: { detail: ActivityEventDetail; tr: Tr; t
     );
   }
 
+  /**
+   * ⚠️ در «ویرایش» فقط ردیفی که هر دو طرفش ثبت شده واقعاً «تغییر» است. فیلدی
+   * که فرم دوباره فرستاده ولی مقدارِ قبلی‌اش در رویداد نیست، جدا نشان داده
+   * می‌شود — پیش از این زیرِ «تغییرات» می‌آمد و کاربر خیال می‌کرد سه چیز عوض
+   * شده، در حالی که فقط نام عوض شده بود.
+   */
+  const changed = mode === 'diff' ? rows.filter((r) => 'before' in r) : rows;
+  const unknown = mode === 'diff' ? rows.filter((r) => !('before' in r)) : [];
+
+  const table = (list: ChangeRow[], render: (row: ChangeRow) => React.ReactNode) => (
+    <dl className="divide-y rounded-md border text-sm">
+      {list.map((row) => (
+        <div key={row.field} className="grid gap-1 p-3 sm:grid-cols-[11rem_1fr] sm:gap-3">
+          <dt className="text-muted-foreground">{tr(FIELD_LABELS[row.field] ?? row.field)}</dt>
+          <dd className="min-w-0">{render(row)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+
   const heading = mode === 'diff'
     ? tr('تغییرات')
     : mode === 'removed' ? tr('حالتِ پیش از این رویداد') : tr('مقدارهای ثبت‌شده');
 
   return (
+    <div className="grid gap-4">
+      <div className="grid gap-2">
+        <h3 className="text-sm font-medium">
+          {heading}
+          {mode === 'diff' && <span className="ms-1 text-xs font-normal text-muted-foreground">({changed.length})</span>}
+        </h3>
+        {changed.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{tr('هیچ تغییرِ قطعی‌ای در این رویداد ثبت نشده است.')}</p>
+        ) : table(changed, (row) => (mode === 'diff' ? (
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="min-w-0 rounded bg-red-50 px-1.5 py-0.5 text-red-800 dark:bg-red-500/15 dark:text-red-300">
+              {show(row, 'before')}
+            </span>
+            <ArrowRight aria-label={tr('به')} className="size-3.5 shrink-0 text-muted-foreground rtl:-scale-x-100" />
+            <span className="min-w-0 rounded bg-emerald-50 px-1.5 py-0.5 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
+              {'after' in row ? show(row, 'after') : <span className="text-muted-foreground">—</span>}
+            </span>
+          </span>
+        ) : show(row, mode === 'removed' ? 'before' : 'after')))}
+        {mode === 'diff' && unchanged > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {tr('{n} فیلدِ دیگر هم ذخیره شد ولی تغییری نکرد.', { n: unchanged })}
+          </p>
+        )}
+      </div>
+
+      {unknown.length > 0 && (
+        <div className="grid gap-2">
+          <h3 className="text-sm font-medium text-muted-foreground">{tr('ذخیره‌شده، بی‌مقدارِ قبلی')}</h3>
+          <p className="text-xs text-muted-foreground">
+            {tr('این فیلدها هم همراهِ فرم ذخیره شدند، ولی مقدارِ قبلی‌شان در این رویداد نگه داشته نشده؛ پس معلوم نیست عوض شده‌اند یا همان قبلی‌اند.')}
+          </p>
+          {table(unknown, (row) => show(row, 'after'))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * تاریخچهٔ همین مورد — هر رویداد با زمانش، تازه‌تر اول. رویدادِ باز پررنگ است
+ * و بقیه کلیک‌خورند تا بی‌بستنِ دیالوگ بشود تغییرِ قبلی و بعدی را دید.
+ */
+function History({
+  detail, tr, tz, onSelect,
+}: { detail: ActivityEventDetail; tr: Tr; tz: string; onSelect: (id: number) => void }) {
+  if (detail.history.length < 2 || !detail.historyOf) return null;
+  return (
     <div className="grid gap-2">
-      <h3 className="text-sm font-medium">{heading}</h3>
-      <dl className="divide-y rounded-md border text-sm">
-        {rows.map((row) => (
-          <div key={row.field} className="grid gap-1 p-3 sm:grid-cols-[11rem_1fr] sm:gap-3">
-            <dt className="text-muted-foreground">{tr(FIELD_LABELS[row.field] ?? row.field)}</dt>
-            <dd className="min-w-0">
-              {mode === 'diff' ? (
-                <span className="flex flex-wrap items-center gap-2">
-                  <span className="min-w-0 rounded bg-red-50 px-1.5 py-0.5 text-red-800 dark:bg-red-500/15 dark:text-red-300">
-                    {'before' in row ? show(row, 'before') : <em className="not-italic opacity-70">{tr('ثبت نشده')}</em>}
-                  </span>
-                  <ArrowRight aria-label={tr('به')} className="size-3.5 shrink-0 text-muted-foreground rtl:-scale-x-100" />
-                  <span className="min-w-0 rounded bg-emerald-50 px-1.5 py-0.5 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
-                    {'after' in row ? show(row, 'after') : <span className="text-muted-foreground">—</span>}
-                  </span>
-                </span>
-              ) : show(row, mode === 'removed' ? 'before' : 'after')}
-            </dd>
-          </div>
+      <h3 className="text-sm font-medium">
+        {tr('تاریخچهٔ همین {kind}', { kind: tr(detail.historyOf) })}
+        <span className="ms-1 text-xs font-normal text-muted-foreground">({detail.history.length})</span>
+      </h3>
+      <ol className="grid max-h-64 overflow-y-auto rounded-md border text-sm">
+        {detail.history.map((h) => (
+          <li key={h.id} className="border-b last:border-b-0">
+            <button
+              type="button"
+              disabled={h.current}
+              aria-current={h.current ? 'true' : undefined}
+              onClick={() => onSelect(h.id)}
+              className="grid w-full gap-x-3 gap-y-0.5 px-3 py-2 text-start hover:bg-muted disabled:cursor-default disabled:bg-primary/5 disabled:hover:bg-primary/5 sm:grid-cols-[9rem_1fr_auto]"
+            >
+              <span className="num text-muted-foreground">{formatDateTime(h.createdAt, tz)}</span>
+              <span className={h.current ? 'font-medium' : undefined}>
+                {tr(h.label)}
+                {h.current && <span className="ms-2 text-xs text-primary">{tr('همین رویداد')}</span>}
+              </span>
+              <span className="text-xs text-muted-foreground">{h.actorName ?? tr('سامانه')}</span>
+            </button>
+          </li>
         ))}
-      </dl>
-      {mode === 'diff' && unchanged > 0 && (
-        <p className="text-xs text-muted-foreground">
-          {tr('{n} فیلدِ دیگر هم ذخیره شد ولی تغییری نکرد.', { n: unchanged })}
-        </p>
-      )}
-      {mode === 'diff' && rows.some((r) => !('before' in r)) && (
-        <p className="text-xs text-muted-foreground">
-          {tr('«ثبت نشده» یعنی مقدارِ قبلیِ این فیلد در رویداد نگه داشته نشده است، نه اینکه خالی بوده.')}
-        </p>
-      )}
+      </ol>
     </div>
   );
 }
@@ -170,16 +232,23 @@ function ChangeList({ detail, tr, tz }: { detail: ActivityEventDetail; tr: Tr; t
  * دیالوگِ جزئیاتِ یک رویداد — چه کسی، کی، روی چه چیزی، و دقیقاً چه چیزی
  * عوض شد. داده با باز شدن گرفته می‌شود تا فهرست سبک بماند.
  */
-export function EventDialog({ eventId, onClose }: { eventId: number | null; onClose: () => void }) {
+export function EventDialog({
+  eventId, onClose, onNavigate,
+}: {
+  eventId: number | null;
+  onClose: () => void;
+  /** رفتن به رویدادِ دیگری از تاریخچهٔ همین مورد — بی‌بستنِ دیالوگ. */
+  onNavigate: (id: number) => void;
+}) {
   const tr = useT();
   const tz = useTimeZone();
   const { show } = useToast();
   const [detail, setDetail] = useState<ActivityEventDetail | null>(null);
 
   useEffect(() => {
-    if (eventId === null) return;
+    // ⚠️ با پرش از تاریخچه محتوای قبلی می‌ماند (کم‌رنگ) تا دیالوگ نپرد؛ فقط بستن پاکش می‌کند.
+    if (eventId === null) { setDetail(null); return; }
     let alive = true;
-    setDetail(null);
     activityEventAction(eventId)
       .then((d) => {
         if (!alive) return;
@@ -208,29 +277,32 @@ export function EventDialog({ eventId, onClose }: { eventId: number | null; onCl
             {detail ? <Badge variant="secondary">{tr(detail.label)}</Badge> : tr('جزئیاتِ رویداد')}
           </DialogTitle>
           <DialogDescription>
-            {detail && (
-              <>
-                {detail.actorName ?? (detail.actorType === 'system' ? tr('سامانه') : '—')}
-                {' · '}
-                <span className="num">{formatDateTime(detail.createdAt, tz)}</span>
-              </>
-            )}
+            {tr('همهٔ تغییراتِ این رویداد در یک لحظه ثبت شده‌اند.')}
           </DialogDescription>
         </DialogHeader>
 
         {!detail ? (
           <div className="flex justify-center py-8"><Spinner /></div>
         ) : (
-          <div className="grid gap-4">
-            <div className="flex flex-wrap items-start justify-between gap-2 rounded-md bg-muted/50 p-3 text-sm">
-              <SubjectText subject={detail.subject} />
-              {projectHref && (
-                <Link href={projectHref} className="text-primary underline-offset-4 hover:underline">
-                  {tr('باز کردنِ پروژه')}
-                </Link>
-              )}
-            </div>
+          <div className={cn('grid gap-4 transition-opacity', detail.id !== eventId && 'opacity-60')}>
+            {/* چه کسی، کِی، روی چه چیزی — سه پرسشِ اولِ هر رویداد، هرکدام ردیفِ خودش. */}
+            <dl className="grid gap-2 rounded-md bg-muted/50 p-3 text-sm sm:grid-cols-[7rem_1fr]">
+              <dt className="text-muted-foreground">{tr('زمان')}</dt>
+              <dd className="num font-medium">{formatDateTime(detail.createdAt, tz)}</dd>
+              <dt className="text-muted-foreground">{tr('انجام‌دهنده')}</dt>
+              <dd>{detail.actorName ?? (detail.actorType === 'system' ? tr('سامانه') : '—')}</dd>
+              <dt className="text-muted-foreground">{tr('مورد')}</dt>
+              <dd className="flex flex-wrap items-start justify-between gap-2">
+                <SubjectText subject={detail.subject} />
+                {projectHref && (
+                  <Link href={projectHref} className="text-primary underline-offset-4 hover:underline">
+                    {tr('باز کردنِ پروژه')}
+                  </Link>
+                )}
+              </dd>
+            </dl>
             <ChangeList detail={detail} tr={tr} tz={tz} />
+            <History detail={detail} tr={tr} tz={tz} onSelect={onNavigate} />
           </div>
         )}
       </DialogContent>

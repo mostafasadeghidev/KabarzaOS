@@ -204,7 +204,7 @@ export function ActivityView({
 
       {tab === 'availability' && <AvailabilityView data={availability} />}
 
-      <EventDialog eventId={openEvent} onClose={() => setOpenEvent(null)} />
+      <EventDialog eventId={openEvent} onClose={() => setOpenEvent(null)} onNavigate={setOpenEvent} />
     </div>
   );
 }

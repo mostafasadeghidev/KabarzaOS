@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.114.0]
+
+### Added
+
+- **History of the item in the event dialog.** Below the changes, the dialog lists every event on the same person, project, account and so on, newest first, each with its own date, time and author. The open event is highlighted. Clicking another one switches to it without closing the dialog. Events whose ID points to a task are kept apart from the project with the same number.
+- The time, author and item now sit in their own labelled rows at the top of the dialog, which notes that all changes in one event were recorded at the same moment.
+
+### Fixed
+
+- **Event dialog showed changes that did not happen.**
+  - Editing only a person's name listed «roles» and «offices» as changes too, because the form always resends them and their previous values were not recorded.
+  - A person edit now records the previous roles, offices and managed offices, so only real changes appear.
+  - In older events, fields without a recorded previous value are no longer listed under «Changes». They appear in a separate «Saved, previous value unknown» section that explains why.
+
 ## [1.113.0]
 
 ### Added

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
   auditLog, users, userRoles, projectMembers, projects, currencies, offices, tags, userOffices,
@@ -462,5 +462,31 @@ describe('رویدادِ ویرایشِ فرد', () => {
   it('بی‌مجوزِ «فعالیت» جزئیات را نمی‌بیند', async () => {
     const event = await lastEvent();
     await expect(activity.getActivityEvent(viewer(), event.id)).rejects.toThrow(ForbiddenError);
+  });
+
+  it('⚠️ فقط نام عوض شد ← فقط نام «تغییر» است، نه نقش و دفترِ همان‌قبلی', async () => {
+    const owner = actor({ id: ownerUser, roles: ['owner'] });
+    // همان نقشِ ویرایشِ قبلی؛ فرم همیشه نقش و دفتر را دوباره می‌فرستد.
+    await service.updatePerson(manager(), target, {
+      name: 'فقط نام عوض شد', email: 'audit@t', phone: '', tagIds: [devRole], officeIds: [], managedOfficeIds: [],
+    });
+    const [event] = await db.select().from(auditLog)
+      .where(and(eq(auditLog.action, 'person.update'), eq(auditLog.objectId, target)))
+      .orderBy(desc(auditLog.id)).limit(1);
+    const detail = (await activity.getActivityEvent(owner, event!.id))!;
+    expect(detail.changes.rows.map((r) => r.field)).toEqual(['name']);
+    expect(detail.changes.rows[0]).toMatchObject({ before: 'پس از ویرایش', after: 'فقط نام عوض شد' });
+  });
+
+  it('تاریخچهٔ همین مورد، هر رویداد با زمانش', async () => {
+    const owner = actor({ id: ownerUser, roles: ['owner'] });
+    await service.setMemberState(manager(), target, 'finance');
+    const event = await lastEvent();
+    const detail = (await activity.getActivityEvent(owner, event.id))!;
+    expect(detail.historyOf).toBe('فرد');
+    // تازه‌تر اول: حالت، و دو ویرایشِ تست‌های بالا.
+    expect(detail.history.map((h) => h.label)).toEqual(['تغییرِ حالتِ عضو', 'ویرایشِ فرد', 'ویرایشِ فرد']);
+    expect(detail.history.find((h) => h.current)!.id).toBe(event.id);
+    expect(detail.history.every((h) => h.createdAt instanceof Date)).toBe(true);
   });
 });

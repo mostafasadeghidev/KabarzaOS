@@ -146,6 +146,48 @@ export interface ActivityEventDetail {
   changes: ChangeSet;
   /** نامِ شناسه‌های داخلِ تغییرات: `user:3` → «سارا». */
   refs: Record<string, string>;
+  /**
+   * همهٔ رویدادهای همین مورد (تازه‌تر اول، تا ۵۰) — هر کدام با زمانش؛ خودِ
+   * این رویداد هم در فهرست است (`current`).
+   */
+  history: Array<{ id: number; label: string; actorName: string | null; createdAt: Date; current: boolean }>;
+  /** نوعِ موردی که تاریخچه بر پایهٔ آن است («پروژه»). */
+  historyOf: string | null;
+}
+
+/** سقفِ تاریخچهٔ یک مورد در دیالوگ. */
+const HISTORY_LIMIT = 50;
+
+/**
+ * رویدادهای دیگرِ همان مورد.
+ *
+ * ⚠️ تطبیق روی `object_type` + `object_id` کافی نیست: «ارجاعِ تسک» شناسهٔ تسک
+ * را با نوعِ `project` نوشته، پس پروژهٔ ۷ و تسکِ ۷ هم‌کلید می‌شدند. ردیف‌ها
+ * با `subjectKind` دوباره صافی می‌شوند و فقط همان نوع می‌ماند.
+ */
+async function historyOf(row: { id: number; action: string; objectType: string; objectId: number | null }) {
+  const kind = subjectKind(row.action, row.objectType);
+  if (!kind || row.objectId === null) return { kind: null, rows: [] };
+  const rows = await db
+    .select({
+      id: auditLog.id, action: auditLog.action, createdAt: auditLog.createdAt, actorName: users.name,
+    })
+    .from(auditLog)
+    .leftJoin(users, eq(users.id, auditLog.actorId))
+    .where(and(eq(auditLog.objectType, row.objectType), eq(auditLog.objectId, row.objectId)))
+    .orderBy(desc(auditLog.id))
+    // کمی بیشتر از سقف، چون صافیِ نوع ممکن است چند ردیف را کنار بگذارد.
+    .limit(HISTORY_LIMIT * 2);
+  return {
+    kind,
+    rows: rows
+      .filter((r) => subjectKind(r.action, row.objectType) === kind)
+      .slice(0, HISTORY_LIMIT)
+      .map((r) => ({
+        id: r.id, label: actionLabel(r.action), actorName: r.actorName, createdAt: r.createdAt,
+        current: r.id === row.id,
+      })),
+  };
 }
 
 export async function getActivityEvent(actor: Actor, id: number): Promise<ActivityEventDetail | null> {
@@ -167,8 +209,11 @@ export async function getActivityEvent(actor: Actor, id: number): Promise<Activi
     .where(eq(auditLog.id, id));
   if (!row) return null;
 
-  const [subject] = await subjectsOf([{ ...row, snapshot: snapshotName(row.before, row.after) }]);
-  const names = await namesOf(collectRefs(row.action, row.before, row.after), await currentLocale());
+  const [[subject], names, history] = await Promise.all([
+    subjectsOf([{ ...row, snapshot: snapshotName(row.before, row.after) }]),
+    namesOf(collectRefs(row.action, row.before, row.after), await currentLocale()),
+    historyOf(row),
+  ]);
 
   return {
     id: row.id,
@@ -181,6 +226,8 @@ export async function getActivityEvent(actor: Actor, id: number): Promise<Activi
     // ⚠️ `describeChanges` رازها را دوباره حذف می‌کند — ردیف‌های پیش از مهاجرتِ ۰۰۳۷ هم امن‌اند.
     changes: describeChanges(row.action, row.before, row.after),
     refs: Object.fromEntries([...names].map(([key, v]) => [key, v.name])),
+    history: history.rows,
+    historyOf: history.kind ? SUBJECT_LABELS[history.kind] : null,
   };
 }
 

@@ -97,3 +97,11 @@ describe('جزئیاتِ رویداد', () => {
     expect(sameValue({ a: 1 }, { a: 2 })).toBe(false);
   });
 });
+
+describe('تاریخچه — صافیِ نوع', () => {
+  it('⚠️ «ارجاعِ تسک» با نوعِ project در تاریخچهٔ پروژهٔ هم‌شناسه نمی‌آید', () => {
+    // تاریخچه روی object_type + object_id می‌خواند و با subjectKind صافی می‌کند.
+    expect(subjectKind('task.refer', 'project')).not.toBe(subjectKind('project.update', 'project'));
+    expect(subjectKind('task.status', 'project')).toBe(subjectKind('project.update', 'project'));
+  });
+});
