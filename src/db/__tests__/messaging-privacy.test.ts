@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
-  messages, notifications, threads, userPermissions, userRoles, users,
+  messages, notifications, threads, userOffices, userPermissions, userRoles, users,
 } from '../schema';
 import * as service from '@/server/messaging/service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -152,6 +152,25 @@ describe('گیرندگان و مخاطبِ آماده — فقط اعضا و ک�
     const ids = await service.resolveAudience(owner(), 'members');
     expect(ids).toContain(devId);
     expect(ids).not.toContain(formerId);
+  });
+
+  it('«همهٔ اعضای یک دفتر» فقط اعضای همان دفتر را می‌گیرد؛ دفتر برای کارفرما بی‌اثر است', async () => {
+    const officeId = 987_654;
+    await db.insert(userOffices).values([
+      { userId: devId, officeId },
+      { userId: formerId, officeId },
+      { userId: clientId, officeId },
+    ]);
+    try {
+      expect(await service.resolveAudience(owner(), 'members', officeId)).toEqual([devId]);
+      // دفتر فقط با «همهٔ اعضا» معنا دارد.
+      expect(await service.resolveAudience(owner(), 'clients', officeId)).toEqual([clientId]);
+      const all = await service.resolveAudience(owner(), 'all', officeId);
+      expect(all).toEqual(expect.arrayContaining([devId, staffId, clientId]));
+      await expect(service.resolveAudience(dev(), 'members', officeId)).rejects.toThrow(ForbiddenError);
+    } finally {
+      await db.delete(userOffices).where(eq(userOffices.officeId, officeId));
+    }
   });
 });
 

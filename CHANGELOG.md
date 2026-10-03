@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.112.0]
+
+### Changed
+
+- **New message dialog, reorganised.** Managers first choose who the message is for: specific people, all members, all clients, or everyone. The choice is shown as plain options instead of a drop-down.
+- **«All members» can be limited to one office.** Leave it on «every office» to reach the whole team, or pick an office to reach only its members.
+- **Picking a project selects its team.** Choosing a project in the recipient filter now ticks that project's team members automatically; untick anyone you don't want. The project's client is not ticked automatically. Switching to another project swaps the automatic ticks, while people you ticked yourself stay selected.
+- **Name search in the recipient list**, tolerant of Arabic/Persian letter variants and half-spaces, plus «select everyone in this list» for the current filter and search.
+- The selected people are listed under the recipient list with a remove button each, and the send button shows how many people the message goes to («Send to 3 people»). It stays disabled until someone is selected. For a preset audience, the dialog shows how many people it reaches before sending.
+
+### Fixed
+
+- Sending with nobody selected now says so («No recipient has been selected yet»), and an audience that reaches nobody, such as an office without members, says that instead.
+
 ## [1.111.0]
 
 ### Added

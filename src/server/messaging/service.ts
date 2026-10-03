@@ -480,8 +480,16 @@ export async function getRecipientFilterData(actor: Actor) {
   };
 }
 
-/** گیرندگانِ یک مخاطبِ آماده («همهٔ اعضا» و …) — فقط برای مدیر. */
-export async function resolveAudience(actor: Actor, audience: Audience): Promise<number[]> {
+/**
+ * گیرندگانِ یک مخاطبِ آماده («همهٔ اعضا» و …) — فقط برای مدیر.
+ * `officeId` فقط با «همهٔ اعضا» معنا دارد: همهٔ اعضای همان دفتر. کارفرما به
+ * دفتر تعلق ندارد، پس برای بقیهٔ مخاطب‌ها نادیده گرفته می‌شود.
+ */
+export async function resolveAudience(
+  actor: Actor,
+  audience: Audience,
+  officeId: number | null = null,
+): Promise<number[]> {
   // ⚠️ پخشِ همگانی فقط از مدیر — وگرنه هر عضوی می‌توانست به کلِ تیم پیام بدهد.
   if (!isManager(actor)) throw new ForbiddenError('messages.broadcast');
 
@@ -498,6 +506,10 @@ export async function resolveAudience(actor: Actor, audience: Audience): Promise
       inArray(userRoles.role, roles),
       isNull(users.deletedAt),
       eq(users.memberState, 'active'),
+      audience === 'members' && officeId
+        ? inArray(users.id, db.select({ id: userOffices.userId }).from(userOffices)
+          .where(eq(userOffices.officeId, officeId)))
+        : undefined,
     ));
   return rows.map((r) => r.id);
 }

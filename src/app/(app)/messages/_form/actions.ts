@@ -7,7 +7,7 @@ import {
   leaveThread, openThread, RateLimitedError, reply, resolveAudience, setThreadMuted, ThreadNotFoundError,
 } from '@/server/messaging/service';
 import { ForbiddenError } from '@/domain/access/guard';
-import type { Audience } from '@/domain/messaging/threads';
+import { AUDIENCE_LABELS, type Audience } from '@/domain/messaging/threads';
 import { CHANNEL_MESSAGES, ChannelError } from '@/domain/messaging/channels';
 import { getT } from '@/i18n/server';
 
@@ -46,7 +46,9 @@ async function explain(error: unknown, fallback: string): Promise<string> {
 export async function composeAction(_prev: MessageState, formData: FormData): Promise<MessageState> {
   const body = String(formData.get('body') ?? '');
   const allowReply = formData.get('allowReply') !== null;
-  const audience = String(formData.get('audience') ?? '');
+  const rawAudience = String(formData.get('audience') ?? '');
+  const audience = Object.hasOwn(AUDIENCE_LABELS, rawAudience) ? rawAudience as Audience : null;
+  const officeId = Number(formData.get('audienceOffice')) || null;
 
   const recipientIds = formData.getAll('recipients')
     .map((v) => Number(v))
@@ -58,8 +60,14 @@ export async function composeAction(_prev: MessageState, formData: FormData): Pr
     // مخاطبِ آماده («همهٔ اعضا») گیرنده‌ها را از سرور می‌گیرد، نه از فرم —
     // تا فهرستِ فرستاده‌شده قابلِ دست‌کاری نباشد.
     const finalRecipients = audience
-      ? await resolveAudience(actor, audience as Audience)
+      ? await resolveAudience(actor, audience, officeId)
       : recipientIds;
+
+    // ⚠️ دو حالتِ «خالی» جمله‌های جدا دارند: «کسی را تیک نزده‌ای» با «این
+    // مخاطب (مثلاً دفترِ بی‌عضو) کسی را ندارد» یکی نیست.
+    if (finalRecipients.length === 0) {
+      return { error: audience ? 'این مخاطب کسی را در بر نمی‌گیرد.' : 'هنوز گیرنده‌ای انتخاب نشده است.' };
+    }
 
     const created = await compose(actor, { recipientIds: finalRecipients, body, allowReply });
     revalidatePath('/messages');

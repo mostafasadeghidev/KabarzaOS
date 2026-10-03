@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  allowedRecipients, keepsProject, pickableRecipients, visibleProjects,
+  allowedRecipients, audienceIds, keepsProject, matchesName, pickableRecipients, projectTeamIds,
+  switchAutoPicks, visibleProjects,
 } from './recipient-filter';
 
 const projects = [
@@ -59,5 +60,67 @@ describe('فیلترِ زندهٔ گیرندگان', () => {
     const allowed = allowedRecipients({ projects, officeMembers, officeId: null, projectId: 999 });
     expect(allowed).not.toBeNull();
     expect(allowed!.size).toBe(0);
+  });
+});
+
+describe('انتخابِ گیرندگان', () => {
+  const recipients = [
+    { id: 1, role: 'member' }, { id: 2, role: 'member' }, { id: 3, role: 'member' },
+    { id: 90, role: 'client' }, { id: 91, role: 'client' },
+  ];
+
+  it('جستجوی نام «ي/ك» ِ عربی و نیم‌فاصله را یکی می‌گیرد', () => {
+    expect(matchesName('علي كريمي', 'علی کریمی')).toBe(true);
+    expect(matchesName('محمد‌رضا', 'محمد رضا')).toBe(true);
+    expect(matchesName('Sara', 'sa')).toBe(true);
+    expect(matchesName('Sara', '  ')).toBe(true);
+    expect(matchesName('Sara', 'x')).toBe(false);
+  });
+
+  it('⚠️ انتخابِ پروژه اعضای تیم را تیک می‌زند، نه کارفرما را', () => {
+    expect(projectTeamIds({ projects, officeMembers, recipients, officeId: null, projectId: 1 }))
+      .toEqual([1, 2]);
+    // زیرِ دفتر فقط اعضای همان دفتر.
+    expect(projectTeamIds({ projects, officeMembers, recipients, officeId: 20, projectId: 3 }))
+      .toEqual([3]);
+    expect(projectTeamIds({ projects, officeMembers, recipients, officeId: null, projectId: null }))
+      .toEqual([]);
+  });
+
+  it('عضوی که گیرندهٔ ممکن نیست (عضوِ سابق) تیک نمی‌خورد', () => {
+    expect(projectTeamIds({
+      projects, officeMembers, recipients: recipients.filter((r) => r.id !== 2),
+      officeId: null, projectId: 1,
+    })).toEqual([1]);
+  });
+
+  it('⚠️ عوض‌کردنِ پروژه تیک‌های خودکارِ قبلی را برمی‌دارد ولی تیکِ دستی را نه', () => {
+    // پروژهٔ ۱ ← [۱، ۲] خودکار؛ کاربر ۹۰ را دستی زده است.
+    const first = switchAutoPicks({ picked: new Set([90]), auto: new Set(), team: [1, 2] });
+    expect([...first.picked].sort()).toEqual([1, 2, 90]);
+    expect([...first.auto].sort()).toEqual([1, 2]);
+
+    // پروژهٔ ۲ ← [۳].
+    const second = switchAutoPicks({ picked: first.picked, auto: first.auto, team: [3] });
+    expect([...second.picked].sort()).toEqual([3, 90]);
+
+    // بی‌پروژه ← فقط دستی‌ها.
+    const none = switchAutoPicks({ picked: second.picked, auto: second.auto, team: [] });
+    expect([...none.picked]).toEqual([90]);
+  });
+
+  it('کسی که دستی هم زده شده بود با عوض‌شدنِ پروژه نمی‌افتد', () => {
+    const r = switchAutoPicks({ picked: new Set([1]), auto: new Set(), team: [1, 2] });
+    expect([...r.auto]).toEqual([2]);
+    const back = switchAutoPicks({ picked: r.picked, auto: r.auto, team: [] });
+    expect([...back.picked]).toEqual([1]);
+  });
+
+  it('شمارِ مخاطبِ آماده — دفتر فقط برای «همهٔ اعضا»', () => {
+    const base = { recipients, officeMembers };
+    expect(audienceIds({ ...base, audience: 'members', officeId: null })).toEqual([1, 2, 3]);
+    expect(audienceIds({ ...base, audience: 'members', officeId: 10 })).toEqual([1, 2]);
+    expect(audienceIds({ ...base, audience: 'clients', officeId: 10 })).toEqual([90, 91]);
+    expect(audienceIds({ ...base, audience: 'all', officeId: null })).toEqual([1, 2, 3, 90, 91]);
   });
 });

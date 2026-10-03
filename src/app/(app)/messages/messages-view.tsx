@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { ArrowDown, ArrowRight, Archive, Bell, BellOff, Check, CheckCheck, ChevronDown, CircleAlert, FolderKanban, Hash, Inbox, Megaphone, MessagesSquare, Plus, ShieldQuestion, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowRight, Archive, Bell, BellOff, Check, CheckCheck, ChevronDown, FolderKanban, Hash, Inbox, Megaphone, MessagesSquare, Plus, ShieldQuestion, Trash2 } from 'lucide-react';
 import {
   composeAction, contactManagementAction, deleteGroupMessageAction, deleteThreadAction, leaveThreadAction,
   openThreadAction, replyAction, setMutedAction, type MessageState,
@@ -11,7 +11,7 @@ import {
 import {
   CreateChannelDialog, GroupComposer, MessageBody, SendButton, type ChannelOptions,
 } from './group-parts';
-import { AUDIENCE_LABELS, type Audience } from '@/domain/messaging/threads';
+import { ComposeDialog } from './compose-dialog';
 import { groupInbox } from '@/domain/messaging/labels';
 import { monogram } from '@/domain/files/monogram';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -25,7 +25,7 @@ import {
   Message, MessageAvatar, MessageContent, MessageFooter, MessageGroup, MessageHeader,
 } from '@/components/ui/message';
 import { Spinner } from '@/components/ui/spinner';
-import { Field, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 import { submitOnModEnter, useModEnterLabel } from '@/lib/submit-shortcut';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -33,19 +33,12 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/page-shell';
 import { useConfirm } from '@/components/ui/confirm';
 import {
-  allowedRecipients, keepsProject, pickableRecipients, visibleProjects,
-} from '@/domain/messaging/recipient-filter';
-import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatCompact, formatDateTime } from '@/i18n/datetime';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { SearchableSelect } from '@/components/ui/searchable-select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { SearchInput } from '@/components/ui/search-input';
 import { Hint } from '@/components/ui/tooltip';
@@ -325,35 +318,11 @@ export function MessagesView({
   );
   const [replyState, replyFormAction] = useActionState<MessageState, FormData>(replyAction, {});
 
-  const [audience, setAudience] = useState<'' | Audience>('');
-  const [picked, setPicked] = useState<Set<number>>(new Set());
 
   /** جستجو و زبانهٔ «خوانده‌نشده» — فقط نمایشِ صندوق را باریک می‌کنند. */
   const [query, setQuery] = useState('');
   const [box, setBox] = useState<'all' | 'unread'>('all');
 
-  /**
-   * فیلترِ زندهٔ گیرندگان — انتخابِ دفتر پروژه‌ها را باریک می‌کند و
-   * «دفتر ∩ پروژه» فهرستِ گیرندگان را. قاعده‌ها در دامنه‌اند (R-MSG-09..11).
-   */
-  const [officeId, setOfficeId] = useState<number | null>(null);
-  const [projectId, setProjectId] = useState<number | null>(null);
-
-  const shownProjects = visibleProjects(filters.projects, officeId);
-
-  // ⚠️ پروژه‌ای که با تغییرِ دفتر دیگر دیده نمی‌شود باید صفر شود، وگرنه
-  // فیلترِ نامرئی فهرستِ گیرندگان را خالی نگه می‌دارد.
-  useEffect(() => {
-    if (!keepsProject(filters.projects, projectId, officeId)) setProjectId(null);
-  }, [filters.projects, projectId, officeId]);
-
-  const allowed = allowedRecipients({
-    projects: filters.projects,
-    officeMembers: filters.officeMembers,
-    officeId,
-    projectId,
-  });
-  const shownRecipients = pickableRecipients(recipients, allowed, picked);
 
   useEffect(() => {
     if (openId === null) { setThread(null); return; }
@@ -426,8 +395,6 @@ export function MessagesView({
   useEffect(() => {
     if (composeState.ok) {
       setComposeOpen(false);
-      setPicked(new Set());
-      setAudience('');
       /**
        * ⚠️ جملهٔ شمارنده‌دار حفظ می‌شود: «پیام به ۷ نفر ارسال شد.» چیزی
        * می‌گوید که «پیام ارسال شد.» نمی‌گوید — و کاربر پس از انتخابِ چند
@@ -449,13 +416,6 @@ export function MessagesView({
     }
   }, [mgmtState]);
 
-  const togglePick = (id: number) =>
-    setPicked((cur) => {
-      const next = new Set(cur);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
 
   // ---- صندوق: جستجو + «خوانده‌نشده» ----
   // ⚠️ گروهِ بی‌صدا در جمعِ «خوانده‌نشده» نیست — همان قاعدهٔ شمارندهٔ سایدبار.
@@ -937,133 +897,15 @@ export function MessagesView({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{tr("پیام جدید")}</DialogTitle>
-            <DialogDescription>
-              {tr("به هر گیرنده یک گفتگوی جداگانه فرستاده می‌شود؛ گیرنده‌ها همدیگر را نمی‌بینند.")}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form action={composeFormAction} className="grid gap-3">
-            {canBroadcast && (
-              <Field>
-                <FieldLabel htmlFor="msg-audience">{tr("مخاطب")}</FieldLabel>
-                <NativeSelect
-                  id="msg-audience"
-                  name="audience"
-                  containerClassName="w-full"
-                  value={audience}
-                  onChange={(e) => setAudience(e.target.value as '' | Audience)}
-                >
-                  <NativeSelectOption value="">{tr("— انتخابِ دستی —")}</NativeSelectOption>
-                  {(Object.keys(AUDIENCE_LABELS) as Audience[]).map((key) => (
-                    <NativeSelectOption key={key} value={key}>{tr(AUDIENCE_LABELS[key])}</NativeSelectOption>
-                  ))}
-                </NativeSelect>
-              </Field>
-            )}
-
-            {audience === '' && (
-              <FieldSet variant="box">
-                <FieldLegend>{tr("گیرندگان")}</FieldLegend>
-
-                {/*
-                  فیلترِ زنده. ⚠️ فقط منویِ انتخاب‌شدنی را کوچک می‌کند؛
-                  کسی که قبلاً تیک خورده هرگز نمی‌افتد.
-                */}
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <NativeSelect
-                    aria-label={tr("فیلترِ دفتر")}
-                    value={officeId ?? ''}
-                    onChange={(e) => setOfficeId(e.target.value ? Number(e.target.value) : null)}
-                  >
-                    <NativeSelectOption value="">{tr("همهٔ دفاتر")}</NativeSelectOption>
-                    {filters.offices.map((o) => (
-                      <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>
-                    ))}
-                  </NativeSelect>
-                  <SearchableSelect
-                    aria-label={tr("فیلترِ پروژه")}
-                    value={projectId ?? ''}
-                    onValueChange={(v) => setProjectId(v ? Number(v) : null)}
-                  >
-                    <NativeSelectOption value="">{tr("همهٔ پروژه‌ها")}</NativeSelectOption>
-                    {shownProjects.map((p) => (
-                      <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>
-                    ))}
-                  </SearchableSelect>
-                </div>
-
-                <div className="grid max-h-48 gap-1 overflow-y-auto">
-                  {shownRecipients.map((r) => (
-                    <label key={r.id} className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        name="recipients"
-                        value={String(r.id)}
-                        checked={picked.has(r.id)}
-                        onCheckedChange={() => togglePick(r.id)}
-                      />
-                      {r.name}
-                      <span className="text-xs text-muted-foreground">
-                        ({r.role === 'client' ? tr('کارفرما') : tr('عضو')})
-                      </span>
-                    </label>
-                  ))}
-                  {shownRecipients.length === 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      {recipients.length === 0
-                        ? tr('مخاطبی برای ارسال نیست.')
-                        : tr('با این فیلتر کسی پیدا نشد.')}
-                    </p>
-                  )}
-                </div>
-                {picked.size > 0 && (
-                  <Button
-                    type="button" variant="link" size="xs" className="justify-self-start px-0 text-muted-foreground"
-                    onClick={() => setPicked(new Set())}
-                  >
-                    {tr("پاک کردن همه")}
-                  </Button>
-                )}
-              </FieldSet>
-            )}
-
-            <Field>
-              <FieldLabel htmlFor="msg-body">{tr("متن پیام")}</FieldLabel>
-              <Textarea
-                id="msg-body" name="body" rows={4} required
-                placeholder={tr('{keys} برای ارسال', { keys: sendKeys })} onKeyDown={submitOnModEnter}
-              />
-            </Field>
-
-            <label className="flex items-start gap-2 text-sm">
-              <Checkbox
-                name="allowReply"
-                defaultChecked className="mt-0.5"
-              />
-              {tr("پاسخ مجاز باشد (برای سؤال)؛ بدون تیک = اعلانِ یک‌طرفه")}
-            </label>
-
-            {composeState.error && (
-              <Alert variant="destructive">
-                <CircleAlert />
-                <AlertDescription>
-                  {tr(composeState.error)}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setComposeOpen(false)}>
-                {tr("بستن")}
-              </Button>
-              <SubmitButton label={tr("ارسال پیام")} />
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ComposeDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        recipients={recipients}
+        filters={filters}
+        canBroadcast={canBroadcast}
+        formAction={composeFormAction}
+        state={composeState}
+      />
     </>
   );
 }

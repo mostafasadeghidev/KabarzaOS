@@ -85,3 +85,84 @@ export function pickableRecipients<T extends { id: number }>(
   if (!allowed) return [...recipients];
   return recipients.filter((r) => allowed.has(r.id) || picked.has(r.id));
 }
+
+/**
+ * کلیدِ جستجوی نام — «ي/ك» ِ عربی با «ی/ک»، نیم‌فاصله با فاصله و بزرگی/کوچکی
+ * یکی می‌شوند؛ وگرنه نامی که با صفحه‌کلیدِ دیگری ثبت شده هرگز پیدا نمی‌شد.
+ */
+export function searchKey(text: string): string {
+  return text
+    .replace(/[يى]/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/[‌‏‎]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+/** آیا نام با عبارتِ جستجو جور است؟ عبارتِ خالی یعنی همه. */
+export function matchesName(name: string, query: string): boolean {
+  const needle = searchKey(query);
+  return needle === '' || searchKey(name).includes(needle);
+}
+
+/**
+ * اعضای تیمِ پروژه برای تیکِ خودکار — زیرِ فیلترِ دفتر، و فقط از میانِ
+ * گیرندگانِ ممکن با نقشِ «عضو».
+ *
+ * ⚠️ کارفرمای پروژه خودکار تیک نمی‌خورد: پیامی که برای تیم نوشته شده نباید
+ * بی‌صدا به کارفرما هم برسد. کارفرما در فهرست می‌ماند تا اگر خواستی دستی بزنی.
+ */
+export function projectTeamIds(input: {
+  projects: readonly ProjectRef[];
+  officeMembers: Readonly<Record<number, readonly number[]>>;
+  recipients: ReadonlyArray<{ id: number; role: string }>;
+  officeId: number | null;
+  projectId: number | null;
+}): number[] {
+  if (!input.projectId) return [];
+  const project = input.projects.find((p) => p.id === input.projectId);
+  if (!project) return [];
+  const inOffice = input.officeId ? new Set(input.officeMembers[input.officeId] ?? []) : null;
+  const team = new Set(project.memberIds.filter((id) => !inOffice || inOffice.has(id)));
+  return input.recipients.filter((r) => r.role !== 'client' && team.has(r.id)).map((r) => r.id);
+}
+
+/**
+ * عوض‌شدنِ پروژه (یا دفترِ زیرِ آن) — تیک‌های خودکار جابه‌جا می‌شوند.
+ *
+ * `auto` تیک‌هایی است که انتخابِ پروژه گذاشته و کاربر هنوز دست نزده. با
+ * پروژهٔ تازه همان‌ها برداشته و اعضای پروژهٔ تازه تیک می‌خورند؛ ⚠️ تیکِ دستیِ
+ * کاربر هرگز نمی‌افتد، وگرنه عوض‌کردنِ پروژه بی‌صدا گیرنده‌ها را پاک می‌کرد.
+ */
+export function switchAutoPicks(input: {
+  picked: ReadonlySet<number>;
+  auto: ReadonlySet<number>;
+  team: readonly number[];
+}): { picked: Set<number>; auto: Set<number> } {
+  const manual = new Set([...input.picked].filter((id) => !input.auto.has(id)));
+  const auto = new Set(input.team.filter((id) => !manual.has(id)));
+  return { picked: new Set([...manual, ...auto]), auto };
+}
+
+/**
+ * گیرندگانِ یک مخاطبِ آماده — همان قاعدهٔ `resolveAudience` ِ سرور، برای
+ * نشان‌دادنِ «این پیام به n نفر می‌رسد» پیش از ارسال. دفتر فقط برای
+ * «همهٔ اعضا» معنا دارد — کارفرما به دفتر تعلق ندارد.
+ */
+export function audienceIds(input: {
+  audience: 'members' | 'clients' | 'all';
+  officeId: number | null;
+  recipients: ReadonlyArray<{ id: number; role: string }>;
+  officeMembers: Readonly<Record<number, readonly number[]>>;
+}): number[] {
+  const inOffice = input.audience === 'members' && input.officeId
+    ? new Set(input.officeMembers[input.officeId] ?? [])
+    : null;
+  return input.recipients
+    .filter((r) => {
+      if (r.role === 'client') return input.audience !== 'members';
+      return input.audience !== 'clients' && (!inOffice || inOffice.has(r.id));
+    })
+    .map((r) => r.id);
+}
