@@ -23,6 +23,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { Field, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
+import { submitOnModEnter, useModEnterLabel } from '@/lib/submit-shortcut';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageHeader } from '@/components/page-shell';
@@ -274,6 +275,7 @@ export function MessagesView({
   viewerId: number;
 }) {
   const tr = useT();
+  const sendKeys = useModEnterLabel();
   const tz = useTimeZone();
   const { show } = useToast();
   const confirm = useConfirm();
@@ -714,8 +716,9 @@ export function MessagesView({
                     <Textarea
                       name="body"
                       rows={1}
-                      placeholder={tr('پاسخ شما…')}
+                      placeholder={tr('پاسخ شما… ({keys} برای ارسال)', { keys: sendKeys })}
                       aria-label={tr('پاسخ شما…')}
+                      onKeyDown={submitOnModEnter}
                       required
                       className="max-h-40 min-h-10 resize-none"
                     />
@@ -747,7 +750,10 @@ export function MessagesView({
           <form action={mgmtFormAction} className="grid gap-3">
             <Field>
               <FieldLabel htmlFor="mgmt-body">{tr("متنِ پیام")}</FieldLabel>
-              <Textarea id="mgmt-body" name="body" rows={5} required />
+              <Textarea
+                id="mgmt-body" name="body" rows={5} required
+                placeholder={tr('{keys} برای ارسال', { keys: sendKeys })} onKeyDown={submitOnModEnter}
+              />
             </Field>
             {mgmtState.error && (
               <p className="text-xs text-destructive">{tr(mgmtState.error)}</p>
@@ -857,7 +863,10 @@ export function MessagesView({
 
             <Field>
               <FieldLabel htmlFor="msg-body">{tr("متن پیام")}</FieldLabel>
-              <Textarea id="msg-body" name="body" rows={4} required />
+              <Textarea
+                id="msg-body" name="body" rows={4} required
+                placeholder={tr('{keys} برای ارسال', { keys: sendKeys })} onKeyDown={submitOnModEnter}
+              />
             </Field>
 
             <label className="flex items-start gap-2 text-sm">

@@ -2,6 +2,11 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.110.0]
+
+### Added
+
+- **Send a message with Ctrl+Enter** (⌘+Enter on a Mac) in the reply box, the new-message dialog and «message to management». Enter on its own still adds a new line, so multi-line messages are written as before and nothing is sent by accident. The shortcut is shown in the box, and it does nothing while a previous send is still in progress, so a message cannot go out twice.
 ## [1.109.0]
 
 ### Added
