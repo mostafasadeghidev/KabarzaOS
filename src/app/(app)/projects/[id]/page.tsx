@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
+import { projectGroupSummary } from '@/server/messaging/service';
 import { listUnitEntries, myRequests, myUnpaidUnits } from '@/server/finance/member-service';
 import {
   getBidderView, getMemberTender, getMembersForm, getProjectFormOptions, getProjectTabs,
@@ -159,7 +160,7 @@ export default async function ProjectDetailPage({
    * نبودنش چیزی از او نمی‌گیرد: `TaskStatusPicker` برای غیرمدیر همان چیپِ
    * خواندنی را برمی‌گرداند، مثلِ `task_status_dropdown_html()` نسخهٔ قبلی.
    */
-  const [taskStatuses, taskFormOptions, qaForm] = await Promise.all([
+  const [taskStatuses, taskFormOptions, qaForm, chat] = await Promise.all([
     // پورتِ افزونه: هر شرکت‌کننده وضعیتِ تسک را عوض می‌کند (عضو تسکش را به ریویو می‌فرستد) — نه روی منجمد.
     detail.canInteract && !detail.isFrozen ? taskStatusOptionsFor(actor, project.id) : Promise.resolve([]),
     /**
@@ -170,6 +171,8 @@ export default async function ProjectDetailPage({
      */
     detail.isFrozen ? Promise.resolve(null) : getTaskFormOptions(actor, project.id),
     canManage ? getQaForm(actor, project.id) : Promise.resolve(null),
+    // گروهِ گفتگو: سرویس خودش کارفرما و غیرعضو را `null` می‌دهد — حتی وجودِ گروه را نمی‌بینند.
+    projectGroupSummary(actor, project.id),
   ]);
 
   // فرم‌ها فقط وقتی خوانده می‌شوند که دکمه‌شان هم دیده شود.
@@ -365,6 +368,7 @@ export default async function ProjectDetailPage({
         initialView={query.view ?? null}
         data={{
           projectId: project.id,
+          chat,
           title: project.title,
           isTender: project.isTender,
           isArchived: project.isArchived,

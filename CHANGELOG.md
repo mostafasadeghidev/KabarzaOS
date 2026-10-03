@@ -2,6 +2,33 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.111.0]
+
+### Added
+
+- **Team channels.** Owners and admins can create a channel from Messages → «New channel» for all members, one member role or one office. Everyone in the audience shares one conversation. Ordinary messages send no notification at all (only an unread count); a person is notified only when they are mentioned. A channel can be «announcements only», where only managers post.
+- **Project chat groups.** A manager — or that project's manager — opens a chat group from the project's new «Chat group» tab. Its members are the project members, the managers of the project's office and the owners/admins. New messages notify the other members in the app and on Telegram, bundled: while someone still has an unread notice from the group, further messages don't send another one. Mentions are immediate and also go by email; ordinary group messages never send email.
+- **Mentions.** Typing `@` in a channel or group opens a list of its members (arrow keys and Enter or Tab to pick). Mentions are highlighted in the message, and yours stand out. «@all» is available to managers, and in a project group to that project's manager.
+- **Mute.** Anyone can mute a channel or group for themselves: it leaves the unread badge and stops group notices, while mentions still arrive.
+- **Message deletion in groups:** authors can delete their own messages; managers (and the project's manager in its group) can delete any.
+- The inbox is split into team channels, project groups and conversations whenever there are groups to show.
+
+### Rules
+
+- Clients are never members of a channel or a group, and people who left the team, or whose access to a project is blocked, are not either.
+- Membership is computed live from project membership, roles, offices and member state rather than copied, so adding or removing someone on a project takes effect immediately.
+- Managers' names stay masked as «Management» for members, as in all messages.
+- Project group messages are kept for 90 days, regardless of the general message clean-up setting; channels and conversations follow that setting. Channels and groups themselves are never removed by the clean-up.
+- An archived project's group becomes read-only. Lightening or deleting a project removes its group with all messages and notices.
+
+### Changed
+
+- Notifications can now be limited to fewer channels for a single notice; group messages use this to skip email.
+- Mention-like tokens typed into direct messages are stored as plain text.
+
+### Upgrade note
+
+- Migration `0036_channels` runs automatically on start. Existing conversations are unchanged.
 ## [1.110.0]
 
 ### Added

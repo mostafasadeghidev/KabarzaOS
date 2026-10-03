@@ -1,5 +1,6 @@
 import { tagName } from '@/db/tag-name';
 import { alias } from 'drizzle-orm/pg-core';
+import { deleteProjectGroupsTx } from '@/server/messaging/groups';
 import { currentLocale, getT } from '@/i18n/server';
 import { notInArray, and, eq, inArray, isNull, asc, like, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
@@ -621,6 +622,9 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
       eq(notifications.url, `/projects/${projectId}`),
       like(notifications.url, `/projects/${projectId}?%`),
     ));
+
+    // گروهِ گفتگوی پروژه با همهٔ پیام‌هایش — حذفِ نرم cascade ِ کلیدِ خارجی را اجرا نمی‌کند.
+    await deleteProjectGroupsTx(tx, projectId);
 
     // حذفِ نرم — سوابق برای ممیزی می‌مانند (G6).
     await tx.update(projects).set({ deletedAt: new Date() }).where(eq(projects.id, projectId));
@@ -2740,6 +2744,8 @@ export async function lightenProject(actor: Actor, projectId: number) {
     await tx.delete(attachments).where(eq(attachments.projectId, projectId));
     await tx.delete(timelogs).where(eq(timelogs.projectId, projectId));
     await tx.delete(tenderBids).where(eq(tenderBids.projectId, projectId));
+    // گروهِ گفتگوی پروژه هم — سبک‌سازی یعنی آزاد کردنِ جا؛ پیام‌ها هم دادهٔ سنگین‌اند.
+    await deleteProjectGroupsTx(tx, projectId);
 
     // پرچمِ مناقصه و نقش‌ها/اعلام‌شده‌ها پاک می‌شوند تا پروژهٔ سبک‌شده نشان و تبِ
     // مناقصه نداشته باشد و مناقصهٔ دوباره از نو اعلام شود؛ خاطره‌اش در `wasTender` می‌ماند.

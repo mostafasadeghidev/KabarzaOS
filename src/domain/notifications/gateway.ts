@@ -54,6 +54,10 @@ const CATEGORY_OF: Record<string, NotifyCategory> = {
 
   // پیام
   'message.received': 'messages',
+  // کانال و گروهِ پروژه — منشن، پیامِ تازهٔ گروه، و «به کانال اضافه شدید».
+  'message.mention': 'messages',
+  'message.group': 'messages',
+  'message.channel': 'messages',
 
   /**
    * ⚠️ عمداً `other`، پس هیچ‌وقت خاموش نمی‌شوند:

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ChatTab, type ProjectChat } from './chat-tab';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { TasksTab, type TaskItem, type TaskStatusOption } from './tasks-tab';
 import type { TaskFormOptions } from './add-task-dialog';
@@ -31,6 +32,8 @@ import { Separator } from '@/components/ui/separator';
 
 export interface ProjectTabsData {
   projectId: number;
+  /** گروهِ گفتگوی پروژه — فقط برای تیم؛ کارفرما و غیرعضو `null`. */
+  chat: ProjectChat | null;
   title: string;
   isTender: boolean;
   isArchived: boolean;
@@ -144,6 +147,7 @@ export function ProjectTabs({
     ...((data.isTender || data.bids.length > 0) && data.canManage
       ? [{ key: 'bids', label: 'پیشنهادهای مناقصه', badge: data.bids.length }] : []),
     ...(data.myBid ? [{ key: 'my-bid', label: 'پیشنهادِ من' }] : []),
+    ...(data.chat ? [{ key: 'chat', label: 'گروهِ گفتگو', badge: data.chat.unread }] : []),
   ];
 
   /** تبِ خواسته‌شده فقط وقتی پذیرفته می‌شود که واقعاً ساخته شده باشد. */
@@ -220,6 +224,10 @@ export function ProjectTabs({
         تصمیم می‌گرفت و سه فاصله و دو عرضِ متفاوت داشتیم.
       */}
       {tab === 'info' && <TabPanel>{info}</TabPanel>}
+
+      {tab === 'chat' && data.chat && (
+        <TabPanel width="reading"><ChatTab projectId={data.projectId} chat={data.chat} /></TabPanel>
+      )}
 
       {tab === 'tasks' && (
         <TabPanel><TasksTab

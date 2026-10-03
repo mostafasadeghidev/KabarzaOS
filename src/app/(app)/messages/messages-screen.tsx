@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
-import { getRecipientFilterData, getRecipients, listInbox } from '@/server/messaging/service';
+import { channelFormOptions, getRecipientFilterData, getRecipients, listInbox } from '@/server/messaging/service';
 import { can } from '@/domain/access/permissions';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { MessagesView } from './messages-view';
@@ -38,8 +38,11 @@ export async function MessagesScreen({ threadId = null }: { threadId?: number | 
     ? await Promise.all([getRecipients(actor), getRecipientFilterData(actor)])
     : [[], { offices: [], projects: [], officeMembers: {} }];
   const canBroadcast = actor.roles.includes('owner') || actor.roles.includes('admin');
+  // «کانالِ تازه» همان گاردِ پخشِ همگانی را دارد: فقط مالک و ادمین.
+  const channelOptions = canBroadcast ? await channelFormOptions(actor) : null;
 
-  const unread = inbox.threads.reduce((sum, t) => sum + t.unread, 0);
+  // ⚠️ گروهِ بی‌صدا در شمارِ «خوانده‌نشده» ِ سرصفحه نیست — همان قاعدهٔ شمارندهٔ سایدبار.
+  const unread = inbox.threads.reduce((sum, t) => sum + (t.muted ? 0 : t.unread), 0);
 
   return (
     /*
@@ -80,6 +83,7 @@ export async function MessagesScreen({ threadId = null }: { threadId?: number | 
         canSend={inbox.canSend}
         poll={{ enabled: system.chatPollEnabled, seconds: system.chatPollInterval }}
         canBroadcast={canBroadcast}
+        channelOptions={channelOptions}
         initialThreadId={threadId}
         viewerId={actor.id}
       />

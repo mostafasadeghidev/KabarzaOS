@@ -2,11 +2,15 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { ArrowDown, ArrowRight, Check, CheckCheck, ChevronDown, CircleAlert, Inbox, Megaphone, MessagesSquare, Plus, SendHorizontal, ShieldQuestion, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowDown, ArrowRight, Archive, Bell, BellOff, Check, CheckCheck, ChevronDown, CircleAlert, FolderKanban, Hash, Inbox, Megaphone, MessagesSquare, Plus, ShieldQuestion, Trash2 } from 'lucide-react';
 import {
-  composeAction, contactManagementAction, deleteThreadAction, leaveThreadAction, openThreadAction,
-  replyAction, type MessageState,
+  composeAction, contactManagementAction, deleteGroupMessageAction, deleteThreadAction, leaveThreadAction,
+  openThreadAction, replyAction, setMutedAction, type MessageState,
 } from './_form/actions';
+import {
+  CreateChannelDialog, GroupComposer, MessageBody, SendButton, type ChannelOptions,
+} from './group-parts';
 import { AUDIENCE_LABELS, type Audience } from '@/domain/messaging/threads';
 import { groupInbox } from '@/domain/messaging/labels';
 import { monogram } from '@/domain/files/monogram';
@@ -49,6 +53,10 @@ import { Item, ItemContent, ItemMedia } from '@/components/ui/item';
 
 export interface InboxRow {
   id: number;
+  /** `direct` گفتگوی دونفره؛ `channel` کانالِ تیم؛ `project` گروهِ پروژه. */
+  kind: 'direct' | 'channel' | 'project';
+  /** گروهِ بی‌صدا — شمارنده خاکستری و بیرون از جمعِ خوانده‌نشده. */
+  muted: boolean;
   allowReply: boolean;
   broadcastId: number | null;
   isMine: boolean;
@@ -98,6 +106,30 @@ function ChatAvatar({ label, size = 'default' }: { label: string; size?: 'sm' | 
   );
 }
 
+/** سرتیترِ یک بخشِ صندوق — کانال‌ها، گروه‌های پروژه، گفتگوها. */
+function InboxSection({ label }: { label: string }) {
+  return (
+    <li role="presentation" className="px-3 pt-3 pb-1 text-xs font-medium text-muted-foreground first:pt-1">
+      {label}
+    </li>
+  );
+}
+
+/** نشانِ گروه به‌جای آواتار — # برای کانالِ تیم، پوشه برای گروهِ پروژه. */
+function GroupIcon({ kind, size = 'lg' }: { kind: 'channel' | 'project'; size?: 'default' | 'lg' }) {
+  const Icon = kind === 'channel' ? Hash : FolderKanban;
+  return (
+    <span
+      className={cn(
+        'flex shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary',
+        size === 'lg' ? 'size-10' : 'size-8',
+      )}
+    >
+      <Icon className={size === 'lg' ? 'size-5' : 'size-4'} />
+    </span>
+  );
+}
+
 /** یک ردیفِ صندوق — هم تک‌گفتگو هم فرزندِ آکاردئونِ ارسالِ همگانی. */
 function InboxRowButton({
   row, open, onOpen, tz,
@@ -114,7 +146,9 @@ function InboxRowButton({
         onClick={() => onOpen(row.id)}
         aria-current={open ? 'true' : undefined}
       >
-        <ItemMedia><ChatAvatar label={row.label} size="lg" /></ItemMedia>
+        <ItemMedia>
+          {row.kind === 'direct' ? <ChatAvatar label={row.label} size="lg" /> : <GroupIcon kind={row.kind} />}
+        </ItemMedia>
         <ItemContent className="gap-0.5">
           <span className="flex items-center gap-1.5">
             <span className={cn('truncate text-sm', unread ? 'font-semibold' : 'font-medium')}>
@@ -123,6 +157,7 @@ function InboxRowButton({
             {!row.allowReply && (
               <Megaphone className="size-3.5 shrink-0 text-muted-foreground" aria-label={tr('اعلان یک‌طرفه')} />
             )}
+            {row.muted && <BellOff className="size-3.5 shrink-0 text-muted-foreground" aria-label={tr('بی‌صدا')} />}
             <Hint label={formatDateTime(row.lastAt, tz)}>
               <span className={cn('num ms-auto shrink-0 text-xs', unread ? 'font-medium text-primary' : 'text-muted-foreground')}>
                 {formatCompact(row.lastAt, tz)}
@@ -134,7 +169,12 @@ function InboxRowButton({
               {row.lastBody}
             </span>
             {unread && (
-              <Badge className="num h-5 min-w-5 shrink-0 rounded-full px-1.5">{row.unread}</Badge>
+              <Badge
+                variant={row.muted ? 'secondary' : 'default'}
+                className="num h-5 min-w-5 shrink-0 rounded-full px-1.5"
+              >
+                {row.unread}
+              </Badge>
             )}
           </span>
         </ItemContent>
@@ -197,16 +237,6 @@ function BroadcastGroup({
   );
 }
 
-/** دکمهٔ ارسالِ پاسخ — آیکونی مثلِ هر پیام‌رسان؛ برچسب در تولتیپ و برای صفحه‌خوان. */
-function SendButton({ label }: { label: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <IconButton type="submit" label={label} disabled={pending} className="size-10 shrink-0 rounded-full">
-      {pending ? <Spinner /> : <SendHorizontal className="rtl:-scale-x-100" />}
-    </IconButton>
-  );
-}
-
 /**
  * تکه‌های گفتگو: جداکنندهٔ روز + دسته‌های پیاپیِ یک فرستنده.
  *
@@ -247,6 +277,7 @@ export function MessagesView({
   filters,
   canSend,
   canBroadcast,
+  channelOptions = null,
   poll,
   initialThreadId = null,
   viewerId,
@@ -265,6 +296,8 @@ export function MessagesView({
   poll: { enabled: boolean; seconds: number };
   /** پخشِ همگانی («همهٔ اعضا») فقط از مدیر. */
   canBroadcast: boolean;
+  /** گزینه‌های «کانالِ تازه» — فقط برای مالک و ادمین؛ برای بقیه `null`. */
+  channelOptions?: ChannelOptions | null;
   /**
    * گفتگویی که باید همان اولِ کار باز باشد — مسیرِ `/messages/{id}`.
    * ⚠️ لینکِ اعلانِ پیام دقیقاً همین شکل است و پیش از این به هیچ مسیری
@@ -282,6 +315,7 @@ export function MessagesView({
   const [openId, setOpenId] = useState<number | null>(initialThreadId);
   const [thread, setThread] = useState<Thread | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [channelOpen, setChannelOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const [composeState, composeFormAction] = useActionState<MessageState, FormData>(composeAction, {});
@@ -360,12 +394,18 @@ export function MessagesView({
         if (!res.ok) return;
         const data = await res.json() as {
           changed: boolean; fingerprint?: string; messages?: Thread['messages']; readUpTo?: number;
+          mentionNames?: Record<number, string>;
         };
         if (!alive) return;
         if (data.fingerprint) fpRef.current = data.fingerprint;
         if (data.changed && data.messages) {
           setThread((cur) => (cur
-            ? { ...cur, messages: data.messages!, readUpTo: data.readUpTo ?? cur.readUpTo }
+            ? {
+              ...cur,
+              messages: data.messages!,
+              readUpTo: data.readUpTo ?? cur.readUpTo,
+              mentionNames: { ...cur.mentionNames, ...data.mentionNames },
+            }
             : cur));
         }
       } catch { /* شبکهٔ قطع نباید چیزی را بشکند؛ تیکِ بعدی دوباره تلاش می‌کند. */ }
@@ -418,12 +458,21 @@ export function MessagesView({
     });
 
   // ---- صندوق: جستجو + «خوانده‌نشده» ----
-  const unreadTotal = inbox.reduce((sum, row) => sum + row.unread, 0);
+  // ⚠️ گروهِ بی‌صدا در جمعِ «خوانده‌نشده» نیست — همان قاعدهٔ شمارندهٔ سایدبار.
+  const unreadTotal = inbox.reduce((sum, row) => sum + (row.muted ? 0 : row.unread), 0);
   const needle = query.trim().toLowerCase();
-  const entries = useMemo(() => groupInbox(inbox.filter((row) =>
-    (box === 'all' || row.unread > 0)
+  const shown = useMemo(() => inbox.filter((row) =>
+    (box === 'all' || (row.unread > 0 && !row.muted))
     && (!needle || row.label.toLowerCase().includes(needle) || row.lastBody.toLowerCase().includes(needle)),
-  )), [inbox, box, needle]);
+  ), [inbox, box, needle]);
+  /*
+   * سه بخش: کانال‌های تیم، گروه‌های پروژه، گفتگوها. بخشِ خالی کشیده نمی‌شود، و
+   * اگر کاربر هیچ گروهی ندارد صندوق همان فهرستِ قبلی است — بی‌سرتیتر.
+   */
+  const channelRows = shown.filter((r) => r.kind === 'channel');
+  const projectRows = shown.filter((r) => r.kind === 'project');
+  const entries = useMemo(() => groupInbox(shown.filter((r) => r.kind === 'direct')), [shown]);
+  const sectioned = channelRows.length + projectRows.length > 0;
 
   // ---- گفتگو: پیمایش تا آخرین پیام ----
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -465,10 +514,14 @@ export function MessagesView({
     if (!thread) return;
     const everyone = thread.thread.canDelete;
     const ok = await confirm({
-      title: everyone ? tr('این گفتگو برای همه حذف شود؟') : tr('این گفتگو از صندوقِ شما برداشته شود؟'),
-      description: everyone
-        ? tr('پیام‌های آن برای طرفِ مقابل هم پاک می‌شوند.')
-        : tr('گفتگو برای طرفِ مقابل می‌ماند.'),
+      title: thread.group
+        ? tr('این گروه با همهٔ پیام‌هایش حذف شود؟')
+        : everyone ? tr('این گفتگو برای همه حذف شود؟') : tr('این گفتگو از صندوقِ شما برداشته شود؟'),
+      description: thread.group
+        ? tr('گروه برای همهٔ اعضا پاک می‌شود و برنمی‌گردد.')
+        : everyone
+          ? tr('پیام‌های آن برای طرفِ مقابل هم پاک می‌شوند.')
+          : tr('گفتگو برای طرفِ مقابل می‌ماند.'),
       confirmLabel: tr('حذف'),
     });
     if (!ok) return;
@@ -478,6 +531,30 @@ export function MessagesView({
         : await leaveThreadAction(thread.thread.id);
       if (result.error) show(tr(result.error), 'error');
       else { setOpenId(null); show(tr('گفتگو حذف شد.'), 'success'); }
+    });
+  };
+
+  /** بی‌صدا کردنِ گروه — فقط برای خودِ بیننده. */
+  const toggleMute = () => {
+    if (!thread?.group) return;
+    const next = !thread.group.muted;
+    startTransition(async () => {
+      const result = await setMutedAction(thread.thread.id, next);
+      if (result.error) { show(tr(result.error), 'error'); return; }
+      setThread((cur) => (cur?.group ? { ...cur, group: { ...cur.group, muted: next } } : cur));
+      show(next ? tr('گروه بی‌صدا شد؛ منشن‌ها همچنان می‌رسند.') : tr('اعلان‌های گروه دوباره روشن شد.'), 'success');
+    });
+  };
+
+  /** حذفِ یک پیام در گروه — نویسنده یا مدیر (سرور هم می‌سنجد). */
+  const removeMessage = async (messageId: number) => {
+    if (!thread) return;
+    const ok = await confirm({ title: tr('این پیام حذف شود؟'), confirmLabel: tr('حذف') });
+    if (!ok) return;
+    startTransition(async () => {
+      const result = await deleteGroupMessageAction(messageId);
+      if (result.error) { show(tr(result.error), 'error'); return; }
+      setThread((cur) => (cur ? { ...cur, messages: cur.messages.filter((m) => m.id !== messageId) } : cur));
     });
   };
 
@@ -498,6 +575,12 @@ export function MessagesView({
               <Button variant="outline" onClick={() => setMgmtOpen(true)}>
                 <ShieldQuestion />
                 {tr('پیام به مدیریت')}
+              </Button>
+            )}
+            {channelOptions && (
+              <Button variant="outline" onClick={() => setChannelOpen(true)}>
+                <Hash />
+                {tr('کانالِ تازه')}
               </Button>
             )}
             {canSend && (
@@ -545,10 +628,23 @@ export function MessagesView({
           <div className="min-h-0 flex-1 overflow-y-auto">
             {inbox.length === 0 ? (
               <EmptyState className="m-3 border-0" icon={<Inbox />} title={tr('هنوز پیامی ندارید.')} />
-            ) : entries.length === 0 ? (
+            ) : shown.length === 0 ? (
               <EmptyState className="m-3 border-0" title={needle ? tr('نتیجه‌ای نیست') : tr('موردی نیست.')} />
             ) : (
               <ul className="grid gap-0.5 p-2">
+                {channelRows.length > 0 && <InboxSection label={tr('کانال‌های تیم')} />}
+                {channelRows.map((row) => (
+                  <li key={row.id}>
+                    <InboxRowButton row={row} open={openId === row.id} onOpen={setOpenId} tz={tz} />
+                  </li>
+                ))}
+                {projectRows.length > 0 && <InboxSection label={tr('گروه‌های پروژه')} />}
+                {projectRows.map((row) => (
+                  <li key={row.id}>
+                    <InboxRowButton row={row} open={openId === row.id} onOpen={setOpenId} tz={tz} />
+                  </li>
+                ))}
+                {sectioned && entries.length > 0 && <InboxSection label={tr('گفتگوها')} />}
                 {/*
                   ⚠️ R-MSG-01 — گفتگوهای یک ارسالِ همگانی در صندوقِ **فرستنده** یک
                   آکاردئون‌اند (شمار، جمعِ خوانده‌نشده، ردیف‌های فرزند)؛ گیرنده هر
@@ -604,25 +700,52 @@ export function MessagesView({
                 >
                   <ArrowRight className="ltr:rotate-180" />
                 </IconButton>
-                <ChatAvatar label={thread.thread.label} />
+                {thread.group
+                  ? <GroupIcon kind={thread.group.kind} size="default" />
+                  : <ChatAvatar label={thread.thread.label} />}
                 <div className="grid min-w-0 flex-1 gap-0.5">
                   <h2 className="truncate text-sm font-semibold">{thread.thread.label || tr('گفتگو')}</h2>
-                  {!thread.thread.allowReply && (
+                  {thread.group ? (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {tr('{n} عضو', { n: thread.group.memberCount })}
+                      {thread.group.retentionDays > 0 && (
+                        <> · {tr('پیام‌ها {days} روز می‌مانند', { days: thread.group.retentionDays })}</>
+                      )}
+                      {thread.group.projectId && (
+                        <> · <Link href={`/projects/${thread.group.projectId}`} className="underline-offset-4 hover:underline">{tr('صفحهٔ پروژه')}</Link></>
+                      )}
+                    </p>
+                  ) : !thread.thread.allowReply && (
                     <p className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Megaphone className="size-3" />
                       {tr('اعلان یک‌طرفه')}
                     </p>
                   )}
                 </div>
-                <IconButton
-                  variant="ghost"
-                  label={thread.thread.canDelete ? tr('حذف گفتگو') : tr('حذف از صندوق')}
-                  className="text-muted-foreground hover:text-destructive"
-                  disabled={pending}
-                  onClick={() => { void removeThread(); }}
-                >
-                  {pending ? <Spinner /> : <Trash2 />}
-                </IconButton>
+                {/* بی‌صدا فقط برای خودِ بیننده؛ منشن همیشه می‌رسد. */}
+                {thread.group && (
+                  <IconButton
+                    variant="ghost"
+                    label={thread.group.muted ? tr('روشن کردنِ اعلان‌های گروه') : tr('بی‌صدا کردنِ گروه')}
+                    className="text-muted-foreground"
+                    disabled={pending}
+                    onClick={toggleMute}
+                  >
+                    {thread.group.muted ? <BellOff /> : <Bell />}
+                  </IconButton>
+                )}
+                {/* ⚠️ از گروه نمی‌شود «بیرون رفت»؛ حذف فقط برای کسی که حقِ حذفِ کلِ گروه را دارد. */}
+                {(!thread.group || thread.thread.canDelete) && (
+                  <IconButton
+                    variant="ghost"
+                    label={thread.group ? tr('حذفِ گروه') : thread.thread.canDelete ? tr('حذف گفتگو') : tr('حذف از صندوق')}
+                    className="text-muted-foreground hover:text-destructive"
+                    disabled={pending}
+                    onClick={() => { void removeThread(); }}
+                  >
+                    {pending ? <Spinner /> : <Trash2 />}
+                  </IconButton>
+                )}
               </header>
 
               <div className="relative min-h-0 flex-1">
@@ -666,12 +789,25 @@ export function MessagesView({
                                 <MessageContent className="gap-1">
                                   {!mine && i === 0 && <MessageHeader>{block.fromName}</MessageHeader>}
                                   <Bubble variant={mine ? 'default' : 'muted'} align={mine ? 'end' : 'start'}>
-                                    <BubbleContent className="whitespace-pre-wrap">{m.body}</BubbleContent>
+                                    <BubbleContent className="whitespace-pre-wrap">
+                                      <MessageBody body={m.body} names={thread.mentionNames} viewerId={viewerId} onPrimary={mine} />
+                                    </BubbleContent>
                                   </Bubble>
                                   <MessageFooter className="gap-1 font-normal">
                                     <Hint label={formatDateTime(m.createdAt, tz)}>
                                       <span className="num">{formatDateTime(m.createdAt, tz).slice(11)}</span>
                                     </Hint>
+                                    {/* حذفِ تک‌پیام فقط در گروه: پیامِ خودم، یا هر پیام برای مدیر. */}
+                                    {thread.group && (mine || thread.thread.canDelete) && (
+                                      <button
+                                        type="button"
+                                        onClick={() => { void removeMessage(m.id); }}
+                                        className="text-muted-foreground/70 hover:text-destructive"
+                                        aria-label={tr('حذفِ این پیام')}
+                                      >
+                                        <Trash2 className="size-3" />
+                                      </button>
+                                    )}
                                     {mine && thread.thread.showReceipts && (
                                       <Hint label={read ? tr('خوانده شد') : tr('تحویل شد')}>
                                         <span
@@ -709,7 +845,27 @@ export function MessagesView({
                 </Button>
               </div>
 
-              {thread.canReply ? (
+              {thread.canReply && thread.group ? (
+                <GroupComposer
+                  key={thread.thread.id}
+                  threadId={thread.thread.id}
+                  formAction={replyFormAction}
+                  state={replyState}
+                  mentionables={thread.group.mentionables}
+                  canMentionAll={thread.group.canMentionAll}
+                  placeholder={tr('پیام… (@ برای منشن، {keys} برای ارسال)', { keys: sendKeys })}
+                />
+              ) : thread.group?.readOnly === 'archived' ? (
+                <p className="flex items-center gap-2 border-t bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+                  <Archive className="size-3.5 shrink-0" />
+                  {tr('این پروژه بایگانی شده است؛ گروهش فقط‌خواندنی است.')}
+                </p>
+              ) : thread.group?.readOnly === 'announce' ? (
+                <p className="flex items-center gap-2 border-t bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+                  <Megaphone className="size-3.5 shrink-0" />
+                  {tr('در این کانال فقط مدیران می‌نویسند.')}
+                </p>
+              ) : thread.canReply ? (
                 <form action={replyFormAction} className="border-t p-3">
                   <input type="hidden" name="threadId" value={thread.thread.id} />
                   <div className="flex items-end gap-2">
@@ -736,6 +892,19 @@ export function MessagesView({
           )}
         </section>
       </div>
+
+      {channelOptions && (
+        <CreateChannelDialog
+          open={channelOpen}
+          onOpenChange={setChannelOpen}
+          options={channelOptions}
+          onCreated={(threadId) => {
+            setChannelOpen(false);
+            setOpenId(threadId);
+            show(tr('کانال ساخته شد.'), 'success');
+          }}
+        />
+      )}
 
       {/* ---- نوشتنِ پیامِ نو ---- */}
       <Dialog open={mgmtOpen} onOpenChange={setMgmtOpen}>

@@ -3,11 +3,12 @@
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
-  compose, contactManagement, deleteThread, leaveThread, openThread, RateLimitedError, reply,
-  resolveAudience, ThreadNotFoundError,
+  compose, contactManagement, createChannel, createProjectGroup, deleteGroupMessage, deleteThread,
+  leaveThread, openThread, RateLimitedError, reply, resolveAudience, setThreadMuted, ThreadNotFoundError,
 } from '@/server/messaging/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import type { Audience } from '@/domain/messaging/threads';
+import { CHANNEL_MESSAGES, ChannelError } from '@/domain/messaging/channels';
 import { getT } from '@/i18n/server';
 
 /** اقدام‌های پیام‌ها. گاردها همه در سرویس‌اند (R-ARCH-01). */
@@ -26,7 +27,12 @@ async function explain(error: unknown, fallback: string): Promise<string> {
     return t('کمی صبر کنید — تا ارسالِ بعدی {n} ثانیه مانده.', { n: error.secondsLeft });
   }
   if (error instanceof ThreadNotFoundError) return 'این گفتگو در دسترس نیست.';
+  if (error instanceof ChannelError) return CHANNEL_MESSAGES[error.code];
   if (error instanceof ForbiddenError) {
+    if (error.required === 'thread.group_leave') return 'از گروه نمی‌شود بیرون رفت؛ می‌توانید بی‌صدایش کنید.';
+    if (error.required === 'messages.channel') return 'ساختِ کانال فقط از مدیر ممکن است.';
+    if (error.required === 'messages.project_group') return 'گروهِ پروژه را مدیر یا مدیرِ همان پروژه می‌سازد.';
+    if (error.required === 'message.delete') return 'فقط نویسندهٔ پیام یا مدیر می‌تواند آن را حذف کند.';
     if (error.required === 'message.empty') return 'متنِ پیام خالی است.';
     if (error.required === 'message.no_recipients') return 'مخاطبی برای ارسال نیست.';
     if (error.required === 'thread.no_reply') return 'این یک اعلانِ یک‌طرفه است و امکان پاسخ ندارد.';
@@ -121,5 +127,69 @@ export async function deleteThreadAction(threadId: number): Promise<MessageState
     return { ok: true };
   } catch (error) {
     return { error: await explain(error, 'گفتگو حذف نشد.') };
+  }
+}
+
+/* ---- کانالِ تیم و گروهِ پروژه ---- */
+
+export interface ChannelState extends MessageState {
+  /** گفتگوی ساخته‌شده — تا همان باز شود. */
+  threadId?: number;
+}
+
+/** کانالِ تازه — مخاطب از فرم می‌آید ولی سرور خودش می‌سنجد. */
+export async function createChannelAction(_prev: ChannelState, formData: FormData): Promise<ChannelState> {
+  const type = String(formData.get('audienceType') ?? 'all');
+  const audience = type === 'role'
+    ? { type, tagId: Number(formData.get('roleTagId')) }
+    : type === 'office' ? { type, officeId: Number(formData.get('officeId')) } : { type: 'all' };
+  try {
+    const actor = await requireActor();
+    const threadId = await createChannel(actor, {
+      title: String(formData.get('title') ?? ''),
+      audience,
+      // «فقط اعلان» یعنی فقط مدیر می‌نویسد.
+      allowReply: formData.get('announceOnly') === null,
+      body: String(formData.get('body') ?? ''),
+    });
+    revalidatePath('/messages');
+    return { ok: true, threadId };
+  } catch (error) {
+    return { error: await explain(error, 'کانال ساخته نشد.') };
+  }
+}
+
+/** گروهِ گفتگوی پروژه — از صفحهٔ همان پروژه. */
+export async function createProjectGroupAction(projectId: number): Promise<ChannelState> {
+  try {
+    const actor = await requireActor();
+    const threadId = await createProjectGroup(actor, projectId);
+    revalidatePath('/messages');
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: true, threadId };
+  } catch (error) {
+    return { error: await explain(error, 'گروه ساخته نشد.') };
+  }
+}
+
+export async function setMutedAction(threadId: number, muted: boolean): Promise<MessageState> {
+  try {
+    const actor = await requireActor();
+    await setThreadMuted(actor, threadId, muted);
+    revalidatePath('/messages');
+    return { ok: true };
+  } catch (error) {
+    return { error: await explain(error, 'تغییر ذخیره نشد.') };
+  }
+}
+
+export async function deleteGroupMessageAction(messageId: number): Promise<MessageState> {
+  try {
+    const actor = await requireActor();
+    await deleteGroupMessage(actor, messageId);
+    revalidatePath('/messages');
+    return { ok: true };
+  } catch (error) {
+    return { error: await explain(error, 'پیام حذف نشد.') };
   }
 }

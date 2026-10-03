@@ -31,6 +31,12 @@ export interface NotifyInput {
   title: string;
   body?: string;
   url?: string;
+  /**
+   * بستنِ یک کانالِ بیرونی **برای همین اعلان** (پیش‌فرض: هر دو باز). مثلاً
+   * پیامِ عادیِ گروهِ پروژه به تلگرام می‌رود ولی ایمیل نه — ایمیل برای هر
+   * پیامِ گفتگو پرسروصدا است. ترجیحِ کاربر همچنان مقدم است؛ این فقط کم می‌کند.
+   */
+  channels?: { email?: boolean; telegram?: boolean };
 }
 
 /**
@@ -95,7 +101,11 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
     hasTelegram: !r.telegramOff && r.telegramChatId !== '',
   }));
 
-  const plan = planDelivery(input.type, recipients);
+  const plan = planDelivery(input.type, recipients).map((p) => ({
+    ...p,
+    email: p.email && input.channels?.email !== false,
+    telegram: p.telegram && input.channels?.telegram !== false,
+  }));
   if (plan.length === 0) return 0;
 
   const inApp = plan.filter((p) => p.inApp);

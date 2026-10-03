@@ -1,4 +1,4 @@
-import { uniqueIndex, boolean, index, integer, text, date, pgTable, check } from 'drizzle-orm/pg-core';
+import { uniqueIndex, boolean, index, integer, text, date, pgTable, check, jsonb } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { pk, fk, ts, stamps, scope } from './_shared';
 import { offices } from './base';
@@ -17,12 +17,28 @@ export const threads = pgTable('threads', {
   /** R-MSG-06 — گفتگوی یک‌طرفه (اعلان). */
   allowReply: boolean('allow_reply').notNull().default(true),
   broadcastId: fk('broadcast_id'),
+  /**
+   * `direct` گفتگوی دونفره/مدیریت؛ `channel` کانالِ تیم؛ `project` گروهِ پروژه.
+   * ⚠️ عضویتِ دو نوعِ گروهی از `thread_users` خوانده **نمی‌شود** — زنده از
+   * پروژه، نقش و دفتر حساب می‌شود (src/domain/messaging/channels.ts)؛
+   * `thread_users` فقط رسیدِ خواندن و بی‌صدا بودنِ هر نفر را نگه می‌دارد.
+   */
+  kind: text('kind').notNull().default('direct').$type<'direct' | 'channel' | 'project'>(),
+  /** نامِ کانالِ تیم؛ گروهِ پروژه نامِ زندهٔ پروژه را نشان می‌دهد. */
+  title: text('title').notNull().default(''),
+  /** مخاطبِ کانالِ تیم — همه، یک تگِ نقش یا یک دفتر. */
+  audience: jsonb('audience').$type<{ type: 'all' } | { type: 'role'; tagId: number } | { type: 'office'; officeId: number }>(),
+  /** گروهِ پروژه — یکی به‌ازای هر پروژه. */
+  projectId: fk('project_id').references(() => projects.id, { onDelete: 'cascade' }),
   ...stamps,
 }, (t) => [
   index('threads_broadcast_ix').on(t.broadcastId),
   index('threads_creator_ix').on(t.creatorId),
   // صندوق به تازه‌ترین فعالیت مرتب می‌شود (۱.۳۰.۰).
   index('threads_updated_ix').on(t.updatedAt),
+  index('threads_kind_ix').on(t.kind),
+  uniqueIndex('threads_project_group_uq').on(t.projectId).where(sql`${t.kind} = 'project'`),
+  check('threads_kind_ck', sql`${t.kind} in ('direct','channel','project')`),
 ]);
 
 /**
@@ -35,6 +51,8 @@ export const threadUsers = pgTable('thread_users', {
   userId: fk('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   /** R-MSG-07 — رسیدِ خواندن. */
   lastReadMessageId: fk('last_read_message_id'),
+  /** گروهِ بی‌صدا برای همین نفر — نه شمارنده، نه اعلانِ گروه؛ منشن همیشه می‌رسد. */
+  muted: boolean('muted').notNull().default(false),
   ...stamps,
 }, (t) => [
   index('thread_users_user_ix').on(t.userId),

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { getT } from '@/i18n/server';
 import { db } from '@/db/client';
@@ -15,7 +15,16 @@ import {
 import {
   counterpartLabel, personLabel, readUpTo, type LabelContext,
 } from '@/domain/messaging/labels';
-import { markReadForTarget, notify } from '@/server/notifications/service';
+import {
+  canMentionAll, canPostInGroup, ChannelError, groupRecipients, mentionsToPlain, normalizeAudience,
+  normalizeChannelTitle, PROJECT_GROUP_RETENTION_DAYS, sanitizeMentions, splitMentions,
+} from '@/domain/messaging/channels';
+import { markReadForTarget, notify, type NotifyInput } from '@/server/notifications/service';
+import { canManageProject } from '@/server/projects/authority';
+import {
+  channelAudienceOptions, ensureReadRows, groupMemberIds, groupsVisibleTo, loadGroups,
+  mutedMembers, recentlyNotified, type GroupThread,
+} from './groups';
 
 /**
  * سرویسِ پیام‌ها.
@@ -116,17 +125,33 @@ async function labelContext(actor: Actor, userIds: Iterable<number>): Promise<La
  * گفتگویی که جوابِ تازه گرفته باید بالا بیاید.
  */
 export async function listInbox(actor: Actor) {
+  /*
+   * ⚠️ گروه‌ها از عضویتِ **زنده** می‌آیند، نه از `thread_users`: کسی که از
+   * پروژه برداشته شده ردیفِ رسیدش هنوز هست ولی گروه دیگر در صندوقش نیست.
+   * ردیفِ رسید برای گروهِ تازه‌دیده همین‌جا ساخته می‌شود («تا امروز خوانده»).
+   */
+  const visible = await groupsVisibleTo(actor);
+  const groupById = new Map(visible.map((g) => [g.id, g]));
+  await ensureReadRows(actor.id, visible.map((g) => g.id));
+
   const myThreads = await db
     .select({
       threadId: threads.id,
       creatorId: threads.creatorId,
       allowReply: threads.allowReply,
       broadcastId: threads.broadcastId,
+      kind: threads.kind,
+      muted: threadUsers.muted,
       lastReadMessageId: threadUsers.lastReadMessageId,
     })
     .from(threadUsers)
     .innerJoin(threads, eq(threads.id, threadUsers.threadId))
-    .where(eq(threadUsers.userId, actor.id))
+    .where(and(
+      eq(threadUsers.userId, actor.id),
+      visible.length > 0
+        ? sql`(${threads.kind} = 'direct' or ${threads.id} in ${sql.raw(`(${visible.map((g) => g.id).join(',')})`)})`
+        : eq(threads.kind, 'direct'),
+    ))
     .orderBy(desc(threads.updatedAt), desc(threads.id));
 
   if (myThreads.length === 0) return { threads: [], canSend: can(actor, 'messages.send') };
@@ -174,25 +199,32 @@ export async function listInbox(actor: Actor) {
   }
 
   const t = await getT();
+  const lastBodies = [...last.values()].map((r) => r.body);
   const ctx = await labelContext(actor, [
-    ...participants.map((p) => p.userId),
+    ...participants.filter((p) => !groupById.has(p.threadId)).map((p) => p.userId),
     ...[...last.values()].map((r) => Number(r.from_user_id)),
+    ...mentionedIdsIn(lastBodies),
   ]);
+  const plain = (body: string) => mentionsToPlain(body, (id) => personLabel(id, ctx, t), t('همه'));
 
   return {
     threads: myThreads.map((row) => {
-      const ids = byThread.get(row.threadId) ?? [];
+      const group = groupById.get(row.threadId) ?? null;
+      // ⚠️ برای گروه، شرکت‌کنندگان از عضویتِ زنده‌اند؛ ردیف‌های رسیدِ اعضای سابق برچسب نمی‌سازند.
+      const ids = group ? [] : (byThread.get(row.threadId) ?? []);
       const lastRow = last.get(row.threadId);
       return {
         id: row.threadId,
+        kind: (group?.kind ?? 'direct') as 'direct' | 'channel' | 'project',
         allowReply: row.allowReply,
-        broadcastId: row.broadcastId,
+        broadcastId: group ? null : row.broadcastId,
         isMine: row.creatorId === actor.id,
+        muted: group ? row.muted : false,
         // «مخاطب» یعنی بقیه، نه خودم — با نامِ ماسک‌شده.
         counterparts: ids.filter((id) => id !== actor.id)
           .map((userId) => ({ userId, name: personLabel(userId, ctx, t) })),
-        label: counterpartLabel(ids, ctx, t),
-        lastBody: lastRow?.body ?? '',
+        label: group ? groupLabel(group) : counterpartLabel(ids, ctx, t),
+        lastBody: lastRow ? plain(lastRow.body) : '',
         lastAt: lastRow?.created_at ?? null,
         lastFromName: lastRow ? personLabel(Number(lastRow.from_user_id), ctx, t) : null,
         unread: unread.get(row.threadId) ?? 0,
@@ -209,8 +241,10 @@ export async function listInbox(actor: Actor) {
  * پیش از این «پیامِ تازه» بعد از خواندنِ گفتگو هم روشن می‌ماند.
  */
 export async function openThread(actor: Actor, threadId: number) {
-  const thread = await loadThread(threadId);
-  if (!canRead(thread, actor.id)) throw new ThreadNotFoundError();
+  const access = await accessThread(actor, threadId);
+  if (!access.readable) throw new ThreadNotFoundError();
+  const { thread, group } = access;
+  if (group) await ensureReadRows(actor.id, [threadId]);
 
   const [rows, states] = await Promise.all([
     db.select({
@@ -236,23 +270,75 @@ export async function openThread(actor: Actor, threadId: number) {
   await markReadForTarget(actor, '/messages', threadId);
 
   const t = await getT();
-  const ctx = await labelContext(actor, [...thread.participantIds, ...rows.map((r) => r.fromUserId)]);
+  const members = access.members ?? [];
+  const ctx = await labelContext(actor, [
+    ...(group ? members : thread.participantIds),
+    ...rows.map((r) => r.fromUserId),
+    ...mentionedIdsIn(rows.map((r) => r.body)),
+  ]);
 
   return {
     thread: {
       id: thread.id,
       allowReply: thread.allowReply,
       creatorId: thread.creatorId,
-      label: counterpartLabel(thread.participantIds, ctx, t),
-      /** حذفِ کلِ گفتگو: سازنده یا مدیر (R-MSG-11). */
-      canDelete: thread.creatorId === actor.id || isManager(actor),
-      /** تیکِ ✓✓ فقط برای مدیران — همان نمایشِ نسخهٔ قبلی. */
-      showReceipts: isManagement(actor),
+      label: group ? groupLabel(group) : counterpartLabel(thread.participantIds, ctx, t),
+      /**
+       * حذفِ کلِ گفتگو: سازنده یا مدیر (R-MSG-11). کانالِ تیم فقط مدیر؛ گروهِ
+       * پروژه مدیر یا مدیرِ همان پروژه.
+       */
+      canDelete: group
+        ? isManager(actor) || await managesGroupProject(actor, group)
+        : thread.creatorId === actor.id || isManager(actor),
+      /** تیکِ ✓✓ فقط برای مدیران و فقط در گفتگوی دونفره — در گروه «همه خواندند» معنا ندارد. */
+      showReceipts: !group && isManagement(actor),
     },
+    group: group ? await groupView(actor, group, members, ctx, t) : null,
     messages: rows.map((m) => ({ ...m, fromName: personLabel(m.fromUserId, ctx, t) })),
-    canReply: canReply(thread, actor.id),
+    canReply: access.writable,
     /** تا این شناسه، همهٔ طرف‌های دیگر خوانده‌اند (R-MSG-07). */
     readUpTo: readUpTo(states, actor.id),
+    /** برچسبِ هر منشن برای همین بیننده (ماسکِ R-MSG-03 هم اعمال شده). */
+    mentionNames: Object.fromEntries(
+      mentionedIdsIn(rows.map((r) => r.body)).map((id) => [id, personLabel(id, ctx, t)]),
+    ) as Record<number, string>,
+  };
+}
+
+/**
+ * دادهٔ سربرگ و نوارِ نوشتنِ یک گروه.
+ *
+ * ⚠️ فهرستِ منشن برای عضوِ عادی مدیران را ندارد: نامشان برایش «مدیریت» است و
+ * منشنِ «مدیریت» معلوم نمی‌کرد به کدام نفر اعلان برود.
+ */
+async function groupView(
+  actor: Actor,
+  group: GroupThread,
+  members: number[],
+  ctx: LabelContext,
+  t: Awaited<ReturnType<typeof getT>>,
+) {
+  const [mine] = await db.select({ muted: threadUsers.muted }).from(threadUsers)
+    .where(and(eq(threadUsers.threadId, group.id), eq(threadUsers.userId, actor.id)));
+  const managesProject = await managesGroupProject(actor, group);
+  return {
+    kind: group.kind,
+    projectId: group.projectId,
+    muted: mine?.muted ?? false,
+    memberCount: members.length,
+    /** پیام‌های گروهِ پروژه ثابت ۹۰ روز؛ بقیه از تنظیمِ سامانه. */
+    retentionDays: group.kind === 'project'
+      ? PROJECT_GROUP_RETENTION_DAYS
+      : (await getSystemConfig()).msgPurgeDays,
+    /** چرا نمی‌شود نوشت — برای جملهٔ جای کادرِ نوشتن. */
+    readOnly: group.kind === 'project' && group.projectArchived
+      ? 'archived' as const
+      : !group.allowReply && !isManager(actor) ? 'announce' as const : null,
+    canMentionAll: canMentionAll({ kind: group.kind, isManager: isManager(actor), managesProject }),
+    mentionables: members
+      .filter((id) => id !== actor.id && (ctx.viewerIsManager || !ctx.managerIds.has(id)))
+      .map((id) => ({ id, name: personLabel(id, ctx, t) }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
   };
 }
 
@@ -261,15 +347,65 @@ async function loadThread(threadId: number) {
   const thread = rows[0];
   if (!thread) throw new ThreadNotFoundError();
 
-  const parts = await db.select({ userId: threadUsers.userId })
-    .from(threadUsers).where(eq(threadUsers.threadId, threadId));
+  // ⚠️ برای گروه، ردیف‌های رسید عضویت نیستند — `accessThread` عضویتِ زنده را می‌سنجد.
+  const parts = thread.kind === 'direct'
+    ? await db.select({ userId: threadUsers.userId }).from(threadUsers).where(eq(threadUsers.threadId, threadId))
+    : [];
 
   return {
     id: thread.id,
     creatorId: thread.creatorId,
     allowReply: thread.allowReply,
+    kind: thread.kind,
     participantIds: parts.map((p) => p.userId),
   };
+}
+
+/**
+ * دسترسیِ یک نفر به یک گفتگو — دونفره با `thread_users`، گروهی با عضویتِ زنده.
+ *
+ * ⚠️ همهٔ مسیرها (باز کردن، پاسخ، پول، حذف) از همین می‌گذرند تا قاعدهٔ
+ * «عضوِ گروه کیست» فقط یک جا باشد.
+ */
+async function accessThread(actor: Actor, threadId: number) {
+  const thread = await loadThread(threadId);
+  if (thread.kind === 'direct') {
+    return {
+      thread, group: null, members: null,
+      readable: canRead(thread, actor.id), writable: canReply(thread, actor.id),
+    };
+  }
+  const [group] = await loadGroups([threadId]);
+  if (!group) throw new ThreadNotFoundError();
+  const members = await groupMemberIds(group);
+  const isMember = members.includes(actor.id);
+  return {
+    thread, group, members,
+    readable: isMember,
+    writable: canPostInGroup({
+      kind: group.kind, isMember, allowReply: group.allowReply,
+      isManager: isManager(actor), projectArchived: group.projectArchived,
+    }),
+  };
+}
+
+/** نامِ نمایشیِ گروه — کانال نامِ خودش، گروهِ پروژه نامِ **زندهٔ** پروژه. */
+function groupLabel(group: GroupThread): string {
+  return group.kind === 'project' ? (group.projectTitle ?? '') : group.title;
+}
+
+/** مدیرِ پروژهٔ این گروه است؟ (برای «@همه» و حذفِ گروه.) */
+async function managesGroupProject(actor: Actor, group: GroupThread): Promise<boolean> {
+  return group.kind === 'project' && group.projectId !== null && canManageProject(actor, group.projectId);
+}
+
+/** شناسه‌های منشن‌شده در چند متن — برای ساختنِ برچسب‌هایشان. */
+function mentionedIdsIn(bodies: Iterable<string>): number[] {
+  const ids = new Set<number>();
+  for (const body of bodies) {
+    for (const part of splitMentions(body)) if (part.kind === 'mention' && part.id !== 'all') ids.add(part.id);
+  }
+  return [...ids];
 }
 
 /**
@@ -377,6 +513,28 @@ async function notifyMessage(
   recipientIds: number[],
   input: { kind: 'new' | 'reply'; body: string; url: string },
 ): Promise<void> {
+  await notifyFrom(actor, recipientIds, {
+    type: 'message.received',
+    named: input.kind === 'new' ? 'پیام جدید از {name}' : 'پاسخِ تازه از {name}',
+    masked: input.kind === 'new' ? 'پیام جدید از مدیریت' : 'پاسخِ تازه از مدیریت',
+    body: input.body.slice(0, 120),
+    url: input.url,
+  });
+}
+
+/**
+ * اعلانی با نامِ فرستنده، ماسک‌شده برای گیرندهٔ عادی وقتی فرستنده «مدیریت»
+ * است (R-NOTIF-13) — مشترکِ پیامِ دونفره، پیامِ گروه و منشن.
+ * `named` جای‌نگهدارِ `{name}` دارد؛ `masked` ندارد.
+ */
+async function notifyFrom(
+  actor: Actor,
+  recipientIds: number[],
+  input: {
+    type: string; named: string; masked: string; body: string; url: string;
+    params?: Record<string, string | number>; channels?: NotifyInput['channels'];
+  },
+): Promise<void> {
   const ids = [...new Set(recipientIds.filter((id) => id !== actor.id))];
   if (ids.length === 0) return;
 
@@ -385,21 +543,67 @@ async function notifyMessage(
     managementIds(),
   ]);
   const name = nameRow[0]?.name ?? '';
-  const snippet = input.body.slice(0, 120);
-  const named = input.kind === 'new' ? 'پیام جدید از {name}' : 'پاسخِ تازه از {name}';
-  const masked = input.kind === 'new' ? 'پیام جدید از مدیریت' : 'پاسخِ تازه از مدیریت';
+  const base = { type: input.type, body: input.body, url: input.url, channels: input.channels };
 
   const plain = mgmt.has(actor.id) ? ids.filter((id) => !mgmt.has(id)) : [];
   const withName = ids.filter((id) => !plain.includes(id));
   if (plain.length > 0) {
-    await notify(plain, { type: 'message.received', title: masked, body: snippet, url: input.url });
+    await notify(plain, { ...base, title: input.masked, params: input.params });
   }
   if (withName.length > 0) {
-    await notify(withName, {
-      type: 'message.received', title: named, params: { name }, body: snippet, url: input.url,
-    });
+    await notify(withName, { ...base, title: input.named, params: { ...input.params, name } });
   }
 }
+
+/**
+ * اعلانِ یک پیامِ گروهی.
+ *  · منشن: فوری، با تلگرام و ایمیل؛ بی‌صدا کردنِ گروه جلویش را نمی‌گیرد.
+ *  · گروهِ پروژه: بقیهٔ اعضا اعلانِ «پیامِ تازه» در برنامه و تلگرام — بی‌ایمیل، و
+ *    **جمع‌شده**: کسی که اعلانِ خوانده‌نشدهٔ تازه‌ای از همین گروه دارد دوباره نمی‌گیرد.
+ *  · کانالِ تیم: پیامِ عادی هیچ اعلانی ندارد.
+ */
+async function notifyGroup(
+  actor: Actor,
+  group: GroupThread,
+  members: number[],
+  body: string,
+  mentions: { ids: number[]; all: boolean },
+): Promise<void> {
+  const muted = await mutedMembers(group.id);
+  const recipients = groupRecipients({
+    kind: group.kind, memberIds: members, authorId: actor.id, mutedIds: muted,
+    mentionedIds: mentions.ids, mentionAll: mentions.all,
+  });
+
+  // متنِ اعلان بی‌توکن؛ مدیرِ منشن‌شده برای همه «مدیریت» است (گیرندگان متفاوت‌اند).
+  const mgmt = await managementIds();
+  const names = new Map((await db.select({ id: users.id, name: users.name }).from(users)
+    .where(inArray(users.id, [...new Set([0, ...mentions.ids])]))).map((r) => [r.id, r.name]));
+  const snippet = mentionsToPlain(body, (id) => (mgmt.has(id) ? MANAGEMENT : names.get(id) ?? '#'), ALL_LABEL)
+    .slice(0, 120);
+  const where = groupLabel(group);
+  const url = `/messages/${group.id}`;
+
+  await notifyFrom(actor, recipients.mention, {
+    type: 'message.mention',
+    named: '{name} در «{where}» از شما نام برد',
+    masked: 'مدیریت در «{where}» از شما نام برد',
+    params: { where }, body: snippet, url,
+  });
+
+  const quiet = await recentlyNotified(group.id, recipients.group);
+  await notifyFrom(actor, recipients.group.filter((id) => !quiet.has(id)), {
+    type: 'message.group',
+    named: 'پیامِ تازه از {name} در گروهِ «{where}»',
+    masked: 'پیامِ تازه از مدیریت در گروهِ «{where}»',
+    params: { where }, body: snippet, url,
+    channels: { email: false },
+  });
+}
+
+/** متنِ مبدأ؛ اعلان به زبانِ هر گیرنده ترجمه می‌شود. */
+const MANAGEMENT = 'مدیریت';
+const ALL_LABEL = 'همه';
 
 /**
  * ارسالِ پیامِ نو — برای هر گیرنده یک رشتهٔ دونفره (R-MSG-N1).
@@ -411,7 +615,7 @@ export async function compose(
 ): Promise<number[]> {
   if (!can(actor, 'messages.send')) throw new ForbiddenError('messages.send');
 
-  const body = input.body.trim();
+  const body = noMentions(input.body).trim();
   if (body === '') throw new ForbiddenError('message.empty');
 
   await assertNotRateLimited(actor);
@@ -472,7 +676,7 @@ export async function compose(
  * کند هم باید بتواند به مدیریت پیام بدهد. ولی محدودیتِ زمانی همان است.
  */
 export async function contactManagement(actor: Actor, body: string): Promise<number> {
-  const text = body.trim();
+  const text = noMentions(body).trim();
   if (text === '') throw new ForbiddenError('message.empty');
 
   await assertNotRateLimited(actor);
@@ -516,12 +720,28 @@ export async function contactManagement(actor: Actor, body: string): Promise<num
  * گفتگوی روان می‌شکست.
  */
 export async function reply(actor: Actor, threadId: number, body: string): Promise<number> {
-  const thread = await loadThread(threadId);
-  if (!canRead(thread, actor.id)) throw new ThreadNotFoundError();
-  // ⚠️ اعلانِ یک‌طرفه پاسخ نمی‌پذیرد — گاردِ سرور، نه فقط پنهان‌کردنِ فرم.
-  if (!canReply(thread, actor.id)) throw new ForbiddenError('thread.no_reply');
+  const access = await accessThread(actor, threadId);
+  if (!access.readable) throw new ThreadNotFoundError();
+  const { thread, group } = access;
+  if (!access.writable) {
+    // ⚠️ گروهِ پروژهٔ بایگانی‌شده فقط‌خواندنی است — پیامِ روشن، نه «اعلانِ یک‌طرفه».
+    if (group?.kind === 'project' && group.projectArchived) throw new ChannelError('archived');
+    // ⚠️ اعلانِ یک‌طرفه پاسخ نمی‌پذیرد — گاردِ سرور، نه فقط پنهان‌کردنِ فرم.
+    throw new ForbiddenError('thread.no_reply');
+  }
 
-  const text = body.trim();
+  /*
+   * ⚠️ سرور به منشن‌های فرستاده‌شده اعتماد نمی‌کند: در گروه فقط عضوِ همان
+   * گروه منشن می‌شود و «همه» فقط از کسی که اجازه دارد؛ در گفتگوی دونفره
+   * منشن معنا ندارد و هر توکنی متنِ ساده می‌شود.
+   */
+  const clean = group
+    ? sanitizeMentions(body, {
+      memberIds: new Set(access.members),
+      allowAll: canMentionAll({ kind: group.kind, isManager: isManager(actor), managesProject: await managesGroupProject(actor, group) }),
+    })
+    : { body: noMentions(body), ids: [], all: false };
+  const text = clean.body.trim();
   if (text === '') throw new ForbiddenError('message.empty');
 
   const rows = await db.insert(messages)
@@ -532,11 +752,20 @@ export async function reply(actor: Actor, threadId: number, body: string): Promi
   // ساختِ رشته با now() ِ دیتابیس مهر می‌خورد و دو ساعتِ متفاوت ترتیب را به‌هم می‌زد.
   await db.update(threads).set({ updatedAt: sql`now()` }).where(eq(threads.id, threadId));
 
-  // همهٔ شرکت‌کنندگان جز خودِ نویسنده.
-  await notifyMessage(actor, thread.participantIds, {
-    kind: 'reply', body: text, url: `/messages/${threadId}`,
-  });
+  if (group) {
+    await notifyGroup(actor, group, access.members ?? [], text, clean);
+  } else {
+    // همهٔ شرکت‌کنندگان جز خودِ نویسنده.
+    await notifyMessage(actor, thread.participantIds, {
+      kind: 'reply', body: text, url: `/messages/${threadId}`,
+    });
+  }
   return rows[0]!.id;
+}
+
+/** توکنِ منشن در جایی که منشن ندارد (گفتگوی دونفره) متنِ ساده می‌شود. */
+function noMentions(body: string): string {
+  return sanitizeMentions(body, { memberIds: new Set(), allowAll: false }).body;
 }
 
 /**
@@ -547,6 +776,8 @@ export async function reply(actor: Actor, threadId: number, body: string): Promi
  */
 export async function leaveThread(actor: Actor, threadId: number) {
   const thread = await loadThread(threadId);
+  // ⚠️ از گروه نمی‌شود «بیرون رفت» — عضویت از پروژه/نقش/دفتر می‌آید؛ راهش بی‌صدا کردن است.
+  if (thread.kind !== 'direct') throw new ForbiddenError('thread.group_leave');
   if (!canRead(thread, actor.id)) throw new ThreadNotFoundError();
   await db.delete(threadUsers)
     .where(and(eq(threadUsers.threadId, threadId), eq(threadUsers.userId, actor.id)));
@@ -560,9 +791,14 @@ export async function leaveThread(actor: Actor, threadId: number) {
  * کنار می‌گذارد (`leaveThread`).
  */
 export async function deleteThread(actor: Actor, threadId: number) {
-  const thread = await loadThread(threadId);
-  if (!canRead(thread, actor.id)) throw new ThreadNotFoundError();
-  if (thread.creatorId !== actor.id && !isManager(actor)) throw new ForbiddenError('thread.delete');
+  const access = await accessThread(actor, threadId);
+  if (!access.readable) throw new ThreadNotFoundError();
+  const { thread, group } = access;
+  // کانالِ تیم: فقط مدیر. گروهِ پروژه: مدیر یا مدیرِ همان پروژه. دونفره: سازنده یا مدیر.
+  const allowed = group
+    ? isManager(actor) || await managesGroupProject(actor, group)
+    : thread.creatorId === actor.id || isManager(actor);
+  if (!allowed) throw new ForbiddenError('thread.delete');
 
   await db.transaction(async (tx) => {
     await tx.delete(messages).where(eq(messages.threadId, threadId));
@@ -604,18 +840,32 @@ async function touchSent(actor: Actor) {
  * @returns تعدادِ پیام‌های حذف‌شده.
  */
 export async function purgeMessages(days: number): Promise<number> {
+  /*
+   * ⚠️ گروهِ پروژه قاعدهٔ خودش را دارد: پیام‌هایش ثابت ۹۰ روز می‌مانند، حتی
+   * اگر پاک‌سازیِ بقیه «هرگز» باشد. خودِ گروه (و کانالِ تیم) هیچ‌وقت با پاک‌سازی
+   * نمی‌رود — ظرفِ دائمی است؛ فقط پیام‌های کهنه‌اش هرس می‌شوند.
+   */
+  const projectCutoff = new Date(Date.now() - PROJECT_GROUP_RETENTION_DAYS * 86400000);
+  const projectTrimmed = await db.delete(messages)
+    .where(and(
+      lt(messages.createdAt, projectCutoff),
+      sql`${messages.threadId} in (select id from threads where kind = 'project')`,
+    ))
+    .returning({ id: messages.id });
+
   // ⚠️ صفر یعنی «هرگز» — نه «همین حالا همه را پاک کن».
-  if (days <= 0) return 0;
+  if (days <= 0) return projectTrimmed.length;
 
   const cutoff = new Date(Date.now() - days * 86400000);
 
+  // ⚠️ حذفِ کاملِ رشته فقط برای گفتگوی دونفره — کانال و گروه با کهنه شدن نمی‌روند.
   const stale = await db
     .select({ id: threads.id })
     .from(threads)
-    .where(sql`coalesce(
+    .where(and(eq(threads.kind, 'direct'), sql`coalesce(
       (select max(m.created_at) from ${messages} m where m.thread_id = ${threads.id}),
       '1000-01-01'::timestamp
-    ) < ${cutoff}`);
+    ) < ${cutoff.toISOString()}::timestamptz`));
 
   const staleIds = stale.map((t) => t.id);
   if (staleIds.length > 0) {
@@ -633,11 +883,15 @@ export async function purgeMessages(days: number): Promise<number> {
     ));
   }
 
+  // دونفره و کانالِ تیم با تنظیمِ سامانه؛ گروهِ پروژه بالاتر جدا هرس شد.
   const trimmed = await db.delete(messages)
-    .where(sql`${messages.createdAt} < ${cutoff}`)
+    .where(and(
+      lt(messages.createdAt, cutoff),
+      sql`${messages.threadId} in (select id from threads where kind <> 'project')`,
+    ))
     .returning({ id: messages.id });
 
-  return trimmed.length;
+  return trimmed.length + projectTrimmed.length;
 }
 
 /**
@@ -656,8 +910,8 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
   // R-ARCH-01 — گاردِ سرور، نه فقط سوارنشدنِ کامپوننت.
   if (!config.chatPollEnabled) return { off: true as const, changed: false as const };
 
-  const thread = await loadThread(threadId);
-  if (!canRead(thread, actor.id)) throw new ThreadNotFoundError();
+  const access = await accessThread(actor, threadId);
+  if (!access.readable) throw new ThreadNotFoundError();
 
   const [maxRow, states] = await Promise.all([
     db.select({ maxId: sql<number>`coalesce(max(${messages.id}), 0)::int` })
@@ -694,7 +948,8 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
   await markReadForTarget(actor, '/messages', threadId);
 
   const t = await getT();
-  const ctx = await labelContext(actor, rows.map((r) => r.fromUserId));
+  const mentioned = mentionedIdsIn(rows.map((r) => r.body));
+  const ctx = await labelContext(actor, [...rows.map((r) => r.fromUserId), ...mentioned]);
 
   return {
     off: false as const,
@@ -702,6 +957,7 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
     fingerprint: fp,
     messages: rows.map((m) => ({ ...m, fromName: personLabel(m.fromUserId, ctx, t) })),
     readUpTo: readUpTo(states, actor.id),
+    mentionNames: Object.fromEntries(mentioned.map((id) => [id, personLabel(id, ctx, t)])) as Record<number, string>,
   };
 }
 
@@ -712,14 +968,201 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
  * می‌شود (بجِ سایدبار)، پس باید ارزان بماند.
  */
 export async function unreadMessageCount(actor: Actor): Promise<number> {
+  /*
+   * ⚠️ گروهِ بی‌صدا شمرده نمی‌شود، و گروهی که این نفر دیگر عضوش نیست (ردیفِ
+   * رسیدش مانده) هم نه. عضویت فقط وقتی سنجیده می‌شود که اصلاً پیامِ گروهیِ
+   * خوانده‌نشده‌ای باشد — مسیرِ معمولِ صفحه همان یک کوئری می‌ماند.
+   */
   const rows = await db.execute(sql`
-    select count(m.id)::int as n
+    select tu.thread_id, t.kind, count(m.id)::int as n
     from thread_users tu
+    join threads t on t.id = tu.thread_id
     join messages m on m.thread_id = tu.thread_id
       and m.id > coalesce(tu.last_read_message_id, 0)
       and m.from_user_id <> ${actor.id}
-    where tu.user_id = ${actor.id}
+    where tu.user_id = ${actor.id} and not tu.muted
+    group by tu.thread_id, t.kind
   `);
-  return Number((rows as unknown as Array<{ n: number }>)[0]?.n ?? 0);
+  const list = (rows as unknown as Array<{ thread_id: number; kind: string; n: number }>)
+    .map((r) => ({ threadId: Number(r.thread_id), kind: r.kind, n: Number(r.n) }));
+
+  const groupIds = list.filter((r) => r.kind !== 'direct').map((r) => r.threadId);
+  const visible = groupIds.length > 0
+    ? new Set((await groupsVisibleTo(actor, await loadGroups(groupIds))).map((g) => g.id))
+    : new Set<number>();
+  return list.reduce((sum, r) => sum + (r.kind === 'direct' || visible.has(r.threadId) ? r.n : 0), 0);
 }
 
+
+/* ------------------------------------------------------------------ *
+ * کانالِ تیم و گروهِ پروژه
+ * ------------------------------------------------------------------ */
+
+/** گزینه‌های فرمِ «کانالِ تازه» — فقط برای مدیر. */
+export async function channelFormOptions(actor: Actor) {
+  if (!isManager(actor)) throw new ForbiddenError('messages.channel');
+  return channelAudienceOptions();
+}
+
+/**
+ * ساختِ کانالِ تیم — فقط مالک و ادمین.
+ *
+ * ⚠️ مخاطب سمتِ سرور سنجیده می‌شود: تگی که «نقشِ عضو» نیست یا دفترِ غیرفعال
+ * پذیرفته نمی‌شود، وگرنه کانالی ساخته می‌شد که هیچ‌کس جز مدیر عضوش نیست.
+ * عضوها خبرِ «به کانال اضافه شدید» را فقط داخلِ برنامه می‌گیرند — کانالِ تیم
+ * طبقِ قاعده‌اش برای پیامِ عادی تلگرام و ایمیل نمی‌فرستد.
+ */
+export async function createChannel(
+  actor: Actor,
+  input: { title: string; audience: unknown; allowReply: boolean; body?: string },
+): Promise<number> {
+  if (!isManager(actor)) throw new ForbiddenError('messages.channel');
+  const title = normalizeChannelTitle(input.title);
+  const audience = normalizeAudience(input.audience);
+  if (!audience) throw new ChannelError('audience_invalid');
+  const options = await channelAudienceOptions();
+  if (audience.type === 'role' && !options.roleTags.some((r) => r.id === audience.tagId)) {
+    throw new ChannelError('audience_invalid');
+  }
+  if (audience.type === 'office' && !options.offices.some((o) => o.id === audience.officeId)) {
+    throw new ChannelError('audience_invalid');
+  }
+
+  const first = noMentions(input.body ?? '').trim();
+  const threadId = await db.transaction(async (tx) => {
+    const [row] = await tx.insert(threads).values({
+      creatorId: actor.id, allowReply: input.allowReply, kind: 'channel', title, audience,
+    }).returning({ id: threads.id });
+    if (first) await tx.insert(messages).values({ threadId: row!.id, fromUserId: actor.id, body: first });
+    return row!.id;
+  });
+
+  const group: GroupThread = {
+    id: threadId, kind: 'channel', title, audience, projectId: null, projectTitle: null,
+    projectArchived: false, projectOfficeId: null, creatorId: actor.id, allowReply: input.allowReply,
+  };
+  const members = await groupMemberIds(group);
+  // رسیدِ خواندن برای عضوهای امروز — پیامِ اول برایشان «خوانده‌نشده» است.
+  if (members.length > 0) {
+    await db.insert(threadUsers).values(members.map((userId) => ({ threadId, userId })))
+      .onConflictDoNothing();
+  }
+  await notifyFrom(actor, members, {
+    type: 'message.channel',
+    named: 'به کانالِ «{where}» اضافه شدید',
+    masked: 'به کانالِ «{where}» اضافه شدید',
+    params: { where: title }, body: first.slice(0, 120), url: `/messages/${threadId}`,
+    channels: { email: false, telegram: false },
+  });
+  return threadId;
+}
+
+/**
+ * ساختِ گروهِ گفتگوی یک پروژه — مدیر یا مدیرِ همان پروژه.
+ *
+ * ⚠️ یکی به‌ازای هر پروژه: اگر هست همان برمی‌گردد (دو کلیکِ هم‌زمان را شاخصِ
+ * یکتای دیتابیس هم می‌گیرد). پروژهٔ بایگانی‌شده یا حذف‌شده گروهِ تازه نمی‌گیرد.
+ */
+export async function createProjectGroup(actor: Actor, projectId: number): Promise<number> {
+  const [project] = await db.select({
+    id: projects.id, title: projects.title, isArchived: projects.isArchived,
+    officeId: projects.officeId, deletedAt: projects.deletedAt,
+  }).from(projects).where(eq(projects.id, projectId));
+  if (!project || project.deletedAt) throw new ThreadNotFoundError();
+  if (!(isManager(actor) || await canManageProject(actor, projectId))) {
+    throw new ForbiddenError('messages.project_group');
+  }
+  if (project.isArchived) throw new ChannelError('archived');
+
+  const [existing] = await db.select({ id: threads.id }).from(threads)
+    .where(and(eq(threads.kind, 'project'), eq(threads.projectId, projectId)));
+  if (existing) return existing.id;
+
+  const inserted = await db.insert(threads).values({
+    creatorId: actor.id, allowReply: true, kind: 'project', projectId,
+  }).onConflictDoNothing().returning({ id: threads.id });
+  if (inserted.length === 0) {
+    // کسِ دیگری همین لحظه ساخت — همان را بده.
+    const [again] = await db.select({ id: threads.id }).from(threads)
+      .where(and(eq(threads.kind, 'project'), eq(threads.projectId, projectId)));
+    return again!.id;
+  }
+  const threadId = inserted[0]!.id;
+
+  const group: GroupThread = {
+    id: threadId, kind: 'project', title: '', audience: null, projectId,
+    projectTitle: project.title, projectArchived: false, projectOfficeId: project.officeId,
+    creatorId: actor.id, allowReply: true,
+  };
+  const members = await groupMemberIds(group);
+  if (members.length > 0) {
+    await db.insert(threadUsers).values(members.map((userId) => ({ threadId, userId })))
+      .onConflictDoNothing();
+  }
+  // مثلِ هر خبرِ گروهِ پروژه: در برنامه و تلگرام، بی‌ایمیل.
+  await notifyFrom(actor, members, {
+    type: 'message.group',
+    named: 'گروهِ گفتگوی «{where}» باز شد',
+    masked: 'گروهِ گفتگوی «{where}» باز شد',
+    params: { where: project.title }, body: '', url: `/messages/${threadId}`,
+    channels: { email: false },
+  });
+  return threadId;
+}
+
+/** بی‌صدا کردن یا برداشتنِ آن — فقط برای خودِ این نفر و فقط در گروهی که عضوش است. */
+export async function setThreadMuted(actor: Actor, threadId: number, muted: boolean): Promise<void> {
+  const access = await accessThread(actor, threadId);
+  if (!access.readable || !access.group) throw new ThreadNotFoundError();
+  await ensureReadRows(actor.id, [threadId]);
+  await db.update(threadUsers).set({ muted, updatedAt: new Date() })
+    .where(and(eq(threadUsers.threadId, threadId), eq(threadUsers.userId, actor.id)));
+}
+
+/**
+ * حذفِ یک پیام در گروه — نویسنده پیامِ خودش را، مدیر (و مدیرِ پروژه در گروهِ
+ * همان پروژه) هر پیامی را. ⚠️ در گفتگوی دونفره نیست؛ آنجا قاعدهٔ قبلی
+ * (حذفِ کلِ گفتگو) سرِ جایش است.
+ */
+export async function deleteGroupMessage(actor: Actor, messageId: number): Promise<number> {
+  const [row] = await db.select({ threadId: messages.threadId, fromUserId: messages.fromUserId })
+    .from(messages).where(eq(messages.id, messageId));
+  if (!row) throw new ThreadNotFoundError();
+  const access = await accessThread(actor, row.threadId);
+  if (!access.readable || !access.group) throw new ThreadNotFoundError();
+  const allowed = row.fromUserId === actor.id || isManager(actor) || await managesGroupProject(actor, access.group);
+  if (!allowed) throw new ForbiddenError('message.delete');
+  await db.delete(messages).where(eq(messages.id, messageId));
+  return row.threadId;
+}
+
+/**
+ * خلاصهٔ گروهِ یک پروژه برای صفحهٔ همان پروژه — هست؟ عضوم؟ می‌توانم بسازم؟
+ * ⚠️ کارفرما و غیرعضو چیزی نمی‌گیرند (`null`) — حتی وجودِ گروه را.
+ */
+export async function projectGroupSummary(actor: Actor, projectId: number) {
+  const [row] = await db.select({ id: threads.id }).from(threads)
+    .where(and(eq(threads.kind, 'project'), eq(threads.projectId, projectId)));
+  if (row) {
+    const [group] = await groupsVisibleTo(actor, await loadGroups([row.id]));
+    if (!group) return null;
+    await ensureReadRows(actor.id, [row.id]);
+    const unread = await db.execute(sql`
+      select count(m.id)::int as n from thread_users tu
+      join messages m on m.thread_id = tu.thread_id and m.id > coalesce(tu.last_read_message_id, 0)
+        and m.from_user_id <> ${actor.id}
+      where tu.thread_id = ${row.id} and tu.user_id = ${actor.id}
+    `);
+    return {
+      threadId: row.id as number | null,
+      unread: Number((unread as unknown as Array<{ n: number }>)[0]?.n ?? 0),
+      canCreate: false,
+      archived: group.projectArchived,
+    };
+  }
+  const [project] = await db.select({ isArchived: projects.isArchived, deletedAt: projects.deletedAt })
+    .from(projects).where(eq(projects.id, projectId));
+  if (!project || project.deletedAt) return null;
+  const canCreate = !project.isArchived && (isManager(actor) || await canManageProject(actor, projectId));
+  return canCreate ? { threadId: null as number | null, unread: 0, canCreate: true, archived: false } : null;
+}
