@@ -135,7 +135,8 @@ export function ProjectCard({
             />
           </div>
         </div>
-        <Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} />
+        {/* افقی، ۱۰۵×۵۵ — تصویرِ سایت/پروژه در قابِ مربع بیش از حد بریده می‌شد. */}
+        <Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} size={105} height={55} />
       </div>
 
       {/* ۲ · والد یا فرزندان — پیوند به کارتِ آن پروژه. */}

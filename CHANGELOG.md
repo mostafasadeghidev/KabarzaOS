@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.118.1]
+
+### Changed
+
+- The project image is now a 105×55 landscape frame instead of a 44×44 square on project cards, and instead of 56×56 in the project page header (including the bidder view). Website screenshots and covers are no longer cropped to a small square. Projects without an image get the same frame with their coloured initial.
+
 ## [1.118.0]
 
 ### Added

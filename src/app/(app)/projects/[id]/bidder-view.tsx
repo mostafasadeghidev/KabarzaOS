@@ -55,7 +55,7 @@ export function BidderView({ data, tab: requested }: { data: BidderData; tab?: s
       <PageHeader
         back={{ href: '/projects', label: t("پروژه‌ها") }}
         title={data.project.title}
-        media={<Thumb id={data.project.id} title={data.project.title} fileId={data.project.thumbnailFileId ?? null} size={56} />}
+        media={<Thumb id={data.project.id} title={data.project.title} fileId={data.project.thumbnailFileId ?? null} size={105} height={55} />}
         description={(
           <span className="flex flex-wrap items-center gap-2">
             {data.project.statusName && <TagChip color={data.project.statusColor}>{data.project.statusName}</TagChip>}

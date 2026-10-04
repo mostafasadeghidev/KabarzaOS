@@ -12,15 +12,20 @@ export function Thumb({
   title,
   fileId,
   size = 44,
+  height,
   className = '',
 }: {
   id: number;
   title: string;
   fileId: number | null;
+  /** عرض (و بی‌`height`، ارتفاع هم) به پیکسل. */
   size?: number;
+  /** ارتفاعِ جدا برای تصویرِ افقی (کارت و سربرگِ پروژه: ۱۰۵×۵۵). */
+  height?: number;
   className?: string;
 }) {
   const px = Math.max(16, size);
+  const py = Math.max(16, height ?? size);
   const shared = `shrink-0 overflow-hidden rounded-md ${className}`;
 
   if (fileId) {
@@ -31,10 +36,10 @@ export function Thumb({
         src={`/api/files/${fileId}?thumb`}
         alt=""
         width={px}
-        height={px}
+        height={py}
         loading="lazy"
         className={`${shared} object-cover`}
-        style={{ width: px, height: px }}
+        style={{ width: px, height: py }}
       />
     );
   }
@@ -44,7 +49,8 @@ export function Thumb({
     <span
       aria-hidden
       className={`${shared} flex items-center justify-center font-semibold text-white`}
-      style={{ width: px, height: px, fontSize: Math.round(px * 0.42), background }}
+      // اندازهٔ حرف از ضلعِ کوچک‌تر — در قابِ افقی حرف از ارتفاع بیرون نمی‌زند.
+      style={{ width: px, height: py, fontSize: Math.round(Math.min(px, py) * 0.42), background }}
     >
       {letter}
     </span>

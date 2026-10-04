@@ -214,7 +214,7 @@ export default async function ProjectDetailPage({
         back={{ href: '/projects', label: t("پروژه‌ها") }}
         title={project.title}
         // تصویرِ شاخص کنارِ عنوان (dash-3 #56) — بی‌تصویر، تک‌نگارِ رنگی.
-        media={<Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} size={56} />}
+        media={<Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} size={105} height={55} />}
         description={project.description ? (
           // توضیحِ پروژه — پیش از این فقط داخلِ فرمِ ویرایش دیده می‌شد.
           // پیوندهای توضیح (فیگما، سایتِ آزمایشی) کلیک‌پذیرند؛ پخش‌کنندهٔ ویدئو در سربرگ جا نمی‌شود.
