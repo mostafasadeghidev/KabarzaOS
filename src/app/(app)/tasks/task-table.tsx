@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Lock, MessageSquare } from 'lucide-react';
@@ -137,10 +138,13 @@ export function TaskTable({
                   )}
                   {/* نقش‌ها زیرِ عنوان می‌نشینند تا ستون‌ها به‌هم نریزند. */}
                   {task.roles.length > 0 && (
-                    <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {task.roles
-                        .map((r) => (r.claimedByName ? `${r.roleName ?? ''} (${r.claimedByName})` : (r.roleName ?? '')))
-                        .join(t('، '))}
+                    <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                      {task.roles.map((r, i) => (
+                        <span key={i} className="inline-flex items-center gap-1">
+                          {r.roleName ?? ''}
+                          {r.claimedByName && <UserName userId={r.claimedBy} name={r.claimedByName} />}
+                        </span>
+                      ))}
                     </span>
                   )}
                   {/* پورتِ `task_notes_summary`: شمار و آخرین یادداشت — بی‌بازکردنِ تسک معلوم شود گفتگو کجاست. */}

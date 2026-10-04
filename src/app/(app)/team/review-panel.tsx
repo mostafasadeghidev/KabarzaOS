@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useActionState, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -83,6 +84,7 @@ export interface CommentThread {
   id: number;
   projectId: number;
   projectTitle: string;
+  authorId?: number | null;
   authorName: string | null;
   createdAt: Date | string;
   excerpt: string;
@@ -111,7 +113,7 @@ export function CommentThreads({
           <Item key={c.rootId} variant="outline" size="sm" className="items-start gap-3 p-3">
             <ItemContent className="gap-1.5">
               <ItemTitle className="flex-wrap gap-x-2">
-                {c.authorName ?? '—'}
+                <UserName userId={c.authorId} name={c.authorName ?? '—'} size="sm" />
                 <Link href={href} className="font-normal text-muted-foreground hover:underline">— {c.projectTitle}</Link>
                 <span className="num text-xs font-normal text-muted-foreground">{formatDateTime(c.createdAt, tz)}</span>
               </ItemTitle>

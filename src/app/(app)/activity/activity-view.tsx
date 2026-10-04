@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -25,6 +26,7 @@ export interface EventRow {
   objectType: string;
   objectId: number | null;
   createdAt: Date | string;
+  actorId?: number | null;
   actorName: string | null;
   actorType: string;
   /** «مورد» به زبانِ آدم — نه `user #2`. */
@@ -33,6 +35,7 @@ export interface EventRow {
 
 export interface AbsenceRow {
   id: number;
+  userId?: number | null;
   userName: string | null;
   fromDate: string;
   toDate: string;
@@ -144,7 +147,11 @@ export function ActivityView({
                 >
                   <TableCell><Badge variant="secondary">{tr(e.label)}</Badge></TableCell>
                   <TableCell className="whitespace-normal"><SubjectText subject={e.subject} /></TableCell>
-                  <TableCell>{e.actorName ?? (e.actorType === 'system' ? tr('سامانه') : '—')}</TableCell>
+                  <TableCell>
+                    {e.actorName
+                      ? <UserName userId={e.actorId} name={e.actorName} size="sm" />
+                      : (e.actorType === 'system' ? tr('سامانه') : '—')}
+                  </TableCell>
                   <TableNumericCell>{when(e.createdAt, tz)}</TableNumericCell>
                   <TableCell className="w-8 text-muted-foreground">
                     <ChevronLeft aria-hidden className="size-4 ltr:-scale-x-100" />
@@ -189,7 +196,7 @@ export function ActivityView({
             <TableBody>
               {absences.map((a) => (
                 <TableRow key={a.id}>
-                  <TableCell>{a.userName ?? '—'}</TableCell>
+                  <TableCell><UserName userId={a.userId} name={a.userName ?? '—'} size="sm" /></TableCell>
                   <TableNumericCell>{a.fromDate}</TableNumericCell>
                   <TableNumericCell>{a.toDate}</TableNumericCell>
                   <TableCell>{a.note || '—'}</TableCell>

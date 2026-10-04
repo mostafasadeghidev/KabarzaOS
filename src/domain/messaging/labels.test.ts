@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { counterpartLabel, groupInbox, personLabel, readUpTo } from './labels';
+import { counterpartAvatarId, counterpartLabel, groupInbox, personAvatarId, personLabel, readUpTo } from './labels';
 
 const names = new Map([[1, 'مالک'], [2, 'ادمین'], [3, 'سارا'], [4, 'کارفرما']]);
 const managerIds = new Set([1, 2]);
@@ -77,5 +77,23 @@ describe('R-MSG-01 — آکاردئونِ ارسالِ همگانی در صند�
 
   it('گروهِ یک‌نفره گروه نیست', () => {
     expect(groupInbox([row(5, { broadcastId: 5 })])[0]!.kind).toBe('single');
+  });
+});
+
+describe('آواتار کنارِ برچسب', () => {
+  it('⚠️ کنارِ «مدیریت» عکسی نمی‌آید؛ کنارِ نامِ آشکار می‌آید', () => {
+    const member = { viewerId: 3, viewerIsManager: false, managerIds, names };
+    expect(personAvatarId(1, member)).toBeNull();
+    expect(personAvatarId(4, member)).toBe(4);
+    expect(counterpartAvatarId([1, 3], member)).toBeNull();
+    expect(counterpartAvatarId([3, 4], member)).toBe(4);
+    // گفتگوی چندنفره یک چهره ندارد.
+    expect(counterpartAvatarId([3, 4, 2], { ...member, viewerIsManager: true })).toBeNull();
+  });
+
+  it('مدیر عکسِ همه را کنارِ نامشان می‌بیند', () => {
+    const manager = { viewerId: 1, viewerIsManager: true, managerIds, names };
+    expect(personAvatarId(2, manager)).toBe(2);
+    expect(counterpartAvatarId([1, 2], manager)).toBe(2);
   });
 });

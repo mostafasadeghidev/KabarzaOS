@@ -1,7 +1,8 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useMemo, useState, useTransition } from 'react';
-import { Check, ChevronDown, Clapperboard, Columns3, EyeOff, Hand, Link2, List as ListIcon, Lock, User, MessageSquare, Paperclip } from 'lucide-react';
+import { Check, ChevronDown, Clapperboard, Columns3, EyeOff, Hand, Link2, List as ListIcon, Lock, MessageSquare, Paperclip } from 'lucide-react';
 import { formatTimestamp } from '@/domain/files/video';
 import { claimTaskAction, setTaskStatusAction } from '../_form/tab-actions';
 import { canClaimTask } from '@/domain/projects/claim';
@@ -82,10 +83,7 @@ function Assignee({ task }: { task: TaskItem }) {
   const t = useT();
   if (task.assignedTo && task.assigneeName) {
     return (
-      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-        <User className="size-3" />
-        {task.assigneeName}
-      </span>
+      <UserName userId={task.assignedTo} name={task.assigneeName} className="text-xs text-muted-foreground" />
     );
   }
   // پورتِ «تخصیص‌نیافته» — نه نفر، نه نقش: کارتی که هیچ نمی‌گفت، بی‌صاحب بودنش را پنهان می‌کرد.
@@ -93,10 +91,10 @@ function Assignee({ task }: { task: TaskItem }) {
   return (
     <div className="flex flex-wrap gap-1">
       {task.roles.map((r, i) => (
-        <span key={i} className="text-xs text-muted-foreground">
+        <span key={i} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
           {r.roleName ?? '—'}
           {r.claimedBy
-            ? ` (${r.claimedByName ?? `#${r.claimedBy}`})`
+            ? <UserName userId={r.claimedBy} name={r.claimedByName ?? `#${r.claimedBy}`} />
             : ` — ${t('هنوز ساین نشده')}`}
         </span>
       ))}

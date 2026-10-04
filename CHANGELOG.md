@@ -2,6 +2,29 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.118.0]
+
+### Added
+
+- **Member avatars next to names.** Wherever a person's name appears, their photo now appears beside it. A person without a photo gets their initial on a fixed colour picked from their account, so it doesn't change when they're renamed. Covered:
+  - task cards, the task dialog (assignee, roles taken and note authors), the task inbox, and comments (author above each message);
+  - reviews (creator and item assignee), project members and clients, the members dialog, project cards, file uploaders, QA «done by», tender bids;
+  - hours on the project, member pay, payouts, ledger payer and receiver, the activity log and event dialog, absences, the dashboard's recent activity, team comment threads, onboarding and the access register;
+  - direct conversations and message senders in Messages.
+- The «Assign to…» and «Refer to…» pickers show each member's avatar.
+
+### Security
+
+- Photos follow the same rules as names:
+  - a client sees no member's photo, because members appear to clients by role name;
+  - members don't see the photo of a client or of an assistant manager, who appear to them as «Client» and «Assistant manager»;
+  - in Messages, no photo is shown beside «Management».
+- Photos come from a new address that takes only the person's ID. «No photo» and «not allowed» give the same answer, so the response doesn't reveal whether someone has a photo.
+
+### Fixed
+
+- A ledger test failed now and then because it looked up the entry's tags by ID only, without the object type.
+
 ## [1.117.0]
 
 ### Added

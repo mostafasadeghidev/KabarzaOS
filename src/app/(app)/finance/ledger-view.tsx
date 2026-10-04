@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import Link from 'next/link';
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -358,8 +359,9 @@ export function LedgerView({
                 <TableNumericCell className={e.direction === 'in' ? 'text-emerald-700 dark:text-emerald-500' : 'text-destructive'}>
                   {e.direction === 'in' ? '+' : '−'}{format(e.amountAccount)}
                 </TableNumericCell>
-                <TableCell>{e.payerName || e.payerLabel || '—'}</TableCell>
-                <TableCell>{e.receiverName || e.receiverLabel || '—'}</TableCell>
+                {/* عضوِ سامانه با آواتار؛ طرف‌حسابِ بیرونی (برچسبِ آزاد) فقط نام. */}
+                <TableCell>{e.payerName ? <UserName userId={e.payerUserId} name={e.payerName} /> : (e.payerLabel || '—')}</TableCell>
+                <TableCell>{e.receiverName ? <UserName userId={e.receiverUserId} name={e.receiverName} /> : (e.receiverLabel || '—')}</TableCell>
                 <TableCell>{e.projectTitle ? <Badge variant="secondary">{e.projectTitle}</Badge> : '—'}</TableCell>
                 <TableCell className="text-muted-foreground">{e.lastActor ?? '—'}</TableCell>
                 {showEur && (

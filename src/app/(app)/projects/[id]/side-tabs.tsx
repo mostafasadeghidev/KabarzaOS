@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
@@ -193,6 +194,7 @@ export interface QaRow {
   roleTagId: number | null;
   roleName: string | null;
   isDone: boolean;
+  doneBy?: number | null;
   doneByName: string | null;
   /** تسکِ ساخته‌شده از این آیتم (پورتِ `QA::project_tasks`) — با عنوان پیدا می‌شود. */
   taskId?: number | null;
@@ -510,7 +512,10 @@ export function QaTab({
                   </TagChip>
                 )}
                 {q.isDone && q.doneByName && (
-                  <span className="text-xs text-muted-foreground">{t('توسط {name}', { name: q.doneByName })}</span>
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    {t('توسط')}
+                    <UserName userId={q.doneBy} name={q.doneByName} />
+                  </span>
                 )}
                 <QaTick row={q} canManage={canManage || canInteract} />
                 {canManage && <QaDelete itemId={q.id} />}
@@ -584,6 +589,7 @@ export interface BidRow {
   status: string;
   note: string | null;
   currencyCode?: string | null;
+  userId?: number | null;
   userName: string | null;
   roleName: string | null;
 }
@@ -721,7 +727,7 @@ export function BidsTab({
             const s = BID_STATUS[b.status] ?? { label: b.status, variant: 'secondary' as const };
             return (
               <TableRow key={b.id}>
-                <TableCell>{b.userName ?? '—'}</TableCell>
+                <TableCell><UserName userId={b.userId} name={b.userName ?? '—'} size="sm" /></TableCell>
                 <TableCell>{b.roleName ?? '—'}</TableCell>
                 <TableNumericCell>{format(b.amount)}{b.currencyCode ? ` ${b.currencyCode}` : ''}</TableNumericCell>
                 <TableCell><Badge variant={s.variant}>{t(s.label)}</Badge></TableCell>

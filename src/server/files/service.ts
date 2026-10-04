@@ -3,8 +3,9 @@ import { assertNotFrozen, canManageProject, isClientOnly, projectRelation } from
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
-  attachments, company, files, ledger, projectClients, projectMembers, projectPayments, projects, userAvatars, users,
+  attachments, company, files, ledger, projectClients, projectMembers, projectPayments, projects, userAvatars, userRoles, users,
 } from '@/db/schema';
+import { canSeeAvatar, type AccountRole } from '@/domain/people/avatar';
 import { can, canManageSection, type Actor } from '@/domain/access/permissions';
 import { filterVisibleFor, ForbiddenError, visibleScopes } from '@/domain/access/guard';
 import {
@@ -173,17 +174,50 @@ export async function canViewFile(actor: Actor, fileId: number): Promise<boolean
     if (await canAccessProject(actor, row.id)) return true;
   }
 
-  // آواتار ← هر کسی که اعضا را می‌بیند، و خودِ صاحبِ آواتار.
+  // آواتار ← همان قاعدهٔ `canSeeAvatar` (آینهٔ پنهان‌کردنِ نام).
   const avatar = await db.select({ userId: userAvatars.userId })
     .from(userAvatars).where(eq(userAvatars.fileId, fileId));
-  if (avatar.length > 0) {
-    if (avatar.some((a) => a.userId === actor.id)) return true;
-    if (can(actor, 'members.view')) return true;
+  for (const a of avatar) {
+    if (await avatarVisible(actor, a.userId)) return true;
   }
 
   // رسیدِ حسابداری ← نام‌بردهٔ روی تراکنش، یا عضوی که پرداخت به او بوده،
   // یا کارفرمای پروژه‌ای که رسید به آن مربوط است.
   return receiptVisible(actor, fileId);
+}
+
+/** گاردِ آواتار — نقش‌های صاحبِ عکس از دیتابیس، تصمیم از دامنه. */
+async function avatarVisible(actor: Actor, userId: number): Promise<boolean> {
+  const roles = await db.select({ role: userRoles.role }).from(userRoles).where(eq(userRoles.userId, userId));
+  return canSeeAvatar(
+    { id: actor.id, roles: actor.roles as AccountRole[], canViewMembers: can(actor, 'members.view') },
+    { id: userId, roles: roles.map((r) => r.role as AccountRole) },
+  );
+}
+
+/**
+ * آواتارِ یک شخص با **شناسهٔ خودِ او** — مسیرِ `/api/users/[id]/avatar`.
+ *
+ * ⚠️ چرا مسیرِ جدا: هر جا نامِ عضوی نمایش داده می‌شود شناسه‌اش هم هست، ولی
+ * شناسهٔ فایلِ آواتارش نه. با این مسیر فهرست‌ها لازم نیست برای هر نام یک
+ * کوئریِ آواتار بزنند. نبودنِ عکس و «اجازه نداری» هر دو «یافت نشد» است تا
+ * از پاسخ معلوم نشود کسی عکس دارد یا نه؛ UI حرفِ اول را جایش می‌گذارد.
+ */
+export async function serveUserAvatar(actor: Actor, userId: number): Promise<ServedFile> {
+  if (!await avatarVisible(actor, userId)) throw new FileNotFoundError();
+  const [row] = await db.select({ storageKey: files.storageKey, previewKey: files.previewKey, mime: files.mime, name: files.originalName })
+    .from(userAvatars).innerJoin(files, eq(files.id, userAvatars.fileId)).where(eq(userAvatars.userId, userId));
+  if (!row) throw new FileNotFoundError();
+  const usePreview = row.previewKey !== null;
+  const mime = usePreview ? PREVIEW_MIME : row.mime;
+  // ⚠️ فقط تصویرِ رستری inline — همان R-FILE-04.
+  if (!mime.startsWith('image/') || mime === 'image/svg+xml') throw new FileNotFoundError();
+  return {
+    key: usePreview ? row.previewKey! : row.storageKey,
+    mime,
+    downloadName: safeDownloadName(row.name, row.mime),
+    disposition: 'inline',
+  };
 }
 
 async function receiptVisible(actor: Actor, fileId: number): Promise<boolean> {

@@ -140,6 +140,7 @@ export interface ActivityEventDetail {
   action: string;
   label: string;
   createdAt: Date;
+  actorId: number | null;
   actorName: string | null;
   actorType: string;
   subject: EventSubject;
@@ -150,7 +151,7 @@ export interface ActivityEventDetail {
    * همهٔ رویدادهای همین مورد (تازه‌تر اول، تا ۵۰) — هر کدام با زمانش؛ خودِ
    * این رویداد هم در فهرست است (`current`).
    */
-  history: Array<{ id: number; label: string; actorName: string | null; createdAt: Date; current: boolean }>;
+  history: Array<{ id: number; label: string; actorId: number | null; actorName: string | null; createdAt: Date; current: boolean }>;
   /** نوعِ موردی که تاریخچه بر پایهٔ آن است («پروژه»). */
   historyOf: string | null;
 }
@@ -170,7 +171,8 @@ async function historyOf(row: { id: number; action: string; objectType: string; 
   if (!kind || row.objectId === null) return { kind: null, rows: [] };
   const rows = await db
     .select({
-      id: auditLog.id, action: auditLog.action, createdAt: auditLog.createdAt, actorName: users.name,
+      id: auditLog.id, action: auditLog.action, createdAt: auditLog.createdAt,
+      actorId: auditLog.actorId, actorName: users.name,
     })
     .from(auditLog)
     .leftJoin(users, eq(users.id, auditLog.actorId))
@@ -184,7 +186,7 @@ async function historyOf(row: { id: number; action: string; objectType: string; 
       .filter((r) => subjectKind(r.action, row.objectType) === kind)
       .slice(0, HISTORY_LIMIT)
       .map((r) => ({
-        id: r.id, label: actionLabel(r.action), actorName: r.actorName, createdAt: r.createdAt,
+        id: r.id, label: actionLabel(r.action), actorId: r.actorId, actorName: r.actorName, createdAt: r.createdAt,
         current: r.id === row.id,
       })),
   };
@@ -202,6 +204,7 @@ export async function getActivityEvent(actor: Actor, id: number): Promise<Activi
       after: auditLog.after,
       createdAt: auditLog.createdAt,
       actorType: auditLog.actorType,
+      actorId: auditLog.actorId,
       actorName: users.name,
     })
     .from(auditLog)
@@ -220,6 +223,7 @@ export async function getActivityEvent(actor: Actor, id: number): Promise<Activi
     action: row.action,
     label: actionLabel(row.action),
     createdAt: row.createdAt,
+    actorId: row.actorId,
     actorName: row.actorName,
     actorType: row.actorType,
     subject: subject!,

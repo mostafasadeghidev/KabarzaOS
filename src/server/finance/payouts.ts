@@ -314,6 +314,7 @@ export async function listDetachedPayments(actor: Actor) {
     amount: projectPayments.amount,
     currencyCode: currencies.code,
     note: projectPayments.note,
+    userId: projectPayments.userId,
     userName: users.name,
     ledgerId: projectPayments.ledgerId,
     receiptIds: ledger.receiptIds,

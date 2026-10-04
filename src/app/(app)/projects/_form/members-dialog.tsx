@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Plus, X } from 'lucide-react';
@@ -172,7 +173,7 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                       {row.isFormer ? (
                         // عضوِ سابق دوباره انتخاب‌شدنی نیست، ولی ردیفش می‌ماند (R-PROJ-11).
                         <div className="flex items-center gap-2">
-                          <span>{row.userName}</span>
+                          <UserName userId={row.userId} name={row.userName} size="sm" />
                           <Badge variant="secondary">{t("سابق")}</Badge>
                           <input type="hidden" name="memberUser" value={row.userId ?? ''} />
                         </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar, UserName } from '@/components/user-avatar';
 import Link from 'next/link';
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
@@ -172,7 +173,10 @@ export function TaskDialog({
                 onChanged={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
               />
               {task.assigneeName && (
-                <span className="text-xs text-muted-foreground">{tr('مسئول: {name}', { name: task.assigneeName })}</span>
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  {tr('مسئول:')}
+                  <UserName userId={task.assignedTo} name={task.assigneeName} size="sm" nameClassName="text-foreground" />
+                </span>
               )}
               {task.dueDate && (
                 <span className="text-xs text-muted-foreground tabular-nums">{tr('ددلاین {date}', { date: ltr(task.dueDate) })}</span>
@@ -181,9 +185,14 @@ export function TaskDialog({
 
             {/* پورتِ سطرِ نقش‌ها + «وابسته به» + «این تسک را برمی‌دارم» ِ مودال. */}
             {(data?.detail.roles.length ?? 0) > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {tr("نقش‌ها")}: {data!.detail.roles.map((r) =>
-                  r.claimedByName ? `${r.roleName ?? ''} (${r.claimedByName})` : (r.roleName ?? '')).join(tr('، '))}
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                {tr("نقش‌ها")}:
+                {data!.detail.roles.map((r, i) => (
+                  <span key={i} className="inline-flex items-center gap-1">
+                    {r.roleName ?? ''}
+                    {r.claimedByName && <UserName userId={r.claimedBy} name={r.claimedByName} />}
+                  </span>
+                ))}
               </p>
             )}
             {data?.detail.dependsOnTitle && (
@@ -280,7 +289,7 @@ export function TaskDialog({
                 <input type="hidden" name="toUserId" value={referTo.id ?? ''} />
                 <span className="text-sm font-medium">{tr("ارجاعِ تسک به شخصِ دیگر")}</span>
                 <Combobox
-                  options={(options?.assignees ?? []).map((a) => ({ value: a.userId, label: a.label }))}
+                  options={(options?.assignees ?? []).map((a) => ({ value: a.userId, label: a.label, media: <UserAvatar userId={a.userId} name={a.label} size="xs" /> }))}
                   value={referTo}
                   onChange={setReferTo}
                   placeholder={t("گیرندهٔ ارجاع…")}
@@ -395,7 +404,7 @@ export function TaskDialog({
                     <Combobox
                       id="t-assignee"
                       name="assignedTo"
-                      options={options.assignees.map((a) => ({ value: a.userId, label: a.label }))}
+                      options={options.assignees.map((a) => ({ value: a.userId, label: a.label, media: <UserAvatar userId={a.userId} name={a.label} size="xs" /> }))}
                       value={assignee}
                       onChange={setAssignee}
                       placeholder={t("نامِ عضو را تایپ کنید…")}
@@ -500,6 +509,11 @@ export function TaskDialog({
                 <ul className="grid gap-2">
                   {data.detail.notes.map((n) => (
                     <li key={n.id} className="grid gap-2 rounded-lg bg-muted/60 p-2.5">
+                      {/* نویسنده بالای پیام، مثلِ گفتگو — چهره زودتر از نام خوانده می‌شود. */}
+                      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <UserName userId={n.userId} name={n.userName ?? '—'} size="sm" nameClassName="font-medium text-foreground" />
+                        <span className="num">{when(n.createdAt, tz)}</span>
+                      </p>
                       <RichText text={n.body} />
                       <MediaGallery
                         items={n.media}
@@ -507,9 +521,6 @@ export function TaskDialog({
                         size="sm"
                         onChanged={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
                       />
-                      <p className="text-xs text-muted-foreground">
-                        {n.userName ?? '—'} · <span className="num">{when(n.createdAt, tz)}</span>
-                      </p>
                     </li>
                   ))}
                 </ul>

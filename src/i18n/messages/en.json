@@ -2952,6 +2952,7 @@
   "مسئول": "Assignee",
   "مسئولِ اعطای دسترسی": "Access owner",
   "مسئولِ سرویس": "Service owner",
+  "مسئول:": "Assignee:",
   "مسئول: {name}": "Assignee: {name}",
   "مسیرِ پوشه معتبر نیست.": "The folder path is not valid.",
   "مسیرِ صفحه": "Breadcrumb",

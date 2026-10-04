@@ -14,7 +14,7 @@ import {
 import { ComposeDialog } from './compose-dialog';
 import { groupInbox } from '@/domain/messaging/labels';
 import { monogram } from '@/domain/files/monogram';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
@@ -56,6 +56,8 @@ export interface InboxRow {
   counterparts: Array<{ userId: number; name: string }>;
   /** برچسبِ طرفِ مقابل — ماسک‌شده سمتِ سرور (R-MSG-03). */
   label: string;
+  /** عکسِ طرفِ مقابل در گفتگوی دونفره؛ تهی برای «مدیریت» و گروه‌ها. */
+  avatarUserId?: number | null;
   lastBody: string;
   lastAt: Date | string | null;
   lastFromName: string | null;
@@ -88,10 +90,19 @@ type ThreadMessage = Thread['messages'][number];
  * ماسک می‌شود (R-MSG-03) و همهٔ مدیران «مدیریت»اند. اگر رنگ از شناسهٔ واقعی
  * می‌آمد، دو «مدیریت» با دو رنگ از هم تشخیص داده می‌شدند و ماسک بی‌اثر می‌شد.
  */
-function ChatAvatar({ label, size = 'default' }: { label: string; size?: 'sm' | 'default' | 'lg' }) {
+function ChatAvatar({ label, userId, size = 'default' }: {
+  label: string;
+  /**
+   * شناسه‌ای که عکسش آمدنی است — سرور فقط وقتی می‌دهد که برچسب ماسک نشده
+   * (`personAvatarId`). عکس نبود، همان تک‌نگارِ برچسب می‌ماند.
+   */
+  userId?: number | null;
+  size?: 'sm' | 'default' | 'lg';
+}) {
   const { letter, background } = monogram(0, label || '—');
   return (
     <Avatar size={size}>
+      {userId ? <AvatarImage src={`/api/users/${userId}/avatar`} alt="" className="object-cover" /> : null}
       <AvatarFallback className="font-semibold text-white" style={{ background }}>
         {letter}
       </AvatarFallback>
@@ -140,7 +151,7 @@ function InboxRowButton({
         aria-current={open ? 'true' : undefined}
       >
         <ItemMedia>
-          {row.kind === 'direct' ? <ChatAvatar label={row.label} size="lg" /> : <GroupIcon kind={row.kind} />}
+          {row.kind === 'direct' ? <ChatAvatar label={row.label} userId={row.avatarUserId} size="lg" /> : <GroupIcon kind={row.kind} />}
         </ItemMedia>
         <ItemContent className="gap-0.5">
           <span className="flex items-center gap-1.5">
@@ -239,7 +250,7 @@ function BroadcastGroup({
  */
 type Block =
   | { kind: 'day'; key: string; day: string }
-  | { kind: 'group'; key: string; fromUserId: number; fromName: string; items: ThreadMessage[] };
+  | { kind: 'group'; key: string; fromUserId: number; fromName: string; fromAvatarId: number | null; items: ThreadMessage[] };
 
 function toBlocks(messages: ThreadMessage[], tz: string): Block[] {
   const blocks: Block[] = [];
@@ -252,7 +263,7 @@ function toBlocks(messages: ThreadMessage[], tz: string): Block[] {
     }
     const last = blocks[blocks.length - 1];
     if (last?.kind === 'group' && last.fromUserId === m.fromUserId) last.items.push(m);
-    else blocks.push({ kind: 'group', key: `g${m.id}`, fromUserId: m.fromUserId, fromName: m.fromName ?? '—', items: [m] });
+    else blocks.push({ kind: 'group', key: `g${m.id}`, fromUserId: m.fromUserId, fromName: m.fromName ?? '—', fromAvatarId: m.fromAvatarId ?? null, items: [m] });
   }
   return blocks;
 }
@@ -662,7 +673,7 @@ export function MessagesView({
                 </IconButton>
                 {thread.group
                   ? <GroupIcon kind={thread.group.kind} size="default" />
-                  : <ChatAvatar label={thread.thread.label} />}
+                  : <ChatAvatar label={thread.thread.label} userId={thread.thread.avatarUserId} />}
                 <div className="grid min-w-0 flex-1 gap-0.5">
                   <h2 className="truncate text-sm font-semibold">{thread.thread.label || tr('گفتگو')}</h2>
                   {thread.group ? (
@@ -743,7 +754,7 @@ export function MessagesView({
                               <Message key={m.id} align={mine ? 'end' : 'start'}>
                                 {!mine && (
                                   <MessageAvatar className={cn(!lastInGroup && 'invisible')}>
-                                    <ChatAvatar label={block.fromName} />
+                                    <ChatAvatar label={block.fromName} userId={block.fromAvatarId} />
                                   </MessageAvatar>
                                 )}
                                 <MessageContent className="gap-1">

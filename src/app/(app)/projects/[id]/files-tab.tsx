@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useActionState, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
@@ -161,9 +162,9 @@ export function FilesTab({
                     </AttachmentMedia>
                     <AttachmentContent>
                       <AttachmentTitle>{title}</AttachmentTitle>
-                      <AttachmentDescription>
-                        {f.uploaderName ?? '—'}
-                        {f.size ? ` · ${humanSize(f.size, tr)}` : ''}
+                      <AttachmentDescription className="flex items-center gap-1">
+                        <UserName userId={f.uploaderId} name={f.uploaderName ?? '—'} />
+                        {f.size ? <span className="shrink-0">· {humanSize(f.size, tr)}</span> : null}
                       </AttachmentDescription>
                     </AttachmentContent>
                     <AttachmentActions>
@@ -252,8 +253,9 @@ export function FilesTab({
                     <AttachmentMedia><Link2 /></AttachmentMedia>
                     <AttachmentContent>
                       <AttachmentTitle>{f.title}</AttachmentTitle>
-                      <AttachmentDescription>
-                        {host ? `${host} · ` : ''}{f.uploaderName ?? '—'}
+                      <AttachmentDescription className="flex items-center gap-1">
+                        {host ? <span className="shrink-0" dir="ltr">{host} ·</span> : null}
+                        <UserName userId={f.uploaderId} name={f.uploaderName ?? '—'} />
                       </AttachmentDescription>
                     </AttachmentContent>
                     {canDelete(f) && (

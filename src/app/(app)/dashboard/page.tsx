@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { UserName } from '@/components/user-avatar';
 import { currentActor, currentSession } from '@/server/auth';
 import { getDashboard } from '@/server/dashboard';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -319,8 +320,8 @@ export default async function DashboardPage({
                         <span className="text-muted-foreground">
                           {' · '}
                           {a.actorId && canViewSection(actor, 'reports')
-                            ? <Link href={`/reports/member/${a.actorId}`} className="hover:text-foreground hover:underline">{a.actorName}</Link>
-                            : a.actorName}
+                            ? <Link href={`/reports/member/${a.actorId}`} className="hover:text-foreground hover:underline"><UserName userId={a.actorId} name={a.actorName} /></Link>
+                            : <UserName userId={a.actorId} name={a.actorName} />}
                         </span>
                       ) : null}
                     </span>

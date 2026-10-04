@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Check, Reply, RotateCcw, Trash2 } from 'lucide-react';
@@ -31,6 +32,8 @@ export interface CommentItem {
   status: string;
   createdAt: Date | string;
   userName: string | null;
+  /** نویسنده — برای آواتار؛ عکسش را سرور فقط به کسی می‌دهد که نامش را هم می‌بیند. */
+  userId?: number | null;
   closedAt: Date | string | null;
   closedByName: string | null;
   /** پاسخ زیرِ والدش می‌نشیند (پورتِ `parent_id`). */
@@ -218,6 +221,10 @@ function Node({
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="grid min-w-0 flex-1 gap-2">
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <UserName userId={comment.userId} name={comment.userName ?? '—'} size="sm" nameClassName="font-medium text-foreground" />
+            <span className="num">{when(comment.createdAt, tz)}</span>
+          </p>
           <RichText text={comment.body} />
           {comment.media && comment.media.length > 0 && (
             <MediaGallery
@@ -226,9 +233,6 @@ function Node({
               size="sm"
             />
           )}
-          <p className="text-xs text-muted-foreground">
-            {comment.userName ?? '—'} · <span className="num">{when(comment.createdAt, tz)}</span>
-          </p>
           {/* «انجام شد توسط X» — فقط روی تازه‌ترین پیام و فقط وقتی واقعاً بسته شده باشد. */}
           {isLatest && closed && comment.closedByName && comment.closedAt && (
             <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-400">

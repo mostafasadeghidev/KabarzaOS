@@ -13,7 +13,7 @@ import {
   streamFingerprint, type Audience,
 } from '@/domain/messaging/threads';
 import {
-  counterpartLabel, personLabel, readUpTo, type LabelContext,
+  counterpartAvatarId, counterpartLabel, personAvatarId, personLabel, readUpTo, type LabelContext,
 } from '@/domain/messaging/labels';
 import {
   canMentionAll, canPostInGroup, ChannelError, groupRecipients, mentionsToPlain, normalizeAudience,
@@ -224,6 +224,7 @@ export async function listInbox(actor: Actor) {
         counterparts: ids.filter((id) => id !== actor.id)
           .map((userId) => ({ userId, name: personLabel(userId, ctx, t) })),
         label: group ? groupLabel(group) : counterpartLabel(ids, ctx, t),
+        avatarUserId: group ? null : counterpartAvatarId(ids, ctx),
         lastBody: lastRow ? plain(lastRow.body) : '',
         lastAt: lastRow?.created_at ?? null,
         lastFromName: lastRow ? personLabel(Number(lastRow.from_user_id), ctx, t) : null,
@@ -283,6 +284,7 @@ export async function openThread(actor: Actor, threadId: number) {
       allowReply: thread.allowReply,
       creatorId: thread.creatorId,
       label: group ? groupLabel(group) : counterpartLabel(thread.participantIds, ctx, t),
+      avatarUserId: group ? null : counterpartAvatarId(thread.participantIds, ctx),
       /**
        * حذفِ کلِ گفتگو: سازنده یا مدیر (R-MSG-11). کانالِ تیم فقط مدیر؛ گروهِ
        * پروژه مدیر یا مدیرِ همان پروژه.
@@ -294,7 +296,7 @@ export async function openThread(actor: Actor, threadId: number) {
       showReceipts: !group && isManagement(actor),
     },
     group: group ? await groupView(actor, group, members, ctx, t) : null,
-    messages: rows.map((m) => ({ ...m, fromName: personLabel(m.fromUserId, ctx, t) })),
+    messages: rows.map((m) => ({ ...m, fromName: personLabel(m.fromUserId, ctx, t), fromAvatarId: personAvatarId(m.fromUserId, ctx) })),
     canReply: access.writable,
     /** تا این شناسه، همهٔ طرف‌های دیگر خوانده‌اند (R-MSG-07). */
     readUpTo: readUpTo(states, actor.id),
@@ -967,7 +969,7 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
     off: false as const,
     changed: true as const,
     fingerprint: fp,
-    messages: rows.map((m) => ({ ...m, fromName: personLabel(m.fromUserId, ctx, t) })),
+    messages: rows.map((m) => ({ ...m, fromName: personLabel(m.fromUserId, ctx, t), fromAvatarId: personAvatarId(m.fromUserId, ctx) })),
     readUpTo: readUpTo(states, actor.id),
     mentionNames: Object.fromEntries(mentioned.map((id) => [id, personLabel(id, ctx, t)])) as Record<number, string>,
   };

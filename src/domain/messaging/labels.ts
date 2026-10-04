@@ -33,6 +33,21 @@ export function personLabel(otherId: number, ctx: LabelContext, t: Translator = 
 }
 
 /**
+ * شناسه‌ای که آواتارش کنارِ برچسب نشان داده می‌شود — `null` وقتی برچسب
+ * «مدیریت» است. ⚠️ چهرهٔ واقعی کنارِ «مدیریت» همان نامی را لو می‌داد که
+ * R-MSG-03 پنهان می‌کند.
+ */
+export function personAvatarId(otherId: number, ctx: LabelContext): number | null {
+  return !ctx.viewerIsManager && ctx.managerIds.has(otherId) ? null : otherId;
+}
+
+/** آواتارِ گفتگوی دونفره — فقط وقتی طرفِ مقابل یک نفر و نامش آشکار است. */
+export function counterpartAvatarId(participantIds: readonly number[], ctx: LabelContext): number | null {
+  const others = [...new Set(participantIds)].filter((id) => id !== ctx.viewerId);
+  return others.length === 1 ? personAvatarId(others[0]!, ctx) : null;
+}
+
+/**
  * برچسبِ «طرفِ مقابل» در صندوق و سربرگِ گفتگو.
  *
  * ⚠️ مدیران در **یک** کلید جمع می‌شوند، پس گفتگویی با دو مدیر برای عضو

@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -206,7 +207,7 @@ export function ReviewItemComposer({
             <FieldLabel htmlFor="ri-assignee">{t('تخصیص به…')}</FieldLabel>
             <Combobox
               id="ri-assignee"
-              options={options.assignees.map((a) => ({ value: a.userId, label: a.label }))}
+              options={options.assignees.map((a) => ({ value: a.userId, label: a.label, media: <UserAvatar userId={a.userId} name={a.label} size="xs" /> }))}
               value={draft.assignee}
               onChange={(v) => set('assignee', v)}
               placeholder={t('نامِ عضو را تایپ کنید…')}

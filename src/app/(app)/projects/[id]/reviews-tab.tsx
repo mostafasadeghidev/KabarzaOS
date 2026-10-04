@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -43,6 +44,7 @@ export interface ReviewListItem {
   notes: string;
   clientVisible: boolean;
   createdAt: Date | string;
+  createdBy: number;
   createdByName: string | null;
   roles: Array<{ id: number; name: string; color: string | null }>;
   progress: { done: number; total: number; percent: number };
@@ -146,7 +148,7 @@ export function ReviewsTab({
                   </div>
                   <Progress value={r.progress.percent} className="h-1.5" indicatorClassName={r.progress.percent === 100 ? 'bg-emerald-500' : undefined} />
                 </div>
-                <ReviewMeta createdAt={r.createdAt} createdByName={r.createdByName} mediaCount={r.mediaCount} />
+                <ReviewMeta createdAt={r.createdAt} createdBy={r.createdBy} createdByName={r.createdByName} mediaCount={r.mediaCount} />
               </button>
             </li>
           ))}
@@ -182,11 +184,13 @@ function AudienceLine({ roles, clientVisible }: { roles: Array<{ id: number; nam
   );
 }
 
-function ReviewMeta({ createdAt, createdByName, mediaCount }: { createdAt: Date | string; createdByName: string | null; mediaCount: number }) {
+function ReviewMeta({ createdAt, createdBy, createdByName, mediaCount }: {
+  createdAt: Date | string; createdBy: number; createdByName: string | null; mediaCount: number;
+}) {
   const tz = useTimeZone();
   return (
     <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-      <span>{createdByName ?? '—'}</span>
+      <UserName userId={createdBy} name={createdByName ?? '—'} />
       <span>·</span>
       <span className="num">{formatDateTime(createdAt, tz)}</span>
       {mediaCount > 0 && (
@@ -295,7 +299,7 @@ function ReviewDetail({
             <Badge variant="outline">{t(SOURCE_LABELS[review.source])}</Badge>
           </h2>
           {showAudience && <AudienceLine roles={review.roles} clientVisible={review.clientVisible} />}
-          <ReviewMeta createdAt={review.createdAt} createdByName={review.createdByName} mediaCount={0} />
+          <ReviewMeta createdAt={review.createdAt} createdBy={review.createdBy} createdByName={review.createdByName} mediaCount={0} />
         </div>
         {data.detail.canManage && (
           <div className="flex gap-2">
@@ -503,7 +507,7 @@ function ItemRow({
         {item.area && <span className="rounded-sm bg-muted px-1.5 py-px">{item.area}</span>}
         {item.priorityName && <TagChip color={item.priorityColor}>{item.priorityName}</TagChip>}
         {item.assigneeName
-          ? <span>{item.assigneeName}</span>
+          ? <UserName userId={item.assigneeId} name={item.assigneeName} />
           : item.roles.length > 0 && <span>{item.roles.join(t('، '))}</span>}
         {showClientHidden && item.clientHidden && (
           <span className="inline-flex items-center gap-1" title={t('پنهان از کارفرما')}><EyeOff className="size-3" /></span>

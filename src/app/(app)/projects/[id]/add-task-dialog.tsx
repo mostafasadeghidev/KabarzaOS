@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Plus } from 'lucide-react';
@@ -155,7 +156,7 @@ export function AddTaskDialog({
                 <Combobox
                   id="nt-assignee"
                   name="assignedTo"
-                  options={options.assignees.map((a) => ({ value: a.userId, label: a.label }))}
+                  options={options.assignees.map((a) => ({ value: a.userId, label: a.label, media: <UserAvatar userId={a.userId} name={a.label} size="xs" /> }))}
                   value={assignee}
                   onChange={setAssignee}
                   placeholder={t("نامِ عضو را تایپ کنید…")}

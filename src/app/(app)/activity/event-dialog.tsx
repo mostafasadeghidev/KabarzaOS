@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
@@ -219,7 +220,9 @@ function History({
                 {tr(h.label)}
                 {h.current && <span className="ms-2 text-xs text-primary">{tr('همین رویداد')}</span>}
               </span>
-              <span className="text-xs text-muted-foreground">{h.actorName ?? tr('سامانه')}</span>
+              <span className="text-xs text-muted-foreground">
+                {h.actorName ? <UserName userId={h.actorId} name={h.actorName} /> : tr('سامانه')}
+              </span>
             </button>
           </li>
         ))}
@@ -290,7 +293,11 @@ export function EventDialog({
               <dt className="text-muted-foreground">{tr('زمان')}</dt>
               <dd className="num font-medium">{formatDateTime(detail.createdAt, tz)}</dd>
               <dt className="text-muted-foreground">{tr('انجام‌دهنده')}</dt>
-              <dd>{detail.actorName ?? (detail.actorType === 'system' ? tr('سامانه') : '—')}</dd>
+              <dd>
+                {detail.actorName
+                  ? <UserName userId={detail.actorId} name={detail.actorName} size="sm" />
+                  : (detail.actorType === 'system' ? tr('سامانه') : '—')}
+              </dd>
               <dt className="text-muted-foreground">{tr('مورد')}</dt>
               <dd className="flex flex-wrap items-start justify-between gap-2">
                 <SubjectText subject={detail.subject} />

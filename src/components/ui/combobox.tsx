@@ -38,6 +38,8 @@ export interface Option {
   disabled?: boolean;
   /** نقطهٔ رنگی کنارِ گزینه و چیپ — برای تگ‌ها. */
   color?: string;
+  /** پیش از نام — مثلاً آواتارِ عضو در «تخصیص به…». */
+  media?: React.ReactNode;
 }
 
 /** جستجوی ساده و بی‌طرف نسبت به فاصله و «ی/ک» عربی. */
@@ -179,8 +181,9 @@ export function Combobox({
             onKeyDown={(e) => { if (!open) typeToSearch(e, start); }}
             className={triggerClass}
           >
-            <span className={cn('min-w-0 flex-1 truncate text-start', !value.label && 'text-muted-foreground')}>
-              {value.label || placeholder || t('جستجو…')}
+            <span className={cn('flex min-w-0 flex-1 items-center gap-1.5 text-start', !value.label && 'text-muted-foreground')}>
+              {value.id !== null && listed.find((o) => o.value === value.id)?.media}
+              <span className="min-w-0 truncate">{value.label || placeholder || t('جستجو…')}</span>
             </span>
             <ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground opacity-50" />
           </Button>
@@ -224,6 +227,7 @@ export function Combobox({
                     keywords={[o.label, o.hint ?? '']}
                     onSelect={() => pick({ id: o.value, label: o.label })}
                   >
+                    {o.media}
                     <span className="min-w-0 truncate">{o.label}</span>
                     <span className="ms-auto flex shrink-0 items-center gap-2">
                       {o.hint && <span className="text-xs text-muted-foreground">{o.hint}</span>}

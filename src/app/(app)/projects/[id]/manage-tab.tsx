@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Archive, ArchiveRestore, CircleAlert, CircleCheck, Trash2, TreePalm, TriangleAlert, X } from 'lucide-react';
@@ -91,7 +92,7 @@ export function TeamMatrix({
         {rows.map((r) => (
           <TableRow key={r.id}>
             <TableCell>
-              <span className="font-medium">{r.name}</span>
+              <UserName userId={r.id} name={r.name} size="sm" nameClassName="font-medium" />
               {r.roles.length > 0 && <span className="block text-[11px] text-muted-foreground">{r.roles.join('، ')}</span>}
             </TableCell>
             {r.cells.map((c, i) => (
@@ -205,7 +206,7 @@ function LogDetail({ logs, weekStart }: { logs: LogRow[]; weekStart: number }) {
           {view.rows.map((r) => (
             <TableRow key={r.id}>
               <TableNumericCell>{r.logDate}</TableNumericCell>
-              <TableCell className="break-words">{r.userName ?? '—'}</TableCell>
+              <TableCell className="break-words"><UserName userId={r.userId} name={r.userName ?? '—'} /></TableCell>
               <TableNumericCell>{hhmm(r.minutes)}</TableNumericCell>
               <TableCell className="break-words">{r.description || '—'}</TableCell>
             </TableRow>
@@ -637,7 +638,7 @@ export function ManageTab({
             <TableBody>
               {hours.map((h) => (
                 <TableRow key={h.userId}>
-                  <TableCell>{h.userName ?? String(h.userId)}</TableCell>
+                  <TableCell><UserName userId={h.userId} name={h.userName ?? String(h.userId)} size="sm" /></TableCell>
                   <TableCell className="text-muted-foreground">{h.roleNames || '—'}</TableCell>
                   <TableNumericCell>{hhmm(h.minutes)}</TableNumericCell>
                   <TableNumericCell>{h.entries}</TableNumericCell>

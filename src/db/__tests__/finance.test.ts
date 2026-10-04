@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
   currencies, exchangeRates, users, accounts, accountUsers, ledger, fiscalLocks, projects, tags, tagRelations,
@@ -369,8 +369,9 @@ describe('دسته‌ها، نرخِ غایب و ویرایشِ بی‌تلفا�
   it('⚠️ دسته‌های ردیف ذخیره می‌شوند و فیلترِ تگ آنها را می‌یابد', async () => {
     // پیش از این هیچ‌جا نوشته نمی‌شدند — فیلترِ تگ همیشه خالی برمی‌گشت.
     const id = await service.createEntry(manager(), entry({ tagIds: [tagA, tagB], description: 'با دسته' }));
+    // ⚠️ با نوعِ شیء — شناسهٔ ردیف ممکن است با شناسهٔ کاربر یا پروژه‌ای که خودش تگ دارد یکی باشد.
     const rel = await db.select({ tagId: tagRelations.tagId }).from(tagRelations)
-      .where(eq(tagRelations.objectId, id));
+      .where(and(eq(tagRelations.objectType, 'ledger'), eq(tagRelations.objectId, id)));
     expect(rel.map((r) => r.tagId).sort()).toEqual([tagA, tagB].sort());
 
     const filtered = await service.getLedger(manager(), { accountId: eurAccount, tagId: tagB });
@@ -380,7 +381,7 @@ describe('دسته‌ها، نرخِ غایب و ویرایشِ بی‌تلفا�
     // ویرایش، جایگزینیِ کامل است.
     await service.updateEntry(manager(), id, entry({ tagIds: [tagB], description: 'با دسته' }));
     const after = await db.select({ tagId: tagRelations.tagId }).from(tagRelations)
-      .where(eq(tagRelations.objectId, id));
+      .where(and(eq(tagRelations.objectType, 'ledger'), eq(tagRelations.objectId, id)));
     expect(after.map((r) => r.tagId)).toEqual([tagB]);
   });
 

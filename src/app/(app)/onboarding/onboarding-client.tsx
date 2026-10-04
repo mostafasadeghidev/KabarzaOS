@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useActionState, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Plus, RefreshCw, Trash2 } from 'lucide-react';
@@ -113,7 +114,7 @@ export function TaskRows({ tasks, canDelete = false, showPerson = false, memberI
                 <span>{tr(KIND_LABELS[t.kind])}</span>
                 {t.serviceName && <span>· {t.serviceName}</span>}
                 {showPerson && t.personName && (
-                  <span>· <Link href={`/onboarding/${t.userId}`} className="underline">{t.personName}</Link></span>
+                  <span className="inline-flex items-center gap-1">· <Link href={`/onboarding/${t.userId}`} className="underline"><UserName userId={t.userId} name={t.personName} /></Link></span>
                 )}
                 <span>· {tr('با: {name}', { name: who(t) })}</span>
                 <span>· {tr('موعد: {date}', { date: ltr(t.dueDate) })}</span>

@@ -458,6 +458,7 @@ async function openCommentThreads(projectIds: number[]) {
       status: comments.status,
       body: comments.body,
       projectId: comments.projectId,
+      userId: comments.userId,
       userName: users.name,
       createdAt: comments.createdAt,
     })
@@ -490,6 +491,7 @@ export async function teamComments(actor: Actor) {
       id: latest.id,
       projectId: root.projectId!,
       projectTitle: titleOf.get(root.projectId!) ?? '',
+      authorId: latest.userId,
       authorName: latest.userName,
       createdAt: latest.createdAt,
       // پورتِ `wp_trim_words( …, 30 )`.

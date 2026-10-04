@@ -1816,6 +1816,7 @@ export async function myOpenCommentThreads(actor: Actor) {
       id: latest.id,
       projectId: root.projectId!,
       projectTitle: titleOf.get(root.projectId!) ?? '',
+      authorId: latest.userId,
       authorName: latest.userId === null || latest.userName === null
         ? latest.userName
         : nameForViewer(latest.userId, latest.userName, contexts.get(root.projectId!)!),

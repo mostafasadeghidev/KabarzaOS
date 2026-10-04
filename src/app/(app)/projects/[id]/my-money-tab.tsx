@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Package, Trash2 } from 'lucide-react';
@@ -183,7 +184,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
                 return (
                   <TableRow key={u.id}>
                     <TableNumericCell>{u.entryDate}</TableNumericCell>
-                    {data.canManage && <TableCell>{u.userName ?? `#${u.userId}`}</TableCell>}
+                    {data.canManage && <TableCell><UserName userId={u.userId} name={u.userName ?? `#${u.userId}`} /></TableCell>}
                     <TableNumericCell>{Number(u.quantity)}</TableNumericCell>
                     <TableNumericCell>{format(u.amount)} {u.currencyCode}</TableNumericCell>
                     <TableCell>

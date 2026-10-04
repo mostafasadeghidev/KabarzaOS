@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
@@ -304,7 +305,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                     <TableRow key={row.id}>
                       <TableCell>
                         <span className="flex flex-wrap items-center gap-1">
-                          {row.userName}
+                          <UserName userId={row.userId} name={row.userName} size="sm" />
                           {former && <Badge variant="outline">{tr(former)}</Badge>}
                         </span>
                       </TableCell>

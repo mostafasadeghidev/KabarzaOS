@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UserName } from '@/components/user-avatar';
 import { RichText } from '@/components/media/rich-text';
 import { listReviews, reviewFormOptions } from '@/server/projects/reviews';
 import { isClientOnly } from '@/server/projects/authority';
@@ -471,7 +472,7 @@ export default async function ProjectDetailPage({
                     {members.map((m) => (
                       <TableRow key={m.id}>
                         <TableCell className="font-medium">
-                          {m.userName}
+                          <UserName userId={m.userId} name={m.userName} size="sm" />
                           {m.accessBlocked && (
                             <Badge variant="outline" className="ms-1.5 text-[10px]">
                               {t("دسترسی قطع")}
@@ -516,7 +517,7 @@ export default async function ProjectDetailPage({
                 <ul className="grid gap-1 text-sm">
                   {detail.clients.map((c, i) => (
                     <li key={c.userId} className="flex items-center gap-2">
-                      {c.name}
+                      <UserName userId={c.userId} name={c.name} size="sm" />
                       {i === 0 && detail.clients.length > 1 && (
                         <Badge variant="outline" className="text-[10px]">{t("کارفرمای اصلی")}</Badge>
                       )}

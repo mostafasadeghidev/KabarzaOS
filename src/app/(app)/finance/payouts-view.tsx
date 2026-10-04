@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { Fragment, useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Banknote, Check, CircleAlert, Pencil, Plus, Trash2, X } from 'lucide-react';
@@ -53,6 +54,7 @@ export interface RequestRow {
   decisionNote: string;
   ledgerId: number | null;
   createdAt: Date;
+  userId?: number | null;
   userName: string | null;
   projectTitle: string | null;
   /** ماندهٔ قراردادِ عضو در همان پروژه — پورتِ ستونِ `member_summary`. */
@@ -71,6 +73,7 @@ export interface UnitRow {
   quantity: string;
   amount: string;
   currencyCode: string | null;
+  userId?: number | null;
   userName: string | null;
   projectTitle: string | null;
 }
@@ -83,6 +86,7 @@ export interface DetachedRow {
   amount: string;
   currencyCode: string | null;
   note: string;
+  userId?: number | null;
   userName: string | null;
   receiptId: number | null;
 }
@@ -374,7 +378,7 @@ export function PayoutsView({
                 return (
                   <TableRow key={r.id}>
                     <TableCell>
-                      {r.userName ?? '—'}
+                      <UserName userId={r.userId} name={r.userName ?? '—'} size="sm" />
                       {/* یادداشتِ خودِ عضو روی درخواست — پورتِ ستونِ «توضیح». */}
                       {r.note && <span className="block text-xs text-muted-foreground">{r.note}</span>}
                     </TableCell>
@@ -470,7 +474,7 @@ export function PayoutsView({
               {unpaidUnits.map((u) => (
                 <TableRow key={u.id}>
                   <TableNumericCell>{u.entryDate}</TableNumericCell>
-                  <TableCell>{u.userName ?? '—'}</TableCell>
+                  <TableCell><UserName userId={u.userId} name={u.userName ?? '—'} size="sm" /></TableCell>
                   <TableCell>{u.projectTitle ?? '—'}</TableCell>
                   <TableNumericCell>{format(u.quantity)}</TableNumericCell>
                   <TableNumericCell>{format(u.amount)} {u.currencyCode ?? ''}</TableNumericCell>
@@ -511,7 +515,7 @@ export function PayoutsView({
             {detachedPayments.map((p) => (
               <TableRow key={p.id}>
                 <TableNumericCell>{p.paidAt ?? '—'}</TableNumericCell>
-                <TableCell>{p.userName ?? '—'}</TableCell>
+                <TableCell><UserName userId={p.userId} name={p.userName ?? '—'} size="sm" /></TableCell>
                 <TableCell>{t(PAY_DIRECTION_LABELS[p.direction] ?? p.direction)}</TableCell>
                 <TableNumericCell>{format(p.amount)} {p.currencyCode ?? ''}</TableNumericCell>
                 <TableCell className="text-muted-foreground">{p.note || '—'}</TableCell>
