@@ -16,6 +16,7 @@ import {
 } from './manage-tab';
 import { FilesTab, type FileRow } from './files-tab';
 import { ReviewsTab, type ReviewListItem } from './reviews-tab';
+import type { ReviewFormOptions } from './review-item-composer';
 import { MyMoneyTab, type MyMoneyData } from './my-money-tab';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
 import { useT } from '@/i18n/client';
@@ -74,10 +75,11 @@ export interface ProjectTabsData {
   comments: CommentItem[];
   /** بازبینی‌هایی که این بیننده می‌بیند (۱.۱۱۶.۰). */
   reviews: ReviewListItem[];
-  /** ساختِ بازبینی — مدیرِ پروژه، روی پروژهٔ نامنجمد. */
-  canCreateReview: boolean;
-  /** نقش‌های مخاطب و موردها — همان نقش‌های فرمِ تسک. */
-  reviewRoleOptions: Array<{ id: number; name: string }>;
+  /**
+   * گزینه‌های فرمِ بازبینی (نقش‌های همین پروژه، بخش‌ها، اعضا، اولویت‌ها).
+   * حاضر بودنش یعنی بیننده می‌تواند بازبینی بسازد — مدیرِ پروژهٔ نامنجمد.
+   */
+  reviewFormOptions: ReviewFormOptions | null;
   /** بیننده عضو یا کادر است (نه فقط کارفرما) — نشانِ مخاطب و «پنهان از کارفرما». */
   isTeamViewer: boolean;
   files: FileRow[];
@@ -131,7 +133,7 @@ export function ProjectTabs({
     { key: 'info', label: 'اطلاعات' },
     { key: 'tasks', label: 'تسک‌ها', badge: data.tasks.length },
     // تب فقط وقتی بازبینی‌ای هست یا بیننده می‌تواند بسازد — کارفرما بی‌بازبینیِ آشکار تبی نمی‌بیند.
-    ...(data.reviews.length > 0 || data.canCreateReview
+    ...(data.reviews.length > 0 || data.reviewFormOptions
       ? [{ key: 'reviews', label: 'بازبینی‌ها', badge: data.reviews.length }] : []),
     { key: 'files', label: 'فایل‌ها', badge: data.files.length },
     { key: 'comments', label: 'کامنت‌ها', badge: data.comments.length },
@@ -264,8 +266,7 @@ export function ProjectTabs({
         <TabPanel><ReviewsTab
           projectId={data.projectId}
           reviews={data.reviews}
-          canCreate={data.canCreateReview}
-          roleOptions={data.reviewRoleOptions}
+          formOptions={data.reviewFormOptions}
           showAudience={data.isTeamViewer}
           initialReviewId={initialReview}
         /></TabPanel>

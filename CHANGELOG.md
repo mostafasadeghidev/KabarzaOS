@@ -2,6 +2,27 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.117.0]
+
+### Added
+
+- **New reviews are created in one two-step dialog.**
+  - Step 1: title, video (Loom/YouTube/Vimeo link or an uploaded video), audience, client visibility, notes and images.
+  - Step 2: write the items one after another. Each item has a time, area, title, screenshots, priority and roles; Enter adds it to the list.
+  - Items can be edited or removed before saving. «Create review» saves the review, its images and all items together.
+  - If an item fails, the review and the items already saved are kept, and the button retries only the rest.
+- **Large image box on the review page**, under the video.
+  - Drop files onto it, click to choose, or press Ctrl+V anywhere on the page when you're not typing in a field. Files upload immediately, with no save button.
+  - Images show as large thumbnails with the full-screen viewer.
+- **Site areas in settings.** «Settings → Tags → Site area» holds a ready list (Header, Menu & navigation, Hero, Footer, Forms, Mobile version, CMS & content, SEO). The item's area field offers this list and still accepts free text.
+
+### Changed
+
+- The review audience and the item roles list only the roles assigned to members of this project, not every role defined in the system.
+- After «Add item», every field of the item form is cleared, including the area. The roles go back to the review's audience.
+- Pasting a screenshot inside an item's form attaches it to that item.
+- The review source is always detected automatically (Loom, YouTube, Vimeo, uploaded video or other). The manual «Source» field was removed because it had no effect.
+
 ## [1.116.0]
 
 ### Added

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { RichText } from '@/components/media/rich-text';
-import { listReviews } from '@/server/projects/reviews';
+import { listReviews, reviewFormOptions } from '@/server/projects/reviews';
 import { isClientOnly } from '@/server/projects/authority';
 import { notFound, redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
@@ -163,7 +163,7 @@ export default async function ProjectDetailPage({
    * نبودنش چیزی از او نمی‌گیرد: `TaskStatusPicker` برای غیرمدیر همان چیپِ
    * خواندنی را برمی‌گرداند، مثلِ `task_status_dropdown_html()` نسخهٔ قبلی.
    */
-  const [taskStatuses, taskFormOptions, qaForm, chat, reviews, clientOnly] = await Promise.all([
+  const [taskStatuses, taskFormOptions, qaForm, chat, reviews, clientOnly, reviewOptions] = await Promise.all([
     // پورتِ افزونه: هر شرکت‌کننده وضعیتِ تسک را عوض می‌کند (عضو تسکش را به ریویو می‌فرستد) — نه روی منجمد.
     detail.canInteract && !detail.isFrozen ? taskStatusOptionsFor(actor, project.id) : Promise.resolve([]),
     /**
@@ -179,6 +179,8 @@ export default async function ProjectDetailPage({
     // بازبینی‌ها — سرویس فقط آنچه این بیننده می‌بیند را می‌دهد (مخاطبِ نقشی، «برای کارفرما»).
     listReviews(actor, project.id),
     isClientOnly(actor, project.id),
+    // فرمِ «بازبینیِ تازه» فقط برای مدیرِ پروژهٔ نامنجمد — بقیه دکمه‌اش را نمی‌بینند.
+    canManage && !detail.isFrozen ? reviewFormOptions(actor, project.id) : Promise.resolve(null),
   ]);
 
   // فرم‌ها فقط وقتی خوانده می‌شوند که دکمه‌شان هم دیده شود.
@@ -413,8 +415,7 @@ export default async function ProjectDetailPage({
           tenderIsOpen: detail.tenderIsOpen,
           comments: detail.comments,
           reviews,
-          canCreateReview: canManage && !detail.isFrozen,
-          reviewRoleOptions: taskFormOptions?.roles ?? [],
+          reviewFormOptions: reviewOptions,
           isTeamViewer: !clientOnly,
           files: detail.files,
           qa: detail.qa,

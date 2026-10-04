@@ -16,7 +16,7 @@ import { discardUploads, removeFiles, storeUploads, type UploadBlob } from '@/se
 import { notify } from '@/server/notifications/service';
 import { assertNotFrozen, canInteractWithProject, canManageProject, isProjectFrozen, projectRelation } from './authority';
 import * as repo from './repository';
-import { createTask, getProject, NotFoundError, viewerContext, type TaskInput } from './service';
+import { createTask, getProject, getTaskFormOptions, NotFoundError, viewerContext, type TaskInput } from './service';
 import { canManageSection } from '@/domain/access/permissions';
 
 /**
@@ -257,6 +257,27 @@ export async function getReview(actor: Actor, reviewId: number) {
   };
 }
 
+/**
+ * گزینه‌های فرمِ بازبینی و موردها — برای کسی که می‌سازد.
+ *
+ * ⚠️ نقش‌ها فقط همان‌هایی‌اند که **روی این پروژه** به کسی سپرده شده‌اند، نه
+ * همهٔ نقش‌های تعریف‌شده (درخواستِ کاربر): بازبینی برای تیمِ همین پروژه است.
+ * فرمِ تسکِ معمولی عمداً همه را دارد (تسکِ پیش از پیداشدنِ دیزاینر).
+ * بخش‌ها از «تنظیمات ← تگ‌ها ← بخشِ سایت»؛ متنِ آزاد هم پذیرفته می‌شود.
+ */
+export async function reviewFormOptions(actor: Actor, projectId: number) {
+  const [task, members, areas] = await Promise.all([
+    getTaskFormOptions(actor, projectId),
+    repo.listMembers(projectId),
+    db.select({ id: tags.id, name: tagName(await currentLocale()) }).from(tags)
+      .where(eq(tags.type, 'site_area')).orderBy(asc(tags.sortOrder), asc(tags.id)),
+  ]);
+  const roles = [...new Map(members
+    .filter((m) => m.roleTagId !== null && !m.accessBlocked)
+    .map((m) => [m.roleTagId!, { id: m.roleTagId!, name: m.roleName ?? '' }])).values()];
+  return { roles, areas, assignees: task.assignees, priorities: task.priorities };
+}
+
 /* ------------------------------------------------------------------ *
  * نوشتن
  * ------------------------------------------------------------------ */
@@ -386,6 +407,25 @@ export async function updateReview(actor: Actor, reviewId: number, input: Review
       url: `/projects/${review.projectId}?tab=reviews&review=${reviewId}`,
     });
   }
+  return review.projectId;
+}
+
+/**
+ * افزودنِ تصویر/سند به خودِ بازبینی — بی‌فرم، همان لحظه (کادرِ «تصاویر»).
+ * ⚠️ همان گاردِ ویرایشِ بازبینی و قفلِ انجماد.
+ */
+export async function addReviewMedia(actor: Actor, reviewId: number, media: readonly UploadBlob[]) {
+  const { review } = await loadVisibleReview(actor, reviewId);
+  await assertCanManageReview(actor, review);
+  await assertNotFrozen(review.projectId, actor);
+  if (media.length === 0) return review.projectId;
+  const uploads = await storeUploads(actor, media);
+  await db.insert(attachments).values(uploads.map((u) => ({
+    projectId: review.projectId, reviewId, fileId: u.fileId, kind: u.kind, userId: actor.id,
+  }))).catch(async (error: unknown) => {
+    await discardUploads(uploads);
+    throw error;
+  });
   return review.projectId;
 }
 

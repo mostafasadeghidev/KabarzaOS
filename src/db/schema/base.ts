@@ -57,6 +57,8 @@ export const vendors = pgTable('vendors', {
  */
 export const TAG_TYPES = [
   'member_role', 'ledger_category', 'project_status', 'task_status', 'task_priority', 'service_category',
+  // بخشِ سایت برای موردهای بازبینی (مهاجرتِ ۰۰۴۰).
+  'site_area',
 ] as const;
 export type TagType = (typeof TAG_TYPES)[number];
 
@@ -77,7 +79,7 @@ export const tags = pgTable('tags', {
   ...stamps,
 }, (t) => [
   // G9 — enum به‌صورتِ text + check.
-  check('tags_type_ck', sql`${t.type} in ('member_role','ledger_category','project_status','task_status','task_priority','service_category')`),
+  check('tags_type_ck', sql`${t.type} in ('member_role','ledger_category','project_status','task_status','task_priority','service_category','site_area')`),
   index('tags_type_ix').on(t.type, t.sortOrder),
   // مهاجرتِ 0031 — یک اسلاگ، یک تگ. خالی مجاز است: تگِ تازه اول درج می‌شود و
   // بلافاصله `type-id` می‌گیرد.

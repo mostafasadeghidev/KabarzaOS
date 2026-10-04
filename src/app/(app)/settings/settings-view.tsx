@@ -103,6 +103,8 @@ const TAG_TYPES: Array<{ key: TagType; label: string }> = [
   { key: 'task_priority', label: 'اولویتِ تسک' },
   { key: 'ledger_category', label: 'دستهٔ دفتر' },
   { key: 'service_category', label: 'دستهٔ سرویس' },
+  // فهرستِ آمادهٔ «بخش» برای موردهای بازبینی؛ متنِ آزاد هم مجاز است.
+  { key: 'site_area', label: 'بخشِ سایت' },
 ];
 
 const TABS = [

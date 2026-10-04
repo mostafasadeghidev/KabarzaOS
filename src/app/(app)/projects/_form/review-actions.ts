@@ -3,9 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
-  addReviewItem, createReview, deleteReview, getReview, updateReview, type ReviewInput,
+  addReviewItem, addReviewMedia, createReview, deleteReview, getReview, reviewFormOptions, updateReview,
+  type ReviewInput,
 } from '@/server/projects/reviews';
-import { getTaskFormOptions, taskStatusOptionsFor } from '@/server/projects/service';
+import { taskStatusOptionsFor } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FrozenProjectError } from '@/server/projects/authority';
 import { REVIEW_SOURCES, type ReviewSource } from '@/db/schema/projects';
@@ -73,6 +74,17 @@ export async function saveReviewAction(_prev: ReviewFormState, formData: FormDat
   }
 }
 
+/** تصویر و سندِ تازه برای خودِ بازبینی — کادرِ «تصاویر»، بی‌دکمهٔ ذخیره. */
+export async function addReviewMediaAction(reviewId: number, formData: FormData): Promise<ReviewFormState> {
+  try {
+    const projectId = await addReviewMedia(await requireActor(), reviewId, await mediaFrom(formData));
+    revalidatePath(`/projects/${projectId}`);
+  } catch (error) {
+    return { error: message(error, 'فایل بارگذاری نشد.') };
+  }
+  return { ok: true };
+}
+
 export async function deleteReviewAction(reviewId: number): Promise<ReviewFormState> {
   try {
     const projectId = await deleteReview(await requireActor(), reviewId);
@@ -134,17 +146,12 @@ export async function loadReviewAction(reviewId: number) {
   const actor = await requireActor();
   const detail = await getReview(actor, reviewId);
   const [options, statuses] = await Promise.all([
-    detail.canManage ? getTaskFormOptions(actor, detail.review.projectId) : Promise.resolve(null),
+    detail.canManage ? reviewFormOptions(actor, detail.review.projectId) : Promise.resolve(null),
     detail.canInteract ? taskStatusOptionsFor(actor, detail.review.projectId) : Promise.resolve([]),
   ]);
   return {
     detail,
-    options: options && {
-      roles: options.roles,
-      assignees: options.assignees,
-      priorities: options.priorities,
-      statuses: options.statuses,
-    },
+    options,
     statuses: statuses.map((s) => ({ id: s.id, name: s.name, group: s.group, color: s.color })),
   };
 }

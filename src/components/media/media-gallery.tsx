@@ -43,7 +43,8 @@ export function MediaGallery({
   projectId: number;
   /** پس از حذف — فراخوان دوباره می‌خواند (مودالِ تسک). صفحهٔ پروژه با revalidate تازه می‌شود. */
   onChanged?: () => void;
-  size?: 'sm' | 'md';
+  /** `lg` — کادرِ «تصاویر» ِ بازبینی، جایی که تصویر خودش محتواست. */
+  size?: 'sm' | 'md' | 'lg';
 }) {
   const t = useT();
   const confirm = useConfirm();
@@ -95,7 +96,7 @@ export function MediaGallery({
                 aria-label={item.name}
                 className={cn(
                   'block overflow-hidden rounded-lg border bg-muted transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring',
-                  size === 'sm' ? 'size-16' : 'size-24',
+                  size === 'sm' ? 'size-16' : size === 'lg' ? 'size-32 sm:size-40' : 'size-24',
                 )}
               >
                 <img src={`${fileUrl(item.fileId)}?thumb`} alt={item.name} loading="lazy" className="size-full object-cover" />

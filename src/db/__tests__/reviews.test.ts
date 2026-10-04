@@ -5,7 +5,7 @@ import {
   attachments, currencies, notifications, projectClients, projectMembers, projects, tags, tasks, userRoles, users,
 } from '../schema';
 import {
-  addReviewItem, createReview, deleteReview, getReview, listReviews, updateReview,
+  addReviewItem, addReviewMedia, createReview, deleteReview, getReview, listReviews, reviewFormOptions, updateReview,
 } from '@/server/projects/reviews';
 import { getProjectDetail, getTaskDetail, myTasks, setTaskStatus } from '@/server/projects/service';
 import { canViewFile } from '@/server/files/service';
@@ -54,6 +54,9 @@ beforeAll(async () => {
     { name: 'دولوپر', type: 'member_role' },
     { name: 'دیزاینر', type: 'member_role' },
     { name: 'آماده برای بررسی', type: 'task_status', statusGroup: 'in_progress', isReview: true },
+    // نقشی که به هیچ‌کس در این پروژه سپرده نشده — نباید در فرمِ بازبینی بیاید.
+    { name: 'انیماتور', type: 'member_role' },
+    { name: 'هدر', type: 'site_area' },
   ]).returning({ id: tags.id });
   [DEV_ROLE, DES_ROLE, REVIEW_STATUS] = [t[1]!.id, t[2]!.id, t[3]!.id];
   const [p] = await db.insert(projects).values({ title: 'سایت', price: '0', statusTagId: t[0]!.id }).returning({ id: projects.id });
@@ -143,5 +146,22 @@ describe('موردها و پنهان‌ماندن از کارفرما', () => {
     await deleteReview(owner, rid);
     const [row] = await db.select().from(tasks).where(eq(tasks.id, taskId));
     expect([row!.reviewId, row!.clientHidden, row!.deletedAt]).toEqual([null, true, null]);
+  });
+});
+
+describe('فرمِ بازبینی (۱.۱۱۷.۰)', () => {
+  it('فقط نقش‌های سپرده‌شده روی همین پروژه، و بخش‌های تنظیمات', async () => {
+    const options = await reviewFormOptions(owner, P);
+    expect(options.roles.map((r) => r.name).sort()).toEqual(['دولوپر', 'دیزاینر'].sort());
+    expect(options.areas.map((a) => a.name)).toEqual(['هدر']);
+  });
+
+  it('تصویرِ فوری به خودِ بازبینی می‌رود؛ عضو نمی‌تواند', async () => {
+    const rid = await createReview(owner, P, review({ title: 'گالری' }));
+    await addReviewMedia(owner, rid, [shot, shot]);
+    const rows = await db.select().from(attachments).where(eq(attachments.reviewId, rid));
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.taskId === null && r.commentId === null)).toBe(true);
+    await expect(addReviewMedia(dev, rid, [shot])).rejects.toThrow();
   });
 });

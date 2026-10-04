@@ -64,8 +64,9 @@ export function withoutClientHidden<T extends { clientHidden: boolean }>(
 }
 
 /**
- * منبعِ بازبینی از روی پیوند — کاربر لازم نیست خودش «لوم» را انتخاب کند.
- * انتخابِ صریحِ کاربر (واتس‌اپ، جلسه…) بر حدس مقدم است.
+ * منبعِ بازبینی — همیشه خودکار (۱.۱۱۷.۰): از پیوند (لوم/یوتیوب/ویمئو)، از
+ * ویدئوی بارگذاری‌شده، وگرنه «دیگر». انتخابِ دستی از فرم برداشته شد چون
+ * روی هیچ رفتاری اثر نداشت؛ مقدارهای قدیمی (واتس‌اپ، جلسه…) همچنان نمایش داده می‌شوند.
  */
 export function detectSource(chosen: ReviewSource | null, videoUrl: string | null, hasUploadedVideo: boolean): ReviewSource {
   const video = videoUrl ? parseVideoUrl(videoUrl) : null;
@@ -87,8 +88,6 @@ export const SOURCE_LABELS: Record<ReviewSource, string> = {
   other: 'دیگر',
 };
 
-/** منابعی که کاربر می‌تواند صریح انتخاب کند (بقیه از پیوند حدس زده می‌شوند). */
-export const PICKABLE_SOURCES: readonly ReviewSource[] = ['video', 'whatsapp', 'document', 'meeting', 'other'];
 
 export interface ReviewItemTiming {
   start: number | null;

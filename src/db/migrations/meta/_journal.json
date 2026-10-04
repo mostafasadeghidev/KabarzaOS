@@ -281,6 +281,13 @@
       "when": 1789006800018,
       "tag": "0039_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1789093200018,
+      "tag": "0040_site_areas",
+      "breakpoints": true
     }
   ]
 }

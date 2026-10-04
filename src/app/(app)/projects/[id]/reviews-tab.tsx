@@ -1,37 +1,31 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
-  ArrowRight, Clapperboard, ExternalLink, Eye, EyeOff, FileText, MessageSquare, Paperclip, Pencil, Play, Plus, Timer,
+  ArrowRight, Clapperboard, ExternalLink, Eye, EyeOff, FileText, Images, MessageSquare, Paperclip, Pencil, Play, Plus,
   Trash2, Users,
 } from 'lucide-react';
 import {
-  addReviewItemAction, deleteReviewAction, loadReviewAction, type ReviewFormState,
+  addReviewItemAction, addReviewMediaAction, deleteReviewAction, loadReviewAction,
 } from '../_form/review-actions';
 import { ReviewDialog, type ReviewFormValues } from './review-dialog';
+import { itemFormData, ReviewItemComposer, type ReviewFormOptions } from './review-item-composer';
 import { TaskDialog } from './task-dialog';
 import { TaskStatusPicker } from './task-status-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Combobox, MultiSelect } from '@/components/ui/combobox';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TagChip } from '@/components/ui/tag-chip';
 import { useConfirm } from '@/components/ui/confirm';
-import { useActionToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/toast';
 import { SectionHeader } from '@/components/page-shell';
 import { RichText } from '@/components/media/rich-text';
 import { MediaGallery } from '@/components/media/media-gallery';
-import { MediaPicker } from '@/components/media/media-picker';
+import { FileDrop } from '@/components/media/file-drop';
 import { VideoFrame, type VideoFrameHandle } from '@/components/media/video-frame';
 import { formatTimestamp, parseVideoUrl } from '@/domain/files/video';
 import { SOURCE_LABELS } from '@/domain/projects/reviews';
@@ -68,16 +62,14 @@ type Item = Loaded['detail']['items'][number];
 export function ReviewsTab({
   projectId,
   reviews,
-  canCreate,
-  roleOptions,
+  formOptions,
   showAudience,
   initialReviewId,
 }: {
   projectId: number;
   reviews: ReviewListItem[];
-  /** مدیرِ پروژه و پروژهٔ نامنجمد. */
-  canCreate: boolean;
-  roleOptions: Array<{ id: number; name: string }>;
+  /** حاضر = بیننده می‌تواند بسازد (مدیرِ پروژه و پروژهٔ نامنجمد). */
+  formOptions: ReviewFormOptions | null;
   /** نشانِ مخاطب و «پنهان از کارفرما» فقط برای تیم — کارفرما فقط بازبینیِ آشکار را می‌بیند. */
   showAudience: boolean;
   initialReviewId: number | null;
@@ -88,6 +80,7 @@ export function ReviewsTab({
   const search = useSearchParams();
   const [selected, setSelected] = useState<number | null>(initialReviewId);
   const [creating, setCreating] = useState(false);
+  const canCreate = formOptions !== null;
   useEffect(() => { setSelected(initialReviewId); }, [initialReviewId]);
 
   const select = (id: number | null) => {
@@ -104,7 +97,6 @@ export function ReviewsTab({
         key={selected}
         reviewId={selected}
         projectId={projectId}
-        roleOptions={roleOptions}
         showAudience={showAudience}
         onBack={() => select(null)}
       />
@@ -161,12 +153,12 @@ export function ReviewsTab({
         </ul>
       )}
 
-      {canCreate && (
+      {formOptions && (
         <ReviewDialog
           open={creating}
           onOpenChange={setCreating}
           projectId={projectId}
-          roleOptions={roleOptions}
+          options={formOptions}
           onSaved={(id) => select(id)}
         />
       )}
@@ -211,13 +203,11 @@ function ReviewMeta({ createdAt, createdByName, mediaCount }: { createdAt: Date 
 function ReviewDetail({
   reviewId,
   projectId,
-  roleOptions,
   showAudience,
   onBack,
 }: {
   reviewId: number;
   projectId: number;
-  roleOptions: Array<{ id: number; name: string }>;
   showAudience: boolean;
   onBack: () => void;
 }) {
@@ -229,6 +219,9 @@ function ReviewDetail({
   const [openTask, setOpenTask] = useState<number | null>(null);
   const [filter, setFilter] = useState<'all' | 'open' | 'done'>('all');
   const [deleting, startDelete] = useTransition();
+  const [adding, setAdding] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const { show } = useToast();
   const frame = useRef<VideoFrameHandle>(null);
   const video = useRef<HTMLVideoElement>(null);
 
@@ -272,8 +265,21 @@ function ReviewDetail({
   );
 
   const formValues: ReviewFormValues = {
-    id: review.id, title: review.title, videoUrl: review.videoUrl, source: review.source,
+    id: review.id, title: review.title, videoUrl: review.videoUrl,
     notes: review.notes, roles: review.roles, clientVisible: review.clientVisible,
+  };
+
+  /** کادرِ تصاویر: همان لحظه بارگذاری، بی‌دکمهٔ ذخیره — دسته‌های ۱۰تایی. */
+  const upload = async (files: File[]) => {
+    setUploading(true);
+    for (let i = 0; i < files.length; i += 10) {
+      const fd = new FormData();
+      for (const f of files.slice(i, i + 10)) fd.append('media', f);
+      const result = await addReviewMediaAction(review.id, fd);
+      if (result.error) { show(t(result.error), 'error'); break; }
+    }
+    setUploading(false);
+    await reload();
   };
   const progress = data.detail.progress;
 
@@ -337,7 +343,29 @@ function ReviewDetail({
           {review.notes && (
             <div className="rounded-lg bg-muted/40 p-3"><RichText text={review.notes} /></div>
           )}
-          {others.length > 0 && <MediaGallery items={others} projectId={projectId} onChanged={reload} />}
+          {/*
+            کادرِ بزرگِ تصاویر — زیرِ ویدئو، چون کنارش ستونِ موردهاست. رها کن یا
+            Ctrl+V هر جای صفحه (وقتی در فیلدی تایپ نمی‌کنی)؛ بارگذاری فوری است.
+          */}
+          {(others.length > 0 || data.detail.canManage) && (
+            <section className="grid gap-2 rounded-xl border p-3">
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+                <Images className="size-4 text-muted-foreground" />
+                {t('تصاویر و فایل‌ها')}
+                {others.length > 0 && <span className="num text-xs font-normal text-muted-foreground">{others.length}</span>}
+              </h3>
+              <MediaGallery items={others} projectId={projectId} onChanged={reload} size="lg" />
+              {data.detail.canManage && (
+                <FileDrop
+                  variant="zone"
+                  pageWide
+                  busy={uploading}
+                  onAdd={(files) => void upload(files)}
+                  hint={t('Ctrl+V هر جای صفحه، رها کردن روی همین کادر، یا کلیک برای انتخاب')}
+                />
+              )}
+            </section>
+          )}
         </div>
 
         <div className="grid content-start gap-3">
@@ -351,17 +379,27 @@ function ReviewDetail({
             <Progress value={progress.percent} indicatorClassName={progress.percent === 100 ? 'bg-emerald-500' : undefined} />
           </div>
 
-          {data.detail.canManage && data.options && (
-            <AddItemForm
-              reviewId={review.id}
-              reviewRoles={review.roles}
-              clientVisible={review.clientVisible}
+          {data.detail.canManage && data.options && (adding ? (
+            <ReviewItemComposer
               options={data.options}
-              areas={[...new Set(data.detail.items.map((i) => i.area).filter(Boolean))]}
+              defaultRoles={review.roles.map((r) => r.id)}
+              clientVisible={review.clientVisible}
               currentTime={uploaded ? () => video.current?.currentTime ?? null : null}
-              onAdded={reload}
+              submitLabel={t('افزودنِ مورد')}
+              onCancel={() => setAdding(false)}
+              onSubmit={async (draft) => {
+                const result = await addReviewItemAction({}, itemFormData(review.id, draft));
+                if (result.error) return result.error;
+                show(t('مورد ثبت شد.'));
+                await reload();
+                return null;
+              }}
             />
-          )}
+          ) : (
+            <Button size="sm" variant="outline" className="justify-self-start" onClick={() => setAdding(true)}>
+              <Plus className="size-4" />{t('افزودنِ مورد')}
+            </Button>
+          ))}
 
           <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
             <TabsList>
@@ -392,12 +430,12 @@ function ReviewDetail({
         </div>
       </div>
 
-      {data.detail.canManage && (
+      {data.detail.canManage && data.options && (
         <ReviewDialog
           open={editing}
           onOpenChange={setEditing}
           projectId={projectId}
-          roleOptions={roleOptions}
+          options={data.options}
           review={formValues}
           onSaved={() => { void reload(); }}
         />
@@ -475,147 +513,5 @@ function ItemRow({
         {item.description && <span className="inline-flex items-center gap-1"><FileText className="size-3" /></span>}
       </div>
     </li>
-  );
-}
-
-function AddButton() {
-  const { pending } = useFormStatus();
-  const t = useT();
-  return (
-    <Button type="submit" size="sm" disabled={pending}>
-      {pending ? <><Spinner />{t('در حالِ ثبت…')}</> : <><Plus className="size-4" />{t('افزودنِ مورد')}</>}
-    </Button>
-  );
-}
-
-/**
- * افزودنِ مورد ← تسک. ⚠️ پس از هر ثبت، «بخش» و نقش‌ها می‌مانند و زمان/عنوان
- * خالی می‌شود: موردهای یک ویدئو پشتِ سرِ هم و اغلب در همان بخش ثبت می‌شوند.
- */
-function AddItemForm({
-  reviewId, reviewRoles, clientVisible, options, areas, currentTime, onAdded,
-}: {
-  reviewId: number;
-  reviewRoles: Array<{ id: number; name: string }>;
-  clientVisible: boolean;
-  options: NonNullable<Loaded['options']>;
-  areas: string[];
-  /** فقط ویدئوی بارگذاری‌شده زمانِ جاری را می‌دهد؛ قابِ لوم/یوتیوب نه. */
-  currentTime: (() => number | null) | null;
-  onAdded: () => void;
-}) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const [round, setRound] = useState(0);
-  const [area, setArea] = useState('');
-  const [roles, setRoles] = useState<number[]>([]);
-  const [assignee, setAssignee] = useState<{ id: number | null; label: string }>({ id: null, label: '' });
-  const startRef = useRef<HTMLInputElement>(null);
-  const endRef = useRef<HTMLInputElement>(null);
-  const [state, action] = useActionState<ReviewFormState, FormData>(async (prev, formData) => {
-    setArea(String(formData.get('area') ?? ''));
-    const result = await addReviewItemAction(prev, formData);
-    if (result.ok) { setRound((r) => r + 1); setAssignee({ id: null, label: '' }); onAdded(); }
-    return result;
-  }, {});
-  useActionToast(state, { success: 'مورد ثبت شد.' });
-
-  if (!open) {
-    return (
-      <Button size="sm" variant="outline" className="justify-self-start" onClick={() => setOpen(true)}>
-        <Plus className="size-4" />{t('افزودنِ مورد')}
-      </Button>
-    );
-  }
-
-  const stamp = (ref: React.RefObject<HTMLInputElement | null>) => {
-    const now = currentTime?.();
-    if (now !== null && now !== undefined && ref.current) ref.current.value = formatTimestamp(now);
-  };
-
-  return (
-    <form key={round} action={action} className="grid gap-3 rounded-lg border border-dashed p-3">
-      <input type="hidden" name="reviewId" value={reviewId} />
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-end gap-3">
-        <Field>
-          <FieldLabel htmlFor="ri-start">{t('زمان')}</FieldLabel>
-          <div className="flex items-center gap-1" dir="ltr">
-            <Input ref={startRef} id="ri-start" name="start" placeholder="1:23" className="num w-16" autoFocus={round > 0} />
-            <span className="text-muted-foreground">–</span>
-            <Input ref={endRef} name="end" placeholder="1:40" className="num w-16" aria-label={t('پایان')} />
-          </div>
-        </Field>
-        <Field>
-          <FieldLabel htmlFor="ri-area">{t('بخش')}</FieldLabel>
-          <Input id="ri-area" name="area" list={`ri-areas-${reviewId}`} defaultValue={area} maxLength={120}
-            placeholder={t('مثلاً هدر')} />
-          <datalist id={`ri-areas-${reviewId}`}>
-            {areas.map((a) => <option key={a} value={a} />)}
-          </datalist>
-        </Field>
-      </div>
-      {currentTime && (
-        <div className="flex gap-2 text-xs">
-          <Button type="button" size="xs" variant="ghost" onClick={() => stamp(startRef)}><Timer className="size-3.5" />{t('شروع = لحظهٔ فعلی')}</Button>
-          <Button type="button" size="xs" variant="ghost" onClick={() => stamp(endRef)}><Timer className="size-3.5" />{t('پایان = لحظهٔ فعلی')}</Button>
-        </div>
-      )}
-      <Field>
-        <FieldLabel htmlFor="ri-title">{t('عنوانِ مورد')}</FieldLabel>
-        <Input id="ri-title" name="title" required maxLength={200} placeholder={t('مثلاً فاصلهٔ منوی موبایل کم است')} />
-      </Field>
-      <MediaPicker>
-        <Textarea name="description" rows={2} placeholder={t('توضیح (اختیاری) — اسکرین‌شات را هم می‌شود چسباند.')} />
-      </MediaPicker>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field>
-          <FieldLabel htmlFor="ri-priority">{t('اولویت…')}</FieldLabel>
-          <NativeSelect id="ri-priority" name="priorityTagId" containerClassName="w-full" defaultValue="">
-            <NativeSelectOption value="">—</NativeSelectOption>
-            {options.priorities.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>)}
-          </NativeSelect>
-        </Field>
-        {options.assignees.length > 0 && (
-          <Field>
-            <FieldLabel htmlFor="ri-assignee">{t('تخصیص به…')}</FieldLabel>
-            <Combobox
-              id="ri-assignee"
-              name="assignedTo"
-              options={options.assignees.map((a) => ({ value: a.userId, label: a.label }))}
-              value={assignee}
-              onChange={setAssignee}
-              placeholder={t('نامِ عضو را تایپ کنید…')}
-            />
-          </Field>
-        )}
-        {assignee.id === null && options.roles.length > 0 && (
-          <Field className="sm:col-span-2">
-            <FieldLabel htmlFor="ri-roles">{t('تخصیص به نقش')}</FieldLabel>
-            <MultiSelect
-              id="ri-roles"
-              name="roleTagIds"
-              options={options.roles.map((r) => ({ value: r.id, label: r.name }))}
-              selected={roles}
-              onChange={setRoles}
-              placeholder={reviewRoles.length > 0
-                ? t('نقش‌های بازبینی: {roles}', { roles: reviewRoles.map((r) => r.name).join(t('، ')) })
-                : t('نقش‌ها…')}
-            />
-          </Field>
-        )}
-      </div>
-      {/* پنهان‌کردنِ تک‌مورد فقط وقتی معنا دارد که خودِ بازبینی برای کارفرما آشکار است. */}
-      {clientVisible && (
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox name="clientHidden" value="1" />
-          {t('این مورد پنهان از کارفرما')}
-        </label>
-      )}
-      {state.error && <p className="text-xs text-destructive">{t(state.error)}</p>}
-      <div className="flex justify-end gap-2">
-        <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>{t('بستن')}</Button>
-        <AddButton />
-      </div>
-    </form>
   );
 }
