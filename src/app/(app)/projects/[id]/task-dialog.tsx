@@ -4,7 +4,8 @@ import Link from 'next/link';
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { ArrowLeft, Lock, Pencil, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Clapperboard, EyeOff, Lock, Pencil, Share2, Trash2 } from 'lucide-react';
+import { formatTimestamp } from '@/domain/files/video';
 import {
   addTaskNoteAction, deleteTaskAction, loadTaskAction, referTaskAction, updateTaskAction,
   type TaskFormState,
@@ -205,6 +206,31 @@ export function TaskDialog({
                 projectId={task.projectId}
                 onDone={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
               />
+            )}
+
+            {/* موردِ بازبینی: از کدام بازبینی، کجای ویدئو و کدام بخشِ سایت — با پیوند به خودِ بازبینی. */}
+            {(task.reviewId || task.area || task.clientHidden) && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                {task.reviewId && (
+                  <Link
+                    href={`/projects/${task.projectId}?tab=reviews&review=${task.reviewId}`}
+                    className="inline-flex items-center gap-1 underline-offset-4 hover:text-foreground hover:underline"
+                    onClick={() => onOpenChange(false)}
+                  >
+                    <Clapperboard className="size-3.5" />
+                    {tr('از بازبینیِ «{title}»', { title: task.reviewTitle ?? '' })}
+                    {task.reviewStart !== null && (
+                      <span className="num" dir="ltr">
+                        {formatTimestamp(task.reviewStart)}{task.reviewEnd !== null ? `–${formatTimestamp(task.reviewEnd)}` : ''}
+                      </span>
+                    )}
+                  </Link>
+                )}
+                {task.area && <span>{tr('بخش: {area}', { area: task.area })}</span>}
+                {task.clientHidden && (
+                  <span className="inline-flex items-center gap-1"><EyeOff className="size-3.5" />{tr('پنهان از کارفرما')}</span>
+                )}
+              </div>
             )}
 
             {/* «آخرین ویرایش توسط X» — همان سطرِ نسخهٔ قبلی. */}
@@ -426,10 +452,38 @@ export function TaskDialog({
                   </Field>
                 </div>
 
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel htmlFor="t-area">{t("بخش")}</FieldLabel>
+                    <Input id="t-area" name="area" defaultValue={task.area} placeholder={t("مثلاً هدر، فوتر، صفحهٔ تماس")} maxLength={120} />
+                  </Field>
+                  {/* زمانِ ویدئو فقط برای موردِ بازبینی. */}
+                  {task.reviewId && (
+                    <Field>
+                      <FieldLabel htmlFor="t-start">{t("زمانِ ویدئو (از – تا)")}</FieldLabel>
+                      <div className="flex items-center gap-2" dir="ltr">
+                        <Input id="t-start" name="reviewStart" className="num" placeholder="1:23"
+                          defaultValue={task.reviewStart !== null ? formatTimestamp(task.reviewStart) : ''} />
+                        <span className="text-muted-foreground">–</span>
+                        <Input name="reviewEnd" className="num" placeholder="1:40" aria-label={t("پایان")}
+                          defaultValue={task.reviewEnd !== null ? formatTimestamp(task.reviewEnd) : ''} />
+                      </div>
+                    </Field>
+                  )}
+                </div>
+
                 <label className="flex items-center gap-2 text-sm">
                   <Checkbox name="isPrivate" value="1" defaultChecked={task.isPrivate} />
                   {tr("تسکِ خصوصی (فقط سازنده، مسئول و مدیران)")}
                 </label>
+                {/* ⚠️ فقط مدیر؛ سرور هم از دیگران نادیده‌اش می‌گیرد. نشانگر یعنی «این فرم فیلد را دارد». */}
+                {canManage && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="hidden" name="clientHiddenField" value="1" />
+                    <Checkbox name="clientHidden" value="1" defaultChecked={task.clientHidden} />
+                    {tr("پنهان از کارفرما")}
+                  </label>
+                )}
 
                 {saveState.error && <p className="text-xs text-destructive">{tr(saveState.error)}</p>}
                 <div className="flex justify-end">

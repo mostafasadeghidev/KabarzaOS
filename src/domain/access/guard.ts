@@ -51,6 +51,8 @@ export interface PrivateRecord {
   isPrivate: boolean;
   createdBy: number | null;
   assignedTo: number | null;
+  /** تسکِ «پنهان از کارفرما» (۱.۱۱۶.۰) — فقط با `clientOnly` معنا دارد. */
+  clientHidden?: boolean;
 }
 
 export function canSeePrivateRecord(actor: Actor, record: PrivateRecord, section: Section): boolean {
@@ -77,7 +79,14 @@ export function canSeePrivateRecordFor(
   actor: Actor,
   record: PrivateRecord,
   managesProject: boolean,
+  /**
+   * بیننده **فقط** کارفرمای این پروژه است (نه عضو، نه مدیر) — `isClientOnly`.
+   * ⚠️ تسکِ پنهان از کارفرما برای او نیست، مگر خودش مسئولش باشد: کاری که
+   * به خودِ کارفرما سپرده شده نمی‌تواند از خودش پنهان بماند.
+   */
+  clientOnly = false,
 ): boolean {
+  if (clientOnly && record.clientHidden && record.assignedTo !== actor.id) return false;
   if (!record.isPrivate) return true;
   if (record.createdBy === actor.id || record.assignedTo === actor.id) return true;
   return managesProject;
@@ -87,8 +96,9 @@ export function filterVisibleFor<T extends PrivateRecord>(
   actor: Actor,
   records: T[],
   managesProject: boolean,
+  clientOnly = false,
 ): T[] {
-  return records.filter((r) => canSeePrivateRecordFor(actor, r, managesProject));
+  return records.filter((r) => canSeePrivateRecordFor(actor, r, managesProject, clientOnly));
 }
 
 /**

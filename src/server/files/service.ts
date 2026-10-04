@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { assertNotFrozen, canManageProject, projectRelation } from '@/server/projects/authority';
+import { assertNotFrozen, canManageProject, isClientOnly, projectRelation } from '@/server/projects/authority';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
@@ -132,6 +132,7 @@ export async function canViewFile(actor: Actor, fileId: number): Promise<boolean
   // پیوستِ پروژه ← هر کس به آن پروژه دسترسی دارد.
   const attached = await db.select({
     projectId: attachments.projectId, taskId: attachments.taskId, commentId: attachments.commentId,
+    reviewId: attachments.reviewId,
   }).from(attachments).where(eq(attachments.fileId, fileId));
   for (const row of attached) {
     /**
@@ -142,6 +143,12 @@ export async function canViewFile(actor: Actor, fileId: number): Promise<boolean
      */
     if (row.taskId) {
       if (await canSeeTask(actor, row.taskId)) return true;
+      continue;
+    }
+    // پیوستِ بازبینی ← گاردِ خودِ بازبینی (مخاطبِ نقشی و «برای کارفرما»).
+    if (row.reviewId) {
+      const { canSeeReviewById } = await import('@/server/projects/reviews');
+      if (await canSeeReviewById(actor, row.reviewId)) return true;
       continue;
     }
     if (row.projectId && await canAccessProject(actor, row.projectId)) return true;
@@ -255,7 +262,9 @@ async function canSeeTask(actor: Actor, taskId: number): Promise<boolean> {
   const task = await projectRepo.getTask(taskId);
   if (!task) return false;
   if (!await canAccessProject(actor, task.projectId)) return false;
-  return filterVisibleFor(actor, [task], await canManageProject(actor, task.projectId)).length > 0;
+  return filterVisibleFor(
+    actor, [task], await canManageProject(actor, task.projectId), await isClientOnly(actor, task.projectId),
+  ).length > 0;
 }
 
 /** فایل را برای سرو کردن آماده می‌کند — یا ۴۰۳ می‌دهد. */

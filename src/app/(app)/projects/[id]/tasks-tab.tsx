@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { Check, ChevronDown, Columns3, Hand, Link2, List as ListIcon, Lock, User, MessageSquare, Paperclip } from 'lucide-react';
+import { Check, ChevronDown, Clapperboard, Columns3, EyeOff, Hand, Link2, List as ListIcon, Lock, User, MessageSquare, Paperclip } from 'lucide-react';
+import { formatTimestamp } from '@/domain/files/video';
 import { claimTaskAction, setTaskStatusAction } from '../_form/tab-actions';
 import { canClaimTask } from '@/domain/projects/claim';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,13 @@ export interface TaskItem {
   notesCount?: number;
   /** تصویر و فایلِ تسک و یادداشت‌هایش. */
   mediaCount?: number;
+  /** پنهان از کارفرما (۱.۱۱۶.۰) — نشانش فقط برای تیم معنا دارد. */
+  clientHidden?: boolean;
+  /** موردِ بازبینی: عنوانِ بازبینی و زمانِ ویدئو. */
+  reviewId?: number | null;
+  reviewTitle?: string | null;
+  reviewStart?: number | null;
+  area?: string;
   lastNote?: string | null;
   /** عنوانِ تسکی که این یکی منتظرش است؛ null یعنی راه باز است. */
   blockedBy?: string | null;
@@ -172,7 +180,8 @@ function priorityTint(color: string | null | undefined): React.CSSProperties | u
 
 function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boolean }) {
   const tr = useT();
-  if (!task.priorityName && !task.description && !task.notesCount && !task.mediaCount && !task.blockedBy) return null;
+  if (!task.priorityName && !task.description && !task.notesCount && !task.mediaCount && !task.blockedBy
+    && !task.reviewId && !task.clientHidden && !task.area) return null;
   return (
     <div className={compact ? 'grid gap-0.5' : 'mt-1 grid gap-1'}>
       {/*
@@ -185,7 +194,17 @@ function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boole
           {tr('منتظرِ: {title}', { title: task.blockedBy })}
         </span>
       )}
-      {(task.priorityName || (task.notesCount ?? 0) > 0 || (task.mediaCount ?? 0) > 0) && (
+      {/* از کدام بازبینی و کجای ویدئو — بی‌بازکردنِ تسک معلوم شود این کار از کجا آمده. */}
+      {task.reviewId && (
+        <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
+          <Clapperboard className="size-3 shrink-0" aria-hidden />
+          <span className="truncate">{task.reviewTitle ?? tr('بازبینی')}</span>
+          {task.reviewStart !== null && task.reviewStart !== undefined && (
+            <span className="num shrink-0" dir="ltr">{formatTimestamp(task.reviewStart)}</span>
+          )}
+        </span>
+      )}
+      {(task.priorityName || (task.notesCount ?? 0) > 0 || (task.mediaCount ?? 0) > 0 || task.area || task.clientHidden) && (
         <div className="flex flex-wrap items-center gap-1.5">
           {task.priorityName && (
             <TagChip color={task.priorityColor}>{task.priorityName}</TagChip>
@@ -194,6 +213,14 @@ function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boole
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <MessageSquare className="size-3" />
               <span className="num">{task.notesCount}</span>
+            </span>
+          )}
+          {task.area && (
+            <span className="rounded-sm bg-muted px-1.5 py-px text-[10px] text-muted-foreground">{task.area}</span>
+          )}
+          {task.clientHidden && (
+            <span className="flex items-center text-muted-foreground" title={tr('پنهان از کارفرما')}>
+              <EyeOff className="size-3" aria-label={tr('پنهان از کارفرما')} />
             </span>
           )}
           {(task.mediaCount ?? 0) > 0 && (

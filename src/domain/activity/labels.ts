@@ -60,6 +60,11 @@ export const ACTION_LABELS: Record<string, string> = {
   'comment.status': 'ریویو',
   'comment.delete': 'حذفِ کامنت',
 
+  // بازبینی
+  'review.create': 'بازبینیِ جدید',
+  'review.update': 'ویرایشِ بازبینی',
+  'review.delete': 'حذفِ بازبینی',
+
   // QA
   'qa.apply': 'اعمالِ چک‌لیستِ QA',
   'qa.toggle': 'تیکِ QA',

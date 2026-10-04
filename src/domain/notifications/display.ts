@@ -17,7 +17,7 @@ export function kindOf(type: string): NotificationKind {
   if (type.startsWith('meeting')) return 'meeting';
   if (type.startsWith('payment')) return 'money';
   if (type.startsWith('message')) return 'message';
-  if (type.startsWith('project') || type === 'tender_opened' || type === 'business') return 'project';
+  if (type.startsWith('project') || type.startsWith('review.') || type === 'tender_opened' || type === 'business') return 'project';
   return 'other';
 }
 

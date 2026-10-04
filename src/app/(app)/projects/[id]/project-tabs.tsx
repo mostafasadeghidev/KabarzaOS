@@ -15,6 +15,7 @@ import {
   ManageTab, type HourRow, type ImpactCounts, type LightenSummaryView, type LogRow, type MatrixRowView,
 } from './manage-tab';
 import { FilesTab, type FileRow } from './files-tab';
+import { ReviewsTab, type ReviewListItem } from './reviews-tab';
 import { MyMoneyTab, type MyMoneyData } from './my-money-tab';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
 import { useT } from '@/i18n/client';
@@ -71,6 +72,14 @@ export interface ProjectTabsData {
   /** حاضر بودنش یعنی کاربر می‌تواند تسک بسازد. */
   taskFormOptions: TaskFormOptions | null;
   comments: CommentItem[];
+  /** بازبینی‌هایی که این بیننده می‌بیند (۱.۱۱۶.۰). */
+  reviews: ReviewListItem[];
+  /** ساختِ بازبینی — مدیرِ پروژه، روی پروژهٔ نامنجمد. */
+  canCreateReview: boolean;
+  /** نقش‌های مخاطب و موردها — همان نقش‌های فرمِ تسک. */
+  reviewRoleOptions: Array<{ id: number; name: string }>;
+  /** بیننده عضو یا کادر است (نه فقط کارفرما) — نشانِ مخاطب و «پنهان از کارفرما». */
+  isTeamViewer: boolean;
   files: FileRow[];
   qa: QaRow[];
   /** حاضر بودنش یعنی کاربر می‌تواند چک‌لیست اعمال کند. */
@@ -98,6 +107,7 @@ export function ProjectTabs({
   info,
   initialTab,
   initialView,
+  initialReview = null,
 }: {
   data: ProjectTabsData;
   /** پنلِ «اطلاعات» روی سرور ساخته می‌شود و اینجا فقط جاسازی می‌شود. */
@@ -110,6 +120,8 @@ export function ProjectTabs({
   initialTab?: string | null;
   /** زیرتب — فعلاً فقط `review` برای تبِ تسک‌ها. */
   initialView?: string | null;
+  /** بازبینیِ باز از `?review=` — پیوندِ اعلان و مودالِ تسک. */
+  initialReview?: number | null;
 }) {
   const tr = useT();
   const router = useRouter();
@@ -118,6 +130,9 @@ export function ProjectTabs({
   const tabs: Array<{ key: string; label: string; badge?: number }> = [
     { key: 'info', label: 'اطلاعات' },
     { key: 'tasks', label: 'تسک‌ها', badge: data.tasks.length },
+    // تب فقط وقتی بازبینی‌ای هست یا بیننده می‌تواند بسازد — کارفرما بی‌بازبینیِ آشکار تبی نمی‌بیند.
+    ...(data.reviews.length > 0 || data.canCreateReview
+      ? [{ key: 'reviews', label: 'بازبینی‌ها', badge: data.reviews.length }] : []),
     { key: 'files', label: 'فایل‌ها', badge: data.files.length },
     { key: 'comments', label: 'کامنت‌ها', badge: data.comments.length },
     /**
@@ -190,6 +205,7 @@ export function ProjectTabs({
     next.set('tab', key);
     // زیرتب مالِ تبِ قبلی بود؛ با عوض شدنِ تب معنایش را از دست می‌دهد.
     next.delete('view');
+    next.delete('review');
     router.replace(`${pathname}?${next}`, { scroll: false });
   };
 
@@ -241,6 +257,17 @@ export function ProjectTabs({
           currentUserId={data.currentUserId}
           formOptions={data.taskFormOptions}
           initialGroup={initialView}
+        /></TabPanel>
+      )}
+
+      {tab === 'reviews' && (
+        <TabPanel><ReviewsTab
+          projectId={data.projectId}
+          reviews={data.reviews}
+          canCreate={data.canCreateReview}
+          roleOptions={data.reviewRoleOptions}
+          showAudience={data.isTeamViewer}
+          initialReviewId={initialReview}
         /></TabPanel>
       )}
 

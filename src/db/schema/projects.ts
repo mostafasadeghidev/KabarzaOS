@@ -1,4 +1,4 @@
-import { bigint, boolean, index, integer, text, date, pgTable, jsonb, check, uniqueIndex } from 'drizzle-orm/pg-core';
+import { bigint, boolean, index, integer, text, date, pgTable, jsonb, check, uniqueIndex, primaryKey } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { pk, fk, money, ts, stamps, softDelete, scope } from './_shared';
 import { currencies, offices, tags } from './base';
@@ -109,6 +109,19 @@ export const tasks = pgTable('tasks', {
    * قابلِ اعمال می‌شود.
    */
   qaItemId: fk('qa_item_id').references(() => qaItems.id),
+  /**
+   * موردِ یک بازبینی (۱.۱۱۶.۰) — با بازهٔ زمانیِ ویدئو (ثانیه) و بخشِ سایت.
+   * حذفِ بازبینی پیوند را برمی‌دارد، تسک می‌ماند.
+   */
+  reviewId: fk('review_id').references(() => reviews.id, { onDelete: 'set null' }),
+  reviewStart: integer('review_start'),
+  reviewEnd: integer('review_end'),
+  area: text('area').notNull().default(''),
+  /**
+   * ⚠️ پنهان از کارفرما — هر جا که کارفرما تسک می‌بیند. تسکِ بازبینیِ داخلی
+   * این را از بازبینی به ارث می‌برد. عضو و مدیرِ پروژه همچنان می‌بینند.
+   */
+  clientHidden: boolean('client_hidden').notNull().default(false),
   updatedBy: fk('updated_by').references(() => users.id),
   scope: scope(),
   ...stamps,
@@ -118,7 +131,37 @@ export const tasks = pgTable('tasks', {
   index('tasks_project_ix').on(t.projectId),
   index('tasks_assigned_ix').on(t.assignedTo),
   index('tasks_status_ix').on(t.statusTagId),
+  index('tasks_review_ix').on(t.reviewId).where(sql`${t.reviewId} is not null`),
 ]);
+
+export const REVIEW_SOURCES = ['video', 'loom', 'youtube', 'vimeo', 'upload', 'whatsapp', 'document', 'meeting', 'other'] as const;
+export type ReviewSource = (typeof REVIEW_SOURCES)[number];
+
+/**
+ * بازبینیِ پروژه — ویدئو یا هر منبعی که نتیجه‌اش فهرستِ کارهای اصلاحی است.
+ * ⚠️ کارفرما فقط با `clientVisible` می‌بیند؛ پیش‌فرض خاموش.
+ */
+export const reviews = pgTable('reviews', {
+  id: pk(),
+  projectId: fk('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  source: text('source').notNull().default('video').$type<ReviewSource>(),
+  /** پیوندِ لوم/یوتیوب/ویمئو؛ ویدئوی بارگذاری‌شده پیوستِ خودِ بازبینی است. */
+  videoUrl: text('video_url'),
+  notes: text('notes').notNull().default(''),
+  clientVisible: boolean('client_visible').notNull().default(false),
+  createdBy: fk('created_by').notNull().references(() => users.id),
+  ...stamps,
+}, (t) => [
+  check('reviews_source_ck', sql`${t.source} in ('video','loom','youtube','vimeo','upload','whatsapp','document','meeting','other')`),
+  index('reviews_project_ix').on(t.projectId),
+]);
+
+/** مخاطبِ بازبینی — نقش‌های عضو. هیچ ردیفی = کلِ تیمِ پروژه. */
+export const reviewRoles = pgTable('review_roles', {
+  reviewId: fk('review_id').notNull().references(() => reviews.id, { onDelete: 'cascade' }),
+  roleTagId: fk('role_tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
+}, (t) => [primaryKey({ name: 'review_roles_pk', columns: [t.reviewId, t.roleTagId] })]);
 
 /** R-PROJ-13 — ساین‌کردن per-role است: هر نقش claimed_by جدا دارد. */
 export const taskRoles = pgTable('task_roles', {
@@ -167,12 +210,15 @@ export const attachments = pgTable('attachments', {
    */
   taskId: fk('task_id').references(() => tasks.id, { onDelete: 'cascade' }),
   commentId: fk('comment_id').references(() => comments.id, { onDelete: 'cascade' }),
+  /** پیوستِ بازبینی (ویدئوی بارگذاری‌شده، اسکرین‌شات، سند) — گاردِ خودِ بازبینی. */
+  reviewId: fk('review_id').references(() => reviews.id, { onDelete: 'cascade' }),
   ...stamps,
 }, (t) => [
   index('attachments_project_ix').on(t.projectId),
   index('attachments_task_ix').on(t.taskId).where(sql`${t.taskId} is not null`),
   index('attachments_comment_ix').on(t.commentId).where(sql`${t.commentId} is not null`),
   index('attachments_file_ix').on(t.fileId),
+  index('attachments_review_ix').on(t.reviewId).where(sql`${t.reviewId} is not null`),
 ]);
 
 export const timelogs = pgTable('timelogs', {

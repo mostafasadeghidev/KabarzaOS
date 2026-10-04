@@ -298,3 +298,14 @@ export async function managedOfficeProjectIds(userId: number): Promise<number[]>
   return rows.map((r) => r.id);
 }
 
+
+/**
+ * بیننده **فقط** کارفرمای این پروژه است؟ — نه عضو، نه مدیرِ آن (۱.۱۱۶.۰).
+ * مبنای «پنهان از کارفرما»: کسی که هم کارفرماست هم عضو، از راهِ عضویتش
+ * می‌بیند. ⚠️ از رابطهٔ واقعی با **همین** پروژه، نه از نقشِ سراسریِ `client`.
+ */
+export async function isClientOnly(actor: Actor, projectId: number): Promise<boolean> {
+  const relation = await projectRelation(actor.id, projectId);
+  if (!relation.isClient || relation.isMember) return false;
+  return !(await canManageProject(actor, projectId));
+}

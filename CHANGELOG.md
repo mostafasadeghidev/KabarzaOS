@@ -2,6 +2,29 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.116.0]
+
+### Added
+
+- **Reviews tab on every project.** A review is the result of checking the project: usually a Loom video, but also a YouTube or Vimeo link, an uploaded video, a WhatsApp thread, a document or a meeting.
+  - The video plays next to the list of items. Each item has a time range; clicking it jumps the player to that moment. For uploaded videos, the add form can take the start and end from the current playback time.
+  - Each item becomes a normal task, with its area of the site (header, footer…), priority, assignee or roles, description and screenshots. Status, notes and notifications work as for any task. The area is remembered between items so a series can be entered quickly.
+  - Each review shows its progress: how many items are done. «Done» and «Won't do» both count as resolved.
+  - Notes and attachments (screenshots, documents) can be added to the review itself.
+- **Audience and client visibility for reviews.**
+  - A review can target one or more member roles. Only holders of those roles and the project's managers see it, and its items are assigned to those roles by default. With no role picked, the whole project team sees it.
+  - «Show to the client» is off by default. While it's off, the client sees neither the review nor any task created from it. Turning it on later reveals the review and its items; individual items can still be kept hidden.
+  - The audience is notified when a review is posted, and new people are notified when the audience is widened.
+- **Hide a task from the client.** Managers can mark any task «Hidden from client» when creating or editing it. A hidden task assigned to the client stays visible to that client.
+- **Three new task statuses:** «Needs Design», «Waiting on Client» and «Won't Do» (closed). They're added to existing installs without touching statuses you've renamed.
+- Task cards and the task dialog show the review a task came from, its video time, its area and a «Hidden from client» mark. The dialog links back to the review.
+
+### Fixed
+
+- Moving a private task into review sent its title to the project's clients by in-app notification, email and Telegram. Clients now receive it only for tasks they can see.
+- The client dashboard counted private tasks in «Awaiting your review», so the number didn't match the list.
+- The «Waiting for…» line on a task card named the blocking task even when the viewer couldn't see it. It now says «another task».
+
 ## [1.115.0]
 
 ### Added

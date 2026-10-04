@@ -28,6 +28,8 @@ const CATEGORY_OF: Record<string, NotifyCategory> = {
   'task.back': 'tasks',
   'task_note': 'tasks',
   'comment': 'tasks',
+  // بازبینیِ تازهٔ پروژه — نتیجه‌اش کار است، پس همان دستهٔ «تسک».
+  'review.posted': 'tasks',
   // آنبوردینگ — کارِ روزهای اول، همان دستهٔ «تسک».
   'onboarding.started': 'tasks',
   'onboarding.assigned': 'tasks',

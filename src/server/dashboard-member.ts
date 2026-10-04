@@ -177,7 +177,8 @@ async function clientSection(actor: Actor): Promise<ClientSection> {
     db.select({ id: currencies.id, code: currencies.code }).from(currencies),
   ]);
   const codeOf = new Map(currencyRows.map((c) => [c.id, c.code]));
-  const reviewCounts = await repo.reviewTaskCounts(activeIds);
+  // ⚠️ همان چیزی که کارفرما در صندوق می‌بیند — بی‌تسکِ خصوصی و پنهان از کارفرما.
+  const reviewCounts = await repo.reviewTaskCounts(activeIds, actor.id);
   const summaries = await Promise.all(listed.map((p) => repo.financeSummary(p.id)));
 
   const rows: ClientRow[] = listed.map((p, i) => {

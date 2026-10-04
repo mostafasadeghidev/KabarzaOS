@@ -10,6 +10,7 @@ import {
 import { ForbiddenError } from '@/domain/access/guard';
 import { FrozenProjectError } from '@/server/projects/authority';
 import { mediaError, mediaFrom } from './media-form';
+import { parseTimestamp } from '@/domain/files/video';
 
 /**
  * اقدام‌های تسک (op = load/save/add/delete/note).
@@ -76,6 +77,27 @@ function parse(formData: FormData) {
   return { parsed, values };
 }
 
+/**
+ * فیلدهای اختیاریِ ۱.۱۱۶.۰ — فقط وقتی در فرم هستند خوانده می‌شوند، تا فرمی
+ * که آن‌ها را ندارد (افزودنِ سریعِ صندوق) مقدارِ ذخیره‌شده را پاک نکند.
+ * ⚠️ تیکِ «پنهان از کارفرما» با نشانگرِ `clientHiddenField` می‌آید: تیکِ
+ * خاموش در فرم اصلاً فرستاده نمی‌شود و بی‌نشانگر از «فیلد نبود» جدا نمی‌شد.
+ */
+function extras(formData: FormData) {
+  const out: { clientHidden?: boolean; area?: string; reviewStart?: number | null; reviewEnd?: number | null } = {};
+  if (formData.has('clientHiddenField')) out.clientHidden = formData.get('clientHidden') !== null;
+  if (formData.has('area')) out.area = String(formData.get('area') ?? '');
+  if (formData.has('reviewStart')) {
+    const time = (name: string) => {
+      const raw = String(formData.get(name) ?? '').trim();
+      return raw === '' ? null : parseTimestamp(raw);
+    };
+    out.reviewStart = time('reviewStart');
+    out.reviewEnd = time('reviewEnd');
+  }
+  return out;
+}
+
 function fieldErrorsOf(issues: z.ZodIssue[]): TaskFormState['fieldErrors'] {
   const out: TaskFormState['fieldErrors'] = {};
   for (const issue of issues) {
@@ -96,7 +118,7 @@ export async function createTaskAction(_prev: TaskFormState, formData: FormData)
 
   try {
     const actor = await requireActor();
-    await createTask(actor, projectId, parsed.data, { media: await mediaFrom(formData) });
+    await createTask(actor, projectId, { ...parsed.data, ...extras(formData) }, { media: await mediaFrom(formData) });
   } catch (error) {
     const rejected = mediaError(error);
     if (rejected) return { error: rejected, values };
@@ -123,7 +145,7 @@ export async function updateTaskAction(_prev: TaskFormState, formData: FormData)
 
   try {
     const actor = await requireActor();
-    const projectId = await updateTask(actor, taskId, parsed.data, await mediaFrom(formData));
+    const projectId = await updateTask(actor, taskId, { ...parsed.data, ...extras(formData) }, await mediaFrom(formData));
     revalidatePath(`/projects/${projectId}`);
     revalidatePath('/projects');
   } catch (error) {

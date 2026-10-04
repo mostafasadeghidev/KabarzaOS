@@ -228,10 +228,18 @@ export function AddTaskDialog({
             کارفرما خصوصی کند حتی مدیرِ پروژه هم نمی‌دیدش.
           */}
           {canManage && (
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox name="isPrivate" value="1" />
-              {tr("تسکِ خصوصی (فقط سازنده، مسئول و مدیران)")}
-            </label>
+            <div className="grid gap-2">
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox name="isPrivate" value="1" />
+                {tr("تسکِ خصوصی (فقط سازنده، مسئول و مدیران)")}
+              </label>
+              {/* کارِ داخلیِ تیم — کارفرمای پروژه نمی‌بیندش (مگر به خودش سپرده شود). */}
+              <label className="flex items-center gap-2 text-sm">
+                <input type="hidden" name="clientHiddenField" value="1" />
+                <Checkbox name="clientHidden" value="1" />
+                {tr("پنهان از کارفرما")}
+              </label>
+            </div>
           )}
 
           <DialogFooter>

@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { RichText } from '@/components/media/rich-text';
+import { listReviews } from '@/server/projects/reviews';
+import { isClientOnly } from '@/server/projects/authority';
 import { notFound, redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { projectGroupSummary } from '@/server/messaging/service';
@@ -51,7 +53,7 @@ export default async function ProjectDetailPage({
    * قبلی هم همین را سمتِ سرور حل می‌کند تا صفحه از فریمِ اول روی تبِ درست
    * بنشیند و تبِ پیش‌فرض یک‌لحظه چشمک نزند.
    */
-  searchParams: Promise<{ tab?: string; view?: string; created?: string; incomplete?: string }>;
+  searchParams: Promise<{ tab?: string; view?: string; created?: string; incomplete?: string; review?: string }>;
 }) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
@@ -161,7 +163,7 @@ export default async function ProjectDetailPage({
    * نبودنش چیزی از او نمی‌گیرد: `TaskStatusPicker` برای غیرمدیر همان چیپِ
    * خواندنی را برمی‌گرداند، مثلِ `task_status_dropdown_html()` نسخهٔ قبلی.
    */
-  const [taskStatuses, taskFormOptions, qaForm, chat] = await Promise.all([
+  const [taskStatuses, taskFormOptions, qaForm, chat, reviews, clientOnly] = await Promise.all([
     // پورتِ افزونه: هر شرکت‌کننده وضعیتِ تسک را عوض می‌کند (عضو تسکش را به ریویو می‌فرستد) — نه روی منجمد.
     detail.canInteract && !detail.isFrozen ? taskStatusOptionsFor(actor, project.id) : Promise.resolve([]),
     /**
@@ -174,6 +176,9 @@ export default async function ProjectDetailPage({
     canManage ? getQaForm(actor, project.id) : Promise.resolve(null),
     // گروهِ گفتگو: سرویس خودش کارفرما و غیرعضو را `null` می‌دهد — حتی وجودِ گروه را نمی‌بینند.
     projectGroupSummary(actor, project.id),
+    // بازبینی‌ها — سرویس فقط آنچه این بیننده می‌بیند را می‌دهد (مخاطبِ نقشی، «برای کارفرما»).
+    listReviews(actor, project.id),
+    isClientOnly(actor, project.id),
   ]);
 
   // فرم‌ها فقط وقتی خوانده می‌شوند که دکمه‌شان هم دیده شود.
@@ -368,6 +373,7 @@ export default async function ProjectDetailPage({
       <ProjectTabs
         initialTab={query.tab ?? null}
         initialView={query.view ?? null}
+        initialReview={Number(query.review) > 0 ? Number(query.review) : null}
         data={{
           projectId: project.id,
           chat,
@@ -406,6 +412,10 @@ export default async function ProjectDetailPage({
           qaTasks: detail.qaTasks,
           tenderIsOpen: detail.tenderIsOpen,
           comments: detail.comments,
+          reviews,
+          canCreateReview: canManage && !detail.isFrozen,
+          reviewRoleOptions: taskFormOptions?.roles ?? [],
+          isTeamViewer: !clientOnly,
           files: detail.files,
           qa: detail.qa,
           bids: detail.bids,

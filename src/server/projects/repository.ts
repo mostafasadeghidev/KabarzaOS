@@ -9,7 +9,7 @@ import {
   projects, projectMembers, projectClients, tasks, taskRoles,
   timelogs, ledger, projectPayments, paymentRequests, users, tags,
   currencies, offices, tagRelations, userRoles, comments, tenderBids,
-  projectQa, qaItems, attachments, files, meetings, meetingAttendees, userOffices,
+  projectQa, qaItems, attachments, files, meetings, meetingAttendees, userOffices, reviews,
 } from '@/db/schema';
 import type { ProjectImpact } from '@/domain/projects/lifecycle';
 import { isOverdueProject, isFrozenProject } from '@/domain/projects/lifecycle';
@@ -402,6 +402,13 @@ export interface TaskRow {
   lastNote: string | null;
   /** آیتمِ QA ای که این تسک را ساخته — تبِ QA تسک‌هایش را با همین پیدا می‌کند. */
   qaItemId: number | null;
+  /** پنهان از کارفرما (۱.۱۱۶.۰). */
+  clientHidden: boolean;
+  /** موردِ بازبینی — عنوان و زمانِ ویدئو برای چیپِ کارت. */
+  reviewId: number | null;
+  reviewTitle: string | null;
+  reviewStart: number | null;
+  area: string;
 }
 
 /** تسک‌های یک پروژه — دو کوئریِ ثابت (R-PERF-01). */
@@ -437,11 +444,17 @@ export async function listTasks(projectId: number): Promise<TaskRow[]> {
       mediaCount: sql<number>`(select count(*) from attachments a where a.task_id = ${tasks.id})::int`,
       lastNote: sql<string | null>`(select c.body from comments c where c.task_id = ${tasks.id} order by c.id desc limit 1)`,
       qaItemId: tasks.qaItemId,
+      clientHidden: tasks.clientHidden,
+      reviewId: tasks.reviewId,
+      reviewTitle: reviews.title,
+      reviewStart: tasks.reviewStart,
+      area: tasks.area,
     })
     .from(tasks)
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))
     .leftJoin(priority, eq(priority.id, tasks.priorityTagId))
     .leftJoin(assignee, eq(assignee.id, tasks.assignedTo))
+    .leftJoin(reviews, eq(reviews.id, tasks.reviewId))
     .where(and(eq(tasks.projectId, projectId), isNull(tasks.deletedAt)))
     .orderBy(tasks.id);
 }
@@ -1061,7 +1074,10 @@ export async function listAttachments(projectId: number) {
     .leftJoin(users, eq(users.id, attachments.userId))
     .leftJoin(files, eq(files.id, attachments.fileId))
     // ⚠️ فقط فایلِ خودِ پروژه — رسانهٔ تسک و کامنت گاردِ خودش را دارد (تسکِ خصوصی).
-    .where(and(eq(attachments.projectId, projectId), isNull(attachments.taskId), isNull(attachments.commentId)))
+    .where(and(
+      eq(attachments.projectId, projectId),
+      isNull(attachments.taskId), isNull(attachments.commentId), isNull(attachments.reviewId),
+    ))
     .orderBy(desc(attachments.id));
 
   return rows.map((r) => ({
@@ -1088,6 +1104,7 @@ export interface MediaItem {
   fileId: number;
   taskId: number | null;
   commentId: number | null;
+  reviewId: number | null;
   userId: number;
   kind: string;
   mime: string;
@@ -1100,12 +1117,18 @@ export interface MediaItem {
  * ⚠️ گاردی اینجا نیست؛ فراخوان فقط شناسهٔ تسک‌ها و کامنت‌هایی را می‌دهد که
  * بیننده می‌بیند. `/api/files` هم برای هر فایل جدا گارد دارد.
  */
-export async function mediaFor(filter: { taskIds?: readonly number[]; commentIds?: readonly number[] }): Promise<MediaItem[]> {
+export async function mediaFor(filter: {
+  taskIds?: readonly number[];
+  commentIds?: readonly number[];
+  reviewIds?: readonly number[];
+}): Promise<MediaItem[]> {
   const taskIds = [...(filter.taskIds ?? [])];
   const commentIds = [...(filter.commentIds ?? [])];
+  const reviewIds = [...(filter.reviewIds ?? [])];
   const conditions = [
     ...(taskIds.length > 0 ? [inArray(attachments.taskId, taskIds)] : []),
     ...(commentIds.length > 0 ? [inArray(attachments.commentId, commentIds)] : []),
+    ...(reviewIds.length > 0 ? [inArray(attachments.reviewId, reviewIds)] : []),
   ];
   if (conditions.length === 0) return [];
   const rows = await db
@@ -1114,6 +1137,7 @@ export async function mediaFor(filter: { taskIds?: readonly number[]; commentIds
       fileId: attachments.fileId,
       taskId: attachments.taskId,
       commentId: attachments.commentId,
+      reviewId: attachments.reviewId,
       userId: attachments.userId,
       kind: attachments.kind,
       mime: files.mime,
@@ -1138,6 +1162,9 @@ export async function getTask(id: number) {
       // حالتِ قبلِ «ویرایشِ تسک» در لاگ — بدونِ این‌ها جزئیاتِ رویداد «ثبت نشده» می‌گفت.
       description: tasks.description, dueDate: tasks.dueDate,
       priorityTagId: tasks.priorityTagId, dependsOn: tasks.dependsOn,
+      // پنهان از کارفرما و پیوندِ بازبینی — گاردِ دیدن و حالتِ قبلِ ویرایش.
+      clientHidden: tasks.clientHidden, reviewId: tasks.reviewId,
+      reviewStart: tasks.reviewStart, reviewEnd: tasks.reviewEnd, area: tasks.area,
     })
     .from(tasks).where(and(eq(tasks.id, id), isNull(tasks.deletedAt)));
   return rows[0] ?? null;
@@ -1232,12 +1259,19 @@ export async function getTaskFull(id: number) {
       updatedBy: tasks.updatedBy,
       updatedByName: editor.name,
       dependsOn: tasks.dependsOn,
+      clientHidden: tasks.clientHidden,
+      reviewId: tasks.reviewId,
+      reviewTitle: reviews.title,
+      reviewStart: tasks.reviewStart,
+      reviewEnd: tasks.reviewEnd,
+      area: tasks.area,
     })
     .from(tasks)
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))
     .leftJoin(priority, eq(priority.id, tasks.priorityTagId))
     .leftJoin(assignee, eq(assignee.id, tasks.assignedTo))
     .leftJoin(editor, eq(editor.id, tasks.updatedBy))
+    .leftJoin(reviews, eq(reviews.id, tasks.reviewId))
     .where(and(eq(tasks.id, id), isNull(tasks.deletedAt)));
   return rows[0] ?? null;
 }
@@ -1428,7 +1462,15 @@ export function visibleToUserSql(userId: number) {
 }
 
 /** تسک‌های در انتظارِ بررسی روی پروژه‌ها — صندوقِ کارفرما (پورتِ `review_for_projects`). */
-export async function reviewTasksForProjects(projectIds: number[], scopes: Array<'company' | 'private'>) {
+export async function reviewTasksForProjects(
+  projectIds: number[],
+  scopes: Array<'company' | 'private'>,
+  /**
+   * صندوقِ کارفرما: تسکِ «پنهان از کارفرما» نمی‌آید، مگر به خودِ همین کاربر
+   * سپرده شده باشد (۱.۱۱۶.۰). فهرستِ ریویوی مدیر این را نمی‌دهد.
+   */
+  clientViewerId: number | null = null,
+) {
   if (projectIds.length === 0) return [];
   const priority = alias(tags, 'review_priority_tag');
   return db
@@ -1461,6 +1503,7 @@ export async function reviewTasksForProjects(projectIds: number[], scopes: Array
       eq(tasks.isPrivate, false),
       eq(tags.isReview, true),
       inArray(projects.scope, scopes),
+      ...(clientViewerId !== null ? [or(eq(tasks.clientHidden, false), eq(tasks.assignedTo, clientViewerId))!] : []),
     ))
     .orderBy(priority.sortOrder, desc(tasks.id));
 }
@@ -1540,13 +1583,27 @@ export async function dependentsOf(taskId: number) {
 }
 
 /** شمارِ تسک‌های در انتظارِ بررسی به‌ازای پروژه. */
-export async function reviewTaskCounts(projectIds: number[]): Promise<Map<number, number>> {
+export async function reviewTaskCounts(
+  projectIds: number[],
+  /**
+   * شمارِ کارتِ کارفرما: فقط آنچه خودش در صندوق می‌بیند — نه تسکِ خصوصی، نه
+   * «پنهان از کارفرما» (مگر سپرده به خودش). ⚠️ پیش از این همه شمرده می‌شد و
+   * عددِ کارت با فهرستِ صندوق نمی‌خواند.
+   */
+  clientViewerId: number | null = null,
+): Promise<Map<number, number>> {
   if (projectIds.length === 0) return new Map();
   const rows = await db
     .select({ projectId: tasks.projectId, n: sql<number>`count(*)::int` })
     .from(tasks)
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))
-    .where(and(inArray(tasks.projectId, projectIds), isNull(tasks.deletedAt), eq(tags.isReview, true)))
+    .where(and(
+      inArray(tasks.projectId, projectIds), isNull(tasks.deletedAt), eq(tags.isReview, true),
+      ...(clientViewerId !== null ? [
+        eq(tasks.isPrivate, false),
+        or(eq(tasks.clientHidden, false), eq(tasks.assignedTo, clientViewerId))!,
+      ] : []),
+    ))
     .groupBy(tasks.projectId);
   return new Map(rows.map((r) => [r.projectId, r.n]));
 }

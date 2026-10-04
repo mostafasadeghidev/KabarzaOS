@@ -35,7 +35,7 @@ import { notify } from '@/server/notifications/service';
 import {
   assertCanInteractWithProject, assertCanManageProject, assertCanViewProject, assertNotFrozen,
   canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation, canInteractWithProject, managedOfficeProjectIds, pmProjectIds,
-  isProjectFrozen,
+  isProjectFrozen, isClientOnly,
 } from './authority';
 import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
 import { visiblePayments } from '@/domain/access/project-payments';
@@ -44,6 +44,7 @@ import {
   assignableToPeople, ASSISTANT_LABEL, FALLBACK_MEMBER_LABEL, nameForViewer, type ViewerContext, CLIENT_LABEL,
 } from '@/domain/access/viewer-names';
 import { resolveAssignment } from '@/domain/projects/assignment';
+import { normalizeTiming } from '@/domain/projects/reviews';
 import {
   assignmentDelta, commentRecipients, reviewRecipients, taskDoerIds,
 } from '@/server/notifications/audience';
@@ -657,8 +658,11 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
 
   // R-PROJ-14 با مدیریتِ پروژه‌محور: مدیرِ پروژه/دفتر تسکِ خصوصیِ پروژهٔ خودش را می‌بیند.
   const canManage = await canManageProject(actor, projectId);
-  const privateOk = filterVisibleFor(actor, allTasks, canManage);
+  // ⚠️ تسکِ «پنهان از کارفرما» (۱.۱۱۶.۰) برای کسی که فقط کارفرمای این پروژه است.
+  const clientOnly = await isClientOnly(actor, projectId);
+  const privateOk = filterVisibleFor(actor, allTasks, canManage, clientOnly);
   const allRoles = await repo.taskRolesFor(privateOk.map((t) => t.id));
+  const tr = await getT();
 
   /**
    * ⚠️ عضوِ ساده فقط **کارِ خودش** را روی تخته می‌بیند (R-TASK-VIS):
@@ -714,7 +718,9 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
         const dep = allTasks.find((x) => x.id === t.dependsOn);
         if (!dep) return null;
         const done = dep.statusIsClosed === true || dep.statusGroup === 'complete';
-        return done ? null : dep.title;
+        if (done) return null;
+        // ⚠️ عنوانِ پیش‌نیازی که بیننده نمی‌بیند (خصوصی یا پنهان از کارفرما) لو نمی‌رود.
+        return privateOk.some((x) => x.id === dep.id) ? dep.title : tr('یک تسکِ دیگر');
       })(),
       assigneeName: t.assigneeName === null || t.assignedTo === null
         ? t.assigneeName
@@ -741,7 +747,7 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
  * ⚠️ `roleByUser` از همان `members` ِ خوانده‌شده ساخته می‌شود تا کوئریِ
  * اضافه‌ای نخورد؛ فقط فهرستِ کارفرمایان جداگانه لازم است.
  */
-async function viewerContext(
+export async function viewerContext(
   actor: Actor,
   projectId: number,
   canManage: boolean,
@@ -1579,7 +1585,7 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
    * نمی‌توانست جابه‌جا کند و کلِ چرخهٔ ریویو فقط برای مدیر کار می‌کرد.
    * تسکِ خصوصی همان قاعدهٔ R-PROJ-14 را دارد: سازنده/مسئول/مدیرِ **همین پروژه**.
    */
-  const [visible] = filterVisibleFor(actor, [task], managesTask);
+  const [visible] = filterVisibleFor(actor, [task], managesTask, await isClientOnly(actor, task.projectId));
   if (!visible) throw new NotFoundError();
 
   /**
@@ -1628,6 +1634,32 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
  * ⚠️ ملاک **ورود به** و **خروج از** حالتِ ریویو است، نه خودِ تگ: تغییر بینِ
  * دو وضعیتِ ریویو اعلانِ تکراری نمی‌فرستد.
  */
+function normalizedTiming(start: number | null, end: number | null) {
+  const t = normalizeTiming(start, end);
+  return { reviewStart: t.start, reviewEnd: t.end };
+}
+
+/**
+ * مخاطبِ «تسک به ریویو رفت» — منهای کارفرمایی که این تسک را نمی‌بیند.
+ *
+ * ⚠️ `reviewRecipients` همهٔ کارفرمایانِ پروژه را می‌دهد و عنوانِ تسک در
+ * بدنهٔ اعلان (درون‌برنامه، ایمیل و تلگرام) می‌رود؛ پس عنوانِ تسکِ خصوصی و
+ * «پنهان از کارفرما» به کارفرما لو می‌رفت. کارفرمایی که هم‌زمان عضوِ پروژه
+ * است، یا تسک به خودش سپرده شده (یا تسکِ خصوصیِ ساختهٔ خودش است) می‌ماند.
+ */
+async function visibleReviewRecipients(taskId: number, projectId: number, actorId: number): Promise<number[]> {
+  const recipients = await reviewRecipients(projectId, actorId);
+  const flags = await repo.getTask(taskId);
+  if (!flags || (!flags.isPrivate && !flags.clientHidden)) return recipients;
+  const [members, clients] = await Promise.all([repo.listMembers(projectId), repo.listClientIds(projectId)]);
+  const memberIds = new Set(members.map((m) => m.userId));
+  const clientIds = new Set(clients);
+  return recipients.filter((id) => !clientIds.has(id)
+    || memberIds.has(id)
+    || id === flags.assignedTo
+    || (!flags.clientHidden && id === flags.createdBy));
+}
+
 async function applyStatusEffects(
   actor: Actor,
   task: { id: number; projectId: number; title: string; before: number | null; after: number | null },
@@ -1652,7 +1684,7 @@ async function applyStatusEffects(
   if (nextDone) await releaseDependents(actor, task.id, task.projectId);
 
   if (!wasReview && isReview) {
-    await notify(await reviewRecipients(task.projectId, actor.id), {
+    await notify(await visibleReviewRecipients(task.id, task.projectId, actor.id), {
       type: 'task.review',
       title: 'تسکی نیاز به بررسی دارد',
       body: task.title,
@@ -1919,6 +1951,13 @@ export interface TaskInput {
    * ⚠️ مسئولِ مشخص ندارد تا کسی بتواند «برش دارد» (R-CLAIM).
    */
   roleTagIds?: number[];
+  /** پنهان از کارفرما — فقط از مدیرِ پروژه پذیرفته می‌شود (۱.۱۱۶.۰). */
+  clientHidden?: boolean;
+  /** بخشِ سایت («هدر»، «فوتر»…) — برای مرتب‌کردنِ موردهای بازبینی. */
+  area?: string;
+  /** بازهٔ ویدئوی موردِ بازبینی به ثانیه — فقط روی تسکی که بازبینی دارد. */
+  reviewStart?: number | null;
+  reviewEnd?: number | null;
 }
 
 /** «وابسته به» — فقط تسکِ همین پروژه و نه خودش (پورتِ انتخابگرِ `depends_on`). */
@@ -1981,7 +2020,7 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
   ]);
   const canManageProjectNow = await canManageProject(actor, projectId);
   // گزینه‌های «وابسته به» — فقط تسک‌هایی که خودِ بیننده می‌بیند.
-  const dependencyOptions = filterVisibleFor(actor, allTasks, canManageProjectNow)
+  const dependencyOptions = filterVisibleFor(actor, allTasks, canManageProjectNow, await isClientOnly(actor, projectId))
     .map((t) => ({ id: t.id, title: t.title }));
 
   const clientNames = await repo.userNames([...clientIds]);
@@ -2041,7 +2080,12 @@ export async function createTask(
   actor: Actor,
   projectId: number,
   input: TaskInput,
-  options: { silent?: boolean; media?: readonly UploadBlob[] } = {},
+  options: {
+    silent?: boolean;
+    media?: readonly UploadBlob[];
+    /** موردِ بازبینی — فقط از `server/projects/reviews` که گاردِ بازبینی را گذرانده. */
+    review?: { id: number; start: number | null; end: number | null; area: string; clientHidden: boolean };
+  } = {},
 ): Promise<number> {
   const project = await getProject(actor, projectId);
   /**
@@ -2102,6 +2146,17 @@ export async function createTask(
     isPrivate: canManage ? input.isPrivate : false,
     createdBy: actor.id,
     scope: project.scope,
+    ...(options.review ? {
+      reviewId: options.review.id,
+      reviewStart: options.review.start,
+      reviewEnd: options.review.end,
+      area: options.review.area,
+      clientHidden: options.review.clientHidden,
+    } : {
+      area: (input.area ?? '').trim().slice(0, 120),
+      // ⚠️ مثلِ «خصوصی»: تصمیمِ مدیریتی؛ از دیگران نادیده گرفته می‌شود.
+      clientHidden: canManage ? Boolean(input.clientHidden) : false,
+    }),
   }).returning({ id: tasks.id }).catch(async (error: unknown) => {
     await discardUploads(uploads);
     throw error;
@@ -2323,6 +2378,12 @@ export async function updateTask(
     dueDate: input.dueDate,
     dependsOn: nextDependsOn,
     isPrivate: canManage ? input.isPrivate : before.isPrivate,
+    clientHidden: canManage && input.clientHidden !== undefined ? input.clientHidden : before.clientHidden,
+    area: input.area !== undefined ? input.area.trim().slice(0, 120) : before.area,
+    // زمانِ ویدئو فقط برای موردِ بازبینی معنا دارد.
+    ...(before.reviewId !== null && input.reviewStart !== undefined
+      ? normalizedTiming(input.reviewStart, input.reviewEnd ?? null)
+      : {}),
     updatedBy: actor.id,
     updatedAt: new Date(),
   }).where(eq(tasks.id, taskId)).catch(async (error: unknown) => {
@@ -2476,7 +2537,9 @@ export async function addTaskNote(
   await getProject(actor, task.projectId);
   // ⚠️ پورتِ گاردِ یادداشت: دسترسیِ کاری + دیدنِ تسکِ خصوصی — نه هر بیننده‌ای.
   await assertCanInteractWithProject(actor, task.projectId);
-  const [noteVisible] = filterVisibleFor(actor, [task], await canManageProject(actor, task.projectId));
+  const [noteVisible] = filterVisibleFor(
+    actor, [task], await canManageProject(actor, task.projectId), await isClientOnly(actor, task.projectId),
+  );
   if (!noteVisible) throw new NotFoundError();
   await assertNotFrozen(task.projectId, actor);
 
@@ -2510,8 +2573,10 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
   await getProject(actor, task.projectId); // مجوزی یا عضویتی — هر دو راه.
 
   const canManage = await canManageProject(actor, task.projectId);
-  // R-PROJ-14 — تسکِ خصوصی فقط برای سازنده، مسئول و مدیرانِ **همین پروژه**.
-  const [visible] = filterVisibleFor(actor, [task], canManage);
+  // R-PROJ-14 — تسکِ خصوصی فقط برای سازنده، مسئول و مدیرانِ **همین پروژه**؛
+  // و تسکِ پنهان از کارفرما نه برای کسی که فقط کارفرمای این پروژه است.
+  const clientOnly = await isClientOnly(actor, task.projectId);
+  const [visible] = filterVisibleFor(actor, [task], canManage, clientOnly);
   if (!visible) throw new NotFoundError();
   // یادداشت‌نویسی «کار کردن» است: همکارِ فقط‌خواندنی فرمش را نمی‌بیند.
   const canInteract = await canInteractWithProject(actor, task.projectId);
@@ -2562,7 +2627,7 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
     })),
     roles: roles.map((r) => ({ ...r, claimedByName: mask(r.claimedBy, r.claimedByName) })),
     /** عنوانِ تسکِ وابسته — فقط اگر خودِ بیننده آن را می‌بیند. */
-    dependsOnTitle: dependency && filterVisibleFor(actor, [dependency], canManage).length > 0 ? dependency.title : null,
+    dependsOnTitle: dependency && filterVisibleFor(actor, [dependency], canManage, clientOnly).length > 0 ? dependency.title : null,
     /**
      * ⚠️ پروژهٔ منجمد (بایگانی/لغو/توقف) برای **این بیننده** — همان قاعدهٔ
      * `assertNotFrozen`: مدیرِ سراسری مستثناست. پیش از این مودال دکمه‌های
@@ -3425,7 +3490,8 @@ export async function myTasks(actor: Actor) {
      *    ریویو نمی‌آمدند و کارفرما هیچ‌جا نمی‌دیدشان.
      */
     const [review, own] = await Promise.all([
-      repo.reviewTasksForProjects(ids, scopes),
+      // ⚠️ تسکِ «پنهان از کارفرما» در صندوقِ کارفرما نمی‌آید (۱.۱۱۶.۰).
+      repo.reviewTasksForProjects(ids, scopes, actor.id),
       repo.openTasksForUser(actor.id, scopes),
     ]);
     const reviewIds = new Set(review.map((t) => t.id));
