@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Plus } from 'lucide-react';
@@ -91,6 +92,9 @@ export function CardQuickAdd({
               size="sm" className="h-7 text-xs" containerClassName="min-w-0 flex-1"
               value={pickedUser}
               onValueChange={(v) => setPickedUser(v)}
+              renderMedia={(v) => (
+                <UserAvatar userId={Number(v)} name={options.team.find((u) => String(u.id) === v)?.name} size="xs" />
+              )}
             >
               <NativeSelectOption value="">{t("— عضو —")}</NativeSelectOption>
               {options.team.map((u) => (
@@ -162,7 +166,12 @@ export function CardQuickAdd({
         <form action={clientAction} className="grid gap-1">
           <input type="hidden" name="projectId" value={projectId} />
           <div className="flex flex-wrap items-center gap-1">
-            <SearchableSelect name="userId" size="sm" className="h-7 text-xs" containerClassName="min-w-0 flex-1" defaultValue="">
+            <SearchableSelect
+              name="userId" size="sm" className="h-7 text-xs" containerClassName="min-w-0 flex-1" defaultValue=""
+              renderMedia={(v) => (
+                <UserAvatar userId={Number(v)} name={options.clients.find((u) => String(u.id) === v)?.name} size="xs" />
+              )}
+            >
               <NativeSelectOption value="">{t("— کارفرما —")}</NativeSelectOption>
               {options.clients.map((u) => (
                 <NativeSelectOption key={u.id} value={u.id}>{u.name}</NativeSelectOption>

@@ -1,6 +1,6 @@
 'use client';
 
-import { UserName } from '@/components/user-avatar';
+import { UserAvatar, UserName } from '@/components/user-avatar';
 import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Plus, X } from 'lucide-react';
@@ -183,6 +183,9 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                           size="sm" containerClassName="w-full"
                           value={row.userId ?? ''}
                           onValueChange={(v) => patch(i, { userId: v ? Number(v) : null })}
+                          renderMedia={(v) => (
+                            <UserAvatar userId={Number(v)} name={data.team.find((u) => String(u.id) === v)?.name} size="xs" />
+                          )}
                         >
                           <NativeSelectOption value="">—</NativeSelectOption>
                           {data.team.map((u) => (

@@ -121,6 +121,11 @@ export interface SearchableSelectProps {
    * ساختن با سرور است، هنگامِ ذخیرهٔ فرم — پس اگر فرم لغو شود چیزی ساخته نمی‌شود.
    */
   createName?: string;
+  /**
+   * پیش از برچسبِ هر گزینه (و گزینهٔ انتخاب‌شده روی دکمه) — مثلاً آواتارِ
+   * عضو در «افزودنِ عضو». مقدارِ خالی (`—`) چیزی نمی‌گیرد.
+   */
+  renderMedia?: (value: string) => React.ReactNode;
   'aria-label'?: string;
   'aria-invalid'?: boolean;
   children?: React.ReactNode;
@@ -142,6 +147,7 @@ export function SearchableSelect({
   containerClassName,
   searchPlaceholder,
   createName,
+  renderMedia,
   'aria-label': ariaLabel,
   'aria-invalid': ariaInvalid,
   children,
@@ -240,7 +246,10 @@ export function SearchableSelect({
               جابه‌جا می‌شدند.
             */}
             <span className="grid min-w-0 flex-1 text-start">
-              <span className="col-start-1 row-start-1 truncate">{selected?.label || '—'}</span>
+              <span className="col-start-1 row-start-1 flex min-w-0 items-center gap-1.5">
+                {renderMedia && selected?.value ? renderMedia(selected.value) : null}
+                <span className="truncate">{selected?.label || '—'}</span>
+              </span>
               {choices.map((choice) => (
                 <span key={choice.key} aria-hidden="true" className="invisible col-start-1 row-start-1 h-0 truncate">
                   {choice.label}
@@ -279,6 +288,7 @@ export function SearchableSelect({
                       disabled={choice.disabled}
                       onSelect={() => pick(choice.value)}
                     >
+                      {renderMedia && choice.value && choice.value !== CREATE_VALUE ? renderMedia(choice.value) : null}
                       <span className="truncate">{choice.label || '—'}</span>
                       <CheckIcon
                         className={cn('ms-auto', choice.value === current ? 'opacity-100' : 'opacity-0')}

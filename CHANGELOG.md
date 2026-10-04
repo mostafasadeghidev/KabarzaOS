@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.118.2]
+
+### Changed
+
+- Avatars in the member and client chips on project cards are larger (24 px instead of 16 px).
+- The «Add member» and «Add client» menus on project cards, and the member picker in «Manage members», show each person's avatar next to their name, in the list and on the chosen value.
+
 ## [1.118.1]
 
 ### Changed

@@ -274,14 +274,14 @@ export function ProjectCard({
           ) : (
             <div className="flex flex-wrap gap-1">
               {project.clients.map((c, i) => (
-                <Badge key={`c${i}`} className="gap-1 ps-0.5 bg-sky-50 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300">
-                  <UserAvatar userId={c.userId} name={c.name} size="xs" className="size-4 text-[8px]" />
+                <Badge key={`c${i}`} className="gap-1.5 py-0.5 ps-0.5 bg-sky-50 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300">
+                  <UserAvatar userId={c.userId} name={c.name} size="sm" />
                   {c.name}
                 </Badge>
               ))}
               {project.members.map((m, i) => (
-                <Badge key={`m${i}`} variant="secondary" className="gap-1 ps-0.5">
-                  <UserAvatar userId={m.userId} name={m.name} size="xs" className="size-4 text-[8px]" />
+                <Badge key={`m${i}`} variant="secondary" className="gap-1.5 py-0.5 ps-0.5">
+                  <UserAvatar userId={m.userId} name={m.name} size="sm" />
                   {m.name}
                   {/*
                     ⚠️ برای کارفرما، «نام» خودش همان نقش است (ماسک شده)، پس
