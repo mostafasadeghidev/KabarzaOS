@@ -383,3 +383,29 @@ describe('کارکردِ تعدادی — مدیرِ همین پروژه برا�
     await db.update(projects).set({ isUnitBased: false }).where(eq(projects.id, projectA));
   });
 });
+
+describe('خبرِ مالک وقتی مدیرِ پروژه/تیم عضو را برمی‌دارد یا دسترسی‌اش را قطع می‌کند (۲.۱.۰)', () => {
+  it('قطعِ دسترسی به دستِ مدیرِ پروژه به مالک خبر می‌دهد؛ کارِ مدیرِ سراسری نه', async () => {
+    const { notifications } = await import('../schema');
+    const { and: andOp } = await import('drizzle-orm');
+    await db.insert(userRoles).values({ userId: owner, role: 'owner' });
+    const ownerNotices = () => db.select().from(notifications)
+      .where(andOp(eq(notifications.userId, owner), eq(notifications.type, 'project.team_changed')));
+
+    await service.setProjectAccess(actor(pm), projectA, plainMember, true);
+    const after = await ownerNotices();
+    expect(after).toHaveLength(1);
+    expect(after[0]!.body).toContain('عضوِ عادی');
+    expect(after[0]!.url).toBe(`/projects/${projectA}`);
+
+    // بازکردنِ دسترسی خبر نمی‌خواهد.
+    await service.setProjectAccess(actor(pm), projectA, plainMember, false);
+    // کارِ مدیرِ سراسری هم نه.
+    await service.setProjectAccess(actor(owner, globalManage), projectA, plainMember, true);
+    await service.setProjectAccess(actor(owner, globalManage), projectA, plainMember, false);
+    expect(await ownerNotices()).toHaveLength(1);
+
+    await db.delete(notifications).where(eq(notifications.userId, owner));
+    await db.delete(userRoles).where(andOp(eq(userRoles.userId, owner), eq(userRoles.role, 'owner')));
+  });
+});

@@ -37,6 +37,8 @@ const CATEGORY_OF: Record<string, NotifyCategory> = {
 
   // پروژه
   'project.signed': 'projects',
+  // مدیرِ پروژه/تیم عضوی را از پروژه برداشت یا دسترسی‌اش را قطع کرد — خبرِ مالک.
+  'project.team_changed': 'projects',
   'tender_opened': 'projects',
   'business': 'projects',
 

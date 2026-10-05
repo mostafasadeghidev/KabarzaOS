@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { PageCrumb } from '@/components/page-crumb';
+import { HistoryBackLink } from '@/components/nav-history';
 
 /**
  * پوسته و سرصفحهٔ مشترکِ همهٔ صفحه‌ها.
@@ -84,7 +85,8 @@ export function PageHeader({
         backHref={back?.href}
         backLabel={typeof back?.label === 'string' ? back.label : undefined}
       />
-      {back && <BackLink href={back.href}>{back.label}</BackLink>}
+      {/* به صفحه‌ای که از آن آمده‌ای؛ بی‌تاریخچه به صفحهٔ مادر (nav-history). */}
+      {back && <HistoryBackLink href={back.href}>{back.label}</HistoryBackLink>}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           {media}

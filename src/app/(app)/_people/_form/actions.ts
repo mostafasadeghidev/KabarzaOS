@@ -158,7 +158,7 @@ export async function savePersonAction(
       const sent = await sendInvite(await requireActor(), existingId, role, false).catch((): InviteResult => 'no_mail');
       message = inviteMessage(sent);
     }
-    revalidatePath(pathOf(role));
+    revalidatePeople(role);
     return { ok: true, message };
   }
 
@@ -207,7 +207,7 @@ export async function savePersonAction(
           });
         } catch (uploadError) {
           console.error('[person] avatar', uploadError);
-          revalidatePath(pathOf(role));
+          revalidatePeople(role);
           // ⚠️ صادقانه: فرد ساخته شد ولی تصویر نه — نه «ذخیره شد» ِ بی‌قید.
           return { error: 'فرد ساخته شد، ولی تصویر ذخیره نشد؛ از فرمِ ویرایش دوباره بارگذاری کنید.' };
         }
@@ -241,13 +241,22 @@ export async function savePersonAction(
     const sent = await sendInvite(await requireActor(), savedId, role, isNew).catch((): InviteResult => 'no_mail');
     message = inviteMessage(sent);
   }
-  revalidatePath(pathOf(role));
+  revalidatePeople(role);
   return { ok: true, message };
 }
 
 /** مسیرِ صفحهٔ هر نقش — برای تازه‌سازیِ همان صفحه. */
 function pathOf(role: Role): string {
   return role === 'client' ? '/clients' : '/members';
+}
+
+/**
+ * ⚠️ عضو از «تیمِ من ← عضو» هم ویرایش می‌شود (۲.۱.۰)؛ بی‌این، سرصفحهٔ آن
+ * صفحه پس از ذخیره نام و نقشِ کهنه را نشان می‌داد.
+ */
+function revalidatePeople(role: Role) {
+  revalidatePath(pathOf(role));
+  if (role === 'member') revalidatePath('/team', 'layout');
 }
 
 export interface StateActionState {
@@ -271,7 +280,7 @@ export async function setStateAction(
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ تغییرِ دسترسی ندارید.' };
     return { error: 'وضعیتِ دسترسی ثبت نشد.' };
   }
-  revalidatePath(pathOf(role));
+  revalidatePeople(role);
   return { ok: true, message: 'وضعیت دسترسیِ عضو به‌روزرسانی شد.' };
 }
 
@@ -283,7 +292,7 @@ export async function removePersonAction(
   try {
     const actor = await requireActor();
     const result = await removePerson(actor, userId, role);
-    revalidatePath(pathOf(role));
+    revalidatePeople(role);
     return { ok: true, outcome: result.outcome, message: result.message };
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ حذفِ عضو ندارید.' };

@@ -20,6 +20,11 @@ import { Thumb } from '@/components/thumb';
 import { ProjectBoard } from '../project-board';
 import { OpenTaskList } from './open-task-list';
 import { pageTitle } from '@/i18n/page-title';
+import { listPeople } from '@/server/people/service';
+import { getSystemConfig } from '@/server/settings/system-service';
+import { canViewSection } from '@/domain/access/permissions';
+import { canSeeScope } from '@/domain/access/guard';
+import { TeamMemberActions } from './member-actions';
 
 export const generateMetadata = pageTitle('تیمِ من');
 
@@ -91,6 +96,41 @@ export default async function TeamMemberPage({
     throw error;
   }
 
+  /**
+   * «ویرایشِ عضو» و «دسترسی‌های بیرونی» — همان داده و گاردِ صفحهٔ «اعضا».
+   * ⚠️ مدیرِ دفتری که `members.view` ندارد هیچ‌کدام را نمی‌بیند؛ دکمه‌ای که
+   * به «دسترسی ندارید» برسد بدتر از نبودنش است.
+   */
+  let actions = null;
+  if (canViewSection(actor, 'members')) {
+    const people = await listPeople(actor, 'member');
+    const person = people.people.find((p) => p.id === userId);
+    if (person) {
+      actions = (
+        <TeamMemberActions
+          person={person}
+          canManage={people.canManage}
+          options={{
+            roleTags: people.roleTags,
+            offices: people.offices,
+            candidates: people.candidates,
+            canGrantPrivate: canSeeScope(actor, 'private'),
+          }}
+          section={{
+            role: 'member',
+            title: 'اعضای تیم',
+            addLabel: 'افزودن عضو',
+            editLabel: 'ویرایش عضو',
+            supportsTags: true,
+            supportsOffices: true,
+            supportsOffboarding: true,
+            onboarding: (await getSystemConfig()).onboardingEnabled,
+          }}
+        />
+      );
+    }
+  }
+
   const total = data.logs.reduce((sum, l) => sum + l.minutes, 0);
   const today = new Date().toISOString().slice(0, 10);
   const stats = [
@@ -107,6 +147,7 @@ export default async function TeamMemberPage({
       <PageHeader
         back={{ href: '/team', label: t("تیمِ من") }}
         title={data.person?.name ?? `#${userId}`}
+        actions={actions}
         media={data.person && (
           <Thumb id={data.person.id} title={data.person.name} fileId={data.person.avatarFileId} size={56} />
         )}

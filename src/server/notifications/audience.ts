@@ -15,6 +15,16 @@ import {
  * توابع در مسیرِ داغِ ثبتِ کامنت و تغییرِ وضعیتِ تسک صدا زده می‌شوند.
  */
 
+/** فقط مالک‌ها («مدیرِ کل») — برای خبرهایی که مالِ دستیارِ مدیر نیست. */
+export async function ownerIds(): Promise<number[]> {
+  const rows = await db
+    .selectDistinct({ id: users.id })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .where(and(eq(userRoles.role, 'owner'), isNull(users.deletedAt)));
+  return rows.map((r) => r.id);
+}
+
 /** مالک و ادمین — پورتِ `manager_ids()`. */
 export async function managerIds(): Promise<number[]> {
   const rows = await db

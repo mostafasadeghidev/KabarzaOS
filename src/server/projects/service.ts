@@ -46,7 +46,7 @@ import {
 import { resolveAssignment } from '@/domain/projects/assignment';
 import { normalizeTiming } from '@/domain/projects/reviews';
 import {
-  assignmentDelta, commentRecipients, reviewRecipients, taskDoerIds,
+  assignmentDelta, commentRecipients, ownerIds, reviewRecipients, taskDoerIds,
 } from '@/server/notifications/audience';
 import * as repo from './repository';
 import { defaultProjectStatusId, defaultTaskStatusId } from '@/domain/projects/defaults';
@@ -378,6 +378,12 @@ export async function setMembers(actor: Actor, projectId: number, desired: Membe
 
   await audit(actor, 'members.set', projectId, existing, desired);
 
+  const deleted = new Set(diff.toDelete);
+  const removedUsers = [...new Set(existing.filter((e) => deleted.has(e.id)).map((e) => e.userId))]
+    .filter((uid) => !existing.some((e) => e.userId === uid && !deleted.has(e.id))
+      && !desired.some((d) => d.userId === uid));
+  await notifyOwnersOfTeamChange(actor, projectId, removedUsers, 'removed');
+
   /**
    * ⚠️ تسکِ نقشیِ منتظر → به عضوِ تازه.
    *
@@ -539,6 +545,7 @@ export async function setProjectAccess(
     null,
     { userId },
   );
+  if (blocked) await notifyOwnersOfTeamChange(actor, projectId, [userId], 'blocked');
   return touched;
 }
 
@@ -1256,7 +1263,59 @@ export async function removeProjectMember(actor: Actor, projectId: number, membe
 
   await db.delete(projectMembers).where(eq(projectMembers.id, row.id));
   await audit(actor, 'member.remove', projectId, row, null);
+  // ⚠️ عضوِ دو-نقشه با حذفِ یک ردیف هنوز عضو است — آن «حذف از پروژه» نیست.
+  const left = await db.select({ id: projectMembers.id }).from(projectMembers)
+    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, row.userId)));
+  if (left.length === 0) await notifyOwnersOfTeamChange(actor, projectId, [row.userId], 'removed');
   return row.userId;
+}
+
+/**
+ * خبرِ مالک: مدیرِ پروژه یا مدیرِ تیم عضوی را از پروژه برداشت یا دسترسی‌اش
+ * را قطع کرد (۲.۱.۰، به خواستِ کاربر) — زنگوله، تلگرام و ایمیل.
+ *
+ * ⚠️ فقط وقتی کننده **مدیرِ سراسری نیست**: کارِ خودِ مالک/مدیرِ کل خبر
+ * نمی‌خواهد. مالک‌ها، نه دستیارِ مدیر — این خبرِ نظارتی است.
+ * ⚠️ شکستِ اعلان نباید خودِ تغییر را بشکند؛ تغییر پیش‌تر ثبت شده است.
+ */
+async function notifyOwnersOfTeamChange(
+  actor: Actor,
+  projectId: number,
+  userIds: number[],
+  kind: 'removed' | 'blocked',
+) {
+  if (userIds.length === 0 || canManageSection(actor, 'projects')) return;
+  try {
+    const owners = (await ownerIds()).filter((id) => id !== actor.id);
+    if (owners.length === 0) return;
+    const [project, people] = await Promise.all([
+      db.select({ title: projects.title }).from(projects).where(eq(projects.id, projectId)),
+      db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, [actor.id, ...userIds])),
+    ]);
+    const nameOf = (id: number) => people.find((p) => p.id === id)?.name ?? `#${id}`;
+    const params = {
+      actor: nameOf(actor.id),
+      members: userIds.map(nameOf).join('، '),
+      project: project[0]?.title ?? '',
+    };
+    await notify(owners, kind === 'removed'
+      ? {
+        type: 'project.team_changed',
+        title: 'عضو از پروژه حذف شد',
+        body: '{actor} «{members}» را از پروژهٔ «{project}» حذف کرد.',
+        params,
+        url: `/projects/${projectId}`,
+      }
+      : {
+        type: 'project.team_changed',
+        title: 'دسترسیِ عضو به پروژه قطع شد',
+        body: '{actor} دسترسیِ «{members}» به پروژهٔ «{project}» را قطع کرد.',
+        params,
+        url: `/projects/${projectId}`,
+      });
+  } catch {
+    // R-NOTIF-03 — اعلان بی‌صدا شکست می‌خورد.
+  }
 }
 
 /**

@@ -7,6 +7,7 @@ import { AppSidebar, type NavItem } from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import { HeaderBreadcrumb } from '@/components/header-breadcrumb';
+import { NavHistory } from '@/components/nav-history';
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette';
 import { OffboardedShell } from './offboarded-shell';
 import { PresenceProvider } from '@/components/presence';
@@ -261,6 +262,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             عنوانِ صفحه». فهرستِ بخش‌ها همان منوی فیلترشدهٔ سرور است، به‌علاوهٔ
             دو صفحه‌ای که در منو نیستند و از منوی حساب باز می‌شوند.
           */}
+          {/* تاریخچهٔ ناوبری برای پیوندِ «برگشت» ِ سرصفحه‌ها. */}
+          <NavHistory />
           <HeaderBreadcrumb
             pages={[
               ...items.map(({ href, label }) => ({ href, label })),

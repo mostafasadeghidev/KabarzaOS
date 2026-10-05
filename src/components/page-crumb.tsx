@@ -34,6 +34,11 @@ function set(next: PageCrumbData | null) {
   for (const l of listeners) l();
 }
 
+/** عنوانِ سرصفحهٔ فعلی — برای ثبتِ تاریخچهٔ ناوبری (`nav-history`). */
+export function currentCrumbTitle(): string | null {
+  return current?.title ?? null;
+}
+
 export function usePageCrumb(): PageCrumbData | null {
   return useSyncExternalStore(subscribe, () => current, () => null);
 }

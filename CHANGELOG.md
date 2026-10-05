@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.1.0]
+
+### Added
+
+- **«Back» returns to the page you came from.** The back link above a page used to go to the page's parent section. Example: open a member in «My team», then one of their projects; the project page offered «Projects». It now offers the page you actually came from, here the member, and keeps the tab you had open there. The history is kept per browser tab. Without history, such as a link opened directly, the link still goes to the parent section. This applies to every page with a back link.
+- **«Edit member» and «External access» on the member page in «My team».** It's the same dialog and register as on the members page, with the same permissions. The external access button shows the number of open grants.
+- **The owner is told when a project or team manager removes a member from a project or cuts their project access.** The notice goes to the bell, Telegram and email, depending on each owner's settings. Changes made by global managers don't send it.
+
+### Fixed
+
+- After editing a member, the «My team» pages are refreshed as well.
+
 ## [2.0.0]
 
 Version 2.0.0 marks the rebuilt app as the main release line. It has no breaking data changes, so updating works like any other release.
