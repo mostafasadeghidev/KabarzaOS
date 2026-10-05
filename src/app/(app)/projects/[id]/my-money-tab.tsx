@@ -65,7 +65,10 @@ export interface PayoutRow {
 
 export interface MyMoneyData {
   projectId: number;
-  canManage: boolean;
+  /** کارکردِ همهٔ اعضا را می‌بیند و برای هر عضوی ثبت می‌کند (مدیرِ سراسری). */
+  seesAll: boolean;
+  /** عضوِ پروژه برای خودش — درخواستِ پرداخت می‌دهد (حتی اگر مدیرِ پروژه/تیم باشد). */
+  asMember: boolean;
   isFrozen: boolean;
   /**
    * ⚠️ بخشِ «کارکردِ تعدادی» فقط برای پروژهٔ تعدادی است — همان شرطِ
@@ -139,7 +142,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
             <input type="hidden" name="projectId" value={data.projectId} />
 
             {/* مدیر برای هر عضوی ثبت می‌کند؛ عضو فقط برای خودش. */}
-            {data.canManage && (
+            {data.seesAll && (
               <Field>
                 <FieldLabel htmlFor="u-user">{t("عضو")}</FieldLabel>
                 <SearchableSelect id="u-user" name="userId" containerClassName="w-44" required renderMedia={avatarFor(data.members)}>
@@ -171,7 +174,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
             <TableHeader>
               <TableRow>
                 <TableHead numeric>{t("تاریخ")}</TableHead>
-                {data.canManage && <TableHead>{t("عضو")}</TableHead>}
+                {data.seesAll && <TableHead>{t("عضو")}</TableHead>}
                 <TableHead numeric>{t("تعداد")}</TableHead>
                 <TableHead numeric>{t("مبلغ")}</TableHead>
                 <TableHead>{t("وضعیت")}</TableHead>
@@ -184,7 +187,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
                 return (
                   <TableRow key={u.id}>
                     <TableNumericCell>{u.entryDate}</TableNumericCell>
-                    {data.canManage && <TableCell><UserName userId={u.userId} name={u.userName ?? `#${u.userId}`} /></TableCell>}
+                    {data.seesAll && <TableCell><UserName userId={u.userId} name={u.userName ?? `#${u.userId}`} /></TableCell>}
                     <TableNumericCell>{Number(u.quantity)}</TableNumericCell>
                     <TableNumericCell>{format(u.amount)} {u.currencyCode}</TableNumericCell>
                     <TableCell>
@@ -196,7 +199,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
                       {/* ⚠️ ردیفِ پرداخت‌شده هیچ اقدامی ندارد — سندِ انجام‌شده است. */}
                       {!paid && !data.isFrozen && (
                         <>
-                          {u.isMine && !data.canManage && (
+                          {u.isMine && data.asMember && (
                             u.openRequest ? (
                               u.openRequest.status === 'pending' ? (
                                 <Button
@@ -217,7 +220,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
                               </Button>
                             )
                           )}
-                          {(data.canManage || u.isMine) && (
+                          {(data.seesAll || u.isMine) && (
                             <IconButton
                               variant="ghost"
                               className="size-8 text-muted-foreground hover:text-destructive"
@@ -238,7 +241,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
           </Table>
         )}
 
-        {!data.canManage && (
+        {data.asMember && (
           <p className="flex flex-wrap gap-4 text-sm">
             <span><b>{t("جمعِ پرداخت‌نشده:")}</b> <span className="num">{format(data.myUnpaidUnits)}</span></span>
             {/* پورتِ جمعِ «پرداخت‌شده» ِ ردیف‌های تعدادی. */}
@@ -255,8 +258,9 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
         ── پولِ من روی این پروژه ──
         ⚠️ خلاصه (توافقی/پرداختی/مانده) و ردیف‌های پرداخت برای **مدیری که
         خودش هم عضو است** هم نشان داده می‌شود؛ پیش از این کلِ بخش با
-        `!canManage` بسته می‌شد و تبِ مالیِ چنین کاربری خالی بود. فقط فرمِ
-        «درخواستِ پرداخت» برای مدیر نمی‌آید — او پرداخت را خودش ثبت می‌کند.
+        `!canManage` بسته می‌شد و تبِ مالیِ چنین کاربری خالی بود. فرمِ
+        «درخواستِ پرداخت» فقط برای مدیرِ سراسری نمی‌آید (`asMember`) — مدیرِ
+        پروژه/تیم که خودش عضو است، مثلِ هر عضوی درخواست می‌دهد.
       */}
       {(
         <Section title={t("درخواستِ پرداخت")}>
@@ -335,8 +339,8 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
             )}
           </div>
 
-          {/* فرمِ درخواست فقط برای عضو — مدیر پرداخت را خودش در حسابداری ثبت می‌کند. */}
-          {data.canManage ? null : Number(data.available) > 0 ? (
+          {/* فرمِ درخواست برای عضو — مدیرِ سراسری پرداخت را خودش در حسابداری ثبت می‌کند. */}
+          {!data.asMember ? null : Number(data.available) > 0 ? (
             <form action={requestPayment} className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3">
               <input type="hidden" name="projectId" value={data.projectId} />
               <Field>
@@ -355,7 +359,12 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
           ) : data.requests.some((r) => r.status === 'pending' || r.status === 'approved') ? null : (
             /* ⚠️ با درخواستِ باز پیام لازم نیست — خودِ درخواست بالاتر دیده می‌شود (نسخهٔ قبلی هم پنهانش می‌کرد). */
             <p className="text-xs text-muted-foreground">
-              {tr("مبلغِ قابلِ درخواستی ندارید — یا مانده صفر است یا درخواستِ بازی دارید.")}
+              {/* ⚠️ قراردادِ صفر یعنی مدیر هنوز مبلغِ توافقی را تعیین نکرده — نه اینکه همه‌اش پرداخت شده. */}
+              {data.isUnitBased
+                ? tr("برای پروژهٔ تعدادی، کارکرد را بالا ثبت کنید و کنارِ هر ردیف «درخواست پرداخت» را بزنید.")
+                : Number(data.agreed) > 0
+                  ? tr("مبلغِ قابلِ درخواستی ندارید — یا مانده صفر است یا درخواستِ بازی دارید.")
+                  : tr("مبلغِ توافقیِ شما در این پروژه هنوز تعیین نشده؛ پس از تعیین، اینجا درخواست می‌دهید.")}
             </p>
           )}
         </Section>

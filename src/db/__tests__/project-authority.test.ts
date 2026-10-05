@@ -367,4 +367,19 @@ describe('کارکردِ تعدادی — مدیرِ همین پروژه برا�
     })).rejects.toThrow();
     await db.update(projects).set({ isUnitBased: false }).where(eq(projects.id, projectA));
   });
+
+  it('⚠️ مدیرِ پروژه‌ای که خودش عضو است، بی‌انتخابِ عضو برای خودش ثبت می‌کند (user_id ?: $uid)', async () => {
+    const { addUnitEntry, deleteUnitEntry } = await import('@/server/finance/member-service');
+    const { unitEntries } = await import('../schema');
+    await db.update(projects).set({ isUnitBased: true }).where(eq(projects.id, projectA));
+
+    // فرمِ مدیرِ پروژه/تیم انتخابگرِ عضو ندارد → userId صفر می‌رسد.
+    const id = await addUnitEntry(actor(pm), {
+      projectId: projectA, userId: 0, entryDate: '2026-09-02', quantity: 4, note: '',
+    });
+    const [row] = await db.select().from(unitEntries).where(eq(unitEntries.id, id));
+    expect(row!.userId).toBe(pm);
+    await deleteUnitEntry(actor(pm), id);
+    await db.update(projects).set({ isUnitBased: false }).where(eq(projects.id, projectA));
+  });
 });

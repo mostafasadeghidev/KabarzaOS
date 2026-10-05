@@ -419,10 +419,17 @@ export function PayoutsView({
                               {tr("تأیید")}
                             </Button>
                           )}
+                          {/*
+                            ⚠️ برچسبِ کوتاه: با «ثبت پرداخت در حسابداری» ستونِ اقدام ۳۳۵px
+                            می‌شد و دکمهٔ «رد» در ۱۲۸۰px بیرونِ جدول (اسکرولِ افقی) می‌افتاد.
+                          */}
                           {(r.status === 'approved' || (isOwner && r.status === 'pending')) && (
-                            <Button size="sm" variant="outline" disabled={pending} onClick={() => setPayTarget(r)}>
+                            <Button
+                              size="sm" variant="outline" disabled={pending} onClick={() => setPayTarget(r)}
+                              title={tr("ثبت پرداخت در حسابداری")}
+                            >
                               <Banknote className="size-3.5" />
-                              {tr("ثبت پرداخت در حسابداری")}
+                              {tr("پرداخت")}
                             </Button>
                           )}
                           {isOwner && (r.status === 'pending' || r.status === 'approved') && (

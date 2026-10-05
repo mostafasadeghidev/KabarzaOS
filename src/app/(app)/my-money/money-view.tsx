@@ -101,10 +101,12 @@ function PaymentLines({
  * تراکنش‌ها.
  */
 function Row({
-  title, href, chips, status, children,
+  title, href, chips, status, children, linkLabel = 'پروژه',
 }: {
   title: string;
   href: string;
+  /** متنِ پیوند — برای عضو «درخواست پرداخت» که مستقیم به تبِ مالیِ پروژه می‌رود. */
+  linkLabel?: string;
   chips: Array<{ label: string; value: string; strong?: boolean }>;
   status: string;
   children: React.ReactNode;
@@ -129,7 +131,7 @@ function Row({
             </span>
           ))}
           <Link href={href} className="inline-flex items-center gap-1 text-primary hover:underline">
-            {t('پروژه')}
+            {t(linkLabel)}
             <ArrowLeft className="size-3.5 ltr:rotate-180" aria-hidden />
           </Link>
         </div>
@@ -223,7 +225,8 @@ export function MyMoneyView({
                 <Row
                   key={p.projectId}
                   title={p.title}
-                  href={`/projects/${p.projectId}`}
+                  href={`/projects/${p.projectId}?tab=finance`}
+                  linkLabel="درخواست پرداخت"
                   status={p.isUnitBased ? (Number(p.unitUnpaid) > 0 ? 'partial' : 'paid') : p.status}
                   chips={p.isUnitBased
                     ? [

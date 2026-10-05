@@ -163,8 +163,13 @@ export async function addUnitEntry(
     ? input.entryDate
     : new Date().toISOString().slice(0, 10);
 
-  // عضو فقط برای خودش ثبت می‌کند؛ مدیر برای هر عضوی.
-  const targetId = canManage ? input.userId : actor.id;
+  /**
+   * عضو فقط برای خودش ثبت می‌کند؛ مدیر برای هر عضوی — و اگر عضوی انتخاب
+   * نکرده باشد، برای **خودش** (پورتِ `user_id ?: $uid` ِ `handle_add_unit`).
+   * ⚠️ مدیرِ پروژه/تیمی که خودش عضو است انتخابگرِ عضو ندارد؛ بی‌این بازگشت
+   * کارکردِ خودش با «این شخص عضو این پروژه نیست» رد می‌شد.
+   */
+  const targetId = canManage && input.userId > 0 ? input.userId : actor.id;
 
   const membership = await db
     .select({ unitRate: projectMembers.unitRate, currencyId: projectMembers.currencyId })

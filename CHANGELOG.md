@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.119.2]
+
+### Fixed
+
+- **Project and team managers who are also project members couldn't request payment.** Since 1.119.0 they count as managers of the project, and the «Request payment» form was hidden for any project manager. As in the previous version, the form is now hidden only for global project managers. Anyone else who is a member requests their own pay: a part of the agreed amount in fixed projects, or per logged row in unit-based projects.
+- **A project manager logging their own unit-based work got «This person is not a member of this project».** Their form has no member picker, and the server expected one. When no member is chosen, the row is now logged for the person themselves, as in the previous version.
+- **The «Reject» button on payment requests was off-screen.** On a normal laptop width, the long «Record payment in accounting» label pushed it out of the table. The button now reads «Pay», with the full text as a tooltip.
+- **A clearer message when there is nothing to request.**
+  - A member with no agreed amount yet is told that the amount hasn't been set.
+  - In a unit-based project, the message points to the per-row request.
+- On «Money», each project links straight to its request tab.
+
 ## [1.119.1]
 
 ### Fixed

@@ -98,6 +98,18 @@ export default async function ProjectDetailPage({
    * ⚠️ مجوزِ مالی لازم ندارد؛ ولی اگر کاربر نه عضو باشد نه مدیر، سرویس
    * ForbiddenError می‌دهد و تب اصلاً ساخته نمی‌شود.
    */
+  /**
+   * ⚠️ «عضو برای خودش» (پورتِ `$as_member` ِ افزونه): عضوِ پروژه که مدیرِ
+   * سراسریِ پروژه‌ها نیست. مدیرِ پروژه و مدیرِ تیم اگر خودشان عضو باشند
+   * **درخواستِ پرداخت می‌دهند** — پیش از این شرطِ فرم `canManage` (مدیریتِ همین
+   * پروژه) بود و از ۱.۱۱۹.۰ که مدیرِ دفتر/پروژه هم مدیر حساب شد، فرم برایشان
+   * پنهان ماند. `seesAll` همان مرزِ `listUnitEntries` است: کارکردِ همه را فقط
+   * مدیرِ سراسری می‌بیند (مبلغِ کارکرد حقوقِ عضو است).
+   */
+  const seesAll = canManageSection(actor, 'projects');
+  const isProjectMember = members.some((m) => m.userId === actor.id);
+  const asMember = isProjectMember && !seesAll;
+
   let myMoney = null;
   try {
     const [units, unpaid, requests] = await Promise.all([
@@ -107,7 +119,8 @@ export default async function ProjectDetailPage({
     ]);
     myMoney = {
       projectId: id,
-      canManage,
+      seesAll,
+      asMember,
       isFrozen: detail.isFrozen,
       isUnitBased: project.isUnitBased,
       units,
@@ -135,7 +148,7 @@ export default async function ProjectDetailPage({
    * پرداختی، نه درخواستی. پیش از این تبِ مالی برایش ساخته می‌شد و **خالی**
    * باز می‌شد — کاربر روی تبی کلیک می‌کرد که هیچ‌چیز در آن نبود.
    */
-  if (myMoney && canManage) {
+  if (myMoney && canManage && !asMember) {
     const hasPersonal = myMoney.isUnitBased
       || Number(myMoney.agreed) > 0
       || myMoney.payouts.length > 0
