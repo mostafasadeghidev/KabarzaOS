@@ -15,6 +15,7 @@ import { ComposeDialog } from './compose-dialog';
 import { groupInbox } from '@/domain/messaging/labels';
 import { monogram } from '@/domain/files/monogram';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DefaultAvatar } from '@/components/default-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
@@ -103,9 +104,25 @@ function ChatAvatar({ label, userId, size = 'default' }: {
   return (
     <Avatar size={size}>
       {userId ? <AvatarImage src={`/api/users/${userId}/avatar`} alt="" className="object-cover" /> : null}
-      <AvatarFallback className="font-semibold text-white" style={{ background }}>
-        {letter}
-      </AvatarFallback>
+      {/*
+        شخص بی‌عکس ← آواتارِ پیش‌فرض (۲.۵.۰)؛ کانال و «مدیریت» (بی‌شناسه) همان حرفِ رنگی.
+        اگر تصویرِ پیش‌فرض بار نشد، باز همان حرف.
+      */}
+      {userId ? (
+        <AvatarFallback className="bg-muted" delayMs={150}>
+          <DefaultAvatar
+            fallback={(
+              <span className="flex size-full items-center justify-center rounded-full font-semibold text-white" style={{ background }}>
+                {letter}
+              </span>
+            )}
+          />
+        </AvatarFallback>
+      ) : (
+        <AvatarFallback className="font-semibold text-white" style={{ background }}>
+          {letter}
+        </AvatarFallback>
+      )}
     </Avatar>
   );
 }

@@ -199,7 +199,7 @@ function MemberCards({ members, query }: { members: MembersData['members']; quer
           {list.map((m) => (
             <Item key={m.id} asChild variant="outline" size="sm" className="gap-3 p-3">
               <Link href={`/team/${m.id}?${query}`}>
-                <Thumb id={m.id} title={m.name} fileId={m.avatarFileId} size={44} />
+                <Thumb id={m.id} title={m.name} fileId={m.avatarFileId} person size={44} />
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5 font-medium">
                     <span className="truncate">{m.name}</span>

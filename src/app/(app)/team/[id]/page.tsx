@@ -149,7 +149,7 @@ export default async function TeamMemberPage({
         title={data.person?.name ?? `#${userId}`}
         actions={actions}
         media={data.person && (
-          <Thumb id={data.person.id} title={data.person.name} fileId={data.person.avatarFileId} size={56} />
+          <Thumb id={data.person.id} title={data.person.name} fileId={data.person.avatarFileId} person size={56} />
         )}
         description={(
           <>

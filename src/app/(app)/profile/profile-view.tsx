@@ -200,7 +200,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
                   className="size-14 shrink-0 rounded-full object-cover ring-2 ring-primary/40"
                 />
               ) : (
-                <Thumb id={data.id} title={data.name} fileId={data.avatarFileId} size={56} className="rounded-full" />
+                <Thumb id={data.id} title={data.name} fileId={data.avatarFileId} person size={56} className="rounded-full" />
               )}
               <form
                 ref={avatarForm}

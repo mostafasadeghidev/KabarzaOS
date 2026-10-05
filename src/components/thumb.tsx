@@ -1,4 +1,5 @@
 import { monogram } from '@/domain/files/monogram';
+import { DefaultAvatar } from '@/components/default-avatar';
 
 /**
  * تصویرِ شاخص — عکسِ واقعی اگر باشد، وگرنه تک‌نگارِ رنگی.
@@ -14,6 +15,7 @@ export function Thumb({
   size = 44,
   height,
   className = '',
+  person = false,
 }: {
   id: number;
   title: string;
@@ -23,6 +25,8 @@ export function Thumb({
   /** ارتفاعِ جدا برای تصویرِ افقی (کارت و سربرگِ پروژه: ۱۰۵×۵۵). */
   height?: number;
   className?: string;
+  /** عکسِ یک **شخص** — بی‌عکس، آواتارِ پیش‌فرض به‌جای تک‌نگار (۲.۵.۰). پروژه تک‌نگار می‌ماند. */
+  person?: boolean;
 }) {
   const px = Math.max(16, size);
   const py = Math.max(16, height ?? size);
@@ -45,7 +49,7 @@ export function Thumb({
   }
 
   const { letter, background } = monogram(id, title);
-  return (
+  const mono = (
     <span
       aria-hidden
       className={`${shared} flex items-center justify-center font-semibold text-white`}
@@ -55,4 +59,8 @@ export function Thumb({
       {letter}
     </span>
   );
+  // ⚠️ تک‌نگار پشتِ تصویرِ پیش‌فرض می‌ماند: اگر آن بار نشد، همان حرفِ رنگی.
+  return person
+    ? <DefaultAvatar className={shared} style={{ width: px, height: py }} fallback={mono} />
+    : mono;
 }

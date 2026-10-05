@@ -3,6 +3,7 @@
 import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarImage } from '@/components/ui/avatar';
 import { avatarColor, avatarInitials } from '@/domain/people/avatar';
 import { cn } from '@/lib/utils';
+import { DefaultAvatar } from '@/components/default-avatar';
 
 /**
  * آواتارِ یک عضو — **تنها** جایی که چهرهٔ اعضا کنارِ نامشان رندر می‌شود.
@@ -40,11 +41,24 @@ export function UserAvatar({
     <Avatar className={cn(SIZES[size], className)} title={label}>
       {userId ? <AvatarImage src={`/api/users/${userId}/avatar`} alt="" className="object-cover" /> : null}
       <AvatarFallback
-        className={cn('font-semibold', userId ? 'text-white' : 'bg-muted text-muted-foreground')}
-        style={userId ? { background: avatarColor(userId) } : undefined}
-        // ⚠️ عکس اگر بیاید فوری جایگزین می‌شود؛ تأخیر نمی‌گذاریم تا حرف چشمک نزند.
+        className="bg-muted"
+        // ⚠️ تأخیرِ کوتاه: عکسِ واقعیِ کش‌شده زودتر می‌رسد و تصویرِ پیش‌فرض چشمک نمی‌زند.
+        delayMs={userId ? 150 : 0}
       >
-        {avatarInitials(label)}
+        {/* بی‌عکس ← تصویرِ پیش‌فرض (۲.۵.۰)؛ اگر آن هم بار نشد ← حرفِ اول روی رنگِ ثابتِ شخص. */}
+        <DefaultAvatar
+          fallback={(
+            <span
+              className={cn(
+                'flex size-full items-center justify-center rounded-full font-semibold',
+                userId ? 'text-white' : 'bg-muted text-muted-foreground',
+              )}
+              style={userId ? { background: avatarColor(userId) } : undefined}
+            >
+              {avatarInitials(label)}
+            </span>
+          )}
+        />
       </AvatarFallback>
     </Avatar>
   );

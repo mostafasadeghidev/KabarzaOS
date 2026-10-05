@@ -75,7 +75,7 @@ function AvatarPicker({ person }: { person: PersonView }) {
       <Thumb
         id={person.id}
         title={person.name}
-        fileId={person.avatarFileId}
+        fileId={person.avatarFileId} person
         size={56}
         className="rounded-full"
       />

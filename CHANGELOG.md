@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.5.0]
+
+### Added
+
+- **Default avatar.** Anyone without a profile photo now shows the Kabarza mark instead of a blank or letter avatar. This covers names across the app, member cards, profile, «My team», reports, the team availability grid and messages. The image is a 12 KB, 256 px copy in `public/`. If it can't load, the previous initials on the person's color come back. Projects keep their colored monogram, and channels and «Management» in messages keep their letter. People whose name is hidden from a client also get the default image, since it doesn't reveal who they are.
+
 ## [2.4.1]
 
 ### Changed

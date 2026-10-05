@@ -124,7 +124,7 @@ export function PersonCard({
     <Card className={`gap-2 py-4 ${isFormer ? 'border-dashed' : ''}`}>
       <CardContent className="grid gap-2 px-4">
         <div className="flex items-start gap-3">
-          <Thumb id={person.id} title={person.name} fileId={person.avatarFileId} className="rounded-full" />
+          <Thumb id={person.id} title={person.name} fileId={person.avatarFileId} person className="rounded-full" />
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-1.5 text-sm font-semibold">
               {/* حضورِ خاموش ← بی‌نقطه، نه نقطهٔ خاکستریِ گمراه‌کننده. */}

@@ -81,7 +81,7 @@ export default async function MemberReportPage({ params }: { params: Promise<{ i
     <PageShell>
       <PageHeader
         back={{ href: '/reports?tab=members', label: t("گزارش‌ها") }}
-        media={<Thumb id={data.person.id} title={data.person.name} fileId={data.person.avatarFileId} size={48} />}
+        media={<Thumb id={data.person.id} title={data.person.name} fileId={data.person.avatarFileId} person size={48} />}
         title={data.person.name}
         description={data.person.roleNames.length > 0 ? data.person.roleNames.join('، ') : data.person.email}
       />

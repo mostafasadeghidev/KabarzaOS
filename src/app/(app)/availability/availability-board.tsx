@@ -78,7 +78,7 @@ function PersonName({ row }: { row: BoardRow }) {
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       {/* ⚠️ حضورِ خاموش ← بی‌نقطه، نه نقطهٔ خاکستریِ گمراه‌کننده. */}
       {row.presence && <PresenceDot state={row.presence} userId={row.id} />}
-      <Thumb id={row.id} title={row.name} fileId={row.avatarFileId} size={22} className="rounded-full" />
+      <Thumb id={row.id} title={row.name} fileId={row.avatarFileId} person size={22} className="rounded-full" />
       {/* ⚠️ /members/{id} وجود ندارد؛ پروفایلِ عضو در گزارش‌هاست — همان لینکِ کارتِ افراد. */}
       <Link href={`/reports/member/${row.id}`} className="hover:underline">{row.name}</Link>
     </span>
