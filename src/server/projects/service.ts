@@ -37,7 +37,7 @@ import {
   canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation, canInteractWithProject, managedOfficeProjectIds, pmProjectIds,
   isProjectFrozen, isClientOnly,
 } from './authority';
-import { canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
+import { canEditTeamMoney, canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
 import { visiblePayments } from '@/domain/access/project-payments';
 import { canCreateProject, canManageProject as decideManage, mayCreateProjects, PM_CAP } from '@/domain/access/project-scope';
 import {
@@ -324,6 +324,20 @@ export async function setMembers(actor: Actor, projectId: number, desired: Membe
     repo.inactiveUserIds(),
     repo.owedUserIds(projectId),
   ]);
+  /**
+   * ⚠️ مدیرِ پروژه/تیم مبلغ را نمی‌بیند، پس فرمش هم مبلغی نمی‌فرستد: مبلغِ
+   * ردیف‌های موجود از دیتابیس نگه داشته می‌شود و عضوِ تازه صفر می‌گیرد تا
+   * مدیرِ مالی بعداً تعیینش کند. بدونِ این، ذخیرهٔ فرم همهٔ مبالغ را صفر می‌کرد.
+   */
+  if (!canEditTeamMoney(actor)) {
+    desired = desired.map((d) => {
+      const row = existing.find((e) => e.userId === d.userId && e.roleTagId === d.roleTagId)
+        ?? existing.find((e) => e.userId === d.userId);
+      return row
+        ? { ...d, agreedAmount: row.agreedAmount, unitRate: row.unitRate, currencyId: row.currencyId }
+        : { ...d, agreedAmount: '0', unitRate: '0', currencyId: null };
+    });
+  }
   // R-PROJ-10 — نقشِ اصلی فقط برای کسانی لازم است که نقش انتخاب نکرده‌اند.
   const needRole = desired.filter((d) => !d.roleTagId).map((d) => d.userId);
   const primaryRoleOf = await repo.primaryRoleOf([...new Set(needRole)]);
@@ -705,6 +719,8 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
     project,
     members: members.map((m) => ({
       ...m,
+      // ⚠️ مبلغِ دیگران در payload ِ صفحه نمی‌ماند (View Source)؛ مبلغِ خودِ بیننده می‌ماند.
+      ...(canEditTeamMoney(actor) || m.userId === actor.id ? {} : { agreedAmount: '0', unitRate: '0' }),
       userName: m.userName === null ? null : nameForViewer(m.userId, m.userName, viewer),
     })),
     tasks: visibleTasks.map((t) => ({
@@ -1040,6 +1056,8 @@ export async function getMembersForm(actor: Actor, projectId: number) {
 
   // R-PROJ-11 — عضوِ غیرفعال در فهرستِ انتخاب نیست، ولی ردیفِ موجودش دیده می‌شود.
   const inactiveOnList = rows.filter((r) => !team.some((t) => t.id === r.userId));
+  // مبلغِ اعضا فقط برای مدیرِ سراسری و مالی — نه در UI، در **داده**.
+  const money = canEditTeamMoney(actor);
 
   return {
     isUnitBased: project.isUnitBased,
@@ -1049,9 +1067,9 @@ export async function getMembersForm(actor: Actor, projectId: number) {
       userId: r.userId,
       userName: r.userName,
       roleTagId: r.roleTagId,
-      agreedAmount: r.agreedAmount,
-      unitRate: r.unitRate,
-      currencyId: r.currencyId,
+      agreedAmount: money ? r.agreedAmount : '0',
+      unitRate: money ? r.unitRate : '0',
+      currencyId: money ? r.currencyId : null,
       /** عضوِ سابق — ردیفش می‌ماند ولی دوباره انتخاب‌شدنی نیست. */
       isFormer: inactiveOnList.some((i) => i.userId === r.userId),
       /** هنوز طلب دارد — حذفِ دسته‌جمعی رویش اثر ندارد (R-PROJ-23). */
@@ -1061,6 +1079,8 @@ export async function getMembersForm(actor: Actor, projectId: number) {
     roles,
     /** `userId → نقش‌هایش` — همان محدودیتِ افزودنِ سریع و فرمِ ساخت (D#90). */
     memberRoles: roleMap,
+    /** ستون‌های مبلغ و ارز — فقط مدیرِ سراسری و مالی. */
+    canEditMoney: money,
     currencies: currencyRows,
   };
 }
@@ -1178,9 +1198,14 @@ export async function addProjectMember(
     input.roleTagId ? Promise.resolve(new Map<number, number | null>()) : repo.primaryRoleOf([input.userId]),
   ]);
 
+  // مدیرِ بی‌اختیارِ پول: عضوِ تازه با مبلغِ صفر؛ مبلغِ عضوِ موجود دست نمی‌خورد.
+  const money = canEditTeamMoney(actor);
+  if (!money) input = { ...input, agreedAmount: '0', unitRate: '0', currencyId: null };
+
   const plan = planAddMember(input, existing, { inactiveUserIds: inactive, primaryRoleOf });
   if (!plan) throw new ForbiddenError('member.inactive');
   if (plan.action === 'keep') return plan;
+  if (plan.action === 'raise' && !money) return plan;
 
   // پورتِ `add_member`: نرخِ واحد و ارزِ فراخوان؛ بی‌ارز = ارزِ پروژه. افزایش هم همین دو را می‌نویسد.
   const unitRate = input.unitRate ?? '0';
@@ -1345,7 +1370,7 @@ export async function getCardOptions(actor: Actor) {
     // منوی وضعیتِ کارت — مدیرِ دفتر مجوزِ «دیدنِ بخشِ پروژه‌ها» را ندارد که از راهِ دیگر بخواندش.
     repo.statusTags(),
   ]);
-  return { team, roles, clients, roleMap, currencies, statuses, manageableIds };
+  return { team, roles, clients, roleMap, currencies, statuses, manageableIds, canEditMoney: canEditTeamMoney(actor) };
 }
 
 /**

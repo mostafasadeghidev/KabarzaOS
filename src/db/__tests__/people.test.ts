@@ -206,6 +206,15 @@ describe('مدیریتِ دفتر به نقش گره خورده است', () => {
     });
     expect((await managed()).map((r) => r.officeId)).toEqual([officeId]);
   });
+
+  it('⚠️ فرمی که فیلدِ «مدیرِ این دفاتر» را نداشت، مدیریتِ دفتر را پاک نمی‌کند (۱.۱۱۹.۱)', async () => {
+    // همان ذخیره‌ای که دو مدیرِ تیم را از مدیریت انداخت: فقط تلفن عوض شد.
+    await service.updatePerson(manager(), person, {
+      name: 'مدیرِ دفتر', email: 'om@t', phone: '0912',
+      tagIds: [devRole, managerTag], officeIds: [officeId], managedOfficeIds: null,
+    });
+    expect((await managed()).map((r) => r.officeId)).toEqual([officeId]);
+  });
 });
 
 /**

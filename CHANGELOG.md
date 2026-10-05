@@ -2,6 +2,19 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.119.1]
+
+### Fixed
+
+- **Saving a person cleared their «Manager of these offices».** The person dialog is mounted once per page and kept the roles of the first person it showed. When editing a team manager, the «Manager of these offices» field didn't appear, and saving sent an empty list. The person lost office management, and with it «My team», the office's projects, member management and the team views.
+  - The dialog now starts fresh for each person.
+  - The server keeps the existing managed offices when the form didn't include that field.
+  - Team managers whose offices were cleared need them set again once: Members → edit → «Manager of these offices».
+- **Project and team managers saw and changed member pay.** The «Manage members» dialog and the «Add member» menu on project cards showed every member's agreed amount, unit rate and currency, and let them change it. Member amounts are now only for global project managers and finance, as in the previous version.
+  - Others can add and remove members and set roles.
+  - Saving keeps existing amounts, and new members start at zero.
+- Other members' agreed amounts no longer reach the project page's data for viewers who may not see them.
+
 ## [1.119.0]
 
 ### Added

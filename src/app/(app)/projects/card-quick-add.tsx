@@ -30,6 +30,8 @@ export interface CardOptions {
   roleMap: Record<number, number[]>;
   /** پروژه‌هایی که بیننده مدیریت می‌کند؛ `null` = همه (مدیرِ سراسری). */
   manageableIds: number[] | null;
+  /** فیلدهای مبلغ و ارز — فقط مدیرِ سراسری و مالی؛ مدیرِ پروژه/تیم پول نمی‌بیند. */
+  canEditMoney: boolean;
   /** ارزهای فعال — ستونِ «ارز» ِ عضوِ تازه. */
   currencies: Array<{ id: number; code: string }>;
 }
@@ -121,7 +123,7 @@ export function CardQuickAdd({
                   <NativeSelectOption key={r.id} value={r.id}>{r.name}</NativeSelectOption>
                 ))}
             </NativeSelect>
-            {isUnitBased ? (
+            {options.canEditMoney && (isUnitBased ? (
               <Input
                 name="unitRate"
                 inputMode="decimal"
@@ -137,7 +139,8 @@ export function CardQuickAdd({
                 aria-label={t("مبلغ")}
                 className="num h-7 w-20 text-xs"
               />
-            )}
+            ))}
+            {options.canEditMoney && (
             <NativeSelect
               name="currencyId"
               aria-label={t("ارز")}
@@ -149,6 +152,7 @@ export function CardQuickAdd({
                 <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>
               ))}
             </NativeSelect>
+            )}
             <Submit label={t("افزودن")} />
             <Button
               type="button"

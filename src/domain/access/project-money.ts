@@ -1,3 +1,5 @@
+import { canManageSection, type Actor } from './permissions';
+
 /**
  * چه کسی **پولِ پروژه** را می‌بیند.
  *
@@ -62,4 +64,17 @@ export function isPlainMember(a: MoneyAudience): boolean {
 /** تبِ مالیِ پروژه اصلاً ساخته شود؟ */
 export function canSeeProjectFinance(a: MoneyAudience): boolean {
   return canSeeProjectPrice(a) || isPlainMember(a);
+}
+
+/**
+ * مبلغِ **اعضا** (توافقی، نرخِ واحد، ارز) را می‌بیند و عوض می‌کند؟ (۱.۱۱۹.۱)
+ *
+ * ⚠️ همان دو در ورودیِ قیمتِ پروژه — مدیرِ سراسریِ پروژه‌ها و مدیرِ مالی.
+ * مدیرِ پروژه و مدیرِ تیم اعضا را اضافه و کم می‌کنند و نقش می‌دهند، ولی
+ * پول را نه: «A team/office manager or pure project manager does NOT — no
+ * finance tab». پیش از این فرمِ «مدیریتِ اعضا» و افزودنِ سریعِ کارت مبلغِ
+ * همه را به مدیرِ پروژه نشان می‌دادند و می‌گذاشتند عوضش کند.
+ */
+export function canEditTeamMoney(actor: Actor): boolean {
+  return canManageSection(actor, 'projects') || canManageSection(actor, 'finance');
 }

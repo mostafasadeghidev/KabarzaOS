@@ -151,6 +151,15 @@ export function PersonDialog({
     options.roleTags.filter((t) => t.grantsCap === OFFICE_MANAGER_CAP).map((t) => t.id),
   );
   const [pickedTags, setPickedTags] = useState<number[]>([...tagIds]);
+  /**
+   * ⚠️ این دیالوگ یک بار برای کلِ صفحه سوار می‌شود و فقط `person` ِ آن عوض
+   * می‌شود. بدونِ این، نقش‌های انتخاب‌شده همان مقدارِ بارِ اول (خالی) می‌ماند،
+   * فیلدِ «مدیرِ این دفاتر» برای مدیرِ تیم اصلاً دیده نمی‌شد و ذخیرهٔ فرم
+   * دفاترِ تحتِ مدیریتش را پاک می‌کرد (اتفاقی که برای دو مدیرِ تیم افتاد).
+   */
+  useEffect(() => {
+    if (open) setPickedTags(person?.tags.map((t) => t.id) ?? []);
+  }, [open, person]);
   const hasManagerTag = pickedTags.some((id) => managerTagIds.has(id));
   const showsManagedOffices = section.supportsTags && hasManagerTag;
   /** نقش برداشته شده ولی دفترِ تحتِ مدیریت هنوز ثبت است — با ذخیره پاک می‌شود. */
@@ -386,6 +395,8 @@ export function PersonDialog({
             {showsManagedOffices && (
             <Field>
               <FieldLabel className="text-xs text-muted-foreground">{tr("مدیرِ این دفاتر")}</FieldLabel>
+              {/* نشانگر: «فیلد در فرم بود» — بی‌آن سرور دفاترِ تحتِ مدیریت را دست نمی‌زند. */}
+              <input type="hidden" name="managedOfficesField" value="1" />
               <MultiSelect
                 name="managedOfficeIds"
                 options={options.offices.map((o) => ({ id: o.id, label: o.name }))}

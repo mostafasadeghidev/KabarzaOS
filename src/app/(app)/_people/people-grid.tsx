@@ -162,6 +162,8 @@ export function PeopleGrid({
 
       {canManage && (
         <PersonDialog
+          // هر فرد دیالوگِ تازهٔ خودش — state ِ فرد قبلی نمی‌ماند.
+          key={editing?.id ?? 'new'}
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           person={editing}

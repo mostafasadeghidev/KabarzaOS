@@ -45,6 +45,11 @@ export interface MembersFormData {
   /** نقش‌های هر نفر؛ نبودنِ کلید یعنی نقشی ثبت نشده — آن‌وقت همهٔ نقش‌ها. */
   memberRoles?: Record<number, number[]>;
   currencies: Array<{ id: number; code: string; isDefault: boolean }>;
+  /**
+   * ستون‌های مبلغ و ارز — فقط مدیرِ سراسری و مالی (۱.۱۱۹.۱). مدیرِ پروژه/تیم
+   * اعضا و نقش‌ها را می‌گرداند، نه پول را؛ سرور هم مبلغِ او را نادیده می‌گیرد.
+   */
+  canEditMoney?: boolean;
 }
 
 
@@ -68,6 +73,7 @@ function SaveButton() {
 export function MembersDialog({ data }: { data: MembersFormData }) {
   const tr = useT();
   const t = useT();
+  const money = data.canEditMoney !== false;
   const { show } = useToast();
   const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState<MembersFormState, FormData>(setMembersAction, {});
@@ -159,10 +165,14 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                 <TableRow className="hover:bg-transparent">
                   <TableHead>{t("عضو")}</TableHead>
                   <TableHead>{t("نقش")}</TableHead>
-                  <TableHead>
-                    {data.isUnitBased ? tr('نرخِ هر واحد') : tr('مبلغ توافقی')}
-                  </TableHead>
-                  <TableHead>{t("ارز")}</TableHead>
+                  {money && (
+                    <>
+                      <TableHead>
+                        {data.isUnitBased ? tr('نرخِ هر واحد') : tr('مبلغ توافقی')}
+                      </TableHead>
+                      <TableHead>{t("ارز")}</TableHead>
+                    </>
+                  )}
                   <TableActionsHead />
                 </TableRow>
               </TableHeader>
@@ -224,6 +234,8 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                       </NativeSelect>
                     </TableCell>
 
+                    {money && (
+                    <>
                     <TableCell>
                       {/* هر دو فیلد همیشه فرستاده می‌شوند تا آرایه‌ها هم‌طول بمانند. */}
                       <Input
@@ -256,8 +268,18 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
                         ))}
                       </NativeSelect>
                     </TableCell>
+                    </>
+                    )}
 
                     <TableActionsCell>
+                      {/* ⚠️ بی‌ستونِ پول هم آرایه‌ها هم‌طول می‌مانند؛ سرور مبلغِ موجود را نگه می‌دارد. */}
+                      {!money && (
+                        <>
+                          <input type="hidden" name="memberAmount" value="0" />
+                          <input type="hidden" name="memberUnitRate" value="0" />
+                          <input type="hidden" name="memberCurrency" value="" />
+                        </>
+                      )}
                       <IconButton
                         type="button"
                         variant="ghost"

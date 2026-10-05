@@ -98,7 +98,12 @@ export interface PersonInput {
   privateAccess?: boolean;
   tagIds: number[];
   officeIds: number[];
-  managedOfficeIds: number[];
+  /**
+   * `null` یعنی «فرم این فیلد را نداشت» — همان دفاترِ تحتِ مدیریتِ قبلی نگه
+   * داشته می‌شوند (ویرایش). ⚠️ پیش از این نبودنِ فیلد با «هیچ دفتری» یکی بود و
+   * هر ذخیرهٔ فرمی که فیلد را نشان نداده بود، مدیرِ تیم را از مدیریت می‌انداخت.
+   */
+  managedOfficeIds: number[] | null;
 }
 
 /**
@@ -151,7 +156,7 @@ export async function createPerson(actor: Actor, role: Role, input: PersonInput)
     if (!policy.ok) throw new ForbiddenError(`password.${policy.reason}`);
   }
 
-  const managedOffices = await gateManagedOffices(input.tagIds, input.managedOfficeIds);
+  const managedOffices = await gateManagedOffices(input.tagIds, input.managedOfficeIds ?? []);
 
   const id = await db.transaction(async (tx) => {
     const rows = await tx.insert(users).values({
@@ -286,7 +291,10 @@ export async function updatePerson(actor: Actor, userId: number, input: PersonIn
   );
   if (clash.some((c) => c.id !== userId)) throw new ForbiddenError('email.taken');
 
-  const managedOffices = await gateManagedOffices(input.tagIds, input.managedOfficeIds);
+  const managedOffices = await gateManagedOffices(
+    input.tagIds,
+    input.managedOfficeIds ?? relationsBefore.managedOfficeIds,
+  );
 
   await db.transaction(async (tx) => {
     await tx.update(users).set({

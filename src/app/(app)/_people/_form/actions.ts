@@ -172,7 +172,11 @@ export async function savePersonAction(
   try {
     const actor = await requireActor();
     if (userId) {
-      await updatePerson(actor, userId, parsed.data);
+      // فیلدِ «مدیرِ این دفاتر» در فرم نبود ← دفاترِ تحتِ مدیریت دست نمی‌خورند.
+      await updatePerson(actor, userId, {
+        ...parsed.data,
+        managedOfficeIds: formData.has('managedOfficesField') ? parsed.data.managedOfficeIds : null,
+      });
     } else {
       /**
        * پورتِ `validate_avatar_upload()`: فایلِ بد **پیش از** ساخت رد می‌شود،

@@ -49,3 +49,21 @@ describe('منوی کارتِ پروژه', () => {
     await expect(getCardOptions(actor(M, ['member']))).rejects.toBeInstanceOf(ForbiddenError);
   });
 });
+
+describe('مبلغِ اعضا برای مدیرِ بی‌اختیارِ پول (۱.۱۱۹.۱)', () => {
+  it('⚠️ مدیرِ دفتر مبلغ نمی‌بیند و ذخیره‌اش مبلغِ موجود را عوض نمی‌کند', async () => {
+    const { getMembersForm, setMembers } = await import('@/server/projects/service');
+    const { projectMembers } = await import('../schema');
+    const { eq } = await import('drizzle-orm');
+    // مالک مبلغ را تعیین می‌کند.
+    await setMembers(actor(O, ['owner']), MINE, [{ userId: M, roleTagId: null, agreedAmount: '700', unitRate: '0', currencyId: null }]);
+    const form = await getMembersForm(actor(MGR, ['member']), MINE);
+    expect(form.canEditMoney).toBe(false);
+    expect(form.members.map((m) => m.agreedAmount)).toEqual(['0']);
+    // مدیرِ دفتر فرم را بی‌مبلغ می‌فرستد.
+    await setMembers(actor(MGR, ['member']), MINE, [{ userId: M, roleTagId: null, agreedAmount: '0', unitRate: '0', currencyId: null }]);
+    const [row] = await db.select().from(projectMembers).where(eq(projectMembers.projectId, MINE));
+    expect(Number(row!.agreedAmount)).toBe(700);
+    expect((await getCardOptions(actor(MGR, ['member']))).canEditMoney).toBe(false);
+  });
+});
