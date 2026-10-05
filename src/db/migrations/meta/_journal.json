@@ -288,6 +288,13 @@
       "when": 1789093200018,
       "tag": "0040_site_areas",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1789093200019,
+      "tag": "0041_attachment_pin",
+      "breakpoints": true
     }
   ]
 }

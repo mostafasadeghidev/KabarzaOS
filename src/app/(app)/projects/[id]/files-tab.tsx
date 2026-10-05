@@ -4,14 +4,17 @@ import { UserName } from '@/components/user-avatar';
 import { useActionState, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
-  Download, FileText, Film, ImageIcon, Link2, Paperclip, Play, Square, Trash2, Upload,
+  Download, FileText, Film, ImageIcon, Link2, Paperclip, Pin, PinOff, Play, Square, Trash2, Upload,
 } from 'lucide-react';
+import { LinkIcon } from '@/components/media/link-card';
+import { linkTitle, providerName } from '@/domain/files/link-preview';
+import { Badge } from '@/components/ui/badge';
 import {
   Attachment, AttachmentAction, AttachmentActions, AttachmentContent, AttachmentDescription,
   AttachmentMedia, AttachmentTitle, AttachmentTrigger,
 } from '@/components/ui/attachment';
 import {
-  addLinkAction, deleteAttachmentAction, uploadAttachmentAction, type FileFormState,
+  addLinkAction, deleteAttachmentAction, pinAttachmentAction, uploadAttachmentAction, type FileFormState,
 } from './_form/file-actions';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Button } from '@/components/ui/button';
@@ -35,6 +38,8 @@ export interface FileRow {
   size: number | null;
   uploaderName: string | null;
   uploaderId?: number | null;
+  /** سنجاق‌شده — بالای فهرست (۲.۳.۰). */
+  pinned?: boolean;
 }
 
 const KIND_ICON = {
@@ -42,15 +47,6 @@ const KIND_ICON = {
   video: Film,
   file: FileText,
 } as const;
-
-/** دامنهٔ لینک («drive.google.com») — زیرِ نامِ لینک، تا پیش از باز کردن معلوم باشد کجا می‌رود. */
-function hostOf(href: string): string {
-  try {
-    return new URL(href).host;
-  } catch {
-    return '';
-  }
-}
 
 function SubmitButton({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
@@ -99,6 +95,25 @@ export function FilesTab({
   const [playing, setPlaying] = useState<number | null>(null);
   const uploadForm = useRef<HTMLFormElement>(null);
 
+  /** سنجاق — همان قاعدهٔ حذف (بارگذارنده یا مدیر). */
+  const togglePin = (f: FileRow) => {
+    setRemoveError(null);
+    startRemove(async () => {
+      const result = await pinAttachmentAction(f.id, projectId, !f.pinned);
+      if (result?.error) setRemoveError(result.error);
+    });
+  };
+  const PinAction = ({ f, title }: { f: FileRow; title: string }) => (
+    <AttachmentAction
+      onClick={() => togglePin(f)}
+      disabled={removing}
+      aria-pressed={Boolean(f.pinned)}
+      aria-label={`${f.pinned ? t('برداشتنِ سنجاق') : t('سنجاق')} — ${title}`}
+    >
+      {f.pinned ? <PinOff /> : <Pin />}
+    </AttachmentAction>
+  );
+
   const remove = async (id: number) => {
     if (!(await confirm({ title: tr('این پیوست حذف شود؟') }))) return;
     setRemoveError(null);
@@ -110,6 +125,79 @@ export function FilesTab({
 
   return (
     <div className="grid gap-4">
+      {/*
+        ⚠️ منابع بالای پیوست‌ها (۲.۳.۰): فیگما و سندهای مرجع را تیم مدام باز
+        می‌کند؛ نباید زیرِ فهرستِ بلندِ فایل‌ها پنهان بمانند.
+      */}
+      <Section icon={<Link2 />} title={tr("منابع و لینک‌ها")}>
+
+        {canUpload && (
+          <form action={addLink} className="grid gap-2 rounded-xl border bg-card p-3">
+            <input type="hidden" name="projectId" value={projectId} />
+            <div className="grid gap-2 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
+              <Field>
+                <FieldLabel htmlFor="link-url">{t("نشانی")}</FieldLabel>
+                <Input id="link-url" name="url" type="url" placeholder="https://…" required />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="link-label">{t("برچسب")}</FieldLabel>
+                <Input id="link-label" name="label" placeholder={t("مثلاً: طراحیِ نهایی")} />
+              </Field>
+              <SubmitButton>{t("افزودن")}</SubmitButton>
+            </div>
+            {/* ⚠️ هیچ فایلی از این نشانی گرفته نمی‌شود — فقط ذخیره می‌شود. */}
+            <p className="text-xs text-muted-foreground">
+              {tr("فایل دانلود نمی‌شود؛ فقط نشانی نگه داشته می‌شود.")}
+            </p>
+          </form>
+        )}
+
+        {links.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            {tr("لینکِ فیگما، گوگل‌درایو، سایتِ آزمایشی و … اینجا دیده می‌شوند.")}
+          </p>
+        ) : (
+          <ul className="grid gap-2 @xl/main:grid-cols-2">
+            {links.map((f) => {
+              // برچسبِ کاربر اول؛ وگرنه عنوانِ خوانا از خودِ نشانی، نه نشانیِ خام.
+              const title = f.label || linkTitle(f.href);
+              return (
+                <li key={f.id}>
+                  <Attachment className={`w-full${f.pinned ? ' border-primary/40' : ''}`}>
+                    <AttachmentMedia className="bg-transparent p-0"><LinkIcon href={f.href} /></AttachmentMedia>
+                    <AttachmentContent>
+                      <AttachmentTitle className="flex items-center gap-1.5">
+                        <span className="truncate" dir="auto">{title}</span>
+                        {f.pinned && <Badge variant="secondary" className="shrink-0">{t('سنجاق‌شده')}</Badge>}
+                      </AttachmentTitle>
+                      <AttachmentDescription className="flex items-center gap-1">
+                        <span className="shrink-0" dir="ltr">{providerName(f.href)} ·</span>
+                        <UserName userId={f.uploaderId} name={f.uploaderName ?? '—'} />
+                      </AttachmentDescription>
+                    </AttachmentContent>
+                    {canDelete(f) && (
+                      <AttachmentActions>
+                        <PinAction f={f} title={title} />
+                        <AttachmentAction
+                          onClick={() => remove(f.id)}
+                          disabled={removing}
+                          aria-label={`${t("حذف")} — ${title}`}
+                        >
+                          <Trash2 />
+                        </AttachmentAction>
+                      </AttachmentActions>
+                    )}
+                    <AttachmentTrigger asChild>
+                      <a href={f.href} target="_blank" rel="noopener noreferrer nofollow" title={f.href} aria-label={title} />
+                    </AttachmentTrigger>
+                  </Attachment>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Section>
+
       <Section icon={<Paperclip />} title={tr("پیوست‌ها")}>
 
         {canUpload && (
@@ -153,7 +241,7 @@ export function FilesTab({
               const title = f.title || `#${f.id}`;
               return (
                 <li key={f.id}>
-                  <Attachment className="w-full">
+                  <Attachment className={`w-full${f.pinned ? ' border-primary/40' : ''}`}>
                     <AttachmentMedia variant={f.kind === 'image' ? 'image' : 'icon'}>
                       {f.kind === 'image'
                         // نسخهٔ کوچک از همان مسیرِ گیت‌شده؛ نبودنش خطا نیست و اصل می‌آید (R-FILE-16).
@@ -161,7 +249,10 @@ export function FilesTab({
                         : <Icon />}
                     </AttachmentMedia>
                     <AttachmentContent>
-                      <AttachmentTitle>{title}</AttachmentTitle>
+                      <AttachmentTitle className="flex items-center gap-1.5">
+                        <span className="truncate">{title}</span>
+                        {f.pinned && <Badge variant="secondary" className="shrink-0">{t('سنجاق‌شده')}</Badge>}
+                      </AttachmentTitle>
                       <AttachmentDescription className="flex items-center gap-1">
                         <UserName userId={f.uploaderId} name={f.uploaderName ?? '—'} />
                         {f.size ? <span className="shrink-0">· {humanSize(f.size, tr)}</span> : null}
@@ -180,6 +271,7 @@ export function FilesTab({
                       <AttachmentAction asChild aria-label={`${t("دانلود")} — ${title}`}>
                         <a href={`${f.href}?dl`}><Download /></a>
                       </AttachmentAction>
+                      {canDelete(f) && <PinAction f={f} title={title} />}
                       {canDelete(f) && (
                         <AttachmentAction
                           onClick={() => remove(f.id)}
@@ -216,69 +308,6 @@ export function FilesTab({
         {removeError && <p className="text-xs text-destructive">{tr(removeError)}</p>}
       </Section>
 
-      <Section icon={<Link2 />} title={tr("لینک‌های خارجی")}>
-
-        {canUpload && (
-          <form action={addLink} className="grid gap-2 rounded-xl border bg-card p-3">
-            <input type="hidden" name="projectId" value={projectId} />
-            <div className="grid gap-2 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
-              <Field>
-                <FieldLabel htmlFor="link-url">{t("نشانی")}</FieldLabel>
-                <Input id="link-url" name="url" type="url" placeholder="https://…" required />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="link-label">{t("برچسب")}</FieldLabel>
-                <Input id="link-label" name="label" placeholder={t("گوگل‌درایو")} />
-              </Field>
-              <SubmitButton>{t("افزودن")}</SubmitButton>
-            </div>
-            {/* ⚠️ هیچ فایلی از این نشانی گرفته نمی‌شود — فقط ذخیره می‌شود. */}
-            <p className="text-xs text-muted-foreground">
-              {tr("فایل دانلود نمی‌شود؛ فقط نشانی نگه داشته می‌شود.")}
-            </p>
-          </form>
-        )}
-
-        {links.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {tr("لینکِ گوگل‌درایو/دراپ‌باکس و … اینجا دیده می‌شوند.")}
-          </p>
-        ) : (
-          <ul className="grid gap-2 @xl/main:grid-cols-2">
-            {links.map((f) => {
-              const host = hostOf(f.href);
-              return (
-                <li key={f.id}>
-                  <Attachment className="w-full">
-                    <AttachmentMedia><Link2 /></AttachmentMedia>
-                    <AttachmentContent>
-                      <AttachmentTitle>{f.title}</AttachmentTitle>
-                      <AttachmentDescription className="flex items-center gap-1">
-                        {host ? <span className="shrink-0" dir="ltr">{host} ·</span> : null}
-                        <UserName userId={f.uploaderId} name={f.uploaderName ?? '—'} />
-                      </AttachmentDescription>
-                    </AttachmentContent>
-                    {canDelete(f) && (
-                      <AttachmentActions>
-                        <AttachmentAction
-                          onClick={() => remove(f.id)}
-                          disabled={removing}
-                          aria-label={`${t("حذف")} — ${f.title}`}
-                        >
-                          <Trash2 />
-                        </AttachmentAction>
-                      </AttachmentActions>
-                    )}
-                    <AttachmentTrigger asChild>
-                      <a href={f.href} target="_blank" rel="noopener noreferrer nofollow" aria-label={f.title} />
-                    </AttachmentTrigger>
-                  </Attachment>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Section>
     </div>
   );
 }

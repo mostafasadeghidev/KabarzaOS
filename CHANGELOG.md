@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.3.0]
+
+### Added
+
+- **Links in a project description show as cards.** A line that holds only a link, such as «Figma: https://…», becomes a card with the service icon and a readable name taken from the address, for example «Peppers Unlimited | UI Kit». The label next to the link is kept. A link in the middle of a sentence shrinks to a short name. The description text itself is unchanged, and nothing is fetched from the linked site.
+- **«Resources and links» in the Files tab, with pinning.** Links now come before attachments, with the service icon and a readable name when no label was given. A link or file can be pinned so it stays at the top. The uploader or the project's manager can pin, the same as for deleting. Migration 0041 adds the column.
+
+### Fixed
+
+- English text in descriptions, comments and notes now reads left to right, so the full stop is no longer at the start of the line.
+
 ## [2.2.0]
 
 ### Changed

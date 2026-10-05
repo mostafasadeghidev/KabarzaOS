@@ -409,3 +409,23 @@ describe('خبرِ مالک وقتی مدیرِ پروژه/تیم عضو را ب
     await db.delete(userRoles).where(andOp(eq(userRoles.userId, owner), eq(userRoles.role, 'owner')));
   });
 });
+
+describe('سنجاقِ منابعِ پروژه (۲.۳.۰)', () => {
+  it('مدیرِ پروژه سنجاق می‌کند، بیگانه نه؛ سنجاق‌شده بالای فهرست', async () => {
+    const { attachments } = await import('../schema');
+    const { setAttachmentPinned } = await import('@/server/files/service');
+    const { listAttachments } = await import('@/server/projects/repository');
+    const [older, newer] = await db.insert(attachments).values([
+      { projectId: projectA, userId: plainMember, kind: 'link', externalUrl: 'https://www.figma.com/design/k/A' },
+      { projectId: projectA, userId: plainMember, kind: 'link', externalUrl: 'https://example.com/b' },
+    ]).returning({ id: attachments.id });
+
+    expect((await listAttachments(projectA)).map((r) => r.id).slice(0, 2)).toEqual([newer!.id, older!.id]);
+    await setAttachmentPinned(actor(pm), older!.id, true);
+    const list = await listAttachments(projectA);
+    expect(list[0]).toMatchObject({ id: older!.id, pinned: true });
+
+    await expect(setAttachmentPinned(actor(stranger), newer!.id, true)).rejects.toThrow();
+    await db.delete(attachments).where(eq(attachments.projectId, projectA));
+  });
+});

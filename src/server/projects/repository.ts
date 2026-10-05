@@ -1069,6 +1069,7 @@ export async function listAttachments(projectId: number) {
       mime: files.mime,
       size: files.size,
       originalName: files.originalName,
+      pinned: attachments.pinned,
     })
     .from(attachments)
     .leftJoin(users, eq(users.id, attachments.userId))
@@ -1078,11 +1079,13 @@ export async function listAttachments(projectId: number) {
       eq(attachments.projectId, projectId),
       isNull(attachments.taskId), isNull(attachments.commentId), isNull(attachments.reviewId),
     ))
-    .orderBy(desc(attachments.id));
+    // سنجاق‌شده‌ها بالا (۲.۳.۰)؛ بقیه تازه‌ترین بالا، مثلِ قبل.
+    .orderBy(desc(attachments.pinned), desc(attachments.id));
 
   return rows.map((r) => ({
     id: r.id,
     label: r.label,
+    pinned: r.pinned,
     kind: r.kind,
     mime: r.mime,
     size: r.size,

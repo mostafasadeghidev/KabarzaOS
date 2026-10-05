@@ -212,6 +212,8 @@ export const attachments = pgTable('attachments', {
   commentId: fk('comment_id').references(() => comments.id, { onDelete: 'cascade' }),
   /** پیوستِ بازبینی (ویدئوی بارگذاری‌شده، اسکرین‌شات، سند) — گاردِ خودِ بازبینی. */
   reviewId: fk('review_id').references(() => reviews.id, { onDelete: 'cascade' }),
+  /** سنجاق‌شده — بالای فهرستِ تبِ فایل‌ها (۲.۳.۰). */
+  pinned: boolean('pinned').notNull().default(false),
   ...stamps,
 }, (t) => [
   index('attachments_project_ix').on(t.projectId),

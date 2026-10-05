@@ -231,7 +231,7 @@ export default async function ProjectDetailPage({
         description={project.description ? (
           // توضیحِ پروژه — پیش از این فقط داخلِ فرمِ ویرایش دیده می‌شد.
           // پیوندهای توضیح (فیگما، سایتِ آزمایشی) کلیک‌پذیرند؛ پخش‌کنندهٔ ویدئو در سربرگ جا نمی‌شود.
-          <RichText text={project.description} embeds={false} className="max-w-3xl text-[length:inherit]" />
+          <RichText text={project.description} embeds={false} linkCards className="max-w-3xl text-[length:inherit]" />
         ) : undefined}
         actions={formOptions && (
           <ProjectDialog

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
-  addAttachment, addLink, deleteAttachment,
+  addAttachment, addLink, deleteAttachment, setAttachmentPinned,
 } from '@/server/files/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FrozenProjectError } from '@/server/projects/authority';
@@ -92,6 +92,16 @@ export async function addLinkAction(
 
   revalidatePath(`/projects/${projectId}`);
   return { message: 'لینک ثبت شد.' };
+}
+
+export async function pinAttachmentAction(attachmentId: number, projectId: number, pinned: boolean) {
+  try {
+    await setAttachmentPinned(await requireActor(), attachmentId, pinned);
+  } catch (error) {
+    return { error: message(error) };
+  }
+  revalidatePath(`/projects/${projectId}`);
+  return { message: pinned ? 'سنجاق شد.' : 'سنجاق برداشته شد.' };
 }
 
 export async function deleteAttachmentAction(attachmentId: number, projectId: number) {

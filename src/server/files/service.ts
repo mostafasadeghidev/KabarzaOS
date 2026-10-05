@@ -454,6 +454,24 @@ export async function deleteAttachment(actor: Actor, attachmentId: number) {
   if (row.fileId) await removeFile(row.fileId);
 }
 
+/**
+ * سنجاق/برداشتنِ سنجاقِ پیوست یا لینکِ پروژه (۲.۳.۰).
+ * ⚠️ همان قاعدهٔ حذف: بارگذارنده یا مدیرِ **همین پروژه** (مدیرِ پروژه/تیم هم)؛
+ * و پروژهٔ منجمد دست نمی‌خورد.
+ */
+export async function setAttachmentPinned(actor: Actor, attachmentId: number, pinned: boolean) {
+  const rows = await db.select().from(attachments).where(eq(attachments.id, attachmentId));
+  const row = rows[0];
+  if (!row || !row.projectId || row.taskId || row.commentId || row.reviewId) throw new FileNotFoundError();
+
+  await assertProjectAccess(actor, row.projectId);
+  await assertNotFrozen(row.projectId, actor);
+  if (row.userId !== actor.id && !(await canManageProject(actor, row.projectId))) {
+    throw new ForbiddenError('attachment.not_yours');
+  }
+  await db.update(attachments).set({ pinned, updatedAt: new Date() }).where(eq(attachments.id, attachmentId));
+}
+
 /* ------------------------------------------------------------------ *
  * تصویرِ شاخص و آواتار
  * ------------------------------------------------------------------ */
