@@ -193,7 +193,13 @@ export function ProjectDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={formAction} className="grid gap-4">
+        {/*
+          ⚠️ تلهٔ ریستِ فرمِ React 19: در ویرایش، دیالوگ پس از ذخیره باز می‌ماند و
+          selectهای وضعیت/ارز/دفتر/دامنه به مقدارِ لحظهٔ بازشدن برمی‌گشتند —
+          ذخیرهٔ بعدی همان مقدارِ کهنه را می‌فرستاد. key روی پروژهٔ ذخیره‌شده.
+          تبِ فعال (`formTab`) بیرونِ فرم است و با سوارشدنِ دوباره عوض نمی‌شود.
+        */}
+        <form key={isEdit ? JSON.stringify(project) : undefined} action={formAction} className="grid gap-4">
           {isEdit && <input type="hidden" name="projectId" value={project.id} />}
           {/*
             ⚠️ تب‌بندی، نه یک فرمِ بلندِ اسکرولی: پروژه ده‌ها فیلد دارد و

@@ -102,6 +102,8 @@ export async function saveCompanyAction(_prev: ProfileState, formData: FormData)
     return { error: message(error) };
   }
   revalidatePath('/profile');
+  // ⚠️ این فرم در /settings است؛ بی‌این، پس از ریستِ فرم مقدارِ کهنه دیده می‌شد.
+  revalidatePath('/settings');
   return { message: 'مشخصاتِ شرکت ذخیره شد.' };
 }
 

@@ -98,9 +98,11 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
    * نمی‌دانست کارش گرفت یا نه — و با زدنِ دوبارهٔ «ذخیره» همان فهرست را
    * دوباره می‌فرستاد.
    */
+  // ⚠️ وابستگی `state` است، نه `state.ok`: در ذخیرهٔ دوم ok باز هم true است،
+  // effect اجرا نمی‌شد و دیالوگ باز می‌ماند (با فرمی که React ریستش کرده بود).
   useEffect(() => {
     if (state.ok) setOpen(false);
-  }, [state.ok]);
+  }, [state]);
 
   useEffect(() => {
     if (state.keptOwed?.length) {

@@ -121,7 +121,14 @@ export function AvailabilityView({ data }: { data: AvailabilityData }) {
           {tr("روزهایی که معمولاً کار می‌کنید را تیک بزنید. بازهٔ ساعتی اختیاری است — بدونِ آن یعنی تمامِ روز.")}
         </p>
 
-        <form action={save} className="grid gap-2">
+        {/*
+          ⚠️ تلهٔ ریستِ فرمِ React 19: پس از ذخیره فرم خودکار reset می‌شود و
+          Checkbox ِ Radix به مقدارِ **لحظهٔ سوار شدن** برمی‌گردد — روزی که هنگامِ
+          بازکردنِ صفحه خالی بود، پس از اولین ذخیره بی‌تیک دیده می‌شد (و بازهٔ
+          ساعتیِ تازه به ۰۹:۰۰–۱۷:۰۰ برمی‌گشت)، هرچند درست ذخیره شده بود.
+          key روی برنامهٔ ذخیره‌شده فرم را با دادهٔ تازه از نو سوار می‌کند.
+        */}
+        <form key={JSON.stringify(data.mine)} action={save} className="grid gap-2">
           <div className="grid gap-2 @2xl/main:grid-cols-2">
             {data.order.map((weekday) => (
               <DayEditor key={weekday} weekday={weekday} initial={data.mine[weekday]} isToday={weekday === data.today} />

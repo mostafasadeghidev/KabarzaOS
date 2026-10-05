@@ -2,6 +2,19 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.0.0]
+
+Version 2.0.0 marks the rebuilt app as the main release line. It has no breaking data changes, so updating works like any other release.
+
+### Fixed
+
+- **Weekly availability lost its ticks after the first save.** Days ticked in «Activity → Availability» disappeared on screen after «Save schedule», even though they were saved; they reappeared after leaving and coming back. Time ranges added in the same visit also snapped back to 09:00–17:00. The form now reloads with the saved schedule.
+- **The same problem in other forms that stay open after saving.**
+  - Profile → Notifications: the email and Telegram switches and the muted-event ticks went back to their old values.
+  - Edit project: the dialog stays open after saving, and status, currency, office and scope went back to the values from when it was opened, so a second save sent the old values again.
+- **«Manage members» didn't close on a second save** without a page reload.
+- **Settings → Company details** now refreshes the settings page after saving.
+
 ## [1.119.2]
 
 ### Fixed

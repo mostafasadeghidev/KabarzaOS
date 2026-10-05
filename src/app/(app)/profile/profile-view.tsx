@@ -347,7 +347,9 @@ export function ProfileView({ data }: { data: ProfileData }) {
       )}
 
       {tab === 'notify' && (
-        <form action={saveNotify} className="grid max-w-2xl grid-cols-1 gap-4">
+        // ⚠️ تلهٔ ریستِ فرمِ React 19: Switch/Checkbox ِ Radix پس از ذخیره به مقدارِ
+        // لحظهٔ بازشدن برمی‌گشتند. key روی ترجیحاتِ ذخیره‌شده فرم را از نو سوار می‌کند.
+        <form key={JSON.stringify(data.notify)} action={saveNotify} className="grid max-w-2xl grid-cols-1 gap-4">
           <p className="text-sm text-muted-foreground">
             {tr("زنگِ داخلِ اپ همیشه روشن است. این تنظیمات فقط کانال‌های بیرونی را تعیین می‌کنند.")}
           </p>
