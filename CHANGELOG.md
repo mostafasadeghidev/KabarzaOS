@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.3.1]
+
+### Fixed
+
+- **«Money»:** «Bank account details» and the per-project «Request payment» links are now buttons, like the others in the app.
+- **«Access» opened for one person had no way back.** When it's opened from a member card or from «My team» → member → «External access», it now has a back link to where you came from, or to «Members» if there's no history.
+
+### Changed
+
+- «Team availability & leave» now sits right under «My team» in the menu.
+
 ## [2.3.0]
 
 ### Added

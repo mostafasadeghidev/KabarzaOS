@@ -56,6 +56,11 @@ export default async function AccessPage({
   return (
     <PageShell>
       <PageHeader
+        /**
+         * ⚠️ با `?user=` این صفحه از جای دیگری باز شده (کارتِ عضو، «تیمِ من ← عضو»)؛
+         * برگشت به همان‌جا می‌رود (تاریخچهٔ ناوبری)، وگرنه به «اعضا» (۲.۳.۱).
+         */
+        back={focusUser ? { href: '/members', label: t("اعضا") } : undefined}
         title={t("دسترسی‌ها")}
         description={(
           <><span className="num">{openCount}</span>{' '}{t('دسترسیِ باز')}

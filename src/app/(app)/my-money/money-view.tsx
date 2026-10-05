@@ -13,6 +13,7 @@ import {
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDate } from '@/i18n/datetime';
 import { Section } from '@/components/page-shell';
+import { Button } from '@/components/ui/button';
 
 /** برچسبِ وضعیتِ پرداخت — همان سه حالتِ `Payments::status_label`. */
 const STATUS_LABEL: Record<string, string> = {
@@ -130,10 +131,12 @@ function Row({
               <b className={`num ${c.strong ? 'text-sm text-foreground' : ''}`}>{c.value}</b>
             </span>
           ))}
-          <Link href={href} className="inline-flex items-center gap-1 text-primary hover:underline">
-            {t(linkLabel)}
-            <ArrowLeft className="size-3.5 ltr:rotate-180" aria-hidden />
-          </Link>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={href}>
+              {t(linkLabel)}
+              <ArrowLeft className="size-3.5 ltr:rotate-180" aria-hidden />
+            </Link>
+          </Button>
         </div>
       </div>
       <CollapsibleContent className="grid gap-3 border-t bg-muted/30 p-3">{children}</CollapsibleContent>
@@ -211,10 +214,13 @@ export function MyMoneyView({
           title={t('دریافتی‌های شما (عضوِ تیم)')}
           description={tr('برای پروژه‌هایی که هنوز کامل پرداخت نشده‌اند می‌توانید از صفحهٔ پروژه درخواستِ پرداخت ثبت کنید (حداکثر تا ماندهٔ خودتان).')}
           actions={(
-            <Link href={bankHref} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-              {t('اطلاعاتِ حسابِ بانکی')}
-              <ArrowLeft className="size-3 ltr:rotate-180" aria-hidden />
-            </Link>
+            // ⚠️ دکمه، نه پیوندِ متنی (۲.۳.۱) — همان شکلِ دکمه‌های دیگرِ برنامه.
+            <Button variant="outline" size="sm" asChild>
+              <Link href={bankHref}>
+                {t('اطلاعاتِ حسابِ بانکی')}
+                <ArrowLeft className="size-3.5 ltr:rotate-180" aria-hidden />
+              </Link>
+            </Button>
           )}
         >
           {memberProjects.length === 0 ? (

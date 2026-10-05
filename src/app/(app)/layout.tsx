@@ -187,9 +187,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    * بیش از همه به «امروز چه کسی سرِ کار است» نیاز دارد و در نسخهٔ قبلی
    * مسیرِ اختصاصیِ خودش را داشت.
    */
+  // ⚠️ درست زیرِ «تیمِ من» (۲.۳.۱): هر دو کارِ روزمرهٔ مدیرِ تیم‌اند، نه دادهٔ پایه.
   if (await hasTeamAvailability(actor)) {
     items.push({
-      href: '/availability', label: t("حضور و مرخصیِ تیم"), icon: 'availability', group: 'data',
+      href: '/availability', label: t("حضور و مرخصیِ تیم"), icon: 'availability', group: 'operations',
     });
   }
 
