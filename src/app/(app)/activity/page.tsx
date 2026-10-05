@@ -7,6 +7,7 @@ import { ActivityView } from './activity-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { pageTitle } from '@/i18n/page-title';
+import { ACTION_LABELS } from '@/domain/activity/labels';
 
 export const generateMetadata = pageTitle('رویدادها');
 
@@ -21,7 +22,7 @@ export const generateMetadata = pageTitle('رویدادها');
 export default async function ActivityPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; tab?: string }>;
+  searchParams: Promise<{ page?: string; tab?: string; q?: string; from?: string; to?: string }>;
 }) {
   await primeTranslations();
 
@@ -33,9 +34,19 @@ export default async function ActivityPage({
   if (query.tab === 'absences') redirect((await hasTeamAvailability(actor)) ? '/availability' : '/my-schedule');
 
   const page = Math.max(1, Number(query.page ?? 1) || 1);
+  const q = (query.q ?? '').trim();
+  /**
+   * رویدادهایی که **برچسبشان** با جستجو می‌خواند — به فارسی و به زبانِ
+   * بیننده؛ کاربری که «Task created» تایپ می‌کند همان «تسکِ جدید» را می‌خواهد.
+   */
+  const needle = q.toLowerCase();
+  const actions = needle === '' ? [] : Object.entries(ACTION_LABELS)
+    .filter(([, label]) => label.toLowerCase().includes(needle) || t(label).toLowerCase().includes(needle))
+    .map(([key]) => key);
+
   let feed;
   try {
-    feed = await listActivity(actor, { page });
+    feed = await listActivity(actor, { page, q, from: query.from, to: query.to, actions });
   } catch (error) {
     if (error instanceof ForbiddenError) redirect('/my-schedule');
     throw error;

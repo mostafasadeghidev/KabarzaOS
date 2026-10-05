@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.4.0]
+
+### Added
+
+- **«Events» has live search and a date filter.** Search looks through all events on the server, not just the current page. It matches the person who acted, the event type (in Persian or your own language), and the item's name. Item names come both from what the event recorded and from the current project or task title, and an item's number also works. Search runs as you type. «From» and «To» dates follow the system timezone and can be combined with search. The filter lives in the address, so the browser's back button and shared links keep it, and paging keeps it too.
+
 ## [2.3.2]
 
 ### Fixed

@@ -1,6 +1,7 @@
-import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lte, or, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { absences, auditLog, users } from '@/db/schema';
+import { absences, auditLog, projects, tasks, users } from '@/db/schema';
+import { getSystemConfig } from '@/server/settings/system-service';
 import { can, type Actor } from '@/domain/access/permissions';
 import { ForbiddenError } from '@/domain/access/guard';
 import { actionLabel } from '@/domain/activity/labels';
@@ -33,14 +34,62 @@ const MAX_PER_PAGE = 200;
  * ⚠️ شمارشِ کل جدا برمی‌گردد چون بدونِ آن نمی‌شود گفت «صفحهٔ بعدی هست یا نه»
  * و کاربر عملاً فقط ۵۰ ردیفِ اول را می‌بیند بی‌آنکه بداند بقیه‌ای هم هست.
  */
+export interface ActivityFilter {
+  /** `yyyy-mm-dd` به وقتِ سامانه — هر دو سر شامل. */
+  from?: string;
+  to?: string;
+  /** جستجوی آزاد: نامِ کننده، نامِ رویداد، نامِ مورد (پروژه، تسک، شخص…). */
+  q?: string;
+  /**
+   * کلیدهای رویدادی که **برچسبشان** با جستجو می‌خواند — صفحه آن را می‌سازد،
+   * چون برچسب به زبانِ بیننده ترجمه می‌شود و سرویس زبان را نمی‌داند.
+   */
+  actions?: string[];
+}
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * شرطِ فیلترِ رویدادها (۲.۴.۰).
+ * ⚠️ تاریخ به **منطقهٔ زمانیِ سامانه** بریده می‌شود، نه UTC: رویدادِ ساعتِ
+ * ۰۱:۰۰ ِ تهران مالِ همان روز است، نه دیروز.
+ * ⚠️ `%` و `_` ِ کاربر فرار داده می‌شوند — «۱۰۰%» نباید همه‌چیز را بیاورد.
+ */
+async function activityWhere(filter: ActivityFilter): Promise<SQL | undefined> {
+  const parts: SQL[] = [];
+  const tz = (await getSystemConfig()).timezone || 'UTC';
+  const day = sql`(${auditLog.createdAt} at time zone ${tz})::date`;
+  if (filter.from && DAY.test(filter.from)) parts.push(sql`${day} >= ${filter.from}::date`);
+  if (filter.to && DAY.test(filter.to)) parts.push(sql`${day} <= ${filter.to}::date`);
+
+  const q = filter.q?.trim().slice(0, 100) ?? '';
+  if (q !== '') {
+    const like = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const matches: SQL[] = [
+      sql`${users.name} ilike ${like}`,
+      sql`${auditLog.action} ilike ${like}`,
+      // نامِ عکس‌گرفته در خودِ رویداد (عنوانِ پروژهٔ حذف‌شده، نامِ شخص…).
+      sql`(coalesce(${auditLog.before}::text, '') || ' ' || coalesce(${auditLog.after}::text, '')) ilike ${like}`,
+      // نامِ **امروزِ** مورد — پروژه یا تسکی که بعد از رویداد تغییرِ نام داده.
+      sql`(${auditLog.objectType} = 'project' and ${auditLog.objectId} in (select ${projects.id} from ${projects} where ${projects.title} ilike ${like}))`,
+      sql`(${auditLog.objectType} = 'task' and ${auditLog.objectId} in (select ${tasks.id} from ${tasks} where ${tasks.title} ilike ${like}))`,
+    ];
+    if (filter.actions?.length) matches.push(inArray(auditLog.action, filter.actions));
+    if (/^\d+$/.test(q)) matches.push(eq(auditLog.objectId, Number(q)));
+    parts.push(or(...matches)!);
+  }
+  return parts.length ? and(...parts) : undefined;
+}
+
 export async function listActivity(
   actor: Actor,
-  options: { page?: number; perPage?: number } = {},
+  options: { page?: number; perPage?: number } & ActivityFilter = {},
 ) {
   assertActivity(actor);
 
   const perPage = Math.min(Math.max(1, options.perPage ?? ACTIVITY_PER_PAGE), MAX_PER_PAGE);
   const page = Math.max(1, Math.trunc(options.page ?? 1));
+  const where = await activityWhere(options);
 
   const [rows, totalRows] = await Promise.all([
     db
@@ -61,10 +110,14 @@ export async function listActivity(
       })
       .from(auditLog)
       .leftJoin(users, eq(users.id, auditLog.actorId))
+      .where(where)
       .orderBy(desc(auditLog.id))
       .limit(perPage)
       .offset((page - 1) * perPage),
-    db.select({ n: sql<number>`count(*)::int` }).from(auditLog),
+    // ⚠️ همان join و شرط — شمارِ کل باید با فهرستِ فیلترشده بخواند.
+    db.select({ n: sql<number>`count(*)::int` }).from(auditLog)
+      .leftJoin(users, eq(users.id, auditLog.actorId))
+      .where(where),
   ]);
 
   const total = totalRows[0]?.n ?? 0;

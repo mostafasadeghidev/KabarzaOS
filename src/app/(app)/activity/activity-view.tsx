@@ -13,6 +13,8 @@ import { Pager } from '@/components/ui/pager';
 import { ChevronLeft } from 'lucide-react';
 import type { EventSubject } from '@/server/activity/service';
 import { EventDialog, SubjectText } from './event-dialog';
+import { EventsFilter } from './events-filter';
+import { useSearchParams } from 'next/navigation';
 
 export interface EventRow {
   id: number;
@@ -65,12 +67,23 @@ export function ActivityView({
 }) {
   const tr = useT();
   const tz = useTimeZone();
+  const params = useSearchParams();
+  /** پیوندِ صفحه‌ها فیلترِ فعلی را نگه می‌دارد. */
+  const pageHref = (n: number) => {
+    const next = new URLSearchParams(params.toString());
+    next.set('page', String(n));
+    return `/activity?${next.toString()}`;
+  };
+  const filtered = ['q', 'from', 'to'].some((k) => (params.get(k) ?? '') !== '');
   /** رویدادی که دیالوگِ جزئیاتش باز است. */
   const [openEvent, setOpenEvent] = useState<number | null>(null);
 
   return (
     <div className="grid gap-4">
-      {events.length === 0 ? <EmptyState title={tr("رویدادی ثبت نشده")} /> : (
+      <EventsFilter />
+      {events.length === 0 ? (
+        <EmptyState title={filtered ? tr("رویدادی با این فیلتر پیدا نشد") : tr("رویدادی ثبت نشده")} />
+      ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -127,7 +140,7 @@ export function ActivityView({
         totalPages={paging.totalPages}
         total={paging.total}
         perPage={paging.perPage}
-        hrefOf={(n) => `/activity?page=${n}`}
+        hrefOf={pageHref}
       />
 
       <EventDialog eventId={openEvent} onClose={() => setOpenEvent(null)} onNavigate={setOpenEvent} />
