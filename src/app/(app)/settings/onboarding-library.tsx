@@ -3,7 +3,10 @@
 import { UserName, avatarFor } from '@/components/user-avatar';
 import { useState } from 'react';
 import { CatalogSection } from './catalog-section';
-import { deleteOnboardingItemAction, saveOnboardingItemAction } from './_form/actions';
+import { deleteOnboardingItemAction, deleteOnboardingMediaAction, saveOnboardingItemAction } from './_form/actions';
+import { MediaPicker } from '@/components/media/media-picker';
+import { MediaGallery, type MediaEntry } from '@/components/media/media-gallery';
+import { Paperclip } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,8 +20,10 @@ import {
   type AssigneeRule, type LibraryItem, type OnboardingKind,
 } from '@/domain/onboarding/plan';
 
+type LibraryRow = LibraryItem & { media: MediaEntry[] };
+
 export interface OnboardingLibraryData {
-  items: LibraryItem[];
+  items: LibraryRow[];
   services: Array<{ id: number; name: string }>;
   people: Array<{ id: number; name: string }>;
   /** «+ ساختِ سرویسِ تازه» — همان گاردِ دفترِ دسترسی‌ها (`members.manage`). */
@@ -65,7 +70,7 @@ export function OnboardingLibrary({ data, roles }: {
 
       <CatalogSection
         title={tr('کتابخانهٔ آنبوردینگ')}
-        description={tr('آیتم‌های «همهٔ نقش‌ها» به هر عضوِ تازه می‌رسند و آیتم‌های هر نقش فقط به کسی که آن نقش را دارد. تغییرِ کتابخانه چک‌لیستِ کسانی را که شروع کرده‌اند عوض نمی‌کند.')}
+        description={tr('آیتم‌های «همهٔ نقش‌ها» به هر عضوِ تازه می‌رسند و آیتم‌های هر نقش فقط به کسی که آن نقش را دارد. ویرایشِ آیتم با «همگام‌سازی با کتابخانه» به کارهای انجام‌نشدهٔ هر نفر می‌رسد؛ فایل‌های راهنما بی‌درنگ.')}
         addLabel="افزودن آیتم"
         rows={rows}
         columns={[
@@ -73,7 +78,14 @@ export function OnboardingLibrary({ data, roles }: {
             header: 'عنوان',
             cell: (i) => (
               <span className="grid gap-0.5">
-                <span className="font-medium">{i.title}</span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  {i.title}
+                  {i.media.length > 0 && (
+                    <span className="inline-flex items-center gap-0.5 text-xs font-normal text-muted-foreground">
+                      <Paperclip className="size-3" aria-hidden /><span className="num">{i.media.length}</span>
+                    </span>
+                  )}
+                </span>
                 {i.kind === 'access' && serviceName(i.serviceId) && (
                   <span className="text-xs text-muted-foreground">{tr('سرویس: {name}', { name: serviceName(i.serviceId)! })}</span>
                 )}
@@ -113,7 +125,7 @@ export function OnboardingLibrary({ data, roles }: {
  * سرور همین قاعده را خودش می‌سنجد.
  */
 function ItemFields({ editing, defaultRole, roles, services, people, canCreateService }: {
-  editing: LibraryItem | null;
+  editing: LibraryRow | null;
   defaultRole: number | null;
   roles: Array<{ id: number; label: string }>;
   services: Array<{ id: number; name: string }>;
@@ -124,6 +136,9 @@ function ItemFields({ editing, defaultRole, roles, services, people, canCreateSe
   const [kind, setKind] = useState<OnboardingKind>(editing?.kind ?? 'task');
   const [assignee, setAssignee] = useState<AssigneeRule>(editing?.assignee ?? 'member');
   const needsService = kind === 'access' || assignee === 'service_owner';
+  /** فایل‌هایی که همین حالا حذف شدند — دیالوگ باز می‌ماند و نباید منتظرِ بارِ دوباره بماند. */
+  const [gone, setGone] = useState<number[]>([]);
+  const currentMedia = (editing?.media ?? []).filter((m) => !gone.includes(m.id));
 
   return (
     <>
@@ -215,10 +230,32 @@ function ItemFields({ editing, defaultRole, roles, services, people, canCreateSe
         <FieldLabel htmlFor="ob-link">{tr('پیوند (اختیاری)')}</FieldLabel>
         <Input id="ob-link" name="link" dir="ltr" placeholder="https://…" defaultValue={editing?.link ?? ''} />
       </Field>
-      <Field>
-        <FieldLabel htmlFor="ob-desc">{tr('توضیحات')}</FieldLabel>
-        <Textarea id="ob-desc" name="description" rows={3} defaultValue={editing?.description ?? ''} />
-      </Field>
+      {/*
+        فایل‌های راهنما (۲.۶.۰) — تصویر، ویدئو، PDF؛ چند فایل، با کشیدن و رهاکردن
+        یا Ctrl+V روی توضیحات. همان ورودیِ رسانهٔ تسک‌ها و همان سقف‌ها.
+        روی آیتمِ کتابخانه می‌نشینند، پس به چک‌لیستِ همه بی‌درنگ می‌رسند.
+      */}
+      <MediaPicker>
+        <Field>
+          <FieldLabel htmlFor="ob-desc">{tr('توضیحات')}</FieldLabel>
+          <Textarea id="ob-desc" name="description" rows={3} defaultValue={editing?.description ?? ''} />
+        </Field>
+      </MediaPicker>
+      {currentMedia.length > 0 && (
+        <div className="grid gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground">{tr('فایل‌های راهنمای فعلی')}</span>
+          <MediaGallery
+            items={currentMedia}
+            projectId={0}
+            size="sm"
+            onRemove={async (m) => {
+              const result = await deleteOnboardingMediaAction(m.id);
+              if (!result.error) setGone((g) => [...g, m.id]);
+              return result;
+            }}
+          />
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <FieldLabel htmlFor="ob-sort" className="text-xs">{tr('ترتیب')}</FieldLabel>
         <Input id="ob-sort" name="sortOrder" type="number" className="num w-20" defaultValue={editing?.sortOrder ?? 0} />

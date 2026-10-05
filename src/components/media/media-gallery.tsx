@@ -38,9 +38,15 @@ export function MediaGallery({
   projectId,
   onChanged,
   size = 'md',
+  onRemove,
 }: {
   items: readonly MediaEntry[];
   projectId: number;
+  /**
+   * حذفِ سفارشی — فایلی که مالِ پروژه نیست (راهنمای آنبوردینگ، ۲.۶.۰) گاردِ
+   * حذفِ خودش را دارد. بی‌این، حذفِ پیوستِ پروژه.
+   */
+  onRemove?: (item: MediaEntry) => Promise<{ error?: string }>;
   /** پس از حذف — فراخوان دوباره می‌خواند (مودالِ تسک). صفحهٔ پروژه با revalidate تازه می‌شود. */
   onChanged?: () => void;
   /** `lg` — کادرِ «تصاویر» ِ بازبینی، جایی که تصویر خودش محتواست. */
@@ -60,7 +66,7 @@ export function MediaGallery({
   const remove = async (item: MediaEntry) => {
     if (!(await confirm({ title: t('این فایل حذف شود؟'), description: item.name }))) return;
     startTransition(async () => {
-      const result = await deleteAttachmentAction(item.id, projectId);
+      const result = onRemove ? await onRemove(item) : await deleteAttachmentAction(item.id, projectId);
       if (result.error) setError(result.error);
       else { setError(null); setZoom(null); onChanged?.(); }
     });

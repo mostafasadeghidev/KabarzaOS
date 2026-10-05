@@ -2,9 +2,10 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { and, eq, isNull } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
-  notifications, offices, onboardingTasks, serviceGrants, services, tagRelations, tags, userOffices,
+  attachments, files, notifications, offices, onboardingTasks, serviceGrants, services, tagRelations, tags, userOffices,
   userRoles, users,
 } from '../schema';
+import { canViewFile } from '@/server/files/service';
 import {
   notifyOverdueOnboarding, OnboardingError, saveLibraryItem, startOnboarding, toggleTask,
 } from '@/server/onboarding/service';
@@ -21,7 +22,7 @@ const OWNER = 1, MANAGER = 2, DEV = 3, KEEPER = 4, CLIENT = 5;
 const owner = (): Actor => ({ id: OWNER, roles: ['owner'], permissions: [], privateAccess: false });
 const member = (id: number): Actor => ({ id, roles: ['member'], permissions: [], privateAccess: false });
 
-let DEV_ROLE = 0, DESIGN_ROLE = 0, GITHUB = 0;
+let DEV_ROLE = 0, DESIGN_ROLE = 0, GITHUB = 0, CODE_GUIDE = 0, DEV_ENV = 0;
 const today = () => new Date().toISOString().slice(0, 10);
 const addDays = (n: number) => new Date(Date.parse(`${today()}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
@@ -55,9 +56,9 @@ beforeAll(async () => {
   const [svc] = await db.insert(services).values({ name: 'GitHub', ownerUserId: KEEPER }).returning({ id: services.id });
   GITHUB = svc!.id;
 
-  await lib({ title: 'راهنمای کدنویسی', kind: 'learn', dueDay: 1 });
+  CODE_GUIDE = await lib({ title: 'راهنمای کدنویسی', kind: 'learn', dueDay: 1 });
   await lib({ title: 'دسترسیِ گیت‌هاب', roleTagId: DEV_ROLE, kind: 'access', assignee: 'service_owner', serviceId: GITHUB });
-  await lib({ title: 'محیطِ توسعه', roleTagId: DEV_ROLE, assignee: 'office_manager', dueDay: 2 });
+  DEV_ENV = await lib({ title: 'محیطِ توسعه', roleTagId: DEV_ROLE, assignee: 'office_manager', dueDay: 2 });
   await lib({ title: 'فایلِ طراحی', roleTagId: DESIGN_ROLE });
   await lib({ title: 'قرارداد', kind: 'document', assignee: 'user', assigneeUserId: OWNER, dueDay: 3 });
 });
@@ -78,7 +79,7 @@ describe('روشن/خاموش', () => {
 
 describe('شروع از کتابخانه', () => {
   it('همهٔ نقش‌ها + نقشِ خودش؛ نه نقشِ دیگر — با مسئولِ واقعیِ هر کار', async () => {
-    expect(await startOnboarding(owner(), DEV)).toBe(4);
+    expect(await startOnboarding(owner(), DEV)).toEqual({ added: 4, updated: 0 });
     const rows = await db.select().from(onboardingTasks).where(eq(onboardingTasks.userId, DEV));
     const by = new Map(rows.map((r) => [r.title, r]));
     expect(by.has('فایلِ طراحی')).toBe(false);
@@ -90,9 +91,9 @@ describe('شروع از کتابخانه', () => {
   });
 
   it('دوباره‌زدن تکراری نمی‌سازد؛ آیتمِ تازهٔ کتابخانه با همگام‌سازی می‌آید', async () => {
-    expect(await startOnboarding(owner(), DEV)).toBe(0);
+    expect(await startOnboarding(owner(), DEV)).toEqual({ added: 0, updated: 0 });
     await lib({ title: 'آشنایی با تیم', roleTagId: DEV_ROLE, kind: 'meeting' });
-    expect(await startOnboarding(owner(), DEV)).toBe(1);
+    expect(await startOnboarding(owner(), DEV)).toEqual({ added: 1, updated: 0 });
   });
 
   it('مسئول اعلانِ جمع‌بسته می‌گیرد', async () => {
@@ -193,5 +194,42 @@ describe('ساختنِ سرویس از داخلِ کتابخانه', () => {
   it('برای آیتمِ بی‌نیاز به سرویس، نامِ تازه نادیده گرفته می‌شود', async () => {
     await lib({ kind: 'task', title: 'خواندنِ راهنما', newServiceName: 'Ghost' });
     expect((await db.select().from(services).where(eq(services.name, 'Ghost'))).length).toBe(0);
+  });
+});
+
+describe('همگام‌سازی ویرایشِ کتابخانه را می‌برد (۲.۶.۰)', () => {
+  it('کارِ باز ویرایش را می‌گیرد؛ کارِ انجام‌شده دست نمی‌خورد', async () => {
+    // «راهنمای کدنویسی» بالاتر تیک خورده؛ «محیطِ توسعه» هنوز باز است.
+    await lib({ id: DEV_ENV, title: 'محیطِ توسعه (نسخهٔ تازه)', description: 'مرحله‌به‌مرحله', roleTagId: DEV_ROLE, assignee: 'office_manager', dueDay: 3, link: 'https://example.com/setup' });
+    await lib({ id: CODE_GUIDE, title: 'راهنمای کدنویسی (ویرایش)', kind: 'learn', dueDay: 1 });
+
+    // ⚠️ تست‌های بالاتر آیتمِ تازه هم به کتابخانه افزوده‌اند؛ اینجا فقط «به‌روز» مهم است.
+    expect(await startOnboarding(owner(), DEV)).toMatchObject({ updated: 1 });
+    const rows = await db.select().from(onboardingTasks).where(eq(onboardingTasks.userId, DEV));
+    const env = rows.find((r) => r.itemId === DEV_ENV)!;
+    expect(env).toMatchObject({ title: 'محیطِ توسعه (نسخهٔ تازه)', description: 'مرحله‌به‌مرحله', link: 'https://example.com/setup' });
+    expect(env.dueDate).toBe(addDays(2));
+    expect(env.assigneeUserId).toBe(MANAGER);
+    expect(rows.find((r) => r.itemId === CODE_GUIDE)!.title).toBe('راهنمای کدنویسی');
+
+    // دوباره‌زدن بی‌تغییر چیزی را به‌روز نمی‌کند.
+    expect(await startOnboarding(owner(), DEV)).toEqual({ added: 0, updated: 0 });
+  });
+});
+
+describe('فایلِ راهنما فقط برای مخاطبِ همان آیتم (۲.۶.۰)', () => {
+  it('عضوِ تازه و انجام‌دهنده می‌بینند؛ عضوِ دیگر نه', async () => {
+    const [file] = await db.insert(files).values({
+      storageKey: 'test/onboarding-guide.pdf', mime: 'application/pdf', size: 10, originalName: 'guide.pdf',
+      purpose: 'attachment', uploadedBy: OWNER,
+    }).returning({ id: files.id });
+    await db.insert(attachments).values({ fileId: file!.id, kind: 'file', userId: OWNER, onboardingItemId: DEV_ENV });
+
+    expect(await canViewFile(member(DEV), file!.id)).toBe(true);
+    expect(await canViewFile(member(MANAGER), file!.id)).toBe(true); // انجام‌دهندهٔ «محیطِ توسعه»
+    expect(await canViewFile(member(KEEPER), file!.id)).toBe(false);
+
+    await db.delete(attachments).where(eq(attachments.fileId, file!.id));
+    await db.delete(files).where(eq(files.id, file!.id));
   });
 });

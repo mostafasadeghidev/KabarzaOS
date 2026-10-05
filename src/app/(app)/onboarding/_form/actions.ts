@@ -12,6 +12,8 @@ import {
 export interface OnboardingState {
   error?: string;
   message?: string;
+  /** جای‌گذاریِ پیام («{added} آیتمِ تازه…») — UI با `tr(message, params)`. */
+  params?: Record<string, number>;
 }
 
 function explain(error: unknown, fallback: string): string {
@@ -34,11 +36,13 @@ const num = (v: FormDataEntryValue | null): number | null => {
 
 export async function startOnboardingAction(userId: number): Promise<OnboardingState> {
   try {
-    const added = await startOnboarding(await requireActor(), userId);
+    const { added, updated } = await startOnboarding(await requireActor(), userId);
     refresh(userId);
-    return added > 0
-      ? { message: 'آنبوردینگ ساخته شد.' }
-      : { message: 'آیتمِ تازه‌ای در کتابخانه برای این نفر نبود.' };
+    // ⚠️ همگام‌سازی حالا ویرایشِ کتابخانه را هم می‌برد (۲.۶.۰) — پیام هر دو را می‌گوید.
+    if (added > 0 && updated > 0) return { message: '{added} آیتمِ تازه اضافه و {updated} کار به‌روز شد.', params: { added, updated } };
+    if (added > 0) return { message: 'آنبوردینگ ساخته شد.' };
+    if (updated > 0) return { message: '{updated} کار با کتابخانه به‌روز شد.', params: { updated } };
+    return { message: 'چک‌لیست با کتابخانه یکی است؛ چیزی برای تغییر نبود.' };
   } catch (error) {
     return { error: explain(error, 'آنبوردینگ ساخته نشد.') };
   }

@@ -2,6 +2,25 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.6.0]
+
+### Added
+
+- **Onboarding task details in a modal.** Click a checklist item's title, on the dashboard or the onboarding page, to see everything in one place:
+  - type and status;
+  - who it's with and the due date, plus the service and who completed it;
+  - the full description, where a video link plays inline;
+  - the link as a card, and the guide files.
+  - Anyone allowed to tick the item can mark it done, or reopen it, from the modal.
+- **Guide files on library items.** Add images, videos, PDFs or documents to an onboarding library item: several at once, by picking, dragging or pasting with Ctrl+V. It's the same uploader and limits as task media.
+  - Files belong to the library item, so they reach every checklist that uses it right away.
+  - Only the new member, the person responsible for that item, people who can see members, and library editors can open them.
+  - Deleting a library item also removes its files. Migration 0042 adds the link column.
+
+### Fixed
+
+- **«Sync with library» ignored library edits.** It only added new items, so items already on a checklist kept their original title, description and link. Sync now also updates every item that isn't done yet: title, description, link, type, service, assignee, and the due date counted from that person's start. Completed items stay as they were, as a record of what was done. The message says how many items were added and how many were updated.
+
 ## [2.5.0]
 
 ### Added

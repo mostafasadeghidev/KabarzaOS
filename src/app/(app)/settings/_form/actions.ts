@@ -18,8 +18,9 @@ import { closePeriod, reopenPeriod } from '@/server/finance/service';
 import { saveTelegramSettings, telegramCredentials, telegramEnabled } from '@/server/settings/telegram-service';
 import { getT } from '@/i18n/server';
 import {
-  deleteLibraryItem, ONBOARDING_MESSAGES, OnboardingError, saveLibraryItem,
+  deleteLibraryItem, deleteLibraryMedia, ONBOARDING_MESSAGES, OnboardingError, saveLibraryItem,
 } from '@/server/onboarding/service';
+import { mediaError, mediaFrom } from '@/app/(app)/projects/_form/media-form';
 
 /** اقدام‌های تنظیمات. گاردها در سرویس‌اند (R-ARCH-01). */
 
@@ -35,7 +36,8 @@ function explain(error: unknown, fallback: string): string {
   if (error instanceof OnboardingError) return ONBOARDING_MESSAGES[error.code];
   if (error instanceof AccessError) return accessMessage(error.code);
   if (error instanceof ForbiddenError) return 'دسترسی کافی ندارید.';
-  return fallback;
+  // فایلِ راهنمای آنبوردینگ — دلیلِ ردِ فایل (حجم، نوع، شمار) به زبانِ کاربر.
+  return mediaError(error) ?? fallback;
 }
 
 async function run(fn: (actor: Awaited<ReturnType<typeof requireActor>>) => Promise<unknown>, fallback: string) {
@@ -174,6 +176,8 @@ export async function deleteQaItemAction(id: number) {
 /* ---- کتابخانهٔ آنبوردینگ ---- */
 
 export async function saveOnboardingItemAction(_prev: SettingsState, formData: FormData) {
+  // فایل‌های راهنما (۲.۶.۰) — همان ورودیِ رسانهٔ تسک‌ها.
+  const media = await mediaFrom(formData);
   return run((actor) => saveLibraryItem(actor, {
     id: num(formData.get('id')),
     roleTagId: num(formData.get('roleTagId')),
@@ -188,7 +192,11 @@ export async function saveOnboardingItemAction(_prev: SettingsState, formData: F
     link: String(formData.get('link') ?? ''),
     dueDay: Number(formData.get('dueDay') ?? 1) || 1,
     sortOrder: Number(formData.get('sortOrder') ?? 0) || 0,
-  }), 'آیتم ذخیره نشد.');
+  }, media), 'آیتم ذخیره نشد.');
+}
+
+export async function deleteOnboardingMediaAction(attachmentId: number) {
+  return run((actor) => deleteLibraryMedia(actor, attachmentId), 'فایل حذف نشد.');
 }
 
 export async function deleteOnboardingItemAction(id: number) {

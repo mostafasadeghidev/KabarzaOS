@@ -4,6 +4,7 @@ import { pk, fk, money, ts, stamps, softDelete, scope } from './_shared';
 import { currencies, offices, tags } from './base';
 import { users } from './access';
 import { files } from './files';
+import { onboardingItems } from './onboarding';
 
 /** گروه ۳ — پروژه و کار. قواعد در rules/PROJECTS-TASKS.md */
 
@@ -212,6 +213,8 @@ export const attachments = pgTable('attachments', {
   commentId: fk('comment_id').references(() => comments.id, { onDelete: 'cascade' }),
   /** پیوستِ بازبینی (ویدئوی بارگذاری‌شده، اسکرین‌شات، سند) — گاردِ خودِ بازبینی. */
   reviewId: fk('review_id').references(() => reviews.id, { onDelete: 'cascade' }),
+  /** فایلِ راهنمای آیتمِ کتابخانهٔ آنبوردینگ (۲.۶.۰) — گاردِ آنبوردینگ، نه پروژه. */
+  onboardingItemId: fk('onboarding_item_id').references(() => onboardingItems.id, { onDelete: 'cascade' }),
   /** سنجاق‌شده — بالای فهرستِ تبِ فایل‌ها (۲.۳.۰). */
   pinned: boolean('pinned').notNull().default(false),
   ...stamps,
@@ -221,6 +224,7 @@ export const attachments = pgTable('attachments', {
   index('attachments_comment_ix').on(t.commentId).where(sql`${t.commentId} is not null`),
   index('attachments_file_ix').on(t.fileId),
   index('attachments_review_ix').on(t.reviewId).where(sql`${t.reviewId} is not null`),
+  index('attachments_onboarding_item_ix').on(t.onboardingItemId).where(sql`${t.onboardingItemId} is not null`),
 ]);
 
 export const timelogs = pgTable('timelogs', {

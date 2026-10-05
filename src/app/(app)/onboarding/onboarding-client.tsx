@@ -3,7 +3,10 @@
 import { UserAvatar, UserName } from '@/components/user-avatar';
 import { useActionState, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { CalendarDays, CircleCheck, ExternalLink, Paperclip, Plus, RefreshCw, RotateCcw, Trash2, UserRound, Wrench } from 'lucide-react';
+import { RichText } from '@/components/media/rich-text';
+import { LinkCard } from '@/components/media/link-card';
+import { MediaGallery, type MediaEntry } from '@/components/media/media-gallery';
 import {
   addCustomTaskAction, deleteTaskAction, startOnboardingAction, toggleTaskAction, type OnboardingState,
 } from './_form/actions';
@@ -18,7 +21,7 @@ import { Field, FieldLabel } from '@/components/ui/field';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm';
@@ -46,6 +49,8 @@ export interface TaskItem {
   canTick: boolean;
   /** فقط در فهرستِ «با شما» — این کار مالِ آنبوردینگِ چه کسی است. */
   personName?: string;
+  /** فایل‌های راهنمای آیتمِ کتابخانه (۲.۶.۰). */
+  media: MediaEntry[];
 }
 
 const STATE_BADGE: Record<TaskState, { label: string; variant: 'success' | 'warning' | 'secondary' }> = {
@@ -88,7 +93,12 @@ export function TaskRows({ tasks, canDelete = false, showPerson = false, memberI
     return t.assigneeName ?? tr('مدیرانِ اعضا');
   };
 
+  /** کاری که مودالِ جزئیاتش باز است — شناسه، تا پس از تیک دادهٔ تازه را نشان دهد. */
+  const [openId, setOpenId] = useState<number | null>(null);
+  const opened = tasks.find((t) => t.id === openId) ?? null;
+
   return (
+    <>
     <ul className="grid gap-2">
       {tasks.map((t) => {
         // کارِ بازی که تیکش با دیگری است — برای عضو «در انتظارِ مسئول»، نه «باز».
@@ -108,9 +118,22 @@ export function TaskRows({ tasks, canDelete = false, showPerson = false, memberI
               aria-label={t.title}
             />
             <div className="grid min-w-0 flex-1 gap-0.5">
-              <span className={cn('text-sm font-medium', t.state === 'done' && 'text-muted-foreground line-through')}>
+              {/* عنوان مودالِ جزئیات را باز می‌کند (۲.۶.۰) — توضیحِ کامل، پیوند و فایل‌های راهنما. */}
+              <button
+                type="button"
+                onClick={() => setOpenId(t.id)}
+                className={cn(
+                  'flex w-fit items-center gap-1.5 rounded-sm text-start text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                  t.state === 'done' && 'text-muted-foreground line-through',
+                )}
+              >
                 {t.title}
-              </span>
+                {t.media.length > 0 && (
+                  <span className="inline-flex items-center gap-0.5 text-xs font-normal text-muted-foreground no-underline">
+                    <Paperclip className="size-3" aria-hidden /><span className="num">{t.media.length}</span>
+                  </span>
+                )}
+              </button>
               <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                 <span>{tr(KIND_LABELS[t.kind])}</span>
                 {t.serviceName && <span>· {t.serviceName}</span>}
@@ -127,7 +150,7 @@ export function TaskRows({ tasks, canDelete = false, showPerson = false, memberI
                 )}
                 {t.hasGrant && <span>· {tr('در سیاههٔ دسترسی ثبت شد')}</span>}
               </span>
-              {t.description && <p className="text-xs whitespace-pre-line text-muted-foreground">{t.description}</p>}
+              {t.description && <p className="line-clamp-2 text-xs whitespace-pre-line text-muted-foreground">{t.description}</p>}
               {t.link && (
                 <a href={t.link} target="_blank" rel="noopener noreferrer nofollow" className="flex w-fit items-center gap-1 text-xs underline">
                   <ExternalLink className="size-3" />{tr('باز کردنِ پیوند')}
@@ -144,6 +167,118 @@ export function TaskRows({ tasks, canDelete = false, showPerson = false, memberI
         );
       })}
     </ul>
+    <TaskDetailDialog
+      task={opened}
+      onClose={() => setOpenId(null)}
+      who={opened ? who(opened) : ''}
+      pending={pending}
+      onToggle={(task, done) => toggle(task, done)}
+    />
+    </>
+  );
+}
+
+/**
+ * جزئیاتِ یک کارِ آنبوردینگ (۲.۶.۰) — همه‌چیز مرتب در یک جا: نوع و وضعیت،
+ * انجام‌دهنده و موعد، توضیحِ کامل (ویدئوی لینک‌شده همان‌جا پخش می‌شود)،
+ * پیوند و فایل‌های راهنما. تیک هم همین‌جاست — با همان اجازهٔ فهرست (`canTick`).
+ */
+function TaskDetailDialog({ task, onClose, who, pending, onToggle }: {
+  task: TaskItem | null;
+  onClose: () => void;
+  who: string;
+  pending: boolean;
+  onToggle: (task: TaskItem, done: boolean) => void;
+}) {
+  const tr = useT();
+  const badge = task && (!task.canTick && task.state !== 'done'
+    ? { label: 'در انتظارِ مسئول', variant: task.state === 'overdue' ? 'warning' as const : 'secondary' as const }
+    : STATE_BADGE[task.state]);
+  return (
+    <Dialog open={task !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        {task && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex flex-wrap items-center gap-2 pe-6">
+                {task.title}
+              </DialogTitle>
+              <DialogDescription className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">{tr(KIND_LABELS[task.kind])}</Badge>
+                {badge && <Badge variant={badge.variant}>{tr(badge.label)}</Badge>}
+                {task.hasGrant && <Badge variant="secondary">{tr('در سیاههٔ دسترسی ثبت شد')}</Badge>}
+              </DialogDescription>
+            </DialogHeader>
+
+            <dl className="grid gap-3 rounded-lg border bg-muted/30 p-3 text-sm sm:grid-cols-2">
+              <div className="grid gap-0.5">
+                <dt className="flex items-center gap-1 text-xs text-muted-foreground"><UserRound className="size-3.5" aria-hidden />{tr('انجام‌دهنده')}</dt>
+                <dd>{task.assigneeUserId !== null ? <UserName userId={task.assigneeUserId} name={who} /> : who}</dd>
+              </div>
+              <div className="grid gap-0.5">
+                <dt className="flex items-center gap-1 text-xs text-muted-foreground"><CalendarDays className="size-3.5" aria-hidden />{tr('موعد')}</dt>
+                <dd className="num">{ltr(task.dueDate)}</dd>
+              </div>
+              {task.personName && (
+                <div className="grid gap-0.5">
+                  <dt className="text-xs text-muted-foreground">{tr('عضوِ تازه')}</dt>
+                  <dd><UserName userId={task.userId} name={task.personName} /></dd>
+                </div>
+              )}
+              {task.serviceName && (
+                <div className="grid gap-0.5">
+                  <dt className="flex items-center gap-1 text-xs text-muted-foreground"><Wrench className="size-3.5" aria-hidden />{tr('سرویس')}</dt>
+                  <dd>{task.serviceName}</dd>
+                </div>
+              )}
+              {task.state === 'done' && task.doneByName && (
+                <div className="grid gap-0.5">
+                  <dt className="flex items-center gap-1 text-xs text-muted-foreground"><CircleCheck className="size-3.5" aria-hidden />{tr('انجام شد توسط')}</dt>
+                  <dd><UserName userId={task.doneBy} name={task.doneByName} /></dd>
+                </div>
+              )}
+            </dl>
+
+            {task.description && (
+              <section className="grid gap-1.5">
+                <h3 className="text-xs font-medium text-muted-foreground">{tr('توضیحات')}</h3>
+                <RichText text={task.description} />
+              </section>
+            )}
+
+            {task.link && (
+              <section className="grid gap-1.5">
+                <h3 className="text-xs font-medium text-muted-foreground">{tr('پیوند')}</h3>
+                <LinkCard href={task.link} label={null} />
+              </section>
+            )}
+
+            {task.media.length > 0 && (
+              <section className="grid gap-1.5">
+                <h3 className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                  <Paperclip className="size-3.5" aria-hidden />{tr('فایل‌های راهنما')}
+                </h3>
+                <MediaGallery items={task.media} projectId={0} size="lg" />
+              </section>
+            )}
+
+            {task.canTick && (
+              <DialogFooter>
+                {task.state === 'done' ? (
+                  <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => onToggle(task, false)}>
+                    <RotateCcw className="size-3.5" />{tr('برگرداندن به باز')}
+                  </Button>
+                ) : (
+                  <Button type="button" size="sm" disabled={pending} onClick={() => onToggle(task, true)}>
+                    <CircleCheck className="size-3.5" />{tr('انجام شد')}
+                  </Button>
+                )}
+              </DialogFooter>
+            )}
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -157,7 +292,7 @@ export function StartButton({ userId, started }: { userId: number; started: bool
       type="button" size="sm" variant={started ? 'outline' : 'default'} disabled={pending}
       onClick={() => startTransition(async () => {
         const result = await startOnboardingAction(userId);
-        show(tr(result.error ?? result.message ?? ''), result.error ? 'error' : 'success');
+        show(tr(result.error ?? result.message ?? '', result.params), result.error ? 'error' : 'success');
       })}
     >
       <RefreshCw className="size-3.5" />
@@ -188,7 +323,7 @@ export function StartPicker({ candidates }: { candidates: Array<{ id: number; na
         type="button" size="sm" disabled={!userId || pending}
         onClick={() => startTransition(async () => {
           const result = await startOnboardingAction(Number(userId));
-          show(tr(result.error ?? result.message ?? ''), result.error ? 'error' : 'success');
+          show(tr(result.error ?? result.message ?? '', result.params), result.error ? 'error' : 'success');
           if (!result.error) setUserId('');
         })}
       >

@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { assertNotFrozen, canManageProject, isClientOnly, projectRelation } from '@/server/projects/authority';
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
-  attachments, company, files, ledger, projectClients, projectMembers, projectPayments, projects, userAvatars, userRoles, users,
+  attachments, company, files, ledger, onboardingTasks, projectClients, projectMembers, projectPayments, projects, userAvatars, userRoles, users,
 } from '@/db/schema';
 import { canSeeAvatar, type AccountRole } from '@/domain/people/avatar';
 import { can, canManageSection, type Actor } from '@/domain/access/permissions';
@@ -133,9 +133,25 @@ export async function canViewFile(actor: Actor, fileId: number): Promise<boolean
   // پیوستِ پروژه ← هر کس به آن پروژه دسترسی دارد.
   const attached = await db.select({
     projectId: attachments.projectId, taskId: attachments.taskId, commentId: attachments.commentId,
-    reviewId: attachments.reviewId,
+    reviewId: attachments.reviewId, onboardingItemId: attachments.onboardingItemId,
   }).from(attachments).where(eq(attachments.fileId, fileId));
   for (const row of attached) {
+    /**
+     * فایلِ راهنمای آنبوردینگ (۲.۶.۰): پرونده‌خوانِ اعضا و ویرایشگرِ کتابخانه،
+     * و از بقیه فقط کسی که کاری از همان آیتم در چک‌لیست دارد — خودِ عضوِ تازه
+     * یا انجام‌دهندهٔ آن کار. ⚠️ عضوِ دیگرِ تیم با حدسِ شناسه چیزی نمی‌گیرد.
+     */
+    if (row.onboardingItemId) {
+      if (can(actor, 'members.view') || can(actor, 'settings.manage')) return true;
+      const mine = await db.select({ id: onboardingTasks.id }).from(onboardingTasks)
+        .where(and(
+          eq(onboardingTasks.itemId, row.onboardingItemId),
+          or(eq(onboardingTasks.userId, actor.id), eq(onboardingTasks.assigneeUserId, actor.id)),
+        ))
+        .limit(1);
+      if (mine.length > 0) return true;
+      continue;
+    }
     /**
      * ⚠️ رسانهٔ تسک (و یادداشتِ تسک) قاعدهٔ **خودِ تسک** را دارد، نه پروژه:
      * عکسِ تسکِ خصوصی را فقط کسی می‌بیند که آن تسک را می‌بیند. اگر این شاخه
@@ -441,7 +457,9 @@ export async function addLink(actor: Actor, projectId: number, rawUrl: string, l
 export async function deleteAttachment(actor: Actor, attachmentId: number) {
   const rows = await db.select().from(attachments).where(eq(attachments.id, attachmentId));
   const row = rows[0];
-  if (!row) throw new FileNotFoundError();
+  // ⚠️ فایلِ راهنمای آنبوردینگ مسیرِ حذفِ خودش را دارد (`deleteLibraryMedia`، با
+  // `settings.manage`)؛ اینجا گاردِ پروژه است و «مدیرِ پروژه‌ها» نباید از این راه پاکش کند.
+  if (!row || row.onboardingItemId) throw new FileNotFoundError();
 
   if (row.projectId) await assertProjectAccess(actor, row.projectId);
   // ⚠️ پروژهٔ منجمد پیوستش هم حذف نمی‌شود — همان قفلی که افزودن دارد (`block_if_frozen`).

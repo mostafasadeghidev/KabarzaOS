@@ -2,7 +2,7 @@ import { and, asc, desc, eq, inArray, isNull, lt, ne, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '@/db/client';
 import {
-  auditLog, onboardingItems, onboardingTasks, serviceGrants, services, tagRelations, tags,
+  attachments, auditLog, files, onboardingItems, onboardingTasks, serviceGrants, services, tagRelations, tags,
   userOffices, userRoles, users,
 } from '@/db/schema';
 import { tagName } from '@/db/tag-name';
@@ -17,6 +17,43 @@ import {
 import { getSystemConfig } from '@/server/settings/system-service';
 import { notify } from '@/server/notifications/service';
 import { findOrCreateService } from '@/server/access/service';
+import { discardUploads, removeFiles, storeUploads, type UploadBlob } from '@/server/files/service';
+
+/** فایلِ راهنمای یک آیتم — همان شکلِ `MediaEntry` ِ گالری (۲.۶.۰). */
+export interface OnboardingMedia {
+  id: number;
+  fileId: number;
+  kind: string;
+  mime: string;
+  size: number;
+  name: string;
+  canDelete: boolean;
+}
+
+/** فایل‌های راهنمای چند آیتمِ کتابخانه، یک کوئری. */
+async function mediaForItems(itemIds: readonly number[], canDelete: boolean): Promise<Map<number, OnboardingMedia[]>> {
+  const map = new Map<number, OnboardingMedia[]>();
+  if (itemIds.length === 0) return map;
+  const rows = await db.select({
+    id: attachments.id,
+    itemId: attachments.onboardingItemId,
+    fileId: attachments.fileId,
+    kind: attachments.kind,
+    mime: files.mime,
+    size: files.size,
+    name: files.originalName,
+  }).from(attachments)
+    .innerJoin(files, eq(files.id, attachments.fileId))
+    .where(inArray(attachments.onboardingItemId, [...itemIds]))
+    .orderBy(asc(attachments.id));
+  for (const r of rows) {
+    if (r.itemId === null || r.fileId === null) continue;
+    map.set(r.itemId, [...(map.get(r.itemId) ?? []), {
+      id: r.id, fileId: r.fileId, kind: r.kind, mime: r.mime, size: Number(r.size), name: r.name, canDelete,
+    }]);
+  }
+  return map;
+}
 
 /**
  * آنبوردینگِ نقش‌محور.
@@ -76,7 +113,7 @@ async function ownerIds(): Promise<number[]> {
  * کتابخانه (تنظیمات)
  * ------------------------------------------------------------------ */
 
-export async function listLibrary(actor: Actor): Promise<LibraryItem[]> {
+export async function listLibrary(actor: Actor): Promise<Array<LibraryItem & { media: OnboardingMedia[] }>> {
   assertCan(actor, 'settings.manage');
   const rows = await db.select({
     id: onboardingItems.id,
@@ -92,7 +129,8 @@ export async function listLibrary(actor: Actor): Promise<LibraryItem[]> {
     sortOrder: onboardingItems.sortOrder,
   }).from(onboardingItems)
     .orderBy(sql`${onboardingItems.roleTagId} nulls first`, asc(onboardingItems.dueDay), asc(onboardingItems.sortOrder), asc(onboardingItems.id));
-  return rows;
+  const media = await mediaForItems(rows.map((r) => r.id), true);
+  return rows.map((r) => ({ ...r, media: media.get(r.id) ?? [] }));
 }
 
 export interface LibraryInput {
@@ -120,7 +158,7 @@ function safeLink(raw: string): string {
   return /^https?:\/\//i.test(link) || link.startsWith('/') ? link.slice(0, 500) : '';
 }
 
-export async function saveLibraryItem(actor: Actor, input: LibraryInput): Promise<number> {
+export async function saveLibraryItem(actor: Actor, input: LibraryInput, media: readonly UploadBlob[] = []): Promise<number> {
   assertCan(actor, 'settings.manage');
   const title = input.title.trim();
   if (!title) throw new OnboardingError('title_required');
@@ -156,22 +194,55 @@ export async function saveLibraryItem(actor: Actor, input: LibraryInput): Promis
     sortOrder: Math.trunc(input.sortOrder) || 0,
     updatedAt: new Date(),
   };
-  if (input.id) {
-    const [row] = await db.update(onboardingItems).set(values)
-      .where(eq(onboardingItems.id, input.id)).returning({ id: onboardingItems.id });
-    if (!row) throw new OnboardingError('not_found');
-    await audit(actor, 'onboarding_item.update', 'onboarding_item', row.id, null, values);
-    return row.id;
+  /**
+   * ⚠️ فایل‌ها **پیش از** نوشتنِ آیتم سنجیده و ذخیره می‌شوند (همه یا هیچ،
+   * `storeUploads`)؛ اگر نوشتنِ آیتم یا ردیفِ پیوست شکست خورد، پس گرفته می‌شوند.
+   */
+  const stored = await storeUploads(actor, media);
+  try {
+    let id: number;
+    if (input.id) {
+      const [row] = await db.update(onboardingItems).set(values)
+        .where(eq(onboardingItems.id, input.id)).returning({ id: onboardingItems.id });
+      if (!row) throw new OnboardingError('not_found');
+      await audit(actor, 'onboarding_item.update', 'onboarding_item', row.id, null, { ...values, media: stored.length });
+      id = row.id;
+    } else {
+      const [row] = await db.insert(onboardingItems).values(values).returning({ id: onboardingItems.id });
+      await audit(actor, 'onboarding_item.create', 'onboarding_item', row!.id, null, { ...values, media: stored.length });
+      id = row!.id;
+    }
+    if (stored.length > 0) {
+      await db.insert(attachments).values(stored.map((f) => ({
+        fileId: f.fileId, kind: f.kind, userId: actor.id, onboardingItemId: id,
+      })));
+    }
+    return id;
+  } catch (error) {
+    await discardUploads(stored);
+    throw error;
   }
-  const [row] = await db.insert(onboardingItems).values(values).returning({ id: onboardingItems.id });
-  await audit(actor, 'onboarding_item.create', 'onboarding_item', row!.id, null, values);
-  return row!.id;
+}
+
+/** حذفِ یک فایلِ راهنما از آیتمِ کتابخانه (۲.۶.۰). */
+export async function deleteLibraryMedia(actor: Actor, attachmentId: number): Promise<void> {
+  assertCan(actor, 'settings.manage');
+  const [row] = await db.select({ fileId: attachments.fileId, itemId: attachments.onboardingItemId })
+    .from(attachments).where(eq(attachments.id, attachmentId));
+  if (!row || row.itemId === null) throw new OnboardingError('not_found');
+  await db.delete(attachments).where(eq(attachments.id, attachmentId));
+  if (row.fileId) await removeFiles([row.fileId]);
+  await audit(actor, 'onboarding_item.media_delete', 'onboarding_item', row.itemId, { attachmentId }, null);
 }
 
 /** حذف از کتابخانه — چک‌لیستِ کسانی که شروع کرده‌اند دست نمی‌خورد (عکسِ آیتم می‌ماند). */
 export async function deleteLibraryItem(actor: Actor, id: number): Promise<void> {
   assertCan(actor, 'settings.manage');
+  // ⚠️ ردیف‌های پیوست با cascade می‌روند، ولی خودِ فایل‌ها (ردیفِ files و شیء) نه.
+  const own = await db.select({ fileId: attachments.fileId }).from(attachments)
+    .where(eq(attachments.onboardingItemId, id));
   await db.delete(onboardingItems).where(eq(onboardingItems.id, id));
+  await removeFiles(own.map((o) => o.fileId).filter((f): f is number => f !== null));
   await audit(actor, 'onboarding_item.delete', 'onboarding_item', id);
 }
 
@@ -217,7 +288,7 @@ async function officeManagerOf(userId: number): Promise<number | null> {
  * تازه (نقشِ تازه، آیتمِ تازهٔ کتابخانه) را اضافه می‌کند. تکراری نمی‌سازد.
  * موعدِ آیتم‌های تازه از **امروز** حساب می‌شود.
  */
-export async function startOnboarding(actor: Actor, userId: number): Promise<number> {
+export async function startOnboarding(actor: Actor, userId: number): Promise<{ added: number; updated: number }> {
   assertCanManage(actor, 'members');
   await assertEnabled();
   const person = await activeMember(userId);
@@ -226,8 +297,13 @@ export async function startOnboarding(actor: Actor, userId: number): Promise<num
   const [roleTagIds, library, existing, officeManagerId, start] = await Promise.all([
     roleTagIdsOf(userId),
     db.select().from(onboardingItems),
-    db.select({ itemId: onboardingTasks.itemId, sortOrder: onboardingTasks.sortOrder })
-      .from(onboardingTasks).where(eq(onboardingTasks.userId, userId)),
+    db.select({
+      id: onboardingTasks.id, itemId: onboardingTasks.itemId, sortOrder: onboardingTasks.sortOrder,
+      doneAt: onboardingTasks.doneAt, createdAt: onboardingTasks.createdAt,
+      title: onboardingTasks.title, description: onboardingTasks.description, kind: onboardingTasks.kind,
+      link: onboardingTasks.link, serviceId: onboardingTasks.serviceId,
+      assigneeUserId: onboardingTasks.assigneeUserId, dueDate: onboardingTasks.dueDate,
+    }).from(onboardingTasks).where(eq(onboardingTasks.userId, userId)),
     officeManagerOf(userId),
     today(),
   ]);
@@ -236,13 +312,54 @@ export async function startOnboarding(actor: Actor, userId: number): Promise<num
     roleTagIds,
     new Set(existing.map((e) => e.itemId).filter((id): id is number => id !== null)),
   );
-  if (toAdd.length === 0) return 0;
-
-  const serviceIds = [...new Set(toAdd.map((i) => i.serviceId).filter((id): id is number => id !== null))];
+  /**
+   * ⚠️ همگام‌سازی ویرایشِ کتابخانه را هم می‌برد (۲.۶.۰): کارهای **باز** ِ این
+   * نفر که از کتابخانه آمده‌اند عنوان، توضیح، پیوند، نوع، سرویس، انجام‌دهنده
+   * و موعدِ تازهٔ آیتم را می‌گیرند. کارِ انجام‌شده دست نمی‌خورد — سندِ همان
+   * چیزی است که انجام شد. پیش از این دکمه فقط آیتمِ تازه اضافه می‌کرد و
+   * ویرایش‌ها هیچ‌وقت به چک‌لیستِ شروع‌شده نمی‌رسید.
+   */
+  const byId = new Map(library.map((i) => [i.id, i]));
+  const stale = existing.filter((e) => e.doneAt === null && e.itemId !== null && byId.has(e.itemId));
+  const toAddIds = new Set(toAdd.map((i) => i.id));
+  const serviceIds = [...new Set([...toAdd, ...stale.map((e) => byId.get(e.itemId!)!)]
+    .map((i) => i.serviceId).filter((id): id is number => id !== null))];
   const owners = serviceIds.length === 0 ? [] : await db.select({ id: services.id, owner: services.ownerUserId })
     .from(services).where(inArray(services.id, serviceIds));
   const ownerOf = new Map(owners.map((o) => [o.id, o.owner]));
   const base = existing.reduce((max, e) => Math.max(max, e.sortOrder), 0);
+  const assigneeFor = (item: { assignee: string; serviceId: number | null; assigneeUserId: number | null }) => resolveAssignee(item.assignee as AssigneeRule, {
+    memberId: userId,
+    officeManagerId,
+    serviceOwnerId: item.serviceId ? (ownerOf.get(item.serviceId) ?? null) : null,
+    userId: item.assigneeUserId,
+  });
+
+  let updated = 0;
+  const tz = (await getSystemConfig()).timezone || 'UTC';
+  for (const task of stale) {
+    if (toAddIds.has(task.itemId!)) continue;
+    const item = byId.get(task.itemId!)!;
+    // موعد از روزِ ساختنِ همین کار (روزِ شروع) به وقتِ سامانه.
+    const started = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(task.createdAt);
+    const next = {
+      title: item.title,
+      description: item.description,
+      kind: item.kind,
+      link: item.link,
+      serviceId: item.serviceId,
+      assigneeUserId: assigneeFor(item),
+      dueDate: dueDateFor(started, item.dueDay),
+    };
+    const changed = (Object.keys(next) as Array<keyof typeof next>).some((k) => task[k] !== next[k]);
+    if (!changed) continue;
+    await db.update(onboardingTasks).set({ ...next, updatedAt: new Date() }).where(eq(onboardingTasks.id, task.id));
+    updated++;
+  }
+  if (toAdd.length === 0) {
+    if (updated > 0) await audit(actor, 'onboarding.sync', 'user', userId, null, { added: 0, updated });
+    return { added: 0, updated };
+  }
 
   const rows = toAdd.map((item, i) => ({
     userId,
@@ -252,12 +369,7 @@ export async function startOnboarding(actor: Actor, userId: number): Promise<num
     kind: item.kind,
     link: item.link,
     serviceId: item.serviceId,
-    assigneeUserId: resolveAssignee(item.assignee, {
-      memberId: userId,
-      officeManagerId,
-      serviceOwnerId: item.serviceId ? (ownerOf.get(item.serviceId) ?? null) : null,
-      userId: item.assigneeUserId,
-    }),
+    assigneeUserId: assigneeFor(item),
     dueDate: dueDateFor(start, item.dueDay),
     sortOrder: base + i + 1,
   }));
@@ -265,9 +377,9 @@ export async function startOnboarding(actor: Actor, userId: number): Promise<num
   // ⚠️ onConflictDoNothing: دو کلیکِ هم‌زمان روی «همگام‌سازی» تکراری نمی‌سازد (شاخصِ یکتا).
   const inserted = await db.insert(onboardingTasks).values(rows).onConflictDoNothing()
     .returning({ assignee: onboardingTasks.assigneeUserId });
-  await audit(actor, 'onboarding.start', 'user', userId, null, { added: inserted.length });
+  await audit(actor, 'onboarding.start', 'user', userId, null, { added: inserted.length, updated });
   await announce(actor, person, inserted.map((r) => r.assignee), existing.length === 0);
-  return inserted.length;
+  return { added: inserted.length, updated };
 }
 
 /**
@@ -453,6 +565,8 @@ export interface TaskView {
   hasGrant: boolean;
   fromLibrary: boolean;
   canTick: boolean;
+  /** فایل‌های راهنمای آیتمِ کتابخانه (۲.۶.۰) — آیتمِ ویژهٔ یک نفر ندارد. */
+  media: OnboardingMedia[];
 }
 
 async function taskViews(actor: Actor, where: ReturnType<typeof and>, now: string): Promise<TaskView[]> {
@@ -481,6 +595,9 @@ async function taskViews(actor: Actor, where: ReturnType<typeof and>, now: strin
     .where(where)
     .orderBy(asc(onboardingTasks.dueDate), asc(onboardingTasks.sortOrder), asc(onboardingTasks.id));
   const manage = canManageSection(actor, 'members');
+  const media = await mediaForItems(
+    [...new Set(rows.map((r) => r.itemId).filter((id): id is number => id !== null))], false,
+  );
   return rows.map((r) => ({
     id: r.id,
     userId: r.userId,
@@ -499,6 +616,7 @@ async function taskViews(actor: Actor, where: ReturnType<typeof and>, now: strin
     hasGrant: r.grantId !== null,
     fromLibrary: r.itemId !== null,
     canTick: canTick({ id: actor.id, canManageMembers: manage }, r),
+    media: r.itemId !== null ? (media.get(r.itemId) ?? []) : [],
   }));
 }
 
