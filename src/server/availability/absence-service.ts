@@ -167,7 +167,8 @@ export async function saveAbsence(actor: Actor, input: AbsenceInput): Promise<nu
       title: 'مرخصی برای شما ثبت شد',
       body: byUser ? 'از {from} تا {to} (توسط {by}).' : 'از {from} تا {to}.',
       params: { from: range.from, to: range.to, by: byUser?.name ?? '' },
-      url: '/activity',
+      // مرخصیِ ثبت‌شده برای او در «برنامهٔ من» دیده می‌شود (۲.۲.۰).
+      url: '/my-schedule',
     });
   }
 

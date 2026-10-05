@@ -84,10 +84,17 @@ const NAV: Array<NavItem & {
    * ماتریسِ تیم را ببیند؛ و چون داده‌ای وارد نمی‌شد، ماتریس برای همیشه
    * خالی می‌ماند.
    */
+  /**
+   * ⚠️ از ۲.۲.۰ سه منوی جدا به‌جای «فعالیت» ِ سه‌تکه:
+   *  · «برنامهٔ من» — برنامه و مرخصیِ خود، برای هر عضو (و مالک).
+   *  · «حضور و مرخصیِ تیم» — پایین‌تر، با `hasTeamAvailability`.
+   *  · «رویدادها» — فقط با `activity.view` (مالک و مالی).
+   */
   {
-    href: '/activity', label: t("فعالیت"), icon: 'activity', group: 'data',
+    href: '/my-schedule', label: t("برنامهٔ من"), icon: 'schedule', group: 'data',
     permission: 'activity.view', orPermissions: ['members.view'], orMember: true,
   },
+  { href: '/activity', label: t("رویدادها"), icon: 'activity', group: 'data', permission: 'activity.view' },
   // ⚠️ تنظیمات بخشِ دیدنی ندارد؛ با مجوزِ مدیریتش گارد می‌شود.
 ];
 
@@ -182,7 +189,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    */
   if (await hasTeamAvailability(actor)) {
     items.push({
-      href: '/availability', label: t("در دسترس بودن"), icon: 'availability', group: 'data',
+      href: '/availability', label: t("حضور و مرخصیِ تیم"), icon: 'availability', group: 'data',
     });
   }
 

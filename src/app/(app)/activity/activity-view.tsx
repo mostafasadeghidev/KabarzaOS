@@ -4,17 +4,12 @@ import { UserName } from '@/components/user-avatar';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { AvailabilityView, type AvailabilityData } from './availability-view';
-import { AbsencePanel, type AbsencePanelData } from './absence-panel';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
-import { useSearchParams } from 'next/navigation';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Pager } from '@/components/ui/pager';
-import { Section } from '@/components/page-shell';
 import { ChevronLeft } from 'lucide-react';
 import type { EventSubject } from '@/server/activity/service';
 import { EventDialog, SubjectText } from './event-dialog';
@@ -42,12 +37,6 @@ export interface AbsenceRow {
   note: string;
 }
 
-const TABS = [
-  { key: 'events', label: 'رویدادها' },
-  { key: 'absences', label: 'مرخصی‌ها' },
-  { key: 'availability', label: 'در دسترس بودن' },
-] as const;
-
 /** تاریخ/ساعت به وقتِ بیننده — نه UTC ِ خام (`useDateTime`). */
 function when(value: Date | string | null | undefined, tz: string): string {
   return formatDateTime(value, tz);
@@ -60,61 +49,28 @@ export interface Paging {
   total: number;
 }
 
+/**
+ * «رویدادها» — گزارشِ رویدادهای سامانه (۲.۲.۰).
+ *
+ * ⚠️ پیش از این سه تب داشت (رویدادها، مرخصی‌ها، در دسترس بودن) و سه مخاطبِ
+ * جدا را در یک صفحه قاطی می‌کرد. برنامه و مرخصیِ خودِ کاربر به «برنامهٔ من»
+ * رفت و مرخصی‌های تیم به «حضور و مرخصیِ تیم»؛ اینجا فقط رویداد می‌ماند.
+ */
 export function ActivityView({
   events,
   paging,
-  absences,
-  leave,
-  availability,
-  canSeeFeed,
 }: {
   events: EventRow[];
   paging: Paging;
-  absences: AbsenceRow[];
-  leave: AbsencePanelData;
-  availability: AvailabilityData;
-  /**
-   * خوراکِ رویدادها مجوزِ `activity.view` می‌خواهد. نداشتنش تبِ رویدادها را
-   * برمی‌دارد، ولی مرخصی و برنامهٔ هفتگی — که مالِ خودِ کاربرند — می‌مانند.
-   */
-  canSeeFeed: boolean;
 }) {
   const tr = useT();
   const tz = useTimeZone();
-  const visible = TABS.filter((t) => t.key !== 'events' || canSeeFeed);
-
-  /**
-   * تب از نشانی خوانده می‌شود تا «در دسترس بودن» **لینک‌شدنی** باشد.
-   * ⚠️ پیش از این فقط state ِ محلی بود: هیچ راهی نبود کسی را مستقیم به
-   * ماتریسِ تیم بفرستی، و رفرش هم به تبِ اول برمی‌گشت.
-   */
-  const params = useSearchParams();
-  const asked = params.get('tab');
-  const [tab, setTab] = useState<(typeof TABS)[number]['key']>(
-    visible.some((x) => x.key === asked)
-      ? (asked as (typeof TABS)[number]['key'])
-      : visible[0]!.key,
-  );
   /** رویدادی که دیالوگِ جزئیاتش باز است. */
   const [openEvent, setOpenEvent] = useState<number | null>(null);
 
   return (
     <div className="grid gap-4">
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
-        <div className="overflow-x-auto pb-1.5">
-          <TabsList variant="line" className="w-max">
-            {visible.map((t) => (
-              <TabsTrigger key={t.key} value={t.key} className="flex-none">
-                {tr(t.label)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
-
-      {tab === 'events' && (
-        events.length === 0 ? <EmptyState title={tr("رویدادی ثبت نشده")} /> : (
+      {events.length === 0 ? <EmptyState title={tr("رویدادی ثبت نشده")} /> : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -160,56 +116,19 @@ export function ActivityView({
               ))}
             </TableBody>
           </Table>
-        )
       )}
 
       {/*
         صفحه‌بندی — پیوند، نه دکمهٔ کلاینتی: نشانیِ صفحه باید قابلِ اشتراک و
         بازگشت‌پذیر بماند. همان صفحه‌بندِ مشترکِ اپ؛ خودش با یک صفحه پنهان می‌شود.
       */}
-      {tab === 'events' && (
-        <Pager
-          page={paging.page}
-          totalPages={paging.totalPages}
-          total={paging.total}
-          perPage={paging.perPage}
-          hrefOf={(n) => `/activity?page=${n}`}
-        />
-      )}
-
-      {tab === 'absences' && (
-        <div className="grid gap-6">
-          <AbsencePanel data={leave} />
-
-          {/* جدولِ تیمی — فقط با مجوزِ اعضا پر می‌شود (سرور تصمیم می‌گیرد). */}
-          <Section title={tr("مرخصی‌های تیم (۳۰ روزِ اخیر)")}>
-            {absences.length === 0 ? <p className="text-sm text-muted-foreground">{tr("مرخصی‌ای در این بازه نیست")}</p> : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tr("عضو")}</TableHead>
-                <TableHead numeric>{tr("از")}</TableHead>
-                <TableHead numeric>{tr("تا")}</TableHead>
-                <TableHead>{tr("توضیح")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {absences.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell><UserName userId={a.userId} name={a.userName ?? '—'} size="sm" /></TableCell>
-                  <TableNumericCell>{a.fromDate}</TableNumericCell>
-                  <TableNumericCell>{a.toDate}</TableNumericCell>
-                  <TableCell>{a.note || '—'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-            )}
-          </Section>
-        </div>
-      )}
-
-      {tab === 'availability' && <AvailabilityView data={availability} />}
+      <Pager
+        page={paging.page}
+        totalPages={paging.totalPages}
+        total={paging.total}
+        perPage={paging.perPage}
+        hrefOf={(n) => `/activity?page=${n}`}
+      />
 
       <EventDialog eventId={openEvent} onClose={() => setOpenEvent(null)} onNavigate={setOpenEvent} />
     </div>

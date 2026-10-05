@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import {
-  filterOptions, getWeek, hasTeamAvailability, onlineNow, rowCells, runningTimers, teamMatrix,
+  filterOptions, hasTeamAvailability, onlineNow, rowCells, runningTimers, teamMatrix,
 } from '@/server/availability/service';
-import { AvailabilityView } from '../activity/availability-view';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { weekdayIndex, weekOrder } from '@/domain/availability/weekly';
 import { formatElapsed } from '@/domain/availability/team';
@@ -14,8 +13,10 @@ import { leaveTargets, listAbsences } from '@/server/availability/absence-servic
 import { AbsencePanel } from '../activity/absence-panel';
 import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { pageTitle } from '@/i18n/page-title';
+import { listAbsences as listTeamAbsences } from '@/server/activity/service';
+import { TeamAbsences } from './team-absences';
 
-export const generateMetadata = pageTitle('در دسترس بودن');
+export const generateMetadata = pageTitle('حضور و مرخصیِ تیم');
 
 /**
  * «در دسترس بودن اعضا» — پورتِ صفحهٔ مستقلِ `Admin\Availability_Page`.
@@ -42,13 +43,16 @@ export default async function AvailabilityPage({
   const view = (await searchParams).view === 'board' ? 'board' : 'matrix';
   const now = new Date();
 
-  const [rows, timers, online, options, system, mineMap] = await Promise.all([
+  const monthAgo = new Date(now.getTime() - 30 * 86400000).toISOString().slice(0, 10);
+  const [rows, timers, online, options, system, teamAbsences] = await Promise.all([
     teamMatrix(actor, now),
     runningTimers(actor, now),
     onlineNow(actor),
     filterOptions(actor),
     getSystemConfig(),
-    getWeek(actor.id),
+    // مرخصی‌های تیم (۳۰ روزِ اخیر) — از «فعالیت ← مرخصی‌ها» به اینجا آمد (۲.۲.۰).
+    // ⚠️ `members.view` می‌خواهد؛ مدیرِ دفترِ بی‌این مجوز جدولش را نمی‌بیند.
+    listTeamAbsences(actor, { from: monthAgo, to: now.toISOString().slice(0, 10) }).catch(() => null),
   ]);
 
   const order = weekOrder(system.weekStart);
@@ -63,9 +67,9 @@ export default async function AvailabilityPage({
   return (
     <PageShell>
       <PageHeader
-        title={t("در دسترس بودن اعضا")}
+        title={t("حضور و مرخصیِ تیم")}
         description={(
-          <>{t("هر عضو روزها و ساعت‌هایی که در هفته در دسترسِ کار است را خودش ثبت می‌کند؛ این صفحه نمای هفتگیِ کلِ تیم است.")}</>
+          <>{t("هر عضو روزهای کاری و مرخصی‌اش را خودش در «برنامهٔ من» ثبت می‌کند؛ این صفحه نمای کلِ تیم است.")}</>
         )}
       />
 
@@ -98,13 +102,10 @@ export default async function AvailabilityPage({
         />
       )}
       {/*
-        ⚠️ برنامهٔ هفتگیِ **خودِ** مدیر هم همین‌جا. پیش از این فقط در «فعالیت ←
-        در دسترس بودن» بود و مدیرِ دفتری که کارش در همین صفحه است، جایی برای
-        ثبتِ روزهای خودش نمی‌دید.
+        ⚠️ برنامهٔ هفتگیِ خودِ مدیر دیگر اینجا نیست (۲.۲.۰): در دو جا بود و
+        گیج می‌کرد. جای یکتایش «برنامهٔ من» است که در منوی همه هست.
       */}
-      <AvailabilityView
-        data={{ mine: Object.fromEntries(mineMap), order, today: todayIdx }}
-      />
+      {teamAbsences && <TeamAbsences rows={teamAbsences} />}
 
       {targets.length > 1 && (
         <Section title={t("ثبت مرخصی برای عضو")}>

@@ -1,107 +1,60 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
-import { ACTIVITY_PER_PAGE, actionLabel, listAbsences, listActivity } from '@/server/activity/service';
+import { ACTIVITY_PER_PAGE, actionLabel, listActivity } from '@/server/activity/service';
 import { ForbiddenError } from '@/domain/access/guard';
-import { EmptyState } from '@/components/ui/empty-state';
-import { getWeek } from '@/server/availability/service';
-import {
-  leaveTargets, listAbsences as listMyAbsences,
-} from '@/server/availability/absence-service';
-import { weekdayIndex, weekOrder, type Slot } from '@/domain/availability/weekly';
-import { can } from '@/domain/access/permissions';
-import { getSystemConfig } from '@/server/settings/system-service';
+import { hasTeamAvailability } from '@/server/availability/service';
 import { ActivityView } from './activity-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { pageTitle } from '@/i18n/page-title';
 
-export const generateMetadata = pageTitle('فعالیت');
+export const generateMetadata = pageTitle('رویدادها');
 
-/** فعالیت و حضور — از همان لاگِ ممیزی که هر سرویس در آن می‌نویسد. */
+/**
+ * «رویدادها» — از همان لاگِ ممیزی که هر سرویس در آن می‌نویسد (`activity.view`).
+ *
+ * ⚠️ تب‌های قدیمیِ این صفحه جابه‌جا شدند (۲.۲.۰) و پیوندهای کهنه — اعلان‌ها،
+ * نشانک‌ها — به جای تازه‌شان می‌روند: برنامه و مرخصیِ خود → «برنامهٔ من»،
+ * مرخصی‌های تیم → «حضور و مرخصیِ تیم». کسی هم که مجوزِ رویدادها ندارد به
+ * «برنامهٔ من» می‌رود، نه به صفحهٔ «دسترسی ندارید».
+ */
 export default async function ActivityPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; tab?: string }>;
 }) {
-  /**
-   * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
-   * در ناوبریِ سمتِ کلاینت، Next فقط بخشِ صفحه را دوباره رندر می‌کند و
-   * چیدمان را از درختِ کش‌شده برمی‌دارد — پس `primeTranslations()` ِ
-   * چیدمان اجرا نمی‌شود و `t()` رشتهٔ فارسیِ مبدأ را برمی‌گرداند.
-   * `cache()` تضمین می‌کند در هر درخواست فقط یک بار اجرا شود.
-   */
   await primeTranslations();
 
   const actor = await currentActor();
   if (!actor) redirect('/login');
 
-  const today = new Date().toISOString().slice(0, 10);
-  const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const query = await searchParams;
+  if (query.tab === 'availability') redirect('/my-schedule');
+  if (query.tab === 'absences') redirect((await hasTeamAvailability(actor)) ? '/availability' : '/my-schedule');
 
-  const page = Math.max(1, Number((await searchParams).page ?? 1) || 1);
-
-  /**
-   * ⚠️ نبودنِ مجوزِ «فعالیت» فقط **خوراکِ رویدادها** را خالی می‌کند، نه کلِ صفحه.
-   *
-   * پیش از این اینجا `return` بود و صفحه با «دسترسی ندارید» تمام می‌شد — که
-   * یعنی برنامهٔ هفتگی و فرمِ مرخصیِ **خودِ کاربر** هم هرگز رندر نمی‌شد.
-   * `activity.view` را فقط owner و finance دارند (`member: []`)، پس هیچ عضوی
-   * نمی‌توانست ساعتِ کاری‌اش را ثبت کند و ماتریسِ تیم برای همیشه خالی می‌ماند.
-   * بقیهٔ همین تابع از اول همین را می‌گفت — «برنامهٔ هفتگیِ خودِ کاربر همیشه» —
-   * و آن `return` حرفش را نقض می‌کرد.
-   */
-  let feed: Awaited<ReturnType<typeof listActivity>> | null = null;
+  const page = Math.max(1, Number(query.page ?? 1) || 1);
+  let feed;
   try {
     feed = await listActivity(actor, { page });
   } catch (error) {
-    if (!(error instanceof ForbiddenError)) throw error;
+    if (error instanceof ForbiddenError) redirect('/my-schedule');
+    throw error;
   }
-
-  // مرخصی مجوزِ دیگری دارد؛ نبودنش نباید کلِ صفحه را از کار بیندازد.
-  let absences: Awaited<ReturnType<typeof listAbsences>> = [];
-  try {
-    absences = await listAbsences(actor, { from: monthAgo, to: today });
-  } catch { /* بدونِ دسترسیِ اعضا، بخشِ مرخصی خالی می‌ماند. */ }
-
-  // برنامهٔ هفتگیِ خودِ کاربر همیشه؛ ماتریسِ تیم فقط با دسترسیِ اعضا.
-  // ⚠️ ترتیبِ ستون‌ها از تنظیماتِ سامانه می‌آید — نه ثابتِ «شنبه».
-  const [mineMap, system, myAbsences, targets] = await Promise.all([
-    getWeek(actor.id),
-    getSystemConfig(),
-    // ⚠️ مرخصیِ **خودِ** کاربر مجوزِ بخش نمی‌خواهد؛ جدولِ تیمیِ بالا می‌خواهد.
-    // پورتِ `for_user(upcoming_only)`: فهرستِ خودِ عضو فقط بازه‌های امروز به بعد.
-    listMyAbsences(actor, actor.id, { upcomingOnly: true }),
-    leaveTargets(actor),
-  ]);
-
-  // Map به شیء تبدیل می‌شود تا از مرزِ سرور/کلاینت رد شود.
-  const toRecord = (m: Map<number, Slot[]>) => Object.fromEntries(m) as Record<number, Slot[]>;
 
   return (
     <PageShell>
       <PageHeader
-        title={t("فعالیت")}
-        description={(
-          <>{t("آخرین رویدادهای سامانه و مرخصی‌های ثبت‌شده.")}</>
-        )}
+        title={t("رویدادها")}
+        description={t("آخرین رویدادهای سامانه — چه کسی، چه کاری، روی چه چیزی.")}
       />
 
       <ActivityView
-        events={(feed?.rows ?? []).map((r) => ({ ...r, label: actionLabel(r.action) }))}
+        events={feed.rows.map((r) => ({ ...r, label: actionLabel(r.action) }))}
         paging={{
-          page: feed?.page ?? 1,
-          totalPages: feed?.totalPages ?? 1,
-          total: feed?.total ?? 0,
-          perPage: feed?.perPage ?? ACTIVITY_PER_PAGE,
-        }}
-        canSeeFeed={feed !== null}
-        absences={absences}
-        leave={{ mine: myAbsences, targets, meId: actor.id, today }}
-        availability={{
-          mine: toRecord(mineMap),
-          order: weekOrder(system.weekStart),
-          // روزِ امروز از **سرور** — تا نشانِ «امروز» در هیدریشن نپرد.
-          today: weekdayIndex(new Date()),
+          page: feed.page,
+          totalPages: feed.totalPages,
+          total: feed.total,
+          perPage: feed.perPage ?? ACTIVITY_PER_PAGE,
         }}
       />
     </PageShell>

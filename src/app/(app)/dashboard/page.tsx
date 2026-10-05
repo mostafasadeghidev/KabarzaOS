@@ -292,7 +292,7 @@ export default async function DashboardPage({
           </DashPanel>
 
           {/* پورتِ پنلِ «آنلاین اکنون» ِ داشبوردِ مالک: فعال‌ها اول، بعد بی‌کارها. */}
-          <DashPanel title={t("آنلاین اکنون")} action={{ href: '/availability', label: t("در دسترس بودن") }}>
+          <DashPanel title={t("آنلاین اکنون")} action={{ href: '/availability', label: t("حضور و مرخصیِ تیم") }}>
             {today.online.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("کسی آنلاین نیست.")}</p>
             ) : (
@@ -309,7 +309,7 @@ export default async function DashboardPage({
             )}
           </DashPanel>
 
-          <DashPanel title={t("آخرین رویدادها")} action={{ href: '/activity', label: t("فعالیت") }}>
+          <DashPanel title={t("آخرین رویدادها")} action={{ href: '/activity', label: t("رویدادها") }}>
             {today.activity.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("رویدادی ثبت نشده.")}</p>
             ) : (

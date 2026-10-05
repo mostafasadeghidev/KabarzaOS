@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.2.0]
+
+### Changed
+
+- **The «Activity» and «Availability» menus have been rearranged by who they are for.** Before, «Activity» mixed system events, leave and your own weekly schedule. «Availability» showed the team, and your own schedule appeared there too.
+  - **My schedule** (new, for every member): your working days and hours, and your leave.
+  - **Team availability & leave** (was «Availability»), for owners and team managers: the team grid, the team's leave over the last 30 days (moved from «Activity»), and recording leave for a member.
+  - **Events** (was «Activity»), for owners and finance: only the system event log.
+  - Nothing was removed; everything moved to one place. Old links and notifications open the new pages.
+
 ## [2.1.0]
 
 ### Added
