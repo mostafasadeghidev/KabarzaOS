@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { EntryRow, FormOptions } from './ledger-view';
@@ -90,7 +91,10 @@ export function EntryForm({
   const [description, setDescription] = useState(keep('description', editing?.description ?? ''));
 
   const peopleOptions: Option[] = useMemo(
-    () => options.people.map((p) => ({ value: p.id, label: p.name, hint: p.email })),
+    () => options.people.map((p) => ({
+      value: p.id, label: p.name, hint: p.email,
+      media: <UserAvatar userId={p.id} name={p.name} size="xs" />,
+    })),
     [options.people],
   );
   /**

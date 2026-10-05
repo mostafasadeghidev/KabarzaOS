@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { savePersonAction, type PersonFormState } from './_form/actions';
@@ -201,6 +202,7 @@ export function PersonDialog({
                 id="p-existing"
                 options={options.candidates.map((c) => ({
                   value: c.id, label: c.name, hint: c.email,
+                  media: <UserAvatar userId={c.id} name={c.name} size="xs" />,
                 }))}
                 value={{ id: picked?.id ?? null, label: picked?.name ?? '' }}
                 onChange={(next) => setPicked(

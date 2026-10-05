@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -73,7 +74,7 @@ export function BankDirectory({
               <TableRow key={r.id}>
                 <TableCell>
                   <div className="flex items-center gap-1.5">
-                    {r.name}
+                    <UserName userId={r.id} name={r.name} size="sm" />
                     {r.isFormer && (
                       <Badge variant="outline" className="text-[0.65rem]">{tr('سابق')}</Badge>
                     )}

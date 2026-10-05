@@ -447,6 +447,7 @@ export interface TaskView {
   assigneeUserId: number | null;
   assigneeName: string | null;
   doneAt: Date | null;
+  doneBy: number | null;
   doneByName: string | null;
   serviceName: string | null;
   hasGrant: boolean;
@@ -468,6 +469,7 @@ async function taskViews(actor: Actor, where: ReturnType<typeof and>, now: strin
     doneAt: onboardingTasks.doneAt,
     assigneeUserId: onboardingTasks.assigneeUserId,
     assigneeName: assignee.name,
+    doneBy: onboardingTasks.doneBy,
     doneByName: doer.name,
     serviceName: services.name,
     grantId: onboardingTasks.grantId,
@@ -491,6 +493,7 @@ async function taskViews(actor: Actor, where: ReturnType<typeof and>, now: strin
     assigneeUserId: r.assigneeUserId,
     assigneeName: r.assigneeName,
     doneAt: r.doneAt,
+    doneBy: r.doneBy,
     doneByName: r.doneByName,
     serviceName: r.serviceName,
     hasGrant: r.grantId !== null,

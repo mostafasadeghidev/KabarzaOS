@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UserAvatar } from '@/components/user-avatar';
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { getMemberHours } from '@/server/reports/service';
@@ -98,6 +99,7 @@ export default async function MemberHoursPage({
           href: `/reports?tab=hours&${range.allTime ? 'hfrom=&hto=' : reportQuery({ hfrom: range.from, hto: range.to })}`,
           label: t('گزارش‌ها'),
         }}
+        media={<UserAvatar userId={userId} name={data.member.name} size="lg" />}
         title={data.member.name}
         description={(
           <>

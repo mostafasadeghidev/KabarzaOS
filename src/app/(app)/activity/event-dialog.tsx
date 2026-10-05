@@ -28,7 +28,10 @@ export function SubjectText({ subject }: { subject: EventSubject }) {
     <span className="grid gap-0.5">
       <span>
         <span className="text-muted-foreground">{tr(subject.kindLabel)}: </span>
-        {subject.name ?? `#${subject.id}`}
+        {/* موردِ «فرد» با آواتار — بقیهٔ موردها (پروژه، حساب…) فقط نام. */}
+        {subject.kind === 'user' && subject.name
+          ? <UserName userId={subject.id} name={subject.name} />
+          : (subject.name ?? `#${subject.id}`)}
       </span>
       {subject.projectTitle && subject.kind !== 'project' && subject.kind !== 'bid'
         && subject.kind !== 'unit' && subject.kind !== 'payment_request' && (

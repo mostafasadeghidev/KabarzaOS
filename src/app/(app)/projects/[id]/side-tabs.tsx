@@ -49,6 +49,7 @@ export interface PaymentRow {
   amountSettled: string | null;
   paidAt: Date | string | null;
   note: string;
+  userId?: number | null;
   userName: string | null;
   receiptIds: number[] | null;
   /** «معادل (محاسبه)» — ارزشِ ردیف در ارزِ پروژه (پورتِ `row_value_in`). */
@@ -149,7 +150,7 @@ export function FinanceTab({
           <TableBody>
             {payments.map((p) => (
               <TableRow key={p.id}>
-                <TableCell>{p.note || p.userName || '—'}</TableCell>
+                <TableCell>{p.note || (p.userName ? <UserName userId={p.userId} name={p.userName} /> : '—')}</TableCell>
                 <TableCell>{t(DIRECTION_LABEL[p.direction] ?? p.direction)}</TableCell>
                 <TableNumericCell>{day(p.paidAt)}</TableNumericCell>
                 <TableNumericCell>{format(settled(p))}</TableNumericCell>
@@ -209,6 +210,7 @@ export interface QaTaskRow {
   statusName: string | null;
   statusColor: string | null;
   roleNames: string[];
+  assigneeId?: number | null;
   assigneeName: string | null;
 }
 
@@ -254,7 +256,7 @@ function QaTaskGroups({ tasks, onOpen }: { tasks: QaTaskRow[]; onOpen: (id: numb
               >
                 {task.title}
               </button>
-              {task.assigneeName && <span className="text-xs text-muted-foreground">{task.assigneeName}</span>}
+              {task.assigneeName && <UserName userId={task.assigneeId} name={task.assigneeName} className="text-xs text-muted-foreground" />}
             </ItemContent>
             {task.statusName && (
               <ItemActions><TagChip color={task.statusColor}>{task.statusName}</TagChip></ItemActions>

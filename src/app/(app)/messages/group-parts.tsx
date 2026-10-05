@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { AtSign, CircleAlert, SendHorizontal } from 'lucide-react';
@@ -181,7 +182,10 @@ export function GroupComposer({
                   i === active && 'bg-accent text-accent-foreground',
                 )}
               >
-                <AtSign className="size-3.5 text-muted-foreground" />
+                {/* «همه» نشانِ @ دارد؛ هر شخص آواتارِ خودش را. */}
+                {o.id === 'all'
+                  ? <AtSign className="size-3.5 text-muted-foreground" />
+                  : <UserAvatar userId={o.id} name={o.name} size="xs" />}
                 <span className="truncate">{o.name}</span>
                 {o.id === 'all' && <span className="ms-auto text-xs text-muted-foreground">{t('همهٔ اعضا')}</span>}
               </li>

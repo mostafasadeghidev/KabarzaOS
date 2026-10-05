@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Users } from 'lucide-react';
@@ -72,7 +73,7 @@ export function ClientsDialog({ data }: { data: ClientsFormData }) {
           <input type="hidden" name="projectId" value={data.projectId} />
           <MultiSelect
             name="clientId"
-            options={data.candidates}
+            options={data.candidates.map((c) => ({ ...c, media: <UserAvatar userId={c.id} name={c.label} size="xs" /> }))}
             defaultSelected={data.clientIds}
             placeholder={tr('افزودنِ کارفرما…')}
             emptyText={tr('کارفرمایی برای افزودن نیست.')}

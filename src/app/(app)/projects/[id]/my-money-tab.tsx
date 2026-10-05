@@ -1,6 +1,6 @@
 'use client';
 
-import { UserName } from '@/components/user-avatar';
+import { UserName, avatarFor } from '@/components/user-avatar';
 import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Package, Trash2 } from 'lucide-react';
@@ -142,7 +142,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
             {data.canManage && (
               <Field>
                 <FieldLabel htmlFor="u-user">{t("عضو")}</FieldLabel>
-                <SearchableSelect id="u-user" name="userId" containerClassName="w-44" required>
+                <SearchableSelect id="u-user" name="userId" containerClassName="w-44" required renderMedia={avatarFor(data.members)}>
                   {data.members.map((m) => <NativeSelectOption key={m.id} value={m.id}>{m.name}</NativeSelectOption>)}
                 </SearchableSelect>
               </Field>

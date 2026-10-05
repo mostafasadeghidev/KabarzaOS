@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { UserAvatar } from '@/components/user-avatar';
 import Link from 'next/link';
 import { currentActor } from '@/server/auth';
 import { teamMember, teamMemberProjects } from '@/server/team/service';
@@ -61,7 +62,11 @@ export default async function TeamMemberPage({
       const name = drill.person?.name ?? `#${userId}`;
       return (
         <PageShell>
-          <PageHeader back={{ href: `/team/${userId}`, label: name }} title={t('پروژه‌های {name}', { name })} />
+          <PageHeader
+            back={{ href: `/team/${userId}`, label: name }}
+            media={<UserAvatar userId={userId} name={name} size="lg" />}
+            title={t('پروژه‌های {name}', { name })}
+          />
           <ProjectBoard mode="member" projects={drill.projects} empty={t('پروژه‌ای ندارد.')} />
         </PageShell>
       );

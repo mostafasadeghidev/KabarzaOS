@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react';
@@ -249,7 +250,7 @@ export function AccountsView({
                       value={String(p.id)}
                       defaultChecked={assigned.has(p.id)}
                     />
-                    {p.name}
+                    <UserName userId={p.id} name={p.name} />
                   </label>
                 ))}
               </div>

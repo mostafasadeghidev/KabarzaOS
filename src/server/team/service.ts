@@ -515,6 +515,7 @@ export async function teamReviewTasks(actor: Actor) {
       projectId: tasks.projectId,
       projectTitle: projects.title,
       dueDate: tasks.dueDate,
+      assigneeId: tasks.assignedTo,
       assigneeName: users.name,
       statusName: tagName(await currentLocale()),
       statusColor: tags.color,

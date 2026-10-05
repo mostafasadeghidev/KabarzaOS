@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { UserAvatar } from '@/components/user-avatar';
 import { currentActor } from '@/server/auth';
 import {
   canCreateProjects, getCardOptions, getProjectFormOptions, getStatusOptions, listProjects,
@@ -60,12 +61,22 @@ export default async function ProjectsPage({
 
   /**
    * گزینه‌های فرم فقط وقتی خوانده می‌شوند که دکمه‌اش هم دیده شود.
-   * ⚠️ مدیرِ دفتر بی‌مجوزِ سراسری هم فرمِ ساخت دارد (فقط دفاترِ خودش)، ولی
-   * کارتِ قابلِ ویرایش نه — `cardOptions` همچنان فقط برای مدیرِ سراسری است.
+   * ⚠️ مدیرِ دفتر بی‌مجوزِ سراسری هم فرمِ ساخت دارد (فقط دفاترِ خودش).
+   */
+  /**
+   * ⚠️ منوی کارت برای مدیرِ دفتر/پروژه هم ساخته می‌شود؛ روی هر کارت فقط وقتی
+   * دیده می‌شود که آن پروژه را مدیریت کند (`manageableIds`). کسی که هیچ پروژه‌ای
+   * را مدیریت نمی‌کند ForbiddenError می‌گیرد ← بی‌منو.
    */
   const [formOptions, cardOptions] = canManage
     ? await Promise.all([getProjectFormOptions(actor), getCardOptions(actor)])
-    : [await canCreateProjects(actor) ? await getProjectFormOptions(actor) : null, null];
+    : [
+      await canCreateProjects(actor) ? await getProjectFormOptions(actor) : null,
+      await getCardOptions(actor).catch((error: unknown) => {
+        if (error instanceof ForbiddenError) return null;
+        throw error;
+      }),
+    ];
 
   /**
    * وضعیت‌ها فقط خوراکِ منوی چیپِ **قابلِ تغییر**اند و آن منو فقط برای مدیر
@@ -74,6 +85,7 @@ export default async function ProjectsPage({
    * می‌خواهد و صدازدنِ بی‌قیدش همین‌جا صفحهٔ عضو را می‌انداخت.
    */
   const statuses = (formOptions?.statuses
+    ?? cardOptions?.statuses
     ?? (canViewSection(actor, 'projects') ? await getStatusOptions(actor) : [])
   ).map((s) => ({
     id: s.id,
@@ -103,8 +115,8 @@ export default async function ProjectsPage({
           today: new Date().toISOString().slice(0, 10),
           // بخش‌های اولیه فقط در همین فرمِ ساخت لازم‌اند.
           bootstrap: {
-            people: formOptions.people.map((p) => ({ value: p.id, label: p.name })),
-            clients: formOptions.clientPeople.map((c) => ({ value: c.id, label: c.name })),
+            people: formOptions.people.map((p) => ({ value: p.id, label: p.name, media: <UserAvatar userId={p.id} name={p.name} size="xs" /> })),
+            clients: formOptions.clientPeople.map((c) => ({ value: c.id, label: c.name, media: <UserAvatar userId={c.id} name={c.name} size="xs" /> })),
             memberRoles: formOptions.memberRoles,
             roleTags: formOptions.roleTags,
             priorities: formOptions.priorities.map((p) => ({ id: p.id, label: p.name })),

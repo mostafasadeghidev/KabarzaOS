@@ -248,7 +248,7 @@ export default async function DashboardPage({
               <p className="text-sm text-muted-foreground">{t("همه سرِ کارند.")}</p>
             ) : (
               <ul className="space-y-1.5 text-sm">
-                {today.away.map((a) => <li key={a.userId}>{a.name}</li>)}
+                {today.away.map((a) => <li key={a.userId}><UserName userId={a.userId} name={a.name} size="sm" /></li>)}
               </ul>
             )}
           </DashPanel>
@@ -267,7 +267,7 @@ export default async function DashboardPage({
               </p>
             ) : (
               <ul className="space-y-1.5 text-sm">
-                {today.available.map((a) => <li key={a.userId}>{a.name}</li>)}
+                {today.available.map((a) => <li key={a.userId}><UserName userId={a.userId} name={a.name} size="sm" /></li>)}
               </ul>
             )}
           </DashPanel>
@@ -280,7 +280,10 @@ export default async function DashboardPage({
               <ul className="space-y-1.5 text-sm">
                 {today.timers.map((w) => (
                   <li key={w.userId} className="flex items-center justify-between gap-3">
-                    <span className="truncate">{w.name}{w.project ? <span className="text-muted-foreground"> · {w.project}</span> : null}</span>
+                    <span className="flex min-w-0 items-center gap-1">
+                      <UserName userId={w.userId} name={w.name} size="sm" />
+                      {w.project ? <span className="truncate text-muted-foreground"> · {w.project}</span> : null}
+                    </span>
                     <span className="num shrink-0 text-xs text-muted-foreground">{Math.floor(w.minutes / 60)}:{String(w.minutes % 60).padStart(2, '0')}</span>
                   </li>
                 ))}
@@ -296,7 +299,7 @@ export default async function DashboardPage({
               <ul className="space-y-1.5 text-sm">
                 {today.online.map((u) => (
                   <li key={u.id} className="flex items-center justify-between gap-3">
-                    <span className="truncate">{u.name}</span>
+                    <UserName userId={u.id} name={u.name} size="sm" />
                     <span className={`shrink-0 text-xs ${u.state === 'active' ? 'text-emerald-700 dark:text-emerald-500' : 'text-muted-foreground'}`}>
                       {u.state === 'active' ? t('فعال') : t('بی‌کار')}
                     </span>

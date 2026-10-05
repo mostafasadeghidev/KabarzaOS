@@ -337,6 +337,7 @@ export function MultiSelect({
                   {o?.color && (
                     <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ backgroundColor: o.color }} />
                   )}
+                  {o?.media}
                   <span className="truncate">{label}</span>
                   <button
                     type="button"
@@ -413,6 +414,7 @@ export function MultiSelect({
                       {o.color && (
                         <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ backgroundColor: o.color }} />
                       )}
+                      {o.media}
                       <span className="min-w-0 truncate">{o.label}</span>
                       {o.hint && <span className="ms-auto shrink-0 text-xs text-muted-foreground">{o.hint}</span>}
                     </CommandItem>

@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName, avatarFor } from '@/components/user-avatar';
 import { useState } from 'react';
 import { CatalogSection } from './catalog-section';
 import { deleteOnboardingItemAction, saveOnboardingItemAction } from './_form/actions';
@@ -83,7 +84,9 @@ export function OnboardingLibrary({ data, roles }: {
           { header: 'نوع', cell: (i) => <Badge variant="secondary">{tr(KIND_LABELS[i.kind])}</Badge> },
           {
             header: 'انجام‌دهنده',
-            cell: (i) => (i.assignee === 'user' ? (personName(i.assigneeUserId) ?? '—') : tr(ASSIGNEE_LABELS[i.assignee])),
+            cell: (i) => (i.assignee === 'user'
+              ? (personName(i.assigneeUserId) ? <UserName userId={i.assigneeUserId} name={personName(i.assigneeUserId)} /> : '—')
+              : tr(ASSIGNEE_LABELS[i.assignee])),
           },
           { header: 'موعد', cell: (i) => tr('روزِ {n}', { n: i.dueDay }) },
         ]}
@@ -198,6 +201,7 @@ function ItemFields({ editing, defaultRole, roles, services, people, canCreateSe
               <SearchableSelect
                 id="ob-user" name="assigneeUserId" containerClassName="w-full" required
                 defaultValue={editing?.assigneeUserId ? String(editing.assigneeUserId) : ''}
+                renderMedia={avatarFor(people)}
               >
                 <NativeSelectOption value="">{tr('انتخاب کنید')}</NativeSelectOption>
                 {people.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>)}

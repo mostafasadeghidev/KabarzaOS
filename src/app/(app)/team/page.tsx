@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { UserAvatar } from '@/components/user-avatar';
 import { currentActor } from '@/server/auth';
 import {
   taskFilterOptions, teamComments, teamMembers, teamOverview, teamProjects, teamReviewTasks, teamTasks,
@@ -78,8 +79,8 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
                 canEditMoney: form.canSetMoney,
                 today: new Date().toISOString().slice(0, 10),
                 bootstrap: {
-                  people: form.people.map((p) => ({ value: p.id, label: p.name })),
-                  clients: form.clientPeople.map((c) => ({ value: c.id, label: c.name })),
+                  people: form.people.map((p) => ({ value: p.id, label: p.name, media: <UserAvatar userId={p.id} name={p.name} size="xs" /> })),
+                  clients: form.clientPeople.map((c) => ({ value: c.id, label: c.name, media: <UserAvatar userId={c.id} name={c.name} size="xs" /> })),
                   memberRoles: form.memberRoles,
                   roleTags: form.roleTags,
                   priorities: form.priorities.map((p) => ({ id: p.id, label: p.name })),

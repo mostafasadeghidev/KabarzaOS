@@ -95,3 +95,16 @@ export function UserAvatarStack({
     </AvatarGroup>
   );
 }
+
+/**
+ * `renderMedia` ِ انتخابگرهایی که مقدارشان شناسهٔ شخص است — آواتارِ کوچک
+ * کنارِ هر نام. مقدارِ ناشناس (مثلاً «همه» یا «تعیین‌نشده») چیزی نمی‌گیرد.
+ */
+export function avatarFor(people: ReadonlyArray<{ id: number; name: string }>, prefix = '') {
+  return (value: string) => {
+    if (prefix && !value.startsWith(prefix)) return null;
+    const id = Number(prefix ? value.slice(prefix.length) : value);
+    const person = people.find((p) => p.id === id);
+    return person ? <UserAvatar userId={person.id} name={person.name} size="xs" /> : null;
+  };
+}

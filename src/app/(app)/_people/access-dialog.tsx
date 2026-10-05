@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { useEffect, useState, useTransition } from 'react';
 import { loadAccessAction, saveAccessAction } from './_form/access-actions';
 import { REPORT_TABS, SECTION_ACCESS } from '@/domain/access/staff-levels';
@@ -70,7 +71,10 @@ export function AccessDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{tr("دسترسی‌های همکار ادمین")}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {person && <UserAvatar userId={person.id} name={person.name} size="md" />}
+            {tr("دسترسی‌های همکار ادمین")}
+          </DialogTitle>
           <DialogDescription>
             {tr('{name} — برای هر بخش تعیین کنید دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند.', { name: person?.name ?? '' })}
             {' '}{tr('کارهای حساس (تنظیمات، حذف، بستنِ مالی) همیشه فقط برای مدیرِ کل است.')}

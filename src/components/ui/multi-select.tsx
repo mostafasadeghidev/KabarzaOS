@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { MultiSelect as SearchableMultiSelect } from '@/components/ui/combobox';
 
 /**
@@ -25,6 +25,8 @@ export interface MultiOption {
   label: string;
   /** نقطهٔ رنگی کنارِ گزینه — برای تگ‌ها. */
   color?: string;
+  /** پیش از نام — آواتارِ شخص در فهرست‌های افراد. */
+  media?: ReactNode;
 }
 
 export function MultiSelect({
@@ -48,7 +50,7 @@ export function MultiSelect({
 }) {
   const [selected, setSelected] = useState<number[]>(defaultSelected);
   const mapped = useMemo(
-    () => options.map((o) => ({ value: o.id, label: o.label, color: o.color })),
+    () => options.map((o) => ({ value: o.id, label: o.label, color: o.color, media: o.media })),
     [options],
   );
 

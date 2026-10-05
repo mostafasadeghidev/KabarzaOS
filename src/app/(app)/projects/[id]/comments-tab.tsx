@@ -35,6 +35,7 @@ export interface CommentItem {
   /** نویسنده — برای آواتار؛ عکسش را سرور فقط به کسی می‌دهد که نامش را هم می‌بیند. */
   userId?: number | null;
   closedAt: Date | string | null;
+  closedBy?: number | null;
   closedByName: string | null;
   /** پاسخ زیرِ والدش می‌نشیند (پورتِ `parent_id`). */
   parentId?: number | null;
@@ -235,12 +236,10 @@ function Node({
           )}
           {/* «انجام شد توسط X» — فقط روی تازه‌ترین پیام و فقط وقتی واقعاً بسته شده باشد. */}
           {isLatest && closed && comment.closedByName && comment.closedAt && (
-            <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-400">
-              ✓ {t('{label} توسط {name}', {
-                label: statusLabel(comment.type as CommentType, comment.status),
-                name: comment.closedByName,
-              })} ·{' '}
-              <span className="num">{when(comment.closedAt, tz)}</span>
+            <p className="mt-0.5 flex flex-wrap items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
+              ✓ {t('{label} توسط', { label: statusLabel(comment.type as CommentType, comment.status) })}
+              <UserName userId={comment.closedBy} name={comment.closedByName} />
+              <span className="num">· {when(comment.closedAt, tz)}</span>
             </p>
           )}
         </div>

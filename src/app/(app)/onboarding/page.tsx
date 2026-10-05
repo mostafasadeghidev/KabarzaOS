@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UserName } from '@/components/user-avatar';
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { onboardingBoard } from '@/server/onboarding/service';
@@ -93,7 +94,7 @@ export default async function OnboardingPage() {
                 return (
                   <TableRow key={p.userId}>
                     <TableCell className="font-medium">
-                      <Link href={`/onboarding/${p.userId}`} className="hover:underline">{p.name}</Link>
+                      <Link href={`/onboarding/${p.userId}`} className="hover:underline"><UserName userId={p.userId} name={p.name} size="sm" /></Link>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

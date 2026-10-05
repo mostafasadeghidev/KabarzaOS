@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { CalendarDays, LayoutGrid, Table2, Timer, TreePalm, Users } from 'lucide-react';
@@ -248,7 +249,7 @@ export function AvailabilityBoard(props: BoardProps) {
               {props.away.map((a) => (
                 <li key={a.id} className="flex items-center gap-1.5">
                   <TreePalm className="size-3.5 shrink-0 text-amber-600 dark:text-amber-500" aria-hidden />
-                  <span>{a.name}</span>
+                  <UserName userId={a.id} name={a.name} />
                   {a.until && (
                     <span className="text-xs text-muted-foreground">{tr("تا")} <span className="num">{a.until}</span></span>
                   )}
@@ -265,7 +266,7 @@ export function AvailabilityBoard(props: BoardProps) {
             <ul className="grid gap-1 text-sm">
               {props.running.map((r) => (
                 <li key={r.userId} className="flex flex-wrap items-center gap-1.5">
-                  <span>{r.name}</span>
+                  <UserName userId={r.userId} name={r.name} />
                   {/* ⚠️ تایمرِ بدونِ پروژه هم کار است — «ساعتِ عمومی». */}
                   <span className="text-xs text-muted-foreground">
                     {r.project || tr('بدونِ پروژه')}
@@ -285,7 +286,7 @@ export function AvailabilityBoard(props: BoardProps) {
               {props.online.map((o) => (
                 <li key={o.id} className="flex items-center gap-1.5">
                   <PresenceDot state={o.state} userId={o.id} />
-                  <span>{o.name}</span>
+                  <UserName userId={o.id} name={o.name} />
                   <span className="ms-auto text-xs text-muted-foreground">
                     {tr(PRESENCE_LABELS[o.state])} · {ago(o.seen, tr)}
                   </span>
@@ -300,7 +301,7 @@ export function AvailabilityBoard(props: BoardProps) {
             <p className="text-sm text-muted-foreground">{t("همه برنامه‌شان را ثبت کرده‌اند.")}</p>
           ) : (
             <ul className="grid gap-1 text-sm">
-              {props.none.map((n) => <li key={n.id}>{n.name}</li>)}
+              {props.none.map((n) => <li key={n.id}><UserName userId={n.id} name={n.name} /></li>)}
             </ul>
           )}
         </Panel>

@@ -1,6 +1,6 @@
 'use client';
 
-import { UserName } from '@/components/user-avatar';
+import { UserName, avatarFor } from '@/components/user-avatar';
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
@@ -215,6 +215,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                 size="sm"
                 containerClassName="w-44"
                 aria-label={tr("فیلترِ شخص")}
+                renderMedia={avatarFor(data.people)}
               >
                 <NativeSelectOption value="">{tr("همه")}</NativeSelectOption>
                 {data.people.map((p) => (
@@ -400,7 +401,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                 </span>
               ) : '—'),
             },
-            { header: 'مسئول', cell: (s) => (s.ownerUserId ? personName(s.ownerUserId) : '—') },
+            { header: 'مسئول', cell: (s) => (s.ownerUserId ? <UserName userId={s.ownerUserId} name={personName(s.ownerUserId)} /> : '—') },
             { header: 'کاربران', cell: (s) => s.openCount, numeric: true },
             /**
              * ⚠️ ستونِ هزینه فقط برای کسی ساخته می‌شود که `finance.view` دارد.
@@ -514,6 +515,7 @@ function ChecklistDialog({
         owner: service?.ownerUserId
           ? data.people.find((p) => p.id === service.ownerUserId)?.name ?? ''
           : '',
+        ownerId: service?.ownerUserId ?? null,
       };
     }),
   })), [data]);
@@ -551,7 +553,7 @@ function ChecklistDialog({
           {groups.map((group) => (
             <section key={group.userId} className="grid gap-2">
               <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-                {group.name}
+                <UserName userId={group.userId} name={group.name} size="sm" />
                 <Badge variant="outline">{tr(stateLabel(group.state) ?? '')}</Badge>
               </h3>
               {group.rows.map((row) => (
@@ -564,8 +566,8 @@ function ChecklistDialog({
                   <span className="grid flex-1 gap-0.5">
                     <span>{row.serviceName}</span>
                     {row.owner && (
-                      <span className="text-xs text-muted-foreground">
-                        {tr("مسئول")}: {row.owner}
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        {tr("مسئول")}: <UserName userId={row.ownerId} name={row.owner} />
                       </span>
                     )}
                   </span>
@@ -659,6 +661,7 @@ function GrantDialog({
               defaultValue={editing ? String(editing.userId) : ''}
               containerClassName="w-full"
               required
+              renderMedia={avatarFor(activePeople)}
             >
               {activePeople.map((p) => (
                 <NativeSelectOption key={p.id} value={String(p.id)}>{p.name}</NativeSelectOption>
@@ -781,6 +784,7 @@ function ServiceFields({ edit, data }: { edit: ServiceRow | null; data: AccessDa
           name="ownerUserId"
           defaultValue={edit?.ownerUserId ? String(edit.ownerUserId) : ''}
           containerClassName="w-full"
+          renderMedia={avatarFor(data.people)}
         >
           <NativeSelectOption value="">{tr("تعیین‌نشده")}</NativeSelectOption>
           {data.people.map((p) => (

@@ -1,5 +1,6 @@
 'use client';
 
+import { avatarFor } from '@/components/user-avatar';
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
@@ -139,7 +140,10 @@ export function QuickTaskForm({
             <div className="grid gap-3 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="q-assignee">{t("مسئول")}</FieldLabel>
-                <SearchableSelect id="q-assignee" name="assignedTo" containerClassName="w-full" disabled={loading}>
+                <SearchableSelect
+                  id="q-assignee" name="assignedTo" containerClassName="w-full" disabled={loading}
+                  renderMedia={avatarFor((options?.assignees ?? []).map((a) => ({ id: a.id, name: a.label })))}
+                >
                   <NativeSelectOption value="">{t("— بدونِ مسئول —")}</NativeSelectOption>
                   {(options?.assignees ?? []).map((a) => (
                     <NativeSelectOption key={a.id} value={a.id}>{a.label}</NativeSelectOption>

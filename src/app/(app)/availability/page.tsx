@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import {
-  filterOptions, hasTeamAvailability, onlineNow, rowCells, runningTimers, teamMatrix,
+  filterOptions, getWeek, hasTeamAvailability, onlineNow, rowCells, runningTimers, teamMatrix,
 } from '@/server/availability/service';
+import { AvailabilityView } from '../activity/availability-view';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { weekdayIndex, weekOrder } from '@/domain/availability/weekly';
 import { formatElapsed } from '@/domain/availability/team';
@@ -41,12 +42,13 @@ export default async function AvailabilityPage({
   const view = (await searchParams).view === 'board' ? 'board' : 'matrix';
   const now = new Date();
 
-  const [rows, timers, online, options, system] = await Promise.all([
+  const [rows, timers, online, options, system, mineMap] = await Promise.all([
     teamMatrix(actor, now),
     runningTimers(actor, now),
     onlineNow(actor),
     filterOptions(actor),
     getSystemConfig(),
+    getWeek(actor.id),
   ]);
 
   const order = weekOrder(system.weekStart);
@@ -95,6 +97,15 @@ export default async function AvailabilityPage({
           roles={options.roles}
         />
       )}
+      {/*
+        ⚠️ برنامهٔ هفتگیِ **خودِ** مدیر هم همین‌جا. پیش از این فقط در «فعالیت ←
+        در دسترس بودن» بود و مدیرِ دفتری که کارش در همین صفحه است، جایی برای
+        ثبتِ روزهای خودش نمی‌دید.
+      */}
+      <AvailabilityView
+        data={{ mine: Object.fromEntries(mineMap), order, today: todayIdx }}
+      />
+
       {targets.length > 1 && (
         <Section title={t("ثبت مرخصی برای عضو")}>
           <AbsencePanel data={{ mine, targets, meId: actor.id, today }} />

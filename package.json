@@ -1,6 +1,6 @@
 {
   "name": "kabarza-os",
-  "version": "1.118.2",
+  "version": "1.119.0",
   "private": true,
   "type": "module",
   "scripts": {

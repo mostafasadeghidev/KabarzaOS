@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { CircleAlert, X } from 'lucide-react';
@@ -267,7 +268,7 @@ export function ComposeDialog({
                         checked={picked.has(r.id)}
                         onCheckedChange={(v) => setPick([r.id], v === true)}
                       />
-                      {r.name}
+                      <UserName userId={r.id} name={r.name} />
                       <span className="text-xs text-muted-foreground">
                         ({r.role === 'client' ? tr('کارفرما') : tr('عضو')})
                       </span>
@@ -301,8 +302,8 @@ export function ComposeDialog({
                 {picked.size > 0 && (
                   <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto">
                     {[...picked].map((id) => (
-                      <Badge key={id} variant="outline" className="gap-1 pe-1">
-                        {names.get(id) ?? '#'}
+                      <Badge key={id} variant="outline" className="gap-1 ps-0.5 pe-1">
+                        <UserName userId={id} name={names.get(id) ?? '#'} />
                         <button
                           type="button"
                           className="pointer-events-auto rounded-full p-0.5 hover:bg-border"

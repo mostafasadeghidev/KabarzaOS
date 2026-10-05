@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UserName } from '@/components/user-avatar';
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { getFocusList } from '@/server/dashboard-focus';
@@ -121,7 +122,7 @@ export default async function FocusPage({
                       className="flex items-center justify-between gap-3 px-3 py-2 text-sm transition-colors hover:bg-muted"
                     >
                       <span className="min-w-0 truncate">{it.label}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">{it.who}</span>
+                      <UserName userId={it.whoId} name={it.who} className="shrink-0 text-xs text-muted-foreground" />
                     </Link>
                   </li>
                 ))}

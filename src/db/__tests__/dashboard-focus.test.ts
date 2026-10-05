@@ -86,7 +86,8 @@ describe('موردمحور', () => {
     const d = await getFocusList(owner(), 'tasks_review', TODAY);
     const p1 = d.groups.find((g) => g.id === P1)!;
     expect(p1.items.map((i) => [i.label, i.who])).toEqual([['تسکِ پراولویت', 'بدون مسئول'], ['تسکِ کم‌اولویت', 'سارا']]);
-    expect(d.groups.find((g) => g.id === P3)!.items).toEqual([{ label: 'بی‌اولویت', who: 'بدون مسئول' }]);
+    // «بدون مسئول» آواتاری ندارد — شناسه‌اش تهی است.
+    expect(d.groups.find((g) => g.id === P3)!.items).toEqual([{ label: 'بی‌اولویت', who: 'بدون مسئول', whoId: null }]);
   });
 
   it('کامنت‌های باز: گزیدهٔ تازه‌ترین پیام + نویسنده‌اش؛ رشتهٔ بسته نمی‌آید', async () => {
@@ -95,6 +96,9 @@ describe('موردمحور', () => {
     expect(p1.items).toHaveLength(1);
     expect(p1.items[0]!.who).toBe('علی');
     expect(p1.items[0]!.label.endsWith('…')).toBe(true);
-    expect(d.groups.find((g) => g.id === T1)!.items).toEqual([{ label: 'کامنتِ مناقصه', who: 'علی' }]);
+    const t1 = d.groups.find((g) => g.id === T1)!.items;
+    expect(t1).toMatchObject([{ label: 'کامنتِ مناقصه', who: 'علی' }]);
+    // شناسهٔ نویسنده برای آواتار.
+    expect(t1[0]!.whoId).toEqual(expect.any(Number));
   });
 });

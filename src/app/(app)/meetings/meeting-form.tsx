@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { loadCandidatesAction, saveMeetingAction, type MeetingFormState } from './_form/actions';
@@ -330,7 +331,7 @@ export function MeetingForm({
                         checked={checked.has(c.userId)}
                         onCheckedChange={() => toggle(c.userId)}
                       />
-                      {c.name}
+                      <UserName userId={c.userId} name={c.name} />
                       {/* ⚠️ `sub` کلیدِ ترجمه است: یا نامِ تگ (که خودش
                           ترجمه‌شده می‌آید) یا یکی از سه واژهٔ ثابتِ
                           `meetingCandidates`. خام چاپ‌کردنش همان سه واژه را

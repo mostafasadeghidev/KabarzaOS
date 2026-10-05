@@ -28,6 +28,8 @@ export interface CardOptions {
    * را می‌داد و می‌شد کسی را با نقشی روی پروژه نشاند که ندارد.
    */
   roleMap: Record<number, number[]>;
+  /** پروژه‌هایی که بیننده مدیریت می‌کند؛ `null` = همه (مدیرِ سراسری). */
+  manageableIds: number[] | null;
   /** ارزهای فعال — ستونِ «ارز» ِ عضوِ تازه. */
   currencies: Array<{ id: number; code: string }>;
 }

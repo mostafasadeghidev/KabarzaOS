@@ -1316,8 +1316,21 @@ export async function getStatusOptions(actor: Actor) {
 
 /** گزینه‌های افزودنِ سریعِ کارت — عضو، نقش، کارفرما. */
 export async function getCardOptions(actor: Actor) {
-  assertCanManage(actor, 'projects');
-  const [team, roles, clients, roleMap, currencies] = await Promise.all([
+  /**
+   * ⚠️ مدیرِ دفتر و مدیرِ پروژهٔ تگ‌دار هم — فقط روی پروژه‌های خودشان.
+   * پیش از این منوی کارت فقط برای مدیرِ سراسری ساخته می‌شد، در حالی که
+   * سرور (`addProjectMember`، `addProjectClient`، `setProjectStatus`) همان
+   * کار را با `assertCanManageProject` به آن‌ها اجازه می‌داد و در صفحهٔ
+   * پروژه هم «مدیریتِ اعضا» را داشتند: یک اجازه، دو رفتار.
+   * `manageableIds` تهی یعنی همهٔ پروژه‌ها (مدیرِ سراسری).
+   */
+  const all = canManageSection(actor, 'projects');
+  const manageableIds = all ? null : [...new Set([
+    ...await managedOfficeProjectIds(actor.id),
+    ...await pmProjectIds(actor.id),
+  ])];
+  if (manageableIds !== null && manageableIds.length === 0) throw new ForbiddenError('projects.manage');
+  const [team, roles, clients, roleMap, currencies, statuses] = await Promise.all([
     repo.memberCandidates(),
     repo.memberRoleTags(),
     repo.clientCandidates(),
@@ -1329,8 +1342,10 @@ export async function getCardOptions(actor: Actor) {
     repo.memberRoleMap(),
     // پورتِ ستونِ «ارز» ِ افزودنِ عضو — پیش‌فرض ارزِ خودِ پروژه است.
     repo.currencyOptions(),
+    // منوی وضعیتِ کارت — مدیرِ دفتر مجوزِ «دیدنِ بخشِ پروژه‌ها» را ندارد که از راهِ دیگر بخواندش.
+    repo.statusTags(),
   ]);
-  return { team, roles, clients, roleMap, currencies };
+  return { team, roles, clients, roleMap, currencies, statuses, manageableIds };
 }
 
 /**
@@ -1511,6 +1526,7 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
       statusName: t.statusName,
       statusColor: t.statusColor,
       roleNames: t.roles.map((r) => r.roleName).filter((n): n is string => Boolean(n)),
+      assigneeId: t.assignedTo,
       assigneeName: t.assigneeName,
     }));
 

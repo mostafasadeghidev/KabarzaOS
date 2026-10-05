@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar, avatarFor } from '@/components/user-avatar';
 import { useState, useTransition } from 'react';
 import { KeyRound, UserMinus, UserPlus } from 'lucide-react';
 import { setStaffRoleAction } from '../_people/_form/access-actions';
@@ -75,6 +76,7 @@ export function StaffSection({
         onValueChange={(v) => setPick(v)}
         containerClassName="w-full sm:w-64"
         aria-label={tr('افزودنِ همکارِ ادمین')}
+        renderMedia={avatarFor(candidates)}
       >
         <NativeSelectOption value="">{t('— انتخابِ کاربر —')}</NativeSelectOption>
         {candidates.map((c) => (
@@ -134,8 +136,13 @@ export function StaffSection({
             return (
               <TableRow key={s.id}>
                 <TableCell>
-                  <span className="font-medium">{s.name}</span>
-                  <span className="block text-xs text-muted-foreground">{s.email}</span>
+                  <span className="flex items-center gap-2">
+                    <UserAvatar userId={s.id} name={s.name} size="md" />
+                    <span className="grid min-w-0">
+                      <span className="font-medium">{s.name}</span>
+                      <span className="text-xs text-muted-foreground">{s.email}</span>
+                    </span>
+                  </span>
                 </TableCell>
                 <TableCell>
                   {granted.length === 0 ? (

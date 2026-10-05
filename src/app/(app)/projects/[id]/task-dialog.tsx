@@ -244,11 +244,10 @@ export function TaskDialog({
 
             {/* «آخرین ویرایش توسط X» — همان سطرِ نسخهٔ قبلی. */}
             {task.updatedByName && (
-              <p className="text-xs text-muted-foreground">
-                {tr('آخرین ویرایش توسط {name} · {at}', {
-                  name: task.updatedByName ?? '',
-                  at: ltr(when(task.updatedAt, tz)),
-                })}
+              <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                {tr('آخرین ویرایش توسط')}
+                <UserName userId={task.updatedBy} name={task.updatedByName} />
+                <span className="num">· {ltr(when(task.updatedAt, tz))}</span>
               </p>
             )}
 

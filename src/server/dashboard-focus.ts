@@ -31,7 +31,7 @@ export interface FocusGroup {
   title: string;
   statusName: string | null;
   statusGroup: string | null;
-  items: Array<{ label: string; who: string }>;
+  items: Array<{ label: string; who: string; whoId: number | null }>;
 }
 
 export interface FocusData {
@@ -110,7 +110,7 @@ export async function getFocusList(
     const status = alias(tags, 'status_tag');
     const priority = alias(tags, 'priority_tag');
     const list = await db
-      .select({ projectId: tasks.projectId, label: tasks.title, who: users.name })
+      .select({ projectId: tasks.projectId, label: tasks.title, who: users.name, whoId: tasks.assignedTo })
       .from(tasks)
       .innerJoin(status, eq(status.id, tasks.statusTagId))
       .leftJoin(priority, eq(priority.id, tasks.priorityTagId))
@@ -118,7 +118,7 @@ export async function getFocusList(
       .where(and(inArray(tasks.projectId, ids), isNull(tasks.deletedAt), eq(status.isReview, true)))
       // پورتِ `order_priority`: اولویتِ بالا اول (sort_order صعودی، بی‌اولویت آخر)، تازه‌تر اول.
       .orderBy(sql`(${priority.sortOrder} is null)`, asc(priority.sortOrder), desc(tasks.id));
-    return { view, projects: [], groups: toGroups(list.map((r) => ({ projectId: r.projectId, label: r.label, who: r.who ?? t('بدون مسئول') }))) };
+    return { view, projects: [], groups: toGroups(list.map((r) => ({ projectId: r.projectId, label: r.label, who: r.who ?? t('بدون مسئول'), whoId: r.who ? r.whoId : null }))) };
   }
 
   // comments_review — پورتِ `threads_for_projects` + وضعیتِ باز.
@@ -135,13 +135,14 @@ export async function getFocusList(
     projectId: root.projectId!,
     label: excerptWords(latest.body) || t('(بدون متن)'),
     who: latest.userName ?? `#${latest.userId ?? 0}`,
+    whoId: latest.userId ?? null,
   }));
   return { view, projects: [], groups: toGroups(threads) };
 
-  function toGroups(items: Array<{ projectId: number; label: string; who: string }>): FocusGroup[] {
+  function toGroups(items: Array<{ projectId: number; label: string; who: string; whoId: number | null }>): FocusGroup[] {
     return [...groupByProject(items)].flatMap(([projectId, list]) => {
       const p = byId.get(projectId);
-      return p ? [{ ...chip(p), items: list.map(({ label, who }) => ({ label, who })) }] : [];
+      return p ? [{ ...chip(p), items: list.map(({ label, who, whoId }) => ({ label, who, whoId })) }] : [];
     });
   }
 }

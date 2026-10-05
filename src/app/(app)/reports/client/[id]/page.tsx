@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { UserAvatar } from '@/components/user-avatar';
 import { TriangleAlert } from 'lucide-react';
 import { currentActor } from '@/server/auth';
 import { getClientDetail } from '@/server/reports/service';
@@ -63,6 +64,7 @@ export default async function ClientReportPage({ params }: { params: Promise<{ i
     <PageShell>
       <PageHeader
         back={{ href: '/reports?tab=clients', label: t("گزارش‌ها") }}
+        media={<UserAvatar userId={id} name={data.person.name} size="lg" />}
         title={data.person.name}
         description={data.person.email}
       />

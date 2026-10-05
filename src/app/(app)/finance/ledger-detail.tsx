@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useState } from 'react';
 import { FileText, Paperclip } from 'lucide-react';
 import type { EntryRow, ReceiptView } from './ledger-view';
@@ -86,7 +87,7 @@ export function LedgerDetail({
   const tz = useTimeZone();
   const [zoom, setZoom] = useState<string | null>(null);
 
-  const rows: Array<[string, string]> = [];
+  const rows: Array<[string, React.ReactNode]> = [];
   if (entry) {
     const tags = entry.tagIds.map((id) => tagName.get(id)).filter((n): n is string => Boolean(n));
     rows.push([t('تاریخ'), entry.entryDate]);
@@ -97,8 +98,13 @@ export function LedgerDetail({
       const code = entry.settledCurrencyId ? currencyCodeOf(entry.settledCurrencyId) : '';
       rows.push([t('معادلِ تسویه'), `${format(entry.amountSettled)} ${code}`.trim()]);
     }
-    rows.push([t('پرداخت‌کننده'), entry.payerName || entry.payerLabel || '—']);
-    rows.push([t('دریافت‌کننده'), entry.receiverName || entry.receiverLabel || '—']);
+    // عضوِ سامانه با آواتار؛ طرف‌حسابِ بیرونی (برچسبِ آزاد) فقط نام.
+    rows.push([t('پرداخت‌کننده'), entry.payerName
+      ? <UserName userId={entry.payerUserId} name={entry.payerName} size="sm" />
+      : (entry.payerLabel || '—')]);
+    rows.push([t('دریافت‌کننده'), entry.receiverName
+      ? <UserName userId={entry.receiverUserId} name={entry.receiverName} size="sm" />
+      : (entry.receiverLabel || '—')]);
     rows.push([t('بابت'), entry.projectTitle ?? '—']);
     rows.push([t('تگ‌ها'), tags.length > 0 ? tags.join('، ') : '—']);
     rows.push([t('توضیحات'), entry.description || '—']);

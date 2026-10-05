@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -75,7 +76,7 @@ export function MembersPanel({ data }: { data: MembersData }) {
               <TableBody>
                 {data.hours.map((h) => (
                   <TableRow key={h.id}>
-                    <TableCell className="font-medium">{h.name}</TableCell>
+                    <TableCell className="font-medium"><UserName userId={h.id} name={h.name} size="sm" /></TableCell>
                     <TableNumericCell>{h.projects}</TableNumericCell>
                     <TableNumericCell>{hoursLabel(h.minutes)}</TableNumericCell>
                     <TableNumericCell>{h.openTasks}</TableNumericCell>
@@ -175,7 +176,7 @@ function HoursBars({ rows }: { rows: MembersData['hours'] }) {
     <ul className="grid gap-2" aria-label={tr('نمودارِ ساعت کاری')}>
       {rows.map((r) => (
         <li key={r.id} className="grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-3 text-sm">
-          <span className="truncate">{r.name}</span>
+          <UserName userId={r.id} name={r.name} />
           <Progress value={Math.round((r.minutes * 100) / max)} aria-label={r.name} />
           <span className="num text-xs text-muted-foreground">{hoursLabel(r.minutes)}</span>
         </li>

@@ -43,5 +43,7 @@ export async function saveAvailabilityAction(
   }
 
   revalidatePath('/activity');
+  // همان فرم در صفحهٔ «در دسترس بودن» هم هست — ماتریسِ تیم باید ردیفِ تازه را ببیند.
+  revalidatePath('/availability');
   return { message: 'برنامهٔ هفتگی ذخیره شد.' };
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatarStack, UserName } from '@/components/user-avatar';
 import Link from 'next/link';
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -184,10 +185,10 @@ export function MeetingsView({
                   )}
 
                   {m.attendees.length > 0 && (
-                    <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-                      <Users className="size-3" />
-                      {m.attendees.map((a) => a.name).join(tr('، '))}
-                    </p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <UserAvatarStack people={m.attendees.map((a) => ({ userId: a.userId, name: a.name }))} max={5} size="sm" />
+                      <span className="truncate">{m.attendees.map((a) => a.name).join(tr('، '))}</span>
+                    </div>
                   )}
 
                   <div className="flex justify-end gap-1" data-stop onClick={(e) => e.stopPropagation()}>
@@ -406,7 +407,7 @@ export function MeetingsView({
                   ) : (
                     <ul className="grid gap-1">
                       {detail.attendees.map((a) => (
-                        <li key={a.userId} className="rounded-md bg-muted/50 px-2 py-1 text-xs">{a.name}</li>
+                        <li key={a.userId} className="rounded-md bg-muted/50 px-2 py-1 text-xs"><UserName userId={a.userId} name={a.name} /></li>
                       ))}
                     </ul>
                   )}

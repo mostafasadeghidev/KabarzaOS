@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName } from '@/components/user-avatar';
 import { useMemo, useState, useTransition } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -419,7 +420,7 @@ export function ReportsView({
                   {/* ریز شدن روی یک عضو — پروژه‌به‌پروژه با ردیف‌های پرداخت. */}
                   <TableCell>
                     <Link href={`/reports/member/${m.id}`} className="hover:underline">
-                      {m.name}
+                      <UserName userId={m.id} name={m.name} size="sm" />
                     </Link>
                     {m.isFormer && <Badge variant="outline" className="ms-1.5 text-[10px]">{tr("سابق")}</Badge>}
                   </TableCell>
@@ -483,7 +484,7 @@ export function ReportsView({
                   {/* ریز شدن روی یک کارفرما — مطالبات پروژه‌به‌پروژه. */}
                   <TableCell>
                     <Link href={`/reports/client/${c.id}`} className="hover:underline">
-                      {c.name}
+                      <UserName userId={c.id} name={c.name} size="sm" />
                     </Link>
                     <span className="num ms-1 text-xs text-muted-foreground">
                       ({c.projectCount})
@@ -685,7 +686,7 @@ export function ReportsView({
               <TableBody>
                 {hoursView.rows.map((h) => (
                   <TableRow key={h.userId}>
-                    <TableCell className="font-medium">{h.name}</TableCell>
+                    <TableCell className="font-medium"><UserName userId={h.userId} name={h.name} size="sm" /></TableCell>
                     <TableNumericCell>{hoursLabel(h.project)}</TableNumericCell>
                     <TableNumericCell>{hoursLabel(h.general)}</TableNumericCell>
                     <TableNumericCell className="font-semibold">{hoursLabel(h.total)}</TableNumericCell>
@@ -773,7 +774,7 @@ export function ReportsView({
             <TableBody>
               {unitsView.rows.map((u) => (
                 <TableRow key={u.userId}>
-                  <TableCell>{u.name}</TableCell>
+                  <TableCell><UserName userId={u.userId} name={u.name} size="sm" /></TableCell>
                   <TableNumericCell>{format(u.paid)}</TableNumericCell>
                   <TableNumericCell
                     className={Number(u.unpaid) > 0 ? 'text-amber-700 dark:text-amber-500' : ''}
@@ -809,7 +810,7 @@ export function ReportsView({
               <ul className="flex flex-wrap gap-1.5">
                 {data.attendance.withoutSchedule.map((m) => (
                   <li key={m.id}>
-                    <Badge variant="outline">{m.name}</Badge>
+                    <Badge variant="outline" className="gap-1.5 ps-0.5"><UserName userId={m.id} name={m.name} /></Badge>
                   </li>
                 ))}
               </ul>
@@ -832,7 +833,7 @@ export function ReportsView({
                 <TableBody>
                   {attendanceView.rows.map((l, i) => (
                     <TableRow key={`${l.userId}-${l.fromDate}-${i}`}>
-                      <TableCell>{l.name}</TableCell>
+                      <TableCell><UserName userId={l.userId} name={l.name} size="sm" /></TableCell>
                       <TableNumericCell>{l.fromDate}</TableNumericCell>
                       <TableNumericCell>{l.toDate}</TableNumericCell>
                       <TableCell>{l.note || '—'}</TableCell>

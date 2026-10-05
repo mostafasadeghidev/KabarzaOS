@@ -1,6 +1,6 @@
 'use client';
 
-import { UserName } from '@/components/user-avatar';
+import { UserAvatar, UserName } from '@/components/user-avatar';
 import { useActionState, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Plus, RefreshCw, Trash2 } from 'lucide-react';
@@ -39,6 +39,7 @@ export interface TaskItem {
   state: TaskState;
   assigneeUserId: number | null;
   assigneeName: string | null;
+  doneBy?: number | null;
   doneByName: string | null;
   serviceName: string | null;
   hasGrant: boolean;
@@ -116,9 +117,14 @@ export function TaskRows({ tasks, canDelete = false, showPerson = false, memberI
                 {showPerson && t.personName && (
                   <span className="inline-flex items-center gap-1">· <Link href={`/onboarding/${t.userId}`} className="underline"><UserName userId={t.userId} name={t.personName} /></Link></span>
                 )}
-                <span>· {tr('با: {name}', { name: who(t) })}</span>
+                <span className="inline-flex items-center gap-1">
+                  · {tr('با:')}
+                  {t.assigneeUserId !== null ? <UserName userId={t.assigneeUserId} name={who(t)} /> : who(t)}
+                </span>
                 <span>· {tr('موعد: {date}', { date: ltr(t.dueDate) })}</span>
-                {t.state === 'done' && t.doneByName && <span>· {tr('انجام شد توسط {name}', { name: t.doneByName })}</span>}
+                {t.state === 'done' && t.doneByName && (
+                  <span className="inline-flex items-center gap-1">· {tr('انجام شد توسط')} <UserName userId={t.doneBy} name={t.doneByName} /></span>
+                )}
                 {t.hasGrant && <span>· {tr('در سیاههٔ دسترسی ثبت شد')}</span>}
               </span>
               {t.description && <p className="text-xs whitespace-pre-line text-muted-foreground">{t.description}</p>}
@@ -170,7 +176,10 @@ export function StartPicker({ candidates }: { candidates: Array<{ id: number; na
     <div className="flex flex-wrap items-end gap-2">
       <Field className="w-64">
         <FieldLabel htmlFor="ob-start">{tr('عضو')}</FieldLabel>
-        <SearchableSelect id="ob-start" value={userId} onValueChange={setUserId} containerClassName="w-full">
+        <SearchableSelect
+          id="ob-start" value={userId} onValueChange={setUserId} containerClassName="w-full"
+          renderMedia={(v) => <UserAvatar userId={Number(v)} name={candidates.find((c) => String(c.id) === v)?.name} size="xs" />}
+        >
           <NativeSelectOption value="">{tr('انتخاب کنید')}</NativeSelectOption>
           {candidates.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.name}</NativeSelectOption>)}
         </SearchableSelect>
@@ -234,7 +243,10 @@ export function AddTaskDialog({ userId, people, services, today }: {
             </div>
             <Field>
               <FieldLabel htmlFor="ot-who">{tr('انجام‌دهنده')}</FieldLabel>
-              <SearchableSelect id="ot-who" name="assigneeUserId" containerClassName="w-full" defaultValue={String(userId)}>
+              <SearchableSelect
+                id="ot-who" name="assigneeUserId" containerClassName="w-full" defaultValue={String(userId)}
+                renderMedia={(v) => <UserAvatar userId={Number(v)} name={people.find((p) => String(p.id) === v)?.name} size="xs" />}
+              >
                 <NativeSelectOption value="">{tr('مدیرانِ اعضا')}</NativeSelectOption>
                 {people.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>)}
               </SearchableSelect>

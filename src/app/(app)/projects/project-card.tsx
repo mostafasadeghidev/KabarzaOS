@@ -70,6 +70,9 @@ export function ProjectCard({
 }) {
   const tr = useT();
   const t = useT();
+  // منوی وضعیت و «افزودنِ عضو/کارفرما» فقط روی پروژه‌ای که بیننده مدیریتش می‌کند.
+  const manages = cardOptions !== null
+    && (cardOptions.manageableIds === null || cardOptions.manageableIds.includes(project.id));
   /**
    * ⚠️ پروژهٔ تمام‌شده یا کنسل‌شده نوارِ ددلاین ندارد (نسخهٔ قبلی هم نداشت):
    * «۴۰ روز گذشته» ِ قرمز روی کاری که تحویل شده، هشدارِ دروغ بود. تاریخ می‌ماند.
@@ -131,7 +134,7 @@ export function ProjectCard({
               group={project.statusGroup}
               statusId={project.statusTagId}
               options={statuses}
-              canManage={cardOptions !== null}
+              canManage={manages}
             />
           </div>
         </div>
@@ -297,7 +300,7 @@ export function ProjectCard({
 
       {/* ۸ · افزودنِ سریع — زیرِ جعبهٔ چیپ‌ها، دقیقاً مثلِ نسخهٔ قبلی. */}
       <div>
-        {cardOptions && (
+        {cardOptions && manages && (
           <div className="pt-3">
             <CardQuickAdd
               projectId={project.id}

@@ -1,5 +1,6 @@
 'use client';
 
+import { UserName, avatarFor } from '@/components/user-avatar';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -25,6 +26,8 @@ export interface BoardTask {
   projectId: number;
   projectTitle: string | null;
   dueDate: string | null;
+  /** مسئولِ مستقیم — برای آواتار. */
+  assigneeId?: number | null;
   assigneeName: string | null;
   roleNames: string[];
   statusName: string | null;
@@ -55,6 +58,17 @@ export interface TaskBoardOptions {
 export function assigneeText(task: Pick<BoardTask, 'assigneeName' | 'roleNames'>): string {
   const parts = [task.assigneeName, ...task.roleNames].filter((p): p is string => Boolean(p));
   return parts.length > 0 ? parts.join('، ') : '—';
+}
+
+/** «برای چه کسی» با آواتارِ مسئولِ مستقیم؛ نقش‌ها پس از نام. */
+export function Assignee({ task }: { task: Pick<BoardTask, 'assigneeId' | 'assigneeName' | 'roleNames'> }) {
+  if (!task.assigneeName) return <>{assigneeText(task)}</>;
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      <UserName userId={task.assigneeId} name={task.assigneeName} />
+      {task.roleNames.length > 0 && <span className="text-muted-foreground">، {task.roleNames.join('، ')}</span>}
+    </span>
+  );
 }
 
 /** عنوانِ تسک که مودالِ خودش را باز می‌کند — همان `kteam-task-open`. */
@@ -127,6 +141,9 @@ export function TaskBoard({ board, options }: { board: TaskBoardData; options: T
           value={value('tassignee')}
           onValueChange={(v) => go({ tassignee: v })}
           aria-label={tr('عضو / نقش')}
+          renderMedia={(v) => (v.startsWith('m:') && board.forMember
+            ? avatarFor([board.forMember], 'm:')(v)
+            : avatarFor(options.assignees, 'u:')(v))}
         >
           <NativeSelectOption value="">{tr('همهٔ اعضا و نقش‌ها')}</NativeSelectOption>
           {/* ⚠️ صفر معنایش «بدونِ مسئول» است، نه «همه». */}
@@ -216,7 +233,7 @@ export function TaskBoard({ board, options }: { board: TaskBoardData; options: T
                 <TableCell>
                   <Link href={`/projects/${task.projectId}`} className="hover:underline">{task.projectTitle ?? '—'}</Link>
                 </TableCell>
-                <TableCell>{assigneeText(task)}</TableCell>
+                <TableCell><Assignee task={task} /></TableCell>
                 <TableCell>
                   {task.priorityName ? <TagChip color={task.priorityColor}>{task.priorityName}</TagChip> : '—'}
                 </TableCell>

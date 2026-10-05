@@ -1,6 +1,6 @@
 'use client';
 
-import { UserName } from '@/components/user-avatar';
+import { UserName, avatarFor } from '@/components/user-avatar';
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Archive, ArchiveRestore, CircleAlert, CircleCheck, Trash2, TreePalm, TriangleAlert, X } from 'lucide-react';
@@ -156,6 +156,7 @@ function LogDetail({ logs, weekStart }: { logs: LogRow[]; weekStart: number }) {
             value={userId}
             onValueChange={(v) => applyFilter({ userId: v })}
             containerClassName="w-44"
+            renderMedia={avatarFor(members)}
           >
             <NativeSelectOption value="">{t("همهٔ اعضا")}</NativeSelectOption>
             {members.map((m) => (

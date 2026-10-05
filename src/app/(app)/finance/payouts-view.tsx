@@ -748,8 +748,8 @@ export function PayoutsView({
           </DialogHeader>
           {rejectTarget && (
             <div className="grid gap-3">
-              <p className="text-sm">
-                {rejectTarget.userName} — <span className="num">{format(rejectTarget.amount)}</span>
+              <p className="flex items-center gap-1.5 text-sm">
+                <UserName userId={rejectTarget.userId} name={rejectTarget.userName} size="sm" /> — <span className="num">{format(rejectTarget.amount)}</span>
               </p>
               <Textarea
                 aria-label={tr("دلیل رد (اختیاری)")}
@@ -790,8 +790,8 @@ export function PayoutsView({
           {payTarget && (
             <form action={payAction} className="grid gap-3">
               <input type="hidden" name="requestId" value={payTarget.id} />
-              <p className="text-sm">
-                {payTarget.userName} — <span className="num">{format(payTarget.amount)}</span>
+              <p className="flex items-center gap-1.5 text-sm">
+                <UserName userId={payTarget.userId} name={payTarget.userName} size="sm" /> — <span className="num">{format(payTarget.amount)}</span>
               </p>
 
               <Field>
@@ -847,8 +847,8 @@ export function PayoutsView({
           {unitTarget && (
             <form action={unitAction} className="grid gap-3">
               <input type="hidden" name="unitEntryId" value={unitTarget.id} />
-              <p className="text-sm">
-                {unitTarget.userName} — {unitTarget.projectTitle} — <span className="num">{format(unitTarget.amount)} {unitTarget.currencyCode ?? ''}</span>
+              <p className="flex flex-wrap items-center gap-1.5 text-sm">
+                <UserName userId={unitTarget.userId} name={unitTarget.userName} size="sm" /> — {unitTarget.projectTitle} — <span className="num">{format(unitTarget.amount)} {unitTarget.currencyCode ?? ''}</span>
               </p>
               <Field>
                 <FieldLabel htmlFor="unit-account">{t("حساب")}</FieldLabel>

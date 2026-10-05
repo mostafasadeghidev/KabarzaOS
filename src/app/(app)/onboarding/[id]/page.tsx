@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UserAvatar } from '@/components/user-avatar';
 import { notFound, redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { OnboardingError, onboardingDetail } from '@/server/onboarding/service';
@@ -45,6 +46,7 @@ export default async function OnboardingPersonPage({ params }: { params: Promise
     <PageShell>
       <PageHeader
         back={{ href: '/onboarding', label: t('آنبوردینگ') }}
+        media={<UserAvatar userId={userId} name={data.person.name} size="lg" />}
         title={data.person.name}
         description={data.person.roles.length > 0 ? data.person.roles.join(t('، ')) : undefined}
         actions={editable && (

@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { useActionState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Trash2 } from 'lucide-react';
@@ -77,6 +78,9 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
                 id="a-user"
                 name="userId"
                 defaultValue={data.meId}
+                renderMedia={(v) => (
+                  <UserAvatar userId={Number(v)} name={data.targets.find((p) => String(p.id) === v)?.name} size="xs" />
+                )}
               >
                 {data.targets.map((p) => (
                   <NativeSelectOption key={p.id} value={p.id}>

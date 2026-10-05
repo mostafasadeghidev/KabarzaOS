@@ -1,5 +1,6 @@
 'use client';
 
+import { UserAvatar } from '@/components/user-avatar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -35,6 +36,8 @@ interface Item {
   /** برچسبِ کوچکِ کنارِ ردیف — نوعِ رکورد؛ صفحه‌ها ندارند. */
   sub?: string;
   icon?: LucideIcon;
+  /** شناسهٔ شخص — آواتار به‌جای آیکون. */
+  userId?: number;
 }
 
 /**
@@ -121,6 +124,7 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
       href: h.href,
       sub: tr(KIND_LABEL[h.kind]),
       icon: KIND_ICON[h.kind],
+      userId: h.kind === 'member' || h.kind === 'client' ? h.id : undefined,
     }));
 
     return [pageMatches, recordMatches];
@@ -135,7 +139,9 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
 
   const row = (item: Item) => (
     <CommandItem key={item.key} value={item.key} onSelect={() => go(item.href)}>
-      {item.icon && <item.icon aria-hidden />}
+      {item.userId
+        ? <UserAvatar userId={item.userId} name={item.label} size="xs" />
+        : item.icon && <item.icon aria-hidden />}
       <span className="flex-1 truncate">{item.label}</span>
       {/* ⚠️ نه `CommandShortcut`: فاصله‌گذاریِ حروفش اتصالِ حروفِ فارسی را می‌شکند. */}
       {item.sub && <span className="text-xs text-muted-foreground">{item.sub}</span>}

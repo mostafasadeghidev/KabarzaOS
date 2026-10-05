@@ -2,6 +2,36 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [1.119.0]
+
+### Added
+
+- **Avatars in the remaining places that show a person's name.**
+  - Pages:
+    - Reports: Members, Clients, Hours, Units and Attendance tabs, and the hours and client report headers.
+    - Finance: payout dialogs, bank directory, ledger entry details, accountants list.
+    - Activity: items that are a person.
+    - Availability side panels; the dashboard's away, available, working and online lists; the focus list.
+    - Onboarding: in-progress table, person header, «with» and «done by».
+    - Access register: services owner, checklist; team hours and bars; QA tasks; project payments.
+    - Who last edited a task, and who resolved a comment.
+    - Meetings: attendee avatars on cards and in details.
+    - Messages: recipients and their chips.
+    - Admin staff list, onboarding library.
+  - Pickers:
+    - the «Record leave» person picker in Activity, Availability and member pages;
+    - the payer and receiver fields of ledger entries;
+    - people filters and pickers in the access register, onboarding, quick task, staff settings, project hours and member units;
+    - new-project member and client fields, the clients dialog, the team task board filter;
+    - existing-user search when adding a person, @mention suggestions;
+    - member and client results in the command palette.
+- Multi-select pickers can show an avatar beside each option and selected chip.
+- **«My weekly schedule» on the Availability page.** Office managers work from this page and can now set their own days there. Before, the form was only under Activity → Availability.
+
+### Fixed
+
+- **Office managers couldn't add members or clients, or change status, from project cards**, although they can on the project page and the server allows it. Project cards now show these controls to office managers and tagged project managers, but only on projects they manage.
+
 ## [1.118.2]
 
 ### Changed

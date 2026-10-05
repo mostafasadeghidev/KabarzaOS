@@ -21,7 +21,7 @@ import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { addCommentAction, type TabActionState } from '../projects/_form/tab-actions';
 import { TaskDialog } from '../projects/[id]/task-dialog';
-import { assigneeText, TaskTitleButton, type BoardTask } from './task-board';
+import { Assignee, assigneeText, TaskTitleButton, type BoardTask } from './task-board';
 
 /**
  * «تسک‌های نیاز به ریویو» — پورتِ `view_team_review`: جستجوی زنده، عنوان که
@@ -61,7 +61,7 @@ export function ReviewTasks({ tasks }: { tasks: BoardTask[] }) {
                 <TableCell>
                   <Link href={`/projects/${task.projectId}`} className="hover:underline">{task.projectTitle ?? '—'}</Link>
                 </TableCell>
-                <TableCell>{assigneeText(task)}</TableCell>
+                <TableCell><Assignee task={task} /></TableCell>
                 <TableCell>
                   {task.statusName ? <TagChip color={task.statusColor}>{task.statusName}</TagChip> : '—'}
                 </TableCell>
