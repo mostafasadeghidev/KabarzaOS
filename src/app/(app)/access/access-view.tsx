@@ -824,7 +824,10 @@ function ServiceFields({ edit, data }: { edit: ServiceRow | null; data: AccessDa
         </Field>
       )}
       {sub === CREATE_VALUE && data.canCreateSubscription && (
-        <div className="grid gap-3 rounded-md border bg-muted/30 p-3 sm:col-span-2 sm:grid-cols-4">
+        // ⚠️ دو ستون، نه چهار (۲.۳.۲): در دیالوگِ باریک هر ستون ~۹۵px می‌شد و
+        // انتخابگرِ تاریخ با حداقل‌عرضِ خودش از قاب بیرون می‌زد. `minmax(0,1fr)`
+        // هم نمی‌گذارد محتوا ستون را از عرضش پهن‌تر کند.
+        <div className="grid grid-cols-1 gap-3 rounded-md border bg-muted/30 p-3 sm:col-span-2 sm:grid-cols-[repeat(2,minmax(0,1fr))]">
           <Field>
             <FieldLabel htmlFor="s-sub-amount">{tr("مبلغ")}</FieldLabel>
             <Input id="s-sub-amount" name="subAmount" inputMode="decimal" className="num" required />

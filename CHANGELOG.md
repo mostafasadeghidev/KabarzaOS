@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.3.2]
+
+### Fixed
+
+- **Access → Add service → «New subscription»: the «Next renewal» date stuck out of its box.** The four fields shared one row in a narrow dialog, and the date picker was wider than its column. They now sit in two rows (amount and currency, then period and next renewal), and no field can be wider than its column.
+
 ## [2.3.1]
 
 ### Fixed
