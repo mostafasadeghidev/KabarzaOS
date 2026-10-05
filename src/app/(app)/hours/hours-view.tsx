@@ -201,16 +201,11 @@ export function HoursView({ data }: { data: HoursData }) {
   const canLogSomething = data.canLogGeneral || data.projects.length > 0;
   const pageHref = (page: number) => `/hours?${hoursQuery(data.filter, page)}`;
   const filtered = data.rangeMinutes !== null;
+  const showTimer = !data.pending && canLogSomething;
 
   return (
     <div className="grid gap-4">
-      {/* پورتِ آمارِ افزونه: هفتهٔ تقویمی از روزِ شروعِ تنظیمات + این ماه. */}
-      <div className="grid gap-4 @2xl/main:grid-cols-2">
-        <StatCard label={t("این هفته")} value={hoursLabel(data.totals.week)} />
-        <StatCard label={t("این ماه")} value={hoursLabel(data.totals.month)} />
-      </div>
-
-      {/* ── تایمرِ پارک‌شده: مهم‌ترین حالت، پس بالاتر از همه ── */}
+      {/* ── تایمرِ پارک‌شده: مهم‌ترین حالت، پس بالاتر از همه (تمام‌عرض) ── */}
       {data.pending && (
         <Panel tone="warning" title={t("تایمرِ طولانی — تأیید کنید")}>
           <p className="text-sm text-muted-foreground">
@@ -251,31 +246,46 @@ export function HoursView({ data }: { data: HoursData }) {
         </Panel>
       )}
 
-      {/* ── تایمرِ در حالِ اجرا / شروعِ تایمر ── */}
-      {!data.pending && canLogSomething && (
-        <Panel icon={<Clock />} title={tr("تایمر")}>
-          {data.running ? (
-            <form action={stop} className="grid gap-3">
-              <div className="flex items-center gap-3">
-                <LiveMinutes from={data.running.minutes} />
-                <Badge variant="secondary">{data.running.projectTitle ?? t('کارِ عمومی')}</Badge>
-              </div>
-              <div className="flex flex-wrap items-end gap-2">
-                <Field className="flex-1">
-                  <FieldLabel htmlFor="stop-desc">{t("توضیح (اختیاری)")}</FieldLabel>
-                  <Input id="stop-desc" name="description" placeholder={t("روی چه کار کردید؟")} />
-                </Field>
-                <Submit variant="outline">
-                  <Pause className="size-3.5" />
-                  {tr("توقف و ثبت")}
-                </Submit>
-              </div>
-            </form>
-          ) : (
-            <StartTimerForm projects={data.projects} canLogGeneral={data.canLogGeneral} />
-          )}
-        </Panel>
-      )}
+      {/*
+        ⚠️ تایمر کنارِ «این هفته» و «این ماه»، در یک ردیف (۲.۴.۱): پرکاربردترین
+        بخشِ صفحه بی‌اسکرول دیده می‌شود. تایمر دو برابرِ هر کارت جا دارد چون
+        انتخابگرِ پروژه و دکمه (یا توضیح و توقف) در آن است؛ روی موبایل زیرِ هم.
+        `minmax(0, …)` نمی‌گذارد محتوای پهن ستون را از عرضش بیرون بزند.
+      */}
+      <div
+        className={showTimer
+          ? 'grid items-stretch gap-4 @3xl/main:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]'
+          : 'grid gap-4 @2xl/main:grid-cols-2'}
+      >
+        {/* ── تایمرِ در حالِ اجرا / شروعِ تایمر ── */}
+        {showTimer && (
+          <Panel icon={<Clock />} title={tr("تایمر")}>
+            {data.running ? (
+              <form action={stop} className="grid gap-3">
+                <div className="flex items-center gap-3">
+                  <LiveMinutes from={data.running.minutes} />
+                  <Badge variant="secondary">{data.running.projectTitle ?? t('کارِ عمومی')}</Badge>
+                </div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <Field className="flex-1">
+                    <FieldLabel htmlFor="stop-desc">{t("توضیح (اختیاری)")}</FieldLabel>
+                    <Input id="stop-desc" name="description" placeholder={t("روی چه کار کردید؟")} />
+                  </Field>
+                  <Submit variant="outline">
+                    <Pause className="size-3.5" />
+                    {tr("توقف و ثبت")}
+                  </Submit>
+                </div>
+              </form>
+            ) : (
+              <StartTimerForm projects={data.projects} canLogGeneral={data.canLogGeneral} />
+            )}
+          </Panel>
+        )}
+        {/* پورتِ آمارِ افزونه: هفتهٔ تقویمی از روزِ شروعِ تنظیمات + این ماه. */}
+        <StatCard label={t("این هفته")} value={hoursLabel(data.totals.week)} />
+        <StatCard label={t("این ماه")} value={hoursLabel(data.totals.month)} />
+      </div>
 
       {/* ── ثبتِ دستی ── */}
       {canLogSomething ? (

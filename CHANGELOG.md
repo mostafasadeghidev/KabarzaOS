@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.4.1]
+
+### Changed
+
+- **Work hours: the timer sits in one row with «This week» and «This month».** The timer is the part of the page people use most. It now opens without scrolling, twice as wide as each total so the project picker and buttons fit. On phones the three stack, timer first. The «long timer, please confirm» notice stays full width above them.
+
 ## [2.4.0]
 
 ### Added
