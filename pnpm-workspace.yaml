@@ -5,3 +5,14 @@
 allowBuilds:
   esbuild: true
   sharp: true
+
+# ⚠️ وصله‌های امنیتیِ وابستگی‌های غیرمستقیم (۲.۶.۱):
+#  · source-map-js < 1.2.2 — DoS با source-map ِ ساختگی (از postcss/tailwind).
+#  · sharp < 0.35.5 — librsvg ِ داخلی (CVE-2026-96889).
+#  · esbuild ِ ۰.۱۸ ِ @esbuild-kit (فقط ابزارِ drizzle-kit) — سرورِ توسعه هر
+#    درخواستی را جواب می‌داد. ۰.۲۵ همان API ِ transform را دارد.
+overrides:
+  source-map-js: ^1.2.2
+  '@esbuild-kit/core-utils>esbuild': ^0.25.0
+  # next خودش sharp ِ ۰.۳۵.۴ را سنجاق کرده (librsvg ِ آسیب‌پذیر) — یک نسخه برای همه.
+  sharp: ^0.35.5
