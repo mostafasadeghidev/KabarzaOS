@@ -2,6 +2,31 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.6.1]
+
+### Security
+
+Dependency updates for every open Dependabot alert. `pnpm audit` now reports no known vulnerabilities.
+
+- **Next.js 16.3.3 → 16.3.8 (critical).** Remote code execution in `next/og` `ImageResponse`. The app uses `ImageResponse` to draw the favicon from the company logo (`/brand-icon`), so it was exposed.
+- **Nodemailer 9.0.6 → 10.0.15 (high).** This fixes:
+  - denial of service through crafted address lists;
+  - delivery to an unintended domain through IDN or comment parsing;
+  - SMTP credentials reused across transports;
+  - a file and URL access bypass.
+
+  The app only uses `createTransport` and `sendMail`, which haven't changed. `@types/nodemailer` → 8.0.2.
+- **sharp → 0.35.5 (high).** Vulnerable bundled librsvg. Next.js pinned its own copy to 0.35.4, so a pnpm override now enforces one safe version for both.
+- **source-map-js → 1.2.2 (high, build time only).** Pulled in by postcss and Tailwind; enforced through an override.
+- **esbuild 0.18 → 0.25 (moderate, development only).** The old version reached the app only through `drizzle-kit`'s loader; it's enforced through an override, and `drizzle-kit` itself → 0.31.11.
+
+Checked after the update:
+- type check, unit and DB tests, page smoke test and Docker build;
+- the favicon renders through `next/og`;
+- sharp resizes images and writes WebP;
+- Nodemailer builds a message with a Persian subject;
+- `drizzle-kit` runs.
+
 ## [2.6.0]
 
 ### Added
