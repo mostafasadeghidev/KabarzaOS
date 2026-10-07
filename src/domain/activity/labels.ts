@@ -156,6 +156,10 @@ export const ACTION_LABELS: Record<string, string> = {
   'onboarding_item.media_delete': 'حذفِ فایلِ راهنمای آنبوردینگ',
   'onboarding.start': 'شروع یا همگام‌سازیِ آنبوردینگ',
   'onboarding.sync': 'به‌روزرسانیِ آنبوردینگ از کتابخانه',
+  // اتصالِ Claude (MCP) — ۲.۷.۰
+  'mcp.token_create': 'ساختنِ توکنِ MCP',
+  'mcp.token_revoke': 'باطل‌کردنِ توکنِ MCP',
+  'mcp.call': 'کار از طریقِ Claude (MCP)',
   'onboarding.add': 'آیتمِ ویژهٔ آنبوردینگ',
   'onboarding.delete': 'حذفِ کارِ آنبوردینگ',
   'onboarding.done': 'انجامِ کارِ آنبوردینگ',

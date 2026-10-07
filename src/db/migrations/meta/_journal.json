@@ -302,6 +302,13 @@
       "when": 1789093200020,
       "tag": "0042_onboarding_media",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1789093200021,
+      "tag": "0043_personal_tokens",
+      "breakpoints": true
     }
   ]
 }
