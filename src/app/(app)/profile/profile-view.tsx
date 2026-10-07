@@ -4,6 +4,7 @@ import { useActionState, useEffect, useMemo, useRef, useState, useTransition } f
 import { useFormStatus } from 'react-dom';
 import { Bell, Bot, Building2, CreditCard, Clock, KeyRound, Send, Lock, UserRound } from 'lucide-react';
 import { McpPanel, type McpGrantView, type McpTokenView } from './mcp-panel';
+import { AiBotPanel, type AiConnectionInfo, type AiProviderOption } from './ai-bot-panel';
 import { Thumb } from '@/components/thumb';
 import {
   changePasswordAction, completeTelegramAction, connectTelegramAction,
@@ -61,6 +62,7 @@ export interface ProfileData {
   isOwner: boolean;
   /** توکن‌های MCP ِ خودِ کاربر و نشانیِ اتصال (۲.۷.۰). */
   mcp: { tokens: McpTokenView[]; grants: McpGrantView[]; endpoint: string };
+  ai: { connection: AiConnectionInfo | null; botUsername: string; providers: AiProviderOption[] };
   company: {
     logoFileId: number | null;
     name: string; address: string; taxId: string; email: string;
@@ -421,7 +423,12 @@ export function ProfileView({ data }: { data: ProfileData }) {
         </form>
       )}
 
-      {tab === 'mcp' && <McpPanel tokens={data.mcp.tokens} grants={data.mcp.grants} endpoint={data.mcp.endpoint} />}
+      {tab === 'mcp' && (
+        <McpPanel
+          tokens={data.mcp.tokens} grants={data.mcp.grants} endpoint={data.mcp.endpoint}
+          bot={<AiBotPanel connection={data.ai.connection} providers={data.ai.providers} telegram={data.telegram} botUsername={data.ai.botUsername} />}
+        />
+      )}
 
       {tab === 'telegram' && (
         <Panel title={tr("تلگرام")} className="max-w-2xl">

@@ -100,6 +100,8 @@ export interface TokenSession {
   keyId: number;
   scopes: string[];
   name: string;
+  /** ربات تلگرام (۲.۹.۰): همان ابزارها، بی توکن — `keyId` صفر است. */
+  via?: 'telegram';
 }
 
 /** شمارندهٔ درخواست‌ها به‌ازای هر کلید — در حافظهٔ همین فرایند. */

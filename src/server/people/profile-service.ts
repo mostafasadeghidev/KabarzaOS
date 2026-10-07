@@ -301,8 +301,11 @@ export async function tryConnectTelegram(actor: Actor): Promise<TelegramConnectR
   const token = await botToken();
   if (!token) return { ok: false, reason: 'no_token' };
 
-  const [me] = await db.select({ linkToken: users.telegramLinkToken })
+  const [me] = await db.select({ linkToken: users.telegramLinkToken, chatId: users.telegramChatId })
     .from(users).where(eq(users.id, actor.id));
+  // ⚠️ از ۲.۹.۰ خودِ ربات «/start» را می‌گیرد و وصل می‌کند (وب‌هوک/پولینگ)؛ در آن
+  // حالت `getUpdates` چیزی ندارد (یا ۴۰۹ می‌دهد)، پس اول ببین وصل شده یا نه.
+  if (!me?.linkToken && me?.chatId) return { ok: true };
   if (!me?.linkToken) return { ok: false, reason: 'not_found' };
 
   let updates: Array<{ message?: { text?: string; chat?: { id?: number }; from?: { id?: number } } }>;
@@ -326,17 +329,25 @@ export async function tryConnectTelegram(actor: Actor): Promise<TelegramConnectR
   const chatId = String(rawChat).replace(/[^0-9-]/g, '');
   if (chatId === '') return { ok: false, reason: 'not_found' };
 
-  /**
-   * ⚠️ یک حسابِ تلگرام فقط به **یک** کاربر وصل می‌شود.
-   * بدونِ این گارد، اعلان‌های مالیِ دو نفر در یک چت می‌نشست — یعنی نشتِ
-   * اطلاعات، نه یک ناهماهنگیِ ساده. نسخهٔ قبلی هم صریحاً همین را نوشته.
-   */
+  const result = await linkTelegramChat(me.linkToken, chatId);
+  return result === 'ok' ? { ok: true } : { ok: false, reason: result };
+}
+
+/**
+ * گره‌زدنِ چت به صاحبِ توکن — مشترکِ دکمهٔ پروفایل و «/start» ِ خودِ ربات.
+ *
+ * ⚠️ یک حسابِ تلگرام فقط به **یک** کاربر وصل می‌شود.
+ * بدونِ این گارد، اعلان‌های مالیِ دو نفر در یک چت می‌نشست — یعنی نشتِ
+ * اطلاعات، نه یک ناهماهنگیِ ساده. نسخهٔ قبلی هم صریحاً همین را نوشته.
+ */
+export async function linkTelegramChat(token: string, chatId: string): Promise<'ok' | 'not_found' | 'taken'> {
+  if (!token || !chatId) return 'not_found';
+  const [owner] = await db.select({ id: users.id }).from(users).where(eq(users.telegramLinkToken, token));
+  if (!owner) return 'not_found';
   const others = await db.select({ id: users.id })
     .from(users).where(eq(users.telegramChatId, chatId));
-  if (others.some((u) => u.id !== actor.id)) return { ok: false, reason: 'taken' };
-
-  const linked = await completeTelegramLink(me.linkToken, chatId);
-  return linked ? { ok: true } : { ok: false, reason: 'not_found' };
+  if (others.some((u) => u.id !== owner.id)) return 'taken';
+  return (await completeTelegramLink(token, chatId)) ? 'ok' : 'not_found';
 }
 
 /**

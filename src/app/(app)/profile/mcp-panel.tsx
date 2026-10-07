@@ -116,10 +116,12 @@ function guides(endpoint: string, token: string) {
  *
  * ⚠️ توکن **فقط یک بار** نشان داده می‌شود (دیتابیس فقط هشش را دارد).
  */
-export function McpPanel({ tokens, grants, endpoint }: {
+export function McpPanel({ tokens, grants, endpoint, bot }: {
   tokens: McpTokenView[];
   grants: McpGrantView[];
   endpoint: string;
+  /** «ربات تلگرامِ هوشمند» (۲.۹.۰) — زیرِ معرفی. */
+  bot?: React.ReactNode;
 }) {
   const tr = useT();
   const tz = useTimeZone();
@@ -163,6 +165,8 @@ export function McpPanel({ tokens, grants, endpoint }: {
           {tr('هوشِ مصنوعیِ خودتان را به Kabarza وصل کنید — Claude، ChatGPT، Cursor، VS Code، Gemini، Zed و هر ابزاری که MCP پشتیبانی می‌کند. بعد کافی است بپرسید «امروز چه تسکی دارم؟» یا بگویید «پنجشنبه ۳ ساعت روی پروژهٔ آلفا ثبت کن». همیشه با همان دسترسی‌هایی که خودتان دارید، نه بیشتر.')}
         </p>
       </Panel>
+
+      {bot}
 
       <Panel title={tr('اتصال از وب و موبایل')}>
         <p className="text-sm text-muted-foreground">

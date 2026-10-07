@@ -290,3 +290,19 @@ export const serviceGrants = pgTable('service_grants', {
   index('service_grants_user_ix').on(t.userId),
   index('service_grants_service_ix').on(t.serviceId),
 ]);
+
+/**
+ * «مغزِ» ربات تلگرام (۲.۹.۰) — ارائه‌دهندهٔ هوشِ مصنوعیِ هر کاربر.
+ * ⚠️ `apiKeyEnc` رمزگذاری‌شده است (`server/ai/secret-box`)؛ `keyHint` فقط چهار
+ * نویسهٔ آخرِ کلید برای تشخیص.
+ */
+export const aiConnections = pgTable('ai_connections', {
+  id: pk(),
+  userId: fk('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  provider: text('provider').notNull(),
+  baseUrl: text('base_url').notNull(),
+  model: text('model').notNull().default(''),
+  apiKeyEnc: text('api_key_enc').notNull(),
+  keyHint: text('key_hint').notNull().default(''),
+  ...stamps,
+});
