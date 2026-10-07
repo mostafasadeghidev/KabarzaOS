@@ -162,6 +162,10 @@ export const ACTION_LABELS: Record<string, string> = {
   'mcp.call': 'کار از طریقِ هوشِ مصنوعی (MCP)',
   'mcp.oauth_connect': 'اتصالِ وبِ هوشِ مصنوعی',
   'mcp.oauth_revoke': 'قطعِ اتصالِ وبِ هوشِ مصنوعی',
+  // «مغزِ» ربات تلگرام — ۲.۹.۰
+  'ai.connect': 'وصل‌کردنِ هوشِ مصنوعی به ربات',
+  'ai.disconnect': 'قطعِ هوشِ مصنوعیِ ربات',
+  'telegram.bot_call': 'کار از طریقِ ربات تلگرام',
   'onboarding.add': 'آیتمِ ویژهٔ آنبوردینگ',
   'onboarding.delete': 'حذفِ کارِ آنبوردینگ',
   'onboarding.done': 'انجامِ کارِ آنبوردینگ',

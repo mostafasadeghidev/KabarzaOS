@@ -316,6 +316,13 @@
       "when": 1789093200022,
       "tag": "0044_oauth",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1789093200023,
+      "tag": "0045_ai_connections",
+      "breakpoints": true
     }
   ]
 }

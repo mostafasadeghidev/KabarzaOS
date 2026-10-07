@@ -11,6 +11,13 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+  await migrateOnBoot();
+  // ربات تلگرام (۲.۹.۰): وب‌هوک یا پولینگ — بعد از مهاجرت، تا جدول‌ها آماده باشند.
+  const { startTelegramRunner } = await import('./server/telegram/runner');
+  startTelegramRunner();
+}
+
+async function migrateOnBoot() {
   if (process.env.SKIP_MIGRATIONS === '1') return;
 
   const { default: postgres } = await import('postgres');

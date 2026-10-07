@@ -2,6 +2,35 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.9.0]
+
+### Added
+
+- **Telegram bot with commands and buttons.** Members who linked Telegram can now use the bot, not only receive notifications:
+  - `/tasks` (open tasks, reviews waiting for you), `/hours` (today, this week, this month, running timer), `/timer` and `/stop`, `/log` (pick a project, then a duration), `/new` and `/help`, plus inline menu buttons.
+  - Linking now happens inside the bot: opening the link from Profile → Telegram connects the chat right away. One Telegram account still links to only one user.
+  - Only private chats are answered; group messages are ignored. Locked or offboarded members get no data.
+  - Everything runs with the member's own permissions through the existing services, and every change is recorded as «Action via the Telegram bot».
+- **Smart replies with the member's own AI.** Under Profile → «AI assistant» → «Smart Telegram bot», each member can connect their own provider. The company pays nothing and holds no shared key.
+  - **Sign in with OpenRouter** (OAuth PKCE): no key to copy, and a free model is picked by default.
+  - Or bring your own key: DeepSeek, ChatGPT (OpenAI), Claude (Anthropic), Z.ai (GLM), AgentRouter, Gemini, Groq, or any other OpenAI-compatible service by address.
+  - Models can be listed and switched from the profile; free and tool-capable models are listed first.
+  - The AI uses the same MCP tools, with the member's own permissions. Reading happens directly. **Every change (logging hours, timers, tasks, status, comments) waits for a «Yes/No» button.**
+  - If the quota runs out, the key stops working or the model can't use tools, the bot says so and falls back to the buttons. Models without tool support still chat.
+  - Short conversation memory (30 minutes, `/new` clears it) and a limit of 20 AI messages per 5 minutes per member.
+- Events: «Connect AI to the bot» and «Disconnect the bot's AI».
+
+### Security
+
+- AI keys are stored encrypted with AES-256-GCM (from `AI_KEY_SECRET`, or `SESSION_SECRET` by default). They are never sent back to the browser; only the last four characters are shown, and keys are never written to the audit log.
+- Custom AI addresses must be public HTTPS. Private, loopback and link-local addresses are refused, including names that resolve to them, and redirects are not followed.
+- The webhook only accepts requests carrying the secret registered with Telegram, and repeated updates are processed once.
+
+### Notes
+
+- Migration 0045 adds `ai_connections`.
+- `TELEGRAM_BOT_MODE` controls how the bot receives messages: `auto` (default) uses a webhook when `APP_URL` is https, polling in production otherwise, and stays off in development. Polling hands each update to the local webhook route.
+
 ## [2.8.0]
 
 ### Added
