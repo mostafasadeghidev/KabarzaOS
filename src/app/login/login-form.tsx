@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
  * فرمِ ورود — بلوکِ login ِ shadcn: کارت، `FieldGroup`، پیوندِ «فراموشی» کنارِ
  * برچسبِ رمز. پوسته و نشانِ برند از `PublicShell` می‌آید (صفحه آن را می‌سازد).
  */
-export function LoginForm({ notice }: { notice?: string } = {}) {
+export function LoginForm({ notice, next }: { notice?: string; next?: string } = {}) {
   const t = useT();
   const [state, formAction, pending] = useActionState<LoginState, FormData>(login, {});
 
@@ -29,6 +29,7 @@ export function LoginForm({ notice }: { notice?: string } = {}) {
       </CardHeader>
       <CardContent>
         <form action={formAction}>
+          {next && <input type="hidden" name="next" value={next} />}
           <FieldGroup>
             {notice && (
               <Alert>

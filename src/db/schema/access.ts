@@ -141,8 +141,52 @@ export const apiKeys = pgTable('api_keys', {
   rateLimit: integer('rate_limit').notNull().default(600),
   lastUsedAt: ts('last_used_at'),
   revokedAt: ts('revoked_at'),
+  /** توکنِ دسترسیِ OAuth کوتاه‌عمر است؛ توکنِ شخصی تاریخِ انقضا ندارد (۲.۸.۰). */
+  expiresAt: ts('expires_at'),
+  /** توکنی که «اتصالِ وب» صادر کرده — با قطعِ اتصال پاک می‌شود. */
+  oauthGrantId: fk('oauth_grant_id').references(() => oauthGrants.id, { onDelete: 'cascade' }),
   ...stamps,
 }, (t) => [uniqueIndex('api_keys_hash_uq').on(t.hash), index('api_keys_user_ix').on(t.userId)]);
+
+/* ------------------------------------------------------------------ *
+ * OAuth 2.1 — اتصالِ نسخه‌های وبِ هوشِ مصنوعی به MCP (مهاجرتِ ۰۰۴۴)
+ * ------------------------------------------------------------------ */
+
+/** اپِ هوشِ مصنوعی‌ای که خودش را ثبت کرده (Dynamic Client Registration). */
+export const oauthClients = pgTable('oauth_clients', {
+  id: pk(),
+  clientId: text('client_id').notNull().unique(),
+  name: text('name').notNull().default(''),
+  redirectUris: jsonb('redirect_uris').notNull().$type<string[]>().default(sql`'[]'::jsonb`),
+  ...stamps,
+});
+
+/** کدِ یک‌بارمصرفِ پس از «اجازه» — ده دقیقه، با PKCE. فقط هش ذخیره می‌شود. */
+export const oauthCodes = pgTable('oauth_codes', {
+  id: pk(),
+  codeHash: text('code_hash').notNull().unique(),
+  clientId: fk('client_id').notNull().references(() => oauthClients.id, { onDelete: 'cascade' }),
+  userId: fk('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  redirectUri: text('redirect_uri').notNull(),
+  codeChallenge: text('code_challenge').notNull(),
+  scopes: jsonb('scopes').notNull().$type<string[]>().default(sql`'[]'::jsonb`),
+  expiresAt: ts('expires_at').notNull(),
+  usedAt: ts('used_at'),
+  ...stamps,
+});
+
+/** «اتصالِ وب»: یک کاربر به یک اپ اجازه داده — با توکنِ تمدیدِ چرخشی. */
+export const oauthGrants = pgTable('oauth_grants', {
+  id: pk(),
+  clientId: fk('client_id').notNull().references(() => oauthClients.id, { onDelete: 'cascade' }),
+  userId: fk('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  scopes: jsonb('scopes').notNull().$type<string[]>().default(sql`'[]'::jsonb`),
+  refreshHash: text('refresh_hash').notNull().unique(),
+  refreshExpiresAt: ts('refresh_expires_at').notNull(),
+  lastUsedAt: ts('last_used_at'),
+  revokedAt: ts('revoked_at'),
+  ...stamps,
+}, (t) => [index('oauth_grants_user_ix').on(t.userId)]);
 
 /**
  * لاگِ ممیزی — ارتقا نسبت به نسخهٔ قبلی: دیفِ قبل/بعد + نوعِ عامل.

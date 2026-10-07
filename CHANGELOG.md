@@ -2,6 +2,26 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.8.0]
+
+### Added
+
+- **Connect web AI apps (claude.ai, ChatGPT and others) through OAuth 2.1.** Add the server address as a custom connector in the app. Kabarza's sign-in page and a consent page («“Claude” wants to connect to your account») open, where the user picks read-only or read and write. No token to copy. It works in the service's mobile app too.
+  - Standard discovery: `/.well-known/oauth-protected-resource` (RFC 9728), `/.well-known/oauth-authorization-server` (RFC 8414, also served as `openid-configuration`), and a `401` from `/api/mcp` that points to them.
+  - Dynamic client registration (RFC 7591), limited to 30 per IP per hour. Allowed redirect addresses are https, loopback http, or an app's own scheme.
+  - Authorization code with PKCE S256 only. Codes are single-use and last 10 minutes; access tokens last 1 hour; refresh tokens last 90 days and rotate. Only hashes are stored.
+  - An invalid request (unknown app, unregistered redirect, no PKCE) shows an error instead of redirecting anywhere.
+  - Revocation endpoint (RFC 7009).
+  - Connected apps get exactly the same tools, permissions and audit trail as personal tokens.
+- **Profile → «AI assistant»** (renamed from «Claude (MCP)»):
+  - the server address for web connectors;
+  - the list of connected web apps, with disconnect;
+  - ready-made setup for Claude Code, Cursor, VS Code, Gemini CLI, and the Claude desktop app, Zed and others (via `mcp-remote`).
+- Sign-in now returns to the page that sent you there, but only to paths on this site.
+- Events: «AI web connection» and «AI web connection removed». Tool calls now show as «Action through AI (MCP)».
+
+Migration 0044 adds the OAuth tables, plus an expiry and connection link on `api_keys`. `APP_URL` must be the public HTTPS address so web apps can reach the sign-in and token addresses.
+
 ## [2.7.0]
 
 ### Added

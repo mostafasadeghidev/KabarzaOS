@@ -9,6 +9,7 @@ import { PageHeader, PageShell } from '@/components/page-shell';
 import { pageTitle } from '@/i18n/page-title';
 import { headers } from 'next/headers';
 import { listTokens } from '@/server/mcp/tokens';
+import { listGrants } from '@/server/mcp/oauth';
 
 export const generateMetadata = pageTitle('پروفایلِ من');
 
@@ -31,7 +32,7 @@ export default async function ProfilePage() {
    * حسابدارِ نسخهٔ قبلی هم این تب را داشت (زیرِ).
    */
   const isOwner = can(actor, 'settings.manage');
-  const [me, company, account, myAccess, mcpTokens] = await Promise.all([
+  const [me, company, account, myAccess, mcpTokens, mcpGrants] = await Promise.all([
     getMyProfile(actor),
     // مشخصاتِ شرکت فقط برای مالک خوانده می‌شود.
     isOwner ? getCompany() : Promise.resolve(null),
@@ -40,6 +41,8 @@ export default async function ProfilePage() {
     myGrants(actor),
     // توکن‌های MCP ِ خودِ کاربر — هیچ‌کس توکنِ دیگری را نمی‌بیند.
     listTokens(actor),
+    // «اتصال‌های وب» (OAuth) ِ خودِ کاربر — ۲.۸.۰.
+    listGrants(actor),
   ]);
 
   /**
@@ -74,7 +77,7 @@ export default async function ProfilePage() {
           notify: me.notify,
           myAccess,
           isOwner,
-          mcp: { tokens: mcpTokens, endpoint: `${origin}/api/mcp` },
+          mcp: { tokens: mcpTokens, grants: mcpGrants, endpoint: `${origin}/api/mcp` },
           company: company ?? {
             name: '', address: '', taxId: '', email: '',
             phone: '', website: '', bank: '', invoiceFooter: '', logoFileId: null,

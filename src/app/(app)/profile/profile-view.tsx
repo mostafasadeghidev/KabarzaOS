@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Bell, Bot, Building2, CreditCard, Clock, KeyRound, Send, Lock, UserRound } from 'lucide-react';
-import { McpPanel, type McpTokenView } from './mcp-panel';
+import { McpPanel, type McpGrantView, type McpTokenView } from './mcp-panel';
 import { Thumb } from '@/components/thumb';
 import {
   changePasswordAction, completeTelegramAction, connectTelegramAction,
@@ -60,7 +60,7 @@ export interface ProfileData {
   }>;
   isOwner: boolean;
   /** توکن‌های MCP ِ خودِ کاربر و نشانیِ اتصال (۲.۷.۰). */
-  mcp: { tokens: McpTokenView[]; endpoint: string };
+  mcp: { tokens: McpTokenView[]; grants: McpGrantView[]; endpoint: string };
   company: {
     logoFileId: number | null;
     name: string; address: string; taxId: string; email: string;
@@ -76,7 +76,7 @@ const TABS = [
   { key: 'password', label: 'رمزِ ورود', icon: Lock },
   { key: 'notify', label: 'اعلان‌ها', icon: Bell },
   { key: 'telegram', label: 'تلگرام', icon: Send },
-  { key: 'mcp', label: 'Claude (MCP)', icon: Bot },
+  { key: 'mcp', label: 'دستیارِ هوشِ مصنوعی', icon: Bot },
 ] as const;
 
 function Submit({ children }: { children: React.ReactNode }) {
@@ -421,7 +421,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
         </form>
       )}
 
-      {tab === 'mcp' && <McpPanel tokens={data.mcp.tokens} endpoint={data.mcp.endpoint} />}
+      {tab === 'mcp' && <McpPanel tokens={data.mcp.tokens} grants={data.mcp.grants} endpoint={data.mcp.endpoint} />}
 
       {tab === 'telegram' && (
         <Panel title={tr("تلگرام")} className="max-w-2xl">
