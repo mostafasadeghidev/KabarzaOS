@@ -12,6 +12,7 @@ import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from '@/doma
 import { sessionSecret, currentActor } from '@/server/auth';
 import { loginSchema, type LoginState } from './schema';
 import { markOffline } from '@/server/people/presence-service';
+import { safeNextPath } from '@/domain/auth/next-path';
 
 
 /** شمارندهٔ شکست‌های ورود — یک نمونه برای عمرِ فرایند (R-AUTH: پنجرهٔ ۱۵ دقیقه، سقفِ ۱۰). */
@@ -89,7 +90,8 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   const token = await createSessionToken({ userId: result.userId }, sessionSecret());
   (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions());
-  redirect('/');
+  // «پس از ورود برگرد به …» — فقط مسیرِ داخلی (صفحهٔ «اجازه» ِ OAuth، ۲.۸.۰).
+  redirect(safeNextPath(formData.get('next')));
 }
 
 export async function logout(): Promise<void> {

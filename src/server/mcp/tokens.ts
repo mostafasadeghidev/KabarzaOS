@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { apiKeys, auditLog } from '@/db/schema';
+import { apiKeys, auditLog, oauthGrants } from '@/db/schema';
 import type { Actor } from '@/domain/access/permissions';
 import { ForbiddenError } from '@/domain/access/guard';
 import {
@@ -57,7 +57,8 @@ export async function listTokens(actor: Actor): Promise<TokenRow[]> {
     lastUsedAt: apiKeys.lastUsedAt,
     createdAt: apiKeys.createdAt,
   }).from(apiKeys)
-    .where(and(eq(apiKeys.userId, actor.id), isNull(apiKeys.revokedAt)))
+    // ⚠️ توکن‌های «اتصالِ وب» (OAuth) اینجا نیستند — فهرستِ جدای خودشان را دارند.
+    .where(and(eq(apiKeys.userId, actor.id), isNull(apiKeys.revokedAt), isNull(apiKeys.oauthGrantId)))
     .orderBy(desc(apiKeys.id));
 }
 
@@ -118,6 +119,8 @@ export async function authenticateToken(raw: string, now = Date.now()): Promise<
   if (!looksLikeToken(raw)) return { ok: false, reason: 'invalid' };
   const [key] = await db.select().from(apiKeys).where(eq(apiKeys.hash, hashToken(raw)));
   if (!key || key.revokedAt || key.userId === null) return { ok: false, reason: 'invalid' };
+  // توکنِ دسترسیِ OAuth کوتاه‌عمر است؛ اپ با توکنِ تمدید تازه‌اش می‌کند.
+  if (key.expiresAt && key.expiresAt.getTime() <= now) return { ok: false, reason: 'invalid' };
 
   const rate = rateWindow(windows.get(key.id), now, key.rateLimit);
   windows.set(key.id, rate.state);
@@ -129,6 +132,9 @@ export async function authenticateToken(raw: string, now = Date.now()): Promise<
   if (now - (lastStamp.get(key.id) ?? 0) > 60_000) {
     lastStamp.set(key.id, now);
     await db.update(apiKeys).set({ lastUsedAt: new Date(now) }).where(eq(apiKeys.id, key.id));
+    if (key.oauthGrantId) {
+      await db.update(oauthGrants).set({ lastUsedAt: new Date(now) }).where(eq(oauthGrants.id, key.oauthGrantId));
+    }
   }
   return { ok: true, session: { actor: loaded.actor, keyId: key.id, scopes: key.scopes, name: key.name } };
 }

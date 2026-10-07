@@ -95,7 +95,7 @@ const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 export function buildMcpServer(session: TokenSession): McpServer {
   const { actor } = session;
   const server = new McpServer(
-    { name: 'kabarza', version: '2.7.0' },
+    { name: 'kabarza', version: '2.8.0' },
     {
       instructions: [
         'Kabarza is an agency workspace: projects, tasks, work hours and team availability.',
