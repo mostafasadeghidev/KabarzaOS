@@ -1437,8 +1437,29 @@ export async function openTasksForUser(userId: number, scopes: Array<'company' |
       isNull(tasks.deletedAt),
       inArray(projects.scope, scopes),
       sql`coalesce(${tags.statusGroup}, '') <> 'complete'`,
+      notBlockedOnProjectSql(userId),
     ))
     .orderBy(priority.sortOrder, desc(tasks.id));
+}
+
+/**
+ * ⚠️ «قطعِ دسترسی» روی پروژه (۲.۹.۰): تسکِ آن پروژه در صندوقِ کاربر نمی‌آید، حتی
+ * اگر به نامِ خودش باشد — همان قاعدهٔ `projectRelation` (همهٔ رابطه‌ها قطع ← قطع).
+ * پیش از این عنوانِ تسک و نامِ پروژه در «تسک‌های من» (و ربات/MCP) می‌ماند.
+ */
+function notBlockedOnProjectSql(userId: number) {
+  return sql`not (
+    exists (
+      select 1 from project_members pm where pm.project_id = ${tasks.projectId} and pm.user_id = ${userId} and pm.access_blocked
+      union all
+      select 1 from project_clients pc where pc.project_id = ${tasks.projectId} and pc.user_id = ${userId} and pc.access_blocked
+    )
+    and not exists (
+      select 1 from project_members pm where pm.project_id = ${tasks.projectId} and pm.user_id = ${userId} and not pm.access_blocked
+      union all
+      select 1 from project_clients pc where pc.project_id = ${tasks.projectId} and pc.user_id = ${userId} and not pc.access_blocked
+    )
+  )`;
 }
 
 /* ------------------------------------------------------------------ *

@@ -294,7 +294,7 @@ export function buildMcpServer(session: TokenSession): McpServer {
 
   server.registerTool('create_task', {
     title: 'Create task',
-    description: 'Create a task in a project. Assigning to someone else needs project manager rights.',
+    description: 'Create a task in a project. The assignee must be on the project (team, client, or admins for managers); otherwise the task is left unassigned.',
     inputSchema: {
       project_id: z.number().int().positive(),
       title: z.string().min(1).max(200),

@@ -259,6 +259,17 @@ async function timerStop(chatId: number, who: Who) {
   }
 }
 
+/**
+ * شناسهٔ پروژه از دادهٔ دکمه: `0` = کارِ عمومی (null)، عددِ مثبت = پروژه،
+ * هر چیزِ دیگر (متن، منفی، اعشار) = undefined و **هیچ کاری**. ⚠️ دادهٔ دکمه را
+ * هر کسی می‌تواند دستی بسازد؛ پیش از این `t:s:abc` به «کارِ عمومی» می‌افتاد.
+ */
+function projectArg(raw: string | undefined): number | null | undefined {
+  if (!raw || !/^\d{1,10}$/.test(raw)) return undefined;
+  const id = Number(raw);
+  return id === 0 ? null : id;
+}
+
 const DURATIONS = [15, 30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480];
 
 /* ---------------- دکمه‌ها ---------------- */
@@ -279,7 +290,8 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
     if (kind === 't' && op === 'p') return await timerStart(chatId, who, msg.message_id);
     if (kind === 't' && op === 'x') return await timerStop(chatId, who);
     if (kind === 't' && op === 's') {
-      const projectId = Number(a) || null;
+      const projectId = projectArg(a);
+      if (projectId === undefined) return;
       await startTimer(who.actor, projectId);
       await audit(who, 'timer.start', { projectId });
       const title = projectId ? (await projectTitle(projectId)) : who.tr('کارِ عمومی');
@@ -288,7 +300,9 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
     }
     if (kind === 'l' && op === 'p') return await pickProject(chatId, who, 'l:j', who.tr('ساعت روی کدام پروژه ثبت شود؟'), msg.message_id);
     if (kind === 'l' && op === 'j') {
-      const pid = Number(a) || 0;
+      const parsed = projectArg(a);
+      if (parsed === undefined) return;
+      const pid = parsed ?? 0;
       const rows: Keyboard = [];
       for (let i = 0; i < DURATIONS.length; i += 4) {
         rows.push(DURATIONS.slice(i, i + 4).map((m) => ({ text: hm(m), callback_data: `l:m:${pid}:${m}` })));
@@ -297,9 +311,9 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
       return;
     }
     if (kind === 'l' && op === 'm') {
-      const projectId = Number(a) || null;
+      const projectId = projectArg(a);
       const minutes = Number(b);
-      if (!DURATIONS.includes(minutes)) return;
+      if (projectId === undefined || !/^\d+$/.test(b ?? '') || !DURATIONS.includes(minutes)) return;
       const date = todayIn(who.tz);
       await addOrMerge(who.actor, { projectId, logDate: date, minutes, description: '' });
       await audit(who, 'timelog.add', { projectId, minutes, date });
