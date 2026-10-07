@@ -49,7 +49,8 @@ export function redactSnapshot(value: unknown): unknown {
 export type SubjectKind =
   | 'user' | 'project' | 'task' | 'bid' | 'ledger' | 'account' | 'unit' | 'payment_request'
   | 'recurring' | 'meeting' | 'timelog' | 'currency' | 'tag' | 'office' | 'vendor' | 'qa_item'
-  | 'service' | 'service_grant' | 'onboarding_item' | 'company' | 'settings' | 'backup' | 'fiscal';
+  | 'service' | 'service_grant' | 'onboarding_item' | 'company' | 'settings' | 'backup' | 'fiscal'
+  | 'api_key';
 
 /** نامِ نوعِ «مورد» — کنارِ نامش در فهرست و سرِ دیالوگ. */
 export const SUBJECT_LABELS: Record<SubjectKind, string> = {
@@ -76,6 +77,8 @@ export const SUBJECT_LABELS: Record<SubjectKind, string> = {
   settings: 'تنظیماتِ سامانه',
   backup: 'پشتیبان‌گیری',
   fiscal: 'دورهٔ مالی',
+  // توکنِ MCP — نامِ توکن در خودِ رویداد عکس گرفته می‌شود (۲.۷.۰).
+  api_key: 'توکنِ MCP',
 };
 
 /**
@@ -118,6 +121,7 @@ export function subjectKind(action: string, objectType: string): SubjectKind | n
     case 'onboarding_item': return 'onboarding_item';
     case 'company': return 'company';
     case 'backup': return 'backup';
+    case 'api_key': return 'api_key';
     default: return null;
   }
 }

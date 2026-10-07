@@ -46,25 +46,12 @@ export async function currentSession(): Promise<
   const session = await readSessionToken(store.get(SESSION_COOKIE)?.value, sessionSecret());
   if (!session) return null;
 
-  const rows = await db.select().from(users).where(eq(users.id, session.userId));
-  const user = rows[0];
-  // R-PEOPLE-03 — «قطع‌شده» و حذف‌شده بازیگر نیستند؛ «فقط مالی» هست.
-  if (!user || !canSignIn(user.memberState, user.deletedAt !== null)) return null;
-
-  const [roleRows, permRows, tagPermissions] = await Promise.all([
-    db.select().from(userRoles).where(eq(userRoles.userId, user.id)),
-    db.select().from(userPermissions).where(eq(userPermissions.userId, user.id)),
-    // پورتِ `sync_caps_from_tags()`: تگِ «حسابدار»/«مدیر حسابداری» دسترسیِ مالی می‌دهد.
-    tagPermissionsFor(user.id),
-  ]);
+  const loaded = await loadActor(session.userId);
+  if (!loaded) return null;
+  const { actor, user } = loaded;
 
   return {
-    actor: {
-      id: user.id,
-      roles: roleRows.map((r) => r.role as Role),
-      permissions: [...new Set([...permRows.map((p) => p.permission as Permission), ...tagPermissions])],
-      privateAccess: user.privateAccess,
-    },
+    actor,
     name: user.name,
     // ⚠️ خالی می‌ماند اگر کاربر انتخابی نکرده باشد؛ حل‌کردنش کارِ
     // `currentLocale()` است که تنظیمِ سامانه را هم می‌بیند (R-I18N-14).
@@ -75,6 +62,33 @@ export async function currentSession(): Promise<
     memberState: user.memberState as MemberState,
     appearance: storedAppearance(user),
   };
+}
+
+/**
+ * بازیگرِ یک کاربر از روی شناسه — مشترکِ نشستِ مرورگر و توکنِ MCP (۲.۷.۰).
+ *
+ * ⚠️ R-PEOPLE-03 — «قطع‌شده» و حذف‌شده بازیگر نیستند؛ «فقط مالی» هست.
+ * مجوزها هر بار از دیتابیس خوانده می‌شوند، پس پس‌گرفتنِ دسترسی بی‌درنگ
+ * روی توکن‌ها هم اثر دارد.
+ */
+export async function loadActor(userId: number) {
+  const rows = await db.select().from(users).where(eq(users.id, userId));
+  const user = rows[0];
+  if (!user || !canSignIn(user.memberState, user.deletedAt !== null)) return null;
+
+  const [roleRows, permRows, tagPermissions] = await Promise.all([
+    db.select().from(userRoles).where(eq(userRoles.userId, user.id)),
+    db.select().from(userPermissions).where(eq(userPermissions.userId, user.id)),
+    // پورتِ `sync_caps_from_tags()`: تگِ «حسابدار»/«مدیر حسابداری» دسترسیِ مالی می‌دهد.
+    tagPermissionsFor(user.id),
+  ]);
+  const actor: Actor = {
+    id: user.id,
+    roles: roleRows.map((r) => r.role as Role),
+    permissions: [...new Set([...permRows.map((p) => p.permission as Permission), ...tagPermissions])],
+    privateAccess: user.privateAccess,
+  };
+  return { actor, user };
 }
 
 /** بازیگرِ فعلی، یا null اگر وارد نشده باشد. */

@@ -124,9 +124,16 @@ export const userPermissions = pgTable('user_permissions', {
   ...stamps,
 }, (t) => [uniqueIndex('user_permissions_uq').on(t.userId, t.permission)]);
 
-/** کلیدهای API — پیش‌نیازِ لایهٔ ایجنت (بستهٔ ۹/۱۰ GAP). */
+/**
+ * کلیدهای API — از ۲.۷.۰ «توکنِ شخصی» برای اتصالِ MCP.
+ * ⚠️ هر کلید مالِ یک کاربر است و همان دسترسی‌های او را دارد؛ فقط هش ذخیره می‌شود.
+ */
 export const apiKeys = pgTable('api_keys', {
   id: pk(),
+  /** صاحبِ کلید — دسترسی‌ها هر بار از همین کاربر خوانده می‌شود (مهاجرتِ ۰۰۴۳). */
+  userId: fk('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  /** آغازِ توکن («kbz_ab12…») — فقط برای تشخیص؛ از آن نمی‌شود توکن را ساخت. */
+  prefix: text('prefix').notNull().default(''),
   name: text('name').notNull(),
   hash: text('hash').notNull(),
   /** مثلاً ['ledger.draft.create','ledger.read'] — کلیدِ ایجنت هرگز confirm نمی‌کند. */
@@ -135,7 +142,7 @@ export const apiKeys = pgTable('api_keys', {
   lastUsedAt: ts('last_used_at'),
   revokedAt: ts('revoked_at'),
   ...stamps,
-}, (t) => [uniqueIndex('api_keys_hash_uq').on(t.hash)]);
+}, (t) => [uniqueIndex('api_keys_hash_uq').on(t.hash), index('api_keys_user_ix').on(t.userId)]);
 
 /**
  * لاگِ ممیزی — ارتقا نسبت به نسخهٔ قبلی: دیفِ قبل/بعد + نوعِ عامل.

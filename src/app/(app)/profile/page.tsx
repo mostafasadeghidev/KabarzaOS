@@ -7,6 +7,8 @@ import { ProfileView } from './profile-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { pageTitle } from '@/i18n/page-title';
+import { headers } from 'next/headers';
+import { listTokens } from '@/server/mcp/tokens';
 
 export const generateMetadata = pageTitle('پروفایلِ من');
 
@@ -29,14 +31,24 @@ export default async function ProfilePage() {
    * حسابدارِ نسخهٔ قبلی هم این تب را داشت (زیرِ).
    */
   const isOwner = can(actor, 'settings.manage');
-  const [me, company, account, myAccess] = await Promise.all([
+  const [me, company, account, myAccess, mcpTokens] = await Promise.all([
     getMyProfile(actor),
     // مشخصاتِ شرکت فقط برای مالک خوانده می‌شود.
     isOwner ? getCompany() : Promise.resolve(null),
     getAccountInfo(actor),
     // دسترسی‌های بیرونیِ خودم — بی‌مجوزِ خاص، چون دادهٔ خودِ کاربر است.
     myGrants(actor),
+    // توکن‌های MCP ِ خودِ کاربر — هیچ‌کس توکنِ دیگری را نمی‌بیند.
+    listTokens(actor),
   ]);
+
+  /**
+   * نشانیِ اتصالِ MCP: `APP_URL` اگر تنظیم شده (پشتِ پراکسی همین درست است)،
+   * وگرنه از سرآیندهای همین درخواست.
+   */
+  const h = await headers();
+  const origin = (process.env.APP_URL ?? '').replace(/\/$/, '')
+    || `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost'}`;
 
   return (
     <PageShell>
@@ -62,6 +74,7 @@ export default async function ProfilePage() {
           notify: me.notify,
           myAccess,
           isOwner,
+          mcp: { tokens: mcpTokens, endpoint: `${origin}/api/mcp` },
           company: company ?? {
             name: '', address: '', taxId: '', email: '',
             phone: '', website: '', bank: '', invoiceFooter: '', logoFileId: null,

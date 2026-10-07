@@ -2,6 +2,19 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.7.0]
+
+### Added
+
+- **Connect Claude to Kabarza through MCP.** Kabarza now runs an MCP server at `/api/mcp` (Streamable HTTP), so Claude Code and the Claude desktop app can work with the app directly.
+  - **Personal tokens:** created under Profile → «Claude (MCP)», read-only or read and write. Only a SHA-256 hash is stored, and the token is shown once. A token can be revoked at any time and stops working immediately. Each user can have up to 10 active tokens, with a limit of 600 requests a minute per token. The tab also gives a ready-to-copy `claude mcp add` command and a desktop config snippet.
+  - **Same access as the owner, never more.** Each request rebuilds the owner's permissions from the database. A disconnected or former member is refused. Tools only call existing services and return a fixed list of safe fields: the project price only for people who see it in the app, and member pay amounts never.
+  - **Tools (read):** `whoami`, `list_my_tasks`, `search`, `list_projects`, `get_project`, `list_task_statuses`, `my_hours`, `team_availability`.
+  - **Tools (write, need a read-and-write token):** `log_hours`, `start_timer`, `stop_timer`, `create_task`, `set_task_status`, `add_comment`. Money, deleting, people and access changes are deliberately not available.
+  - Every write call is recorded in «Events» as «Action through Claude (MCP)», with the tool and the token's name. Creating and revoking tokens are recorded too.
+  - Only `Authorization: Bearer` is accepted. The browser session cookie is ignored, so other websites can't call the server on a user's behalf.
+  - Migration 0043 links `api_keys` to a user. Set `APP_URL` so the connection address shown in the profile is the public one.
+
 ## [2.6.1]
 
 ### Security
