@@ -298,11 +298,15 @@ export const serviceGrants = pgTable('service_grants', {
  */
 export const aiConnections = pgTable('ai_connections', {
   id: pk(),
-  userId: fk('user_id').notNull().unique().references(() => users.id, { onDelete: 'cascade' }),
+  userId: fk('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  /** ترتیبِ امتحان (۲.۱۲.۰): کوچک‌تر اول؛ اگر به سقف خورد، بعدی. */
+  priority: integer('priority').notNull().default(0),
   provider: text('provider').notNull(),
   baseUrl: text('base_url').notNull(),
   model: text('model').notNull().default(''),
   apiKeyEnc: text('api_key_enc').notNull(),
   keyHint: text('key_hint').notNull().default(''),
   ...stamps,
-});
+}, (t) => [
+  index('ai_connections_user_ix').on(t.userId, t.priority),
+]);

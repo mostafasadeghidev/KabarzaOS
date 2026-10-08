@@ -9,6 +9,8 @@ import type { Actor } from '@/domain/access/permissions';
 import { matchesTarget, planDelivery, type Recipient } from '@/domain/notifications/gateway';
 import { sendMail } from '@/server/mail/transport';
 import { telegramCredentials } from '@/server/settings/telegram-service';
+import { taskCard, type TaskCardFile } from '@/server/telegram/task-card';
+import { getObject } from '@/server/files/storage';
 
 /**
  * دروازهٔ اعلان — **تنها** نقطهٔ ارسال (R-NOTIF-01).
@@ -37,6 +39,11 @@ export interface NotifyInput {
    * پیامِ گفتگو پرسروصدا است. ترجیحِ کاربر همچنان مقدم است؛ این فقط کم می‌کند.
    */
   channels?: { email?: boolean; telegram?: boolean };
+  /**
+   * تسکِ همین اعلان (۲.۱۲.۰) — برای «سپرده شد» تلگرام کارتِ کامل می‌فرستد:
+   * عنوان، پروژه، اولویت، ددلاین، توضیح و فایل‌های تسک.
+   */
+  taskId?: number;
 }
 
 /**
@@ -69,7 +76,7 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
   // ترجمهٔ به‌ازای زبانِ هر گیرنده — یک مترجم برای هر زبان، نه هر نفر.
   const fallbackLocale = (await getSystemConfig()).defaultLocale as Locale;
   const translators = new Map<Locale, Translator>();
-  const render = async (locale: Locale): Promise<{ title: string; body: string }> => {
+  const render = async (locale: Locale): Promise<{ title: string; body: string; openLabel: string; locale: Locale; tr: Translator }> => {
     let tr = translators.get(locale);
     if (!tr) {
       tr = createTranslator(await loadMessages(locale), locale);
@@ -78,6 +85,9 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
     return {
       title: tr(input.title, input.params),
       body: input.body ? tr(input.body, input.params) : '',
+      openLabel: tr('باز کردن در برنامه'),
+      locale,
+      tr,
     };
   };
   const localeOf = (r: { locale: string | null }): Locale =>
@@ -148,7 +158,7 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
  */
 async function deliverExternal(
   plan: { email: boolean; telegram: boolean },
-  input: NotifyInput,
+  input: NotifyInput & { openLabel?: string; locale?: Locale; tr?: Translator },
   target: { email: string; chatId: string },
 ): Promise<void> {
   const url = input.url ? absoluteUrl(input.url) : '';
@@ -160,10 +170,21 @@ async function deliverExternal(
   }
 
   if (plan.telegram) {
-    const lines = [input.title];
-    if (input.body) lines.push(input.body);
-    if (url) lines.push(url);
-    await sendTelegram(target.chatId, lines.join('\n\n'));
+    // ⚠️ کارتِ کامل فقط برای «سپرده شد» — گیرنده انجام‌دهندهٔ همان تسک است.
+    const card = input.type === 'task.assigned' && input.taskId && input.locale && input.tr
+      ? await taskCard(input.taskId, input.locale, input.tr).catch(() => null)
+      : null;
+    if (card) {
+      const text = [`🔔 ${input.title}`, '', ...card.lines, ...(url ? ['', url] : [])].join('\n');
+      await sendTelegram(target.chatId, text.slice(0, 4000), miniAppButton(input.url, input.openLabel));
+      for (const file of card.files) await sendTelegramFile(target.chatId, file);
+    } else {
+      // 🔔 عنوان، بعد متن؛ پیوند ته پیام (دکمهٔ «باز کردن» زیرش است).
+      const lines = [`🔔 ${input.title}`];
+      if (input.body) lines.push(input.body);
+      if (url) lines.push(url);
+      await sendTelegram(target.chatId, lines.join('\n\n'), miniAppButton(input.url, input.openLabel));
+    }
   }
 }
 
@@ -177,15 +198,52 @@ function absoluteUrl(url: string): string {
   return base ? `${base}${url.startsWith('/') ? '' : '/'}${url}` : url;
 }
 
+/**
+ * دکمهٔ «باز کردن در برنامه» زیرِ اعلانِ تلگرام (۲.۱۲.۰) — همان صفحه داخلِ
+ * مینی‌اپ و با ورودِ خودکار، به‌جای مرورگرِ بیرونی. فقط برای مسیرِ داخلی و فقط
+ * با `APP_URL` ِ HTTPS (تلگرام مینی‌اپِ بی‌HTTPS را باز نمی‌کند). پیوندِ متنی هم
+ * می‌ماند، برای نسخه‌هایی از تلگرام که مینی‌اپ ندارند.
+ */
+export function miniAppButton(path: string | undefined, label = 'باز کردن در برنامه') {
+  const base = (process.env.APP_URL ?? '').trim().replace(/\/$/, '');
+  if (!path || !base.startsWith('https://')) return undefined;
+  const inner = path.startsWith(base) ? path.slice(base.length) || '/' : path;
+  if (!inner.startsWith('/') || inner.startsWith('//')) return undefined;
+  return { inline_keyboard: [[{ text: `📱 ${label}`, web_app: { url: `${base}/tg?next=${encodeURIComponent(inner)}` } }]] };
+}
+
+/**
+ * فرستادنِ یک فایلِ تسک به تلگرام — عکس با sendPhoto (پیش‌نمایش در چت)، بقیه
+ * با sendDocument. ⚠️ بایت‌ها از انبار خوانده و مستقیم بارگذاری می‌شوند؛ نشانیِ
+ * فایلِ ما (که ورود می‌خواهد) به تلگرام داده نمی‌شود. شکست بی‌صداست.
+ */
+async function sendTelegramFile(chatId: string, file: TaskCardFile): Promise<void> {
+  const { token } = await telegramCredentials();
+  if (!token || !chatId) return;
+  try {
+    const bytes = await getObject(file.storageKey);
+    const form = new FormData();
+    form.append('chat_id', chatId);
+    form.append(file.photo ? 'photo' : 'document', new Blob([new Uint8Array(bytes)], { type: file.mime }), file.name);
+    await fetch(`https://api.telegram.org/bot${token}/${file.photo ? 'sendPhoto' : 'sendDocument'}`, {
+      method: 'POST',
+      body: form,
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch {
+    // R-NOTIF-03 — فایلِ ناموفق متنِ اعلان را بی‌اثر نمی‌کند.
+  }
+}
+
 /** ارسالِ پیامِ تلگرام به یک کاربر. شکست بی‌صداست (R-NOTIF-03). */
-async function sendTelegram(chatId: string, text: string): Promise<void> {
+async function sendTelegram(chatId: string, text: string, replyMarkup?: ReturnType<typeof miniAppButton>): Promise<void> {
   const { token } = await telegramCredentials();
   if (!token || !chatId) return;
 
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true, ...(replyMarkup ? { reply_markup: replyMarkup } : {}) }),
     // ⚠️ تلگرامِ گیرکرده نباید درخواستی را که اعلان را راه انداخته نگه دارد (نسخهٔ قبلی: ۱۵ ثانیه).
     signal: AbortSignal.timeout(15_000),
   });

@@ -323,6 +323,13 @@
       "when": 1789093200023,
       "tag": "0045_ai_connections",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1789093200024,
+      "tag": "0046_ai_connection_priority",
+      "breakpoints": true
     }
   ]
 }

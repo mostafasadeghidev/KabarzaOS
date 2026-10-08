@@ -71,6 +71,17 @@ export function ConsentForm({ hidden, clientName, userName, defaultScope }: {
             {t('این اپ فقط چیزهایی را می‌بیند که خودتان در Kabarza می‌بینید. کارهای مالی، حذف و دسترسی‌ها ممکن نیست. هر وقت بخواهید از «پروفایل ← دستیارِ هوشِ مصنوعی» قطعش کنید.')}
           </p>
 
+          {/*
+            ⚠️ حسابِ مشترک (۲.۱۲.۰): اتصال مالِ **حسابِ هوشِ مصنوعی** است، نه آدم.
+            اگر دو نفر یک حسابِ Claude/ChatGPT دارند، هر دو با دسترسی و نامِ همین
+            کاربر کار می‌کنند — ما از این سمت نمی‌بینیم پشتِ آن حساب کیست.
+          */}
+          <Alert variant="warning">
+            <AlertDescription>
+              {t('این اتصال با دسترسی و نامِ شما کار می‌کند. هر کس به این حسابِ «{app}» دسترسی داشته باشد، دادهٔ شما را می‌بیند و کارهایش به نامِ شما ثبت می‌شود. حسابِ هوشِ مصنوعی را با همکارانتان شریک نشوید؛ هر نفر حسابِ خودش را وصل کند.', { app: clientName })}
+            </AlertDescription>
+          </Alert>
+
           {state.error && <Alert variant="destructive"><AlertDescription>{t(state.error)}</AlertDescription></Alert>}
 
           <div className="flex flex-wrap gap-2">

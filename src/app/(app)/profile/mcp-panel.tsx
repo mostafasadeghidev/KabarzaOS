@@ -178,6 +178,11 @@ export function McpPanel({ tokens, grants, endpoint, bot }: {
           <li>• {tr('ChatGPT: تنظیمات ← Apps & Connectors (حالتِ developer) ← ساختنِ کانکتور ← نشانی.')}</li>
           <li>• {tr('اتصال در اپِ موبایلِ همان سرویس هم خودبه‌خود در دسترس است.')}</li>
         </ul>
+        {/* ⚠️ حسابِ مشترک (۲.۱۲.۰): اتصال مالِ حسابِ آن سرویس است؛ همهٔ کسانی که آن حساب را دارند با نامِ شما کار می‌کنند. */}
+        <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 p-2 text-xs">
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-amber-600" aria-hidden />
+          {tr('حسابِ هوشِ مصنوعی را با همکاران شریک نشوید: هر کس به آن حساب دسترسی داشته باشد، با دسترسی و نامِ شما کار می‌کند. اگر در فهرستِ زیر «آخرین استفاده» ای می‌بینید که کارِ خودتان نیست، فوراً قطعش کنید.')}
+        </p>
 
         <h4 className="mt-2 text-xs font-semibold text-muted-foreground">{tr('اتصال‌های فعالِ وب')}</h4>
         {grants.length === 0 ? (
@@ -189,6 +194,7 @@ export function McpPanel({ tokens, grants, endpoint, bot }: {
                 <TableHead>{tr('اپ')}</TableHead>
                 <TableHead>{tr('دسترسی')}</TableHead>
                 <TableHead>{tr('آخرین استفاده')}</TableHead>
+                <TableHead>{tr('وصل‌شده')}</TableHead>
                 <TableActionsHead />
               </TableRow>
             </TableHeader>
@@ -198,6 +204,7 @@ export function McpPanel({ tokens, grants, endpoint, bot }: {
                   <TableCell className="font-medium" dir="auto"><Globe className="me-1 inline size-3.5 text-muted-foreground" aria-hidden />{g.name}</TableCell>
                   <TableCell><ScopeBadge scopes={g.scopes} /></TableCell>
                   <TableCell className="text-xs">{g.lastUsedAt ? <span className="num">{formatDateTime(g.lastUsedAt, tz)}</span> : tr('هرگز')}</TableCell>
+                  <TableCell className="text-xs"><span className="num">{formatDateTime(g.createdAt, tz)}</span></TableCell>
                   <TableActionsCell>
                     <IconButton
                       variant="ghost" className="size-8 text-muted-foreground hover:text-destructive"

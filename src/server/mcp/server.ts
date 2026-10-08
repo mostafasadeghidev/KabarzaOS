@@ -17,6 +17,9 @@ import {
 import { hasTeamAvailability, teamMatrix } from '@/server/availability/service';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { compose, contactManagement, getRecipients, RateLimitedError } from '@/server/messaging/service';
+import { createReminder, deleteReminder, listMeetings, listReminders } from '@/server/meetings/service';
+import { formatDateTime, parseInZone } from '@/i18n/datetime';
+import { users } from '@/db/schema';
 import { can } from '@/domain/access/permissions';
 import { assertWrite, type TokenSession } from './tokens';
 
@@ -114,6 +117,7 @@ export function buildMcpServer(session: TokenSession): McpServer {
         'Use search or list_projects to find a project id before project-specific tools.',
         'Data is often in Persian; answer the user in their language.',
         'To message a person use list_message_recipients then send_message; to reach the managers use message_management. A project comment (add_comment) is not a message.',
+        'Meetings: list_my_meetings. Personal reminders: list_my_reminders, create_reminder, delete_reminder (times are in the user timezone).',
       ].join(' '),
     },
   );
@@ -341,6 +345,76 @@ export function buildMcpServer(session: TokenSession): McpServer {
   }, async (args) => write('add_comment', args, async () => {
     await addComment(actor, args.project_id, args.text);
     return { posted: true };
+  }));
+
+  /* ---------------- جلسات و یادآورها (۲.۱۲.۰) ---------------- */
+
+  /** منطقهٔ زمانیِ خودِ کاربر، وگرنه سامانه — همان که صفحه‌ها نشان می‌دهند. */
+  const userZone = async () => {
+    const [row] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, actor.id));
+    return row?.tz || (await getSystemConfig()).timezone || 'UTC';
+  };
+
+  server.registerTool('list_my_meetings', {
+    title: 'Upcoming meetings',
+    description: 'Upcoming meetings I can see (the same list as the Meetings page): time in my timezone, place, project and attendees.',
+    annotations: { readOnlyHint: true },
+  }, async () => run(async () => {
+    const tz = await userZone();
+    const { meetings } = await listMeetings(actor);
+    return {
+      timezone: tz,
+      meetings: meetings.slice(0, 30).map((m) => ({
+        id: m.id,
+        title: m.title,
+        at: formatDateTime(m.meetAt, tz),
+        location: m.location || null,
+        project: m.projectTitle,
+        // ⚠️ نام‌ها همان ماسکِ برنامه را دارند (کارفرما نقش می‌بیند نه نام).
+        attendees: m.attendees.map((a) => a.name),
+      })),
+    };
+  }));
+
+  server.registerTool('list_my_reminders', {
+    title: 'My reminders',
+    description: 'My personal reminders that have not fired yet, with ids for delete_reminder.',
+    annotations: { readOnlyHint: true },
+  }, async () => run(async () => {
+    const tz = await userZone();
+    const rows = await listReminders(actor);
+    return {
+      timezone: tz,
+      reminders: rows.filter((r) => !r.isSent).slice(0, 50)
+        .map((r) => ({ id: r.id, at: formatDateTime(r.remindAt, tz), text: r.body })),
+    };
+  }));
+
+  server.registerTool('create_reminder', {
+    title: 'Create a reminder',
+    description: 'Create a personal reminder. `at` is local time in my timezone, format YYYY-MM-DD HH:mm. It must be in the future.',
+    inputSchema: {
+      at: z.string().regex(/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}$/, 'Use YYYY-MM-DD HH:mm'),
+      text: z.string().min(1).max(500),
+    },
+  }, async (args) => write('create_reminder', args, async () => {
+    const tz = await userZone();
+    const when = parseInZone(args.at, tz);
+    if (!when || when.getTime() <= Date.now()) return { created: false, error: 'The time must be in the future.' };
+    const id = await createReminder(actor, { remindAt: when, body: args.text, leads: [0] });
+    return { created: true, reminderId: id, at: formatDateTime(when, tz) };
+  }));
+
+  server.registerTool('delete_reminder', {
+    title: 'Delete a reminder',
+    description: 'Delete one of my reminders (id from list_my_reminders).',
+    inputSchema: { reminder_id: z.number().int().positive() },
+  }, async (args) => write('delete_reminder', args, async () => {
+    // ⚠️ سرویس فقط یادآورِ خودِ کاربر را پاک می‌کند؛ شناسهٔ دیگری بی‌اثر است.
+    const mine = (await listReminders(actor)).some((r) => r.id === args.reminder_id);
+    if (!mine) return { deleted: false, error: 'Not found.' };
+    await deleteReminder(actor, args.reminder_id);
+    return { deleted: true };
   }));
 
   /* ---------------- پیام (۲.۱۱.۰) ---------------- */

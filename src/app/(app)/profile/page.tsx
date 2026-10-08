@@ -10,7 +10,7 @@ import { pageTitle } from '@/i18n/page-title';
 import { headers } from 'next/headers';
 import { listTokens } from '@/server/mcp/tokens';
 import { listGrants } from '@/server/mcp/oauth';
-import { getAiConnection } from '@/server/ai/connections';
+import { listAiConnections } from '@/server/ai/connections';
 import { telegramBotUsername } from '@/server/settings/telegram-service';
 import { PROVIDER_IDS, PROVIDERS } from '@/domain/ai/providers';
 
@@ -35,7 +35,7 @@ export default async function ProfilePage() {
    * حسابدارِ نسخهٔ قبلی هم این تب را داشت (زیرِ).
    */
   const isOwner = can(actor, 'settings.manage');
-  const [me, company, account, myAccess, mcpTokens, mcpGrants, aiConnection, botUsername] = await Promise.all([
+  const [me, company, account, myAccess, mcpTokens, mcpGrants, aiConnections, botUsername] = await Promise.all([
     getMyProfile(actor),
     // مشخصاتِ شرکت فقط برای مالک خوانده می‌شود.
     isOwner ? getCompany() : Promise.resolve(null),
@@ -47,7 +47,7 @@ export default async function ProfilePage() {
     // «اتصال‌های وب» (OAuth) ِ خودِ کاربر — ۲.۸.۰.
     listGrants(actor),
     // «مغزِ» ربات تلگرام ِ خودِ کاربر — ۲.۹.۰؛ کلید هرگز در نما نیست.
-    getAiConnection(actor),
+    listAiConnections(actor),
     telegramBotUsername(),
   ]);
 
@@ -85,7 +85,7 @@ export default async function ProfilePage() {
           isOwner,
           mcp: { tokens: mcpTokens, grants: mcpGrants, endpoint: `${origin}/api/mcp` },
           ai: {
-            connection: aiConnection,
+            connections: aiConnections,
             botUsername,
             providers: PROVIDER_IDS.map((id) => {
               const p = PROVIDERS[id];

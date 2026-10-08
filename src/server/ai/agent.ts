@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { Actor } from '@/domain/access/permissions';
-import { authHeaders } from '@/domain/ai/providers';
+import { authHeaders, PROVIDERS } from '@/domain/ai/providers';
 import {
   allow, classifyProviderError, clip, parseArgs, toOpenAiTools, trimHistory,
   type ChatMessage, type McpToolInfo, type ToolCall,
@@ -24,7 +24,7 @@ import type { AiSecret } from './connections';
  */
 
 export type AgentResult =
-  | { kind: 'reply'; text: string }
+  | { kind: 'reply'; text: string; via?: string }
   | { kind: 'confirm'; id: string; tool: string; args: Record<string, unknown>; note: string }
   | { kind: 'choose'; id: string; question: string; options: Array<{ id: number; title: string }> }
   | { kind: 'quota' }
@@ -35,7 +35,12 @@ export type AgentResult =
 export interface AgentContext {
   actor: Actor;
   userName: string;
-  secret: AiSecret;
+  /**
+   * اتصال‌ها به ترتیبِ اولویت (۲.۱۲.۰). اگر اولی به سقف خورد، کلیدش کار نکرد یا
+   * جواب نداد، همان درخواست به بعدی می‌رود؛ `active` همان را تا آخرِ کار نگه می‌دارد.
+   */
+  secrets: AiSecret[];
+  active?: number;
   /** زبانِ پاسخ، مثلاً «فارسی». */
   language: string;
   today: string;
@@ -176,10 +181,64 @@ async function complete(secret: AiSecret, messages: ChatMessage[], tools: Return
   return { ok: true, message: { content: message.content ?? null, tool_calls: message.tool_calls?.filter((c) => c?.function?.name) } };
 }
 
+/** ساعتِ محلیِ الان — برای «دو ساعت دیگر یادم بنداز». */
+function localNow(tz: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-GB', { timeZone: tz || 'UTC', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(11, 16);
+  }
+}
+
+type AnyCompletion =
+  | { ok: true; message: { content: string | null; tool_calls?: ToolCall[] }; noTools: boolean }
+  | { ok: false; reason: 'quota' | 'auth' | 'other' };
+
+/**
+ * امتحانِ اتصال‌ها به ترتیبِ اولویت. ⚠️ همان پیام‌ها (کلِ گفت‌وگو) به بعدی می‌رود،
+ * پس جابه‌جایی وسطِ کار هم رشتهٔ گفت‌وگو را نمی‌بُرد. مدلی که ابزار نمی‌پذیرد فقط
+ * وقتی بی‌ابزار صدا زده می‌شود که هیچ اتصالِ ابزارپذیری جواب نداده باشد.
+ */
+async function completeAny(ctx: AgentContext, messages: ChatMessage[], tools: unknown[] | null): Promise<AnyCompletion> {
+  const reasons: string[] = [];
+  let plainOnly: number | null = null;
+  for (let i = ctx.active ?? 0; i < ctx.secrets.length; i++) {
+    const out = await complete(ctx.secrets[i]!, messages, tools as Parameters<typeof complete>[2]);
+    if (out.ok) {
+      ctx.active = i;
+      return { ...out, noTools: false };
+    }
+    if (out.reason === 'no_tools' && tools) {
+      if (plainOnly === null) plainOnly = i;
+      continue;
+    }
+    reasons.push(out.reason);
+  }
+  if (plainOnly !== null) {
+    const out = await complete(ctx.secrets[plainOnly]!, messages, null);
+    if (out.ok) {
+      ctx.active = plainOnly;
+      return { ...out, noTools: true };
+    }
+    reasons.push(out.reason);
+  }
+  if (reasons.includes('quota')) return { ok: false, reason: 'quota' };
+  if (reasons.length > 0 && reasons.every((r) => r === 'auth')) return { ok: false, reason: 'auth' };
+  return { ok: false, reason: 'other' };
+}
+
+/** نامِ اتصالی که جواب داد، وقتی اولی نبود — تا کاربر بداند جابه‌جا شده. */
+function viaLabel(ctx: AgentContext): string | undefined {
+  if (!ctx.active) return undefined;
+  const s = ctx.secrets[ctx.active];
+  return s ? `${PROVIDERS[s.provider]?.label ?? s.provider}${s.model ? ` — ${s.model}` : ''}` : undefined;
+}
+
 function systemPrompt(ctx: AgentContext): string {
   return [
     `You are the Kabarza workspace assistant inside Telegram, talking to ${ctx.userName}.`,
-    `Today is ${ctx.today} (${ctx.timezone}).`,
+    `Today is ${ctx.today}; the local time now is ${localNow(ctx.timezone)} (${ctx.timezone}).`,
+    'For meetings use list_my_meetings; for personal reminders use list_my_reminders, create_reminder (local time) and delete_reminder.',
     'Use the tools to read real data; never invent tasks, projects, ids or hours.',
     'Find ids with search or list_projects before project tools.',
     'For changes (logging hours, timers, tasks, comments, messages) just call the tool: the app asks the user to confirm with buttons, so do not ask "are you sure" yourself.',
@@ -200,12 +259,9 @@ async function loop(ctx: AgentContext, messages: ChatMessage[]): Promise<AgentRe
     let tools: Array<ReturnType<typeof toOpenAiTools>[number] | typeof PICK_TOOL> | null = [...toOpenAiTools(conn.tools), PICK_TOOL];
 
     for (let step = 0; step < MAX_STEPS; step++) {
-      let out = await complete(ctx.secret, messages, tools);
+      const out = await completeAny(ctx, messages, tools);
       // مدلی که ابزار نمی‌پذیرد: دستِ‌کم گفت‌وگوی ساده.
-      if (!out.ok && out.reason === 'no_tools' && tools) {
-        tools = null;
-        out = await complete(ctx.secret, messages, null);
-      }
+      if (out.ok && out.noTools) tools = null;
       if (!out.ok) {
         if (out.reason === 'quota') return { kind: 'quota' };
         if (out.reason === 'auth') return { kind: 'auth' };
@@ -217,7 +273,7 @@ async function loop(ctx: AgentContext, messages: ChatMessage[]): Promise<AgentRe
         const text = (out.message.content ?? '').trim();
         messages.push({ role: 'assistant', content: text });
         remember(ctx.actor.id, messages);
-        return text ? { kind: 'reply', text: clip(text) } : { kind: 'error' };
+        return text ? { kind: 'reply', text: clip(text), via: viaLabel(ctx) } : { kind: 'error' };
       }
 
       messages.push({ role: 'assistant', content: out.message.content ?? null, tool_calls: calls });
