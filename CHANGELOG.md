@@ -2,6 +2,25 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.10.0]
+
+### Added
+
+- **Telegram mini app.** The bot has an «Open the app» button (in the menu and next to the message box). It opens Kabarza inside Telegram and signs the member in automatically, with no password.
+  - Sign-in is based on Telegram's signed `initData`, checked against the bot token on the server. Data older than one hour is refused.
+  - Only a Telegram account already linked from the profile can sign in. Locked and deleted users are refused, and an unknown Telegram account never creates or links anything.
+  - Each sign-in is recorded as «Sign-in from the Telegram mini app».
+  - It needs `APP_URL` to be a public HTTPS address; without HTTPS the button is hidden.
+- **AI status in the bot.**
+  - The menu shows which AI is connected (provider and model), or says that one can be added and how.
+  - A new «AI» button and `/ai` command explain the current setup and open the AI settings in the mini app.
+  - Connecting or disconnecting an AI in the profile now sends a short note to the member's Telegram.
+- Work hours: each entry shows the weekday next to its date.
+
+### Changed
+
+- The bot replies to voice messages with a short note instead of staying silent. Voice is not understood yet.
+
 ## [2.9.2]
 
 ### Fixed

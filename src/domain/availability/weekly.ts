@@ -28,6 +28,17 @@ export function weekdayIndex(at: Date): number {
 }
 
 /**
+ * روزِ هفتهٔ ایرانیِ یک تاریخِ تقویمی (`YYYY-MM-DD`) — ستونِ تاریخِ «ساعت کاری».
+ * ⚠️ ظهرِ UTC: تاریخِ تقویمی منطقهٔ زمانی ندارد و نیمه‌شب در بعضی منطقه‌ها روزِ
+ * قبل می‌شد. تاریخِ نامعتبر ← null.
+ */
+export function weekdayOfDate(ymd: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
+  const d = new Date(`${ymd}T12:00:00Z`);
+  return Number.isNaN(d.getTime()) ? null : (d.getUTCDay() + 1) % 7;
+}
+
+/**
  * ترتیبِ **نمایشِ** روزها، چرخیده تا از روزِ آغازِ هفتهٔ تنظیمات شروع شود.
  * ⚠️ ذخیره همیشه ۰..۶ ایرانی می‌ماند؛ فقط ترتیبِ نمایش عوض می‌شود.
  */

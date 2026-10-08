@@ -6,6 +6,7 @@ import {
   AiError, deleteAiConnection, listMyModels, saveAiConnection, setAiModel,
 } from '@/server/ai/connections';
 import type { ModelOption } from '@/domain/ai/providers';
+import { notifyAiChange } from '@/server/telegram/bot';
 
 /** اقدام‌های «مغزِ» ربات — هر کس فقط اتصالِ خودش (۲.۹.۰). */
 
@@ -29,12 +30,15 @@ function explain(error: unknown): string {
 
 export async function saveAiAction(_prev: AiFormState, formData: FormData): Promise<AiFormState> {
   try {
-    await saveAiConnection(await requireActor(), {
+    const actor = await requireActor();
+    const view = await saveAiConnection(actor, {
       provider: String(formData.get('provider') ?? ''),
       baseUrl: String(formData.get('baseUrl') ?? ''),
       apiKey: String(formData.get('apiKey') ?? ''),
       model: String(formData.get('model') ?? ''),
     });
+    // در تلگرام هم معلوم شود چه چیزی وصل است (۲.۱۰.۰).
+    await notifyAiChange(actor.id, view);
     revalidatePath('/profile');
     return { saved: true };
   } catch (error) {
@@ -57,7 +61,8 @@ export async function setModelAction(model: string): Promise<AiFormState> {
 }
 
 export async function deleteAiAction(): Promise<AiFormState> {
-  await deleteAiConnection(await requireActor());
+  const actor = await requireActor();
+  if (await deleteAiConnection(actor)) await notifyAiChange(actor.id, null);
   revalidatePath('/profile');
   return {};
 }

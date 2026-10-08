@@ -117,3 +117,13 @@ describe('برنامهٔ ذخیره', () => {
     expect(isAllDay({ from: '09:00', to: '17:00' })).toBe(false);
   });
 });
+
+describe('weekdayOfDate', () => {
+  it('تاریخِ تقویمی ← روزِ هفتهٔ ایرانی، بی‌وابستگی به منطقهٔ زمانی', async () => {
+    const { weekdayOfDate } = await import('../weekly');
+    expect(weekdayOfDate('2026-10-03')).toBe(0); // شنبه
+    expect(weekdayOfDate('2026-10-08')).toBe(5); // پنج‌شنبه
+    expect(weekdayOfDate('2026-10-09')).toBe(6); // جمعه
+    expect(weekdayOfDate('nope')).toBeNull();
+  });
+});
