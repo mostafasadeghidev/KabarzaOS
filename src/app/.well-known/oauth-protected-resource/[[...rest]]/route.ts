@@ -12,7 +12,7 @@ export function GET(req: Request) {
   return json({
     resource: `${origin}/api/mcp`,
     authorization_servers: [origin],
-    scopes_supported: ['read', 'write'],
+    scopes_supported: ['read', 'write', 'sensitive'],
     bearer_methods_supported: ['header'],
     resource_name: 'Kabarza',
   });

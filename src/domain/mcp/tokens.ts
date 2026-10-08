@@ -11,15 +11,20 @@ import { createHash, randomBytes } from 'node:crypto';
 export const TOKEN_PREFIX = 'kbz_';
 
 /** دامنهٔ دسترسیِ توکن: فقط‌خواندنی، یا خواندن و نوشتن. */
-export const SCOPES = ['read', 'write'] as const;
+/**
+ * دامنه‌ها. `sensitive` (۲.۱۳.۰) = کارهای حساس (پول، حذف، دسترسی‌ها، تنظیمات) —
+ * کاربر صریحاً و جدا روشنش می‌کند؛ شاملِ write و read هم هست.
+ */
+export const SCOPES = ['read', 'write', 'sensitive'] as const;
 export type TokenScope = (typeof SCOPES)[number];
 
 export function isScope(value: unknown): value is TokenScope {
   return typeof value === 'string' && (SCOPES as readonly string[]).includes(value);
 }
 
-/** «write» شاملِ «read» است — توکنِ نوشتنی بی‌خواندن بی‌معناست. */
+/** «write» شاملِ «read» است و «sensitive» شاملِ هر دو — دسترسیِ بالاتر بی پایین‌تر بی‌معناست. */
 export function scopesFor(scope: TokenScope): string[] {
+  if (scope === 'sensitive') return ['read', 'write', 'sensitive'];
   return scope === 'write' ? ['read', 'write'] : ['read'];
 }
 

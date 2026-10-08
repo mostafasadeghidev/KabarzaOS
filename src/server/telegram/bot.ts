@@ -104,6 +104,8 @@ async function edit(chatId: number, messageId: number, text: string, keyboard?: 
 
 interface Who {
   actor: Actor;
+  /** اجازهٔ کارهای حساس به ربات (۲.۱۳.۰). */
+  aiSensitive: boolean;
   name: string;
   tr: Translator;
   locale: Locale;
@@ -136,7 +138,7 @@ async function whoIs(chatId: number): Promise<Who | null> {
   const sys = await systemLocale();
   const locale = loaded.user.locale && isLocale(loaded.user.locale) ? loaded.user.locale : sys.locale;
   return {
-    actor: loaded.actor, name: loaded.user.name, tr: await translatorFor(locale),
+    actor: loaded.actor, aiSensitive: loaded.user.aiSensitive, name: loaded.user.name, tr: await translatorFor(locale),
     locale, tz: sys.tz, weekStart: sys.weekStart,
   };
 }
@@ -628,12 +630,87 @@ const WRITE_TITLES: Record<string, string> = {
   message_management: 'پیام به مدیریت',
   create_reminder: 'ساختنِ یادآور',
   delete_reminder: 'حذفِ یادآور',
+  // ۲.۱۳.۰ — همهٔ کارهای سایت
+  update_task: 'ویرایشِ تسک',
+  refer_task: 'ارجاعِ تسک',
+  claim_task: 'برداشتنِ تسک',
+  add_task_note: 'یادداشت روی تسک',
+  toggle_comment_done: 'انجام/باز کردنِ کامنت',
+  apply_qa: 'اعمالِ چک‌لیستِ QA',
+  toggle_qa_item: 'تیکِ آیتمِ QA',
+  create_review: 'ساختنِ بازبینی',
+  update_review: 'ویرایشِ بازبینی',
+  add_review_item: 'افزودنِ مورد به بازبینی',
+  add_project_link: 'افزودنِ پیوند به پروژه',
+  pin_file: 'سنجاقِ فایل',
+  reply_message: 'پاسخ در گفتگو',
+  mute_conversation: 'بی‌صدا کردنِ گفتگو',
+  create_channel: 'ساختنِ کانال',
+  create_project_group: 'گروهِ گفتگوی پروژه',
+  mark_notification_read: 'خوانده‌شدنِ اعلان',
+  create_meeting: 'ساختنِ جلسه',
+  update_meeting: 'ویرایشِ جلسه',
+  record_leave: 'ثبتِ مرخصی',
+  set_weekly_schedule: 'برنامهٔ هفتگی',
+  onboarding_toggle: 'تیکِ آنبوردینگ',
+  onboarding_start: 'شروعِ آنبوردینگ',
+  onboarding_add_task: 'افزودنِ کارِ آنبوردینگ',
+  update_time_log: 'ویرایشِ ساعتِ ثبت‌شده',
+  resolve_long_timer: 'تکلیفِ تایمرِ طولانی',
+  update_my_profile: 'ویرایشِ پروفایلِ من',
+  set_my_timezone: 'منطقهٔ زمانیِ من',
+  set_notification_prefs: 'تنظیمِ اعلان‌ها',
+  delete_task: 'حذفِ تسک',
+  delete_comment: 'حذفِ کامنت',
+  delete_project_file: 'حذفِ فایلِ پروژه',
+  delete_review: 'حذفِ بازبینی',
+  delete_meeting: 'حذفِ جلسه',
+  delete_conversation: 'حذفِ گفتگو',
+  leave_conversation: 'خروج از گفتگو',
+  delete_group_message: 'حذفِ پیامِ گروه',
+  delete_leave: 'حذفِ مرخصی',
+  delete_time_log: 'حذفِ ساعتِ ثبت‌شده',
+  delete_onboarding_task: 'حذفِ کارِ آنبوردینگ',
+  delete_qa_item: 'حذفِ آیتمِ QA',
+  create_project: 'ساختنِ پروژه',
+  update_project: 'ویرایشِ پروژه',
+  set_project_status: 'تغییرِ وضعیتِ پروژه',
+  archive_project: 'بایگانیِ پروژه',
+  delete_project: 'حذفِ پروژه',
+  add_project_member: 'افزودنِ عضو به پروژه',
+  remove_project_member: 'برداشتنِ عضو از پروژه',
+  set_project_access: 'قطع/وصلِ دسترسی به پروژه',
+  set_project_clients: 'کارفرمایانِ پروژه',
+  remove_qa_role: 'برداشتنِ نقشِ QA',
+  tender_bid: 'پیشنهادِ مناقصه',
+  project_units: 'کارکردِ تعدادی',
+  my_payment_request: 'درخواستِ پرداختِ من',
+  create_ledger_entry: 'ثبتِ درآمد یا هزینه',
+  update_ledger_entry: 'ویرایشِ ردیفِ دفتر',
+  delete_ledger_entry: 'حذفِ ردیفِ دفتر',
+  transfer_money: 'انتقالِ پول بینِ حساب‌ها',
+  decide_payment_request: 'تأیید/ردِ درخواستِ پرداخت',
+  pay: 'پرداخت',
+  recurring_payment: 'پرداختِ دوره‌ای',
+  finance_account: 'حسابِ مالی',
+  fiscal_period: 'بستن/بازکردنِ دورهٔ مالی',
+  create_person: 'افزودنِ عضو یا کارفرما',
+  update_person: 'ویرایشِ عضو یا کارفرما',
+  set_member_state: 'وضعیتِ عضو (فعال/سابق/قفل)',
+  remove_person: 'حذفِ عضو یا کارفرما',
+  staff_access: 'دسترسیِ همکارِ ادمین',
+  access_register: 'دفترِ دسترسی‌ها',
+  settings_catalog: 'تنظیماتِ پایه (ارز، تگ، دفتر، …)',
+  system_settings: 'تنظیماتِ سامانه',
+  company_info: 'مشخصاتِ شرکت',
+  daily_report: 'گزارشِ روزانه',
 };
 
 /** نامِ خوانای آرگومان‌ها در پیامِ تأیید (۲.۱۱.۰) — به‌جای کلیدِ انگلیسیِ خام. */
 const ARG_LABELS: Record<string, string> = {
   text: 'متن', title: 'عنوان', description: 'توضیح', hours: 'ساعت', minutes: 'دقیقه',
   date: 'تاریخ', due_date: 'مهلت', status: 'وضعیت', at: 'زمان', reminder_id: 'یادآور',
+  amount: 'مبلغ', direction: 'نوع', account_id: 'حساب', user_id: 'شخص', state: 'وضعیت', role: 'نقش', note: 'یادداشت', name: 'نام', decision: 'تصمیم', confirm_title: 'تأییدِ نام', action: 'کار', archived: 'بایگانی', blocked: 'قطعِ دسترسی',
 };
 
 async function describeArgs(actor: Actor, tr: Translator, args: Record<string, unknown>): Promise<string[]> {
@@ -669,6 +746,8 @@ async function deliver(chatId: number, who: Who, result: AgentResult) {
     case 'confirm': {
       const lines = [
         ...(result.note ? [result.note, ''] : []),
+        // ⚠️ کارِ حساس (پول، حذف، دسترسی، تنظیمات) پیش از پرسش هشدارِ جدا می‌گیرد.
+        ...(result.sensitive ? [`⚠️ ${who.tr('کارِ حساس — پیش از «بله» دقیق بخوانید.')}`, ''] : []),
         `❓ ${who.tr('این کار انجام شود؟')}`,
         `${who.tr(WRITE_TITLES[result.tool] ?? result.tool)}`,
         ...(await describeArgs(who.actor, who.tr, result.args)),
@@ -705,7 +784,7 @@ async function askAi(chatId: number, who: Who, text: string): Promise<boolean> {
   if (secrets.length === 0) return false;
   await api('sendChatAction', { chat_id: chatId, action: 'typing' });
   const result = await askAgent({
-    actor: who.actor, userName: who.name, secrets,
+    actor: who.actor, userName: who.name, secrets, sensitive: who.aiSensitive,
     language: LOCALE_NAMES[who.locale], today: todayIn(who.tz), timezone: who.tz,
   }, text);
   await deliver(chatId, who, result);
@@ -798,6 +877,7 @@ async function onMessage(msg: TgMessage) {
     }
     const who = await whoIs(chatId);
     if (who) {
+      await localizeChatMenu(chatId, who);
       await send(chatId, `✅ ${who.tr('تلگرامِ شما وصل شد. از این به بعد اعلان‌ها هم اینجا می‌آیند.')}`);
       await showMenu(chatId, who);
     }
@@ -814,6 +894,8 @@ async function onMessage(msg: TgMessage) {
   try {
     switch (cmd) {
       case '/start':
+        await localizeChatMenu(chatId, who);
+        return await showMenu(chatId, who);
       case '/menu':
         return await showMenu(chatId, who);
       case '/help':
@@ -872,27 +954,52 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
 }
 
 /** فهرستِ دستورها در منوی تلگرام. */
+/** فهرستِ دستورهای منوی «/» ِ تلگرام به یک زبان. */
+function commandList(tr: Translator) {
+  return [
+    { command: 'menu', description: tr('منوی اصلی') },
+    { command: 'tasks', description: tr('تسک‌های من') },
+    { command: 'hours', description: tr('ساعت‌های من') },
+    { command: 'timer', description: tr('شروعِ تایمر') },
+    { command: 'stop', description: tr('توقفِ تایمر') },
+    { command: 'log', description: tr('ثبتِ ساعت') },
+    { command: 'meetings', description: tr('جلسه‌ها و یادآورها') },
+    { command: 'ai', description: tr('هوشِ مصنوعی') },
+    { command: 'new', description: tr('گفت‌وگوی تازه با هوشِ مصنوعی') },
+    { command: 'help', description: tr('راهنما') },
+  ];
+}
+
+/**
+ * کدِ زبانِ تلگرام (ISO 639-1) برای هر زبانِ برنامه. ⚠️ کردیِ سورانی کدِ دوحرفیِ
+ * جدا ندارد؛ کاربرانش فهرستِ پیش‌فرض (زبانِ سامانه) را می‌بینند.
+ */
+const TELEGRAM_LANG: Partial<Record<Locale, string>> = {
+  fa: 'fa', en: 'en', ar: 'ar', de: 'de', es: 'es', fr: 'fr', pt: 'pt', tr: 'tr',
+};
+
+/**
+ * منوی «/» ِ تلگرام (۲.۱۳.۰: چندزبانه) — پیش‌فرض به زبانِ سامانه، و برای هر زبانِ
+ * برنامه یک نسخه با `language_code`؛ تلگرام به هر کاربر نسخهٔ زبانِ خودش را نشان می‌دهد.
+ */
 export async function registerCommands(): Promise<void> {
   const { locale } = await systemLocale();
   const tr = await translatorFor(locale);
-  await api('setMyCommands', {
-    commands: [
-      { command: 'tasks', description: tr('تسک‌های من') },
-      { command: 'hours', description: tr('ساعت‌های من') },
-      { command: 'timer', description: tr('شروعِ تایمر') },
-      { command: 'stop', description: tr('توقفِ تایمر') },
-      { command: 'log', description: tr('ثبتِ ساعت') },
-      { command: 'meetings', description: tr('جلسه‌ها و یادآورها') },
-      { command: 'ai', description: tr('هوشِ مصنوعی') },
-      { command: 'new', description: tr('گفت‌وگوی تازه با هوشِ مصنوعی') },
-      { command: 'help', description: tr('راهنما') },
-    ],
-  });
-  // دکمهٔ کنارِ جعبهٔ پیام: مینی‌اپ (فقط با HTTPS).
+  await api('setMyCommands', { commands: commandList(tr) });
+  for (const [appLocale, code] of Object.entries(TELEGRAM_LANG) as Array<[Locale, string]>) {
+    await api('setMyCommands', { commands: commandList(await translatorFor(appLocale)), language_code: code });
+  }
+  // دکمهٔ کنارِ جعبهٔ پیام: مینی‌اپ (فقط با HTTPS) — پیش‌فرض؛ هر چت در /start به زبانِ خودش.
   const url = miniAppUrl('/');
   if (url) {
     await api('setChatMenuButton', { menu_button: { type: WEB_APP, text: tr('باز کردنِ برنامه'), web_app: { url } } });
   }
+}
+
+/** دکمهٔ مینی‌اپِ کنارِ جعبهٔ پیامِ همین چت، به زبانِ خودِ کاربر. */
+async function localizeChatMenu(chatId: number, who: Who) {
+  const url = miniAppUrl('/');
+  if (url) await api('setChatMenuButton', { chat_id: chatId, menu_button: { type: WEB_APP, text: who.tr('باز کردنِ برنامه'), web_app: { url } } });
 }
 
 /** فقط برای تست. */

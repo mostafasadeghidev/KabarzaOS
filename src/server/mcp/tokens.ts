@@ -145,3 +145,8 @@ export async function authenticateToken(raw: string, now = Date.now()): Promise<
 export function assertWrite(session: TokenSession): void {
   if (!session.scopes.includes('write')) throw new ForbiddenError('mcp.read_only');
 }
+
+/** ابزارِ حساس بی دامنهٔ `sensitive` — کاربر این اتصال را برای کارهای حساس روشن نکرده. */
+export function assertSensitive(session: TokenSession): void {
+  if (!session.scopes.includes('sensitive')) throw new ForbiddenError('mcp.not_sensitive');
+}

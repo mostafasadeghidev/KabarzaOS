@@ -3,7 +3,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { db, sql } from '../client';
-import { aiConnections, projectClients, projectMembers, projects, tags, tasks, userRoles, users } from '../schema';
+import { aiConnections, apiKeys, projectClients, projectMembers, projects, tags, tasks, userRoles, users } from '../schema';
 import { handleUpdate, resetBotState, setTelegramApi, type TgUpdate } from '@/server/telegram/bot';
 import { resetAgentState } from '@/server/ai/agent';
 import { seal } from '@/server/ai/secret-box';
@@ -77,7 +77,9 @@ function fakeAi(script: Response[]) {
 
 /* ---------------- MCP ---------------- */
 
-async function mcpAs(actor: Actor, scope: 'read' | 'write' = 'write') {
+async function mcpAs(actor: Actor, scope: 'read' | 'write' | 'sensitive' = 'write') {
+  // ⚠️ سقفِ ۱۰ توکن برای هر کاربر — توکن‌های آزمون‌های قبلی را پاک کن.
+  await db.delete(apiKeys).where(eq(apiKeys.userId, actor.id));
   const { token } = await createToken(actor, { name: `audit-${actor.id}-${scope}-${nextId++}`, scope });
   const auth = await authenticateToken(token);
   if (!auth.ok) throw new Error(`auth ${auth.reason}`);
@@ -89,7 +91,7 @@ async function mcpAs(actor: Actor, scope: 'read' | 'write' = 'write') {
     const r = await client.callTool({ name, arguments: args }) as { content: Array<{ text: string }>; isError?: boolean };
     return { error: r.isError === true, text: r.content.map((x) => x.text).join('\n') };
   };
-  return { call, token, close: () => client.close() };
+  return { call, token, client, close: () => client.close() };
 }
 
 /* ---------------- داده ---------------- */
@@ -444,6 +446,118 @@ describe('MCP — یادآورها و جلسه‌ها (۲.۱۲.۰)', () => {
     expect((await again.call('list_my_reminders')).text).toContain('SECRET-REMINDER');
     expect(JSON.parse((await again.call('delete_reminder', { reminder_id: made.reminderId })).text)).toEqual({ deleted: true });
     await again.close();
+  });
+});
+
+describe('MCP — همهٔ ابزارها با شناسهٔ ممنوع (۲.۱۳.۰)', () => {
+  /**
+   * ⚠️ فازِ کور: هر ابزارِ خواندنی (و نوشتنی) با شناسهٔ پروژه/تسک/آدمِ ممنوع صدا
+   * زده می‌شود. هیچ پاسخی نباید نشانهٔ «SECRET» داشته باشد و هیچ نوشتنی نباید
+   * روی پروژه‌های ممنوع بنشیند — هر ابزارِ تازه خودبه‌خود زیرِ این آزمون می‌رود.
+   */
+  type Schema = { properties?: Record<string, { type?: string; enum?: unknown[]; items?: unknown; anyOf?: unknown[] }>; required?: string[] };
+
+  function argsFor(schema: Schema | undefined, ids: { project: number; task: number; user: number; other: number }) {
+    const out: Record<string, unknown> = {};
+    for (const [name, prop] of Object.entries(schema?.properties ?? {})) {
+      if (name === 'project_id') out[name] = ids.project;
+      else if (name === 'task_id' || name === 'depends_on_task_id') out[name] = ids.task;
+      else if (/user_id$/.test(name)) out[name] = ids.user;
+      else if (/_id$/.test(name)) out[name] = ids.other;
+      else if (name === 'recipient_user_ids' || name === 'attendee_ids') out[name] = [ids.user];
+      else if (name === 'office_ids' || name === 'role_ids') out[name] = [ids.other];
+      else if (prop.enum && prop.enum.length > 0) out[name] = prop.enum[0];
+      else if ((schema?.required ?? []).includes(name)) {
+        if (prop.type === 'string') out[name] = /date|from|to/.test(name) ? '2030-01-01' : name === 'at' ? '2030-01-01 10:00' : name === 'url' ? 'https://example.com' : 'SAFE-TEXT';
+        else if (prop.type === 'number' || prop.type === 'integer') out[name] = 1;
+        else if (prop.type === 'boolean') out[name] = true;
+        else if (prop.type === 'array') out[name] = [];
+      }
+    }
+    return out;
+  }
+
+  it('عضو: هیچ ابزاری دادهٔ پروژه/تسک/آدمِ ممنوع را لو نمی‌دهد و چیزی نمی‌نویسد', async () => {
+    const before = await writes();
+    const { client, call, close } = await mcpAs(roles(A, ['member']), 'write');
+    const { tools } = await client.listTools();
+    expect(tools.length).toBeGreaterThan(50);
+    const leaks: string[] = [];
+    for (const tool of tools) {
+      for (const project of [P2, P3, P4]) {
+        const args = argsFor(tool.inputSchema as Schema, { project, task: T_P2, user: B, other: project });
+        const r = await call(tool.name, args);
+        if (/SECRET/.test(r.text)) leaks.push(`${tool.name}(${JSON.stringify(args)}): ${r.text.slice(0, 200)}`);
+      }
+    }
+    expect(leaks).toEqual([]);
+    const after = await writes();
+    expect({ logs: after.logs, tasks: after.tasks, comments: after.comments }).toEqual({ logs: before.logs, tasks: before.tasks, comments: before.comments });
+    await close();
+  });
+
+  it('کارفرما: همان فازِ کور، با شناسهٔ پروژهٔ خودش هم بی مبلغِ اعضا', async () => {
+    const { client, call, close } = await mcpAs(roles(CLIENT, ['client']), 'read');
+    const { tools } = await client.listTools();
+    const leaks: string[] = [];
+    for (const tool of tools.filter((t) => (t.annotations as { readOnlyHint?: boolean } | undefined)?.readOnlyHint)) {
+      for (const project of [P1, P2, P3, P4]) {
+        const r = await call(tool.name, argsFor(tool.inputSchema as Schema, { project, task: T_P2, user: B, other: project }));
+        if (/SECRET|55555|66666/.test(r.text)) leaks.push(`${tool.name}@${project}: ${r.text.slice(0, 200)}`);
+      }
+    }
+    expect(leaks).toEqual([]);
+    await close();
+  });
+
+  it('کنترلِ مثبت: روی پروژهٔ مجاز همان ابزارها واقعاً داده می‌دهند', async () => {
+    const { call, close } = await mcpAs(roles(A, ['member']), 'write');
+    const full = await call('get_project_full', { project_id: P1, sections: ['project', 'tasks'] });
+    expect(full.error).toBe(false);
+    expect(full.text).toContain('پروژهٔ آ');
+    expect(full.text).not.toMatch(/SECRET-PRIV-TASK/);
+    const opts = await call('task_form_options', { project_id: P1 });
+    expect(opts.error).toBe(false);
+    expect((await call('my_schedule')).error).toBe(false);
+    expect((await call('list_inbox')).error).toBe(false);
+    expect((await call('list_notifications', { include_read: true })).error).toBe(false);
+    // بخش‌های مدیریتی برای عضوِ ساده بسته‌اند.
+    for (const t of ['finance_accounts', 'access_board', 'list_activity']) expect((await call(t)).error, t).toBe(true);
+    expect((await call('list_people', { role: 'member' })).error).toBe(true);
+    expect((await call('get_report', { kind: 'overall' })).error).toBe(true);
+    await close();
+  });
+
+  it('با اجازهٔ «حساس» هم عضو روی پروژه‌های ممنوع نه چیزی می‌بیند نه حذف یا پرداخت می‌کند', async () => {
+    const before = await writes();
+    const [projCount] = await sql<Array<{ n: number }>>`select count(*)::int as n from projects`;
+    const { client, call, close } = await mcpAs(roles(A, ['member']), 'sensitive');
+    const tools = (await client.listTools()).tools.filter((t) => (t.annotations as { destructiveHint?: boolean } | undefined)?.destructiveHint);
+    expect(tools.length).toBeGreaterThan(30);
+    const leaks: string[] = [];
+    for (const tool of tools) {
+      for (const project of [P2, P3, P4]) {
+        const args = argsFor(tool.inputSchema as Schema, { project, task: T_P2, user: B, other: project });
+        const r = await call(tool.name, args);
+        if (/SECRET/.test(r.text)) leaks.push(`${tool.name}: ${r.text.slice(0, 200)}`);
+      }
+    }
+    expect(leaks).toEqual([]);
+    const after = await writes();
+    expect({ tasks: after.tasks, comments: after.comments, logs: after.logs }).toEqual({ tasks: before.tasks, comments: before.comments, logs: before.logs });
+    const [projAfter] = await sql<Array<{ n: number }>>`select count(*)::int as n from projects`;
+    // ⚠️ عضوِ ساده پروژه نمی‌سازد و حذف نمی‌کند، حتی با اجازهٔ حساس.
+    expect(projAfter!.n).toBe(projCount!.n);
+    const [secretTask] = await sql<Array<{ n: number }>>`select count(*)::int as n from tasks where id = ${T_P2} and deleted_at is null`;
+    expect(secretTask!.n).toBe(1);
+    await close();
+  });
+
+  it('ابزارهای حساس بی اجازهٔ «حساس» اصلاً دیده نمی‌شوند', async () => {
+    const { client, close } = await mcpAs(roles(A, ['member']), 'write');
+    const names = (await client.listTools()).tools.map((t) => t.name);
+    for (const n of names) expect(n.startsWith('sensitive_') || n.startsWith('delete_') && n !== 'delete_reminder').toBe(false);
+    await close();
   });
 });
 

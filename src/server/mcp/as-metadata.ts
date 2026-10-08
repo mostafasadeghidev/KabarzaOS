@@ -14,6 +14,6 @@ export function authorizationServerMetadata(req: Request) {
     code_challenge_methods_supported: ['S256'],
     token_endpoint_auth_methods_supported: ['none'],
     revocation_endpoint_auth_methods_supported: ['none'],
-    scopes_supported: ['read', 'write'],
+    scopes_supported: ['read', 'write', 'sensitive'],
   };
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
-import { Bot, Check, Eye, PenLine, ShieldCheck, X } from 'lucide-react';
+import { Bot, Check, Eye, PenLine, ShieldAlert, ShieldCheck, X } from 'lucide-react';
 import { consentAction, type ConsentState } from './actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,15 +22,17 @@ export function ConsentForm({ hidden, clientName, userName, defaultScope }: {
 }) {
   const t = useT();
   const [state, action, pending] = useActionState<ConsentState, FormData>(consentAction, {});
-  const [scope, setScope] = useState<'read' | 'write'>(defaultScope);
+  // ⚠️ «حساس» هرگز پیش‌فرض نیست؛ کاربر باید خودش انتخابش کند (۲.۱۳.۰).
+  const [scope, setScope] = useState<'read' | 'write' | 'sensitive'>(defaultScope);
 
   useEffect(() => {
     if (state.redirect) window.location.href = state.redirect;
   }, [state.redirect]);
 
   const choices = [
-    { value: 'read' as const, icon: Eye, title: t('فقط خواندن'), body: t('تسک‌ها، پروژه‌ها، ساعت‌ها و در دسترس بودنِ تیم را می‌بیند.') },
-    { value: 'write' as const, icon: PenLine, title: t('خواندن و نوشتن'), body: t('به‌علاوه: ثبتِ ساعت، تایمر، ساختنِ تسک، تغییرِ وضعیت و کامنت.') },
+    { value: 'read' as const, icon: Eye, title: t('فقط خواندن'), body: t('هر چیزی را که خودتان در Kabarza می‌بینید می‌خواند.') },
+    { value: 'write' as const, icon: PenLine, title: t('خواندن و نوشتن'), body: t('به‌علاوه: کارهای روزمره — تسک، کامنت، ساعت، جلسه، پیام، فایل، QA و بازبینی.') },
+    { value: 'sensitive' as const, icon: ShieldAlert, title: t('همه، حتی کارهای حساس'), body: t('به‌علاوه: پرداخت و امورِ مالی، حذف، دسترسی‌ها و تنظیمات — فقط اگر واقعاً لازم است.') },
   ];
 
   return (
@@ -68,7 +70,7 @@ export function ConsentForm({ hidden, clientName, userName, defaultScope }: {
 
           <p className="flex items-start gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
-            {t('این اپ فقط چیزهایی را می‌بیند که خودتان در Kabarza می‌بینید. کارهای مالی، حذف و دسترسی‌ها ممکن نیست. هر وقت بخواهید از «پروفایل ← دستیارِ هوشِ مصنوعی» قطعش کنید.')}
+            {t('این اپ فقط چیزهایی را می‌بیند و انجام می‌دهد که خودتان در Kabarza می‌توانید. کارهای حساس فقط با گزینهٔ سوم. هر وقت بخواهید از «پروفایل ← دستیارِ هوشِ مصنوعی» قطعش کنید.')}
           </p>
 
           {/*

@@ -8,6 +8,7 @@ import {
   type ChatMessage, type McpToolInfo, type ToolCall,
 } from '@/domain/ai/chat';
 import { buildMcpServer } from '@/server/mcp/server';
+import { GROUP_HINTS, groupOf } from '@/domain/ai/tool-groups';
 import { listProjects } from '@/server/projects/service';
 import type { AiSecret } from './connections';
 
@@ -25,7 +26,7 @@ import type { AiSecret } from './connections';
 
 export type AgentResult =
   | { kind: 'reply'; text: string; via?: string }
-  | { kind: 'confirm'; id: string; tool: string; args: Record<string, unknown>; note: string }
+  | { kind: 'confirm'; id: string; tool: string; args: Record<string, unknown>; note: string; sensitive?: boolean }
   | { kind: 'choose'; id: string; question: string; options: Array<{ id: number; title: string }> }
   | { kind: 'quota' }
   | { kind: 'auth' }
@@ -41,6 +42,10 @@ export interface AgentContext {
    */
   secrets: AiSecret[];
   active?: number;
+  /** کاربر به ربات اجازهٔ کارهای حساس داده؟ (`users.ai_sensitive`، ۲.۱۳.۰) */
+  sensitive?: boolean;
+  /** دسته‌های ابزاری که مدل در این گفت‌وگو بارگذاری کرده (`load_tools`). */
+  loaded?: string[];
   /** زبانِ پاسخ، مثلاً «فارسی». */
   language: string;
   today: string;
@@ -83,8 +88,10 @@ export function resetAgentState() {
 
 /* ---------------- ابزارها: همان سرورِ MCP، در حافظه ---------------- */
 
-async function connectTools(actor: Actor) {
-  const server = buildMcpServer({ actor, keyId: 0, scopes: ['read', 'write'], name: 'Telegram', via: 'telegram' });
+async function connectTools(actor: Actor, sensitive = false) {
+  // ⚠️ ابزارهای حساس فقط با اجازهٔ صریحِ کاربر ثبت می‌شوند؛ بی آن مدل اصلاً نمی‌بیندشان.
+  const scopes = sensitive ? ['read', 'write', 'sensitive'] : ['read', 'write'];
+  const server = buildMcpServer({ actor, keyId: 0, scopes, name: 'Telegram', via: 'telegram' });
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   await server.connect(serverSide);
   const client = new Client({ name: 'kabarza-telegram', version: '1.0.0' });
@@ -134,6 +141,24 @@ const PICK_TOOL = {
     },
   },
 };
+
+/** ابزارِ محلیِ «بارگذاریِ دستهٔ ابزار» — بقیهٔ کارهای سایت، فقط وقتِ نیاز. */
+export const LOAD_TOOLS = 'load_tools';
+
+function loadToolsDef(groups: string[]) {
+  return {
+    type: FN,
+    function: {
+      name: LOAD_TOOLS,
+      description: `Load more tools when the request needs them. Groups: ${groups.map((g) => `${g} (${GROUP_HINTS[g] ?? g})`).join('; ')}.`,
+      parameters: {
+        type: OBJ,
+        properties: { group: { type: STR, enum: groups } },
+        required: ['group'],
+      },
+    },
+  };
+}
 
 /** پروژه‌های بازِ قابلِ‌دیدِ کاربر برای دکمه‌ها — همان فهرستِ برنامه. */
 async function projectOptions(actor: Actor) {
@@ -239,6 +264,8 @@ function systemPrompt(ctx: AgentContext): string {
     `You are the Kabarza workspace assistant inside Telegram, talking to ${ctx.userName}.`,
     `Today is ${ctx.today}; the local time now is ${localNow(ctx.timezone)} (${ctx.timezone}).`,
     'For meetings use list_my_meetings; for personal reminders use list_my_reminders, create_reminder (local time) and delete_reminder.',
+    `Only common tools are loaded; call ${LOAD_TOOLS} to get more (projects, team, meetings_messages, hours, finance_reports, profile${ctx.sensitive ? ', sensitive' : ''}). You can do anything the user can do in the app.`,
+    ...(ctx.sensitive ? [] : ['Money, payments, deleting, people/access and settings are not enabled for this bot; if asked, tell the user they can allow "sensitive actions" in Profile → AI assistant.']),
     'Use the tools to read real data; never invent tasks, projects, ids or hours.',
     'Find ids with search or list_projects before project tools.',
     'For changes (logging hours, timers, tasks, comments, messages) just call the tool: the app asks the user to confirm with buttons, so do not ask "are you sure" yourself.',
@@ -253,15 +280,31 @@ function systemPrompt(ctx: AgentContext): string {
 /* ---------------- حلقه ---------------- */
 
 async function loop(ctx: AgentContext, messages: ChatMessage[]): Promise<AgentResult> {
-  const conn = await connectTools(ctx.actor);
+  const conn = await connectTools(ctx.actor, ctx.sensitive);
   try {
     const writable = new Set(conn.tools.filter((t) => t.annotations?.readOnlyHint !== true).map((t) => t.name));
-    let tools: Array<ReturnType<typeof toOpenAiTools>[number] | typeof PICK_TOOL> | null = [...toOpenAiTools(conn.tools), PICK_TOOL];
+    // ابزارِ حساس (`destructiveHint`) در تلگرام با هشدارِ پررنگ تأیید می‌گیرد.
+    const risky = new Set(conn.tools.filter((t) => (t.annotations as { destructiveHint?: boolean } | undefined)?.destructiveHint === true).map((t) => t.name));
+    const all = toOpenAiTools(conn.tools);
+    const groupByName = new Map(conn.tools.map((t) => [t.name, groupOf(t.name, (t.annotations as { destructiveHint?: boolean } | undefined)?.destructiveHint === true)]));
+    const available = [...new Set([...groupByName.values()].filter((g): g is string => g !== null))];
+    ctx.loaded ??= [];
+    /** ابزارهای همین گام: پرکاربردها + دسته‌های بارگذاری‌شده + دو ابزارِ محلی. */
+    const visibleTools = () => {
+      const loaded = new Set(ctx.loaded);
+      const rest = available.filter((g) => !loaded.has(g));
+      return [
+        ...all.filter((t) => { const g = groupByName.get(t.function.name); return g === null || (g !== undefined && loaded.has(g)); }),
+        PICK_TOOL,
+        ...(rest.length > 0 ? [loadToolsDef(rest)] : []),
+      ];
+    };
+    let plain = false;
 
     for (let step = 0; step < MAX_STEPS; step++) {
-      const out = await completeAny(ctx, messages, tools);
+      const out = await completeAny(ctx, messages, plain ? null : visibleTools());
       // مدلی که ابزار نمی‌پذیرد: دستِ‌کم گفت‌وگوی ساده.
-      if (out.ok && out.noTools) tools = null;
+      if (out.ok && out.noTools) plain = true;
       if (!out.ok) {
         if (out.reason === 'quota') return { kind: 'quota' };
         if (out.reason === 'auth') return { kind: 'auth' };
@@ -278,8 +321,20 @@ async function loop(ctx: AgentContext, messages: ChatMessage[]): Promise<AgentRe
 
       messages.push({ role: 'assistant', content: out.message.content ?? null, tool_calls: calls });
       const picks = calls.filter((c) => c.function.name === PICK_PROJECT);
+      // بارگذاریِ دسته: بی‌هزینه و بی‌تأیید؛ ابزارهای دسته از گامِ بعد در دسترس‌اند.
+      for (const call of calls.filter((c) => c.function.name === LOAD_TOOLS)) {
+        const group = String(parseArgs(call.function.arguments).group ?? '');
+        const names = [...groupByName.entries()].filter(([, g]) => g === group).map(([n]) => n);
+        if (names.length > 0 && !ctx.loaded!.includes(group)) ctx.loaded!.push(group);
+        messages.push({
+          role: 'tool', tool_call_id: call.id,
+          content: names.length > 0 ? `Loaded: ${names.join(', ')}` : group === 'sensitive'
+            ? 'Sensitive tools are not enabled for this user. Tell them they can allow them in Profile → AI assistant.'
+            : 'Unknown group.',
+        });
+      }
       const writes = calls.filter((c) => writable.has(c.function.name));
-      for (const call of calls.filter((c) => !writable.has(c.function.name) && c.function.name !== PICK_PROJECT)) {
+      for (const call of calls.filter((c) => !writable.has(c.function.name) && c.function.name !== PICK_PROJECT && c.function.name !== LOAD_TOOLS)) {
         messages.push({ role: 'tool', tool_call_id: call.id, content: await callTool(conn.client, call.function.name, parseArgs(call.function.arguments)) });
       }
       if (writes.length > 0) {
@@ -290,7 +345,7 @@ async function loop(ctx: AgentContext, messages: ChatMessage[]): Promise<AgentRe
         pending.set(id, { kind: 'write', userId: ctx.actor.id, ctx, messages, call: call!, rest, at: Date.now() });
         return {
           kind: 'confirm', id, tool: call!.function.name, args: parseArgs(call!.function.arguments),
-          note: (out.message.content ?? '').trim(),
+          note: (out.message.content ?? '').trim(), sensitive: risky.has(call!.function.name),
         };
       }
       if (picks.length > 0) {
@@ -358,7 +413,7 @@ export async function resolvePending(userId: number, id: string, approve: boolea
     return { kind: 'reply', text: '' };
   }
 
-  const conn = await connectTools(ctx.actor);
+  const conn = await connectTools(ctx.actor, ctx.sensitive);
   try {
     messages.push({ role: 'tool', tool_call_id: call.id, content: await callTool(conn.client, call.function.name, parseArgs(call.function.arguments)) });
   } finally {

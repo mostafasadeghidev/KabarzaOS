@@ -70,6 +70,7 @@ function CopyBlock({ text, label }: { text: string; label: string }) {
 
 function ScopeBadge({ scopes }: { scopes: string[] }) {
   const tr = useT();
+  if (scopes.includes('sensitive')) return <Badge variant="destructive">{tr('همه، حتی کارهای حساس')}</Badge>;
   const write = scopes.includes('write');
   return <Badge variant={write ? 'warning' : 'secondary'}>{write ? tr('خواندن و نوشتن') : tr('فقط خواندن')}</Badge>;
 }
@@ -235,11 +236,12 @@ export function McpPanel({ tokens, grants, endpoint, bot }: {
             <NativeSelect id="mcp-scope" name="scope" defaultValue="read" containerClassName="w-full">
               <NativeSelectOption value="read">{tr('فقط خواندن')}</NativeSelectOption>
               <NativeSelectOption value="write">{tr('خواندن و نوشتن')}</NativeSelectOption>
+              <NativeSelectOption value="sensitive">{tr('همه، حتی کارهای حساس')}</NativeSelectOption>
             </NativeSelect>
           </Field>
           <Submit>{tr('ساختنِ توکن')}</Submit>
           <FieldDescription className="w-full">
-            {tr('«خواندن و نوشتن» یعنی هوشِ مصنوعی می‌تواند ساعت ثبت کند، تایمر بزند، تسک بسازد، وضعیتِ تسک را عوض کند، کامنت بگذارد و پیام بفرستد. کارهای مالی، حذف و دسترسی‌ها از این راه ممکن نیست. برای هر ابزار یک توکنِ جدا بسازید.')}
+            {tr('«خواندن و نوشتن» یعنی هوشِ مصنوعی هر کارِ روزمره‌ای را که خودتان در سایت می‌توانید انجام می‌دهد: تسک، کامنت، ساعت، جلسه، پیام، فایل، QA و بازبینی. «همه، حتی کارهای حساس» پرداخت و امورِ مالی، حذف، دسترسی‌ها و تنظیمات را هم باز می‌کند — فقط وقتی واقعاً لازم است. برای هر ابزار یک توکنِ جدا بسازید.')}
           </FieldDescription>
         </form>
         {state.error && <p className="text-sm text-destructive">{tr(state.error)}</p>}

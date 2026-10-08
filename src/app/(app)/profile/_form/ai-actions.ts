@@ -7,6 +7,9 @@ import {
 } from '@/server/ai/connections';
 import type { ModelOption } from '@/domain/ai/providers';
 import { notifyAiChange } from '@/server/telegram/bot';
+import { eq } from 'drizzle-orm';
+import { db } from '@/db/client';
+import { auditLog, users } from '@/db/schema';
 
 /** اقدام‌های «مغزِ» ربات — هر کس فقط اتصال‌های خودش (۲.۹.۰؛ چندتایی از ۲.۱۲.۰). */
 
@@ -74,4 +77,19 @@ export async function deleteAiAction(id: number): Promise<AiFormState> {
   if (await deleteAiConnection(actor, id)) await notifyAiChange(actor.id, null);
   revalidatePath('/profile');
   return {};
+}
+
+/**
+ * اجازهٔ کارهای حساس به رباتِ تلگرام (۲.۱۳.۰) — فقط برای خودِ کاربر، با ثبت در
+ * «رویدادها». پیش‌فرض خاموش.
+ */
+export async function setAiSensitiveAction(on: boolean): Promise<AiFormState> {
+  const actor = await requireActor();
+  await db.update(users).set({ aiSensitive: on === true, updatedAt: new Date() }).where(eq(users.id, actor.id));
+  await db.insert(auditLog).values({
+    actorType: 'user', actorId: actor.id, action: 'ai.sensitive',
+    objectType: 'user', objectId: actor.id, after: { on: on === true },
+  });
+  revalidatePath('/profile');
+  return { saved: true };
 }

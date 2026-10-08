@@ -165,6 +165,7 @@ export const ACTION_LABELS: Record<string, string> = {
   // «مغزِ» ربات تلگرام — ۲.۹.۰
   'ai.connect': 'وصل‌کردنِ هوشِ مصنوعی به ربات',
   'ai.disconnect': 'قطعِ هوشِ مصنوعیِ ربات',
+  'ai.sensitive': 'اجازهٔ کارهای حساس به ربات',
   'telegram.bot_call': 'کار از طریقِ ربات تلگرام',
   'auth.telegram_login': 'ورود از مینی‌اپِ تلگرام',
   'onboarding.add': 'آیتمِ ویژهٔ آنبوردینگ',

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vite
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import { aiConnections, auditLog, projectMembers, projects, tags, timelogs, userRoles, users, workTimers } from '../schema';
-import { handleUpdate, notifyAiChange, resetBotState, setTelegramApi, type TgUpdate } from '@/server/telegram/bot';
+import { handleUpdate, notifyAiChange, registerCommands, resetBotState, setTelegramApi, type TgUpdate } from '@/server/telegram/bot';
 import { miniAppLogin } from '@/server/telegram/webapp';
 import { signInitData } from '@/domain/telegram/webapp';
 import { resetAgentState } from '@/server/ai/agent';
@@ -476,5 +476,79 @@ describe('منوی وابسته به وضعیت (۲.۱۲.۰)', () => {
   it('/help فهرستِ دستورها را دارد', async () => {
     await handleUpdate(message('/help'));
     expect(texts()[0]).toContain('/meetings');
+  });
+});
+
+describe('بارگذاریِ دسته‌ایِ ابزار (۲.۱۳.۰)', () => {
+  it('ابزارهای کم‌کاربرد اول فرستاده نمی‌شوند؛ با load_tools در گامِ بعد می‌آیند', async () => {
+    const bodies: Array<{ tools?: Array<{ function: { name: string } }> }> = [];
+    let i = 0;
+    const script = [
+      toolCall('load_tools', { group: 'team' }),
+      toolCall('my_schedule', {}),
+      say('برنامهٔ شما خالی است.'),
+    ];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body)));
+      return script[Math.min(i++, script.length - 1)]!.clone();
+    }));
+    await handleUpdate(message('برنامهٔ هفتگیِ من چیست؟'));
+    const names = (n: number) => (bodies[n]?.tools ?? []).map((t) => t.function.name);
+    expect(names(0)).toContain('list_my_tasks');
+    expect(names(0)).toContain('load_tools');
+    expect(names(0)).not.toContain('my_schedule');
+    expect(names(1)).toContain('my_schedule');
+    expect(names(0).length).toBeLessThan(40);
+    // بی اجازهٔ حساس، دستهٔ «sensitive» اصلاً پیشنهاد نمی‌شود.
+    expect(JSON.stringify(bodies[0])).not.toContain('sensitive (');
+    expect(texts()).toContain('برنامهٔ شما خالی است.');
+  });
+});
+
+describe('کارهای حساس در ربات (۲.۱۳.۰)', () => {
+  it('با اجازهٔ حساس: دستهٔ sensitive بارگذاری می‌شود و تأیید هشدارِ پررنگ دارد', async () => {
+    await db.update(users).set({ aiSensitive: true }).where(eq(users.id, MEMBER));
+    try {
+      const [log] = await db.insert(timelogs).values({ userId: MEMBER, projectId: PROJECT, logDate: '2030-01-01', minutes: 10, description: '' }).returning({ id: timelogs.id });
+      const bodies: string[] = [];
+      let i = 0;
+      const script = [toolCall('load_tools', { group: 'sensitive' }), toolCall('delete_time_log', { log_id: log!.id })];
+      vi.stubGlobal('fetch', vi.fn(async (_u: string, init?: RequestInit) => {
+        bodies.push(String(init?.body));
+        return script[Math.min(i++, script.length - 1)]!.clone();
+      }));
+      await handleUpdate(message('ساعتِ آن روز را پاک کن'));
+      expect(bodies[0]).toContain('sensitive (');
+      expect(texts().join(' ')).toContain('کارِ حساس');
+      // تا «بله» نزده، چیزی پاک نشده.
+      expect(await db.select().from(timelogs).where(eq(timelogs.id, log!.id))).toHaveLength(1);
+    } finally {
+      await db.update(users).set({ aiSensitive: false }).where(eq(users.id, MEMBER));
+    }
+  });
+});
+
+describe('ربات چندزبانه (۲.۱۳.۰)', () => {
+  it('منوی «/» برای هر زبان جدا ثبت می‌شود', async () => {
+    await registerCommands();
+    const cmds = sent.filter((x) => x.method === 'setMyCommands');
+    const en = cmds.find((x) => x.payload.language_code === 'en')!;
+    const de = cmds.find((x) => x.payload.language_code === 'de')!;
+    expect(JSON.stringify(en.payload.commands)).toContain('My tasks');
+    expect(JSON.stringify(de.payload.commands)).not.toMatch(/[؀-ۿ]/);
+    expect(cmds.some((x) => x.payload.language_code === undefined)).toBe(true);
+  });
+
+  it('کاربرِ انگلیسی‌زبان هیچ متنِ فارسی در منو و دستورها نمی‌بیند', async () => {
+    await db.update(users).set({ locale: 'en' }).where(eq(users.id, MEMBER));
+    try {
+      for (const cmd of ['/menu', '/help', '/tasks', '/hours', '/meetings', '/ai', '/timer']) await handleUpdate(message(cmd));
+      // نامِ پروژه و آدم دادهٔ کاربر است؛ جز آن، هیچ حرفِ فارسی نباید باشد.
+      const leaks = sent.map((x) => JSON.stringify(x.payload).replaceAll('آلفا', '').replaceAll('سارا', '').replaceAll('طراحی', ''))
+        .filter((t) => /[پچژگیک]/.test(t));
+      expect(leaks).toEqual([]);
+    } finally {
+      await db.update(users).set({ locale: null }).where(eq(users.id, MEMBER));
+    }
   });
 });
