@@ -199,14 +199,6 @@ export function AddTaskDialog({
               </NativeSelect>
             </Field>
 
-            <Field>
-              <FieldLabel htmlFor="nt-due">{t("ددلاین")}</FieldLabel>
-              <DatePicker id="nt-due" name="dueDate" defaultValue={keep('dueDate')} />
-              {state.fieldErrors?.dueDate && (
-                <FieldError>{tr(state.fieldErrors.dueDate)}</FieldError>
-              )}
-            </Field>
-
             {/* پورتِ انتخابگرِ «وابسته به» — تسک‌های همین پروژه. */}
             {(options.tasks?.length ?? 0) > 0 && (
               <Field>
@@ -221,6 +213,21 @@ export function AddTaskDialog({
                 />
               </Field>
             )}
+          </div>
+
+          {/* ددلاین و «بخش» همیشه کنارِ هم در یک ردیف — همان فیلدهای فرمِ ویرایش. */}
+          <div className="grid gap-3 sm:grid-cols-2">
+              <Field>
+                <FieldLabel htmlFor="nt-due">{t("ددلاین")}</FieldLabel>
+                <DatePicker id="nt-due" name="dueDate" defaultValue={keep('dueDate')} />
+                {state.fieldErrors?.dueDate && (
+                  <FieldError>{tr(state.fieldErrors.dueDate)}</FieldError>
+                )}
+              </Field>
+            <Field>
+              <FieldLabel htmlFor="nt-area">{t("بخش")}</FieldLabel>
+              <Input id="nt-area" name="area" defaultValue={keep('area')} placeholder={t("مثلاً هدر، فوتر، صفحهٔ تماس")} maxLength={120} />
+            </Field>
           </div>
 
           {/*

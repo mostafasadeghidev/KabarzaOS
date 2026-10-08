@@ -189,9 +189,18 @@ async function deliverExternal(
       ? await taskCard(input.taskId, input.locale, input.tr).catch(() => null)
       : null;
     if (card) {
-      const text = [`🔔 ${input.title}`, '', ...card.lines, ...(url ? ['', url] : [])].join('\n');
-      await sendTelegram(target.chatId, text.slice(0, 4000), telegramKeyboard(input));
-      for (const file of card.files) await sendTelegramFile(target.chatId, file);
+      const head = [`🔔 ${input.title}`, '', ...card.lines].join('\n');
+      const tail = url ? `\n\n${url}` : '';
+      const keyboard = telegramKeyboard(input);
+      const photos = card.files.filter((f) => f.photo);
+      const docs = card.files.filter((f) => !f.photo);
+      // عکس و متن در یک پیام (۲.۱۴.۰): متن زیرنویسِ عکس/آلبوم می‌شود؛ اگر نشد، همان پیامِ متنی.
+      const sent = photos.length > 0
+        && await sendTelegramPhotos(target.chatId, photos, fitCaption(head, tail), keyboard, input.tr);
+      if (!sent) await sendTelegram(target.chatId, (head + tail).slice(0, 4000), keyboard);
+      if (docs.length > 1) await sendTelegramAlbum(target.chatId, docs, '');
+      else if (docs.length === 1) await sendTelegramFile(target.chatId, docs[0]!);
+      if (!sent) for (const file of photos) await sendTelegramFile(target.chatId, file);
     } else {
       // 🔔 عنوان، بعد متن؛ پیوند ته پیام (دکمهٔ «باز کردن» زیرش است).
       const lines = [`🔔 ${input.title}`];
@@ -231,21 +240,88 @@ export function miniAppButton(path: string | undefined, label = 'باز کردن
  * با sendDocument. ⚠️ بایت‌ها از انبار خوانده و مستقیم بارگذاری می‌شوند؛ نشانیِ
  * فایلِ ما (که ورود می‌خواهد) به تلگرام داده نمی‌شود. شکست بی‌صداست.
  */
-async function sendTelegramFile(chatId: string, file: TaskCardFile): Promise<void> {
+async function sendTelegramFile(
+  chatId: string,
+  file: TaskCardFile,
+  caption?: string,
+  keyboard?: { inline_keyboard: InlineButton[][] },
+): Promise<boolean> {
   const { token } = await telegramCredentials();
-  if (!token || !chatId) return;
+  if (!token || !chatId) return false;
   try {
     const bytes = await getObject(file.storageKey);
     const form = new FormData();
     form.append('chat_id', chatId);
     form.append(file.photo ? 'photo' : 'document', new Blob([new Uint8Array(bytes)], { type: file.mime }), file.name);
-    await fetch(`https://api.telegram.org/bot${token}/${file.photo ? 'sendPhoto' : 'sendDocument'}`, {
+    if (caption) form.append('caption', caption);
+    if (keyboard) form.append('reply_markup', JSON.stringify(keyboard));
+    const res = await fetch(`https://api.telegram.org/bot${token}/${file.photo ? 'sendPhoto' : 'sendDocument'}`, {
       method: 'POST',
       body: form,
       signal: AbortSignal.timeout(30_000),
     });
+    return res.ok;
   } catch {
     // R-NOTIF-03 — فایلِ ناموفق متنِ اعلان را بی‌اثر نمی‌کند.
+    return false;
+  }
+}
+
+/** سقفِ زیرنویسِ عکس در تلگرام. */
+const CAPTION_MAX = 1024;
+
+/**
+ * متنِ کارت در سقفِ زیرنویس: اگر بلند بود، از وسطِ متن (توضیحات) کوتاه می‌شود
+ * ولی پیوندِ ته پیام همیشه می‌ماند.
+ */
+function fitCaption(head: string, tail: string): string {
+  if (head.length + tail.length <= CAPTION_MAX) return head + tail;
+  return `${head.slice(0, CAPTION_MAX - tail.length - 1).trimEnd()}…${tail}`;
+}
+
+/**
+ * عکس‌های تسک **همراهِ متن** (۲.۱۴.۰): یک عکس ← sendPhoto با زیرنویس و دکمه‌ها؛
+ * چند عکس ← آلبوم (sendMediaGroup) که متن زیرنویسِ آن است. ⚠️ تلگرام زیرِ آلبوم
+ * دکمه نمی‌پذیرد، پس دکمه‌ها با یک پیامِ کوتاه پشتِ آلبوم می‌آیند. false یعنی
+ * نشد و فرستنده پیامِ متنیِ معمولی را می‌فرستد.
+ */
+async function sendTelegramPhotos(
+  chatId: string,
+  photos: TaskCardFile[],
+  caption: string,
+  keyboard: { inline_keyboard: InlineButton[][] } | undefined,
+  tr?: Translator,
+): Promise<boolean> {
+  if (photos.length === 1) return sendTelegramFile(chatId, photos[0]!, caption, keyboard);
+  const ok = await sendTelegramAlbum(chatId, photos.slice(0, 10), caption);
+  if (ok && keyboard) await sendTelegram(chatId, `⬆️ ${(tr ?? ((x: string) => x))('گزینه‌ها')}`, keyboard).catch(() => undefined);
+  return ok;
+}
+
+/** آلبومِ عکس یا فایل (۲ تا ۱۰ تا) — زیرنویس روی اولی، که تلگرام زیرِ کلِ آلبوم نشانش می‌دهد. */
+async function sendTelegramAlbum(chatId: string, list: TaskCardFile[], caption: string): Promise<boolean> {
+  const { token } = await telegramCredentials();
+  if (!token || !chatId) return false;
+  try {
+    const form = new FormData();
+    form.append('chat_id', chatId);
+    const media = [];
+    for (const [i, file] of list.entries()) {
+      const bytes = await getObject(file.storageKey);
+      form.append(`f${i}`, new Blob([new Uint8Array(bytes)], { type: file.mime }), file.name);
+      media.push({
+        type: file.photo ? 'photo' : 'document',
+        media: `attach://f${i}`,
+        ...(i === 0 && caption ? { caption } : {}),
+      });
+    }
+    form.append('media', JSON.stringify(media));
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMediaGroup`, {
+      method: 'POST', body: form, signal: AbortSignal.timeout(60_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 

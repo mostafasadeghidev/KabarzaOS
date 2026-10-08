@@ -124,7 +124,8 @@ function Calendar({
         range_middle: cn("rounded-none", defaultClassNames.range_middle),
         range_end: cn("rounded-e-md bg-accent", defaultClassNames.range_end),
         today: cn(
-          "rounded-md bg-accent text-accent-foreground data-[selected=true]:rounded-none",
+          // امروز پررنگ‌تر از حالتِ قبلی: قاب و رنگِ اصلی + متنِ درشت‌تر، تا در نگاهِ اول پیدا شود.
+          "rounded-md bg-primary/15 text-primary font-semibold ring-1 ring-inset ring-primary/50 [&>button]:font-bold [&>button]:text-primary data-[selected=true]:rounded-none data-[selected=true]:ring-0 data-[selected=true]:[&>button]:text-primary-foreground",
           defaultClassNames.today
         ),
         outside: cn(
