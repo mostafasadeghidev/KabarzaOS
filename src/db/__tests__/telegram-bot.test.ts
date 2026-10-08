@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vite
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import { aiConnections, auditLog, projectMembers, projects, tags, timelogs, userRoles, users, workTimers } from '../schema';
-import { handleUpdate, notifyAiChange, resetBotState, setTelegramApi, type TgUpdate } from '@/server/telegram/bot';
+import { handleUpdate, notifyAiChange, registerCommands, resetBotState, setTelegramApi, type TgUpdate } from '@/server/telegram/bot';
 import { miniAppLogin } from '@/server/telegram/webapp';
 import { signInitData } from '@/domain/telegram/webapp';
 import { resetAgentState } from '@/server/ai/agent';
@@ -524,6 +524,31 @@ describe('کارهای حساس در ربات (۲.۱۳.۰)', () => {
       expect(await db.select().from(timelogs).where(eq(timelogs.id, log!.id))).toHaveLength(1);
     } finally {
       await db.update(users).set({ aiSensitive: false }).where(eq(users.id, MEMBER));
+    }
+  });
+});
+
+describe('ربات چندزبانه (۲.۱۳.۰)', () => {
+  it('منوی «/» برای هر زبان جدا ثبت می‌شود', async () => {
+    await registerCommands();
+    const cmds = sent.filter((x) => x.method === 'setMyCommands');
+    const en = cmds.find((x) => x.payload.language_code === 'en')!;
+    const de = cmds.find((x) => x.payload.language_code === 'de')!;
+    expect(JSON.stringify(en.payload.commands)).toContain('My tasks');
+    expect(JSON.stringify(de.payload.commands)).not.toMatch(/[؀-ۿ]/);
+    expect(cmds.some((x) => x.payload.language_code === undefined)).toBe(true);
+  });
+
+  it('کاربرِ انگلیسی‌زبان هیچ متنِ فارسی در منو و دستورها نمی‌بیند', async () => {
+    await db.update(users).set({ locale: 'en' }).where(eq(users.id, MEMBER));
+    try {
+      for (const cmd of ['/menu', '/help', '/tasks', '/hours', '/meetings', '/ai', '/timer']) await handleUpdate(message(cmd));
+      // نامِ پروژه و آدم دادهٔ کاربر است؛ جز آن، هیچ حرفِ فارسی نباید باشد.
+      const leaks = sent.map((x) => JSON.stringify(x.payload).replaceAll('آلفا', '').replaceAll('سارا', '').replaceAll('طراحی', ''))
+        .filter((t) => /[پچژگیک]/.test(t));
+      expect(leaks).toEqual([]);
+    } finally {
+      await db.update(users).set({ locale: null }).where(eq(users.id, MEMBER));
     }
   });
 });

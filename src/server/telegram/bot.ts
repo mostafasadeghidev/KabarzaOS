@@ -877,6 +877,7 @@ async function onMessage(msg: TgMessage) {
     }
     const who = await whoIs(chatId);
     if (who) {
+      await localizeChatMenu(chatId, who);
       await send(chatId, `✅ ${who.tr('تلگرامِ شما وصل شد. از این به بعد اعلان‌ها هم اینجا می‌آیند.')}`);
       await showMenu(chatId, who);
     }
@@ -893,6 +894,8 @@ async function onMessage(msg: TgMessage) {
   try {
     switch (cmd) {
       case '/start':
+        await localizeChatMenu(chatId, who);
+        return await showMenu(chatId, who);
       case '/menu':
         return await showMenu(chatId, who);
       case '/help':
@@ -951,27 +954,52 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
 }
 
 /** فهرستِ دستورها در منوی تلگرام. */
+/** فهرستِ دستورهای منوی «/» ِ تلگرام به یک زبان. */
+function commandList(tr: Translator) {
+  return [
+    { command: 'menu', description: tr('منوی اصلی') },
+    { command: 'tasks', description: tr('تسک‌های من') },
+    { command: 'hours', description: tr('ساعت‌های من') },
+    { command: 'timer', description: tr('شروعِ تایمر') },
+    { command: 'stop', description: tr('توقفِ تایمر') },
+    { command: 'log', description: tr('ثبتِ ساعت') },
+    { command: 'meetings', description: tr('جلسه‌ها و یادآورها') },
+    { command: 'ai', description: tr('هوشِ مصنوعی') },
+    { command: 'new', description: tr('گفت‌وگوی تازه با هوشِ مصنوعی') },
+    { command: 'help', description: tr('راهنما') },
+  ];
+}
+
+/**
+ * کدِ زبانِ تلگرام (ISO 639-1) برای هر زبانِ برنامه. ⚠️ کردیِ سورانی کدِ دوحرفیِ
+ * جدا ندارد؛ کاربرانش فهرستِ پیش‌فرض (زبانِ سامانه) را می‌بینند.
+ */
+const TELEGRAM_LANG: Partial<Record<Locale, string>> = {
+  fa: 'fa', en: 'en', ar: 'ar', de: 'de', es: 'es', fr: 'fr', pt: 'pt', tr: 'tr',
+};
+
+/**
+ * منوی «/» ِ تلگرام (۲.۱۳.۰: چندزبانه) — پیش‌فرض به زبانِ سامانه، و برای هر زبانِ
+ * برنامه یک نسخه با `language_code`؛ تلگرام به هر کاربر نسخهٔ زبانِ خودش را نشان می‌دهد.
+ */
 export async function registerCommands(): Promise<void> {
   const { locale } = await systemLocale();
   const tr = await translatorFor(locale);
-  await api('setMyCommands', {
-    commands: [
-      { command: 'tasks', description: tr('تسک‌های من') },
-      { command: 'hours', description: tr('ساعت‌های من') },
-      { command: 'timer', description: tr('شروعِ تایمر') },
-      { command: 'stop', description: tr('توقفِ تایمر') },
-      { command: 'log', description: tr('ثبتِ ساعت') },
-      { command: 'meetings', description: tr('جلسه‌ها و یادآورها') },
-      { command: 'ai', description: tr('هوشِ مصنوعی') },
-      { command: 'new', description: tr('گفت‌وگوی تازه با هوشِ مصنوعی') },
-      { command: 'help', description: tr('راهنما') },
-    ],
-  });
-  // دکمهٔ کنارِ جعبهٔ پیام: مینی‌اپ (فقط با HTTPS).
+  await api('setMyCommands', { commands: commandList(tr) });
+  for (const [appLocale, code] of Object.entries(TELEGRAM_LANG) as Array<[Locale, string]>) {
+    await api('setMyCommands', { commands: commandList(await translatorFor(appLocale)), language_code: code });
+  }
+  // دکمهٔ کنارِ جعبهٔ پیام: مینی‌اپ (فقط با HTTPS) — پیش‌فرض؛ هر چت در /start به زبانِ خودش.
   const url = miniAppUrl('/');
   if (url) {
     await api('setChatMenuButton', { menu_button: { type: WEB_APP, text: tr('باز کردنِ برنامه'), web_app: { url } } });
   }
+}
+
+/** دکمهٔ مینی‌اپِ کنارِ جعبهٔ پیامِ همین چت، به زبانِ خودِ کاربر. */
+async function localizeChatMenu(chatId: number, who: Who) {
+  const url = miniAppUrl('/');
+  if (url) await api('setChatMenuButton', { chat_id: chatId, menu_button: { type: WEB_APP, text: who.tr('باز کردنِ برنامه'), web_app: { url } } });
 }
 
 /** فقط برای تست. */

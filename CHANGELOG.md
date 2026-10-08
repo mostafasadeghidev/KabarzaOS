@@ -33,7 +33,8 @@ Versioning follows [SemVer](https://semver.org/).
   - With it, every sensitive action in Telegram shows a «Sensitive action — read carefully before Yes» warning before Yes/No.
   - Every sensitive call is marked as sensitive in the activity log.
 - **The bot loads tools on demand.** Common tools are always available; the rest come in groups (projects, team, meetings and messages, hours, finance and reports, profile, sensitive) that the AI loads only when the request needs them. This keeps each request small for free models and under provider tool limits.
-- Confirmation messages in the bot use readable Persian names for every action and its main fields.
+- Confirmation messages in the bot show every action and its main fields by readable name, in the member's language.
+- **Multilingual Telegram menus.** The «/» command list is registered in every app language, so Telegram shows each member the list in their own language. The «Open the app» button next to the message box follows the member's language from `/start` and from linking. A new `/menu` command was added. Sorani Kurdish has no Telegram language code, so its users see the system-language list.
 
 ### Security
 
