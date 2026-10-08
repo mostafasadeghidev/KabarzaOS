@@ -478,3 +478,29 @@ describe('منوی وابسته به وضعیت (۲.۱۲.۰)', () => {
     expect(texts()[0]).toContain('/meetings');
   });
 });
+
+describe('بارگذاریِ دسته‌ایِ ابزار (۲.۱۳.۰)', () => {
+  it('ابزارهای کم‌کاربرد اول فرستاده نمی‌شوند؛ با load_tools در گامِ بعد می‌آیند', async () => {
+    const bodies: Array<{ tools?: Array<{ function: { name: string } }> }> = [];
+    let i = 0;
+    const script = [
+      toolCall('load_tools', { group: 'team' }),
+      toolCall('my_schedule', {}),
+      say('برنامهٔ شما خالی است.'),
+    ];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body)));
+      return script[Math.min(i++, script.length - 1)]!.clone();
+    }));
+    await handleUpdate(message('برنامهٔ هفتگیِ من چیست؟'));
+    const names = (n: number) => (bodies[n]?.tools ?? []).map((t) => t.function.name);
+    expect(names(0)).toContain('list_my_tasks');
+    expect(names(0)).toContain('load_tools');
+    expect(names(0)).not.toContain('my_schedule');
+    expect(names(1)).toContain('my_schedule');
+    expect(names(0).length).toBeLessThan(40);
+    // بی اجازهٔ حساس، دستهٔ «sensitive» اصلاً پیشنهاد نمی‌شود.
+    expect(JSON.stringify(bodies[0])).not.toContain('sensitive (');
+    expect(texts()).toContain('برنامهٔ شما خالی است.');
+  });
+});

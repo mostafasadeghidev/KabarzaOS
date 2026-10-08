@@ -86,6 +86,7 @@ export default async function ProfilePage() {
           mcp: { tokens: mcpTokens, grants: mcpGrants, endpoint: `${origin}/api/mcp` },
           ai: {
             connections: aiConnections,
+            sensitive: account.aiSensitive,
             botUsername,
             providers: PROVIDER_IDS.map((id) => {
               const p = PROVIDERS[id];

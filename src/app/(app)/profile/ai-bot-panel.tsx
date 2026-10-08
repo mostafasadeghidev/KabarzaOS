@@ -5,7 +5,7 @@ import { useFormStatus } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowDown, ArrowUp, ExternalLink, LogIn, Plug, RefreshCw, Send, Unplug } from 'lucide-react';
 import {
-  deleteAiAction, loadModelsAction, moveAiAction, saveAiAction, setModelAction, type AiFormState,
+  deleteAiAction, loadModelsAction, moveAiAction, saveAiAction, setAiSensitiveAction, setModelAction, type AiFormState,
 } from './_form/ai-actions';
 import type { ModelOption, ProviderId } from '@/domain/ai/providers';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import { useConfirm } from '@/components/ui/confirm';
 import { useToast } from '@/components/ui/toast';
 import { Panel } from '@/components/page-shell';
 import { IconButton } from '@/components/ui/icon-button';
+import { Switch } from '@/components/ui/switch';
 import { useT } from '@/i18n/client';
 
 export interface AiProviderOption {
@@ -143,8 +144,10 @@ function ConnectionCard({ connection, index, total, label }: {
  * DeepSeek، ChatGPT، Claude، Z.ai، AgentRouter، Gemini، Groq و هر سرویسِ
  * سازگار با OpenAI. ⚠️ کلید هرگز به مرورگر برنمی‌گردد؛ فقط چهار نویسهٔ آخر.
  */
-export function AiBotPanel({ connections, providers, telegram, botUsername }: {
+export function AiBotPanel({ connections, providers, telegram, botUsername, sensitive }: {
   connections: AiConnectionInfo[];
+  /** اجازهٔ کارهای حساس به ربات (۲.۱۳.۰). */
+  sensitive: boolean;
   providers: AiProviderOption[];
   telegram: 'connected' | 'disconnected' | 'unavailable';
   botUsername: string;
@@ -171,6 +174,15 @@ export function AiBotPanel({ connections, providers, telegram, botUsername }: {
   }, [state, show, tr]);
 
   const preset = providers.find((p) => p.id === provider);
+  const [allowSensitive, setAllowSensitive] = useState(sensitive);
+  const [savingSensitive, startSensitive] = useTransition();
+  const toggleSensitive = (on: boolean) => {
+    setAllowSensitive(on);
+    startSensitive(async () => {
+      await setAiSensitiveAction(on);
+      show(tr(on ? 'ربات حالا کارهای حساس را هم انجام می‌دهد (با تأیید).' : 'کارهای حساس از ربات برداشته شد.'), 'success');
+    });
+  };
   const labelOf = (c: AiConnectionInfo) => providers.find((p) => p.id === c.provider)?.label ?? c.provider;
   const hasOpenRouter = connections.some((c) => c.provider === 'openrouter');
   const sameProvider = connections.some((c) => c.provider === provider && provider !== 'custom');
@@ -200,6 +212,18 @@ export function AiBotPanel({ connections, providers, telegram, botUsername }: {
           <a href="/profile?tab=notify" className="text-primary hover:underline">{tr('اول تلگرامتان را وصل کنید')}</a>
         )}
       </div>
+
+      {connections.length > 0 && (
+        <label className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+          <Switch checked={allowSensitive} disabled={savingSensitive} onCheckedChange={toggleSensitive} className="mt-0.5" />
+          <span className="grid gap-0.5">
+            <span className="font-medium">{tr('اجازهٔ کارهای حساس به ربات')}</span>
+            <span className="text-xs text-muted-foreground">
+              {tr('پرداخت و امورِ مالی، حذف، دسترسی‌ها و تنظیمات — همان‌هایی که خودتان در سایت اجازه دارید. هر کدام پیش از انجام با هشدار و «بله/خیر» از شما تأیید می‌گیرد. خاموش = ربات این کارها را اصلاً نمی‌بیند.')}
+            </span>
+          </span>
+        </label>
+      )}
 
       {connections.length > 0 && (
         <div className="grid gap-2">

@@ -62,7 +62,7 @@ export interface ProfileData {
   isOwner: boolean;
   /** توکن‌های MCP ِ خودِ کاربر و نشانیِ اتصال (۲.۷.۰). */
   mcp: { tokens: McpTokenView[]; grants: McpGrantView[]; endpoint: string };
-  ai: { connections: AiConnectionInfo[]; botUsername: string; providers: AiProviderOption[] };
+  ai: { connections: AiConnectionInfo[]; botUsername: string; providers: AiProviderOption[]; sensitive: boolean };
   company: {
     logoFileId: number | null;
     name: string; address: string; taxId: string; email: string;
@@ -529,7 +529,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
       {tab === 'mcp' && (
         <McpPanel
           tokens={data.mcp.tokens} grants={data.mcp.grants} endpoint={data.mcp.endpoint}
-          bot={<AiBotPanel connections={data.ai.connections} providers={data.ai.providers} telegram={data.telegram} botUsername={data.ai.botUsername} />}
+          bot={<AiBotPanel sensitive={data.ai.sensitive} connections={data.ai.connections} providers={data.ai.providers} telegram={data.telegram} botUsername={data.ai.botUsername} />}
         />
       )}
 

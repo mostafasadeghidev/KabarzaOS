@@ -410,13 +410,15 @@ export class ProfileValidationError extends Error {
 
 /** نامِ کاربری، تلفن و تصویر — برای تبِ «حساب کاربری». */
 export async function getAccountInfo(actor: Actor) {
-  const [row] = await db.select({ username: users.username, phone: users.phone })
+  const [row] = await db.select({ username: users.username, phone: users.phone, aiSensitive: users.aiSensitive })
     .from(users).where(eq(users.id, actor.id));
   const avatars = await avatarsFor([actor.id]);
   return {
     username: row?.username ?? null,
     phone: row?.phone ?? '',
     avatarFileId: avatars.get(actor.id) ?? null,
+    /** اجازهٔ کارهای حساس به ربات (۲.۱۳.۰). */
+    aiSensitive: row?.aiSensitive ?? false,
   };
 }
 

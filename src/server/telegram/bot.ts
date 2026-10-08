@@ -104,6 +104,8 @@ async function edit(chatId: number, messageId: number, text: string, keyboard?: 
 
 interface Who {
   actor: Actor;
+  /** اجازهٔ کارهای حساس به ربات (۲.۱۳.۰). */
+  aiSensitive: boolean;
   name: string;
   tr: Translator;
   locale: Locale;
@@ -136,7 +138,7 @@ async function whoIs(chatId: number): Promise<Who | null> {
   const sys = await systemLocale();
   const locale = loaded.user.locale && isLocale(loaded.user.locale) ? loaded.user.locale : sys.locale;
   return {
-    actor: loaded.actor, name: loaded.user.name, tr: await translatorFor(locale),
+    actor: loaded.actor, aiSensitive: loaded.user.aiSensitive, name: loaded.user.name, tr: await translatorFor(locale),
     locale, tz: sys.tz, weekStart: sys.weekStart,
   };
 }
@@ -669,6 +671,8 @@ async function deliver(chatId: number, who: Who, result: AgentResult) {
     case 'confirm': {
       const lines = [
         ...(result.note ? [result.note, ''] : []),
+        // ⚠️ کارِ حساس (پول، حذف، دسترسی، تنظیمات) پیش از پرسش هشدارِ جدا می‌گیرد.
+        ...(result.sensitive ? [`⚠️ ${who.tr('کارِ حساس — پیش از «بله» دقیق بخوانید.')}`, ''] : []),
         `❓ ${who.tr('این کار انجام شود؟')}`,
         `${who.tr(WRITE_TITLES[result.tool] ?? result.tool)}`,
         ...(await describeArgs(who.actor, who.tr, result.args)),
@@ -705,7 +709,7 @@ async function askAi(chatId: number, who: Who, text: string): Promise<boolean> {
   if (secrets.length === 0) return false;
   await api('sendChatAction', { chat_id: chatId, action: 'typing' });
   const result = await askAgent({
-    actor: who.actor, userName: who.name, secrets,
+    actor: who.actor, userName: who.name, secrets, sensitive: who.aiSensitive,
     language: LOCALE_NAMES[who.locale], today: todayIn(who.tz), timezone: who.tz,
   }, text);
   await deliver(chatId, who, result);
