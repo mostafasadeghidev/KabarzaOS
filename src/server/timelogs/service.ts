@@ -85,8 +85,13 @@ export async function canLogTime(actor: Actor, projectId: number | null): Promis
   if (actor.roles.includes('owner') && !actor.roles.includes('member')) return false;
   if (actor.roles.includes('owner') || canManageSection(actor, 'projects')) return true;
 
+  // ⚠️ عضویتِ «قطع‌دسترسی» (access_blocked) حقِ ثبت نمی‌دهد — همان قاعدهٔ دیدنِ پروژه.
   const member = await db.select({ id: projectMembers.id }).from(projectMembers)
-    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, actor.id)));
+    .where(and(
+      eq(projectMembers.projectId, projectId),
+      eq(projectMembers.userId, actor.id),
+      eq(projectMembers.accessBlocked, false),
+    ));
   if (member.length > 0) return true;
 
   return project.officeId !== null && (await managedOffices(actor.id)).includes(project.officeId);
@@ -114,7 +119,12 @@ export async function loggableProjects(actor: Actor) {
     .selectDistinct({ id: projects.id, title: projects.title })
     .from(projects)
     .leftJoin(tags, eq(tags.id, projects.statusTagId))
-    .leftJoin(projectMembers, and(eq(projectMembers.projectId, projects.id), eq(projectMembers.userId, actor.id)))
+    // ⚠️ عضویتِ قطع‌دسترسی حساب نیست؛ وگرنه نامِ پروژه در فهرستِ ثبت (و دکمه‌های ربات) لو می‌رفت.
+    .leftJoin(projectMembers, and(
+      eq(projectMembers.projectId, projects.id),
+      eq(projectMembers.userId, actor.id),
+      eq(projectMembers.accessBlocked, false),
+    ))
     .where(and(
       isNull(projects.deletedAt),
       eq(projects.isArchived, false),

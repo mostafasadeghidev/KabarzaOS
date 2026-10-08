@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.9.1]
+
+### Fixed
+
+- A member whose access to a project was blocked could still see that project's tasks under «My tasks», see the project in the hours project list, and log time or start a timer on it. All three now follow the same rule as opening the project. This also applies to the bot and MCP.
+
+### Tests
+
+- New access audit for the bot and MCP: strangers, locked, offboarded and deleted users, clients, and members trying private, other people's or blocked projects through commands, forged buttons, the AI and tokens. No forbidden data comes out and nothing is written.
+
+### Security
+
+- Bot button data is validated strictly; malformed or forged values (text, negative ids, odd durations) do nothing.
+
 ## [2.9.0]
 
 ### Added
