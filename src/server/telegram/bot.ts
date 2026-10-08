@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { auditLog, projects, users } from '@/db/schema';
+import { auditLog, projects, tasks, users } from '@/db/schema';
 import type { Actor } from '@/domain/access/permissions';
 import { isLocale, LOCALE_NAMES, type Locale } from '@/i18n/config';
 import { createTranslator, type Translator } from '@/i18n/translate';
@@ -15,7 +15,8 @@ import {
 } from '@/server/timelogs/service';
 import { loadAiSecret, type AiConnectionView } from '@/server/ai/connections';
 import { PROVIDERS, type ProviderId } from '@/domain/ai/providers';
-import { askAgent, forgetConversation, resolvePending, type AgentResult } from '@/server/ai/agent';
+import { askAgent, forgetConversation, resolveChoice, resolvePending, type AgentResult } from '@/server/ai/agent';
+import { MAX_VOICE_BYTES, MAX_VOICE_SECONDS, transcribe, transcriptionModel } from '@/server/ai/transcribe';
 
 /**
  * ربات تلگرام (۲.۹.۰) — دستورها و دکمه‌ها، و «مغزِ» هوشمند برای متنِ آزاد.
@@ -34,7 +35,8 @@ import { askAgent, forgetConversation, resolvePending, type AgentResult } from '
 
 export interface TgUser { id: number }
 export interface TgChat { id: number; type?: string }
-export interface TgMessage { message_id: number; text?: string; chat: TgChat; from?: TgUser; voice?: unknown; audio?: unknown }
+export interface TgVoice { file_id: string; duration?: number; file_size?: number; mime_type?: string }
+export interface TgMessage { message_id: number; text?: string; chat: TgChat; from?: TgUser; voice?: TgVoice; audio?: TgVoice }
 export interface TgUpdate {
   update_id: number;
   message?: TgMessage;
@@ -419,6 +421,20 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
       await edit(chatId, msg.message_id, `✅ ${who.tr('{time} برای «{project}» در تاریخِ {date} ثبت شد.', { time: hm(minutes), project: title, date })}`, menu(who.tr));
       return;
     }
+    if (kind === 'p' && op && a) {
+      const choice = projectArg(a);
+      if (choice === undefined) return;
+      const picked = choice === null ? null : await projectTitle(choice);
+      await edit(chatId, msg.message_id, picked ? `📁 ${picked}` : `✖️ ${who.tr('هیچ‌کدام')}`);
+      await api('sendChatAction', { chat_id: chatId, action: 'typing' });
+      const result = await resolveChoice(who.actor.id, op, choice ?? 0);
+      if (!result) {
+        await send(chatId, who.tr('این درخواست منقضی شده است؛ دوباره بپرسید.'));
+        return;
+      }
+      await deliver(chatId, who, result);
+      return;
+    }
     if (kind === 'a' && (op === 'y' || op === 'n') && a) {
       await edit(chatId, msg.message_id, op === 'y' ? `⏳ ${who.tr('در حالِ انجام…')}` : `✖️ ${who.tr('لغو شد.')}`);
       await api('sendChatAction', { chat_id: chatId, action: 'typing' });
@@ -457,15 +473,39 @@ const WRITE_TITLES: Record<string, string> = {
   create_task: 'ساختنِ تسک',
   set_task_status: 'تغییرِ وضعیتِ تسک',
   add_comment: 'نوشتنِ کامنت در پروژه',
+  send_message: 'فرستادنِ پیامِ مستقیم',
+  message_management: 'پیام به مدیریت',
 };
 
-async function describeArgs(args: Record<string, unknown>): Promise<string[]> {
+/** نامِ خوانای آرگومان‌ها در پیامِ تأیید (۲.۱۱.۰) — به‌جای کلیدِ انگلیسیِ خام. */
+const ARG_LABELS: Record<string, string> = {
+  text: 'متن', title: 'عنوان', description: 'توضیح', hours: 'ساعت', minutes: 'دقیقه',
+  date: 'تاریخ', due_date: 'مهلت', status: 'وضعیت',
+};
+
+async function describeArgs(tr: Translator, args: Record<string, unknown>): Promise<string[]> {
   const lines: string[] = [];
   const pid = typeof args.project_id === 'number' ? args.project_id : null;
-  if (pid) lines.push(`• project: ${await projectTitle(pid)}`);
+  if (pid) lines.push(`• ${tr('پروژه')}: ${await projectTitle(pid)}`);
+  if (typeof args.task_id === 'number') {
+    const [t] = await db.select({ title: tasks.title }).from(tasks).where(eq(tasks.id, args.task_id));
+    lines.push(`• ${tr('تسک')}: ${t?.title ?? `#${args.task_id}`}`);
+  }
+  // ⚠️ گیرنده‌ها با نام، نه شناسه — کاربر باید بداند پیام به دستِ چه کسی می‌رسد.
+  const ids = Array.isArray(args.recipient_user_ids) ? args.recipient_user_ids.filter((x): x is number => typeof x === 'number') : [];
+  if (ids.length > 0) {
+    const rows = await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, ids));
+    lines.push(`• ${tr('به')}: ${ids.map((id) => rows.find((r) => r.id === id)?.name ?? `#${id}`).join('، ')}`);
+  }
+  if (typeof args.assignee_user_id === 'number') {
+    const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, args.assignee_user_id));
+    lines.push(`• ${tr('مسئول')}: ${u?.name ?? `#${args.assignee_user_id}`}`);
+  }
+  const skip = new Set(['project_id', 'task_id', 'recipient_user_ids', 'assignee_user_id']);
   for (const [k, v] of Object.entries(args)) {
-    if (k === 'project_id' || v === '' || v === null || v === undefined) continue;
-    lines.push(`• ${k}: ${String(typeof v === 'object' ? JSON.stringify(v) : v).slice(0, 300)}`);
+    if (skip.has(k) || v === '' || v === null || v === undefined || v === 0) continue;
+    const label = ARG_LABELS[k] ? tr(ARG_LABELS[k]!) : k;
+    lines.push(`• ${label}: ${String(typeof v === 'object' ? JSON.stringify(v) : v).slice(0, 300)}`);
   }
   return lines;
 }
@@ -480,12 +520,19 @@ async function deliver(chatId: number, who: Who, result: AgentResult) {
         ...(result.note ? [result.note, ''] : []),
         `❓ ${who.tr('این کار انجام شود؟')}`,
         `${who.tr(WRITE_TITLES[result.tool] ?? result.tool)}`,
-        ...(await describeArgs(result.args)),
+        ...(await describeArgs(who.tr, result.args)),
       ];
       await send(chatId, lines.join('\n'), [[
         { text: `✅ ${who.tr('بله')}`, callback_data: `a:y:${result.id}` },
         { text: `✖️ ${who.tr('خیر')}`, callback_data: `a:n:${result.id}` },
       ]]);
+      return;
+    }
+    case 'choose': {
+      // ⚠️ دکمه‌ها همان پروژه‌هایی‌اند که کاربر در برنامه می‌بیند؛ سرور دوباره می‌سنجد.
+      const rows: Keyboard = result.options.map((o) => [{ text: o.title.slice(0, 60), callback_data: `p:${result.id}:${o.id}` }]);
+      rows.push([{ text: `✖️ ${who.tr('هیچ‌کدام')}`, callback_data: `p:${result.id}:0` }]);
+      await send(chatId, `📁 ${result.question || who.tr('کدام پروژه؟')}`, rows);
       return;
     }
     case 'quota':
@@ -514,6 +561,58 @@ async function askAi(chatId: number, who: Who, text: string): Promise<boolean> {
   return true;
 }
 
+/**
+ * پیامِ صوتی (۲.۱۱.۰): فایل از تلگرام ← متن با همان کلیدِ هوشِ مصنوعیِ کاربر ←
+ * همان مسیرِ متنِ آزاد. ⚠️ ویسِ بلند یا بزرگ رد می‌شود؛ فایل فقط در حافظه است و
+ * جایی ذخیره نمی‌شود.
+ */
+async function onVoice(chatId: number, who: Who, voice: TgVoice) {
+  const secret = await loadAiSecret(who.actor.id);
+  if (!secret) {
+    await send(chatId, who.tr('برای فهمیدنِ پیامِ صوتی، اول یک هوشِ مصنوعی وصل کنید (Groq رایگان است). تا آن موقع بنویسید یا از دکمه‌ها استفاده کنید.'), menu(who.tr));
+    return;
+  }
+  if (!transcriptionModel(secret.provider)) {
+    await send(chatId, who.tr('هوشِ مصنوعیِ فعلیِ شما ({name}) صدا را به متن تبدیل نمی‌کند؛ برای ویس Groq (رایگان) یا OpenAI را وصل کنید. تا آن موقع بنویسید.', { name: PROVIDERS[secret.provider]?.label ?? secret.provider }), menu(who.tr));
+    return;
+  }
+  if ((voice.duration ?? 0) > MAX_VOICE_SECONDS || (voice.file_size ?? 0) > MAX_VOICE_BYTES) {
+    await send(chatId, who.tr('پیامِ صوتی بیش از ۳ دقیقه است؛ کوتاه‌تر بفرستید یا بنویسید.'));
+    return;
+  }
+  await api('sendChatAction', { chat_id: chatId, action: 'typing' });
+  const audio = await downloadVoice(voice.file_id);
+  if (!audio) {
+    await send(chatId, who.tr('فایلِ صوتی از تلگرام گرفته نشد؛ دوباره بفرستید.'));
+    return;
+  }
+  const out = await transcribe(secret, audio, 'voice.ogg');
+  if (!out.ok) {
+    await send(chatId, out.reason === 'quota'
+      ? who.tr('سهمیهٔ هوشِ مصنوعیِ شما فعلاً تمام شده است؛ تا آن موقع از دکمه‌ها استفاده کنید.')
+      : out.reason === 'auth'
+        ? who.tr('کلیدِ هوشِ مصنوعیِ شما دیگر کار نمی‌کند؛ در پروفایل دوباره وصلش کنید.')
+        : who.tr('صدا به متن تبدیل نشد؛ لطفاً بنویسید.'), menu(who.tr));
+    return;
+  }
+  // کاربر ببیند ربات چه شنیده — اگر اشتباه فهمید، همین‌جا معلوم است.
+  await send(chatId, `🎤 «${out.text.slice(0, 1000)}»`);
+  await askAi(chatId, who, out.text);
+}
+
+/** دانلودِ فایلِ صوتی از تلگرام — فقط در حافظه. */
+async function downloadVoice(fileId: string): Promise<Blob | null> {
+  const info = await api('getFile', { file_id: fileId }) as { ok?: boolean; result?: { file_path?: string; file_size?: number } } | null;
+  const path = info?.result?.file_path;
+  if (!info?.ok || !path || (info.result?.file_size ?? 0) > MAX_VOICE_BYTES) return null;
+  const { token } = await telegramCredentials();
+  if (!token) return null;
+  const res = await fetch(`https://api.telegram.org/file/bot${token}/${path}`, { signal: AbortSignal.timeout(30_000) }).catch(() => null);
+  if (!res?.ok) return null;
+  const blob = await res.blob();
+  return blob.size > 0 && blob.size <= MAX_VOICE_BYTES ? blob : null;
+}
+
 /* ---------------- پیام ---------------- */
 
 async function onMessage(msg: TgMessage) {
@@ -522,9 +621,10 @@ async function onMessage(msg: TgMessage) {
   const text = (msg.text ?? '').trim();
   if (!text) {
     // ⚠️ پیامِ صوتی هنوز فهمیده نمی‌شود (۲.۱۰.۰)؛ بی‌جواب ماندنش گیج‌کننده بود.
-    if (msg.voice || msg.audio) {
+    const voice = msg.voice ?? msg.audio;
+    if (voice) {
       const who = await whoIs(msg.chat.id);
-      if (who) await send(msg.chat.id, who.tr('پیامِ صوتی را هنوز نمی‌فهمم؛ لطفاً بنویسید یا از دکمه‌ها استفاده کنید.'), menu(who.tr));
+      if (who) await onVoice(msg.chat.id, who, voice);
     }
     return;
   }

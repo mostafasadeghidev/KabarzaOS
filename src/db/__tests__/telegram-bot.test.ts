@@ -294,9 +294,70 @@ describe('وضعیتِ هوشِ مصنوعی در ربات و مینی‌اپ (�
     expect(sent).toHaveLength(0);
   });
 
-  it('پیامِ صوتی بی‌جواب نمی‌ماند', async () => {
-    await handleUpdate({ update_id: 99_001, message: { message_id: 1, chat: { id: CHAT, type: 'private' }, voice: { file_id: 'x' } } });
-    expect(texts()[0]).toContain('صوتی');
+  it('ویس با ارائه‌دهندهٔ بی‌صدا: صریح می‌گوید کدام ارائه‌دهنده ویس دارد', async () => {
+    await handleUpdate({ update_id: 99_001, message: { message_id: 1, chat: { id: CHAT, type: 'private' }, voice: { file_id: 'x', duration: 3 } } });
+    expect(texts()[0]).toContain('DeepSeek');
+    expect(texts()[0]).toContain('Groq');
+  });
+
+  it('ویس با Groq: متن می‌شود، نشان داده می‌شود و مثلِ پیامِ نوشتاری جواب می‌گیرد', async () => {
+    const [row] = await db.select().from(aiConnections).where(eq(aiConnections.userId, MEMBER));
+    await db.update(aiConnections).set({ provider: 'groq', baseUrl: 'https://api.groq.com/openai/v1', model: 'llama' })
+      .where(eq(aiConnections.userId, MEMBER));
+    setTelegramApi(async (method, payload) => {
+      sent.push({ method, payload });
+      return method === 'getFile' ? { ok: true, result: { file_path: 'voice/a.oga', file_size: 1000 } } : { ok: true };
+    });
+    process.env.TELEGRAM_BOT_TOKEN = '123456789:AAVoiceTestTokenForUnitTestsOnly0000';
+    const urls: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      urls.push(url);
+      if (url.includes('/file/bot')) return new Response(new Uint8Array([1, 2, 3]));
+      if (url.endsWith('/audio/transcriptions')) return Response.json({ text: 'امروز چه تسکی دارم' });
+      return say('تسکِ بازی ندارید.');
+    }));
+    try {
+      await handleUpdate({ update_id: 99_002, message: { message_id: 1, chat: { id: CHAT, type: 'private' }, voice: { file_id: 'v1', duration: 4 } } });
+      expect(texts()).toContain('🎤 «امروز چه تسکی دارم»');
+      expect(texts()).toContain('تسکِ بازی ندارید.');
+      expect(urls.some((u) => u.endsWith('/audio/transcriptions'))).toBe(true);
+      // ویسِ بلند اصلاً دانلود نمی‌شود.
+      urls.length = 0;
+      await handleUpdate({ update_id: 99_003, message: { message_id: 1, chat: { id: CHAT, type: 'private' }, voice: { file_id: 'v2', duration: 999 } } });
+      expect(urls).toHaveLength(0);
+    } finally {
+      delete process.env.TELEGRAM_BOT_TOKEN;
+      await db.update(aiConnections).set({ provider: row!.provider, baseUrl: row!.baseUrl, model: row!.model })
+        .where(eq(aiConnections.userId, MEMBER));
+    }
+  });
+
+  it('پروژهٔ نامشخص: دکمهٔ پروژه‌ها، بعد ادامهٔ همان درخواست با تأیید', async () => {
+    fakeProvider([
+      () => toolCall('ask_user_to_choose_project', { question: 'کدام پروژه؟' }),
+      () => toolCall('add_comment', { project_id: PROJECT, text: 'بررسی کنید لطفاً' }),
+      () => say('کامنت روی پروژهٔ آلفا نوشته شد.'),
+    ]);
+    await handleUpdate(message('یه کامنت بنویس بررسی کنید لطفاً'));
+    const pick = lastKeyboard().find((b) => b.callback_data?.endsWith(`:${PROJECT}`) && b.callback_data.startsWith('p:'))!;
+    expect(pick.text).toBe('آلفا');
+    expect(lastKeyboard().some((b) => b.callback_data?.endsWith(':0'))).toBe(true);
+    // پروژهٔ دست‌ساز (بیرون از فهرست) پذیرفته نمی‌شود.
+    const id = pick.callback_data!.split(':')[1];
+    await handleUpdate(press(`p:${id}:99999`));
+    expect(texts().at(-1)).toContain('منقضی');
+    await handleUpdate(press(pick.callback_data!));
+    expect(lastKeyboard().some((b) => b.callback_data?.startsWith('a:y:'))).toBe(true);
+    expect(texts().join(' ')).toContain('نوشتنِ کامنت در پروژه');
+  });
+
+  it('پیامِ مستقیم: تأیید با نامِ گیرنده، و ابزارِ پیام جدا از کامنت', async () => {
+    fakeProvider([() => toolCall('send_message', { recipient_user_ids: [OTHER], text: 'منتظرِ فایل‌های کارفرما هستم' })]);
+    await handleUpdate(message('به دیگری پیام بده منتظر فایل‌ها هستم'));
+    const all = texts().join(' ');
+    expect(all).toContain('فرستادنِ پیامِ مستقیم');
+    expect(all).toContain('دیگری');
+    expect(all).toContain('متن');
   });
 
   it('مینی‌اپ: فقط حسابِ تلگرامِ وصل‌شده با امضای درست وارد می‌شود', async () => {

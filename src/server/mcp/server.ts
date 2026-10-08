@@ -16,6 +16,8 @@ import {
 } from '@/server/timelogs/service';
 import { hasTeamAvailability, teamMatrix } from '@/server/availability/service';
 import { getSystemConfig } from '@/server/settings/system-service';
+import { compose, contactManagement, getRecipients, RateLimitedError } from '@/server/messaging/service';
+import { can } from '@/domain/access/permissions';
 import { assertWrite, type TokenSession } from './tokens';
 
 /**
@@ -57,6 +59,7 @@ const TIMER_MESSAGES: Record<TimerError['code'], string> = {
 /** خطای سرویس ← پیامِ قابلِ‌فهم برای مدل؛ جزئیاتِ داخلی بیرون نمی‌رود. */
 function explain(error: unknown): string {
   if (error instanceof TimerError) return TIMER_MESSAGES[error.code];
+  if (error instanceof RateLimitedError) return 'A new message was sent less than 30 seconds ago. Wait a little and try again.';
   if (error instanceof ForbiddenError) {
     return `Not allowed (${error.message}). The token's owner does not have permission for this, or the token is read-only.`;
   }
@@ -110,6 +113,7 @@ export function buildMcpServer(session: TokenSession): McpServer {
         'Every tool acts as the token owner and sees only what they can see in the app.',
         'Use search or list_projects to find a project id before project-specific tools.',
         'Data is often in Persian; answer the user in their language.',
+        'To message a person use list_message_recipients then send_message; to reach the managers use message_management. A project comment (add_comment) is not a message.',
       ].join(' '),
     },
   );
@@ -337,6 +341,40 @@ export function buildMcpServer(session: TokenSession): McpServer {
   }, async (args) => write('add_comment', args, async () => {
     await addComment(actor, args.project_id, args.text);
     return { posted: true };
+  }));
+
+  /* ---------------- پیام (۲.۱۱.۰) ---------------- */
+
+  server.registerTool('list_message_recipients', {
+    title: 'Who I can message',
+    description: 'People I can send a direct message to (active members and clients), with ids for send_message. Managers are reached with message_management instead.',
+    annotations: { readOnlyHint: true },
+  }, async () => run(async () => {
+    // ⚠️ بی مجوزِ ارسال، فهرست خالی است — همان قاعدهٔ صفحهٔ پیام‌ها.
+    if (!can(actor, 'messages.send')) return { canSendDirect: false, recipients: [] };
+    const rows = await getRecipients(actor);
+    return { canSendDirect: true, recipients: rows.map((r) => ({ userId: r.id, name: r.name, role: r.role })) };
+  }));
+
+  server.registerTool('send_message', {
+    title: 'Send a direct message',
+    description: 'Send a new direct message to one or more people (ids from list_message_recipients). Each recipient gets their own conversation.',
+    inputSchema: {
+      recipient_user_ids: z.array(z.number().int().positive()).min(1).max(10),
+      text: z.string().min(1).max(5000),
+    },
+  }, async (args) => write('send_message', args, async () => {
+    const threads = await compose(actor, { recipientIds: args.recipient_user_ids, body: args.text, allowReply: true });
+    return { sent: true, conversations: threads.length };
+  }));
+
+  server.registerTool('message_management', {
+    title: 'Message the managers',
+    description: 'Send a message to the management team (all managers in one shared conversation). Use this for "message my manager" when no specific person is named.',
+    inputSchema: { text: z.string().min(1).max(5000) },
+  }, async (args) => write('message_management', args, async () => {
+    await contactManagement(actor, args.text);
+    return { sent: true, to: 'management' };
   }));
 
   return server;
