@@ -2,6 +2,50 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.13.0]
+
+### Added
+
+- **The AI and the bot can now do everything the member can do in the app.** Before there were about 20 tools; there are now more than 120. They still act with the member's own permissions, and each tool calls the same service as the app page or action it mirrors.
+  - **Read anything shown in the app:**
+    - dashboard;
+    - every project tab (team, tasks, comments, files, QA, finance, bids, hours), task details and notes;
+    - reviews, inbox and conversations, notifications, meetings and invitees, time entries, schedule and leave;
+    - team boards, members and clients, access register, onboarding, activity log, reports, finance accounts and ledger, payment requests, recurring payments, my money.
+  - **Everyday actions:**
+    - tasks: edit, refer, claim, add notes, mark comments done;
+    - QA and reviews;
+    - project links and pins;
+    - messages: reply, mute, channels, project groups; mark notifications read;
+    - meetings: create and edit;
+    - leave and weekly schedule, onboarding;
+    - time entries: edit, resolve long timers;
+    - my profile, timezone and notification preferences.
+  - **Sensitive actions, behind a separate opt-in:**
+    - deleting things;
+    - projects: create, edit, change status, archive, delete; members, clients and access blocks; QA roles; tender bids;
+    - money: unit entries and payment requests, ledger entries, transfers, approving and paying requests, recurring payments, finance accounts, closing the fiscal period;
+    - people: members and clients, member state, staff access, the access register;
+    - settings catalogs, system settings, company information, the daily report.
+- **A new access level, «Everything, including sensitive actions».** It is never the default.
+  - It can be chosen for a personal token, on the web «allow access» page, and with a new «Allow sensitive actions for the bot» switch for the Telegram bot.
+  - Without it, sensitive tools are not offered to the AI at all.
+  - With it, every sensitive action in Telegram shows a «Sensitive action — read carefully before Yes» warning before Yes/No.
+  - Every sensitive call is marked as sensitive in the activity log.
+- **The bot loads tools on demand.** Common tools are always available; the rest come in groups (projects, team, meetings and messages, hours, finance and reports, profile, sensitive) that the AI loads only when the request needs them. This keeps each request small for free models and under provider tool limits.
+- Confirmation messages in the bot use readable Persian names for every action and its main fields.
+
+### Security
+
+- Passwords, bank details, the bot token and webhooks, and file uploads are deliberately not available to the AI. The access register never takes a vault reference from the AI.
+- Tool output passes through a filter that removes storage keys, hashes, tokens and other secret fields, and caps list sizes.
+- A new blind access test calls **every** tool, sensitive ones included, with ids of projects, tasks and people the member must not see. No forbidden data comes back and nothing is written. Matching positive checks confirm the same tools do work on allowed data.
+
+### Notes
+
+- Migration 0047 adds `users.ai_sensitive` (off by default).
+- The MCP server is now split into `src/server/mcp/kit.ts` and `src/server/mcp/tools/*`.
+
 ## [2.12.0]
 
 ### Added

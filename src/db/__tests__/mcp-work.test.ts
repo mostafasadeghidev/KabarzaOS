@@ -111,3 +111,41 @@ describe('ابزارهای روزمره', () => {
     expect(auth.ok && auth.session.scopes).toEqual(['read', 'write', 'sensitive']);
   });
 });
+
+describe('کارهای حساس با اجازهٔ صریح', () => {
+  it('بی اجازهٔ حساس ابزارِ حساسی در فهرست نیست؛ با اجازه هست', async () => {
+    const w = await mcp(as(A, ['member']), 'write');
+    const plain = (await w.client.listTools()).tools.map((t) => t.name);
+    expect(plain).not.toContain('delete_task');
+    expect(plain).not.toContain('create_ledger_entry');
+    const s = await mcp(as(A, ['member']), 'sensitive');
+    const all = (await s.client.listTools()).tools.map((t) => t.name);
+    expect(all).toContain('delete_task');
+    expect(all).toContain('create_ledger_entry');
+  });
+
+  it('مالک با اجازهٔ حساس پروژه می‌سازد و تسک حذف می‌کند؛ ثبت با برچسبِ حساس', async () => {
+    const { call } = await mcp(as(OWNER, ['owner']), 'sensitive');
+    const made = JSON.parse((await call('create_project', { title: 'از هوشِ مصنوعی' })).text) as { projectId: number };
+    expect(made.projectId).toBeGreaterThan(0);
+    const [t] = await db.insert(tasks).values({ projectId: P, title: 'برای حذف', createdBy: OWNER }).returning({ id: tasks.id });
+    const r = await call('delete_task', { task_id: t!.id });
+    expect(r.error, r.text).toBe(false);
+    const [row] = await db.select().from(tasks).where(eq(tasks.id, t!.id));
+    expect(row?.deletedAt ?? null).not.toBeNull();
+    const logs = await sql<Array<{ after: { sensitive?: boolean; tool: string } }>>`select after from audit_log where action = 'mcp.call' and after->>'tool' = 'delete_task'`;
+    expect(logs[0]!.after.sensitive).toBe(true);
+  });
+
+  it('عضو ساعتِ خودش را پاک می‌کند، نه ساعتِ دیگری را؛ و پول نمی‌پردازد', async () => {
+    const { call } = await mcp(as(A, ['member']), 'sensitive');
+    await call('log_hours', { project_id: P, hours: 1 });
+    const mine = await db.select().from(timelogs).where(eq(timelogs.userId, A));
+    const [other] = await db.insert(timelogs).values({ userId: OWNER, projectId: P, logDate: '2030-01-01', minutes: 30, description: '' }).returning({ id: timelogs.id });
+    expect((await call('delete_time_log', { log_id: other!.id })).error).toBe(true);
+    expect(await db.select().from(timelogs).where(eq(timelogs.id, other!.id))).toHaveLength(1);
+    expect((await call('delete_time_log', { log_id: mine.at(-1)!.id })).error).toBe(false);
+    expect((await call('create_ledger_entry', { account_id: 1, date: '2030-01-01', direction: 'out', amount: '100', currency_id: 1 })).error).toBe(true);
+    expect((await call('pay', { what: 'request', id: 1, account_id: 1, date: '2030-01-01' })).error).toBe(true);
+  });
+});

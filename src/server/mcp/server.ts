@@ -4,6 +4,7 @@ import { makeKit } from './kit';
 import { registerCore } from './tools/core';
 import { registerRead } from './tools/read';
 import { registerWork } from './tools/work';
+import { registerSensitive } from './tools/sensitive';
 
 /**
  * سرورِ MCP ِ Kabarza (۲.۷.۰؛ چندفایلی از ۲.۱۳.۰) — ابزارهایی که هوشِ مصنوعی
@@ -27,5 +28,7 @@ export function buildMcpServer(session: TokenSession): McpServer {
   registerCore(kit);
   registerRead(kit);
   registerWork(kit);
+  // ⚠️ فقط با اجازهٔ صریحِ «حساس»؛ بی آن هیچ ابزاری ثبت نمی‌شود.
+  registerSensitive(kit);
   return server;
 }

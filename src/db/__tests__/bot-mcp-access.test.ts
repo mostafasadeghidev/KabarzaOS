@@ -77,7 +77,7 @@ function fakeAi(script: Response[]) {
 
 /* ---------------- MCP ---------------- */
 
-async function mcpAs(actor: Actor, scope: 'read' | 'write' = 'write') {
+async function mcpAs(actor: Actor, scope: 'read' | 'write' | 'sensitive' = 'write') {
   // ⚠️ سقفِ ۱۰ توکن برای هر کاربر — توکن‌های آزمون‌های قبلی را پاک کن.
   await db.delete(apiKeys).where(eq(apiKeys.userId, actor.id));
   const { token } = await createToken(actor, { name: `audit-${actor.id}-${scope}-${nextId++}`, scope });
@@ -525,6 +525,31 @@ describe('MCP — همهٔ ابزارها با شناسهٔ ممنوع (۲.۱۳.
     for (const t of ['finance_accounts', 'access_board', 'list_activity']) expect((await call(t)).error, t).toBe(true);
     expect((await call('list_people', { role: 'member' })).error).toBe(true);
     expect((await call('get_report', { kind: 'overall' })).error).toBe(true);
+    await close();
+  });
+
+  it('با اجازهٔ «حساس» هم عضو روی پروژه‌های ممنوع نه چیزی می‌بیند نه حذف یا پرداخت می‌کند', async () => {
+    const before = await writes();
+    const [projCount] = await sql<Array<{ n: number }>>`select count(*)::int as n from projects`;
+    const { client, call, close } = await mcpAs(roles(A, ['member']), 'sensitive');
+    const tools = (await client.listTools()).tools.filter((t) => (t.annotations as { destructiveHint?: boolean } | undefined)?.destructiveHint);
+    expect(tools.length).toBeGreaterThan(30);
+    const leaks: string[] = [];
+    for (const tool of tools) {
+      for (const project of [P2, P3, P4]) {
+        const args = argsFor(tool.inputSchema as Schema, { project, task: T_P2, user: B, other: project });
+        const r = await call(tool.name, args);
+        if (/SECRET/.test(r.text)) leaks.push(`${tool.name}: ${r.text.slice(0, 200)}`);
+      }
+    }
+    expect(leaks).toEqual([]);
+    const after = await writes();
+    expect({ tasks: after.tasks, comments: after.comments, logs: after.logs }).toEqual({ tasks: before.tasks, comments: before.comments, logs: before.logs });
+    const [projAfter] = await sql<Array<{ n: number }>>`select count(*)::int as n from projects`;
+    // ⚠️ عضوِ ساده پروژه نمی‌سازد و حذف نمی‌کند، حتی با اجازهٔ حساس.
+    expect(projAfter!.n).toBe(projCount!.n);
+    const [secretTask] = await sql<Array<{ n: number }>>`select count(*)::int as n from tasks where id = ${T_P2} and deleted_at is null`;
+    expect(secretTask!.n).toBe(1);
     await close();
   });
 

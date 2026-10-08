@@ -504,3 +504,26 @@ describe('بارگذاریِ دسته‌ایِ ابزار (۲.۱۳.۰)', () => {
     expect(texts()).toContain('برنامهٔ شما خالی است.');
   });
 });
+
+describe('کارهای حساس در ربات (۲.۱۳.۰)', () => {
+  it('با اجازهٔ حساس: دستهٔ sensitive بارگذاری می‌شود و تأیید هشدارِ پررنگ دارد', async () => {
+    await db.update(users).set({ aiSensitive: true }).where(eq(users.id, MEMBER));
+    try {
+      const [log] = await db.insert(timelogs).values({ userId: MEMBER, projectId: PROJECT, logDate: '2030-01-01', minutes: 10, description: '' }).returning({ id: timelogs.id });
+      const bodies: string[] = [];
+      let i = 0;
+      const script = [toolCall('load_tools', { group: 'sensitive' }), toolCall('delete_time_log', { log_id: log!.id })];
+      vi.stubGlobal('fetch', vi.fn(async (_u: string, init?: RequestInit) => {
+        bodies.push(String(init?.body));
+        return script[Math.min(i++, script.length - 1)]!.clone();
+      }));
+      await handleUpdate(message('ساعتِ آن روز را پاک کن'));
+      expect(bodies[0]).toContain('sensitive (');
+      expect(texts().join(' ')).toContain('کارِ حساس');
+      // تا «بله» نزده، چیزی پاک نشده.
+      expect(await db.select().from(timelogs).where(eq(timelogs.id, log!.id))).toHaveLength(1);
+    } finally {
+      await db.update(users).set({ aiSensitive: false }).where(eq(users.id, MEMBER));
+    }
+  });
+});
