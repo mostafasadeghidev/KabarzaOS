@@ -152,6 +152,15 @@ function menu(tr: Translator): Keyboard {
 
 /* ---------------- دستورها ---------------- */
 
+/**
+ * ردیفِ «بازگشت» (۲.۹.۲) — هر زیرمنو یکی دارد؛ پیش از این از فهرستِ پروژه یا
+ * مدت راهی به عقب نبود و باید دستور را دوباره تایپ می‌کردی.
+ * پیش‌فرض: منوی اصلی؛ انتخابِ مدت به فهرستِ پروژه برمی‌گردد.
+ */
+function backRow(tr: Translator, data = 'm:menu'): Button[] {
+  return [{ text: `↩️ ${tr('بازگشت')}`, callback_data: data }];
+}
+
 async function showMenu(chatId: number, who: Who, hasAi: boolean) {
   const lines = [
     who.tr('سلام {name}! چه کاری انجام بدهم؟', { name: who.name }),
@@ -225,6 +234,7 @@ async function pickProject(chatId: number, who: Who, prefix: 't:s' | 'l:j', titl
     await send(chatId, who.tr('پروژه‌ای برای ثبتِ ساعت ندارید.'), menu(who.tr));
     return;
   }
+  keyboard.push(backRow(who.tr));
   if (messageId) await edit(chatId, messageId, title, keyboard);
   else await send(chatId, title, keyboard);
 }
@@ -233,11 +243,11 @@ async function timerStart(chatId: number, who: Who, messageId?: number) {
   const state = await timerState(who.actor);
   if (state.running) {
     await send(chatId, `▶️ ${who.tr('تایمر روشن است')}: ${state.running.projectTitle ?? who.tr('کارِ عمومی')} — ${hm(state.running.minutes)}`,
-      [[{ text: `⏹ ${who.tr('توقفِ تایمر')}`, callback_data: 't:x' }]]);
+      [[{ text: `⏹ ${who.tr('توقفِ تایمر')}`, callback_data: 't:x' }], backRow(who.tr)]);
     return;
   }
   if (state.pending) {
-    await send(chatId, who.tr('یک تایمرِ طولانی منتظرِ تأییدِ شماست؛ آن را در برنامه، صفحهٔ ساعت‌های کاری، تأیید کنید.'));
+    await send(chatId, who.tr('یک تایمرِ طولانی منتظرِ تأییدِ شماست؛ آن را در برنامه، صفحهٔ ساعت‌های کاری، تأیید کنید.'), menu(who.tr));
     return;
   }
   await pickProject(chatId, who, 't:s', who.tr('تایمر روی کدام پروژه شروع شود؟'), messageId);
@@ -285,6 +295,10 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
   const [kind, op, a, b] = data.split(':');
 
   try {
+    if (kind === 'm' && op === 'menu') {
+      await edit(chatId, msg.message_id, who.tr('چه کاری انجام بدهم؟'), menu(who.tr));
+      return;
+    }
     if (kind === 'm' && op === 'tasks') return await showTasks(chatId, who);
     if (kind === 'm' && op === 'hours') return await showHours(chatId, who);
     if (kind === 't' && op === 'p') return await timerStart(chatId, who, msg.message_id);
@@ -295,7 +309,7 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
       await startTimer(who.actor, projectId);
       await audit(who, 'timer.start', { projectId });
       const title = projectId ? (await projectTitle(projectId)) : who.tr('کارِ عمومی');
-      await edit(chatId, msg.message_id, `▶️ ${who.tr('تایمر روشن شد')}: ${title}`, [[{ text: `⏹ ${who.tr('توقفِ تایمر')}`, callback_data: 't:x' }]]);
+      await edit(chatId, msg.message_id, `▶️ ${who.tr('تایمر روشن شد')}: ${title}`, [[{ text: `⏹ ${who.tr('توقفِ تایمر')}`, callback_data: 't:x' }], backRow(who.tr)]);
       return;
     }
     if (kind === 'l' && op === 'p') return await pickProject(chatId, who, 'l:j', who.tr('ساعت روی کدام پروژه ثبت شود؟'), msg.message_id);
@@ -307,6 +321,7 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
       for (let i = 0; i < DURATIONS.length; i += 4) {
         rows.push(DURATIONS.slice(i, i + 4).map((m) => ({ text: hm(m), callback_data: `l:m:${pid}:${m}` })));
       }
+      rows.push(backRow(who.tr, 'l:p'));
       await edit(chatId, msg.message_id, who.tr('امروز چقدر کار کردید؟'), rows);
       return;
     }
@@ -449,7 +464,7 @@ async function onMessage(msg: TgMessage) {
   const who = await whoIs(chatId);
   if (!who) {
     const tr = await translatorFor((await systemLocale()).locale);
-    await send(chatId, tr('این چت به حسابی وصل نیست. در برنامه به پروفایل ← تلگرام بروید و «اتصال» را بزنید.'));
+    await send(chatId, tr('این چت به حسابی وصل نیست. در برنامه به پروفایل ← «اعلان‌ها و تلگرام» بروید و «اتصال به تلگرام» را بزنید.'));
     return;
   }
 

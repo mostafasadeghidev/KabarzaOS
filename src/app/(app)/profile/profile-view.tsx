@@ -76,8 +76,8 @@ const TABS = [
   { key: 'bank', label: 'حساب بانکی', icon: CreditCard },
   { key: 'prefs', label: 'ترجیحات', icon: Clock },
   { key: 'password', label: 'رمزِ ورود', icon: Lock },
-  { key: 'notify', label: 'اعلان‌ها', icon: Bell },
-  { key: 'telegram', label: 'تلگرام', icon: Send },
+  // ⚠️ تلگرام زیرِ همین تب است (۲.۹.۲)؛ `?tab=telegram` ِ لینک‌های قدیمی هم اینجا می‌آید.
+  { key: 'notify', label: 'اعلان‌ها و تلگرام', icon: Bell },
   { key: 'mcp', label: 'دستیارِ هوشِ مصنوعی', icon: Bot },
 ] as const;
 
@@ -97,10 +97,8 @@ export function ProfileView({ data }: { data: ProfileData }) {
    * ⚠️ تبِ «دسترسی‌های من» فقط وقتی هست که چیزی برای نشان‌دادن باشد؛
    * تبِ همیشه‌خالی فقط سؤال می‌سازد.
    */
-  // ⚠️ بی‌باتِ تلگرام تبش هم نیست (نسخهٔ قبلی هم پنهانش می‌کرد) — تبی که فقط «پیکربندی نشده» بگوید، شلوغی است.
   const visible = TABS
-    .filter((x) => x.key !== 'access' || data.myAccess.length > 0)
-    .filter((x) => x.key !== 'telegram' || data.telegram !== 'unavailable');
+    .filter((x) => x.key !== 'access' || data.myAccess.length > 0);
 
   /**
    * تبِ آغازین از نشانی خوانده می‌شود.
@@ -114,7 +112,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
    * خالی بدهد.
    */
   const params = useSearchParams();
-  const asked = params.get('tab');
+  const asked = params.get('tab') === 'telegram' ? 'notify' : params.get('tab');
   const [tab, setTab] = useState<string>(
     visible.some((x) => x.key === asked) ? asked! : visible[0]!.key,
   );
@@ -152,13 +150,16 @@ export function ProfileView({ data }: { data: ProfileData }) {
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="grid gap-4">
+    // ⚠️ یک پهنا برای ردیفِ تب‌ها و همهٔ کادرها؛ پیش از این کادرها max-w-2xl بودند و
+    // از ردیفِ تب‌ها کوتاه‌تر می‌افتادند.
+    <div className="grid w-full max-w-3xl gap-4">
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
         <div className="overflow-x-auto pb-1.5">
-          <TabsList variant="line" className="w-max">
+          {/* ⚠️ min-w-full: ردیفِ تب‌ها هم‌پهنای کادرِ زیرش کشیده می‌شود؛ w-max روی موبایل پیمایش را نگه می‌دارد. */}
+          <TabsList variant="line" className="w-max min-w-full">
             {visible.map((t) => (
-              <TabsTrigger key={t.key} value={t.key} className="flex-none">
+              <TabsTrigger key={t.key} value={t.key}>
                 <t.icon className="size-3.5" />
                 {tr(t.label)}
               </TabsTrigger>
@@ -169,8 +170,8 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
       {/* پورتِ پنلِ «حساب» ِ داشبورد: نام، ایمیل و تلفن به دستِ خودِ کاربر. */}
       {tab === 'account' && (
-        // ⚠️ همهٔ تب‌های پروفایل یک پهنا دارند (پیش از این xl و md) و هر گروه یک پنل است.
-        <div className="grid max-w-2xl grid-cols-1 gap-4">
+        // ⚠️ هر گروه یک پنل است؛ پهنا را ظرفِ بیرونی تعیین می‌کند.
+        <div className="grid grid-cols-1 gap-4">
           <Panel title={tr("حساب کاربری")}>
             <form action={saveAccount} className="grid gap-3">
               <Field>
@@ -248,7 +249,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
         ⚠️ هیچ رمزی اینجا نیست؛ فقط فهرستِ «به چه چیزهایی دسترسی دارم».
       */}
       {tab === 'access' && (
-        <div className="grid max-w-2xl grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <p className="text-sm text-muted-foreground">
             {tr("سامانه‌هایی که به تو دسترسی داده شده. اگر چیزی اینجا درست نیست، به مدیر بگو.")}
           </p>
@@ -278,13 +279,13 @@ export function ProfileView({ data }: { data: ProfileData }) {
       )}
 
       {tab === 'bank' && (
-        <div className="max-w-2xl">
+        <div>
           <BankCard bank={data.bank} card={data.bank.card} />
         </div>
       )}
 
       {tab === 'prefs' && (
-        <Panel title={tr("ترجیحات")} className="max-w-2xl">
+        <Panel title={tr("ترجیحات")}>
           <form action={saveTz} className="grid gap-3">
             <Field>
               <FieldLabel htmlFor="p-tz">{tr("منطقهٔ زمانی")}</FieldLabel>
@@ -314,7 +315,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
       )}
 
       {tab === 'password' && (
-        <Panel title={tr("رمزِ ورود")} className="max-w-2xl">
+        <Panel title={tr("رمزِ ورود")}>
           <form action={changePw} className="grid gap-3">
             <Field>
               <FieldLabel htmlFor="pw-current">{tr("رمزِ فعلی")}</FieldLabel>
@@ -355,7 +356,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
       {tab === 'notify' && (
         // ⚠️ تلهٔ ریستِ فرمِ React 19: Switch/Checkbox ِ Radix پس از ذخیره به مقدارِ
         // لحظهٔ بازشدن برمی‌گشتند. key روی ترجیحاتِ ذخیره‌شده فرم را از نو سوار می‌کند.
-        <form key={JSON.stringify(data.notify)} action={saveNotify} className="grid max-w-2xl grid-cols-1 gap-4">
+        <form key={JSON.stringify(data.notify)} action={saveNotify} className="grid grid-cols-1 gap-4">
           <p className="text-sm text-muted-foreground">
             {tr("زنگِ داخلِ اپ همیشه روشن است. این تنظیمات فقط کانال‌های بیرونی را تعیین می‌کنند.")}
           </p>
@@ -403,19 +404,111 @@ export function ProfileView({ data }: { data: ProfileData }) {
             </fieldset>
           </Panel>
 
-          <Panel title={tr("تلگرام")}>
-            <label className="flex items-center gap-1.5 text-sm">
-              <Switch name="telegramOn" defaultChecked={data.notify.telegramOn}
-              />
-              {tr("دریافتِ اعلان در تلگرام")}
-            </label>
-            {/* ⚠️ خاموش‌کردنِ دسته فقط ایمیل را ساکت می‌کند (R-NOTIF-04). */}
-            <p className="text-xs text-muted-foreground">
-              {data.telegram === 'connected'
-                ? tr('تلگرام همهٔ رویدادها را می‌گیرد؛ دسته‌بندیِ بالا فقط ایمیل را ساکت می‌کند.')
-                : tr('برای این گزینه، ابتدا از تبِ «تلگرام» حساب را وصل کنید.')}
-            </p>
-          </Panel>
+          {/*
+            ⚠️ اتصالِ تلگرام و کلیدِ «دریافتِ اعلان در تلگرام» یک جا (۲.۹.۲)؛ پیش از این
+            دو تبِ جدا بودند و این کلید می‌گفت «اول از تبِ تلگرام وصل کنید».
+            دکمه‌های اتصال type="button" هستند و فرمِ اعلان را ارسال نمی‌کنند.
+          */}
+          {data.telegram !== 'unavailable' && (
+            <Panel title={tr("تلگرام")}>
+            {/* ⚠️ بدونِ توکنِ بات کلِ این پنل نیست؛ دکمه‌ای که همیشه شکست بخورد نشان نمی‌دهیم. */}
+            {data.telegram === 'connected' ? (
+              <div className="grid gap-2">
+                <p className="text-sm">{tr("اعلان‌های شما به تلگرام هم فرستاده می‌شود.")}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button" size="sm" variant="outline" disabled={pending}
+                    onClick={() => startTransition(async () => setTgState(await sendMyTelegramTestAction()))}
+                  >
+                    {tr("ارسال پیام تست")}
+                  </Button>
+                  <Button
+                    type="button" size="sm" variant="destructive" disabled={pending}
+                    onClick={() => startTransition(async () => setTgState(await disconnectTelegramAction()))}
+                  >
+                    {tr("قطع اتصال تلگرام")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                <p className="text-sm text-muted-foreground">
+                  {tr("برای دریافتِ اعلان در تلگرام، بات را باز کنید و Start را بزنید.")}
+                </p>
+                <div>
+                  {/*
+                    ⚠️ یک دکمه، نه دو. پیش از این «ساختِ پیوند» را می‌زدی، بعد
+                    یک لینکِ آبیِ بی‌استایل ظاهر می‌شد که باید آن را هم
+                    می‌زدی — سه کلیک برای کاری که یکی است. حالا همان دکمه
+                    پیوند را می‌گیرد و تلگرام را باز می‌کند.
+                  */}
+                  <Button
+                    type="button" size="sm" disabled={pending}
+                    onClick={() => {
+                      /**
+                       * ⚠️ تب **همین‌جا و همگام** باز می‌شود، پیش از هر await.
+                       * پیش از این پیوند در همان تب باز می‌شد چون
+                       * `window.open` بعد از await بیرون از رویدادِ کلیک است و
+                       * مرورگر پاپ‌آپ حسابش می‌کند. راهش این است: اول یک تبِ
+                       * خالی — که هنوز داخلِ کلیک است و اجازه دارد — بعد
+                       * نشانی‌اش را می‌گذاریم.
+                       *
+                       * ⚠️ `opener = null` برای reverse tabnabbing: بدونِ آن
+                       * صفحهٔ باز‌شده می‌تواند تبِ ما را جای دیگری ببرد.
+                       */
+                      const tab = window.open('', '_blank');
+                      // ⚠️ در try: قطعِ opener جایی مجاز نباشد نباید کلِ اتصال را بشکند.
+                      try { if (tab) tab.opener = null; } catch { /* مهم نیست */ }
+
+                      startTransition(async () => {
+                        const next = await connectTelegramAction();
+                        setTgState(next);
+                        if (!next.link) {
+                          // پیوندی ساخته نشد — تبِ خالی را باز نگه نمی‌داریم.
+                          tab?.close();
+                          return;
+                        }
+                        // ⚠️ پاپ‌آپ‌بلاکر که جلویش را گرفت، همان تب؛ از هیچ بهتر است.
+                        if (tab) tab.location.href = next.link;
+                        else window.location.href = next.link;
+                      });
+                    }}
+                  >
+                    <Send className="size-3.5" />
+                    {tr("اتصال به تلگرام")}
+                  </Button>
+                </div>
+                {tgState.link && (
+                  /*
+                    ⚠️ مرحلهٔ دوم می‌ماند: سرور وب‌هوک ندارد، پس تا کاربر
+                    نگوید «Start را زدم» راهی نیست بفهمد پیام رسیده. نسخهٔ
+                    قبلی هم همین دو مرحله را دارد.
+                  */
+                  <div>
+                    <Button
+                      type="button" size="sm" variant="outline" disabled={pending}
+                      onClick={() => startTransition(async () => setTgState(await completeTelegramAction()))}
+                    >
+                      {tr("Start را زدم — اتصال را کامل کن")}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+              {data.telegram === 'connected' && (
+                <>
+                  <label className="flex items-center gap-1.5 text-sm">
+                    <Switch name="telegramOn" defaultChecked={data.notify.telegramOn} />
+                    {tr("دریافتِ اعلان در تلگرام")}
+                  </label>
+                  {/* ⚠️ خاموش‌کردنِ دسته فقط ایمیل را ساکت می‌کند (R-NOTIF-04). */}
+                  <p className="text-xs text-muted-foreground">
+                    {tr('تلگرام همهٔ رویدادها را می‌گیرد؛ دسته‌بندیِ بالا فقط ایمیل را ساکت می‌کند.')}
+                  </p>
+                </>
+              )}
+            </Panel>
+          )}
 
           <div className="flex items-center gap-3">
             <Submit>{tr("ذخیره")}</Submit>
@@ -430,98 +523,6 @@ export function ProfileView({ data }: { data: ProfileData }) {
         />
       )}
 
-      {tab === 'telegram' && (
-        <Panel title={tr("تلگرام")} className="max-w-2xl">
-          {/* ⚠️ بدونِ توکنِ بات، دکمه‌ای که همیشه شکست بخورد نشان نمی‌دهیم. */}
-          {data.telegram === 'unavailable' ? (
-            <p className="text-sm text-muted-foreground">
-              {tr("باتِ تلگرام روی این سامانه پیکربندی نشده است.")}
-            </p>
-          ) : data.telegram === 'connected' ? (
-            <div className="grid gap-2">
-              <p className="text-sm">{tr("اعلان‌های شما به تلگرام هم فرستاده می‌شود.")}</p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button" size="sm" variant="outline" disabled={pending}
-                  onClick={() => startTransition(async () => setTgState(await sendMyTelegramTestAction()))}
-                >
-                  {tr("ارسال پیام تست")}
-                </Button>
-                <Button
-                  type="button" size="sm" variant="destructive" disabled={pending}
-                  onClick={() => startTransition(async () => setTgState(await disconnectTelegramAction()))}
-                >
-                  {tr("قطع اتصال تلگرام")}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-2">
-              <p className="text-sm text-muted-foreground">
-                {tr("برای دریافتِ اعلان در تلگرام، بات را باز کنید و Start را بزنید.")}
-              </p>
-              <div>
-                {/*
-                  ⚠️ یک دکمه، نه دو. پیش از این «ساختِ پیوند» را می‌زدی، بعد
-                  یک لینکِ آبیِ بی‌استایل ظاهر می‌شد که باید آن را هم
-                  می‌زدی — سه کلیک برای کاری که یکی است. حالا همان دکمه
-                  پیوند را می‌گیرد و تلگرام را باز می‌کند.
-                */}
-                <Button
-                  type="button" size="sm" disabled={pending}
-                  onClick={() => {
-                    /**
-                     * ⚠️ تب **همین‌جا و همگام** باز می‌شود، پیش از هر await.
-                     * پیش از این پیوند در همان تب باز می‌شد چون
-                     * `window.open` بعد از await بیرون از رویدادِ کلیک است و
-                     * مرورگر پاپ‌آپ حسابش می‌کند. راهش این است: اول یک تبِ
-                     * خالی — که هنوز داخلِ کلیک است و اجازه دارد — بعد
-                     * نشانی‌اش را می‌گذاریم.
-                     *
-                     * ⚠️ `opener = null` برای reverse tabnabbing: بدونِ آن
-                     * صفحهٔ باز‌شده می‌تواند تبِ ما را جای دیگری ببرد.
-                     */
-                    const tab = window.open('', '_blank');
-                    // ⚠️ در try: قطعِ opener جایی مجاز نباشد نباید کلِ اتصال را بشکند.
-                    try { if (tab) tab.opener = null; } catch { /* مهم نیست */ }
-
-                    startTransition(async () => {
-                      const next = await connectTelegramAction();
-                      setTgState(next);
-                      if (!next.link) {
-                        // پیوندی ساخته نشد — تبِ خالی را باز نگه نمی‌داریم.
-                        tab?.close();
-                        return;
-                      }
-                      // ⚠️ پاپ‌آپ‌بلاکر که جلویش را گرفت، همان تب؛ از هیچ بهتر است.
-                      if (tab) tab.location.href = next.link;
-                      else window.location.href = next.link;
-                    });
-                  }}
-                >
-                  <Send className="size-3.5" />
-                  {tr("اتصال به تلگرام")}
-                </Button>
-              </div>
-              {tgState.link && (
-                /*
-                  ⚠️ مرحلهٔ دوم می‌ماند: سرور وب‌هوک ندارد، پس تا کاربر
-                  نگوید «Start را زدم» راهی نیست بفهمد پیام رسیده. نسخهٔ
-                  قبلی هم همین دو مرحله را دارد.
-                */
-                <div>
-                  <Button
-                    type="button" size="sm" variant="outline" disabled={pending}
-                    onClick={() => startTransition(async () => setTgState(await completeTelegramAction()))}
-                  >
-                    {tr("Start را زدم — اتصال را کامل کن")}
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </Panel>
-      )}
 
     </div>
   );

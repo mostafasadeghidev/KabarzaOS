@@ -31,7 +31,7 @@ export function TelegramNudge() {
         {tr('برای اینکه هیچ اعلانی را از دست ندهید، تلگرامتان را وصل کنید.')}
       </span>
       <Button asChild size="sm" variant="outline" className="h-7">
-        <Link href="/profile?tab=telegram">{tr('اتصال تلگرام')}</Link>
+        <Link href="/profile?tab=notify">{tr('اتصال تلگرام')}</Link>
       </Button>
       <Button
         size="sm"

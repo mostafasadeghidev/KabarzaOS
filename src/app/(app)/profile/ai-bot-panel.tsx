@@ -126,7 +126,7 @@ export function AiBotPanel({ connection, providers, telegram, botUsername }: {
         ) : telegram === 'unavailable' ? (
           <Badge variant="secondary">{tr('ربات تلگرام هنوز راه‌اندازی نشده (تنظیمات ← تلگرام).')}</Badge>
         ) : (
-          <a href="/profile?tab=telegram" className="text-primary hover:underline">{tr('اول تلگرامتان را وصل کنید')}</a>
+          <a href="/profile?tab=notify" className="text-primary hover:underline">{tr('اول تلگرامتان را وصل کنید')}</a>
         )}
       </div>
 

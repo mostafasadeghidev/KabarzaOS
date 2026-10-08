@@ -119,6 +119,15 @@ describe('ربات — اتصال و دستورها', () => {
     expect((await db.select().from(timelogs).where(eq(timelogs.userId, MEMBER))).length).toBe(before);
   });
 
+  it('هر زیرمنو دکمهٔ «بازگشت» دارد؛ انتخابِ مدت به فهرستِ پروژه برمی‌گردد', async () => {
+    await handleUpdate(press('l:p'));
+    expect(lastKeyboard().some((b) => b.callback_data === 'm:menu')).toBe(true);
+    await handleUpdate(press(`l:j:${PROJECT}`));
+    expect(lastKeyboard().some((b) => b.callback_data === 'l:p')).toBe(true);
+    await handleUpdate(press('m:menu'));
+    expect(lastKeyboard().some((b) => b.callback_data === 'm:tasks')).toBe(true);
+  });
+
   it('همان به‌روزرسانی دو بار پردازش نمی‌شود', async () => {
     const u = message('/hours');
     await handleUpdate(u);

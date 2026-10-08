@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.9.2]
+
+### Fixed
+
+- Profile: the panel under the tabs was narrower than the tab row. The tab row and every tab's panels now share one width, and the tabs stretch to fill it. On phones the tab row still scrolls sideways.
+
+### Changed
+
+- Profile: the separate «Telegram» tab is merged into «Notifications & Telegram».
+  - Connecting, the test message and disconnecting now sit in the same Telegram panel as the «Receive notifications in Telegram» switch.
+  - The switch appears only once Telegram is connected; before, it pointed to the other tab.
+  - Old links to `?tab=telegram` open the merged tab.
+- Telegram bot: every submenu now has a «Back» button. Project lists and the running timer go back to the main menu, and the duration picker goes back to the project list.
+
 ## [2.9.1]
 
 ### Fixed
