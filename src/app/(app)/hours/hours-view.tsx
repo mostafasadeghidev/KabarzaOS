@@ -10,6 +10,7 @@ import {
   type HoursState,
 } from './_form/actions';
 import { hoursLabel } from '@/domain/timelogs/timer';
+import { WEEKDAYS, weekdayOfDate } from '@/domain/availability/weekly';
 import { HOURS_PER_PAGE, hoursQuery } from '@/domain/timelogs/hours-filter';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -352,7 +353,13 @@ export function HoursView({ data }: { data: HoursData }) {
           <TableBody>
             {data.logs.map((l) => (
               <TableRow key={l.id}>
-                <TableNumericCell>{l.logDate}</TableNumericCell>
+                {/* روزِ هفته کنارِ تاریخ (۲.۱۰.۰). ⚠️ `num` فقط دورِ خودِ تاریخ؛ نامِ فارسیِ روز داخلش نمی‌رود (تستِ bidi). */}
+                <TableCell className="whitespace-nowrap ltr:text-end rtl:text-start">
+                  <span className="num">{l.logDate}</span>
+                  {weekdayOfDate(l.logDate) !== null && (
+                    <span className="ms-1.5 text-xs text-muted-foreground">{t(WEEKDAYS[weekdayOfDate(l.logDate)!]!)}</span>
+                  )}
+                </TableCell>
                 <TableCell>{l.projectTitle ?? <span className="text-muted-foreground">{t("عمومی")}</span>}</TableCell>
                 <TableCell className="max-w-64 truncate">{l.description || '—'}</TableCell>
                 <TableNumericCell>{hoursLabel(l.minutes)}</TableNumericCell>

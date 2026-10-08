@@ -13,7 +13,8 @@ import { telegramCredentials } from '@/server/settings/telegram-service';
 import {
   addOrMerge, canLogGeneral, loggableProjects, myLogs, myTotals, startTimer, stopTimer, timerState, TimerError,
 } from '@/server/timelogs/service';
-import { loadAiSecret } from '@/server/ai/connections';
+import { loadAiSecret, type AiConnectionView } from '@/server/ai/connections';
+import { PROVIDERS, type ProviderId } from '@/domain/ai/providers';
 import { askAgent, forgetConversation, resolvePending, type AgentResult } from '@/server/ai/agent';
 
 /**
@@ -33,7 +34,7 @@ import { askAgent, forgetConversation, resolvePending, type AgentResult } from '
 
 export interface TgUser { id: number }
 export interface TgChat { id: number; type?: string }
-export interface TgMessage { message_id: number; text?: string; chat: TgChat; from?: TgUser }
+export interface TgMessage { message_id: number; text?: string; chat: TgChat; from?: TgUser; voice?: unknown; audio?: unknown }
 export interface TgUpdate {
   update_id: number;
   message?: TgMessage;
@@ -65,7 +66,7 @@ export { webhookSecret } from './secret';
 
 /* ---------------- کمکی‌ها ---------------- */
 
-interface Button { text: string; callback_data?: string; url?: string }
+interface Button { text: string; callback_data?: string; url?: string; web_app?: { url: string } }
 type Keyboard = Button[][];
 
 function hm(minutes: number): string {
@@ -142,12 +143,94 @@ async function audit(who: Who, action: string, detail: Record<string, unknown>) 
   });
 }
 
+/**
+ * نشانیِ مینی‌اپ (۲.۱۰.۰) — فقط وقتی `APP_URL` ِ HTTPS هست؛ تلگرام مینی‌اپِ
+ * بی‌HTTPS را باز نمی‌کند. `next` مسیرِ داخلی بعد از ورود است.
+ */
+export function miniAppUrl(next = '/'): string | null {
+  const base = (process.env.APP_URL ?? '').trim().replace(/\/$/, '');
+  if (!base.startsWith('https://')) return null;
+  return `${base}/tg?next=${encodeURIComponent(next)}`;
+}
+
+/** دکمهٔ بازکردنِ برنامه داخلِ تلگرام؛ بی HTTPS ← هیچ. */
+function appButton(tr: Translator, next = '/', label = 'باز کردنِ برنامه'): Button | null {
+  const url = miniAppUrl(next);
+  return url ? { text: `📱 ${tr(label)}`, web_app: { url } } : null;
+}
+
 function menu(tr: Translator): Keyboard {
+  const app = appButton(tr);
   return [
     [{ text: `📋 ${tr('تسک‌های من')}`, callback_data: 'm:tasks' }, { text: `🕒 ${tr('ساعت‌های من')}`, callback_data: 'm:hours' }],
     [{ text: `▶️ ${tr('شروعِ تایمر')}`, callback_data: 't:p' }, { text: `⏹ ${tr('توقفِ تایمر')}`, callback_data: 't:x' }],
-    [{ text: `➕ ${tr('ثبتِ ساعت')}`, callback_data: 'l:p' }],
+    [{ text: `➕ ${tr('ثبتِ ساعت')}`, callback_data: 'l:p' }, { text: `🤖 ${tr('هوشِ مصنوعی')}`, callback_data: 'm:ai' }],
+    ...(app ? [[app]] : []),
   ];
+}
+
+/**
+ * نوعِ دکمهٔ منوی تلگرام. ⚠️ ثابتِ جدا، نه رشتهٔ لفظی کنارِ کلیدِ type: تستِ
+ * نگاشتِ اعلان (`gateway.test`) هر `type: '…'` ِ کد را نوعِ اعلان حساب می‌کند.
+ */
+const WEB_APP = 'web_app' as const;
+
+/** خط‌شکنیِ پیامِ تلگرام. */
+const NL = String.fromCharCode(10);
+
+/** «DeepSeek — deepseek-chat» برای پیام‌ها. */
+function aiLabel(provider: ProviderId, model: string): string {
+  return `${PROVIDERS[provider]?.label ?? provider}${model ? ` — ${model}` : ''}`;
+}
+
+/** خطِ وضعیتِ هوشِ مصنوعی در منو (۲.۱۰.۰) — همیشه معلوم باشد وصل است یا نه. */
+async function aiStatusLine(who: Who): Promise<string> {
+  const secret = await loadAiSecret(who.actor.id);
+  return secret
+    ? `🤖 ${who.tr('هوشِ مصنوعی: {name}', { name: aiLabel(secret.provider, secret.model) })}${NL}${who.tr('می‌توانید سؤالتان را هم آزاد بنویسید؛ هوشِ مصنوعیِ شما جواب می‌دهد. /new گفت‌وگو را از نو شروع می‌کند.')}`
+    : `🤖 ${who.tr('هوشِ مصنوعی وصل نیست.')} ${who.tr('با وصل‌کردنش می‌توانید آزاد بپرسید، مثلاً «امروز چه تسکی دارم؟». دکمهٔ «هوشِ مصنوعی» را بزنید.')}`;
+}
+
+/** صفحهٔ «هوشِ مصنوعی» در ربات: وضعیت + راهِ وصل/عوض‌کردن. */
+async function showAi(chatId: number, who: Who, messageId?: number) {
+  const secret = await loadAiSecret(who.actor.id);
+  const lines = secret
+    ? [
+      `✅ ${who.tr('هوشِ مصنوعیِ شما وصل است: {name}', { name: aiLabel(secret.provider, secret.model) })}`,
+      '',
+      who.tr('سؤالتان را آزاد بنویسید؛ مثلاً «امروز چه تسکی دارم؟» یا «۲ ساعت روی پروژهٔ آلفا ثبت کن». هر تغییری پیش از انجام از شما تأیید می‌گیرد.'),
+      who.tr('برای عوض‌کردنِ مدل یا ارائه‌دهنده به پروفایل ← «دستیارِ هوشِ مصنوعی» بروید.'),
+    ]
+    : [
+      `➕ ${who.tr('هنوز هوشِ مصنوعی وصل نکرده‌اید.')}`,
+      '',
+      who.tr('با وصل‌کردنِ هوشِ مصنوعیِ خودتان، ربات متنِ آزاد را می‌فهمد. راهِ رایگان: «ورود با OpenRouter» در پروفایل ← «دستیارِ هوشِ مصنوعی». DeepSeek، ChatGPT، Claude، Gemini و … هم با کلیدِ خودتان وصل می‌شوند.'),
+    ];
+  const open = appButton(who.tr, '/profile?tab=mcp', secret ? 'تنظیمِ هوشِ مصنوعی' : 'وصل‌کردنِ هوشِ مصنوعی');
+  const keyboard: Keyboard = [...(open ? [[open]] : []), backRow(who.tr)];
+  const text = lines.join(NL);
+  if (messageId) await edit(chatId, messageId, text, keyboard);
+  else await send(chatId, text, keyboard);
+}
+
+/**
+ * خبرِ وصل/قطع‌شدنِ هوشِ مصنوعی به تلگرامِ خودِ کاربر (۲.۱۰.۰) — تا در ربات هم
+ * معلوم باشد چه چیزی وصل است. بی‌اتصالِ تلگرام کاری نمی‌کند؛ خطای تلگرام هم
+ * ذخیرهٔ پروفایل را نمی‌شکند.
+ */
+export async function notifyAiChange(userId: number, connection: AiConnectionView | null): Promise<void> {
+  try {
+    const [row] = await db.select({ chatId: users.telegramChatId, locale: users.locale }).from(users).where(eq(users.id, userId));
+    if (!row?.chatId) return;
+    const sys = await systemLocale();
+    const tr = await translatorFor(row.locale && isLocale(row.locale) ? row.locale : sys.locale);
+    const text = connection
+      ? `✅ ${tr('هوشِ مصنوعیِ شما وصل است: {name}', { name: aiLabel(connection.provider, connection.model) })}${NL}${tr('حالا می‌توانید سؤالتان را همین‌جا آزاد بنویسید.')}`
+      : `🤖 ${tr('هوشِ مصنوعیِ ربات قطع شد؛ دکمه‌ها مثلِ قبل کار می‌کنند.')}`;
+    await api('sendMessage', { chat_id: Number(row.chatId), text, reply_markup: { inline_keyboard: menu(tr) } });
+  } catch {
+    // اعلانِ جانبی است.
+  }
 }
 
 /* ---------------- دستورها ---------------- */
@@ -161,7 +244,7 @@ function backRow(tr: Translator, data = 'm:menu'): Button[] {
   return [{ text: `↩️ ${tr('بازگشت')}`, callback_data: data }];
 }
 
-async function showMenu(chatId: number, who: Who, hasAi: boolean) {
+async function showMenu(chatId: number, who: Who) {
   const lines = [
     who.tr('سلام {name}! چه کاری انجام بدهم؟', { name: who.name }),
     '',
@@ -170,10 +253,9 @@ async function showMenu(chatId: number, who: Who, hasAi: boolean) {
     '/timer — ' + who.tr('شروعِ تایمر'),
     '/stop — ' + who.tr('توقفِ تایمر'),
     '/log — ' + who.tr('ثبتِ ساعت'),
+    '/ai — ' + who.tr('هوشِ مصنوعی'),
     '',
-    hasAi
-      ? who.tr('می‌توانید سؤالتان را هم آزاد بنویسید؛ هوشِ مصنوعیِ شما جواب می‌دهد. /new گفت‌وگو را از نو شروع می‌کند.')
-      : who.tr('برای جوابِ هوشمند به متنِ آزاد، در پروفایل ← «دستیارِ هوشِ مصنوعی» یک ارائه‌دهنده وصل کنید.'),
+    await aiStatusLine(who),
   ];
   await send(chatId, lines.join('\n'), menu(who.tr));
 }
@@ -299,6 +381,7 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
       await edit(chatId, msg.message_id, who.tr('چه کاری انجام بدهم؟'), menu(who.tr));
       return;
     }
+    if (kind === 'm' && op === 'ai') return await showAi(chatId, who, msg.message_id);
     if (kind === 'm' && op === 'tasks') return await showTasks(chatId, who);
     if (kind === 'm' && op === 'hours') return await showHours(chatId, who);
     if (kind === 't' && op === 'p') return await timerStart(chatId, who, msg.message_id);
@@ -437,7 +520,14 @@ async function onMessage(msg: TgMessage) {
   if (msg.chat.type && msg.chat.type !== 'private') return;
   const chatId = msg.chat.id;
   const text = (msg.text ?? '').trim();
-  if (!text) return;
+  if (!text) {
+    // ⚠️ پیامِ صوتی هنوز فهمیده نمی‌شود (۲.۱۰.۰)؛ بی‌جواب ماندنش گیج‌کننده بود.
+    if (msg.voice || msg.audio) {
+      const who = await whoIs(msg.chat.id);
+      if (who) await send(msg.chat.id, who.tr('پیامِ صوتی را هنوز نمی‌فهمم؛ لطفاً بنویسید یا از دکمه‌ها استفاده کنید.'), menu(who.tr));
+    }
+    return;
+  }
   const [command, ...rest] = text.split(/\s+/);
   const cmd = (command ?? '').toLowerCase().replace(/@.*$/, '');
 
@@ -456,7 +546,7 @@ async function onMessage(msg: TgMessage) {
     const who = await whoIs(chatId);
     if (who) {
       await send(chatId, `✅ ${who.tr('تلگرامِ شما وصل شد. از این به بعد اعلان‌ها هم اینجا می‌آیند.')}`);
-      await showMenu(chatId, who, Boolean(await loadAiSecret(who.actor.id)));
+      await showMenu(chatId, who);
     }
     return;
   }
@@ -473,7 +563,7 @@ async function onMessage(msg: TgMessage) {
       case '/start':
       case '/help':
       case '/menu':
-        return await showMenu(chatId, who, Boolean(await loadAiSecret(who.actor.id)));
+        return await showMenu(chatId, who);
       case '/tasks':
         return await showTasks(chatId, who);
       case '/hours':
@@ -484,12 +574,14 @@ async function onMessage(msg: TgMessage) {
         return await timerStop(chatId, who);
       case '/log':
         return await pickProject(chatId, who, 'l:j', who.tr('ساعت روی کدام پروژه ثبت شود؟'));
+      case '/ai':
+        return await showAi(chatId, who);
       case '/new':
         forgetConversation(who.actor.id);
         await send(chatId, who.tr('گفت‌وگو از نو شروع شد.'));
         return;
     }
-    if (cmd.startsWith('/')) return await showMenu(chatId, who, Boolean(await loadAiSecret(who.actor.id)));
+    if (cmd.startsWith('/')) return await showMenu(chatId, who);
 
     if (!(await askAi(chatId, who, text))) {
       await send(chatId, who.tr('برای جوابِ هوشمند به متنِ آزاد، در پروفایل ← «دستیارِ هوشِ مصنوعی» یک ارائه‌دهنده وصل کنید. تا آن موقع:'), menu(who.tr));
@@ -534,10 +626,16 @@ export async function registerCommands(): Promise<void> {
       { command: 'timer', description: tr('شروعِ تایمر') },
       { command: 'stop', description: tr('توقفِ تایمر') },
       { command: 'log', description: tr('ثبتِ ساعت') },
+      { command: 'ai', description: tr('هوشِ مصنوعی') },
       { command: 'new', description: tr('گفت‌وگوی تازه با هوشِ مصنوعی') },
       { command: 'help', description: tr('راهنما') },
     ],
   });
+  // دکمهٔ کنارِ جعبهٔ پیام: مینی‌اپ (فقط با HTTPS).
+  const url = miniAppUrl('/');
+  if (url) {
+    await api('setChatMenuButton', { menu_button: { type: WEB_APP, text: tr('باز کردنِ برنامه'), web_app: { url } } });
+  }
 }
 
 /** فقط برای تست. */

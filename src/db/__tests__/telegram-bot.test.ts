@@ -2,7 +2,9 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vite
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import { aiConnections, auditLog, projectMembers, projects, tags, timelogs, userRoles, users, workTimers } from '../schema';
-import { handleUpdate, resetBotState, setTelegramApi, type TgUpdate } from '@/server/telegram/bot';
+import { handleUpdate, notifyAiChange, resetBotState, setTelegramApi, type TgUpdate } from '@/server/telegram/bot';
+import { miniAppLogin } from '@/server/telegram/webapp';
+import { signInitData } from '@/domain/telegram/webapp';
 import { resetAgentState } from '@/server/ai/agent';
 import { AiError, getAiConnection, loadAiSecret, saveAiConnection } from '@/server/ai/connections';
 import type { Actor } from '@/domain/access/permissions';
@@ -260,5 +262,58 @@ describe('ربات — هوشِ مصنوعی', () => {
     expect(texts()).toContain('سلام! چطور کمک کنم؟');
     const last = calls.filter((c) => c.url.endsWith('/chat/completions')).at(-1)!.body as { tools?: unknown };
     expect(last.tools).toBeUndefined();
+  });
+});
+
+describe('وضعیتِ هوشِ مصنوعی در ربات و مینی‌اپ (۲.۱۰.۰)', () => {
+  it('منو و /ai نشان می‌دهند چه هوشِ مصنوعی‌ای وصل است', async () => {
+    await handleUpdate(message('/help'));
+    expect(texts().join(' ')).toMatch(/هوشِ مصنوعی: DeepSeek/);
+    expect(lastKeyboard().some((b) => b.callback_data === 'm:ai')).toBe(true);
+    sent = [];
+    await handleUpdate(message('/ai'));
+    expect(texts()[0]).toContain('وصل است');
+    // کلید هیچ‌وقت در پیام نمی‌آید.
+    expect(JSON.stringify(sent)).not.toContain('sk-test');
+  });
+
+  it('بی اتصال: می‌گوید می‌شود هوشِ مصنوعی اضافه کرد', async () => {
+    const [row] = await db.select().from(aiConnections).where(eq(aiConnections.userId, MEMBER));
+    await db.delete(aiConnections).where(eq(aiConnections.userId, MEMBER));
+    await handleUpdate(press('m:ai'));
+    expect(texts().join(' ')).toContain('هنوز هوشِ مصنوعی وصل نکرده‌اید');
+    const { id: _id, ...restore } = row!;
+    await db.insert(aiConnections).values(restore);
+  });
+
+  it('وصل/قطع‌شدن در پروفایل در تلگرام خبر داده می‌شود', async () => {
+    await notifyAiChange(MEMBER, { provider: 'groq', baseUrl: 'x', model: 'llama', keyHint: '', updatedAt: '' });
+    expect(texts()[0]).toContain('Groq — llama');
+    sent = [];
+    await notifyAiChange(OTHER + 999, null);
+    expect(sent).toHaveLength(0);
+  });
+
+  it('پیامِ صوتی بی‌جواب نمی‌ماند', async () => {
+    await handleUpdate({ update_id: 99_001, message: { message_id: 1, chat: { id: CHAT, type: 'private' }, voice: { file_id: 'x' } } });
+    expect(texts()[0]).toContain('صوتی');
+  });
+
+  it('مینی‌اپ: فقط حسابِ تلگرامِ وصل‌شده با امضای درست وارد می‌شود', async () => {
+    const token = '123456789:AAMiniAppTestTokenForUnitTestsOnly00';
+    process.env.TELEGRAM_BOT_TOKEN = token;
+    try {
+      const now = String(Math.floor(Date.now() / 1000));
+      const as = (id: number) => signInitData({ auth_date: now, user: JSON.stringify({ id }) }, token);
+      expect(await miniAppLogin(as(CHAT))).toEqual({ ok: true, userId: MEMBER });
+      expect(await miniAppLogin(as(123))).toEqual({ ok: false, reason: 'not_linked' });
+      expect(await miniAppLogin(signInitData({ auth_date: now, user: JSON.stringify({ id: CHAT }) }, '999:wrong'))).toEqual({ ok: false, reason: 'invalid' });
+      expect(await miniAppLogin('')).toEqual({ ok: false, reason: 'invalid' });
+      await db.update(users).set({ memberState: 'locked' }).where(eq(users.id, MEMBER));
+      expect(await miniAppLogin(as(CHAT))).toEqual({ ok: false, reason: 'inactive' });
+      await db.update(users).set({ memberState: 'active' }).where(eq(users.id, MEMBER));
+    } finally {
+      delete process.env.TELEGRAM_BOT_TOKEN;
+    }
   });
 });

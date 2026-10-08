@@ -1,6 +1,7 @@
 import { requireActor } from '@/server/auth';
 import { AiError, exchangeOpenRouterCode, saveAiConnection } from '@/server/ai/connections';
 import { publicOrigin } from '@/server/mcp/origin';
+import { notifyAiChange } from '@/server/telegram/bot';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,7 @@ export async function GET(req: Request) {
   try {
     const actor = await requireActor();
     const apiKey = await exchangeOpenRouterCode(code, verifier);
-    await saveAiConnection(actor, { provider: 'openrouter', apiKey });
+    await notifyAiChange(actor.id, await saveAiConnection(actor, { provider: 'openrouter', apiKey }));
     return back('connected');
   } catch (error) {
     if (error instanceof AiError || (error instanceof Error && error.message === 'unauthenticated')) return back('failed');
