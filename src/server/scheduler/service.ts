@@ -14,6 +14,8 @@ import { runDailyReport } from './daily-report';
 import { notifyOverdueOnboarding } from '@/server/onboarding/service';
 import { runBackupIfDue } from '@/server/backup/run';
 import { formatDateTime } from '@/i18n/datetime';
+import { briefDue } from '@/domain/telegram/brief';
+import { weekdayOfDate } from '@/domain/availability/weekly';
 
 /**
  * تیکِ زمان‌بند — پورتِ `Core\.
@@ -52,6 +54,8 @@ export interface TickReport {
   onboarding: number;
   /** پشتیبانِ روزانه شروع شد؟ (کارِ واقعی بی‌انتظار در پس‌زمینه می‌رود.) */
   backup: boolean;
+  /** گزارشِ صبحگاهیِ تلگرام — شمارِ فرستاده‌ها (۲.۱۴.۰). */
+  briefs: number;
 }
 
 /* ------------------------------------------------------------------ *
@@ -325,13 +329,54 @@ async function runCleanup(now: Date): Promise<boolean> {
 }
 
 /* ------------------------------------------------------------------ *
+ * گزارشِ صبحگاهیِ تلگرام (۲.۱۴.۰)
+ * ------------------------------------------------------------------ */
+
+/**
+ * ⚠️ «مزاحم نشدن» در `briefDue`: یک بار در روز، بعد از ساعتِ خودِ کاربر و پیش
+ * از ظهر، فقط روزِ کاریِ او و نه در مرخصی. گزارشِ خالی هم فرستاده نمی‌شود
+ * (`sendMorningBrief`) ولی مهرِ روز می‌خورد تا تا فردا دوباره سنجیده نشود.
+ */
+async function runMorningBriefs(now: Date): Promise<number> {
+  const { telegramEnabled } = await import('@/server/settings/telegram-service');
+  if (!(await telegramEnabled())) return 0;
+  const rows = await db.select({
+    id: users.id, timezone: users.timezone, briefAt: users.briefAt, muted: users.telegramMuted,
+    memberState: users.memberState, deletedAt: users.deletedAt,
+  }).from(users).where(and(sql`${users.telegramChatId} <> ''`, eq(users.telegramOff, false)));
+  const systemTz = (await getSystemConfig()).timezone;
+  let sent = 0;
+  for (const u of rows) {
+    if (u.memberState !== 'active' || u.deletedAt !== null || (u.muted ?? []).includes('brief')) continue;
+    const local = localParts(now, u.timezone || systemTz);
+    const key = `brief:${u.id}`;
+    const [stamp, slots, absent] = await Promise.all([
+      readStamp(key),
+      db.selectDistinct({ weekday: availabilitySlots.weekday }).from(availabilitySlots).where(eq(availabilitySlots.userId, u.id)),
+      db.select({ id: absences.id }).from(absences)
+        .where(and(eq(absences.userId, u.id), lte(absences.fromDate, local.date), gte(absences.toDate, local.date))),
+    ]);
+    const due = briefDue({
+      briefAt: u.briefAt, local, lastSent: stamp, workDays: slots.map((s) => s.weekday),
+      weekday: weekdayOfDate(local.date) ?? 0, onLeave: absent.length > 0,
+    });
+    if (!due) continue;
+    // ⚠️ مهر پیش از ارسال: خطای وسطِ کار حلقهٔ «هر تیک یک پیام» نمی‌سازد.
+    await writeStamp(key, local.date);
+    const { sendMorningBrief } = await import('@/server/telegram/bot');
+    if (await sendMorningBrief(u.id).catch(() => false)) sent += 1;
+  }
+  return sent;
+}
+
+/* ------------------------------------------------------------------ *
  * تیک
  * ------------------------------------------------------------------ */
 
 /** یک تیکِ کامل. هر کار مستقل است؛ خطای یکی بقیه را نمی‌خواباند. */
 export async function runTick(now = new Date()): Promise<TickReport> {
   const report: TickReport = {
-    reminders: 0, meetings: 0, timers: 0, nudges: 0, cleaned: false, dailyReport: false, onboarding: 0, backup: false,
+    reminders: 0, meetings: 0, timers: 0, nudges: 0, cleaned: false, dailyReport: false, onboarding: 0, backup: false, briefs: 0,
   };
 
   const jobs: Array<[keyof TickReport, () => Promise<number | boolean>]> = [
@@ -342,6 +387,7 @@ export async function runTick(now = new Date()): Promise<TickReport> {
     ['dailyReport', () => runDailyReport(now)],
     ['onboarding', () => notifyOverdueOnboarding(now)],
     ['backup', () => runBackupIfDue(now)],
+    ['briefs', () => runMorningBriefs(now)],
     ['cleaned', () => runCleanup(now)],
   ];
 

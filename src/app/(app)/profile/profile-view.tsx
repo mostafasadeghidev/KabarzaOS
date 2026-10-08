@@ -51,6 +51,9 @@ export interface ProfileData {
     emailOn: boolean;
     muted: string[];
     telegramOn: boolean;
+    /** یادآورهای بی‌صدا در تلگرام و ساعتِ گزارشِ صبحگاهی (۲.۱۴.۰). */
+    telegramMuted: string[];
+    briefAt: string;
     /** بدونِ mailer، گزینه‌های ایمیل بی‌اثرند و همین گفته می‌شود. */
     mailerReady: boolean;
   };
@@ -515,6 +518,35 @@ export function ProfileView({ data }: { data: ProfileData }) {
                   <p className="text-xs text-muted-foreground">
                     {tr('تلگرام همهٔ رویدادها را می‌گیرد؛ دسته‌بندیِ بالا فقط ایمیل را ساکت می‌کند.')}
                   </p>
+                  {/*
+                    یادآورهای تلگرام (۲.۱۴.۰). ⚠️ هر کدام حداکثر یک بار در روز، فقط روزِ
+                    کاری و نه در مرخصی؛ زیرِ هر پیام هم «🔕 دیگر نفرست» هست.
+                  */}
+                  <input type="hidden" name="tgPrefs" value="1" />
+                  <fieldset className="grid gap-2 rounded-lg border p-3">
+                    <legend className="px-1 text-xs font-medium text-muted-foreground">{tr('یادآورهای تلگرام')}</legend>
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <label className="flex items-center gap-1.5">
+                        <Switch name="tgOn" value="brief" defaultChecked={!data.notify.telegramMuted.includes('brief') && data.notify.briefAt !== ''} />
+                        {tr('گزارشِ صبحگاهی ساعتِ')}
+                      </label>
+                      <Input type="time" name="briefAt" defaultValue={data.notify.briefAt || '08:30'} className="w-28" dir="ltr" />
+                    </div>
+                    {([
+                      ['no_timelog', 'یادآوریِ ثبتِ ساعت (اگر روزِ کاری چیزی ثبت نشده)'],
+                      ['timer_running', 'تایمری که خیلی روشن مانده'],
+                      ['meeting_soon', 'جلسهٔ نزدیک'],
+                      ['onboarding.overdue', 'کارِ آنبوردینگِ عقب‌افتاده'],
+                    ] as const).map(([kind, label]) => (
+                      <label key={kind} className="flex items-center gap-1.5 text-sm">
+                        <Switch name="tgOn" value={kind} defaultChecked={!data.notify.telegramMuted.includes(kind)} />
+                        {tr(label)}
+                      </label>
+                    ))}
+                    <p className="text-xs text-muted-foreground">
+                      {tr('هر یادآوری حداکثر یک بار در روز، فقط روزهای کاریِ خودتان و نه در مرخصی؛ گزارشِ خالی هم فرستاده نمی‌شود.')}
+                    </p>
+                  </fieldset>
                 </>
               )}
             </Panel>

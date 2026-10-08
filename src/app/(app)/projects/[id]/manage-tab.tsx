@@ -28,6 +28,7 @@ import { DateRangePicker, type DateRangeValue } from '@/components/ui/date-picke
 import { filterLogs, localIsoDate, logMembers, totalMinutes } from '@/domain/projects/log-filter';
 import { monthRange, weekRange } from '@/domain/reports/filters';
 import { Panel } from '@/components/page-shell';
+import { TelegramGroupPanel } from './telegram-group-panel';
 
 /**
  * تبِ مدیریت — بازسازیِ `manage_tab_html()`:
@@ -659,6 +660,8 @@ export function ManageTab({
       </Panel>
 
       {canManage && <LogDetail logs={logs} weekStart={weekStart} />}
+
+      {canManage && <TelegramGroupPanel projectId={projectId} />}
 
       {canManage && (
         <>

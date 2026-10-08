@@ -44,7 +44,19 @@ export interface NotifyInput {
    * عنوان، پروژه، اولویت، ددلاین، توضیح و فایل‌های تسک.
    */
   taskId?: number;
+  /**
+   * جوابِ مستقیم از زیرِ اعلانِ تلگرام (۲.۱۴.۰): گفتگوی پیام، یا کامنتی در پروژه.
+   * ⚠️ ربات پیش از ثبت دوباره گاردِ همان سرویس را می‌گذراند.
+   */
+  replyTo?: { thread: number } | { projectId: number; commentId: number };
 }
+
+/**
+ * یادآورهای خودکار (۲.۱۴.۰) — زیرشان «🔕 دیگر نفرست» می‌آید و کاربر با یک ضربه
+ * همان نوع را **فقط در تلگرام** خاموش می‌کند. ⚠️ اعلانِ کارِ واقعی (تسک، کامنت،
+ * پیام) این دکمه را ندارد؛ آن‌ها با تنظیمِ کلیِ اعلان‌ها کنترل می‌شوند.
+ */
+export const MUTABLE_REMINDERS = ['timer_running', 'no_timelog', 'meeting_soon', 'onboarding.overdue'] as const;
 
 /**
  * ارسالِ اعلان به چند نفر.
@@ -68,6 +80,7 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
       notifyEmailMuted: users.notifyEmailMuted,
       telegramChatId: users.telegramChatId,
       telegramOff: users.telegramOff,
+      telegramMuted: users.telegramMuted,
       locale: users.locale,
     })
     .from(users)
@@ -108,7 +121,8 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
     // را خاموش کرده نباید با دستهٔ `other` دوباره ایمیل بگیرد.
     hasEmail: !r.notifyEmailOff && addressOf(r) !== '',
     mutedEmailCategories: r.notifyEmailMuted as Recipient['mutedEmailCategories'],
-    hasTelegram: !r.telegramOff && r.telegramChatId !== '',
+    // ⚠️ نوعی که کاربر در تلگرام «دیگر نفرست» زده، فقط از تلگرام حذف می‌شود.
+    hasTelegram: !r.telegramOff && r.telegramChatId !== '' && !(r.telegramMuted ?? []).includes(input.type),
   }));
 
   const plan = planDelivery(input.type, recipients).map((p) => ({
@@ -176,14 +190,14 @@ async function deliverExternal(
       : null;
     if (card) {
       const text = [`🔔 ${input.title}`, '', ...card.lines, ...(url ? ['', url] : [])].join('\n');
-      await sendTelegram(target.chatId, text.slice(0, 4000), miniAppButton(input.url, input.openLabel));
+      await sendTelegram(target.chatId, text.slice(0, 4000), telegramKeyboard(input));
       for (const file of card.files) await sendTelegramFile(target.chatId, file);
     } else {
       // 🔔 عنوان، بعد متن؛ پیوند ته پیام (دکمهٔ «باز کردن» زیرش است).
       const lines = [`🔔 ${input.title}`];
       if (input.body) lines.push(input.body);
       if (url) lines.push(url);
-      await sendTelegram(target.chatId, lines.join('\n\n'), miniAppButton(input.url, input.openLabel));
+      await sendTelegram(target.chatId, lines.join('\n\n'), telegramKeyboard(input));
     }
   }
 }
@@ -235,8 +249,38 @@ async function sendTelegramFile(chatId: string, file: TaskCardFile): Promise<voi
   }
 }
 
+type InlineButton = { text: string; callback_data?: string; web_app?: { url: string } };
+
+/**
+ * دکمه‌های زیرِ اعلانِ تلگرام (۲.۱۴.۰): کارِ همان اعلان (توقفِ تایمر، ثبتِ ساعت،
+ * پاسخ)، «باز کردن در برنامه»، و برای یادآورهای خودکار «🔕 دیگر نفرست».
+ */
+function telegramKeyboard(input: NotifyInput & { openLabel?: string; tr?: Translator }) {
+  const tr = input.tr ?? ((s: string) => s);
+  const rows: InlineButton[][] = [];
+  const actions: InlineButton[] = [];
+  if (input.type === 'timer_running') actions.push({ text: `⏹ ${tr('توقفِ تایمر')}`, callback_data: 't:x' });
+  if (input.type === 'no_timelog') actions.push({ text: `➕ ${tr('ثبتِ ساعت')}`, callback_data: 'l:p' });
+  // پیام‌ها شمارهٔ گفتگو را در خودِ پیوند دارند (`/messages/N`).
+  const thread = input.type.startsWith('message.') ? /^\/messages\/(\d+)/.exec(input.url ?? '')?.[1] : undefined;
+  const replyTo = input.replyTo ?? (thread ? { thread: Number(thread) } : undefined);
+  if (replyTo) {
+    actions.push({
+      text: `↩️ ${tr('پاسخ')}`,
+      callback_data: 'thread' in replyTo ? `r:m:${replyTo.thread}` : `r:c:${replyTo.projectId}:${replyTo.commentId}`,
+    });
+  }
+  if (actions.length > 0) rows.push(actions);
+  const open = miniAppButton(input.url, input.openLabel);
+  if (open) rows.push(...open.inline_keyboard);
+  if ((MUTABLE_REMINDERS as readonly string[]).includes(input.type)) {
+    rows.push([{ text: `🔕 ${tr('دیگر نفرست')}`, callback_data: `q:${input.type}` }]);
+  }
+  return rows.length > 0 ? { inline_keyboard: rows } : undefined;
+}
+
 /** ارسالِ پیامِ تلگرام به یک کاربر. شکست بی‌صداست (R-NOTIF-03). */
-async function sendTelegram(chatId: string, text: string, replyMarkup?: ReturnType<typeof miniAppButton>): Promise<void> {
+async function sendTelegram(chatId: string, text: string, replyMarkup?: { inline_keyboard: InlineButton[][] }): Promise<void> {
   const { token } = await telegramCredentials();
   if (!token || !chatId) return;
 

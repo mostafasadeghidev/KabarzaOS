@@ -32,6 +32,7 @@ import {
   validateBid, type BidRejection, type TenderRoleRow,
 } from '@/domain/projects/tender';
 import { notify } from '@/server/notifications/service';
+import { announceComment, announceTask } from '@/server/telegram/group';
 import {
   assertCanInteractWithProject, assertCanManageProject, assertCanViewProject, assertNotFrozen,
   canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation, canInteractWithProject, managedOfficeProjectIds, pmProjectIds,
@@ -1770,6 +1771,7 @@ async function applyStatusEffects(
   const nextTag = task.after === null ? null : await repo.getTag(task.after);
   // پورتِ `is_done`: پرچمِ بسته یا گروهِ complete.
   const nextDone = nextTag !== null && (nextTag.isClosed || nextTag.statusGroup === 'complete');
+  if (nextDone) void announceTask(task.id, 'done');
 
   const [wasReview, isReview] = await Promise.all([
     task.before === null ? Promise.resolve(false) : repo.isReviewTag(task.before),
@@ -1978,6 +1980,7 @@ export async function addComment(
   }
 
   const uploads = await storeUploads(actor, media);
+  let newCommentId = 0;
   await db.transaction(async (tx) => {
     const [comment] = await tx.insert(comments).values({
       projectId,
@@ -1989,6 +1992,7 @@ export async function addComment(
       body: text,
     }).returning({ id: comments.id });
     await linkMedia(actor, { projectId, commentId: comment!.id }, uploads, tx);
+    newCommentId = comment!.id;
   }).catch(async (error: unknown) => {
     await discardUploads(uploads);
     throw error;
@@ -2010,7 +2014,10 @@ export async function addComment(
     // کامنتِ فقط‌عکس متنی ندارد؛ نشانهٔ تصویر جایش می‌نشیند.
     body: `«${project?.title ?? ''}» — ${text.slice(0, 140) || '🖼'}`,
     url: `/projects/${projectId}?tab=comments`,
+    // پاسخ از زیرِ اعلانِ تلگرام — به رشتهٔ همین کامنت (یا والدش، اگر خودش پاسخ است).
+    replyTo: { projectId, commentId: parentId ?? newCommentId },
   });
+  void announceComment(projectId, actor.id, text);
 }
 
 /** بایگانی/خروج از بایگانی — `ajax_archive_toggle`. */
@@ -2303,6 +2310,8 @@ export async function createTask(
       });
     }
   }
+  // گروهِ تلگرامِ پروژه (۲.۱۴.۰) — بی‌انتظار؛ خصوصی/پنهان از کارفرما خودش کنار می‌رود.
+  void announceTask(id, 'new');
   return id;
 }
 

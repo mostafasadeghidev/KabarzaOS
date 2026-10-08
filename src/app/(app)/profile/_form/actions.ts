@@ -4,7 +4,7 @@ import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import { disconnectTelegram, saveBankInfo, saveCompany, saveNotifyPrefs, saveTimezone, startTelegramLink,
-  tryConnectTelegram, changeMyPassword, PasswordError, updateMyProfile, ProfileValidationError,
+  tryConnectTelegram, changeMyPassword, PasswordError, updateMyProfile, ProfileValidationError, saveTelegramPrefs,
 } from '@/server/people/profile-service';
 import { removeAvatar, setAvatar } from '@/server/files/service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -125,6 +125,15 @@ export async function saveNotifyAction(
       muted: formData.getAll('muted').map(String),
       telegramOn: formData.get('telegramOn') !== null,
     });
+    // یادآورهای تلگرام — فقط وقتی کادرش در فرم بود (تلگرامِ وصل).
+    if (formData.get('tgPrefs') !== null) {
+      const on = new Set(formData.getAll('tgOn').map(String));
+      const kinds = ['timer_running', 'no_timelog', 'meeting_soon', 'onboarding.overdue', 'brief'];
+      await saveTelegramPrefs(actor, {
+        briefAt: on.has('brief') ? String(formData.get('briefAt') ?? '') : '',
+        muted: kinds.filter((k) => !on.has(k)),
+      });
+    }
   } catch (error) {
     if (error instanceof ForbiddenError) {
       return { error: error.required === 'email.invalid' ? 'ایمیل معتبر نیست.' : 'ذخیره نشد.' };

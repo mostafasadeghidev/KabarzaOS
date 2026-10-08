@@ -2,6 +2,25 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.14.0]
+
+### Added
+
+- Telegram bot: a persistent shortcut keyboard under the chat (`/keyboard` shows it again), plus a bot description and short description in every supported language.
+- Morning summary in Telegram: meetings, due and overdue tasks, today's reminders and, for managers, reviews waiting. Time is set per person in Profile.
+- Buttons under notifications: stop a running timer, log hours, reply to a message or comment straight from Telegram, or open the item in the app.
+- Send a photo or file to the bot and attach it to a project or one of your tasks (up to 20 MB).
+- Project Telegram groups: from a project's manage tab, add the bot to a group and new comments and new or completed tasks are posted there. Private and client-hidden tasks are never posted; the bot answers nothing in groups.
+- Managers get "My team" in the bot: reviews waiting, team overdue tasks, who is working now and who is on leave today. The owner also gets "Company status": open projects and pending payment requests, with approve/reject behind a second confirmation.
+
+### Changed
+
+- Automatic reminders are now gentle: at most once a day, only on the person's working days and never while on leave, nothing is sent when there is nothing to say, and every reminder has a "Don't send again" button (with undo). Reminder choices are in Profile → Notifications.
+
+### Database
+
+- Migration `0048_telegram_plus`: per-user muted Telegram reminders and morning-summary time; per-project Telegram group link.
+
 ## [2.13.1]
 
 ### Fixed

@@ -75,6 +75,10 @@ export const users = pgTable('users', {
   telegramOff: boolean('telegram_off').notNull().default(false),
   /** ربات تلگرام اجازهٔ کارهای حساس دارد؟ (۲.۱۳.۰) — پیش‌فرض خاموش. */
   aiSensitive: boolean('ai_sensitive').notNull().default(false),
+  /** انواعِ اعلانی که کاربر در تلگرام بی‌صدا کرده (۲.۱۴.۰)؛ `brief` = گزارشِ صبحگاهی. */
+  telegramMuted: text('telegram_muted').array().notNull().default(sql`'{}'::text[]`),
+  /** ساعتِ گزارشِ صبحگاهی (HH:MM، وقتِ خودِ کاربر)؛ خالی = خاموش. */
+  briefAt: text('brief_at').notNull().default('08:30'),
 
   /**
    * حضورِ زنده — دو مهر: آخرین ضربان (هر تبی) و آخرین ضربانِ تبِ **متمرکز**.

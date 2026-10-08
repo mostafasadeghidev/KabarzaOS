@@ -7,7 +7,17 @@ import { createTranslator, type Translator } from '@/i18n/translate';
 import { loadMessages } from '@/i18n/server';
 import { loadActor } from '@/server/auth';
 import { linkTelegramChat } from '@/server/people/profile-service';
-import { myTasks } from '@/server/projects/service';
+import { addComment, listProjects, myTasks } from '@/server/projects/service';
+import { reply as replyInThread } from '@/server/messaging/service';
+import { addAttachment, type UploadBlob } from '@/server/files/service';
+import { addTaskNote } from '@/server/projects/service';
+import { hasTeamScope, teamTasks } from '@/server/team/service';
+import { runningTimers } from '@/server/availability/service';
+import { listAbsences as listTeamAbsences } from '@/server/activity/service';
+import { decideRequest, listRequests } from '@/server/finance/payouts';
+import { canManageSection, canViewSection } from '@/domain/access/permissions';
+import { MUTABLE_REMINDERS } from '@/server/notifications/service';
+import { linkProjectGroup } from './group';
 import { canViewProject } from '@/server/projects/authority';
 import { listMeetings, listReminders } from '@/server/meetings/service';
 import { formatDateTime } from '@/i18n/datetime';
@@ -39,7 +49,12 @@ import { MAX_VOICE_BYTES, MAX_VOICE_SECONDS, transcribe, transcriptionModel } fr
 export interface TgUser { id: number }
 export interface TgChat { id: number; type?: string }
 export interface TgVoice { file_id: string; duration?: number; file_size?: number; mime_type?: string }
-export interface TgMessage { message_id: number; text?: string; chat: TgChat; from?: TgUser; voice?: TgVoice; audio?: TgVoice }
+export interface TgFile { file_id: string; file_size?: number; file_name?: string; mime_type?: string }
+export interface TgMessage {
+  message_id: number; text?: string; chat: TgChat; from?: TgUser; voice?: TgVoice; audio?: TgVoice;
+  /** عکس (چند اندازه؛ آخری بزرگ‌ترین) و فایل (۲.۱۴.۰). */
+  photo?: TgFile[]; document?: TgFile; caption?: string;
+}
 export interface TgUpdate {
   update_id: number;
   message?: TgMessage;
@@ -104,6 +119,12 @@ async function edit(chatId: number, messageId: number, text: string, keyboard?: 
 
 interface Who {
   actor: Actor;
+  /** مدیرِ تیم/پروژه‌ها؟ دکمهٔ «👥 تیم من» (۲.۱۴.۰). */
+  manager: boolean;
+  /** مدیرِ کل یا مالی؟ دکمهٔ «📊 وضعیتِ شرکت». */
+  owner: boolean;
+  /** انواعِ بی‌صداشده در تلگرام. */
+  muted: string[];
   /** اجازهٔ کارهای حساس به ربات (۲.۱۳.۰). */
   aiSensitive: boolean;
   name: string;
@@ -133,13 +154,22 @@ async function systemLocale(): Promise<{ locale: Locale; tz: string; weekStart: 
 async function whoIs(chatId: number): Promise<Who | null> {
   const [row] = await db.select({ id: users.id }).from(users).where(eq(users.telegramChatId, String(chatId)));
   if (!row) return null;
-  const loaded = await loadActor(row.id);
+  return whoById(row.id);
+}
+
+async function whoById(userId: number): Promise<Who | null> {
+  const loaded = await loadActor(userId);
   if (!loaded || loaded.user.memberState !== 'active') return null;
   const sys = await systemLocale();
   const locale = loaded.user.locale && isLocale(loaded.user.locale) ? loaded.user.locale : sys.locale;
+  const actor = loaded.actor;
   return {
-    actor: loaded.actor, aiSensitive: loaded.user.aiSensitive, name: loaded.user.name, tr: await translatorFor(locale),
-    locale, tz: sys.tz, weekStart: sys.weekStart,
+    actor, aiSensitive: loaded.user.aiSensitive, name: loaded.user.name, tr: await translatorFor(locale),
+    // ⚠️ وقتِ خودِ کاربر (پروفایل)، وگرنه سامانه — «امروز» برای هر کس روزِ خودش.
+    locale, tz: loaded.user.timezone || sys.tz, weekStart: sys.weekStart,
+    manager: actor.roles.includes('owner') || canManageSection(actor, 'projects') || await hasTeamScope(actor),
+    owner: actor.roles.includes('owner') || canViewSection(actor, 'finance'),
+    muted: loaded.user.telegramMuted ?? [],
   };
 }
 
@@ -178,7 +208,7 @@ interface TimerView {
  * بودند و «توقف» بی‌تایمر فقط می‌گفت «تایمری روشن نیست».
  * بی `timer` (مثلاً پیامِ جانبی) فقط «شروع» می‌آید.
  */
-function menu(tr: Translator, timer?: TimerView): Keyboard {
+function menu(tr: Translator, timer?: TimerView, roles?: { manager: boolean; owner: boolean }): Keyboard {
   const app = appButton(tr);
   const timerButton: Button = timer?.running
     ? { text: `⏹ ${tr('توقفِ تایمر')} · ${hm(timer.running.minutes)}`, callback_data: 't:x' }
@@ -190,6 +220,12 @@ function menu(tr: Translator, timer?: TimerView): Keyboard {
     [timerButton, { text: `➕ ${tr('ثبتِ ساعت')}`, callback_data: 'l:p' }],
     [{ text: `📅 ${tr('جلسه‌ها و یادآورها')}`, callback_data: 'm:meet' }, { text: `🤖 ${tr('هوشِ مصنوعی')}`, callback_data: 'm:ai' }],
     ...(app ? [[app]] : []),
+    ...(roles?.manager || roles?.owner
+      ? [[
+        ...(roles.manager ? [{ text: `👥 ${tr('تیم من')}`, callback_data: 'm:team' }] : []),
+        ...(roles.owner ? [{ text: `📊 ${tr('وضعیتِ شرکت')}`, callback_data: 'm:co' }] : []),
+      ]]
+      : []),
   ];
 }
 
@@ -203,7 +239,176 @@ async function timerView(who: Who): Promise<TimerView> {
 
 /** منوی اصلی با وضعیتِ همین لحظهٔ تایمرِ کاربر. */
 async function menuFor(who: Who): Promise<Keyboard> {
-  return menu(who.tr, await timerView(who));
+  return menu(who.tr, await timerView(who), who);
+}
+
+/* ---------------- صفحه‌کلیدِ ثابت (۲.۱۴.۰) ---------------- */
+
+/**
+ * دکمه‌های میان‌بر **پایینِ صفحه** (جای صفحه‌کلیدِ گوشی) — همیشه در دسترس، حتی
+ * وقتی پیامِ منو بالا رفته. متنِ هر دکمه همان چیزی است که ربات می‌گیرد؛ پس به
+ * زبانِ خودِ کاربر ساخته و با همان مقایسه می‌شود.
+ */
+function shortcuts(who: Who) {
+  const tr = who.tr;
+  return {
+    tasks: `📋 ${tr('تسک‌های من')}`,
+    hours: `🕒 ${tr('ساعت‌های من')}`,
+    timer: `⏱ ${tr('تایمر')}`,
+    meetings: `📅 ${tr('جلسه‌ها')}`,
+    menu: `🏠 ${tr('منوی اصلی')}`,
+    team: `👥 ${tr('تیم من')}`,
+    company: `📊 ${tr('وضعیتِ شرکت')}`,
+  };
+}
+
+function replyKeyboard(who: Who) {
+  const k = shortcuts(who);
+  const rows = [[{ text: k.tasks }, { text: k.hours }], [{ text: k.timer }, { text: k.meetings }, { text: k.menu }]];
+  const admin = [...(who.manager ? [{ text: k.team }] : []), ...(who.owner ? [{ text: k.company }] : [])];
+  if (admin.length > 0) rows.push(admin);
+  return { keyboard: rows, resize_keyboard: true, is_persistent: true };
+}
+
+async function sendShortcuts(chatId: number, who: Who) {
+  await api('sendMessage', { chat_id: chatId, text: `⌨️ ${who.tr('میان‌برها پایینِ صفحه‌اند.')}`, reply_markup: replyKeyboard(who) });
+}
+
+/* ---------------- مدیرِ تیم / پروژه (۲.۱۴.۰) ---------------- */
+
+/** «👥 تیم من»: بازبینی‌های منتظر، دیرکردهای تیم، کارِ همین حالا، مرخصیِ امروز. */
+async function showTeam(chatId: number, who: Who, messageId?: number) {
+  if (!who.manager) return;
+  const today = todayIn(who.tz);
+  const [inbox, overdue, running, away] = await Promise.all([
+    myTasks(who.actor),
+    teamTasks(who.actor, { due: 'overdue' }).catch(() => ({ rows: [] as Array<{ title: string; projectTitle?: string | null; assigneeName?: string | null }> })),
+    runningTimers(who.actor).catch(() => []),
+    listTeamAbsences(who.actor, { from: today, to: today }).catch(() => []),
+  ]);
+  const overdueRows = ((overdue as { rows?: unknown[] }).rows ?? (Array.isArray(overdue) ? overdue : [])) as Array<{ title: string; projectTitle?: string | null; assigneeName?: string | null }>;
+  const lines = [`👥 ${who.tr('تیم من')}`, ''];
+  lines.push(`🔍 ${who.tr('در انتظارِ بازبینیِ شما')}: ${inbox.review.length}`);
+  for (const t of inbox.review.slice(0, 6)) lines.push(`   • ${t.title} — ${t.projectTitle ?? ''}`);
+  lines.push('', `⚠️ ${who.tr('دیرکردهای تیم')}: ${overdueRows.length}`);
+  for (const t of overdueRows.slice(0, 6)) lines.push(`   • ${t.title}${t.assigneeName ? ` — ${t.assigneeName}` : ''}`);
+  lines.push('', `⏱ ${who.tr('الان مشغولِ کار')}: ${running.length}`);
+  for (const r of running.slice(0, 8)) lines.push(`   • ${r.name} — ${r.project} · ${hm(r.minutes)}`);
+  const awayList = (away as Array<{ userName?: string; name?: string }>);
+  if (awayList.length > 0) {
+    lines.push('', `🌴 ${who.tr('مرخصیِ امروز')}: ${awayList.map((a) => a.userName ?? a.name ?? '').filter(Boolean).join('، ')}`);
+  }
+  const open = appButton(who.tr, '/team', 'باز کردن در برنامه');
+  const keyboard: Keyboard = [...(open ? [[open]] : []), backRow(who.tr)];
+  if (messageId) await edit(chatId, messageId, lines.join(NL), keyboard);
+  else await send(chatId, lines.join(NL), keyboard);
+}
+
+/** «📊 وضعیتِ شرکت»: پروژه‌های باز، درخواست‌های پرداختِ منتظر با «تأیید/رد». */
+async function showCompany(chatId: number, who: Who, messageId?: number) {
+  if (!who.owner) return;
+  const [projectsList, pending, running] = await Promise.all([
+    listProjects(who.actor).catch(() => []),
+    canViewSection(who.actor, 'finance') ? listRequests(who.actor, 'pending').catch(() => []) : Promise.resolve([]),
+    runningTimers(who.actor).catch(() => []),
+  ]);
+  const open = projectsList.filter((p) => !p.isArchived && p.isClosed !== true);
+  const overdueProjects = open.filter((p) => p.deadline && p.deadline < todayIn(who.tz));
+  const lines = [
+    `📊 ${who.tr('وضعیتِ شرکت')}`, '',
+    `📁 ${who.tr('پروژه‌های باز')}: ${open.length}${overdueProjects.length > 0 ? ` · ⚠️ ${who.tr('{n} دیرکرد', { n: overdueProjects.length })}` : ''}`,
+    `⏱ ${who.tr('الان مشغولِ کار')}: ${running.length}`,
+    `💳 ${who.tr('درخواست‌های پرداختِ منتظر')}: ${pending.length}`,
+  ];
+  const keyboard: Keyboard = [];
+  for (const r of pending.slice(0, 5)) {
+    lines.push(`   • ${r.userName} — ${r.amount} ${r.currencyCode ?? ''}${r.projectTitle ? ` (${r.projectTitle})` : ''}`);
+    // ⚠️ تأیید/رد فقط کارِ مالک است (همان گاردِ سرویس)؛ هر کدام یک پرسشِ دوباره دارد.
+    if (who.actor.roles.includes('owner')) {
+      keyboard.push([
+        { text: `✅ ${r.userName}`, callback_data: `pr:a:${r.id}` },
+        { text: `✖️ ${r.userName}`, callback_data: `pr:r:${r.id}` },
+      ]);
+    }
+  }
+  const app = appButton(who.tr, '/finance', 'باز کردن در برنامه');
+  if (app) keyboard.push([app]);
+  keyboard.push(backRow(who.tr));
+  if (messageId) await edit(chatId, messageId, lines.join(NL), keyboard);
+  else await send(chatId, lines.join(NL), keyboard);
+}
+
+/* ---------------- پاسخ از زیرِ اعلان (۲.۱۴.۰) ---------------- */
+
+type ReplyTarget = { thread: number } | { projectId: number; commentId: number };
+/** پاسخِ در انتظار به‌ازای چت — ۱۰ دقیقه. */
+const pendingReplies = new Map<number, { target: ReplyTarget; at: number }>();
+
+/* ---------------- فایل به ربات (۲.۱۴.۰) ---------------- */
+
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
+/** فایلِ فرستاده‌شده تا کاربر بگوید کجا برود — ۱۰ دقیقه، فقط در حافظه. */
+const pendingFiles = new Map<number, { file: TgFile; name: string; mime: string; caption: string; at: number }>();
+
+async function downloadTelegramFile(fileId: string): Promise<Uint8Array | null> {
+  const info = await api('getFile', { file_id: fileId }) as { ok?: boolean; result?: { file_path?: string; file_size?: number } } | null;
+  const path = info?.result?.file_path;
+  if (!info?.ok || !path || (info.result?.file_size ?? 0) > MAX_FILE_BYTES) return null;
+  const { token } = await telegramCredentials();
+  if (!token) return null;
+  const res = await fetch(`https://api.telegram.org/file/bot${token}/${path}`, { signal: AbortSignal.timeout(60_000) }).catch(() => null);
+  if (!res?.ok) return null;
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  return bytes.length > 0 && bytes.length <= MAX_FILE_BYTES ? bytes : null;
+}
+
+async function onFile(chatId: number, who: Who, msg: TgMessage) {
+  const photo = msg.photo?.at(-1);
+  const file = photo ?? msg.document;
+  if (!file) return;
+  if ((file.file_size ?? 0) > MAX_FILE_BYTES) {
+    await send(chatId, who.tr('فایل بزرگ‌تر از ۲۰ مگابایت است؛ از خودِ برنامه بارگذاری کنید.'));
+    return;
+  }
+  const name = msg.document?.file_name || (photo ? `photo-${msg.message_id}.jpg` : 'file');
+  const mime = msg.document?.mime_type || (photo ? 'image/jpeg' : 'application/octet-stream');
+  pendingFiles.set(chatId, { file, name, mime, caption: (msg.caption ?? '').trim(), at: Date.now() });
+  await send(chatId, `📎 ${who.tr('این فایل کجا برود؟')}`, [
+    [{ text: `📁 ${who.tr('فایل‌های پروژه')}`, callback_data: 'f:p' }, { text: `📌 ${who.tr('پیوست به تسک')}`, callback_data: 'f:t' }],
+    [{ text: `✖️ ${who.tr('لغو')}`, callback_data: 'f:x' }],
+  ]);
+}
+
+/** پروژه‌های بازِ قابلِ‌دیدِ کاربر — برای فایل. */
+async function fileProjects(who: Who) {
+  return (await listProjects(who.actor)).filter((p) => !p.isArchived && p.isClosed !== true).slice(0, 12);
+}
+
+async function finishFile(chatId: number, who: Who, messageId: number, where: { projectId: number } | { taskId: number }) {
+  const pending = pendingFiles.get(chatId);
+  if (!pending || Date.now() - pending.at > 10 * 60_000) {
+    pendingFiles.delete(chatId);
+    await edit(chatId, messageId, who.tr('این درخواست منقضی شده است؛ دوباره بپرسید.'));
+    return;
+  }
+  await edit(chatId, messageId, `⏳ ${who.tr('در حالِ انجام…')}`);
+  const bytes = await downloadTelegramFile(pending.file.file_id);
+  if (!bytes) {
+    await send(chatId, who.tr('فایل از تلگرام گرفته نشد؛ دوباره بفرستید.'));
+    return;
+  }
+  const blob: UploadBlob = { name: pending.name, mime: pending.mime, bytes };
+  pendingFiles.delete(chatId);
+  // ⚠️ گاردِ پروژه/تسک و نوع و اندازهٔ مجازِ فایل همان سرویسِ برنامه است.
+  if ('projectId' in where) {
+    await addAttachment(who.actor, where.projectId, blob, pending.caption);
+    await audit(who, 'file.add', { projectId: where.projectId });
+    await send(chatId, `✅ ${who.tr('فایل به پروژه اضافه شد.')}`, await menuFor(who));
+  } else {
+    await addTaskNote(who.actor, where.taskId, pending.caption || '📎', [blob]);
+    await audit(who, 'task.note', { taskId: where.taskId });
+    await send(chatId, `✅ ${who.tr('فایل به تسک پیوست شد.')}`, await menuFor(who));
+  }
 }
 
 /**
@@ -350,7 +555,7 @@ async function showMenu(chatId: number, who: Who, messageId?: number) {
     '',
     await aiStatusLine(who),
   ];
-  const keyboard = menu(who.tr, timer);
+  const keyboard = menu(who.tr, timer, who);
   if (messageId) await edit(chatId, messageId, lines.join(NL), keyboard);
   else await send(chatId, lines.join(NL), keyboard);
 }
@@ -425,7 +630,7 @@ async function showHours(chatId: number, who: Who) {
     }
   }
   if (timer.running) lines.push('', `⏱ ${who.tr('تایمر روشن است')}: ${timer.running.title} · ${hm(timer.running.minutes)}`);
-  await send(chatId, lines.join(NL), menu(who.tr, timer));
+  await send(chatId, lines.join(NL), menu(who.tr, timer, who));
 }
 
 /** پروژه‌های قابلِ ثبت: اخیراً کارشده‌ها اول. */
@@ -515,6 +720,74 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
 
   try {
     if (kind === 'm' && op === 'menu') return await showMenu(chatId, who, msg.message_id);
+    if (kind === 'm' && op === 'team') return await showTeam(chatId, who, msg.message_id);
+    if (kind === 'm' && op === 'co') return await showCompany(chatId, who, msg.message_id);
+    // 🔕 / بازگرداندن — فقط انواعِ یادآورِ خودکار و گزارشِ صبحگاهی.
+    if ((kind === 'q' || kind === 'u') && op && [...MUTABLE_REMINDERS, 'brief'].includes(op)) {
+      const next = kind === 'q' ? [...new Set([...who.muted, op])] : who.muted.filter((m) => m !== op);
+      await db.update(users).set({ telegramMuted: next, updatedAt: new Date() }).where(eq(users.id, who.actor.id));
+      await audit(who, kind === 'q' ? 'telegram.mute' : 'telegram.unmute', { type: op });
+      await send(chatId, kind === 'q'
+        ? `🔕 ${who.tr('باشد؛ این یادآوری دیگر در تلگرام نمی‌آید. (در برنامه می‌ماند.)')}`
+        : `🔔 ${who.tr('این یادآوری دوباره در تلگرام می‌آید.')}`,
+      kind === 'q' ? [[{ text: `↩️ ${who.tr('بازگرداندن')}`, callback_data: `u:${op}` }]] : undefined);
+      return;
+    }
+    // ↩️ پاسخ از زیرِ اعلان: پرسشِ «پاسخ‌تان را بنویسید» با ForceReply.
+    if (kind === 'r' && (op === 'm' || op === 'c')) {
+      const target: ReplyTarget | null = op === 'm' && /^\d+$/.test(a ?? '')
+        ? { thread: Number(a) }
+        : op === 'c' && /^\d+$/.test(a ?? '') && /^\d+$/.test(b ?? '') ? { projectId: Number(a), commentId: Number(b) } : null;
+      if (!target) return;
+      pendingReplies.set(chatId, { target, at: Date.now() });
+      await api('sendMessage', {
+        chat_id: chatId, text: `✍️ ${who.tr('پاسخ‌تان را بنویسید (برای لغو: /cancel):')}`,
+        reply_markup: { force_reply: true, input_field_placeholder: who.tr('پاسخ') },
+      });
+      return;
+    }
+    // درخواستِ پرداخت: دکمهٔ اول فقط می‌پرسد؛ «A»/«R» ِ بزرگ یعنی تأییدِ دوم.
+    if (kind === 'pr' && op && a && /^\d+$/.test(a) && who.actor.roles.includes('owner')) {
+      if (op === 'a' || op === 'r') {
+        await send(chatId, op === 'a' ? `❓ ${who.tr('این درخواستِ پرداخت تأیید شود؟')}` : `❓ ${who.tr('این درخواستِ پرداخت رد شود؟')}`, [[
+          { text: `✅ ${who.tr('بله')}`, callback_data: `pr:${op === 'a' ? 'A' : 'R'}:${a}` },
+          { text: `✖️ ${who.tr('خیر')}`, callback_data: 'm:co' },
+        ]]);
+        return;
+      }
+      if (op === 'A' || op === 'R') {
+        await decideRequest(who.actor, Number(a), op === 'A' ? 'approved' : 'rejected', '');
+        await audit(who, 'payment.decide', { requestId: Number(a), decision: op });
+        await edit(chatId, msg.message_id, op === 'A' ? `✅ ${who.tr('تأیید شد.')}` : `✖️ ${who.tr('رد شد.')}`);
+        return await showCompany(chatId, who);
+      }
+    }
+    // 📎 فایل: کجا برود؟
+    if (kind === 'f') {
+      if (op === 'x') { pendingFiles.delete(chatId); await edit(chatId, msg.message_id, `✖️ ${who.tr('لغو شد.')}`); return; }
+      if (op === 'p' || op === 't') {
+        const list = await fileProjects(who);
+        const rows: Keyboard = list.map((pr) => [{ text: pr.title.slice(0, 60), callback_data: `f:${op === 'p' ? 'pp' : 'tp'}:${pr.id}` }]);
+        rows.push([{ text: `✖️ ${who.tr('لغو')}`, callback_data: 'f:x' }]);
+        await edit(chatId, msg.message_id, `📁 ${who.tr('کدام پروژه؟')}`, rows);
+        return;
+      }
+      const id = projectArg(a);
+      if (!id) return;
+      if (op === 'pp') return await finishFile(chatId, who, msg.message_id, { projectId: id });
+      if (op === 'tp') {
+        // ⚠️ فقط تسک‌هایی که خودِ کاربر در صندوقش دارد؛ نه تسکِ دیگران.
+        const inbox = await myTasks(who.actor);
+        const tasksOf = [...inbox.active, ...inbox.review].filter((t) => t.projectId === id).slice(0, 12);
+        if (tasksOf.length === 0) { await edit(chatId, msg.message_id, who.tr('در این پروژه تسکِ بازی ندارید.'), [[{ text: `📁 ${who.tr('فایل‌های پروژه')}`, callback_data: `f:pp:${id}` }]]); return; }
+        await edit(chatId, msg.message_id, `📌 ${who.tr('کدام تسک؟')}`, [
+          ...tasksOf.map((t) => [{ text: t.title.slice(0, 60), callback_data: `f:tt:${t.id}` }]),
+          [{ text: `✖️ ${who.tr('لغو')}`, callback_data: 'f:x' }],
+        ]);
+        return;
+      }
+      if (op === 'tt') return await finishFile(chatId, who, msg.message_id, { taskId: id });
+    }
     if (kind === 'm' && op === 'ai') return await showAi(chatId, who, msg.message_id);
     if (kind === 'm' && op === 'meet') return await showMeetings(chatId, who, msg.message_id);
     if (kind === 'm' && op === 'tasks') return await showTasks(chatId, who);
@@ -848,9 +1121,26 @@ async function downloadVoice(fileId: string): Promise<Blob | null> {
 /* ---------------- پیام ---------------- */
 
 async function onMessage(msg: TgMessage) {
+  // ⚠️ در گروه فقط «/start <token>» ِ وصل‌کردنِ گروهِ پروژه (۲.۱۴.۰)؛ هیچ دادهٔ دیگری.
+  if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
+    const [c, token] = (msg.text ?? '').trim().split(/\s+/);
+    if ((c ?? '').toLowerCase().replace(/@.*$/, '') === '/start' && token) {
+      const title = await linkProjectGroup(token, msg.chat.id);
+      const tr = await translatorFor((await systemLocale()).locale);
+      await send(msg.chat.id, title
+        ? `✅ ${tr('این گروه به پروژهٔ «{project}» وصل شد؛ کامنت‌ها و تسک‌های تازه و انجام‌شده اینجا هم می‌آیند.', { project: title })}`
+        : tr('این لینک معتبر نیست یا قبلاً استفاده شده؛ از پروفایل دوباره «اتصال» را بزنید.'));
+    }
+    return;
+  }
   if (msg.chat.type && msg.chat.type !== 'private') return;
   const chatId = msg.chat.id;
   const text = (msg.text ?? '').trim();
+  if (!text && (msg.photo || msg.document)) {
+    const who = await whoIs(chatId);
+    if (who) await onFile(chatId, who, msg);
+    return;
+  }
   if (!text) {
     // ⚠️ پیامِ صوتی هنوز فهمیده نمی‌شود (۲.۱۰.۰)؛ بی‌جواب ماندنش گیج‌کننده بود.
     const voice = msg.voice ?? msg.audio;
@@ -879,6 +1169,7 @@ async function onMessage(msg: TgMessage) {
     if (who) {
       await localizeChatMenu(chatId, who);
       await send(chatId, `✅ ${who.tr('تلگرامِ شما وصل شد. از این به بعد اعلان‌ها هم اینجا می‌آیند.')}`);
+      await sendShortcuts(chatId, who);
       await showMenu(chatId, who);
     }
     return;
@@ -892,10 +1183,45 @@ async function onMessage(msg: TgMessage) {
   }
 
   try {
+    // ↩️ پاسخِ در انتظار: متنِ بعدی (نه دستور) همان پاسخ است.
+    const pendingReply = pendingReplies.get(chatId);
+    if (pendingReply) {
+      pendingReplies.delete(chatId);
+      if (!text.startsWith('/') && Date.now() - pendingReply.at < 10 * 60_000) {
+        if ('thread' in pendingReply.target) await replyInThread(who.actor, pendingReply.target.thread, text);
+        else await addComment(who.actor, pendingReply.target.projectId, text, pendingReply.target.commentId);
+        await audit(who, 'reply', { target: pendingReply.target });
+        await send(chatId, `✅ ${who.tr('پاسخ فرستاده شد.')}`);
+        return;
+      }
+      if (cmd === '/cancel') { await send(chatId, `✖️ ${who.tr('لغو شد.')}`); return; }
+    }
+
+    // ⌨️ دکمه‌های میان‌برِ پایینِ صفحه — متن‌شان به زبانِ همین کاربر است.
+    const k = shortcuts(who);
+    if (text === k.tasks) return await showTasks(chatId, who);
+    if (text === k.hours) return await showHours(chatId, who);
+    // تایمرِ روشن ← همان پیامِ «روشن است · توقف»؛ خاموش ← انتخابِ پروژه.
+    if (text === k.timer) return await timerStart(chatId, who);
+    if (text === k.meetings) return await showMeetings(chatId, who);
+    if (text === k.menu) return await showMenu(chatId, who);
+    if (text === k.team && who.manager) return await showTeam(chatId, who);
+    if (text === k.company && who.owner) return await showCompany(chatId, who);
+
     switch (cmd) {
       case '/start':
         await localizeChatMenu(chatId, who);
+        await sendShortcuts(chatId, who);
         return await showMenu(chatId, who);
+      case '/keyboard':
+        return await sendShortcuts(chatId, who);
+      case '/team':
+        if (who.manager) return await showTeam(chatId, who);
+        break;
+      case '/cancel':
+        pendingFiles.delete(chatId);
+        await send(chatId, `✖️ ${who.tr('لغو شد.')}`);
+        return;
       case '/menu':
         return await showMenu(chatId, who);
       case '/help':
@@ -966,8 +1292,17 @@ function commandList(tr: Translator) {
     { command: 'meetings', description: tr('جلسه‌ها و یادآورها') },
     { command: 'ai', description: tr('هوشِ مصنوعی') },
     { command: 'new', description: tr('گفت‌وگوی تازه با هوشِ مصنوعی') },
+    { command: 'keyboard', description: tr('نمایشِ میان‌برها') },
     { command: 'help', description: tr('راهنما') },
   ];
+}
+
+/** توضیحِ ربات (پیش از Start) و توضیحِ کوتاهِ پروفایلش — به هر زبان (۲.۱۴.۰). */
+function botDescriptions(tr: Translator) {
+  return {
+    description: tr('دستیارِ Kabarza: تسک‌ها، ساعتِ کار، تایمر، جلسه‌ها و پیام‌هایتان را همین‌جا ببینید و انجام دهید. برای شروع، در Kabarza از پروفایل ← «اعلان‌ها و تلگرام» روی «اتصال به تلگرام» بزنید.'),
+    short: tr('تسک، ساعت، تایمر و جلسه‌های Kabarza در تلگرام.'),
+  };
 }
 
 /**
@@ -986,8 +1321,15 @@ export async function registerCommands(): Promise<void> {
   const { locale } = await systemLocale();
   const tr = await translatorFor(locale);
   await api('setMyCommands', { commands: commandList(tr) });
+  const base = botDescriptions(tr);
+  await api('setMyDescription', { description: base.description });
+  await api('setMyShortDescription', { short_description: base.short });
   for (const [appLocale, code] of Object.entries(TELEGRAM_LANG) as Array<[Locale, string]>) {
-    await api('setMyCommands', { commands: commandList(await translatorFor(appLocale)), language_code: code });
+    const ltr = await translatorFor(appLocale);
+    await api('setMyCommands', { commands: commandList(ltr), language_code: code });
+    const d = botDescriptions(ltr);
+    await api('setMyDescription', { description: d.description, language_code: code });
+    await api('setMyShortDescription', { short_description: d.short, language_code: code });
   }
   // دکمهٔ کنارِ جعبهٔ پیام: مینی‌اپ (فقط با HTTPS) — پیش‌فرض؛ هر چت در /start به زبانِ خودش.
   const url = miniAppUrl('/');
@@ -1009,3 +1351,59 @@ export function resetBotState() {
   translators.clear();
 }
 
+
+/* ---------------- گزارشِ صبحگاهی (۲.۱۴.۰) ---------------- */
+
+/**
+ * گزارشِ صبحگاهیِ یک نفر. ⚠️ اگر چیزی برای گفتن نیست **هیچ نمی‌فرستد** (false)؛
+ * گزارشِ خالی همان آزاری است که نمی‌خواهیم. زمان‌بند کی‌بودنش را می‌سنجد
+ * (`briefDue`)؛ اینجا فقط محتوا.
+ */
+export async function sendMorningBrief(userId: number): Promise<boolean> {
+  const [row] = await db.select({ chatId: users.telegramChatId }).from(users).where(eq(users.id, userId));
+  if (!row?.chatId) return false;
+  const who = await whoById(userId);
+  if (!who) return false;
+  const today = todayIn(who.tz);
+  const [inbox, meetingsList, reminderList] = await Promise.all([
+    myTasks(who.actor),
+    listMeetings(who.actor).then((r) => r.meetings).catch(() => []),
+    listReminders(who.actor).catch(() => []),
+  ]);
+  const dayOf = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: who.tz }).format(d);
+  const timeOf = (d: Date) => new Intl.DateTimeFormat('en-GB', { timeZone: who.tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+  const meetingsToday = meetingsList.filter((m) => dayOf(new Date(m.meetAt)) === today);
+  const remindersToday = reminderList.filter((r) => !r.isSent && dayOf(new Date(r.remindAt)) === today);
+  const overdue = inbox.active.filter((t) => t.dueDate && t.dueDate < today);
+  const dueToday = inbox.active.filter((t) => t.dueDate === today);
+  const reviews = who.manager ? inbox.review : [];
+
+  if (meetingsToday.length + remindersToday.length + overdue.length + dueToday.length + reviews.length === 0) return false;
+
+  const lines = [`☀️ ${who.tr('صبح بخیر {name}!', { name: who.name })}`, ''];
+  if (meetingsToday.length > 0) {
+    lines.push(`📅 ${who.tr('جلسه‌های امروز')}:`);
+    for (const m of meetingsToday.slice(0, 6)) lines.push(`   • ${timeOf(new Date(m.meetAt))} — ${m.title}`);
+  }
+  if (dueToday.length > 0) {
+    lines.push(`📌 ${who.tr('ددلاینِ امروز')}:`);
+    for (const t of dueToday.slice(0, 6)) lines.push(`   • ${t.title} — ${t.projectTitle ?? ''}`);
+  }
+  if (overdue.length > 0) {
+    lines.push(`⚠️ ${who.tr('دیرکرد')}: ${overdue.length}`);
+    for (const t of overdue.slice(0, 5)) lines.push(`   • ${t.title} (${t.dueDate})`);
+  }
+  if (remindersToday.length > 0) {
+    lines.push(`⏰ ${who.tr('یادآورهای امروز')}:`);
+    for (const r of remindersToday.slice(0, 5)) lines.push(`   • ${timeOf(new Date(r.remindAt))} — ${r.body.slice(0, 100)}`);
+  }
+  if (reviews.length > 0) lines.push(`🔍 ${who.tr('در انتظارِ بازبینیِ شما')}: ${reviews.length}`);
+
+  const keyboard: Keyboard = [
+    ...(await menuFor(who)),
+    // ⚠️ همیشه یک ضربه تا خاموشی؛ در پروفایل هم ساعتش عوض یا خاموش می‌شود.
+    [{ text: `🔕 ${who.tr('گزارشِ صبحگاهی را نفرست')}`, callback_data: 'q:brief' }],
+  ];
+  await send(Number(row.chatId), lines.join(NL), keyboard);
+  return true;
+}

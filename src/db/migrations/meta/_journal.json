@@ -337,6 +337,13 @@
       "when": 1789093200025,
       "tag": "0047_ai_sensitive",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1789093200026,
+      "tag": "0048_telegram_plus",
+      "breakpoints": true
     }
   ]
 }

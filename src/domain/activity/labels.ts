@@ -168,6 +168,11 @@ export const ACTION_LABELS: Record<string, string> = {
   'ai.sensitive': 'اجازهٔ کارهای حساس به ربات',
   'telegram.bot_call': 'کار از طریقِ ربات تلگرام',
   'auth.telegram_login': 'ورود از مینی‌اپِ تلگرام',
+  // ۲.۱۴.۰
+  'project.telegram_group_on': 'وصلِ گروهِ تلگرام به پروژه',
+  'project.telegram_group_off': 'جداکردنِ گروهِ تلگرام از پروژه',
+  'telegram.mute': 'خاموش‌کردنِ یادآورِ تلگرام',
+  'telegram.unmute': 'روشن‌کردنِ دوبارهٔ یادآورِ تلگرام',
   'onboarding.add': 'آیتمِ ویژهٔ آنبوردینگ',
   'onboarding.delete': 'حذفِ کارِ آنبوردینگ',
   'onboarding.done': 'انجامِ کارِ آنبوردینگ',

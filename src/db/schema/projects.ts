@@ -42,6 +42,10 @@ export const projects = pgTable('projects', {
   scope: scope(),
   /** تصویرِ شاخصِ پروژه — همان «تصویر شاخص» نسخهٔ قبلی. */
   thumbnailFileId: fk('thumbnail_file_id').references(() => files.id),
+  /** گروهِ تلگرامِ پروژه (۲.۱۴.۰) — رویدادهای پروژه آنجا هم می‌آیند؛ خالی = وصل نیست. */
+  telegramGroupId: text('telegram_group_id').notNull().default(''),
+  /** توکنِ یک‌بارمصرفِ وصل‌کردنِ گروه (لینکِ «افزودنِ ربات به گروه»). */
+  telegramGroupToken: text('telegram_group_token'),
   ...stamps,
   ...softDelete,
 }, (t) => [
