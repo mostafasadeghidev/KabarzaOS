@@ -1837,6 +1837,7 @@ async function releaseDependents(actor: Actor, taskId: number, projectId: number
       type: 'task.assigned',
       title: 'نوبتِ این تسک رسید',
       body: released.title,
+      taskId: released.id,
       url: `/projects/${projectId}?tab=tasks`,
     });
   }
@@ -2297,6 +2298,7 @@ export async function createTask(
         type: 'task.assigned',
         title: 'تسکِ تازه به شما تخصیص یافت',
         body: input.title,
+        taskId: id,
         url: `/projects/${projectId}?tab=tasks`,
       });
     }
@@ -2371,6 +2373,7 @@ export async function referTask(
       type: 'task.assigned',
       title: 'تسکی به شما ارجاع شد',
       body: task.title,
+      taskId,
       url: `/projects/${task.projectId}?tab=tasks`,
     });
   }
@@ -2533,6 +2536,7 @@ export async function updateTask(
       type: 'task.assigned',
       title: 'تسک به شما محول شد',
       body: input.title,
+      taskId: before.id,
       url: `/projects/${before.projectId}?tab=tasks`,
     });
   }

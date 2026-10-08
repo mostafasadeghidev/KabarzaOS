@@ -8,12 +8,15 @@ import { loadMessages } from '@/i18n/server';
 import { loadActor } from '@/server/auth';
 import { linkTelegramChat } from '@/server/people/profile-service';
 import { myTasks } from '@/server/projects/service';
+import { canViewProject } from '@/server/projects/authority';
+import { listMeetings, listReminders } from '@/server/meetings/service';
+import { formatDateTime } from '@/i18n/datetime';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { telegramCredentials } from '@/server/settings/telegram-service';
 import {
-  addOrMerge, canLogGeneral, loggableProjects, myLogs, myTotals, startTimer, stopTimer, timerState, TimerError,
+  addOrMerge, canLogGeneral, canLogTime, loggableProjects, myLogs, myTotals, startTimer, stopTimer, timerState, TimerError,
 } from '@/server/timelogs/service';
-import { loadAiSecret, type AiConnectionView } from '@/server/ai/connections';
+import { loadAiSecret, loadAiSecrets, type AiConnectionView } from '@/server/ai/connections';
 import { PROVIDERS, type ProviderId } from '@/domain/ai/providers';
 import { askAgent, forgetConversation, resolveChoice, resolvePending, type AgentResult } from '@/server/ai/agent';
 import { MAX_VOICE_BYTES, MAX_VOICE_SECONDS, transcribe, transcriptionModel } from '@/server/ai/transcribe';
@@ -161,14 +164,44 @@ function appButton(tr: Translator, next = '/', label = 'باز کردنِ برن
   return url ? { text: `📱 ${tr(label)}`, web_app: { url } } : null;
 }
 
-function menu(tr: Translator): Keyboard {
+/** وضعیتِ تایمر برای منو — روشن (با پروژه و مدت)، منتظرِ تأیید، یا خاموش. */
+interface TimerView {
+  running: { title: string; minutes: number } | null;
+  pending: boolean;
+}
+
+/**
+ * منوی اصلی (۲.۱۲.۰: وابسته به وضعیت). ⚠️ فقط دکمه‌ای که الان معنا دارد: تایمرِ
+ * خاموش «شروع» دارد، تایمرِ روشن «توقف» با پروژه و مدت؛ پیش از این هر دو همیشه
+ * بودند و «توقف» بی‌تایمر فقط می‌گفت «تایمری روشن نیست».
+ * بی `timer` (مثلاً پیامِ جانبی) فقط «شروع» می‌آید.
+ */
+function menu(tr: Translator, timer?: TimerView): Keyboard {
   const app = appButton(tr);
+  const timerButton: Button = timer?.running
+    ? { text: `⏹ ${tr('توقفِ تایمر')} · ${hm(timer.running.minutes)}`, callback_data: 't:x' }
+    : timer?.pending
+      ? { text: `⏳ ${tr('تایمرِ منتظرِ تأیید')}`, callback_data: 't:p' }
+      : { text: `▶️ ${tr('شروعِ تایمر')}`, callback_data: 't:p' };
   return [
     [{ text: `📋 ${tr('تسک‌های من')}`, callback_data: 'm:tasks' }, { text: `🕒 ${tr('ساعت‌های من')}`, callback_data: 'm:hours' }],
-    [{ text: `▶️ ${tr('شروعِ تایمر')}`, callback_data: 't:p' }, { text: `⏹ ${tr('توقفِ تایمر')}`, callback_data: 't:x' }],
-    [{ text: `➕ ${tr('ثبتِ ساعت')}`, callback_data: 'l:p' }, { text: `🤖 ${tr('هوشِ مصنوعی')}`, callback_data: 'm:ai' }],
+    [timerButton, { text: `➕ ${tr('ثبتِ ساعت')}`, callback_data: 'l:p' }],
+    [{ text: `📅 ${tr('جلسه‌ها و یادآورها')}`, callback_data: 'm:meet' }, { text: `🤖 ${tr('هوشِ مصنوعی')}`, callback_data: 'm:ai' }],
     ...(app ? [[app]] : []),
   ];
+}
+
+async function timerView(who: Who): Promise<TimerView> {
+  const state = await timerState(who.actor);
+  return {
+    running: state.running ? { title: state.running.projectTitle ?? who.tr('کارِ عمومی'), minutes: state.running.minutes } : null,
+    pending: Boolean(state.pending),
+  };
+}
+
+/** منوی اصلی با وضعیتِ همین لحظهٔ تایمرِ کاربر. */
+async function menuFor(who: Who): Promise<Keyboard> {
+  return menu(who.tr, await timerView(who));
 }
 
 /**
@@ -180,6 +213,42 @@ const WEB_APP = 'web_app' as const;
 /** خط‌شکنیِ پیامِ تلگرام. */
 const NL = String.fromCharCode(10);
 
+/**
+ * جلسه‌های پیشِ‌رو و یادآورهای خودِ کاربر (۲.۱۲.۰) — همان فهرستِ صفحهٔ جلسات،
+ * با همان ماسکِ نام برای کارفرما. زمان در منطقهٔ زمانیِ خودِ کاربر.
+ */
+async function showMeetings(chatId: number, who: Who, messageId?: number) {
+  const [row] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, who.actor.id));
+  const tz = row?.tz || who.tz;
+  const [{ meetings }, reminders] = await Promise.all([listMeetings(who.actor), listReminders(who.actor)]);
+  const lines: string[] = [];
+  if (meetings.length > 0) {
+    lines.push(`📅 ${who.tr('جلسه‌های پیشِ‌رو')} (${meetings.length})`);
+    for (const m of meetings.slice(0, 10)) {
+      const where = [m.projectTitle, m.location].filter(Boolean).join(' — ');
+      lines.push(`• ${formatDateTime(m.meetAt, tz)} — ${m.title}${where ? ` (${where})` : ''}`);
+    }
+  } else {
+    lines.push(`📅 ${who.tr('جلسهٔ پیشِ‌رویی ندارید.')}`);
+  }
+  const open = reminders.filter((r) => !r.isSent);
+  lines.push('');
+  if (open.length > 0) {
+    lines.push(`⏰ ${who.tr('یادآورهای من')} (${open.length})`);
+    for (const r of open.slice(0, 10)) lines.push(`• ${formatDateTime(r.remindAt, tz)} — ${r.body.slice(0, 120)}`);
+  } else {
+    lines.push(`⏰ ${who.tr('یادآوری ندارید.')}`);
+  }
+  if (await loadAiSecret(who.actor.id)) {
+    lines.push('', who.tr('برای یادآورِ تازه بنویسید، مثلاً «فردا ساعت ۱۰ یادم بنداز فاکتور را بفرستم».'));
+  }
+  const appBtn = appButton(who.tr, '/meetings', 'باز کردنِ جلسه‌ها');
+  const keyboard: Keyboard = [...(appBtn ? [[appBtn]] : []), backRow(who.tr)];
+  const text = lines.join(NL);
+  if (messageId) await edit(chatId, messageId, text, keyboard);
+  else await send(chatId, text, keyboard);
+}
+
 /** «DeepSeek — deepseek-chat» برای پیام‌ها. */
 function aiLabel(provider: ProviderId, model: string): string {
   return `${PROVIDERS[provider]?.label ?? provider}${model ? ` — ${model}` : ''}`;
@@ -187,18 +256,25 @@ function aiLabel(provider: ProviderId, model: string): string {
 
 /** خطِ وضعیتِ هوشِ مصنوعی در منو (۲.۱۰.۰) — همیشه معلوم باشد وصل است یا نه. */
 async function aiStatusLine(who: Who): Promise<string> {
-  const secret = await loadAiSecret(who.actor.id);
+  const secrets = await loadAiSecrets(who.actor.id);
+  const secret = secrets[0];
+  const backups = secrets.length > 1 ? ` ${who.tr('(+{n} جایگزین)', { n: secrets.length - 1 })}` : '';
   return secret
-    ? `🤖 ${who.tr('هوشِ مصنوعی: {name}', { name: aiLabel(secret.provider, secret.model) })}${NL}${who.tr('می‌توانید سؤالتان را هم آزاد بنویسید؛ هوشِ مصنوعیِ شما جواب می‌دهد. /new گفت‌وگو را از نو شروع می‌کند.')}`
+    ? `🤖 ${who.tr('هوشِ مصنوعی: {name}', { name: aiLabel(secret.provider, secret.model) })}${backups}${NL}${who.tr('می‌توانید سؤالتان را هم آزاد بنویسید؛ هوشِ مصنوعیِ شما جواب می‌دهد. /new گفت‌وگو را از نو شروع می‌کند.')}`
     : `🤖 ${who.tr('هوشِ مصنوعی وصل نیست.')} ${who.tr('با وصل‌کردنش می‌توانید آزاد بپرسید، مثلاً «امروز چه تسکی دارم؟». دکمهٔ «هوشِ مصنوعی» را بزنید.')}`;
 }
 
 /** صفحهٔ «هوشِ مصنوعی» در ربات: وضعیت + راهِ وصل/عوض‌کردن. */
 async function showAi(chatId: number, who: Who, messageId?: number) {
-  const secret = await loadAiSecret(who.actor.id);
+  const secrets = await loadAiSecrets(who.actor.id);
+  const secret = secrets[0];
   const lines = secret
     ? [
       `✅ ${who.tr('هوشِ مصنوعیِ شما وصل است: {name}', { name: aiLabel(secret.provider, secret.model) })}`,
+      // ترتیبِ جایگزین‌ها — اگر اولی به سقف خورد، ربات سراغِ بعدی می‌رود.
+      ...(secrets.length > 1
+        ? [who.tr('ترتیبِ امتحان:'), ...secrets.map((x, i) => `${i + 1}. ${aiLabel(x.provider, x.model)}`)]
+        : []),
       '',
       who.tr('سؤالتان را آزاد بنویسید؛ مثلاً «امروز چه تسکی دارم؟» یا «۲ ساعت روی پروژهٔ آلفا ثبت کن». هر تغییری پیش از انجام از شما تأیید می‌گیرد.'),
       who.tr('برای عوض‌کردنِ مدل یا ارائه‌دهنده به پروفایل ← «دستیارِ هوشِ مصنوعی» بروید.'),
@@ -246,56 +322,108 @@ function backRow(tr: Translator, data = 'm:menu'): Button[] {
   return [{ text: `↩️ ${tr('بازگشت')}`, callback_data: data }];
 }
 
-async function showMenu(chatId: number, who: Who) {
+/**
+ * صفحهٔ اصلی (۲.۱۲.۰): به‌جای فهرستِ دستورها، خلاصهٔ همین لحظه — تایمر، ساعتِ
+ * امروز، تسک‌های باز و دیرکرد، و هوشِ مصنوعی. فهرستِ دستورها در /help است.
+ */
+async function showMenu(chatId: number, who: Who, messageId?: number) {
+  const today = todayIn(who.tz);
+  const [timer, todayLogs, inbox] = await Promise.all([
+    timerView(who),
+    myLogs(who.actor, { from: today, to: today, perPage: 1 }),
+    myTasks(who.actor),
+  ]);
+  const overdue = inbox.active.filter((t) => t.dueDate && t.dueDate < today).length;
   const lines = [
-    who.tr('سلام {name}! چه کاری انجام بدهم؟', { name: who.name }),
+    `👋 ${who.tr('سلام {name}!', { name: who.name })}`,
     '',
+    timer.running
+      ? `⏱ ${who.tr('تایمر روشن است')}: ${timer.running.title} · ${hm(timer.running.minutes)}`
+      : timer.pending
+        ? `⏳ ${who.tr('یک تایمرِ طولانی منتظرِ تأییدِ شماست.')}`
+        : `⏱ ${who.tr('تایمر خاموش است')}`,
+    `🕒 ${who.tr('امروز')}: ${hm(todayLogs.rangeMinutes)}`,
+    `📋 ${who.tr('تسکِ باز')}: ${inbox.active.length}${overdue > 0 ? ` · ⚠️ ${who.tr('{n} دیرکرد', { n: overdue })}` : ''}`,
+    ...(inbox.review.length > 0 ? [`🔍 ${who.tr('در انتظارِ بازبینیِ شما')}: ${inbox.review.length}`] : []),
+    '',
+    await aiStatusLine(who),
+  ];
+  const keyboard = menu(who.tr, timer);
+  if (messageId) await edit(chatId, messageId, lines.join(NL), keyboard);
+  else await send(chatId, lines.join(NL), keyboard);
+}
+
+/** /help — دستورها و چند نمونه. */
+async function showHelp(chatId: number, who: Who) {
+  const lines = [
+    `ℹ️ ${who.tr('راهنما')}`,
+    '',
+    '/menu — ' + who.tr('منوی اصلی'),
     '/tasks — ' + who.tr('تسک‌های من'),
     '/hours — ' + who.tr('ساعت‌های من'),
     '/timer — ' + who.tr('شروعِ تایمر'),
     '/stop — ' + who.tr('توقفِ تایمر'),
     '/log — ' + who.tr('ثبتِ ساعت'),
+    '/meetings — ' + who.tr('جلسه‌ها و یادآورها'),
     '/ai — ' + who.tr('هوشِ مصنوعی'),
-    '',
-    await aiStatusLine(who),
+    '/new — ' + who.tr('گفت‌وگوی تازه با هوشِ مصنوعی'),
   ];
-  await send(chatId, lines.join('\n'), menu(who.tr));
+  await send(chatId, lines.join(NL), await menuFor(who));
 }
 
 async function showTasks(chatId: number, who: Who) {
+  const today = todayIn(who.tz);
   const inbox = await myTasks(who.actor);
-  const line = (x: { title: string; projectTitle: string | null; dueDate: string | null }) =>
-    `• ${x.title}${x.projectTitle ? ` — ${x.projectTitle}` : ''}${x.dueDate ? ` (${x.dueDate})` : ''}`;
+  // دیرکردها اول، بعد به ترتیبِ ددلاین؛ بی‌ددلاین‌ها ته.
+  const byDue = <T extends { dueDate: string | null }>(xs: T[]) =>
+    [...xs].sort((a, b) => (a.dueDate ?? '9999') .localeCompare(b.dueDate ?? '9999'));
+  const card = (x: { title: string; projectTitle: string | null; dueDate: string | null }, i: number) => {
+    const due = x.dueDate
+      ? x.dueDate < today
+        ? ` · ⚠️ ${x.dueDate} (${who.tr('دیرکرد')})`
+        : x.dueDate === today ? ` · 📅 ${who.tr('امروز')}` : ` · 📅 ${x.dueDate}`
+      : '';
+    return `${i + 1}. ${x.title}${NL}    📁 ${x.projectTitle ?? '—'}${due}`;
+  };
   const parts: string[] = [];
   if (inbox.active.length > 0) {
-    parts.push(`📋 ${who.tr('تسک‌های باز')} (${inbox.active.length})`, ...inbox.active.slice(0, 15).map(line));
-    if (inbox.active.length > 15) parts.push(who.tr('و {n} مورد دیگر', { n: inbox.active.length - 15 }));
+    parts.push(`📋 ${who.tr('تسک‌های باز')} (${inbox.active.length})`, '', ...byDue(inbox.active).slice(0, 15).map(card));
+    if (inbox.active.length > 15) parts.push('', who.tr('و {n} مورد دیگر', { n: inbox.active.length - 15 }));
   }
   if (inbox.review.length > 0) {
-    parts.push('', `🔍 ${who.tr('در انتظارِ بازبینیِ شما')} (${inbox.review.length})`, ...inbox.review.slice(0, 10).map(line));
+    if (parts.length > 0) parts.push('');
+    parts.push(`🔍 ${who.tr('در انتظارِ بازبینیِ شما')} (${inbox.review.length})`, '', ...byDue(inbox.review).slice(0, 10).map(card));
   }
   if (inbox.waiting.length > 0) {
     parts.push('', `⏳ ${who.tr('قابلِ برداشتن')}: ${inbox.waiting.length}`);
   }
-  await send(chatId, parts.length > 0 ? parts.join('\n') : who.tr('تسکِ بازی ندارید. 🎉'), menu(who.tr));
+  const open = appButton(who.tr, '/tasks', 'باز کردن در برنامه');
+  const keyboard: Keyboard = [...(open ? [[open]] : []), backRow(who.tr)];
+  await send(chatId, parts.length > 0 ? parts.join(NL) : `🎉 ${who.tr('تسکِ بازی ندارید.')}`, keyboard);
 }
 
 async function showHours(chatId: number, who: Who) {
   const today = todayIn(who.tz);
   const [totals, todayLogs, timer] = await Promise.all([
     myTotals(who.actor, new Date(), who.weekStart),
-    myLogs(who.actor, { from: today, to: today, perPage: 50 }),
-    timerState(who.actor),
+    myLogs(who.actor, { from: today, to: today, perPage: 20 }),
+    timerView(who),
   ]);
   const lines = [
-    `🕒 ${who.tr('امروز')}: ${hm(todayLogs.rangeMinutes)}`,
+    `🕒 ${who.tr('ساعت‌های من')}`,
+    '',
+    `${who.tr('امروز')}: ${hm(todayLogs.rangeMinutes)}`,
     `${who.tr('این هفته')}: ${hm(totals.week)}`,
     `${who.tr('این ماه')}: ${hm(totals.month)}`,
   ];
-  if (timer.running) {
-    lines.push('', `▶️ ${who.tr('تایمر روشن است')}: ${timer.running.projectTitle ?? who.tr('کارِ عمومی')} — ${hm(timer.running.minutes)}`);
+  if (todayLogs.rows.length > 0) {
+    lines.push('', `${who.tr('ثبت‌های امروز')}:`);
+    for (const r of todayLogs.rows.slice(0, 8)) {
+      lines.push(`• ${hm(r.minutes)} — ${r.projectTitle ?? who.tr('کارِ عمومی')}${r.description ? ` — ${r.description.slice(0, 60)}` : ''}`);
+    }
   }
-  await send(chatId, lines.join('\n'), menu(who.tr));
+  if (timer.running) lines.push('', `⏱ ${who.tr('تایمر روشن است')}: ${timer.running.title} · ${hm(timer.running.minutes)}`);
+  await send(chatId, lines.join(NL), menu(who.tr, timer));
 }
 
 /** پروژه‌های قابلِ ثبت: اخیراً کارشده‌ها اول. */
@@ -315,7 +443,7 @@ async function pickProject(chatId: number, who: Who, prefix: 't:s' | 'l:j', titl
   const keyboard: Keyboard = list.map((p) => [{ text: p.title.slice(0, 60), callback_data: `${prefix}:${p.id}` }]);
   if (canLogGeneral(who.actor)) keyboard.push([{ text: who.tr('کارِ عمومی (بدونِ پروژه)'), callback_data: `${prefix}:0` }]);
   if (keyboard.length === 0) {
-    await send(chatId, who.tr('پروژه‌ای برای ثبتِ ساعت ندارید.'), menu(who.tr));
+    await send(chatId, who.tr('پروژه‌ای برای ثبتِ ساعت ندارید.'), await menuFor(who));
     return;
   }
   keyboard.push(backRow(who.tr));
@@ -326,27 +454,32 @@ async function pickProject(chatId: number, who: Who, prefix: 't:s' | 'l:j', titl
 async function timerStart(chatId: number, who: Who, messageId?: number) {
   const state = await timerState(who.actor);
   if (state.running) {
-    await send(chatId, `▶️ ${who.tr('تایمر روشن است')}: ${state.running.projectTitle ?? who.tr('کارِ عمومی')} — ${hm(state.running.minutes)}`,
+    await send(chatId, `⏱ ${who.tr('تایمر روشن است')}: ${state.running.projectTitle ?? who.tr('کارِ عمومی')} · ${hm(state.running.minutes)}`,
       [[{ text: `⏹ ${who.tr('توقفِ تایمر')}`, callback_data: 't:x' }], backRow(who.tr)]);
     return;
   }
   if (state.pending) {
-    await send(chatId, who.tr('یک تایمرِ طولانی منتظرِ تأییدِ شماست؛ آن را در برنامه، صفحهٔ ساعت‌های کاری، تأیید کنید.'), menu(who.tr));
+    await send(chatId, who.tr('یک تایمرِ طولانی منتظرِ تأییدِ شماست؛ آن را در برنامه، صفحهٔ ساعت‌های کاری، تأیید کنید.'), await menuFor(who));
     return;
   }
-  await pickProject(chatId, who, 't:s', who.tr('تایمر روی کدام پروژه شروع شود؟'), messageId);
+  await pickProject(chatId, who, 't:s', `▶️ ${who.tr('تایمر روی کدام پروژه شروع شود؟')}`, messageId);
 }
 
 async function timerStop(chatId: number, who: Who) {
   try {
+    const before = await timerView(who);
     const result = await stopTimer(who.actor, '');
     await audit(who, 'timer.stop', { minutes: result.minutes });
     await send(chatId, result.parked
-      ? who.tr('تایمر بیش از حد طولانی بود؛ مدتِ آن را در برنامه، صفحهٔ ساعت‌های کاری، تأیید کنید.')
-      : `✅ ${who.tr('تایمر متوقف شد و {time} ثبت شد.', { time: hm(result.minutes) })}`, menu(who.tr));
+      ? `⏳ ${who.tr('تایمر بیش از حد طولانی بود؛ مدتِ آن را در برنامه، صفحهٔ ساعت‌های کاری، تأیید کنید.')}`
+      : [
+        `⏹ ${who.tr('تایمر متوقف شد')}`,
+        `📁 ${before.running?.title ?? who.tr('کارِ عمومی')}`,
+        `⏱ ${who.tr('{time} ثبت شد', { time: hm(result.minutes) })}`,
+      ].join(NL), await menuFor(who));
   } catch (error) {
     if (error instanceof TimerError) {
-      await send(chatId, who.tr('تایمری روشن نیست.'), menu(who.tr));
+      await send(chatId, `⏱ ${who.tr('تایمری روشن نیست.')}`, await menuFor(who));
       return;
     }
     throw error;
@@ -379,11 +512,9 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
   const [kind, op, a, b] = data.split(':');
 
   try {
-    if (kind === 'm' && op === 'menu') {
-      await edit(chatId, msg.message_id, who.tr('چه کاری انجام بدهم؟'), menu(who.tr));
-      return;
-    }
+    if (kind === 'm' && op === 'menu') return await showMenu(chatId, who, msg.message_id);
     if (kind === 'm' && op === 'ai') return await showAi(chatId, who, msg.message_id);
+    if (kind === 'm' && op === 'meet') return await showMeetings(chatId, who, msg.message_id);
     if (kind === 'm' && op === 'tasks') return await showTasks(chatId, who);
     if (kind === 'm' && op === 'hours') return await showHours(chatId, who);
     if (kind === 't' && op === 'p') return await timerStart(chatId, who, msg.message_id);
@@ -393,21 +524,26 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
       if (projectId === undefined) return;
       await startTimer(who.actor, projectId);
       await audit(who, 'timer.start', { projectId });
-      const title = projectId ? (await projectTitle(projectId)) : who.tr('کارِ عمومی');
-      await edit(chatId, msg.message_id, `▶️ ${who.tr('تایمر روشن شد')}: ${title}`, [[{ text: `⏹ ${who.tr('توقفِ تایمر')}`, callback_data: 't:x' }], backRow(who.tr)]);
+      const title = projectId ? (await projectTitle(who.actor, projectId)) : who.tr('کارِ عمومی');
+      const at = new Intl.DateTimeFormat('en-GB', { timeZone: who.tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date());
+      await edit(chatId, msg.message_id, [`▶️ ${who.tr('تایمر روشن شد')}`, `📁 ${title}`, `🕐 ${who.tr('شروع')}: ${at}`].join(NL),
+        [[{ text: `⏹ ${who.tr('توقفِ تایمر')}`, callback_data: 't:x' }], backRow(who.tr)]);
       return;
     }
-    if (kind === 'l' && op === 'p') return await pickProject(chatId, who, 'l:j', who.tr('ساعت روی کدام پروژه ثبت شود؟'), msg.message_id);
+    if (kind === 'l' && op === 'p') return await pickProject(chatId, who, 'l:j', `➕ ${who.tr('ساعت روی کدام پروژه ثبت شود؟')}`, msg.message_id);
     if (kind === 'l' && op === 'j') {
       const parsed = projectArg(a);
       if (parsed === undefined) return;
+      // ⚠️ دکمهٔ دست‌ساز برای پروژهٔ ممنوع حتی صفحهٔ انتخابِ مدت را هم نمی‌گیرد.
+      if (!(await canLogTime(who.actor, parsed))) return;
       const pid = parsed ?? 0;
       const rows: Keyboard = [];
       for (let i = 0; i < DURATIONS.length; i += 4) {
         rows.push(DURATIONS.slice(i, i + 4).map((m) => ({ text: hm(m), callback_data: `l:m:${pid}:${m}` })));
       }
       rows.push(backRow(who.tr, 'l:p'));
-      await edit(chatId, msg.message_id, who.tr('امروز چقدر کار کردید؟'), rows);
+      const title = parsed === null ? who.tr('کارِ عمومی') : await projectTitle(who.actor, parsed);
+      await edit(chatId, msg.message_id, [`➕ ${who.tr('امروز چقدر کار کردید؟')}`, `📁 ${title}`].join(NL), rows);
       return;
     }
     if (kind === 'l' && op === 'm') {
@@ -417,14 +553,14 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
       const date = todayIn(who.tz);
       await addOrMerge(who.actor, { projectId, logDate: date, minutes, description: '' });
       await audit(who, 'timelog.add', { projectId, minutes, date });
-      const title = projectId ? (await projectTitle(projectId)) : who.tr('کارِ عمومی');
-      await edit(chatId, msg.message_id, `✅ ${who.tr('{time} برای «{project}» در تاریخِ {date} ثبت شد.', { time: hm(minutes), project: title, date })}`, menu(who.tr));
+      const title = projectId ? (await projectTitle(who.actor, projectId)) : who.tr('کارِ عمومی');
+      await edit(chatId, msg.message_id, [`✅ ${who.tr('ساعت ثبت شد')}`, `📁 ${title}`, `⏱ ${hm(minutes)} · 📅 ${date}`].join(NL), await menuFor(who));
       return;
     }
     if (kind === 'p' && op && a) {
       const choice = projectArg(a);
       if (choice === undefined) return;
-      const picked = choice === null ? null : await projectTitle(choice);
+      const picked = choice === null ? null : await projectTitle(who.actor, choice);
       await edit(chatId, msg.message_id, picked ? `📁 ${picked}` : `✖️ ${who.tr('هیچ‌کدام')}`);
       await api('sendChatAction', { chat_id: chatId, action: 'typing' });
       const result = await resolveChoice(who.actor.id, op, choice ?? 0);
@@ -447,13 +583,28 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
       return;
     }
   } catch (error) {
-    await send(chatId, explainError(who.tr, error), menu(who.tr));
+    await send(chatId, explainError(who.tr, error), await menuFor(who));
   }
 }
 
-async function projectTitle(id: number): Promise<string> {
+/**
+ * نامِ پروژه برای پیام — ⚠️ فقط اگر کاربر آن پروژه را در برنامه می‌بیند؛ وگرنه
+ * `#id`. شناسه از دکمهٔ دست‌ساز یا از مدلِ هوشِ مصنوعی می‌آید و نباید نامِ
+ * پروژهٔ دیگران را لو بدهد (یافتهٔ ممیزیِ ۲.۱۲.۰).
+ */
+async function projectTitle(actor: Actor, id: number): Promise<string> {
+  if (!(await canViewProject(actor, id))) return `#${id}`;
   const [row] = await db.select({ title: projects.title }).from(projects).where(eq(projects.id, id));
   return row?.title ?? `#${id}`;
+}
+
+/** نامِ تسک با همان احتیاط: پروژه‌اش دیده شود و اگر خصوصی است مالِ خودِ کاربر باشد. */
+async function taskTitle(actor: Actor, id: number): Promise<string> {
+  const [t] = await db.select({ title: tasks.title, projectId: tasks.projectId, isPrivate: tasks.isPrivate, assignedTo: tasks.assignedTo, createdBy: tasks.createdBy })
+    .from(tasks).where(eq(tasks.id, id));
+  if (!t || !(await canViewProject(actor, t.projectId))) return `#${id}`;
+  if (t.isPrivate && t.assignedTo !== actor.id && t.createdBy !== actor.id && !actor.privateAccess) return `#${id}`;
+  return t.title;
 }
 
 function explainError(tr: Translator, error: unknown): string {
@@ -475,22 +626,21 @@ const WRITE_TITLES: Record<string, string> = {
   add_comment: 'نوشتنِ کامنت در پروژه',
   send_message: 'فرستادنِ پیامِ مستقیم',
   message_management: 'پیام به مدیریت',
+  create_reminder: 'ساختنِ یادآور',
+  delete_reminder: 'حذفِ یادآور',
 };
 
 /** نامِ خوانای آرگومان‌ها در پیامِ تأیید (۲.۱۱.۰) — به‌جای کلیدِ انگلیسیِ خام. */
 const ARG_LABELS: Record<string, string> = {
   text: 'متن', title: 'عنوان', description: 'توضیح', hours: 'ساعت', minutes: 'دقیقه',
-  date: 'تاریخ', due_date: 'مهلت', status: 'وضعیت',
+  date: 'تاریخ', due_date: 'مهلت', status: 'وضعیت', at: 'زمان', reminder_id: 'یادآور',
 };
 
-async function describeArgs(tr: Translator, args: Record<string, unknown>): Promise<string[]> {
+async function describeArgs(actor: Actor, tr: Translator, args: Record<string, unknown>): Promise<string[]> {
   const lines: string[] = [];
   const pid = typeof args.project_id === 'number' ? args.project_id : null;
-  if (pid) lines.push(`• ${tr('پروژه')}: ${await projectTitle(pid)}`);
-  if (typeof args.task_id === 'number') {
-    const [t] = await db.select({ title: tasks.title }).from(tasks).where(eq(tasks.id, args.task_id));
-    lines.push(`• ${tr('تسک')}: ${t?.title ?? `#${args.task_id}`}`);
-  }
+  if (pid) lines.push(`• ${tr('پروژه')}: ${await projectTitle(actor, pid)}`);
+  if (typeof args.task_id === 'number') lines.push(`• ${tr('تسک')}: ${await taskTitle(actor, args.task_id)}`);
   // ⚠️ گیرنده‌ها با نام، نه شناسه — کاربر باید بداند پیام به دستِ چه کسی می‌رسد.
   const ids = Array.isArray(args.recipient_user_ids) ? args.recipient_user_ids.filter((x): x is number => typeof x === 'number') : [];
   if (ids.length > 0) {
@@ -513,14 +663,15 @@ async function describeArgs(tr: Translator, args: Record<string, unknown>): Prom
 async function deliver(chatId: number, who: Who, result: AgentResult) {
   switch (result.kind) {
     case 'reply':
-      if (result.text) await send(chatId, result.text);
+      // ⚠️ وقتی اولی جواب نداد، کاربر ببیند کدام جایگزین جواب داد.
+      if (result.text) await send(chatId, result.via ? `${result.text}${NL}${NL}↪️ ${who.tr('با {name}', { name: result.via })}` : result.text);
       return;
     case 'confirm': {
       const lines = [
         ...(result.note ? [result.note, ''] : []),
         `❓ ${who.tr('این کار انجام شود؟')}`,
         `${who.tr(WRITE_TITLES[result.tool] ?? result.tool)}`,
-        ...(await describeArgs(who.tr, result.args)),
+        ...(await describeArgs(who.actor, who.tr, result.args)),
       ];
       await send(chatId, lines.join('\n'), [[
         { text: `✅ ${who.tr('بله')}`, callback_data: `a:y:${result.id}` },
@@ -536,25 +687,25 @@ async function deliver(chatId: number, who: Who, result: AgentResult) {
       return;
     }
     case 'quota':
-      await send(chatId, who.tr('سهمیهٔ هوشِ مصنوعیِ شما فعلاً تمام شده است؛ تا آن موقع از دکمه‌ها استفاده کنید.'), menu(who.tr));
+      await send(chatId, who.tr('سهمیهٔ هوشِ مصنوعیِ شما فعلاً تمام شده است؛ تا آن موقع از دکمه‌ها استفاده کنید.'), await menuFor(who));
       return;
     case 'auth':
-      await send(chatId, who.tr('کلیدِ هوشِ مصنوعیِ شما دیگر کار نمی‌کند؛ در پروفایل دوباره وصلش کنید.'), menu(who.tr));
+      await send(chatId, who.tr('کلیدِ هوشِ مصنوعیِ شما دیگر کار نمی‌کند؛ در پروفایل دوباره وصلش کنید.'), await menuFor(who));
       return;
     case 'busy':
-      await send(chatId, who.tr('پیام‌ها زیاد شد؛ چند دقیقه صبر کنید. تا آن موقع دکمه‌ها کار می‌کنند.'), menu(who.tr));
+      await send(chatId, who.tr('پیام‌ها زیاد شد؛ چند دقیقه صبر کنید. تا آن موقع دکمه‌ها کار می‌کنند.'), await menuFor(who));
       return;
     default:
-      await send(chatId, who.tr('هوشِ مصنوعی جواب نداد؛ کمی بعد دوباره امتحان کنید یا از دکمه‌ها استفاده کنید.'), menu(who.tr));
+      await send(chatId, who.tr('هوشِ مصنوعی جواب نداد؛ کمی بعد دوباره امتحان کنید یا از دکمه‌ها استفاده کنید.'), await menuFor(who));
   }
 }
 
 async function askAi(chatId: number, who: Who, text: string): Promise<boolean> {
-  const secret = await loadAiSecret(who.actor.id);
-  if (!secret || !secret.model) return false;
+  const secrets = (await loadAiSecrets(who.actor.id)).filter((x) => x.model);
+  if (secrets.length === 0) return false;
   await api('sendChatAction', { chat_id: chatId, action: 'typing' });
   const result = await askAgent({
-    actor: who.actor, userName: who.name, secret,
+    actor: who.actor, userName: who.name, secrets,
     language: LOCALE_NAMES[who.locale], today: todayIn(who.tz), timezone: who.tz,
   }, text);
   await deliver(chatId, who, result);
@@ -567,13 +718,15 @@ async function askAi(chatId: number, who: Who, text: string): Promise<boolean> {
  * جایی ذخیره نمی‌شود.
  */
 async function onVoice(chatId: number, who: Who, voice: TgVoice) {
-  const secret = await loadAiSecret(who.actor.id);
+  const all = await loadAiSecrets(who.actor.id);
+  // اولین اتصالی که صدا می‌فهمد — DeepSeek برای متن و Groq برای ویس کنارِ هم کار می‌کنند.
+  const secret = all.find((x) => transcriptionModel(x.provider)) ?? all[0];
   if (!secret) {
-    await send(chatId, who.tr('برای فهمیدنِ پیامِ صوتی، اول یک هوشِ مصنوعی وصل کنید (Groq رایگان است). تا آن موقع بنویسید یا از دکمه‌ها استفاده کنید.'), menu(who.tr));
+    await send(chatId, who.tr('برای فهمیدنِ پیامِ صوتی، اول یک هوشِ مصنوعی وصل کنید (Groq رایگان است). تا آن موقع بنویسید یا از دکمه‌ها استفاده کنید.'), await menuFor(who));
     return;
   }
   if (!transcriptionModel(secret.provider)) {
-    await send(chatId, who.tr('هوشِ مصنوعیِ فعلیِ شما ({name}) صدا را به متن تبدیل نمی‌کند؛ برای ویس Groq (رایگان) یا OpenAI را وصل کنید. تا آن موقع بنویسید.', { name: PROVIDERS[secret.provider]?.label ?? secret.provider }), menu(who.tr));
+    await send(chatId, who.tr('هوشِ مصنوعیِ فعلیِ شما ({name}) صدا را به متن تبدیل نمی‌کند؛ برای ویس Groq (رایگان) یا OpenAI را وصل کنید. تا آن موقع بنویسید.', { name: PROVIDERS[secret.provider]?.label ?? secret.provider }), await menuFor(who));
     return;
   }
   if ((voice.duration ?? 0) > MAX_VOICE_SECONDS || (voice.file_size ?? 0) > MAX_VOICE_BYTES) {
@@ -592,7 +745,7 @@ async function onVoice(chatId: number, who: Who, voice: TgVoice) {
       ? who.tr('سهمیهٔ هوشِ مصنوعیِ شما فعلاً تمام شده است؛ تا آن موقع از دکمه‌ها استفاده کنید.')
       : out.reason === 'auth'
         ? who.tr('کلیدِ هوشِ مصنوعیِ شما دیگر کار نمی‌کند؛ در پروفایل دوباره وصلش کنید.')
-        : who.tr('صدا به متن تبدیل نشد؛ لطفاً بنویسید.'), menu(who.tr));
+        : who.tr('صدا به متن تبدیل نشد؛ لطفاً بنویسید.'), await menuFor(who));
     return;
   }
   // کاربر ببیند ربات چه شنیده — اگر اشتباه فهمید، همین‌جا معلوم است.
@@ -661,9 +814,10 @@ async function onMessage(msg: TgMessage) {
   try {
     switch (cmd) {
       case '/start':
-      case '/help':
       case '/menu':
         return await showMenu(chatId, who);
+      case '/help':
+        return await showHelp(chatId, who);
       case '/tasks':
         return await showTasks(chatId, who);
       case '/hours':
@@ -676,6 +830,8 @@ async function onMessage(msg: TgMessage) {
         return await pickProject(chatId, who, 'l:j', who.tr('ساعت روی کدام پروژه ثبت شود؟'));
       case '/ai':
         return await showAi(chatId, who);
+      case '/meetings':
+        return await showMeetings(chatId, who);
       case '/new':
         forgetConversation(who.actor.id);
         await send(chatId, who.tr('گفت‌وگو از نو شروع شد.'));
@@ -684,10 +840,10 @@ async function onMessage(msg: TgMessage) {
     if (cmd.startsWith('/')) return await showMenu(chatId, who);
 
     if (!(await askAi(chatId, who, text))) {
-      await send(chatId, who.tr('برای جوابِ هوشمند به متنِ آزاد، در پروفایل ← «دستیارِ هوشِ مصنوعی» یک ارائه‌دهنده وصل کنید. تا آن موقع:'), menu(who.tr));
+      await send(chatId, who.tr('برای جوابِ هوشمند به متنِ آزاد، در پروفایل ← «دستیارِ هوشِ مصنوعی» یک ارائه‌دهنده وصل کنید. تا آن موقع:'), await menuFor(who));
     }
   } catch (error) {
-    await send(chatId, explainError(who.tr, error), menu(who.tr));
+    await send(chatId, explainError(who.tr, error), await menuFor(who));
   }
 }
 
@@ -726,6 +882,7 @@ export async function registerCommands(): Promise<void> {
       { command: 'timer', description: tr('شروعِ تایمر') },
       { command: 'stop', description: tr('توقفِ تایمر') },
       { command: 'log', description: tr('ثبتِ ساعت') },
+      { command: 'meetings', description: tr('جلسه‌ها و یادآورها') },
       { command: 'ai', description: tr('هوشِ مصنوعی') },
       { command: 'new', description: tr('گفت‌وگوی تازه با هوشِ مصنوعی') },
       { command: 'help', description: tr('راهنما') },

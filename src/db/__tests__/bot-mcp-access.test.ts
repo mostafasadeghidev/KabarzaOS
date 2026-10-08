@@ -282,6 +282,8 @@ describe('ربات — هوشِ مصنوعی نمی‌تواند از دسترس
       expect(yes, tool).toBeDefined();
       await handleUpdate(press(CHAT.A, yes!.callback_data!));
       expect(seen.join('\n'), tool).not.toMatch(/SECRET/);
+      // ⚠️ پیامِ تأیید هم نامِ پروژه/تسکِ ممنوع را لو نمی‌دهد (شناسه از مدل می‌آید).
+      expect(out(), tool).not.toMatch(/SECRET/);
     }
     expect(await writes()).toEqual(before);
   });
@@ -418,6 +420,30 @@ describe('MCP — پیام‌ها (۲.۱۱.۰)', () => {
     await write.close();
     const [after] = await sql<Array<{ n: number }>>`select count(*)::int as n from threads`;
     expect(after!.n).toBe(before!.n);
+  });
+});
+
+describe('MCP — یادآورها و جلسه‌ها (۲.۱۲.۰)', () => {
+  it('یادآور مالِ خودِ کاربر است: دیگری نه می‌بیند نه پاک می‌کند؛ زمانِ گذشته رد می‌شود', async () => {
+    const a = await mcpAs(roles(A, ['member']), 'write');
+    const past = JSON.parse((await a.call('create_reminder', { at: '2020-01-01 10:00', text: 'گذشته' })).text) as { created: boolean };
+    expect(past.created).toBe(false);
+    const made = JSON.parse((await a.call('create_reminder', { at: '2099-01-01 10:00', text: 'SECRET-REMINDER' })).text) as { created: boolean; reminderId: number };
+    expect(made.created).toBe(true);
+    expect((await a.call('list_my_reminders')).text).toContain('SECRET-REMINDER');
+    await a.close();
+
+    const b = await mcpAs(roles(B, ['member']), 'write');
+    expect((await b.call('list_my_reminders')).text).not.toContain('SECRET-REMINDER');
+    const del = JSON.parse((await b.call('delete_reminder', { reminder_id: made.reminderId })).text) as { deleted: boolean };
+    expect(del.deleted).toBe(false);
+    expect((await b.call('list_my_meetings')).error).toBe(false);
+    await b.close();
+
+    const again = await mcpAs(roles(A, ['member']), 'write');
+    expect((await again.call('list_my_reminders')).text).toContain('SECRET-REMINDER');
+    expect(JSON.parse((await again.call('delete_reminder', { reminder_id: made.reminderId })).text)).toEqual({ deleted: true });
+    await again.close();
   });
 });
 

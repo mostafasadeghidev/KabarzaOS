@@ -6,7 +6,9 @@ import { handleUpdate, notifyAiChange, resetBotState, setTelegramApi, type TgUpd
 import { miniAppLogin } from '@/server/telegram/webapp';
 import { signInitData } from '@/domain/telegram/webapp';
 import { resetAgentState } from '@/server/ai/agent';
-import { AiError, getAiConnection, loadAiSecret, saveAiConnection } from '@/server/ai/connections';
+import { AiError, deleteAiConnection, getAiConnection, listAiConnections, loadAiSecret, moveAiConnection, saveAiConnection } from '@/server/ai/connections';
+import { seal } from '@/server/ai/secret-box';
+import { miniAppButton } from '@/server/notifications/service';
 import type { Actor } from '@/domain/access/permissions';
 
 /**
@@ -267,7 +269,7 @@ describe('ربات — هوشِ مصنوعی', () => {
 
 describe('وضعیتِ هوشِ مصنوعی در ربات و مینی‌اپ (۲.۱۰.۰)', () => {
   it('منو و /ai نشان می‌دهند چه هوشِ مصنوعی‌ای وصل است', async () => {
-    await handleUpdate(message('/help'));
+    await handleUpdate(message('/menu'));
     expect(texts().join(' ')).toMatch(/هوشِ مصنوعی: DeepSeek/);
     expect(lastKeyboard().some((b) => b.callback_data === 'm:ai')).toBe(true);
     sent = [];
@@ -287,7 +289,7 @@ describe('وضعیتِ هوشِ مصنوعی در ربات و مینی‌اپ (�
   });
 
   it('وصل/قطع‌شدن در پروفایل در تلگرام خبر داده می‌شود', async () => {
-    await notifyAiChange(MEMBER, { provider: 'groq', baseUrl: 'x', model: 'llama', keyHint: '', updatedAt: '' });
+    await notifyAiChange(MEMBER, { id: 1, priority: 0, provider: 'groq', baseUrl: 'x', model: 'llama', keyHint: '', updatedAt: '' });
     expect(texts()[0]).toContain('Groq — llama');
     sent = [];
     await notifyAiChange(OTHER + 999, null);
@@ -376,5 +378,103 @@ describe('وضعیتِ هوشِ مصنوعی در ربات و مینی‌اپ (�
     } finally {
       delete process.env.TELEGRAM_BOT_TOKEN;
     }
+  });
+});
+
+describe('چند هوشِ مصنوعی با اولویت، جلسه‌ها و دکمهٔ اعلان (۲.۱۲.۰)', () => {
+  it('فهرستِ اتصال: افزودن ته فهرست، همان ارائه‌دهنده به‌روز می‌شود، جابه‌جایی، سقفِ ۵', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ data: [{ id: 'm1' }] })));
+    const other = actorOf(OTHER);
+    await saveAiConnection(other, { provider: 'deepseek', apiKey: 'sk-other-111111111111' });
+    await saveAiConnection(other, { provider: 'groq', apiKey: 'gsk-other-22222222222' });
+    await saveAiConnection(other, { provider: 'deepseek', apiKey: 'sk-other-333333333333' });
+    let list = await listAiConnections(other);
+    expect(list.map((c) => c.provider)).toEqual(['deepseek', 'groq']);
+    expect(list[0]!.keyHint).toBe('…3333');
+    expect(await moveAiConnection(other, list[1]!.id, 'up')).toBe(true);
+    list = await listAiConnections(other);
+    expect(list.map((c) => c.provider)).toEqual(['groq', 'deepseek']);
+    // اتصالِ دیگری را نمی‌شود جابه‌جا یا حذف کرد.
+    expect(await moveAiConnection(actorOf(MEMBER), list[0]!.id, 'down')).toBe(false);
+    expect(await deleteAiConnection(actorOf(MEMBER), list[0]!.id)).toBe(false);
+    for (const provider of ['openai', 'gemini', 'zai']) await saveAiConnection(other, { provider, apiKey: `key-${provider}-123456789` });
+    await expect(saveAiConnection(other, { provider: 'anthropic', apiKey: 'sk-ant-1234567890' })).rejects.toMatchObject({ code: 'too_many' });
+    await deleteAiConnection(other);
+    expect(await listAiConnections(other)).toHaveLength(0);
+  });
+
+  it('اولی به سقف خورد ← همان درخواست با دومی، و کاربر می‌بیند کدام جواب داد', async () => {
+    const [extra] = await db.insert(aiConnections).values({
+      userId: MEMBER, priority: 5, provider: 'groq', baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-backup',
+      apiKeyEnc: seal('gsk-backup-000000000'), keyHint: '…0000',
+    }).returning({ id: aiConnections.id });
+    const hits: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      hits.push(url);
+      if (url.includes('deepseek')) return new Response('{"error":{"message":"Insufficient Balance"}}', { status: 402 });
+      return say('جواب از جایگزین');
+    }));
+    try {
+      await handleUpdate(message('سلام'));
+      expect(hits[0]).toContain('deepseek');
+      expect(hits.at(-1)).toContain('groq');
+      const reply = texts().find((t) => t.startsWith('جواب از جایگزین'))!;
+      expect(reply).toContain('Groq — llama-backup');
+    } finally {
+      await db.delete(aiConnections).where(eq(aiConnections.id, extra!.id));
+    }
+  });
+
+  it('همه به سقف خوردند ← پیامِ سهمیه و دکمه‌ها', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 429 })));
+    await handleUpdate(message('سلام دوباره'));
+    expect(texts()[0]).toContain('سهمیه');
+  });
+
+  it('دکمهٔ جلسه‌ها: جلسه‌ها و یادآورهای خودِ کاربر، با بازگشت', async () => {
+    await handleUpdate(press('m:meet'));
+    const all = texts().join(' ');
+    expect(all).toContain('جلسهٔ پیشِ‌رویی ندارید');
+    expect(lastKeyboard().some((b) => b.callback_data === 'm:menu')).toBe(true);
+  });
+
+  it('دکمهٔ «باز کردن در برنامه» زیرِ اعلان فقط با HTTPS و مسیرِ داخلی', () => {
+    const before = process.env.APP_URL;
+    try {
+      process.env.APP_URL = 'https://team.example.com';
+      const btn = miniAppButton('/projects/3?tab=tasks', 'باز کن')!;
+      expect(btn.inline_keyboard[0]![0]!.web_app.url).toBe(`https://team.example.com/tg?next=${encodeURIComponent('/projects/3?tab=tasks')}`);
+      expect(miniAppButton('https://team.example.com/tasks')!.inline_keyboard[0]![0]!.web_app.url).toContain(encodeURIComponent('/tasks'));
+      expect(miniAppButton('https://evil.example/x')).toBeUndefined();
+      expect(miniAppButton('//evil.example')).toBeUndefined();
+      expect(miniAppButton(undefined)).toBeUndefined();
+      process.env.APP_URL = 'http://10.0.0.2:3000';
+      expect(miniAppButton('/tasks')).toBeUndefined();
+    } finally {
+      if (before === undefined) delete process.env.APP_URL; else process.env.APP_URL = before;
+    }
+  });
+});
+
+describe('منوی وابسته به وضعیت (۲.۱۲.۰)', () => {
+  it('تایمرِ خاموش فقط «شروع»؛ روشن فقط «توقف» با مدت', async () => {
+    await db.delete(workTimers).where(eq(workTimers.userId, MEMBER));
+    await handleUpdate(message('/menu'));
+    let kb = lastKeyboard().map((b) => b.callback_data);
+    expect(kb).toContain('t:p');
+    expect(kb).not.toContain('t:x');
+    await handleUpdate(press(`t:s:${PROJECT}`));
+    sent = [];
+    await handleUpdate(message('/menu'));
+    kb = lastKeyboard().map((b) => b.callback_data);
+    expect(kb).toContain('t:x');
+    expect(kb).not.toContain('t:p');
+    expect(texts()[0]).toContain('آلفا');
+    await handleUpdate(press('t:x'));
+  });
+
+  it('/help فهرستِ دستورها را دارد', async () => {
+    await handleUpdate(message('/help'));
+    expect(texts()[0]).toContain('/meetings');
   });
 });

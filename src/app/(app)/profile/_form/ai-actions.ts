@@ -3,12 +3,12 @@
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
-  AiError, deleteAiConnection, listMyModels, saveAiConnection, setAiModel,
+  AiError, deleteAiConnection, listMyModels, moveAiConnection, saveAiConnection, setAiModel,
 } from '@/server/ai/connections';
 import type { ModelOption } from '@/domain/ai/providers';
 import { notifyAiChange } from '@/server/telegram/bot';
 
-/** اقدام‌های «مغزِ» ربات — هر کس فقط اتصالِ خودش (۲.۹.۰). */
+/** اقدام‌های «مغزِ» ربات — هر کس فقط اتصال‌های خودش (۲.۹.۰؛ چندتایی از ۲.۱۲.۰). */
 
 export interface AiFormState {
   error?: string;
@@ -21,6 +21,8 @@ const MESSAGES: Record<AiError['code'], string> = {
   network: 'به ارائه‌دهنده وصل نشد؛ کمی بعد دوباره امتحان کنید.',
   no_key: 'کلیدِ API را وارد کنید.',
   bad_provider: 'ارائه‌دهنده را انتخاب کنید.',
+  too_many: 'حداکثر ۵ هوشِ مصنوعی می‌شود وصل کرد؛ یکی را حذف کنید.',
+  not_found: 'این اتصال پیدا نشد.',
 };
 
 function explain(error: unknown): string {
@@ -46,23 +48,30 @@ export async function saveAiAction(_prev: AiFormState, formData: FormData): Prom
   }
 }
 
-export async function loadModelsAction(): Promise<{ models?: ModelOption[]; error?: string }> {
+export async function loadModelsAction(id: number): Promise<{ models?: ModelOption[]; error?: string }> {
   try {
-    return { models: await listMyModels(await requireActor()) };
+    return { models: await listMyModels(await requireActor(), id) };
   } catch (error) {
     return { error: explain(error) };
   }
 }
 
-export async function setModelAction(model: string): Promise<AiFormState> {
-  const ok = await setAiModel(await requireActor(), model);
+export async function setModelAction(id: number, model: string): Promise<AiFormState> {
+  const ok = await setAiModel(await requireActor(), model, id);
   revalidatePath('/profile');
   return ok ? { saved: true } : { error: 'مدل ذخیره نشد.' };
 }
 
-export async function deleteAiAction(): Promise<AiFormState> {
+/** جابه‌جاییِ اولویت. */
+export async function moveAiAction(id: number, direction: 'up' | 'down'): Promise<AiFormState> {
+  const ok = await moveAiConnection(await requireActor(), id, direction === 'up' ? 'up' : 'down');
+  revalidatePath('/profile');
+  return ok ? {} : { error: 'اولویت عوض نشد.' };
+}
+
+export async function deleteAiAction(id: number): Promise<AiFormState> {
   const actor = await requireActor();
-  if (await deleteAiConnection(actor)) await notifyAiChange(actor.id, null);
+  if (await deleteAiConnection(actor, id)) await notifyAiChange(actor.id, null);
   revalidatePath('/profile');
   return {};
 }

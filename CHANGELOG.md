@@ -2,6 +2,37 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.12.0]
+
+### Added
+
+- **Several AIs per member, in priority order.** Under Profile → «AI assistant» a member can connect up to 5 providers and reorder them with up/down buttons.
+  - The bot tries the first one. If its quota runs out, its key fails or it doesn't answer, the same request (with the conversation so far) goes to the next. A short «↪️ via …» line shows when a backup answered.
+  - Voice uses the first connection that can transcribe (Groq or OpenAI), so DeepSeek can handle text while Groq handles voice.
+  - Saving the same provider again updates it instead of adding a duplicate. Each connection has its own model picker and remove button. Existing connections become the first in the list.
+- **Meetings and reminders for the AI and the bot.**
+  - MCP tools: `list_my_meetings`, `list_my_reminders`, `create_reminder` and `delete_reminder` (local time, future only, own reminders only).
+  - The bot has a «📅 Meetings & reminders» button and a `/meetings` command.
+  - The bot's AI knows the current local time, so «remind me in two hours» works.
+- **Full task card in Telegram.** The «assigned to you» notification now shows the title, project, priority, deadline, description and the task's links. The task's own images are sent as photos and other files as documents (up to 5, 10 MB each). Comment media is never included.
+- **«📱 Open in the app» under Telegram notifications.** Notifications with a link get a button that opens that page in the mini app with automatic sign-in (HTTPS only). The plain link stays for older Telegram versions.
+- **Shared-account warning.** The web «allow access» page and the profile warn that a connection acts with the member's name and permissions, so an AI account must not be shared with colleagues. The connected-apps table now shows when each app was connected.
+
+- **Cleaner Telegram bot.**
+  - The main menu (`/menu`, Back) is a live summary: timer state, hours today, open and overdue tasks, reviews waiting, and AI status. The command list moved to `/help`.
+  - The menu only offers buttons that make sense now: «Start timer» when it's off, «Stop timer · 0:45» when it's running, «awaiting confirmation» for a parked long timer.
+  - «My tasks» puts overdue tasks first and marks overdue and today, with the project on a second line. «My hours» lists today's entries.
+  - Clear confirmations for starting or stopping the timer and logging hours (project, duration, start time).
+  - Notifications start with 🔔.
+
+### Security
+
+- The bot no longer shows the name of a project or task the member can't see. Before, the confirmation for an AI action (since 2.9.0) and a hand-made button could show the title of any project id. Names are now shown only when the member can see that project, otherwise just «#id», and a forged «log hours» button for a forbidden project does nothing.
+
+### Notes
+
+- Migration 0046 lets a member have several AI connections, adds a priority column, and removes the one-per-member constraint.
+
 ## [2.11.0]
 
 ### Added
