@@ -49,6 +49,8 @@ export async function getMyProfile(actor: Actor) {
       notifyEmailOff: users.notifyEmailOff,
       notifyEmailMuted: users.notifyEmailMuted,
       telegramOff: users.telegramOff,
+      telegramMuted: users.telegramMuted,
+      briefAt: users.briefAt,
     })
     .from(users)
     .where(eq(users.id, actor.id));
@@ -72,6 +74,9 @@ export async function getMyProfile(actor: Actor) {
       emailOn: !me.notifyEmailOff,
       muted: normalizeMuted(me.notifyEmailMuted),
       telegramOn: !me.telegramOff,
+      /** یادآورهای بی‌صدا در تلگرام و ساعتِ گزارشِ صبحگاهی (۲.۱۴.۰). */
+      telegramMuted: me.telegramMuted ?? [],
+      briefAt: me.briefAt,
       // ⚠️ بدونِ mailer، به‌جای گزینه‌هایی که کار نمی‌کنند، حقیقت گفته می‌شود.
       mailerReady: mailEnabled(),
     },
@@ -455,4 +460,18 @@ export async function updateMyProfile(
     objectId: actor.id,
     after: { name, email },
   });
+}
+
+/**
+ * یادآورهای تلگرام (۲.۱۴.۰): کدام یادآورِ خودکار در تلگرام بیاید و گزارشِ
+ * صبحگاهی چه ساعتی. ⚠️ فقط انواعِ مجاز؛ ساعتِ نامعتبر = خاموش.
+ */
+export async function saveTelegramPrefs(actor: Actor, input: { briefAt: string; muted: string[] }) {
+  const allowed = new Set(['timer_running', 'no_timelog', 'meeting_soon', 'onboarding.overdue', 'brief']);
+  const briefAt = /^([01]\d|2[0-3]):[0-5]\d$/.test(input.briefAt.trim()) ? input.briefAt.trim() : '';
+  await db.update(users).set({
+    briefAt,
+    telegramMuted: [...new Set(input.muted.filter((m) => allowed.has(m)))],
+    updatedAt: new Date(),
+  }).where(eq(users.id, actor.id));
 }
