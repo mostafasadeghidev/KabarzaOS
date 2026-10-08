@@ -2,6 +2,29 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.11.0]
+
+### Added
+
+- **Direct messages through the AI (MCP and Telegram).** New tools:
+  - `list_message_recipients` (the same people the Messages page offers);
+  - `send_message` (a direct message to chosen people);
+  - `message_management` (one shared conversation with the managers).
+  The sending rules, the 30-second limit and notifications are the same as in the app, and every send waits for the «Yes/No» button in Telegram. Before, «send a message to my manager» became a project comment.
+- **Project buttons in the bot.** When a request needs a project and none is named, the bot shows the member's open projects as buttons, plus «None of these», and continues the same request with the choice. Only projects from that list are accepted.
+- **Voice messages.** A voice message is turned into text with the member's own AI key, shown back as «🎤 …», and handled like typed text.
+  - Works with Groq (free tier), OpenAI and OpenAI-compatible addresses. Other providers get a clear note about which ones support voice.
+  - Voice longer than 3 minutes or 8 MB is refused. Audio is kept only in memory.
+
+### Changed
+
+- The AI is told to report only what a tool actually did. A comment is no longer described as «sent to the project manager».
+- Confirmation messages in the bot are readable: project, task, assignee and recipients by name, and labelled fields, instead of raw keys and ids.
+
+### Fixed
+
+- Profile: with the «My access» tab the tab row was wider than the fixed width and scrolled sideways. The tab row now sets the width, and the panels below stretch to match it however many tabs there are. Sideways scrolling remains only on screens narrower than the tab row.
+
 ## [2.10.0]
 
 ### Added

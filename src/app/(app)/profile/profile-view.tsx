@@ -150,9 +150,13 @@ export function ProfileView({ data }: { data: ProfileData }) {
   const [pending, startTransition] = useTransition();
 
   return (
-    // ⚠️ یک پهنا برای ردیفِ تب‌ها و همهٔ کادرها؛ پیش از این کادرها max-w-2xl بودند و
-    // از ردیفِ تب‌ها کوتاه‌تر می‌افتادند.
-    <div className="grid w-full max-w-3xl gap-4">
+    /*
+     * ⚠️ پهنا را **ردیفِ تب‌ها** تعیین می‌کند (w-fit)، نه عددِ ثابت: با تبِ «دسترسی‌های
+     * من» ردیف از max-w-3xl بلندتر می‌شد و اسکرولِ افقی می‌گرفت (۲.۱۱.۰).
+     * کمینه ۴۸rem تا با تب‌های کم کادرها باریک نشوند؛ اسکرول فقط وقتی صفحه واقعاً
+     * باریک‌تر از ردیف است (موبایل).
+     */
+    <div className="grid w-fit max-w-full min-w-[min(100%,48rem)] gap-4">
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
         <div className="overflow-x-auto pb-1.5">
@@ -167,6 +171,12 @@ export function ProfileView({ data }: { data: ProfileData }) {
           </TabsList>
         </div>
       </Tabs>
+
+      {/*
+        ⚠️ w-0 + min-w-full: کادرها در پهنای ظرف سهمی ندارند و فقط کشیده می‌شوند؛
+        وگرنه یک پاراگرافِ بلند ظرف را تا لبهٔ صفحه پهن می‌کرد.
+      */}
+      <div className="grid w-0 min-w-full gap-4">
 
       {/* پورتِ پنلِ «حساب» ِ داشبورد: نام، ایمیل و تلفن به دستِ خودِ کاربر. */}
       {tab === 'account' && (
@@ -524,6 +534,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
       )}
 
 
+      </div>
     </div>
   );
 }

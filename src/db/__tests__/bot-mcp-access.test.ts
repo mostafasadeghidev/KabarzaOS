@@ -397,6 +397,30 @@ describe('MCP — بیرون از دسترسی', () => {
   });
 });
 
+describe('MCP — پیام‌ها (۲.۱۱.۰)', () => {
+  it('فهرستِ گیرنده‌ها همان برنامه است: نه خودش، نه قفل‌شده/سابق/حذف‌شده، نه مالک', async () => {
+    const { call, close } = await mcpAs(roles(A, ['member']), 'read');
+    const out = JSON.parse((await call('list_message_recipients')).text) as { canSendDirect: boolean; recipients: Array<{ userId: number }> };
+    const ids = out.recipients.map((r) => r.userId);
+    for (const id of [A, LOCKED, FINANCE, DELETED, OWNER]) expect(ids, String(id)).not.toContain(id);
+    await close();
+  });
+
+  it('توکنِ فقط‌خواندنی پیام نمی‌فرستد؛ پیام به کاربرِ ناموجود یا قفل‌شده رشته نمی‌سازد', async () => {
+    const [before] = await sql<Array<{ n: number }>>`select count(*)::int as n from threads`;
+    const read = await mcpAs(roles(A, ['member']), 'read');
+    expect((await read.call('send_message', { recipient_user_ids: [B], text: 'x' })).error).toBe(true);
+    expect((await read.call('message_management', { text: 'x' })).error).toBe(true);
+    await read.close();
+    const write = await mcpAs(roles(A, ['member']), 'write');
+    const r = await write.call('send_message', { recipient_user_ids: [LOCKED, 999999], text: 'x' });
+    expect(r.text).not.toMatch(/SECRET/);
+    await write.close();
+    const [after] = await sql<Array<{ n: number }>>`select count(*)::int as n from threads`;
+    expect(after!.n).toBe(before!.n);
+  });
+});
+
 describe('وب‌هوکِ ربات', () => {
   it('بی رمزِ درست ۴۰۳ است و پیامِ جعلی هیچ اثری ندارد', async () => {
     process.env.TELEGRAM_BOT_TOKEN = '123:audit-token';
