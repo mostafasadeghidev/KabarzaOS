@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.9.2]
+
+### Fixed
+
+- Profile: the panel under the tabs was narrower than the tab row. The tab row and every tab's panels now share one width, and the tabs stretch to fill it. On phones the tab row still scrolls sideways.
+
 ## [2.9.1]
 
 ### Fixed

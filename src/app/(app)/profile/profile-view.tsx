@@ -152,13 +152,16 @@ export function ProfileView({ data }: { data: ProfileData }) {
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="grid gap-4">
+    // ⚠️ یک پهنا برای ردیفِ تب‌ها و همهٔ کادرها؛ پیش از این کادرها max-w-2xl بودند و
+    // از ردیفِ تب‌ها کوتاه‌تر می‌افتادند.
+    <div className="grid w-full max-w-3xl gap-4">
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
         <div className="overflow-x-auto pb-1.5">
-          <TabsList variant="line" className="w-max">
+          {/* ⚠️ min-w-full: ردیفِ تب‌ها هم‌پهنای کادرِ زیرش کشیده می‌شود؛ w-max روی موبایل پیمایش را نگه می‌دارد. */}
+          <TabsList variant="line" className="w-max min-w-full">
             {visible.map((t) => (
-              <TabsTrigger key={t.key} value={t.key} className="flex-none">
+              <TabsTrigger key={t.key} value={t.key}>
                 <t.icon className="size-3.5" />
                 {tr(t.label)}
               </TabsTrigger>
@@ -169,8 +172,8 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
       {/* پورتِ پنلِ «حساب» ِ داشبورد: نام، ایمیل و تلفن به دستِ خودِ کاربر. */}
       {tab === 'account' && (
-        // ⚠️ همهٔ تب‌های پروفایل یک پهنا دارند (پیش از این xl و md) و هر گروه یک پنل است.
-        <div className="grid max-w-2xl grid-cols-1 gap-4">
+        // ⚠️ هر گروه یک پنل است؛ پهنا را ظرفِ بیرونی تعیین می‌کند.
+        <div className="grid grid-cols-1 gap-4">
           <Panel title={tr("حساب کاربری")}>
             <form action={saveAccount} className="grid gap-3">
               <Field>
@@ -248,7 +251,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
         ⚠️ هیچ رمزی اینجا نیست؛ فقط فهرستِ «به چه چیزهایی دسترسی دارم».
       */}
       {tab === 'access' && (
-        <div className="grid max-w-2xl grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           <p className="text-sm text-muted-foreground">
             {tr("سامانه‌هایی که به تو دسترسی داده شده. اگر چیزی اینجا درست نیست، به مدیر بگو.")}
           </p>
@@ -278,13 +281,13 @@ export function ProfileView({ data }: { data: ProfileData }) {
       )}
 
       {tab === 'bank' && (
-        <div className="max-w-2xl">
+        <div>
           <BankCard bank={data.bank} card={data.bank.card} />
         </div>
       )}
 
       {tab === 'prefs' && (
-        <Panel title={tr("ترجیحات")} className="max-w-2xl">
+        <Panel title={tr("ترجیحات")}>
           <form action={saveTz} className="grid gap-3">
             <Field>
               <FieldLabel htmlFor="p-tz">{tr("منطقهٔ زمانی")}</FieldLabel>
@@ -314,7 +317,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
       )}
 
       {tab === 'password' && (
-        <Panel title={tr("رمزِ ورود")} className="max-w-2xl">
+        <Panel title={tr("رمزِ ورود")}>
           <form action={changePw} className="grid gap-3">
             <Field>
               <FieldLabel htmlFor="pw-current">{tr("رمزِ فعلی")}</FieldLabel>
@@ -355,7 +358,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
       {tab === 'notify' && (
         // ⚠️ تلهٔ ریستِ فرمِ React 19: Switch/Checkbox ِ Radix پس از ذخیره به مقدارِ
         // لحظهٔ بازشدن برمی‌گشتند. key روی ترجیحاتِ ذخیره‌شده فرم را از نو سوار می‌کند.
-        <form key={JSON.stringify(data.notify)} action={saveNotify} className="grid max-w-2xl grid-cols-1 gap-4">
+        <form key={JSON.stringify(data.notify)} action={saveNotify} className="grid grid-cols-1 gap-4">
           <p className="text-sm text-muted-foreground">
             {tr("زنگِ داخلِ اپ همیشه روشن است. این تنظیمات فقط کانال‌های بیرونی را تعیین می‌کنند.")}
           </p>
@@ -431,7 +434,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
       )}
 
       {tab === 'telegram' && (
-        <Panel title={tr("تلگرام")} className="max-w-2xl">
+        <Panel title={tr("تلگرام")}>
           {/* ⚠️ بدونِ توکنِ بات، دکمه‌ای که همیشه شکست بخورد نشان نمی‌دهیم. */}
           {data.telegram === 'unavailable' ? (
             <p className="text-sm text-muted-foreground">
