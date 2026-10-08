@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.13.1]
+
+### Fixed
+
+- Phone view: the side menu now closes after you tap a menu item. Before, the page changed underneath but the menu stayed open and covered it, which looked as if tapping outside did not close it. Tapping a link to the page you are already on closes it too.
+
 ## [2.13.0]
 
 ### Added

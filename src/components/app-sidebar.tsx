@@ -219,6 +219,24 @@ export function AppSidebar({
   const pathname = usePathname();
 
   /**
+   * ⚠️ سایدبارِ موبایل (کشو) پس از رفتن به صفحهٔ تازه بسته می‌شود. پیش از این
+   * زدنِ یک منو صفحه را عوض می‌کرد ولی کشو باز می‌ماند و روی صفحهٔ تازه را
+   * می‌پوشاند؛ کاربر فکر می‌کرد «با کلیک بیرون بسته نمی‌شود».
+   * دو راه: عوض‌شدنِ مسیر، و کلیک روی هر پیوندِ داخلِ کشو — حتی پیوندی به همین
+   * صفحه، که مسیر را عوض نمی‌کند.
+   */
+  const { isMobile, openMobile, setOpenMobile } = useSidebar();
+  useEffect(() => { setOpenMobile(false); }, [pathname, setOpenMobile]);
+  useEffect(() => {
+    if (!isMobile || !openMobile) return;
+    const onClick = (e: MouseEvent) => {
+      if ((e.target as Element | null)?.closest?.('[data-mobile="true"] a[href]')) setOpenMobile(false);
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, [isMobile, openMobile, setOpenMobile]);
+
+  /**
    * ⚠️ همان نبضی که زنگِ اعلان می‌گیرد، اینجا دوباره صدا زده می‌شود — و
    * گران نیست: `usePulse` یک تایمرِ مستقل دارد ولی هر دو یک مسیرِ سبک را
    * می‌خوانند که فقط دو عدد برمی‌گرداند.
