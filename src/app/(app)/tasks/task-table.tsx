@@ -13,6 +13,8 @@ import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { SearchInput } from '@/components/ui/search-input';
 import { TagChip } from '@/components/ui/tag-chip';
+import { TaskNumber } from '@/components/task-number';
+import { latinDigits, parseTaskRef, projectCodeOf } from '@/domain/projects/task-ref';
 
 /**
  * فهرستِ تسک‌های صندوق — **جدول**، نه ردیفِ درهم.
@@ -51,10 +53,16 @@ export function TaskTable({
   }, [rows]);
 
   const visible = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = latinDigits(query.trim()).toLowerCase();
+    // «ALZ-325»/«#325»/«325» (۲.۱۶.۰) ← دقیقاً همان تسک، نه هر سطری که «325» دارد.
+    const ref = parseTaskRef(needle);
     return rows.filter((r) => {
       if (projectId !== '' && String(r.projectId) !== projectId) return false;
       if (needle === '') return true;
+      if (ref && r.number) {
+        if (ref.kind === 'local') return r.number === ref.number;
+        return r.number === ref.number && projectCodeOf({ id: r.projectId, code: r.projectCode }) === ref.code;
+      }
       // جستجو روی همان چیزهایی که در سطر دیده می‌شوند.
       return [
         r.title, r.projectTitle ?? '', r.statusName ?? '', r.priorityName ?? '',
@@ -130,6 +138,7 @@ export function TaskTable({
                     {task.isPrivate && (
                       <Lock className="size-3.5 shrink-0 text-muted-foreground" aria-label={t('خصوصی')} />
                     )}
+                    <TaskNumber number={task.number} code={projectCodeOf({ id: task.projectId, code: task.projectCode })} />
                     <span className="font-medium">{task.title}</span>
                   </span>
                   {/* پورتِ آیتمِ 👤 ِ ردیفِ صندوق: تسکی که مستقیم به خودِ شماست. */}

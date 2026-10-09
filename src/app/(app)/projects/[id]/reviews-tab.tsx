@@ -345,7 +345,7 @@ function ReviewDetail({
             </a>
           ) : null}
           {review.notes && (
-            <div className="rounded-lg bg-muted/40 p-3"><RichText text={review.notes} /></div>
+            <div className="rounded-lg bg-muted/40 p-3"><RichText text={review.notes} projectId={projectId} /></div>
           )}
           {/*
             کادرِ بزرگِ تصاویر — زیرِ ویدئو، چون کنارش ستونِ موردهاست. رها کن یا

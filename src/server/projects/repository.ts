@@ -409,6 +409,8 @@ export interface TaskRow {
   reviewTitle: string | null;
   reviewStart: number | null;
   area: string;
+  /** شمارهٔ تسک در پروژه (۲.۱۶.۰) — برای کارفرما null (سرویس می‌گذارد). */
+  number: number | null;
 }
 
 /** تسک‌های یک پروژه — دو کوئریِ ثابت (R-PERF-01). */
@@ -449,6 +451,7 @@ export async function listTasks(projectId: number): Promise<TaskRow[]> {
       reviewTitle: reviews.title,
       reviewStart: tasks.reviewStart,
       area: tasks.area,
+      number: tasks.number,
     })
     .from(tasks)
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))
@@ -1268,8 +1271,11 @@ export async function getTaskFull(id: number) {
       reviewStart: tasks.reviewStart,
       reviewEnd: tasks.reviewEnd,
       area: tasks.area,
+      number: tasks.number,
+      projectCode: projects.code,
     })
     .from(tasks)
+    .innerJoin(projects, eq(projects.id, tasks.projectId))
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))
     .leftJoin(priority, eq(priority.id, tasks.priorityTagId))
     .leftJoin(assignee, eq(assignee.id, tasks.assignedTo))
@@ -1412,6 +1418,9 @@ export async function openTasksForUser(userId: number, scopes: Array<'company' |
       title: tasks.title,
       projectId: tasks.projectId,
       projectTitle: projects.title,
+      /** شماره و کدِ پروژه (۲.۱۶.۰) — «ALZ-325»؛ صندوقِ کارفرما null می‌کند. */
+      number: tasks.number,
+      projectCode: projects.code,
       dueDate: tasks.dueDate,
       statusName: tagName(await currentLocale()),
       statusColor: tags.color,
@@ -1503,6 +1512,8 @@ export async function reviewTasksForProjects(
       title: tasks.title,
       projectId: tasks.projectId,
       projectTitle: projects.title,
+      number: tasks.number,
+      projectCode: projects.code,
       dueDate: tasks.dueDate,
       statusName: tagName(await currentLocale()),
       statusColor: tags.color,

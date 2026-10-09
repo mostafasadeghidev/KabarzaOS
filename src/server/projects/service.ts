@@ -734,6 +734,11 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
     tasks: visibleTasks.map((t) => ({
       ...t,
       /**
+       * ⚠️ کارفرما شمارهٔ تسک نمی‌بیند (۲.۱۶.۰): از فاصلهٔ شماره‌ها (۱۲، ۱۴)
+       * وجودِ تسکِ پنهان از او لو می‌رفت. اینجا، نه در UI — payload ِ صفحه.
+       */
+      number: clientOnly ? null : t.number,
+      /**
        * ⚠️ «منتظرِ …» — تسکی که وابستگی‌اش هنوز تمام نشده. بدونِ این نشان،
        * کارتِ «در نوبت» می‌گفت کاری نکن ولی نمی‌گفت **منتظرِ چه**.
        */
@@ -969,6 +974,9 @@ export async function createProject(actor: Actor, input: CreateProjectData): Pro
   }).returning({ id: projects.id });
 
   const id = rows[0]!.id;
+  // کدِ کوتاهِ پروژه (۲.۱۶.۰) — پیشنهاد از عنوان؛ مدیر در تبِ مدیریت عوضش می‌کند.
+  const { assignDefaultProjectCode } = await import('@/server/projects/task-numbers');
+  await assignDefaultProjectCode(id, input.title);
 
   if (moneyOk) {
     await saveTenderRoles(actor, id, {
@@ -2729,6 +2737,9 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
   return {
     task: {
       ...task,
+      // ⚠️ کارفرما شماره و کدِ پروژه را نمی‌بیند — همان قاعدهٔ فهرستِ تسک‌ها.
+      number: clientOnly ? null : task.number,
+      projectCode: clientOnly ? '' : task.projectCode,
       assigneeName: mask(task.assignedTo, task.assigneeName),
       updatedByName: mask(task.updatedBy, task.updatedByName),
     },
@@ -3611,11 +3622,12 @@ export async function myTasks(actor: Actor) {
     const reviewIds = new Set(review.map((t) => t.id));
     return {
       kind: 'client' as const,
+      // ⚠️ کارفرما شمارهٔ تسک نمی‌بیند (۲.۱۶.۰) — null، نه پنهان در UI.
       active: own
         .filter((t) => !reviewIds.has(t.id))
-        .map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false, mine: t.assignedTo === actor.id })),
+        .map((t) => ({ ...t, number: null as number | null, projectCode: '', roles: [] as InboxRole[], claimable: false, mine: t.assignedTo === actor.id })),
       waiting: [] as InboxTask[],
-      review: review.map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false, mine: t.assignedTo === actor.id })),
+      review: review.map((t) => ({ ...t, number: null as number | null, projectCode: '', roles: [] as InboxRole[], claimable: false, mine: t.assignedTo === actor.id })),
     };
   }
 
@@ -3693,7 +3705,9 @@ export interface InboxRole {
   claimedByName: string | null;
 }
 
-export type InboxTask = Awaited<ReturnType<typeof repo.openTasksForUser>>[number] & {
+export type InboxTask = Omit<Awaited<ReturnType<typeof repo.openTasksForUser>>[number], 'number'> & {
+  /** شمارهٔ تسک (۲.۱۶.۰) — برای کارفرما null. */
+  number: number | null;
   roles: InboxRole[];
   claimable: boolean;
   /** مستقیم به نامِ خودِ بیننده — آیتمِ 👤 ِ ردیفِ صندوق. */

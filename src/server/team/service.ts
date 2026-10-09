@@ -360,6 +360,9 @@ export async function teamTasks(actor: Actor, filter: TeamTaskFilter = {}) {
       title: tasks.title,
       projectId: tasks.projectId,
       projectTitle: projects.title,
+      // «ALZ-325» (۲.۱۶.۰) — صفحهٔ تیم فقط برای مدیران است، کارفرما اینجا نمی‌آید.
+      number: tasks.number,
+      projectCode: projects.code,
       dueDate: tasks.dueDate,
       assigneeId: tasks.assignedTo,
       assigneeName: users.name,
@@ -514,6 +517,9 @@ export async function teamReviewTasks(actor: Actor) {
       title: tasks.title,
       projectId: tasks.projectId,
       projectTitle: projects.title,
+      // «ALZ-325» (۲.۱۶.۰) — صفحهٔ تیم فقط برای مدیران است، کارفرما اینجا نمی‌آید.
+      number: tasks.number,
+      projectCode: projects.code,
       dueDate: tasks.dueDate,
       assigneeId: tasks.assignedTo,
       assigneeName: users.name,
@@ -664,7 +670,10 @@ export async function teamMember(
       .groupBy(timelogs.projectId, projects.title),
 
     scope.projectIds.length === 0 ? Promise.resolve([]) : db
-      .select({ id: tasks.id, title: tasks.title, projectTitle: projects.title, dueDate: tasks.dueDate })
+      .select({
+        id: tasks.id, title: tasks.title, projectTitle: projects.title, dueDate: tasks.dueDate,
+        projectId: tasks.projectId, number: tasks.number, projectCode: projects.code,
+      })
       .from(tasks)
       .innerJoin(projects, eq(projects.id, tasks.projectId))
       .leftJoin(tags, eq(tags.id, tasks.statusTagId))

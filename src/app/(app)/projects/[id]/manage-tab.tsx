@@ -29,6 +29,7 @@ import { filterLogs, localIsoDate, logMembers, totalMinutes } from '@/domain/pro
 import { monthRange, weekRange } from '@/domain/reports/filters';
 import { Panel } from '@/components/page-shell';
 import { TelegramGroupPanel } from './telegram-group-panel';
+import { ProjectCodePanel } from './project-code-panel';
 
 /**
  * تبِ مدیریت — بازسازیِ `manage_tab_html()`:
@@ -660,6 +661,8 @@ export function ManageTab({
       </Panel>
 
       {canManage && <LogDetail logs={logs} weekStart={weekStart} />}
+
+      {canManage && <ProjectCodePanel projectId={projectId} />}
 
       {canManage && <TelegramGroupPanel projectId={projectId} />}
 

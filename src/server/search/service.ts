@@ -3,6 +3,8 @@ import { db } from '@/db/client';
 import { accounts, projects, userRoles, users } from '@/db/schema';
 import { can, canViewSection, type Actor } from '@/domain/access/permissions';
 import { visibleScopes } from '@/domain/access/guard';
+import { parseTaskRef } from '@/domain/projects/task-ref';
+import { findTaskByRef } from '@/server/projects/task-numbers';
 
 /**
  * جستجوی سراسری — پالتِ فرمان (Ctrl+K).
@@ -17,7 +19,7 @@ import { visibleScopes } from '@/domain/access/guard';
 export const MIN_QUERY_LENGTH = 3;
 
 export interface SearchHit {
-  kind: 'project' | 'member' | 'client' | 'account';
+  kind: 'project' | 'member' | 'client' | 'account' | 'task';
   id: number;
   label: string;
   href: string;
@@ -29,6 +31,17 @@ export async function search(actor: Actor, rawQuery: string): Promise<SearchHit[
   const pattern = `%${q}%`;
 
   const tasks: Array<Promise<SearchHit[]>> = [];
+
+  /**
+   * «ALZ-325» (۲.۱۶.۰) — تسک با شمارهٔ کامل. ⚠️ گاردِ دیدنِ تسک در
+   * `findTaskByRef` است (خصوصی، پنهان از کارفرما، کارفرمای همان پروژه).
+   */
+  const ref = parseTaskRef(q);
+  if (ref?.kind === 'global') {
+    tasks.push(findTaskByRef(actor, ref).then((t) => (t ? [{
+      kind: 'task' as const, id: t.taskId, label: `${t.ref} · ${t.title}`, href: `/t/${t.ref}`,
+    }] : [])));
+  }
 
   if (canViewSection(actor, 'projects')) {
     tasks.push(

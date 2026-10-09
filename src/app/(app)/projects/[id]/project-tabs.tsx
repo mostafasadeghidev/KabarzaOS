@@ -110,6 +110,7 @@ export function ProjectTabs({
   initialTab,
   initialView,
   initialReview = null,
+  initialTask = null,
 }: {
   data: ProjectTabsData;
   /** پنلِ «اطلاعات» روی سرور ساخته می‌شود و اینجا فقط جاسازی می‌شود. */
@@ -124,6 +125,8 @@ export function ProjectTabs({
   initialView?: string | null;
   /** بازبینیِ باز از `?review=` — پیوندِ اعلان و مودالِ تسک. */
   initialReview?: number | null;
+  /** شمارهٔ تسک از `?task=` (۲.۱۶.۰). */
+  initialTask?: number | null;
 }) {
   const tr = useT();
   const router = useRouter();
@@ -259,6 +262,7 @@ export function ProjectTabs({
           currentUserId={data.currentUserId}
           formOptions={data.taskFormOptions}
           initialGroup={initialView}
+          initialTask={initialTask}
         /></TabPanel>
       )}
 

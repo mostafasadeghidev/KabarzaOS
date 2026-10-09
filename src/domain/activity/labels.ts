@@ -171,6 +171,7 @@ export const ACTION_LABELS: Record<string, string> = {
   // ۲.۱۴.۰
   'project.telegram_group_on': 'وصلِ گروهِ تلگرام به پروژه',
   'project.telegram_group_off': 'جداکردنِ گروهِ تلگرام از پروژه',
+  'project.code': 'تغییرِ کدِ پروژه',
   'telegram.mute': 'خاموش‌کردنِ یادآورِ تلگرام',
   'telegram.unmute': 'روشن‌کردنِ دوبارهٔ یادآورِ تلگرام',
   'onboarding.add': 'آیتمِ ویژهٔ آنبوردینگ',

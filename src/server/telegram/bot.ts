@@ -1,4 +1,7 @@
 import { eq, inArray } from 'drizzle-orm';
+import { parseTaskRef, taskRefGlobal, type ParsedTaskRef } from '@/domain/projects/task-ref';
+import { findTaskByRef } from '@/server/projects/task-numbers';
+import { taskCard } from '@/server/telegram/task-card';
 import { db } from '@/db/client';
 import { auditLog, projects, tasks, users } from '@/db/schema';
 import type { Actor } from '@/domain/access/permissions';
@@ -599,13 +602,18 @@ async function showTasks(chatId: number, who: Who) {
   // دیرکردها اول، بعد به ترتیبِ ددلاین؛ بی‌ددلاین‌ها ته.
   const byDue = <T extends { dueDate: string | null }>(xs: T[]) =>
     [...xs].sort((a, b) => (a.dueDate ?? '9999') .localeCompare(b.dueDate ?? '9999'));
-  const card = (x: { title: string; projectTitle: string | null; dueDate: string | null }, i: number) => {
+  const card = (
+    x: { title: string; projectTitle: string | null; dueDate: string | null; number: number | null; projectId: number; projectCode: string },
+    i: number,
+  ) => {
     const due = x.dueDate
       ? x.dueDate < today
         ? ` · ⚠️ ${x.dueDate} (${who.tr('دیرکرد')})`
         : x.dueDate === today ? ` · 📅 ${who.tr('امروز')}` : ` · 📅 ${x.dueDate}`
       : '';
-    return `${i + 1}. ${x.title}${NL}    📁 ${x.projectTitle ?? '—'}${due}`;
+    // «ALZ-325 · عنوان» (۲.۱۶.۰) — همان شماره‌ای که مدیر می‌گوید؛ با فرستادنش کارت باز می‌شود.
+    const head = x.number ? `• ${taskRefGlobal({ id: x.projectId, code: x.projectCode }, x.number)} · ` : `${i + 1}. `;
+    return `${head}${x.title}${NL}    📁 ${x.projectTitle ?? '—'}${due}`;
   };
   const parts: string[] = [];
   if (inbox.active.length > 0) {
@@ -622,6 +630,38 @@ async function showTasks(chatId: number, who: Who) {
   const open = appButton(who.tr, '/tasks', 'باز کردن در برنامه');
   const keyboard: Keyboard = [...(open ? [[open]] : []), backRow(who.tr)];
   await send(chatId, parts.length > 0 ? parts.join(NL) : `🎉 ${who.tr('تسکِ بازی ندارید.')}`, keyboard);
+}
+
+/**
+ * کارتِ یک تسک از روی شماره (۲.۱۶.۰). «ALZ-325» مستقیم؛ «#325» بینِ تسک‌های
+ * خودِ کاربر (صندوق) — چون بی‌کدِ پروژه معلوم نیست کدام پروژه. ⚠️ گاردِ دیدن
+ * در `findTaskByRef`/`myTasks` است؛ ناپیدا و ممنوع یک جواب دارند.
+ */
+async function showTaskRef(chatId: number, who: Who, ref: ParsedTaskRef) {
+  let found: { taskId: number; ref: string } | null = null;
+  if (ref.kind === 'global') {
+    const t = await findTaskByRef(who.actor, ref);
+    if (t) found = { taskId: t.taskId, ref: t.ref };
+  } else {
+    const inbox = await myTasks(who.actor);
+    const hits = [...inbox.active, ...inbox.waiting, ...inbox.review].filter((t) => t.number === ref.number);
+    const unique = [...new Map(hits.map((t) => [t.id, t])).values()];
+    if (unique.length > 1) {
+      // چند پروژه تسکِ همین شماره را دارند ← کدِ کامل را نشان بده.
+      const lines = unique.slice(0, 8).map((t) => `• ${taskRefGlobal({ id: t.projectId, code: t.projectCode }, ref.number)} · ${t.title}`);
+      await send(chatId, [`🔢 ${who.tr('چند تسک با این شماره دارید؛ کدِ کامل را بفرستید:')}`, '', ...lines].join(NL));
+      return;
+    }
+    const one = unique[0];
+    if (one) found = { taskId: one.id, ref: taskRefGlobal({ id: one.projectId, code: one.projectCode }, ref.number) };
+  }
+  if (!found) {
+    await send(chatId, `🔎 ${who.tr('تسکی با این شماره پیدا نشد. اگر در کارهای شما نیست، کدِ کاملش را بفرستید؛ مثلاً ALZ-325.')}`);
+    return;
+  }
+  const card = await taskCard(found.taskId, who.locale, who.tr, who.actor.id);
+  const open = appButton(who.tr, `/t/${found.ref}`, 'باز کردن در برنامه');
+  await send(chatId, (card?.lines ?? [found.ref]).join(NL).slice(0, 4000), open ? [[open]] : []);
 }
 
 async function showHours(chatId: number, who: Who) {
@@ -1224,6 +1264,10 @@ async function onMessage(msg: TgMessage) {
     if (text === k.menu) return await showMenu(chatId, who);
     if (text === k.team && who.manager) return await showTeam(chatId, who);
     if (text === k.company && who.owner) return await showCompany(chatId, who);
+
+    // «#325» یا «ALZ-325» (۲.۱۶.۰) ← کارتِ همان تسک.
+    const ref = cmd.startsWith('/') ? null : parseTaskRef(text);
+    if (ref) return await showTaskRef(chatId, who, ref);
 
     switch (cmd) {
       case '/start':
