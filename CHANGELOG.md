@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.15.0]
+
+### Added
+
+- Add task form now has the "Section" field (e.g. header, footer, contact page), the same as the edit form.
+
+### Changed
+
+- Task forms: Deadline and Section sit side by side on one row, in both add and edit.
+- Date picker: today is highlighted more clearly (tinted background, outline and bold number).
+- Telegram task notifications: photos and text now arrive together. One photo comes with the task text as its caption and the buttons under it; several photos (up to 10) arrive as one album with the text under it, followed by a short message with the buttons. Long text is shortened to fit, keeping the link. Other files follow as before.
+
 ## [2.14.0]
 
 ### Added

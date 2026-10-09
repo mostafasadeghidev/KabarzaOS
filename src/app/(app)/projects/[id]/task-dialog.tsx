@@ -450,6 +450,10 @@ export function TaskDialog({
                     </NativeSelect>
                   </Field>
 
+                </div>
+
+                {/* ددلاین و «بخش» کنارِ هم در یک ردیف (همان چیدمانِ فرمِ افزودن). */}
+                <div className="grid gap-3 sm:grid-cols-2">
                   <Field>
                     <FieldLabel htmlFor="t-due">{t("ددلاین")}</FieldLabel>
                     <DatePicker
@@ -458,9 +462,6 @@ export function TaskDialog({
                       defaultValue={task.dueDate ?? ''}
                     />
                   </Field>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
                   <Field>
                     <FieldLabel htmlFor="t-area">{t("بخش")}</FieldLabel>
                     <Input id="t-area" name="area" defaultValue={task.area} placeholder={t("مثلاً هدر، فوتر، صفحهٔ تماس")} maxLength={120} />

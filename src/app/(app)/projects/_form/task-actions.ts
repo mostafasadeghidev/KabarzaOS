@@ -52,7 +52,7 @@ export interface TaskFormState {
   ok?: boolean;
 }
 
-const RAW_FIELDS = ['title', 'description', 'statusTagId', 'priorityTagId', 'assignedTo', 'dueDate', 'dependsOn'] as const;
+const RAW_FIELDS = ['title', 'description', 'statusTagId', 'priorityTagId', 'assignedTo', 'dueDate', 'dependsOn', 'area'] as const;
 
 function parse(formData: FormData) {
   const checked = (name: string) => formData.get(name) !== null;
