@@ -356,7 +356,7 @@ function DetailRow({ label, value, copy, mono = false }: { label: string; value:
 
 /**
  * مشخصاتِ حساب (۲.۱۸.۰) — با کلیک روی ردیف: بانک، صاحبِ حساب، شماره‌ها با دکمهٔ
- * کپی (بی‌فاصله، همان‌که در فرمِ بانک چسبانده می‌شود)، ارز، دفتر و مانده.
+ * کپی (بی‌فاصله، همان‌که در فرمِ بانک چسبانده می‌شود)، ارز و دفتر. ⚠️ مانده عمداً اینجا نیست (۲.۱۸.۱) — مودال برای دادنِ مشخصاتِ حساب به دیگران است.
  */
 function AccountDetailsDialog({ account, onClose, onEdit }: {
   account: AccountRow | null;
@@ -385,7 +385,6 @@ function AccountDetailsDialog({ account, onClose, onEdit }: {
             <DetailRow label="IBAN" value={groupBy4(a.iban ?? '')} copy={a.iban ?? ''} mono />
             <DetailRow label={t("ارز")} value={a.currencyCode ?? ''} mono />
             <DetailRow label={t("دفتر")} value={a.officeName ?? ''} />
-            <DetailRow label={t("مانده")} value={`${format(a.balance)}${a.currencyCode ? ` ${a.currencyCode}` : ''}`} mono />
             {a.note && <DetailRow label={t("یادداشت")} value={a.note} />}
           </div>
         )}
