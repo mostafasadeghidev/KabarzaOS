@@ -2974,6 +2974,7 @@
   "کد ارز (مثل EUR)": "Para birimi kodu (örneğin EUR)",
   "کد باید ۲ تا ۶ حرف یا رقمِ انگلیسی باشد و با حرف شروع شود.": "Kod 2 ile 6 arası Latin harf veya rakamdan oluşmalı ve harfle başlamalı.",
   "کدِ پروژه": "Proje kodu",
+  "کدِ پروژه — تسک‌ها بیرون از پروژه با این کد نوشته می‌شوند (مثلاً {example}).": "Proje kodu — proje dışında görevler bu kodla yazılır (örn. {example}).",
   "کدِ پروژه ذخیره شد.": "Proje kodu kaydedildi.",
   "کدِ رنگ": "Renk kodu",
   "کد مالیاتی / شناسهٔ ملی": "Vergi no / ulusal kimlik",
