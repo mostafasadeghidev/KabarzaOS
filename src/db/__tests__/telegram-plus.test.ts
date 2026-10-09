@@ -151,6 +151,20 @@ describe('صفحه‌کلیدِ ثابت و منوی مدیران', () => {
     await handleUpdate(press(CHAT_A, 'pr:A:1'));
     expect(texts().join(' ')).not.toContain('وضعیتِ شرکت');
   });
+
+  it('مالک ساعت و تایمر ندارد؛ عضو دارد؛ دکمهٔ قدیمیِ «ساعت» صفحه‌کلید را تازه می‌کند', async () => {
+    await handleUpdate(msg(CHAT_OWNER, '/start'));
+    const owner = JSON.stringify(sent);
+    for (const gone of ['m:hours', 'l:p', 't:p', 'ساعت‌های من', 'تایمر']) expect(owner, gone).not.toContain(gone);
+    sent = [];
+    await handleUpdate(msg(CHAT_A, '/start'));
+    const member = JSON.stringify(sent);
+    for (const kept of ['m:hours', 'l:p', 'ساعت‌های من']) expect(member).toContain(kept);
+    sent = [];
+    await handleUpdate(msg(CHAT_OWNER, '🕒 ساعت‌های من'));
+    expect(sent.some((s) => (s.payload.reply_markup as { keyboard?: unknown } | undefined)?.keyboard)).toBe(true);
+    expect(JSON.stringify(sent)).not.toContain('ساعت‌های من');
+  });
 });
 
 describe('گزارشِ صبحگاهی', () => {
