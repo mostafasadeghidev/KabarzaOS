@@ -2,6 +2,25 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.18.0]
+
+### Added
+
+- Bank accounts (Finance → Bank accounts) have bank details: bank name, account holder, account number, card number and international account number (IBAN). All are optional. Spaces, dashes and Persian digits are accepted; numbers are stored in one standard form and shown in groups of four. The IBAN is checked with its check digits and the card number with the Luhn check, so a typo is caught before saving.
+- Clicking an account row opens its details: bank, holder, account number, card number and IBAN each with a copy button (copied without spaces), plus currency, office, balance and note, with an Edit button for managers.
+
+### Fixed
+
+- The account form keeps what you typed after a validation error instead of clearing every field.
+
+### Security
+
+- Account, card and IBAN numbers are not sent to AI providers: the AI's finance accounts tool leaves them out.
+
+### Database
+
+- Migration `0050_account_bank_details`: `bank_name`, `holder_name`, `account_number`, `iban`, `card_number` on `accounts`.
+
 ## [2.17.1]
 
 ### Fixed

@@ -1,3 +1,4 @@
+import { normalizeAccountNumber, normalizeCard, normalizeIban } from '@/domain/finance/bank';
 import { format as formatMoney } from '@/domain/money/money';
 import { buildTimelines, lastActorOf } from '@/domain/ledger/timeline';
 import { tagName } from '@/db/tag-name';
@@ -92,6 +93,12 @@ export async function listAccounts(actor: Actor) {
       note: accounts.note,
       sortOrder: accounts.sortOrder,
       scope: accounts.scope,
+      // مشخصاتِ بانکی (۲.۱۸.۰).
+      bankName: accounts.bankName,
+      holderName: accounts.holderName,
+      accountNumber: accounts.accountNumber,
+      iban: accounts.iban,
+      cardNumber: accounts.cardNumber,
       /**
        * ماندهٔ **فعلی** — پورتِ ستونِ `balance_fmt` ِ فهرستِ حساب‌ها. یک زیرپرس‌وجوی
        * گروهی به‌ازای هر حساب، نه کوئری در حلقه.
@@ -1055,6 +1062,12 @@ export interface AccountInput {
   isActive: boolean;
   scope: 'company' | 'private';
   accountantIds: number[];
+  /** مشخصاتِ بانکی (۲.۱۸.۰) — اختیاری. */
+  bankName?: string;
+  holderName?: string;
+  accountNumber?: string;
+  iban?: string;
+  cardNumber?: string;
 }
 
 export async function saveAccount(actor: Actor, input: AccountInput): Promise<number> {
@@ -1064,7 +1077,20 @@ export async function saveAccount(actor: Actor, input: AccountInput): Promise<nu
   if (name === '') throw new AccountError('name_required');
   if (input.currencyId === null) throw new AccountError('no_currency');
 
+  // ⚠️ شماره‌ها یکدست و سنجیده — یک رقمِ اشتباه یعنی پولی که به حسابِ دیگری می‌رود.
+  const iban = normalizeIban(input.iban ?? '');
+  if (iban === null) throw new AccountError('iban_invalid');
+  const cardNumber = normalizeCard(input.cardNumber ?? '');
+  if (cardNumber === null) throw new AccountError('card_invalid');
+  const accountNumber = normalizeAccountNumber(input.accountNumber ?? '');
+  if (accountNumber === null) throw new AccountError('account_number_invalid');
+
   const values = {
+    bankName: (input.bankName ?? '').trim().slice(0, 120),
+    holderName: (input.holderName ?? '').trim().slice(0, 120),
+    accountNumber,
+    iban,
+    cardNumber,
     name,
     type: input.type,
     officeId: input.officeId,

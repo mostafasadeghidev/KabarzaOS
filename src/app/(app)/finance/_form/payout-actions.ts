@@ -19,6 +19,8 @@ import { ltr } from '@/i18n/bidi';
 export interface PayoutState {
   error?: string;
   ok?: boolean;
+  /** آنچه کاربر فرستاده بود — تا فرم پس از خطا خالی نشود. */
+  values?: Record<string, string>;
 }
 
 async function explain(error: unknown, fallback: string): Promise<string> {
@@ -141,7 +143,22 @@ export async function deleteRecurringAction(id: number): Promise<PayoutState> {
 
 /* ---- حساب‌های بانکی ---- */
 
-export async function saveAccountAction(_prev: PayoutState, formData: FormData): Promise<PayoutState> {
+/** فیلدهای فرمِ حساب که پس از خطا برمی‌گردند. */
+const ACCOUNT_FIELDS = [
+  'name', 'type', 'officeId', 'currencyId', 'openingBalance', 'note', 'sortOrder',
+  'bankName', 'holderName', 'accountNumber', 'iban', 'cardNumber',
+] as const;
+
+export async function saveAccountAction(prev: PayoutState, formData: FormData): Promise<PayoutState> {
+  const result = await saveAccountInner(prev, formData);
+  // ⚠️ React پس از اکشن فرم را خالی می‌کند؛ بی این، یک شمارهٔ کارتِ اشتباه یعنی تایپِ دوبارهٔ همه‌چیز.
+  if (result.error) {
+    return { ...result, values: Object.fromEntries(ACCOUNT_FIELDS.map((k) => [k, String(formData.get(k) ?? '')])) };
+  }
+  return result;
+}
+
+async function saveAccountInner(_prev: PayoutState, formData: FormData): Promise<PayoutState> {
   const { saveAccount } = await import('@/server/finance/service');
   const num = (name: string) => {
     const n = Number(formData.get(name));
@@ -160,6 +177,11 @@ export async function saveAccountAction(_prev: PayoutState, formData: FormData):
     isActive: formData.get('isActive') !== null,
     scope: (String(formData.get('scope') ?? 'company') as 'company' | 'private'),
     accountantIds: formData.getAll('accountantIds').map(Number).filter((n) => n > 0),
+    bankName: String(formData.get('bankName') ?? ''),
+    holderName: String(formData.get('holderName') ?? ''),
+    accountNumber: String(formData.get('accountNumber') ?? ''),
+    iban: String(formData.get('iban') ?? ''),
+    cardNumber: String(formData.get('cardNumber') ?? ''),
   }), 'حساب ذخیره نشد.');
 }
 

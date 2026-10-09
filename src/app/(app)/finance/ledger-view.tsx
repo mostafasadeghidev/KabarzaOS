@@ -57,6 +57,12 @@ export interface AccountOption {
   scope: 'company' | 'private';
   /** ماندهٔ فعلی — اولیه + خالصِ دفتر. */
   balance: string;
+  /** مشخصاتِ بانکی (۲.۱۸.۰) — خالی یعنی ثبت نشده. */
+  bankName?: string;
+  holderName?: string;
+  accountNumber?: string;
+  iban?: string;
+  cardNumber?: string;
 }
 
 export interface EntryRow {
