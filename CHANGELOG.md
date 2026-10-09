@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.15.1]
+
+### Changed
+
+- Telegram bot: the owner no longer sees hours and timer. The main menu, the bottom shortcut keyboard, the help text and the menu summary drop "My hours", the timer, "Log hours" and today's hours for the owner (a timer actually running from the web is still shown). Pressing an old "My hours" or "Timer" shortcut replaces the keyboard with the new one. Team and project managers keep them, since they log their own work.
+
 ## [2.15.0]
 
 ### Added

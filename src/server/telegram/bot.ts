@@ -215,9 +215,15 @@ function menu(tr: Translator, timer?: TimerView, roles?: { manager: boolean; own
     : timer?.pending
       ? { text: `⏳ ${tr('تایمرِ منتظرِ تأیید')}`, callback_data: 't:p' }
       : { text: `▶️ ${tr('شروعِ تایمر')}`, callback_data: 't:p' };
+  // ⚠️ مالک (مدیرِ کل) ساعت نمی‌زند: «ساعت‌های من»، تایمر و «ثبتِ ساعت» برایش نیست (۲.۱۵.۱).
+  const work: Keyboard = roles?.owner
+    ? [[{ text: `📋 ${tr('تسک‌های من')}`, callback_data: 'm:tasks' }]]
+    : [
+      [{ text: `📋 ${tr('تسک‌های من')}`, callback_data: 'm:tasks' }, { text: `🕒 ${tr('ساعت‌های من')}`, callback_data: 'm:hours' }],
+      [timerButton, { text: `➕ ${tr('ثبتِ ساعت')}`, callback_data: 'l:p' }],
+    ];
   return [
-    [{ text: `📋 ${tr('تسک‌های من')}`, callback_data: 'm:tasks' }, { text: `🕒 ${tr('ساعت‌های من')}`, callback_data: 'm:hours' }],
-    [timerButton, { text: `➕ ${tr('ثبتِ ساعت')}`, callback_data: 'l:p' }],
+    ...work,
     [{ text: `📅 ${tr('جلسه‌ها و یادآورها')}`, callback_data: 'm:meet' }, { text: `🤖 ${tr('هوشِ مصنوعی')}`, callback_data: 'm:ai' }],
     ...(app ? [[app]] : []),
     ...(roles?.manager || roles?.owner
@@ -264,7 +270,10 @@ function shortcuts(who: Who) {
 
 function replyKeyboard(who: Who) {
   const k = shortcuts(who);
-  const rows = [[{ text: k.tasks }, { text: k.hours }], [{ text: k.timer }, { text: k.meetings }, { text: k.menu }]];
+  // مالک ساعت و تایمر ندارد — همان قاعدهٔ منوی اصلی.
+  const rows = who.owner
+    ? [[{ text: k.tasks }, { text: k.meetings }, { text: k.menu }]]
+    : [[{ text: k.tasks }, { text: k.hours }], [{ text: k.timer }, { text: k.meetings }, { text: k.menu }]];
   const admin = [...(who.manager ? [{ text: k.team }] : []), ...(who.owner ? [{ text: k.company }] : [])];
   if (admin.length > 0) rows.push(admin);
   return { keyboard: rows, resize_keyboard: true, is_persistent: true };
@@ -544,12 +553,15 @@ async function showMenu(chatId: number, who: Who, messageId?: number) {
   const lines = [
     `👋 ${who.tr('سلام {name}!', { name: who.name })}`,
     '',
-    timer.running
-      ? `⏱ ${who.tr('تایمر روشن است')}: ${timer.running.title} · ${hm(timer.running.minutes)}`
-      : timer.pending
-        ? `⏳ ${who.tr('یک تایمرِ طولانی منتظرِ تأییدِ شماست.')}`
-        : `⏱ ${who.tr('تایمر خاموش است')}`,
-    `🕒 ${who.tr('امروز')}: ${hm(todayLogs.rangeMinutes)}`,
+    // مالک ساعت نمی‌زند: خطِ تایمر و «امروز» برایش نیست (مگر تایمری واقعاً از وب روشن باشد).
+    ...(who.owner && !timer.running && !timer.pending ? [] : [
+      timer.running
+        ? `⏱ ${who.tr('تایمر روشن است')}: ${timer.running.title} · ${hm(timer.running.minutes)}`
+        : timer.pending
+          ? `⏳ ${who.tr('یک تایمرِ طولانی منتظرِ تأییدِ شماست.')}`
+          : `⏱ ${who.tr('تایمر خاموش است')}`,
+      `🕒 ${who.tr('امروز')}: ${hm(todayLogs.rangeMinutes)}`,
+    ]),
     `📋 ${who.tr('تسکِ باز')}: ${inbox.active.length}${overdue > 0 ? ` · ⚠️ ${who.tr('{n} دیرکرد', { n: overdue })}` : ''}`,
     ...(inbox.review.length > 0 ? [`🔍 ${who.tr('در انتظارِ بازبینیِ شما')}: ${inbox.review.length}`] : []),
     '',
@@ -567,10 +579,13 @@ async function showHelp(chatId: number, who: Who) {
     '',
     '/menu — ' + who.tr('منوی اصلی'),
     '/tasks — ' + who.tr('تسک‌های من'),
-    '/hours — ' + who.tr('ساعت‌های من'),
-    '/timer — ' + who.tr('شروعِ تایمر'),
-    '/stop — ' + who.tr('توقفِ تایمر'),
-    '/log — ' + who.tr('ثبتِ ساعت'),
+    // مالک ساعت نمی‌زند؛ راهنمایش هم این‌ها را نمی‌گوید.
+    ...(who.owner ? [] : [
+      '/hours — ' + who.tr('ساعت‌های من'),
+      '/timer — ' + who.tr('شروعِ تایمر'),
+      '/stop — ' + who.tr('توقفِ تایمر'),
+      '/log — ' + who.tr('ثبتِ ساعت'),
+    ]),
     '/meetings — ' + who.tr('جلسه‌ها و یادآورها'),
     '/ai — ' + who.tr('هوشِ مصنوعی'),
     '/new — ' + who.tr('گفت‌وگوی تازه با هوشِ مصنوعی'),
@@ -1199,6 +1214,8 @@ async function onMessage(msg: TgMessage) {
 
     // ⌨️ دکمه‌های میان‌برِ پایینِ صفحه — متن‌شان به زبانِ همین کاربر است.
     const k = shortcuts(who);
+    // صفحه‌کلیدِ قدیمیِ مالک هنوز «ساعت»/«تایمر» دارد ← صفحه‌کلیدِ تازه جایش می‌نشیند.
+    if (who.owner && (text === k.hours || text === k.timer)) return await sendShortcuts(chatId, who);
     if (text === k.tasks) return await showTasks(chatId, who);
     if (text === k.hours) return await showHours(chatId, who);
     // تایمرِ روشن ← همان پیامِ «روشن است · توقف»؛ خاموش ← انتخابِ پروژه.
