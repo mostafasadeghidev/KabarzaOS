@@ -130,7 +130,6 @@ async function runMeetingSoon(now: Date): Promise<number> {
   // شروع کمی گذشت، دعوت‌شده باز هم — کمی دیر — خبردار می‌شود، نه هیچ‌وقت.
   // `reminded` یک‌بار‌بودن را تضمین می‌کند.
   const grace = new Date(now.getTime() - 30 * 60_000);
-  const timeZone = (await getSystemConfig()).timezone || undefined;
 
   const rows = await db
     .select({
@@ -157,7 +156,9 @@ async function runMeetingSoon(now: Date): Promise<number> {
         type: 'meeting_soon',
         title: 'یادآوری جلسه: {title}',
         body: location ? 'زمان: {when} · مکان: {location}' : 'زمان: {when}',
-        params: { title: meeting.title, when: formatDateTime(meeting.meetAt, timeZone), location },
+        // ساعت به وقتِ هر گیرنده (`times`)، نه سامانه.
+        params: { title: meeting.title, location },
+        times: { when: meeting.meetAt },
         url: `/meetings?meeting=${meeting.id}`,
       });
       sent += 1;

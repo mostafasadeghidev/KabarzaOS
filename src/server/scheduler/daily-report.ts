@@ -1,4 +1,7 @@
 import { and, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { isLocale } from '@/i18n/config';
+import { canViewSection } from '@/domain/access/permissions';
+import { loadActor } from '@/server/auth';
 import { getSystemConfig } from '@/server/settings/system-service';
 import type { Locale } from '@/i18n/config';
 import { loadMessages } from '@/i18n/server';
@@ -64,10 +67,13 @@ export async function saveReportConfig(actor: Actor, config: ReportConfig): Prom
  * مترجمِ گزارش — زبانِ پیش‌فرضِ سامانه، چون کرون درخواستی ندارد که زبانش را
  * بخواند. پیش‌نمایش و «ارسالِ آزمایشی» هم همین را می‌گیرند تا یک متن باشد.
  */
-async function reportTranslator(): Promise<Translator> {
-  const locale = (await getSystemConfig()).defaultLocale as Locale;
-  return createTranslator(await loadMessages(locale), locale);
+async function reportTranslator(locale?: string | null): Promise<Translator> {
+  const wanted = locale && isLocale(locale) ? locale : (await getSystemConfig()).defaultLocale as Locale;
+  return createTranslator(await loadMessages(wanted), wanted);
 }
+
+/** بخش‌های پولی — فقط برای گیرنده‌ای که بخشِ مالی را می‌بیند (۲.۱۶.۲). */
+const MONEY_SECTIONS = new Set(['incoming', 'payouts', 'expenses']);
 
 async function collect(date: string, t: Translator): Promise<ReportSections> {
   // پورتِ افزونه: «همان روز» به وقتِ **سامانه**، نه UTC — پرداختِ نزدیکِ نیمه‌شب به روزِ درست می‌افتد.
@@ -114,12 +120,18 @@ async function collect(date: string, t: Translator): Promise<ReportSections> {
         eq(tags.statusGroup, 'complete'),
         gte(tasks.updatedAt, dayStart),
         lte(tasks.updatedAt, dayEnd),
+        // ⚠️ تسکِ خصوصی و پاک‌شده در گزارشِ مدیران نمی‌آید (۲.۱۶.۲).
+        eq(tasks.isPrivate, false),
+        isNull(tasks.deletedAt),
       )),
 
     db.select({ title: tasks.title, projectTitle: projects.title })
       .from(tasks)
       .leftJoin(projects, eq(projects.id, tasks.projectId))
-      .where(and(gte(tasks.createdAt, dayStart), lte(tasks.createdAt, dayEnd))),
+      .where(and(
+        gte(tasks.createdAt, dayStart), lte(tasks.createdAt, dayEnd),
+        eq(tasks.isPrivate, false), isNull(tasks.deletedAt),
+      )),
 
     db.select({ title: meetings.title, meetAt: meetings.meetAt, projectTitle: projects.title })
       .from(meetings)
@@ -233,23 +245,41 @@ export async function sendReportToChat(chatId: string, date: string): Promise<bo
  * است — پورتِ `send_telegram_admins()`. متن روی مرزِ خط تکه می‌شود، وگرنه
  * گزارشِ بلندتر از ۴۰۹۶ نویسه بی‌صدا رد می‌شد.
  */
-async function sendToAdmins(text: string): Promise<void> {
+async function sendToAdmins(date: string, sections: string[]): Promise<void> {
   const admins = await db
-    .selectDistinct({ chatId: users.telegramChatId })
+    .selectDistinct({ id: users.id, chatId: users.telegramChatId, locale: users.locale })
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
     .where(and(
       inArray(userRoles.role, ['owner', 'admin']),
       isNull(users.deletedAt),
+      // ⚠️ همکارِ قفل‌شده یا قطع‌شده گزارش نمی‌گیرد.
+      eq(users.memberState, 'active'),
       eq(users.telegramOff, false),
       sql`${users.telegramChatId} <> ''`,
     ));
 
   const token = await botToken();
-  const parts = chunkText(text);
+  /**
+   * ⚠️ هر گیرنده گزارشِ **خودش**: به زبانِ پنلِ خودش، و بخش‌های پولی فقط اگر
+   * بخشِ مالی را می‌بیند — پیش از این همکارِ ادمینِ بی‌دسترسیِ مالی پرداخت‌ها و
+   * مبلغ‌ها را در تلگرام می‌دید.
+   */
+  const cache = new Map<string, string>();
   for (const admin of admins) {
     if (!admin.chatId) continue;
-    for (const part of parts) {
+    const loaded = await loadActor(admin.id).catch(() => null);
+    if (!loaded) continue;
+    const money = canViewSection(loaded.actor, 'finance');
+    const key = `${admin.locale ?? ''}|${money}`;
+    if (!cache.has(key)) {
+      const t = await reportTranslator(admin.locale);
+      const visible = money ? sections : sections.filter((s) => !MONEY_SECTIONS.has(s));
+      cache.set(key, buildReport({ date, sections: visible, data: await collect(date, t) }, t));
+    }
+    const text = cache.get(key)!;
+    if (!text) continue;
+    for (const part of chunkText(text)) {
       await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -284,7 +314,7 @@ export async function dispatchReport(date: string): Promise<boolean> {
   }
   if (config.telegram && await botToken()) {
     try {
-      await sendToAdmins(text);
+      await sendToAdmins(date, config.sections);
     } catch (error) {
       console.error('[daily-report] telegram', error);
     }

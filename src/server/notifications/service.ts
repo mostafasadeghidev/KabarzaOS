@@ -1,3 +1,4 @@
+import { formatDateTime } from '@/i18n/datetime';
 import { and, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { isLocale, type Locale } from '@/i18n/config';
 import { createTranslator, type Translator } from '@/i18n/translate';
@@ -49,6 +50,12 @@ export interface NotifyInput {
    * ⚠️ ربات پیش از ثبت دوباره گاردِ همان سرویس را می‌گذراند.
    */
   replyTo?: { thread: number } | { projectId: number; commentId: number };
+  /**
+   * زمان‌هایی که در متن می‌آیند (۲.۱۶.۲) — «{when}». هر گیرنده آن را به وقتِ
+   * **منطقهٔ زمانیِ خودش** می‌بیند؛ پیش از این ساعتِ جلسه به وقتِ سازنده یا
+   * سامانه می‌رفت و عضوِ شهرِ دیگر ساعتِ اشتباه می‌گرفت.
+   */
+  times?: Record<string, Date | string>;
 }
 
 /**
@@ -82,6 +89,7 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
       telegramOff: users.telegramOff,
       telegramMuted: users.telegramMuted,
       locale: users.locale,
+      timezone: users.timezone,
     })
     .from(users)
     .where(inArray(users.id, ids));
@@ -89,15 +97,18 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
   // ترجمهٔ به‌ازای زبانِ هر گیرنده — یک مترجم برای هر زبان، نه هر نفر.
   const fallbackLocale = (await getSystemConfig()).defaultLocale as Locale;
   const translators = new Map<Locale, Translator>();
-  const render = async (locale: Locale): Promise<{ title: string; body: string; openLabel: string; locale: Locale; tr: Translator }> => {
+  const systemTz = (await getSystemConfig()).timezone;
+  const render = async (locale: Locale, timezone?: string | null): Promise<{ title: string; body: string; openLabel: string; locale: Locale; tr: Translator }> => {
     let tr = translators.get(locale);
     if (!tr) {
       tr = createTranslator(await loadMessages(locale), locale);
       translators.set(locale, tr);
     }
+    const params = { ...input.params };
+    for (const [key, at] of Object.entries(input.times ?? {})) params[key] = formatDateTime(at, timezone || systemTz || undefined);
     return {
-      title: tr(input.title, input.params),
-      body: input.body ? tr(input.body, input.params) : '',
+      title: tr(input.title, params),
+      body: input.body ? tr(input.body, params) : '',
       openLabel: tr('باز کردن در برنامه'),
       locale,
       tr,
@@ -137,7 +148,7 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
     const values = [];
     for (const p of inApp) {
       const row = byId.get(p.userId);
-      const text = await render(localeOf(row ?? { locale: null }));
+      const text = await render(localeOf(row ?? { locale: null }), row?.timezone);
       values.push({ userId: p.userId, type: input.type, title: text.title, body: text.body, url: input.url ?? '' });
     }
     await db.insert(notifications).values(values);
@@ -149,7 +160,7 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
     const row = byId.get(p.userId);
     if (!row) continue;
     try {
-      const text = await render(localeOf(row));
+      const text = await render(localeOf(row), row.timezone);
       await deliverExternal(p, { ...input, ...text }, {
         email: addressOf(row),
         chatId: row.telegramChatId,
@@ -185,28 +196,34 @@ async function deliverExternal(
   }
 
   if (plan.telegram) {
+    /**
+     * ⚠️ نشانیِ خام فقط وقتی دکمهٔ «باز کردن در برنامه» نیست و نشانی مطلق است
+     * (۲.۱۶.۲) — پیش از این زیرِ هر اعلان یک پیوندِ بلند تکرار می‌شد، یا بی
+     * `APP_URL` مسیرِ نسبیِ بی‌فایده‌ای مثلِ «/projects/3».
+     */
+    const link = !miniAppButton(input.url) && /^https?:\/\//.test(url) ? url : '';
     // ⚠️ کارتِ کامل فقط برای «سپرده شد» — گیرنده انجام‌دهندهٔ همان تسک است.
     const card = input.type === 'task.assigned' && input.taskId && input.locale && input.tr
       ? await taskCard(input.taskId, input.locale, input.tr, target.userId).catch(() => null)
       : null;
     if (card) {
       const head = [`🔔 ${input.title}`, '', ...card.lines].join('\n');
-      const tail = url ? `\n\n${url}` : '';
+      const tail = link ? `\n\n${link}` : '';
       const keyboard = telegramKeyboard(input);
       const photos = card.files.filter((f) => f.photo);
       const docs = card.files.filter((f) => !f.photo);
       // عکس و متن در یک پیام (۲.۱۴.۰): متن زیرنویسِ عکس/آلبوم می‌شود؛ اگر نشد، همان پیامِ متنی.
       const sent = photos.length > 0
         && await sendTelegramPhotos(target.chatId, photos, fitCaption(head, tail), keyboard, input.tr);
-      if (!sent) await sendTelegram(target.chatId, (head + tail).slice(0, 4000), keyboard);
+      if (!sent) await sendTelegram(target.chatId, `${head.slice(0, 3900 - tail.length)}${tail}`, keyboard);
       if (docs.length > 1) await sendTelegramAlbum(target.chatId, docs, '');
       else if (docs.length === 1) await sendTelegramFile(target.chatId, docs[0]!);
       if (!sent) for (const file of photos) await sendTelegramFile(target.chatId, file);
     } else {
       // 🔔 عنوان، بعد متن؛ پیوند ته پیام (دکمهٔ «باز کردن» زیرش است).
       const lines = [`🔔 ${input.title}`];
-      if (input.body) lines.push(input.body);
-      if (url) lines.push(url);
+      if (input.body) lines.push(input.body.length > 3500 ? `${input.body.slice(0, 3500)}…` : input.body);
+      if (link) lines.push(link);
       await sendTelegram(target.chatId, lines.join('\n\n'), telegramKeyboard(input));
     }
   }

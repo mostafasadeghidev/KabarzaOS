@@ -4,7 +4,7 @@ import { db, sql } from '../client';
 import { comments, messages, projectMembers, projects, schedulerStamps, tags, tasks, threadUsers, threads, userRoles, users } from '../schema';
 import { handleUpdate, resetBotState, sendMorningBrief, setTelegramApi, type TgUpdate } from '@/server/telegram/bot';
 import { notify } from '@/server/notifications/service';
-import { announceTask, linkProjectGroup } from '@/server/telegram/group';
+import { announceComment, announceTask, linkProjectGroup } from '@/server/telegram/group';
 import { createTask } from '@/server/projects/service';
 import type { Actor } from '@/domain/access/permissions';
 import { runTick } from '@/server/scheduler/service';
@@ -225,6 +225,26 @@ describe('گروهِ تلگرامِ پروژه', () => {
     const all = JSON.stringify(bodies);
     expect(all).toContain('تسکِ عمومی');
     expect(all).not.toContain('SECRET-PRIVATE');
+  });
+
+  it('سبکِ پیام (۲.۱۶.۲): HTML ِ امن، نامِ عضو با نقش (کارفرما در گروه است)، بی نامِ پروژه', async () => {
+    const bodies = captureTelegramFetch();
+    await announceComment(P, A, 'نسخهٔ <موبایل> & دسکتاپ');
+    await announceTask(
+      await createTask(as(A, ['member']), P, { title: 'هدر <b>', description: '', statusTagId: null, priorityTagId: null, assignedTo: A, dueDate: '2030-01-05', isPrivate: false }),
+      'new',
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    const group = bodies.filter((b) => String(b.chat_id) === '-500');
+    const all = group.map((b) => String(b.text)).join(' | ');
+    expect(group.every((b) => b.parse_mode === 'HTML')).toBe(true);
+    // ⚠️ نامِ واقعیِ عضو («عضو») نمی‌آید؛ نقشش («دولوپر») می‌آید.
+    expect(all).toContain('<b>دولوپر</b>');
+    expect(all).not.toMatch(/عضو(?! تیم)/);
+    expect(all).toContain('&lt;موبایل&gt; &amp; دسکتاپ');
+    expect(all).toContain('<b>هدر &lt;b&gt;</b>');
+    expect(all).toContain('2030-01-05');
+    expect(all).not.toContain('پروژهٔ آ');
   });
 });
 

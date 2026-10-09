@@ -2,6 +2,9 @@ import { rateSource } from '@/server/finance/service';
 import { isFrozenProject } from '@/domain/projects/lifecycle';
 import { notify } from '@/server/notifications/service';
 import { managerIds } from '@/server/notifications/audience';
+import { loadActor } from '@/server/auth';
+import { payoutLevel } from '@/server/finance/payouts';
+import { format } from '@/domain/money/money';
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
@@ -396,14 +399,33 @@ async function notifyPaymentRequested(
 ) {
   const [managers, project, member] = await Promise.all([
     managerIds(),
-    db.select({ title: projects.title }).from(projects).where(eq(projects.id, input.projectId)),
+    db.select({ title: projects.title, currency: currencies.code }).from(projects)
+      .leftJoin(currencies, eq(currencies.id, projects.currencyId))
+      .where(eq(projects.id, input.projectId)),
     db.select({ name: users.name }).from(users).where(eq(users.id, actorId)),
   ]);
 
-  await notify(managers.filter((id) => id !== actorId), {
+  /**
+   * ⚠️ فقط کسی که درخواست را **می‌تواند ببیند و تصمیم بگیرد** (سطحِ کاملِ
+   * مالی) — پیش از این هر همکارِ ادمین، حتی بی‌دسترسیِ مالی، مبلغ را در
+   * تلگرام می‌گرفت (۲.۱۶.۲).
+   */
+  const deciders: number[] = [];
+  for (const id of managers) {
+    if (id === actorId) continue;
+    const loaded = await loadActor(id).catch(() => null);
+    if (loaded && payoutLevel(loaded.actor) === 'full') deciders.push(id);
+  }
+  await notify(deciders, {
     type: 'payment.requested',
     title: 'درخواست پرداخت جدید',
-    body: `${member[0]?.name ?? ''} — ${input.amount} — «${project[0]?.title ?? ''}»`,
+    // ⚠️ قالبِ ترجمه‌پذیر با پارامتر، نه رشتهٔ ساخته‌شده (R-NOTIF)؛ مبلغ با جداکننده و ارز.
+    body: '{member} — {amount} — «{project}»',
+    params: {
+      member: member[0]?.name ?? '',
+      amount: `${format(input.amount)}${project[0]?.currency ? ` ${project[0].currency}` : ''}`,
+      project: project[0]?.title ?? '',
+    },
     url: '/finance?tab=members',
   });
 }

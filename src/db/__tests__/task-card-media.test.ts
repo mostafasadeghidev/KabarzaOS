@@ -78,12 +78,13 @@ describe('عکس و متنِ تسک با هم', () => {
     expect(calls[1]!.json!.reply_markup).toBeTruthy();
   });
 
-  it('متنِ بلند در سقفِ زیرنویس کوتاه می‌شود ولی پیوند می‌ماند', async () => {
+  it('متنِ بلند در سقفِ زیرنویس کوتاه می‌شود؛ پیوند در دکمه است، نه نشانیِ خام (۲.۱۶.۲)', async () => {
     const taskId = await taskWithPhotos(1, 'الف'.repeat(3000));
     const calls = capture();
     await notify([USER], { type: 'task.assigned', title: 'تسکِ تازه', url: '/projects/1?tab=tasks', taskId });
     const caption = String(calls[0]!.form!.get('caption'));
     expect(caption.length).toBeLessThanOrEqual(1024);
-    expect(caption.endsWith('https://app.test/projects/1?tab=tasks')).toBe(true);
+    expect(caption).not.toContain('https://app.test');
+    expect(String(calls[0]!.form!.get('reply_markup'))).toContain('app.test');
   });
 });

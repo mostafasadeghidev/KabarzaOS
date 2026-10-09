@@ -49,7 +49,7 @@ describe('project_signed', () => {
     expect(n).toHaveLength(1);
     expect(n[0]!.type).toBe('project.signed');
     expect(n[0]!.title).toBe('به پروژه اضافه شدید: وب‌سایت');
-    expect(n[0]!.body).toBe('شما به‌عنوان کارفرما به پروژهٔ «وب‌سایت» اضافه شدید.');
+    expect(n[0]!.body).toBe('نقشِ شما: کارفرما');
     expect(n[0]!.url).toBe(`/projects/${projectId}`);
 
     // دوباره افزودن: بی‌اثر و بی‌اعلان.
@@ -61,7 +61,7 @@ describe('project_signed', () => {
     await service.addProjectMember(ownerActor(), projectId, { userId: dev, roleTagId: devRole, agreedAmount: '100' });
     const n = await db.select().from(notifications).where(eq(notifications.userId, dev));
     expect(n).toHaveLength(1);
-    expect(n[0]!.body).toBe('شما به‌عنوان عضو با نقش (دولوپر) به پروژهٔ «وب‌سایت» اضافه شدید.');
+    expect(n[0]!.body).toBe('نقشِ شما: دولوپر');
 
     await service.addProjectMember(ownerActor(), projectId, { userId: dev, roleTagId: devRole, agreedAmount: '200' });
     expect(await db.select().from(notifications).where(eq(notifications.userId, dev))).toHaveLength(1);

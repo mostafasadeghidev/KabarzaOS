@@ -476,27 +476,26 @@ export async function createMeeting(actor: Actor, input: MeetingInput): Promise<
 /**
  * بدنهٔ اعلانِ جلسه — پورتِ `Notifications::meeting_created()`:
  * زمان، و اگر بود مکان و پروژه. کلید بسته به ترکیب فرق می‌کند تا هر خط
- * ترجمه‌پذیر بماند؛ زمان به وقتِ خودِ سازنده نوشته می‌شود.
+ * ترجمه‌پذیر بماند؛ زمان به وقتِ هر گیرنده نوشته می‌شود (۲.۱۶.۲).
  */
 async function meetingBody(
   actor: Actor,
   input: { title: string; meetAt: Date; location: string; projectId: number | null },
-): Promise<{ body: string; params: Record<string, string> }> {
-  const [tzRow, projectRow] = await Promise.all([
-    db.select({ timezone: users.timezone }).from(users).where(eq(users.id, actor.id)),
-    input.projectId !== null
-      ? db.select({ title: projects.title }).from(projects).where(eq(projects.id, input.projectId))
-      : Promise.resolve([] as Array<{ title: string }>),
-  ]);
-  const when = formatDateTime(input.meetAt, tzRow[0]?.timezone || undefined);
+): Promise<{ body: string; params: Record<string, string>; times: Record<string, Date> }> {
+  void actor;
+  const projectRow = input.projectId !== null
+    ? await db.select({ title: projects.title }).from(projects).where(eq(projects.id, input.projectId))
+    : [] as Array<{ title: string }>;
   const location = input.location.trim();
   const project = projectRow[0]?.title ?? '';
-  const params = { title: input.title, when, location, project };
+  // ⚠️ «{when}» به وقتِ هر گیرنده (`times` ِ notify، ۲.۱۶.۲) — نه وقتِ سازنده.
+  const params = { title: input.title, location, project };
+  const times = { when: input.meetAt };
   // ⚠️ بدونِ شکستِ خط در کلید — استخراج‌گرِ ترجمه «\n» ِ کد را با خطِ واقعی جور نمی‌کند.
-  if (location && project) return { body: 'زمان: {when} · مکان: {location} · پروژه: {project}', params };
-  if (location) return { body: 'زمان: {when} · مکان: {location}', params };
-  if (project) return { body: 'زمان: {when} · پروژه: {project}', params };
-  return { body: 'زمان: {when}', params };
+  if (location && project) return { body: 'زمان: {when} · مکان: {location} · پروژه: {project}', params, times };
+  if (location) return { body: 'زمان: {when} · مکان: {location}', params, times };
+  if (project) return { body: 'زمان: {when} · پروژه: {project}', params, times };
+  return { body: 'زمان: {when}', params, times };
 }
 
 /**
