@@ -1,5 +1,6 @@
 'use client';
 
+import { useToast } from '@/components/ui/toast';
 import { useState, useTransition } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 import { setTaskStatusAction } from '../_form/tab-actions';
@@ -53,6 +54,7 @@ export function TaskStatusPicker({
   onChanged?: () => void;
 }) {
   const tr = useT();
+  const { show } = useToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -82,7 +84,12 @@ export function TaskStatusPicker({
     startTransition(async () => {
       const result = await setTaskStatusAction(task.id, statusTagId);
       if (result.error) setError(result.error);
-      else onChanged?.();
+      else {
+        // تأییدِ دیدنی (۲.۱۷.۱) — تغییرِ چیپ به‌تنهایی از چشم می‌افتاد.
+        const name = options.find((o) => o.id === statusTagId)?.name;
+        show(name ? tr('وضعیت به «{status}» تغییر کرد.', { status: name }) : tr('وضعیت برداشته شد.'), 'success');
+        onChanged?.();
+      }
     });
   };
 

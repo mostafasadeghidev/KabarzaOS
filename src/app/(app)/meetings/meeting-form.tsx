@@ -1,5 +1,6 @@
 'use client';
 
+import { useFreshKey } from '@/hooks/use-fresh-key';
 import { UserName } from '@/components/user-avatar';
 import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -59,7 +60,7 @@ function SubmitButton({ isEdit }: { isEdit: boolean }) {
  * ⚠️ فهرستِ دعوت‌شدگان با تغییرِ پروژه/دفتر **از سرور** تازه می‌شود — قواعدش
  * (تیکِ پیش‌فرض، حذفِ عضوِ سابق، اختیاری‌بودنِ مدیران) در دامنه است.
  */
-export function MeetingForm({
+function MeetingFormBody({
   open,
   onOpenChange,
   meeting,
@@ -355,4 +356,13 @@ export function MeetingForm({
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * ⚠️ بدنه با هر بار باز شدن از نو ساخته می‌شود (`useFreshKey`، ۲.۱۷.۱) — تغییرِ
+ * ذخیره‌نشده با بستنِ پنجره دور ریخته می‌شود، نه اینکه دفعهٔ بعد سرِ جایش بماند.
+ */
+export function MeetingForm(props: Parameters<typeof MeetingFormBody>[0]) {
+  const key = useFreshKey(props.open);
+  return <MeetingFormBody key={key} {...props} />;
 }

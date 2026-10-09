@@ -781,6 +781,8 @@ export async function getTag(id: number) {
     id: tags.id, type: tags.type, name: tagName(await currentLocale()),
     // برای قاعدهٔ «انجام‌شده» ِ تسک (پورتِ `is_done` = پرچمِ بسته / گروهِ complete).
     isClosed: tags.isClosed, statusGroup: tags.statusGroup,
+    // «نیاز به کار بیشتر» با شناسهٔ ثابتش شناخته می‌شود، نه با نامِ قابلِ ویرایش.
+    slug: tags.slug,
   })
     .from(tags).where(eq(tags.id, id));
   return rows[0] ?? null;
@@ -1171,6 +1173,8 @@ export async function getTask(id: number) {
       // پنهان از کارفرما و پیوندِ بازبینی — گاردِ دیدن و حالتِ قبلِ ویرایش.
       clientHidden: tasks.clientHidden, reviewId: tasks.reviewId,
       reviewStart: tasks.reviewStart, reviewEnd: tasks.reviewEnd, area: tasks.area,
+      // پیوندِ مستقیمِ اعلان (`?task=`) — ۲.۱۷.۱.
+      number: tasks.number,
     })
     .from(tasks).where(and(eq(tasks.id, id), isNull(tasks.deletedAt)));
   return rows[0] ?? null;

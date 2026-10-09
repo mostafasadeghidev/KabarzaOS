@@ -2,6 +2,39 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.18.0]
+
+### Added
+
+- Bank accounts (Finance → Bank accounts) have bank details: bank name, account holder, account number, card number and international account number (IBAN). All are optional. Spaces, dashes and Persian digits are accepted; numbers are stored in one standard form and shown in groups of four. The IBAN is checked with its check digits and the card number with the Luhn check, so a typo is caught before saving.
+- Clicking an account row opens its details: bank, holder, account number, card number and IBAN each with a copy button (copied without spaces), plus currency, office, balance and note, with an Edit button for managers.
+
+### Fixed
+
+- The account form keeps what you typed after a validation error instead of clearing every field.
+
+### Security
+
+- Account, card and IBAN numbers are not sent to AI providers: the AI's finance accounts tool leaves them out.
+
+### Database
+
+- Migration `0050_account_bank_details`: `bank_name`, `holder_name`, `account_number`, `iban`, `card_number` on `accounts`.
+
+## [2.17.1]
+
+### Fixed
+
+- Dialogs no longer keep unsaved changes after closing: project members, add/edit project, add task, task details, new message, meeting, review, person, access checklist, new channel and onboarding task all start from the saved data each time they open.
+- Project members dialog: the "unsettled" note under a member no longer pushes the row's fields out of line.
+- Project Manage tab → Log details: in left-to-right languages the date column is no longer pushed far from the member column.
+
+### Added
+
+- A confirmation toast after changing a task's status (from the status menu or by dragging on the board).
+- A new comment on a task notifies the people responsible for it and the task's creator (not the writer; never a client for a client-hidden task).
+- Setting a task to "Need more work" from any status notifies the people responsible (before, only a return from review did).
+
 ## [2.17.0]
 
 ### Changed

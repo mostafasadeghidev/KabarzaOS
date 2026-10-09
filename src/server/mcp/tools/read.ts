@@ -297,7 +297,11 @@ export function registerRead(kit: Kit) {
     title: 'Finance accounts',
     description: 'Accounts (cash, bank, …) with balances — same as the Finance page.',
     annotations: RO,
-  }, async () => j(() => listAccounts(actor)));
+    // ⚠️ شمارهٔ حساب/کارت/IBAN به ارائه‌دهندهٔ هوشِ مصنوعی نمی‌رود (۲.۱۸.۰).
+  }, async () => j(async () => (await listAccounts(actor)).map(({ accountNumber, iban, cardNumber, ...rest }) => {
+    void accountNumber; void iban; void cardNumber;
+    return rest;
+  })));
 
   server.registerTool('finance_ledger', {
     title: 'Ledger of an account',

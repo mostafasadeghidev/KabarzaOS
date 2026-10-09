@@ -5,7 +5,7 @@
  */
 
 export class AccountError extends Error {
-  constructor(readonly code: 'in_use' | 'name_required' | 'no_currency') {
+  constructor(readonly code: 'in_use' | 'name_required' | 'no_currency' | 'iban_invalid' | 'card_invalid' | 'account_number_invalid') {
     super(`account rule violated: ${code}`);
     this.name = 'AccountError';
   }
@@ -26,6 +26,10 @@ export function accountMessage(code: AccountError['code']): string {
     return 'این حساب ردیف‌های ثبت‌شده دارد و حذف نمی‌شود؛ به‌جای حذف، آن را غیرفعال کنید.';
   }
   if (code === 'no_currency') return 'ارزِ حساب را انتخاب کنید.';
+  // مشخصاتِ بانکی (۲.۱۸.۰)
+  if (code === 'iban_invalid') return 'شمارهٔ بین‌المللیِ حساب (IBAN/شبا) درست نیست.';
+  if (code === 'card_invalid') return 'شمارهٔ کارت درست نیست.';
+  if (code === 'account_number_invalid') return 'شمارهٔ حساب فقط رقم و خط تیره می‌پذیرد.';
   return 'نامِ حساب الزامی است.';
 }
 

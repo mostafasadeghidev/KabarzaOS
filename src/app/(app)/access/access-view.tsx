@@ -1,5 +1,6 @@
 'use client';
 
+import { useFreshKey } from '@/hooks/use-fresh-key';
 import { UserName, avatarFor } from '@/components/user-avatar';
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -489,7 +490,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
  * ⚠️ تیک‌زدن اینجا فقط **دفتر** را می‌بندد. قطعِ واقعی در خودِ سرویس انجام
  * می‌شود؛ متنِ بالای دیالوگ همین را می‌گوید تا کسی خیال نکند کار تمام است.
  */
-function ChecklistDialog({
+function ChecklistDialogBody({
   open, onOpenChange, data,
 }: {
   open: boolean;
@@ -864,4 +865,10 @@ function ServiceFields({ edit, data }: { edit: ServiceRow | null; data: AccessDa
       </label>
     </div>
   );
+}
+
+/** ⚠️ هر باز شدن از نو — انتخابِ ذخیره‌نشده با بستن دور ریخته می‌شود (۲.۱۷.۱). */
+function ChecklistDialog(props: Parameters<typeof ChecklistDialogBody>[0]) {
+  const key = useFreshKey(props.open);
+  return <ChecklistDialogBody key={key} {...props} />;
 }

@@ -22,6 +22,7 @@ import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { useFreshKey } from '@/hooks/use-fresh-key';
 
 export interface MemberRow {
   userId: number | null;
@@ -71,11 +72,20 @@ function SaveButton() {
  * می‌شوند: پروژهٔ تعدادی نرخ می‌گیرد، بقیه مبلغِ توافقی.
  */
 export function MembersDialog({ data }: { data: MembersFormData }) {
+  const [open, setOpen] = useState(false);
+  const key = useFreshKey(open);
+  return <MembersDialogBody key={key} data={data} open={open} setOpen={setOpen} />;
+}
+
+/**
+ * ⚠️ بدنه با هر بار باز شدن از نو ساخته می‌شود (`useFreshKey`، ۲.۱۷.۱): تغییرِ
+ * ذخیره‌نشده با بستنِ پنجره دور ریخته می‌شود، نه اینکه دفعهٔ بعد سرِ جایش بماند.
+ */
+function MembersDialogBody({ data, open, setOpen }: { data: MembersFormData; open: boolean; setOpen: (o: boolean) => void }) {
   const tr = useT();
   const t = useT();
   const money = data.canEditMoney !== false;
   const { show } = useToast();
-  const [open, setOpen] = useState(false);
   const [state, formAction] = useActionState<MembersFormState, FormData>(setMembersAction, {});
   /**
    * ⚠️ شمارنده‌ها در پیام می‌مانند — «۲ افزوده، ۱ به‌روز، ۰ حذف» تنها راهی
@@ -180,7 +190,8 @@ export function MembersDialog({ data }: { data: MembersFormData }) {
               </TableHeader>
               <TableBody>
                 {rows.map((row, i) => (
-                  <TableRow key={i} className="hover:bg-transparent">
+                  // ⚠️ همهٔ سلول‌ها از بالا تراز — پیامِ «تسویه‌نشده» زیرِ عضو ردیف را از یک خط نیندازد.
+                  <TableRow key={i} className="hover:bg-transparent [&>td]:align-top">
                     <TableCell>
                       {row.isFormer ? (
                         // عضوِ سابق دوباره انتخاب‌شدنی نیست، ولی ردیفش می‌ماند (R-PROJ-11).

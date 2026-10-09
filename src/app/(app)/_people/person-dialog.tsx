@@ -1,5 +1,6 @@
 'use client';
 
+import { useFreshKey } from '@/hooks/use-fresh-key';
 import { UserAvatar } from '@/components/user-avatar';
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -104,7 +105,7 @@ function AvatarPicker({ person }: { person: PersonView }) {
   );
 }
 
-export function PersonDialog({
+function PersonDialogBody({
   open,
   onOpenChange,
   person,
@@ -428,4 +429,13 @@ export function PersonDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * ⚠️ بدنه با هر بار باز شدن از نو ساخته می‌شود (`useFreshKey`، ۲.۱۷.۱) — تغییرِ
+ * ذخیره‌نشده با بستنِ پنجره دور ریخته می‌شود، نه اینکه دفعهٔ بعد سرِ جایش بماند.
+ */
+export function PersonDialog(props: Parameters<typeof PersonDialogBody>[0]) {
+  const key = useFreshKey(props.open);
+  return <PersonDialogBody key={key} {...props} />;
 }

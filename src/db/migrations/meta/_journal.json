@@ -351,6 +351,13 @@
       "when": 1789179600026,
       "tag": "0049_task_numbers",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1789266000026,
+      "tag": "0050_account_bank_details",
+      "breakpoints": true
     }
   ]
 }

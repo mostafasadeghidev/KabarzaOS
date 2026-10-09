@@ -17,6 +17,15 @@ export const accounts = pgTable('accounts', {
   currencyId: fk('currency_id').notNull().references(() => currencies.id),
   openingBalance: money('opening_balance').notNull().default('0'),
   note: text('note').notNull().default(''),
+  /**
+   * مشخصاتِ بانکی (۲.۱۸.۰) — اختیاری؛ یکدست ذخیره (بی‌فاصله، ارقامِ لاتین).
+   * IBAN با رقمِ کنترلی و کارت با Luhn سنجیده می‌شود (`domain/finance/bank`).
+   */
+  bankName: text('bank_name').notNull().default(''),
+  holderName: text('holder_name').notNull().default(''),
+  accountNumber: text('account_number').notNull().default(''),
+  iban: text('iban').notNull().default(''),
+  cardNumber: text('card_number').notNull().default(''),
   isActive: boolean('is_active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
   scope: scope(),

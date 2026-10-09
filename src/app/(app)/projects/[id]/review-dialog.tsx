@@ -1,5 +1,6 @@
 'use client';
 
+import { useFreshKey } from '@/hooks/use-fresh-key';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, Film, Paperclip, Pencil, Play, Trash2, Upload, X } from 'lucide-react';
 import {
@@ -77,7 +78,7 @@ function chunks<T>(list: T[], size: number): T[][] {
  *
  * ⚠️ «برای کارفرما نمایش داده شود» پیش‌فرض **خاموش** است.
  */
-export function ReviewDialog({
+function ReviewDialogBody({
   open,
   onOpenChange,
   projectId,
@@ -399,3 +400,11 @@ export function ReviewDialog({
   );
 }
 
+/**
+ * ⚠️ بدنه با هر بار باز شدن از نو ساخته می‌شود (`useFreshKey`، ۲.۱۷.۱) — تغییرِ
+ * ذخیره‌نشده با بستنِ پنجره دور ریخته می‌شود، نه اینکه دفعهٔ بعد سرِ جایش بماند.
+ */
+export function ReviewDialog(props: Parameters<typeof ReviewDialogBody>[0]) {
+  const key = useFreshKey(props.open);
+  return <ReviewDialogBody key={key} {...props} />;
+}

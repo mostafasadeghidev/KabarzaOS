@@ -1,5 +1,6 @@
 'use client';
 
+import { useDialogOpen, withFreshOpen } from '@/hooks/use-fresh-key';
 import { UserAvatar, UserName } from '@/components/user-avatar';
 import { useActionState, useState, useTransition } from 'react';
 import Link from 'next/link';
@@ -334,14 +335,14 @@ export function StartPicker({ candidates }: { candidates: Array<{ id: number; na
 }
 
 /** آیتمِ ویژهٔ همین نفر — بیرون از کتابخانه. */
-export function AddTaskDialog({ userId, people, services, today }: {
+function AddTaskDialogBody({ userId, people, services, today }: {
   userId: number;
   people: Array<{ id: number; name: string }>;
   services: Array<{ id: number; name: string }>;
   today: string;
 }) {
   const tr = useT();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useDialogOpen();
   const [kind, setKind] = useState<OnboardingKind>('task');
   const [state, action] = useActionState(async (prev: OnboardingState, form: FormData) => {
     const result = await addCustomTaskAction(prev, form);
@@ -415,3 +416,6 @@ export function AddTaskDialog({ userId, people, services, today }: {
     </>
   );
 }
+
+/** ⚠️ هر باز شدن از نو — تغییرِ ذخیره‌نشده با بستن دور ریخته می‌شود (۲.۱۷.۱). */
+export const AddTaskDialog = withFreshOpen(AddTaskDialogBody);

@@ -1806,7 +1806,8 @@ async function applyStatusEffects(
        */
       url: '/tasks',
     });
-  } else if (wasReview && !isReview && !nextDone) {
+  } else if ((wasReview && !isReview && !nextDone) || nextTag?.slug === 'need-more-work') {
+    // ⚠️ «نیاز به کار بیشتر» از هر وضعیتی (نه فقط از ریویو) هم خبر می‌دهد (۲.۱۷.۱).
     // ⚠️ فقط وقتی کار **برمی‌گردد**؛ تأیید (ریویو → انجام‌شده) اعلانِ «برگشت» ندارد (پورتِ افزونه).
     // ⚠️ گیرنده «انجام‌دهنده» است، نه مدیر: کارِ برگشتی دستِ اوست.
     const doers = (await taskDoerIds(task.id)).filter((id) => id !== actor.id);
@@ -2688,7 +2689,37 @@ export async function addTaskNote(
     throw error;
   });
   await audit(actor, 'task.note', task.projectId, null, { taskId });
+  await notifyTaskNote(actor, task, text);
   return task.projectId;
+}
+
+/**
+ * کامنتِ تازه روی تسک ← مسئولِ تسک (یا دارندگانِ نقشش) و سازنده‌اش (۲.۱۷.۱).
+ * ⚠️ نویسنده خودش نمی‌گیرد؛ تسکِ «پنهان از کارفرما» به کارفرما نمی‌رسد (مگر به
+ * خودش سپرده شده)؛ و شمارهٔ تسک در پیوندِ کارفرما نمی‌آید.
+ */
+async function notifyTaskNote(
+  actor: Actor,
+  task: { id: number; projectId: number; title: string; createdBy: number | null; assignedTo: number | null; clientHidden: boolean; number: number },
+  text: string,
+) {
+  const ids = [...new Set([...(await taskDoerIds(task.id)), task.createdBy ?? 0])].filter((id) => id > 0 && id !== actor.id);
+  const team: number[] = [];
+  const clients: number[] = [];
+  for (const id of ids) {
+    const rel = await projectRelation(id, task.projectId);
+    const clientOnly = rel.isClient && !rel.isMember;
+    if (clientOnly && task.clientHidden && task.assignedTo !== id) continue;
+    (clientOnly ? clients : team).push(id);
+  }
+  const base = {
+    type: 'task_note',
+    title: 'کامنتِ تازه روی تسک',
+    body: '«{project}» — {text}',
+    params: { project: task.title, text: text.slice(0, 140) || '🖼' },
+  };
+  if (team.length > 0) await notify(team, { ...base, url: `/projects/${task.projectId}?task=${task.number}` });
+  if (clients.length > 0) await notify(clients, { ...base, url: `/projects/${task.projectId}?tab=tasks` });
 }
 
 /** جزئیاتِ یک تسک + گفتگویش — برای مودالِ تسک. */
