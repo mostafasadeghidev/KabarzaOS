@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.18.1]
+
+### Changed
+
+- Account details modal (Finance → Bank accounts → click a row) no longer shows the balance. It is meant for sharing an account's bank details, so only the details are shown; the balance stays in the accounts table.
+
 ## [2.18.0]
 
 ### Added
