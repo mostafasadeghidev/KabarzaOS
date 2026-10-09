@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.16.1]
+
+### Fixed
+
+- Search palette (Ctrl+K): Escape and clicking outside now close it, and it has a close (×) button. It had picked up the form dialogs' "don't close by accident" rule.
+
+### Changed
+
+- The project code (the prefix of task references such as P12-325) is now shown next to the project title for the team, with a hint on how it's used. It is changed in the project's Manage tab → Project code. Clients don't see it.
+
 ## [2.16.0]
 
 ### Added

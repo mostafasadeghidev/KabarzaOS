@@ -2974,6 +2974,7 @@
   "کد ارز (مثل EUR)": "Código da moeda (por exemplo, EUR)",
   "کد باید ۲ تا ۶ حرف یا رقمِ انگلیسی باشد و با حرف شروع شود.": "O código deve ter 2 a 6 letras ou dígitos latinos e começar por uma letra.",
   "کدِ پروژه": "Código do projeto",
+  "کدِ پروژه — تسک‌ها بیرون از پروژه با این کد نوشته می‌شوند (مثلاً {example}).": "Código do projeto — fora do projeto as tarefas escrevem-se com este código (ex. {example}).",
   "کدِ پروژه ذخیره شد.": "Código do projeto guardado.",
   "کدِ رنگ": "Código de cor",
   "کد مالیاتی / شناسهٔ ملی": "NIF / identificação fiscal",

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { projectCodeOf } from '@/domain/projects/task-ref';
 import { UserName } from '@/components/user-avatar';
 import { RichText } from '@/components/media/rich-text';
 import { listReviews, reviewFormOptions } from '@/server/projects/reviews';
@@ -233,7 +234,23 @@ export default async function ProjectDetailPage({
           // پیوندهای توضیح (فیگما، سایتِ آزمایشی) کلیک‌پذیرند؛ پخش‌کنندهٔ ویدئو در سربرگ جا نمی‌شود.
           <RichText text={project.description} embeds={false} linkCards className="max-w-3xl text-[length:inherit]" />
         ) : undefined}
-        actions={formOptions && (
+        actions={(
+          <>
+          {/*
+            کدِ پروژه (۲.۱۶.۰) — همان پیشوندِ «ALZ-325»؛ تا تیم بداند تسک‌های این
+            پروژه را بیرون از آن با چه کدی بنویسد. عوض‌کردنش در تبِ «مدیریت».
+            ⚠️ کارفرما شمارهٔ تسک نمی‌بیند، پس کد هم برایش نیست.
+          */}
+          {!clientOnly && (
+            <span
+              title={t('کدِ پروژه — تسک‌ها بیرون از پروژه با این کد نوشته می‌شوند (مثلاً {example}).', { example: `${projectCodeOf(project)}-12` })}
+              dir="ltr"
+              className="num inline-flex h-8 items-center rounded-md border bg-muted/50 px-2 font-mono text-xs text-muted-foreground"
+            >
+              {projectCodeOf(project)}
+            </span>
+          )}
+          {formOptions && (
           <ProjectDialog
             options={{
               statuses: formOptions.statuses.map((s) => ({ id: s.id, label: s.name })),
@@ -269,6 +286,8 @@ export default async function ProjectDetailPage({
               thumbnailFileId: project.thumbnailFileId,
             }}
           />
+          )}
+          </>
         )}
       >
         {/* پورتِ `project_status_control`: مدیر انتخابگر، بقیه چیپ. */}

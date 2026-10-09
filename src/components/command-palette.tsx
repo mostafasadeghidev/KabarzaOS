@@ -150,7 +150,15 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="overflow-hidden p-0 sm:max-w-lg" showCloseButton={false}>
+      {/*
+        ⚠️ `dismissable`: پالت فرم نیست — Escape و کلیکِ بیرون می‌بندندش. پیش‌فرضِ
+        دیالوگ (نبستن، برای فرمِ نیمه‌پر) اینجا پالت را باز نگه می‌داشت و دکمهٔ
+        بستن هم نبود؛ حالا × هم هست و جای آن در ردیفِ جستجو خالی مانده.
+      */}
+      <DialogContent
+        className="overflow-hidden p-0 sm:max-w-lg [&_[data-slot=command-input-wrapper]]:pe-10 [&>[data-slot=dialog-close]]:top-3.5"
+        dismissable
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>{t("جستجوی سراسری")}</DialogTitle>
           <DialogDescription>
