@@ -1,5 +1,6 @@
 'use client';
 
+import { useFreshKey } from '@/hooks/use-fresh-key';
 import { UserAvatar, UserName } from '@/components/user-avatar';
 import Link from 'next/link';
 
@@ -60,7 +61,7 @@ function SubmitButton({ label, busy }: { label: string; busy: string }) {
   );
 }
 
-export function TaskDialog({
+function TaskDialogBody({
   taskId: requestedId,
   open,
   onOpenChange,
@@ -551,4 +552,13 @@ export function TaskDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * ⚠️ بدنه با هر بار باز شدن از نو ساخته می‌شود (`useFreshKey`، ۲.۱۷.۱) — تغییرِ
+ * ذخیره‌نشده با بستنِ پنجره دور ریخته می‌شود، نه اینکه دفعهٔ بعد سرِ جایش بماند.
+ */
+export function TaskDialog(props: Parameters<typeof TaskDialogBody>[0]) {
+  const key = useFreshKey(props.open);
+  return <TaskDialogBody key={key} {...props} />;
 }

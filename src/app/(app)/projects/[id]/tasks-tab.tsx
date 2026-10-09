@@ -1,5 +1,6 @@
 'use client';
 
+import { useToast } from '@/components/ui/toast';
 import { UserName } from '@/components/user-avatar';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Check, ChevronDown, Clapperboard, Columns3, EyeOff, Hand, Link2, List as ListIcon, Lock, MessageSquare, Paperclip } from 'lucide-react';
@@ -268,6 +269,7 @@ function KanbanBoard({
   renderMeta: (task: TaskItem) => React.ReactNode;
 }) {
   const tr = useT();
+  const { show } = useToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState<number | null>(null);
@@ -287,6 +289,10 @@ function KanbanBoard({
     startTransition(async () => {
       const result = await setTaskStatusAction(taskId, statusId);
       setError(result.error ?? null);
+      if (!result.error) {
+        const name = statuses.find((s) => s.id === statusId)?.name;
+        if (name) show(tr('وضعیت به «{status}» تغییر کرد.', { status: name }), 'success');
+      }
     });
   };
 

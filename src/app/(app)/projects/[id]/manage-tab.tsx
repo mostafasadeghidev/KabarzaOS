@@ -199,16 +199,20 @@ function LogDetail({ logs, weekStart }: { logs: LogRow[]; weekStart: number }) {
       <Table frame={false} className="table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead numeric className="w-[20%]">{t("تاریخ")}</TableHead>
-            <TableHead className="w-[28%]">{t("عضو")}</TableHead>
-            <TableHead numeric className="w-[16%]">{t("مدت")}</TableHead>
+            {/*
+              ⚠️ تاریخ از اول تراز است، نه انتها: در نمای چپ‌به‌راست تاریخِ راست‌چین
+              با فاصلهٔ زیاد از ستونِ عضو جدا می‌افتاد. ستون‌ها هم باریک‌تر، تا توضیحات جا داشته باشد.
+            */}
+            <TableHead className="w-28">{t("تاریخ")}</TableHead>
+            <TableHead className="w-[30%]">{t("عضو")}</TableHead>
+            <TableHead numeric className="w-20">{t("مدت")}</TableHead>
             <TableHead>{t("توضیحات")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {view.rows.map((r) => (
             <TableRow key={r.id}>
-              <TableNumericCell>{r.logDate}</TableNumericCell>
+              <TableCell className="num">{r.logDate}</TableCell>
               <TableCell className="break-words"><UserName userId={r.userId} name={r.userName ?? '—'} /></TableCell>
               <TableNumericCell>{hhmm(r.minutes)}</TableNumericCell>
               <TableCell className="break-words">{r.description || '—'}</TableCell>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useFreshKey } from '@/hooks/use-fresh-key';
 import { UserAvatar } from '@/components/user-avatar';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -220,7 +221,7 @@ export interface ChannelOptions {
  * «کانالِ تازه» — فقط برای مالک و ادمین (سرور هم می‌سنجد).
  * مخاطب زنده است: هر کس بعداً آن نقش یا دفتر را بگیرد خودکار عضو می‌شود.
  */
-export function CreateChannelDialog({ open, onOpenChange, options, onCreated }: {
+function CreateChannelDialogBody({ open, onOpenChange, options, onCreated }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   options: ChannelOptions;
@@ -306,4 +307,10 @@ export function CreateChannelDialog({ open, onOpenChange, options, onCreated }: 
 function CreateButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return <Button type="submit" size="sm" disabled={pending}>{pending ? <Spinner /> : label}</Button>;
+}
+
+/** ⚠️ هر باز شدن از نو — انتخابِ ذخیره‌نشده با بستن دور ریخته می‌شود (۲.۱۷.۱). */
+export function CreateChannelDialog(props: Parameters<typeof CreateChannelDialogBody>[0]) {
+  const key = useFreshKey(props.open);
+  return <CreateChannelDialogBody key={key} {...props} />;
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { useFreshKey } from '@/hooks/use-fresh-key';
 import { UserName } from '@/components/user-avatar';
 import { useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -59,7 +60,7 @@ function ComposeSubmit({ count }: { count: number }) {
  * جستجو ردیف‌ها را پنهان می‌کند و چک‌باکسِ پنهان‌شده در فرم نیست — کسی که
  * انتخاب شده و بعد با جستجو از دید رفته بی‌صدا از گیرندگان می‌افتاد.
  */
-export function ComposeDialog({
+function ComposeDialogBody({
   open,
   onOpenChange,
   recipients,
@@ -353,4 +354,13 @@ export function ComposeDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * ⚠️ بدنه با هر بار باز شدن از نو ساخته می‌شود (`useFreshKey`، ۲.۱۷.۱) — تغییرِ
+ * ذخیره‌نشده با بستنِ پنجره دور ریخته می‌شود، نه اینکه دفعهٔ بعد سرِ جایش بماند.
+ */
+export function ComposeDialog(props: Parameters<typeof ComposeDialogBody>[0]) {
+  const key = useFreshKey(props.open);
+  return <ComposeDialogBody key={key} {...props} />;
 }

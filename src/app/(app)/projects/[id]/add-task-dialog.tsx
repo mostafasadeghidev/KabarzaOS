@@ -1,5 +1,6 @@
 'use client';
 
+import { useDialogOpen, withFreshOpen } from '@/hooks/use-fresh-key';
 import { UserAvatar } from '@/components/user-avatar';
 import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -51,7 +52,7 @@ function SubmitButton() {
 }
 
 /** افزودنِ تسک — همان ستون‌های ردیفِ تسکِ نسخهٔ قبلی: عنوان · نقش/مسئول · ددلاین · اولویت. */
-export function AddTaskDialog({
+function AddTaskDialogBody({
   projectId,
   currentUserId,
   options,
@@ -66,7 +67,7 @@ export function AddTaskDialog({
 }) {
   const tr = useT();
   const t = useT();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useDialogOpen();
   const [state, formAction] = useActionState<TaskFormState, FormData>(createTaskAction, {});
   useActionToast(state, { success: 'تسک ثبت شد.' });
 
@@ -259,3 +260,6 @@ export function AddTaskDialog({
     </Dialog>
   );
 }
+
+/** ⚠️ هر باز شدن از نو — تغییرِ ذخیره‌نشده با بستن دور ریخته می‌شود (۲.۱۷.۱). */
+export const AddTaskDialog = withFreshOpen(AddTaskDialogBody);

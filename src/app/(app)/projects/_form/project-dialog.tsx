@@ -1,5 +1,6 @@
 'use client';
 
+import { useDialogOpen, withFreshOpen } from '@/hooks/use-fresh-key';
 import { useActionState, useEffect, useId, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { X } from 'lucide-react';
@@ -120,7 +121,7 @@ function SubmitButton({ isEdit }: { isEdit: boolean }) {
  * ⚠️ اعتبارسنجی روی **سرور** انجام می‌شود (zod در schema.ts). required ِ مرورگر
  * فقط برای بازخوردِ زودهنگام است، نه گارد.
  */
-export function ProjectDialog({
+function ProjectDialogBody({
   options,
   project,
 }: {
@@ -131,7 +132,7 @@ export function ProjectDialog({
   const tr = useT();
   const isEdit = project !== undefined;
   const canEditMoney = options.canEditMoney !== false;
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useDialogOpen();
   const [formTab, setFormTab] = useState<'info' | 'tasks' | 'files' | 'qa' | 'tender'>('info');
   /** بخش‌های اولیه فقط هنگامِ ساخت وجود دارند. */
   const showBootstrap = !isEdit && Boolean(options.bootstrap);
@@ -524,3 +525,6 @@ export function ProjectDialog({
     </Dialog>
   );
 }
+
+/** ⚠️ هر باز شدن از نو — تغییرِ ذخیره‌نشده با بستن دور ریخته می‌شود (۲.۱۷.۱). */
+export const ProjectDialog = withFreshOpen(ProjectDialogBody);

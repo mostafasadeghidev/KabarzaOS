@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.17.1]
+
+### Fixed
+
+- Dialogs no longer keep unsaved changes after closing: project members, add/edit project, add task, task details, new message, meeting, review, person, access checklist, new channel and onboarding task all start from the saved data each time they open.
+- Project members dialog: the "unsettled" note under a member no longer pushes the row's fields out of line.
+- Project Manage tab → Log details: in left-to-right languages the date column is no longer pushed far from the member column.
+
+### Added
+
+- A confirmation toast after changing a task's status (from the status menu or by dragging on the board).
+- A new comment on a task notifies the people responsible for it and the task's creator (not the writer; never a client for a client-hidden task).
+- Setting a task to "Need more work" from any status notifies the people responsible (before, only a return from review did).
+
 ## [2.17.0]
 
 ### Changed
