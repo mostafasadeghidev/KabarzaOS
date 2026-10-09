@@ -2,6 +2,36 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.17.0]
+
+### Changed
+
+- Project Telegram group messages have a new style: a short header without the project name, the task title in bold with assignee or roles, deadline and priority, comments shown as a quote, and a "View in Kabarza" / "Reply in Kabarza" button. Names are shown the way the client sees them in the app (team members by role), since clients may be in the group.
+- Telegram messages reviewed end to end: one bullet style for lists (task title first, then its number), blank lines between morning-summary sections, a smaller keyboard under the morning summary, the help text lists /keyboard, /team and /cancel, and each chat's "/" menu matches the person's role (no hours commands for the owner, /team for managers).
+- Notifications no longer repeat the raw link under the message when the "Open in app" button is there.
+- Linking Telegram sends one confirmation message instead of three.
+
+### Fixed
+
+- Tapping a bottom shortcut while the bot waited for a reply sent the shortcut text as the reply (possibly to a client). Shortcuts now cancel the pending reply.
+- Finance staff (non-owners) lost hours and the timer in the bot; only the owner has them hidden now. Accountants no longer see an always-zero "pending payment requests" line.
+- "My team" showed at most one page of overdue tasks as the total.
+- Long messages (long task lists, long AI answers) were silently dropped by Telegram; they are now split. An empty AI answer gets a message instead of silence, and the confirmation no longer stays on "Working…".
+- Files sent to the bot: a failed download or a rejected file type/size now says why, instead of leaving "⏳" or claiming missing access.
+- Messages, photos, voice and button taps from an unlinked or inactive chat now get the "not linked" message instead of silence. The group-link error now points to the project's Manage tab.
+- Meeting times in notifications are now shown in each recipient's own time zone.
+- The AI connect/disconnect message showed the hours and timer buttons to the owner.
+
+### Security
+
+- Daily report on Telegram: private and deleted tasks are no longer listed, money sections (incoming, payouts, expenses) go only to recipients who can see finance, locked admins no longer receive it, and each admin gets it in their own language.
+- New payment request notifications go only to people who can decide on them, with a formatted amount and currency.
+- A leave recorded by an admin assistant no longer reveals the assistant's name to the member.
+
+### i18n
+
+- Translated the direct-message notification titles, the "added to project" text, and new bot texts; comment and review notification bodies use translatable templates.
+
 ## [2.16.1]
 
 ### Fixed

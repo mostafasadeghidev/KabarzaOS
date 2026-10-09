@@ -349,7 +349,8 @@ export async function createReview(actor: Actor, projectId: number, input: Revie
   await notify(await audienceOf(projectId, clean.roleTagIds, clean.clientVisible, actor.id), {
     type: 'review.posted',
     title: 'بازبینیِ تازه در پروژه',
-    body: `«${project?.title ?? ''}» — ${clean.title}`,
+    body: '«{project}» — {text}',
+    params: { project: project?.title ?? '', text: clean.title },
     url: `/projects/${projectId}?tab=reviews&review=${reviewId}`,
   });
   return reviewId;
@@ -405,7 +406,8 @@ export async function updateReview(actor: Actor, reviewId: number, input: Review
     await notify(fresh, {
       type: 'review.posted',
       title: 'بازبینیِ تازه در پروژه',
-      body: `«${project?.title ?? ''}» — ${clean.title}`,
+      body: '«{project}» — {text}',
+      params: { project: project?.title ?? '', text: clean.title },
       url: `/projects/${review.projectId}?tab=reviews&review=${reviewId}`,
     });
   }

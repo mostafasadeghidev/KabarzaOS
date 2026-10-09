@@ -162,10 +162,12 @@ export async function saveAbsence(actor: Actor, input: AbsenceInput): Promise<nu
   if (input.userId !== actor.id) {
     const [byUser] = await db.select({ name: users.name })
       .from(users).where(eq(users.id, actor.id));
+    // ⚠️ نامِ همکارِ ادمین (دستیار) به عضو نمی‌رسد — قاعدهٔ ۴ ِ viewer-names (۲.۱۶.۲).
+    const assistant = actor.roles.includes('admin') && !actor.roles.includes('owner');
     await notify([input.userId], {
       type: 'absence_set',
       title: 'مرخصی برای شما ثبت شد',
-      body: byUser ? 'از {from} تا {to} (توسط {by}).' : 'از {from} تا {to}.',
+      body: assistant ? 'از {from} تا {to} (توسطِ دستیارِ مدیر).' : byUser ? 'از {from} تا {to} (توسط {by}).' : 'از {from} تا {to}.',
       params: { from: range.from, to: range.to, by: byUser?.name ?? '' },
       // مرخصیِ ثبت‌شده برای او در «برنامهٔ من» دیده می‌شود (۲.۲.۰).
       url: '/my-schedule',

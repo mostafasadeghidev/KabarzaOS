@@ -286,11 +286,12 @@ function signedNotice(
   projectTitle: string,
   who: { client: true } | { client: false; role: string },
 ) {
+  // ⚠️ نامِ پروژه در عنوان هست؛ بدنه فقط نقش را می‌گوید (پیش از این دو بار تکرار می‌شد).
   const body = who.client
-    ? 'شما به‌عنوان کارفرما به پروژهٔ «{project}» اضافه شدید.'
+    ? 'نقشِ شما: کارفرما'
     : who.role
-      ? 'شما به‌عنوان عضو با نقش ({role}) به پروژهٔ «{project}» اضافه شدید.'
-      : 'شما به‌عنوان عضو به پروژهٔ «{project}» اضافه شدید.';
+      ? 'نقشِ شما: {role}'
+      : 'نقشِ شما: عضوِ تیم';
   return {
     type: 'project.signed',
     title: 'به پروژه اضافه شدید: {project}',
@@ -1779,7 +1780,7 @@ async function applyStatusEffects(
   const nextTag = task.after === null ? null : await repo.getTag(task.after);
   // پورتِ `is_done`: پرچمِ بسته یا گروهِ complete.
   const nextDone = nextTag !== null && (nextTag.isClosed || nextTag.statusGroup === 'complete');
-  if (nextDone) void announceTask(task.id, 'done');
+  if (nextDone) void announceTask(task.id, 'done', actor.id);
 
   const [wasReview, isReview] = await Promise.all([
     task.before === null ? Promise.resolve(false) : repo.isReviewTag(task.before),
@@ -2020,7 +2021,9 @@ export async function addComment(
     // می‌نشیند (R-NOTIF-06). همین الگو در بقیهٔ اعلان‌ها هم هست.
     title: 'کامنت جدید در پروژه',
     // کامنتِ فقط‌عکس متنی ندارد؛ نشانهٔ تصویر جایش می‌نشیند.
-    body: `«${project?.title ?? ''}» — ${text.slice(0, 140) || '🖼'}`,
+    // قالبِ ترجمه‌پذیر با پارامتر (۲.۱۶.۲) — نه رشتهٔ ساخته‌شده.
+    body: '«{project}» — {text}',
+    params: { project: project?.title ?? '', text: text.slice(0, 140) || '🖼' },
     url: `/projects/${projectId}?tab=comments`,
     // پاسخ از زیرِ اعلانِ تلگرام — به رشتهٔ همین کامنت (یا والدش، اگر خودش پاسخ است).
     replyTo: { projectId, commentId: parentId ?? newCommentId },
