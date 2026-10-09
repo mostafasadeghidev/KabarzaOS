@@ -4,6 +4,7 @@ import { getDashboard } from '@/server/dashboard';
 import { getMemberDashboard } from '@/server/dashboard-member';
 import { getProjectTabs, getQaForm, getTaskDetail, getTaskFormOptions } from '@/server/projects/service';
 import { getReview, listReviews } from '@/server/projects/reviews';
+import { findTaskByRef } from '@/server/projects/task-numbers';
 import { listInbox, openThread } from '@/server/messaging/service';
 import { listNotificationFeed } from '@/server/notifications/service';
 import { getCandidates, getMeetingFormOptions } from '@/server/meetings/service';
@@ -83,6 +84,24 @@ export function registerRead(kit: Kit) {
     inputSchema: { task_id: ID },
     annotations: RO,
   }, async ({ task_id }) => j(() => getTaskDetail(actor, task_id)));
+
+  /**
+   * شمارهٔ تسک (۲.۱۶.۰) — «ALZ-325»، یا «#325» با پروژه. ⚠️ گاردِ دیدن در
+   * `findTaskByRef` است؛ ناپیدا و ممنوع یک جواب دارند.
+   */
+  server.registerTool('find_task', {
+    title: 'Find a task by its number',
+    description: 'Resolve a task number to the task. Tasks are numbered per project: "#325" inside a project, "ALZ-325" (project code + number) anywhere. Use this whenever the user mentions a task number, then use the returned task id with other task tools.',
+    inputSchema: {
+      ref: z.string().min(1).max(30).describe('Task number, e.g. "ALZ-325", "#325" or "325".'),
+      project_id: ID.optional().describe('Needed when ref has no project code (e.g. "#325").'),
+    },
+    annotations: RO,
+  }, async ({ ref, project_id }) => j(async () => {
+    const found = await findTaskByRef(actor, ref, project_id);
+    if (!found) throw new Error('Task not found (or not visible to you). Give the full number with the project code, e.g. ALZ-325.');
+    return { ref: found.ref, project_id: found.projectId, ...(await getTaskDetail(actor, found.taskId)) };
+  }));
 
   server.registerTool('task_form_options', {
     title: 'Task options for a project',

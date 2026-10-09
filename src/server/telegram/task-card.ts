@@ -4,6 +4,8 @@ import { attachments, files, projects, tags, tasks } from '@/db/schema';
 import { tagName } from '@/db/tag-name';
 import type { Locale } from '@/i18n/config';
 import type { Translator } from '@/i18n/translate';
+import { taskRefGlobal } from '@/domain/projects/task-ref';
+import { projectRelation } from '@/server/projects/authority';
 
 /**
  * کارتِ تسک برای اعلانِ تلگرام (۲.۱۲.۰) — عنوان، پروژه، اولویت، ددلاین،
@@ -36,10 +38,19 @@ export interface TaskCard {
 
 const PHOTO = /^image\/(jpeg|png|webp)$/;
 
-export async function taskCard(taskId: number, locale: Locale, tr: Translator): Promise<TaskCard | null> {
+export async function taskCard(
+  taskId: number,
+  locale: Locale,
+  tr: Translator,
+  /** گیرنده — اگر در این پروژه فقط کارفرماست، شمارهٔ تسک نمی‌آید (۲.۱۶.۰). */
+  viewerId?: number,
+): Promise<TaskCard | null> {
   const [row] = await db
     .select({
       title: tasks.title,
+      number: tasks.number,
+      projectId: tasks.projectId,
+      projectCode: projects.code,
       description: tasks.description,
       dueDate: tasks.dueDate,
       project: projects.title,
@@ -63,7 +74,11 @@ export async function taskCard(taskId: number, locale: Locale, tr: Translator): 
     .orderBy(asc(attachments.id))
     .limit(20);
 
-  const lines = [`📌 ${row.title}`, `📁 ${tr('پروژه')}: ${row.project}`];
+  // «ALZ-325 · عنوان» — ⚠️ کارفرمای خالصِ این پروژه شماره نمی‌بیند.
+  const relation = viewerId ? await projectRelation(viewerId, row.projectId) : null;
+  const showRef = row.number > 0 && relation !== null && !(relation.isClient && !relation.isMember);
+  const ref = showRef ? `${taskRefGlobal({ id: row.projectId, code: row.projectCode }, row.number)} · ` : '';
+  const lines = [`📌 ${ref}${row.title}`, `📁 ${tr('پروژه')}: ${row.project}`];
   if (row.priority) lines.push(`⚡ ${tr('اولویت')}: ${row.priority}`);
   if (row.dueDate) lines.push(`📅 ${tr('ددلاین')}: ${row.dueDate}`);
   const description = row.description.trim();

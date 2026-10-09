@@ -2,6 +2,27 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.16.0]
+
+### Added
+
+- Task numbers per project. Every task gets a number inside its project (#1, #2, …), given by the database when the task is created, so every path (form, QA, reviews, bot, AI, import, backup restore) is covered and two tasks created at once never share a number. A number is never reused, even after a task is deleted. Existing tasks were numbered in creation order.
+- Project code: a short code per project (e.g. ALZ) used to reference a task outside its project: ALZ-325. It is suggested from the project title (P + id for non-Latin titles) and can be changed by the project manager in the Manage tab.
+- Where numbers show: next to the title on task cards (list and board), in the task dialog header (with a "Copy link" button), in My tasks and the Team pages (with the project code), and on Telegram task cards.
+- Search: a search box on the project Tasks tab (number, #number or title; Persian digits work too; Enter opens a single match); My tasks search understands numbers; Ctrl+K finds "ALZ-325".
+- Direct links: `/projects/{id}?task=325` opens that task, and the short link `/t/ALZ-325` goes to it.
+- Comments, task notes and review notes turn "#325" and "ALZ-325" into links to that task.
+- Telegram bot: send "ALZ-325" (or "#325" for one of your own tasks) to get that task's card; task lists show the numbers.
+- AI tools: new `find_task` resolves a task number to the task.
+
+### Security
+
+- Clients never see task numbers (gaps in the numbers would reveal hidden tasks): the number is removed on the server for the project page, task details, the client's task inbox, search, the bot and the short link.
+
+### Database
+
+- Migration `0049_task_numbers`: `tasks.number` (unique per project), `projects.code` (unique, case-insensitive), `projects.task_seq`, and the `tasks_assign_number` trigger.
+
 ## [2.15.1]
 
 ### Changed

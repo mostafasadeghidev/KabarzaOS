@@ -153,6 +153,7 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
       await deliverExternal(p, { ...input, ...text }, {
         email: addressOf(row),
         chatId: row.telegramChatId,
+        userId: p.userId,
       });
     } catch {
       // R-NOTIF-03 — عمداً بلعیده می‌شود.
@@ -173,7 +174,7 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
 async function deliverExternal(
   plan: { email: boolean; telegram: boolean },
   input: NotifyInput & { openLabel?: string; locale?: Locale; tr?: Translator },
-  target: { email: string; chatId: string },
+  target: { email: string; chatId: string; userId?: number },
 ): Promise<void> {
   const url = input.url ? absoluteUrl(input.url) : '';
 
@@ -186,7 +187,7 @@ async function deliverExternal(
   if (plan.telegram) {
     // ⚠️ کارتِ کامل فقط برای «سپرده شد» — گیرنده انجام‌دهندهٔ همان تسک است.
     const card = input.type === 'task.assigned' && input.taskId && input.locale && input.tr
-      ? await taskCard(input.taskId, input.locale, input.tr).catch(() => null)
+      ? await taskCard(input.taskId, input.locale, input.tr, target.userId).catch(() => null)
       : null;
     if (card) {
       const head = [`🔔 ${input.title}`, '', ...card.lines].join('\n');

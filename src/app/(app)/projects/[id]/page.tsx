@@ -54,7 +54,7 @@ export default async function ProjectDetailPage({
    * قبلی هم همین را سمتِ سرور حل می‌کند تا صفحه از فریمِ اول روی تبِ درست
    * بنشیند و تبِ پیش‌فرض یک‌لحظه چشمک نزند.
    */
-  searchParams: Promise<{ tab?: string; view?: string; created?: string; incomplete?: string; review?: string }>;
+  searchParams: Promise<{ tab?: string; view?: string; created?: string; incomplete?: string; review?: string; task?: string }>;
 }) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
@@ -387,8 +387,10 @@ export default async function ProjectDetailPage({
       />
 
       <ProjectTabs
-        initialTab={query.tab ?? null}
+        // ⚠️ `?task=325` بی `tab` هم به تبِ تسک‌ها می‌رود (پیوندِ «کپیِ پیوند»).
+        initialTab={query.tab ?? (Number(query.task) > 0 ? 'tasks' : null)}
         initialView={query.view ?? null}
+        initialTask={Number(query.task) > 0 ? Number(query.task) : null}
         initialReview={Number(query.review) > 0 ? Number(query.review) : null}
         data={{
           projectId: project.id,

@@ -3,6 +3,7 @@ import { linkify, videosIn, type VideoLink } from '@/domain/files/video';
 import { VideoFrame } from './video-frame';
 import { LinkCard } from './link-card';
 import { extractLinkCards, linkTitle, providerName } from '@/domain/files/link-preview';
+import { splitTaskRefs } from '@/domain/projects/task-ref';
 
 /**
  * متنِ کاربر با پیوندهای قابلِ کلیک — و ویدئوی لوم/یوتیوب/ویمئو که داخلِ متن
@@ -17,6 +18,7 @@ export function RichText({
   className,
   embeds = true,
   linkCards = false,
+  projectId,
 }: {
   text: string;
   className?: string;
@@ -28,6 +30,11 @@ export function RichText({
    * فیگما ناخوانایش می‌کرد.
    */
   linkCards?: boolean;
+  /**
+   * پروژهٔ همین متن (۲.۱۶.۰) — «#325» به تسکِ همین پروژه پیوند می‌شود. بی آن
+   * فقط «ALZ-325» (با کدِ پروژه) پیوند است.
+   */
+  projectId?: number;
 }) {
   if (text.trim() === '') return null;
   const split = linkCards ? extractLinkCards(text) : { text, cards: [] };
@@ -39,7 +46,18 @@ export function RichText({
       // ⚠️ dir="auto": متنِ انگلیسیِ کاربر در صفحهٔ راست‌به‌چپ نقطه‌اش را به اولِ خط می‌برد.
       <p dir="auto" className={cn('text-sm break-words whitespace-pre-wrap', className)}>
         {parts.map((part, i) => (part.kind === 'text' ? (
-          <span key={i}>{part.text}</span>
+          <span key={i}>
+            {/* «#325» و «ALZ-325» ← پیوندِ همان تسک؛ ⚠️ دیدنش را صفحهٔ مقصد می‌سنجد. */}
+            {splitTaskRefs(part.text).map((piece, j) => {
+              if (piece.kind === 'text') return piece.text;
+              const href = piece.code
+                ? `/t/${piece.code}-${piece.number}`
+                : projectId ? `/projects/${projectId}?task=${piece.number}` : null;
+              return href
+                ? <a key={j} href={href} dir="ltr" className="num font-mono text-primary underline-offset-4 hover:underline">{piece.text}</a>
+                : piece.text;
+            })}
+          </span>
         ) : (
           <a
             key={i}

@@ -35,6 +35,7 @@ import { TagChip } from '@/components/ui/tag-chip';
 import { RichText } from '@/components/media/rich-text';
 import { MediaGallery } from '@/components/media/media-gallery';
 import { MediaPicker } from '@/components/media/media-picker';
+import { CopyTaskLink, TaskNumber } from '@/components/task-number';
 
 /**
  * مودالِ تسک — بازسازیِ `task_admin_html()`:
@@ -144,8 +145,12 @@ export function TaskDialog({
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
+            {/* شمارهٔ تسک (۲.۱۶.۰) — کارفرما null می‌گیرد و نمی‌بیند. */}
+            <TaskNumber number={task?.number} className="text-xs" />
             {task?.isPrivate && <Lock className="size-4 text-muted-foreground" />}
-            {task?.title ?? tr('تسک')}
+            <span className="min-w-0 flex-1">{task?.title ?? tr('تسک')}</span>
+            {/* ⚠️ فاصله از دکمهٔ بستن (×) که همان گوشه است. */}
+            {task?.number ? <span className="me-6 shrink-0"><CopyTaskLink projectId={task.projectId} number={task.number} /></span> : null}
           </DialogTitle>
           <DialogDescription>
             {task ? tr('جزئیات، ویرایش و گفتگوی این تسک.') : tr('در حالِ بارگذاری…')}
@@ -254,7 +259,7 @@ export function TaskDialog({
             {/* توضیح با پیوندِ کلیک‌پذیر و ویدئوی لوم/یوتیوب، و تصویرهای تسک زیرش. */}
             {(task.description || data.detail.media.length > 0) && (
               <div className="grid gap-3 rounded-md bg-muted/40 p-3">
-                <RichText text={task.description} />
+                <RichText text={task.description} projectId={task.projectId} />
                 <MediaGallery
                   items={data.detail.media}
                   projectId={task.projectId}
@@ -514,7 +519,7 @@ export function TaskDialog({
                         <UserName userId={n.userId} name={n.userName ?? '—'} size="sm" nameClassName="font-medium text-foreground" />
                         <span className="num">{when(n.createdAt, tz)}</span>
                       </p>
-                      <RichText text={n.body} />
+                      <RichText text={n.body} projectId={task.projectId} />
                       <MediaGallery
                         items={n.media}
                         projectId={task.projectId}

@@ -1,5 +1,7 @@
 'use client';
 
+import { TaskNumber } from '@/components/task-number';
+import { projectCodeOf } from '@/domain/projects/task-ref';
 import { UserName, avatarFor } from '@/components/user-avatar';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -34,6 +36,9 @@ export interface BoardTask {
   statusColor: string | null;
   priorityName?: string | null;
   priorityColor?: string | null;
+  /** شماره و کدِ پروژه (۲.۱۶.۰) — «ALZ-325». */
+  number?: number | null;
+  projectCode?: string | null;
 }
 
 export interface TaskBoardData {
@@ -72,15 +77,22 @@ export function Assignee({ task }: { task: Pick<BoardTask, 'assigneeId' | 'assig
 }
 
 /** عنوانِ تسک که مودالِ خودش را باز می‌کند — همان `kteam-task-open`. */
-export function TaskTitleButton({ task, onOpen }: { task: Pick<BoardTask, 'id' | 'title'>; onOpen: (id: number) => void }) {
+export function TaskTitleButton({
+  task, onOpen,
+}: { task: Pick<BoardTask, 'id' | 'title' | 'number' | 'projectCode'> & { projectId?: number }; onOpen: (id: number) => void }) {
   return (
-    <button
-      type="button"
-      className="text-start font-medium hover:underline focus-visible:underline focus-visible:outline-none"
-      onClick={() => onOpen(task.id)}
-    >
-      {task.title}
-    </button>
+    <span className="inline-flex items-center gap-1.5">
+      {task.number && task.projectId
+        ? <TaskNumber number={task.number} code={projectCodeOf({ id: task.projectId, code: task.projectCode })} />
+        : null}
+      <button
+        type="button"
+        className="text-start font-medium hover:underline focus-visible:underline focus-visible:outline-none"
+        onClick={() => onOpen(task.id)}
+      >
+        {task.title}
+      </button>
+    </span>
   );
 }
 

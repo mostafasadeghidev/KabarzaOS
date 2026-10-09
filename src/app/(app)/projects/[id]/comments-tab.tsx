@@ -226,7 +226,7 @@ function Node({
             <UserName userId={comment.userId} name={comment.userName ?? '—'} size="sm" nameClassName="font-medium text-foreground" />
             <span className="num">{when(comment.createdAt, tz)}</span>
           </p>
-          <RichText text={comment.body} />
+          <RichText text={comment.body} projectId={projectId} />
           {comment.media && comment.media.length > 0 && (
             <MediaGallery
               items={isFrozen ? comment.media.map((m) => ({ ...m, canDelete: false })) : comment.media}

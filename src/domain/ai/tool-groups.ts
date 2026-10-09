@@ -12,7 +12,7 @@
 export const CORE_TOOLS = new Set([
   'whoami', 'list_my_tasks', 'search', 'list_projects', 'get_project', 'list_task_statuses',
   'my_hours', 'log_hours', 'start_timer', 'stop_timer',
-  'create_task', 'set_task_status', 'add_comment', 'get_task', 'update_task', 'add_task_note',
+  'create_task', 'set_task_status', 'add_comment', 'get_task', 'find_task', 'update_task', 'add_task_note',
   'list_my_meetings', 'list_my_reminders', 'create_reminder', 'delete_reminder',
   'list_message_recipients', 'send_message', 'message_management', 'list_inbox', 'read_thread', 'reply_message',
   'list_notifications',

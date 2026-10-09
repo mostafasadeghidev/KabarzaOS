@@ -46,6 +46,16 @@ export const projects = pgTable('projects', {
   telegramGroupId: text('telegram_group_id').notNull().default(''),
   /** توکنِ یک‌بارمصرفِ وصل‌کردنِ گروه (لینکِ «افزودنِ ربات به گروه»). */
   telegramGroupToken: text('telegram_group_token'),
+  /**
+   * کدِ کوتاهِ پروژه (۲.۱۶.۰) — ارجاعِ تسک بیرون از پروژه: «ALZ-325».
+   * یکتا (بی‌توجه به بزرگی/کوچکیِ حرف)؛ فقط حروف و ارقامِ لاتین.
+   */
+  code: text('code').notNull().default(''),
+  /**
+   * آخرین شمارهٔ تسکِ داده‌شده. ⚠️ فقط تریگرِ `tasks_assign_number` عوضش
+   * می‌کند (مهاجرتِ ۰۰۴۹)؛ کدِ برنامه نه.
+   */
+  taskSeq: integer('task_seq').notNull().default(0),
   ...stamps,
   ...softDelete,
 }, (t) => [
@@ -123,6 +133,11 @@ export const tasks = pgTable('tasks', {
   reviewEnd: integer('review_end'),
   area: text('area').notNull().default(''),
   /**
+   * شمارهٔ تسک در همان پروژه (۲.۱۶.۰) — «#325». ⚠️ تریگرِ پایگاه‌داده هنگامِ
+   * درج می‌دهدش (۰ = «بده»)؛ هرگز دوباره داده نمی‌شود. کارفرما نمی‌بیندش.
+   */
+  number: integer('number').notNull().default(0),
+  /**
    * ⚠️ پنهان از کارفرما — هر جا که کارفرما تسک می‌بیند. تسکِ بازبینیِ داخلی
    * این را از بازبینی به ارث می‌برد. عضو و مدیرِ پروژه همچنان می‌بینند.
    */
@@ -137,6 +152,7 @@ export const tasks = pgTable('tasks', {
   index('tasks_assigned_ix').on(t.assignedTo),
   index('tasks_status_ix').on(t.statusTagId),
   index('tasks_review_ix').on(t.reviewId).where(sql`${t.reviewId} is not null`),
+  uniqueIndex('tasks_project_number_ux').on(t.projectId, t.number),
 ]);
 
 export const REVIEW_SOURCES = ['video', 'loom', 'youtube', 'vimeo', 'upload', 'whatsapp', 'document', 'meeting', 'other'] as const;

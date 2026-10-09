@@ -1,7 +1,7 @@
 'use client';
 
 import { UserName } from '@/components/user-avatar';
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Check, ChevronDown, Clapperboard, Columns3, EyeOff, Hand, Link2, List as ListIcon, Lock, MessageSquare, Paperclip } from 'lucide-react';
 import { formatTimestamp } from '@/domain/files/video';
 import { claimTaskAction, setTaskStatusAction } from '../_form/tab-actions';
@@ -24,6 +24,9 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TagChip } from '@/components/ui/tag-chip';
+import { Input } from '@/components/ui/input';
+import { TaskNumber } from '@/components/task-number';
+import { parseTaskRef } from '@/domain/projects/task-ref';
 
 /**
  * تبِ تسک‌ها — بازسازیِ `edit_tasks_subtabs()` + `edit_task_li()`.
@@ -70,6 +73,8 @@ export interface TaskItem {
   lastNote?: string | null;
   /** عنوانِ تسکی که این یکی منتظرش است؛ null یعنی راه باز است. */
   blockedBy?: string | null;
+  /** شمارهٔ تسک در پروژه (۲.۱۶.۰) — برای کارفرما null. */
+  number?: number | null;
 }
 
 const GROUP_ORDER = ['todo', 'in_progress', 'complete', 'other'];
@@ -330,6 +335,7 @@ function KanbanBoard({
                   onClick={() => onOpen(t.id)}
                   className="flex items-start gap-1.5 text-start text-[13px] font-medium hover:underline"
                 >
+                  <TaskNumber number={t.number} className="mt-0.5" />
                   {t.isPrivate && <Lock className="mt-0.5 size-3 shrink-0 text-muted-foreground" />}
                   <span className="line-clamp-2">{t.title}</span>
                 </button>
@@ -366,6 +372,7 @@ export function TasksTab({
   roleHolders,
   currentUserId,
   initialGroup,
+  initialTask = null,
 }: {
   projectId: number;
   tasks: TaskItem[];
@@ -384,9 +391,41 @@ export function TasksTab({
    * مستقیم به همان‌جا برسد، نه فقط به صفحهٔ پروژه.
    */
   initialGroup?: string | null;
+  /** شمارهٔ تسک از `?task=` (۲.۱۶.۰) — پیوندِ مستقیم همان تسک را باز می‌کند. */
+  initialTask?: number | null;
 }) {
   const tr = useT();
-  const [openTask, setOpenTask] = useState<number | null>(null);
+  const [openTask, setOpenTask] = useState<number | null>(
+    () => (initialTask ? tasks.find((t) => t.number === initialTask)?.id ?? null : null),
+  );
+  /**
+   * ⚠️ `useState` فقط یک بار مقدار می‌گیرد؛ پیوندِ تسکِ دیگری روی همین صفحه
+   * (اعلان، کامنت) کامپوننت را دوباره سوار نمی‌کند — این اثر دنبالش می‌کند.
+   * شماره فقط بینِ تسک‌هایی که خودِ بیننده دارد جستجو می‌شود، نه از سرور.
+   */
+  useEffect(() => {
+    if (!initialTask) return;
+    const id = tasks.find((t) => t.number === initialTask)?.id;
+    if (id) setOpenTask(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTask]);
+
+  /**
+   * جستجو (۲.۱۶.۰): «325» یا «#325» ← همان تسک؛ متن ← عنوان. ⚠️ روی **همهٔ**
+   * تسک‌ها، نه فقط زیرتبِ باز — کسی که شماره را می‌داند، وضعیتش را نمی‌داند.
+   */
+  const [query, setQuery] = useState('');
+  const found = useMemo(() => {
+    const q = query.trim();
+    if (!q) return null;
+    const ref = parseTaskRef(q);
+    if (ref?.kind === 'local') {
+      const exact = tasks.filter((t) => t.number === ref.number);
+      if (exact.length > 0) return exact;
+    }
+    const needle = q.toLocaleLowerCase();
+    return tasks.filter((t) => t.title.toLocaleLowerCase().includes(needle) || (t.area ?? '').toLocaleLowerCase().includes(needle));
+  }, [query, tasks]);
   // سطل‌بندی بر پایهٔ گروه؛ تسکِ بی‌گروه در «بدون دسته».
   const { buckets, review } = useMemo(() => {
     const b = new Map<string, TaskItem[]>();
@@ -434,7 +473,7 @@ export function TasksTab({
   );
 
 
-  const list = tab === 'review' ? review : tab === 'mine' ? mine : (buckets.get(tab) ?? []);
+  const list = found ?? (tab === 'review' ? review : tab === 'mine' ? mine : (buckets.get(tab) ?? []));
 
   return (
     <div className="grid gap-4">
@@ -447,7 +486,6 @@ export function TasksTab({
           value={view}
           // تک‌انتخابی نباید خالی بماند: کلیک روی گزینهٔ فعال بی‌اثر است.
           onValueChange={(v) => { if (v) setView(v as typeof view); }}
-          className="me-auto"
         >
           <ToggleGroupItem value="list" aria-label={tr('نمای فهرست')}>
             <ListIcon className="size-3.5" />
@@ -456,6 +494,18 @@ export function TasksTab({
             <Columns3 className="size-3.5" />
           </ToggleGroupItem>
         </ToggleGroup>
+        <Input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter روی یک نتیجهٔ تنها ← همان تسک باز می‌شود.
+            if (e.key === 'Enter' && found?.length === 1) setOpenTask(found[0]!.id);
+          }}
+          placeholder={tasks.some((t) => t.number) ? tr('شماره یا عنوانِ تسک…') : tr('عنوانِ تسک…')}
+          aria-label={tr('جستجوی تسک')}
+          className="me-auto h-8 w-48"
+        />
         {formOptions && (
           <AddTaskDialog projectId={projectId} options={formOptions} canManage={canManage} currentUserId={currentUserId} />
         )}
@@ -464,7 +514,7 @@ export function TasksTab({
       {tasks.length === 0 && <EmptyState title={tr("تسکی ثبت نشده")} />}
 
       {/* زیرتب‌ها — «نیاز به ریویو» اول، ولی گروهِ اول پیش‌فرضِ فعال است. */}
-      <div className={`overflow-x-auto overflow-y-hidden ${tasks.length === 0 || view === 'board' ? 'hidden' : ''}`}>
+      <div className={`overflow-x-auto overflow-y-hidden ${tasks.length === 0 || view === 'board' || found ? 'hidden' : ''}`}>
         <Tabs value={tab} onValueChange={setTab}>
           {/* همان قرصِ فیلترِ بقیهٔ اپ — اندازه و وزن یکی، نه نسخهٔ ریزِ خودش. */}
           <TabsList className="w-max">
@@ -492,7 +542,7 @@ export function TasksTab({
 
       {view === 'board' ? (
         <KanbanBoard
-          tasks={tasks}
+          tasks={found ?? tasks}
           statuses={statuses}
           canDrag={(canManage || canInteract) && !isFrozen}
           onOpen={setOpenTask}
@@ -508,7 +558,7 @@ export function TasksTab({
       // ⚠️ کارتِ تسک تا لبهٔ صفحه کش نمی‌آید: روی نمایشگرِ پهن تا چهار ستون.
       // سطلی که خالی مانده (مثلاً پس از تغییرِ وضعیت) «تسکی نیست.» می‌گوید، نه صفحهٔ سفید.
       tasks.length > 0 && list.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{tr('تسکی نیست.')}</p>
+        <p className="text-sm text-muted-foreground">{found ? tr('تسکی با این شماره یا عنوان پیدا نشد.') : tr('تسکی نیست.')}</p>
       ) : (
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {list.map((t) => (
@@ -530,6 +580,7 @@ export function TasksTab({
             >
               <span className="flex items-center gap-1.5 text-start text-sm font-medium">
                 {/* R-PROJ-17 — تسکِ خصوصی نشانِ خودش را دارد. */}
+                <TaskNumber number={t.number} />
                 {t.isPrivate && <Lock className="size-3.5 text-muted-foreground" />}
                 {/* تسکِ انجام‌شده کم‌رنگ و خط‌خورده (`kteam-done`) — در نگاهِ اول از کارِ باز جدا شود. */}
                 <span className={t.statusGroup === 'complete' ? 'text-muted-foreground line-through' : undefined}>{t.title}</span>
