@@ -35,7 +35,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { TagChip } from '@/components/ui/tag-chip';
 import { RichText } from '@/components/media/rich-text';
 import { MediaGallery } from '@/components/media/media-gallery';
-import { MediaPicker } from '@/components/media/media-picker';
+import { FormFileDrop } from '@/components/media/form-file-drop';
 import { CopyTaskLink, TaskNumber } from '@/components/task-number';
 
 /**
@@ -360,12 +360,12 @@ function TaskDialogBody({
                 </Field>
 
                 {/* تصویرِ تازه به تصویرهای قبلی **افزوده** می‌شود؛ حذفِ قبلی‌ها از خودِ گالری است. */}
-                <MediaPicker>
+                <FormFileDrop name="media">
                   <Field>
                     <FieldLabel htmlFor="t-desc">{t("توضیحات")}</FieldLabel>
                     <Textarea id="t-desc" name="description" rows={3} defaultValue={task.description} />
                   </Field>
-                </MediaPicker>
+                </FormFileDrop>
 
                 {(options.tasks?.filter((x) => x.id !== task.id).length ?? 0) > 0 && (
                   <Field>
@@ -537,9 +537,9 @@ function TaskDialogBody({
               <form action={noteAction} className="grid gap-2">
                 <input type="hidden" name="taskId" value={task.id} />
                 {/* ⚠️ متن اجباری نیست: یادداشتِ فقط‌اسکرین‌شات هم یادداشت است (سرور هر دو خالی را رد می‌کند). */}
-                <MediaPicker>
+                <FormFileDrop name="media" compact>
                   <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} />
-                </MediaPicker>
+                </FormFileDrop>
                 {noteState.error && <p className="text-xs text-destructive">{tr(noteState.error)}</p>}
                 <div className="flex justify-end">
                   <SubmitButton label={t("ارسال")} busy={t('در حال ارسال…')} />

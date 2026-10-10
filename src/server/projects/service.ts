@@ -6,7 +6,7 @@ import { notInArray, and, eq, inArray, isNull, asc, like, or, sql } from 'drizzl
 import { db } from '@/db/client';
 import {
   attachments, comments, ledger, notifications, paymentRequests, projectClients, projectMembers,
-  projectPayments, projectQa, projects, tags, tagRelations, tasks, taskRoles,
+  projectPayments, projectQa, projects, reviews, tags, tagRelations, tasks, taskRoles,
   tenderBids, timelogs, auditLog, userOffices, users, currencies,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
@@ -593,6 +593,12 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
 
   const orphanFileIds: number[] = [];
   await db.transaction(async (tx) => {
+    // فایلِ فیزیکیِ پیوست‌ها هم می‌رود (`Attachments::delete`) — وگرنه در باکت یتیم می‌ماند.
+    // ⚠️ **پیش از** پاک‌کردنِ تسک و کامنت: ردیفِ رسانهٔ آن‌ها با حذفِ مادر (cascade) می‌رود
+    // و شناسهٔ فایلش را هم می‌برد (همان تلهٔ سبک‌سازی).
+    orphanFileIds.push(...(await tx.select({ fileId: attachments.fileId }).from(attachments)
+      .where(eq(attachments.projectId, projectId))).map((a) => a.fileId).filter((id): id is number => id !== null));
+
     // ردیف‌های سبک همیشه می‌روند — فایل، تسک، کامنت، QA، پیشنهاد، اعضا، کارفرمایان.
     const taskIds = await tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.projectId, projectId));
     if (taskIds.length > 0) {
@@ -601,9 +607,6 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
     await tx.delete(tasks).where(eq(tasks.projectId, projectId));
     await tx.delete(comments).where(eq(comments.projectId, projectId));
     await tx.delete(projectQa).where(eq(projectQa.projectId, projectId));
-    // فایلِ فیزیکیِ پیوست‌ها هم می‌رود (`Attachments::delete`) — وگرنه در باکت یتیم می‌ماند.
-    orphanFileIds.push(...(await tx.select({ fileId: attachments.fileId }).from(attachments)
-      .where(eq(attachments.projectId, projectId))).map((a) => a.fileId).filter((id): id is number => id !== null));
     await tx.delete(attachments).where(eq(attachments.projectId, projectId));
     await tx.delete(tenderBids).where(eq(tenderBids.projectId, projectId));
     await tx.delete(timelogs).where(eq(timelogs.projectId, projectId));
@@ -3084,16 +3087,25 @@ export async function lightenProject(actor: Actor, projectId: number) {
 
   const orphanFileIds: number[] = [];
   await db.transaction(async (tx) => {
+    /**
+     * ⚠️ فایل‌های همهٔ پیوست‌ها — فایل‌های پروژه، رسانهٔ تسک و کامنت، و پیوستِ
+     * بازبینی — **پیش از** پاک‌کردنِ تسک و کامنت و بازبینی جمع می‌شوند. ردیفِ
+     * پیوستِ تسک/کامنت/بازبینی با حذفِ مادرش (cascade) می‌رفت و شناسهٔ فایلش
+     * همراهش؛ فایلِ فیزیکی در باکت یتیم می‌ماند و سبک‌سازی جایی آزاد نمی‌کرد.
+     * همهٔ این ردیف‌ها `project_id` دارند، پس یک کوئری کافی است.
+     */
+    orphanFileIds.push(...(await tx.select({ fileId: attachments.fileId }).from(attachments)
+      .where(eq(attachments.projectId, projectId))).map((a) => a.fileId).filter((id): id is number => id !== null));
+
     const taskIds = await tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.projectId, projectId));
     if (taskIds.length > 0) {
       await tx.delete(taskRoles).where(inArray(taskRoles.taskId, taskIds.map((t) => t.id)));
     }
     await tx.delete(tasks).where(eq(tasks.projectId, projectId));
     await tx.delete(comments).where(eq(comments.projectId, projectId));
+    // بازبینی‌ها هم جزئیاتِ پروژه‌اند (عنوان، یادداشت، پیوند، مخاطب) — با تسک‌هایشان می‌روند.
+    await tx.delete(reviews).where(eq(reviews.projectId, projectId));
     await tx.delete(projectQa).where(eq(projectQa.projectId, projectId));
-    // فایلِ فیزیکی هم می‌رود — سبک‌سازی وگرنه فضایی آزاد نمی‌کرد.
-    orphanFileIds.push(...(await tx.select({ fileId: attachments.fileId }).from(attachments)
-      .where(eq(attachments.projectId, projectId))).map((a) => a.fileId).filter((id): id is number => id !== null));
     await tx.delete(attachments).where(eq(attachments.projectId, projectId));
     await tx.delete(timelogs).where(eq(timelogs.projectId, projectId));
     await tx.delete(tenderBids).where(eq(tenderBids.projectId, projectId));

@@ -22,7 +22,7 @@ import { useT } from '@/i18n/client';
 import { defaultTaskStatusId } from '@/domain/projects/defaults';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { MediaPicker } from '@/components/media/media-picker';
+import { FormFileDrop } from '@/components/media/form-file-drop';
 
 /** گزینه‌های فرمِ تسک — از سرور می‌آیند (همان `getTaskFormOptions`). */
 export interface TaskFormOptions {
@@ -113,13 +113,13 @@ function AddTaskDialogBody({
             )}
           </Field>
 
-          {/* اسکرین‌شات و فایلِ تسک — با دکمه، چسباندن یا رهاکردن روی توضیحات. */}
-          <MediaPicker>
+          {/* اسکرین‌شات و فایلِ تسک — کادرِ رها/بچسبان (مثلِ بازبینی)، یا چسباندن روی توضیحات. */}
+          <FormFileDrop name="media">
             <Field>
               <FieldLabel htmlFor="nt-desc">{t("توضیحات")}</FieldLabel>
               <Textarea id="nt-desc" name="description" rows={2} defaultValue={keep('description')} />
             </Field>
-          </MediaPicker>
+          </FormFileDrop>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Field>

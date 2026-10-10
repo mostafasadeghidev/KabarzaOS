@@ -273,9 +273,7 @@ function ProjectDialogBody({
                     name="thumbnailFile"
                     accept="image/*"
                     multiple={false}
-                    preview
-                    addLabel={tr("انتخابِ تصویر")}
-                    emptyLabel={tr("تصویری انتخاب نشده")}
+                    compact
                   />
                   {/* برداشتنِ تصویرِ فعلی — پیش از این فقط جایگزین‌کردن ممکن بود. */}
                   {project?.thumbnailFileId && (
