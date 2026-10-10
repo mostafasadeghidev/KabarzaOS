@@ -846,6 +846,8 @@ export interface CreateProjectData {
   officeId: number | null;
   parentId: number | null;
   isUnitBased: boolean;
+  /** پروژهٔ تعدادی: مبلغِ هر ردیف را مسئول بزند (۲.۲۰.۰) — نیامده = نگه‌داشتنِ مقدارِ قبلی. */
+  unitManualAmount?: boolean;
   isTender: boolean;
   /** ردیف‌های جدولِ نقش/سقفِ مناقصه. */
   tenderRoles?: TenderRoleRow[];
@@ -994,6 +996,7 @@ export async function createProject(actor: Actor, input: CreateProjectData): Pro
     officeId: input.officeId,
     parentId: input.parentId,
     isUnitBased: input.isUnitBased,
+    unitManualAmount: input.isUnitBased && (input.unitManualAmount ?? false),
     // ⚠️ پرچمِ نهایی را `saveTenderRoles` تعیین می‌کند (تیک بدونِ نقش، مناقصه نیست).
     isTender: false,
     scope: input.scope,
@@ -1188,6 +1191,8 @@ export async function updateProject(actor: Actor, id: number, input: CreateProje
     officeId: input.officeId,
     parentId,
     isUnitBased: input.isUnitBased,
+    // ⚠️ بدونِ تعدادی‌بودن بی‌معناست؛ فراخوانِ بی‌فیلد مقدارِ قبلی را نگه می‌دارد.
+    unitManualAmount: input.isUnitBased && (input.unitManualAmount ?? before.unitManualAmount),
     scope: input.scope,
     // ⚠️ فیلدی که اصلاً نیامده (فراخوانِ قدیمی: API، ایمپورت) مقدارِ قبلی را نگه می‌دارد.
     liveUrl: input.liveUrl ?? before.liveUrl,

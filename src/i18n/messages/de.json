@@ -3948,5 +3948,16 @@
   "آدرسِ سایت معتبر نیست": "Die Website-Adresse ist ungültig",
   "سایتِ پروژه": "Projekt-Website",
   "تصویر یا فایل را اینجا رها کنید یا بچسبانید": "Bild oder Datei hier ablegen oder einfügen",
-  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Strg+V für einen Screenshot, Klick zum Auswählen einer Datei – oder einen Videolink (Loom, YouTube, Vimeo) in den Text einfügen"
+  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Strg+V für einen Screenshot, Klick zum Auswählen einer Datei – oder einen Videolink (Loom, YouTube, Vimeo) in den Text einfügen",
+  "اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Ohne Betrag gilt der vereinbarte Satz des Mitglieds.",
+  "تعدادِ کارِ هر تاریخ را ثبت کنید. مبلغ را می‌توانید خودتان بزنید؛ اگر خالی بماند، تعداد × نرخِ توافقیِ عضو حساب می‌شود.": "Erfassen Sie die Menge pro Datum. Den Betrag können Sie selbst eintragen; bleibt er leer, gilt Menge × vereinbarter Satz des Mitglieds.",
+  "تعیینِ مبلغِ ردیف برای این پروژه فعال نیست یا اجازه‌اش را ندارید.": "Das Festlegen des Zeilenbetrags ist für dieses Projekt nicht aktiviert, oder Sie haben keine Berechtigung.",
+  "طبق نرخِ توافقی": "Nach vereinbartem Satz",
+  "مبلغ ذخیره شد.": "Betrag gespeichert.",
+  "مبلغ معتبر نیست؛ فقط عددِ مثبت با حداکثر چهار رقمِ اعشار.": "Der Betrag ist ungültig; verwenden Sie eine positive Zahl mit höchstens vier Dezimalstellen.",
+  "مبلغِ دستیِ ردیفِ تعدادی": "Manueller Betrag der Mengenzeilen",
+  "مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.": "Der Betrag einer angeforderten oder bezahlten Zeile kann nicht geändert werden.",
+  "مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند": "Projektverantwortliche können den Betrag jeder Zeile selbst festlegen",
+  "ویرایشِ مبلغ": "Betrag bearbeiten",
+  "ویرایشِ مبلغِ کارکرد": "Mengenbetrag bearbeiten"
 }

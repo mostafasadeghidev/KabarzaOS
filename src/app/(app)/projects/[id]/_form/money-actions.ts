@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
   addUnitEntry, cancelRequest, createRequest, deleteUnitEntry,
-  MemberMoneyError, requestForUnit,
+  MemberMoneyError, requestForUnit, setUnitEntryAmount,
 } from '@/server/finance/member-service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { REQUEST_MESSAGES } from '@/domain/finance/member-money';
@@ -26,6 +26,9 @@ function message(error: unknown): string {
     if (error.reason === 'not_member') return 'این شخص عضوِ این پروژه نیست.';
     if (error.reason === 'not_yours') return 'این ردیف مالِ شما نیست.';
     if (error.reason === 'frozen') return 'پروژه بایگانی شده و تغییر نمی‌پذیرد.';
+    if (error.reason === 'amount_invalid') return 'مبلغ معتبر نیست؛ فقط عددِ مثبت با حداکثر چهار رقمِ اعشار.';
+    if (error.reason === 'amount_forbidden') return 'تعیینِ مبلغِ ردیف برای این پروژه فعال نیست یا اجازه‌اش را ندارید.';
+    if (error.reason === 'not_editable') return 'مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.';
     return REQUEST_MESSAGES[error.reason] ?? 'انجام نشد.';
   }
   if (error instanceof ForbiddenError) return 'دسترسی ندارید.';
@@ -42,12 +45,25 @@ export async function addUnitAction(_prev: MoneyState, formData: FormData): Prom
       entryDate: String(formData.get('entryDate') ?? ''),
       quantity: Number(formData.get('quantity') ?? 0),
       note: String(formData.get('note') ?? ''),
+      // خالی = از نرخِ توافقی پیروی کن (۲.۲۰.۰)؛ سرویس اجازه‌اش را گارد می‌کند.
+      amount: String(formData.get('amount') ?? ''),
     });
   } catch (error) {
     return { error: message(error) };
   }
   revalidatePath(`/projects/${projectId}`);
   return { message: 'کارکرد ثبت شد.' };
+}
+
+/** عوض‌کردنِ مبلغِ یک ردیفِ پرداخت‌نشده — فقط مسئولِ پروژه (۲.۲۰.۰). */
+export async function setUnitAmountAction(entryId: number, projectId: number, amount: string): Promise<MoneyState> {
+  try {
+    await setUnitEntryAmount(await requireActor(), entryId, amount);
+  } catch (error) {
+    return { error: message(error) };
+  }
+  revalidatePath(`/projects/${projectId}`);
+  return { message: 'مبلغ ذخیره شد.' };
 }
 
 export async function deleteUnitAction(entryId: number, projectId: number): Promise<MoneyState> {

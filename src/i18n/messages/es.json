@@ -3948,5 +3948,16 @@
   "آدرسِ سایت معتبر نیست": "La dirección del sitio no es válida",
   "سایتِ پروژه": "Sitio del proyecto",
   "تصویر یا فایل را اینجا رها کنید یا بچسبانید": "Suelta o pega aquí una imagen o un archivo",
-  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Ctrl+V para una captura, clic para elegir un archivo, o pon un enlace de vídeo (Loom, YouTube, Vimeo) en el texto"
+  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Ctrl+V para una captura, clic para elegir un archivo, o pon un enlace de vídeo (Loom, YouTube, Vimeo) en el texto",
+  "اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Si no se indica un importe, se usa la tarifa acordada del miembro.",
+  "تعدادِ کارِ هر تاریخ را ثبت کنید. مبلغ را می‌توانید خودتان بزنید؛ اگر خالی بماند، تعداد × نرخِ توافقیِ عضو حساب می‌شود.": "Registre la cantidad de trabajo por fecha. Puede indicar el importe usted mismo; si queda vacío, se usa cantidad × tarifa acordada del miembro.",
+  "تعیینِ مبلغِ ردیف برای این پروژه فعال نیست یا اجازه‌اش را ندارید.": "Fijar el importe de la fila no está activado para este proyecto, o no tiene permiso.",
+  "طبق نرخِ توافقی": "Según la tarifa acordada",
+  "مبلغ ذخیره شد.": "Importe guardado.",
+  "مبلغ معتبر نیست؛ فقط عددِ مثبت با حداکثر چهار رقمِ اعشار.": "El importe no es válido; use un número positivo con hasta cuatro decimales.",
+  "مبلغِ دستیِ ردیفِ تعدادی": "Importe manual de las filas por unidad",
+  "مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.": "No se puede cambiar el importe de una fila solicitada o pagada.",
+  "مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند": "El responsable del proyecto puede fijar el importe de cada fila",
+  "ویرایشِ مبلغ": "Editar importe",
+  "ویرایشِ مبلغِ کارکرد": "Editar importe de la cantidad"
 }

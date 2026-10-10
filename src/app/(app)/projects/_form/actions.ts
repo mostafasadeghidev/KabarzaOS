@@ -24,7 +24,7 @@ export async function createProjectAction(_prev: FormState, formData: FormData):
 
   const values: Record<string, string> = {};
   for (const name of RAW_FIELDS) values[name] = String(formData.get(name) ?? '');
-  for (const name of ['isUnitBased', 'isTender', 'urlsClientVisible']) values[name] = checked(name) ? '1' : '';
+  for (const name of ['isUnitBased', 'isTender', 'urlsClientVisible', 'unitManualAmount']) values[name] = checked(name) ? '1' : '';
 
   const parsed = createProjectSchema.safeParse({
     title: formData.get('title') ?? '',
@@ -40,6 +40,7 @@ export async function createProjectAction(_prev: FormState, formData: FormData):
     testUrl: formData.get('testUrl') ?? '',
     urlsClientVisible: checked('urlsClientVisible'),
     isUnitBased: checked('isUnitBased'),
+    unitManualAmount: checked('unitManualAmount'),
     isTender: checked('isTender'),
     tenderRoles: readTenderRows(formData),
     scope: formData.get('scope') === 'private' ? 'private' : 'company',
@@ -95,7 +96,7 @@ export async function updateProjectAction(_prev: FormState, formData: FormData):
 
   const values: Record<string, string> = {};
   for (const name of RAW_FIELDS) values[name] = String(formData.get(name) ?? '');
-  for (const name of ['isUnitBased', 'isTender', 'urlsClientVisible']) values[name] = checked(name) ? '1' : '';
+  for (const name of ['isUnitBased', 'isTender', 'urlsClientVisible', 'unitManualAmount']) values[name] = checked(name) ? '1' : '';
 
   const parsed = createProjectSchema.safeParse({
     title: formData.get('title') ?? '',
@@ -111,6 +112,7 @@ export async function updateProjectAction(_prev: FormState, formData: FormData):
     testUrl: formData.get('testUrl') ?? '',
     urlsClientVisible: checked('urlsClientVisible'),
     isUnitBased: checked('isUnitBased'),
+    unitManualAmount: checked('unitManualAmount'),
     isTender: checked('isTender'),
     tenderRoles: readTenderRows(formData),
     scope: formData.get('scope') === 'private' ? 'private' : 'company',

@@ -14,7 +14,7 @@ import { canManageSection, type Actor } from '@/domain/access/permissions';
 import { ForbiddenError, visibleScopes } from '@/domain/access/guard';
 import {
   availableToRequest, canCancelRequest, canDeleteUnit, isValidQuantity,
-  OPEN_STATUSES, unitAmount, validateRequest, type RequestRejection,
+  OPEN_STATUSES, parseManualAmount, unitAmount, validateRequest, type RequestRejection,
 } from '@/domain/finance/member-money';
 import { contractBalance, paymentStatus } from '@/domain/team-money/payments';
 import { myPayoutsOn } from '@/server/projects/repository';
@@ -26,7 +26,7 @@ import { canManageProject } from '@/server/projects/authority';
  */
 
 export class MemberMoneyError extends Error {
-  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen' | 'not_member' | 'not_unit_based') {
+  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen' | 'not_member' | 'not_unit_based' | 'amount_invalid' | 'amount_forbidden' | 'not_editable') {
     super(reason);
     this.name = 'MemberMoneyError';
   }
@@ -61,6 +61,7 @@ async function projectContext(
       isArchived: projects.isArchived,
       currencyId: projects.currencyId,
       isUnitBased: projects.isUnitBased,
+      unitManualAmount: projects.unitManualAmount,
       // ⚠️ گروهِ وضعیت لازم است، نه فقط بایگانی: پروژهٔ لغوشده هم منجمد است.
       statusGroup: tags.statusGroup,
     })
@@ -154,13 +155,26 @@ export async function myUnpaidUnits(actor: Actor, projectId: number): Promise<st
  */
 export async function addUnitEntry(
   actor: Actor,
-  input: { projectId: number; userId: number; entryDate: string; quantity: number; note: string },
+  input: {
+    projectId: number; userId: number; entryDate: string; quantity: number; note: string;
+    /** مبلغِ دستی (۲.۲۰.۰) — فقط مسئولِ پروژه و فقط وقتی پروژه اجازه داده؛ خالی = نرخِ توافقی. */
+    amount?: string;
+  },
 ) {
   const { canManage, isFrozen, project } = await projectContext(actor, input.projectId, { projectManager: true });
   if (isFrozen) throw new MemberMoneyError('frozen');
   // پورتِ `handle_add_unit`: فقط پروژهٔ **تعدادی** ردیفِ کارکرد می‌پذیرد.
   if (!project.isUnitBased) throw new MemberMoneyError('not_unit_based');
   if (!isValidQuantity(input.quantity)) throw new MemberMoneyError('quantity_invalid');
+  const manual = parseManualAmount(input.amount);
+  if (manual.kind === 'invalid') throw new MemberMoneyError('amount_invalid');
+  /**
+   * ⚠️ مبلغِ دستی پول است: فقط مسئولِ پروژه، فقط روی پروژه‌ای که تیکش را دارد.
+   * عضوِ ساده با درخواستِ دستی هم نمی‌تواند برای خودش مبلغ بنویسد.
+   */
+  if (manual.kind === 'ok' && !(canManage && project.unitManualAmount)) {
+    throw new MemberMoneyError('amount_forbidden');
+  }
   // پورتِ `clean_date`: تاریخِ نامعتبر/خالی → امروز، نه خطای دیتابیس.
   const entryDate = /^\d{4}-\d{2}-\d{2}$/.test(input.entryDate) && Number.isFinite(Date.parse(`${input.entryDate}T00:00:00Z`))
     ? input.entryDate
@@ -196,13 +210,45 @@ export async function addUnitEntry(
     userId: targetId,
     entryDate,
     quantity: String(input.quantity),
-    amount: unitAmount(input.quantity, rate),
+    amount: manual.kind === 'ok' ? manual.amount : unitAmount(input.quantity, rate),
     currencyId,
     note: input.note.trim().slice(0, 500),
   }).returning({ id: unitEntries.id });
 
   await audit(actor, 'unit.add', rows[0]!.id, { ...input, userId: targetId });
   return rows[0]!.id;
+}
+
+/**
+ * عوض‌کردنِ مبلغِ یک ردیفِ پرداخت‌نشده (۲.۲۰.۰) — مسئولِ پروژه، فقط روی پروژه‌ای
+ * که «مبلغِ دستی» را روشن دارد. مبلغِ خالی ردیف را به نرخِ توافقیِ فعلیِ عضو برمی‌گرداند.
+ *
+ * ⚠️ فقط ردیفِ `unpaid`: ردیفِ درخواست‌شده مبلغش در درخواستِ پرداخت قفل شده و
+ * پرداخت‌شده سندِ مالیِ انجام‌شده است. ⚠️ پروژهٔ منجمد هم نه.
+ */
+export async function setUnitEntryAmount(actor: Actor, entryId: number, rawAmount: string) {
+  const rows = await db.select().from(unitEntries).where(eq(unitEntries.id, entryId));
+  const row = rows[0];
+  if (!row) throw new MemberMoneyError('not_yours');
+  const { canManage, isFrozen, project } = await projectContext(actor, row.projectId, { projectManager: true });
+  if (!canManage || !project.unitManualAmount) throw new MemberMoneyError('amount_forbidden');
+  if (isFrozen) throw new MemberMoneyError('frozen');
+  if (row.status !== 'unpaid') throw new MemberMoneyError('not_editable');
+
+  const manual = parseManualAmount(rawAmount);
+  if (manual.kind === 'invalid') throw new MemberMoneyError('amount_invalid');
+  let amount: string;
+  if (manual.kind === 'ok') {
+    amount = manual.amount;
+  } else {
+    const membership = await db.select({ unitRate: projectMembers.unitRate }).from(projectMembers)
+      .where(and(eq(projectMembers.projectId, row.projectId), eq(projectMembers.userId, row.userId)))
+      .orderBy(projectMembers.id).limit(1);
+    amount = unitAmount(Number(row.quantity), membership[0]?.unitRate ?? null);
+  }
+
+  await db.update(unitEntries).set({ amount, updatedAt: new Date() }).where(eq(unitEntries.id, entryId));
+  await audit(actor, 'unit.amount', entryId, { before: row.amount, after: amount });
 }
 
 export async function deleteUnitEntry(actor: Actor, entryId: number) {

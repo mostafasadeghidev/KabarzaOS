@@ -30,6 +30,11 @@ export const projects = pgTable('projects', {
 
   /** پروژهٔ تعدادی: دستمزد = نرخ × تعداد. */
   isUnitBased: boolean('is_unit_based').notNull().default(false),
+  /**
+   * پروژهٔ تعدادی: مسئولِ پروژه مبلغِ هر ردیفِ کارکرد را خودش بزند (۲.۲۰.۰)؟
+   * خالی‌گذاشتنِ مبلغ هنوز از نرخِ توافقیِ عضو پیروی می‌کند. پیش‌فرض خاموش.
+   */
+  unitManualAmount: boolean('unit_manual_amount').notNull().default(false),
 
   /** R-PROJ-06 — بایگانی، قدمِ برگشت‌پذیرِ قبل از سبک‌سازی. */
   isArchived: boolean('is_archived').notNull().default(false),
