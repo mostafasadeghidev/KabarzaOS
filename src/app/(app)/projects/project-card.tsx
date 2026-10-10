@@ -13,6 +13,7 @@ import { summarizeProject } from '@/domain/team-money/payments';
 import { deadlineBar, deadlineLabel, taskProgress } from '@/domain/projects/deadline';
 import type { VisibleProjectRow } from '@/server/projects/service';
 import { Thumb } from '@/components/thumb';
+import { SiteLinkPills } from '@/components/site-links';
 import { StatusPicker, type StatusOption } from './status-picker';
 import { CardQuickAdd, type CardOptions } from './card-quick-add';
 import { useT } from '@/i18n/client';
@@ -86,20 +87,20 @@ export function ProjectCard({
    * ⚠️ بی‌سایه (DESIGN.md §۵): سطحِ سفید روی کاغذِ زمینه خودش جداست.
    * بازخوردِ «کلیک‌خور» مرزِ پررنگ‌تر در hover است، نه سایهٔ بزرگ‌شونده.
    *
-   * ⚠️ هم‌ترازی با کارت‌های کناری — subgrid: کارت ۹ ردیف از شبکهٔ والد را
-   * می‌گیرد (`row-span-9`) و ردیف‌هایش را از همان‌جا برمی‌دارد
+   * ⚠️ هم‌ترازی با کارت‌های کناری — subgrid: کارت ۱۰ ردیف از شبکهٔ والد را
+   * می‌گیرد (`row-span-10`) و ردیف‌هایش را از همان‌جا برمی‌دارد
    * (`grid-rows-subgrid`). ارتفاعِ هر ردیف بلندترین نسخهٔ آن بخش در ردیفِ
    * کارت‌هاست، پس ددلاین، نوارِ پیشرفت و دکمهٔ مشاهده در همهٔ کارت‌های یک
    * ردیف روی یک خط می‌نشینند — هر قدر هم عنوان یا چیپ‌های بالایشان بلند باشد.
    *   - هر بخش **همیشه** یک فرزندِ مستقیم است، حتی خالی: بخشِ غایب بخش‌های
-   *     بعدی را یک ردیف بالا می‌کشد. شمارِ فرزندانِ درون‌جریان = ۹.
+   *     بعدی را یک ردیف بالا می‌کشد. شمارِ فرزندانِ درون‌جریان = ۱۰.
    *   - فاصله `pt` ِ خودِ بخش است و `gap` صفر: ردیفی که در هیچ کارتی محتوا
    *     ندارد (پیوندِ والد، مبلغ برای عضو، افزودنِ سریع برای غیرمدیر) باید
    *     صفر شود، ولی gap دو طرفش می‌ماند. فاصلهٔ عمودیِ کارت‌ها هم به همین
    *     دلیل `mb-3` است نه `gap-y` ِ شبکه (← project-grid).
    */
   return (
-    <Card className="relative row-span-9 mb-3 grid grid-rows-subgrid gap-0 overflow-clip px-4 py-4 transition-colors hover:border-input">
+    <Card className="relative row-span-10 mb-3 grid grid-rows-subgrid gap-0 overflow-clip px-4 py-4 transition-colors hover:border-input">
       {/* نوارهای گوشه — بایگانی و مناقصه، مثلِ ribbonهای نسخهٔ قبلی. absolute است و ردیفی نمی‌گیرد. */}
       <div className="absolute top-0 end-0 flex">
         {project.isArchived && (
@@ -168,8 +169,17 @@ export function ProjectCard({
         ) : null}
       </div>
 
+      {/* ۳ · لینک‌های سایت (۲.۱۹.۰) — دامنهٔ اصلی و آزمایشی؛ بی‌لینک ردیف صفر می‌ماند. */}
+      <div>
+        {(project.liveUrl || project.testUrl) && (
+          <div className="pt-2.5">
+            <SiteLinkPills liveUrl={project.liveUrl} testUrl={project.testUrl} />
+          </div>
+        )}
+      </div>
+
       {/*
-        ۳ · مبلغ.
+        ۴ · مبلغ.
         ⚠️ ردیفِ «مبلغ» فقط برای کسی که حقِ دیدنِ قیمت دارد — مالک/مدیرِ
         مالی و کارفرمای همین پروژه. سرویس قیمت را برای بقیه صفر می‌فرستد
         (`maskPrices`)، پس نشان‌دادنِ «۰» گمراه‌کننده بود.
@@ -193,7 +203,7 @@ export function ProjectCard({
       </div>
 
       {/*
-        ۴ · نوارِ ددلاین — پر می‌شود و روزهای مانده را نشان می‌دهد.
+        ۵ · نوارِ ددلاین — پر می‌شود و روزهای مانده را نشان می‌دهد.
         ⚠️ بی‌ددلاین هم خطش می‌ماند: کنارِ کارتی که ددلاین دارد، جای خالی وسطِ
         کارت شبیهِ خطای چیدمان بود؛ «بدون ددلاین» می‌گوید چرا خالی است.
       */}
@@ -222,7 +232,7 @@ export function ProjectCard({
         )}
       </div>
 
-      {/* ۵ · دو شمارندهٔ ریویو — تسک و کامنت. */}
+      {/* ۶ · دو شمارندهٔ ریویو — تسک و کامنت. */}
       <div className="flex gap-4 pt-3 text-xs">
         <Link
           href={`/projects/${project.id}?tab=tasks&view=review`}
@@ -244,7 +254,7 @@ export function ProjectCard({
         </Link>
       </div>
 
-      {/* ۶ · پیشرفتِ تسک‌ها. */}
+      {/* ۷ · پیشرفتِ تسک‌ها. */}
       <div className="pt-3">
         <Link
           href={`/projects/${project.id}?tab=tasks`}
@@ -265,7 +275,7 @@ export function ProjectCard({
       </div>
 
       {/*
-        ۷ · جعبهٔ چیپ‌ها — کارفرمایان بالا، اعضا پایین.
+        ۸ · جعبهٔ چیپ‌ها — کارفرمایان بالا، اعضا پایین.
         ⚠️ جعبه تا تهِ ردیف کش می‌آید تا جعبه‌های یک ردیف هم‌قد باشند، نه یکی
         کوتاه‌تر از کناری‌اش. زمینهٔ ملایم است، نه قابِ خط‌چین: قاب داخلِ کارت
         «جعبه در جعبه» می‌ساخت (DESIGN.md §۵).
@@ -298,7 +308,7 @@ export function ProjectCard({
         </div>
       </div>
 
-      {/* ۸ · افزودنِ سریع — زیرِ جعبهٔ چیپ‌ها، دقیقاً مثلِ نسخهٔ قبلی. */}
+      {/* ۹ · افزودنِ سریع — زیرِ جعبهٔ چیپ‌ها، دقیقاً مثلِ نسخهٔ قبلی. */}
       <div>
         {cardOptions && manages && (
           <div className="pt-3">
@@ -312,7 +322,7 @@ export function ProjectCard({
         )}
       </div>
 
-      {/* ۹ · دکمهٔ مشاهده — ردیفِ آخر. */}
+      {/* ۱۰ · دکمهٔ مشاهده — ردیفِ آخر. */}
       <div className="flex justify-end pt-3">
         <Button asChild size="sm" variant="outline">
           <Link href={`/projects/${project.id}`}>{t("مشاهده")}</Link>

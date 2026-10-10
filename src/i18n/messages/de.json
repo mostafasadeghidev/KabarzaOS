@@ -3941,5 +3941,10 @@
   "یک یادداشت برای زمانی در آینده تنظیم کنید؛ سرِ موعد به‌صورت اعلان (و ایمیل/تلگرام در صورت فعال‌بودن) به شما یادآوری می‌شود.": "Legen Sie eine Notiz für einen späteren Zeitpunkt fest; zur Fälligkeit werden Sie per Benachrichtigung (und E-Mail/Telegram, falls aktiviert) erinnert.",
   "یک‌بار": "Einmalig",
   "یک‌شنبه": "Sonntag",
-  "یکی از دفترهایی را انتخاب کنید که مدیرشان هستید.": "Wählen Sie eines der Büros, die Sie leiten."
+  "یکی از دفترهایی را انتخاب کنید که مدیرشان هستید.": "Wählen Sie eines der Büros, die Sie leiten.",
+  "دامنهٔ اصلی": "Hauptdomain",
+  "دامنهٔ آزمایشی": "Testdomain",
+  "نمایشِ لینک‌ها به کارفرما": "Links für den Kunden anzeigen",
+  "آدرسِ سایت معتبر نیست": "Die Website-Adresse ist ungültig",
+  "سایتِ پروژه": "Projekt-Website"
 }

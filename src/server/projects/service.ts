@@ -12,6 +12,7 @@ import {
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, canSeeScope, filterVisible, ForbiddenError, visibleScopes, assertOwner, filterVisibleFor } from '@/domain/access/guard';
 import { visibleTasksForMember } from '@/domain/projects/task-visibility';
+import { canSeeSiteLinks } from '@/domain/projects/site-links';
 import type { RelationKey } from '@/domain/projects/tabs';
 import { excerptWords, openThreads } from '@/domain/dashboard/focus';
 /** برچسبِ کنارِ نامِ مدیران در فهرستِ «تخصیص به». */
@@ -68,7 +69,7 @@ import { getSystemConfig } from '@/server/settings/system-service';
 /** فهرستِ پروژه‌ها — فقط scopeهایی که بازیگر اجازه دارد. */
 export async function listProjects(actor: Actor): Promise<VisibleProjectRow[]> {
   if (canViewSection(actor, 'projects')) {
-    return maskNames(actor, await maskPrices(actor, await repo.listProjects(visibleScopes(actor))));
+    return maskLinks(actor, await maskNames(actor, await maskPrices(actor, await repo.listProjects(visibleScopes(actor)))));
   }
   /**
    * مسیرِ عضویتی — پورتِ «پروژه‌های من» ِ نسخهٔ قبلی: عضو/کارفرما فقط
@@ -82,7 +83,7 @@ export async function listProjects(actor: Actor): Promise<VisibleProjectRow[]> {
     managedOfficeProjectIds(actor.id),
   ]);
   const ids = [...new Set([...asMember, ...asClient, ...managed])];
-  const rows = await maskNames(actor, await maskPrices(actor, await repo.listProjects(['company', 'private'], ids)));
+  const rows = maskLinks(actor, await maskNames(actor, await maskPrices(actor, await repo.listProjects(['company', 'private'], ids))));
   /**
    * رابطهٔ من با هر پروژه — شبکه با آن سه بخشِ نسخهٔ قبلی را جدا می‌کند
    * («پروژه‌های شما / به‌عنوان کارفرما / دفاترِ تحتِ مدیریت»). پیش از این
@@ -96,6 +97,23 @@ export async function listProjects(actor: Actor): Promise<VisibleProjectRow[]> {
       managed.includes(r.id) && 'managed',
     ] as const).filter((k): k is RelationKey => k !== false),
   }));
+}
+
+/**
+ * لینک‌های سایتِ پروژه روی **فهرست** (۲.۱۹.۰): کارفرمای صرف فقط وقتی می‌بیند که
+ * تیم «نمایش به کارفرما» را زده باشد. مدیرِ سراسری و تیم همیشه می‌بینند.
+ * ⚠️ خالی‌کردن در سرور است، نه پنهان‌کردن در کارت — وگرنه آدرسِ آزمایشی در
+ * payload ِ صفحه می‌ماند و با View Source خوانده می‌شد.
+ */
+function maskLinks<T extends repo.ProjectListRow>(actor: Actor, rows: T[]): T[] {
+  if (canManageSection(actor, 'projects')) return rows;
+  return rows.map((r) => {
+    const clientOnly = r.clients.some((c) => c.userId === actor.id)
+      && !r.members.some((m) => m.userId === actor.id);
+    return canSeeSiteLinks({ clientOnly, urlsClientVisible: r.urlsClientVisible })
+      ? r
+      : { ...r, liveUrl: '', testUrl: '' };
+  });
 }
 
 /**
@@ -829,6 +847,10 @@ export interface CreateProjectData {
   /** ردیف‌های جدولِ نقش/سقفِ مناقصه. */
   tenderRoles?: TenderRoleRow[];
   scope: 'company' | 'private';
+  /** لینک‌های سایتِ پروژه (۲.۱۹.۰) — خالی = ثبت نشده؛ از فرم نرمال‌شده می‌آید. */
+  liveUrl?: string;
+  testUrl?: string;
+  urlsClientVisible?: boolean;
 }
 
 /**
@@ -972,6 +994,9 @@ export async function createProject(actor: Actor, input: CreateProjectData): Pro
     // ⚠️ پرچمِ نهایی را `saveTenderRoles` تعیین می‌کند (تیک بدونِ نقش، مناقصه نیست).
     isTender: false,
     scope: input.scope,
+    liveUrl: input.liveUrl ?? '',
+    testUrl: input.testUrl ?? '',
+    urlsClientVisible: input.urlsClientVisible ?? false,
   }).returning({ id: projects.id });
 
   const id = rows[0]!.id;
@@ -1161,6 +1186,10 @@ export async function updateProject(actor: Actor, id: number, input: CreateProje
     parentId,
     isUnitBased: input.isUnitBased,
     scope: input.scope,
+    // ⚠️ فیلدی که اصلاً نیامده (فراخوانِ قدیمی: API، ایمپورت) مقدارِ قبلی را نگه می‌دارد.
+    liveUrl: input.liveUrl ?? before.liveUrl,
+    testUrl: input.testUrl ?? before.testUrl,
+    urlsClientVisible: input.urlsClientVisible ?? before.urlsClientVisible,
     updatedAt: new Date(),
   }).where(eq(projects.id, id));
 

@@ -14,7 +14,7 @@ import { createProjectSchema, type FormState } from './schema';
 /** فیلدهای متنی‌ای که در صورتِ خطا باید به فرم برگردند. */
 const RAW_FIELDS = [
   'title', 'description', 'regDate', 'deadline', 'statusTagId',
-  'price', 'currencyId', 'officeId', 'parentId', 'scope',
+  'price', 'currencyId', 'officeId', 'parentId', 'scope', 'liveUrl', 'testUrl',
 ] as const;
 
 /** ساختِ پروژه — گاردِ دسترسی در سرویس است، نه اینجا (R-ARCH-01). */
@@ -24,7 +24,7 @@ export async function createProjectAction(_prev: FormState, formData: FormData):
 
   const values: Record<string, string> = {};
   for (const name of RAW_FIELDS) values[name] = String(formData.get(name) ?? '');
-  for (const name of ['isUnitBased', 'isTender']) values[name] = checked(name) ? '1' : '';
+  for (const name of ['isUnitBased', 'isTender', 'urlsClientVisible']) values[name] = checked(name) ? '1' : '';
 
   const parsed = createProjectSchema.safeParse({
     title: formData.get('title') ?? '',
@@ -36,6 +36,9 @@ export async function createProjectAction(_prev: FormState, formData: FormData):
     currencyId: formData.get('currencyId') ?? '',
     officeId: formData.get('officeId') ?? '',
     parentId: formData.get('parentId') ?? '',
+    liveUrl: formData.get('liveUrl') ?? '',
+    testUrl: formData.get('testUrl') ?? '',
+    urlsClientVisible: checked('urlsClientVisible'),
     isUnitBased: checked('isUnitBased'),
     isTender: checked('isTender'),
     tenderRoles: readTenderRows(formData),
@@ -92,7 +95,7 @@ export async function updateProjectAction(_prev: FormState, formData: FormData):
 
   const values: Record<string, string> = {};
   for (const name of RAW_FIELDS) values[name] = String(formData.get(name) ?? '');
-  for (const name of ['isUnitBased', 'isTender']) values[name] = checked(name) ? '1' : '';
+  for (const name of ['isUnitBased', 'isTender', 'urlsClientVisible']) values[name] = checked(name) ? '1' : '';
 
   const parsed = createProjectSchema.safeParse({
     title: formData.get('title') ?? '',
@@ -104,6 +107,9 @@ export async function updateProjectAction(_prev: FormState, formData: FormData):
     currencyId: formData.get('currencyId') ?? '',
     officeId: formData.get('officeId') ?? '',
     parentId: formData.get('parentId') ?? '',
+    liveUrl: formData.get('liveUrl') ?? '',
+    testUrl: formData.get('testUrl') ?? '',
+    urlsClientVisible: checked('urlsClientVisible'),
     isUnitBased: checked('isUnitBased'),
     isTender: checked('isTender'),
     tenderRoles: readTenderRows(formData),

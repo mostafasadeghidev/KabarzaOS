@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeSiteUrl } from '@/domain/projects/site-links';
 
 /**
  * اسکیمای ساختِ پروژه — فیلدها از فرمِ نسخهٔ قبلی.
@@ -21,6 +22,20 @@ const day = z
   .refine((v) => v === '' || /^\d{4}-\d{2}-\d{2}$/.test(v), 'تاریخ معتبر نیست')
   .transform((v) => (v === '' ? null : v));
 
+/**
+ * آدرسِ سایت: خالی مجاز است؛ پر باید http(s) و با میزبانِ کامل باشد.
+ * بی‌طرحِ آدرس (example.com) خودکار https می‌گیرد.
+ */
+const siteUrl = z
+  .string()
+  .trim()
+  .superRefine((v, ctx) => {
+    if (v !== '' && normalizeSiteUrl(v) === null) {
+      ctx.addIssue({ code: 'custom', message: 'آدرسِ سایت معتبر نیست' });
+    }
+  })
+  .transform((v) => (v === '' ? '' : normalizeSiteUrl(v) ?? ''));
+
 /** شناسه از فرم می‌آید به‌صورت رشته؛ «۰» یعنی انتخاب‌نشده. */
 const optionalId = z
   .string()
@@ -40,6 +55,10 @@ export const createProjectSchema = z.object({
   currencyId: optionalId,
   officeId: optionalId,
   parentId: optionalId,
+  /** لینک‌های سایتِ پروژه (۲.۱۹.۰) — هر دو اختیاری. */
+  liveUrl: siteUrl,
+  testUrl: siteUrl,
+  urlsClientVisible: z.boolean().default(false),
   isUnitBased: z.boolean().default(false),
   isTender: z.boolean().default(false),
   /**

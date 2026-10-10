@@ -70,6 +70,10 @@ export interface ProjectDefaults {
   parentId: string;
   isUnitBased: boolean;
   isTender: boolean;
+  /** لینک‌های سایت (۲.۱۹.۰) — خالی = ثبت نشده. */
+  liveUrl: string;
+  testUrl: string;
+  urlsClientVisible: boolean;
   /** نقش ← سقف. */
   tenderRoles: Record<string, string | null> | null;
   scope: string;
@@ -144,6 +148,7 @@ function ProjectDialogBody({
   const [isTender, setIsTender] = useState(false);
   const [tenderRows, setTenderRows] = useState<Array<{ roleTagId: string; cap: string }>>([]);
   const [isUnitBased, setIsUnitBased] = useState(false);
+  const [urlsVisible, setUrlsVisible] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const fe = state.fieldErrors ?? {};
 
@@ -165,6 +170,7 @@ function ProjectDialogBody({
     if (!back) return;
     setIsUnitBased(back.isUnitBased === '1');
     setIsTender(back.isTender === '1');
+    setUrlsVisible(back.urlsClientVisible === '1');
     setFormKey((k) => k + 1);
   }, [back]);
 
@@ -173,6 +179,7 @@ function ProjectDialogBody({
     if (!project) return;
     setIsUnitBased(project.isUnitBased);
     setIsTender(project.isTender);
+    setUrlsVisible(project.urlsClientVisible);
     // ردیف‌های موجودِ مناقصه در حالتِ ویرایش.
     setTenderRows(Object.entries(project.tenderRoles ?? {})
       .map(([roleTagId, cap]) => ({ roleTagId, cap: cap ? String(Number(cap)) : '' })));
@@ -364,6 +371,37 @@ function ProjectDialogBody({
               </SearchableSelect>
             )}
           </LabeledField>
+
+          {/*
+            لینک‌های سایتِ پروژه (۲.۱۹.۰) — هر دو اختیاری. آدرسِ آزمایشی کامل
+            نوشته می‌شود (مثلاً https://xxx.webflow.io)؛ بی‌طرح، https می‌گیرد.
+            تیکِ «نمایش به کارفرما» پیش‌فرض خاموش است.
+          */}
+          <div className="grid gap-3 rounded-lg bg-muted/60 p-3">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <LabeledField label={tr("دامنهٔ اصلی")} name="liveUrl" error={fe.liveUrl}>
+                {(id) => (
+                  <Input id={id} name="liveUrl" dir="ltr" inputMode="url" placeholder="example.com" defaultValue={keep('liveUrl')} maxLength={300} />
+                )}
+              </LabeledField>
+              <LabeledField label={tr("دامنهٔ آزمایشی")} name="testUrl" error={fe.testUrl}>
+                {(id) => (
+                  <Input id={id} name="testUrl" dir="ltr" inputMode="url" placeholder="https://project.webflow.io" defaultValue={keep('testUrl')} maxLength={300} />
+                )}
+              </LabeledField>
+            </div>
+            <label className="flex items-start gap-2 text-sm">
+              <Checkbox
+                key={`urls-${formKey}`}
+                name="urlsClientVisible"
+                value="1"
+                className="mt-0.5"
+                checked={urlsVisible}
+                onCheckedChange={(v) => setUrlsVisible(v === true)}
+              />
+              {tr("نمایشِ لینک‌ها به کارفرما")}
+            </label>
+          </div>
 
           <div className="rounded-lg bg-muted/60 p-3">
             <label className="flex items-start gap-2 text-sm font-medium">

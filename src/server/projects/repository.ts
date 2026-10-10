@@ -38,6 +38,10 @@ export interface ProjectListRow {
   deadline: string | null;
   /** تصویرِ شاخص؛ null ← تک‌نگار نشان داده می‌شود. */
   thumbnailFileId: number | null;
+  /** لینک‌های سایتِ پروژه (۲.۱۹.۰) — برای کارفرمای بی‌تیک در سرویس خالی می‌شود. */
+  liveUrl: string;
+  testUrl: string;
+  urlsClientVisible: boolean;
   /** پروژهٔ سبک‌شده — خلاصه‌اش منجمد شده (R-PROJ-07). */
   isLightened: boolean;
   /** جمعِ هزینه‌های قابلِ‌صورتحساب؛ «مبلغ»ِ کارت = price + این. */
@@ -98,6 +102,9 @@ export async function listProjects(
       isClosed: tags.isClosed,
       deadline: projects.deadline,
       thumbnailFileId: projects.thumbnailFileId,
+      liveUrl: projects.liveUrl,
+      testUrl: projects.testUrl,
+      urlsClientVisible: projects.urlsClientVisible,
       lightenSummary: projects.lightenSummary,
       isArchived: projects.isArchived,
       isTender: projects.isTender,

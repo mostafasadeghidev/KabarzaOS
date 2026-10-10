@@ -39,6 +39,8 @@ import { CreatedNotice } from './created-notice';
 import { Thumb } from '@/components/thumb';
 import { CircleAlert } from 'lucide-react';
 import { PageHeader, PageShell, Panel } from '@/components/page-shell';
+import { SiteLinksBody } from '@/components/site-links';
+import { canSeeSiteLinks } from '@/domain/projects/site-links';
 import { StatCard } from '@/components/stat-card';
 import { pageTitle } from '@/i18n/page-title';
 
@@ -281,6 +283,9 @@ export default async function ProjectDetailPage({
               parentId: project.parentId ? String(project.parentId) : '',
               isUnitBased: project.isUnitBased,
               isTender: project.isTender,
+              liveUrl: project.liveUrl,
+              testUrl: project.testUrl,
+              urlsClientVisible: project.urlsClientVisible,
               tenderRoles: canSeeAgreedAmounts ? project.tenderRoles : null,
               scope: project.scope,
               thumbnailFileId: project.thumbnailFileId,
@@ -474,6 +479,17 @@ export default async function ProjectDetailPage({
         }}
         info={
           <div className="grid grid-cols-1 gap-4">
+            {/*
+              سایتِ پروژه (۲.۱۹.۰) — کارتِ اولِ تبِ اطلاعات.
+              ⚠️ کارفرمای صرف فقط با تیکِ «نمایش به کارفرما» می‌بیند؛ سرور هم
+              در فهرست همین را اعمال می‌کند.
+            */}
+            {(project.liveUrl || project.testUrl)
+              && canSeeSiteLinks({ clientOnly, urlsClientVisible: project.urlsClientVisible }) && (
+              <Panel title={t("سایتِ پروژه")}>
+                <SiteLinksBody liveUrl={project.liveUrl} testUrl={project.testUrl} />
+              </Panel>
+            )}
             {/* ⚠️ `Panel`: دکمهٔ «مدیریتِ اعضا» در نوارِ عنوان، نه زیرِ آن (`CardHeader` grid بود و `flex-row` بی‌اثر). */}
             {/*
               ⚠️ فهرستِ تیم فقط برای مدیرِ پروژه — نسخهٔ قبلی تبِ «تیم» را فقط با

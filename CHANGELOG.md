@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.19.0]
+
+### Added
+
+- Projects have two optional site links: the main domain and the full address of the test site (for example a webflow.io address). Set them in the project form (add or edit). An address typed without http(s) gets https automatically; unsafe or incomplete addresses are rejected.
+- The links show as a "Project site" card at the top of the project's Info tab (with copy and open buttons) and as two small chips with an icon on each project card (a globe for the main domain, a flask for the test domain).
+- A "Show links to the client" checkbox in the project form. It is off by default: clients see neither link unless it is ticked. The server empties the links for clients, so they never reach the page otherwise.
+
 ## [2.18.2]
 
 ### Fixed

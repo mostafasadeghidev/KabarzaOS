@@ -3941,5 +3941,10 @@
   "یک یادداشت برای زمانی در آینده تنظیم کنید؛ سرِ موعد به‌صورت اعلان (و ایمیل/تلگرام در صورت فعال‌بودن) به شما یادآوری می‌شود.": "Set a note for a future time; at the due moment you're reminded via a notification (and e-mail/Telegram if enabled).",
   "یک‌بار": "One-time",
   "یک‌شنبه": "Sunday",
-  "یکی از دفترهایی را انتخاب کنید که مدیرشان هستید.": "Choose one of the offices you manage."
+  "یکی از دفترهایی را انتخاب کنید که مدیرشان هستید.": "Choose one of the offices you manage.",
+  "دامنهٔ اصلی": "Main domain",
+  "دامنهٔ آزمایشی": "Test domain",
+  "نمایشِ لینک‌ها به کارفرما": "Show links to the client",
+  "آدرسِ سایت معتبر نیست": "The site address isn't valid",
+  "سایتِ پروژه": "Project site"
 }
