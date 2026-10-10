@@ -3941,5 +3941,12 @@
   "یک یادداشت برای زمانی در آینده تنظیم کنید؛ سرِ موعد به‌صورت اعلان (و ایمیل/تلگرام در صورت فعال‌بودن) به شما یادآوری می‌شود.": "Defina uma nota para um momento futuro; ao chegar a data, é-lhe recordada sob a forma de notificação (e e-mail/Telegram se estiverem ativados).",
   "یک‌بار": "Uma vez",
   "یک‌شنبه": "Domingo",
-  "یکی از دفترهایی را انتخاب کنید که مدیرشان هستید.": "Escolha um dos escritórios que você gerencia."
+  "یکی از دفترهایی را انتخاب کنید که مدیرشان هستید.": "Escolha um dos escritórios que você gerencia.",
+  "دامنهٔ اصلی": "Domínio principal",
+  "دامنهٔ آزمایشی": "Domínio de teste",
+  "نمایشِ لینک‌ها به کارفرما": "Mostrar os links ao cliente",
+  "آدرسِ سایت معتبر نیست": "O endereço do site não é válido",
+  "سایتِ پروژه": "Site do projeto",
+  "تصویر یا فایل را اینجا رها کنید یا بچسبانید": "Solte ou cole aqui uma imagem ou um arquivo",
+  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Ctrl+V para uma captura, clique para escolher um arquivo, ou coloque um link de vídeo (Loom, YouTube, Vimeo) no texto"
 }

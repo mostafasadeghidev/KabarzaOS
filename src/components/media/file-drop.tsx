@@ -8,6 +8,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useT } from '@/i18n/client';
 import { humanSize, MAX_MEDIA, MAX_MEDIA_TOTAL } from '@/domain/files/upload';
 import { cn } from '@/lib/utils';
+import { Hint } from '@/components/ui/tooltip';
 
 const NO_FILES: File[] = [];
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp';
@@ -49,6 +50,7 @@ export function FileDrop({
   variant = 'inline',
   imagesOnly = false,
   pageWide = false,
+  compact = false,
   busy = false,
   title,
   hint,
@@ -63,6 +65,8 @@ export function FileDrop({
   variant?: 'zone' | 'inline';
   imagesOnly?: boolean;
   pageWide?: boolean;
+  /** کادرِ کم‌ارتفاع برای جاهایی که زیرِ هم تکرار می‌شود (کامنت، یادداشتِ تسک). */
+  compact?: boolean;
   busy?: boolean;
   title?: string;
   hint?: string;
@@ -128,7 +132,7 @@ export function FileDrop({
           ) : (
             <div className={cn('flex flex-col justify-center gap-0.5 rounded-md border bg-muted/50 px-2', variant === 'zone' ? 'h-28 w-36' : 'h-16 w-32')}>
               {f.type.startsWith('video/') ? <Film className="size-4 text-muted-foreground" /> : <FileText className="size-4 text-muted-foreground" />}
-              <span className="truncate text-[11px]" title={f.name}>{f.name}</span>
+              <Hint label={f.name}><span className="truncate text-[11px]">{f.name}</span></Hint>
               <span className="num text-[10px] text-muted-foreground">{humanSize(f.size, t)}</span>
             </div>
           )}
@@ -191,13 +195,20 @@ export function FileDrop({
           onClick={() => inputRef.current?.click()}
           disabled={busy}
           className={cn(
-            'grid min-h-32 place-items-center gap-1 rounded-xl border-2 border-dashed p-4 text-center transition',
+            'grid place-items-center gap-1 rounded-xl border-2 border-dashed text-center transition',
+            compact ? 'min-h-16 p-2' : 'min-h-32 p-4',
             dragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-muted/40',
           )}
         >
-          <span className="grid justify-items-center gap-1.5">
-            {busy ? <Spinner className="size-6" /> : <ImagePlus className="size-7 text-muted-foreground" />}
-            <span className="text-sm font-medium">{busy ? t('در حالِ بارگذاری…') : (title ?? t('تصویر را اینجا رها کنید یا بچسبانید'))}</span>
+          <span className={cn('grid justify-items-center', compact ? 'gap-0.5' : 'gap-1.5')}>
+            {busy
+              ? <Spinner className={compact ? 'size-5' : 'size-6'} />
+              : <ImagePlus className={cn('text-muted-foreground', compact ? 'size-5' : 'size-7')} />}
+            <span className="text-sm font-medium">
+              {busy
+                ? t('در حالِ بارگذاری…')
+                : (title ?? (imagesOnly ? t('تصویر را اینجا رها کنید یا بچسبانید') : t('تصویر یا فایل را اینجا رها کنید یا بچسبانید')))}
+            </span>
             <span className="text-xs text-muted-foreground">{hint ?? t('Ctrl+V برای اسکرین‌شات، یا کلیک برای انتخابِ فایل')}</span>
           </span>
         </button>

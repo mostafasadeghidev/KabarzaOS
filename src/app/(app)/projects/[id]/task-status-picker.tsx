@@ -12,6 +12,7 @@ import {
 import { groupLabels, TASK_STATUS_GROUPS } from '@/domain/tags/groups';
 import { useT } from '@/i18n/client';
 import { TagChip } from '@/components/ui/tag-chip';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * چیپِ وضعیتِ تسک — و اگر اجازه باشد، انتخابگرش.
@@ -96,14 +97,15 @@ export function TaskStatusPicker({
   return (
     <div className="grid gap-0.5">
       <DropdownMenu>
-        <DropdownMenuTrigger
-          className="flex items-center gap-1 disabled:opacity-60"
-          title={tr("تغییر وضعیت")}
-          disabled={pending}
-        >
-          {chip}
-          <ChevronDown className="size-3 text-muted-foreground" />
-        </DropdownMenuTrigger>
+        <Hint label={tr("تغییر وضعیت")}>
+          <DropdownMenuTrigger
+            className="flex items-center gap-1 disabled:opacity-60"
+            disabled={pending}
+          >
+            {chip}
+            <ChevronDown className="size-3 text-muted-foreground" />
+          </DropdownMenuTrigger>
+        </Hint>
         {/*
           ⚠️ `pointerEvents: 'auto'` — این انتخابگر داخلِ مودال هم می‌نشیند و
           Radix روی صفحهٔ پشتِ مودال `pointer-events: none` می‌گذارد؛ فهرستِ

@@ -34,6 +34,7 @@ import type { ReviewSource } from '@/db/schema/projects';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { cn } from '@/lib/utils';
+import { Hint } from '@/components/ui/tooltip';
 
 /** یک ردیفِ فهرست — همان `listReviews`. */
 export interface ReviewListItem {
@@ -481,17 +482,18 @@ function ItemRow({
     <li className={cn('grid gap-1.5 rounded-lg border bg-card p-2.5', item.done && 'opacity-70')}>
       <div className="flex items-start gap-2">
         {item.start !== null && (
-          <button
-            type="button"
-            disabled={!onSeek}
-            onClick={() => onSeek?.(item.start!)}
-            title={onSeek ? t('پخش از همین لحظه') : undefined}
-            className="num inline-flex shrink-0 items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary transition hover:bg-primary/20 disabled:cursor-default disabled:bg-muted disabled:text-muted-foreground"
-            dir="ltr"
-          >
-            <Play className="size-3" />
-            {formatTimestamp(item.start)}{item.end !== null ? `–${formatTimestamp(item.end)}` : ''}
-          </button>
+          <Hint label={onSeek ? t('پخش از همین لحظه') : undefined}>
+            <button
+              type="button"
+              disabled={!onSeek}
+              onClick={() => onSeek?.(item.start!)}
+              className="num inline-flex shrink-0 items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary transition hover:bg-primary/20 disabled:cursor-default disabled:bg-muted disabled:text-muted-foreground"
+              dir="ltr"
+            >
+              <Play className="size-3" />
+              {formatTimestamp(item.start)}{item.end !== null ? `–${formatTimestamp(item.end)}` : ''}
+            </button>
+          </Hint>
         )}
         <button type="button" onClick={onOpen} className={cn('min-w-0 flex-1 text-start text-sm font-medium hover:underline', item.done && 'line-through')}>
           {item.title}
@@ -510,7 +512,9 @@ function ItemRow({
           ? <UserName userId={item.assigneeId} name={item.assigneeName} />
           : item.roles.length > 0 && <span>{item.roles.join(t('، '))}</span>}
         {showClientHidden && item.clientHidden && (
-          <span className="inline-flex items-center gap-1" title={t('پنهان از کارفرما')}><EyeOff className="size-3" /></span>
+          <Hint label={t('پنهان از کارفرما')}>
+            <span className="inline-flex items-center gap-1"><EyeOff className="size-3" /></span>
+          </Hint>
         )}
         {item.notesCount > 0 && <span className="inline-flex items-center gap-1"><MessageSquare className="size-3" /><span className="num">{item.notesCount}</span></span>}
         {item.mediaCount > 0 && <span className="inline-flex items-center gap-1"><Paperclip className="size-3" /><span className="num">{item.mediaCount}</span></span>}

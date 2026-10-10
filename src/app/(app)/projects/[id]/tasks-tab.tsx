@@ -28,6 +28,7 @@ import { TagChip } from '@/components/ui/tag-chip';
 import { Input } from '@/components/ui/input';
 import { TaskNumber } from '@/components/task-number';
 import { parseTaskRef } from '@/domain/projects/task-ref';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * تبِ تسک‌ها — بازسازیِ `edit_tasks_subtabs()` + `edit_task_li()`.
@@ -223,15 +224,19 @@ function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boole
             <span className="rounded-sm bg-muted px-1.5 py-px text-[10px] text-muted-foreground">{task.area}</span>
           )}
           {task.clientHidden && (
-            <span className="flex items-center text-muted-foreground" title={tr('پنهان از کارفرما')}>
-              <EyeOff className="size-3" aria-label={tr('پنهان از کارفرما')} />
-            </span>
+            <Hint label={tr('پنهان از کارفرما')}>
+              <span className="flex items-center text-muted-foreground">
+                <EyeOff className="size-3" aria-label={tr('پنهان از کارفرما')} />
+              </span>
+            </Hint>
           )}
           {(task.mediaCount ?? 0) > 0 && (
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground" title={tr('تصویر و فایل')}>
-              <Paperclip className="size-3" />
-              <span className="num">{task.mediaCount}</span>
-            </span>
+            <Hint label={tr('تصویر و فایل')}>
+              <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <Paperclip className="size-3" />
+                <span className="num">{task.mediaCount}</span>
+              </span>
+            </Hint>
           )}
         </div>
       )}

@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/table';
 import { TablePager, TableSearch, useTableView } from '@/components/ui/table-search';
 import { useT } from '@/i18n/client';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * جدول‌های ریزِ عضو/کارفرما در گزارش‌ها — پورتِ `member-detail.php` /
@@ -178,9 +179,11 @@ export function ClientProjectsTable({
                   : p.title}
                 {/* پورتِ نشانِ «شریک»: پروژهٔ مشترک که این کارفرما اصلی‌اش نیست — چیزی بدهکار نیست. */}
                 {p.shared && (
-                  <Badge variant="outline" className="ms-1.5 text-[10px]" title={t("پروژهٔ مشترک؛ صورت‌حساب به کارفرمای اصلی می‌رود.")}>
-                    {t("شریک")}
-                  </Badge>
+                  <Hint label={t("پروژهٔ مشترک؛ صورت‌حساب به کارفرمای اصلی می‌رود.")}>
+                    <Badge variant="outline" className="ms-1.5 text-[10px]">
+                      {t("شریک")}
+                    </Badge>
+                  </Hint>
                 )}
                 <Lines lines={linesOf(p.projectId)} showNote />
               </TableCell>

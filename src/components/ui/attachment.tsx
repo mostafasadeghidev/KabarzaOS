@@ -21,6 +21,7 @@ import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Hint } from "@/components/ui/tooltip"
 
 const attachmentVariants = cva(
   "group/attachment relative flex w-fit max-w-full min-w-0 shrink-0 flex-wrap rounded-lg border bg-card text-card-foreground transition-colors focus-within:ring-1 focus-within:ring-ring/50 has-[>a,>button]:hover:bg-muted/50 data-[state=error]:border-destructive/30 data-[state=idle]:border-dashed",
@@ -111,17 +112,21 @@ function AttachmentContent({
 
 function AttachmentTitle({
   className,
+  title,
   ...props
 }: React.ComponentProps<"span">) {
+  // ⚠️ `title` ِ خامِ مرورگر نه؛ نامِ کاملِ فایل با همان راهنمای شناورِ اپ.
   return (
-    <span
-      data-slot="attachment-title"
-      className={cn(
-        "block max-w-full min-w-0 truncate font-medium group-data-[state=processing]/attachment:shimmer group-data-[state=uploading]/attachment:shimmer",
-        className
-      )}
-      {...props}
-    />
+    <Hint label={title}>
+      <span
+        data-slot="attachment-title"
+        className={cn(
+          "block max-w-full min-w-0 truncate font-medium group-data-[state=processing]/attachment:shimmer group-data-[state=uploading]/attachment:shimmer",
+          className
+        )}
+        {...props}
+      />
+    </Hint>
   )
 }
 

@@ -2,6 +2,24 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.19.0]
+
+### Added
+
+- Projects have two optional site links: the main domain and the full address of the test site (for example a webflow.io address). Set them in the project form (add or edit). An address typed without http(s) gets https automatically; unsafe or incomplete addresses are rejected.
+- The links show as a "Project site" card at the top of the project's Info tab (with copy and open buttons) and as two small chips with an icon on each project card (a globe for the main domain, a flask for the test domain).
+- A "Show links to the client" checkbox in the project form. It is off by default: clients see neither link unless it is ticked. The server empties the links for clients, so they never reach the page otherwise.
+
+- Everywhere you can add images or files to a project now uses the same drop zone as the review dialog: drop files, paste a screenshot (Ctrl+V) or click, with thumbnails and a remove button. This covers the Files tab, new and edited tasks, task notes, comments and replies, and the files step of the new-project dialog (plus the project thumbnail). The Files tab keeps its optional label field, applied to the files of that upload. Next to a text box (tasks, notes, comments) the zone also says a video link (Loom, YouTube, Vimeo) can be put in the text, which plays under it.
+
+### Changed
+
+- Every remaining browser-default tooltip (the plain `title` hover text) now uses the app's own tooltip, so all hints look and behave the same: project card counters and progress link, status pickers, project code chip, task and review icons, user avatars and avatar groups, file names, link cards, availability cells, payout buttons and badges. A test now fails if a native `title` tooltip is added again.
+
+### Fixed
+
+- Lightening a project now also removes the files and images added in tasks and comments, and the project's reviews with their attachments. Before, those files stayed in storage after their rows were deleted, so lightening freed less space than it should. Deleting a project had the same leftover files and is fixed too.
+
 ## [2.18.2]
 
 ### Fixed

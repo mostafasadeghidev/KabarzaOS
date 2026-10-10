@@ -25,7 +25,8 @@ import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { Section } from '@/components/page-shell';
-import { FileInput } from '@/components/ui/file-input';
+import { FormFileDrop } from '@/components/media/form-file-drop';
+import { Hint } from '@/components/ui/tooltip';
 
 export interface FileRow {
   id: number;
@@ -48,11 +49,11 @@ const KIND_ICON = {
   file: FileText,
 } as const;
 
-function SubmitButton({ children }: { children: React.ReactNode }) {
+function SubmitButton({ children, disabled = false }: { children: React.ReactNode; disabled?: boolean }) {
   const { pending } = useFormStatus();
   const tr = useT();
   return (
-    <Button type="submit" size="sm" disabled={pending}>
+    <Button type="submit" size="sm" disabled={pending || disabled}>
       {pending ? <><Spinner />{tr('در حال ارسال…')}</> : children}
     </Button>
   );
@@ -94,6 +95,8 @@ export function FilesTab({
   /** ویدئویی که همین‌جا پخش می‌شود — یکی در هر لحظه، تا چند پخش‌کننده هم‌زمان بار نشوند. */
   const [playing, setPlaying] = useState<number | null>(null);
   const uploadForm = useRef<HTMLFormElement>(null);
+  /** شمارِ فایل‌های انتخاب‌شده — بی‌فایل، دکمهٔ بارگذاری غیرفعال است. */
+  const [pickedCount, setPickedCount] = useState(0);
 
   /** سنجاق — همان قاعدهٔ حذف (بارگذارنده یا مدیر). */
   const togglePin = (f: FileRow) => {
@@ -187,9 +190,11 @@ export function FilesTab({
                         </AttachmentAction>
                       </AttachmentActions>
                     )}
-                    <AttachmentTrigger asChild>
-                      <a href={f.href} target="_blank" rel="noopener noreferrer nofollow" title={f.href} aria-label={title} />
-                    </AttachmentTrigger>
+                    <Hint label={f.href}>
+                      <AttachmentTrigger asChild>
+                        <a href={f.href} target="_blank" rel="noopener noreferrer nofollow" aria-label={title} />
+                      </AttachmentTrigger>
+                    </Hint>
                   </Attachment>
                 </li>
               );
@@ -207,21 +212,19 @@ export function FilesTab({
             className="grid gap-2 rounded-xl border bg-card p-3"
           >
             <input type="hidden" name="projectId" value={projectId} />
+            {/* چند فایل هم‌زمان؛ رها کردن، چسباندنِ اسکرین‌شات یا کلیک — مثلِ بازبینی. */}
+            <FormFileDrop name="file" onCountChange={setPickedCount} />
+            {/* برچسبِ اختیاری برای فایل‌های همین بارگذاری (با چند فایل شماره می‌گیرد). */}
             <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
               <Field>
-                <FieldLabel htmlFor="att-file">{t("فایل‌ها")}</FieldLabel>
-                {/* چند فایل هم‌زمان — مثلِ داشبوردِ نسخهٔ قبلی. */}
-                <FileInput id="att-file" name="file" multiple required />
+                <FieldLabel htmlFor="att-label">{t("برچسب (اختیاری)")}</FieldLabel>
+                <Input id="att-label" name="label" placeholder={t("مثلاً: قرارداد امضاشده")} />
               </Field>
-              <SubmitButton>
+              <SubmitButton disabled={pickedCount === 0}>
                 <Upload className="size-3.5" />
                 {tr("بارگذاری")}
               </SubmitButton>
             </div>
-            <Field>
-              <FieldLabel htmlFor="att-label">{t("برچسب (اختیاری)")}</FieldLabel>
-              <Input id="att-label" name="label" placeholder={t("مثلاً: قرارداد امضاشده")} />
-            </Field>
             <p className="text-xs text-muted-foreground">
               {tr('تصویر، ویدیو، PDF و سند — تا {size} برای هر فایل.', { size: humanSize(MAX_SIZE.attachment, tr) })}
             </p>

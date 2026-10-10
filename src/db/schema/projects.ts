@@ -56,6 +56,12 @@ export const projects = pgTable('projects', {
    * می‌کند (مهاجرتِ ۰۰۴۹)؛ کدِ برنامه نه.
    */
   taskSeq: integer('task_seq').notNull().default(0),
+  /** دامنهٔ اصلیِ سایتِ پروژه (۲.۱۹.۰) — خالی = ثبت نشده. همیشه با http(s) ذخیره می‌شود. */
+  liveUrl: text('live_url').notNull().default(''),
+  /** آدرسِ کاملِ سایتِ آزمایشی (مثلاً xxx.webflow.io) — خالی = ثبت نشده. */
+  testUrl: text('test_url').notNull().default(''),
+  /** کارفرما هر دو لینک را ببیند؟ پیش‌فرض نه — نشان‌دادنش تصمیمِ تیم است. */
+  urlsClientVisible: boolean('urls_client_visible').notNull().default(false),
   ...stamps,
   ...softDelete,
 }, (t) => [

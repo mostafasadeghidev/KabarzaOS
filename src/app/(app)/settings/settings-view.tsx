@@ -44,6 +44,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Hint } from '@/components/ui/tooltip';
 
 export interface SettingsData {
   /** برای پنهان‌کردنِ تب‌های مالکانه از دیدِ حسابدار. */
@@ -203,7 +204,6 @@ export function SettingsView({
                   variant="ghost"
                   className="size-8"
                   label={tr("تنظیم به‌عنوانِ پیش‌فرض")}
-                  title={tr("تنظیم به‌عنوانِ پیش‌فرض")}
                   disabled={pending}
                   onClick={() => startTransition(async () => {
                     const { setDefaultCurrencyAction } = await import('./_form/actions');
@@ -349,7 +349,9 @@ export function SettingsView({
                   return traits.length === 0 ? '—' : (
                     <span className="flex flex-wrap gap-1">
                       {traits.map((b) => (
-                        <Badge key={b.label} variant="outline" className="font-normal" title={b.hint}>{b.label}</Badge>
+                        <Hint key={b.label} label={b.hint}>
+                          <Badge variant="outline" className="font-normal">{b.label}</Badge>
+                        </Hint>
                       ))}
                     </span>
                   );

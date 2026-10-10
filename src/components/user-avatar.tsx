@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarGroup, AvatarGroupCount, AvatarImage } fr
 import { avatarColor, avatarInitials } from '@/domain/people/avatar';
 import { cn } from '@/lib/utils';
 import { DefaultAvatar } from '@/components/default-avatar';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * آواتارِ یک عضو — **تنها** جایی که چهرهٔ اعضا کنارِ نامشان رندر می‌شود.
@@ -38,7 +39,8 @@ export function UserAvatar({
 }) {
   const label = name?.trim() || '?';
   return (
-    <Avatar className={cn(SIZES[size], className)} title={label}>
+    <Hint label={label}>
+    <Avatar className={cn(SIZES[size], className)}>
       {userId ? <AvatarImage src={`/api/users/${userId}/avatar`} alt="" className="object-cover" /> : null}
       <AvatarFallback
         className="bg-muted"
@@ -61,6 +63,7 @@ export function UserAvatar({
         />
       </AvatarFallback>
     </Avatar>
+    </Hint>
   );
 }
 
@@ -103,9 +106,13 @@ export function UserAvatarStack({
   const shown = people.slice(0, max);
   const rest = people.length - shown.length;
   return (
-    <AvatarGroup className={className} title={people.map((p) => p.name).join('، ')}>
+    <AvatarGroup className={className}>
       {shown.map((p, i) => <UserAvatar key={`${p.userId ?? 'x'}-${i}`} userId={p.userId} name={p.name} size={size} />)}
-      {rest > 0 && <AvatarGroupCount className={cn(SIZES[size], 'num')}>+{rest}</AvatarGroupCount>}
+      {rest > 0 && (
+        <Hint label={people.slice(max).map((p) => p.name).join('، ')}>
+          <AvatarGroupCount className={cn(SIZES[size], 'num')}>+{rest}</AvatarGroupCount>
+        </Hint>
+      )}
     </AvatarGroup>
   );
 }

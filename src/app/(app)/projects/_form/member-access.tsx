@@ -35,7 +35,6 @@ export function MemberAccessToggle({
         className={`size-8 ${blocked ? 'text-amber-600 dark:text-amber-500' : 'text-muted-foreground hover:text-destructive'}`}
         disabled={pending}
         label={blocked ? t('بازگرداندنِ دسترسی') : t('قطعِ دسترسی به این پروژه')}
-        title={blocked ? t('بازگرداندنِ دسترسی') : t('قطعِ دسترسی به این پروژه')}
         onClick={() =>
           startTransition(async () => {
             const result = await setProjectAccessAction(projectId, userId, !blocked);

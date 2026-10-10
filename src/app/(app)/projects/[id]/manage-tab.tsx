@@ -30,6 +30,7 @@ import { monthRange, weekRange } from '@/domain/reports/filters';
 import { Panel } from '@/components/page-shell';
 import { TelegramGroupPanel } from './telegram-group-panel';
 import { ProjectCodePanel } from './project-code-panel';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * تبِ مدیریت — بازسازیِ `manage_tab_html()`:
@@ -98,14 +99,16 @@ export function TeamMatrix({
               {r.roles.length > 0 && <span className="block text-[11px] text-muted-foreground">{r.roles.join('، ')}</span>}
             </TableCell>
             {r.cells.map((c, i) => (
-              <TableCell key={i} title={c.tip} className={`text-xs tabular-nums ${c.isToday ? 'bg-primary/5' : ''}`}>
-                {c.state === 'leave' ? (
-                  <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-500">
-                    <TreePalm className="size-3.5 shrink-0" aria-hidden />
-                    {t("مرخصی")}{c.span ? <> {t("تا")} <span className="num">{c.span}</span></> : null}
-                  </span>
-                ) : c.state === 'avail' ? (c.span ? <span className="num">{c.span}</span> : t("تمام روز")) : '·'}
-              </TableCell>
+              <Hint key={i} label={c.tip || undefined}>
+                <TableCell className={`text-xs tabular-nums ${c.isToday ? 'bg-primary/5' : ''}`}>
+                  {c.state === 'leave' ? (
+                    <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-500">
+                      <TreePalm className="size-3.5 shrink-0" aria-hidden />
+                      {t("مرخصی")}{c.span ? <> {t("تا")} <span className="num">{c.span}</span></> : null}
+                    </span>
+                  ) : c.state === 'avail' ? (c.span ? <span className="num">{c.span}</span> : t("تمام روز")) : '·'}
+                </TableCell>
+              </Hint>
             ))}
           </TableRow>
         ))}

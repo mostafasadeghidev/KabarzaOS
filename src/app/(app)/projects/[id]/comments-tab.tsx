@@ -23,7 +23,7 @@ import { useConfirm } from '@/components/ui/confirm';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RichText } from '@/components/media/rich-text';
 import { MediaGallery, type MediaEntry } from '@/components/media/media-gallery';
-import { MediaPicker } from '@/components/media/media-picker';
+import { FormFileDrop } from '@/components/media/form-file-drop';
 
 export interface CommentItem {
   id: number;
@@ -171,9 +171,9 @@ function Composer({
       <input type="hidden" name="projectId" value={projectId} />
       {parentId !== null && <input type="hidden" name="parentId" value={parentId} />}
       {/* ⚠️ متن اجباری نیست: کامنتِ فقط‌اسکرین‌شات هم کامنت است (سرور هر دو خالی را رد می‌کند). */}
-      <MediaPicker>
+      <FormFileDrop name="media" compact videoLinks>
         <Textarea name="body" rows={rows} placeholder={placeholder} />
-      </MediaPicker>
+      </FormFileDrop>
       <div className="flex justify-end"><SendButton label={buttonLabel} /></div>
     </form>
   );

@@ -1,13 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { FileText, ImageIcon, Plus, X } from 'lucide-react';
+import { useState } from 'react';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Attachment, AttachmentAction, AttachmentActions, AttachmentContent, AttachmentDescription,
-  AttachmentMedia, AttachmentTitle,
-} from '@/components/ui/attachment';
-import { humanSize } from '@/domain/files/upload';
+import { FormFileDrop } from '@/components/media/form-file-drop';
 import { Input } from '@/components/ui/input';
 import { Combobox, MultiSelect, type Option as ComboOption } from '@/components/ui/combobox';
 import type { Option } from './project-dialog';
@@ -69,122 +65,28 @@ function SectionTitle({ children, hint }: { children: React.ReactNode; hint?: st
 }
 
 /**
- * انتخابگرِ فایل با دکمهٔ «افزودن» — پورتِ ردیف‌های فایلِ نسخهٔ قبلی.
+ * انتخابگرِ فایلِ فرمِ پروژه (۲.۱۹.۰) — همان کادرِ «رها کن یا بچسبان» ِ بازبینی
+ * (`FormFileDrop`): کلیک، چسباندنِ اسکرین‌شات و کشیدن‌ورهاکردن؛ انتخاب‌ها روی هم
+ * انباشته می‌شوند، هر کدام پیش‌نمایش و حذف دارد، و فایل‌ها در ورودیِ نام‌دارِ
+ * همین فرم می‌نشینند تا `FormData` بدونِ تغییرِ سمتِ سرور بخواندشان.
  *
- * ⚠️ چرا نه `<input type="file" multiple>` ِ خالی: هر بار که کاربر دکمه را
- * می‌زد، انتخابِ قبلی **جایگزین** می‌شد؛ یعنی فایل‌ها را باید یک‌جا و از یک
- * پوشه برمی‌داشت. اینجا انتخاب‌ها روی هم انباشته می‌شوند، هر کدام قابلِ
- * حذف‌اند، و مقدارِ نهایی با `DataTransfer` داخلِ همان ورودیِ نام‌دار
- * می‌نشیند تا `FormData` بدونِ تغییرِ سمتِ سرور همان‌طور بخوانَدش.
+ * `accept` که با «image/» شروع شود یعنی فقط تصویر (تصویرِ شاخص). `multiple={false}`:
+ * فایلِ تازه جایگزینِ قبلی می‌شود.
  */
 export function FilePicker({
   name,
   accept,
   multiple = true,
-  addLabel,
-  emptyLabel,
-  preview = false,
+  compact = false,
 }: {
   name: string;
   accept?: string;
   multiple?: boolean;
-  addLabel: string;
-  emptyLabel: string;
-  /** تصویرِ انتخاب‌شده پیش از ذخیره نشان داده شود (تصویرِ شاخص). */
-  preview?: boolean;
+  /** برای جاهایی که کنارِ چیز دیگری است (تصویرِ شاخص). */
+  compact?: boolean;
 }) {
-  const tr = useT();
-  const [files, setFiles] = useState<File[]>([]);
-  const holderRef = useRef<HTMLInputElement>(null);
-  const pickerRef = useRef<HTMLInputElement>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  const sync = (next: File[]) => {
-    const data = new DataTransfer();
-    for (const f of next) data.items.add(f);
-    if (holderRef.current) holderRef.current.files = data.files;
-    setFiles(next);
-  };
-
-  /**
-   * ⚠️ فرمِ ویرایش پس از ذخیره باز می‌ماند و React فرم را `reset` می‌کند: ورودیِ
-   * نام‌دار خالی می‌شد ولی فهرست و پیش‌نمایش می‌ماند و کاربر فکر می‌کرد تصویر
-   * هنوز منتظرِ ذخیره است. فهرست همراهِ فرم خالی می‌شود.
-   */
-  useEffect(() => {
-    const form = holderRef.current?.form;
-    if (!form) return;
-    const onReset = () => setFiles([]);
-    form.addEventListener('reset', onReset);
-    return () => form.removeEventListener('reset', onReset);
-  }, []);
-
-  useEffect(() => {
-    const first = preview ? files[0] : undefined;
-    if (!first || !first.type.startsWith('image/')) { setPreviewUrl(null); return; }
-    const url = URL.createObjectURL(first);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [files, preview]);
-
   return (
-    <div className="grid gap-2">
-      {/* ورودیِ نام‌دار: دیده نمی‌شود ولی فایل‌ها را برای فرم نگه می‌دارد. */}
-      <input ref={holderRef} type="file" name={name} multiple={multiple} className="hidden" tabIndex={-1} />
-      {/* ورودیِ انتخاب: بی‌نام است تا خودش در FormData نیفتد. */}
-      <input
-        ref={pickerRef}
-        type="file"
-        accept={accept}
-        multiple={multiple}
-        className="hidden"
-        onChange={(e) => {
-          const picked = [...(e.target.files ?? [])];
-          if (picked.length === 0) return;
-          sync(multiple ? [...files, ...picked] : picked.slice(0, 1));
-          // ⚠️ خالی‌کردن، وگرنه انتخابِ دوبارهٔ همان فایل رویداد نمی‌دهد.
-          e.target.value = '';
-        }}
-      />
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" size="sm" variant="outline" onClick={() => pickerRef.current?.click()}>
-          <Plus className="size-3.5" />
-          {addLabel}
-        </Button>
-        {files.length === 0 && <span className="text-xs text-muted-foreground">{emptyLabel}</span>}
-      </div>
-
-      {previewUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={previewUrl} alt="" className="size-20 rounded-md object-cover" />
-      )}
-
-      {/* `idle` = انتخاب‌شده، هنوز فرستاده نشده؛ همراهِ فرم بارگذاری می‌شود. */}
-      {files.length > 0 && (
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {files.map((f, i) => (
-            <li key={`${f.name}-${i}`}>
-              <Attachment size="sm" state="idle" className="w-full">
-                <AttachmentMedia>{f.type.startsWith('image/') ? <ImageIcon /> : <FileText />}</AttachmentMedia>
-                <AttachmentContent>
-                  <AttachmentTitle title={f.name}>{f.name}</AttachmentTitle>
-                  <AttachmentDescription>{humanSize(f.size, tr)}</AttachmentDescription>
-                </AttachmentContent>
-                <AttachmentActions>
-                  <AttachmentAction
-                    aria-label={`${tr('حذف')} — ${f.name}`}
-                    onClick={() => sync(files.filter((_, j) => j !== i))}
-                  >
-                    <X />
-                  </AttachmentAction>
-                </AttachmentActions>
-              </Attachment>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <FormFileDrop name={name} multiple={multiple} imagesOnly={Boolean(accept?.startsWith('image/'))} compact={compact} />
   );
 }
 
@@ -541,11 +443,7 @@ export function BootstrapSections({
           کاربر باید پروژه را می‌ساخت، بازش می‌کرد و از تبِ فایل‌ها دوباره
           آپلود می‌کرد.
         */}
-        <FilePicker
-          name="attachmentFile"
-          addLabel={tr("افزودنِ فایل")}
-          emptyLabel={tr("فایلی انتخاب نشده")}
-        />
+        <FilePicker name="attachmentFile" />
       </section>
 
       {/* ------------------------------------------------ لینک‌ها */}

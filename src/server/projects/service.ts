@@ -6,12 +6,13 @@ import { notInArray, and, eq, inArray, isNull, asc, like, or, sql } from 'drizzl
 import { db } from '@/db/client';
 import {
   attachments, comments, ledger, notifications, paymentRequests, projectClients, projectMembers,
-  projectPayments, projectQa, projects, tags, tagRelations, tasks, taskRoles,
+  projectPayments, projectQa, projects, reviews, tags, tagRelations, tasks, taskRoles,
   tenderBids, timelogs, auditLog, userOffices, users, currencies,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, canSeeScope, filterVisible, ForbiddenError, visibleScopes, assertOwner, filterVisibleFor } from '@/domain/access/guard';
 import { visibleTasksForMember } from '@/domain/projects/task-visibility';
+import { canSeeSiteLinks } from '@/domain/projects/site-links';
 import type { RelationKey } from '@/domain/projects/tabs';
 import { excerptWords, openThreads } from '@/domain/dashboard/focus';
 /** برچسبِ کنارِ نامِ مدیران در فهرستِ «تخصیص به». */
@@ -68,7 +69,7 @@ import { getSystemConfig } from '@/server/settings/system-service';
 /** فهرستِ پروژه‌ها — فقط scopeهایی که بازیگر اجازه دارد. */
 export async function listProjects(actor: Actor): Promise<VisibleProjectRow[]> {
   if (canViewSection(actor, 'projects')) {
-    return maskNames(actor, await maskPrices(actor, await repo.listProjects(visibleScopes(actor))));
+    return maskLinks(actor, await maskNames(actor, await maskPrices(actor, await repo.listProjects(visibleScopes(actor)))));
   }
   /**
    * مسیرِ عضویتی — پورتِ «پروژه‌های من» ِ نسخهٔ قبلی: عضو/کارفرما فقط
@@ -82,7 +83,7 @@ export async function listProjects(actor: Actor): Promise<VisibleProjectRow[]> {
     managedOfficeProjectIds(actor.id),
   ]);
   const ids = [...new Set([...asMember, ...asClient, ...managed])];
-  const rows = await maskNames(actor, await maskPrices(actor, await repo.listProjects(['company', 'private'], ids)));
+  const rows = maskLinks(actor, await maskNames(actor, await maskPrices(actor, await repo.listProjects(['company', 'private'], ids))));
   /**
    * رابطهٔ من با هر پروژه — شبکه با آن سه بخشِ نسخهٔ قبلی را جدا می‌کند
    * («پروژه‌های شما / به‌عنوان کارفرما / دفاترِ تحتِ مدیریت»). پیش از این
@@ -96,6 +97,23 @@ export async function listProjects(actor: Actor): Promise<VisibleProjectRow[]> {
       managed.includes(r.id) && 'managed',
     ] as const).filter((k): k is RelationKey => k !== false),
   }));
+}
+
+/**
+ * لینک‌های سایتِ پروژه روی **فهرست** (۲.۱۹.۰): کارفرمای صرف فقط وقتی می‌بیند که
+ * تیم «نمایش به کارفرما» را زده باشد. مدیرِ سراسری و تیم همیشه می‌بینند.
+ * ⚠️ خالی‌کردن در سرور است، نه پنهان‌کردن در کارت — وگرنه آدرسِ آزمایشی در
+ * payload ِ صفحه می‌ماند و با View Source خوانده می‌شد.
+ */
+function maskLinks<T extends repo.ProjectListRow>(actor: Actor, rows: T[]): T[] {
+  if (canManageSection(actor, 'projects')) return rows;
+  return rows.map((r) => {
+    const clientOnly = r.clients.some((c) => c.userId === actor.id)
+      && !r.members.some((m) => m.userId === actor.id);
+    return canSeeSiteLinks({ clientOnly, urlsClientVisible: r.urlsClientVisible })
+      ? r
+      : { ...r, liveUrl: '', testUrl: '' };
+  });
 }
 
 /**
@@ -575,6 +593,12 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
 
   const orphanFileIds: number[] = [];
   await db.transaction(async (tx) => {
+    // فایلِ فیزیکیِ پیوست‌ها هم می‌رود (`Attachments::delete`) — وگرنه در باکت یتیم می‌ماند.
+    // ⚠️ **پیش از** پاک‌کردنِ تسک و کامنت: ردیفِ رسانهٔ آن‌ها با حذفِ مادر (cascade) می‌رود
+    // و شناسهٔ فایلش را هم می‌برد (همان تلهٔ سبک‌سازی).
+    orphanFileIds.push(...(await tx.select({ fileId: attachments.fileId }).from(attachments)
+      .where(eq(attachments.projectId, projectId))).map((a) => a.fileId).filter((id): id is number => id !== null));
+
     // ردیف‌های سبک همیشه می‌روند — فایل، تسک، کامنت، QA، پیشنهاد، اعضا، کارفرمایان.
     const taskIds = await tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.projectId, projectId));
     if (taskIds.length > 0) {
@@ -583,9 +607,6 @@ export async function deleteProject(actor: Actor, projectId: number, input: Dele
     await tx.delete(tasks).where(eq(tasks.projectId, projectId));
     await tx.delete(comments).where(eq(comments.projectId, projectId));
     await tx.delete(projectQa).where(eq(projectQa.projectId, projectId));
-    // فایلِ فیزیکیِ پیوست‌ها هم می‌رود (`Attachments::delete`) — وگرنه در باکت یتیم می‌ماند.
-    orphanFileIds.push(...(await tx.select({ fileId: attachments.fileId }).from(attachments)
-      .where(eq(attachments.projectId, projectId))).map((a) => a.fileId).filter((id): id is number => id !== null));
     await tx.delete(attachments).where(eq(attachments.projectId, projectId));
     await tx.delete(tenderBids).where(eq(tenderBids.projectId, projectId));
     await tx.delete(timelogs).where(eq(timelogs.projectId, projectId));
@@ -829,6 +850,10 @@ export interface CreateProjectData {
   /** ردیف‌های جدولِ نقش/سقفِ مناقصه. */
   tenderRoles?: TenderRoleRow[];
   scope: 'company' | 'private';
+  /** لینک‌های سایتِ پروژه (۲.۱۹.۰) — خالی = ثبت نشده؛ از فرم نرمال‌شده می‌آید. */
+  liveUrl?: string;
+  testUrl?: string;
+  urlsClientVisible?: boolean;
 }
 
 /**
@@ -972,6 +997,9 @@ export async function createProject(actor: Actor, input: CreateProjectData): Pro
     // ⚠️ پرچمِ نهایی را `saveTenderRoles` تعیین می‌کند (تیک بدونِ نقش، مناقصه نیست).
     isTender: false,
     scope: input.scope,
+    liveUrl: input.liveUrl ?? '',
+    testUrl: input.testUrl ?? '',
+    urlsClientVisible: input.urlsClientVisible ?? false,
   }).returning({ id: projects.id });
 
   const id = rows[0]!.id;
@@ -1161,6 +1189,10 @@ export async function updateProject(actor: Actor, id: number, input: CreateProje
     parentId,
     isUnitBased: input.isUnitBased,
     scope: input.scope,
+    // ⚠️ فیلدی که اصلاً نیامده (فراخوانِ قدیمی: API، ایمپورت) مقدارِ قبلی را نگه می‌دارد.
+    liveUrl: input.liveUrl ?? before.liveUrl,
+    testUrl: input.testUrl ?? before.testUrl,
+    urlsClientVisible: input.urlsClientVisible ?? before.urlsClientVisible,
     updatedAt: new Date(),
   }).where(eq(projects.id, id));
 
@@ -3055,16 +3087,25 @@ export async function lightenProject(actor: Actor, projectId: number) {
 
   const orphanFileIds: number[] = [];
   await db.transaction(async (tx) => {
+    /**
+     * ⚠️ فایل‌های همهٔ پیوست‌ها — فایل‌های پروژه، رسانهٔ تسک و کامنت، و پیوستِ
+     * بازبینی — **پیش از** پاک‌کردنِ تسک و کامنت و بازبینی جمع می‌شوند. ردیفِ
+     * پیوستِ تسک/کامنت/بازبینی با حذفِ مادرش (cascade) می‌رفت و شناسهٔ فایلش
+     * همراهش؛ فایلِ فیزیکی در باکت یتیم می‌ماند و سبک‌سازی جایی آزاد نمی‌کرد.
+     * همهٔ این ردیف‌ها `project_id` دارند، پس یک کوئری کافی است.
+     */
+    orphanFileIds.push(...(await tx.select({ fileId: attachments.fileId }).from(attachments)
+      .where(eq(attachments.projectId, projectId))).map((a) => a.fileId).filter((id): id is number => id !== null));
+
     const taskIds = await tx.select({ id: tasks.id }).from(tasks).where(eq(tasks.projectId, projectId));
     if (taskIds.length > 0) {
       await tx.delete(taskRoles).where(inArray(taskRoles.taskId, taskIds.map((t) => t.id)));
     }
     await tx.delete(tasks).where(eq(tasks.projectId, projectId));
     await tx.delete(comments).where(eq(comments.projectId, projectId));
+    // بازبینی‌ها هم جزئیاتِ پروژه‌اند (عنوان، یادداشت، پیوند، مخاطب) — با تسک‌هایشان می‌روند.
+    await tx.delete(reviews).where(eq(reviews.projectId, projectId));
     await tx.delete(projectQa).where(eq(projectQa.projectId, projectId));
-    // فایلِ فیزیکی هم می‌رود — سبک‌سازی وگرنه فضایی آزاد نمی‌کرد.
-    orphanFileIds.push(...(await tx.select({ fileId: attachments.fileId }).from(attachments)
-      .where(eq(attachments.projectId, projectId))).map((a) => a.fileId).filter((id): id is number => id !== null));
     await tx.delete(attachments).where(eq(attachments.projectId, projectId));
     await tx.delete(timelogs).where(eq(timelogs.projectId, projectId));
     await tx.delete(tenderBids).where(eq(tenderBids.projectId, projectId));
