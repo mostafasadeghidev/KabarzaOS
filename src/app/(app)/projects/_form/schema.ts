@@ -60,6 +60,8 @@ export const createProjectSchema = z.object({
   testUrl: siteUrl,
   urlsClientVisible: z.boolean().default(false),
   isUnitBased: z.boolean().default(false),
+  /** پروژهٔ تعدادی: مبلغِ هر ردیف را مسئول بزند (۲.۲۰.۰). */
+  unitManualAmount: z.boolean().default(false),
   isTender: z.boolean().default(false),
   /**
    * ردیف‌های جدولِ نقش/سقفِ مناقصه.

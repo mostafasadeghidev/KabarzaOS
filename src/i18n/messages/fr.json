@@ -3948,5 +3948,16 @@
   "آدرسِ سایت معتبر نیست": "L'adresse du site n'est pas valide",
   "سایتِ پروژه": "Site du projet",
   "تصویر یا فایل را اینجا رها کنید یا بچسبانید": "Déposez ou collez ici une image ou un fichier",
-  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Ctrl+V pour une capture, clic pour choisir un fichier, ou mettez un lien vidéo (Loom, YouTube, Vimeo) dans le texte"
+  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Ctrl+V pour une capture, clic pour choisir un fichier, ou mettez un lien vidéo (Loom, YouTube, Vimeo) dans le texte",
+  "اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Sans montant saisi, le tarif convenu du membre est utilisé.",
+  "تعدادِ کارِ هر تاریخ را ثبت کنید. مبلغ را می‌توانید خودتان بزنید؛ اگر خالی بماند، تعداد × نرخِ توافقیِ عضو حساب می‌شود.": "Saisissez la quantité de travail par date. Vous pouvez fixer le montant vous-même ; s'il reste vide, quantité × tarif convenu du membre est utilisé.",
+  "تعیینِ مبلغِ ردیف برای این پروژه فعال نیست یا اجازه‌اش را ندارید.": "La saisie du montant d'une ligne n'est pas activée pour ce projet, ou vous n'en avez pas le droit.",
+  "طبق نرخِ توافقی": "Selon le tarif convenu",
+  "مبلغ ذخیره شد.": "Montant enregistré.",
+  "مبلغ معتبر نیست؛ فقط عددِ مثبت با حداکثر چهار رقمِ اعشار.": "Le montant n'est pas valide ; utilisez un nombre positif avec au plus quatre décimales.",
+  "مبلغِ دستیِ ردیفِ تعدادی": "Montant manuel des lignes à l'unité",
+  "مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.": "Le montant d'une ligne demandée ou payée ne peut pas être modifié.",
+  "مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند": "Le responsable du projet peut fixer le montant de chaque ligne",
+  "ویرایشِ مبلغ": "Modifier le montant",
+  "ویرایشِ مبلغِ کارکرد": "Modifier le montant de l'unité"
 }

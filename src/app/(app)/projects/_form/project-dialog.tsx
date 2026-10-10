@@ -69,6 +69,7 @@ export interface ProjectDefaults {
   officeId: string;
   parentId: string;
   isUnitBased: boolean;
+  unitManualAmount: boolean;
   isTender: boolean;
   /** لینک‌های سایت (۲.۱۹.۰) — خالی = ثبت نشده. */
   liveUrl: string;
@@ -149,6 +150,7 @@ function ProjectDialogBody({
   const [tenderRows, setTenderRows] = useState<Array<{ roleTagId: string; cap: string }>>([]);
   const [isUnitBased, setIsUnitBased] = useState(false);
   const [urlsVisible, setUrlsVisible] = useState(false);
+  const [unitManual, setUnitManual] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const fe = state.fieldErrors ?? {};
 
@@ -171,6 +173,7 @@ function ProjectDialogBody({
     setIsUnitBased(back.isUnitBased === '1');
     setIsTender(back.isTender === '1');
     setUrlsVisible(back.urlsClientVisible === '1');
+    setUnitManual(back.unitManualAmount === '1');
     setFormKey((k) => k + 1);
   }, [back]);
 
@@ -180,6 +183,7 @@ function ProjectDialogBody({
     setIsUnitBased(project.isUnitBased);
     setIsTender(project.isTender);
     setUrlsVisible(project.urlsClientVisible);
+    setUnitManual(project.unitManualAmount);
     // ردیف‌های موجودِ مناقصه در حالتِ ویرایش.
     setTenderRows(Object.entries(project.tenderRoles ?? {})
       .map(([roleTagId, cap]) => ({ roleTagId, cap: cap ? String(Number(cap)) : '' })));
@@ -416,6 +420,28 @@ function ProjectDialogBody({
             <p className="mt-1 ms-6 text-xs text-muted-foreground">
               {tr("به‌جای مبلغِ توافقیِ ثابت، هر عضو «نرخِ هر واحد» دارد و دستمزدش = نرخ × تعدادِ ثبت‌شده.")}
             </p>
+            {/*
+              مبلغِ دستیِ ردیف (۲.۲۰.۰) — مسئولِ پروژه هنگامِ ثبتِ ردیف می‌تواند مبلغ بزند؛
+              خالی بماند، از نرخِ توافقی پیروی می‌کند. فقط برای پروژهٔ تعدادی معنا دارد.
+            */}
+            {isUnitBased && (
+              <div className="mt-2 ms-6">
+                <label className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    key={`manual-${formKey}`}
+                    name="unitManualAmount"
+                    value="1"
+                    className="mt-0.5"
+                    checked={unitManual}
+                    onCheckedChange={(v) => setUnitManual(v === true)}
+                  />
+                  {tr("مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند")}
+                </label>
+                <p className="mt-1 ms-6 text-xs text-muted-foreground">
+                  {tr("اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.")}
+                </p>
+              </div>
+            )}
           </div>
 
           {canEditMoney && (

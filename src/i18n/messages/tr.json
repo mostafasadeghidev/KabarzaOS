@@ -3948,5 +3948,16 @@
   "آدرسِ سایت معتبر نیست": "Site adresi geçerli değil",
   "سایتِ پروژه": "Proje sitesi",
   "تصویر یا فایل را اینجا رها کنید یا بچسبانید": "Bir görseli veya dosyayı buraya bırakın ya da yapıştırın",
-  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Ekran görüntüsü için Ctrl+V, dosya seçmek için tıklayın ya da metne bir video bağlantısı (Loom, YouTube, Vimeo) koyun"
+  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Ekran görüntüsü için Ctrl+V, dosya seçmek için tıklayın ya da metne bir video bağlantısı (Loom, YouTube, Vimeo) koyun",
+  "اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Tutar girilmezse üyenin anlaşılan birim fiyatı kullanılır.",
+  "تعدادِ کارِ هر تاریخ را ثبت کنید. مبلغ را می‌توانید خودتان بزنید؛ اگر خالی بماند، تعداد × نرخِ توافقیِ عضو حساب می‌شود.": "Her tarih için iş miktarını girin. Tutarı kendiniz belirleyebilirsiniz; boş bırakılırsa miktar × üyenin anlaşılan birim fiyatı kullanılır.",
+  "تعیینِ مبلغِ ردیف برای این پروژه فعال نیست یا اجازه‌اش را ندارید.": "Satır tutarını belirleme bu proje için etkin değil veya yetkiniz yok.",
+  "طبق نرخِ توافقی": "Anlaşılan fiyata göre",
+  "مبلغ ذخیره شد.": "Tutar kaydedildi.",
+  "مبلغ معتبر نیست؛ فقط عددِ مثبت با حداکثر چهار رقمِ اعشار.": "Tutar geçerli değil; en fazla dört ondalık basamaklı pozitif bir sayı kullanın.",
+  "مبلغِ دستیِ ردیفِ تعدادی": "Adet satırlarının elle tutarı",
+  "مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.": "Talep edilmiş veya ödenmiş bir satırın tutarı değiştirilemez.",
+  "مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند": "Proje sorumlusu her satırın tutarını kendisi belirleyebilir",
+  "ویرایشِ مبلغ": "Tutarı düzenle",
+  "ویرایشِ مبلغِ کارکرد": "Adet tutarını düzenle"
 }

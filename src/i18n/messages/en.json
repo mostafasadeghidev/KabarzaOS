@@ -3948,5 +3948,16 @@
   "آدرسِ سایت معتبر نیست": "The site address isn't valid",
   "سایتِ پروژه": "Project site",
   "تصویر یا فایل را اینجا رها کنید یا بچسبانید": "Drop or paste an image or file here",
-  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Ctrl+V for a screenshot, click to pick a file, or put a video link (Loom, YouTube, Vimeo) in the text"
+  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Ctrl+V for a screenshot, click to pick a file, or put a video link (Loom, YouTube, Vimeo) in the text",
+  "اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "If no amount is entered, the member's agreed rate is used.",
+  "تعدادِ کارِ هر تاریخ را ثبت کنید. مبلغ را می‌توانید خودتان بزنید؛ اگر خالی بماند، تعداد × نرخِ توافقیِ عضو حساب می‌شود.": "Record the amount of work for each date. You can set the amount yourself; if left empty, quantity × the member's agreed rate is used.",
+  "تعیینِ مبلغِ ردیف برای این پروژه فعال نیست یا اجازه‌اش را ندارید.": "Setting a row's amount isn't enabled for this project, or you don't have permission.",
+  "طبق نرخِ توافقی": "Per agreed rate",
+  "مبلغ ذخیره شد.": "Amount saved.",
+  "مبلغ معتبر نیست؛ فقط عددِ مثبت با حداکثر چهار رقمِ اعشار.": "The amount isn't valid; use a positive number with at most four decimals.",
+  "مبلغِ دستیِ ردیفِ تعدادی": "Manual amount of unit rows",
+  "مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.": "The amount of a requested or paid row can't be changed.",
+  "مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند": "The project lead can set each row's amount",
+  "ویرایشِ مبلغ": "Edit amount",
+  "ویرایشِ مبلغِ کارکرد": "Edit unit amount"
 }

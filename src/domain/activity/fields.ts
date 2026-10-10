@@ -42,6 +42,7 @@ export const FIELD_LABELS: Record<string, string> = {
   isTender: 'مناقصه‌ای',
   tenderRoles: 'نقش‌های مناقصه',
   isUnitBased: 'تعدادی',
+  unitManualAmount: 'مبلغِ دستیِ ردیفِ تعدادی',
   isArchived: 'بایگانی',
   thumbnailFileId: 'تصویرِ شاخص',
   liveUrl: 'دامنهٔ اصلی',

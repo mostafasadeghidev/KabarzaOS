@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.20.0]
+
+### Added
+
+- Unit-based projects have a new option, "The project lead can set each row's amount". With it on, whoever manages the project can type an amount when adding a work row; leaving the amount empty still uses the member's agreed rate (quantity × rate). It is off by default, so existing unit-based projects behave as before.
+- The project lead can also edit the amount of an unpaid row (pencil button in the row); an empty amount goes back to the agreed rate. Rows with a payment request or already paid cannot be edited, and members can never set their own amounts.
+
 ## [2.19.0]
 
 ### Added

@@ -94,6 +94,7 @@ export const ACTION_LABELS: Record<string, string> = {
 
   // کارکردِ تعدادی و درخواستِ عضو
   'unit.add': 'ثبتِ کارکرد',
+  'unit.amount': 'ویرایشِ مبلغِ کارکرد',
   'unit.delete': 'حذفِ کارکرد',
   'request.create': 'درخواستِ پرداخت',
   'request.cancel': 'لغوِ درخواستِ پرداخت',

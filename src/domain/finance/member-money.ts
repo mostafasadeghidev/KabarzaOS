@@ -28,6 +28,31 @@ export function unitAmount(quantity: number, unitRate: string | null): string {
   return (Math.max(0, Math.trunc(quantity)) * rate).toFixed(4);
 }
 
+/**
+ * مبلغِ دستیِ یک ردیفِ کارکرد (۲.۲۰.۰) — مسئولِ پروژه به‌جای نرخِ توافقی می‌زند.
+ *
+ *  none    خالی ← از نرخِ توافقیِ عضو پیروی کن
+ *  ok      مبلغِ معتبر، با چهار رقمِ اعشار (پول رشته است، هرگز float)
+ *  invalid عددِ منفی، حرف، یا بیش از چهار رقم اعشار
+ *
+ * ارقامِ فارسی و عربی و «٬»/«,» هم پذیرفته می‌شوند — مدیر در فرم همان‌طور که می‌نویسد.
+ */
+export type ManualAmount = { kind: 'none' } | { kind: 'ok'; amount: string } | { kind: 'invalid' };
+
+export function parseManualAmount(raw: string | null | undefined): ManualAmount {
+  const text = (raw ?? '')
+    .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+    .replace(/[,٬\s]/g, '')
+    .replace(/٫/g, '.')
+    .trim();
+  if (text === '') return { kind: 'none' };
+  if (!/^\d+(\.\d{1,4})?$/.test(text)) return { kind: 'invalid' };
+  // ⚠️ رشته‌ای، نه Number: پول هرگز float نیست (R-MONEY)؛ صفرِ ابتدایی هم برداشته می‌شود.
+  const [whole = '0', frac = ''] = text.split('.');
+  return { kind: 'ok', amount: `${BigInt(whole).toString()}.${frac.padEnd(4, '0')}` };
+}
+
 /** تعدادِ معتبر — کمتر از یک بی‌معناست. */
 export function isValidQuantity(quantity: number): boolean {
   return Number.isInteger(quantity) && quantity >= 1;
