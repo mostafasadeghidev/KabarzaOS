@@ -458,6 +458,9 @@ export async function listTasks(projectId: number): Promise<TaskRow[]> {
       reviewTitle: reviews.title,
       reviewStart: tasks.reviewStart,
       area: tasks.area,
+      /** ردیفِ کارکردِ تسک (۲.۲۲.۰) — «CAT» در پروژهٔ تعدادی. */
+      unitEntryId: tasks.unitEntryId,
+      unitEntryName: sql<string | null>`(select ue.name from unit_entries ue where ue.id = ${tasks.unitEntryId})`,
       number: tasks.number,
     })
     .from(tasks)
@@ -1180,6 +1183,9 @@ export async function getTask(id: number) {
       // پنهان از کارفرما و پیوندِ بازبینی — گاردِ دیدن و حالتِ قبلِ ویرایش.
       clientHidden: tasks.clientHidden, reviewId: tasks.reviewId,
       reviewStart: tasks.reviewStart, reviewEnd: tasks.reviewEnd, area: tasks.area,
+      // ردیفِ کارکردِ تسک (۲.۲۲.۰).
+      unitEntryId: tasks.unitEntryId,
+      unitEntryName: sql<string | null>`(select ue.name from unit_entries ue where ue.id = ${tasks.unitEntryId})`,
       // پیوندِ مستقیمِ اعلان (`?task=`) — ۲.۱۷.۱.
       number: tasks.number,
     })
@@ -1282,6 +1288,9 @@ export async function getTaskFull(id: number) {
       reviewStart: tasks.reviewStart,
       reviewEnd: tasks.reviewEnd,
       area: tasks.area,
+      // ردیفِ کارکردِ تسک (۲.۲۲.۰).
+      unitEntryId: tasks.unitEntryId,
+      unitEntryName: sql<string | null>`(select ue.name from unit_entries ue where ue.id = ${tasks.unitEntryId})`,
       number: tasks.number,
       projectCode: projects.code,
     })

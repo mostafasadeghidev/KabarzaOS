@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.22.0]
+
+### Added
+
+- Work rows of a unit-based project have a **work status**, using the same statuses as projects (Not started, In progress, Completed…). It is separate from the payment status and does not change the status of the unit-based project itself. New rows start as "Not started"; the project lead or the row's owner changes it from the row. Completed, cancelled and on-hold rows drop out of the hours pickers, like closed projects.
+- A task can be linked to a work row (for example "CAT" in "Simon Zickert media"). The add and edit task forms show a "Work row" field on unit-based projects with named rows, and the row name shows on the task card and in the task details. Managers can pick any row; members only their own.
+- Reviews can target **people** as well as roles. A review for one developer is no longer seen by a second developer with the same role. With no roles and no people selected, the whole project team sees it, as before; roles and people add up. Notifications follow the same audience.
+
 ## [2.21.0]
 
 ### Added

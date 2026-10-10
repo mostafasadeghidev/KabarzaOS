@@ -3968,5 +3968,14 @@
   "ویرایشِ نام": "Edit name",
   "ویرایشِ نامِ کارکرد": "Renamed a work row",
   "پرداختِ من": "My payment",
-  "کارکردها": "Work rows"
+  "کارکردها": "Work rows",
+  "اشخاص (اختیاری)": "People (optional)",
+  "تغییرِ وضعیتِ کارکرد": "Changed a work row's status",
+  "خالی یعنی همهٔ اعضای پروژه می‌بینند. با انتخابِ نقش یا شخص فقط همان‌ها (و مدیران) می‌بینند.": "Empty means every project member sees it. Picking roles or people limits it to them (and managers).",
+  "ردیفِ کارکرد": "Work row",
+  "فقط دارندگانِ این نقش‌ها، اشخاصِ انتخاب‌شده و مدیرانِ پروژه می‌بینند.": "Only holders of these roles, the selected people and project managers see it.",
+  "مخاطب باید از اعضای همین پروژه باشد.": "The audience must be members of this project.",
+  "وضعیت ذخیره شد.": "Status saved.",
+  "وضعیتِ انتخاب‌شده معتبر نیست.": "The selected status isn't valid.",
+  "وضعیتِ کار": "Work status"
 }

@@ -140,6 +140,8 @@ export const tasks = pgTable('tasks', {
    * حذفِ بازبینی پیوند را برمی‌دارد، تسک می‌ماند.
    */
   reviewId: fk('review_id').references(() => reviews.id, { onDelete: 'set null' }),
+  /** ردیفِ کارکردِ پروژهٔ تعدادی که این تسک مالِ آن است (۲.۲۲.۰) — «Simon - CAT». */
+  unitEntryId: fk('unit_entry_id').references((): AnyPgColumn => unitEntries.id, { onDelete: 'set null' }),
   reviewStart: integer('review_start'),
   reviewEnd: integer('review_end'),
   area: text('area').notNull().default(''),
@@ -194,6 +196,15 @@ export const reviewRoles = pgTable('review_roles', {
   reviewId: fk('review_id').notNull().references(() => reviews.id, { onDelete: 'cascade' }),
   roleTagId: fk('role_tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
 }, (t) => [primaryKey({ name: 'review_roles_pk', columns: [t.reviewId, t.roleTagId] })]);
+
+/**
+ * مخاطبِ بازبینی — اشخاص (۲.۲۲.۰). با نقش‌ها جمع می‌شود: کسی می‌بیند که یکی از
+ * نقش‌ها را دارد **یا** نامش اینجاست. هیچ نقش و هیچ شخص = کلِ تیمِ پروژه.
+ */
+export const reviewUsers = pgTable('review_users', {
+  reviewId: fk('review_id').notNull().references(() => reviews.id, { onDelete: 'cascade' }),
+  userId: fk('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+}, (t) => [primaryKey({ name: 'review_users_pk', columns: [t.reviewId, t.userId] })]);
 
 /** R-PROJ-13 — ساین‌کردن per-role است: هر نقش claimed_by جدا دارد. */
 export const taskRoles = pgTable('task_roles', {
@@ -286,6 +297,11 @@ export const unitEntries = pgTable('unit_entries', {
   note: text('note').notNull().default(''),
   /** نامِ یکتای ردیف داخلِ پروژه (۲.۲۱.۰) — مثلاً «CAT»؛ خالی = بی‌نام. */
   name: text('name').notNull().default(''),
+  /**
+   * وضعیتِ **کارِ** ردیف (۲.۲۲.۰) — از همان وضعیت‌های پروژه. جدا از `status` (پرداخت).
+   * ⚠️ روی وضعیتِ خودِ پروژهٔ تعدادی اثری ندارد.
+   */
+  workStatusTagId: fk('work_status_tag_id').references(() => tags.id, { onDelete: 'set null' }),
   /** R-TEAM-13 — ارزش با نرخِ همان زمان منجمد می‌شود. */
   amount: money('amount').notNull().default('0'),
   currencyId: fk('currency_id').notNull().references(() => currencies.id),

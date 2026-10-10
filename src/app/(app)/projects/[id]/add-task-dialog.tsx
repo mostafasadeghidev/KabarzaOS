@@ -38,6 +38,8 @@ export interface TaskFormOptions {
   priorities: Array<{ id: number; name: string }>;
   /** تسک‌های همین پروژه — گزینه‌های «وابسته به». */
   tasks?: Array<{ id: number; title: string }>;
+  /** ردیف‌های نام‌دارِ پروژهٔ تعدادی (۲.۲۲.۰) — «تسک مالِ کدام ردیف است». */
+  unitEntries?: Array<{ id: number; name: string }>;
 }
 
 
@@ -230,6 +232,17 @@ function AddTaskDialogBody({
               <Input id="nt-area" name="area" defaultValue={keep('area')} placeholder={t("مثلاً هدر، فوتر، صفحهٔ تماس")} maxLength={120} />
             </Field>
           </div>
+
+          {/* ردیفِ کارکرد (۲.۲۲.۰) — فقط در پروژهٔ تعدادی که ردیفِ نام‌دار دارد. */}
+          {(options.unitEntries?.length ?? 0) > 0 && (
+            <Field>
+              <FieldLabel htmlFor="nt-unit">{t("ردیفِ کارکرد")}</FieldLabel>
+              <NativeSelect id="nt-unit" name="unitEntryId" containerClassName="w-full" defaultValue={keep('unitEntryId')}>
+                <NativeSelectOption value="">{t("— هیچ‌کدام —")}</NativeSelectOption>
+                {options.unitEntries!.map((u) => <NativeSelectOption key={u.id} value={u.id}>{u.name}</NativeSelectOption>)}
+              </NativeSelect>
+            </Field>
+          )}
 
           {/*
             ⚠️ فقط برای مدیر. سرور هم برای غیرمدیر نادیده‌اش می‌گیرد، ولی

@@ -1,7 +1,7 @@
 import { alias } from 'drizzle-orm/pg-core';
 import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { attachments, auditLog, reviewRoles, reviews, tags, tasks, users, type ReviewSource } from '@/db/schema';
+import { attachments, auditLog, reviewRoles, reviews, reviewUsers, tags, tasks, users, type ReviewSource } from '@/db/schema';
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
 import type { Actor } from '@/domain/access/permissions';
@@ -34,6 +34,8 @@ export interface ReviewInput {
   source: ReviewSource | null;
   notes: string;
   roleTagIds: number[];
+  /** اشخاصِ مخاطب (۲.۲۲.۰) — باید عضوِ همین پروژه باشند؛ نیامده = هیچ. */
+  userIds?: number[];
   clientVisible: boolean;
 }
 
@@ -78,6 +80,20 @@ async function rolesOf(reviewIds: number[]) {
   return map;
 }
 
+/** اشخاصِ مخاطبِ چند بازبینی (۲.۲۲.۰). */
+async function usersOf(reviewIds: number[]) {
+  const map = new Map<number, Array<{ id: number; name: string }>>();
+  if (reviewIds.length === 0) return map;
+  const rows = await db
+    .select({ reviewId: reviewUsers.reviewId, id: users.id, name: users.name })
+    .from(reviewUsers)
+    .innerJoin(users, eq(users.id, reviewUsers.userId))
+    .where(inArray(reviewUsers.reviewId, reviewIds))
+    .orderBy(asc(users.name));
+  for (const r of rows) map.set(r.reviewId, [...(map.get(r.reviewId) ?? []), { id: r.id, name: r.name }]);
+  return map;
+}
+
 /**
  * یک بازبینی، به شرطِ دیدن. «یافت نشد» — نه «ممنوع» — تا وجودش لو نرود.
  */
@@ -87,10 +103,13 @@ async function loadVisibleReview(actor: Actor, reviewId: number) {
   await getProject(actor, review.projectId);
   const viewer = await reviewViewer(actor, review.projectId);
   const roles = (await rolesOf([review.id])).get(review.id) ?? [];
-  if (!canSeeReview(viewer, { createdBy: review.createdBy, roleTagIds: roles.map((r) => r.id), clientVisible: review.clientVisible })) {
+  const people = (await usersOf([review.id])).get(review.id) ?? [];
+  if (!canSeeReview(viewer, {
+    createdBy: review.createdBy, roleTagIds: roles.map((r) => r.id), userIds: people.map((p) => p.id), clientVisible: review.clientVisible,
+  })) {
     throw new NotFoundError();
   }
-  return { review, roles, viewer };
+  return { review, roles, people, viewer };
 }
 
 /** گاردِ فایلِ بازبینی — `canViewFile` از راهِ پیوستِ `review_id` به اینجا می‌رسد. */
@@ -177,9 +196,12 @@ export async function listReviews(actor: Actor, projectId: number) {
     .innerJoin(users, eq(users.id, reviews.createdBy))
     .where(eq(reviews.projectId, projectId))
     .orderBy(desc(reviews.id));
-  const roles = await rolesOf(rows.map((r) => r.id));
+  const [roles, people] = await Promise.all([rolesOf(rows.map((r) => r.id)), usersOf(rows.map((r) => r.id))]);
   const visible = rows.filter((r) => canSeeReview(viewer, {
-    createdBy: r.createdBy, roleTagIds: (roles.get(r.id) ?? []).map((x) => x.id), clientVisible: r.clientVisible,
+    createdBy: r.createdBy,
+    roleTagIds: (roles.get(r.id) ?? []).map((x) => x.id),
+    userIds: (people.get(r.id) ?? []).map((x) => x.id),
+    clientVisible: r.clientVisible,
   }));
   const ids = visible.map((r) => r.id);
   const [items, media] = await Promise.all([itemsOf(actor, viewer, ids), repo.mediaFor({ reviewIds: ids })]);
@@ -188,6 +210,7 @@ export async function listReviews(actor: Actor, projectId: number) {
     ...r,
     createdByName: nameForViewer(r.createdBy, r.createdByName, ctx),
     roles: roles.get(r.id) ?? [],
+    people: (people.get(r.id) ?? []).map((p) => ({ id: p.id, name: nameForViewer(p.id, p.name, ctx) })),
     progress: reviewProgress(items.filter((i) => i.reviewId === r.id)),
     mediaCount: media.filter((m) => m.reviewId === r.id).length,
   }));
@@ -195,7 +218,7 @@ export async function listReviews(actor: Actor, projectId: number) {
 
 /** جزئیاتِ یک بازبینی — پخش‌کننده، یادداشت، پیوست‌ها و موردها. */
 export async function getReview(actor: Actor, reviewId: number) {
-  const { review, roles, viewer } = await loadVisibleReview(actor, reviewId);
+  const { review, roles, people, viewer } = await loadVisibleReview(actor, reviewId);
   const [items, media, members, frozenForViewer, canInteract] = await Promise.all([
     itemsOf(actor, viewer, [reviewId]),
     repo.mediaFor({ reviewIds: [reviewId] }),
@@ -223,6 +246,7 @@ export async function getReview(actor: Actor, reviewId: number) {
       createdBy: review.createdBy,
       createdByName: mask(review.createdBy, creator?.name ?? null),
       roles,
+      people: people.map((p) => ({ id: p.id, name: mask(p.id, p.name) ?? p.name })),
     },
     media: media.map((m) => ({
       id: m.id, fileId: m.fileId, kind: m.kind, mime: m.mime, size: m.size, name: m.name,
@@ -277,14 +301,18 @@ export async function reviewFormOptions(actor: Actor, projectId: number) {
   const roles = [...new Map(members
     .filter((m) => m.roleTagId !== null && !m.accessBlocked)
     .map((m) => [m.roleTagId!, { id: m.roleTagId!, name: m.roleName ?? '' }])).values()];
-  return { roles, areas, assignees: task.assignees, priorities: task.priorities };
+  // اشخاصِ تیمِ همین پروژه (۲.۲۲.۰) — عضوِ دو-نقشه یک‌بار.
+  const people = [...new Map(members
+    .filter((m) => !m.accessBlocked)
+    .map((m) => [m.userId, { id: m.userId, name: m.userName ?? `#${m.userId}` }])).values()];
+  return { roles, people, areas, assignees: task.assignees, priorities: task.priorities };
 }
 
 /* ------------------------------------------------------------------ *
  * نوشتن
  * ------------------------------------------------------------------ */
 
-async function cleanInput(input: ReviewInput, hasUploadedVideo: boolean) {
+async function cleanInput(input: ReviewInput, hasUploadedVideo: boolean, projectId: number) {
   const title = input.title.trim().slice(0, 200);
   if (title === '') throw new ForbiddenError('review.title');
   const raw = input.videoUrl.trim();
@@ -297,21 +325,33 @@ async function cleanInput(input: ReviewInput, hasUploadedVideo: boolean) {
       .where(and(inArray(tags.id, roleTagIds), eq(tags.type, 'member_role')));
     if (ok.length !== roleTagIds.length) throw new ForbiddenError('review.roles');
   }
+  // ⚠️ فقط عضوِ همین پروژه (و نه قطع‌دسترسی) — شناسهٔ دلخواه مخاطب نمی‌شود (۲.۲۲.۰).
+  const userIds = [...new Set(input.userIds ?? [])];
+  if (userIds.length > 0) {
+    const team = new Set((await repo.listMembers(projectId)).filter((m) => !m.accessBlocked).map((m) => m.userId));
+    if (!userIds.every((id) => team.has(id))) throw new ForbiddenError('review.users');
+  }
   return {
     title,
     videoUrl,
     notes: input.notes.trim().slice(0, 10000),
     roleTagIds,
+    userIds,
     clientVisible: input.clientVisible,
     source: detectSource(input.source, videoUrl, hasUploadedVideo),
   };
 }
 
 /** گیرندگانِ اعلانِ «بازبینیِ تازه»: مخاطبِ نقشی (یا کلِ تیم) و کارفرما اگر می‌بیند. */
-async function audienceOf(projectId: number, roleTagIds: number[], clientVisible: boolean, exclude: number) {
+async function audienceOf(
+  projectId: number, roleTagIds: number[], userIds: number[], clientVisible: boolean, exclude: number,
+) {
   const members = await repo.listMembers(projectId);
+  const everyone = roleTagIds.length === 0 && userIds.length === 0;
   const team = members
-    .filter((m) => !m.accessBlocked && (roleTagIds.length === 0 || (m.roleTagId !== null && roleTagIds.includes(m.roleTagId))))
+    .filter((m) => !m.accessBlocked && (everyone
+      || (m.roleTagId !== null && roleTagIds.includes(m.roleTagId))
+      || userIds.includes(m.userId)))
     .map((m) => m.userId);
   const clients = clientVisible ? await repo.listClientIds(projectId) : [];
   return [...new Set([...team, ...clients])].filter((id) => id !== exclude);
@@ -321,7 +361,7 @@ export async function createReview(actor: Actor, projectId: number, input: Revie
   await getProject(actor, projectId);
   if (!await canManageProject(actor, projectId)) throw new ForbiddenError('projects.manage');
   await assertNotFrozen(projectId, actor);
-  const clean = await cleanInput(input, media.some((m) => m.mime.startsWith('video/')));
+  const clean = await cleanInput(input, media.some((m) => m.mime.startsWith('video/')), projectId);
 
   const uploads = await storeUploads(actor, media);
   const reviewId = await db.transaction(async (tx) => {
@@ -331,6 +371,9 @@ export async function createReview(actor: Actor, projectId: number, input: Revie
     }).returning({ id: reviews.id });
     if (clean.roleTagIds.length > 0) {
       await tx.insert(reviewRoles).values(clean.roleTagIds.map((roleTagId) => ({ reviewId: row!.id, roleTagId })));
+    }
+    if (clean.userIds.length > 0) {
+      await tx.insert(reviewUsers).values(clean.userIds.map((userId) => ({ reviewId: row!.id, userId })));
     }
     if (uploads.length > 0) {
       await tx.insert(attachments).values(uploads.map((u) => ({
@@ -343,10 +386,12 @@ export async function createReview(actor: Actor, projectId: number, input: Revie
     throw error;
   });
 
-  await audit(actor, 'review.create', projectId, null, { reviewId, title: clean.title, roleTagIds: clean.roleTagIds, clientVisible: clean.clientVisible });
+  await audit(actor, 'review.create', projectId, null, {
+    reviewId, title: clean.title, roleTagIds: clean.roleTagIds, userIds: clean.userIds, clientVisible: clean.clientVisible,
+  });
 
   const project = await repo.getProject(projectId);
-  await notify(await audienceOf(projectId, clean.roleTagIds, clean.clientVisible, actor.id), {
+  await notify(await audienceOf(projectId, clean.roleTagIds, clean.userIds, clean.clientVisible, actor.id), {
     type: 'review.posted',
     title: 'بازبینیِ تازه در پروژه',
     body: '«{project}» — {text}',
@@ -357,10 +402,10 @@ export async function createReview(actor: Actor, projectId: number, input: Revie
 }
 
 export async function updateReview(actor: Actor, reviewId: number, input: ReviewInput, media: readonly UploadBlob[] = []) {
-  const { review, roles } = await loadVisibleReview(actor, reviewId);
+  const { review, roles, people } = await loadVisibleReview(actor, reviewId);
   await assertCanManageReview(actor, review);
   await assertNotFrozen(review.projectId, actor);
-  const clean = await cleanInput(input, media.some((m) => m.mime.startsWith('video/')));
+  const clean = await cleanInput(input, media.some((m) => m.mime.startsWith('video/')), review.projectId);
   // منبعِ بارگذاری‌شده با ویدئوی قبلی هم بارگذاری‌شده می‌ماند.
   const hadUpload = (await repo.mediaFor({ reviewIds: [reviewId] })).some((m) => m.kind === 'video');
   const source = detectSource(input.source, clean.videoUrl, hadUpload || media.some((m) => m.mime.startsWith('video/')));
@@ -374,6 +419,10 @@ export async function updateReview(actor: Actor, reviewId: number, input: Review
     await tx.delete(reviewRoles).where(eq(reviewRoles.reviewId, reviewId));
     if (clean.roleTagIds.length > 0) {
       await tx.insert(reviewRoles).values(clean.roleTagIds.map((roleTagId) => ({ reviewId, roleTagId })));
+    }
+    await tx.delete(reviewUsers).where(eq(reviewUsers.reviewId, reviewId));
+    if (clean.userIds.length > 0) {
+      await tx.insert(reviewUsers).values(clean.userIds.map((userId) => ({ reviewId, userId })));
     }
     /**
      * ⚠️ «برای کارفرما» که عوض شد، موردها هم با آن عوض می‌شوند: بازبینیِ
@@ -395,12 +444,12 @@ export async function updateReview(actor: Actor, reviewId: number, input: Review
   });
 
   await audit(actor, 'review.update', review.projectId,
-    { reviewId, title: review.title, roleTagIds: roles.map((r) => r.id), clientVisible: review.clientVisible },
-    { reviewId, title: clean.title, roleTagIds: clean.roleTagIds, clientVisible: clean.clientVisible });
+    { reviewId, title: review.title, roleTagIds: roles.map((r) => r.id), userIds: people.map((p) => p.id), clientVisible: review.clientVisible },
+    { reviewId, title: clean.title, roleTagIds: clean.roleTagIds, userIds: clean.userIds, clientVisible: clean.clientVisible });
 
   // مخاطبِ تازه (نقشِ اضافه‌شده یا کارفرمایی که تازه می‌بیند) خبردار می‌شود.
-  const before = new Set(await audienceOf(review.projectId, roles.map((r) => r.id), review.clientVisible, actor.id));
-  const fresh = (await audienceOf(review.projectId, clean.roleTagIds, clean.clientVisible, actor.id)).filter((id) => !before.has(id));
+  const before = new Set(await audienceOf(review.projectId, roles.map((r) => r.id), people.map((p) => p.id), review.clientVisible, actor.id));
+  const fresh = (await audienceOf(review.projectId, clean.roleTagIds, clean.userIds, clean.clientVisible, actor.id)).filter((id) => !before.has(id));
   if (fresh.length > 0) {
     const project = await repo.getProject(review.projectId);
     await notify(fresh, {
