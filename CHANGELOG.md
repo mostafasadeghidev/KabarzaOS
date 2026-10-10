@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.18.2]
+
+### Fixed
+
+- Quick add member on project cards: after Cancel or a successful add, the form now closes and clears the selected member, so the previous choice no longer reappears when you reopen it.
+
 ## [2.18.1]
 
 ### Changed

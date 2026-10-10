@@ -1,7 +1,7 @@
 'use client';
 
 import { UserAvatar } from '@/components/user-avatar';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Plus } from 'lucide-react';
 import { addClientAction, addMemberAction, type CardActionState } from './_form/card-actions';
@@ -71,8 +71,28 @@ export function CardQuickAdd({
   const [clientState, clientAction] = useActionState<CardActionState, FormData>(addClientAction, {});
   useActionToast(clientState, { success: 'کارفرما اضافه شد.' });
 
-  const toggle = (which: 'member' | 'client') =>
-    setOpenForm((cur) => (cur === which ? null : which));
+  /**
+   * ⚠️ بستن (لغو، یا بعد از افزودنِ موفق) یعنی فرم از نو شروع شود: عضوِ انتخاب‌شده
+   * هم پاک می‌شود. پیش از این حالتِ `pickedUser` می‌ماند و بار بعد همان عضو
+   * دوباره نشان داده می‌شد.
+   */
+  const closeForm = () => {
+    setOpenForm(null);
+    setPickedUser('');
+  };
+  const toggle = (which: 'member' | 'client') => {
+    if (openForm === which) closeForm();
+    else { setPickedUser(''); setOpenForm(which); }
+  };
+
+  useEffect(() => {
+    if (memberState.ok) closeForm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memberState]);
+  useEffect(() => {
+    if (clientState.ok) closeForm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientState]);
 
   return (
     <div className="grid gap-1.5">
@@ -159,7 +179,7 @@ export function CardQuickAdd({
               size="sm"
               variant="ghost"
               className="h-7 px-2 text-xs"
-              onClick={() => setOpenForm(null)}
+              onClick={closeForm}
             >
               {tr("لغو")}
             </Button>
@@ -189,7 +209,7 @@ export function CardQuickAdd({
               size="sm"
               variant="ghost"
               className="h-7 px-2 text-xs"
-              onClick={() => setOpenForm(null)}
+              onClick={closeForm}
             >
               {tr("لغو")}
             </Button>
