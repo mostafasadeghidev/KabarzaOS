@@ -360,7 +360,7 @@ function TaskDialogBody({
                 </Field>
 
                 {/* تصویرِ تازه به تصویرهای قبلی **افزوده** می‌شود؛ حذفِ قبلی‌ها از خودِ گالری است. */}
-                <FormFileDrop name="media">
+                <FormFileDrop name="media" videoLinks>
                   <Field>
                     <FieldLabel htmlFor="t-desc">{t("توضیحات")}</FieldLabel>
                     <Textarea id="t-desc" name="description" rows={3} defaultValue={task.description} />
@@ -537,7 +537,7 @@ function TaskDialogBody({
               <form action={noteAction} className="grid gap-2">
                 <input type="hidden" name="taskId" value={task.id} />
                 {/* ⚠️ متن اجباری نیست: یادداشتِ فقط‌اسکرین‌شات هم یادداشت است (سرور هر دو خالی را رد می‌کند). */}
-                <FormFileDrop name="media" compact>
+                <FormFileDrop name="media" compact videoLinks>
                   <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} />
                 </FormFileDrop>
                 {noteState.error && <p className="text-xs text-destructive">{tr(noteState.error)}</p>}

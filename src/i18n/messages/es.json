@@ -3947,5 +3947,6 @@
   "نمایشِ لینک‌ها به کارفرما": "Mostrar los enlaces al cliente",
   "آدرسِ سایت معتبر نیست": "La dirección del sitio no es válida",
   "سایتِ پروژه": "Sitio del proyecto",
-  "تصویر یا فایل را اینجا رها کنید یا بچسبانید": "Suelta o pega aquí una imagen o un archivo"
+  "تصویر یا فایل را اینجا رها کنید یا بچسبانید": "Suelta o pega aquí una imagen o un archivo",
+  "Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید": "Ctrl+V para una captura, clic para elegir un archivo, o pon un enlace de vídeo (Loom, YouTube, Vimeo) en el texto"
 }

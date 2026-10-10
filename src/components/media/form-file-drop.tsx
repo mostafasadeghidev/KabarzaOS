@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FileDrop } from '@/components/media/file-drop';
+import { useT } from '@/i18n/client';
 
 /**
  * کادرِ «رها کن یا بچسبان» **داخلِ فرم** (۲.۱۹.۰) — همان کادرِ بازبینی (`FileDrop`)
@@ -21,6 +22,7 @@ export function FormFileDrop({
   multiple = true,
   imagesOnly = false,
   compact = false,
+  videoLinks = false,
   title,
   hint,
   children,
@@ -32,6 +34,11 @@ export function FormFileDrop({
   multiple?: boolean;
   imagesOnly?: boolean;
   compact?: boolean;
+  /**
+   * کنارِ فیلدِ متن: به کاربر بگو لینکِ ویدئو را هم می‌شود در متن گذاشت. متنِ
+   * تسک و کامنت لینکِ لوم/یوتیوب/ویمئو را زیرِ خودش پخش می‌کند (`RichText`).
+   */
+  videoLinks?: boolean;
   title?: string;
   hint?: string;
   /** فیلدهای متنیِ فرم — چسباندن و رهاکردن روی آن‌ها هم کار می‌کند. */
@@ -41,6 +48,7 @@ export function FormFileDrop({
   /** شمارِ فایل‌های در انتظار — مثلاً برای غیرفعال‌کردنِ دکمهٔ ارسال. */
   onCountChange?: (count: number) => void;
 }) {
+  const t = useT();
   const holderRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const countRef = useRef(onCountChange);
@@ -71,7 +79,9 @@ export function FormFileDrop({
         imagesOnly={imagesOnly}
         compact={compact}
         title={title}
-        hint={hint}
+        hint={hint ?? (videoLinks
+          ? t('Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید')
+          : undefined)}
         footer={footer}
         files={files}
         onAdd={(added) => sync(multiple ? [...files, ...added] : added.slice(0, 1))}

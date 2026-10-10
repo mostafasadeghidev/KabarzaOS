@@ -114,7 +114,7 @@ function AddTaskDialogBody({
           </Field>
 
           {/* اسکرین‌شات و فایلِ تسک — کادرِ رها/بچسبان (مثلِ بازبینی)، یا چسباندن روی توضیحات. */}
-          <FormFileDrop name="media">
+          <FormFileDrop name="media" videoLinks>
             <Field>
               <FieldLabel htmlFor="nt-desc">{t("توضیحات")}</FieldLabel>
               <Textarea id="nt-desc" name="description" rows={2} defaultValue={keep('description')} />

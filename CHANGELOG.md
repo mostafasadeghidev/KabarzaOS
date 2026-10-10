@@ -10,7 +10,7 @@ Versioning follows [SemVer](https://semver.org/).
 - The links show as a "Project site" card at the top of the project's Info tab (with copy and open buttons) and as two small chips with an icon on each project card (a globe for the main domain, a flask for the test domain).
 - A "Show links to the client" checkbox in the project form. It is off by default: clients see neither link unless it is ticked. The server empties the links for clients, so they never reach the page otherwise.
 
-- Everywhere you can add images or files to a project now uses the same drop zone as the review dialog: drop files, paste a screenshot (Ctrl+V) or click, with thumbnails and a remove button. This covers the Files tab, new and edited tasks, task notes, comments and replies, and the files step of the new-project dialog (plus the project thumbnail). The Files tab keeps its optional label field, applied to the files of that upload.
+- Everywhere you can add images or files to a project now uses the same drop zone as the review dialog: drop files, paste a screenshot (Ctrl+V) or click, with thumbnails and a remove button. This covers the Files tab, new and edited tasks, task notes, comments and replies, and the files step of the new-project dialog (plus the project thumbnail). The Files tab keeps its optional label field, applied to the files of that upload. Next to a text box (tasks, notes, comments) the zone also says a video link (Loom, YouTube, Vimeo) can be put in the text, which plays under it.
 
 ### Changed
 

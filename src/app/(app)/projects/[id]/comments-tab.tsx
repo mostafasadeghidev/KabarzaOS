@@ -171,7 +171,7 @@ function Composer({
       <input type="hidden" name="projectId" value={projectId} />
       {parentId !== null && <input type="hidden" name="parentId" value={parentId} />}
       {/* ⚠️ متن اجباری نیست: کامنتِ فقط‌اسکرین‌شات هم کامنت است (سرور هر دو خالی را رد می‌کند). */}
-      <FormFileDrop name="media" compact>
+      <FormFileDrop name="media" compact videoLinks>
         <Textarea name="body" rows={rows} placeholder={placeholder} />
       </FormFileDrop>
       <div className="flex justify-end"><SendButton label={buttonLabel} /></div>
