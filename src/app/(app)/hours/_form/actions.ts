@@ -9,6 +9,7 @@ import {
 import { ForbiddenError } from '@/domain/access/guard';
 import { FrozenProjectError } from '@/server/projects/authority';
 import { minutesFrom } from '@/domain/timelogs/timer';
+import { parseHoursTarget } from '@/domain/projects/unit-entry-name';
 
 /**
  * اکشن‌های تایمر و ثبتِ ساعت.
@@ -32,6 +33,7 @@ function message(error: unknown): string {
     if (error.required === 'timelog.not_yours') return 'فقط صاحبِ ثبت می‌تواند تغییرش دهد.';
     if (error.required === 'timelog.window_closed') return 'پنجرهٔ ویرایشِ این ثبت (دو هفته) بسته شده است.';
     if (error.required === 'timelog.minutes') return 'مدت را وارد کنید.';
+    if (error.required === 'timelog.entry') return 'این ردیفِ کارکرد مالِ شما یا مالِ این پروژه نیست.';
     return 'روی این پروژه اجازهٔ ثبتِ ساعت ندارید.';
   }
   return 'انجام نشد.';
@@ -44,15 +46,19 @@ function revalidateAll() {
   revalidatePath('/reports');
 }
 
-/** `''` در فرم یعنی ساعتِ عمومی (بدونِ پروژه) — نه «انتخاب نشده». */
-function readProjectId(raw: FormDataEntryValue | null): number | null {
-  const value = String(raw ?? '');
-  return value === '' ? null : Number(value);
+/**
+ * `''` در فرم یعنی ساعتِ عمومی (بدونِ پروژه) — نه «انتخاب نشده». `57` پروژه و
+ * `57:12` ردیفِ کارکردِ ۱۲ از پروژهٔ ۵۷ است (۲.۲۱.۰). مقدارِ خراب ساعتِ عمومی نمی‌شود:
+ * شناسهٔ نامعتبر می‌دهیم تا سرویس رد کند.
+ */
+function readTarget(raw: FormDataEntryValue | null): { projectId: number | null; unitEntryId: number | null } {
+  return parseHoursTarget(String(raw ?? '')) ?? { projectId: -1, unitEntryId: null };
 }
 
 export async function startTimerAction(_prev: HoursState, formData: FormData): Promise<HoursState> {
   try {
-    await startTimer(await requireActor(), readProjectId(formData.get('projectId')));
+    const target = readTarget(formData.get('projectId'));
+    await startTimer(await requireActor(), target.projectId, new Date(), target.unitEntryId);
   } catch (error) {
     return { error: message(error) };
   }
@@ -108,8 +114,10 @@ export async function logHoursAction(_prev: HoursState, formData: FormData): Pro
   if (minutes <= 0) return { error: 'مدت را وارد کنید.' };
 
   try {
+    const target = readTarget(formData.get('projectId'));
     await addOrMerge(await requireActor(), {
-      projectId: readProjectId(formData.get('projectId')),
+      projectId: target.projectId,
+      unitEntryId: target.unitEntryId,
       logDate: String(formData.get('logDate') ?? ''),
       minutes,
       description: String(formData.get('description') ?? ''),
@@ -125,11 +133,13 @@ export async function updateLogAction(_prev: HoursState, formData: FormData): Pr
   const minutes = minutesFrom(Number(formData.get('hours') ?? 0), Number(formData.get('minutes') ?? 0));
   if (minutes <= 0) return { error: 'مدت را وارد کنید.' };
   try {
+    const target = formData.has('projectId') ? readTarget(formData.get('projectId')) : null;
     await updateLog(await requireActor(), Number(formData.get('logId')), {
       minutes,
       description: String(formData.get('description') ?? ''),
       logDate: formData.has('logDate') ? String(formData.get('logDate') ?? '') : undefined,
-      projectId: formData.has('projectId') ? readProjectId(formData.get('projectId')) : undefined,
+      projectId: target ? target.projectId : undefined,
+      unitEntryId: target ? target.unitEntryId : undefined,
     });
   } catch (error) {
     return { error: message(error) };

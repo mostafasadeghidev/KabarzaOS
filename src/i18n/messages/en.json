@@ -3959,5 +3959,14 @@
   "مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.": "The amount of a requested or paid row can't be changed.",
   "مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند": "The project lead can set each row's amount",
   "ویرایشِ مبلغ": "Edit amount",
-  "ویرایشِ مبلغِ کارکرد": "Edit unit amount"
+  "ویرایشِ مبلغِ کارکرد": "Edit unit amount",
+  "این ردیفِ کارکرد مالِ شما یا مالِ این پروژه نیست.": "This work row isn't yours or doesn't belong to this project.",
+  "این نام در همین پروژه برای ردیفِ دیگری استفاده شده؛ نامِ دیگری بگذارید.": "This name is already used by another row in this project; pick a different one.",
+  "مثلاً CAT": "e.g. CAT",
+  "نام ذخیره شد.": "Name saved.",
+  "نامِ ردیف بیش از ۸۰ نویسه است.": "The row name is longer than 80 characters.",
+  "ویرایشِ نام": "Edit name",
+  "ویرایشِ نامِ کارکرد": "Renamed a work row",
+  "پرداختِ من": "My payment",
+  "کارکردها": "Work rows"
 }

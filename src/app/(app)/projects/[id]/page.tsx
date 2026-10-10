@@ -40,6 +40,7 @@ import { Thumb } from '@/components/thumb';
 import { CircleAlert } from 'lucide-react';
 import { PageHeader, PageShell, Panel } from '@/components/page-shell';
 import { SiteLinksBody } from '@/components/site-links';
+import { UnitEntriesSection, type UnitSectionData } from './unit-entries-section';
 import { canSeeSiteLinks } from '@/domain/projects/site-links';
 import { StatCard } from '@/components/stat-card';
 import { pageTitle } from '@/i18n/page-title';
@@ -153,9 +154,26 @@ export default async function ProjectDetailPage({
    * پرداختی، نه درخواستی. پیش از این تبِ مالی برایش ساخته می‌شد و **خالی**
    * باز می‌شد — کاربر روی تبی کلیک می‌کرد که هیچ‌چیز در آن نبود.
    */
+  /**
+   * کارکردهای پروژهٔ تعدادی (۲.۲۱.۰) در تبِ «اطلاعات» نشان داده می‌شوند، نه «مالی»؛
+   * پس داده‌شان **پیش از** تصمیمِ «تبِ مالی خالی است» جدا می‌شود.
+   */
+  const unitData: UnitSectionData | null = myMoney?.isUnitBased
+    ? {
+      projectId: myMoney.projectId,
+      seesAll: myMoney.seesAll,
+      asMember: myMoney.asMember,
+      isFrozen: myMoney.isFrozen,
+      unitManualAmount: myMoney.unitManualAmount,
+      units: myMoney.units,
+      myUnpaidUnits: myMoney.myUnpaidUnits,
+      members: myMoney.members,
+      today: myMoney.today,
+    }
+    : null;
+
   if (myMoney && canManage && !asMember) {
-    const hasPersonal = myMoney.isUnitBased
-      || Number(myMoney.agreed) > 0
+    const hasPersonal = Number(myMoney.agreed) > 0
       || myMoney.payouts.length > 0
       || myMoney.requests.length > 0;
     if (!hasPersonal) myMoney = null;
@@ -494,6 +512,8 @@ export default async function ProjectDetailPage({
                 <SiteLinksBody liveUrl={project.liveUrl} testUrl={project.testUrl} />
               </Panel>
             )}
+            {/* کارکردهای پروژهٔ تعدادی — نامِ یکتا، ساعت، مبلغ و پرداخت (۲.۲۱.۰). */}
+            {unitData && <UnitEntriesSection data={unitData} />}
             {/* ⚠️ `Panel`: دکمهٔ «مدیریتِ اعضا» در نوارِ عنوان، نه زیرِ آن (`CardHeader` grid بود و `flex-row` بی‌اثر). */}
             {/*
               ⚠️ فهرستِ تیم فقط برای مدیرِ پروژه — نسخهٔ قبلی تبِ «تیم» را فقط با

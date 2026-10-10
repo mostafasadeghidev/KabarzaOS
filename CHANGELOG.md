@@ -2,6 +2,19 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.21.0]
+
+### Added
+
+- Work rows of a unit-based project now show in the project's **Info** tab (they used to be in the Finance tab), under the title "Work rows".
+- Every work row can have a **unique name** inside its project (for example "CAT"). Names are unique regardless of letter case and extra spaces; rows without a name still work. The name can be set when adding a row and changed later (by the project lead, or by the row's owner).
+- Hours can be logged on a named work row. The hours page, the timer and the dashboard card offer "Project - Name" options (for example "Simon Zickert media - CAT"), and each row shows its total logged hours. Project-level hours and reports are unchanged; deleting a row keeps its hours.
+- Search and the command palette (Ctrl+K) find work rows as "Project - Name" and jump to the row in the Info tab. Members only find their own rows.
+
+### Changed
+
+- The Finance tab no longer lists work rows; it keeps the payment summary and requests. Its title is now "My payment".
+
 ## [2.20.0]
 
 ### Added

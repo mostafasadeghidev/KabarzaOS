@@ -2,7 +2,7 @@ import { date, integer, pgTable, text, index, check } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm';
 import { fk, pk, stamps, ts } from './_shared';
 import { users } from './access';
-import { projects } from './projects';
+import { projects, unitEntries } from './projects';
 
 /**
  * تایمرِ کار — یک ردیف برای هر کاربر.
@@ -14,6 +14,8 @@ export const workTimers = pgTable('work_timers', {
   userId: fk('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
   /** null یعنی ساعتِ **عمومی** (بدونِ پروژه)، نه «بدونِ مقدار». */
   projectId: fk('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  /** ردیفِ کارکردی که تایمر روی آن است (۲.۲۱.۰). */
+  unitEntryId: fk('unit_entry_id').references(() => unitEntries.id, { onDelete: 'set null' }),
   startedAt: ts('started_at'),
   /** پارک‌شده — بیش از ۵ ساعت، منتظرِ تأییدِ کاربر. */
   pendingMinutes: integer('pending_minutes'),

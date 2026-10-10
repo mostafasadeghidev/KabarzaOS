@@ -8,8 +8,9 @@ import { format } from '@/domain/money/money';
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
-  auditLog, currencies, paymentRequests, projectMembers, projectPayments, projects, tags, unitEntries, users, ledger,
+  auditLog, currencies, paymentRequests, projectMembers, projectPayments, projects, tags, timelogs, unitEntries, users, ledger,
 } from '@/db/schema';
+import { normalizeEntryName } from '@/domain/projects/unit-entry-name';
 import { canManageSection, type Actor } from '@/domain/access/permissions';
 import { ForbiddenError, visibleScopes } from '@/domain/access/guard';
 import {
@@ -26,7 +27,7 @@ import { canManageProject } from '@/server/projects/authority';
  */
 
 export class MemberMoneyError extends Error {
-  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen' | 'not_member' | 'not_unit_based' | 'amount_invalid' | 'amount_forbidden' | 'not_editable') {
+  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen' | 'not_member' | 'not_unit_based' | 'amount_invalid' | 'amount_forbidden' | 'not_editable' | 'name_taken' | 'name_invalid') {
     super(reason);
     this.name = 'MemberMoneyError';
   }
@@ -101,6 +102,10 @@ export async function listUnitEntries(actor: Actor, projectId: number) {
       id: unitEntries.id,
       userId: unitEntries.userId,
       userName: users.name,
+      /** نامِ یکتای ردیف (۲.۲۱.۰) — خالی = بی‌نام. */
+      name: unitEntries.name,
+      /** جمعِ ساعتِ ثبت‌شده روی همین ردیف، به دقیقه. */
+      minutes: sql<number>`coalesce((select sum(${timelogs.minutes}) from ${timelogs} where ${timelogs.unitEntryId} = ${unitEntries.id}), 0)::int`,
       entryDate: unitEntries.entryDate,
       quantity: unitEntries.quantity,
       amount: unitEntries.amount,
@@ -159,6 +164,8 @@ export async function addUnitEntry(
     projectId: number; userId: number; entryDate: string; quantity: number; note: string;
     /** مبلغِ دستی (۲.۲۰.۰) — فقط مسئولِ پروژه و فقط وقتی پروژه اجازه داده؛ خالی = نرخِ توافقی. */
     amount?: string;
+    /** نامِ یکتای ردیف (۲.۲۱.۰) — اختیاری. */
+    name?: string;
   },
 ) {
   const { canManage, isFrozen, project } = await projectContext(actor, input.projectId, { projectManager: true });
@@ -168,6 +175,8 @@ export async function addUnitEntry(
   if (!isValidQuantity(input.quantity)) throw new MemberMoneyError('quantity_invalid');
   const manual = parseManualAmount(input.amount);
   if (manual.kind === 'invalid') throw new MemberMoneyError('amount_invalid');
+  const entryName = normalizeEntryName(input.name);
+  if (!entryName.ok) throw new MemberMoneyError('name_invalid');
   /**
    * ⚠️ مبلغِ دستی پول است: فقط مسئولِ پروژه، فقط روی پروژه‌ای که تیکش را دارد.
    * عضوِ ساده با درخواستِ دستی هم نمی‌تواند برای خودش مبلغ بنویسد.
@@ -205,18 +214,64 @@ export async function addUnitEntry(
   // ارزِ کارکرد: قرارداد → پروژه → ارزِ پیش‌فرض (ستون از مهاجرتِ ۰۰۲۴ اجباری است).
   const currencyId = membership[0]?.currencyId ?? project.currencyId ?? (await rateSource()).baseCurrencyId;
 
+  // ⚠️ نامِ یکتا داخلِ پروژه، بی‌توجه به بزرگی/کوچکیِ حرف — ایندکسِ دیتابیس هم نگه می‌دارد.
+  if (entryName.name !== '' && await entryNameTaken(input.projectId, entryName.name)) {
+    throw new MemberMoneyError('name_taken');
+  }
+
   const rows = await db.insert(unitEntries).values({
     projectId: input.projectId,
     userId: targetId,
+    name: entryName.name,
     entryDate,
     quantity: String(input.quantity),
     amount: manual.kind === 'ok' ? manual.amount : unitAmount(input.quantity, rate),
     currencyId,
     note: input.note.trim().slice(0, 500),
-  }).returning({ id: unitEntries.id });
+  }).returning({ id: unitEntries.id }).catch((error: unknown) => {
+    // رقابتِ دو ثبتِ هم‌زمانِ یک نام — ایندکسِ یکتا برنده را تعیین می‌کند.
+    if ((error as { code?: string; cause?: { code?: string } })?.code === '23505'
+      || (error as { cause?: { code?: string } })?.cause?.code === '23505') {
+      throw new MemberMoneyError('name_taken');
+    }
+    throw error;
+  });
 
   await audit(actor, 'unit.add', rows[0]!.id, { ...input, userId: targetId });
   return rows[0]!.id;
+}
+
+/** آیا این نام (بی‌توجه به بزرگی/کوچکیِ حرف) در این پروژه برای ردیفِ دیگری هست؟ */
+async function entryNameTaken(projectId: number, name: string, exceptId?: number): Promise<boolean> {
+  const rows = await db.select({ id: unitEntries.id }).from(unitEntries).where(and(
+    eq(unitEntries.projectId, projectId),
+    sql`lower(${unitEntries.name}) = lower(${name})`,
+    exceptId === undefined ? sql`true` : sql`${unitEntries.id} <> ${exceptId}`,
+  )).limit(1);
+  return rows.length > 0;
+}
+
+/**
+ * عوض‌کردنِ نامِ یک ردیف (۲.۲۱.۰) — مسئولِ پروژه، یا صاحبِ ردیف برای ردیفِ خودش.
+ * نامِ خالی ردیف را بی‌نام می‌کند. ⚠️ پروژهٔ منجمد تغییر نمی‌پذیرد؛ وضعیتِ پرداخت
+ * مهم نیست چون نام مبلغ نیست.
+ */
+export async function renameUnitEntry(actor: Actor, entryId: number, rawName: string) {
+  const rows = await db.select().from(unitEntries).where(eq(unitEntries.id, entryId));
+  const row = rows[0];
+  if (!row) throw new MemberMoneyError('not_yours');
+  const { canManage, isFrozen } = await projectContext(actor, row.projectId, { projectManager: true });
+  if (!canManage && row.userId !== actor.id) throw new MemberMoneyError('not_yours');
+  if (isFrozen) throw new MemberMoneyError('frozen');
+
+  const entryName = normalizeEntryName(rawName);
+  if (!entryName.ok) throw new MemberMoneyError('name_invalid');
+  if (entryName.name !== '' && await entryNameTaken(row.projectId, entryName.name, entryId)) {
+    throw new MemberMoneyError('name_taken');
+  }
+
+  await db.update(unitEntries).set({ name: entryName.name, updatedAt: new Date() }).where(eq(unitEntries.id, entryId));
+  await audit(actor, 'unit.rename', entryId, { before: row.name, after: entryName.name });
 }
 
 /**

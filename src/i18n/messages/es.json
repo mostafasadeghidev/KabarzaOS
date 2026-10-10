@@ -3959,5 +3959,14 @@
   "مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.": "No se puede cambiar el importe de una fila solicitada o pagada.",
   "مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند": "El responsable del proyecto puede fijar el importe de cada fila",
   "ویرایشِ مبلغ": "Editar importe",
-  "ویرایشِ مبلغِ کارکرد": "Editar importe de la cantidad"
+  "ویرایشِ مبلغِ کارکرد": "Editar importe de la cantidad",
+  "این ردیفِ کارکرد مالِ شما یا مالِ این پروژه نیست.": "Esta fila de trabajo no es suya o no pertenece a este proyecto.",
+  "این نام در همین پروژه برای ردیفِ دیگری استفاده شده؛ نامِ دیگری بگذارید.": "Este nombre ya lo usa otra fila de este proyecto; elija otro.",
+  "مثلاً CAT": "p. ej. CAT",
+  "نام ذخیره شد.": "Nombre guardado.",
+  "نامِ ردیف بیش از ۸۰ نویسه است.": "El nombre de la fila supera los 80 caracteres.",
+  "ویرایشِ نام": "Editar nombre",
+  "ویرایشِ نامِ کارکرد": "Fila de trabajo renombrada",
+  "پرداختِ من": "Mi pago",
+  "کارکردها": "Filas de trabajo"
 }

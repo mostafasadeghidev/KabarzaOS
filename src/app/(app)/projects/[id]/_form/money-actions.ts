@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
   addUnitEntry, cancelRequest, createRequest, deleteUnitEntry,
-  MemberMoneyError, requestForUnit, setUnitEntryAmount,
+  MemberMoneyError, renameUnitEntry, requestForUnit, setUnitEntryAmount,
 } from '@/server/finance/member-service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { REQUEST_MESSAGES } from '@/domain/finance/member-money';
@@ -28,6 +28,8 @@ function message(error: unknown): string {
     if (error.reason === 'frozen') return 'پروژه بایگانی شده و تغییر نمی‌پذیرد.';
     if (error.reason === 'amount_invalid') return 'مبلغ معتبر نیست؛ فقط عددِ مثبت با حداکثر چهار رقمِ اعشار.';
     if (error.reason === 'amount_forbidden') return 'تعیینِ مبلغِ ردیف برای این پروژه فعال نیست یا اجازه‌اش را ندارید.';
+    if (error.reason === 'name_taken') return 'این نام در همین پروژه برای ردیفِ دیگری استفاده شده؛ نامِ دیگری بگذارید.';
+    if (error.reason === 'name_invalid') return 'نامِ ردیف بیش از ۸۰ نویسه است.';
     if (error.reason === 'not_editable') return 'مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.';
     return REQUEST_MESSAGES[error.reason] ?? 'انجام نشد.';
   }
@@ -47,12 +49,26 @@ export async function addUnitAction(_prev: MoneyState, formData: FormData): Prom
       note: String(formData.get('note') ?? ''),
       // خالی = از نرخِ توافقی پیروی کن (۲.۲۰.۰)؛ سرویس اجازه‌اش را گارد می‌کند.
       amount: String(formData.get('amount') ?? ''),
+      // نامِ یکتای ردیف (۲.۲۱.۰) — اختیاری.
+      name: String(formData.get('name') ?? ''),
     });
   } catch (error) {
     return { error: message(error) };
   }
   revalidatePath(`/projects/${projectId}`);
   return { message: 'کارکرد ثبت شد.' };
+}
+
+/** عوض‌کردنِ نامِ یک ردیف — مسئولِ پروژه یا صاحبِ ردیف (۲.۲۱.۰). */
+export async function renameUnitAction(entryId: number, projectId: number, name: string): Promise<MoneyState> {
+  try {
+    await renameUnitEntry(await requireActor(), entryId, name);
+  } catch (error) {
+    return { error: message(error) };
+  }
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath('/hours');
+  return { message: 'نام ذخیره شد.' };
 }
 
 /** عوض‌کردنِ مبلغِ یک ردیفِ پرداخت‌نشده — فقط مسئولِ پروژه (۲.۲۰.۰). */

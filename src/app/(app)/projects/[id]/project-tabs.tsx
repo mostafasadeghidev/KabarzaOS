@@ -318,7 +318,7 @@ export function ProjectTabs({
               {data.canSeePrice && (
                 <>
                   <Separator />
-                  <SectionHeader title={tr(data.myMoney.isUnitBased ? 'کارکرد و پرداختِ من' : 'پرداختِ من')} />
+                  <SectionHeader title={tr('پرداختِ من')} />
                 </>
               )}
               <MyMoneyTab data={data.myMoney} />

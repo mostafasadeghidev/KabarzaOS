@@ -2,8 +2,9 @@ import { and, desc, eq, gte, inArray, isNull, sql, ilike, lte, or, SQL } from 'd
 import { assertNotFrozen } from '@/server/projects/authority';
 import { db } from '@/db/client';
 import {
-  auditLog, projectMembers, projects, timelogs, users, workTimers, tags, userOffices,
+  auditLog, projectMembers, projects, timelogs, unitEntries, users, workTimers, tags, userOffices,
 } from '@/db/schema';
+import { entryLabel } from '@/domain/projects/unit-entry-name';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { ForbiddenError, visibleScopes } from '@/domain/access/guard';
 import {
@@ -139,13 +140,62 @@ export async function loggableProjects(actor: Actor) {
     .orderBy(projects.title);
 }
 
+/**
+ * ردیف‌های کارکردِ نام‌دارِ **خودِ کاربر** روی پروژه‌های قابلِ ثبت (۲.۲۱.۰) — برای
+ * گزینه‌های «نامِ پروژه - نامِ ردیف» در ثبتِ ساعت. ردیفِ دیگران پیشنهاد نمی‌شود:
+ * ساعت را کسی می‌زند که کار را انجام داده.
+ */
+export async function loggableUnitEntries(actor: Actor) {
+  const projectsOk = await loggableProjects(actor);
+  if (projectsOk.length === 0) return [];
+  const rows = await db
+    .select({ id: unitEntries.id, projectId: unitEntries.projectId, name: unitEntries.name, projectTitle: projects.title })
+    .from(unitEntries)
+    .innerJoin(projects, eq(projects.id, unitEntries.projectId))
+    .where(and(
+      eq(unitEntries.userId, actor.id),
+      sql`${unitEntries.name} <> ''`,
+      inArray(unitEntries.projectId, projectsOk.map((p) => p.id)),
+    ))
+    .orderBy(projects.title, unitEntries.name);
+  return rows.map((r) => ({ id: r.id, projectId: r.projectId, name: r.name, label: entryLabel(r.projectTitle, r.name) }));
+}
+
+/**
+ * گزینه‌های انتخابگرِ «پروژه» در ثبتِ ساعت و تایمر (۲.۲۱.۰): هر پروژه، و زیرِ آن
+ * ردیف‌های نام‌دارِ خودِ کاربر با برچسبِ «پروژه - نامِ ردیف». `unitEntryId` خالی
+ * یعنی ساعتِ کلِ پروژه. مقدارِ فرم `57` یا `57:12` است (`parseHoursTarget`).
+ */
+export async function loggableTargets(actor: Actor) {
+  const [projectRows, entries] = await Promise.all([loggableProjects(actor), loggableUnitEntries(actor)]);
+  return projectRows.flatMap((p) => [
+    { id: p.id, title: p.title, unitEntryId: undefined as number | undefined },
+    ...entries.filter((e) => e.projectId === p.id).map((e) => ({ id: p.id, title: e.label, unitEntryId: e.id as number | undefined })),
+  ]);
+}
+
+/**
+ * ردیفی که ساعت رویش ثبت می‌شود را می‌سنجد (۲.۲۱.۰): باید مالِ همین پروژه و
+ * **مالِ خودِ کاربر** باشد. `null` یعنی ساعتِ کلِ پروژه.
+ */
+async function resolveEntry(actor: Actor, projectId: number | null, unitEntryId: number | null | undefined): Promise<number | null> {
+  if (unitEntryId === null || unitEntryId === undefined) return null;
+  if (projectId === null) throw new ForbiddenError('timelog.entry');
+  const rows = await db.select({ id: unitEntries.id, projectId: unitEntries.projectId, userId: unitEntries.userId })
+    .from(unitEntries).where(eq(unitEntries.id, unitEntryId));
+  const entry = rows[0];
+  if (!entry || entry.projectId !== projectId || entry.userId !== actor.id) throw new ForbiddenError('timelog.entry');
+  return entry.id;
+}
+
 /* ------------------------------------------------------------------ *
  * تایمر
  * ------------------------------------------------------------------ */
 
 export interface TimerState {
-  running: (RunningTimer & { projectTitle: string | null; minutes: number }) | null;
-  pending: (PendingTimer & { projectTitle: string | null }) | null;
+  /** ⚠️ `projectTitle` همان برچسبِ نمایشی است: «پروژه» یا «پروژه - نامِ ردیف». */
+  running: (RunningTimer & { projectTitle: string | null; minutes: number; unitEntryId: number | null }) | null;
+  pending: (PendingTimer & { projectTitle: string | null; unitEntryId: number | null }) | null;
 }
 
 /** وضعیتِ فعلیِ تایمرِ کاربر — برای نوارِ بالای صفحه. */
@@ -156,22 +206,27 @@ export async function timerState(actor: Actor, now = new Date()): Promise<TimerS
       startedAt: workTimers.startedAt,
       pendingMinutes: workTimers.pendingMinutes,
       pendingLogDate: workTimers.pendingLogDate,
+      unitEntryId: workTimers.unitEntryId,
       projectTitle: projects.title,
+      entryName: unitEntries.name,
     })
     .from(workTimers)
     .leftJoin(projects, eq(projects.id, workTimers.projectId))
+    .leftJoin(unitEntries, eq(unitEntries.id, workTimers.unitEntryId))
     .where(eq(workTimers.userId, actor.id));
 
   const row = rows[0];
   if (!row) return { running: null, pending: null };
+  const label = row.projectTitle === null ? null : entryLabel(row.projectTitle, row.entryName);
 
   if (row.startedAt) {
     return {
       running: {
         projectId: row.projectId,
         startedAt: row.startedAt,
-        projectTitle: row.projectTitle,
+        projectTitle: label,
         minutes: elapsedMinutes(row.startedAt, now),
+        unitEntryId: row.unitEntryId,
       },
       pending: null,
     };
@@ -183,16 +238,18 @@ export async function timerState(actor: Actor, now = new Date()): Promise<TimerS
       projectId: row.projectId,
       minutes: row.pendingMinutes!,
       logDate: row.pendingLogDate!,
-      projectTitle: row.projectTitle,
+      projectTitle: label,
+      unitEntryId: row.unitEntryId,
     },
   };
 }
 
 /** شروعِ تایمر — اگر یکی در حالِ اجراست، کاری نمی‌کند (مثلِ نسخهٔ قبلی). */
-export async function startTimer(actor: Actor, projectId: number | null, now = new Date()) {
+export async function startTimer(actor: Actor, projectId: number | null, now = new Date(), unitEntryId: number | null = null) {
   if (!await canLogTime(actor, projectId)) throw new ForbiddenError('timelog.forbidden');
   // ⚠️ تایمر هم روی پروژهٔ منجمد شروع نمی‌شود (`handle_timer_start`).
   if (projectId) await assertNotFrozen(projectId, actor);
+  const entryId = await resolveEntry(actor, projectId, unitEntryId);
 
   const state = await timerState(actor, now);
   if (state.running) throw new TimerError('already_running');
@@ -200,10 +257,10 @@ export async function startTimer(actor: Actor, projectId: number | null, now = n
   if (state.pending) throw new TimerError('already_running');
 
   await db.insert(workTimers)
-    .values({ userId: actor.id, projectId, startedAt: now })
+    .values({ userId: actor.id, projectId, unitEntryId: entryId, startedAt: now })
     .onConflictDoUpdate({
       target: workTimers.userId,
-      set: { projectId, startedAt: now, pendingMinutes: null, pendingLogDate: null },
+      set: { projectId, unitEntryId: entryId, startedAt: now, pendingMinutes: null, pendingLogDate: null },
     });
 }
 
@@ -234,6 +291,7 @@ export async function stopTimer(actor: Actor, description: string, now = new Dat
   if (outcome.minutes > 0) {
     await addOrMerge(actor, {
       projectId: outcome.projectId,
+      unitEntryId: state.running.unitEntryId,
       logDate: outcome.logDate,
       minutes: outcome.minutes,
       description,
@@ -251,6 +309,7 @@ export async function confirmPending(actor: Actor, minutes: number, now = new Da
   if (minutes > 0) {
     await addOrMerge(actor, {
       projectId: state.pending.projectId,
+      unitEntryId: state.pending.unitEntryId,
       logDate: state.pending.logDate,
       minutes,
       description: '',
@@ -282,6 +341,8 @@ export async function discardPending(actor: Actor) {
 
 export interface LogInput {
   projectId: number | null;
+  /** ردیفِ کارکرد (۲.۲۱.۰) — نیامده/null = ساعتِ کلِ پروژه. */
+  unitEntryId?: number | null;
   logDate: string;
   minutes: number;
   description: string;
@@ -290,13 +351,14 @@ export interface LogInput {
 /**
  * افزودن یا **ادغام** با ثبتِ همان روز و همان پروژه.
  *
- * ⚠️ یک روز + یک پروژه = یک ردیف. وگرنه «چقدر امروز روی پروژهٔ X» به چند
- * ردیفِ تکه‌تکه تبدیل می‌شود و گزارش خواندنی نمی‌ماند.
+ * ⚠️ یک روز + یک پروژه (+ یک ردیفِ کارکرد) = یک ردیف. وگرنه «چقدر امروز روی
+ * پروژهٔ X» به چند ردیفِ تکه‌تکه تبدیل می‌شود و گزارش خواندنی نمی‌ماند.
  */
 export async function addOrMerge(actor: Actor, input: LogInput): Promise<number> {
   if (!await canLogTime(actor, input.projectId)) throw new ForbiddenError('timelog.forbidden');
   // ⚠️ پروژهٔ منجمد ساعتِ تازه نمی‌پذیرد (`handle_log_time` → `block_if_frozen`).
   if (input.projectId) await assertNotFrozen(input.projectId, actor);
+  const entryId = await resolveEntry(actor, input.projectId, input.unitEntryId);
 
   const existing = await db
     .select({ id: timelogs.id, minutes: timelogs.minutes, description: timelogs.description })
@@ -304,6 +366,7 @@ export async function addOrMerge(actor: Actor, input: LogInput): Promise<number>
     .where(and(
       eq(timelogs.userId, actor.id),
       input.projectId === null ? isNull(timelogs.projectId) : eq(timelogs.projectId, input.projectId),
+      entryId === null ? isNull(timelogs.unitEntryId) : eq(timelogs.unitEntryId, entryId),
       eq(timelogs.logDate, input.logDate),
     ))
     .orderBy(timelogs.id)
@@ -313,6 +376,7 @@ export async function addOrMerge(actor: Actor, input: LogInput): Promise<number>
   if (!row) {
     const inserted = await db.insert(timelogs).values({
       projectId: input.projectId,
+      unitEntryId: entryId,
       userId: actor.id,
       logDate: input.logDate,
       minutes: input.minutes,
@@ -351,13 +415,18 @@ export async function myLogs(actor: Actor, filter: HoursListFilter = {}, now = n
   const conds: SQL[] = [eq(timelogs.userId, actor.id)];
   if (filter.from) conds.push(gte(timelogs.logDate, filter.from));
   if (filter.to) conds.push(lte(timelogs.logDate, filter.to));
-  if (filter.project) conds.push(ilike(projects.title, `%${filter.project.replace(/[%_\\]/g, '')}%`));
+  if (filter.project) {
+    // نامِ پروژه یا نامِ ردیفِ کارکرد (۲.۲۱.۰).
+    const like = `%${filter.project.replace(/[%_\\]/g, '')}%`;
+    conds.push(or(ilike(projects.title, like), ilike(unitEntries.name, like))!);
+  }
   const where = and(...conds);
 
   const [summary] = await db
     .select({ n: sql<number>`count(*)::int`, minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int` })
     .from(timelogs)
     .leftJoin(projects, eq(projects.id, timelogs.projectId))
+    .leftJoin(unitEntries, eq(unitEntries.id, timelogs.unitEntryId))
     .where(where);
   const total = summary?.n ?? 0;
   const { page, pages } = clampPage(filter.page ?? 1, total, perPage);
@@ -366,7 +435,9 @@ export async function myLogs(actor: Actor, filter: HoursListFilter = {}, now = n
     .select({
       id: timelogs.id,
       projectId: timelogs.projectId,
+      unitEntryId: timelogs.unitEntryId,
       projectTitle: projects.title,
+      entryName: unitEntries.name,
       logDate: timelogs.logDate,
       minutes: timelogs.minutes,
       description: timelogs.description,
@@ -374,13 +445,19 @@ export async function myLogs(actor: Actor, filter: HoursListFilter = {}, now = n
     })
     .from(timelogs)
     .leftJoin(projects, eq(projects.id, timelogs.projectId))
+    .leftJoin(unitEntries, eq(unitEntries.id, timelogs.unitEntryId))
     .where(where)
     .orderBy(desc(timelogs.logDate), desc(timelogs.id))
     .limit(perPage)
     .offset((page - 1) * perPage);
 
   return {
-    rows: rows.map((r) => ({ ...r, editable: isEditable(r.createdAt, now) })),
+    // ⚠️ `projectTitle` همان برچسبِ نمایشی است: «پروژه» یا «پروژه - نامِ ردیف» (۲.۲۱.۰).
+    rows: rows.map(({ entryName, ...r }) => ({
+      ...r,
+      projectTitle: r.projectTitle === null ? null : entryLabel(r.projectTitle, entryName),
+      editable: isEditable(r.createdAt, now),
+    })),
     total,
     page,
     pages,
@@ -423,7 +500,7 @@ export async function myTotals(actor: Actor, now = new Date(), weekStart = 0) {
 export async function updateLog(
   actor: Actor,
   logId: number,
-  input: { minutes: number; description: string; logDate?: string; projectId?: number | null },
+  input: { minutes: number; description: string; logDate?: string; projectId?: number | null; unitEntryId?: number | null },
   now = new Date(),
 ) {
   const rows = await db.select().from(timelogs).where(eq(timelogs.id, logId));
@@ -444,12 +521,19 @@ export async function updateLog(
     if (!await canLogTime(actor, input.projectId)) throw new ForbiddenError('timelog.forbidden');
   }
   const nextDate = input.logDate && /^\d{4}-\d{2}-\d{2}$/.test(input.logDate) ? input.logDate : row.logDate;
+  // ردیفِ کارکرد (۲.۲۱.۰): با عوض‌شدنِ پروژه، ردیفِ پروژهٔ قبلی دیگر معنا ندارد.
+  const projectChanged = nextProject !== row.projectId;
+  const nextEntry = await resolveEntry(
+    actor, nextProject,
+    input.unitEntryId !== undefined ? input.unitEntryId : (projectChanged ? null : row.unitEntryId),
+  );
 
   await db.update(timelogs).set({
     minutes: input.minutes,
     description: input.description.trim(),
     logDate: nextDate,
     projectId: nextProject,
+    unitEntryId: nextEntry,
     updatedAt: now,
   }).where(eq(timelogs.id, logId));
 

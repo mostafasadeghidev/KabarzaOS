@@ -1,6 +1,7 @@
 import { and, eq, ilike, isNull, inArray, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { accounts, projects, userRoles, users } from '@/db/schema';
+import { accounts, projects, unitEntries, userRoles, users } from '@/db/schema';
+import { entryLabel } from '@/domain/projects/unit-entry-name';
 import { can, canViewSection, type Actor } from '@/domain/access/permissions';
 import { visibleScopes } from '@/domain/access/guard';
 import { parseTaskRef } from '@/domain/projects/task-ref';
@@ -19,7 +20,7 @@ import { findTaskByRef } from '@/server/projects/task-numbers';
 export const MIN_QUERY_LENGTH = 3;
 
 export interface SearchHit {
-  kind: 'project' | 'member' | 'client' | 'account' | 'task';
+  kind: 'project' | 'member' | 'client' | 'account' | 'task' | 'unit';
   id: number;
   label: string;
   href: string;
@@ -59,6 +60,30 @@ export async function search(actor: Actor, rawQuery: string): Promise<SearchHit[
         }))),
     );
   }
+
+  /**
+   * ردیف‌های کارکردِ نام‌دار (۲.۲۱.۰) — «Simon Zickert media - CAT». مدیرِ سراسریِ
+   * پروژه‌ها همه را می‌بیند؛ بقیه فقط ردیف‌های **خودشان** را (مبلغ و ساعتِ کارکرد
+   * حقوقِ عضو است، پس نامِ ردیفِ دیگران هم از راهِ جستجو لو نمی‌رود).
+   * پیوند به همان ردیف در تبِ «اطلاعات» می‌رود.
+   */
+  tasks.push(
+    db.select({ id: unitEntries.id, projectId: unitEntries.projectId, name: unitEntries.name, title: projects.title })
+      .from(unitEntries)
+      .innerJoin(projects, eq(projects.id, unitEntries.projectId))
+      .where(and(
+        isNull(projects.deletedAt),
+        inArray(projects.scope, visibleScopes(actor)),
+        sql`${unitEntries.name} <> ''`,
+        or(ilike(unitEntries.name, pattern), ilike(projects.title, pattern)),
+        canViewSection(actor, 'projects') ? sql`true` : eq(unitEntries.userId, actor.id),
+      ))
+      .orderBy(projects.title, unitEntries.name)
+      .limit(6)
+      .then((rows) => rows.map((r): SearchHit => ({
+        kind: 'unit', id: r.id, label: entryLabel(r.title, r.name), href: `/projects/${r.projectId}#unit-${r.id}`,
+      }))),
+  );
 
   if (canViewSection(actor, 'members')) {
     tasks.push(

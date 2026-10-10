@@ -1,4 +1,4 @@
-import { bigint, boolean, index, integer, text, date, pgTable, jsonb, check, uniqueIndex, primaryKey } from 'drizzle-orm/pg-core';
+import { bigint, boolean, index, integer, text, date, pgTable, jsonb, check, uniqueIndex, primaryKey, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { pk, fk, money, ts, stamps, softDelete, scope } from './_shared';
 import { currencies, offices, tags } from './base';
@@ -266,6 +266,8 @@ export const timelogs = pgTable('timelogs', {
   logDate: date('log_date', { mode: 'string' }).notNull(),
   minutes: integer('minutes').notNull().default(0),
   description: text('description').notNull().default(''),
+  /** ردیفِ کارکردی که این ساعت رویش ثبت شده (۲.۲۱.۰) — خالی = ساعتِ کلِ پروژه. */
+  unitEntryId: fk('unit_entry_id').references((): AnyPgColumn => unitEntries.id, { onDelete: 'set null' }),
   ...stamps,
 }, (t) => [
   index('timelogs_project_user_ix').on(t.projectId, t.userId, t.logDate),
@@ -282,6 +284,8 @@ export const unitEntries = pgTable('unit_entries', {
   entryDate: date('entry_date', { mode: 'string' }).notNull(),
   quantity: money('quantity').notNull().default('0'),
   note: text('note').notNull().default(''),
+  /** نامِ یکتای ردیف داخلِ پروژه (۲.۲۱.۰) — مثلاً «CAT»؛ خالی = بی‌نام. */
+  name: text('name').notNull().default(''),
   /** R-TEAM-13 — ارزش با نرخِ همان زمان منجمد می‌شود. */
   amount: money('amount').notNull().default('0'),
   currencyId: fk('currency_id').notNull().references(() => currencies.id),
@@ -292,6 +296,7 @@ export const unitEntries = pgTable('unit_entries', {
 }, (t) => [
   check('unit_entries_status_ck', sql`${t.status} in ('unpaid','requested','paid')`),
   index('unit_entries_project_user_ix').on(t.projectId, t.userId),
+  uniqueIndex('unit_entries_project_name_ux').on(t.projectId, sql`lower(${t.name})`).where(sql`${t.name} <> ''`),
   index('unit_entries_status_ix').on(t.status),
 ]);
 

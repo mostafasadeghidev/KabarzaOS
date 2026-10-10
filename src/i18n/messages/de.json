@@ -3959,5 +3959,14 @@
   "مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.": "Der Betrag einer angeforderten oder bezahlten Zeile kann nicht geändert werden.",
   "مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند": "Projektverantwortliche können den Betrag jeder Zeile selbst festlegen",
   "ویرایشِ مبلغ": "Betrag bearbeiten",
-  "ویرایشِ مبلغِ کارکرد": "Mengenbetrag bearbeiten"
+  "ویرایشِ مبلغِ کارکرد": "Mengenbetrag bearbeiten",
+  "این ردیفِ کارکرد مالِ شما یا مالِ این پروژه نیست.": "Diese Arbeitszeile gehört nicht Ihnen oder nicht zu diesem Projekt.",
+  "این نام در همین پروژه برای ردیفِ دیگری استفاده شده؛ نامِ دیگری بگذارید.": "Dieser Name wird in diesem Projekt bereits von einer anderen Zeile verwendet; wählen Sie einen anderen.",
+  "مثلاً CAT": "z. B. CAT",
+  "نام ذخیره شد.": "Name gespeichert.",
+  "نامِ ردیف بیش از ۸۰ نویسه است.": "Der Zeilenname ist länger als 80 Zeichen.",
+  "ویرایشِ نام": "Namen bearbeiten",
+  "ویرایشِ نامِ کارکرد": "Arbeitszeile umbenannt",
+  "پرداختِ من": "Meine Zahlung",
+  "کارکردها": "Arbeitszeilen"
 }

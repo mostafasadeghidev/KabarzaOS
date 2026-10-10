@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Clock } from 'lucide-react';
 import type { Actor } from '@/domain/access/permissions';
-import { canLogGeneral, loggableProjects, timerState } from '@/server/timelogs/service';
+import { canLogGeneral, loggableTargets, timerState } from '@/server/timelogs/service';
 import { toDateString } from '@/domain/timelogs/timer';
 import { Panel } from '@/components/page-shell';
 import { ManualLogForm, StartTimerForm } from '../hours/hours-view';
@@ -17,7 +17,7 @@ import { t } from '@/i18n/server';
  */
 export async function DashboardTimeLog({ actor }: { actor: Actor }) {
   const now = new Date();
-  const [projects, state] = await Promise.all([loggableProjects(actor), timerState(actor, now)]);
+  const [projects, state] = await Promise.all([loggableTargets(actor), timerState(actor, now)]);
   const general = canLogGeneral(actor);
   if (!general && projects.length === 0) return null;
   if (state.running || state.pending) return null;
