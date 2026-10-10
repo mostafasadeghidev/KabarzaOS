@@ -4,7 +4,7 @@ import { UserAvatar } from '@/components/user-avatar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowUpRight, ListChecks, Building2, FolderKanban, Landmark, Search, User, type LucideIcon,
+  ArrowUpRight, ListChecks, Building2, FolderKanban, Landmark, Search, User, type LucideIcon, Package,
 } from 'lucide-react';
 import { searchAction } from '@/app/(app)/_actions/search';
 import type { SearchHit } from '@/server/search/service';
@@ -22,11 +22,11 @@ import { Spinner } from '@/components/ui/spinner';
 const MIN_QUERY = 3;
 
 const KIND_ICON: Record<SearchHit['kind'], LucideIcon> = {
-  project: FolderKanban, member: User, client: Building2, account: Landmark, task: ListChecks,
+  project: FolderKanban, member: User, client: Building2, account: Landmark, task: ListChecks, unit: Package,
 };
 
 const KIND_LABEL: Record<SearchHit['kind'], string> = {
-  project: 'پروژه', member: 'عضو', client: 'کارفرما', account: 'حساب', task: 'تسک',
+  project: 'پروژه', member: 'عضو', client: 'کارفرما', account: 'حساب', task: 'تسک', unit: 'کارکرد',
 };
 
 interface Item {

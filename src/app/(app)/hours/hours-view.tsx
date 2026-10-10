@@ -34,6 +34,8 @@ import { Pager } from '@/components/ui/pager';
 export interface LogRow {
   id: number;
   projectId: number | null;
+  /** ردیفِ کارکردِ این ساعت (۲.۲۱.۰) — خالی = ساعتِ کلِ پروژه. */
+  unitEntryId: number | null;
   projectTitle: string | null;
   logDate: string;
   minutes: number;
@@ -44,7 +46,8 @@ export interface LogRow {
 export interface HoursData {
   running: { projectTitle: string | null; minutes: number } | null;
   pending: { projectTitle: string | null; minutes: number; logDate: string } | null;
-  projects: Array<{ id: number; title: string }>;
+  /** پروژه‌ها و ردیف‌های کارکردِ نام‌دارِ کاربر؛ `unitEntryId` یعنی «پروژه - نامِ ردیف». */
+  projects: Array<{ id: number; title: string; unitEntryId?: number }>;
   logs: LogRow[];
   /** صفحه‌بندیِ ۱۵تایی با حفظِ فیلتر (پورتِ افزونه). */
   pager: { page: number; pages: number; total: number };
@@ -87,7 +90,11 @@ function ProjectSelect({
     <SearchableSelect id={id} name="projectId" containerClassName="w-full" defaultValue={defaultValue} required={!allowGeneral}>
       {/* ⚠️ ساعتِ عمومی یک گزینهٔ واقعی است، نه «انتخاب نشده» — ولی فقط برای کسی که مجازش است. */}
       {allowGeneral && <NativeSelectOption value="">{t("بدون پروژه (کارِ عمومی)")}</NativeSelectOption>}
-      {projects.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.title}</NativeSelectOption>)}
+      {projects.map((p) => {
+        // مقدارِ ردیفِ کارکرد «پروژه:ردیف» است؛ پروژه فقط شناسه (`parseHoursTarget`).
+        const value = p.unitEntryId === undefined ? String(p.id) : `${p.id}:${p.unitEntryId}`;
+        return <NativeSelectOption key={value} value={value}>{p.title}</NativeSelectOption>;
+      })}
     </SearchableSelect>
   );
 }
@@ -419,7 +426,7 @@ export function HoursView({ data }: { data: HoursData }) {
                 projects={data.projects}
                 id="e-project"
                 allowGeneral={data.canLogGeneral}
-                defaultValue={editing.projectId === null ? '' : String(editing.projectId)}
+                defaultValue={editing.projectId === null ? '' : (editing.unitEntryId === null ? String(editing.projectId) : `${editing.projectId}:${editing.unitEntryId}`)}
               />
             </Field>
             <Field>

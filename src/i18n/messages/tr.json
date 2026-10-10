@@ -3959,5 +3959,14 @@
   "مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.": "Talep edilmiş veya ödenmiş bir satırın tutarı değiştirilemez.",
   "مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند": "Proje sorumlusu her satırın tutarını kendisi belirleyebilir",
   "ویرایشِ مبلغ": "Tutarı düzenle",
-  "ویرایشِ مبلغِ کارکرد": "Adet tutarını düzenle"
+  "ویرایشِ مبلغِ کارکرد": "Adet tutarını düzenle",
+  "این ردیفِ کارکرد مالِ شما یا مالِ این پروژه نیست.": "Bu iş satırı size ait değil veya bu projeye ait değil.",
+  "این نام در همین پروژه برای ردیفِ دیگری استفاده شده؛ نامِ دیگری بگذارید.": "Bu ad bu projedeki başka bir satırda kullanılıyor; başka bir ad seçin.",
+  "مثلاً CAT": "örn. CAT",
+  "نام ذخیره شد.": "Ad kaydedildi.",
+  "نامِ ردیف بیش از ۸۰ نویسه است.": "Satır adı 80 karakterden uzun.",
+  "ویرایشِ نام": "Adı düzenle",
+  "ویرایشِ نامِ کارکرد": "İş satırı yeniden adlandırıldı",
+  "پرداختِ من": "Ödemem",
+  "کارکردها": "İş satırları"
 }

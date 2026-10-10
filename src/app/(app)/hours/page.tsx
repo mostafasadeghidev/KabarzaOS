@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import {
-  canLogGeneral, canUseTimesheet, loggableProjects, loggedProjectTitles, myLogs, myTotals, timerState,
+  canLogGeneral, canUseTimesheet, loggableTargets, loggedProjectTitles, myLogs, myTotals, timerState,
 } from '@/server/timelogs/service';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -53,7 +53,7 @@ export default async function HoursPage({
   const { weekStart } = await getSystemConfig();
   const [state, projects, logs, totals, projectTitles] = await Promise.all([
     timerState(actor, now),
-    loggableProjects(actor),
+    loggableTargets(actor),
     myLogs(actor, { from: filter.from, to: filter.to, project: filter.project, page: filter.page }, now),
     myTotals(actor, now, weekStart),
     loggedProjectTitles(actor),

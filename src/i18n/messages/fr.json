@@ -3959,5 +3959,14 @@
   "مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.": "Le montant d'une ligne demandée ou payée ne peut pas être modifié.",
   "مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند": "Le responsable du projet peut fixer le montant de chaque ligne",
   "ویرایشِ مبلغ": "Modifier le montant",
-  "ویرایشِ مبلغِ کارکرد": "Modifier le montant de l'unité"
+  "ویرایشِ مبلغِ کارکرد": "Modifier le montant de l'unité",
+  "این ردیفِ کارکرد مالِ شما یا مالِ این پروژه نیست.": "Cette ligne de travail n'est pas à vous ou n'appartient pas à ce projet.",
+  "این نام در همین پروژه برای ردیفِ دیگری استفاده شده؛ نامِ دیگری بگذارید.": "Ce nom est déjà utilisé par une autre ligne de ce projet ; choisissez-en un autre.",
+  "مثلاً CAT": "p. ex. CAT",
+  "نام ذخیره شد.": "Nom enregistré.",
+  "نامِ ردیف بیش از ۸۰ نویسه است.": "Le nom de la ligne dépasse 80 caractères.",
+  "ویرایشِ نام": "Modifier le nom",
+  "ویرایشِ نامِ کارکرد": "Ligne de travail renommée",
+  "پرداختِ من": "Mon paiement",
+  "کارکردها": "Lignes de travail"
 }

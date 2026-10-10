@@ -1,34 +1,28 @@
 'use client';
 
-import { UserName, avatarFor } from '@/components/user-avatar';
 import { useActionState, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Check, Package, Pencil, Trash2, X } from 'lucide-react';
-import {
-  addUnitAction, cancelRequestAction, deleteUnitAction, requestPaymentAction,
-  requestUnitAction, setUnitAmountAction, type MoneyState,
-} from './_form/money-actions';
+import { cancelRequestAction, requestPaymentAction, type MoneyState } from './_form/money-actions';
 import { format } from '@/domain/money/money';
-import { REQUEST_STATUS_LABELS, UNIT_STATUS_LABELS } from '@/domain/finance/member-money';
+import { REQUEST_STATUS_LABELS } from '@/domain/finance/member-money';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDate } from '@/i18n/datetime';
-import { NativeSelectOption } from '@/components/ui/native-select';
-import { SearchableSelect } from '@/components/ui/searchable-select';
-import { DatePicker } from '@/components/ui/date-picker';
 import { Section } from '@/components/page-shell';
-import { IconButton } from '@/components/ui/icon-button';
 
 export interface UnitRow {
   id: number;
   userId: number;
   userName: string | null;
+  /** نامِ یکتای ردیف (۲.۲۱.۰) — خالی = بی‌نام. */
+  name: string;
+  /** جمعِ ساعتِ ثبت‌شده روی ردیف، به دقیقه. */
+  minutes: number;
   entryDate: string;
   quantity: string;
   amount: string;
@@ -120,203 +114,16 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
   const tr = useT();
   const t = useT();
   const tz = useTimeZone();
-  const [unitState, addUnit] = useActionState(addUnitAction, {} as MoneyState);
-  useActionToast(unitState);
   const [reqState, requestPayment] = useActionState(requestPaymentAction, {} as MoneyState);
   useActionToast(reqState);
   const [pending, startTransition] = useTransition();
   const [rowError, setRowError] = useState<string | null>(null);
-  /** ردیفی که مبلغش در حالِ ویرایش است (۲.۲۰.۰). */
-  const [editing, setEditing] = useState<{ id: number; value: string } | null>(null);
-  /** فقط مسئولِ پروژه و فقط روی پروژه‌ای که مبلغِ دستی را روشن دارد. */
-  const manualAmount = data.unitManualAmount && data.seesAll;
 
   const run = (fn: () => Promise<MoneyState>) =>
     startTransition(async () => setRowError((await fn()).error ?? null));
 
   return (
     <div className="grid gap-4">
-      {data.isUnitBased && (
-      <Section
-        icon={<Package />}
-        title={tr("کارکردِ تعدادی")}
-        description={manualAmount
-          ? tr("تعدادِ کارِ هر تاریخ را ثبت کنید. مبلغ را می‌توانید خودتان بزنید؛ اگر خالی بماند، تعداد × نرخِ توافقیِ عضو حساب می‌شود.")
-          : tr("تعدادِ کارِ هر تاریخ را ثبت کنید؛ مبلغ = تعداد × نرخِ هر واحدِ شما (خودکار) و حسابدار هنگامِ پرداخت می‌تواند اصلاحش کند.")}
-      >
-
-        {!data.isFrozen && (
-          <form action={addUnit} className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3">
-            <input type="hidden" name="projectId" value={data.projectId} />
-
-            {/* مدیر برای هر عضوی ثبت می‌کند؛ عضو فقط برای خودش. */}
-            {data.seesAll && (
-              <Field>
-                <FieldLabel htmlFor="u-user">{t("عضو")}</FieldLabel>
-                <SearchableSelect id="u-user" name="userId" containerClassName="w-44" required renderMedia={avatarFor(data.members)}>
-                  {data.members.map((m) => <NativeSelectOption key={m.id} value={m.id}>{m.name}</NativeSelectOption>)}
-                </SearchableSelect>
-              </Field>
-            )}
-
-            <Field>
-              <FieldLabel htmlFor="u-date">{t("تاریخ")}</FieldLabel>
-              <DatePicker id="u-date" name="entryDate" className="w-40" defaultValue={data.today} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="u-qty">{t("تعداد")}</FieldLabel>
-              <Input id="u-qty" name="quantity" type="number" min={1} className="num w-24" required />
-            </Field>
-            {/* مبلغِ دستی — فقط مسئولِ پروژه؛ خالی = از نرخِ توافقی پیروی کن. */}
-            {manualAmount && (
-              <Field>
-                <FieldLabel htmlFor="u-amount">{t("مبلغ")}</FieldLabel>
-                <Input
-                  id="u-amount" name="amount" inputMode="decimal" dir="ltr"
-                  className="num w-32" placeholder={t("طبق نرخِ توافقی")}
-                />
-              </Field>
-            )}
-            <Field className="flex-1">
-              <FieldLabel htmlFor="u-note">{t("توضیح")}</FieldLabel>
-              <Input id="u-note" name="note" placeholder={t("اختیاری")} />
-            </Field>
-            <Submit>{t("ثبت")}</Submit>
-          </form>
-        )}
-
-        {data.units.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("هنوز ردیفی ثبت نشده.")}</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead numeric>{t("تاریخ")}</TableHead>
-                {data.seesAll && <TableHead>{t("عضو")}</TableHead>}
-                <TableHead numeric>{t("تعداد")}</TableHead>
-                <TableHead numeric>{t("مبلغ")}</TableHead>
-                <TableHead>{t("وضعیت")}</TableHead>
-                <TableActionsHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.units.map((u) => {
-                const paid = u.status === 'paid';
-                return (
-                  <TableRow key={u.id}>
-                    <TableNumericCell>{u.entryDate}</TableNumericCell>
-                    {data.seesAll && <TableCell><UserName userId={u.userId} name={u.userName ?? `#${u.userId}`} /></TableCell>}
-                    <TableNumericCell>{Number(u.quantity)}</TableNumericCell>
-                    <TableNumericCell>
-                      {editing?.id === u.id ? (
-                        /* ویرایشِ درجا — خالی = برگشت به نرخِ توافقی. */
-                        <span className="inline-flex items-center gap-1">
-                          <Input
-                            autoFocus dir="ltr" inputMode="decimal" className="num h-8 w-28"
-                            value={editing.value} placeholder={t("طبق نرخِ توافقی")}
-                            onChange={(e) => setEditing({ id: u.id, value: e.target.value })}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Escape') setEditing(null);
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                run(async () => {
-                                  const result = await setUnitAmountAction(u.id, data.projectId, editing.value);
-                                  if (!result.error) setEditing(null);
-                                  return result;
-                                });
-                              }
-                            }}
-                          />
-                          <IconButton
-                            variant="ghost" className="size-8" label={t("ذخیره")} disabled={pending}
-                            onClick={() => run(async () => {
-                              const result = await setUnitAmountAction(u.id, data.projectId, editing.value);
-                              if (!result.error) setEditing(null);
-                              return result;
-                            })}
-                          >
-                            <Check className="size-3.5" />
-                          </IconButton>
-                          <IconButton variant="ghost" className="size-8" label={t("انصراف")} onClick={() => setEditing(null)}>
-                            <X className="size-3.5" />
-                          </IconButton>
-                        </span>
-                      ) : (
-                        <>{format(u.amount)} {u.currencyCode}</>
-                      )}
-                    </TableNumericCell>
-                    <TableCell>
-                      <Badge variant={paid ? 'success' : 'outline'}>
-                        {t(UNIT_STATUS_LABELS[u.status] ?? u.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableActionsCell>
-                      {/* ⚠️ ردیفِ پرداخت‌شده هیچ اقدامی ندارد — سندِ انجام‌شده است. */}
-                      {!paid && !data.isFrozen && (
-                        <>
-                          {u.isMine && data.asMember && (
-                            u.openRequest ? (
-                              u.openRequest.status === 'pending' ? (
-                                <Button
-                                  size="sm" variant="ghost" disabled={pending}
-                                  onClick={() => run(() => cancelRequestAction(u.openRequest!.id, data.projectId))}
-                                >
-                                  {tr("لغو درخواست")}
-                                </Button>
-                              ) : (
-                                <Badge variant="secondary">{t("در انتظار پرداخت")}</Badge>
-                              )
-                            ) : (
-                              <Button
-                                size="sm" variant="outline" disabled={pending}
-                                onClick={() => run(() => requestUnitAction(u.id, data.projectId))}
-                              >
-                                {tr("درخواست پرداخت")}
-                              </Button>
-                            )
-                          )}
-                          {/* ویرایشِ مبلغ — فقط ردیفِ پرداخت‌نشده و بی‌درخواستِ باز. */}
-                          {manualAmount && u.status === 'unpaid' && !u.openRequest && editing?.id !== u.id && (
-                            <IconButton
-                              variant="ghost" className="size-8 text-muted-foreground" label={t("ویرایشِ مبلغ")}
-                              onClick={() => setEditing({ id: u.id, value: String(Number(u.amount)) })}
-                            >
-                              <Pencil className="size-3.5" />
-                            </IconButton>
-                          )}
-                          {(data.seesAll || u.isMine) && (
-                            <IconButton
-                              variant="ghost"
-                              className="size-8 text-muted-foreground hover:text-destructive"
-                              label={t("حذف")}
-                              disabled={pending}
-                              onClick={() => run(() => deleteUnitAction(u.id, data.projectId))}
-                            >
-                              <Trash2 className="size-3.5" />
-                            </IconButton>
-                          )}
-                        </>
-                      )}
-                    </TableActionsCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-
-        {data.asMember && (
-          <p className="flex flex-wrap gap-4 text-sm">
-            <span><b>{t("جمعِ پرداخت‌نشده:")}</b> <span className="num">{format(data.myUnpaidUnits)}</span></span>
-            {/* پورتِ جمعِ «پرداخت‌شده» ِ ردیف‌های تعدادی. */}
-            <span><b>{t("جمعِ پرداخت‌شده:")}</b> <span className="num">{format(
-              data.units.filter((u) => u.isMine && u.status === 'paid').reduce((sum, u) => sum + Number(u.amount), 0).toFixed(4),
-            )}</span></span>
-          </p>
-        )}
-        {rowError && <p className="text-xs text-destructive">{rowError}</p>}
-      </Section>
-      )}
 
       {/*
         ── پولِ من روی این پروژه ──
