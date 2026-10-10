@@ -3,6 +3,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { linkProvider, linkTitle, providerName, type LinkProvider } from '@/domain/files/link-preview';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * آیکون و کارتِ پیوندِ بیرونی (۲.۳.۰) — در توضیحِ پروژه و «منابع و لینک‌ها».
@@ -39,11 +40,11 @@ export function LinkCard({ href, label }: { href: string; label: string | null }
   const service = providerName(href);
   const sub = label && label.toLowerCase() !== title.toLowerCase() ? label : service;
   return (
+    <Hint label={href}>
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer nofollow"
-      title={href}
       className="flex min-w-0 items-center gap-3 rounded-lg border bg-card px-3 py-2 transition-colors hover:bg-muted/60"
     >
       <LinkIcon href={href} />
@@ -55,5 +56,6 @@ export function LinkCard({ href, label }: { href: string; label: string | null }
       </span>
       <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
     </a>
+    </Hint>
   );
 }

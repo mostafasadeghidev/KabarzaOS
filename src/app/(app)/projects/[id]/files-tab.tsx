@@ -26,6 +26,7 @@ import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { Section } from '@/components/page-shell';
 import { FileInput } from '@/components/ui/file-input';
+import { Hint } from '@/components/ui/tooltip';
 
 export interface FileRow {
   id: number;
@@ -187,9 +188,11 @@ export function FilesTab({
                         </AttachmentAction>
                       </AttachmentActions>
                     )}
-                    <AttachmentTrigger asChild>
-                      <a href={f.href} target="_blank" rel="noopener noreferrer nofollow" title={f.href} aria-label={title} />
-                    </AttachmentTrigger>
+                    <Hint label={f.href}>
+                      <AttachmentTrigger asChild>
+                        <a href={f.href} target="_blank" rel="noopener noreferrer nofollow" aria-label={title} />
+                      </AttachmentTrigger>
+                    </Hint>
                   </Attachment>
                 </li>
               );

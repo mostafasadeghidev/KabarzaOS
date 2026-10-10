@@ -10,6 +10,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useT } from '@/i18n/client';
+import { Hint } from '@/components/ui/tooltip';
 
 export interface StatusOption {
   id: number;
@@ -80,14 +81,15 @@ export function StatusPicker({
   return (
     <div className="grid gap-0.5">
       <DropdownMenu>
-        <DropdownMenuTrigger
-          className="flex items-center gap-1 disabled:opacity-60"
-          title={t('تغییر وضعیت')}
-          disabled={pending}
-        >
-          <ProjectStatus name={name} group={group} color={color} />
-          <ChevronDown className="size-3 text-muted-foreground" />
-        </DropdownMenuTrigger>
+        <Hint label={t('تغییر وضعیت')}>
+          <DropdownMenuTrigger
+            className="flex items-center gap-1 disabled:opacity-60"
+            disabled={pending}
+          >
+            <ProjectStatus name={name} group={group} color={color} />
+            <ChevronDown className="size-3 text-muted-foreground" />
+          </DropdownMenuTrigger>
+        </Hint>
 
         <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
           <DropdownMenuItem onSelect={() => pick(null)}>

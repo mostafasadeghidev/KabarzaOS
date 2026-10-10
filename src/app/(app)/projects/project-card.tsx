@@ -234,32 +234,34 @@ export function ProjectCard({
 
       {/* ۶ · دو شمارندهٔ ریویو — تسک و کامنت. */}
       <div className="flex gap-4 pt-3 text-xs">
-        <Link
-          href={`/projects/${project.id}?tab=tasks&view=review`}
-          className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-          title={t("تسک‌های نیازمند ریویو")}
-        >
-          <ListChecks className="size-3.5" />
-          {tr("تسک‌ها")}
-          <b className="num">{project.reviewCount}</b>
-        </Link>
-        <Link
-          href={`/projects/${project.id}?tab=comments`}
-          className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-          title={t("کامنت‌های نیازمند بررسی")}
-        >
-          <MessageSquare className="size-3.5" />
-          {tr("کامنت")}
-          <b className="num">{project.commentReviewCount}</b>
-        </Link>
+        <Hint label={t("تسک‌های نیازمند ریویو")}>
+          <Link
+            href={`/projects/${project.id}?tab=tasks&view=review`}
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          >
+            <ListChecks className="size-3.5" />
+            {tr("تسک‌ها")}
+            <b className="num">{project.reviewCount}</b>
+          </Link>
+        </Hint>
+        <Hint label={t("کامنت‌های نیازمند بررسی")}>
+          <Link
+            href={`/projects/${project.id}?tab=comments`}
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          >
+            <MessageSquare className="size-3.5" />
+            {tr("کامنت")}
+            <b className="num">{project.commentReviewCount}</b>
+          </Link>
+        </Hint>
       </div>
 
       {/* ۷ · پیشرفتِ تسک‌ها. */}
       <div className="pt-3">
+        <Hint label={t("مشاهدهٔ تسک‌ها")}>
         <Link
           href={`/projects/${project.id}?tab=tasks`}
           className="grid gap-1"
-          title={t("مشاهدهٔ تسک‌ها")}
         >
           {/* عدد روی نوار می‌نشیند، بیرونِ `Progress`: نوار در راست‌به‌چپ آینه می‌شود و متن نباید. */}
           <div className="relative">
@@ -272,6 +274,7 @@ export function ProjectCard({
             {tr('{done}/{total} تسک', { done: project.doneTaskCount, total: project.totalTaskCount })}
           </small>
         </Link>
+        </Hint>
       </div>
 
       {/*

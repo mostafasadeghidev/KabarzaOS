@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useT } from '@/i18n/client';
 import { humanSize, MAX_MEDIA, MAX_MEDIA_TOTAL } from '@/domain/files/upload';
 import { cn } from '@/lib/utils';
+import { Hint } from '@/components/ui/tooltip';
 
 /** همان فهرستِ سفیدِ پیوستِ پروژه (`ALLOWED_TYPES.attachment`) — انتخابگرِ سیستم را محدود می‌کند، گارد نیست. */
 const ACCEPT = 'image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip';
@@ -144,7 +145,7 @@ export function MediaPicker({
               ) : (
                 <div className="flex h-16 w-32 flex-col justify-center gap-0.5 rounded-md border border-dashed bg-muted/50 px-2">
                   {f.type.startsWith('video/') ? <Film className="size-4 text-muted-foreground" /> : <FileText className="size-4 text-muted-foreground" />}
-                  <span className="truncate text-[11px]" title={f.name}>{f.name}</span>
+                  <Hint label={f.name}><span className="truncate text-[11px]">{f.name}</span></Hint>
                   <span className="num text-[10px] text-muted-foreground">{humanSize(f.size, t)}</span>
                 </div>
               )}

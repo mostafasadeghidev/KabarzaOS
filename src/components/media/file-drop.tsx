@@ -8,6 +8,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useT } from '@/i18n/client';
 import { humanSize, MAX_MEDIA, MAX_MEDIA_TOTAL } from '@/domain/files/upload';
 import { cn } from '@/lib/utils';
+import { Hint } from '@/components/ui/tooltip';
 
 const NO_FILES: File[] = [];
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp';
@@ -128,7 +129,7 @@ export function FileDrop({
           ) : (
             <div className={cn('flex flex-col justify-center gap-0.5 rounded-md border bg-muted/50 px-2', variant === 'zone' ? 'h-28 w-36' : 'h-16 w-32')}>
               {f.type.startsWith('video/') ? <Film className="size-4 text-muted-foreground" /> : <FileText className="size-4 text-muted-foreground" />}
-              <span className="truncate text-[11px]" title={f.name}>{f.name}</span>
+              <Hint label={f.name}><span className="truncate text-[11px]">{f.name}</span></Hint>
               <span className="num text-[10px] text-muted-foreground">{humanSize(f.size, t)}</span>
             </div>
           )}

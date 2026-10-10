@@ -4,6 +4,7 @@ import { VideoFrame } from './video-frame';
 import { LinkCard } from './link-card';
 import { extractLinkCards, linkTitle, providerName } from '@/domain/files/link-preview';
 import { splitTaskRefs } from '@/domain/projects/task-ref';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * متنِ کاربر با پیوندهای قابلِ کلیک — و ویدئوی لوم/یوتیوب/ویمئو که داخلِ متن
@@ -59,17 +60,17 @@ export function RichText({
             })}
           </span>
         ) : (
-          <a
-            key={i}
-            href={part.href}
-            target="_blank"
-            rel="noopener noreferrer nofollow"
-            dir="ltr"
-            title={linkCards ? part.href : undefined}
-            className="break-all text-primary underline-offset-4 hover:underline"
-          >
-            {linkCards ? `${providerName(part.href)}: ${linkTitle(part.href)}` : part.text}
-          </a>
+          <Hint key={i} label={linkCards ? part.href : undefined}>
+            <a
+              href={part.href}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              dir="ltr"
+              className="break-all text-primary underline-offset-4 hover:underline"
+            >
+              {linkCards ? `${providerName(part.href)}: ${linkTitle(part.href)}` : part.text}
+            </a>
+          </Hint>
         )))}
       </p>
       )}

@@ -37,7 +37,6 @@ export function MemberRemoveButton({
         className="size-8 text-muted-foreground hover:text-destructive"
         disabled={pending}
         label={t('حذف از پروژه')}
-        title={t('حذف از پروژه')}
         onClick={async () => {
           const ok = await confirm({
             title: t('حذفِ عضو از پروژه'),

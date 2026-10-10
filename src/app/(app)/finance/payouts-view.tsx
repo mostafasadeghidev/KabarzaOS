@@ -44,6 +44,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DatePicker } from '@/components/ui/date-picker';
 import { SearchInput } from '@/components/ui/search-input';
 import { useSearchParams } from 'next/navigation';
+import { Hint } from '@/components/ui/tooltip';
 
 export interface RequestRow {
   id: number;
@@ -424,13 +425,14 @@ export function PayoutsView({
                             می‌شد و دکمهٔ «رد» در ۱۲۸۰px بیرونِ جدول (اسکرولِ افقی) می‌افتاد.
                           */}
                           {(r.status === 'approved' || (isOwner && r.status === 'pending')) && (
-                            <Button
-                              size="sm" variant="outline" disabled={pending} onClick={() => setPayTarget(r)}
-                              title={tr("ثبت پرداخت در حسابداری")}
-                            >
-                              <Banknote className="size-3.5" />
-                              {tr("پرداخت")}
-                            </Button>
+                            <Hint label={tr("ثبت پرداخت در حسابداری")}>
+                              <Button
+                                size="sm" variant="outline" disabled={pending} onClick={() => setPayTarget(r)}
+                              >
+                                <Banknote className="size-3.5" />
+                                {tr("پرداخت")}
+                              </Button>
+                            </Hint>
                           )}
                           {isOwner && (r.status === 'pending' || r.status === 'approved') && (
                             <Button
@@ -623,8 +625,8 @@ export function PayoutsView({
               {eurMissing > 0 && ` (${tr('{n} مورد بی‌نرخ', { n: eurMissing })})`}
             </span>
             {vendorSummary.map((v) => (
+              <Hint key={v.key} label={tr('فیلتر بر اساسِ طرف‌حساب')}>
               <Button
-                key={v.key}
                 type="button"
                 variant={v.vendorId !== null && expenseVendors.includes(v.vendorId) ? 'secondary' : 'outline'}
                 size="xs"
@@ -636,10 +638,10 @@ export function PayoutsView({
                 }}
                 aria-pressed={v.vendorId !== null && expenseVendors.includes(v.vendorId)}
                 className="rounded-full font-normal"
-                title={tr('فیلتر بر اساسِ طرف‌حساب')}
               >
                 {v.vendor}: <span className="num">{format(v.total)} {v.code}</span>
               </Button>
+              </Hint>
             ))}
           </div>
         )}
@@ -696,11 +698,11 @@ export function PayoutsView({
                       <TableNumericCell>{r.nextDueDate}</TableNumericCell>
                       {canManage && (
                         <TableActionsCell>
+                          <Hint label={r.accountId === null ? tr('بدونِ حساب فقط سررسید جلو می‌رود') : undefined}>
                           <Button
                             size="sm"
                             variant="outline"
                             disabled={pending}
-                            title={r.accountId === null ? tr('بدونِ حساب فقط سررسید جلو می‌رود') : undefined}
                             onClick={async () => {
                               // پورتِ `pay()`: بدونِ حساب هیچ ردیفی نوشته نمی‌شود، فقط نوبت می‌گذرد.
                               if (r.accountId === null && !(await confirm({
@@ -713,6 +715,7 @@ export function PayoutsView({
                             <Banknote className="size-3.5" />
                             {tr("ثبت پرداخت")}
                           </Button>
+                          </Hint>
                           <IconButton
                             variant="ghost"
                             className="size-8"

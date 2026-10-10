@@ -43,6 +43,7 @@ import { SiteLinksBody } from '@/components/site-links';
 import { canSeeSiteLinks } from '@/domain/projects/site-links';
 import { StatCard } from '@/components/stat-card';
 import { pageTitle } from '@/i18n/page-title';
+import { Hint } from '@/components/ui/tooltip';
 
 export const generateMetadata = pageTitle('پروژه‌ها');
 
@@ -244,13 +245,14 @@ export default async function ProjectDetailPage({
             ⚠️ کارفرما شمارهٔ تسک نمی‌بیند، پس کد هم برایش نیست.
           */}
           {!clientOnly && (
-            <span
-              title={t('کدِ پروژه — تسک‌ها بیرون از پروژه با این کد نوشته می‌شوند (مثلاً {example}).', { example: `${projectCodeOf(project)}-12` })}
-              dir="ltr"
-              className="num inline-flex h-8 items-center rounded-md border bg-muted/50 px-2 font-mono text-xs text-muted-foreground"
-            >
-              {projectCodeOf(project)}
-            </span>
+            <Hint label={t('کدِ پروژه — تسک‌ها بیرون از پروژه با این کد نوشته می‌شوند (مثلاً {example}).', { example: `${projectCodeOf(project)}-12` })}>
+              <span
+                dir="ltr"
+                className="num inline-flex h-8 items-center rounded-md border bg-muted/50 px-2 font-mono text-xs text-muted-foreground"
+              >
+                {projectCodeOf(project)}
+              </span>
+            </Hint>
           )}
           {formOptions && (
           <ProjectDialog

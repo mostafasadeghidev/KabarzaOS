@@ -10,6 +10,10 @@ Versioning follows [SemVer](https://semver.org/).
 - The links show as a "Project site" card at the top of the project's Info tab (with copy and open buttons) and as two small chips with an icon on each project card (a globe for the main domain, a flask for the test domain).
 - A "Show links to the client" checkbox in the project form. It is off by default: clients see neither link unless it is ticked. The server empties the links for clients, so they never reach the page otherwise.
 
+### Changed
+
+- Every remaining browser-default tooltip (the plain `title` hover text) now uses the app's own tooltip, so all hints look and behave the same: project card counters and progress link, status pickers, project code chip, task and review icons, user avatars and avatar groups, file names, link cards, availability cells, payout buttons and badges. A test now fails if a native `title` tooltip is added again.
+
 ## [2.18.2]
 
 ### Fixed
