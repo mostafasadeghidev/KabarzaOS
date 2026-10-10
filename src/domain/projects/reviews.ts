@@ -22,15 +22,18 @@ export interface ReviewViewer {
 
 export interface ReviewAudience {
   createdBy: number;
-  /** نقش‌های مخاطب؛ تهی = کلِ تیمِ پروژه. */
+  /** نقش‌های مخاطب؛ همراهِ `userIds` تهی = کلِ تیمِ پروژه. */
   roleTagIds: readonly number[];
+  /** اشخاصِ مخاطب (۲.۲۲.۰)؛ نیامده = هیچ. */
+  userIds?: readonly number[];
   clientVisible: boolean;
 }
 
 /**
  * چه کسی بازبینی را می‌بیند:
  *  ۱. مدیرِ پروژه و سازندهٔ بازبینی — همیشه.
- *  ۲. عضو — اگر بازبینی برای کلِ تیم است، یا یکی از نقش‌هایش در مخاطب است.
+ *  ۲. عضو — اگر بازبینی برای کلِ تیم است (نه نقشی، نه شخصی)، یا یکی از نقش‌هایش
+ *     در مخاطب است، یا **خودش** در مخاطب است (۲.۲۲.۰).
  *  ۳. کارفرما — فقط اگر «برای کارفرما نمایش داده شود» روشن است.
  *
  * ⚠️ کسی که هم عضو است هم کارفرما، از هر دو در می‌تواند وارد شود: نقشِ
@@ -39,9 +42,11 @@ export interface ReviewAudience {
 export function canSeeReview(viewer: ReviewViewer, review: ReviewAudience): boolean {
   if (viewer.manages || review.createdBy === viewer.userId) return true;
   if (viewer.isMember) {
-    if (review.roleTagIds.length === 0) return true;
+    const people = review.userIds ?? [];
+    if (review.roleTagIds.length === 0 && people.length === 0) return true;
     const mine = new Set(viewer.roleTagIds);
     if (review.roleTagIds.some((r) => mine.has(r))) return true;
+    if (people.includes(viewer.userId)) return true;
   }
   return viewer.isClient && review.clientVisible;
 }

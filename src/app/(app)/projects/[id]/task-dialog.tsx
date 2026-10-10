@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { ArrowLeft, Clapperboard, EyeOff, Lock, Pencil, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Clapperboard, EyeOff, Lock, Pencil, Share2, Trash2, Package } from 'lucide-react';
 import { formatTimestamp } from '@/domain/files/video';
 import {
   addTaskNoteAction, deleteTaskAction, loadTaskAction, referTaskAction, updateTaskAction,
@@ -242,6 +242,9 @@ function TaskDialogBody({
                   </Link>
                 )}
                 {task.area && <span>{tr('بخش: {area}', { area: task.area })}</span>}
+                {task.unitEntryName && (
+                  <span className="inline-flex items-center gap-1"><Package className="size-3.5" />{task.unitEntryName}</span>
+                )}
                 {task.clientHidden && (
                   <span className="inline-flex items-center gap-1"><EyeOff className="size-3.5" />{tr('پنهان از کارفرما')}</span>
                 )}
@@ -472,6 +475,16 @@ function TaskDialogBody({
                     <FieldLabel htmlFor="t-area">{t("بخش")}</FieldLabel>
                     <Input id="t-area" name="area" defaultValue={task.area} placeholder={t("مثلاً هدر، فوتر، صفحهٔ تماس")} maxLength={120} />
                   </Field>
+                  {/* ردیفِ کارکرد (۲.۲۲.۰) — فقط در پروژهٔ تعدادی که ردیفِ نام‌دار دارد. */}
+                  {(options.unitEntries?.length ?? 0) > 0 && (
+                    <Field>
+                      <FieldLabel htmlFor="t-unit">{t("ردیفِ کارکرد")}</FieldLabel>
+                      <NativeSelect id="t-unit" name="unitEntryId" containerClassName="w-full" defaultValue={task.unitEntryId ? String(task.unitEntryId) : ''}>
+                        <NativeSelectOption value="">{t("— هیچ‌کدام —")}</NativeSelectOption>
+                        {options.unitEntries!.map((u) => <NativeSelectOption key={u.id} value={u.id}>{u.name}</NativeSelectOption>)}
+                      </NativeSelect>
+                    </Field>
+                  )}
                   {/* زمانِ ویدئو فقط برای موردِ بازبینی. */}
                   {task.reviewId && (
                     <Field>

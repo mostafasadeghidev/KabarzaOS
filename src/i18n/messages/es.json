@@ -3968,5 +3968,14 @@
   "ویرایشِ نام": "Editar nombre",
   "ویرایشِ نامِ کارکرد": "Fila de trabajo renombrada",
   "پرداختِ من": "Mi pago",
-  "کارکردها": "Filas de trabajo"
+  "کارکردها": "Filas de trabajo",
+  "اشخاص (اختیاری)": "Personas (opcional)",
+  "تغییرِ وضعیتِ کارکرد": "Estado de una fila de trabajo cambiado",
+  "خالی یعنی همهٔ اعضای پروژه می‌بینند. با انتخابِ نقش یا شخص فقط همان‌ها (و مدیران) می‌بینند.": "Vacío significa que lo ven todos los miembros del proyecto. Elegir roles o personas lo limita a ellos (y a los responsables).",
+  "ردیفِ کارکرد": "Fila de trabajo",
+  "فقط دارندگانِ این نقش‌ها، اشخاصِ انتخاب‌شده و مدیرانِ پروژه می‌بینند.": "Solo lo ven quienes tienen estos roles, las personas elegidas y los responsables del proyecto.",
+  "مخاطب باید از اعضای همین پروژه باشد.": "El público debe ser miembro de este proyecto.",
+  "وضعیت ذخیره شد.": "Estado guardado.",
+  "وضعیتِ انتخاب‌شده معتبر نیست.": "El estado elegido no es válido.",
+  "وضعیتِ کار": "Estado del trabajo"
 }

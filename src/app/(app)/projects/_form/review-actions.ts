@@ -32,6 +32,7 @@ function message(error: unknown, fallback: string): string {
   if (error instanceof FrozenProjectError) return FROZEN;
   if (error instanceof ForbiddenError) {
     if (error.required === 'review.title') return 'عنوانِ بازبینی الزامی است.';
+    if (error.required === 'review.users') return 'مخاطب باید از اعضای همین پروژه باشد.';
     if (error.required === 'link.invalid') return 'نشانی معتبر نیست؛ فقط http و https پذیرفته می‌شوند.';
     return 'برای این کار دسترسی ندارید.';
   }
@@ -50,6 +51,8 @@ function reviewInput(formData: FormData): ReviewInput {
     source: (REVIEW_SOURCES as readonly string[]).includes(source) ? (source as ReviewSource) : null,
     notes: String(formData.get('notes') ?? ''),
     roleTagIds: ids(formData, 'roleTagIds'),
+    // مخاطبِ شخصی (۲.۲۲.۰) — با نقش‌ها جمع می‌شود.
+    userIds: ids(formData, 'userIds'),
     clientVisible: formData.get('clientVisible') !== null,
   };
 }

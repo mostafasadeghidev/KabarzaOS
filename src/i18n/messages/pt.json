@@ -3968,5 +3968,14 @@
   "ویرایشِ نام": "Editar nome",
   "ویرایشِ نامِ کارکرد": "Linha de trabalho renomeada",
   "پرداختِ من": "Meu pagamento",
-  "کارکردها": "Linhas de trabalho"
+  "کارکردها": "Linhas de trabalho",
+  "اشخاص (اختیاری)": "Pessoas (opcional)",
+  "تغییرِ وضعیتِ کارکرد": "Status de uma linha de trabalho alterado",
+  "خالی یعنی همهٔ اعضای پروژه می‌بینند. با انتخابِ نقش یا شخص فقط همان‌ها (و مدیران) می‌بینند.": "Vazio significa que todos os membros do projeto veem. Escolher funções ou pessoas limita a eles (e aos gestores).",
+  "ردیفِ کارکرد": "Linha de trabalho",
+  "فقط دارندگانِ این نقش‌ها، اشخاصِ انتخاب‌شده و مدیرانِ پروژه می‌بینند.": "Apenas quem tem essas funções, as pessoas escolhidas e os gestores do projeto veem.",
+  "مخاطب باید از اعضای همین پروژه باشد.": "O público deve ser membro deste projeto.",
+  "وضعیت ذخیره شد.": "Status salvo.",
+  "وضعیتِ انتخاب‌شده معتبر نیست.": "O status escolhido não é válido.",
+  "وضعیتِ کار": "Status do trabalho"
 }

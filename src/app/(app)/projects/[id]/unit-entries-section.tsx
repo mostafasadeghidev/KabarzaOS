@@ -7,7 +7,7 @@ import { Check, Clock, Package, Pencil, TextCursorInput, Trash2, X } from 'lucid
 import { UserName, avatarFor } from '@/components/user-avatar';
 import {
   addUnitAction, cancelRequestAction, deleteUnitAction, renameUnitAction,
-  requestUnitAction, setUnitAmountAction, type MoneyState,
+  requestUnitAction, setUnitAmountAction, setUnitStatusAction, type MoneyState,
 } from './_form/money-actions';
 import type { UnitRow } from './my-money-tab';
 import { format } from '@/domain/money/money';
@@ -26,6 +26,8 @@ import { useT } from '@/i18n/client';
 import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { NativeSelect } from '@/components/ui/native-select';
+import { ProjectStatus } from '../project-status';
 import { Section } from '@/components/page-shell';
 import { IconButton } from '@/components/ui/icon-button';
 
@@ -40,6 +42,8 @@ export interface UnitSectionData {
   myUnpaidUnits: string;
   members: Array<{ id: number; name: string }>;
   today: string;
+  /** وضعیت‌های کار — همان وضعیت‌های پروژه (۲.۲۲.۰). */
+  statuses: Array<{ id: number; name: string; group: string | null; color: string | null }>;
 }
 
 /** دقیقه به «ساعت:دقیقه». */
@@ -105,6 +109,18 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
             <FieldLabel htmlFor="u-name">{t("نام")}</FieldLabel>
             <Input id="u-name" name="name" maxLength={ENTRY_NAME_MAX} className="w-40" placeholder={t("مثلاً CAT")} />
           </Field>
+          {/* وضعیتِ کار (۲.۲۲.۰) — پیش‌فرض «شروع نشده»؛ روی وضعیتِ پروژه اثری ندارد. */}
+          {data.statuses.length > 0 && (
+            <Field>
+              <FieldLabel htmlFor="u-status">{t("وضعیت")}</FieldLabel>
+              <NativeSelect
+                id="u-status" name="workStatusTagId" containerClassName="w-40"
+                defaultValue={String(data.statuses.find((s) => s.group === 'not_started')?.id ?? '')}
+              >
+                {data.statuses.map((s) => <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>)}
+              </NativeSelect>
+            </Field>
+          )}
           <Field>
             <FieldLabel htmlFor="u-date">{t("تاریخ")}</FieldLabel>
             <DatePicker id="u-date" name="entryDate" className="w-40" defaultValue={data.today} />
@@ -142,8 +158,9 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
               {data.seesAll && <TableHead>{t("عضو")}</TableHead>}
               <TableHead numeric>{t("تعداد")}</TableHead>
               <TableHead numeric>{t("ساعت")}</TableHead>
+              <TableHead>{t("وضعیتِ کار")}</TableHead>
               <TableHead numeric>{t("مبلغ")}</TableHead>
-              <TableHead>{t("وضعیت")}</TableHead>
+              <TableHead>{t("پرداخت")}</TableHead>
               <TableActionsHead />
             </TableRow>
           </TableHeader>
@@ -205,6 +222,24 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                   {data.seesAll && <TableCell><UserName userId={u.userId} name={u.userName ?? `#${u.userId}`} /></TableCell>}
                   <TableNumericCell>{Number(u.quantity)}</TableNumericCell>
                   <TableNumericCell>{u.minutes > 0 ? hoursLabel(u.minutes) : '—'}</TableNumericCell>
+                  <TableCell>
+                    {/* وضعیتِ کار — مسئول یا صاحبِ ردیف عوضش می‌کند (۲.۲۲.۰). */}
+                    {canRename && data.statuses.length > 0 ? (
+                      <NativeSelect
+                        aria-label={t("وضعیتِ کار")} containerClassName="w-36" className="h-8"
+                        value={u.workStatusTagId === null ? '' : String(u.workStatusTagId)} disabled={pending}
+                        onChange={(e) => {
+                          const next = e.target.value === '' ? null : Number(e.target.value);
+                          run(() => setUnitStatusAction(u.id, data.projectId, next));
+                        }}
+                      >
+                        <NativeSelectOption value="">{t("— بدونِ وضعیت —")}</NativeSelectOption>
+                        {data.statuses.map((s) => <NativeSelectOption key={s.id} value={s.id}>{s.name}</NativeSelectOption>)}
+                      </NativeSelect>
+                    ) : (
+                      <ProjectStatus name={u.workStatusName} group={u.workStatusGroup} color={u.workStatusColor} />
+                    )}
+                  </TableCell>
                   <TableNumericCell>
                     {editing?.id === u.id ? (
                       /* ویرایشِ درجا — خالی = برگشت به نرخِ توافقی. */

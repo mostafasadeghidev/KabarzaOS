@@ -3968,5 +3968,14 @@
   "ویرایشِ نام": "Modifier le nom",
   "ویرایشِ نامِ کارکرد": "Ligne de travail renommée",
   "پرداختِ من": "Mon paiement",
-  "کارکردها": "Lignes de travail"
+  "کارکردها": "Lignes de travail",
+  "اشخاص (اختیاری)": "Personnes (facultatif)",
+  "تغییرِ وضعیتِ کارکرد": "Statut d'une ligne de travail modifié",
+  "خالی یعنی همهٔ اعضای پروژه می‌بینند. با انتخابِ نقش یا شخص فقط همان‌ها (و مدیران) می‌بینند.": "Vide signifie que tous les membres du projet le voient. Choisir des rôles ou des personnes le limite à eux (et aux responsables).",
+  "ردیفِ کارکرد": "Ligne de travail",
+  "فقط دارندگانِ این نقش‌ها، اشخاصِ انتخاب‌شده و مدیرانِ پروژه می‌بینند.": "Seuls les titulaires de ces rôles, les personnes choisies et les responsables du projet le voient.",
+  "مخاطب باید از اعضای همین پروژه باشد.": "Le public doit être membre de ce projet.",
+  "وضعیت ذخیره شد.": "Statut enregistré.",
+  "وضعیتِ انتخاب‌شده معتبر نیست.": "Le statut choisi n'est pas valide.",
+  "وضعیتِ کار": "Statut du travail"
 }

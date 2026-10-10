@@ -152,10 +152,14 @@ export async function loggableUnitEntries(actor: Actor) {
     .select({ id: unitEntries.id, projectId: unitEntries.projectId, name: unitEntries.name, projectTitle: projects.title })
     .from(unitEntries)
     .innerJoin(projects, eq(projects.id, unitEntries.projectId))
+    .leftJoin(tags, eq(tags.id, unitEntries.workStatusTagId))
     .where(and(
       eq(unitEntries.userId, actor.id),
       sql`${unitEntries.name} <> ''`,
       inArray(unitEntries.projectId, projectsOk.map((p) => p.id)),
+      // ⚠️ ردیفِ تمام‌شده/لغو/متوقف مثلِ پروژهٔ بسته از گزینه‌ها بیرون است (۲.۲۲.۰).
+      sql`coalesce(${tags.isClosed}, false) = false`,
+      sql`coalesce(${tags.statusGroup}, '') not in ('cancelled', 'on_hold')`,
     ))
     .orderBy(projects.title, unitEntries.name);
   return rows.map((r) => ({ id: r.id, projectId: r.projectId, name: r.name, label: entryLabel(r.projectTitle, r.name) }));

@@ -7,7 +7,7 @@ import { isClientOnly } from '@/server/projects/authority';
 import { notFound, redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { projectGroupSummary } from '@/server/messaging/service';
-import { listUnitEntries, myRequests, myUnpaidUnits } from '@/server/finance/member-service';
+import { listUnitEntries, myRequests, myUnpaidUnits, unitStatusOptions } from '@/server/finance/member-service';
 import {
   getBidderView, getMemberTender, getMembersForm, getProjectFormOptions, getProjectTabs,
   getQaForm,
@@ -169,6 +169,7 @@ export default async function ProjectDetailPage({
       myUnpaidUnits: myMoney.myUnpaidUnits,
       members: myMoney.members,
       today: myMoney.today,
+      statuses: await unitStatusOptions(),
     }
     : null;
 

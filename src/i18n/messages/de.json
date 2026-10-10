@@ -3968,5 +3968,14 @@
   "ویرایشِ نام": "Namen bearbeiten",
   "ویرایشِ نامِ کارکرد": "Arbeitszeile umbenannt",
   "پرداختِ من": "Meine Zahlung",
-  "کارکردها": "Arbeitszeilen"
+  "کارکردها": "Arbeitszeilen",
+  "اشخاص (اختیاری)": "Personen (optional)",
+  "تغییرِ وضعیتِ کارکرد": "Status einer Arbeitszeile geändert",
+  "خالی یعنی همهٔ اعضای پروژه می‌بینند. با انتخابِ نقش یا شخص فقط همان‌ها (و مدیران) می‌بینند.": "Leer heißt: alle Projektmitglieder sehen es. Mit Rollen oder Personen nur diese (und Verantwortliche).",
+  "ردیفِ کارکرد": "Arbeitszeile",
+  "فقط دارندگانِ این نقش‌ها، اشخاصِ انتخاب‌شده و مدیرانِ پروژه می‌بینند.": "Nur Inhaber dieser Rollen, die gewählten Personen und Projektverantwortliche sehen es.",
+  "مخاطب باید از اعضای همین پروژه باشد.": "Die Empfänger müssen Mitglieder dieses Projekts sein.",
+  "وضعیت ذخیره شد.": "Status gespeichert.",
+  "وضعیتِ انتخاب‌شده معتبر نیست.": "Der gewählte Status ist ungültig.",
+  "وضعیتِ کار": "Arbeitsstatus"
 }

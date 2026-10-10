@@ -96,6 +96,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'unit.add': 'ثبتِ کارکرد',
   'unit.amount': 'ویرایشِ مبلغِ کارکرد',
   'unit.rename': 'ویرایشِ نامِ کارکرد',
+  'unit.status': 'تغییرِ وضعیتِ کارکرد',
   'unit.delete': 'حذفِ کارکرد',
   'request.create': 'درخواستِ پرداخت',
   'request.cancel': 'لغوِ درخواستِ پرداخت',

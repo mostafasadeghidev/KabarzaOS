@@ -48,6 +48,8 @@ export interface ReviewListItem {
   createdBy: number;
   createdByName: string | null;
   roles: Array<{ id: number; name: string; color: string | null }>;
+  /** اشخاصِ مخاطب (۲.۲۲.۰). */
+  people: Array<{ id: number; name: string }>;
   progress: { done: number; total: number; percent: number };
   mediaCount: number;
 }
@@ -141,7 +143,7 @@ export function ReviewsTab({
                   </span>
                   <Badge variant="outline" className="shrink-0">{t(SOURCE_LABELS[r.source])}</Badge>
                 </div>
-                {showAudience && <AudienceLine roles={r.roles} clientVisible={r.clientVisible} />}
+                {showAudience && <AudienceLine roles={r.roles} people={r.people} clientVisible={r.clientVisible} />}
                 <div className="grid gap-1">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{t('{done} از {total} مورد انجام شده', { done: r.progress.done, total: r.progress.total })}</span>
@@ -169,14 +171,24 @@ export function ReviewsTab({
   );
 }
 
-function AudienceLine({ roles, clientVisible }: { roles: Array<{ id: number; name: string; color: string | null }>; clientVisible: boolean }) {
+function AudienceLine({ roles, people = [], clientVisible }: {
+  roles: Array<{ id: number; name: string; color: string | null }>;
+  /** اشخاصِ مخاطب (۲.۲۲.۰). */
+  people?: Array<{ id: number; name: string }>;
+  clientVisible: boolean;
+}) {
   const t = useT();
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs">
       <Users className="size-3.5 text-muted-foreground" aria-label={t('مخاطب')} />
-      {roles.length === 0
+      {roles.length === 0 && people.length === 0
         ? <span className="text-muted-foreground">{t('کلِ تیمِ پروژه')}</span>
-        : roles.map((r) => <TagChip key={r.id} color={r.color}>{r.name}</TagChip>)}
+        : (
+          <>
+            {roles.map((r) => <TagChip key={`r${r.id}`} color={r.color}>{r.name}</TagChip>)}
+            {people.map((p) => <UserName key={`u${p.id}`} userId={p.id} name={p.name} />)}
+          </>
+        )}
       <span className={cn('ms-auto inline-flex items-center gap-1', clientVisible ? 'text-teal-700 dark:text-teal-400' : 'text-muted-foreground')}>
         {clientVisible ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
         {clientVisible ? t('کارفرما می‌بیند') : t('پنهان از کارفرما')}
@@ -271,7 +283,7 @@ function ReviewDetail({
 
   const formValues: ReviewFormValues = {
     id: review.id, title: review.title, videoUrl: review.videoUrl,
-    notes: review.notes, roles: review.roles, clientVisible: review.clientVisible,
+    notes: review.notes, roles: review.roles, people: review.people, clientVisible: review.clientVisible,
   };
 
   /** کادرِ تصاویر: همان لحظه بارگذاری، بی‌دکمهٔ ذخیره — دسته‌های ۱۰تایی. */
@@ -299,7 +311,7 @@ function ReviewDetail({
             {review.title}
             <Badge variant="outline">{t(SOURCE_LABELS[review.source])}</Badge>
           </h2>
-          {showAudience && <AudienceLine roles={review.roles} clientVisible={review.clientVisible} />}
+          {showAudience && <AudienceLine roles={review.roles} people={review.people} clientVisible={review.clientVisible} />}
           <ReviewMeta createdAt={review.createdAt} createdBy={review.createdBy} createdByName={review.createdByName} mediaCount={0} />
         </div>
         {data.detail.canManage && (

@@ -32,6 +32,8 @@ export interface ReviewFormValues {
   videoUrl: string | null;
   notes: string;
   roles: Array<{ id: number }>;
+  /** اشخاصِ مخاطب (۲.۲۲.۰). */
+  people?: Array<{ id: number }>;
   clientVisible: boolean;
 }
 
@@ -40,6 +42,7 @@ interface Info {
   url: string;
   video: File | null;
   roles: number[];
+  people: number[];
   clientVisible: boolean;
   notes: string;
   images: File[];
@@ -50,6 +53,7 @@ const emptyInfo = (review?: ReviewFormValues | null): Info => ({
   url: review?.videoUrl ?? '',
   video: null,
   roles: review?.roles.map((r) => r.id) ?? [],
+  people: review?.people?.map((p) => p.id) ?? [],
   clientVisible: review?.clientVisible ?? false,
   notes: review?.notes ?? '',
   images: [],
@@ -133,6 +137,7 @@ function ReviewDialogBody({
     fd.set('videoUrl', info.url);
     fd.set('notes', info.notes);
     for (const r of info.roles) fd.append('roleTagIds', String(r));
+    for (const u of info.people) fd.append('userIds', String(u));
     if (info.clientVisible) fd.set('clientVisible', '1');
     if (info.video) fd.append('media', info.video);
     return fd;
@@ -251,10 +256,20 @@ function ReviewDialogBody({
             placeholder={t('کلِ تیمِ پروژه')}
           />
         ) : null}
+        {/* مخاطبِ شخصی (۲.۲۲.۰) — مثلاً فقط یکی از دو دولوپرِ پروژه. با نقش‌ها جمع می‌شود. */}
+        {options.people.length > 0 && (
+          <MultiSelect
+            id="rv-people"
+            options={options.people.map((p) => ({ value: p.id, label: p.name }))}
+            selected={info.people}
+            onChange={(v) => set('people', v)}
+            placeholder={t('اشخاص (اختیاری)')}
+          />
+        )}
         <FieldDescription>
-          {info.roles.length === 0
-            ? t('خالی یعنی همهٔ اعضای پروژه می‌بینند. با انتخابِ نقش فقط دارندگانِ همان نقش‌ها (و مدیران) می‌بینند.')
-            : t('فقط دارندگانِ این نقش‌ها و مدیرانِ پروژه می‌بینند؛ موردها هم به همین نقش‌ها سپرده می‌شوند.')}
+          {info.roles.length === 0 && info.people.length === 0
+            ? t('خالی یعنی همهٔ اعضای پروژه می‌بینند. با انتخابِ نقش یا شخص فقط همان‌ها (و مدیران) می‌بینند.')
+            : t('فقط دارندگانِ این نقش‌ها، اشخاصِ انتخاب‌شده و مدیرانِ پروژه می‌بینند.')}
         </FieldDescription>
       </Field>
 

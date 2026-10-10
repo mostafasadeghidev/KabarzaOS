@@ -3,7 +3,7 @@
 import { useToast } from '@/components/ui/toast';
 import { UserName } from '@/components/user-avatar';
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import { Check, ChevronDown, Clapperboard, Columns3, EyeOff, Hand, Link2, List as ListIcon, Lock, MessageSquare, Paperclip } from 'lucide-react';
+import { Check, ChevronDown, Clapperboard, Columns3, EyeOff, Hand, Link2, List as ListIcon, Lock, MessageSquare, Paperclip, Package } from 'lucide-react';
 import { formatTimestamp } from '@/domain/files/video';
 import { claimTaskAction, setTaskStatusAction } from '../_form/tab-actions';
 import { canClaimTask } from '@/domain/projects/claim';
@@ -72,6 +72,8 @@ export interface TaskItem {
   reviewTitle?: string | null;
   reviewStart?: number | null;
   area?: string;
+  /** ردیفِ کارکردِ پروژهٔ تعدادی (۲.۲۲.۰). */
+  unitEntryName?: string | null;
   lastNote?: string | null;
   /** عنوانِ تسکی که این یکی منتظرش است؛ null یعنی راه باز است. */
   blockedBy?: string | null;
@@ -186,7 +188,7 @@ function priorityTint(color: string | null | undefined): React.CSSProperties | u
 function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boolean }) {
   const tr = useT();
   if (!task.priorityName && !task.description && !task.notesCount && !task.mediaCount && !task.blockedBy
-    && !task.reviewId && !task.clientHidden && !task.area) return null;
+    && !task.reviewId && !task.clientHidden && !task.area && !task.unitEntryName) return null;
   return (
     <div className={compact ? 'grid gap-0.5' : 'mt-1 grid gap-1'}>
       {/*
@@ -209,7 +211,7 @@ function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boole
           )}
         </span>
       )}
-      {(task.priorityName || (task.notesCount ?? 0) > 0 || (task.mediaCount ?? 0) > 0 || task.area || task.clientHidden) && (
+      {(task.priorityName || (task.notesCount ?? 0) > 0 || (task.mediaCount ?? 0) > 0 || task.area || task.unitEntryName || task.clientHidden) && (
         <div className="flex flex-wrap items-center gap-1.5">
           {task.priorityName && (
             <TagChip color={task.priorityColor}>{task.priorityName}</TagChip>
@@ -218,6 +220,11 @@ function TaskExtras({ task, compact = false }: { task: TaskItem; compact?: boole
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <MessageSquare className="size-3" />
               <span className="num">{task.notesCount}</span>
+            </span>
+          )}
+          {task.unitEntryName && (
+            <span className="inline-flex items-center gap-1 rounded-sm bg-primary/10 px-1.5 py-px text-[10px] text-primary">
+              <Package className="size-3" />{task.unitEntryName}
             </span>
           )}
           {task.area && (

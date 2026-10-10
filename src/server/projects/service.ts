@@ -6,7 +6,7 @@ import { notInArray, and, eq, inArray, isNull, asc, like, or, sql } from 'drizzl
 import { db } from '@/db/client';
 import {
   attachments, comments, ledger, notifications, paymentRequests, projectClients, projectMembers,
-  projectPayments, projectQa, projects, reviews, tags, tagRelations, tasks, taskRoles,
+  projectPayments, projectQa, projects, reviews, tags, tagRelations, tasks, taskRoles, unitEntries,
   tenderBids, timelogs, auditLog, userOffices, users, currencies,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
@@ -2116,6 +2116,20 @@ export interface TaskInput {
   /** بازهٔ ویدئوی موردِ بازبینی به ثانیه — فقط روی تسکی که بازبینی دارد. */
   reviewStart?: number | null;
   reviewEnd?: number | null;
+  /**
+   * ردیفِ کارکردِ پروژهٔ تعدادی (۲.۲۲.۰) — «Simon - CAT». نیامده = دست‌نخورده،
+   * `null` = بی‌ردیف. ⚠️ باید ردیفِ **همین** پروژه باشد.
+   */
+  unitEntryId?: number | null;
+}
+
+/** ردیفِ کارکرد باید مالِ همین پروژه باشد — وگرنه شناسهٔ ردیفِ پروژهٔ دیگری می‌نشست. */
+async function validUnitEntry(projectId: number, unitEntryId: number | null | undefined): Promise<number | null | undefined> {
+  if (unitEntryId === undefined || unitEntryId === null) return unitEntryId;
+  const [row] = await db.select({ id: unitEntries.id }).from(unitEntries)
+    .where(and(eq(unitEntries.id, unitEntryId), eq(unitEntries.projectId, projectId)));
+  if (!row) throw new ForbiddenError('task.unit_entry');
+  return row.id;
 }
 
 /** «وابسته به» — فقط تسکِ همین پروژه و نه خودش (پورتِ انتخابگرِ `depends_on`). */
@@ -2224,6 +2238,17 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
     statuses,
     priorities,
     tasks: dependencyOptions,
+    /**
+     * ردیف‌های نام‌دارِ پروژهٔ تعدادی (۲.۲۲.۰) — «تسک مالِ کدام ردیف است». مدیر همه را
+     * می‌بیند؛ بقیه فقط ردیف‌های خودشان را (نامِ ردیفِ دیگران هم کارِ اوست).
+     */
+    unitEntries: await db.select({ id: unitEntries.id, name: unitEntries.name }).from(unitEntries)
+      .where(and(
+        eq(unitEntries.projectId, projectId),
+        sql`${unitEntries.name} <> ''`,
+        canManageProjectNow ? sql`true` : eq(unitEntries.userId, actor.id),
+      ))
+      .orderBy(asc(unitEntries.name)),
   };
 }
 
@@ -2283,11 +2308,14 @@ export async function createTask(
    */
   const assignment = await resolveTaskAssignment(actor, projectId, canManage, input);
 
+  const unitEntryId = await validUnitEntry(projectId, input.unitEntryId);
+
   // ⚠️ رسانه پیش از ردیف: فایلِ ردشده نباید تسکی بی‌عکس جا بگذارد که کاربر دوباره بسازدش.
   const uploads = await storeUploads(actor, options.media ?? []);
 
   const rows = await db.insert(tasks).values({
     projectId,
+    unitEntryId: unitEntryId ?? null,
     title: input.title,
     description: input.description,
     statusTagId,
@@ -2526,10 +2554,13 @@ export async function updateTask(
     await repo.taskStatusTags(),
   );
 
+  const nextUnitEntry = await validUnitEntry(before.projectId, input.unitEntryId);
+
   await db.update(tasks).set({
     title: input.title,
     description: input.description,
     statusTagId: nextStatus,
+    ...(nextUnitEntry !== undefined ? { unitEntryId: nextUnitEntry } : {}),
     priorityTagId: input.priorityTagId,
     /**
      * ⚠️ سازنده‌ای که مدیر نیست، مسئول و «خصوصی» را دست نمی‌زند: اینها

@@ -84,8 +84,12 @@ function parse(formData: FormData) {
  * خاموش در فرم اصلاً فرستاده نمی‌شود و بی‌نشانگر از «فیلد نبود» جدا نمی‌شد.
  */
 function extras(formData: FormData) {
-  const out: { clientHidden?: boolean; area?: string; reviewStart?: number | null; reviewEnd?: number | null } = {};
+  const out: {
+    clientHidden?: boolean; area?: string; reviewStart?: number | null; reviewEnd?: number | null; unitEntryId?: number | null;
+  } = {};
   if (formData.has('clientHiddenField')) out.clientHidden = formData.get('clientHidden') !== null;
+  // ردیفِ کارکرد (۲.۲۲.۰) — فقط وقتی فیلد در فرم است؛ خالی = بی‌ردیف.
+  if (formData.has('unitEntryId')) out.unitEntryId = Number(formData.get('unitEntryId')) || null;
   if (formData.has('area')) out.area = String(formData.get('area') ?? '');
   if (formData.has('reviewStart')) {
     const time = (name: string) => {

@@ -18,6 +18,8 @@ import { formatTimestamp, parseTimestamp } from '@/domain/files/video';
 /** گزینه‌های فرم — `reviewFormOptions` (نقش‌های همین پروژه، بخش‌های تنظیمات). */
 export interface ReviewFormOptions {
   roles: Array<{ id: number; name: string }>;
+  /** اعضای همین پروژه — مخاطبِ شخصی (۲.۲۲.۰). */
+  people: Array<{ id: number; name: string }>;
   areas: Array<{ id: number; name: string }>;
   assignees: Array<{ userId: number; label: string }>;
   priorities: Array<{ id: number; name: string }>;

@@ -23,6 +23,11 @@ export interface UnitRow {
   name: string;
   /** جمعِ ساعتِ ثبت‌شده روی ردیف، به دقیقه. */
   minutes: number;
+  /** وضعیتِ کارِ ردیف (۲.۲۲.۰) — جدا از وضعیتِ پرداخت. */
+  workStatusTagId: number | null;
+  workStatusName: string | null;
+  workStatusColor: string | null;
+  workStatusGroup: string | null;
   entryDate: string;
   quantity: string;
   amount: string;

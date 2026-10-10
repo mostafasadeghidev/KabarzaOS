@@ -11,6 +11,10 @@ import {
   auditLog, currencies, paymentRequests, projectMembers, projectPayments, projects, tags, timelogs, unitEntries, users, ledger,
 } from '@/db/schema';
 import { normalizeEntryName } from '@/domain/projects/unit-entry-name';
+import { defaultProjectStatusId } from '@/domain/projects/defaults';
+import { tagName } from '@/db/tag-name';
+import { currentLocale } from '@/i18n/server';
+import { alias } from 'drizzle-orm/pg-core';
 import { canManageSection, type Actor } from '@/domain/access/permissions';
 import { ForbiddenError, visibleScopes } from '@/domain/access/guard';
 import {
@@ -18,7 +22,7 @@ import {
   OPEN_STATUSES, parseManualAmount, unitAmount, validateRequest, type RequestRejection,
 } from '@/domain/finance/member-money';
 import { contractBalance, paymentStatus } from '@/domain/team-money/payments';
-import { myPayoutsOn } from '@/server/projects/repository';
+import { myPayoutsOn, statusTags } from '@/server/projects/repository';
 import { canManageProject } from '@/server/projects/authority';
 
 /**
@@ -27,7 +31,7 @@ import { canManageProject } from '@/server/projects/authority';
  */
 
 export class MemberMoneyError extends Error {
-  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen' | 'not_member' | 'not_unit_based' | 'amount_invalid' | 'amount_forbidden' | 'not_editable' | 'name_taken' | 'name_invalid') {
+  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen' | 'not_member' | 'not_unit_based' | 'amount_invalid' | 'amount_forbidden' | 'not_editable' | 'name_taken' | 'name_invalid' | 'status_invalid') {
     super(reason);
     this.name = 'MemberMoneyError';
   }
@@ -96,6 +100,7 @@ async function projectContext(
  */
 export async function listUnitEntries(actor: Actor, projectId: number) {
   const { canManage } = await projectContext(actor, projectId);
+  const work = alias(tags, 'unit_work_status');
 
   const rows = await db
     .select({
@@ -107,6 +112,11 @@ export async function listUnitEntries(actor: Actor, projectId: number) {
       /** جمعِ ساعتِ ثبت‌شده روی همین ردیف، به دقیقه. */
       minutes: sql<number>`coalesce((select sum(${timelogs.minutes}) from ${timelogs} where ${timelogs.unitEntryId} = ${unitEntries.id}), 0)::int`,
       entryDate: unitEntries.entryDate,
+      /** وضعیتِ کارِ ردیف (۲.۲۲.۰) — از وضعیت‌های پروژه، جدا از پرداخت. */
+      workStatusTagId: unitEntries.workStatusTagId,
+      workStatusName: tagName(await currentLocale(), work),
+      workStatusColor: work.color,
+      workStatusGroup: work.statusGroup,
       quantity: unitEntries.quantity,
       amount: unitEntries.amount,
       note: unitEntries.note,
@@ -116,6 +126,7 @@ export async function listUnitEntries(actor: Actor, projectId: number) {
     .from(unitEntries)
     .leftJoin(users, eq(users.id, unitEntries.userId))
     .leftJoin(currencies, eq(currencies.id, unitEntries.currencyId))
+    .leftJoin(work, eq(work.id, unitEntries.workStatusTagId))
     .where(canManage
       ? eq(unitEntries.projectId, projectId)
       : and(eq(unitEntries.projectId, projectId), eq(unitEntries.userId, actor.id)))
@@ -166,6 +177,8 @@ export async function addUnitEntry(
     amount?: string;
     /** نامِ یکتای ردیف (۲.۲۱.۰) — اختیاری. */
     name?: string;
+    /** وضعیتِ کار (۲.۲۲.۰) — نیامده = «شروع نشده» ِ پیش‌فرض. */
+    workStatusTagId?: number | null;
   },
 ) {
   const { canManage, isFrozen, project } = await projectContext(actor, input.projectId, { projectManager: true });
@@ -214,6 +227,10 @@ export async function addUnitEntry(
   // ارزِ کارکرد: قرارداد → پروژه → ارزِ پیش‌فرض (ستون از مهاجرتِ ۰۰۲۴ اجباری است).
   const currencyId = membership[0]?.currencyId ?? project.currencyId ?? (await rateSource()).baseCurrencyId;
 
+  const workStatusTagId = input.workStatusTagId === undefined || input.workStatusTagId === null
+    ? defaultProjectStatusId(await statusTags(), false)
+    : await validStatus(input.workStatusTagId);
+
   // ⚠️ نامِ یکتا داخلِ پروژه، بی‌توجه به بزرگی/کوچکیِ حرف — ایندکسِ دیتابیس هم نگه می‌دارد.
   if (entryName.name !== '' && await entryNameTaken(input.projectId, entryName.name)) {
     throw new MemberMoneyError('name_taken');
@@ -223,6 +240,7 @@ export async function addUnitEntry(
     projectId: input.projectId,
     userId: targetId,
     name: entryName.name,
+    workStatusTagId,
     entryDate,
     quantity: String(input.quantity),
     amount: manual.kind === 'ok' ? manual.amount : unitAmount(input.quantity, rate),
@@ -239,6 +257,36 @@ export async function addUnitEntry(
 
   await audit(actor, 'unit.add', rows[0]!.id, { ...input, userId: targetId });
   return rows[0]!.id;
+}
+
+/** وضعیت باید واقعاً از نوعِ `project_status` باشد — وگرنه هر تگی وضعیت می‌شد. */
+async function validStatus(statusTagId: number): Promise<number> {
+  const rows = await db.select({ id: tags.id }).from(tags)
+    .where(and(eq(tags.id, statusTagId), eq(tags.type, 'project_status')));
+  if (rows.length === 0) throw new MemberMoneyError('status_invalid');
+  return statusTagId;
+}
+
+/** گزینه‌های وضعیتِ کارِ ردیف — همان وضعیت‌های پروژه (۲.۲۲.۰). */
+export async function unitStatusOptions() {
+  return statusTags();
+}
+
+/**
+ * عوض‌کردنِ وضعیتِ کارِ یک ردیف (۲.۲۲.۰) — مسئولِ پروژه یا صاحبِ ردیف.
+ * ⚠️ فقط ردیف؛ وضعیتِ خودِ پروژهٔ تعدادی دست نمی‌خورد. `null` = بی‌وضعیت.
+ */
+export async function setUnitEntryStatus(actor: Actor, entryId: number, statusTagId: number | null) {
+  const rows = await db.select().from(unitEntries).where(eq(unitEntries.id, entryId));
+  const row = rows[0];
+  if (!row) throw new MemberMoneyError('not_yours');
+  const { canManage, isFrozen } = await projectContext(actor, row.projectId, { projectManager: true });
+  if (!canManage && row.userId !== actor.id) throw new MemberMoneyError('not_yours');
+  if (isFrozen) throw new MemberMoneyError('frozen');
+  const next = statusTagId === null ? null : await validStatus(statusTagId);
+
+  await db.update(unitEntries).set({ workStatusTagId: next, updatedAt: new Date() }).where(eq(unitEntries.id, entryId));
+  await audit(actor, 'unit.status', entryId, { before: row.workStatusTagId, after: next });
 }
 
 /** آیا این نام (بی‌توجه به بزرگی/کوچکیِ حرف) در این پروژه برای ردیفِ دیگری هست؟ */

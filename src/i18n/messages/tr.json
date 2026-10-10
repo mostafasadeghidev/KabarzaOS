@@ -3968,5 +3968,14 @@
   "ویرایشِ نام": "Adı düzenle",
   "ویرایشِ نامِ کارکرد": "İş satırı yeniden adlandırıldı",
   "پرداختِ من": "Ödemem",
-  "کارکردها": "İş satırları"
+  "کارکردها": "İş satırları",
+  "اشخاص (اختیاری)": "Kişiler (isteğe bağlı)",
+  "تغییرِ وضعیتِ کارکرد": "İş satırının durumu değiştirildi",
+  "خالی یعنی همهٔ اعضای پروژه می‌بینند. با انتخابِ نقش یا شخص فقط همان‌ها (و مدیران) می‌بینند.": "Boş, tüm proje üyelerinin göreceği anlamına gelir. Rol veya kişi seçmek bunu onlarla (ve yöneticilerle) sınırlar.",
+  "ردیفِ کارکرد": "İş satırı",
+  "فقط دارندگانِ این نقش‌ها، اشخاصِ انتخاب‌شده و مدیرانِ پروژه می‌بینند.": "Yalnızca bu rollere sahip olanlar, seçilen kişiler ve proje yöneticileri görür.",
+  "مخاطب باید از اعضای همین پروژه باشد.": "Hedef kitle bu projenin üyeleri olmalıdır.",
+  "وضعیت ذخیره شد.": "Durum kaydedildi.",
+  "وضعیتِ انتخاب‌شده معتبر نیست.": "Seçilen durum geçerli değil.",
+  "وضعیتِ کار": "İş durumu"
 }
