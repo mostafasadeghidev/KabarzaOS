@@ -4039,5 +4039,8 @@
   "دوره‌های بسته": "Kapalı dönemler",
   "ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.": "{date} tarihine kadarki satırlar kapalı dönemdedir ve değişmez.",
   "ردیف‌های دورهٔ بسته در دفترکل نشان داده نمی‌شوند و تغییر نمی‌کنند؛ ماندهٔ آخرشان به دورهٔ بعد منتقل شده است.": "Kapalı dönemin satırları defterde gösterilmez ve değişmez; son bakiyeleri sonraki döneme aktarılır.",
-  "ماندهٔ پایانِ دوره": "Dönem sonu bakiyesi"
+  "ماندهٔ پایانِ دوره": "Dönem sonu bakiyesi",
+  "بستنِ این نما": "Bu görünümü kapat",
+  "دارید ردیف‌های {range} را می‌بینید — فقط‌خواندنی.": "{range} satırlarını görüyorsunuz — salt okunur.",
+  "همهٔ دوره‌های بسته": "Tüm kapalı dönemler"
 }

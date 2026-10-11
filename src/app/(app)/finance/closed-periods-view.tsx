@@ -1,6 +1,7 @@
 'use client';
 
-import Link from 'next/link';
+import Link, { useLinkStatus } from 'next/link';
+import { Spinner } from '@/components/ui/spinner';
 import { Download, Eye, Lock, LockOpen, Settings2 } from 'lucide-react';
 import { format } from '@/domain/money/money';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,16 @@ import {
 } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
 import { ltr } from '@/i18n/bidi';
+
+/**
+ * آیکونِ پیوند که تا باز شدنِ صفحهٔ مقصد چرخنده می‌شود (۲.۲۵.۰) — دفترکل با
+ * فیلترِ دوره کمی طول می‌کشد و بی‌این معلوم نبود کلیک گرفته شده یا نه.
+ * ⚠️ `useLinkStatus` فقط داخلِ خودِ `<Link>` کار می‌کند.
+ */
+function PendingIcon({ icon }: { icon: React.ReactNode }) {
+  const { pending } = useLinkStatus();
+  return pending ? <Spinner /> : <>{icon}</>;
+}
 
 export interface ClosedPeriod {
   closeDate: string;
@@ -83,7 +94,7 @@ export function ClosedPeriodsView({ periods, isOwner }: { periods: ClosedPeriod[
                       <TableNumericCell className="font-semibold">{format(a.closingBalance)} {a.currencyCode ?? ''}</TableNumericCell>
                       <TableActionsCell>
                         <Button asChild size="sm" variant="outline">
-                          <Link href={`/finance?${range}&all=1`}><Eye className="size-3.5" />{t('ردیف‌ها')}</Link>
+                          <Link href={`/finance?tab=ledger&${range}&all=1`}><PendingIcon icon={<Eye className="size-3.5" />} />{t('ردیف‌ها')}</Link>
                         </Button>
                         <Button asChild size="sm" variant="outline">
                           <a href={`/finance/export?${range}&all=1`}><Download className="size-3.5" />{t('خروجی CSV')}</a>

@@ -4,7 +4,8 @@ import { UserName } from '@/components/user-avatar';
 import Link from 'next/link';
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { ArrowLeftRight, CircleAlert, Lock, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, CircleAlert, Lock, Paperclip, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import {
   deleteEntryAction, saveEntryAction, transferAction, type FinanceState,
 } from './_form/actions';
@@ -185,6 +186,10 @@ export function LedgerView({
   const tr = useT();
   const confirm = useConfirm();
   const t = useT();
+  // بازهٔ نمای دورهٔ بسته — از همان نشانیِ فیلتر (۲.۲۵.۰).
+  const search = useSearchParams();
+  const viewFrom = search.get('from') ?? '';
+  const viewTo = search.get('to') ?? '';
 
   /**
    * جستجوی زندهٔ ردیف‌های صفحهٔ جاری.
@@ -283,11 +288,32 @@ export function LedgerView({
         تاریخ‌های قفل در انتخابگرِ تاریخِ ردیف غیرفعال‌اند. فقط وقتی ردیف‌های دورهٔ
         بسته عمداً باز شده‌اند (`all=1`) یک خطِ کوتاه می‌گوید چرا دکمه ندارند.
       */}
+      {/*
+        نمای دورهٔ بسته (۲.۲۵.۰) — از دکمهٔ «ردیف‌ها» ِ تبِ «دوره‌های بسته» (`all=1`).
+        نوارِ روشن می‌گوید چه بازه‌ای دیده می‌شود و دو راهِ بیرون آمدن دارد؛ پیش از این
+        معلوم نبود دفترکل فیلتر شده یا همهٔ ردیف‌ها را نشان می‌دهد.
+      */}
       {lockDate && !periodScoped && (
-        <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Lock className="size-3.5" />
-          {tr('ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.', { date: ltr(lockDate) })}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+          <span className="inline-flex items-center gap-1.5">
+            <Lock className="size-4 text-primary" />
+            {viewFrom || viewTo
+              ? tr('دارید ردیف‌های {range} را می‌بینید — فقط‌خواندنی.', {
+                  range: viewFrom
+                    ? tr('{from} تا {to}', { from: ltr(viewFrom), to: ltr(viewTo || lockDate) })
+                    : tr('تا {to}', { to: ltr(viewTo || lockDate) }),
+                })
+              : tr('ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.', { date: ltr(lockDate) })}
+          </span>
+          <span className="ms-auto flex flex-wrap gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link href="/finance?tab=closed">{tr('همهٔ دوره‌های بسته')}</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href={`/finance?account=${accountId}`}><X className="size-4" />{tr('بستنِ این نما')}</Link>
+            </Button>
+          </span>
+        </div>
       )}
 
       {/* ⚠️ پنج ستون فقط وقتی جا هست — رقمِ پولی در ستونِ باریک از کارت بیرون می‌زد. */}

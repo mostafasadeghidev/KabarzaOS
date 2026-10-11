@@ -4039,5 +4039,8 @@
   "دوره‌های بسته": "Closed periods",
   "ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.": "Rows up to {date} are in a closed period and cannot change.",
   "ردیف‌های دورهٔ بسته در دفترکل نشان داده نمی‌شوند و تغییر نمی‌کنند؛ ماندهٔ آخرشان به دورهٔ بعد منتقل شده است.": "Rows of a closed period are not shown in the ledger and cannot change; their final balance is carried into the next period.",
-  "ماندهٔ پایانِ دوره": "Closing balance"
+  "ماندهٔ پایانِ دوره": "Closing balance",
+  "بستنِ این نما": "Close this view",
+  "دارید ردیف‌های {range} را می‌بینید — فقط‌خواندنی.": "You are viewing the rows of {range} — read-only.",
+  "همهٔ دوره‌های بسته": "All closed periods"
 }

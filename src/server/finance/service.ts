@@ -298,19 +298,33 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
       total: sql<string>`coalesce(sum(${ledger.amountAccount}), 0)::text`,
     })
     .from(ledger);
+  /**
+   * ⚠️ استثنا (۲.۲۵.۰): «نمای دورهٔ بسته» از تبِ «دوره‌های بسته» (همه + «تا» ≤ قفل)
+   * جمع‌های **همان دوره** را نشان می‌دهد — همان ارقامِ خلاصهٔ منجمد. کارت‌های کلِ
+   * حساب کنارِ ردیف‌های یک دورهٔ قدیمی دو عددِ ناهمخوان می‌ساخت.
+   */
+  const closedView = Boolean(lockDate) && Boolean(input.includeLocked) && Boolean(input.to) && input.to! <= lockDate!;
   const [totals, carried] = await Promise.all([
     totalsQuery
-      .where(periodScoped
-        ? and(eq(ledger.accountId, input.accountId), gt(ledger.entryDate, lockDate!))
-        : eq(ledger.accountId, input.accountId))
+      .where(closedView
+        ? and(
+            eq(ledger.accountId, input.accountId),
+            lte(ledger.entryDate, input.to!),
+            ...(input.from ? [gte(ledger.entryDate, input.from)] : []),
+          )
+        : periodScoped
+          ? and(eq(ledger.accountId, input.accountId), gt(ledger.entryDate, lockDate!))
+          : eq(ledger.accountId, input.accountId))
       .groupBy(ledger.direction),
-    periodScoped
+    periodScoped || (closedView && input.from)
       ? db.select({
         direction: ledger.direction,
         total: sql<string>`coalesce(sum(${ledger.amountAccount}), 0)::text`,
       })
         .from(ledger)
-        .where(and(eq(ledger.accountId, input.accountId), lte(ledger.entryDate, lockDate!)))
+        .where(closedView
+          ? and(eq(ledger.accountId, input.accountId), lt(ledger.entryDate, input.from!))
+          : and(eq(ledger.accountId, input.accountId), lte(ledger.entryDate, lockDate!)))
         .groupBy(ledger.direction)
       : Promise.resolve([] as Array<{ direction: 'in' | 'out'; total: string }>),
   ]);
@@ -367,7 +381,7 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
      * ⚠️ جمع‌ها **همیشه** کلِ حساب‌اند (یا کلِ دورهٔ باز)، نه صفحه یا فیلترِ
      * فعال: ماندهٔ حساب یک واقعیتِ حسابداری است و با فیلترِ نمایش عوض نمی‌شود.
      */
-    totals: { in: totalIn, out: totalOut, balance, opening, carried: periodScoped },
+    totals: { in: totalIn, out: totalOut, balance, opening, carried: periodScoped || Boolean(closedView && input.from) },
     paging: { page, perPage, total, totalPages: Math.max(1, Math.ceil(total / perPage)) },
     lockDate,
     periodScoped,

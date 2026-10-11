@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { LedgerPaging } from './ledger-filter';
 import type { BankRow } from './bank-directory';
@@ -109,6 +109,11 @@ export function FinancePage({
   const [tab, setTab] = useState<(typeof TABS)[number]['key']>(
     TABS.some((x) => x.key === asked) ? (asked as (typeof TABS)[number]['key']) : 'ledger',
   );
+  // ⚠️ پیوندِ درون‌صفحه‌ای (مثلاً «همهٔ دوره‌های بسته» از دفترکل) کامپوننت را از نو
+  // نمی‌سازد؛ تب باید با نشانی هم‌گام شود، وگرنه همان دفترکل می‌ماند (۲.۲۵.۰).
+  useEffect(() => {
+    if (asked && TABS.some((x) => x.key === asked)) setTab(asked as (typeof TABS)[number]['key']);
+  }, [asked]);
   const visible = TABS.filter((t) => (t.key === 'vendors'
     ? vendorRows !== null
     : t.key === 'closed'

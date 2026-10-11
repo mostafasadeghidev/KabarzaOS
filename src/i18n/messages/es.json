@@ -4039,5 +4039,8 @@
   "دوره‌های بسته": "Periodos cerrados",
   "ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.": "Las filas hasta {date} están en un periodo cerrado y no cambian.",
   "ردیف‌های دورهٔ بسته در دفترکل نشان داده نمی‌شوند و تغییر نمی‌کنند؛ ماندهٔ آخرشان به دورهٔ بعد منتقل شده است.": "Las filas de un periodo cerrado no se muestran en el libro y no cambian; su saldo final pasa al periodo siguiente.",
-  "ماندهٔ پایانِ دوره": "Saldo de cierre"
+  "ماندهٔ پایانِ دوره": "Saldo de cierre",
+  "بستنِ این نما": "Cerrar esta vista",
+  "دارید ردیف‌های {range} را می‌بینید — فقط‌خواندنی.": "Estás viendo las filas de {range}, solo lectura.",
+  "همهٔ دوره‌های بسته": "Todos los periodos cerrados"
 }
