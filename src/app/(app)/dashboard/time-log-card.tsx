@@ -6,6 +6,7 @@ import { toDateString } from '@/domain/timelogs/timer';
 import { Panel } from '@/components/page-shell';
 import { ManualLogForm, StartTimerForm } from '../hours/hours-view';
 import { t } from '@/i18n/server';
+import { Button } from '@/components/ui/button';
 
 /**
  * کارتِ «ثبتِ ساعت» روی داشبوردِ عضو — پورتِ `time_logging_section()` که
@@ -26,7 +27,7 @@ export async function DashboardTimeLog({ actor }: { actor: Actor }) {
     <Panel
       icon={<Clock />}
       title={t('ثبتِ ساعت')}
-      actions={<Link href="/hours" className="text-sm underline">{t('همهٔ ثبت‌ها')}</Link>}
+      actions={<Button asChild size="sm" variant="outline"><Link href="/hours">{t('همهٔ ثبت‌ها')}</Link></Button>}
     >
       <StartTimerForm projects={projects} canLogGeneral={general} />
       <details className="group">

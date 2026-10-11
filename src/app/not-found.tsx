@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { primeTranslations, t } from '@/i18n/server';
+import { Button } from '@/components/ui/button';
 
 /**
  * ۴۰۴ ِ خودِ برنامه.
@@ -19,12 +20,9 @@ export default async function NotFound() {
       <p className="max-w-sm text-sm text-muted-foreground">
         {t('ممکن است پاک شده باشد، یا دسترسی‌اش را نداشته باشید.')}
       </p>
-      <Link
-        href="/"
-        className="mt-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-      >
-        {t('بازگشت به خانه')}
-      </Link>
+      <Button asChild className="mt-2">
+        <Link href="/">{t('بازگشت به خانه')}</Link>
+      </Button>
     </main>
   );
 }

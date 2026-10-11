@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { PageCrumb } from '@/components/page-crumb';
 import { HistoryBackLink } from '@/components/nav-history';
 
@@ -112,15 +113,15 @@ export function PageHeader({
  * برچسب نامِ صفحهٔ مادر است؛ پیکان جهتِ برگشت را می‌گوید.
  */
 export function BackLink({ href, children }: { href: string; children: React.ReactNode }) {
+  // ⚠️ همان شکلِ `HistoryBackLink` (۲.۲۵.۰): دکمهٔ واقعی، نه متنِ کم‌رنگ.
   return (
-    <Link
-      href={href}
-      className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-    >
-      {/* در راست‌به‌چپ «برگشت» به راست است؛ در چپ‌به‌راست به چپ. */}
-      <ArrowRight className="size-4 ltr:rotate-180" aria-hidden />
-      {children}
-    </Link>
+    <Button asChild size="sm" variant="outline" className="w-fit">
+      <Link href={href}>
+        {/* در راست‌به‌چپ «برگشت» به راست است؛ در چپ‌به‌راست به چپ. */}
+        <ArrowRight className="size-4 ltr:rotate-180" aria-hidden />
+        {children}
+      </Link>
+    </Button>
   );
 }
 

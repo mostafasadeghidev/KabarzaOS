@@ -14,6 +14,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Panel } from '@/components/page-shell';
 import { OnboardingCard } from './onboarding-card';
 import { Item, ItemContent, ItemDescription, ItemTitle } from '@/components/ui/item';
+import { Button } from '@/components/ui/button';
 
 /**
  * داشبوردِ عضو و کارفرما — پورتِ `member_overview()` / `client_overview()`.
@@ -51,7 +52,7 @@ function MoneyStat({
         <CardDescription className="flex items-center justify-between gap-2">
           {label}
           {/* رفتن به صفحهٔ مالی، جدا از کلیکِ «نمایشِ مبلغ». */}
-          <Link href="/my-money" className="text-xs text-primary hover:underline">{t('جزئیات')}</Link>
+          <Button asChild size="xs" variant="outline"><Link href="/my-money">{t('جزئیات')}</Link></Button>
         </CardDescription>
         {/* ⚠️ صفر هم پوشیده است: اگر فقط رقمِ غیرِصفر پوشیده باشد، «•••» خودش
             می‌گوید «چیزی هست» و پوشش بی‌معنا می‌شود. */}
@@ -255,9 +256,11 @@ export function MemberDashboardView({
                   <TableCell>{p.roleNames.join(t('، '))}</TableCell>
                   <TableNumericCell>{p.myBids > 0 ? p.myBids : '—'}</TableNumericCell>
                   <TableActionsCell>
-                    <Link href={`/projects/${p.id}?tab=my-bid`} className="text-sm underline">
-                      {p.myBids > 0 ? t('ویرایش پیشنهاد') : t('پیشنهاد بده')}
-                    </Link>
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/projects/${p.id}?tab=my-bid`}>
+                        {p.myBids > 0 ? t('ویرایش پیشنهاد') : t('پیشنهاد بده')}
+                      </Link>
+                    </Button>
                   </TableActionsCell>
                 </TableRow>
               ))}
@@ -273,10 +276,12 @@ export function MemberDashboardView({
         <Panel
       title={t('جلسات این هفته')}
       actions={(
-        <Link href="/meetings" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-          {t('همهٔ جلسات')}
-          <ArrowLeft className="size-3.5 ltr:rotate-180" aria-hidden />
-        </Link>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/meetings">
+            {t('همهٔ جلسات')}
+            <ArrowLeft className="size-3.5 ltr:rotate-180" aria-hidden />
+          </Link>
+        </Button>
       )}
     >
         <ul className="grid gap-2 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">

@@ -28,6 +28,13 @@ Versioning follows [SemVer](https://semver.org/).
 
 ### Fixed
 
+- Controls that looked like plain text are real buttons now:
+  - Every "back" link at the top of a detail page (projects, reports, team, onboarding, invoice…) and "All reviews".
+  - "Show rows of the closed period" and "Manage fiscal period" in the ledger.
+  - "All logs", "Details", "Edit bid / Make a bid", "All meetings", "Team report", "Full review in accounting", "Edit library", the filter-clearing links in Hours and Reports, and "Back to home" on the not-found page.
+  - "Reject" in payment requests and the delete/withdraw buttons next to outlined buttons (meetings, task, review, tender winner) use the same outlined shape, in red.
+- The closed-period notice in the ledger is a quiet one-line strip instead of a yellow warning card.
+- "Overdue/upcoming expenses" on the dashboard shows name, amount and due date in three separate columns; the amount no longer runs into the name.
 - Setting a member's or client's sign-in password now shows a confirmation toast; it used to close silently.
 - Other actions that succeeded silently now confirm with a toast: work-unit rename, amount, payment request, cancel and delete; cancelling a payment request in "My money"; withdrawing a tender winner; archiving, unarchiving and slimming down a project; deleting a task; claiming a task; resuming or discarding a pending timer and deleting a time log; adding images to a review and deleting a review; removing a member from a project; saving a meeting reminder.
 - Deleting a review, resuming a timer or deleting a time log no longer swallows errors, and the AI panel no longer reports "disconnected" or a changed sensitive-actions setting when the server refused it.

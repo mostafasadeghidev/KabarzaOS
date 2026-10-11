@@ -221,8 +221,8 @@ export function MeetingsView({
                       </Button>
                       <Button
                         size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
+                        variant="outline"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                         disabled={pending}
                         onClick={async () => {
                           if (await confirm({ title: tr('این جلسه حذف شود؟') })) run(() => deleteMeetingAction(m.id));

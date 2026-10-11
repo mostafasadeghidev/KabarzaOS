@@ -322,7 +322,7 @@ function ReviewDetail({
               <Pencil className="size-3.5" />{t('ویرایش')}
             </Button>
             <Button
-              size="sm" variant="ghost" className="text-destructive hover:text-destructive" disabled={deleting}
+              size="sm" variant="outline" className="text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleting}
               onClick={async () => {
                 if (!(await confirm({
                   title: t('این بازبینی حذف شود؟'),
@@ -479,7 +479,8 @@ function BackButton({ onBack }: { onBack: () => void }) {
   const t = useT();
   return (
     <div>
-      <Button size="sm" variant="ghost" className="px-0 text-muted-foreground hover:bg-transparent" onClick={onBack}>
+      {/* همان شکلِ دکمهٔ برگشتِ سرصفحه‌ها (۲.۲۵.۰). */}
+      <Button size="sm" variant="outline" onClick={onBack}>
         <ArrowRight className="size-4 ltr:rotate-180" />
         {t('همهٔ بازبینی‌ها')}
       </Button>

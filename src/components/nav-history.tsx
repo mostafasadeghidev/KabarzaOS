@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useSyncExternalStore } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { currentCrumbTitle } from '@/components/page-crumb';
+import { Button } from '@/components/ui/button';
 
 /**
  * تاریخچهٔ ناوبری داخلِ برنامه — «برگشت» به صفحه‌ای که واقعاً از آن آمده‌ای.
@@ -113,14 +114,14 @@ function usePrevious(): Entry | null {
  */
 export function HistoryBackLink({ href, children }: { href: string; children: React.ReactNode }) {
   const prev = usePrevious();
+  // ⚠️ دکمهٔ واقعی (۲.۲۵.۰)، نه متنِ کم‌رنگ — همان شکلِ `BACK_BUTTON` در همهٔ صفحه‌ها.
   return (
-    <Link
-      href={prev?.href ?? href}
-      className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-    >
-      {/* در راست‌به‌چپ «برگشت» به راست است؛ در چپ‌به‌راست به چپ. */}
-      <ArrowRight className="size-4 ltr:rotate-180" aria-hidden />
-      {prev ? prev.title : children}
-    </Link>
+    <Button asChild size="sm" variant="outline" className="w-fit">
+      <Link href={prev?.href ?? href}>
+        {/* در راست‌به‌چپ «برگشت» به راست است؛ در چپ‌به‌راست به چپ. */}
+        <ArrowRight className="size-4 ltr:rotate-180" aria-hidden />
+        {prev ? prev.title : children}
+      </Link>
+    </Button>
   );
 }

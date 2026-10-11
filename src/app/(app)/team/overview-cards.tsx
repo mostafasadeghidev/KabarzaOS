@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { StatCard } from '@/components/stat-card';
 import { Section } from '@/components/page-shell';
 import { t } from '@/i18n/server';
+import { Button } from '@/components/ui/button';
 
 export interface TeamCounts {
   projects: number;
@@ -31,10 +32,12 @@ export function TeamOverviewCards({ counts, withLink = false }: { counts: TeamCo
     <Section
       title={withLink ? t('تیمِ تحت مدیریت شما') : undefined}
       actions={withLink && (
-        <Link href="/team" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-          {t('گزارش و رصدِ تیم')}
-          <ArrowLeft className="size-4 ltr:rotate-180" aria-hidden />
-        </Link>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/team">
+            {t('گزارش و رصدِ تیم')}
+            <ArrowLeft className="size-4 ltr:rotate-180" aria-hidden />
+          </Link>
+        </Button>
       )}
     >
       <div className="grid grid-cols-2 gap-4 @xl/main:grid-cols-3 @5xl/main:grid-cols-5">

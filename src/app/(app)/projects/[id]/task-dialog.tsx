@@ -334,8 +334,8 @@ function TaskDialogBody({
                 <Button
                   type="button"
                   size="sm"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
+                  variant="outline"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                   disabled={deleting}
                   onClick={async () => {
                     if (!(await confirm({ title: tr('این تسک حذف شود؟') }))) return;

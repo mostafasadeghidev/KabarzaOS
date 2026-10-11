@@ -437,10 +437,11 @@ export function PayoutsView({
                               </Button>
                             </Hint>
                           )}
+                          {/* «رد» قابِ دکمه دارد مثلِ «تأیید» و «پرداخت» (۲.۲۵.۰) — ghost کنارشان متنِ ساده دیده می‌شد. */}
                           {isOwner && (r.status === 'pending' || r.status === 'approved') && (
                             <Button
-                              size="sm" variant="ghost"
-                              className="text-destructive hover:text-destructive"
+                              size="sm" variant="outline"
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                               disabled={pending}
                               onClick={() => { setRejectNote(''); setRejectTarget(r); }}
                             >

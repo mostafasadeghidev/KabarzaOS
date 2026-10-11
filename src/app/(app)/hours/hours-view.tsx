@@ -336,7 +336,7 @@ export function HoursView({ data }: { data: HoursData }) {
             </Field>
             <Button type="submit" size="sm">{t("فیلتر")}</Button>
             {filtered && (
-              <Link href="/hours" className="text-xs text-muted-foreground underline">{t("پاک‌کردن")}</Link>
+              <Button asChild size="sm" variant="outline"><Link href="/hours">{t("پاک‌کردن")}</Link></Button>
             )}
           </form>
           {/* پورتِ افزونه: جمع فقط وقتی فیلتری فعال است. */}

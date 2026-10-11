@@ -277,27 +277,33 @@ export function LedgerView({
         paging={paging}
       />
 
-      {/* ⚠️ نشانِ قفل پیش از فرم دیده می‌شود، نه بعد از خطا. */}
+      {/*
+        ⚠️ نشانِ قفل پیش از فرم دیده می‌شود، نه بعد از خطا — ولی یک خطِ آرام (۲.۲۵.۰)،
+        نه کارتِ هشدارِ زرد: دورهٔ بسته وضعیتِ عادیِ دفتر است و کارتِ زرد هر بار
+        نگاه را به خودش می‌کشید. دو پیوند هم دکمهٔ واقعی‌اند، نه متنِ زیرخط‌دار.
+      */}
       {lockDate && (
-        <Alert variant="warning">
-          <Lock />
-          <AlertDescription>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-dashed px-3 py-1.5 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <Lock className="size-3.5" />
             {tr('دورهٔ مالی تا {date} بسته است؛ ردیف‌های آن بازه تغییر نمی‌کنند.', {
               date: ltr(lockDate),
             })}
+          </span>
+          <span className="ms-auto flex flex-wrap gap-1">
             {periodScoped && (
-              <Link href={`/finance?account=${accountId}&all=1`} className="ms-auto underline">
-                {tr('نمایشِ ردیف‌های دورهٔ بسته')}
-              </Link>
+              <Button asChild size="xs" variant="outline">
+                <Link href={`/finance?account=${accountId}&all=1`}>{tr('نمایشِ ردیف‌های دورهٔ بسته')}</Link>
+              </Button>
             )}
             {/* پورتِ پیوندِ «مدیریت در تنظیمات» — بستن/بازکردنِ دوره فقط کارِ مالک است. */}
             {isOwner && (
-              <Link href="/settings?tab=fiscal" className={periodScoped ? 'ms-3 underline' : 'ms-auto underline'}>
-                {tr('مدیریتِ دورهٔ مالی')}
-              </Link>
+              <Button asChild size="xs" variant="outline">
+                <Link href="/settings?tab=fiscal">{tr('مدیریتِ دورهٔ مالی')}</Link>
+              </Button>
             )}
-          </AlertDescription>
-        </Alert>
+          </span>
+        </div>
       )}
 
       {/* ⚠️ پنج ستون فقط وقتی جا هست — رقمِ پولی در ستونِ باریک از کارت بیرون می‌زد. */}

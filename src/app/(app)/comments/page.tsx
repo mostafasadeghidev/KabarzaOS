@@ -31,7 +31,7 @@ export default async function CommentsPage() {
   return (
     <PageShell>
       <PageHeader
-        back={{ href: '/dashboard', label: t('بازگشت به داشبورد') }}
+        back={{ href: '/dashboard', label: t('داشبورد') }}
         title={t('کامنت‌های نیازمند بررسی')}
       />
       <CommentThreads threads={threads} reply={false} />

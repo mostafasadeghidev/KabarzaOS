@@ -664,8 +664,8 @@ function BidActions({
         <Button
           type="button"
           size="sm"
-          variant="ghost"
-          className="text-destructive hover:text-destructive"
+          variant="outline"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           disabled={pending}
           onClick={async () => {
             if (await confirm({ title: tr('برنده پس گرفته شود؟'), description: tr('نقش دوباره برای پیشنهاد باز می‌شود.') })) {
