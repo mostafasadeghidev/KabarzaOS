@@ -23,6 +23,7 @@ export interface FocusProject {
   title: string;
   statusName: string | null;
   statusGroup: string | null;
+  statusColor: string | null;
   badge: string;
 }
 
@@ -31,6 +32,7 @@ export interface FocusGroup {
   title: string;
   statusName: string | null;
   statusGroup: string | null;
+  statusColor: string | null;
   items: Array<{ label: string; who: string; whoId: number | null }>;
 }
 
@@ -59,6 +61,7 @@ export async function getFocusList(
       isTender: projects.isTender,
       statusGroup: tags.statusGroup,
       statusName: tagName(locale),
+      statusColor: tags.color,
     })
     .from(projects)
     .leftJoin(tags, eq(tags.id, projects.statusTagId))
@@ -70,7 +73,7 @@ export async function getFocusList(
   const byId = new Map(active.map((p) => [p.id, p]));
   if (ids.length === 0) return { view, projects: [], groups: [] };
   const chip = (p: (typeof active)[number]) => ({
-    id: p.id, title: p.title, statusName: p.statusName, statusGroup: p.statusGroup,
+    id: p.id, title: p.title, statusName: p.statusName, statusGroup: p.statusGroup, statusColor: p.statusColor,
   });
 
   if (view === 'bids_pending') {

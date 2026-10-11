@@ -94,7 +94,7 @@ export default async function FocusPage({
                 <Link href={focusHref(view, p.id)}>
                   <span className="flex min-w-0 flex-1 items-center gap-2">
                     <span className="truncate font-medium">{p.title}</span>
-                    <ProjectStatus name={p.statusName} group={p.statusGroup} />
+                    <ProjectStatus name={p.statusName} group={p.statusGroup} color={p.statusColor} />
                   </span>
                   <Badge variant="outline" className="num shrink-0">{p.badge}</Badge>
                 </Link>
@@ -111,7 +111,7 @@ export default async function FocusPage({
             <section key={g.id} className="rounded-lg border bg-card">
               <header className="flex flex-wrap items-center gap-2 border-b bg-muted/40 px-3 py-2 text-sm">
                 <Link href={focusHref(view, g.id)} className="font-semibold hover:underline">{g.title}</Link>
-                <ProjectStatus name={g.statusName} group={g.statusGroup} />
+                <ProjectStatus name={g.statusName} group={g.statusGroup} color={g.statusColor} />
                 <span className="text-xs text-muted-foreground tabular-nums">{t('{n} مورد', { n: g.items.length })}</span>
               </header>
               <ul>

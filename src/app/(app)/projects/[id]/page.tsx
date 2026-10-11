@@ -329,7 +329,7 @@ export default async function ProjectDetailPage({
             canManage
           />
         ) : (
-          <ProjectStatus name={detail.statusName} group={detail.statusGroup} />
+          <ProjectStatus name={detail.statusName} group={detail.statusGroup} color={detail.statusColor} />
         )}
         {project.scope === 'private' && <Badge variant="warning">{t("خصوصی")}</Badge>}
         {project.isArchived && <Badge variant="secondary">{t("بایگانی‌شده")}</Badge>}

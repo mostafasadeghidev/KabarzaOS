@@ -118,7 +118,7 @@ function MemberBlock({
                   </TableCell>
                   <TableCell>{p.myRoles.length > 0 ? p.myRoles.join(t('، ')) : '—'}</TableCell>
                   <TableNumericCell>{p.regDate ?? '—'}</TableNumericCell>
-                  <TableCell><ProjectStatus name={p.statusName} group={p.statusGroup} /></TableCell>
+                  <TableCell><ProjectStatus name={p.statusName} group={p.statusGroup} color={p.statusColor} /></TableCell>
                   <TableNumericCell>{p.deadline ?? '—'}</TableNumericCell>
                   <TableNumericCell>{hours(p.myMinutes)}</TableNumericCell>
                   <TableNumericCell>{p.myOpenTasks}</TableNumericCell>
@@ -179,7 +179,7 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
                   <TableNumericCell>
                     <SecretAmount value={`${format(p.price)} ${p.currencyCode ?? ''}`} />
                   </TableNumericCell>
-                  <TableCell><ProjectStatus name={p.statusName} group={p.statusGroup} /></TableCell>
+                  <TableCell><ProjectStatus name={p.statusName} group={p.statusGroup} color={p.statusColor} /></TableCell>
                   <TableCell>
                     <Badge variant={p.paymentStatus === 'paid' ? 'success' : p.paymentStatus === 'partial' ? 'warning' : 'outline'}>
                       {t(PAY_LABELS[p.paymentStatus] ?? p.paymentStatus)}

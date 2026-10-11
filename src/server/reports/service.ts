@@ -972,7 +972,8 @@ export async function getClientDetail(actor: Actor, userId: number) {
     select
       p.id as project_id, p.title, p.price::text as price, p.currency_id, c.code as currency_code,
       (pc.id = (select min(pc2.id) from project_clients pc2 where pc2.project_id = p.id)) as is_primary,
-      coalesce(nullif(t.name_i18n->>${locale}, ''), nullif(t.name_i18n->>'en', ''), t.name) as status_name
+      coalesce(nullif(t.name_i18n->>${locale}, ''), nullif(t.name_i18n->>'en', ''), t.name) as status_name,
+      t.color as status_color, t.status_group as status_group
     from project_clients pc
     join projects p on p.id = pc.project_id
     left join currencies c on c.id = p.currency_id
@@ -982,6 +983,7 @@ export async function getClientDetail(actor: Actor, userId: number) {
   `) as unknown as Array<{
     project_id: number | string; title: string; price: string; currency_id: number | string | null;
     currency_code: string | null; is_primary: boolean; status_name: string | null;
+    status_color: string | null; status_group: string | null;
   }>;
   const projectIds = rows.map((r) => Number(r.project_id));
 
@@ -1031,6 +1033,9 @@ export async function getClientDetail(actor: Actor, userId: number) {
       title: r.title,
       currencyCode: r.currency_code,
       statusName: r.status_name,
+      // رنگ و گروهِ وضعیت — همان چیپِ فهرستِ پروژه‌ها.
+      statusColor: r.status_color,
+      statusGroup: r.status_group,
       price: price.toFixed(2),
       expenses: expenses.toFixed(2),
       paid: paid.toFixed(2),

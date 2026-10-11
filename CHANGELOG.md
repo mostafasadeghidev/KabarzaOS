@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.22.1]
+
+### Fixed
+
+- Project status colors now match the Projects list everywhere. The member dashboard ("Your open projects" and the payments table), the Focus page, the project header for non-managers, the team project board and the client report showed the status in a generic group color (or a plain gray badge) instead of the color set for that status.
+
 ## [2.22.0]
 
 ### Added

@@ -31,6 +31,8 @@ export interface MemberDashboardRow {
   regDate: string | null;
   statusName: string | null;
   statusGroup: string | null;
+  /** رنگِ تگِ وضعیت — همان رنگِ فهرستِ پروژه‌ها؛ خالی = رنگِ گروه. */
+  statusColor: string | null;
   myRoles: string[];
   myMinutes: number;
   /** تسک‌های بازِ دیدنیِ کاربر (نه بسته، نه در انتظارِ بررسی). */
@@ -52,6 +54,8 @@ export interface ClientRow {
   deadline: string | null;
   statusName: string | null;
   statusGroup: string | null;
+  /** رنگِ تگِ وضعیت — همان رنگِ فهرستِ پروژه‌ها؛ خالی = رنگِ گروه. */
+  statusColor: string | null;
   price: string;
   currencyCode: string | null;
   paymentStatus: PaymentStatus;
@@ -149,6 +153,7 @@ async function memberSection(actor: Actor): Promise<MemberSection> {
       regDate: p.regDate,
       statusName: p.statusName,
       statusGroup: p.statusGroup,
+      statusColor: p.statusColor,
       myRoles: myRoleRows.get(p.id) ?? [],
       myMinutes: minutesBy.get(p.id) ?? 0,
       myOpenTasks: openBy.get(p.id) ?? 0,
@@ -193,6 +198,7 @@ async function clientSection(actor: Actor): Promise<ClientSection> {
       deadline: p.deadline,
       statusName: p.statusName,
       statusGroup: p.statusGroup,
+      statusColor: p.statusColor,
       price: p.price,
       currencyCode: p.currencyId ? (codeOf.get(p.currencyId) ?? null) : null,
       paymentStatus: summary.status,
