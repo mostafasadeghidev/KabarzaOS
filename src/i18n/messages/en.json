@@ -4030,5 +4030,14 @@
   "مبلغ نمی‌تواند از قسط‌های پرداخت‌شدهٔ این ردیف کمتر باشد.": "The amount cannot be less than the instalments already paid on this row.",
   "مبلغِ این قسط ({code})": "This instalment ({code})",
   "کمتر از کلِ مبلغ بنویسید تا بقیه بعداً پرداخت شود.": "Enter less than the full amount to pay the rest later.",
-  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "This member's unpaid work on this project — picking a row puts what is left of it into \"Deduct from balance\". Enter less to pay an instalment of it."
+  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "This member's unpaid work on this project — picking a row puts what is left of it into \"Deduct from balance\". Enter less to pay an instalment of it.",
+  "بازگشایی‌شده": "Reopened",
+  "برای این دوره خلاصهٔ حسابی ثبت نشده است.": "No account summary was saved for this period.",
+  "بسته": "Closed",
+  "تا {to}": "Until {to}",
+  "دوره تا {date} بسته است.": "The period is closed up to {date}.",
+  "دوره‌های بسته": "Closed periods",
+  "ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.": "Rows up to {date} are in a closed period and cannot change.",
+  "ردیف‌های دورهٔ بسته در دفترکل نشان داده نمی‌شوند و تغییر نمی‌کنند؛ ماندهٔ آخرشان به دورهٔ بعد منتقل شده است.": "Rows of a closed period are not shown in the ledger and cannot change; their final balance is carried into the next period.",
+  "ماندهٔ پایانِ دوره": "Closing balance"
 }

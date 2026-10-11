@@ -6,6 +6,9 @@ Versioning follows [SemVer](https://semver.org/).
 
 ### Added
 
+- **"Closed periods" tab in Finance**, shown once at least one period has been closed. Each period is a card with its date range and, per account, total deposits, withdrawals and closing balance, with buttons to open that account's rows of the period in the ledger and to export them as CSV. A period that was later reopened stays in the list marked "Reopened". The owner gets "Manage fiscal period" there.
+  - The closed-period strip at the top of the ledger is gone. Instead, the ledger entry form disables locked dates in its date picker and says up to which date the period is closed. When closed rows are shown on purpose, one short line explains why they have no buttons.
+
 - **Unit-based work can be paid in two or more instalments.** Each work row now has "paid so far" and "left"; a row that is partly paid shows "Partly paid" with what is left, and hovering the badge lists each instalment's date and amount.
   - "Unpaid work" in Finance → Member finance: the payment dialog has "This instalment", filled with what is left; enter less to keep the rest for later. The list shows what is left of each row.
   - Ledger form: picking a work row fills "Deduct from balance" with what is left; a smaller figure pays an instalment of it.

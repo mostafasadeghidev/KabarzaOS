@@ -4030,5 +4030,14 @@
   "مبلغ نمی‌تواند از قسط‌های پرداخت‌شدهٔ این ردیف کمتر باشد.": "Der Betrag darf nicht unter den bereits bezahlten Raten dieser Zeile liegen.",
   "مبلغِ این قسط ({code})": "Diese Rate ({code})",
   "کمتر از کلِ مبلغ بنویسید تا بقیه بعداً پرداخت شود.": "Weniger als den vollen Betrag eingeben, um den Rest später zu zahlen.",
-  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Unbezahlte Arbeit dieses Mitglieds in diesem Projekt — bei Auswahl wird der offene Rest unter „Vom Guthaben abziehen“ eingesetzt. Weniger eingeben, um eine Rate zu zahlen."
+  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Unbezahlte Arbeit dieses Mitglieds in diesem Projekt — bei Auswahl wird der offene Rest unter „Vom Guthaben abziehen“ eingesetzt. Weniger eingeben, um eine Rate zu zahlen.",
+  "بازگشایی‌شده": "Wieder geöffnet",
+  "برای این دوره خلاصهٔ حسابی ثبت نشده است.": "Für diesen Zeitraum wurde keine Kontozusammenfassung gespeichert.",
+  "بسته": "Geschlossen",
+  "تا {to}": "Bis {to}",
+  "دوره تا {date} بسته است.": "Der Zeitraum ist bis {date} geschlossen.",
+  "دوره‌های بسته": "Geschlossene Zeiträume",
+  "ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.": "Zeilen bis {date} liegen in einem geschlossenen Zeitraum und ändern sich nicht.",
+  "ردیف‌های دورهٔ بسته در دفترکل نشان داده نمی‌شوند و تغییر نمی‌کنند؛ ماندهٔ آخرشان به دورهٔ بعد منتقل شده است.": "Zeilen geschlossener Zeiträume erscheinen nicht im Hauptbuch und ändern sich nicht; ihr Endsaldo wird in den nächsten Zeitraum übertragen.",
+  "ماندهٔ پایانِ دوره": "Endsaldo"
 }

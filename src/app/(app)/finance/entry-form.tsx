@@ -34,6 +34,13 @@ import { Toggle } from '@/components/ui/toggle';
 import { DatePicker } from '@/components/ui/date-picker';
 
 
+/** فردای یک تاریخِ ISO — نخستین روزِ بازِ پس از قفل. */
+function dayAfter(iso: string): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   const tr = useT();
@@ -51,6 +58,7 @@ export function EntryForm({
   options,
   accountId,
   today,
+  lockDate = null,
   keep,
   fieldErrors,
   error,
@@ -60,6 +68,8 @@ export function EntryForm({
   options: FormOptions;
   accountId: number;
   today: string;
+  /** تاریخِ قفلِ دوره (۲.۲۵.۰) — روزهای تا این تاریخ در انتخابگر غیرفعال‌اند. */
+  lockDate?: string | null;
   keep: (name: string, fallback?: string) => string;
   fieldErrors?: Record<string, string | undefined>;
   error?: string;
@@ -284,8 +294,13 @@ export function EntryForm({
             id="l-date" name="entryDate"
             defaultValue={keep('entryDate', editing?.entryDate ?? today)}
             onChange={setEntryDate}
+            // ⚠️ جای نوارِ قفلِ بالای دفترکل (۲.۲۵.۰): تاریخِ دورهٔ بسته اصلاً انتخاب‌شدنی نیست.
+            min={lockDate ? dayAfter(lockDate) : undefined}
             required
           />
+          {lockDate && (
+            <FieldDescription>{tr('دوره تا {date} بسته است.', { date: lockDate })}</FieldDescription>
+          )}
           {fieldErrors?.entryDate && <FieldError>{tr(fieldErrors.entryDate)}</FieldError>}
         </Field>
 

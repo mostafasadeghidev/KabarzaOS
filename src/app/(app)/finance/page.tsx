@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import {
-  getAccountFormOptions, getEntryFormOptions, getLedger, listAccounts,
+  getAccountFormOptions, getEntryFormOptions, getLedger, listAccounts, listClosedPeriods,
 } from '@/server/finance/service';
 import { bankDirectory, listRecurring, listRequests , listUnpaidUnits, listDetachedPayments } from '@/server/finance/payouts';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -120,7 +120,7 @@ export default async function Finance({
     includeLocked: query.all === '1',
   };
 
-  const [data, requests, archivedRequests, recurring, directory, unpaidUnits, detachedPayments] = await Promise.all([
+  const [data, requests, archivedRequests, recurring, directory, unpaidUnits, detachedPayments, closedPeriods] = await Promise.all([
     getLedger(actor, filter),
     listRequests(actor),
     listRequests(actor, 'archived'),
@@ -128,6 +128,7 @@ export default async function Finance({
     bankDirectory(actor),
     listUnpaidUnits(actor),
     listDetachedPayments(actor),
+    listClosedPeriods(actor),
   ]);
   const options = data.canManage
     ? await getEntryFormOptions(actor)
@@ -174,6 +175,7 @@ export default async function Finance({
         archivedRequests={archivedRequests}
         unpaidUnits={unpaidUnits}
         detachedPayments={detachedPayments}
+        closedPeriods={closedPeriods}
         isOwner={actor.roles.includes('owner')}
         categories={options.categories}
         recurring={recurring}

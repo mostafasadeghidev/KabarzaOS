@@ -4030,5 +4030,14 @@
   "مبلغ نمی‌تواند از قسط‌های پرداخت‌شدهٔ این ردیف کمتر باشد.": "Tutar bu satırda ödenmiş taksitlerden az olamaz.",
   "مبلغِ این قسط ({code})": "Bu taksit ({code})",
   "کمتر از کلِ مبلغ بنویسید تا بقیه بعداً پرداخت شود.": "Kalanını sonra ödemek için tutarın tamamından az girin.",
-  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Bu üyenin bu projedeki ödenmemiş işi — bir satır seçince kalanı «Alacağından düşülsün» alanına gelir. Taksit ödemek için daha az girin."
+  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Bu üyenin bu projedeki ödenmemiş işi — bir satır seçince kalanı «Alacağından düşülsün» alanına gelir. Taksit ödemek için daha az girin.",
+  "بازگشایی‌شده": "Yeniden açıldı",
+  "برای این دوره خلاصهٔ حسابی ثبت نشده است.": "Bu dönem için hesap özeti kaydedilmedi.",
+  "بسته": "Kapalı",
+  "تا {to}": "{to} tarihine kadar",
+  "دوره تا {date} بسته است.": "Dönem {date} tarihine kadar kapalı.",
+  "دوره‌های بسته": "Kapalı dönemler",
+  "ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.": "{date} tarihine kadarki satırlar kapalı dönemdedir ve değişmez.",
+  "ردیف‌های دورهٔ بسته در دفترکل نشان داده نمی‌شوند و تغییر نمی‌کنند؛ ماندهٔ آخرشان به دورهٔ بعد منتقل شده است.": "Kapalı dönemin satırları defterde gösterilmez ve değişmez; son bakiyeleri sonraki döneme aktarılır.",
+  "ماندهٔ پایانِ دوره": "Dönem sonu bakiyesi"
 }

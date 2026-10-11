@@ -1358,6 +1358,64 @@ export async function closingDatesQuery(): Promise<string[]> {
   return rows.map((r) => r.closeDate);
 }
 
+/**
+ * تبِ «دوره‌های بسته» (۲.۲۵.۰) — هر دوره با بازه‌اش و ماندهٔ منجمدِ هر حساب.
+ *
+ * ⚠️ فقط حساب‌هایی که کاربر می‌بیند (دامنهٔ حسابدار، R-ACC-02). دوره‌ای که بعداً
+ * بازگشایی شده (`reopened`) در تاریخچه می‌ماند — بستن و بازکردن هر دو سابقه‌اند.
+ * قفلی که خلاصه ندارد (قفلِ دستیِ قدیمی) هم یک دورهٔ بی‌ردیف دیده می‌شود.
+ */
+export async function listClosedPeriods(actor: Actor) {
+  assertCanView(actor, 'finance');
+  const [lockDate, scope, rows] = await Promise.all([
+    currentLockDate(),
+    accountScope(actor),
+    db.select({
+      closeDate: fiscalClosings.closeDate,
+      periodStart: fiscalClosings.periodStart,
+      accountId: fiscalClosings.accountId,
+      accountName: accounts.name,
+      accountScope: accounts.scope,
+      currencyCode: currencies.code,
+      deposits: fiscalClosings.deposits,
+      withdrawals: fiscalClosings.withdrawals,
+      closingBalance: fiscalClosings.closingBalance,
+    })
+      .from(fiscalClosings)
+      .innerJoin(accounts, eq(accounts.id, fiscalClosings.accountId))
+      .leftJoin(currencies, eq(currencies.id, fiscalClosings.currencyId))
+      .orderBy(desc(fiscalClosings.closeDate), accounts.sortOrder, accounts.id),
+  ]);
+
+  const scopes = visibleScopes(actor);
+  const periods = new Map<string, {
+    closeDate: string; periodStart: string | null; reopened: boolean;
+    accounts: Array<{ accountId: number; accountName: string; currencyCode: string | null; deposits: string; withdrawals: string; closingBalance: string }>;
+  }>();
+  for (const r of rows) {
+    // ⚠️ نخستین دوره آغاز ندارد و `closePeriod` به‌جایش ۱۹۷۰-۰۱-۰۱ می‌نویسد — «تا …» نشان داده شود.
+    const start = r.periodStart <= '1970-01-01' ? null : r.periodStart;
+    const period = periods.get(r.closeDate) ?? {
+      closeDate: r.closeDate,
+      periodStart: start,
+      reopened: lockDate === null || r.closeDate > lockDate,
+      accounts: [],
+    };
+    if (start !== null && period.periodStart !== null && start < period.periodStart) period.periodStart = start;
+    if (scopes.includes(r.accountScope as 'company' | 'private') && canSeeAccount(r.accountId, scope)) {
+      period.accounts.push({
+        accountId: r.accountId, accountName: r.accountName, currencyCode: r.currencyCode,
+        deposits: r.deposits, withdrawals: r.withdrawals, closingBalance: r.closingBalance,
+      });
+    }
+    periods.set(r.closeDate, period);
+  }
+  if (lockDate && !periods.has(lockDate)) {
+    periods.set(lockDate, { closeDate: lockDate, periodStart: null, reopened: false, accounts: [] });
+  }
+  return [...periods.values()].sort((a, b) => (a.closeDate < b.closeDate ? 1 : -1));
+}
+
 /** ردیف‌های خلاصهٔ یک تاریخِ بستن، همراهِ نامِ حساب. */
 export async function closingRows(actor: Actor, closeDate: string) {
   assertCanView(actor, 'finance');

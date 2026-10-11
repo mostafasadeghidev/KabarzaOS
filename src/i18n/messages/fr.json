@@ -4030,5 +4030,14 @@
   "مبلغ نمی‌تواند از قسط‌های پرداخت‌شدهٔ این ردیف کمتر باشد.": "Le montant ne peut pas être inférieur aux versements déjà payés sur cette ligne.",
   "مبلغِ این قسط ({code})": "Montant de ce versement ({code})",
   "کمتر از کلِ مبلغ بنویسید تا بقیه بعداً پرداخت شود.": "Saisissez moins que le total pour payer le reste plus tard.",
-  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Travail impayé de ce membre sur ce projet — en choisissant une ligne, son reste va dans « Déduire du solde ». Saisissez moins pour payer un versement."
+  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Travail impayé de ce membre sur ce projet — en choisissant une ligne, son reste va dans « Déduire du solde ». Saisissez moins pour payer un versement.",
+  "بازگشایی‌شده": "Rouvert",
+  "برای این دوره خلاصهٔ حسابی ثبت نشده است.": "Aucun résumé de compte n'a été enregistré pour cette période.",
+  "بسته": "Clôturé",
+  "تا {to}": "Jusqu'au {to}",
+  "دوره تا {date} بسته است.": "La période est clôturée jusqu'au {date}.",
+  "دوره‌های بسته": "Périodes clôturées",
+  "ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.": "Les lignes jusqu'au {date} sont dans une période clôturée et ne changent pas.",
+  "ردیف‌های دورهٔ بسته در دفترکل نشان داده نمی‌شوند و تغییر نمی‌کنند؛ ماندهٔ آخرشان به دورهٔ بعد منتقل شده است.": "Les lignes d'une période clôturée n'apparaissent pas dans le registre et ne changent pas ; leur solde final est reporté sur la période suivante.",
+  "ماندهٔ پایانِ دوره": "Solde de clôture"
 }

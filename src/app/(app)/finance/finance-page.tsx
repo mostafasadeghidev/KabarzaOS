@@ -9,6 +9,7 @@ import type { AccountOption, EntryRow, FormOptions } from './ledger-view';
 import { PayoutsView, type RecurringRow, type RequestRow , type UnitRow, type DetachedRow } from './payouts-view';
 import { AccountsView, type AccountFormOptions } from './accounts-view';
 import { VendorsView, type VendorRow } from './vendors-view';
+import { ClosedPeriodsView, type ClosedPeriod } from './closed-periods-view';
 import { useT } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -34,6 +35,11 @@ const TABS = [
    * مدیرِ مالی (`vendorRows` برای بقیه null است).
    */
   { key: 'vendors', label: 'طرف‌حساب‌ها', ownerOnly: false },
+  /**
+   * دوره‌های بسته (۲.۲۵.۰) — جای نوارِ قفلِ بالای دفترکل؛ فقط وقتی دست‌کم یک
+   * دوره بسته شده باشد.
+   */
+  { key: 'closed', label: 'دوره‌های بسته', ownerOnly: false },
 ] as const;
 
 /**
@@ -45,6 +51,7 @@ export function FinancePage({
   archivedRequests,
   unpaidUnits,
   detachedPayments,
+  closedPeriods,
   isOwner,
   categories,
   directory,
@@ -59,6 +66,7 @@ export function FinancePage({
   archivedRequests: RequestRow[];
   unpaidUnits: UnitRow[];
   detachedPayments: DetachedRow[];
+  closedPeriods: ClosedPeriod[];
   /** تأیید/رد فقط مالک؛ حسابدار پرداخت می‌کند. */
   isOwner: boolean;
   categories: Array<{ id: number; name: string | null }>;
@@ -103,7 +111,9 @@ export function FinancePage({
   );
   const visible = TABS.filter((t) => (t.key === 'vendors'
     ? vendorRows !== null
-    : !t.ownerOnly || accountOptions !== null));
+    : t.key === 'closed'
+      ? closedPeriods.length > 0
+      : !t.ownerOnly || accountOptions !== null));
 
   return (
     <div className="grid gap-4">
@@ -129,6 +139,8 @@ export function FinancePage({
       )}
 
       {tab === 'vendors' && vendorRows && <VendorsView rows={vendorRows} />}
+
+      {tab === 'closed' && <ClosedPeriodsView periods={closedPeriods} isOwner={isOwner} />}
 
       {tab === 'accounts' && accountOptions && (
         <AccountsView

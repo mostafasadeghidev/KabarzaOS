@@ -278,32 +278,16 @@ export function LedgerView({
       />
 
       {/*
-        ⚠️ نشانِ قفل پیش از فرم دیده می‌شود، نه بعد از خطا — ولی یک خطِ آرام (۲.۲۵.۰)،
-        نه کارتِ هشدارِ زرد: دورهٔ بسته وضعیتِ عادیِ دفتر است و کارتِ زرد هر بار
-        نگاه را به خودش می‌کشید. دو پیوند هم دکمهٔ واقعی‌اند، نه متنِ زیرخط‌دار.
+        ⚠️ نوارِ «دورهٔ بسته» از اینجا به تبِ «دوره‌های بسته» رفت (۲.۲۵.۰): با بستنِ
+        سالانه دوره‌ها روی هم جمع می‌شوند. جلوی اشتباه را حالا خودِ فرم می‌گیرد —
+        تاریخ‌های قفل در انتخابگرِ تاریخِ ردیف غیرفعال‌اند. فقط وقتی ردیف‌های دورهٔ
+        بسته عمداً باز شده‌اند (`all=1`) یک خطِ کوتاه می‌گوید چرا دکمه ندارند.
       */}
-      {lockDate && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-dashed px-3 py-1.5 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <Lock className="size-3.5" />
-            {tr('دورهٔ مالی تا {date} بسته است؛ ردیف‌های آن بازه تغییر نمی‌کنند.', {
-              date: ltr(lockDate),
-            })}
-          </span>
-          <span className="ms-auto flex flex-wrap gap-1">
-            {periodScoped && (
-              <Button asChild size="xs" variant="outline">
-                <Link href={`/finance?account=${accountId}&all=1`}>{tr('نمایشِ ردیف‌های دورهٔ بسته')}</Link>
-              </Button>
-            )}
-            {/* پورتِ پیوندِ «مدیریت در تنظیمات» — بستن/بازکردنِ دوره فقط کارِ مالک است. */}
-            {isOwner && (
-              <Button asChild size="xs" variant="outline">
-                <Link href="/settings?tab=fiscal">{tr('مدیریتِ دورهٔ مالی')}</Link>
-              </Button>
-            )}
-          </span>
-        </div>
+      {lockDate && !periodScoped && (
+        <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Lock className="size-3.5" />
+          {tr('ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.', { date: ltr(lockDate) })}
+        </p>
       )}
 
       {/* ⚠️ پنج ستون فقط وقتی جا هست — رقمِ پولی در ستونِ باریک از کارت بیرون می‌زد. */}
@@ -477,6 +461,7 @@ export function LedgerView({
               options={options}
               accountId={accountId}
               today={today}
+              lockDate={lockDate}
               keep={keep}
               fieldErrors={entryState.fieldErrors}
               error={entryState.error ? tr(entryState.error) : undefined}

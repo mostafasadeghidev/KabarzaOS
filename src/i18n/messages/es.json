@@ -4030,5 +4030,14 @@
   "مبلغ نمی‌تواند از قسط‌های پرداخت‌شدهٔ این ردیف کمتر باشد.": "El importe no puede ser menor que las cuotas ya pagadas de esta fila.",
   "مبلغِ این قسط ({code})": "Importe de esta cuota ({code})",
   "کمتر از کلِ مبلغ بنویسید تا بقیه بعداً پرداخت شود.": "Escribe menos del total para pagar el resto más tarde.",
-  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Trabajo sin pagar de este miembro en este proyecto: al elegir una fila, lo que queda pasa a «Descontar del saldo». Escribe menos para pagar una cuota."
+  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Trabajo sin pagar de este miembro en este proyecto: al elegir una fila, lo que queda pasa a «Descontar del saldo». Escribe menos para pagar una cuota.",
+  "بازگشایی‌شده": "Reabierto",
+  "برای این دوره خلاصهٔ حسابی ثبت نشده است.": "No se guardó resumen de cuentas para este periodo.",
+  "بسته": "Cerrado",
+  "تا {to}": "Hasta {to}",
+  "دوره تا {date} بسته است.": "El periodo está cerrado hasta {date}.",
+  "دوره‌های بسته": "Periodos cerrados",
+  "ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.": "Las filas hasta {date} están en un periodo cerrado y no cambian.",
+  "ردیف‌های دورهٔ بسته در دفترکل نشان داده نمی‌شوند و تغییر نمی‌کنند؛ ماندهٔ آخرشان به دورهٔ بعد منتقل شده است.": "Las filas de un periodo cerrado no se muestran en el libro y no cambian; su saldo final pasa al periodo siguiente.",
+  "ماندهٔ پایانِ دوره": "Saldo de cierre"
 }
