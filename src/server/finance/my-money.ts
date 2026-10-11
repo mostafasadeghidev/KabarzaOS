@@ -5,6 +5,7 @@ import {
 } from '@/db/schema';
 import { membershipProjectIds } from '@/server/projects/authority';
 import { rateSource } from '@/server/finance/service';
+import { unitPaidOf, unitRemaining } from '@/domain/team-money/unit-installments';
 import {
   paymentStatus, rowValueIn, summarizeProject, type PaymentStatus,
 } from '@/domain/team-money/payments';
@@ -191,6 +192,7 @@ export async function getMyMoney(actor: Actor) {
         entryDate: unitEntries.entryDate,
         quantity: unitEntries.quantity,
         amount: unitEntries.amount,
+        paidAmount: unitEntries.paidAmount,
         status: unitEntries.status,
       })
       .from(unitEntries)
@@ -270,8 +272,9 @@ export async function getMyMoney(actor: Actor) {
     const paid = payoutLines.reduce((sum, l) => sum + zero(l.counted ?? l.amount), 0);
 
     const myUnits = units.filter((u) => u.projectId === projectId);
-    const unitPaid = myUnits.filter((u) => u.status === 'paid').reduce((s, u) => s + zero(u.amount), 0);
-    const unitUnpaid = myUnits.filter((u) => u.status !== 'paid').reduce((s, u) => s + zero(u.amount), 0);
+    // قسط‌ها (۲.۲۵.۰): پرداخت‌شده = جمعِ قسط‌ها؛ پرداخت‌نشده = مانده‌ها.
+    const unitPaid = myUnits.reduce((s, u) => s + unitPaidOf(u.status, u.amount, u.paidAmount), 0);
+    const unitUnpaid = myUnits.reduce((s, u) => s + unitRemaining(u.amount, unitPaidOf(u.status, u.amount, u.paidAmount)), 0);
 
     return {
       projectId,

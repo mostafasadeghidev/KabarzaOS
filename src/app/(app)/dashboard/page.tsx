@@ -372,14 +372,16 @@ export default async function DashboardPage({
             {/* پورتِ فهرستِ سررسیدها (فقط مدیرِ مالی): گذشته‌ها قرمز، ۷ روزِ آینده خاکستری، «+N موردِ دیگر». */}
             {risk.expenseDues.length > 0 && (
               <DashPanel title={t("هزینه‌های سررسیدشده/نزدیک")} action={{ href: '/finance?tab=expenses', label: t("هزینه‌ها") }}>
-                <ul className="space-y-1.5 text-sm">
+                {/*
+                  سه ستونِ جدا (۲.۲۵.۰): نام · مبلغ · سررسید. پیش از این مبلغ با « · » به
+                  دنبالِ نام می‌چسبید و در راست‌به‌چپ دو عدد و نام درهم دیده می‌شدند.
+                */}
+                <ul className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-4 gap-y-1.5 text-sm">
                   {risk.expenseDues.slice(0, 8).map((e) => (
-                    <li key={e.id} className="flex items-center justify-between gap-3">
-                      <span className="truncate">
-                        {e.title}
-                        <span className="num text-muted-foreground"> · {e.amount}</span>
-                      </span>
-                      <span className={`num shrink-0 text-xs ${e.overdue ? 'text-destructive' : 'text-muted-foreground'}`}>{e.due}</span>
+                    <li key={e.id} className="contents">
+                      <span className="truncate">{e.title}</span>
+                      <span className="num text-end text-muted-foreground" dir="ltr">{e.amount}</span>
+                      <span className={`num text-xs ${e.overdue ? 'text-destructive' : 'text-muted-foreground'}`}>{e.due}</span>
                     </li>
                   ))}
                 </ul>

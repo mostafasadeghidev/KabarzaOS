@@ -4,7 +4,7 @@ import { buildTimelines, lastActorOf } from '@/domain/ledger/timeline';
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
 import { alias } from 'drizzle-orm/pg-core';
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   accounts, accountUsers, auditLog, currencies, exchangeRates, fiscalClosings, fiscalLocks,
@@ -12,12 +12,13 @@ import {
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, ForbiddenError, visibleScopes } from '@/domain/access/guard';
-import { buildTransferLegs, computeAmounts, validateEntry, type TransferInput, MissingRateError } from '@/domain/ledger/amounts';
+import { buildTransferLegs, computeAmounts, validateEntry, withSettledEur, type TransferInput, MissingRateError } from '@/domain/ledger/amounts';
 import {
   assertDeletable, assertWritable, closingBalance, isValidCloseDate, nextLockDate, periodStart,
 } from '@/domain/ledger/fiscal';
 import { planReceipts } from '@/domain/files/upload';
 import { learnedRate, paymentNote, planPaymentMirror } from '@/domain/ledger/mirror';
+import { unitRemaining } from '@/domain/team-money/unit-installments';
 import { fileSummaries, removeFiles } from '@/server/files/service';
 import { convert, type RateSource } from '@/domain/currency/rates';
 import { AccountError, assertAccountDeletable, canSeeAccount, visibleAccountIds } from '@/domain/finance/accounts';
@@ -297,19 +298,33 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
       total: sql<string>`coalesce(sum(${ledger.amountAccount}), 0)::text`,
     })
     .from(ledger);
+  /**
+   * ⚠️ استثنا (۲.۲۵.۰): «نمای دورهٔ بسته» از تبِ «دوره‌های بسته» (همه + «تا» ≤ قفل)
+   * جمع‌های **همان دوره** را نشان می‌دهد — همان ارقامِ خلاصهٔ منجمد. کارت‌های کلِ
+   * حساب کنارِ ردیف‌های یک دورهٔ قدیمی دو عددِ ناهمخوان می‌ساخت.
+   */
+  const closedView = Boolean(lockDate) && Boolean(input.includeLocked) && Boolean(input.to) && input.to! <= lockDate!;
   const [totals, carried] = await Promise.all([
     totalsQuery
-      .where(periodScoped
-        ? and(eq(ledger.accountId, input.accountId), gt(ledger.entryDate, lockDate!))
-        : eq(ledger.accountId, input.accountId))
+      .where(closedView
+        ? and(
+            eq(ledger.accountId, input.accountId),
+            lte(ledger.entryDate, input.to!),
+            ...(input.from ? [gte(ledger.entryDate, input.from)] : []),
+          )
+        : periodScoped
+          ? and(eq(ledger.accountId, input.accountId), gt(ledger.entryDate, lockDate!))
+          : eq(ledger.accountId, input.accountId))
       .groupBy(ledger.direction),
-    periodScoped
+    periodScoped || (closedView && input.from)
       ? db.select({
         direction: ledger.direction,
         total: sql<string>`coalesce(sum(${ledger.amountAccount}), 0)::text`,
       })
         .from(ledger)
-        .where(and(eq(ledger.accountId, input.accountId), lte(ledger.entryDate, lockDate!)))
+        .where(closedView
+          ? and(eq(ledger.accountId, input.accountId), lt(ledger.entryDate, input.from!))
+          : and(eq(ledger.accountId, input.accountId), lte(ledger.entryDate, lockDate!)))
         .groupBy(ledger.direction)
       : Promise.resolve([] as Array<{ direction: 'in' | 'out'; total: string }>),
   ]);
@@ -366,7 +381,7 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
      * ⚠️ جمع‌ها **همیشه** کلِ حساب‌اند (یا کلِ دورهٔ باز)، نه صفحه یا فیلترِ
      * فعال: ماندهٔ حساب یک واقعیتِ حسابداری است و با فیلترِ نمایش عوض نمی‌شود.
      */
-    totals: { in: totalIn, out: totalOut, balance, opening, carried: periodScoped },
+    totals: { in: totalIn, out: totalOut, balance, opening, carried: periodScoped || Boolean(closedView && input.from) },
     paging: { page, perPage, total, totalPages: Math.max(1, Math.ceil(total / perPage)) },
     lockDate,
     periodScoped,
@@ -617,14 +632,15 @@ export async function createEntry(actor: Actor, rawInput: EntryInput): Promise<n
   const officeId = account.officeId ?? input.officeId;
   const officeCurrencyId = await officeCurrencyFor(officeId, baseCurrencyId);
 
-  const amounts = computeAmounts(source, {
+  // یوروی ردیف = عددِ «از طلبِ … کم شود» وقتی نوشته شده (۲.۲۵.۰).
+  const amounts = withSettledEur(computeAmounts(source, {
     amount: input.amount,
     currencyId: input.currencyId,
     accountCurrencyId: account.currencyId,
     officeCurrencyId,
     baseCurrencyId,
     amountAccountOverride: input.amountAccountOverride ?? null,
-  });
+  }), source, { amount: input.amountSettled, currencyId: input.settledCurrencyId }, { baseCurrencyId, officeCurrencyId });
   assertRatesKnown(amounts, input, { officeCurrencyId, baseCurrencyId });
 
   const rows = await db.insert(ledger).values({
@@ -717,14 +733,14 @@ export async function updateEntry(actor: Actor, entryId: number, rawInput: Entry
   // در ارزِ **دفتر** حساب می‌شود، نه ارزِ حساب (وگرنه گزارشِ منطقه‌ای بی‌معنا بود).
   const officeId = account.officeId ?? input.officeId;
   const officeCurrencyId = await officeCurrencyFor(officeId, baseCurrencyId);
-  const amounts = computeAmounts(source, {
+  const amounts = withSettledEur(computeAmounts(source, {
     amount: input.amount,
     currencyId: input.currencyId,
     accountCurrencyId: account.currencyId,
     officeCurrencyId,
     baseCurrencyId,
     amountAccountOverride: input.amountAccountOverride ?? null,
-  });
+  }), source, { amount: input.amountSettled, currencyId: input.settledCurrencyId }, { baseCurrencyId, officeCurrencyId });
   assertRatesKnown(amounts, input, { officeCurrencyId, baseCurrencyId });
 
   // «موجودها منهای حذف‌شده‌ها، به‌علاوهٔ تازه‌ها» — نه جایگزینیِ کامل.
@@ -794,11 +810,17 @@ export async function deleteEntry(actor: Actor, entryId: number): Promise<void> 
   }
 
   const ids = rows.map((r) => r.id);
+  // ⚠️ قسطِ کارکردی که با این ردیف پرداخت شده بود (۲.۲۵.۰) با حذفِ ردیف می‌رود
+  // (cascade)؛ پرداخت‌شده و وضعیتِ همان کارکرد باید از نو حساب شود.
+  // import ِ پویا: payouts خودش این ماژول را وارد می‌کند.
+  const { syncUnit, unitsPaidBy } = await import('./payouts');
+  const touchedUnits = await unitsPaidBy(ids);
   await db.delete(tagRelations).where(and(
     eq(tagRelations.objectType, 'ledger'),
     inArray(tagRelations.objectId, ids),
   ));
   await db.delete(ledger).where(inArray(ledger.id, ids));
+  for (const unitId of touchedUnits) await syncUnit(unitId);
   // ⚠️ رسیدهای ردیفِ حذف‌شده دیگر صاحبی ندارند؛ در باکت هم نمی‌مانند.
   await removeFiles(await unreferencedReceipts(ids, [...new Set(rows.flatMap((r) => r.receiptIds ?? []))]));
   await audit(actor, 'ledger.delete', entryId, before, rows.length > 1 ? { transferGroup: before.transferGroup, ids } : null);
@@ -896,14 +918,14 @@ export async function getEntryFormOptions(actor: Actor) {
 
   const [
     accountRows, currencyRows, categoryRows, projectRows, vendorRows, peopleRows, membershipRows, unitRows,
-    clientRows,
+    clientRows, rateRows,
   ] = await Promise.all([
       listAccounts(actor),
       db.select({ id: currencies.id, code: currencies.code, isDefault: currencies.isDefault })
         .from(currencies).where(eq(currencies.isActive, true)).orderBy(currencies.id),
       // ⚠️ جهتِ تگ روی `status_group` می‌نشیند (همان جای نسخهٔ قبلی)؛ مقدارِ
       // نامعتبر یا خالی یعنی «هردو»، تا تگی بی‌صدا ناپدید نشود.
-      db.select({ id: tags.id, name: tagName(await currentLocale()), dir: tags.statusGroup })
+      db.select({ id: tags.id, name: tagName(await currentLocale()), dir: tags.statusGroup, billable: tags.billableDefault })
         .from(tags).where(eq(tags.type, 'ledger_category')).orderBy(tags.sortOrder, tags.id),
       db.select({ id: projects.id, title: projects.title, currencyId: projects.currencyId })
         .from(projects)
@@ -936,6 +958,7 @@ export async function getEntryFormOptions(actor: Actor) {
       db.select({
         id: unitEntries.id, projectId: unitEntries.projectId, userId: unitEntries.userId,
         entryDate: unitEntries.entryDate, quantity: unitEntries.quantity, amount: unitEntries.amount,
+        paidAmount: unitEntries.paidAmount,
         currencyId: unitEntries.currencyId, code: currencies.code, symbol: currencies.symbol,
         decimals: currencies.decimals,
       }).from(unitEntries)
@@ -945,6 +968,15 @@ export async function getEntryFormOptions(actor: Actor) {
 
       // کارفرمایانِ پروژه — برای باریک‌سازیِ پروژه به طرفِ حساب (پورتِ `projectUsers`).
       db.select({ projectId: projectClients.projectId, userId: projectClients.userId }).from(projectClients),
+
+      /**
+       * تاریخچهٔ نرخ‌ها (۲.۲۵.۰) — فرم نرخِ **روزِ پرداخت** را پیشنهاد می‌دهد، نه
+       * آخرین نرخ: پرداختی که سه روز بعد ثبت شود، با نرخِ همان روزِ واریز حساب می‌شود.
+       */
+      db.select({
+        from: exchangeRates.fromCurrencyId, to: exchangeRates.toCurrencyId,
+        rate: exchangeRates.rate, date: exchangeRates.effectiveDate,
+      }).from(exchangeRates).orderBy(desc(exchangeRates.effectiveDate), desc(exchangeRates.id)),
     ]);
 
   const memberships = membershipRows;
@@ -973,14 +1005,18 @@ export async function getEntryFormOptions(actor: Actor) {
       const cur = u.currencyId !== null && u.code !== null
         ? { id: u.currencyId, code: u.code, symbol: u.symbol ?? '', decimals: u.decimals ?? 2 }
         : undefined;
+      // ⚠️ مبلغِ انتخابگر «مانده» است، نه کلِ ردیف (۲.۲۵.۰) — ردیفِ بخشی‌پرداخت‌شده دوباره کامل پرداخت نشود.
+      const remaining = unitRemaining(u.amount, u.paidAmount).toFixed(4);
+      const partial = Number(u.paidAmount) > 0;
       (acc[`${u.projectId}:${u.userId}`] ??= []).push({
         id: u.id,
-        amount: u.amount,
+        amount: remaining,
         currencyId: u.currencyId,
-        text: `${u.entryDate} · ${Number(u.quantity)}× · ${formatMoney(u.amount, cur)}`,
+        text: `${u.entryDate} · ${Number(u.quantity)}× · ${formatMoney(remaining, cur)}${partial ? ` / ${formatMoney(u.amount, cur)}` : ''}`,
       });
       return acc;
     }, {}),
+    rates: rateRows.map((r) => ({ from: r.from, to: r.to, rate: String(r.rate), date: String(r.date) })),
     defaultCurrencyId: currencyRows.find((c) => c.isDefault)?.id ?? null,
     lockDate: await currentLockDate(),
   };
@@ -1336,6 +1372,64 @@ export async function closingDatesQuery(): Promise<string[]> {
   return rows.map((r) => r.closeDate);
 }
 
+/**
+ * تبِ «دوره‌های بسته» (۲.۲۵.۰) — هر دوره با بازه‌اش و ماندهٔ منجمدِ هر حساب.
+ *
+ * ⚠️ فقط حساب‌هایی که کاربر می‌بیند (دامنهٔ حسابدار، R-ACC-02). دوره‌ای که بعداً
+ * بازگشایی شده (`reopened`) در تاریخچه می‌ماند — بستن و بازکردن هر دو سابقه‌اند.
+ * قفلی که خلاصه ندارد (قفلِ دستیِ قدیمی) هم یک دورهٔ بی‌ردیف دیده می‌شود.
+ */
+export async function listClosedPeriods(actor: Actor) {
+  assertCanView(actor, 'finance');
+  const [lockDate, scope, rows] = await Promise.all([
+    currentLockDate(),
+    accountScope(actor),
+    db.select({
+      closeDate: fiscalClosings.closeDate,
+      periodStart: fiscalClosings.periodStart,
+      accountId: fiscalClosings.accountId,
+      accountName: accounts.name,
+      accountScope: accounts.scope,
+      currencyCode: currencies.code,
+      deposits: fiscalClosings.deposits,
+      withdrawals: fiscalClosings.withdrawals,
+      closingBalance: fiscalClosings.closingBalance,
+    })
+      .from(fiscalClosings)
+      .innerJoin(accounts, eq(accounts.id, fiscalClosings.accountId))
+      .leftJoin(currencies, eq(currencies.id, fiscalClosings.currencyId))
+      .orderBy(desc(fiscalClosings.closeDate), accounts.sortOrder, accounts.id),
+  ]);
+
+  const scopes = visibleScopes(actor);
+  const periods = new Map<string, {
+    closeDate: string; periodStart: string | null; reopened: boolean;
+    accounts: Array<{ accountId: number; accountName: string; currencyCode: string | null; deposits: string; withdrawals: string; closingBalance: string }>;
+  }>();
+  for (const r of rows) {
+    // ⚠️ نخستین دوره آغاز ندارد و `closePeriod` به‌جایش ۱۹۷۰-۰۱-۰۱ می‌نویسد — «تا …» نشان داده شود.
+    const start = r.periodStart <= '1970-01-01' ? null : r.periodStart;
+    const period = periods.get(r.closeDate) ?? {
+      closeDate: r.closeDate,
+      periodStart: start,
+      reopened: lockDate === null || r.closeDate > lockDate,
+      accounts: [],
+    };
+    if (start !== null && period.periodStart !== null && start < period.periodStart) period.periodStart = start;
+    if (scopes.includes(r.accountScope as 'company' | 'private') && canSeeAccount(r.accountId, scope)) {
+      period.accounts.push({
+        accountId: r.accountId, accountName: r.accountName, currencyCode: r.currencyCode,
+        deposits: r.deposits, withdrawals: r.withdrawals, closingBalance: r.closingBalance,
+      });
+    }
+    periods.set(r.closeDate, period);
+  }
+  if (lockDate && !periods.has(lockDate)) {
+    periods.set(lockDate, { closeDate: lockDate, periodStart: null, reopened: false, accounts: [] });
+  }
+  return [...periods.values()].sort((a, b) => (a.closeDate < b.closeDate ? 1 : -1));
+}
+
 /** ردیف‌های خلاصهٔ یک تاریخِ بستن، همراهِ نامِ حساب. */
 export async function closingRows(actor: Actor, closeDate: string) {
   assertCanView(actor, 'finance');
@@ -1391,8 +1485,25 @@ export async function recomputeEur(actor: Actor): Promise<{ ledger: number; paym
     id: ledger.id, amount: ledger.amount, currencyId: ledger.currencyId, amountEur: ledger.amountEur,
   }).from(ledger);
 
+  /**
+   * ⚠️ ردیفی که «از طلبِ … کم شود» دارد (۲.۲۵.۰) یورویش را از همان عدد می‌گیرد،
+   * نه از مبلغِ اسمی — همان قاعدهٔ ثبت (`withSettledEur`)، وگرنه بازمحاسبه
+   * دوباره یوروی گزارش را از طلبِ عضو جدا می‌کرد.
+   */
+  const settledByLedger = new Map(
+    (await db.select({
+      ledgerId: projectPayments.ledgerId,
+      amountSettled: projectPayments.amountSettled,
+      settledCurrencyId: projectPayments.settledCurrencyId,
+    }).from(projectPayments).where(isNotNull(projectPayments.amountSettled)))
+      .filter((p) => p.ledgerId !== null && p.settledCurrencyId !== null)
+      .map((p) => [p.ledgerId!, p] as const),
+  );
+
   for (const r of ledgerRows) {
-    const next = convert(source, r.amount, r.currencyId ?? baseCurrencyId, baseCurrencyId);
+    const s = settledByLedger.get(r.id);
+    const next = (s ? convert(source, s.amountSettled!, s.settledCurrencyId!, baseCurrencyId) : null)
+      ?? convert(source, r.amount, r.currencyId ?? baseCurrencyId, baseCurrencyId);
     if (next !== null && Number(next).toFixed(4) !== Number(r.amountEur).toFixed(4)) {
       await db.update(ledger).set({ amountEur: next }).where(eq(ledger.id, r.id));
       changed.ledger += 1;

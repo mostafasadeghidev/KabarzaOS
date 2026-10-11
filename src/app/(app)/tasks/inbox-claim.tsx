@@ -6,6 +6,7 @@ import { claimTaskAction } from '@/app/(app)/projects/_form/tab-actions';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useT } from '@/i18n/client';
+import { useToast } from '@/components/ui/toast';
 
 /**
  * دکمهٔ «این تسک را برمی‌دارم» — روی ردیفِ صندوق و در مودالِ تسک
@@ -21,6 +22,7 @@ export function ClaimTaskButton({
   onDone?: () => void;
 }) {
   const tr = useT();
+  const { show } = useToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +36,10 @@ export function ClaimTaskButton({
         onClick={() => startTransition(async () => {
           const result = await claimTaskAction(taskId, projectId);
           setError(result?.error ?? null);
-          if (!result?.error) onDone?.();
+          if (!result?.error) {
+            show(tr(result?.message ?? 'تسک را برداشتید.'));
+            onDone?.();
+          }
         })}
       >
         <Hand className="size-3.5" />

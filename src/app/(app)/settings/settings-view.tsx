@@ -8,7 +8,7 @@ import { CompanySection } from './company-section';
 import { Separator } from '@/components/ui/separator';
 import { ColorPicker } from '@/components/ui/color-picker';
 import {
-  groupChoices, groupFieldLabel, supportsClosed, supportsGrant, supportsReview,
+  groupChoices, groupFieldLabel, supportsBillableDefault, supportsClosed, supportsGrant, supportsReview,
 } from '@/domain/tags/groups';
 import type { TagType } from '@/db/schema/base';
 import {
@@ -76,6 +76,8 @@ export interface SettingsData {
   tags: Array<{
     id: number; name: string; type: TagType; color: string;
     statusGroup: string; isReview: boolean; isClosed: boolean;
+    /** فقط دستهٔ دفتر (۲.۲۴.۰). */
+    billableDefault?: boolean;
     sortOrder: number; grantsCap: string; isProtected: boolean;
     nameI18n: Record<string, string> | null;
   }>;
@@ -400,6 +402,21 @@ export function SettingsView({
                       ))}
                     </NativeSelect>
                   </Field>
+                )}
+
+                {/* دستهٔ دفتر (۲.۲۴.۰) — برداشتِ پروژه با این دسته خودکار «قابل بازپرداخت از کارفرما» می‌شود. */}
+                {supportsBillableDefault(tagType) && (
+                  <label className="flex items-start gap-2 rounded-lg bg-muted/60 p-3 text-sm">
+                    <Checkbox name="billableDefault" value="1" className="mt-0.5"
+                      defaultChecked={editing?.billableDefault ?? false}
+                    />
+                    <span>
+                      {tr("برداشتِ پروژه با این دسته، پیش‌فرض «قابل بازپرداخت از کارفرما» باشد")}
+                      <span className="block text-xs text-muted-foreground">
+                        {tr("مثلاً هزینه‌ای که برای کارفرما خریده می‌شود. در فرمِ دفتر قابلِ تغییر است.")}
+                      </span>
+                    </span>
+                  </label>
                 )}
 
                 {(supportsClosed(tagType) || supportsReview(tagType)) && (

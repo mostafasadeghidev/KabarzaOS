@@ -289,13 +289,15 @@ function ReviewDetail({
   /** کادرِ تصاویر: همان لحظه بارگذاری، بی‌دکمهٔ ذخیره — دسته‌های ۱۰تایی. */
   const upload = async (files: File[]) => {
     setUploading(true);
+    let failed = false;
     for (let i = 0; i < files.length; i += 10) {
       const fd = new FormData();
       for (const f of files.slice(i, i + 10)) fd.append('media', f);
       const result = await addReviewMediaAction(review.id, fd);
-      if (result.error) { show(t(result.error), 'error'); break; }
+      if (result.error) { show(t(result.error), 'error'); failed = true; break; }
     }
     setUploading(false);
+    if (!failed) show(t('تصاویر افزوده شد.'));
     await reload();
   };
   const progress = data.detail.progress;
@@ -320,7 +322,7 @@ function ReviewDetail({
               <Pencil className="size-3.5" />{t('ویرایش')}
             </Button>
             <Button
-              size="sm" variant="ghost" className="text-destructive hover:text-destructive" disabled={deleting}
+              size="sm" variant="outline" className="text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={deleting}
               onClick={async () => {
                 if (!(await confirm({
                   title: t('این بازبینی حذف شود؟'),
@@ -328,7 +330,10 @@ function ReviewDetail({
                 }))) return;
                 startDelete(async () => {
                   const result = await deleteReviewAction(review.id);
-                  if (!result.error) onBack();
+                  // ⚠️ خطا هم پیش از این بلعیده می‌شد.
+                  if (result.error) { show(t(result.error), 'error'); return; }
+                  show(t('بازبینی حذف شد.'));
+                  onBack();
                 });
               }}
             >
@@ -400,6 +405,10 @@ function ReviewDetail({
             <ReviewItemComposer
               options={data.options}
               defaultRoles={review.roles.map((r) => r.id)}
+              // تنها مخاطبِ بازبینی ← موردها خودکار به او (۲.۲۵.۰).
+              soloAssignee={review.roles.length === 0 && review.people.length === 1
+                ? { id: review.people[0]!.id, label: review.people[0]!.name }
+                : null}
               clientVisible={review.clientVisible}
               currentTime={uploaded ? () => video.current?.currentTime ?? null : null}
               submitLabel={t('افزودنِ مورد')}
@@ -470,7 +479,8 @@ function BackButton({ onBack }: { onBack: () => void }) {
   const t = useT();
   return (
     <div>
-      <Button size="sm" variant="ghost" className="px-0 text-muted-foreground hover:bg-transparent" onClick={onBack}>
+      {/* همان شکلِ دکمهٔ برگشتِ سرصفحه‌ها (۲.۲۵.۰). */}
+      <Button size="sm" variant="outline" onClick={onBack}>
         <ArrowRight className="size-4 ltr:rotate-180" />
         {t('همهٔ بازبینی‌ها')}
       </Button>

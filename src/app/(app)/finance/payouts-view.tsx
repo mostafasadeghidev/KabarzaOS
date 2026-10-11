@@ -73,6 +73,9 @@ export interface UnitRow {
   entryDate: string;
   quantity: string;
   amount: string;
+  /** پرداخت‌شده و مانده (۲.۲۵.۰) — ردیفِ «بخشی پرداخت‌شده» هم در همین فهرست است. */
+  paidAmount?: string;
+  remaining?: string;
   currencyCode: string | null;
   userId?: number | null;
   userName: string | null;
@@ -434,10 +437,11 @@ export function PayoutsView({
                               </Button>
                             </Hint>
                           )}
+                          {/* «رد» قابِ دکمه دارد مثلِ «تأیید» و «پرداخت» (۲.۲۵.۰) — ghost کنارشان متنِ ساده دیده می‌شد. */}
                           {isOwner && (r.status === 'pending' || r.status === 'approved') && (
                             <Button
-                              size="sm" variant="ghost"
-                              className="text-destructive hover:text-destructive"
+                              size="sm" variant="outline"
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                               disabled={pending}
                               onClick={() => { setRejectNote(''); setRejectTarget(r); }}
                             >
@@ -486,7 +490,15 @@ export function PayoutsView({
                   <TableCell><UserName userId={u.userId} name={u.userName ?? '—'} size="sm" /></TableCell>
                   <TableCell>{u.projectTitle ?? '—'}</TableCell>
                   <TableNumericCell>{format(u.quantity)}</TableNumericCell>
-                  <TableNumericCell>{format(u.amount)} {u.currencyCode ?? ''}</TableNumericCell>
+                  <TableNumericCell>
+                    {format(u.remaining ?? u.amount)} {u.currencyCode ?? ''}
+                    {/* بخشی پرداخت‌شده: مانده بزرگ، کلِ مبلغ کوچک زیرش. */}
+                    {Number(u.paidAmount ?? 0) > 0 && (
+                      <span className="block text-xs text-muted-foreground">
+                        {tr('مانده از {total}', { total: format(u.amount) })}
+                      </span>
+                    )}
+                  </TableNumericCell>
                   {canManage && (
                     <TableActionsCell>
                       <Button size="sm" variant="outline" disabled={pending} onClick={() => setUnitTarget(u)}>
@@ -860,6 +872,23 @@ export function PayoutsView({
               <p className="flex flex-wrap items-center gap-1.5 text-sm">
                 <UserName userId={unitTarget.userId} name={unitTarget.userName} size="sm" /> — {unitTarget.projectTitle} — <span className="num">{format(unitTarget.amount)} {unitTarget.currencyCode ?? ''}</span>
               </p>
+              {/* قسط (۲.۲۵.۰): پیش‌فرض کلِ مانده؛ کمتر بنویسید تا ردیف «بخشی پرداخت‌شده» بماند. */}
+              <Field>
+                <FieldLabel htmlFor="unit-part">
+                  {tr('مبلغِ این قسط ({code})', { code: unitTarget.currencyCode ?? '' })}
+                </FieldLabel>
+                <Input
+                  id="unit-part" name="part" inputMode="decimal" className="num" dir="ltr"
+                  defaultValue={String(Number(unitTarget.remaining ?? unitTarget.amount))}
+                />
+                <FieldDescription>
+                  {Number(unitTarget.paidAmount ?? 0) > 0
+                    ? tr('تا امروز {paid} پرداخت شده؛ مانده {left}. کمتر از مانده = قسطی دیگر.', {
+                        paid: format(unitTarget.paidAmount ?? '0'), left: format(unitTarget.remaining ?? unitTarget.amount),
+                      })
+                    : tr('کمتر از کلِ مبلغ بنویسید تا بقیه بعداً پرداخت شود.')}
+                </FieldDescription>
+              </Field>
               <Field>
                 <FieldLabel htmlFor="unit-account">{t("حساب")}</FieldLabel>
                 <SearchableSelect id="unit-account" name="accountId" containerClassName="w-full" defaultValue={accounts[0]?.id ?? ''}>
@@ -874,7 +903,7 @@ export function PayoutsView({
               </Field>
               <Field>
                 <FieldLabel htmlFor="unit-amount">{t("مبلغِ واقعی از حساب (اختیاری)")}</FieldLabel>
-                <Input id="unit-amount" name="amount" inputMode="decimal" className="num" placeholder={unitTarget.amount} />
+                <Input id="unit-amount" name="amount" inputMode="decimal" className="num" placeholder={unitTarget.remaining ?? unitTarget.amount} />
               </Field>
               {unitState.error && (
                 <Alert variant="destructive">

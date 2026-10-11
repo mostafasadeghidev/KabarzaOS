@@ -301,7 +301,11 @@ export function PersonCard({
               onClick={() => startTransition(async () => {
                 const result = await setPersonPasswordAction(person.id, newPassword.current);
                 setPasswordState(result);
-                if (result.message) setPasswordOpen(false);
+                // ⚠️ موفقیت هم توست می‌خواهد — پیش از این فرم بی‌صدا بسته می‌شد.
+                if (result.message) {
+                  setPasswordOpen(false);
+                  onNotice(result.message, false);
+                }
               })}
             >
               {tr("ذخیرهٔ رمز")}

@@ -85,7 +85,14 @@ export function ReviewItemComposer({
   submitLabel,
   onSubmit,
   onCancel,
+  soloAssignee = null,
 }: {
+  /**
+   * مخاطبِ بازبینی **فقط یک نفر** است (۲.۲۵.۰) ← هر مورد خودکار به او سپرده
+   * می‌شود و فیلدهای «تخصیص به» و «تخصیص به نقش» پنهان‌اند؛ انتخابِ دوباره
+   * چیزی را که یک مرحله قبل گفته شده فقط گیج می‌کرد.
+   */
+  soloAssignee?: { id: number; label: string } | null;
   options: ReviewFormOptions;
   /** نقش‌های مخاطبِ بازبینی — پیش‌فرضِ هر موردِ تازه. */
   defaultRoles: number[];
@@ -100,7 +107,10 @@ export function ReviewItemComposer({
   onCancel?: () => void;
 }) {
   const t = useT();
-  const [draft, setDraft] = useState<ItemDraft>(() => initial ?? emptyDraft(defaultRoles));
+  const fresh = (): ItemDraft => (soloAssignee
+    ? { ...emptyDraft([]), assignee: { id: soloAssignee.id, label: soloAssignee.label } }
+    : emptyDraft(defaultRoles));
+  const [draft, setDraft] = useState<ItemDraft>(() => initial ?? fresh());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
@@ -115,7 +125,7 @@ export function ReviewItemComposer({
     setBusy(false);
     if (result) { setError(result); return; }
     setError(null);
-    setDraft(emptyDraft(defaultRoles));
+    setDraft(fresh());
     titleRef.current?.focus();
   };
 
@@ -204,7 +214,12 @@ export function ReviewItemComposer({
             {options.priorities.map((p) => <NativeSelectOption key={p.id} value={p.id}>{p.name}</NativeSelectOption>)}
           </NativeSelect>
         </Field>
-        {options.assignees.length > 0 && (
+        {soloAssignee && (
+          <p className="self-end pb-2 text-xs text-muted-foreground">
+            {t('به «{name}» سپرده می‌شود — تنها مخاطبِ این بازبینی.', { name: soloAssignee.label })}
+          </p>
+        )}
+        {!soloAssignee && options.assignees.length > 0 && (
           <Field>
             <FieldLabel htmlFor="ri-assignee">{t('تخصیص به…')}</FieldLabel>
             <Combobox
@@ -216,7 +231,7 @@ export function ReviewItemComposer({
             />
           </Field>
         )}
-        {draft.assignee.id === null && (
+        {!soloAssignee && draft.assignee.id === null && (
           <Field className="sm:col-span-2">
             <FieldLabel htmlFor="ri-roles">{t('تخصیص به نقش')}</FieldLabel>
             {options.roles.length > 0 ? (

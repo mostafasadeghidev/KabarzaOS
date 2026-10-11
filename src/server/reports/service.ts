@@ -683,6 +683,7 @@ export async function getUnitsReport(actor: Actor) {
       userId: unitEntries.userId,
       name: users.name,
       amount: unitEntries.amount,
+      paidAmount: unitEntries.paidAmount,
       currencyId: unitEntries.currencyId,
       status: unitEntries.status,
     })
@@ -693,8 +694,11 @@ export async function getUnitsReport(actor: Actor) {
   const byUser = new Map<number, { userId: number; name: string; paid: number; unpaid: number }>();
   for (const r of rows) {
     const acc = byUser.get(r.userId) ?? { userId: r.userId, name: r.name ?? `#${r.userId}`, paid: 0, unpaid: 0 };
+    // قسط‌ها (۲.۲۵.۰): پرداخت‌شده = جمعِ قسط‌ها، پرداخت‌نشده = مانده — نه کلِ ردیف در یکی از دو ستون.
     const v = fx.toBase(r.amount, r.currencyId);
-    if (r.status === 'paid') acc.paid += v; else acc.unpaid += v;
+    const paid = r.status === 'paid' ? v : Math.min(v, fx.toBase(r.paidAmount, r.currencyId));
+    acc.paid += paid;
+    acc.unpaid += v - paid;
     byUser.set(r.userId, acc);
   }
   // پورتِ افزونه: بزرگ‌ترین جمع اول.

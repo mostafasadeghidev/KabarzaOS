@@ -4,7 +4,8 @@ import { UserName } from '@/components/user-avatar';
 import Link from 'next/link';
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { ArrowLeftRight, CircleAlert, Lock, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, CircleAlert, Lock, Paperclip, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import {
   deleteEntryAction, saveEntryAction, transferAction, type FinanceState,
 } from './_form/actions';
@@ -12,6 +13,7 @@ import { EntryForm } from './entry-form';
 import { LedgerDetail, ReceiptThumb } from './ledger-detail';
 import { Lightbox } from '@/components/lightbox';
 import type { LedgerEvent } from '@/domain/ledger/timeline';
+import type { DatedRate } from '@/domain/ledger/form-rules';
 import { format } from '@/domain/money/money';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Badge } from '@/components/ui/badge';
@@ -113,7 +115,7 @@ export interface FormOptions {
   accounts: AccountOption[];
   currencies: Array<{ id: number; code: string; isDefault: boolean }>;
   /** `dir` = both | in | out — تگ با جهت فیلتر می‌شود (R-FORM-04). */
-  categories: Array<{ id: number; name: string; dir?: string }>;
+  categories: Array<{ id: number; name: string; dir?: string; billable?: boolean }>;
   projects: Array<{ id: number; title: string; currencyId?: number | null }>;
   people: Array<{ id: number; name: string; email?: string }>;
   /** پروژه ← شناسهٔ اعضایش (R-FORM-02). */
@@ -122,6 +124,8 @@ export interface FormOptions {
   projectClientIds?: Record<number, number[]>;
   /** «projectId:userId» ← ارزِ قرارداد (R-FORM-05). */
   memberCurrency: Record<string, number>;
+  /** تاریخچهٔ نرخ‌ها — نرخِ روزِ پرداخت برای «از طلبِ … کم شود» (۲.۲۵.۰). */
+  rates?: DatedRate[];
   defaultCurrencyId: number | null;
   /** فروشندگان — کاندیدای گیرندهٔ برداشت (پورتِ کاندیدای طرف‌حساب). */
   vendors?: Array<{ id: number; name: string; isActive?: boolean }>;
@@ -182,6 +186,10 @@ export function LedgerView({
   const tr = useT();
   const confirm = useConfirm();
   const t = useT();
+  // بازهٔ نمای دورهٔ بسته — از همان نشانیِ فیلتر (۲.۲۵.۰).
+  const search = useSearchParams();
+  const viewFrom = search.get('from') ?? '';
+  const viewTo = search.get('to') ?? '';
 
   /**
    * جستجوی زندهٔ ردیف‌های صفحهٔ جاری.
@@ -274,27 +282,38 @@ export function LedgerView({
         paging={paging}
       />
 
-      {/* ⚠️ نشانِ قفل پیش از فرم دیده می‌شود، نه بعد از خطا. */}
-      {lockDate && (
-        <Alert variant="warning">
-          <Lock />
-          <AlertDescription>
-            {tr('دورهٔ مالی تا {date} بسته است؛ ردیف‌های آن بازه تغییر نمی‌کنند.', {
-              date: ltr(lockDate),
-            })}
-            {periodScoped && (
-              <Link href={`/finance?account=${accountId}&all=1`} className="ms-auto underline">
-                {tr('نمایشِ ردیف‌های دورهٔ بسته')}
-              </Link>
-            )}
-            {/* پورتِ پیوندِ «مدیریت در تنظیمات» — بستن/بازکردنِ دوره فقط کارِ مالک است. */}
-            {isOwner && (
-              <Link href="/settings?tab=fiscal" className={periodScoped ? 'ms-3 underline' : 'ms-auto underline'}>
-                {tr('مدیریتِ دورهٔ مالی')}
-              </Link>
-            )}
-          </AlertDescription>
-        </Alert>
+      {/*
+        ⚠️ نوارِ «دورهٔ بسته» از اینجا به تبِ «دوره‌های بسته» رفت (۲.۲۵.۰): با بستنِ
+        سالانه دوره‌ها روی هم جمع می‌شوند. جلوی اشتباه را حالا خودِ فرم می‌گیرد —
+        تاریخ‌های قفل در انتخابگرِ تاریخِ ردیف غیرفعال‌اند. فقط وقتی ردیف‌های دورهٔ
+        بسته عمداً باز شده‌اند (`all=1`) یک خطِ کوتاه می‌گوید چرا دکمه ندارند.
+      */}
+      {/*
+        نمای دورهٔ بسته (۲.۲۵.۰) — از دکمهٔ «ردیف‌ها» ِ تبِ «دوره‌های بسته» (`all=1`).
+        نوارِ روشن می‌گوید چه بازه‌ای دیده می‌شود و دو راهِ بیرون آمدن دارد؛ پیش از این
+        معلوم نبود دفترکل فیلتر شده یا همهٔ ردیف‌ها را نشان می‌دهد.
+      */}
+      {lockDate && !periodScoped && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+          <span className="inline-flex items-center gap-1.5">
+            <Lock className="size-4 text-primary" />
+            {viewFrom || viewTo
+              ? tr('دارید ردیف‌های {range} را می‌بینید — فقط‌خواندنی.', {
+                  range: viewFrom
+                    ? tr('{from} تا {to}', { from: ltr(viewFrom), to: ltr(viewTo || lockDate) })
+                    : tr('تا {to}', { to: ltr(viewTo || lockDate) }),
+                })
+              : tr('ردیف‌های تا {date} در دورهٔ بسته‌اند و تغییر نمی‌کنند.', { date: ltr(lockDate) })}
+          </span>
+          <span className="ms-auto flex flex-wrap gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link href="/finance?tab=closed">{tr('همهٔ دوره‌های بسته')}</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href={`/finance?account=${accountId}`}><X className="size-4" />{tr('بستنِ این نما')}</Link>
+            </Button>
+          </span>
+        </div>
       )}
 
       {/* ⚠️ پنج ستون فقط وقتی جا هست — رقمِ پولی در ستونِ باریک از کارت بیرون می‌زد. */}
@@ -468,6 +487,7 @@ export function LedgerView({
               options={options}
               accountId={accountId}
               today={today}
+              lockDate={lockDate}
               keep={keep}
               fieldErrors={entryState.fieldErrors}
               error={entryState.error ? tr(entryState.error) : undefined}

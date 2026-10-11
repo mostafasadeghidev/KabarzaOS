@@ -82,7 +82,7 @@ export function FiscalSection({
         <Panel
           title={t("ماندهٔ فعلیِ حساب‌ها")}
           description={tr("با بستنِ دوره، همین ارقام برای هر حساب منجمد و در «گزارش‌ها» نگه داشته می‌شوند.")}
-          actions={<Link href="/finance" className="text-xs text-muted-foreground hover:text-foreground">{t("مرور کامل در حسابداری")}</Link>}
+          actions={<Button asChild size="sm" variant="outline"><Link href="/finance">{t("مرور کامل در حسابداری")}</Link></Button>}
         >
           {closing.accounts.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("حسابی تعریف نشده.")}</p>

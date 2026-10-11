@@ -116,6 +116,7 @@ export async function saveTagAction(_prev: SettingsState, formData: FormData) {
     ),
     isReview: formData.get('isReview') !== null,
     isClosed: formData.get('isClosed') !== null,
+    billableDefault: formData.get('billableDefault') !== null,
     sortOrder: Number(formData.get('sortOrder') ?? 0) || 0,
   }), 'تگ ذخیره نشد.');
 }

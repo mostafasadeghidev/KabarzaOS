@@ -12,6 +12,8 @@ import {
 import type { UnitRow } from './my-money-tab';
 import { format } from '@/domain/money/money';
 import { UNIT_STATUS_LABELS } from '@/domain/finance/member-money';
+import { unitPayLabel, type UnitPayStatus } from '@/domain/team-money/unit-installments';
+import { Hint } from '@/components/ui/tooltip';
 import { ENTRY_NAME_MAX } from '@/domain/projects/unit-entry-name';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,7 +23,7 @@ import { Field, FieldLabel } from '@/components/ui/field';
 import {
   Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
@@ -79,8 +81,14 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
   /** فقط مسئولِ پروژه و فقط روی پروژه‌ای که مبلغِ دستی را روشن دارد. */
   const manualAmount = data.unitManualAmount && data.seesAll;
 
+  const { show } = useToast();
+  // ⚠️ موفقیت هم توست می‌گیرد (۲.۲۵.۰) — پیش از این فقط خطا دیده می‌شد.
   const run = (fn: () => Promise<MoneyState>) =>
-    startTransition(async () => setRowError((await fn()).error ?? null));
+    startTransition(async () => {
+      const result = await fn();
+      setRowError(result.error ?? null);
+      if (!result.error && result.message) show(t(result.message));
+    });
 
   return (
     <Section
@@ -145,6 +153,16 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
           </Field>
           <Submit>{t("ثبت")}</Submit>
         </form>
+      )}
+
+      {/*
+        راهنما (۲.۲۴.۰): ردیفِ پرداخت‌نشده با مبلغِ صفر یعنی عضو نرخِ هر واحد ندارد و
+        «مبلغِ دستی» هم خاموش است — بدونِ این پیام مدیر نمی‌فهمید چرا نمی‌تواند مبلغ بزند.
+      */}
+      {data.seesAll && !data.unitManualAmount && data.units.some((u) => u.status === 'unpaid' && Number(u.amount) === 0) && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+          {t("مبلغِ بعضی ردیف‌ها صفر است، چون نرخِ هر واحدِ عضو صفر است. نرخ را در «مدیریتِ اعضا» بگذارید، یا در ویرایشِ پروژه «مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند» را روشن کنید.")}
+        </p>
       )}
 
       {data.units.length === 0 ? (
@@ -279,9 +297,36 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                     )}
                   </TableNumericCell>
                   <TableCell>
-                    <Badge variant={paid ? 'success' : 'outline'}>
-                      {t(UNIT_STATUS_LABELS[u.status] ?? u.status)}
-                    </Badge>
+                    {(() => {
+                      // قسط‌ها (۲.۲۵.۰): «بخشی پرداخت‌شده» + پرداخت‌شده/مانده؛ تاریخچه در راهنمای شناور.
+                      const label = unitPayLabel(u.status as UnitPayStatus, u.paidAmount ?? 0);
+                      const list = u.installments ?? [];
+                      const badge = (
+                        <Badge variant={paid ? 'success' : label === 'partial' ? 'warning' : 'outline'}>
+                          {t(UNIT_STATUS_LABELS[label] ?? u.status)}
+                        </Badge>
+                      );
+                      return (
+                        <span className="inline-grid gap-0.5">
+                          {list.length > 0 ? (
+                            <Hint label={(
+                              <span className="grid gap-0.5">
+                                {list.map((p, i) => (
+                                  <span key={i} className="num">{p.paidAt} · {format(p.amount)} {u.currencyCode ?? ''}</span>
+                                ))}
+                              </span>
+                            )}>
+                              <span className="cursor-help">{badge}</span>
+                            </Hint>
+                          ) : badge}
+                          {label === 'partial' && (
+                            <span className="text-[11px] text-muted-foreground">
+                              {t('مانده {left}', { left: format(u.remaining ?? '0') })}
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                   <TableActionsCell>
                     {/* ثبتِ ساعت روی ردیفِ خودم — انتخابگرِ «پروژه - نام» در صفحهٔ ساعت کاری. */}
@@ -305,6 +350,14 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                             ) : (
                               <Badge variant="secondary">{t("در انتظار پرداخت")}</Badge>
                             )
+                          ) : !(Number(u.amount) > 0) ? (
+                            /*
+                              ⚠️ ردیفِ بی‌مبلغ (۲.۲۵.۰): سرور درخواستِ صفر را رد می‌کند؛ به‌جای
+                              دکمه‌ای که فقط خطا می‌داد، عضو می‌بیند منتظرِ چه کسی است.
+                            */
+                            <span className="text-xs text-muted-foreground">
+                              {t("مبلغ هنوز تعیین نشده — منتظرِ مدیرِ پروژه")}
+                            </span>
                           ) : (
                             <Button
                               size="sm" variant="outline" disabled={pending}
@@ -323,7 +376,8 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                             <Pencil className="size-3.5" />
                           </IconButton>
                         )}
-                        {(data.seesAll || u.isMine) && (
+                        {/* ردیفِ قسط‌دار سندِ مالی دارد و حذف نمی‌شود (۲.۲۵.۰). */}
+                        {(data.seesAll || u.isMine) && !(Number(u.paidAmount ?? 0) > 0) && (
                           <IconButton
                             variant="ghost"
                             className="size-8 text-muted-foreground hover:text-destructive"

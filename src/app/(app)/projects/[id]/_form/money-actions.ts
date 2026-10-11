@@ -32,6 +32,8 @@ function message(error: unknown): string {
     if (error.reason === 'status_invalid') return 'وضعیتِ انتخاب‌شده معتبر نیست.';
     if (error.reason === 'name_invalid') return 'نامِ ردیف بیش از ۸۰ نویسه است.';
     if (error.reason === 'not_editable') return 'مبلغِ ردیفِ درخواست‌شده یا پرداخت‌شده را نمی‌شود عوض کرد.';
+    if (error.reason === 'below_paid') return 'مبلغ نمی‌تواند از قسط‌های پرداخت‌شدهٔ این ردیف کمتر باشد.';
+    if (error.reason === 'has_payments') return 'این ردیف قسطِ پرداخت‌شده دارد و حذف نمی‌شود.';
     return REQUEST_MESSAGES[error.reason] ?? 'انجام نشد.';
   }
   if (error instanceof ForbiddenError) return 'دسترسی ندارید.';

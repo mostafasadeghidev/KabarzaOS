@@ -40,6 +40,8 @@ export interface Option {
   color?: string;
   /** پیش از نام — مثلاً آواتارِ عضو در «تخصیص به…». */
   media?: React.ReactNode;
+  /** سرگروهِ ردیف در فهرست (۲.۲۴.۰) — مثلاً «اعضای این پروژه». */
+  group?: string;
 }
 
 /** جستجوی ساده و بی‌طرف نسبت به فاصله و «ی/ک» عربی. */
@@ -106,6 +108,7 @@ export function Combobox({
   id,
   disabled,
   size = 'default',
+  typedOnlyGroups,
 }: {
   options: Option[];
   value: { id: number | null; label: string };
@@ -118,6 +121,11 @@ export function Combobox({
   id?: string;
   disabled?: boolean;
   size?: 'sm' | 'default';
+  /**
+   * گروه‌هایی که فقط با تایپ دیده می‌شوند (۲.۲۴.۰) — مثلاً «کاربرانِ دیگر» وقتی
+   * پروژه انتخاب شده: فهرستِ باز فقط اعضای همان پروژه است و بقیه با جستجو.
+   */
+  typedOnlyGroups?: readonly string[];
 }) {
   const t = useT();
   const [open, setOpen] = React.useState(false);
@@ -219,23 +227,32 @@ export function Combobox({
                   </CommandItem>
                 </CommandGroup>
               )}
-              <CommandGroup>
-                {listed.map((o) => (
-                  <CommandItem
-                    key={o.value}
-                    value={String(o.value)}
-                    keywords={[o.label, o.hint ?? '']}
-                    onSelect={() => pick({ id: o.value, label: o.label })}
-                  >
-                    {o.media}
-                    <span className="min-w-0 truncate">{o.label}</span>
-                    <span className="ms-auto flex shrink-0 items-center gap-2">
-                      {o.hint && <span className="text-xs text-muted-foreground">{o.hint}</span>}
-                      <CheckIcon className={o.value === value.id ? 'opacity-100' : 'opacity-0'} />
-                    </span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
+              {/* ردیف‌ها به ترتیبِ سرگروه؛ گروهِ «فقط با تایپ» تا جستجو خالی است پنهان می‌ماند. */}
+              {[...new Set(listed.map((o) => o.group ?? ''))].map((group) => {
+                if (!typed && group && typedOnlyGroups?.includes(group)) return null;
+                return (
+                  <CommandGroup key={group || '__all__'} heading={group || undefined}>
+                    {listed.filter((o) => (o.group ?? '') === group).map((o) => (
+                      <CommandItem
+                        key={o.value}
+                        value={String(o.value)}
+                        keywords={[o.label, o.hint ?? '']}
+                        onSelect={() => pick({ id: o.value, label: o.label })}
+                      >
+                        {o.media}
+                        <span className="min-w-0 truncate">{o.label}</span>
+                        <span className="ms-auto flex shrink-0 items-center gap-2">
+                          {o.hint && <span className="text-xs text-muted-foreground">{o.hint}</span>}
+                          <CheckIcon className={o.value === value.id ? 'opacity-100' : 'opacity-0'} />
+                        </span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                );
+              })}
+              {!typed && (typedOnlyGroups?.length ?? 0) > 0 && listed.some((o) => o.group && typedOnlyGroups!.includes(o.group)) && (
+                <p className="px-3 py-2 text-xs text-muted-foreground">{t('برای دیگران نام را تایپ کنید.')}</p>
+              )}
               {/* پایینِ فهرست: Enter اول کاربرِ جورشده را برمی‌دارد، نه نامِ آزاد را. */}
               {showFree && (
                 <CommandGroup forceMount>

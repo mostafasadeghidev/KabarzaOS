@@ -20,9 +20,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox, MultiSelect as SearchableMultiSelect } from '@/components/ui/combobox';
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { ltr } from '@/i18n/bidi';
 import { formatDateTime } from '@/i18n/datetime';
@@ -81,6 +81,7 @@ function TaskDialogBody({
   const tz = useTimeZone();
   const t = useT();
   const confirm = useConfirm();
+  const { show } = useToast();
   const [data, setData] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -333,14 +334,16 @@ function TaskDialogBody({
                 <Button
                   type="button"
                   size="sm"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
+                  variant="outline"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                   disabled={deleting}
                   onClick={async () => {
                     if (!(await confirm({ title: tr('این تسک حذف شود؟') }))) return;
                     startDelete(async () => {
                       const result = await deleteTaskAction(task.id);
-                      if (!result.error) onOpenChange(false);
+                      if (result.error) { show(tr(result.error), 'error'); return; }
+                      show(tr('تسک حذف شد.'));
+                      onOpenChange(false);
                     });
                   }}
                 >
@@ -514,12 +517,21 @@ function TaskDialogBody({
                 )}
 
                 {saveState.error && <p className="text-xs text-destructive">{tr(saveState.error)}</p>}
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                  {/* راهِ برگشت به گفتگو بدونِ ذخیره — گفتگو هنگامِ ویرایش پنهان است. */}
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>
+                    {t("انصراف")}
+                  </Button>
                   <SubmitButton label={t("ذخیرهٔ تغییرات")} busy={t('در حالِ ذخیره…')} />
                 </div>
               </form>
             )}
 
+            {/*
+              ⚠️ هنگامِ ویرایش، گفتگو پنهان است (۲.۲۵.۰): دو فرم با دو دکمهٔ جدا
+              («ذخیرهٔ تغییرات» و «ارسال») زیرِ هم گیج می‌کرد که کدام چه را ذخیره می‌کند.
+            */}
+            {!editing && (
             <section className="grid gap-2">
               <h4 className="text-sm font-semibold">{t("گفتگوی تسک")}</h4>
               {data.detail.notes.length === 0 ? (
@@ -560,8 +572,14 @@ function TaskDialogBody({
               </form>
               )}
             </section>
+            )}
           </div>
         )}
+
+        {/* بستن با دکمه، نه فقط ضربدرِ گوشه (۲.۲۵.۰). */}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{tr('بستن')}</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

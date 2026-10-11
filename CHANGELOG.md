@@ -2,6 +2,65 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.25.0]
+
+### Added
+
+- **"Closed periods" tab in Finance**, shown once at least one period has been closed. Each period is a card with its date range and, per account, total deposits, withdrawals and closing balance, with buttons to open that account's rows of the period in the ledger and to export them as CSV. A period that was later reopened stays in the list marked "Reopened". The owner gets "Manage fiscal period" there.
+  - "Rows" shows a spinner until the ledger opens. The ledger then shows only that period's rows, under a clear strip ("You are viewing the rows of … — read-only") with "All closed periods" and "Close this view"; its balance cards show that period's totals, matching the closing summary, instead of the whole account.
+  - The closed-period strip at the top of the ledger is gone. Instead, the ledger entry form disables locked dates in its date picker and says up to which date the period is closed. When closed rows are shown on purpose, one short line explains why they have no buttons.
+
+- **Unit-based work can be paid in two or more instalments.** Each work row now has "paid so far" and "left"; a row that is partly paid shows "Partly paid" with what is left, and hovering the badge lists each instalment's date and amount.
+  - "Unpaid work" in Finance → Member finance: the payment dialog has "This instalment", filled with what is left; enter less to keep the rest for later. The list shows what is left of each row.
+  - Ledger form: picking a work row fills "Deduct from balance" with what is left; a smaller figure pays an instalment of it.
+  - A member's payment request on a partly paid row asks for what is left, not the full amount.
+  - Deleting the ledger row of an instalment puts its amount back into what is left. More than what is left is refused; a row with paid instalments cannot be deleted, and its amount cannot go below what was already paid.
+  - Reports, "My money" and the member's unpaid total count paid instalments as paid and only the rest as unpaid. Rows paid before this version count as one full instalment.
+
+### Changed
+
+- **One line instead of the "Equivalent" block in the ledger form.** For a project row the form now says plainly what is deducted: "Deduct from «Ali»'s balance" for a payment to a project member, "Count for «…»" otherwise. The figure is always in the contract (or project) currency, so there is no currency picker.
+  - Same currency as the amount: a green line shows the same amount; "Deduct a different amount" opens a field for the rare case where it differs.
+  - Different currency (for example "transfer 2,000,000" to a member paid in euros): the euro figure fills in from the **rate of the payment date**, not today's rate, so a payment entered three days late still uses the rate of the transfer day. The form shows which saved rate it used and how many days before the payment it is, or asks for a rate when none exists. You can change the rate or the figure; "Back to the payment-day rate" undoes it.
+  - Your own figure or rate is saved on the row and never changes when rates change later.
+- The project edit dialog has two buttons: "Apply" saves and keeps the dialog open, "Save and close" saves and closes it. Before, the only save button left the dialog open, so it was unclear whether the work was done.
+- While a task is being edited, the task conversation is hidden so the edit form's "Save changes" is not confused with the conversation's "Send"; the edit form also gets a "Cancel" button.
+- New review, step 1: the audience is one picker — "Whole project team", "Specific person or people" or "Specific roles" — and only the matching list opens below it. Before, the roles box ("Whole project team") stayed on screen next to the people box.
+- When a review's audience is exactly one person, each item is assigned to that person automatically and the "Assign to" and "Assign to role" fields are hidden (in the new-review dialog and on the review page).
+- The new-review dialog has a "Cancel" button and the task dialog a "Close" button; before, both could only be closed with the corner ×.
+- On a unit-based project, a member's row with no amount yet shows "Amount not set yet — waiting for the project manager" instead of a "Request payment" button that could only fail.
+
+### Fixed
+
+- Controls that looked like plain text are real buttons now:
+  - Every "back" link at the top of a detail page (projects, reports, team, onboarding, invoice…) and "All reviews".
+  - "Show rows of the closed period" and "Manage fiscal period" in the ledger.
+  - "All logs", "Details", "Edit bid / Make a bid", "All meetings", "Team report", "Full review in accounting", "Edit library", the filter-clearing links in Hours and Reports, and "Back to home" on the not-found page.
+  - "Reject" in payment requests and the delete/withdraw buttons next to outlined buttons (meetings, task, review, tender winner) use the same outlined shape, in red.
+- The closed-period notice in the ledger is a quiet one-line strip instead of a yellow warning card.
+- "Overdue/upcoming expenses" on the dashboard shows name, amount and due date in three separate columns; the amount no longer runs into the name.
+- Setting a member's or client's sign-in password now shows a confirmation toast; it used to close silently.
+- Other actions that succeeded silently now confirm with a toast: work-unit rename, amount, payment request, cancel and delete; cancelling a payment request in "My money"; withdrawing a tender winner; archiving, unarchiving and slimming down a project; deleting a task; claiming a task; resuming or discarding a pending timer and deleting a time log; adding images to a review and deleting a review; removing a member from a project; saving a meeting reminder.
+- Deleting a review, resuming a timer or deleting a time log no longer swallows errors, and the AI panel no longer reports "disconnected" or a changed sensitive-actions setting when the server refused it.
+- Ledger form fields in the same row line up again: a hint under "Categories" no longer pushes the "Date" and "Direction" labels down, and the actual-amount label is shortened to "Paid from account (USD)" so it fits on one line (the account is already named in the dialog header).
+- The euro value of a ledger row now follows the figure deducted from the member or project when one is entered, so reports and the member's balance agree (before, reports converted the nominal amount with the latest rate). "Recalculate euro equivalents" keeps the same rule. A missing rate from the amount's currency to euros no longer blocks saving such a row.
+
+## [2.24.0]
+
+### Changed
+
+- The ledger entry form is easier to follow:
+  - Fields are ordered date · direction · categories, then project · counterparty, then amounts.
+  - The "actual amount" field now says what it is and in which currency: "Paid from «account» (in IRT)" for withdrawals, "Received in «account»" for deposits. It only shows when the amount's currency differs from the account's, and the effective rate (fees included) appears under it.
+  - The amount's currency defaults to the member's contract currency (or the project's). The "Equivalent for project/member" block only shows when the amount is in a different currency, with a note on how reports count it; otherwise a plain line says what is counted for whom (for example "Counted for «Ali»: 100 EUR").
+  - With a project picked, the receiver list shows that project's members first; other users and vendors appear when you type. A typed name that matches a user picks that user.
+  - "Billable to the client" is now off by default. A ledger category can be marked "billable by default" in Settings → Tags; picking it turns the box on.
+- The "Recalculate euro equivalents" note in Reports now says what the button really does: it recalculates every row with the latest saved rates (rows entered in euros do not change).
+
+### Added
+
+- Unit-based projects show a hint when unpaid rows have a zero amount because the member's unit rate is zero, explaining how to fix it.
+
 ## [2.23.0]
 
 ### Changed

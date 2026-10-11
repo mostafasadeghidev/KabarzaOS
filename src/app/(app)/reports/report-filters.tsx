@@ -47,7 +47,7 @@ export function OfficeFilter({
       </div>
       <Button type="submit" size="sm">{tr('اعمال')}</Button>
       {selected.length > 0 && (
-        <Link href={clearHref} className="text-xs text-muted-foreground underline">{tr('همهٔ دفاتر')}</Link>
+        <Button asChild size="sm" variant="outline"><Link href={clearHref}>{tr('همهٔ دفاتر')}</Link></Button>
       )}
     </form>
   );

@@ -113,6 +113,10 @@ export function MeetingsView({
   }, [openMeetingId, meetings]);
   const [pending, startTransition] = useTransition();
   const [reminderState, reminderAction] = useActionState<SimpleState, FormData>(saveReminderAction, {});
+  // ⚠️ ثبتِ یادآور پیش از این فقط خطا را نشان می‌داد (۲.۲۵.۰).
+  useEffect(() => {
+    if (reminderState.ok) show(tr('یادآور ثبت شد.'), 'success');
+  }, [reminderState, show, tr]);
 
   const run = (fn: () => Promise<SimpleState>) =>
     startTransition(async () => {
@@ -217,8 +221,8 @@ export function MeetingsView({
                       </Button>
                       <Button
                         size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
+                        variant="outline"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                         disabled={pending}
                         onClick={async () => {
                           if (await confirm({ title: tr('این جلسه حذف شود؟') })) run(() => deleteMeetingAction(m.id));

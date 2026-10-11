@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
+import { useToast } from '@/components/ui/toast';
 import { TablePager, useTableView } from '@/components/ui/table-search';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { NativeSelectOption } from '@/components/ui/native-select';
@@ -500,6 +501,7 @@ function LightenBox({
   const tr = useT();
   const confirm = useConfirm();
   const t = useT();
+  const { show } = useToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -550,6 +552,7 @@ function LightenBox({
               startTransition(async () => {
                 const result = await lightenAction(projectId);
                 if (result.error) setError(result.error);
+                else show(tr('پروژه سبک شد.'));
               });
             }}
           >
@@ -607,6 +610,7 @@ export function ManageTab({
 }) {
   const tr = useT();
   const t = useT();
+  const { show } = useToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const totalMinutes = hours.reduce((sum, h) => sum + h.minutes, 0);
@@ -689,6 +693,7 @@ export function ManageTab({
                   startTransition(async () => {
                     const result = await setArchivedAction(projectId, !isArchived);
                     if (result.error) setError(result.error);
+                    else show(isArchived ? t('پروژه از بایگانی خارج شد.') : t('پروژه بایگانی شد.'));
                   })
                 }
               >

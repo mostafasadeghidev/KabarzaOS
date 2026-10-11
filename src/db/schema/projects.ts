@@ -306,7 +306,12 @@ export const unitEntries = pgTable('unit_entries', {
   amount: money('amount').notNull().default('0'),
   currencyId: fk('currency_id').notNull().references(() => currencies.id),
   status: text('status').notNull().default('unpaid').$type<'unpaid' | 'requested' | 'paid'>(),
-  /** R-TEAM-08 — پرداخت به تراکنشِ واقعی وصل می‌شود. */
+  /**
+   * جمعِ قسط‌های پرداخت‌شده (۲.۲۵.۰) — از `unit_payments` ساخته می‌شود (`syncUnit`).
+   * «بخشی پرداخت‌شده» = status = 'unpaid' و paidAmount > 0.
+   */
+  paidAmount: money('paid_amount').notNull().default('0'),
+  /** R-TEAM-08 — پرداخت به تراکنشِ واقعی وصل می‌شود (آخرین قسط). */
   ledgerId: fk('ledger_id'),
   ...stamps,
 }, (t) => [

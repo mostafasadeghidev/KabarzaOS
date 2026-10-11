@@ -12,6 +12,7 @@ import { LedgerValidationError } from '@/domain/ledger/amounts';
 import { AccountError, accountMessage } from '@/domain/finance/accounts';
 import { RecurringPayError, type ExpenseKind } from '@/domain/finance/recurring';
 import { getT } from '@/i18n/server';
+import { INSTALLMENT_MESSAGES, UnitInstallmentError } from '@/domain/team-money/unit-installments';
 import { ltr } from '@/i18n/bidi';
 
 /** اقدام‌های پرداخت‌ها و هزینه‌های دوره‌ای. */
@@ -44,6 +45,7 @@ async function explain(error: unknown, fallback: string): Promise<string> {
   if (error instanceof MissingRateError) {
     return 'نرخِ ارز برای این تبدیل ثبت نشده است. نرخ را در تنظیمات اضافه کنید یا مبلغِ واقعی از حساب را بنویسید.';
   }
+  if (error instanceof UnitInstallmentError) return INSTALLMENT_MESSAGES[error.code];
   if (error instanceof AccountError) return accountMessage(error.code);
   if (error instanceof LedgerValidationError) return 'اطلاعاتِ ردیفِ دفتر کامل نیست.';
   if (error instanceof ForbiddenError) return 'دسترسی کافی ندارید.';
@@ -95,10 +97,12 @@ export async function payUnitAction(_prev: PayoutState, formData: FormData): Pro
   const entryDate = String(formData.get('entryDate') ?? '');
   const amount = bankAmountField(formData);
   if (amount === false) return { error: 'مبلغِ بانکی معتبر نیست.' };
+  // مبلغِ این قسط به ارزِ کارکرد (۲.۲۵.۰) — خالی = کلِ مانده.
+  const part = String(formData.get('part') ?? '').trim() || null;
   if (!Number.isInteger(unitEntryId) || !Number.isInteger(accountId)) {
     return { error: 'کارکرد یا حساب معتبر نیست.' };
   }
-  return run((actor) => payUnit(actor, unitEntryId, { accountId, entryDate, amount }), 'پرداخت ثبت نشد.');
+  return run((actor) => payUnit(actor, unitEntryId, { accountId, entryDate, amount, part }), 'پرداخت ثبت نشد.');
 }
 
 export async function saveRecurringAction(_prev: PayoutState, formData: FormData): Promise<PayoutState> {

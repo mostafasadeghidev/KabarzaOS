@@ -33,6 +33,8 @@ export async function GET(request: Request) {
       tagId: Number(params.get('tag')) || null,
       projectId: Number(params.get('project')) || null,
       party: params.get('party') || null,
+      // خروجیِ یک دورهٔ بسته از تبِ «دوره‌های بسته» (۲.۲۵.۰).
+      includeLocked: params.get('all') === '1',
       page: 1,
       perPage: 10_000,
     });

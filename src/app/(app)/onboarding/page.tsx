@@ -16,6 +16,7 @@ import { primeTranslations, t } from '@/i18n/server';
 import { formatDate } from '@/i18n/datetime';
 import { StartPicker, TaskRows } from './onboarding-client';
 import { pageTitle } from '@/i18n/page-title';
+import { Button } from '@/components/ui/button';
 
 export const generateMetadata = pageTitle('آنبوردینگ');
 
@@ -64,7 +65,7 @@ export default async function OnboardingPage() {
         title={t('آنبوردینگ')}
         description={t('کارهای روزهای اولِ اعضای تازه — از کتابخانهٔ هر نقش ساخته می‌شود.')}
         actions={canEditLibrary && (
-          <Link href="/settings?tab=onboarding" className="text-sm underline">{t('ویرایشِ کتابخانه')}</Link>
+          <Button asChild size="sm" variant="outline"><Link href="/settings?tab=onboarding">{t('ویرایشِ کتابخانه')}</Link></Button>
         )}
       />
 

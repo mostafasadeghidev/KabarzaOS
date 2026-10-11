@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { ltr } from '@/i18n/bidi';
 import { useConfirm } from '@/components/ui/confirm';
@@ -205,6 +205,13 @@ export function HoursView({ data }: { data: HoursData }) {
     return result;
   }, {});
   useActionToast(editState);
+  const { show } = useToast();
+  /** نتیجهٔ اقدام‌های تک‌دکمه‌ای (ادامه/دور انداختنِ تایمر، حذف) — پیش از این نادیده می‌ماند. */
+  const notify = (result: { message?: string; error?: string } | void) => {
+    if (!result) return;
+    if (result.error) show(t(result.error), 'error');
+    else if (result.message) show(t(result.message));
+  };
 
   const canLogSomething = data.canLogGeneral || data.projects.length > 0;
   const pageHref = (page: number) => `/hours?${hoursQuery(data.filter, page)}`;
@@ -243,11 +250,11 @@ export function HoursView({ data }: { data: HoursData }) {
               />
             </Field>
             <Submit>{t("ثبتِ این مدت")}</Submit>
-            <Button type="button" size="sm" variant="outline" onClick={() => resumePendingAction()}>
+            <Button type="button" size="sm" variant="outline" onClick={async () => notify(await resumePendingAction())}>
               <Play className="size-3.5" />
               {tr("ادامهٔ تایمر")}
             </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => discardPendingAction()}>
+            <Button type="button" size="sm" variant="ghost" onClick={async () => notify(await discardPendingAction())}>
               {tr("دور بینداز")}
             </Button>
           </form>
@@ -329,7 +336,7 @@ export function HoursView({ data }: { data: HoursData }) {
             </Field>
             <Button type="submit" size="sm">{t("فیلتر")}</Button>
             {filtered && (
-              <Link href="/hours" className="text-xs text-muted-foreground underline">{t("پاک‌کردن")}</Link>
+              <Button asChild size="sm" variant="outline"><Link href="/hours">{t("پاک‌کردن")}</Link></Button>
             )}
           </form>
           {/* پورتِ افزونه: جمع فقط وقتی فیلتری فعال است. */}
@@ -382,7 +389,7 @@ export function HoursView({ data }: { data: HoursData }) {
                         className="size-8 text-muted-foreground hover:text-destructive"
                         label={t("حذف")}
                         onClick={async () => {
-                          if (await ask({ title: t('این ساعت حذف شود؟') })) await deleteLogAction(l.id);
+                          if (await ask({ title: t('این ساعت حذف شود؟') })) notify(await deleteLogAction(l.id));
                         }}
                       >
                         <Trash2 className="size-3.5" />

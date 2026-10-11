@@ -15,6 +15,7 @@ import { getT } from '@/i18n/server';
 import { ltr } from '@/i18n/bidi';
 import { MissingRateError } from '@/domain/ledger/amounts';
 import { assertUnitPayable, markUnitPaid, makeRecurringFromEntry, PayoutError } from '@/server/finance/payouts';
+import { INSTALLMENT_MESSAGES, installmentPart, UnitInstallmentError } from '@/domain/team-money/unit-installments';
 
 /** اقدام‌های حسابداری. گاردها همه در سرویس‌اند (R-ARCH-01). */
 
@@ -97,6 +98,7 @@ async function explain(error: unknown, fallback: string): Promise<string> {
     if (error.code === 'mismatch') return 'کارکردِ انتخاب‌شده با پروژه یا گیرندهٔ این ردیف نمی‌خواند.';
     return 'کارکرد پیدا نشد.';
   }
+  if (error instanceof UnitInstallmentError) return INSTALLMENT_MESSAGES[error.code];
   if (error instanceof ForbiddenError) return 'دسترسی کافی ندارید.';
   return fallback;
 }
@@ -218,11 +220,19 @@ export async function saveEntryAction(
     if (entryId) await updateEntry(actor, entryId, input);
     else {
       // ⚠️ اعتبارسنجیِ کارکرد **پیش از** ساختِ ردیف — وگرنه ردیفِ مالی می‌ماند و کارکرد نه.
+      /**
+       * قسط (۲.۲۵.۰): عددِ «از طلبِ … کم شود» اگر به ارزِ خودِ کارکرد است، همان
+       * مبلغِ قسط است — کمتر از مانده یعنی «بخشی پرداخت‌شده». در ارزِ دیگر، کلِ مانده.
+       */
+      let unitPart: string | null = null;
       if (fromUnit) {
-        await assertUnitPayable(actor, fromUnit, { projectId: input.projectId, receiverUserId: input.receiverUserId });
+        const unit = await assertUnitPayable(actor, fromUnit, { projectId: input.projectId, receiverUserId: input.receiverUserId });
+        unitPart = input.settledCurrencyId === unit.currencyId
+          ? installmentPart(input.amountSettled, unit.amount, unit.paidAmount)
+          : unit.part;
       }
       const newId = await createEntry(actor, input);
-      if (fromUnit) await markUnitPaid(actor, fromUnit, newId);
+      if (fromUnit) await markUnitPaid(actor, fromUnit, newId, unitPart);
       /**
        * «این هزینه را به‌عنوان هزینهٔ دوره‌ای هم ثبت کن» — پورتِ `make_recurring`:
        * قالبِ ماهانه از همین ردیف (طرف‌حساب، حساب، مبلغ، دسته)، سررسیدِ بعدی
