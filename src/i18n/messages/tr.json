@@ -4021,5 +4021,14 @@
   "شخصِ موردِ نظر را انتخاب کنید…": "Kişiyi seçin…",
   "نقش‌ها را انتخاب کنید…": "Rolleri seçin…",
   "نقش‌های خاص": "Belirli roller",
-  "همهٔ اعضای پروژه می‌بینند.": "Tüm proje üyeleri görür."
+  "همهٔ اعضای پروژه می‌بینند.": "Tüm proje üyeleri görür.",
+  "این ردیف قسطِ پرداخت‌شده دارد و حذف نمی‌شود.": "Bu satırın ödenmiş taksitleri var, silinemez.",
+  "بخشی پرداخت‌شده": "Kısmen ödendi",
+  "تا امروز {paid} پرداخت شده؛ مانده {left}. کمتر از مانده = قسطی دیگر.": "Şu ana kadar {paid} ödendi; kalan {left}. Kalandan az = başka bir taksit.",
+  "مانده {left}": "Kalan {left}",
+  "مانده از {total}": "{total} tutarından kalan",
+  "مبلغ نمی‌تواند از قسط‌های پرداخت‌شدهٔ این ردیف کمتر باشد.": "Tutar bu satırda ödenmiş taksitlerden az olamaz.",
+  "مبلغِ این قسط ({code})": "Bu taksit ({code})",
+  "کمتر از کلِ مبلغ بنویسید تا بقیه بعداً پرداخت شود.": "Kalanını sonra ödemek için tutarın tamamından az girin.",
+  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Bu üyenin bu projedeki ödenmemiş işi — bir satır seçince kalanı «Alacağından düşülsün» alanına gelir. Taksit ödemek için daha az girin."
 }

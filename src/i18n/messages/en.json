@@ -4021,5 +4021,14 @@
   "شخصِ موردِ نظر را انتخاب کنید…": "Choose the person…",
   "نقش‌ها را انتخاب کنید…": "Choose the roles…",
   "نقش‌های خاص": "Specific roles",
-  "همهٔ اعضای پروژه می‌بینند.": "All project members can see it."
+  "همهٔ اعضای پروژه می‌بینند.": "All project members can see it.",
+  "این ردیف قسطِ پرداخت‌شده دارد و حذف نمی‌شود.": "This row has paid instalments and cannot be deleted.",
+  "بخشی پرداخت‌شده": "Partly paid",
+  "تا امروز {paid} پرداخت شده؛ مانده {left}. کمتر از مانده = قسطی دیگر.": "{paid} paid so far; {left} left. Less than what is left = another instalment.",
+  "مانده {left}": "{left} left",
+  "مانده از {total}": "left of {total}",
+  "مبلغ نمی‌تواند از قسط‌های پرداخت‌شدهٔ این ردیف کمتر باشد.": "The amount cannot be less than the instalments already paid on this row.",
+  "مبلغِ این قسط ({code})": "This instalment ({code})",
+  "کمتر از کلِ مبلغ بنویسید تا بقیه بعداً پرداخت شود.": "Enter less than the full amount to pay the rest later.",
+  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "This member's unpaid work on this project — picking a row puts what is left of it into \"Deduct from balance\". Enter less to pay an instalment of it."
 }

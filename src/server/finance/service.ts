@@ -18,6 +18,7 @@ import {
 } from '@/domain/ledger/fiscal';
 import { planReceipts } from '@/domain/files/upload';
 import { learnedRate, paymentNote, planPaymentMirror } from '@/domain/ledger/mirror';
+import { unitRemaining } from '@/domain/team-money/unit-installments';
 import { fileSummaries, removeFiles } from '@/server/files/service';
 import { convert, type RateSource } from '@/domain/currency/rates';
 import { AccountError, assertAccountDeletable, canSeeAccount, visibleAccountIds } from '@/domain/finance/accounts';
@@ -795,11 +796,17 @@ export async function deleteEntry(actor: Actor, entryId: number): Promise<void> 
   }
 
   const ids = rows.map((r) => r.id);
+  // ⚠️ قسطِ کارکردی که با این ردیف پرداخت شده بود (۲.۲۵.۰) با حذفِ ردیف می‌رود
+  // (cascade)؛ پرداخت‌شده و وضعیتِ همان کارکرد باید از نو حساب شود.
+  // import ِ پویا: payouts خودش این ماژول را وارد می‌کند.
+  const { syncUnit, unitsPaidBy } = await import('./payouts');
+  const touchedUnits = await unitsPaidBy(ids);
   await db.delete(tagRelations).where(and(
     eq(tagRelations.objectType, 'ledger'),
     inArray(tagRelations.objectId, ids),
   ));
   await db.delete(ledger).where(inArray(ledger.id, ids));
+  for (const unitId of touchedUnits) await syncUnit(unitId);
   // ⚠️ رسیدهای ردیفِ حذف‌شده دیگر صاحبی ندارند؛ در باکت هم نمی‌مانند.
   await removeFiles(await unreferencedReceipts(ids, [...new Set(rows.flatMap((r) => r.receiptIds ?? []))]));
   await audit(actor, 'ledger.delete', entryId, before, rows.length > 1 ? { transferGroup: before.transferGroup, ids } : null);
@@ -937,6 +944,7 @@ export async function getEntryFormOptions(actor: Actor) {
       db.select({
         id: unitEntries.id, projectId: unitEntries.projectId, userId: unitEntries.userId,
         entryDate: unitEntries.entryDate, quantity: unitEntries.quantity, amount: unitEntries.amount,
+        paidAmount: unitEntries.paidAmount,
         currencyId: unitEntries.currencyId, code: currencies.code, symbol: currencies.symbol,
         decimals: currencies.decimals,
       }).from(unitEntries)
@@ -983,11 +991,14 @@ export async function getEntryFormOptions(actor: Actor) {
       const cur = u.currencyId !== null && u.code !== null
         ? { id: u.currencyId, code: u.code, symbol: u.symbol ?? '', decimals: u.decimals ?? 2 }
         : undefined;
+      // ⚠️ مبلغِ انتخابگر «مانده» است، نه کلِ ردیف (۲.۲۵.۰) — ردیفِ بخشی‌پرداخت‌شده دوباره کامل پرداخت نشود.
+      const remaining = unitRemaining(u.amount, u.paidAmount).toFixed(4);
+      const partial = Number(u.paidAmount) > 0;
       (acc[`${u.projectId}:${u.userId}`] ??= []).push({
         id: u.id,
-        amount: u.amount,
+        amount: remaining,
         currencyId: u.currencyId,
-        text: `${u.entryDate} · ${Number(u.quantity)}× · ${formatMoney(u.amount, cur)}`,
+        text: `${u.entryDate} · ${Number(u.quantity)}× · ${formatMoney(remaining, cur)}${partial ? ` / ${formatMoney(u.amount, cur)}` : ''}`,
       });
       return acc;
     }, {}),

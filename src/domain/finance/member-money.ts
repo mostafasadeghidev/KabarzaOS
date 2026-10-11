@@ -13,6 +13,8 @@ export const UNIT_STATUS_LABELS: Record<string, string> = {
   unpaid: 'پرداخت‌نشده',
   requested: 'درخواست‌شده',
   paid: 'پرداخت‌شده',
+  /** فقط نمایشی (۲.۲۵.۰) — `unitPayLabel`. */
+  partial: 'بخشی پرداخت‌شده',
 };
 
 /**

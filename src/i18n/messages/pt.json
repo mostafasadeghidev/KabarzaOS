@@ -4021,5 +4021,14 @@
   "شخصِ موردِ نظر را انتخاب کنید…": "Escolha a pessoa…",
   "نقش‌ها را انتخاب کنید…": "Escolha as funções…",
   "نقش‌های خاص": "Funções específicas",
-  "همهٔ اعضای پروژه می‌بینند.": "Todos os membros do projeto a veem."
+  "همهٔ اعضای پروژه می‌بینند.": "Todos os membros do projeto a veem.",
+  "این ردیف قسطِ پرداخت‌شده دارد و حذف نمی‌شود.": "Esta linha tem prestações pagas e não pode ser eliminada.",
+  "بخشی پرداخت‌شده": "Pago em parte",
+  "تا امروز {paid} پرداخت شده؛ مانده {left}. کمتر از مانده = قسطی دیگر.": "Pago até agora {paid}; faltam {left}. Menos do que falta = outra prestação.",
+  "مانده {left}": "Faltam {left}",
+  "مانده از {total}": "em falta de {total}",
+  "مبلغ نمی‌تواند از قسط‌های پرداخت‌شدهٔ این ردیف کمتر باشد.": "O valor não pode ser inferior às prestações já pagas desta linha.",
+  "مبلغِ این قسط ({code})": "Valor desta prestação ({code})",
+  "کمتر از کلِ مبلغ بنویسید تا بقیه بعداً پرداخت شود.": "Escreva menos do que o total para pagar o resto mais tarde.",
+  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Trabalho por pagar deste membro neste projeto — ao escolher uma linha, o que falta vai para «Descontar do saldo». Escreva menos para pagar uma prestação."
 }

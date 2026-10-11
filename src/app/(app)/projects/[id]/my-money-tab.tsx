@@ -31,6 +31,10 @@ export interface UnitRow {
   entryDate: string;
   quantity: string;
   amount: string;
+  /** قسط‌ها (۲.۲۵.۰) — پرداخت‌شده، مانده و تاریخچه. */
+  paidAmount?: string;
+  remaining?: string;
+  installments?: Array<{ amount: string; paidAt: string }>;
   note: string;
   status: string;
   currencyCode: string | null;

@@ -4021,5 +4021,14 @@
   "شخصِ موردِ نظر را انتخاب کنید…": "Choisissez la personne…",
   "نقش‌ها را انتخاب کنید…": "Choisissez les rôles…",
   "نقش‌های خاص": "Rôles précis",
-  "همهٔ اعضای پروژه می‌بینند.": "Tous les membres du projet la voient."
+  "همهٔ اعضای پروژه می‌بینند.": "Tous les membres du projet la voient.",
+  "این ردیف قسطِ پرداخت‌شده دارد و حذف نمی‌شود.": "Cette ligne a des versements payés et ne peut pas être supprimée.",
+  "بخشی پرداخت‌شده": "Payé en partie",
+  "تا امروز {paid} پرداخت شده؛ مانده {left}. کمتر از مانده = قسطی دیگر.": "{paid} payé à ce jour ; reste {left}. Moins que le reste = un autre versement.",
+  "مانده {left}": "Reste {left}",
+  "مانده از {total}": "reste sur {total}",
+  "مبلغ نمی‌تواند از قسط‌های پرداخت‌شدهٔ این ردیف کمتر باشد.": "Le montant ne peut pas être inférieur aux versements déjà payés sur cette ligne.",
+  "مبلغِ این قسط ({code})": "Montant de ce versement ({code})",
+  "کمتر از کلِ مبلغ بنویسید تا بقیه بعداً پرداخت شود.": "Saisissez moins que le total pour payer le reste plus tard.",
+  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Travail impayé de ce membre sur ce projet — en choisissant une ligne, son reste va dans « Déduire du solde ». Saisissez moins pour payer un versement."
 }

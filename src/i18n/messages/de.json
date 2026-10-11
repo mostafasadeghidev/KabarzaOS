@@ -4021,5 +4021,14 @@
   "شخصِ موردِ نظر را انتخاب کنید…": "Person auswählen…",
   "نقش‌ها را انتخاب کنید…": "Rollen auswählen…",
   "نقش‌های خاص": "Bestimmte Rollen",
-  "همهٔ اعضای پروژه می‌بینند.": "Alle Projektmitglieder sehen sie."
+  "همهٔ اعضای پروژه می‌بینند.": "Alle Projektmitglieder sehen sie.",
+  "این ردیف قسطِ پرداخت‌شده دارد و حذف نمی‌شود.": "Diese Zeile hat bezahlte Raten und kann nicht gelöscht werden.",
+  "بخشی پرداخت‌شده": "Teilweise bezahlt",
+  "تا امروز {paid} پرداخت شده؛ مانده {left}. کمتر از مانده = قسطی دیگر.": "Bisher {paid} bezahlt; offen {left}. Weniger als offen = weitere Rate.",
+  "مانده {left}": "Offen {left}",
+  "مانده از {total}": "offen von {total}",
+  "مبلغ نمی‌تواند از قسط‌های پرداخت‌شدهٔ این ردیف کمتر باشد.": "Der Betrag darf nicht unter den bereits bezahlten Raten dieser Zeile liegen.",
+  "مبلغِ این قسط ({code})": "Diese Rate ({code})",
+  "کمتر از کلِ مبلغ بنویسید تا بقیه بعداً پرداخت شود.": "Weniger als den vollen Betrag eingeben, um den Rest später zu zahlen.",
+  "کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.": "Unbezahlte Arbeit dieses Mitglieds in diesem Projekt — bei Auswahl wird der offene Rest unter „Vom Guthaben abziehen“ eingesetzt. Weniger eingeben, um eine Rate zu zahlen."
 }

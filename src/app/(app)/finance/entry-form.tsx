@@ -524,7 +524,7 @@ export function EntryForm({
       {unitRows.length > 0 && (
         <div className="grid gap-2 rounded-lg bg-muted/60 p-3">
           <p className="text-xs text-muted-foreground">
-            {tr("کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، معادل و ارز پر می‌شود و پس از ذخیره «پرداخت‌شده» می‌گردد.")}
+            {tr("کارکردِ پرداخت‌نشدهٔ این عضو روی این پروژه — با انتخاب، مانده‌اش در «از طلب کم شود» می‌نشیند. عددِ کمتر بنویسید تا قسطی از آن پرداخت شود.")}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {unitRows.map((u) => (

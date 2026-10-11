@@ -393,6 +393,13 @@
       "when": 1789698000026,
       "tag": "0055_ledger_category_billable",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1789698000027,
+      "tag": "0056_unit_installments",
+      "breakpoints": true
     }
   ]
 }

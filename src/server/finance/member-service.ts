@@ -8,8 +8,9 @@ import { format } from '@/domain/money/money';
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
-  auditLog, currencies, paymentRequests, projectMembers, projectPayments, projects, tags, timelogs, unitEntries, users, ledger,
+  auditLog, currencies, paymentRequests, projectMembers, projectPayments, projects, tags, timelogs, unitEntries, unitPayments, users, ledger,
 } from '@/db/schema';
+import { unitRemaining } from '@/domain/team-money/unit-installments';
 import { normalizeEntryName } from '@/domain/projects/unit-entry-name';
 import { defaultProjectStatusId } from '@/domain/projects/defaults';
 import { tagName } from '@/db/tag-name';
@@ -31,7 +32,7 @@ import { canManageProject } from '@/server/projects/authority';
  */
 
 export class MemberMoneyError extends Error {
-  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen' | 'not_member' | 'not_unit_based' | 'amount_invalid' | 'amount_forbidden' | 'not_editable' | 'name_taken' | 'name_invalid' | 'status_invalid') {
+  constructor(public readonly reason: RequestRejection | 'quantity_invalid' | 'not_yours' | 'frozen' | 'not_member' | 'not_unit_based' | 'amount_invalid' | 'amount_forbidden' | 'not_editable' | 'name_taken' | 'name_invalid' | 'status_invalid' | 'below_paid' | 'has_payments') {
     super(reason);
     this.name = 'MemberMoneyError';
   }
@@ -119,6 +120,8 @@ export async function listUnitEntries(actor: Actor, projectId: number) {
       workStatusGroup: work.statusGroup,
       quantity: unitEntries.quantity,
       amount: unitEntries.amount,
+      /** جمعِ قسط‌های پرداخت‌شده (۲.۲۵.۰). */
+      paidAmount: unitEntries.paidAmount,
       note: unitEntries.note,
       status: unitEntries.status,
       currencyCode: currencies.code,
@@ -144,8 +147,17 @@ export async function listUnitEntries(actor: Actor, projectId: number) {
 
   const openByEntry = new Map(open.map((o) => [o.unitEntryId!, o]));
 
+  // قسط‌ها (۲.۲۵.۰) — یک کوئری؛ تاریخ و مبلغِ هر قسط کنارِ ردیف دیده می‌شود.
+  const installments = ids.length === 0 ? [] : await db
+    .select({ unitEntryId: unitPayments.unitEntryId, amount: unitPayments.amount, paidAt: unitPayments.paidAt })
+    .from(unitPayments)
+    .where(inArray(unitPayments.unitEntryId, ids))
+    .orderBy(unitPayments.paidAt, unitPayments.id);
+
   return rows.map((r) => ({
     ...r,
+    remaining: unitRemaining(r.amount, r.paidAmount).toFixed(4),
+    installments: installments.filter((p) => p.unitEntryId === r.id).map((p) => ({ amount: p.amount, paidAt: p.paidAt })),
     openRequest: openByEntry.get(r.id) ?? null,
     isMine: r.userId === actor.id,
   }));
@@ -154,7 +166,8 @@ export async function listUnitEntries(actor: Actor, projectId: number) {
 /** جمعِ پرداخت‌نشدهٔ خودِ کاربر در یک پروژه. */
 export async function myUnpaidUnits(actor: Actor, projectId: number): Promise<string> {
   const rows = await db
-    .select({ total: sql<string>`coalesce(sum(${unitEntries.amount}), 0)::text` })
+    // مانده، نه کلِ مبلغ (۲.۲۵.۰) — قسطِ پرداخت‌شده دیگر «پرداخت‌نشده» نیست.
+    .select({ total: sql<string>`coalesce(sum(${unitEntries.amount} - ${unitEntries.paidAmount}), 0)::text` })
     .from(unitEntries)
     .where(and(
       eq(unitEntries.projectId, projectId),
@@ -349,6 +362,8 @@ export async function setUnitEntryAmount(actor: Actor, entryId: number, rawAmoun
       .orderBy(projectMembers.id).limit(1);
     amount = unitAmount(Number(row.quantity), membership[0]?.unitRate ?? null);
   }
+  // ⚠️ مبلغ کمتر از قسط‌های پرداخت‌شده نمی‌شود (۲.۲۵.۰) — وگرنه «اضافه‌پرداختِ» پنهان می‌ساخت.
+  if (Number(amount) < Number(row.paidAmount)) throw new MemberMoneyError('below_paid');
 
   await db.update(unitEntries).set({ amount, updatedAt: new Date() }).where(eq(unitEntries.id, entryId));
   await audit(actor, 'unit.amount', entryId, { before: row.amount, after: amount });
@@ -362,6 +377,8 @@ export async function deleteUnitEntry(actor: Actor, entryId: number) {
   const { canManage, isFrozen } = await projectContext(actor, row.projectId, { projectManager: true });
   if (!canManage && row.userId !== actor.id) throw new MemberMoneyError('not_yours');
   if (!canDeleteUnit(row.status, isFrozen)) throw new MemberMoneyError('frozen');
+  // ⚠️ ردیفی که قسط گرفته سندِ مالی دارد (۲.۲۵.۰): حذفش قسط‌ها را بی‌صاحب می‌کرد.
+  if (Number(row.paidAmount) > 0) throw new MemberMoneyError('has_payments');
 
   await db.delete(unitEntries).where(eq(unitEntries.id, entryId));
   await audit(actor, 'unit.delete', entryId, row);
@@ -594,6 +611,9 @@ export async function requestForUnit(actor: Actor, entryId: number) {
    * فقط صفِ حسابدار را پر می‌کرد. همان گاردِ مسیرِ عمومی (`validateRequest`).
    */
   if (!(Number(row.amount) > 0)) throw new MemberMoneyError('amount_invalid');
+  // درخواست = ماندهٔ ردیف (۲.۲۵.۰)، نه کلِ مبلغ — قسط‌های پرداخت‌شده دوباره خواسته نشوند.
+  const remaining = unitRemaining(row.amount, row.paidAmount);
+  if (!(remaining > 0)) throw new MemberMoneyError('amount_invalid');
 
   const open = await db.select({ id: paymentRequests.id }).from(paymentRequests)
     .where(and(
@@ -605,7 +625,7 @@ export async function requestForUnit(actor: Actor, entryId: number) {
   const inserted = await db.insert(paymentRequests).values({
     projectId: row.projectId,
     userId: actor.id,
-    amount: row.amount,
+    amount: remaining.toFixed(4),
     currencyId: row.currencyId ?? project.currencyId,
     note: `کارکردِ ${row.entryDate}`,
     unitEntryId: entryId,
@@ -616,7 +636,7 @@ export async function requestForUnit(actor: Actor, entryId: number) {
 
   await audit(actor, 'request.create', inserted[0]!.id, { entryId });
   await notifyPaymentRequested(actor.id, {
-    projectId: row.projectId, amount: row.amount, requestId: inserted[0]!.id,
+    projectId: row.projectId, amount: remaining.toFixed(4), requestId: inserted[0]!.id,
   });
   return inserted[0]!.id;
 }

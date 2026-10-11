@@ -12,6 +12,8 @@ import {
 import type { UnitRow } from './my-money-tab';
 import { format } from '@/domain/money/money';
 import { UNIT_STATUS_LABELS } from '@/domain/finance/member-money';
+import { unitPayLabel, type UnitPayStatus } from '@/domain/team-money/unit-installments';
+import { Hint } from '@/components/ui/tooltip';
 import { ENTRY_NAME_MAX } from '@/domain/projects/unit-entry-name';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -295,9 +297,36 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                     )}
                   </TableNumericCell>
                   <TableCell>
-                    <Badge variant={paid ? 'success' : 'outline'}>
-                      {t(UNIT_STATUS_LABELS[u.status] ?? u.status)}
-                    </Badge>
+                    {(() => {
+                      // قسط‌ها (۲.۲۵.۰): «بخشی پرداخت‌شده» + پرداخت‌شده/مانده؛ تاریخچه در راهنمای شناور.
+                      const label = unitPayLabel(u.status as UnitPayStatus, u.paidAmount ?? 0);
+                      const list = u.installments ?? [];
+                      const badge = (
+                        <Badge variant={paid ? 'success' : label === 'partial' ? 'warning' : 'outline'}>
+                          {t(UNIT_STATUS_LABELS[label] ?? u.status)}
+                        </Badge>
+                      );
+                      return (
+                        <span className="inline-grid gap-0.5">
+                          {list.length > 0 ? (
+                            <Hint label={(
+                              <span className="grid gap-0.5">
+                                {list.map((p, i) => (
+                                  <span key={i} className="num">{p.paidAt} · {format(p.amount)} {u.currencyCode ?? ''}</span>
+                                ))}
+                              </span>
+                            )}>
+                              <span className="cursor-help">{badge}</span>
+                            </Hint>
+                          ) : badge}
+                          {label === 'partial' && (
+                            <span className="text-[11px] text-muted-foreground">
+                              {t('مانده {left}', { left: format(u.remaining ?? '0') })}
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })()}
                   </TableCell>
                   <TableActionsCell>
                     {/* ثبتِ ساعت روی ردیفِ خودم — انتخابگرِ «پروژه - نام» در صفحهٔ ساعت کاری. */}
@@ -347,7 +376,8 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                             <Pencil className="size-3.5" />
                           </IconButton>
                         )}
-                        {(data.seesAll || u.isMine) && (
+                        {/* ردیفِ قسط‌دار سندِ مالی دارد و حذف نمی‌شود (۲.۲۵.۰). */}
+                        {(data.seesAll || u.isMine) && !(Number(u.paidAmount ?? 0) > 0) && (
                           <IconButton
                             variant="ghost"
                             className="size-8 text-muted-foreground hover:text-destructive"

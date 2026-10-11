@@ -83,6 +83,24 @@ export const paymentRequests = pgTable('payment_requests', {
   index('payment_requests_project_ix').on(t.projectId),
 ]);
 
+/**
+ * قسط‌های یک ردیفِ کارکرد (۲.۲۵.۰) — هر قسط به ردیفِ دفترِ خودش وصل است و با
+ * حذفِ آن ردیف می‌رود؛ `unit_entries.paid_amount` جمعِ همین‌هاست.
+ */
+export const unitPayments = pgTable('unit_payments', {
+  id: pk(),
+  unitEntryId: fk('unit_entry_id').notNull().references(() => unitEntries.id, { onDelete: 'cascade' }),
+  ledgerId: fk('ledger_id').references(() => ledger.id, { onDelete: 'cascade' }),
+  /** در ارزِ خودِ ردیفِ کارکرد. */
+  amount: money('amount').notNull(),
+  paidAt: date('paid_at', { mode: 'string' }).notNull(),
+  createdBy: fk('created_by').references(() => users.id),
+  createdAt: ts('created_at').notNull().defaultNow(),
+}, (t) => [
+  check('unit_payments_amount_ck', sql`${t.amount} > 0`),
+  index('unit_payments_unit_ix').on(t.unitEntryId),
+]);
+
 export const INTERVAL_UNITS = ['day', 'week', 'month', 'year'] as const;
 
 export const recurringExpenses = pgTable('recurring_expenses', {

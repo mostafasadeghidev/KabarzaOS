@@ -3,11 +3,12 @@ import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   accounts, auditLog, currencies, ledger, paymentRequests, projects,
-  recurringExpenses, unitEntries, userRoles, users, vendors, projectMembers, projectPayments, tags,
+  recurringExpenses, unitEntries, unitPayments, userRoles, users, vendors, projectMembers, projectPayments, tags,
 } from '@/db/schema';
 import { canManageSection, type Actor, isOwner, canViewSection } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, assertOwner } from '@/domain/access/guard';
 import { contractBalance, markPaid, unpaidWorkExcludingRequested } from '@/domain/team-money/payments';
+import { installmentPart, unitPayStatus, unitRemaining } from '@/domain/team-money/unit-installments';
 import { assertWritable } from '@/domain/ledger/fiscal';
 import {
   computeNext, normalizeUnit, planPay, RecurringPayError,
@@ -197,6 +198,8 @@ export async function listUnpaidUnits(actor: Actor) {
       entryDate: unitEntries.entryDate,
       quantity: unitEntries.quantity,
       amount: unitEntries.amount,
+      /** پرداخت‌شده تا امروز (۲.۲۵.۰) — ردیفِ «بخشی پرداخت‌شده» هم اینجاست. */
+      paidAmount: unitEntries.paidAmount,
       currencyId: unitEntries.currencyId,
       currencyCode: currencies.code,
       userId: unitEntries.userId,
@@ -215,18 +218,74 @@ export async function listUnpaidUnits(actor: Actor) {
       status: paymentRequests.status, unitEntryId: paymentRequests.unitEntryId,
     }).from(paymentRequests).where(inArray(paymentRequests.status, ['pending', 'approved'])),
   ]);
-  return unpaidWorkExcludingRequested(rows, open);
+  return unpaidWorkExcludingRequested(rows, open)
+    .map((r) => ({ ...r, remaining: unitRemaining(r.amount, r.paidAmount).toFixed(4) }));
+}
+
+/* ------------------------------------------------------------------ *
+ * قسط‌های کارکرد (۲.۲۵.۰)
+ * ------------------------------------------------------------------ */
+
+/**
+ * `paid_amount`، وضعیت و پیوندِ دفترِ ردیف از روی قسط‌هایش — تنها جایی که این
+ * سه نوشته می‌شوند. پس از هر قسطِ تازه و پس از حذفِ ردیفِ دفتری که قسط داشت.
+ */
+export async function syncUnit(unitEntryId: number): Promise<void> {
+  const [unit] = await db.select({ amount: unitEntries.amount }).from(unitEntries).where(eq(unitEntries.id, unitEntryId));
+  if (!unit) return;
+  const [sum] = await db.select({
+    paid: sql<string>`coalesce(sum(${unitPayments.amount}), 0)::text`,
+  }).from(unitPayments).where(eq(unitPayments.unitEntryId, unitEntryId));
+  const [last] = await db.select({ ledgerId: unitPayments.ledgerId }).from(unitPayments)
+    .where(eq(unitPayments.unitEntryId, unitEntryId)).orderBy(desc(unitPayments.id)).limit(1);
+  const open = await db.select({ id: paymentRequests.id }).from(paymentRequests)
+    .where(and(eq(paymentRequests.unitEntryId, unitEntryId), inArray(paymentRequests.status, ['pending', 'approved'])))
+    .limit(1);
+  const paid = sum?.paid ?? '0';
+  await db.update(unitEntries).set({
+    paidAmount: paid,
+    status: unitPayStatus(unit.amount, paid, open.length > 0),
+    ledgerId: last?.ledgerId ?? null,
+    updatedAt: new Date(),
+  }).where(eq(unitEntries.id, unitEntryId));
+}
+
+/** یک قسط روی ردیفِ کارکرد، وصل به ردیفِ دفترش. مبلغ پیش‌تر با `installmentPart` سنجیده شده. */
+async function recordUnitPayment(
+  actor: Actor,
+  unitEntryId: number,
+  ledgerId: number,
+  part: string,
+): Promise<void> {
+  const [entry] = await db.select({ entryDate: ledger.entryDate }).from(ledger).where(eq(ledger.id, ledgerId));
+  await db.insert(unitPayments).values({
+    unitEntryId,
+    ledgerId,
+    amount: part,
+    paidAt: entry?.entryDate ?? new Date().toISOString().slice(0, 10),
+    createdBy: actor.id,
+  });
+  await syncUnit(unitEntryId);
+}
+
+/** کدام ردیف‌های کارکرد به این ردیف‌های دفتر قسط دارند — پیش از حذفِ دفتر خوانده می‌شود. */
+export async function unitsPaidBy(ledgerIds: readonly number[]): Promise<number[]> {
+  if (ledgerIds.length === 0) return [];
+  const rows = await db.selectDistinct({ id: unitPayments.unitEntryId }).from(unitPayments)
+    .where(inArray(unitPayments.ledgerId, [...ledgerIds]));
+  return rows.map((r) => r.id);
 }
 
 /**
  * پرداختِ مستقیمِ یک ردیفِ کارِ تعدادی — پورتِ `from_unit` +
- * `Unit_Entries::mark_paid`: ردیفِ برداشت به عضو، با مبلغِ کارکرد به‌عنوانِ
- * معادلِ تعهد؛ سپس ردیف «پرداخت‌شده» و به همان ردیفِ دفتر وصل می‌شود.
+ * `Unit_Entries::mark_paid`: ردیفِ برداشت به عضو، با مبلغِ قسط به‌عنوانِ
+ * معادلِ تعهد؛ سپس قسط ثبت و ردیف «پرداخت‌شده» یا «بخشی پرداخت‌شده» می‌شود.
+ * `part` (به ارزِ کارکرد) خالی = کلِ مانده (۲.۲۵.۰).
  */
 export async function payUnit(
   actor: Actor,
   unitEntryId: number,
-  input: { accountId: number; entryDate: string; amount?: string | null },
+  input: { accountId: number; entryDate: string; amount?: string | null; part?: string | null },
 ) {
   assertCanManage(actor, 'finance');
   const unit = (await db.select().from(unitEntries).where(eq(unitEntries.id, unitEntryId)))[0];
@@ -238,10 +297,11 @@ export async function payUnit(
     .limit(1);
   if (open.length > 0) throw new PayoutError('has_request');
   if (unit.currencyId === null) throw new PayoutError('no_currency');
+  const part = installmentPart(input.part, unit.amount, unit.paidAmount);
 
   const project = (await db.select({ title: projects.title }).from(projects).where(eq(projects.id, unit.projectId)))[0];
   const member = (await db.select({ name: users.name }).from(users).where(eq(users.id, unit.userId)))[0];
-  const bank = await bankAmount(input, unit.amount, unit.currencyId);
+  const bank = await bankAmount(input, part, unit.currencyId);
 
   const ledgerId = await createEntry(actor, {
     accountId: input.accountId,
@@ -249,7 +309,7 @@ export async function payUnit(
     direction: 'out',
     amount: bank.amount,
     currencyId: bank.currencyId,
-    amountSettled: unit.amount,
+    amountSettled: part,
     settledCurrencyId: unit.currencyId,
     description: `پرداختِ کارکرد به ${member?.name ?? 'عضو'} — ${project?.title ?? 'پروژه'}`,
     projectId: unit.projectId,
@@ -261,9 +321,8 @@ export async function payUnit(
     receiverLabel: member?.name ?? '',
   });
 
-  await db.update(unitEntries).set({ status: 'paid', ledgerId, updatedAt: new Date() })
-    .where(eq(unitEntries.id, unitEntryId));
-  await audit(actor, 'unit.paid', unitEntryId, unit.status, { ledgerId });
+  await recordUnitPayment(actor, unitEntryId, ledgerId, part);
+  await audit(actor, 'unit.paid', unitEntryId, unit.status, { ledgerId, part });
   return { ledgerId };
 }
 
@@ -277,6 +336,8 @@ export async function assertUnitPayable(
   actor: Actor,
   unitEntryId: number,
   target: { projectId: number | null; receiverUserId: number | null },
+  /** مبلغِ قسط به ارزِ کارکرد (۲.۲۵.۰)؛ خالی = کلِ مانده. پیش از ساختِ ردیف سنجیده می‌شود. */
+  part?: string | null,
 ) {
   assertCanView(actor, 'finance');
   const unit = (await db.select().from(unitEntries).where(eq(unitEntries.id, unitEntryId)))[0];
@@ -288,17 +349,21 @@ export async function assertUnitPayable(
     .limit(1);
   if (open.length > 0) throw new PayoutError('has_request');
   if (unit.projectId !== target.projectId || unit.userId !== target.receiverUserId) throw new PayoutError('mismatch');
-  return unit;
+  return { ...unit, part: installmentPart(part, unit.amount, unit.paidAmount) };
 }
 
-/** کارکرد «پرداخت‌شده» و به ردیفِ دفتر وصل می‌شود — پورتِ `Unit_Entries::mark_paid`. */
-export async function markUnitPaid(actor: Actor, unitEntryId: number, ledgerId: number): Promise<void> {
+/**
+ * یک قسط روی کارکرد، وصل به ردیفِ دفتر — پورتِ `Unit_Entries::mark_paid`.
+ * `part` خالی = کلِ مانده (رفتارِ قبلی: کلِ ردیف پرداخت‌شده).
+ */
+export async function markUnitPaid(actor: Actor, unitEntryId: number, ledgerId: number, part?: string | null): Promise<void> {
   assertCanView(actor, 'finance');
-  const [before] = await db.select({ status: unitEntries.status }).from(unitEntries).where(eq(unitEntries.id, unitEntryId));
+  const [before] = await db.select({ status: unitEntries.status, amount: unitEntries.amount, paid: unitEntries.paidAmount })
+    .from(unitEntries).where(eq(unitEntries.id, unitEntryId));
   if (!before) throw new PayoutError('not_found');
-  await db.update(unitEntries).set({ status: 'paid', ledgerId, updatedAt: new Date() })
-    .where(eq(unitEntries.id, unitEntryId));
-  await audit(actor, 'unit.paid', unitEntryId, before.status, { ledgerId });
+  const amount = installmentPart(part, before.amount, before.paid);
+  await recordUnitPayment(actor, unitEntryId, ledgerId, amount);
+  await audit(actor, 'unit.paid', unitEntryId, before.status, { ledgerId, part: amount });
 }
 
 /**
@@ -493,11 +558,13 @@ export async function payRequest(
    * گاردِ پرداختِ دوباره (R-TEAM-08) عملاً از کار افتاده بود.
    */
   if (result?.closesUnitEntryId) {
-    await db.update(unitEntries).set({
-      status: 'paid',
-      ledgerId,
-      updatedAt: new Date(),
-    }).where(eq(unitEntries.id, result.closesUnitEntryId));
+    // قسطی به اندازهٔ همین درخواست (= ماندهٔ لحظهٔ درخواست، ۲.۲۵.۰)؛ بیش از مانده بریده می‌شود.
+    const [unit] = await db.select({ amount: unitEntries.amount, paid: unitEntries.paidAmount })
+      .from(unitEntries).where(eq(unitEntries.id, result.closesUnitEntryId));
+    const remaining = unit ? unitRemaining(unit.amount, unit.paid) : 0;
+    const part = Math.min(Number(request.amount), remaining);
+    if (part > 0) await recordUnitPayment(actor, result.closesUnitEntryId, ledgerId, part.toFixed(4));
+    else await syncUnit(result.closesUnitEntryId);
   }
 
   await audit(actor, 'request.paid', requestId, request.status, { ledgerId, result });

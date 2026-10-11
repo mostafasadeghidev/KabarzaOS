@@ -4,6 +4,15 @@ Versioning follows [SemVer](https://semver.org/).
 
 ## [2.25.0]
 
+### Added
+
+- **Unit-based work can be paid in two or more instalments.** Each work row now has "paid so far" and "left"; a row that is partly paid shows "Partly paid" with what is left, and hovering the badge lists each instalment's date and amount.
+  - "Unpaid work" in Finance → Member finance: the payment dialog has "This instalment", filled with what is left; enter less to keep the rest for later. The list shows what is left of each row.
+  - Ledger form: picking a work row fills "Deduct from balance" with what is left; a smaller figure pays an instalment of it.
+  - A member's payment request on a partly paid row asks for what is left, not the full amount.
+  - Deleting the ledger row of an instalment puts its amount back into what is left. More than what is left is refused; a row with paid instalments cannot be deleted, and its amount cannot go below what was already paid.
+  - Reports, "My money" and the member's unpaid total count paid instalments as paid and only the rest as unpaid. Rows paid before this version count as one full instalment.
+
 ### Changed
 
 - **One line instead of the "Equivalent" block in the ledger form.** For a project row the form now says plainly what is deducted: "Deduct from «Ali»'s balance" for a payment to a project member, "Count for «…»" otherwise. The figure is always in the contract (or project) currency, so there is no currency picker.
