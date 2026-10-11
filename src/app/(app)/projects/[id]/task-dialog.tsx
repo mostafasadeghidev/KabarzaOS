@@ -22,7 +22,7 @@ import { Combobox, MultiSelect as SearchableMultiSelect } from '@/components/ui/
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { ltr } from '@/i18n/bidi';
 import { formatDateTime } from '@/i18n/datetime';
@@ -81,6 +81,7 @@ function TaskDialogBody({
   const tz = useTimeZone();
   const t = useT();
   const confirm = useConfirm();
+  const { show } = useToast();
   const [data, setData] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -340,7 +341,9 @@ function TaskDialogBody({
                     if (!(await confirm({ title: tr('این تسک حذف شود؟') }))) return;
                     startDelete(async () => {
                       const result = await deleteTaskAction(task.id);
-                      if (!result.error) onOpenChange(false);
+                      if (result.error) { show(tr(result.error), 'error'); return; }
+                      show(tr('تسک حذف شد.'));
+                      onOpenChange(false);
                     });
                   }}
                 >

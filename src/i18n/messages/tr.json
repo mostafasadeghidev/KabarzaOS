@@ -4007,5 +4007,13 @@
   "نشسته در حساب ({code})": "Hesaba geçen ({code})",
   "پرداخت‌شده از حساب ({code})": "Hesaptan ödenen ({code})",
   "ذخیره و بستن": "Kaydet ve kapat",
-  "مبلغ هنوز تعیین نشده — منتظرِ مدیرِ پروژه": "Tutar henüz belirlenmedi — proje yöneticisi bekleniyor"
+  "مبلغ هنوز تعیین نشده — منتظرِ مدیرِ پروژه": "Tutar henüz belirlenmedi — proje yöneticisi bekleniyor",
+  "{name} از پروژه برداشته شد.": "{name} projeden çıkarıldı.",
+  "بازبینی حذف شد.": "İnceleme silindi.",
+  "برنده پس گرفته شد.": "Kazanan geri alındı.",
+  "تسک حذف شد.": "Görev silindi.",
+  "تصاویر افزوده شد.": "Görseller eklendi.",
+  "پروژه از بایگانی خارج شد.": "Proje arşivden çıkarıldı.",
+  "پروژه بایگانی شد.": "Proje arşivlendi.",
+  "پروژه سبک شد.": "Proje hafifletildi."
 }

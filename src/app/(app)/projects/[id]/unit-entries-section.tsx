@@ -21,7 +21,7 @@ import { Field, FieldLabel } from '@/components/ui/field';
 import {
   Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
 } from '@/components/ui/table';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
@@ -79,8 +79,14 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
   /** فقط مسئولِ پروژه و فقط روی پروژه‌ای که مبلغِ دستی را روشن دارد. */
   const manualAmount = data.unitManualAmount && data.seesAll;
 
+  const { show } = useToast();
+  // ⚠️ موفقیت هم توست می‌گیرد (۲.۲۵.۰) — پیش از این فقط خطا دیده می‌شد.
   const run = (fn: () => Promise<MoneyState>) =>
-    startTransition(async () => setRowError((await fn()).error ?? null));
+    startTransition(async () => {
+      const result = await fn();
+      setRowError(result.error ?? null);
+      if (!result.error && result.message) show(t(result.message));
+    });
 
   return (
     <Section

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDate } from '@/i18n/datetime';
 import { Section } from '@/components/page-shell';
@@ -124,8 +124,14 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
   const [pending, startTransition] = useTransition();
   const [rowError, setRowError] = useState<string | null>(null);
 
+  const { show } = useToast();
+  // ⚠️ موفقیت هم توست می‌گیرد (۲.۲۵.۰) — پیش از این فقط خطا دیده می‌شد.
   const run = (fn: () => Promise<MoneyState>) =>
-    startTransition(async () => setRowError((await fn()).error ?? null));
+    startTransition(async () => {
+      const result = await fn();
+      setRowError(result.error ?? null);
+      if (!result.error && result.message) show(t(result.message));
+    });
 
   return (
     <div className="grid gap-4">

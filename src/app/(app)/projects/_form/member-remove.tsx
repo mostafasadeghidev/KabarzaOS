@@ -6,6 +6,7 @@ import { removeMemberAction } from './tab-actions';
 import { IconButton } from '@/components/ui/icon-button';
 import { useConfirm } from '@/components/ui/confirm';
 import { useT } from '@/i18n/client';
+import { useToast } from '@/components/ui/toast';
 
 /**
  * حذفِ صریحِ یک ردیفِ عضویت — پورتِ `remove_member` ِ افزونه.
@@ -25,6 +26,7 @@ export function MemberRemoveButton({
 }) {
   const t = useT();
   const confirm = useConfirm();
+  const { show } = useToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -48,6 +50,7 @@ export function MemberRemoveButton({
           startTransition(async () => {
             const result = await removeMemberAction(projectId, memberRowId);
             setError(result.error ?? null);
+            if (!result.error) show(t('{name} از پروژه برداشته شد.', { name }));
           });
         }}
       >

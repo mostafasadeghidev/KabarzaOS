@@ -10,7 +10,7 @@ import { hoursLabel } from '@/domain/timelogs/timer';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
@@ -53,6 +53,13 @@ export function TimerBanner({
   useActionToast(stopState);
   const [confirmState, confirm] = useActionState(confirmPendingAction, {});
   useActionToast(confirmState);
+  // «ادامهٔ تایمر» پیش از این نتیجه‌اش را نادیده می‌گرفت (۲.۲۵.۰).
+  const { show } = useToast();
+  const resume = async () => {
+    const result = await resumePendingAction();
+    if (result?.error) show(t(result.error), 'error');
+    else if (result?.message) show(t(result.message));
+  };
 
   if (running) {
     // Alert ِ shadcn به شکلِ نوار زیرِ سربرگ: بی‌گوشه و فقط مرزِ پایین.
@@ -93,7 +100,7 @@ export function TimerBanner({
               <Input name="minutes" type="number" min={0} max={59} className="num h-8 w-16" defaultValue={pending.minutes % 60} />
             </Label>
             <Submit>{t('ثبت')}</Submit>
-            <Button type="button" size="sm" variant="ghost" onClick={() => resumePendingAction()}>
+            <Button type="button" size="sm" variant="ghost" onClick={resume}>
               <Play className="size-3.5" />
               {t('ادامهٔ تایمر')}
             </Button>

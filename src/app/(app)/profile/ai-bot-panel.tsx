@@ -84,8 +84,10 @@ function ConnectionCard({ connection, index, total, label }: {
         : tr('کلیدِ ذخیره‌شده پاک می‌شود و ربات فقط با دکمه‌ها کار می‌کند.'),
     }))) return;
     startTransition(async () => {
-      await deleteAiAction(connection.id);
-      show(tr('قطع شد.'), 'success');
+      // ⚠️ پیش از این بی‌توجه به خطا «قطع شد» می‌گفت.
+      const result = await deleteAiAction(connection.id);
+      if (result?.error) show(tr(result.error), 'error');
+      else show(tr('قطع شد.'), 'success');
     });
   };
 
@@ -179,7 +181,13 @@ export function AiBotPanel({ connections, providers, telegram, botUsername, sens
   const toggleSensitive = (on: boolean) => {
     setAllowSensitive(on);
     startSensitive(async () => {
-      await setAiSensitiveAction(on);
+      // ⚠️ خطا هم دیده شود و کلید برگردد — پیش از این همیشه موفقیت اعلام می‌شد.
+      const result = await setAiSensitiveAction(on);
+      if (result?.error) {
+        setAllowSensitive(!on);
+        show(tr(result.error), 'error');
+        return;
+      }
       show(tr(on ? 'ربات حالا کارهای حساس را هم انجام می‌دهد (با تأیید).' : 'کارهای حساس از ربات برداشته شد.'), 'success');
     });
   };

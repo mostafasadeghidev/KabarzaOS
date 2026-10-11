@@ -622,13 +622,6 @@ function BidActions({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const run = (fn: () => Promise<QaActionState>) =>
-    startTransition(async () => {
-      setError(null);
-      const result = await fn();
-      if (result.error) setError(result.error);
-    });
-
   const gone = bid.status === 'withdrawn' || bid.status === 'archived';
 
   return (
@@ -676,7 +669,12 @@ function BidActions({
           disabled={pending}
           onClick={async () => {
             if (await confirm({ title: tr('برنده پس گرفته شود؟'), description: tr('نقش دوباره برای پیشنهاد باز می‌شود.') })) {
-              run(() => withdrawBidAction(bid.id, projectId));
+              startTransition(async () => {
+                setError(null);
+                const result = await withdrawBidAction(bid.id, projectId);
+                if (result.error) setError(result.error);
+                else show(tr('برنده پس گرفته شد.'), 'success');
+              });
             }
           }}
         >

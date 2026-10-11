@@ -289,13 +289,15 @@ function ReviewDetail({
   /** کادرِ تصاویر: همان لحظه بارگذاری، بی‌دکمهٔ ذخیره — دسته‌های ۱۰تایی. */
   const upload = async (files: File[]) => {
     setUploading(true);
+    let failed = false;
     for (let i = 0; i < files.length; i += 10) {
       const fd = new FormData();
       for (const f of files.slice(i, i + 10)) fd.append('media', f);
       const result = await addReviewMediaAction(review.id, fd);
-      if (result.error) { show(t(result.error), 'error'); break; }
+      if (result.error) { show(t(result.error), 'error'); failed = true; break; }
     }
     setUploading(false);
+    if (!failed) show(t('تصاویر افزوده شد.'));
     await reload();
   };
   const progress = data.detail.progress;
@@ -328,7 +330,10 @@ function ReviewDetail({
                 }))) return;
                 startDelete(async () => {
                   const result = await deleteReviewAction(review.id);
-                  if (!result.error) onBack();
+                  // ⚠️ خطا هم پیش از این بلعیده می‌شد.
+                  if (result.error) { show(t(result.error), 'error'); return; }
+                  show(t('بازبینی حذف شد.'));
+                  onBack();
                 });
               }}
             >

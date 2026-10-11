@@ -130,6 +130,7 @@ function ClaimButton({
   frozen?: boolean;
 }) {
   const tr = useT();
+  const { show } = useToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -154,6 +155,7 @@ function ClaimButton({
         onClick={() => startTransition(async () => {
           const result = await claimTaskAction(task.id, projectId);
           setError(result?.error ?? null);
+          if (!result?.error && result?.message) show(tr(result.message));
         })}
       >
         <Hand className="size-3.5" />

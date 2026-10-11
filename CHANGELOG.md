@@ -17,6 +17,8 @@ Versioning follows [SemVer](https://semver.org/).
 ### Fixed
 
 - Setting a member's or client's sign-in password now shows a confirmation toast; it used to close silently.
+- Other actions that succeeded silently now confirm with a toast: work-unit rename, amount, payment request, cancel and delete; cancelling a payment request in "My money"; withdrawing a tender winner; archiving, unarchiving and slimming down a project; deleting a task; claiming a task; resuming or discarding a pending timer and deleting a time log; adding images to a review and deleting a review; removing a member from a project; saving a meeting reminder.
+- Deleting a review, resuming a timer or deleting a time log no longer swallows errors, and the AI panel no longer reports "disconnected" or a changed sensitive-actions setting when the server refused it.
 - Ledger form fields in the same row line up again: a hint under "Categories" no longer pushes the "Date" and "Direction" labels down, and the actual-amount label is shortened to "Paid from account (USD)" so it fits on one line (the account is already named in the dialog header).
 - The euro value of a ledger row now follows the figure deducted from the member or project when one is entered, so reports and the member's balance agree (before, reports converted the nominal amount with the latest rate). "Recalculate euro equivalents" keeps the same rule. A missing rate from the amount's currency to euros no longer blocks saving such a row.
 

@@ -4007,5 +4007,13 @@
   "نشسته در حساب ({code})": "Reçu sur le compte ({code})",
   "پرداخت‌شده از حساب ({code})": "Payé depuis le compte ({code})",
   "ذخیره و بستن": "Enregistrer et fermer",
-  "مبلغ هنوز تعیین نشده — منتظرِ مدیرِ پروژه": "Montant pas encore fixé — en attente du responsable du projet"
+  "مبلغ هنوز تعیین نشده — منتظرِ مدیرِ پروژه": "Montant pas encore fixé — en attente du responsable du projet",
+  "{name} از پروژه برداشته شد.": "{name} a été retiré du projet.",
+  "بازبینی حذف شد.": "Revue supprimée.",
+  "برنده پس گرفته شد.": "Gagnant retiré.",
+  "تسک حذف شد.": "Tâche supprimée.",
+  "تصاویر افزوده شد.": "Images ajoutées.",
+  "پروژه از بایگانی خارج شد.": "Projet sorti des archives.",
+  "پروژه بایگانی شد.": "Projet archivé.",
+  "پروژه سبک شد.": "Projet allégé."
 }
