@@ -69,7 +69,7 @@ export async function sendMyTelegramTestAction(): Promise<ProfileState> {
   const { sendTelegramTestToSelf } = await import('@/server/notifications/service');
   const { getT } = await import('@/i18n/server');
   const t = await getT();
-  const ok = await sendTelegramTestToSelf(await requireActor(), t('این یک پیامِ آزمایشی از KabarzaOS است؛ اتصالِ تلگرامِ شما کار می‌کند.'));
+  const ok = await sendTelegramTestToSelf(await requireActor(), `✅ ${t('این یک پیامِ آزمایشی از KabarzaOS است؛ اتصالِ تلگرامِ شما کار می‌کند.')}`);
   return ok
     ? { message: 'پیامِ آزمایشی به تلگرامِ شما فرستاده شد.' }
     : { error: 'ارسال نشد؛ اتصالِ تلگرام یا توکنِ بات را بررسی کنید.' };

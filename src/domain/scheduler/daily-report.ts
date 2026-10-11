@@ -109,16 +109,27 @@ export function buildReport(input: {
   date: string;
   sections: string[];
   data: ReportSections;
-}, t: Translator = SOURCE): string {
+}, t: Translator = SOURCE, options: { html?: boolean } = {}): string {
   if (input.sections.length === 0) return '';
 
-  const lines: string[] = [t('📊 گزارش روزانهٔ کبرزا — {date}', { date: input.date })];
+  /**
+   * `html` (۲.۲۳.۰) — نسخهٔ تلگرام: سرتیتر و نامِ بخش‌ها پررنگ با شمار، هر متنِ
+   * دیگر escape (نامِ عضو و پروژه از کاربر است). دیسکورد و پیش‌نمایش متنِ ساده‌اند.
+   * هر خط تگِ خودش را می‌بندد تا تکه‌کردن روی مرزِ خط امن بماند.
+   */
+  const html = options.html === true;
+  const esc = (s: string) => (html ? s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : s);
+  const strong = (s: string) => (html ? `<b>${esc(s)}</b>` : s);
+
+  const lines: string[] = [strong(t('📊 گزارش روزانهٔ کبرزا — {date}', { date: input.date }))];
 
   for (const section of REPORT_SECTIONS) {
     if (!input.sections.includes(section.key)) continue;
     const rows = input.data[section.key];
-    lines.push('', `${section.icon} ${t(section.label)}:`);
-    lines.push(...(rows.length > 0 ? rows : [t('• موردی ثبت نشده.')]));
+    lines.push('', html
+      ? `${section.icon} ${strong(t(section.label))}${rows.length > 0 ? ` (${rows.length})` : ''}`
+      : `${section.icon} ${t(section.label)}:`);
+    lines.push(...(rows.length > 0 ? rows : [t('• موردی ثبت نشده.')]).map(esc));
   }
 
   return lines.join('\n');

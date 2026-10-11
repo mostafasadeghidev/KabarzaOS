@@ -3977,5 +3977,8 @@
   "مخاطب باید از اعضای همین پروژه باشد.": "Hedef kitle bu projenin üyeleri olmalıdır.",
   "وضعیت ذخیره شد.": "Durum kaydedildi.",
   "وضعیتِ انتخاب‌شده معتبر نیست.": "Seçilen durum geçerli değil.",
-  "وضعیتِ کار": "İş durumu"
+  "وضعیتِ کار": "İş durumu",
+  "برای دیدنِ کارتِ هر تسک، شماره‌اش را بفرستید.": "Kartını görmek için bir görev numarası gönderin.",
+  "شمارهٔ تسک (مثلاً ALZ-325) را بفرستید تا کارتش باز شود.": "Kartını açmak için bir görev numarası gönderin (ör. ALZ-325).",
+  "فردا": "Yarın"
 }

@@ -3977,5 +3977,8 @@
   "مخاطب باید از اعضای همین پروژه باشد.": "O público deve ser membro deste projeto.",
   "وضعیت ذخیره شد.": "Status salvo.",
   "وضعیتِ انتخاب‌شده معتبر نیست.": "O status escolhido não é válido.",
-  "وضعیتِ کار": "Status do trabalho"
+  "وضعیتِ کار": "Status do trabalho",
+  "برای دیدنِ کارتِ هر تسک، شماره‌اش را بفرستید.": "Envie o número de uma tarefa para ver o cartão dela.",
+  "شمارهٔ تسک (مثلاً ALZ-325) را بفرستید تا کارتش باز شود.": "Envie o número de uma tarefa (ex.: ALZ-325) para abrir o cartão dela.",
+  "فردا": "Amanhã"
 }

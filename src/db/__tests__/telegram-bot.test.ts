@@ -320,7 +320,7 @@ describe('وضعیتِ هوشِ مصنوعی در ربات و مینی‌اپ (�
     }));
     try {
       await handleUpdate({ update_id: 99_002, message: { message_id: 1, chat: { id: CHAT, type: 'private' }, voice: { file_id: 'v1', duration: 4 } } });
-      expect(texts()).toContain('🎤 «امروز چه تسکی دارم»');
+      expect(texts()).toContain('🎤 <i>«امروز چه تسکی دارم»</i>');
       expect(texts()).toContain('تسکِ بازی ندارید.');
       expect(urls.some((u) => u.endsWith('/audio/transcriptions'))).toBe(true);
       // ویسِ بلند اصلاً دانلود نمی‌شود.

@@ -269,3 +269,74 @@ describe('زمان‌بندِ گزارشِ صبحگاهی', () => {
     expect(briefsToA()).toBe(1);
   });
 });
+
+describe('سبکِ یکدستِ پیام‌ها (۲.۲۳.۰)', () => {
+  it('پیام‌های ربات HTML اند؛ متنِ کاربر escape می‌شود؛ شمارهٔ تسک در <code>', async () => {
+    await db.insert(tasks).values({ projectId: P, title: 'فرم <ورود> & ثبت', createdBy: A, assignedTo: A });
+    await handleUpdate(msg(CHAT_A, '/tasks'));
+    const m = sent.find((s) => s.method === 'sendMessage')!;
+    expect(m.payload.parse_mode).toBe('HTML');
+    const text = String(m.payload.text);
+    expect(text).toContain('فرم &lt;ورود&gt; &amp; ثبت');
+    expect(text).toMatch(/<code>[^<]+<\/code>/);
+    expect(text).toContain('📋 <b>');
+  });
+
+  it('اگر تلگرام قالب را نپذیرفت، همان پیام بی‌قالب می‌رود', async () => {
+    setTelegramApi(async (method, payload) => {
+      sent.push({ method, payload });
+      return payload.parse_mode ? { ok: false, description: "Bad Request: can't parse entities" } : { ok: true, result: { message_id: 1 } };
+    });
+    await handleUpdate(msg(CHAT_A, '/help'));
+    const plain = sent.filter((s) => s.method === 'sendMessage' && !s.payload.parse_mode);
+    expect(plain).toHaveLength(1);
+    expect(String(plain[0]!.payload.text)).not.toContain('<b>');
+    expect(String(plain[0]!.payload.text)).toContain('راهنما');
+  });
+
+  it('/company فقط برای مالک/مالی؛ راهنما راهِ بازکردنِ کارت را می‌گوید', async () => {
+    await handleUpdate(msg(CHAT_OWNER, '/company'));
+    expect(texts().join(' ')).toContain('وضعیتِ شرکت');
+    sent = [];
+    await handleUpdate(msg(CHAT_OWNER, '/help'));
+    expect(texts().join(' ')).toContain('/company');
+    sent = [];
+    await handleUpdate(msg(CHAT_A, '/company'));
+    expect(texts().join(' ')).not.toContain('وضعیتِ شرکت');
+    sent = [];
+    await handleUpdate(msg(CHAT_A, '/help'));
+    expect(texts().join(' ')).toContain('ALZ-325');
+    expect(texts().join(' ')).not.toContain('/company');
+  });
+
+  it('اعلان: عنوانِ پررنگ، متنِ کاربر escape، parse_mode HTML', async () => {
+    const bodies = captureTelegramFetch();
+    await notify([A], { type: 'message.received', title: 'پیام جدید', body: 'سلام <دنیا> & همه', url: `/messages/${THREAD}` });
+    expect(bodies[0]!.parse_mode).toBe('HTML');
+    expect(String(bodies[0]!.text)).toContain('🔔 <b>پیام جدید</b>');
+    expect(String(bodies[0]!.text)).toContain('سلام &lt;دنیا&gt; &amp; همه');
+  });
+
+  it('گروه: «انجام شد» هم عنوانِ پررنگ و دکمهٔ «مشاهده» دارد', async () => {
+    const bodies = captureTelegramFetch();
+    process.env.APP_URL = 'https://team.example.com';
+    try {
+      const id = await createTask(as(A, ['member']), P, { title: 'تمام‌شده', description: '', statusTagId: null, priorityTagId: null, assignedTo: A, dueDate: null, isPrivate: false });
+      await new Promise((r) => setTimeout(r, 50));
+      bodies.length = 0;
+      await announceTask(id, 'done', A);
+      const post = bodies.find((b) => String(b.chat_id) === '-500')!;
+      expect(String(post.text)).toContain('<b>تمام‌شده</b>');
+      expect(JSON.stringify(post.reply_markup)).toContain('team.example.com');
+    } finally {
+      delete process.env.APP_URL;
+    }
+  });
+
+  it('گزارشِ صبحگاهی: سرتیترهای پررنگ با HTML', async () => {
+    expect(await sendMorningBrief(A)).toBe(true);
+    const first = sent.find((s) => s.method === 'sendMessage')!;
+    expect(first.payload.parse_mode).toBe('HTML');
+    expect(String(first.payload.text)).toContain('⚠️ <b>');
+  });
+});

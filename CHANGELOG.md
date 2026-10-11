@@ -2,6 +2,29 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.23.0]
+
+### Changed
+
+- **One visual style for every Telegram message.** Bot replies, notifications, morning summaries, project group posts and the daily report now share one look: a bold header with its icon, bold section titles with their count, one bullet style, numbers in bold, short tips in italics and a blank line between sections. Messages are sent as formatted text, and every name, title, comment or answer typed by a person is escaped, so a "<" or "&" can no longer break or change a message. If Telegram ever refuses the formatting, the same message is sent again as plain text instead of being lost.
+- Task numbers (for example ALZ-325) are shown in a copyable code style in task lists, the task card, "My team" and the morning summary. Clients still never see task numbers.
+- Deadlines read "Today" or "Tomorrow" when they are, and overdue dates say so; meeting and reminder times show "Today 10:00" / "Tomorrow 09:30" in the reader's own time zone.
+- Long lists end with "and N more" instead of stopping silently (tasks, reviews, team overdue, people working now, meetings, reminders, payment requests, today's hours).
+- Task descriptions in the task card and comments in project groups are shown as a quote; long ones are collapsed.
+- Answers from the member's own AI are formatted: bold text, code, headings, bullet lists and https links from the AI's Markdown now show properly instead of raw asterisks.
+- Confirmation questions show the values in bold, and the payment request question now says which request (person, amount, project, note) before Yes/No.
+- The daily report in Telegram has a bold title and bold section names with counts; Discord and the settings preview are unchanged.
+- The "task done" post in a project group now uses the same layout as "new task" and has the "View in Kabarza" button.
+- Cutting long messages and photo captions no longer breaks formatting in the middle of a word, tag or emoji.
+
+### Added
+
+- `/company` command for the owner and finance staff (the "Company status" button existed, the command did not). It is listed in their "/" menu and in /help.
+- /help and the task list explain that sending a task number opens its card.
+- The task card opened from a number has a "My tasks" button.
+- The morning summary lists the tasks waiting for your review (it used to show only their count), shows each meeting's project, and has a "Meetings and reminders" button on days with meetings or reminders.
+- After a file is sent to the bot, the question shows the file name, and the result says which project or task it went to.
+
 ## [2.22.1]
 
 ### Fixed

@@ -15,6 +15,7 @@ import { getSystemConfig } from '@/server/settings/system-service';
 import type { Actor } from '@/domain/access/permissions';
 import { assertCanManageProject } from '@/server/projects/authority';
 import { telegramCredentials } from '@/server/settings/telegram-service';
+import { bold, esc, HTML, isParseError, quote, stripHtml } from './format';
 
 /**
  * گروهِ تلگرامِ پروژه (۲.۱۴.۰).
@@ -72,11 +73,6 @@ export async function linkProjectGroup(linkToken: string, chatId: number): Promi
   return row.title;
 }
 
-/** متنِ کاربر برای `parse_mode: HTML` ِ تلگرام. */
-function esc(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
 /**
  * دکمهٔ «مشاهده در Kabarza». ⚠️ تلگرام دکمهٔ مینی‌اپ را در گروه نمی‌پذیرد، پس
  * پیوندِ معمولی؛ و فقط با `APP_URL` ِ HTTPS (پیوندِ http/localhost را رد می‌کند).
@@ -99,18 +95,20 @@ export async function postToProjectGroup(
     if (!row?.groupId) return;
     const { token } = await telegramCredentials();
     if (!token) return;
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const post = (body: Record<string, unknown>) => fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         chat_id: row.groupId,
-        text: html,
-        parse_mode: 'HTML',
         disable_web_page_preview: true,
         ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+        ...body,
       }),
       signal: AbortSignal.timeout(15_000),
     });
+    // قالبِ ناپذیرفته ← همان متن بی‌قالب (۲.۲۳.۰)؛ پست گم نشود.
+    const res = await post({ text: html, parse_mode: HTML });
+    if (res?.ok === false && isParseError(await res.json().catch(() => null))) await post({ text: stripHtml(html) });
   } catch {
     // پستِ گروه جانبی است.
   }
@@ -177,9 +175,11 @@ export async function announceTask(taskId: number, kind: 'new' | 'done', actorId
     if (kind === 'done') {
       const [by] = actorId ? await db.select({ name: users.name }).from(users).where(eq(users.id, actorId)) : [];
       const who = by ? name(actorId!, by.name) : '';
+      // ۲.۲۳.۰: همان قالبِ «تسکِ تازه» — سرتیتر، عنوانِ پررنگ، و دکمهٔ «مشاهده».
       await postToProjectGroup(
         t.projectId,
-        `✅ <b>${esc(tr('انجام شد'))}</b> · ${esc(t.title)}${who ? `\n<i>${esc(tr('توسطِ {name}', { name: who }))}</i>` : ''}`,
+        [`✅ ${bold(tr('انجام شد'))}`, bold(t.title), ...(who ? [`<i>${esc(tr('توسطِ {name}', { name: who }))}</i>`] : [])].join('\n'),
+        openButton(`/projects/${t.projectId}?tab=tasks`, tr('مشاهده در Kabarza')),
       );
       return;
     }
@@ -192,12 +192,12 @@ export async function announceTask(taskId: number, kind: 'new' | 'done', actorId
     }
     const meta = [
       owner && `👤 ${esc(owner)}`,
-      t.dueDate && `📅 ${t.dueDate}`,
+      t.dueDate && `📅 ${esc(t.dueDate)}`,
       t.priority && `⚡ ${esc(t.priority)}`,
-    ].filter(Boolean).join('  ·  ');
+    ].filter(Boolean).join(' · ');
     await postToProjectGroup(
       t.projectId,
-      `🆕 <b>${esc(tr('تسکِ تازه'))}</b>\n<b>${esc(t.title)}</b>${meta ? `\n${meta}` : ''}`,
+      [`🆕 ${bold(tr('تسکِ تازه'))}`, bold(t.title), ...(meta ? [meta] : [])].join('\n'),
       openButton(`/projects/${t.projectId}?tab=tasks`, tr('مشاهده در Kabarza')),
     );
   } catch {
@@ -212,10 +212,10 @@ export async function announceComment(projectId: number, userId: number, text: s
     const { tr } = await groupTr();
     const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId));
     const who = (await groupNamer(projectId, tr))(userId, u?.name ?? '') || tr(FALLBACK_MEMBER_LABEL);
-    const body = text.length > 1500 ? `${text.slice(0, 1500)}…` : text;
+    // نقل‌قولِ بلند در تلگرام جمع‌شده نشان داده می‌شود (۲.۲۳.۰).
     await postToProjectGroup(
       projectId,
-      `💬 <b>${esc(who)}</b>\n<blockquote>${esc(body)}</blockquote>`,
+      `💬 ${bold(who)}\n${quote(text, 1500)}`,
       openButton(`/projects/${projectId}?tab=comments`, tr('پاسخ در Kabarza')),
     );
   } catch {

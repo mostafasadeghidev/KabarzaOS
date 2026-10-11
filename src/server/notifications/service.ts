@@ -12,6 +12,7 @@ import { sendMail } from '@/server/mail/transport';
 import { telegramCredentials } from '@/server/settings/telegram-service';
 import { taskCard, type TaskCardFile } from '@/server/telegram/task-card';
 import { getObject } from '@/server/files/storage';
+import { esc, HTML, isParseError, stripHtml, truncateHtml } from '@/server/telegram/format';
 
 /**
  * دروازهٔ اعلان — **تنها** نقطهٔ ارسال (R-NOTIF-01).
@@ -206,25 +207,29 @@ async function deliverExternal(
     const card = input.type === 'task.assigned' && input.taskId && input.locale && input.tr
       ? await taskCard(input.taskId, input.locale, input.tr, target.userId).catch(() => null)
       : null;
+    /**
+     * قالب (۲.۲۳.۰، HTML): «🔔 <b>عنوان</b>»، خطِ خالی، متن؛ پیوند ته پیام. ⚠️ عنوان
+     * و متن ترجمهٔ کلید با پارامترهای کاربر (نامِ پروژه، متنِ کامنت) است — همه escape.
+     */
+    const title = `🔔 <b>${esc(input.title)}</b>`;
+    const tail = link ? `\n\n${esc(link)}` : '';
     if (card) {
-      const head = [`🔔 ${input.title}`, '', ...card.lines].join('\n');
-      const tail = link ? `\n\n${link}` : '';
+      const head = [title, '', ...card.lines].join('\n');
       const keyboard = telegramKeyboard(input);
       const photos = card.files.filter((f) => f.photo);
       const docs = card.files.filter((f) => !f.photo);
       // عکس و متن در یک پیام (۲.۱۴.۰): متن زیرنویسِ عکس/آلبوم می‌شود؛ اگر نشد، همان پیامِ متنی.
       const sent = photos.length > 0
         && await sendTelegramPhotos(target.chatId, photos, fitCaption(head, tail), keyboard, input.tr);
-      if (!sent) await sendTelegram(target.chatId, `${head.slice(0, 3900 - tail.length)}${tail}`, keyboard);
+      if (!sent) await sendTelegram(target.chatId, `${truncateHtml(head, TEXT_MAX - tail.length)}${tail}`, keyboard);
       if (docs.length > 1) await sendTelegramAlbum(target.chatId, docs, '');
       else if (docs.length === 1) await sendTelegramFile(target.chatId, docs[0]!);
       if (!sent) for (const file of photos) await sendTelegramFile(target.chatId, file);
     } else {
       // 🔔 عنوان، بعد متن؛ پیوند ته پیام (دکمهٔ «باز کردن» زیرش است).
-      const lines = [`🔔 ${input.title}`];
-      if (input.body) lines.push(input.body.length > 3500 ? `${input.body.slice(0, 3500)}…` : input.body);
-      if (link) lines.push(link);
-      await sendTelegram(target.chatId, lines.join('\n\n'), telegramKeyboard(input));
+      const lines = [title];
+      if (input.body) lines.push(esc(input.body.length > 3500 ? `${input.body.slice(0, 3500)}…` : input.body));
+      await sendTelegram(target.chatId, `${lines.join('\n\n')}${tail}`, telegramKeyboard(input));
     }
   }
 }
@@ -271,13 +276,17 @@ async function sendTelegramFile(
     const form = new FormData();
     form.append('chat_id', chatId);
     form.append(file.photo ? 'photo' : 'document', new Blob([new Uint8Array(bytes)], { type: file.mime }), file.name);
-    if (caption) form.append('caption', caption);
+    if (caption) {
+      form.append('caption', caption);
+      form.append('parse_mode', HTML);
+    }
     if (keyboard) form.append('reply_markup', JSON.stringify(keyboard));
     const res = await fetch(`https://api.telegram.org/bot${token}/${file.photo ? 'sendPhoto' : 'sendDocument'}`, {
       method: 'POST',
       body: form,
       signal: AbortSignal.timeout(30_000),
     });
+    // ⚠️ زیرنویسِ ردشده (قالبِ ناجور) ← false؛ فرستنده پیامِ متنی را جایش می‌فرستد.
     return res.ok;
   } catch {
     // R-NOTIF-03 — فایلِ ناموفق متنِ اعلان را بی‌اثر نمی‌کند.
@@ -294,8 +303,12 @@ const CAPTION_MAX = 1024;
  */
 function fitCaption(head: string, tail: string): string {
   if (head.length + tail.length <= CAPTION_MAX) return head + tail;
-  return `${head.slice(0, CAPTION_MAX - tail.length - 1).trimEnd()}…${tail}`;
+  // ⚠️ بریدنِ HTML بی‌شکستنِ تگ — `slice` ِ ساده نقل‌قولِ توضیح را باز می‌گذاشت.
+  return `${truncateHtml(head, CAPTION_MAX - tail.length)}${tail}`;
 }
+
+/** سقفِ امنِ متنِ پیام (تلگرام ۴۰۹۶). */
+const TEXT_MAX = 3900;
 
 /**
  * عکس‌های تسک **همراهِ متن** (۲.۱۴.۰): یک عکس ← sendPhoto با زیرنویس و دکمه‌ها؛
@@ -312,7 +325,7 @@ async function sendTelegramPhotos(
 ): Promise<boolean> {
   if (photos.length === 1) return sendTelegramFile(chatId, photos[0]!, caption, keyboard);
   const ok = await sendTelegramAlbum(chatId, photos.slice(0, 10), caption);
-  if (ok && keyboard) await sendTelegram(chatId, `⬆️ ${(tr ?? ((x: string) => x))('گزینه‌ها')}`, keyboard).catch(() => undefined);
+  if (ok && keyboard) await sendTelegram(chatId, `⬆️ ${esc((tr ?? ((x: string) => x))('گزینه‌ها'))}`, keyboard).catch(() => undefined);
   return ok;
 }
 
@@ -330,7 +343,7 @@ async function sendTelegramAlbum(chatId: string, list: TaskCardFile[], caption: 
       media.push({
         type: file.photo ? 'photo' : 'document',
         media: `attach://f${i}`,
-        ...(i === 0 && caption ? { caption } : {}),
+        ...(i === 0 && caption ? { caption, parse_mode: HTML } : {}),
       });
     }
     form.append('media', JSON.stringify(media));
@@ -378,13 +391,16 @@ async function sendTelegram(chatId: string, text: string, replyMarkup?: { inline
   const { token } = await telegramCredentials();
   if (!token || !chatId) return;
 
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  const post = (body: Record<string, unknown>) => fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true, ...(replyMarkup ? { reply_markup: replyMarkup } : {}) }),
+    body: JSON.stringify({ chat_id: chatId, disable_web_page_preview: true, ...(replyMarkup ? { reply_markup: replyMarkup } : {}), ...body }),
     // ⚠️ تلگرامِ گیرکرده نباید درخواستی را که اعلان را راه انداخته نگه دارد (نسخهٔ قبلی: ۱۵ ثانیه).
     signal: AbortSignal.timeout(15_000),
   });
+  // متن HTML است (۲.۲۳.۰)؛ اگر تلگرام قالب را نپذیرفت، همان متن بی‌قالب می‌رود — اعلان گم نشود.
+  const res = await post({ text, parse_mode: HTML });
+  if (res?.ok === false && isParseError(await res.json().catch(() => null))) await post({ text: stripHtml(text) });
 }
 
 /**

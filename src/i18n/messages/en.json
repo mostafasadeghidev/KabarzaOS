@@ -3977,5 +3977,8 @@
   "مخاطب باید از اعضای همین پروژه باشد.": "The audience must be members of this project.",
   "وضعیت ذخیره شد.": "Status saved.",
   "وضعیتِ انتخاب‌شده معتبر نیست.": "The selected status isn't valid.",
-  "وضعیتِ کار": "Work status"
+  "وضعیتِ کار": "Work status",
+  "برای دیدنِ کارتِ هر تسک، شماره‌اش را بفرستید.": "Send a task number to see its card.",
+  "شمارهٔ تسک (مثلاً ALZ-325) را بفرستید تا کارتش باز شود.": "Send a task number (e.g. ALZ-325) to open its card.",
+  "فردا": "Tomorrow"
 }
