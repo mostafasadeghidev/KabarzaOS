@@ -6,6 +6,7 @@ import type { Locale } from '@/i18n/config';
 import type { Translator } from '@/i18n/translate';
 import { taskRefGlobal } from '@/domain/projects/task-ref';
 import { projectRelation } from '@/server/projects/authority';
+import { bold, code, esc, hint, quote } from './format';
 
 /**
  * کارتِ تسک برای اعلانِ تلگرام (۲.۱۲.۰) — عنوان، پروژه، اولویت، ددلاین،
@@ -32,6 +33,7 @@ export interface TaskCardFile {
 }
 
 export interface TaskCard {
+  /** خط‌های HTML ِ آماده (۲.۲۳.۰) — با `parse_mode: HTML` فرستاده شوند. */
   lines: string[];
   files: TaskCardFile[];
 }
@@ -74,18 +76,19 @@ export async function taskCard(
     .orderBy(asc(attachments.id))
     .limit(20);
 
-  // «ALZ-325 · عنوان» — ⚠️ کارفرمای خالصِ این پروژه شماره نمی‌بیند.
+  // «📌 <b>عنوان</b> · <code>ALZ-325</code>» (۲.۲۳.۰: HTML، همان قالبِ فهرستِ تسک‌ها).
+  // ⚠️ کارفرمای خالصِ این پروژه شماره نمی‌بیند.
   const relation = viewerId ? await projectRelation(viewerId, row.projectId) : null;
   const showRef = row.number > 0 && relation !== null && !(relation.isClient && !relation.isMember);
-  const ref = showRef ? `${taskRefGlobal({ id: row.projectId, code: row.projectCode }, row.number)} · ` : '';
-  const lines = [`📌 ${ref}${row.title}`, `📁 ${tr('پروژه')}: ${row.project}`];
-  if (row.priority) lines.push(`⚡ ${tr('اولویت')}: ${row.priority}`);
-  if (row.dueDate) lines.push(`📅 ${tr('ددلاین')}: ${row.dueDate}`);
+  const ref = showRef ? ` · ${code(taskRefGlobal({ id: row.projectId, code: row.projectCode }, row.number))}` : '';
+  const lines = [`📌 ${bold(row.title)}${ref}`, `📁 ${esc(tr('پروژه'))}: ${esc(row.project)}`];
+  if (row.priority) lines.push(`⚡ ${esc(tr('اولویت'))}: ${esc(row.priority)}`);
+  if (row.dueDate) lines.push(`📅 ${esc(tr('ددلاین'))}: <b>${esc(row.dueDate)}</b>`);
   const description = row.description.trim();
-  if (description) {
-    lines.push('', `📝 ${description.length > DESCRIPTION_MAX ? `${description.slice(0, DESCRIPTION_MAX)}…` : description}`);
-  }
-  const links = media.filter((m) => m.kind === 'link' && m.url).map((m) => `🔗 ${m.label ? `${m.label}: ` : ''}${m.url}`);
+  // توضیح در نقل‌قول — بلندش در تلگرام جمع‌شده می‌آید و صفحه را پر نمی‌کند.
+  if (description) lines.push('', `📝 ${esc(tr('توضیح'))}`, quote(description, DESCRIPTION_MAX));
+  const links = media.filter((m) => m.kind === 'link' && m.url)
+    .map((m) => `🔗 ${m.label ? `${esc(m.label)}: ` : ''}${esc(m.url ?? '')}`);
   if (links.length > 0) lines.push('', ...links.slice(0, 10));
 
   const out: TaskCardFile[] = [];
@@ -98,6 +101,6 @@ export async function taskCard(
     }
     out.push({ storageKey: m.storageKey, mime: m.mime, name: m.name || 'file', size: m.size ?? 0, photo: PHOTO.test(m.mime) });
   }
-  if (skipped > 0) lines.push('', `📎 ${tr('{n} فایلِ دیگر فقط در برنامه', { n: skipped })}`);
+  if (skipped > 0) lines.push('', hint(`📎 ${tr('{n} فایلِ دیگر فقط در برنامه', { n: skipped })}`));
   return { lines, files: out };
 }

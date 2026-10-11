@@ -117,3 +117,17 @@ describe('سقفِ دیسکورد', () => {
     expect(cut).toContain('بریده شد');
   });
 });
+
+describe('گزارش در تلگرام (HTML، ۲.۲۳.۰)', () => {
+  it('سرتیتر و بخش‌ها پررنگ با شمار؛ متنِ کاربر escape؛ نسخهٔ ساده دست نخورده', () => {
+    const data = { ...empty, tasks_done: ['• هدر <b> & فوتر (آلفا)'] };
+    const html = buildReport({ date: '2026-05-15', sections: ['tasks_done', 'hours'], data }, undefined, { html: true });
+    expect(html.split('\n')[0]).toBe('<b>📊 گزارش روزانهٔ کبرزا — 2026-05-15</b>');
+    expect(html).toContain('✅ <b>تسک‌های انجام‌شده</b> (1)');
+    expect(html).toContain('• هدر &lt;b&gt; &amp; فوتر (آلفا)');
+    expect(html).toContain('🕒 <b>ساعت کاری اعضا</b>');
+    const plain = buildReport({ date: '2026-05-15', sections: ['tasks_done'], data });
+    expect(plain).toContain('✅ تسک‌های انجام‌شده:');
+    expect(plain).toContain('• هدر <b> & فوتر (آلفا)');
+  });
+});

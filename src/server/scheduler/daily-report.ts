@@ -21,6 +21,7 @@ import { hoursLabel } from '@/domain/timelogs/timer';
 import { dayWindow, localParts } from '@/domain/scheduler/tick';
 import { format, type Currency } from '@/domain/money/money';
 import { telegramCredentials } from '@/server/settings/telegram-service';
+import { HTML, isParseError, stripHtml } from '@/server/telegram/format';
 
 /**
  * گزارشِ روزانه — خلاصهٔ گروهیِ یک روز به کانالِ تیم.
@@ -225,19 +226,33 @@ export async function sendReportToDiscord(webhook: string, date: string): Promis
 export async function sendReportToChat(chatId: string, date: string): Promise<boolean> {
   const token = await botToken();
   if (!token || chatId === '') return false;
-  const text = await previewReport(date);
+  const text = await previewReport(date, { html: true });
   if (text === '') return false;
   for (const part of chunkText(text)) {
+    if (!await postTelegram(token, chatId, part)) return false;
+  }
+  return true;
+}
+
+/**
+ * یک تکهٔ گزارش به تلگرام با `parse_mode: HTML` (۲.۲۳.۰). ⚠️ اگر قالب پذیرفته
+ * نشد همان متن بی‌قالب می‌رود — گزارش به‌خاطرِ یک نویسه گم نشود.
+ */
+async function postTelegram(token: string, chatId: string, html: string): Promise<boolean> {
+  const post = async (body: Record<string, unknown>) => {
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: part }),
+      body: JSON.stringify({ chat_id: chatId, disable_web_page_preview: true, ...body }),
+      // ⚠️ تلگرامِ گیرکرده نباید تیک را نگه دارد (نسخهٔ قبلی: ۱۵ ثانیه).
       signal: AbortSignal.timeout(15_000),
     });
-    const data = await res.json().catch(() => ({})) as { ok?: boolean };
-    if (!data.ok) return false;
-  }
-  return true;
+    return await res.json().catch(() => ({})) as { ok?: boolean; description?: string };
+  };
+  const first = await post({ text: html, parse_mode: HTML });
+  if (first.ok) return true;
+  if (!isParseError(first)) return false;
+  return (await post({ text: stripHtml(html) })).ok === true;
 }
 
 /**
@@ -275,27 +290,19 @@ async function sendToAdmins(date: string, sections: string[]): Promise<void> {
     if (!cache.has(key)) {
       const t = await reportTranslator(admin.locale);
       const visible = money ? sections : sections.filter((s) => !MONEY_SECTIONS.has(s));
-      cache.set(key, buildReport({ date, sections: visible, data: await collect(date, t) }, t));
+      cache.set(key, buildReport({ date, sections: visible, data: await collect(date, t) }, t, { html: true }));
     }
     const text = cache.get(key)!;
     if (!text) continue;
-    for (const part of chunkText(text)) {
-      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: admin.chatId, text: part }),
-        // ⚠️ تلگرامِ گیرکرده نباید تیک را نگه دارد (نسخهٔ قبلی: ۱۵ ثانیه).
-        signal: AbortSignal.timeout(15_000),
-      });
-    }
+    for (const part of chunkText(text)) await postTelegram(token, admin.chatId, part);
   }
 }
 
 /** ساختِ متنِ گزارشِ یک روز — برای پیش‌نمایش و «ارسالِ آزمایشی». */
-export async function previewReport(date: string): Promise<string> {
+export async function previewReport(date: string, options: { html?: boolean } = {}): Promise<string> {
   const config = await getReportConfig();
   const t = await reportTranslator();
-  return buildReport({ date, sections: config.sections, data: await collect(date, t) }, t);
+  return buildReport({ date, sections: config.sections, data: await collect(date, t) }, t, options);
 }
 
 /** فرستادنِ گزارشِ یک روز به همهٔ مقصدهای فعال. */

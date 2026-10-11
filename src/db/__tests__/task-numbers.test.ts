@@ -124,7 +124,7 @@ describe('ربات با شماره', () => {
   it('«ALZ-1» کارتِ همان تسک را با شماره می‌فرستد؛ شمارهٔ ناپیدا پیامِ راهنما', async () => {
     await handleUpdate(msg('ALZ-1'));
     const text = sent.map((s) => String(s.payload.text ?? '')).join('\n');
-    expect(text).toContain('ALZ-1 · اول');
+    expect(text).toContain('<b>اول</b> · <code>ALZ-1</code>');
     sent = [];
     await handleUpdate(msg('ALZ-999'));
     expect(sent.map((s) => String(s.payload.text ?? '')).join('\n')).toContain('ALZ-325');

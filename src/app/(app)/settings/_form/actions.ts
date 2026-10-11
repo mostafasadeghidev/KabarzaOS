@@ -460,7 +460,7 @@ export async function sendTelegramTestAction(): Promise<SystemState> {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       // ⚠️ متنِ پیام به زبانِ کاربر (B3) — کلیدش ترجمه داشت ولی به کار نمی‌رفت.
-      body: JSON.stringify({ chat_id: me.chatId, text: (await getT())('پیامِ تستِ کبرزا — اتصال برقرار است.') }),
+      body: JSON.stringify({ chat_id: me.chatId, text: `✅ ${(await getT())('پیامِ تستِ کبرزا — اتصال برقرار است.')}` }),
     });
     const data = await res.json() as { ok?: boolean; description?: string };
 

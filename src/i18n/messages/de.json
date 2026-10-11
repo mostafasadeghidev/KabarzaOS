@@ -3977,5 +3977,8 @@
   "مخاطب باید از اعضای همین پروژه باشد.": "Die Empfänger müssen Mitglieder dieses Projekts sein.",
   "وضعیت ذخیره شد.": "Status gespeichert.",
   "وضعیتِ انتخاب‌شده معتبر نیست.": "Der gewählte Status ist ungültig.",
-  "وضعیتِ کار": "Arbeitsstatus"
+  "وضعیتِ کار": "Arbeitsstatus",
+  "برای دیدنِ کارتِ هر تسک، شماره‌اش را بفرستید.": "Sende eine Aufgabennummer, um ihre Karte zu sehen.",
+  "شمارهٔ تسک (مثلاً ALZ-325) را بفرستید تا کارتش باز شود.": "Sende eine Aufgabennummer (z. B. ALZ-325), um ihre Karte zu öffnen.",
+  "فردا": "Morgen"
 }
