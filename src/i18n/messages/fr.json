@@ -3993,5 +3993,15 @@
   "معادلِ یوروی همهٔ ردیف‌ها را با آخرین نرخ‌های ثبت‌شده دوباره حساب می‌کند. ردیفی که مبلغش به یورو است عوض نمی‌شود.": "Recalcule la valeur en euros de toutes les lignes avec les derniers taux enregistrés. Les lignes dont le montant est en euros ne changent pas.",
   "نشسته در «{account}» (به {code})": "Reçu sur « {account} » (en {code})",
   "پرداخت‌شده از «{account}» (به {code})": "Payé depuis « {account} » (en {code})",
-  "کاربرانِ دیگر": "Autres utilisateurs"
+  "کاربرانِ دیگر": "Autres utilisateurs",
+  "از طلبِ «{who}» کم شود": "Déduire du solde de « {who} »",
+  "برای «{who}» حساب شود": "Compter pour « {who} »",
+  "برای این تاریخ یا پیش از آن نرخی ثبت نشده — نرخ یا عددِ {code} را بنویسید.": "Aucun taux enregistré pour cette date ou avant — saisissez le taux ou le montant en {code}.",
+  "برگشت به نرخِ روزِ پرداخت": "Revenir au taux du jour du paiement",
+  "برگشت به همان مبلغ": "Revenir au même montant",
+  "تاریخِ ردیف را روزِ واقعیِ واریز بگذارید؛ نرخ از همان روز خوانده می‌شود.": "Mettez comme date de ligne le jour réel du virement ; le taux est lu à ce jour.",
+  "عددِ دیگری کم شود": "Déduire un autre montant",
+  "نرخِ ثبت‌شده برای همین تاریخ ({date}).": "Taux enregistré pour cette date ({date}).",
+  "نزدیک‌ترین نرخِ ثبت‌شده: {date} — {days} روز پیش از تاریخِ پرداخت.": "Taux enregistré le plus proche : {date} — {days} jours avant la date du paiement.",
+  "همین عدد ذخیره می‌شود و با تغییرِ نرخ‌ها عوض نمی‌شود.": "Ce chiffre est enregistré et ne change pas avec les taux."
 }

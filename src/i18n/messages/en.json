@@ -3993,5 +3993,15 @@
   "معادلِ یوروی همهٔ ردیف‌ها را با آخرین نرخ‌های ثبت‌شده دوباره حساب می‌کند. ردیفی که مبلغش به یورو است عوض نمی‌شود.": "Recalculates the euro value of all rows with the latest saved rates. Rows whose amount is in euros do not change.",
   "نشسته در «{account}» (به {code})": "Received in \"{account}\" (in {code})",
   "پرداخت‌شده از «{account}» (به {code})": "Paid from \"{account}\" (in {code})",
-  "کاربرانِ دیگر": "Other users"
+  "کاربرانِ دیگر": "Other users",
+  "از طلبِ «{who}» کم شود": "Deduct from \"{who}\"'s balance",
+  "برای «{who}» حساب شود": "Count for \"{who}\"",
+  "برای این تاریخ یا پیش از آن نرخی ثبت نشده — نرخ یا عددِ {code} را بنویسید.": "No rate is saved for this date or earlier — enter the rate or the {code} amount.",
+  "برگشت به نرخِ روزِ پرداخت": "Back to the payment-day rate",
+  "برگشت به همان مبلغ": "Back to the same amount",
+  "تاریخِ ردیف را روزِ واقعیِ واریز بگذارید؛ نرخ از همان روز خوانده می‌شود.": "Set the row date to the actual transfer day; the rate is read from that day.",
+  "عددِ دیگری کم شود": "Deduct a different amount",
+  "نرخِ ثبت‌شده برای همین تاریخ ({date}).": "Saved rate for this date ({date}).",
+  "نزدیک‌ترین نرخِ ثبت‌شده: {date} — {days} روز پیش از تاریخِ پرداخت.": "Nearest saved rate: {date} — {days} days before the payment date.",
+  "همین عدد ذخیره می‌شود و با تغییرِ نرخ‌ها عوض نمی‌شود.": "This figure is saved and won't change when rates change."
 }

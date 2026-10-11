@@ -3993,5 +3993,15 @@
   "معادلِ یوروی همهٔ ردیف‌ها را با آخرین نرخ‌های ثبت‌شده دوباره حساب می‌کند. ردیفی که مبلغش به یورو است عوض نمی‌شود.": "Tüm satırların euro değerini kaydedilen son kurlarla yeniden hesaplar. Tutarı euro olan satırlar değişmez.",
   "نشسته در «{account}» (به {code})": "«{account}» hesabına geçen ({code})",
   "پرداخت‌شده از «{account}» (به {code})": "«{account}» hesabından ödenen ({code})",
-  "کاربرانِ دیگر": "Diğer kullanıcılar"
+  "کاربرانِ دیگر": "Diğer kullanıcılar",
+  "از طلبِ «{who}» کم شود": "«{who}» alacağından düşülsün",
+  "برای «{who}» حساب شود": "«{who}» için sayılsın",
+  "برای این تاریخ یا پیش از آن نرخی ثبت نشده — نرخ یا عددِ {code} را بنویسید.": "Bu tarih veya öncesi için kayıtlı kur yok — kuru ya da {code} tutarını girin.",
+  "برگشت به نرخِ روزِ پرداخت": "Ödeme günü kuruna dön",
+  "برگشت به همان مبلغ": "Aynı tutara dön",
+  "تاریخِ ردیف را روزِ واقعیِ واریز بگذارید؛ نرخ از همان روز خوانده می‌شود.": "Satır tarihini gerçek transfer günü yapın; kur o günden okunur.",
+  "عددِ دیگری کم شود": "Başka bir tutar düşülsün",
+  "نرخِ ثبت‌شده برای همین تاریخ ({date}).": "Bu tarih için kayıtlı kur ({date}).",
+  "نزدیک‌ترین نرخِ ثبت‌شده: {date} — {days} روز پیش از تاریخِ پرداخت.": "En yakın kayıtlı kur: {date} — ödeme tarihinden {days} gün önce.",
+  "همین عدد ذخیره می‌شود و با تغییرِ نرخ‌ها عوض نمی‌شود.": "Bu rakam kaydedilir ve kurlar değişince değişmez."
 }

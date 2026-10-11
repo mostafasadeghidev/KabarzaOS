@@ -264,6 +264,62 @@ export function effectiveRateOf(amount: number, accountAmount: number): number |
   return Math.round((accountAmount / amount) * 10000) / 10000;
 }
 
+/* ------------------------------------------------------------------ *
+ * R-FORM-09 — «از طلبِ … کم شود» با نرخِ روزِ پرداخت (۲.۲۵.۰)
+ * ------------------------------------------------------------------ */
+
+/** یک ردیفِ تاریخچهٔ نرخ: «۱ from = rate to» از تاریخِ date. */
+export interface DatedRate {
+  from: number;
+  to: number;
+  rate: string;
+  date: string;
+}
+
+/**
+ * نرخِ «۱ ارزِ قرارداد = چند ارزِ مبلغ» در **روزِ پرداخت**: تازه‌ترین نرخِ ثبت‌شده
+ * در همان روز یا پیش از آن (مستقیم یا معکوس). نرخِ بعد از تاریخ هرگز برداشته
+ * نمی‌شود — پرداختِ دیروز با نرخِ فردا حساب نمی‌شود.
+ *
+ * ⚠️ نه «آخرین نرخ»: پرداختی که سه روز بعد ثبت شود باید نرخِ روزِ واریز را بگیرد.
+ */
+export function rateOnDate(
+  rates: readonly DatedRate[],
+  from: number | null,
+  to: number | null,
+  date: string,
+): { rate: number; date: string } | null {
+  if (!from || !to || from === to || !date) return null;
+  let best: { rate: number; date: string; direct: boolean } | null = null;
+  for (const r of rates) {
+    if (r.date > date) continue;
+    const value = Number(r.rate);
+    if (!(value > 0)) continue;
+    const direct = r.from === from && r.to === to;
+    const inverse = r.from === to && r.to === from;
+    if (!direct && !inverse) continue;
+    // تاریخِ تازه‌تر می‌برد؛ در همان روز، جفتِ مستقیم بر معکوس مقدم است.
+    if (best && (r.date < best.date || (r.date === best.date && (best.direct || !direct)))) continue;
+    best = { rate: fxRound(direct ? value : 1 / value), date: r.date, direct };
+  }
+  return best ? { rate: best.rate, date: best.date } : null;
+}
+
+/** چند روز بینِ دو تاریخِ ISO (b − a). */
+export function daysBetween(a: string, b: string): number {
+  const ms = Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`);
+  return Number.isFinite(ms) ? Math.round(ms / 86_400_000) : 0;
+}
+
+/**
+ * عددی که از طلب/قرارداد کم می‌شود: `مبلغ ÷ نرخ`، گردشده به دو رقمِ اعشار —
+ * پولِ قرارداد است، نه نرخ؛ ۱۰۵٫۲۶۳۱۵۸ یورو فقط کاربر را گیج می‌کند.
+ */
+export function deductionFromRate(amount: number, rate: number): number | null {
+  if (!Number.isFinite(amount) || !Number.isFinite(rate) || amount <= 0 || rate <= 0) return null;
+  return Math.round((amount / rate) * 100) / 100;
+}
+
 /** آیا یکی از دسته‌های انتخاب‌شده «پیش‌فرض قابلِ بازپرداخت» است؟ */
 export function billableFromTags(
   selected: readonly number[],

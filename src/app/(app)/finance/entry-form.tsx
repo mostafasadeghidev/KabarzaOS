@@ -6,10 +6,10 @@ import { useFormStatus } from 'react-dom';
 import type { EntryRow, FormOptions } from './ledger-view';
 import { ReceiptPicker } from './receipt-picker';
 import {
-  rateFromAmounts, relocateParty, requiresDescription, settledFromAmount,
+  rateFromAmounts, relocateParty, requiresDescription,
   selectableTags, settledCurrencyId, showsBillable, showsRecurring, showsSettled,
   showsUnitPicker, visibleParty, type Direction, type PartyState,
-  billableFromTags, effectiveRateOf, showsEquivalent,
+  billableFromTags, effectiveRateOf, rateOnDate, daysBetween, deductionFromRate,
 } from '@/domain/ledger/form-rules';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Button } from '@/components/ui/button';
@@ -82,8 +82,19 @@ export function EntryForm({
   const [projectId, setProjectId] = useState<number | null>(editing?.projectId ?? null);
   const [projectLabel, setProjectLabel] = useState(editing?.projectTitle ?? '');
   const [tagIds, setTagIds] = useState<number[]>(editing?.tagIds ?? []);
+  /**
+   * «از طلبِ … کم شود» (۲.۲۵.۰) — سه حالت:
+   * · `auto`: ارزِ یکسان ← همان مبلغ؛ ارزِ متفاوت ← مبلغ ÷ نرخِ روزِ پرداخت
+   * · `rate`: کاربر نرخ را نوشته ← عدد از آن
+   * · `settled`: کاربر خودِ عدد را نوشته (یا کارکرد انتخاب شده) ← نرخ از آن
+   */
   const [settled, setSettled] = useState(editing?.amountSettled ?? '');
   const [rate, setRate] = useState('');
+  const [deductMode, setDeductMode] = useState<'auto' | 'rate' | 'settled'>(
+    editing?.amountSettled ? 'settled' : 'auto',
+  );
+  /** تاریخِ ردیف — نرخِ پیشنهادی از **همین روز** خوانده می‌شود، نه امروز. */
+  const [entryDate, setEntryDate] = useState(keep('entryDate', editing?.entryDate ?? today));
   const [amount, setAmount] = useState(keep('amount', editing?.amount ?? ''));
   const [currencyId, setCurrencyId] = useState(
     keep('currencyId', String(editing?.currencyId ?? options.defaultCurrencyId ?? '')),
@@ -215,7 +226,9 @@ export function EntryForm({
 
   const codeOf = (id: number | string | null) =>
     options.currencies.find((c) => String(c.id) === String(id ?? ''))?.code ?? '';
-  const settledCode = codeOf(settledCurrency ?? null);
+  // ⚠️ ارزِ انتخاب‌شده در خودِ بلوک (اگر دستی عوض شده)، نه فقط پیش‌فرضِ قاعده —
+  // وگرنه برچسبِ نرخ «1 EUR =» می‌گفت در حالی که ارزِ معادل IRR بود.
+  const settledCode = codeOf(settledOverride ?? settledCurrency ?? null);
   const entryCode = codeOf(currencyId);
   /** حسابِ همین فرم — ارزش برچسبِ «پرداخت‌شده از حساب» را می‌سازد (۲.۲۴.۰). */
   const account = options.accounts.find((a) => a.id === accountId);
@@ -223,40 +236,36 @@ export function EntryForm({
   const accountCode = account?.currencyCode ?? '';
   const actualVisible = Boolean(account) && String(account!.currencyId) !== String(currencyId);
   const effectiveRate = effectiveRateOf(Number(amount), Number(actual));
-  const equivalentVisible = settledVisible && showsEquivalent({
-    projectId,
-    entryCurrencyId: Number(currencyId) || null,
-    settledCurrencyId: settledOverride ?? settledCurrency ?? null,
-    hasSettled: settled !== '',
-    pickedUnit: pickedUnit !== null,
-  });
 
   /**
-   * نرخِ دوطرفه — پورتِ JS ِ افزونه: **مبلغ هرگز بازنویسی نمی‌شود**.
-   * نرخ تایپ شد → معادل = مبلغ ÷ نرخ؛ معادل تایپ شد → نرخ = مبلغ ÷ معادل؛
-   * مبلغ تایپ شد → معادل (اگر نرخ هست) وگرنه نرخ (اگر معادل هست).
-   * پیش از این تایپِ معادل یا نرخ، مبلغِ بانکیِ واردشده را عوض می‌کرد.
+   * «از طلبِ … کم شود» (۲.۲۵.۰) — جای بلوکِ سه‌خانه‌ایِ «معادل».
+   * ارزش همیشه ارزِ قرارداد/پروژه است (انتخابگرِ ارز ندارد). اگر ارزِ مبلغ همان
+   * باشد، همان مبلغ کم می‌شود و چیزی نوشته نمی‌شود؛ اگر فرق کند، عدد از نرخِ
+   * **روزِ پرداخت** پر می‌شود و کاربر فقط در صورتِ لزوم نرخ یا عدد را عوض می‌کند.
+   * ⚠️ مبلغ هرگز بازنویسی نمی‌شود (پورتِ افزونه).
    */
-  const onSettledChange = (value: string) => {
-    setSettled(value);
-    const next = rateFromAmounts(Number(amount), Number(value));
-    if (next !== null) setRate(String(next));
-  };
-  const onRateChange = (value: string) => {
-    setRate(value);
-    const next = settledFromAmount(Number(amount), Number(value));
-    if (next !== null) setSettled(String(next));
-  };
-  const onAmountChange = (value: string) => {
-    setAmount(value);
-    if (Number(rate) > 0) {
-      const next = settledFromAmount(Number(value), Number(rate));
-      if (next !== null) setSettled(String(next));
-    } else if (Number(settled) > 0) {
-      const next = rateFromAmounts(Number(value), Number(settled));
-      if (next !== null) setRate(String(next));
-    }
-  };
+  const contractCurrency = settledOverride ?? settledCurrency ?? null;
+  const differs = Boolean(contractCurrency) && String(contractCurrency) !== String(currencyId);
+  const suggested = differs
+    ? rateOnDate(options.rates ?? [], contractCurrency, Number(currencyId) || null, entryDate)
+    : null;
+  const usedRate = deductMode === 'rate' ? (Number(rate) > 0 ? Number(rate) : null)
+    : deductMode === 'settled' ? rateFromAmounts(Number(amount), Number(settled))
+    : suggested?.rate ?? null;
+  const deduction = deductMode === 'settled' ? settled
+    : differs ? String(deductionFromRate(Number(amount), usedRate ?? 0) ?? '')
+    : amount;
+  const receiverIsMember = direction === 'out' && Boolean(receiverUserId) && membersHere.has(receiverUserId!);
+  const deductWho = (shown === 'payer' ? party.payer.label : party.receiver.label) || projectLabel;
+  const deductLabel = receiverIsMember
+    ? tr('از طلبِ «{who}» کم شود', { who: deductWho })
+    : tr('برای «{who}» حساب شود', { who: deductWho });
+  /** فقط وقتی چیزی برای ذخیره هست: ارزِ متفاوت، یا عددِ دستی/کارکرد. */
+  const sendSettled = settledVisible && (differs || deductMode === 'settled') && Number(deduction) > 0;
+
+  const onSettledChange = (value: string) => { setSettled(value); setDeductMode('settled'); };
+  const onRateChange = (value: string) => { setRate(value); setDeductMode('rate'); };
+  const onAmountChange = (value: string) => setAmount(value);
 
   /* ── R-FORM-07 — توضیحاتِ اجباریِ ردیفِ پروژه‌دار ── */
   const descMissing = requiresDescription(projectId) && !description.trim();
@@ -275,6 +284,7 @@ export function EntryForm({
           <DatePicker
             id="l-date" name="entryDate"
             defaultValue={keep('entryDate', editing?.entryDate ?? today)}
+            onChange={setEntryDate}
             required
           />
           {fieldErrors?.entryDate && <FieldError>{tr(fieldErrors.entryDate)}</FieldError>}
@@ -427,57 +437,86 @@ export function EntryForm({
         </label>
       )}
 
-      {/* ── R-FORM-05 — بلوکِ معادل + نرخِ دوطرفه ── */}
-      {/*
-        «معادل» فقط وقتی لازم است که ارزِ مبلغ با ارزِ قرارداد فرق کند (۲.۲۴.۰)؛
-        وگرنه همان مبلغ به حسابِ عضو/پروژه می‌رود و یک خطِ روشن جایش می‌نشیند.
-      */}
-      {settledVisible && !equivalentVisible && Number(amount) > 0 && (
-        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300">
-          {tr('برای «{who}» حساب می‌شود: {amount}', {
-            who: (shown === 'payer' ? party.payer.label : party.receiver.label) || projectLabel,
-            amount: `${amount} ${entryCode}`,
-          })}
-        </p>
-      )}
-      {equivalentVisible && (
-        <FieldSet variant="box">
-          <FieldLegend>{tr("معادل برای محاسبهٔ پروژه/عضو")}</FieldLegend>
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              name="amountSettled" inputMode="decimal" className="num w-40"
-              placeholder={tr("اختیاری")} value={settled}
-              onChange={(e) => onSettledChange(e.target.value)}
-            />
-            <NativeSelect
-              name="settledCurrencyId" containerClassName="w-28"
-              value={String(settledOverride ?? settledCurrency ?? '')}
-              // ⚠️ پیش از این کنترل‌شده بود ولی state نداشت: تغییرِ دستی همان لحظه برمی‌گشت.
-              onChange={(e) => setSettledOverride(Number(e.target.value) || null)}
-            >
-              {options.currencies.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>)}
-            </NativeSelect>
+      {/* ── R-FORM-05/09 — «از طلبِ … کم شود» (۲.۲۵.۰) ── */}
+      <input type="hidden" name="amountSettled" value={sendSettled ? deduction : ''} />
+      <input type="hidden" name="settledCurrencyId" value={sendSettled ? String(contractCurrency ?? '') : ''} />
+      {/* نرخ فقط وقتی کاربر خودش نوشته — پیشنهادِ تاریخچه دوباره ذخیره نمی‌شود. */}
+      <input type="hidden" name="fxRate" value={sendSettled && deductMode === 'rate' ? rate : ''} />
 
-            {/* پورتِ «۱ EUR = … IRR»: کدهای دو سرِ نرخ، پیشوند و پسوندِ همان فیلد (InputGroup). */}
-            <InputGroup className="w-60" dir="ltr">
-              <InputGroupAddon>
-                <InputGroupText className="num">1 {settledCode} =</InputGroupText>
-              </InputGroupAddon>
+      {/* ارزِ یکسان: یک خطِ روشن؛ «عددِ دیگر» فقط برای حالتِ نادری که کسر با مبلغ فرق دارد. */}
+      {settledVisible && !differs && deductMode !== 'settled' && Number(amount) > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300">
+          <span>
+            {deductLabel}: <span dir="ltr" className="num font-medium">{amount} {entryCode}</span>
+          </span>
+          <Button
+            type="button" variant="link" size="sm" className="h-auto p-0 text-xs"
+            onClick={() => { setSettled(amount); setDeductMode('settled'); }}
+          >
+            {tr('عددِ دیگری کم شود')}
+          </Button>
+        </div>
+      )}
+
+      {settledVisible && (differs || deductMode === 'settled') && (
+        <FieldSet variant="box">
+          <FieldLegend>{deductLabel}</FieldLegend>
+          <div className="flex flex-wrap items-center gap-2">
+            <InputGroup className="w-48" dir="ltr">
               <InputGroupInput
-                name="fxRate" inputMode="decimal" className="num"
-                placeholder={tr("نرخ")} value={rate} aria-label={tr("نرخ")}
-                onChange={(e) => onRateChange(e.target.value)}
+                inputMode="decimal" className="num" aria-label={deductLabel}
+                value={deduction} onChange={(e) => onSettledChange(e.target.value)}
               />
               <InputGroupAddon align="inline-end">
-                <InputGroupText className="num">{entryCode}</InputGroupText>
+                <InputGroupText className="num">{settledCode}</InputGroupText>
               </InputGroupAddon>
             </InputGroup>
+
+            {differs && (
+              <InputGroup className="w-60" dir="ltr">
+                <InputGroupAddon>
+                  <InputGroupText className="num">1 {settledCode} =</InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  inputMode="decimal" className="num"
+                  placeholder={tr("نرخ")} aria-label={tr("نرخ")}
+                  value={deductMode === 'rate' ? rate : (usedRate !== null ? String(usedRate) : '')}
+                  onChange={(e) => onRateChange(e.target.value)}
+                />
+                <InputGroupAddon align="inline-end">
+                  <InputGroupText className="num">{entryCode}</InputGroupText>
+                </InputGroupAddon>
+              </InputGroup>
+            )}
           </div>
+
+          {differs && deductMode === 'auto' && suggested && (
+            <FieldDescription>
+              {suggested.date === entryDate
+                ? tr('نرخِ ثبت‌شده برای همین تاریخ ({date}).', { date: suggested.date })
+                : tr('نزدیک‌ترین نرخِ ثبت‌شده: {date} — {days} روز پیش از تاریخِ پرداخت.', {
+                    date: suggested.date, days: daysBetween(suggested.date, entryDate),
+                  })}
+            </FieldDescription>
+          )}
+          {differs && deductMode === 'auto' && !suggested && (
+            <FieldDescription className="text-amber-700 dark:text-amber-400">
+              {tr('برای این تاریخ یا پیش از آن نرخی ثبت نشده — نرخ یا عددِ {code} را بنویسید.', { code: settledCode })}
+            </FieldDescription>
+          )}
+          {deductMode !== 'auto' && (
+            <FieldDescription>
+              {tr('همین عدد ذخیره می‌شود و با تغییرِ نرخ‌ها عوض نمی‌شود.')}{' '}
+              <Button
+                type="button" variant="link" size="sm" className="h-auto p-0 text-xs"
+                onClick={() => { setDeductMode('auto'); setFromUnit(null); }}
+              >
+                {differs ? tr('برگشت به نرخِ روزِ پرداخت') : tr('برگشت به همان مبلغ')}
+              </Button>
+            </FieldDescription>
+          )}
           <FieldDescription>
-            {tr("معادلِ این پرداخت در ارزِ قرارداد — نرخ را بنویسید تا مبلغ خودکار پر شود، یا برعکس.")}
-          </FieldDescription>
-          <FieldDescription>
-            {tr("ارزِ مبلغ با ارزِ قرارداد فرق دارد: همین عدد از قرارداد کم می‌شود. یوروی گزارش‌ها اما از «مبلغ» و نرخِ روز حساب می‌شود؛ ساده‌تر است مبلغ را به ارزِ قرارداد بنویسید.")}
+            {tr('تاریخِ ردیف را روزِ واقعیِ واریز بگذارید؛ نرخ از همان روز خوانده می‌شود.')}
           </FieldDescription>
         </FieldSet>
       )}
@@ -496,9 +535,14 @@ export function EntryForm({
                 size="sm"
                 pressed={pickedUnit === u.id}
                 onPressedChange={() => {
+                  if (pickedUnit === u.id) {
+                    setFromUnit(null);
+                    setDeductMode('auto');
+                    return;
+                  }
                   onSettledChange(String(Number(u.amount)));
                   if (u.currencyId) setSettledOverride(u.currencyId);
-                  setFromUnit(pickedUnit === u.id ? null : u.id);
+                  setFromUnit(u.id);
                 }}
                 className="num h-7 px-2 text-xs font-normal data-[state=on]:border-primary data-[state=on]:bg-primary/10"
               >

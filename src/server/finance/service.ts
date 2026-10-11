@@ -4,7 +4,7 @@ import { buildTimelines, lastActorOf } from '@/domain/ledger/timeline';
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
 import { alias } from 'drizzle-orm/pg-core';
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   accounts, accountUsers, auditLog, currencies, exchangeRates, fiscalClosings, fiscalLocks,
@@ -12,7 +12,7 @@ import {
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, ForbiddenError, visibleScopes } from '@/domain/access/guard';
-import { buildTransferLegs, computeAmounts, validateEntry, type TransferInput, MissingRateError } from '@/domain/ledger/amounts';
+import { buildTransferLegs, computeAmounts, validateEntry, withSettledEur, type TransferInput, MissingRateError } from '@/domain/ledger/amounts';
 import {
   assertDeletable, assertWritable, closingBalance, isValidCloseDate, nextLockDate, periodStart,
 } from '@/domain/ledger/fiscal';
@@ -617,14 +617,15 @@ export async function createEntry(actor: Actor, rawInput: EntryInput): Promise<n
   const officeId = account.officeId ?? input.officeId;
   const officeCurrencyId = await officeCurrencyFor(officeId, baseCurrencyId);
 
-  const amounts = computeAmounts(source, {
+  // یوروی ردیف = عددِ «از طلبِ … کم شود» وقتی نوشته شده (۲.۲۵.۰).
+  const amounts = withSettledEur(computeAmounts(source, {
     amount: input.amount,
     currencyId: input.currencyId,
     accountCurrencyId: account.currencyId,
     officeCurrencyId,
     baseCurrencyId,
     amountAccountOverride: input.amountAccountOverride ?? null,
-  });
+  }), source, { amount: input.amountSettled, currencyId: input.settledCurrencyId }, { baseCurrencyId, officeCurrencyId });
   assertRatesKnown(amounts, input, { officeCurrencyId, baseCurrencyId });
 
   const rows = await db.insert(ledger).values({
@@ -717,14 +718,14 @@ export async function updateEntry(actor: Actor, entryId: number, rawInput: Entry
   // در ارزِ **دفتر** حساب می‌شود، نه ارزِ حساب (وگرنه گزارشِ منطقه‌ای بی‌معنا بود).
   const officeId = account.officeId ?? input.officeId;
   const officeCurrencyId = await officeCurrencyFor(officeId, baseCurrencyId);
-  const amounts = computeAmounts(source, {
+  const amounts = withSettledEur(computeAmounts(source, {
     amount: input.amount,
     currencyId: input.currencyId,
     accountCurrencyId: account.currencyId,
     officeCurrencyId,
     baseCurrencyId,
     amountAccountOverride: input.amountAccountOverride ?? null,
-  });
+  }), source, { amount: input.amountSettled, currencyId: input.settledCurrencyId }, { baseCurrencyId, officeCurrencyId });
   assertRatesKnown(amounts, input, { officeCurrencyId, baseCurrencyId });
 
   // «موجودها منهای حذف‌شده‌ها، به‌علاوهٔ تازه‌ها» — نه جایگزینیِ کامل.
@@ -896,7 +897,7 @@ export async function getEntryFormOptions(actor: Actor) {
 
   const [
     accountRows, currencyRows, categoryRows, projectRows, vendorRows, peopleRows, membershipRows, unitRows,
-    clientRows,
+    clientRows, rateRows,
   ] = await Promise.all([
       listAccounts(actor),
       db.select({ id: currencies.id, code: currencies.code, isDefault: currencies.isDefault })
@@ -945,6 +946,15 @@ export async function getEntryFormOptions(actor: Actor) {
 
       // کارفرمایانِ پروژه — برای باریک‌سازیِ پروژه به طرفِ حساب (پورتِ `projectUsers`).
       db.select({ projectId: projectClients.projectId, userId: projectClients.userId }).from(projectClients),
+
+      /**
+       * تاریخچهٔ نرخ‌ها (۲.۲۵.۰) — فرم نرخِ **روزِ پرداخت** را پیشنهاد می‌دهد، نه
+       * آخرین نرخ: پرداختی که سه روز بعد ثبت شود، با نرخِ همان روزِ واریز حساب می‌شود.
+       */
+      db.select({
+        from: exchangeRates.fromCurrencyId, to: exchangeRates.toCurrencyId,
+        rate: exchangeRates.rate, date: exchangeRates.effectiveDate,
+      }).from(exchangeRates).orderBy(desc(exchangeRates.effectiveDate), desc(exchangeRates.id)),
     ]);
 
   const memberships = membershipRows;
@@ -981,6 +991,7 @@ export async function getEntryFormOptions(actor: Actor) {
       });
       return acc;
     }, {}),
+    rates: rateRows.map((r) => ({ from: r.from, to: r.to, rate: String(r.rate), date: String(r.date) })),
     defaultCurrencyId: currencyRows.find((c) => c.isDefault)?.id ?? null,
     lockDate: await currentLockDate(),
   };
@@ -1391,8 +1402,25 @@ export async function recomputeEur(actor: Actor): Promise<{ ledger: number; paym
     id: ledger.id, amount: ledger.amount, currencyId: ledger.currencyId, amountEur: ledger.amountEur,
   }).from(ledger);
 
+  /**
+   * ⚠️ ردیفی که «از طلبِ … کم شود» دارد (۲.۲۵.۰) یورویش را از همان عدد می‌گیرد،
+   * نه از مبلغِ اسمی — همان قاعدهٔ ثبت (`withSettledEur`)، وگرنه بازمحاسبه
+   * دوباره یوروی گزارش را از طلبِ عضو جدا می‌کرد.
+   */
+  const settledByLedger = new Map(
+    (await db.select({
+      ledgerId: projectPayments.ledgerId,
+      amountSettled: projectPayments.amountSettled,
+      settledCurrencyId: projectPayments.settledCurrencyId,
+    }).from(projectPayments).where(isNotNull(projectPayments.amountSettled)))
+      .filter((p) => p.ledgerId !== null && p.settledCurrencyId !== null)
+      .map((p) => [p.ledgerId!, p] as const),
+  );
+
   for (const r of ledgerRows) {
-    const next = convert(source, r.amount, r.currencyId ?? baseCurrencyId, baseCurrencyId);
+    const s = settledByLedger.get(r.id);
+    const next = (s ? convert(source, s.amountSettled!, s.settledCurrencyId!, baseCurrencyId) : null)
+      ?? convert(source, r.amount, r.currencyId ?? baseCurrencyId, baseCurrencyId);
     if (next !== null && Number(next).toFixed(4) !== Number(r.amountEur).toFixed(4)) {
       await db.update(ledger).set({ amountEur: next }).where(eq(ledger.id, r.id));
       changed.ledger += 1;

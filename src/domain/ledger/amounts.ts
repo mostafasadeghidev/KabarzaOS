@@ -86,6 +86,33 @@ export function computeAmounts(source: RateSource, input: AmountInput): Computed
   };
 }
 
+/**
+ * یوروی ردیف از «از طلبِ … کم شود» (۲.۲۵.۰).
+ *
+ * ⚠️ وقتی کاربر گفته این پرداخت چقدر از قرارداد کم شود (مثلاً ۲ میلیون تومان =
+ * ۱۰۵ یورو)، یوروی گزارش‌ها هم باید همان باشد، نه رقمِ حاصل از آخرین نرخِ بازار —
+ * وگرنه گزارش ۹۸ و طلبِ عضو ۱۰۵ می‌گفت. آینهٔ پرداخت از قبل همین کار را می‌کرد.
+ * نبودِ نرخِ ارزِ مبلغ به یورو هم دیگر مانعِ ثبت نیست، چون یورو از همین عدد می‌آید.
+ */
+export function withSettledEur(
+  amounts: ComputedAmounts,
+  source: RateSource,
+  settled: { amount: string | null | undefined; currencyId: number | null | undefined },
+  scope: { baseCurrencyId: number; officeCurrencyId: number },
+): ComputedAmounts {
+  const value = settled.amount?.trim();
+  if (!value || !settled.currencyId || !(Number(value) > 0)) return amounts;
+  const eur = convert(source, value, settled.currencyId, scope.baseCurrencyId);
+  if (eur === null) return amounts;
+  const officeIsBase = scope.officeCurrencyId === scope.baseCurrencyId;
+  return {
+    ...amounts,
+    amountEur: eur,
+    amountOffice: officeIsBase ? eur : amounts.amountOffice,
+    missingRates: amounts.missingRates.filter((id) => id !== scope.baseCurrencyId),
+  };
+}
+
 /* ------------------------------------------------------------------ *
  * انتقالِ داخلی
  * ------------------------------------------------------------------ */

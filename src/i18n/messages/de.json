@@ -3993,5 +3993,15 @@
   "معادلِ یوروی همهٔ ردیف‌ها را با آخرین نرخ‌های ثبت‌شده دوباره حساب می‌کند. ردیفی که مبلغش به یورو است عوض نمی‌شود.": "Berechnet den Euro-Wert aller Zeilen mit den zuletzt gespeicherten Kursen neu. Zeilen mit Betrag in Euro ändern sich nicht.",
   "نشسته در «{account}» (به {code})": "Eingegangen auf „{account}“ (in {code})",
   "پرداخت‌شده از «{account}» (به {code})": "Bezahlt von „{account}“ (in {code})",
-  "کاربرانِ دیگر": "Andere Benutzer"
+  "کاربرانِ دیگر": "Andere Benutzer",
+  "از طلبِ «{who}» کم شود": "Vom Guthaben von „{who}“ abziehen",
+  "برای «{who}» حساب شود": "Für „{who}“ zählen",
+  "برای این تاریخ یا پیش از آن نرخی ثبت نشده — نرخ یا عددِ {code} را بنویسید.": "Für dieses Datum oder früher ist kein Kurs gespeichert — Kurs oder {code}-Betrag eingeben.",
+  "برگشت به نرخِ روزِ پرداخت": "Zurück zum Kurs des Zahltags",
+  "برگشت به همان مبلغ": "Zurück zum gleichen Betrag",
+  "تاریخِ ردیف را روزِ واقعیِ واریز بگذارید؛ نرخ از همان روز خوانده می‌شود.": "Setzen Sie das Zeilendatum auf den tatsächlichen Überweisungstag; der Kurs wird von diesem Tag gelesen.",
+  "عددِ دیگری کم شود": "Anderen Betrag abziehen",
+  "نرخِ ثبت‌شده برای همین تاریخ ({date}).": "Gespeicherter Kurs für dieses Datum ({date}).",
+  "نزدیک‌ترین نرخِ ثبت‌شده: {date} — {days} روز پیش از تاریخِ پرداخت.": "Nächster gespeicherter Kurs: {date} — {days} Tage vor dem Zahlungsdatum.",
+  "همین عدد ذخیره می‌شود و با تغییرِ نرخ‌ها عوض نمی‌شود.": "Diese Zahl wird gespeichert und ändert sich nicht mit den Kursen."
 }

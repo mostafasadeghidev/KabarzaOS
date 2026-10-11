@@ -12,6 +12,7 @@ import { EntryForm } from './entry-form';
 import { LedgerDetail, ReceiptThumb } from './ledger-detail';
 import { Lightbox } from '@/components/lightbox';
 import type { LedgerEvent } from '@/domain/ledger/timeline';
+import type { DatedRate } from '@/domain/ledger/form-rules';
 import { format } from '@/domain/money/money';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Badge } from '@/components/ui/badge';
@@ -122,6 +123,8 @@ export interface FormOptions {
   projectClientIds?: Record<number, number[]>;
   /** «projectId:userId» ← ارزِ قرارداد (R-FORM-05). */
   memberCurrency: Record<string, number>;
+  /** تاریخچهٔ نرخ‌ها — نرخِ روزِ پرداخت برای «از طلبِ … کم شود» (۲.۲۵.۰). */
+  rates?: DatedRate[];
   defaultCurrencyId: number | null;
   /** فروشندگان — کاندیدای گیرندهٔ برداشت (پورتِ کاندیدای طرف‌حساب). */
   vendors?: Array<{ id: number; name: string; isActive?: boolean }>;
