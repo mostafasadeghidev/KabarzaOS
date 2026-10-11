@@ -1638,9 +1638,12 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     : null;
 
   // نام و گروهِ وضعیتِ پروژه برای کنترلِ وضعیتِ هدر (پورتِ `project_status_control`).
-  const statusName = detail.project.statusTagId
-    ? (await repo.statusTags()).find((tag) => tag.id === detail.project.statusTagId)?.name ?? null
+  const statusTag = detail.project.statusTagId
+    ? (await repo.statusTags()).find((tag) => tag.id === detail.project.statusTagId) ?? null
     : null;
+  const statusName = statusTag?.name ?? null;
+  // رنگِ خودِ تگ — همان رنگی که فهرستِ پروژه‌ها نشان می‌دهد.
+  const statusColor = statusTag?.color ?? null;
 
   /**
    * تسک‌هایی که QA ساخته — پورتِ `QA::project_tasks` + `qa_tasks_subtabs`:
@@ -1673,6 +1676,7 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     isFrozen,
     statusGroup,
     statusName,
+    statusColor,
     meta,
     roleHolders,
     currentUserId: actor.id,

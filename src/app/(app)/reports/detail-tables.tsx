@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { ProjectStatus } from '@/app/(app)/projects/project-status';
 import { format } from '@/domain/money/money';
 import { hoursLabel } from '@/domain/reports/summary';
 import {
@@ -135,6 +136,8 @@ export interface ClientProjectRow {
   title: string;
   currencyCode: string | null;
   statusName: string | null;
+  statusColor?: string | null;
+  statusGroup?: string | null;
   price: string;
   expenses: string;
   paid: string;
@@ -187,7 +190,7 @@ export function ClientProjectsTable({
                 )}
                 <Lines lines={linesOf(p.projectId)} showNote />
               </TableCell>
-              <TableCell>{p.statusName ? <Badge variant="secondary">{p.statusName}</Badge> : '—'}</TableCell>
+              <TableCell><ProjectStatus name={p.statusName} group={p.statusGroup ?? null} color={p.statusColor ?? null} /></TableCell>
               <TableNumericCell>{format(p.price)} {p.currencyCode ?? ''}</TableNumericCell>
               <TableNumericCell>{format(p.expenses)} {p.currencyCode ?? ''}</TableNumericCell>
               <TableNumericCell>{format(p.paid)} {p.currencyCode ?? ''}</TableNumericCell>

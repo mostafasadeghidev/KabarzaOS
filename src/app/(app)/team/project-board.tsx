@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Pager } from '@/components/ui/pager';
 import { Progress } from '@/components/ui/progress';
-import { TagChip } from '@/components/ui/tag-chip';
+import { ProjectStatus } from '@/app/(app)/projects/project-status';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
@@ -126,7 +126,7 @@ export function ProjectBoard({
                       </>
                     ) : <TableCell>{p.roles && p.roles.length > 0 ? p.roles.join('، ') : '—'}</TableCell>}
                     <TableCell>
-                      {p.statusName ? <TagChip color={p.statusColor}>{p.statusName}</TagChip> : '—'}
+                      <ProjectStatus name={p.statusName} group={p.statusGroup} color={p.statusColor} />
                     </TableCell>
                     {mode === 'manage' && <TableNumericCell>{p.taskTotal ?? 0}</TableNumericCell>}
                     <TableCell>
