@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { MultiSelect } from '@/components/ui/combobox';
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -58,6 +59,14 @@ const emptyInfo = (review?: ReviewFormValues | null): Info => ({
   notes: review?.notes ?? '',
   images: [],
 });
+
+type Audience = 'team' | 'roles' | 'people';
+
+function audienceOf(review?: ReviewFormValues | null): Audience {
+  if ((review?.people?.length ?? 0) > 0) return 'people';
+  if ((review?.roles.length ?? 0) > 0) return 'roles';
+  return 'team';
+}
 
 /** بخشِ اطلاعاتِ بازبینی بیش از ۱۰ تصویر را دسته‌دسته می‌فرستد (سقفِ هر ارسال). */
 function chunks<T>(list: T[], size: number): T[][] {
@@ -116,6 +125,7 @@ function ReviewDialogBody({
     if (!open) return;
     setStep(1);
     setInfo(emptyInfo(review));
+    setAudience(audienceOf(review));
     setDrafts([]);
     setEditIndex(null);
     setError(null);
@@ -127,6 +137,25 @@ function ReviewDialogBody({
   }, [open, review?.id]);
 
   const set = <K extends keyof Info>(key: K, value: Info[K]) => setInfo((s) => ({ ...s, [key]: value }));
+
+  /**
+   * حالتِ مخاطب از دادهٔ موجود می‌آید. ⚠️ بازبینیِ قدیمی که هم نقش و هم شخص
+   * دارد «اشخاص» نشان داده می‌شود ولی نقش‌هایش دور ریخته نمی‌شوند — فقط تغییرِ
+   * دستیِ حالت بخشِ دیگر را پاک می‌کند.
+   */
+  const [audience, setAudience] = useState<Audience>(() => audienceOf(review));
+  const changeAudience = (next: Audience) => {
+    setAudience(next);
+    setInfo((s) => ({
+      ...s,
+      roles: next === 'roles' ? s.roles : [],
+      people: next === 'people' ? s.people : [],
+    }));
+  };
+  /** فقط یک نفر و بی‌نقش ← موردها خودکار به او سپرده می‌شوند. */
+  const soloPerson = audience === 'people' && info.people.length === 1 && info.roles.length === 0
+    ? options.people.find((p) => p.id === info.people[0]) ?? null
+    : null;
   const detected = info.url.trim() ? parseVideoUrl(info.url) : null;
 
   const infoForm = () => {
@@ -245,30 +274,42 @@ function ReviewDialogBody({
         )}
       </Field>
 
+      {/*
+        مخاطب (۲.۲۵.۰): یک انتخابگر — «کلِ تیم»، «نقش‌ها» یا «اشخاص» — و فقط
+        فهرستِ همان حالت زیرش باز می‌شود. پیش از این دو کادر کنارِ هم بود و با
+        انتخابِ شخص، کادرِ «کلِ تیمِ پروژه» هنوز دیده می‌شد.
+      */}
       <Field>
-        <FieldLabel htmlFor="rv-roles">{t('مخاطب')}</FieldLabel>
-        {options.roles.length > 0 ? (
-          <MultiSelect
-            id="rv-roles"
-            options={options.roles.map((r) => ({ value: r.id, label: r.name }))}
-            selected={info.roles}
-            onChange={(v) => set('roles', v)}
-            placeholder={t('کلِ تیمِ پروژه')}
-          />
-        ) : null}
-        {/* مخاطبِ شخصی (۲.۲۲.۰) — مثلاً فقط یکی از دو دولوپرِ پروژه. با نقش‌ها جمع می‌شود. */}
-        {options.people.length > 0 && (
+        <FieldLabel htmlFor="rv-audience">{t('مخاطب')}</FieldLabel>
+        <NativeSelect
+          id="rv-audience" containerClassName="w-full" value={audience}
+          onChange={(e) => changeAudience(e.target.value as Audience)}
+        >
+          <NativeSelectOption value="team">{t('کلِ تیمِ پروژه')}</NativeSelectOption>
+          {options.people.length > 0 && <NativeSelectOption value="people">{t('شخص یا اشخاصِ خاص')}</NativeSelectOption>}
+          {options.roles.length > 0 && <NativeSelectOption value="roles">{t('نقش‌های خاص')}</NativeSelectOption>}
+        </NativeSelect>
+        {audience === 'people' && (
           <MultiSelect
             id="rv-people"
             options={options.people.map((p) => ({ value: p.id, label: p.name }))}
             selected={info.people}
             onChange={(v) => set('people', v)}
-            placeholder={t('اشخاص (اختیاری)')}
+            placeholder={t('شخصِ موردِ نظر را انتخاب کنید…')}
+          />
+        )}
+        {audience === 'roles' && (
+          <MultiSelect
+            id="rv-roles"
+            options={options.roles.map((r) => ({ value: r.id, label: r.name }))}
+            selected={info.roles}
+            onChange={(v) => set('roles', v)}
+            placeholder={t('نقش‌ها را انتخاب کنید…')}
           />
         )}
         <FieldDescription>
           {info.roles.length === 0 && info.people.length === 0
-            ? t('خالی یعنی همهٔ اعضای پروژه می‌بینند. با انتخابِ نقش یا شخص فقط همان‌ها (و مدیران) می‌بینند.')
+            ? t('همهٔ اعضای پروژه می‌بینند.')
             : t('فقط دارندگانِ این نقش‌ها، اشخاصِ انتخاب‌شده و مدیرانِ پروژه می‌بینند.')}
         </FieldDescription>
       </Field>
@@ -340,6 +381,7 @@ function ReviewDialogBody({
         key={editIndex ?? 'new'}
         options={options}
         defaultRoles={info.roles}
+        soloAssignee={soloPerson ? { id: soloPerson.id, label: soloPerson.name } : null}
         clientVisible={info.clientVisible}
         initial={editIndex !== null ? drafts[editIndex] ?? null : null}
         submitLabel={editIndex !== null ? t('ذخیرهٔ مورد') : t('افزودن به فهرست')}
@@ -386,6 +428,10 @@ function ReviewDialogBody({
 
         <DialogFooter className="gap-2">
           {busy && <span className="me-auto flex items-center gap-2 text-sm text-muted-foreground"><Spinner />{busy}</span>}
+          {/* بستن با دکمه، نه فقط ضربدرِ گوشه (۲.۲۵.۰). */}
+          <Button type="button" variant="ghost" disabled={Boolean(busy)} onClick={() => onOpenChange(false)}>
+            {t('انصراف')}
+          </Button>
           {!editing && step === 2 && (
             <Button type="button" variant="outline" disabled={Boolean(busy)} onClick={() => setStep(1)}>
               <ArrowRight className="size-4 ltr:rotate-180" />{t('قبلی')}

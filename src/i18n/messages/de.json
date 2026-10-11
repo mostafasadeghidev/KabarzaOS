@@ -4015,5 +4015,11 @@
   "تصاویر افزوده شد.": "Bilder hinzugefügt.",
   "پروژه از بایگانی خارج شد.": "Projekt aus dem Archiv geholt.",
   "پروژه بایگانی شد.": "Projekt archiviert.",
-  "پروژه سبک شد.": "Projekt verschlankt."
+  "پروژه سبک شد.": "Projekt verschlankt.",
+  "به «{name}» سپرده می‌شود — تنها مخاطبِ این بازبینی.": "Wird „{name}“ zugewiesen — einzige Zielperson dieser Review.",
+  "شخص یا اشخاصِ خاص": "Bestimmte Person(en)",
+  "شخصِ موردِ نظر را انتخاب کنید…": "Person auswählen…",
+  "نقش‌ها را انتخاب کنید…": "Rollen auswählen…",
+  "نقش‌های خاص": "Bestimmte Rollen",
+  "همهٔ اعضای پروژه می‌بینند.": "Alle Projektmitglieder sehen sie."
 }

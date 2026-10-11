@@ -4015,5 +4015,11 @@
   "تصاویر افزوده شد.": "Görseller eklendi.",
   "پروژه از بایگانی خارج شد.": "Proje arşivden çıkarıldı.",
   "پروژه بایگانی شد.": "Proje arşivlendi.",
-  "پروژه سبک شد.": "Proje hafifletildi."
+  "پروژه سبک شد.": "Proje hafifletildi.",
+  "به «{name}» سپرده می‌شود — تنها مخاطبِ این بازبینی.": "«{name}» kişisine atanır — bu incelemenin tek hedefi.",
+  "شخص یا اشخاصِ خاص": "Belirli kişi(ler)",
+  "شخصِ موردِ نظر را انتخاب کنید…": "Kişiyi seçin…",
+  "نقش‌ها را انتخاب کنید…": "Rolleri seçin…",
+  "نقش‌های خاص": "Belirli roller",
+  "همهٔ اعضای پروژه می‌بینند.": "Tüm proje üyeleri görür."
 }

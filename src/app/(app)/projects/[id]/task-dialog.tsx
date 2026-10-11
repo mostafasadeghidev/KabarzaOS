@@ -20,7 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox, MultiSelect as SearchableMultiSelect } from '@/components/ui/combobox';
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
@@ -575,6 +575,11 @@ function TaskDialogBody({
             )}
           </div>
         )}
+
+        {/* بستن با دکمه، نه فقط ضربدرِ گوشه (۲.۲۵.۰). */}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{tr('بستن')}</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

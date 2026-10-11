@@ -12,6 +12,9 @@ Versioning follows [SemVer](https://semver.org/).
   - Your own figure or rate is saved on the row and never changes when rates change later.
 - The project edit dialog has two buttons: "Apply" saves and keeps the dialog open, "Save and close" saves and closes it. Before, the only save button left the dialog open, so it was unclear whether the work was done.
 - While a task is being edited, the task conversation is hidden so the edit form's "Save changes" is not confused with the conversation's "Send"; the edit form also gets a "Cancel" button.
+- New review, step 1: the audience is one picker — "Whole project team", "Specific person or people" or "Specific roles" — and only the matching list opens below it. Before, the roles box ("Whole project team") stayed on screen next to the people box.
+- When a review's audience is exactly one person, each item is assigned to that person automatically and the "Assign to" and "Assign to role" fields are hidden (in the new-review dialog and on the review page).
+- The new-review dialog has a "Cancel" button and the task dialog a "Close" button; before, both could only be closed with the corner ×.
 - On a unit-based project, a member's row with no amount yet shows "Amount not set yet — waiting for the project manager" instead of a "Request payment" button that could only fail.
 
 ### Fixed

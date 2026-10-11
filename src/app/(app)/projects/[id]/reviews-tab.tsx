@@ -405,6 +405,10 @@ function ReviewDetail({
             <ReviewItemComposer
               options={data.options}
               defaultRoles={review.roles.map((r) => r.id)}
+              // تنها مخاطبِ بازبینی ← موردها خودکار به او (۲.۲۵.۰).
+              soloAssignee={review.roles.length === 0 && review.people.length === 1
+                ? { id: review.people[0]!.id, label: review.people[0]!.name }
+                : null}
               clientVisible={review.clientVisible}
               currentTime={uploaded ? () => video.current?.currentTime ?? null : null}
               submitLabel={t('افزودنِ مورد')}
