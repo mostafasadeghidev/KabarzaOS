@@ -3980,5 +3980,18 @@
   "وضعیتِ کار": "Work status",
   "برای دیدنِ کارتِ هر تسک، شماره‌اش را بفرستید.": "Send a task number to see its card.",
   "شمارهٔ تسک (مثلاً ALZ-325) را بفرستید تا کارتش باز شود.": "Send a task number (e.g. ALZ-325) to open its card.",
-  "فردا": "Tomorrow"
+  "فردا": "Tomorrow",
+  "(نرخِ مؤثر، با کارمزد)": "(effective rate, incl. fee)",
+  "اختیاری — با کارمزد": "Optional — after fees",
+  "ارزِ مبلغ با ارزِ قرارداد فرق دارد: همین عدد از قرارداد کم می‌شود. یوروی گزارش‌ها اما از «مبلغ» و نرخِ روز حساب می‌شود؛ ساده‌تر است مبلغ را به ارزِ قرارداد بنویسید.": "The amount's currency differs from the contract currency: this figure is deducted from the contract. Report euros, however, come from the \"Amount\" and today's rate; it is simpler to enter the amount in the contract currency.",
+  "اعضای این پروژه": "Members of this project",
+  "برای «{who}» حساب می‌شود: {amount}": "Counted for \"{who}\": {amount}",
+  "برای دیگران نام را تایپ کنید.": "Type a name to find others.",
+  "برداشتِ پروژه با این دسته، پیش‌فرض «قابل بازپرداخت از کارفرما» باشد": "Project withdrawals with this category are billable to the client by default",
+  "مبلغِ بعضی ردیف‌ها صفر است، چون نرخِ هر واحدِ عضو صفر است. نرخ را در «مدیریتِ اعضا» بگذارید، یا در ویرایشِ پروژه «مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند» را روشن کنید.": "Some rows have a zero amount because the member's unit rate is zero. Set the rate in \"Manage members\", or turn on \"The project lead can set each row's amount\" in the project's edit form.",
+  "مثلاً هزینه‌ای که برای کارفرما خریده می‌شود. در فرمِ دفتر قابلِ تغییر است.": "For example an expense bought for the client. It can be changed in the ledger form.",
+  "معادلِ یوروی همهٔ ردیف‌ها را با آخرین نرخ‌های ثبت‌شده دوباره حساب می‌کند. ردیفی که مبلغش به یورو است عوض نمی‌شود.": "Recalculates the euro value of all rows with the latest saved rates. Rows whose amount is in euros do not change.",
+  "نشسته در «{account}» (به {code})": "Received in \"{account}\" (in {code})",
+  "پرداخت‌شده از «{account}» (به {code})": "Paid from \"{account}\" (in {code})",
+  "کاربرانِ دیگر": "Other users"
 }

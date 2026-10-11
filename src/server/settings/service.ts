@@ -12,7 +12,7 @@ import {
   assertCurrencyDeletable, assertName, assertRateValid, assertTagDeletable, assertVendorDeletable,
   planSetDefaultCurrency,
 } from '@/domain/settings/catalogs';
-import { isValidGroup, supportsClosed, supportsReview } from '@/domain/tags/groups';
+import { isValidGroup, supportsBillableDefault, supportsClosed, supportsReview } from '@/domain/tags/groups';
 import type { TagType } from '@/db/schema/base';
 
 /**
@@ -184,6 +184,8 @@ export async function saveTag(
     statusGroup: string;
     isReview: boolean;
     isClosed: boolean;
+    /** فقط دستهٔ دفتر (۲.۲۴.۰). */
+    billableDefault?: boolean;
     sortOrder: number;
     grantsCap?: string;
     nameI18n?: Record<string, string> | null;
@@ -209,6 +211,7 @@ export async function saveTag(
     isReview: supportsReview(input.type as TagType) && input.isReview,
     /** «تمام‌شده» فقط برای وضعیتِ تسک و پروژه معنا دارد. */
     isClosed: supportsClosed(input.type as TagType) && input.isClosed,
+    billableDefault: supportsBillableDefault(input.type as TagType) && Boolean(input.billableDefault),
     sortOrder: input.sortOrder,
     /**
      * ⚠️ فقط مقدارِ شناخته‌شده ذخیره می‌شود و فقط روی تگِ **نقشِ عضو**.

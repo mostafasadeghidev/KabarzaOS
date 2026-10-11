@@ -147,6 +147,16 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
         </form>
       )}
 
+      {/*
+        راهنما (۲.۲۴.۰): ردیفِ پرداخت‌نشده با مبلغِ صفر یعنی عضو نرخِ هر واحد ندارد و
+        «مبلغِ دستی» هم خاموش است — بدونِ این پیام مدیر نمی‌فهمید چرا نمی‌تواند مبلغ بزند.
+      */}
+      {data.seesAll && !data.unitManualAmount && data.units.some((u) => u.status === 'unpaid' && Number(u.amount) === 0) && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+          {t("مبلغِ بعضی ردیف‌ها صفر است، چون نرخِ هر واحدِ عضو صفر است. نرخ را در «مدیریتِ اعضا» بگذارید، یا در ویرایشِ پروژه «مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند» را روشن کنید.")}
+        </p>
+      )}
+
       {data.units.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("هنوز ردیفی ثبت نشده.")}</p>
       ) : (

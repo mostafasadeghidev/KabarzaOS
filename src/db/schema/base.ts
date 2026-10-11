@@ -74,6 +74,8 @@ export const tags = pgTable('tags', {
   isClosed: boolean('is_closed').notNull().default(false),
   statusGroup: text('status_group').notNull().default(''),
   isReview: boolean('is_review').notNull().default(false),
+  /** فقط دستهٔ دفتر (۲.۲۴.۰): برداشتِ پروژه با این دسته پیش‌فرض «قابل بازپرداخت از کارفرما» است. */
+  billableDefault: boolean('billable_default').notNull().default(false),
   sortOrder: integer('sort_order').notNull().default(0),
   isProtected: boolean('is_protected').notNull().default(false),
   ...stamps,

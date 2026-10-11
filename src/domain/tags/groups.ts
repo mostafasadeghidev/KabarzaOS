@@ -92,6 +92,11 @@ export function supportsReview(type: TagType): boolean {
   return type === 'task_status';
 }
 
+/** «پیش‌فرض قابلِ بازپرداخت از کارفرما» فقط برای دستهٔ دفتر معنا دارد (۲.۲۴.۰). */
+export function supportsBillableDefault(type: TagType): boolean {
+  return type === 'ledger_category';
+}
+
 /** دسترسی‌دادن فقط از تگِ نقشِ عضو برمی‌آید. */
 export function supportsGrant(type: TagType): boolean {
   return type === 'member_role';

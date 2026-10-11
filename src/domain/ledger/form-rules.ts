@@ -231,3 +231,44 @@ export function showsUnitPicker(input: {
 export function requiresDescription(projectId: number | null): boolean {
   return Boolean(projectId);
 }
+
+/* ------------------------------------------------------------------ *
+ * R-FORM-08 — روشن‌تر کردنِ مبلغ‌ها (۲.۲۴.۰)
+ * ------------------------------------------------------------------ */
+
+/**
+ * بلوکِ «معادل برای محاسبهٔ پروژه/عضو» فقط وقتی لازم است که ارزِ مبلغ با ارزِ
+ * قرارداد (ارزِ معادل) فرق کند — وگرنه همان مبلغ به حسابِ عضو/پروژه می‌رود و
+ * فیلدِ خالیِ «معادل» فقط گیج می‌کند. ردیفی که از قبل معادل دارد یا کارکردی
+ * انتخاب کرده، بلوک را باز نگه می‌دارد تا مقدارش دیده و ذخیره شود.
+ */
+export function showsEquivalent(input: {
+  projectId: number | null;
+  entryCurrencyId: number | null;
+  settledCurrencyId: number | null;
+  hasSettled: boolean;
+  pickedUnit: boolean;
+}): boolean {
+  if (!input.projectId) return false;
+  if (input.hasSettled || input.pickedUnit) return true;
+  if (!input.entryCurrencyId || !input.settledCurrencyId) return false;
+  return input.entryCurrencyId !== input.settledCurrencyId;
+}
+
+/**
+ * نرخِ مؤثر: «۱ ارزِ مبلغ = چند ارزِ حساب» از مبلغ و مبلغِ واقعیِ حساب — کارمزدِ
+ * انتقال همین‌جا دیده می‌شود. ورودیِ نامعتبر `null`.
+ */
+export function effectiveRateOf(amount: number, accountAmount: number): number | null {
+  if (!Number.isFinite(amount) || !Number.isFinite(accountAmount) || amount <= 0 || accountAmount <= 0) return null;
+  return Math.round((accountAmount / amount) * 10000) / 10000;
+}
+
+/** آیا یکی از دسته‌های انتخاب‌شده «پیش‌فرض قابلِ بازپرداخت» است؟ */
+export function billableFromTags(
+  selected: readonly number[],
+  categories: ReadonlyArray<{ id: number; billable?: boolean }>,
+): boolean {
+  const set = new Set(selected);
+  return categories.some((c) => c.billable === true && set.has(c.id));
+}

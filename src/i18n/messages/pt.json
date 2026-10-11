@@ -3980,5 +3980,18 @@
   "وضعیتِ کار": "Status do trabalho",
   "برای دیدنِ کارتِ هر تسک، شماره‌اش را بفرستید.": "Envie o número de uma tarefa para ver o cartão dela.",
   "شمارهٔ تسک (مثلاً ALZ-325) را بفرستید تا کارتش باز شود.": "Envie o número de uma tarefa (ex.: ALZ-325) para abrir o cartão dela.",
-  "فردا": "Amanhã"
+  "فردا": "Amanhã",
+  "(نرخِ مؤثر، با کارمزد)": "(taxa efetiva, com taxa)",
+  "اختیاری — با کارمزد": "Opcional — após taxas",
+  "ارزِ مبلغ با ارزِ قرارداد فرق دارد: همین عدد از قرارداد کم می‌شود. یوروی گزارش‌ها اما از «مبلغ» و نرخِ روز حساب می‌شود؛ ساده‌تر است مبلغ را به ارزِ قرارداد بنویسید.": "A moeda do valor difere da moeda do contrato: este número é descontado do contrato. Os euros dos relatórios vêm do «Valor» e da taxa do dia; é mais simples informar o valor na moeda do contrato.",
+  "اعضای این پروژه": "Membros deste projeto",
+  "برای «{who}» حساب می‌شود: {amount}": "Conta para «{who}»: {amount}",
+  "برای دیگران نام را تایپ کنید.": "Digite um nome para encontrar outros.",
+  "برداشتِ پروژه با این دسته، پیش‌فرض «قابل بازپرداخت از کارفرما» باشد": "Saídas do projeto com esta categoria são reembolsáveis pelo cliente por padrão",
+  "مبلغِ بعضی ردیف‌ها صفر است، چون نرخِ هر واحدِ عضو صفر است. نرخ را در «مدیریتِ اعضا» بگذارید، یا در ویرایشِ پروژه «مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند» را روشن کنید.": "Algumas linhas têm valor zero porque a tarifa por unidade do membro é zero. Defina a tarifa em «Gerir membros» ou ative «O responsável pelo projeto pode definir o valor de cada linha» no formulário do projeto.",
+  "مثلاً هزینه‌ای که برای کارفرما خریده می‌شود. در فرمِ دفتر قابلِ تغییر است.": "Por exemplo, uma despesa comprada para o cliente. Pode ser alterada no formulário do livro.",
+  "معادلِ یوروی همهٔ ردیف‌ها را با آخرین نرخ‌های ثبت‌شده دوباره حساب می‌کند. ردیفی که مبلغش به یورو است عوض نمی‌شود.": "Recalcula o valor em euros de todas as linhas com as últimas taxas guardadas. Linhas com valor em euros não mudam.",
+  "نشسته در «{account}» (به {code})": "Recebido em «{account}» (em {code})",
+  "پرداخت‌شده از «{account}» (به {code})": "Pago de «{account}» (em {code})",
+  "کاربرانِ دیگر": "Outros utilizadores"
 }

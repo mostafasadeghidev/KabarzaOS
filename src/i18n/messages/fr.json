@@ -3980,5 +3980,18 @@
   "وضعیتِ کار": "Statut du travail",
   "برای دیدنِ کارتِ هر تسک، شماره‌اش را بفرستید.": "Envoyez le numéro d’une tâche pour voir sa fiche.",
   "شمارهٔ تسک (مثلاً ALZ-325) را بفرستید تا کارتش باز شود.": "Envoyez le numéro d’une tâche (par ex. ALZ-325) pour ouvrir sa fiche.",
-  "فردا": "Demain"
+  "فردا": "Demain",
+  "(نرخِ مؤثر، با کارمزد)": "(taux effectif, frais inclus)",
+  "اختیاری — با کارمزد": "Facultatif — après frais",
+  "ارزِ مبلغ با ارزِ قرارداد فرق دارد: همین عدد از قرارداد کم می‌شود. یوروی گزارش‌ها اما از «مبلغ» و نرخِ روز حساب می‌شود؛ ساده‌تر است مبلغ را به ارزِ قرارداد بنویسید.": "La devise du montant diffère de celle du contrat : ce chiffre est déduit du contrat. Les euros des rapports viennent toutefois du « Montant » et du taux du jour ; il est plus simple de saisir le montant dans la devise du contrat.",
+  "اعضای این پروژه": "Membres de ce projet",
+  "برای «{who}» حساب می‌شود: {amount}": "Compté pour « {who} » : {amount}",
+  "برای دیگران نام را تایپ کنید.": "Tapez un nom pour trouver d'autres personnes.",
+  "برداشتِ پروژه با این دسته، پیش‌فرض «قابل بازپرداخت از کارفرما» باشد": "Les sorties du projet avec cette catégorie sont refacturables au client par défaut",
+  "مبلغِ بعضی ردیف‌ها صفر است، چون نرخِ هر واحدِ عضو صفر است. نرخ را در «مدیریتِ اعضا» بگذارید، یا در ویرایشِ پروژه «مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند» را روشن کنید.": "Certaines lignes ont un montant nul car le tarif unitaire du membre est nul. Indiquez le tarif dans « Gérer les membres » ou activez « Le responsable du projet peut fixer le montant de chaque ligne » dans le formulaire du projet.",
+  "مثلاً هزینه‌ای که برای کارفرما خریده می‌شود. در فرمِ دفتر قابلِ تغییر است.": "Par exemple une dépense achetée pour le client. Modifiable dans le formulaire du registre.",
+  "معادلِ یوروی همهٔ ردیف‌ها را با آخرین نرخ‌های ثبت‌شده دوباره حساب می‌کند. ردیفی که مبلغش به یورو است عوض نمی‌شود.": "Recalcule la valeur en euros de toutes les lignes avec les derniers taux enregistrés. Les lignes dont le montant est en euros ne changent pas.",
+  "نشسته در «{account}» (به {code})": "Reçu sur « {account} » (en {code})",
+  "پرداخت‌شده از «{account}» (به {code})": "Payé depuis « {account} » (en {code})",
+  "کاربرانِ دیگر": "Autres utilisateurs"
 }

@@ -2,6 +2,22 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.24.0]
+
+### Changed
+
+- The ledger entry form is easier to follow:
+  - Fields are ordered date · direction · categories, then project · counterparty, then amounts.
+  - The "actual amount" field now says what it is and in which currency: "Paid from «account» (in IRT)" for withdrawals, "Received in «account»" for deposits. It only shows when the amount's currency differs from the account's, and the effective rate (fees included) appears under it.
+  - The amount's currency defaults to the member's contract currency (or the project's). The "Equivalent for project/member" block only shows when the amount is in a different currency, with a note on how reports count it; otherwise a plain line says what is counted for whom (for example "Counted for «Ali»: 100 EUR").
+  - With a project picked, the receiver list shows that project's members first; other users and vendors appear when you type. A typed name that matches a user picks that user.
+  - "Billable to the client" is now off by default. A ledger category can be marked "billable by default" in Settings → Tags; picking it turns the box on.
+- The "Recalculate euro equivalents" note in Reports now says what the button really does: it recalculates every row with the latest saved rates (rows entered in euros do not change).
+
+### Added
+
+- Unit-based projects show a hint when unpaid rows have a zero amount because the member's unit rate is zero, explaining how to fix it.
+
 ## [2.23.0]
 
 ### Changed

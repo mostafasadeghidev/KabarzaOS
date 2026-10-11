@@ -113,7 +113,7 @@ export interface FormOptions {
   accounts: AccountOption[];
   currencies: Array<{ id: number; code: string; isDefault: boolean }>;
   /** `dir` = both | in | out — تگ با جهت فیلتر می‌شود (R-FORM-04). */
-  categories: Array<{ id: number; name: string; dir?: string }>;
+  categories: Array<{ id: number; name: string; dir?: string; billable?: boolean }>;
   projects: Array<{ id: number; title: string; currencyId?: number | null }>;
   people: Array<{ id: number; name: string; email?: string }>;
   /** پروژه ← شناسهٔ اعضایش (R-FORM-02). */

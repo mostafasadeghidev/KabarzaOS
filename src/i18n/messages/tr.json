@@ -3980,5 +3980,18 @@
   "وضعیتِ کار": "İş durumu",
   "برای دیدنِ کارتِ هر تسک، شماره‌اش را بفرستید.": "Kartını görmek için bir görev numarası gönderin.",
   "شمارهٔ تسک (مثلاً ALZ-325) را بفرستید تا کارتش باز شود.": "Kartını açmak için bir görev numarası gönderin (ör. ALZ-325).",
-  "فردا": "Yarın"
+  "فردا": "Yarın",
+  "(نرخِ مؤثر، با کارمزد)": "(efektif kur, ücret dahil)",
+  "اختیاری — با کارمزد": "İsteğe bağlı — ücretler sonrası",
+  "ارزِ مبلغ با ارزِ قرارداد فرق دارد: همین عدد از قرارداد کم می‌شود. یوروی گزارش‌ها اما از «مبلغ» و نرخِ روز حساب می‌شود؛ ساده‌تر است مبلغ را به ارزِ قرارداد بنویسید.": "Tutarın para birimi sözleşme para biriminden farklı: bu rakam sözleşmeden düşülür. Raporlardaki euro ise «Tutar» ve günün kurundan hesaplanır; tutarı sözleşme para biriminde girmek daha basittir.",
+  "اعضای این پروژه": "Bu projenin üyeleri",
+  "برای «{who}» حساب می‌شود: {amount}": "«{who}» için sayılır: {amount}",
+  "برای دیگران نام را تایپ کنید.": "Diğerlerini bulmak için bir ad yazın.",
+  "برداشتِ پروژه با این دسته، پیش‌فرض «قابل بازپرداخت از کارفرما» باشد": "Bu kategoriyle yapılan proje çıkışları varsayılan olarak müşteriye yansıtılır",
+  "مبلغِ بعضی ردیف‌ها صفر است، چون نرخِ هر واحدِ عضو صفر است. نرخ را در «مدیریتِ اعضا» بگذارید، یا در ویرایشِ پروژه «مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند» را روشن کنید.": "Üyenin birim fiyatı sıfır olduğu için bazı satırların tutarı sıfır. Fiyatı «Üyeleri yönet» bölümünde girin veya proje formunda «Proje sorumlusu her satırın tutarını kendisi belirleyebilir» seçeneğini açın.",
+  "مثلاً هزینه‌ای که برای کارفرما خریده می‌شود. در فرمِ دفتر قابلِ تغییر است.": "Örneğin müşteri için alınan bir gider. Defter formunda değiştirilebilir.",
+  "معادلِ یوروی همهٔ ردیف‌ها را با آخرین نرخ‌های ثبت‌شده دوباره حساب می‌کند. ردیفی که مبلغش به یورو است عوض نمی‌شود.": "Tüm satırların euro değerini kaydedilen son kurlarla yeniden hesaplar. Tutarı euro olan satırlar değişmez.",
+  "نشسته در «{account}» (به {code})": "«{account}» hesabına geçen ({code})",
+  "پرداخت‌شده از «{account}» (به {code})": "«{account}» hesabından ödenen ({code})",
+  "کاربرانِ دیگر": "Diğer kullanıcılar"
 }

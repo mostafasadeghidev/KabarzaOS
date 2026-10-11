@@ -960,7 +960,7 @@ function RecomputeEurButton() {
       </Button>
       <span className="text-xs text-muted-foreground">
         {state.error ?? state.message
-          ?? tr('برای ردیف‌هایی که پیش از ثبتِ نرخِ ارزشان وارد شده‌اند.')}
+          ?? tr('معادلِ یوروی همهٔ ردیف‌ها را با آخرین نرخ‌های ثبت‌شده دوباره حساب می‌کند. ردیفی که مبلغش به یورو است عوض نمی‌شود.')}
       </span>
     </Card>
   );

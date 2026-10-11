@@ -903,7 +903,7 @@ export async function getEntryFormOptions(actor: Actor) {
         .from(currencies).where(eq(currencies.isActive, true)).orderBy(currencies.id),
       // ⚠️ جهتِ تگ روی `status_group` می‌نشیند (همان جای نسخهٔ قبلی)؛ مقدارِ
       // نامعتبر یا خالی یعنی «هردو»، تا تگی بی‌صدا ناپدید نشود.
-      db.select({ id: tags.id, name: tagName(await currentLocale()), dir: tags.statusGroup })
+      db.select({ id: tags.id, name: tagName(await currentLocale()), dir: tags.statusGroup, billable: tags.billableDefault })
         .from(tags).where(eq(tags.type, 'ledger_category')).orderBy(tags.sortOrder, tags.id),
       db.select({ id: projects.id, title: projects.title, currencyId: projects.currencyId })
         .from(projects)
