@@ -4003,5 +4003,7 @@
   "عددِ دیگری کم شود": "Anderen Betrag abziehen",
   "نرخِ ثبت‌شده برای همین تاریخ ({date}).": "Gespeicherter Kurs für dieses Datum ({date}).",
   "نزدیک‌ترین نرخِ ثبت‌شده: {date} — {days} روز پیش از تاریخِ پرداخت.": "Nächster gespeicherter Kurs: {date} — {days} Tage vor dem Zahlungsdatum.",
-  "همین عدد ذخیره می‌شود و با تغییرِ نرخ‌ها عوض نمی‌شود.": "Diese Zahl wird gespeichert und ändert sich nicht mit den Kursen."
+  "همین عدد ذخیره می‌شود و با تغییرِ نرخ‌ها عوض نمی‌شود.": "Diese Zahl wird gespeichert und ändert sich nicht mit den Kursen.",
+  "نشسته در حساب ({code})": "Auf dem Konto eingegangen ({code})",
+  "پرداخت‌شده از حساب ({code})": "Vom Konto bezahlt ({code})"
 }

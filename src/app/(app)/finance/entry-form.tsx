@@ -232,7 +232,6 @@ export function EntryForm({
   const entryCode = codeOf(currencyId);
   /** حسابِ همین فرم — ارزش برچسبِ «پرداخت‌شده از حساب» را می‌سازد (۲.۲۴.۰). */
   const account = options.accounts.find((a) => a.id === accountId);
-  const accountName = account?.name ?? '';
   const accountCode = account?.currencyCode ?? '';
   const actualVisible = Boolean(account) && String(account!.currencyId) !== String(currencyId);
   const effectiveRate = effectiveRateOf(Number(amount), Number(actual));
@@ -278,7 +277,7 @@ export function EntryForm({
       <input type="hidden" name="direction" value={direction} />
 
       {/* ردیفِ ۱ (۲.۲۴.۰): تاریخ · جهت · دسته — دسته بالا، چون پیش‌فرضِ «قابل بازپرداخت» را تعیین می‌کند. */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid items-start gap-3 sm:grid-cols-3">
         <Field>
           <FieldLabel htmlFor="l-date">{tr("تاریخ")}</FieldLabel>
           <DatePicker
@@ -325,7 +324,7 @@ export function EntryForm({
       </div>
 
       {/* ردیفِ ۲: بابت · طرفِ حساب */}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid items-start gap-3 sm:grid-cols-2">
         <Field>
           <FieldLabel htmlFor="l-project">{tr("بابت (پروژه)")}</FieldLabel>
           <Combobox
@@ -368,7 +367,7 @@ export function EntryForm({
         )}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid items-start gap-3 sm:grid-cols-3">
         <Field>
           <FieldLabel htmlFor="l-amount">{tr("مبلغ")}</FieldLabel>
           <Input
@@ -400,8 +399,8 @@ export function EntryForm({
           <Field>
             <FieldLabel htmlFor="l-real">
               {direction === 'out'
-                ? tr('پرداخت‌شده از «{account}» (به {code})', { account: accountName, code: accountCode })
-                : tr('نشسته در «{account}» (به {code})', { account: accountName, code: accountCode })}
+                ? tr('پرداخت‌شده از حساب ({code})', { code: accountCode })
+                : tr('نشسته در حساب ({code})', { code: accountCode })}
             </FieldLabel>
             <Input
               id="l-real" name="amountAccountOverride" inputMode="decimal" className="num" dir="ltr"

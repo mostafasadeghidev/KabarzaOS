@@ -10,6 +10,7 @@ Versioning follows [SemVer](https://semver.org/).
   - Same currency as the amount: a green line shows the same amount; "Deduct a different amount" opens a field for the rare case where it differs.
   - Different currency (for example "transfer 2,000,000" to a member paid in euros): the euro figure fills in from the **rate of the payment date**, not today's rate, so a payment entered three days late still uses the rate of the transfer day. The form shows which saved rate it used and how many days before the payment it is, or asks for a rate when none exists. You can change the rate or the figure; "Back to the payment-day rate" undoes it.
   - Your own figure or rate is saved on the row and never changes when rates change later.
+- Ledger form fields in the same row line up again: a hint under "Categories" no longer pushes the "Date" and "Direction" labels down, and the actual-amount label is shortened to "Paid from account (USD)" so it fits on one line (the account is already named in the dialog header).
 - The euro value of a ledger row now follows the figure deducted from the member or project when one is entered, so reports and the member's balance agree (before, reports converted the nominal amount with the latest rate). "Recalculate euro equivalents" keeps the same rule. A missing rate from the amount's currency to euros no longer blocks saving such a row.
 
 ## [2.24.0]
