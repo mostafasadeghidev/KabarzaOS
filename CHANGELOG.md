@@ -10,6 +10,13 @@ Versioning follows [SemVer](https://semver.org/).
   - Same currency as the amount: a green line shows the same amount; "Deduct a different amount" opens a field for the rare case where it differs.
   - Different currency (for example "transfer 2,000,000" to a member paid in euros): the euro figure fills in from the **rate of the payment date**, not today's rate, so a payment entered three days late still uses the rate of the transfer day. The form shows which saved rate it used and how many days before the payment it is, or asks for a rate when none exists. You can change the rate or the figure; "Back to the payment-day rate" undoes it.
   - Your own figure or rate is saved on the row and never changes when rates change later.
+- The project edit dialog has two buttons: "Apply" saves and keeps the dialog open, "Save and close" saves and closes it. Before, the only save button left the dialog open, so it was unclear whether the work was done.
+- While a task is being edited, the task conversation is hidden so the edit form's "Save changes" is not confused with the conversation's "Send"; the edit form also gets a "Cancel" button.
+- On a unit-based project, a member's row with no amount yet shows "Amount not set yet — waiting for the project manager" instead of a "Request payment" button that could only fail.
+
+### Fixed
+
+- Setting a member's or client's sign-in password now shows a confirmation toast; it used to close silently.
 - Ledger form fields in the same row line up again: a hint under "Categories" no longer pushes the "Date" and "Direction" labels down, and the actual-amount label is shortened to "Paid from account (USD)" so it fits on one line (the account is already named in the dialog header).
 - The euro value of a ledger row now follows the figure deducted from the member or project when one is entered, so reports and the member's balance agree (before, reports converted the nominal amount with the latest rate). "Recalculate euro equivalents" keeps the same rule. A missing rate from the amount's currency to euros no longer blocks saving such a row.
 

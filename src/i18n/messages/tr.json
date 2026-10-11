@@ -4005,5 +4005,7 @@
   "نزدیک‌ترین نرخِ ثبت‌شده: {date} — {days} روز پیش از تاریخِ پرداخت.": "En yakın kayıtlı kur: {date} — ödeme tarihinden {days} gün önce.",
   "همین عدد ذخیره می‌شود و با تغییرِ نرخ‌ها عوض نمی‌شود.": "Bu rakam kaydedilir ve kurlar değişince değişmez.",
   "نشسته در حساب ({code})": "Hesaba geçen ({code})",
-  "پرداخت‌شده از حساب ({code})": "Hesaptan ödenen ({code})"
+  "پرداخت‌شده از حساب ({code})": "Hesaptan ödenen ({code})",
+  "ذخیره و بستن": "Kaydet ve kapat",
+  "مبلغ هنوز تعیین نشده — منتظرِ مدیرِ پروژه": "Tutar henüz belirlenmedi — proje yöneticisi bekleniyor"
 }

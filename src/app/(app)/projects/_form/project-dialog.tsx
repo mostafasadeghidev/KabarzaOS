@@ -109,14 +109,25 @@ function LabeledField({
 }
 
 
-function SubmitButton({ isEdit }: { isEdit: boolean }) {
+function SubmitButton({ isEdit, idleLabel, active = true, variant, onPress }: {
+  isEdit: boolean;
+  idleLabel?: string;
+  /** فقط دکمه‌ای که زده شده چرخنده نشان می‌دهد (ویرایش دو دکمه دارد). */
+  active?: boolean;
+  variant?: 'outline';
+  onPress?: () => void;
+}) {
   const { pending } = useFormStatus();
   // ⚠️ مترجم اینجا هم لازم است: این جزء بیرونِ کامپوننتِ اصلی است و
   // پراپِ ترجمه‌شده نمی‌گیرد، پس بدونِ آن دکمه در هر زبانی فارسی می‌ماند.
   const tr = useT();
   const busy = isEdit ? tr('در حالِ ذخیره…') : tr('در حالِ ساخت…');
-  const idle = isEdit ? tr('ذخیرهٔ تغییرات') : tr('ساخت پروژه');
-  return <Button type="submit" disabled={pending}>{pending ? <><Spinner />{busy}</> : idle}</Button>;
+  const idle = idleLabel ?? (isEdit ? tr('ذخیرهٔ تغییرات') : tr('ساخت پروژه'));
+  return (
+    <Button type="submit" variant={variant} disabled={pending} onClick={onPress}>
+      {pending && active ? <><Spinner />{busy}</> : idle}
+    </Button>
+  );
 }
 
 /**
@@ -146,6 +157,17 @@ function ProjectDialogBody({
     {},
   );
   useActionToast(state, { success: 'تغییرات ذخیره شد.' });
+  /**
+   * ویرایش دو دکمه دارد (۲.۲۵.۰): «اعمال» ذخیره می‌کند و مودال را باز نگه می‌دارد،
+   * «ذخیره و بستن» پس از ذخیرهٔ موفق می‌بندد. پیش از این فقط یک «ذخیره» بود که
+   * مودال را باز می‌گذاشت و معلوم نبود کار تمام شده یا نه.
+   */
+  const [closeAfterSave, setCloseAfterSave] = useState(true);
+  useEffect(() => {
+    if (isEdit && state.savedId && closeAfterSave) setOpen(false);
+    // فقط با نتیجهٔ تازهٔ action — نه با عوض شدنِ دکمهٔ انتخاب‌شده.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
   const [isTender, setIsTender] = useState(false);
   const [tenderRows, setTenderRows] = useState<Array<{ roleTagId: string; cap: string }>>([]);
   const [isUnitBased, setIsUnitBased] = useState(false);
@@ -580,7 +602,20 @@ function ProjectDialogBody({
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               {isEdit ? tr('بستن') : tr('انصراف')}
             </Button>
-            <SubmitButton isEdit={isEdit} />
+            {isEdit ? (
+              <>
+                <SubmitButton
+                  isEdit variant="outline" idleLabel={tr('اعمال')}
+                  active={!closeAfterSave} onPress={() => setCloseAfterSave(false)}
+                />
+                <SubmitButton
+                  isEdit idleLabel={tr('ذخیره و بستن')}
+                  active={closeAfterSave} onPress={() => setCloseAfterSave(true)}
+                />
+              </>
+            ) : (
+              <SubmitButton isEdit={false} />
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

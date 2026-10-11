@@ -4005,5 +4005,7 @@
   "نزدیک‌ترین نرخِ ثبت‌شده: {date} — {days} روز پیش از تاریخِ پرداخت.": "Tipo guardado más cercano: {date}, {days} días antes de la fecha del pago.",
   "همین عدد ذخیره می‌شود و با تغییرِ نرخ‌ها عوض نمی‌شود.": "Esta cifra se guarda y no cambia aunque cambien los tipos.",
   "نشسته در حساب ({code})": "Recibido en la cuenta ({code})",
-  "پرداخت‌شده از حساب ({code})": "Pagado desde la cuenta ({code})"
+  "پرداخت‌شده از حساب ({code})": "Pagado desde la cuenta ({code})",
+  "ذخیره و بستن": "Guardar y cerrar",
+  "مبلغ هنوز تعیین نشده — منتظرِ مدیرِ پروژه": "Importe aún sin fijar: a la espera del responsable del proyecto"
 }

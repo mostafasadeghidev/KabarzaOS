@@ -315,6 +315,14 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                             ) : (
                               <Badge variant="secondary">{t("در انتظار پرداخت")}</Badge>
                             )
+                          ) : !(Number(u.amount) > 0) ? (
+                            /*
+                              ⚠️ ردیفِ بی‌مبلغ (۲.۲۵.۰): سرور درخواستِ صفر را رد می‌کند؛ به‌جای
+                              دکمه‌ای که فقط خطا می‌داد، عضو می‌بیند منتظرِ چه کسی است.
+                            */
+                            <span className="text-xs text-muted-foreground">
+                              {t("مبلغ هنوز تعیین نشده — منتظرِ مدیرِ پروژه")}
+                            </span>
                           ) : (
                             <Button
                               size="sm" variant="outline" disabled={pending}

@@ -514,12 +514,21 @@ function TaskDialogBody({
                 )}
 
                 {saveState.error && <p className="text-xs text-destructive">{tr(saveState.error)}</p>}
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                  {/* راهِ برگشت به گفتگو بدونِ ذخیره — گفتگو هنگامِ ویرایش پنهان است. */}
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>
+                    {t("انصراف")}
+                  </Button>
                   <SubmitButton label={t("ذخیرهٔ تغییرات")} busy={t('در حالِ ذخیره…')} />
                 </div>
               </form>
             )}
 
+            {/*
+              ⚠️ هنگامِ ویرایش، گفتگو پنهان است (۲.۲۵.۰): دو فرم با دو دکمهٔ جدا
+              («ذخیرهٔ تغییرات» و «ارسال») زیرِ هم گیج می‌کرد که کدام چه را ذخیره می‌کند.
+            */}
+            {!editing && (
             <section className="grid gap-2">
               <h4 className="text-sm font-semibold">{t("گفتگوی تسک")}</h4>
               {data.detail.notes.length === 0 ? (
@@ -560,6 +569,7 @@ function TaskDialogBody({
               </form>
               )}
             </section>
+            )}
           </div>
         )}
       </DialogContent>
