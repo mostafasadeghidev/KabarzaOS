@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findRate, hasRate, convert, effectiveRate, type RateRow, type RateSource } from './rates';
+import { findRate, hasRate, convert, effectiveRate, displayRate, type RateRow, type RateSource } from './rates';
 
 const EUR = 1, IRT = 2, USD = 3;
 
@@ -90,5 +90,15 @@ describe('R-LEDGER-03 — نرخِ واقعی از مبلغِ رسیده، نه 
 
   it('مبلغِ صفر امن است', () => {
     expect(effectiveRate('0', '0')).toBe('1');
+  });
+});
+
+describe('displayRate — نمایشِ خوانای نرخ (۲.۳۰.۲)', () => {
+  it('نرخِ بزرگ دو رقم با هزارگان، متوسط چهار، کوچک شش؛ بی صفرِ انتهایی', () => {
+    expect(displayRate('40650.40650400')).toBe('40,650.41');
+    expect(displayRate('1.08500000')).toBe('1.085');
+    expect(displayRate('0.90000000')).toBe('0.9');
+    expect(displayRate('0.0000246')).toBe('0.000025');
+    expect(displayRate('42000')).toBe('42,000');
   });
 });

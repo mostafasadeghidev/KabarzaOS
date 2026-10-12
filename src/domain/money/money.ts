@@ -64,6 +64,31 @@ export function format(amount: Money, currency?: Currency): string {
 }
 
 /**
+ * R-MONEY-02 — تعدادِ اعشارِ هر ارز، با کدِ ارز (۲.۳۰.۲).
+ *
+ * بیشترِ صفحه‌ها مبلغ را با `format(x)` و کدِ ارز را جدا کنارش می‌نویسند؛
+ * `format` بی‌ارز همیشه ۲ رقم می‌داد و تنظیمِ «تعداد اعشار» (تومان = ۰) هیچ‌جا
+ * اثر نداشت. فهرست یک بار در قابِ برنامه ثبت می‌شود (سرور و مرورگر) و
+ * `formatIn` از روی کد می‌خواند. ارزِ ناشناخته = ۲ رقم، مثلِ قبل.
+ */
+const DECIMALS_BY_CODE = new Map<string, number>();
+
+export function registerCurrencyDecimals(list: ReadonlyArray<{ code: string; decimals: number }>): void {
+  DECIMALS_BY_CODE.clear();
+  for (const c of list) DECIMALS_BY_CODE.set(c.code.toUpperCase(), c.decimals);
+}
+
+export function decimalsOf(code: string | null | undefined): number {
+  const key = code?.toUpperCase();
+  return key && DECIMALS_BY_CODE.has(key) ? DECIMALS_BY_CODE.get(key)! : 2;
+}
+
+/** مبلغ با اعشارِ ارزِ خودش، بی‌نماد — کد را صفحه کنارش می‌نویسد. */
+export function formatIn(amount: Money, code: string | null | undefined): string {
+  return format(amount, { id: 0, code: code ?? '', symbol: '', decimals: decimalsOf(code) });
+}
+
+/**
  * R-MONEY-04 — مقدارِ ورودیِ فرم صفرهای انتهایی ندارد؛ صفر → رشتهٔ خالی
  * (تا placeholder دیده شود).
  */

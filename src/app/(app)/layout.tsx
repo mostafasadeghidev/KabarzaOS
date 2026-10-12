@@ -28,6 +28,9 @@ import { t } from '@/i18n/server';
 import { canUseTimesheet, timerState } from '@/server/timelogs/service';
 import { TimerBanner } from '@/components/timer-banner';
 import { after } from 'next/server';
+import { currencyDecimalsList } from '@/server/settings/service';
+import { registerCurrencyDecimals } from '@/domain/money/money';
+import { CurrencyDecimals } from '@/components/currency-decimals';
 import { BucketWarning } from '@/components/bucket-warning';
 import { bucketCheck, cachedBucketCheck } from '@/server/files/bucket-probe';
 import { isFresh } from '@/domain/files/probe';
@@ -213,7 +216,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const primaryRole = actor.roles[0];
-  const [bell, system, unreadMessages, showTgNudge, timer, brand, roleTags, avatars] = await Promise.all([
+  const [bell, system, unreadMessages, showTgNudge, timer, brand, roleTags, avatars, decimals] = await Promise.all([
     listNotifications(actor),
     getSystemConfig(),
     unreadMessageCount(actor),
@@ -229,7 +232,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     roleTagsOf(actor.id),
     // تصویرِ پروفایل برای دکمهٔ حساب (پورتِ `get_avatar` ِ منوی حساب).
     avatarsFor([actor.id]),
+    // اعشارِ ارزها — «تعداد اعشار» ِ تنظیمات در نمایشِ مبلغ‌ها (۲.۳۰.۲).
+    currencyDecimalsList(),
   ]);
+  registerCurrencyDecimals(decimals);
 
   return (
     // ⚠️ سقفِ پهنا روی همین پوسته، نه روی هر صفحه: ۱۹۲۰ پیکسل و وسط‌چین
@@ -305,7 +311,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           ⚠️ وقتی حضور خاموش است هیچ درخواستی نمی‌فرستد؛ فقط فرزندان را رندر می‌کند.
         */}
         <PresenceProvider enabled={system.presenceEnabled} ping={system.presencePing}>
-          {children}
+          <CurrencyDecimals list={decimals}>{children}</CurrencyDecimals>
         </PresenceProvider>
         {/* صفحه‌ها همان فهرستِ منو است — یعنی همان فیلترِ مجوزِ سمتِ سرور. */}
         <CommandPalette pages={items.map(({ href, label }) => ({ href, label }))} />

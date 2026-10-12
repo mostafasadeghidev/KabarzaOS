@@ -9,7 +9,7 @@ import {
   applyQaAction, approveBidAction, toggleQaAction, withdrawBidAction, type QaActionState,
 } from '../_form/qa-actions';
 import { deleteQaItemAction } from '../_form/tab-actions';
-import { format } from '@/domain/money/money';
+import { format, formatIn } from '@/domain/money/money';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -129,7 +129,7 @@ export function FinanceTab({
 
   // پورتِ `Payments::summary` (R-TEAM-04): بدهیِ کل = قیمت + هزینه‌های قابلِ صورتحساب؛ مانده کف‌بندی؛ وضعیتِ سه‌حالته.
   const summary = summarizeProject(price, finance.projectExpense, finance.incoming);
-  const withCode = (v: string | number, code: string | null) => `${format(String(v))}${code ? ` ${code}` : ''}`;
+  const withCode = (v: string | number, code: string | null) => `${formatIn(String(v), code)}${code ? ` ${code}` : ''}`;
   const money = (v: string | number) => withCode(v, currencyCode);
   /**
    * ⚠️ قیمتِ صفر یعنی «هنوز ثبت نشده»، نه «پرداخت‌نشده» (۲.۳۰.۰): پیش از این

@@ -112,4 +112,21 @@ export function trimRate(rate: string): string {
   return trimmed === '' || trimmed === '-' ? '0' : trimmed;
 }
 
+/**
+ * نمایشِ نرخ (۲.۳۰.۲) — فقط برای چشم؛ نرخ با دقتِ کامل ذخیره و محاسبه می‌شود.
+ * نرخِ بزرگ (۱۰۰ و بیشتر، مثلِ تومان به یورو) دو رقم اعشار، نرخِ ۱ تا ۱۰۰ چهار
+ * رقم، نرخِ کوچک‌تر از ۱ شش رقم؛ صفرهای انتهایی حذف و هزارگان با «,».
+ * پیش از این «40650.406504» خام و بی‌جداکننده نشان داده می‌شد.
+ */
+export function displayRate(rate: string): string {
+  const n = Number(rate);
+  if (!Number.isFinite(n)) return rate;
+  const abs = Math.abs(n);
+  const digits = abs >= 100 ? 2 : abs >= 1 ? 4 : 6;
+  const fixed = trimRate(n.toFixed(digits));
+  const [int = '0', frac] = fixed.split('.');
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return frac ? `${grouped}.${frac}` : grouped;
+}
+
 export const __internal = { divide, multiply };

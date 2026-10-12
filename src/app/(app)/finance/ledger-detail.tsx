@@ -4,7 +4,7 @@ import { UserName } from '@/components/user-avatar';
 import { useState } from 'react';
 import { FileText, Paperclip } from 'lucide-react';
 import type { EntryRow, ReceiptView } from './ledger-view';
-import { format } from '@/domain/money/money';
+import { format, formatIn } from '@/domain/money/money';
 import { humanSize } from '@/domain/files/upload';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -92,16 +92,16 @@ export function LedgerDetail({
     const tags = entry.tagIds.map((id) => tagName.get(id)).filter((n): n is string => Boolean(n));
     rows.push([t('تاریخ'), entry.entryDate]);
     rows.push([t('جهت'), entry.direction === 'out' ? t('برداشت / هزینه') : t('واریز / درآمد')]);
-    rows.push([t('مبلغ'), `${entry.direction === 'out' ? '−' : '+'}${format(entry.amountAccount)} ${currencyCode ?? ''}`.trim()]);
+    rows.push([t('مبلغ'), `${entry.direction === 'out' ? '−' : '+'}${formatIn(entry.amountAccount, currencyCode)} ${currencyCode ?? ''}`.trim()]);
     if (showEur) rows.push([t('معادل یورو'), entry.eurDisplay === null ? '—' : format(entry.eurDisplay)]);
     if (entry.amountSettled) {
       const code = entry.settledCurrencyId ? currencyCodeOf(entry.settledCurrencyId) : '';
-      rows.push([t('معادلِ تسویه'), `${format(entry.amountSettled)} ${code}`.trim()]);
+      rows.push([t('معادلِ تسویه'), `${formatIn(entry.amountSettled, code)} ${code}`.trim()]);
       // هزینهٔ انتقالِ به عهدهٔ عضو (۲.۲۵.۰): درصد و سهمش از همان عددِ کسرشده.
       const pct = Number(entry.transferFeePct ?? 0);
       if (pct > 0) {
         const feeAmount = (Number(entry.amountSettled) * pct / 100).toFixed(2);
-        rows.push([t('هزینهٔ انتقال (به عهدهٔ عضو)'), `${pct}% · ${format(feeAmount)} ${code}`.trim()]);
+        rows.push([t('هزینهٔ انتقال (به عهدهٔ عضو)'), `${pct}% · ${formatIn(feeAmount, code)} ${code}`.trim()]);
       }
     }
     // عضوِ سامانه با آواتار؛ طرف‌حسابِ بیرونی (برچسبِ آزاد) فقط نام.

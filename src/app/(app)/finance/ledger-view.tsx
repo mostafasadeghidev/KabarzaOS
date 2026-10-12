@@ -14,7 +14,7 @@ import { LedgerDetail, ReceiptThumb } from './ledger-detail';
 import { Lightbox } from '@/components/lightbox';
 import type { LedgerEvent } from '@/domain/ledger/timeline';
 import type { DatedRate } from '@/domain/ledger/form-rules';
-import { format } from '@/domain/money/money';
+import { format, formatIn } from '@/domain/money/money';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -244,10 +244,10 @@ export function LedgerView({
   const cards: Array<{ label: string; value: string; strong?: boolean }> = [
     { label: 'ارز حساب', value: currencyCode ?? '—' },
     // در نمای دوره «مانده اولیه» ماندهٔ منتقل‌شده از دورهٔ بسته است (پورتِ `balance($since)`).
-    { label: totals.carried ? 'مانده از سال قبل' : 'مانده اولیه', value: format(totals.opening) },
-    { label: 'مجموع واریز', value: format(totals.in) },
-    { label: 'مجموع برداشت', value: format(totals.out) },
-    { label: 'مانده', value: format(totals.balance), strong: true },
+    { label: totals.carried ? 'مانده از سال قبل' : 'مانده اولیه', value: formatIn(totals.opening, currencyCode) },
+    { label: 'مجموع واریز', value: formatIn(totals.in, currencyCode) },
+    { label: 'مجموع برداشت', value: formatIn(totals.out, currencyCode) },
+    { label: 'مانده', value: formatIn(totals.balance, currencyCode), strong: true },
   ];
 
   return (
@@ -383,7 +383,7 @@ export function LedgerView({
                     {e.isTransfer && <Badge variant="secondary">{t("انتقال")}</Badge>}
                     {/* یک واریز برای چند پروژه (۲.۲۷.۰) — جایگاه در گروه و مبلغِ کلِ واریز. */}
                     {(e.splitCount ?? 0) > 1 && (
-                      <Hint label={t('بخشی از یک واریزِ {total} برای {n} پروژه', { total: format(e.splitTotal ?? '0'), n: e.splitCount ?? 0 })}>
+                      <Hint label={t('بخشی از یک واریزِ {total} برای {n} پروژه', { total: formatIn(e.splitTotal ?? '0', currencyCode), n: e.splitCount ?? 0 })}>
                         <Badge variant="secondary">{t('{i} از {n}', { i: e.splitIndex ?? 0, n: e.splitCount ?? 0 })}</Badge>
                       </Hint>
                     )}
@@ -395,7 +395,7 @@ export function LedgerView({
                 <TableCell>{e.description || '—'}</TableCell>
                 {/* پورتِ `amount_html`/`amount_color`: علامت و رنگ جهت را می‌گویند. */}
                 <TableNumericCell className={e.direction === 'in' ? 'text-emerald-700 dark:text-emerald-500' : 'text-destructive'}>
-                  {e.direction === 'in' ? '+' : '−'}{format(e.amountAccount)}
+                  {e.direction === 'in' ? '+' : '−'}{formatIn(e.amountAccount, currencyCode)}
                 </TableNumericCell>
                 {/* عضوِ سامانه با آواتار؛ طرف‌حسابِ بیرونی (برچسبِ آزاد) فقط نام. */}
                 <TableCell>{e.payerName ? <UserName userId={e.payerUserId} name={e.payerName} /> : (e.payerLabel || '—')}</TableCell>
@@ -404,7 +404,7 @@ export function LedgerView({
                 <TableCell className="text-muted-foreground">{e.lastActor ?? '—'}</TableCell>
                 {showEur && (
                   <TableNumericCell className="text-muted-foreground">
-                    {e.eurDisplay === null ? '—' : format(e.eurDisplay)}
+                    {e.eurDisplay === null ? '—' : formatIn(e.eurDisplay, baseCode)}
                   </TableNumericCell>
                 )}
                 <TableCell>
