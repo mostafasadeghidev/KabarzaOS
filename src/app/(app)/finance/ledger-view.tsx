@@ -97,6 +97,11 @@ export interface EntryRow {
   lastActor: string | null;
   /** لِگِ انتقال — نشانِ «انتقال» (پورتِ `is_transfer`). */
   isTransfer: boolean;
+  /** «یک واریز برای چند پروژه» (۲.۲۷.۰) — نشانِ «۱ از ۳». */
+  splitGroup?: string | null;
+  splitCount?: number | null;
+  splitIndex?: number | null;
+  splitTotal?: string | null;
   /** خانهٔ «معادل یورو» به قاعدهٔ `eur_cell()`؛ null یعنی «—». */
   eurDisplay: string | null;
   /** تاریخچهٔ که/کِی — پورتِ `edit_log`؛ در مودالِ جزئیات نشان داده می‌شود. */
@@ -376,6 +381,12 @@ export function LedgerView({
                 <TableCell>
                   <span className="flex flex-wrap gap-1">
                     {e.isTransfer && <Badge variant="secondary">{t("انتقال")}</Badge>}
+                    {/* یک واریز برای چند پروژه (۲.۲۷.۰) — جایگاه در گروه و مبلغِ کلِ واریز. */}
+                    {(e.splitCount ?? 0) > 1 && (
+                      <Hint label={t('بخشی از یک واریزِ {total} برای {n} پروژه', { total: format(e.splitTotal ?? '0'), n: e.splitCount ?? 0 })}>
+                        <Badge variant="secondary">{t('{i} از {n}', { i: e.splitIndex ?? 0, n: e.splitCount ?? 0 })}</Badge>
+                      </Hint>
+                    )}
                     {e.tagIds.map((id) => tagName.get(id)).filter((n): n is string => Boolean(n)).map((name) => (
                       <Badge key={name} variant="outline">{name}</Badge>
                     ))}
@@ -429,9 +440,22 @@ export function LedgerView({
                         label={t("حذفِ ردیف")}
                         disabled={pending}
                         onClick={async () => {
-                          if (!(await confirm({ title: t('این ردیفِ دفتر حذف شود؟') }))) return;
+                          /**
+                           * ردیفِ «یک واریز برای چند پروژه» (۲.۲۷.۰): اول کلِ گروه پیشنهاد
+                           * می‌شود (واریزِ واقعی یکی بود)؛ «نه» یعنی فقط همین سهم.
+                           */
+                          let wholeSplit = false;
+                          if ((e.splitCount ?? 0) > 1) {
+                            wholeSplit = await confirm({
+                              title: t('کلِ این واریزِ گروهی حذف شود؟'),
+                              description: t('این ردیف یکی از {n} ردیفِ یک واریز است. «حذفِ کلِ گروه» همه را برمی‌دارد؛ برای حذفِ فقط همین سهم «انصراف» را بزنید.', { n: e.splitCount ?? 0 }),
+                              confirmLabel: t('حذفِ کلِ گروه'),
+                              destructive: true,
+                            });
+                            if (!wholeSplit && !(await confirm({ title: t('فقط همین سهم حذف شود؟') }))) return;
+                          } else if (!(await confirm({ title: t('این ردیفِ دفتر حذف شود؟') }))) return;
                           startTransition(async () => {
-                            const result = await deleteEntryAction(e.id);
+                            const result = await deleteEntryAction(e.id, wholeSplit);
                             if (result.error) show(tr(result.error), 'error');
                             else show(tr('حذف شد.'), 'success');
                           });

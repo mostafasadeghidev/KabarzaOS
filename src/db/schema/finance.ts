@@ -92,6 +92,11 @@ export const ledger = pgTable('ledger', {
   vendorId: fk('vendor_id').references(() => vendors.id),
   /** R-LEDGER-04 — دو لِگِ یک انتقال با این گروه به هم وصل می‌شوند. */
   transferGroup: text('transfer_group'),
+  /**
+   * یک واریز برای چند پروژه (۲.۲۷.۰) — هر پروژه ردیفِ خودش را دارد و این گروه
+   * آن‌ها را به هم وصل می‌کند (نشانِ «۱ از ۳»، رسیدِ مشترک، حذفِ گروهی).
+   */
+  splitGroup: text('split_group'),
   /** آرایهٔ واقعی (در نسخهٔ قبلی CSV بود). */
   receiptIds: bigint('receipt_ids', { mode: 'number' }).array(),
 
@@ -120,6 +125,7 @@ export const ledger = pgTable('ledger', {
   index('ledger_account_date_ix').on(t.accountId, t.entryDate),
   index('ledger_project_ix').on(t.projectId),
   index('ledger_transfer_group_ix').on(t.transferGroup),
+  index('ledger_split_group_ix').on(t.splitGroup),
   index('ledger_status_ix').on(t.status),
   index('ledger_scope_ix').on(t.scope),
   index('ledger_source_hash_ix').on(t.sourceHash),

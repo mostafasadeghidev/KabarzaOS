@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.27.0]
+
+### Added
+
+- **One transfer for several projects.** In a new ledger withdrawal, "Split across several projects" replaces the project field with a list: pick each project and its share of the total (or "Split equally"). Each share follows the same rules as a single row: the contract currency of that project, the payment-day rate (or one rate typed for this transfer) and a shared member-paid transfer fee, with "received / deducted" shown per project. Saving is blocked until the shares add up to the total.
+  - Saving creates one ledger row per project with the same date, description and receipts, tied together by a group (migration `0058_ledger_split_group`). An "actual amount from the account" is spread over the rows in proportion and still adds up exactly.
+  - In the ledger the rows show "1 of 3", with the transfer's total on hover. Deleting one asks whether to delete the whole group or only that share.
+
 ## [2.26.0]
 
 ### Added
