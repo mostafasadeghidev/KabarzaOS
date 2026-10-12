@@ -4073,5 +4073,8 @@
   "کلِ این واریزِ گروهی حذف شود؟": "Bu gruplu havalenin tamamı silinsin mi?",
   "یک پروژه": "Tek proje",
   "این ردیف یکی از {n} ردیفِ یک واریز است. «حذفِ کلِ گروه» همه را برمی‌دارد؛ برای حذفِ فقط همین سهم «انصراف» را بزنید.": "Bu satır tek bir havalenin {n} satırından biri. «Tüm grubu sil» hepsini kaldırır; yalnızca bu payı silmek için «İptal»e basın.",
-  "حذفِ کلِ گروه": "Tüm grubu sil"
+  "حذفِ کلِ گروه": "Tüm grubu sil",
+  "مبلغ (آنچه از حساب رفت)": "Tutar (hesaptan çıkan)",
+  "مبلغ (آنچه به حساب آمد)": "Tutar (hesaba giren)",
+  "نرخِ این پرداخت (بدونِ کارمزد): {rate}": "Bu ödemenin kuru (ücretsiz): {rate}"
 }

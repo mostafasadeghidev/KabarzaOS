@@ -1,7 +1,7 @@
 'use client';
 
 import { UserAvatar } from '@/components/user-avatar';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { EntryRow, FormOptions } from './ledger-view';
 import { ReceiptPicker } from './receipt-picker';
@@ -114,11 +114,16 @@ export function EntryForm({
   /** تاریخِ ردیف — نرخِ پیشنهادی از **همین روز** خوانده می‌شود، نه امروز. */
   const [entryDate, setEntryDate] = useState(keep('entryDate', editing?.entryDate ?? today));
   const [amount, setAmount] = useState(keep('amount', editing?.amount ?? ''));
+  /**
+   * ⚠️ ارزِ مبلغ = ارزِ **حساب** (۲.۲۸.۰)، نه ارزِ قرارداد: مبلغ همان عددِ رسیدِ
+   * بانکی است (۴ میلیون تومان از Blue). پیش از این (۲.۲۴.۰) خودکار یورو می‌شد و
+   * تومان به خانهٔ «اختیاری» می‌رفت — کاربر نمی‌دانست کدام را کجا بنویسد.
+   * یورویی که از طلبِ عضو کم می‌شود جدا در «از طلبِ … کم شود» است.
+   */
+  const accountCurrencyId = options.accounts.find((a) => a.id === accountId)?.currencyId;
   const [currencyId, setCurrencyId] = useState(
-    keep('currencyId', String(editing?.currencyId ?? options.defaultCurrencyId ?? '')),
+    keep('currencyId', String(editing?.currencyId ?? accountCurrencyId ?? options.defaultCurrencyId ?? '')),
   );
-  /** ارز را کاربر خودش عوض کرده؟ — تا پیشنهادِ ارزِ قرارداد رویش ننشیند (۲.۲۴.۰). */
-  const [currencyTouched, setCurrencyTouched] = useState(Boolean(editing));
   /** مبلغِ واقعیِ حساب — کنترل‌شده تا نرخِ مؤثر زیرش نشان داده شود. */
   const [actual, setActual] = useState(keep('amountAccountOverride', editing?.amountAccountOverride ?? ''));
   /** «قابل بازپرداخت از کارفرما» — پیش‌فرض خاموش؛ دستهٔ علامت‌خورده روشنش می‌کند (۲.۲۴.۰). */
@@ -236,11 +241,6 @@ export function EntryForm({
     projectCurrency: new Map(options.projects.map((p) => [p.id, p.currencyId ?? 0])),
     defaultCurrencyId: options.defaultCurrencyId,
   }), [direction, projectId, receiverUserId, options]);
-  // ارزِ مبلغ = ارزِ قرارداد/پروژه، تا کاربر خودش ارز را عوض نکرده (۲.۲۴.۰) — «معادل» لازم نشود.
-  useEffect(() => {
-    if (currencyTouched || !settledCurrency) return;
-    setCurrencyId(String(settledCurrency));
-  }, [settledCurrency, currencyTouched]);
 
   const codeOf = (id: number | string | null) =>
     options.currencies.find((c) => String(c.id) === String(id ?? ''))?.code ?? '';
@@ -266,24 +266,30 @@ export function EntryForm({
   const suggested = differs
     ? rateOnDate(options.rates ?? [], contractCurrency, Number(currencyId) || null, entryDate)
     : null;
-  const usedRate = deductMode === 'rate' ? (Number(rate) > 0 ? Number(rate) : null)
-    : deductMode === 'settled' ? rateFromAmounts(Number(amount), Number(settled))
-    : suggested?.rate ?? null;
   const receiverIsMember = direction === 'out' && Boolean(receiverUserId) && membersHere.has(receiverUserId!);
   /**
-   * هزینهٔ انتقالِ به عهدهٔ عضو (۲.۲۵.۰) — آنچه به دستش رسید «خالص» است و از
-   * طلبش «خالص ÷ (۱ − درصد)» کم می‌شود: ۹۸٫۴ با ۱۸٪ ← ۱۲۰. نرخِ روز دست نمی‌خورد،
-   * پس نرخِ بازار (نه نرخِ آلوده به کارمزد) در جدولِ نرخ‌ها می‌نشیند.
+   * هزینهٔ انتقالِ به عهدهٔ عضو (۲.۲۸.۰) — درصد **از عددِ کسرشده** است، همان منطقِ
+   * جدول‌های قدیمیِ پرداخت: ۱۲۰ یورو طلب − ۱۸٪ = ۹۸٫۴ یورو که به دستش رسید. پس:
+   * · عددِ کسر را خودت نوشتی (۱۲۰) ← رسیده = ۱۲۰ × (۱ − ۱۸٪) و نرخ = مبلغ ÷ رسیده
+   * · ننوشتی ← رسیده = مبلغ ÷ نرخِ روز و عددِ کسر = رسیده ÷ (۱ − ۱۸٪)
+   * نرخی که ذخیره می‌شود نرخِ بازار است (۴۰٬۶۵۰)، نه نرخِ آلوده به کارمزد (۳۳٬۳۳۳).
    */
   const feeVisible = settledVisible && receiverIsMember;
-  const feeNum = feeVisible && deductMode !== 'settled' && Number(fee) > 0 && Number(fee) < 100 ? Number(fee) : 0;
-  const net = deductMode === 'settled' ? null
-    : differs ? deductionFromRate(Number(amount), usedRate ?? 0)
+  const feeNum = feeVisible && Number(fee) > 0 && Number(fee) < 100 ? Number(fee) : 0;
+  const keepRatio = 1 - feeNum / 100;
+  const typedRate = deductMode === 'rate' ? (Number(rate) > 0 ? Number(rate) : null) : null;
+  const net = deductMode === 'settled'
+    ? (Number(settled) > 0 ? Math.round(Number(settled) * keepRatio * 100) / 100 : null)
+    : differs ? deductionFromRate(Number(amount), typedRate ?? suggested?.rate ?? 0)
     : (Number(amount) > 0 ? Number(amount) : null);
   const deduction = deductMode === 'settled' ? settled
     : feeNum > 0 ? String(grossFromNet(net ?? 0, feeNum) ?? '')
     : differs ? String(net ?? '')
     : amount;
+  /** نرخِ بازار: «مبلغ ÷ آنچه رسید» وقتی عدد دستی است؛ وگرنه نرخِ نوشته‌شده یا نرخِ روز. */
+  const usedRate = deductMode === 'settled'
+    ? (differs && net !== null ? rateFromAmounts(Number(amount), net) : null)
+    : typedRate ?? suggested?.rate ?? null;
   const deductWho = (shown === 'payer' ? party.payer.label : party.receiver.label) || projectLabel;
   const deductLabel = receiverIsMember
     ? tr('از طلبِ «{who}» کم شود', { who: deductWho })
@@ -423,7 +429,10 @@ export function EntryForm({
 
       <div className="grid items-start gap-3 sm:grid-cols-3">
         <Field>
-          <FieldLabel htmlFor="l-amount">{tr("مبلغ")}</FieldLabel>
+          {/* «مبلغ» همان عددِ رسیدِ بانکی است (۲.۲۸.۰) — برچسب این را صریح می‌گوید. */}
+          <FieldLabel htmlFor="l-amount">
+            {direction === 'out' ? tr('مبلغ (آنچه از حساب رفت)') : tr('مبلغ (آنچه به حساب آمد)')}
+          </FieldLabel>
           <Input
             id="l-amount" name="amount" inputMode="decimal" className="num"
             value={amount}
@@ -438,7 +447,7 @@ export function EntryForm({
           <NativeSelect
             id="l-cur" name="currencyId" containerClassName="w-full"
             value={currencyId}
-            onChange={(e) => { setCurrencyId(e.target.value); setCurrencyTouched(true); }}
+            onChange={(e) => setCurrencyId(e.target.value)}
           >
             {options.currencies.map((c) => <NativeSelectOption key={c.id} value={c.id}>{c.code}</NativeSelectOption>)}
           </NativeSelect>
@@ -513,7 +522,7 @@ export function EntryForm({
       */}
       <input
         type="hidden" name="fxRate"
-        value={sendSettled && differs && (deductMode === 'rate' || feeNum > 0) && usedRate !== null ? String(usedRate) : ''}
+        value={sendSettled && differs && (deductMode === 'rate' || feeNum > 0) && usedRate !== null && usedRate > 0 ? String(usedRate) : ''}
       />
       {/* در حالتِ چندپروژه‌ای درصد را `SplitRows` می‌فرستد — دو ورودیِ هم‌نام نباید باشد. */}
       {!splitOn && <input type="hidden" name="transferFeePct" value={feeNum > 0 ? String(feeNum) : ''} />}
@@ -572,7 +581,12 @@ export function EntryForm({
             )}
 
             {/* هزینهٔ انتقالِ به عهدهٔ عضو (۲.۲۵.۰) — فقط پرداخت به عضوِ پروژه. */}
-            {feeOpen && deductMode !== 'settled' && (
+            {feeVisible && !feeOpen && (
+              <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setShowFee(true)}>
+                {tr('هزینهٔ انتقال دارد')}
+              </Button>
+            )}
+            {feeOpen && (
               <InputGroup className="w-56">
                 <InputGroupAddon>
                   <InputGroupText>{tr('هزینهٔ انتقال')}</InputGroupText>
@@ -595,6 +609,14 @@ export function EntryForm({
                 net: `${groupDigits(String(net))} ${settledCode}`,
                 fee: `${groupDigits((Number(deduction) - net).toFixed(2))} ${settledCode}`,
                 gross: `${groupDigits(deduction)} ${settledCode}`,
+              })}
+            </FieldDescription>
+          )}
+          {/* نرخِ بازارِ همین پرداخت، بی‌کارمزد — همان که ذخیره می‌شود (۲.۲۸.۰). */}
+          {differs && feeNum > 0 && usedRate !== null && usedRate > 0 && (
+            <FieldDescription>
+              {tr('نرخِ این پرداخت (بدونِ کارمزد): {rate}', {
+                rate: `1 ${settledCode} = ${groupDigits(String(Math.round(usedRate * 100) / 100))} ${entryCode}`,
               })}
             </FieldDescription>
           )}

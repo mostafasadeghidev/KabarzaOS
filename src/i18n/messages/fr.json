@@ -4073,5 +4073,8 @@
   "کلِ این واریزِ گروهی حذف شود؟": "Supprimer tout ce virement groupé ?",
   "یک پروژه": "Un projet",
   "این ردیف یکی از {n} ردیفِ یک واریز است. «حذفِ کلِ گروه» همه را برمی‌دارد؛ برای حذفِ فقط همین سهم «انصراف» را بزنید.": "Cette ligne est l'une des {n} lignes d'un même virement. « Supprimer tout le groupe » les retire toutes ; pour ne supprimer que cette part, appuyez sur « Annuler ».",
-  "حذفِ کلِ گروه": "Supprimer tout le groupe"
+  "حذفِ کلِ گروه": "Supprimer tout le groupe",
+  "مبلغ (آنچه از حساب رفت)": "Montant (ce qui est sorti du compte)",
+  "مبلغ (آنچه به حساب آمد)": "Montant (ce qui est arrivé sur le compte)",
+  "نرخِ این پرداخت (بدونِ کارمزد): {rate}": "Taux de ce paiement (hors frais) : {rate}"
 }
