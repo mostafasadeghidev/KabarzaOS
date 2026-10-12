@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { daysBetween, deductionFromRate, rateOnDate, type DatedRate } from '../form-rules';
+import { daysBetween, deductionFromRate, grossFromNet, rateOnDate, type DatedRate } from '../form-rules';
 
 const EUR = 1, IRR = 2, USD = 3;
 
@@ -37,6 +37,17 @@ describe('rateOnDate — نرخِ روزِ پرداخت، نه آخرین نرخ
       { from: EUR, to: IRR, rate: '20000', date: '2026-10-10' },
     ];
     expect(rateOnDate(both, EUR, IRR, '2026-10-10')?.rate).toBe(20000);
+  });
+});
+
+describe('grossFromNet — هزینهٔ انتقالِ به عهدهٔ عضو', () => {
+  it('Jureasy: ۹۸٫۴ یوروی رسیده با ۱۸٪ ← ۱۲۰ از طلب', () => {
+    expect(grossFromNet(98.4, 18)).toBe(120);
+  });
+  it('بی‌هزینه یا درصدِ نامعتبر = همان خالص', () => {
+    expect(grossFromNet(98.4, 0)).toBe(98.4);
+    expect(grossFromNet(98.4, 100)).toBe(98.4);
+    expect(grossFromNet(0, 18)).toBeNull();
   });
 });
 

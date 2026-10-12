@@ -76,6 +76,8 @@ export interface EntryRow {
   currencyId: number;
   amountAccount: string;
   amountEur: string;
+  /** هزینهٔ انتقالِ به عهدهٔ عضو، درصد (۲.۲۵.۰). */
+  transferFeePct?: string | null;
   payerLabel: string;
   payerName: string | null;
   receiverLabel: string;

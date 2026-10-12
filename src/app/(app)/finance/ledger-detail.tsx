@@ -97,6 +97,12 @@ export function LedgerDetail({
     if (entry.amountSettled) {
       const code = entry.settledCurrencyId ? currencyCodeOf(entry.settledCurrencyId) : '';
       rows.push([t('معادلِ تسویه'), `${format(entry.amountSettled)} ${code}`.trim()]);
+      // هزینهٔ انتقالِ به عهدهٔ عضو (۲.۲۵.۰): درصد و سهمش از همان عددِ کسرشده.
+      const pct = Number(entry.transferFeePct ?? 0);
+      if (pct > 0) {
+        const feeAmount = (Number(entry.amountSettled) * pct / 100).toFixed(2);
+        rows.push([t('هزینهٔ انتقال (به عهدهٔ عضو)'), `${pct}% · ${format(feeAmount)} ${code}`.trim()]);
+      }
     }
     // عضوِ سامانه با آواتار؛ طرف‌حسابِ بیرونی (برچسبِ آزاد) فقط نام.
     rows.push([t('پرداخت‌کننده'), entry.payerName

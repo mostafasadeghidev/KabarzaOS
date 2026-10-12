@@ -103,6 +103,11 @@ async function explain(error: unknown, fallback: string): Promise<string> {
   return fallback;
 }
 
+function feePct(raw: FormDataEntryValue | null): string | null {
+  const n = Number(String(raw ?? '').trim());
+  return Number.isFinite(n) && n > 0 && n < 100 ? String(Math.round(n * 100) / 100) : null;
+}
+
 function parse(formData: FormData) {
   const raw = {
     accountId: String(formData.get('accountId') ?? ''),
@@ -209,6 +214,8 @@ export async function saveEntryAction(
     amountSettled: data.amountSettled || null,
     settledCurrencyId: data.settledCurrencyId,
     fxRate: data.fxRate || null,
+    // هزینهٔ انتقالِ به عهدهٔ عضو (۲.۲۵.۰) — درصد، ۰ تا زیرِ ۱۰۰؛ نامعتبر = هیچ.
+    transferFeePct: feePct(formData.get('transferFeePct')),
   };
 
   // پورتِ `from_unit`: کارکردِ انتخاب‌شده در فرم — فقط برای ردیفِ تازه.

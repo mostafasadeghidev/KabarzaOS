@@ -4042,5 +4042,9 @@
   "ماندهٔ پایانِ دوره": "Solde de clôture",
   "بستنِ این نما": "Fermer cette vue",
   "دارید ردیف‌های {range} را می‌بینید — فقط‌خواندنی.": "Vous consultez les lignes de {range} — lecture seule.",
-  "همهٔ دوره‌های بسته": "Toutes les périodes clôturées"
+  "همهٔ دوره‌های بسته": "Toutes les périodes clôturées",
+  "به دستِ «{who}» رسید: {net} · هزینهٔ انتقال (به عهدهٔ خودش): {fee} · از طلبش کم می‌شود: {gross}": "« {who} » a reçu {net} · frais de transfert (à sa charge) : {fee} · déduit de son solde : {gross}",
+  "هزینهٔ انتقال": "Frais de transfert",
+  "هزینهٔ انتقال دارد": "Avec frais de transfert",
+  "هزینهٔ انتقال (به عهدهٔ عضو)": "Frais de transfert (à la charge du membre)"
 }

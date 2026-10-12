@@ -4042,5 +4042,9 @@
   "ماندهٔ پایانِ دوره": "Endsaldo",
   "بستنِ این نما": "Diese Ansicht schließen",
   "دارید ردیف‌های {range} را می‌بینید — فقط‌خواندنی.": "Sie sehen die Zeilen von {range} — nur lesend.",
-  "همهٔ دوره‌های بسته": "Alle geschlossenen Zeiträume"
+  "همهٔ دوره‌های بسته": "Alle geschlossenen Zeiträume",
+  "به دستِ «{who}» رسید: {net} · هزینهٔ انتقال (به عهدهٔ خودش): {fee} · از طلبش کم می‌شود: {gross}": "„{who}“ erhielt {net} · Überweisungsgebühr (trägt die Person): {fee} · vom Guthaben abgezogen: {gross}",
+  "هزینهٔ انتقال": "Überweisungsgebühr",
+  "هزینهٔ انتقال دارد": "Mit Überweisungsgebühr",
+  "هزینهٔ انتقال (به عهدهٔ عضو)": "Überweisungsgebühr (trägt das Mitglied)"
 }

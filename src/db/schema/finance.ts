@@ -1,4 +1,4 @@
-import { uniqueIndex, boolean, index, integer, text, date, pgTable, check, bigint } from 'drizzle-orm/pg-core';
+import { uniqueIndex, boolean, index, integer, text, date, pgTable, check, bigint, numeric } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { pk, fk, money, rate, ts, stamps, scope } from './_shared';
 import { currencies, offices, vendors } from './base';
@@ -77,6 +77,11 @@ export const ledger = pgTable('ledger', {
   amountEur: money('amount_eur').notNull().default('0'),
   /** R-LEDGER-01/03 — نرخِ واقعیِ استفاده‌شده، نه نرخِ بازار. */
   exchangeRate: rate('exchange_rate').notNull().default('1'),
+  /**
+   * هزینهٔ انتقالِ به عهدهٔ عضو، درصد (۲.۲۵.۰) — مثلاً ۱۸: از ۱۲۰ یوروی طلب
+   * ۹۸٫۴ به دستش رسید. فقط برای نمایش و ویرایش؛ عددِ کسرشده خودش در آینهٔ پرداخت است.
+   */
+  transferFeePct: numeric('transfer_fee_pct', { precision: 5, scale: 2, mode: 'string' }),
 
   payerUserId: fk('payer_user_id').references(() => users.id),
   payerLabel: text('payer_label').notNull().default(''),

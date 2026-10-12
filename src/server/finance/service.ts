@@ -230,6 +230,8 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
       currencyId: ledger.currencyId,
       amountAccount: ledger.amountAccount,
       amountEur: ledger.amountEur,
+      /** هزینهٔ انتقالِ به عهدهٔ عضو، درصد (۲.۲۵.۰). */
+      transferFeePct: ledger.transferFeePct,
       payerLabel: ledger.payerLabel,
       payerName: payer.name,
       receiverLabel: ledger.receiverLabel,
@@ -434,6 +436,8 @@ export interface EntryInput {
   settledCurrencyId?: number | null;
   /** نرخِ دستیِ کاربر برای این تسویه؛ خالی یعنی از دو مبلغ مشتق شود. */
   fxRate?: string | null;
+  /** هزینهٔ انتقالِ به عهدهٔ عضو، درصد (۲.۲۵.۰) — فقط نگه‌داری و نمایش. */
+  transferFeePct?: string | null;
 }
 
 /**
@@ -655,6 +659,7 @@ export async function createEntry(actor: Actor, rawInput: EntryInput): Promise<n
     amountOffice: amounts.amountOffice,
     amountEur: amounts.amountEur,
     exchangeRate: amounts.exchangeRate,
+    transferFeePct: input.transferFeePct ?? null,
     payerUserId: input.payerUserId,
     payerLabel: input.payerLabel,
     receiverUserId: input.receiverUserId,
@@ -762,6 +767,7 @@ export async function updateEntry(actor: Actor, entryId: number, rawInput: Entry
     amountOffice: amounts.amountOffice,
     amountEur: amounts.amountEur,
     exchangeRate: amounts.exchangeRate,
+    transferFeePct: input.transferFeePct ?? null,
     payerUserId: input.payerUserId,
     payerLabel: input.payerLabel,
     receiverUserId: input.receiverUserId,
