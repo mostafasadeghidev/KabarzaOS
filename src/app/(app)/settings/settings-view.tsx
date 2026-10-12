@@ -39,7 +39,7 @@ import { GRANTABLE_CAPS } from '@/domain/access/project-scope';
 import type { SchedulerHealth } from '@/domain/scheduler/health';
 import type { BucketCheck } from '@/server/files/bucket-probe';
 import { DEFAULT_LOCALE, isRtl, LOCALE_NAMES, LOCALES } from '@/i18n/config';
-import { trimRate } from '@/domain/currency/rates';
+import { displayRate, trimRate } from '@/domain/currency/rates';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -250,7 +250,7 @@ export function SettingsView({
             columns={[
               { header: 'از', cell: (r) => currencyName(r.fromCurrencyId) },
               { header: 'به', cell: (r) => currencyName(r.toCurrencyId) },
-              { header: 'نرخ', cell: (r) => trimRate(r.rate), numeric: true },
+              { header: 'نرخ', cell: (r) => displayRate(r.rate), numeric: true },
               { header: 'تاریخ', cell: (r) => r.effectiveDate, numeric: true },
             ]}
             saveAction={saveRateAction}
