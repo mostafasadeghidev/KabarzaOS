@@ -4091,5 +4091,16 @@
   "خودکار اضافه می‌شود:": "Ajouté automatiquement :",
   "دلیلِ پرداخت — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Motif du paiement — p. ex. acompte, paiement complet, deuxième versement",
   "در توضیحات ثبت می‌شود:": "Enregistré dans la description :",
-  "اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Facultatif — p. ex. acompte, paiement complet, deuxième versement"
+  "اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Facultatif — p. ex. acompte, paiement complet, deuxième versement",
+  "ارزش برای پروژه": "Valeur pour le projet",
+  "تراکنش‌ها": "Transactions",
+  "توافق": "Convenu",
+  "توافق با اعضا": "Convenu avec les membres",
+  "قیمت ثبت نشده": "Aucun prix défini",
+  "قیمتِ پروژه و آنچه کارفرما پرداخته است.": "Le prix du projet et ce que le client a payé.",
+  "مانده به اعضا": "Reste dû aux membres",
+  "مبلغِ توافق‌شده با اعضا و آنچه به آنها پرداخت شده است.": "Ce qui a été convenu avec les membres et ce qui leur a été versé.",
+  "پرداخت‌شده به اعضا": "Versé aux membres",
+  "کارمزدِ انتقال {pct}٪": "Frais de transfert de {pct} %",
+  "اضافه‌پرداخت": "Trop-perçu"
 }

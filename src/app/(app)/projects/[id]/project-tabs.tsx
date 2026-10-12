@@ -8,7 +8,7 @@ import type { TaskFormOptions } from './add-task-dialog';
 import { CommentsTab, type CommentItem } from './comments-tab';
 import {
   BidsTab, FinanceTab, QaTab,
-  type BidRow, type FinanceSummary, type PaymentRow,
+  type BidRow, type FinanceSummary, type PaymentRow, type TeamMoney,
   type QaFormData, type QaRow, type QaTaskRow,
 } from './side-tabs';
 import {
@@ -101,6 +101,7 @@ export interface ProjectTabsData {
   canLighten: boolean;
   lightenSummary: LightenSummaryView | null;
   finance: FinanceSummary | null;
+  team: TeamMoney | null;
   payments: PaymentRow[];
 }
 
@@ -306,6 +307,7 @@ export function ProjectTabs({
             <FinanceTab
               price={data.price}
               finance={data.finance}
+              team={data.team}
               payments={data.payments}
               canSee={data.canSeeFinance}
               projectId={data.projectId}

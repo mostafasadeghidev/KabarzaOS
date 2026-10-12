@@ -137,6 +137,68 @@ export function contractBalance(input: {
   return { currencyId, agreed, paid, remaining: Math.max(0, agreed - paid) };
 }
 
+/**
+ * پولِ تیمِ یک پروژه — بخشِ «تیم» ِ تبِ مالی (۲.۳۰.۰).
+ *
+ * هر عضو با `contractBalance` در ارزِ قراردادِ خودش حساب می‌شود؛ جمعِ کل به
+ * ارزِ پروژه تبدیل می‌شود (نبودِ نرخ = عددِ اسمی، همان قاعدهٔ بالا). در پروژهٔ
+ * تعدادی «توافق» جمعِ ردیف‌های کارکردِ همان عضو است، نه مبلغِ توافقیِ عضویت.
+ */
+export interface TeamMemberMoney {
+  userId: number;
+  name: string;
+  currencyId: number | null;
+  agreed: number;
+  paid: number;
+  remaining: number;
+}
+
+export function teamSummary(input: {
+  members: ReadonlyArray<{ userId: number; name: string; agreed: string; currencyId: number | null }>;
+  units: ReadonlyArray<{ userId: number; amount: string; currencyId: number }>;
+  payouts: ReadonlyArray<{
+    userId: number | null;
+    amount: string;
+    currencyId: number | null;
+    amountSettled?: string | null;
+    settledCurrencyId?: number | null;
+  }>;
+  isUnitBased: boolean;
+  projectCurrencyId: number | null;
+  source: RateSource;
+}): { currencyId: number | null; agreed: number; paid: number; remaining: number; members: TeamMemberMoney[] } {
+  const { members, units, payouts, isUnitBased, projectCurrencyId, source } = input;
+  const names = new Map<number, string>();
+  for (const m of members) if (!names.has(m.userId)) names.set(m.userId, m.name);
+
+  const rows = [...names.entries()].map(([userId, name]) => {
+    const memberRows = isUnitBased
+      ? units.filter((u) => u.userId === userId).map((u) => ({ agreed: u.amount, currencyId: u.currencyId }))
+      : members.filter((m) => m.userId === userId).map((m) => ({ agreed: m.agreed, currencyId: m.currencyId }));
+    const balance = contractBalance({
+      // ارزِ قرارداد از عضویت می‌آید، حتی در پروژهٔ تعدادی.
+      memberRows: memberRows.length > 0 ? memberRows : members.filter((m) => m.userId === userId).map((m) => ({ agreed: '0', currencyId: m.currencyId })),
+      payouts: payouts.filter((p) => p.userId === userId),
+      projectCurrencyId,
+      source,
+    });
+    return { userId, name, ...balance };
+  });
+
+  const target = projectCurrencyId ?? rows.find((r) => r.currencyId)?.currencyId ?? null;
+  const inTarget = (value: number, from: number | null) => {
+    if (!target || !from || from === target) return value;
+    return num(convert(source, String(value), from, target) ?? String(value));
+  };
+  return {
+    currencyId: target,
+    agreed: rows.reduce((sum, r) => sum + inTarget(r.agreed, r.currencyId), 0),
+    paid: rows.reduce((sum, r) => sum + inTarget(r.paid, r.currencyId), 0),
+    remaining: rows.reduce((sum, r) => sum + inTarget(r.remaining, r.currencyId), 0),
+    members: rows,
+  };
+}
+
 /* ------------------------------------------------------------------ *
  * گاردهای درخواستِ پرداخت
  * ------------------------------------------------------------------ */

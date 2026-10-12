@@ -4091,5 +4091,16 @@
   "خودکار اضافه می‌شود:": "Added automatically:",
   "دلیلِ پرداخت — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Reason for the payment — e.g. prepayment, full payment, second instalment",
   "در توضیحات ثبت می‌شود:": "Saved as the description:",
-  "اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Optional — e.g. prepayment, full payment, second instalment"
+  "اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Optional — e.g. prepayment, full payment, second instalment",
+  "ارزش برای پروژه": "Value for the project",
+  "تراکنش‌ها": "Transactions",
+  "توافق": "Agreed",
+  "توافق با اعضا": "Agreed with members",
+  "قیمت ثبت نشده": "No price set",
+  "قیمتِ پروژه و آنچه کارفرما پرداخته است.": "The project price and what the client has paid.",
+  "مانده به اعضا": "Still owed to members",
+  "مبلغِ توافق‌شده با اعضا و آنچه به آنها پرداخت شده است.": "What was agreed with the members and what they have been paid.",
+  "پرداخت‌شده به اعضا": "Paid to members",
+  "کارمزدِ انتقال {pct}٪": "{pct}% transfer fee",
+  "اضافه‌پرداخت": "Overpaid"
 }

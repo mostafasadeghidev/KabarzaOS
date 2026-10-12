@@ -4,7 +4,7 @@ import { UserName } from '@/components/user-avatar';
 import { useActionState, useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useFormStatus } from 'react-dom';
-import { Check, ExternalLink, FileText, Link2, Paperclip, Square, X } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Check, ExternalLink, FileText, Link2, Paperclip, Square, X } from 'lucide-react';
 import {
   applyQaAction, approveBidAction, toggleQaAction, withdrawBidAction, type QaActionState,
 } from '../_form/qa-actions';
@@ -54,6 +54,26 @@ export interface PaymentRow {
   receiptIds: number[] | null;
   /** «معادل (محاسبه)» — ارزشِ ردیف در ارزِ پروژه (پورتِ `row_value_in`). */
   countedValue?: string | null;
+  /** «از حساب» (۲.۳۰.۰) — مبلغِ واقعی با ارز و نامِ حساب. */
+  currencyCode?: string | null;
+  accountName?: string | null;
+  transferFeePct?: string | null;
+}
+
+/** بخشِ «تیم» ِ تبِ مالی (۲.۳۰.۰) — فقط برای مدیرِ سراسریِ پروژه‌ها یا مالی. */
+export interface TeamMoney {
+  currencyCode: string | null;
+  agreed: number;
+  paid: number;
+  remaining: number;
+  members: Array<{
+    userId: number;
+    name: string;
+    currencyCode: string | null;
+    agreed: number;
+    paid: number;
+    remaining: number;
+  }>;
 }
 
 const DIRECTION_LABEL: Record<string, string> = {
@@ -68,14 +88,10 @@ function day(value: Date | string | null): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** مبلغِ واقعاً تسویه‌شده بر مبلغِ اسمی مقدم است (R-TEAM-01). */
-function settled(row: PaymentRow): string {
-  return row.amountSettled ?? row.amount;
-}
-
 export function FinanceTab({
   price,
   finance,
+  team = null,
   payments,
   canSee,
   projectId,
@@ -83,6 +99,7 @@ export function FinanceTab({
 }: {
   price: string;
   finance: FinanceSummary | null;
+  team?: TeamMoney | null;
   payments: PaymentRow[];
   canSee: boolean;
   projectId: number;
@@ -96,18 +113,28 @@ export function FinanceTab({
 
   // پورتِ `Payments::summary` (R-TEAM-04): بدهیِ کل = قیمت + هزینه‌های قابلِ صورتحساب؛ مانده کف‌بندی؛ وضعیتِ سه‌حالته.
   const summary = summarizeProject(price, finance.projectExpense, finance.incoming);
-  const money = (v: string | number) => `${format(String(v))}${currencyCode ? ` ${currencyCode}` : ''}`;
-  const cards = [
-    { label: 'قیمت', value: money(summary.price) },
+  const withCode = (v: string | number, code: string | null) => `${format(String(v))}${code ? ` ${code}` : ''}`;
+  const money = (v: string | number) => withCode(v, currencyCode);
+  /**
+   * ⚠️ قیمتِ صفر یعنی «هنوز ثبت نشده»، نه «پرداخت‌نشده» (۲.۳۰.۰): پیش از این
+   * پروژه‌ای بی‌قیمت وضعیتِ «پرداخت‌نشده» و ماندهٔ صفر را هم‌زمان نشان می‌داد.
+   */
+  const noPrice = Number(summary.totalDue) <= 0;
+  const clientCards = [
+    { label: 'قیمت', value: noPrice ? t('ثبت نشده') : money(summary.price), plain: noPrice },
     { label: 'هزینه‌های قابلِ صورت‌حساب', value: money(summary.billableExpenses) },
-    { label: 'جمعِ بدهی', value: money(summary.totalDue), strong: true },
+    { label: 'جمعِ بدهی', value: noPrice ? '—' : money(summary.totalDue) },
     { label: 'پرداختی', value: money(summary.paid) },
-    { label: 'مانده', value: money(summary.remaining), warn: summary.remaining > 0 },
-    { label: 'وضعیت', value: t(PAY_STATUS_LABELS[summary.status] ?? summary.status), plain: true },
+    { label: 'مانده', value: noPrice ? '—' : money(summary.remaining), warn: !noPrice && summary.remaining > 0 },
+    {
+      label: 'وضعیت',
+      value: noPrice ? t('قیمت ثبت نشده') : t(PAY_STATUS_LABELS[summary.status] ?? summary.status),
+      plain: true,
+    },
   ];
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-6">
       <div className="flex justify-end">
         {/* فاکتور صفحهٔ جدا دارد تا Ctrl+P سندِ تمیز بدهد. */}
         <Button asChild size="sm" variant="outline">
@@ -118,64 +145,139 @@ export function FinanceTab({
         </Button>
       </div>
 
-      <div className="grid gap-4 @xl/main:grid-cols-3">
-        {cards.map((c) => (
-          <StatCard
-            key={c.label}
-            label={t(c.label)}
-            value={c.value}
-            numeric={!c.plain}
-            tone={c.warn ? 'warning' : 'default'}
-          />
-        ))}
-      </div>
+      <Section title={t('کارفرما')} description={t('قیمتِ پروژه و آنچه کارفرما پرداخته است.')}>
+        <div className="grid gap-4 @xl/main:grid-cols-3">
+          {clientCards.map((c) => (
+            <StatCard
+              key={c.label}
+              label={t(c.label)}
+              value={c.value}
+              numeric={!c.plain}
+              tone={c.warn ? 'warning' : 'default'}
+            />
+          ))}
+        </div>
+      </Section>
 
-      {payments.length === 0 ? (
-        <EmptyState
-          title={t("تراکنشی ثبت نشده")}
-          description={t("هزینه‌ها و پرداخت‌ها از صفحهٔ «حسابداری» ثبت می‌شوند.")}
-        />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("شرح")}</TableHead>
-              <TableHead>{t("نوع")}</TableHead>
-              <TableHead numeric>{t("تاریخ")}</TableHead>
-              <TableHead numeric>{t("مبلغ")}</TableHead>
-              <TableHead numeric>{t("معادل (محاسبه)")}</TableHead>
-              <TableHead>{t("رسید")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {payments.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell>{p.note || (p.userName ? <UserName userId={p.userId} name={p.userName} /> : '—')}</TableCell>
-                <TableCell>{t(DIRECTION_LABEL[p.direction] ?? p.direction)}</TableCell>
-                <TableNumericCell>{day(p.paidAt)}</TableNumericCell>
-                <TableNumericCell>{format(settled(p))}</TableNumericCell>
-                {/* پورتِ ستونِ «معادل (محاسبه)»: ارزشِ ردیف در ارزِ پروژه، نه مبلغِ خام. */}
-                <TableNumericCell className="text-muted-foreground">{p.countedValue ? money(p.countedValue) : '—'}</TableNumericCell>
-                <TableCell>
-                  {(p.receiptIds?.length ?? 0) > 0 ? (
-                    <a
-                      href={`/api/files/${p.receiptIds![0]}`}
-                      target="_blank"
-                      rel="noopener"
-                      className="text-primary hover:underline"
-                    >
-                      {t('مشاهده')}
-                    </a>
-                  ) : '—'}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      {team && (
+        <Section title={t('تیم')} description={t('مبلغِ توافق‌شده با اعضا و آنچه به آنها پرداخت شده است.')}>
+          <div className="grid gap-4 @xl/main:grid-cols-3">
+            <StatCard label={t('توافق با اعضا')} value={withCode(team.agreed, team.currencyCode)} />
+            <StatCard label={t('پرداخت‌شده به اعضا')} value={withCode(team.paid, team.currencyCode)} />
+            <StatCard
+              label={t('مانده به اعضا')}
+              value={withCode(team.remaining, team.currencyCode)}
+              tone={team.remaining > 0.001 ? 'warning' : 'default'}
+            />
+          </div>
+          {team.members.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('عضو')}</TableHead>
+                  <TableHead numeric>{t('توافق')}</TableHead>
+                  <TableHead numeric>{t('پرداخت‌شده')}</TableHead>
+                  <TableHead numeric>{t('مانده')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {team.members.map((m) => (
+                  <TableRow key={m.userId}>
+                    <TableCell><UserName userId={m.userId} name={m.name} /></TableCell>
+                    <TableNumericCell>{withCode(m.agreed, m.currencyCode)}</TableNumericCell>
+                    <TableNumericCell>{withCode(m.paid, m.currencyCode)}</TableNumericCell>
+                    {/* اضافه‌پرداخت پنهان نمی‌شود: مانده کف‌بندی است، ولی «تسویه» برای بیشتر از توافق گمراه‌کننده بود. */}
+                    {m.remaining > 0.001
+                      ? <TableNumericCell>{withCode(m.remaining, m.currencyCode)}</TableNumericCell>
+                      : m.paid - m.agreed > 0.001
+                        ? (
+                          <TableCell className="text-end text-amber-700 dark:text-amber-500">
+                            {t('اضافه‌پرداخت')}{' '}
+                            <bdi dir="ltr" className="tabular-nums">{withCode(m.paid - m.agreed, m.currencyCode)}</bdi>
+                          </TableCell>
+                        )
+                        : <TableCell className="text-muted-foreground">{m.agreed > 0 || m.paid > 0 ? t('تسویه') : '—'}</TableCell>}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Section>
       )}
-      <p className="text-xs text-muted-foreground">
-        {tr("هزینه‌ها و پرداخت‌ها از صفحهٔ «حسابداری» ثبت می‌شوند.")}
-      </p>
+
+      <Section title={t('تراکنش‌ها')}>
+        {payments.length === 0 ? (
+          <EmptyState
+            title={t("تراکنشی ثبت نشده")}
+            description={t("هزینه‌ها و پرداخت‌ها از صفحهٔ «حسابداری» ثبت می‌شوند.")}
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("شرح")}</TableHead>
+                <TableHead>{t("نوع")}</TableHead>
+                <TableHead numeric>{t("تاریخ")}</TableHead>
+                <TableHead numeric>{t("از حساب")}</TableHead>
+                <TableHead numeric>{t("ارزش برای پروژه")}</TableHead>
+                <TableHead>{t("رسید")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {payments.map((p) => {
+                const incoming = p.direction === 'incoming';
+                const fee = Number(p.transferFeePct ?? 0);
+                return (
+                  <TableRow key={p.id}>
+                    <TableCell>{p.note || '—'}</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                        {incoming
+                          ? <ArrowDownLeft className="size-3.5 text-success" aria-hidden />
+                          : <ArrowUpRight className="size-3.5 text-muted-foreground" aria-hidden />}
+                        {t(DIRECTION_LABEL[p.direction] ?? p.direction)}
+                      </span>
+                      {p.userName && p.userId && (
+                        <div className="text-xs text-muted-foreground"><UserName userId={p.userId} name={p.userName} /></div>
+                      )}
+                    </TableCell>
+                    <TableNumericCell>{day(p.paidAt)}</TableNumericCell>
+                    {/* مبلغی که واقعاً از حساب رفت یا به آن رسید — با ارز و نامِ حساب. */}
+                    <TableNumericCell>
+                      <div>{withCode(p.amount, p.currencyCode ?? null)}</div>
+                      {p.accountName && <div className="text-xs text-muted-foreground">{p.accountName}</div>}
+                    </TableNumericCell>
+                    {/* پورتِ ستونِ «معادل (محاسبه)»: ارزشِ ردیف در ارزِ پروژه، نه مبلغِ خام. */}
+                    <TableNumericCell>
+                      <div>{p.countedValue ? money(p.countedValue) : '—'}</div>
+                      {fee > 0 && (
+                        <div className="text-xs text-muted-foreground">{t('کارمزدِ انتقال {pct}٪', { pct: format(String(fee)) })}</div>
+                      )}
+                    </TableNumericCell>
+                    <TableCell>
+                      {(p.receiptIds?.length ?? 0) > 0 ? (
+                        <a
+                          href={`/api/files/${p.receiptIds![0]}`}
+                          target="_blank"
+                          rel="noopener"
+                          className="text-primary hover:underline"
+                        >
+                          {t('مشاهده')}
+                        </a>
+                      ) : '—'}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+        {payments.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {tr("هزینه‌ها و پرداخت‌ها از صفحهٔ «حسابداری» ثبت می‌شوند.")}
+          </p>
+        )}
+      </Section>
     </div>
   );
 }

@@ -53,7 +53,7 @@ import {
 import * as repo from './repository';
 import { defaultProjectStatusId, defaultTaskStatusId } from '@/domain/projects/defaults';
 import { discardUploads, removeFiles, storeUploads, type StoredUpload, type UploadBlob } from '@/server/files/service';
-import { rowValueIn } from '@/domain/team-money/payments';
+import { rowValueIn, teamSummary } from '@/domain/team-money/payments';
 import { rateSource } from '@/server/finance/service';
 import { matrixForIds, rowCells } from '@/server/availability/service';
 import { weekOrder, weekdayIndex, WEEKDAYS } from '@/domain/availability/weekly';
@@ -1611,6 +1611,51 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
       : null,
   }));
 
+  /**
+   * خلاصهٔ کارفرما به ارزِ پروژه (۲.۳۰.۰) — ⚠️ پیش از این جمعِ خامِ مبلغ‌ها
+   * بود: واریزِ تومانی با عددِ خودش کنارِ قیمتِ یورویی می‌نشست. حالا هر ردیف
+   * با همان «معادل (محاسبه)» شمرده می‌شود؛ نبودِ نرخ = عددِ اسمی.
+   */
+  const counted = (p: (typeof payments)[number]) => {
+    const value = detail.project.currencyId && p.currencyId
+      ? rowValueIn(rates, {
+        amount: p.amount, currencyId: p.currencyId, amountSettled: p.amountSettled, settledCurrencyId: p.settledCurrencyId,
+      }, detail.project.currencyId)
+      : null;
+    return Number(value ?? p.amountSettled ?? p.amount);
+  };
+  const sumOf = (direction: string) => String(
+    payments.filter((p) => p.direction === direction).reduce((sum, p) => sum + counted(p), 0),
+  );
+  const financeInProjectCurrency = finance
+    ? { incoming: sumOf('incoming'), memberPayout: sumOf('member_payout'), projectExpense: sumOf('project_expense') }
+    : null;
+
+  /**
+   * بخشِ «تیم» (۲.۳۰.۰): توافق با اعضا در برابرِ پرداختی به آنها. فقط مدیرِ
+   * سراسریِ پروژه‌ها یا مالی — همان کسانی که مبلغِ اعضا را می‌بینند؛ کارفرما
+   * هرگز.
+   */
+  const seesTeamMoney = audience.hasGlobalProjectManage || audience.hasGlobalFinanceManage;
+  const teamMoney = seesTeamMoney && finance
+    ? teamSummary({
+      members: detail.members.map((m) => ({
+        userId: m.userId, name: mask(m.userId, m.userName) ?? `#${m.userId}`, agreed: m.agreedAmount, currencyId: m.currencyId,
+      })),
+      units: detail.project.isUnitBased ? await repo.unitAmounts(projectId) : [],
+      payouts: payments.filter((p) => p.direction === 'member_payout'),
+      isUnitBased: detail.project.isUnitBased,
+      projectCurrencyId: detail.project.currencyId,
+      source: rates,
+    })
+    : null;
+  const codes = teamMoney ? await repo.currencyCodeMap() : new Map<number, string>();
+  const team = teamMoney && {
+    ...teamMoney,
+    currencyCode: teamMoney.currencyId ? codes.get(teamMoney.currencyId) ?? null : null,
+    members: teamMoney.members.map((m) => ({ ...m, currencyCode: m.currencyId ? codes.get(m.currencyId) ?? null : null })),
+  };
+
   // پورتِ تبِ تیم/مدیریت: ریزِ ثبت‌های ساعت (تازه‌تر اول، سقفِ ۵۰۰) و ماتریسِ دسترس‌پذیریِ اعضا — فقط مدیر.
   const memberPeople = [...new Map(
     detail.members.map((m) => [m.userId, { id: m.userId, name: m.userName ?? `#${m.userId}` }]),
@@ -1685,7 +1730,8 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     files,
     bids,
     hours,
-    finance,
+    finance: financeInProjectCurrency,
+    team,
     payments: countedPayments,
     canSeeFinance,
     /**

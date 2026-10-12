@@ -10,6 +10,7 @@ import {
   timelogs, ledger, projectPayments, paymentRequests, users, tags,
   currencies, offices, tagRelations, userRoles, comments, tenderBids,
   projectQa, qaItems, attachments, files, meetings, meetingAttendees, userOffices, reviews,
+  accounts, unitEntries,
 } from '@/db/schema';
 import type { ProjectImpact } from '@/domain/projects/lifecycle';
 import { isOverdueProject, isFrozenProject } from '@/domain/projects/lifecycle';
@@ -954,6 +955,8 @@ export async function financeSummary(projectId: number) {
  * نسخهٔ قبلی با `receipt_attachment_id` ِ آینه می‌کرد.
  */
 export async function listPayments(projectId: number) {
+  const paidCurrency = alias(currencies, 'paid_currency');
+  const settledCurrency = alias(currencies, 'settled_currency');
   return db
     .select({
       id: projectPayments.id,
@@ -968,12 +971,34 @@ export async function listPayments(projectId: number) {
       userId: projectPayments.userId,
       userName: users.name,
       receiptIds: ledger.receiptIds,
+      /** «از حساب» (۲.۳۰.۰) — مبلغِ واقعی با ارز و نامِ حساب، و هزینهٔ انتقال. */
+      currencyCode: paidCurrency.code,
+      settledCurrencyCode: settledCurrency.code,
+      accountName: accounts.name,
+      transferFeePct: ledger.transferFeePct,
     })
     .from(projectPayments)
     .leftJoin(users, eq(users.id, projectPayments.userId))
     .leftJoin(ledger, eq(ledger.id, projectPayments.ledgerId))
+    .leftJoin(accounts, eq(accounts.id, projectPayments.accountId))
+    .leftJoin(paidCurrency, eq(paidCurrency.id, projectPayments.currencyId))
+    .leftJoin(settledCurrency, eq(settledCurrency.id, projectPayments.settledCurrencyId))
     .where(eq(projectPayments.projectId, projectId))
     .orderBy(projectPayments.id);
+}
+
+/** کدِ ارزها — برچسبِ مبلغ‌های بخشِ تیم (۲.۳۰.۰). */
+export async function currencyCodeMap(): Promise<Map<number, string>> {
+  const rows = await db.select({ id: currencies.id, code: currencies.code }).from(currencies);
+  return new Map(rows.map((r) => [r.id, r.code]));
+}
+
+/** ردیف‌های کارکردِ پروژهٔ تعدادی — «توافق» ِ بخشِ تیم (۲.۳۰.۰). */
+export async function unitAmounts(projectId: number) {
+  return db
+    .select({ userId: unitEntries.userId, amount: unitEntries.amount, currencyId: unitEntries.currencyId })
+    .from(unitEntries)
+    .where(eq(unitEntries.projectId, projectId));
 }
 
 /** ساعتِ کاریِ اعضا روی پروژه — تبِ مدیریت. */

@@ -498,6 +498,7 @@ export default async function ProjectDetailPage({
             memberPaidEur: string; wasTender: boolean;
           } | null) ?? null,
           finance: detail.finance,
+          team: detail.team,
           payments: detail.payments,
         }}
         info={
