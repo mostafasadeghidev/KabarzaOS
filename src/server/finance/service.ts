@@ -703,6 +703,8 @@ export interface SplitPart {
   amountSettled?: string | null;
   settledCurrencyId?: number | null;
   fxRate?: string | null;
+  /** هزینهٔ انتقالِ همین پروژه (۲.۲۸.۰) — هر سهم درصدِ خودش را دارد. */
+  transferFeePct?: string | null;
 }
 
 /**
@@ -745,6 +747,7 @@ export async function createSplitEntries(actor: Actor, base: EntryInput, parts: 
         amountSettled: p.amountSettled ?? null,
         settledCurrencyId: p.settledCurrencyId ?? null,
         fxRate: p.fxRate ?? null,
+        transferFeePct: p.transferFeePct ?? base.transferFeePct ?? null,
         splitGroup: group,
       }));
     }
