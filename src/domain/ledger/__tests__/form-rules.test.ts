@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   amountFromSettled, isTagSelectable, rateFromAmounts, relocateParty,
-  requiresDescription, selectableTags, settledCurrencyId, showsBillable,
+  selectableTags, settledCurrencyId, showsBillable,
   showsRecurring, showsSettled, showsUnitPicker, visibleParty,
 } from '../form-rules';
 
@@ -176,16 +176,11 @@ describe('نرخِ تبدیلِ دوطرفه', () => {
   });
 });
 
-describe('R-FORM-06 و R-FORM-07', () => {
+describe('R-FORM-06', () => {
   it('انتخابگرِ کارکرد: برداشت + پروژه + دریافت‌کننده', () => {
     expect(showsUnitPicker({ direction: 'out', projectId: 5, receiverUserId: 9 })).toBe(true);
     expect(showsUnitPicker({ direction: 'in', projectId: 5, receiverUserId: 9 })).toBe(false);
     expect(showsUnitPicker({ direction: 'out', projectId: null, receiverUserId: 9 })).toBe(false);
     expect(showsUnitPicker({ direction: 'out', projectId: 5, receiverUserId: null })).toBe(false);
-  });
-
-  it('ردیفِ پروژه‌دار توضیح لازم دارد', () => {
-    expect(requiresDescription(5)).toBe(true);
-    expect(requiresDescription(null)).toBe(false);
   });
 });

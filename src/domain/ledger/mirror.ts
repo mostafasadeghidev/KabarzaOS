@@ -99,6 +99,23 @@ export function paymentNote(description: string, projectTitle: string | null): s
   return text ? `${text} — ${tag}` : tag;
 }
 
+/** برچسبِ خودکارِ «بابت پروژه: …» — همان متنی که `paymentNote` می‌سازد (برای نمایشِ زنده در فرم). */
+export function projectNoteTag(projectTitle: string): string {
+  return `${PROJECT_TAG} ${projectTitle.trim()}`;
+}
+
+/**
+ * یادداشتِ کاربر بی‌برچسبِ خودکار (۲.۲۹.۰) — فرمِ ویرایش برچسب را جدا و ثابت نشان
+ * می‌دهد؛ اگر در خانهٔ متن هم می‌ماند دوبار دیده می‌شد. فقط برچسبِ **انتهای** متن
+ * (« — بابت پروژه: …») برداشته می‌شود؛ ذخیره دوباره همان را می‌چسباند.
+ */
+export function userNoteOf(description: string): string {
+  const text = description.trim();
+  if (text.startsWith(PROJECT_TAG)) return '';
+  const at = text.lastIndexOf(` — ${PROJECT_TAG}`);
+  return at >= 0 ? text.slice(0, at).trim() : text;
+}
+
 /**
  * نرخِ ارزی که از یک تسویهٔ بین‌ارزی **آموخته** می‌شود.
  *

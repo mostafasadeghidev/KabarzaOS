@@ -4087,5 +4087,9 @@
   "سهمِ هر پروژه را بنویسم به": "Indicar la parte de cada proyecto en",
   "هزینهٔ انتقال (همه)": "Comisión de transferencia (todos)",
   "هزینهٔ انتقال {pct}٪": "comisión {pct} %",
-  "هزینهٔ انتقالِ این پروژه": "Comisión de este proyecto"
+  "هزینهٔ انتقالِ این پروژه": "Comisión de este proyecto",
+  "خودکار اضافه می‌شود:": "Se añade automáticamente:",
+  "دلیلِ پرداخت — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Motivo del pago: p. ej. anticipo, pago completo, segunda cuota",
+  "در توضیحات ثبت می‌شود:": "Se guarda en la descripción:",
+  "اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Opcional: p. ej. anticipo, pago completo, segunda cuota"
 }

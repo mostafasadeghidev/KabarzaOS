@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.29.0]
+
+### Changed
+
+- **The automatic "For project: …" note is visible while you type.** As soon as a project is picked in the ledger form, the label that is added to the description on save ("بابت پروژه: Jureasy") appears under the description field as a fixed chip ("Saved as the description: …"). In a split transfer one chip per project is shown. Editing a row shows only your own note in the field, with the label as a chip, so it is no longer duplicated.
+- **The description is optional for project rows.** Since the "For project: …" label is always saved, a project row no longer needs a typed note; the field is marked optional (e.g. prepayment, second instalment) and anything typed is saved before the label. The old rule existed so a row kept its project's name after the project was deleted, and the label already does that. The check is removed from both the form and the server.
+
 ## [2.28.0]
 
 ### Changed

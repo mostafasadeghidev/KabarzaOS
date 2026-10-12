@@ -78,9 +78,6 @@ async function explain(error: unknown, fallback: string): Promise<string> {
     return t('این دوره تا تاریخ {date} قفل (بسته) شده و قابل تغییر نیست.', { date: ltr(error.lockDate) });
   }
   if (error instanceof LedgerValidationError) {
-    if (error.code === 'note_required') {
-      return 'برای تراکنش‌های مرتبط با پروژه، نوشتن توضیحات الزامی است.';
-    }
     if (error.code === 'amount_invalid') return 'مبلغ معتبر نیست.';
     return 'ابتدا یک حساب بانکی انتخاب کنید.';
   }

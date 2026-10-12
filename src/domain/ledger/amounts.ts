@@ -195,7 +195,7 @@ export function buildTransferLegs(input: TransferInput, transferGroup: string): 
  * ------------------------------------------------------------------ */
 
 export class LedgerValidationError extends Error {
-  constructor(readonly code: 'note_required' | 'amount_invalid' | 'no_account') {
+  constructor(readonly code: 'amount_invalid' | 'no_account') {
     super(`ledger entry invalid: ${code}`);
     this.name = 'LedgerValidationError';
   }
@@ -209,18 +209,16 @@ export interface EntryDraft {
 }
 
 /**
- * ⚠️ R-LEDGER-12 — ردیفِ **مرتبط با پروژه** حتماً باید توضیحات داشته باشد.
+ * اعتبارسنجیِ ردیف: حساب و مبلغِ مثبت.
  *
- * چرا: نامِ پروژه روی ردیف عکسِ لحظه‌ای است؛ اگر پروژه بعداً حذف یا جدا شود،
- * تنها چیزی که در نمای مالیِ کارفرما و عضو می‌ماند همین توضیحات است. بدونِ
- * آن یک مبلغِ بی‌شرح باقی می‌ماند که هیچ‌کس نمی‌داند بابتِ چه بوده.
+ * R-LEDGER-12 (توضیحاتِ اجباریِ ردیفِ پروژه‌دار) از ۲.۲۹.۰ برداشته شد: سرور
+ * همیشه «بابت پروژه: …» را به شرح می‌چسباند (`ledgerDescription`)، پس شرحِ
+ * ذخیره‌شده هرگز خالی نیست و نامِ پروژه با حذف یا جداسازیِ پروژه هم می‌ماند —
+ * همان هدفی که قاعده برایش بود. یادداشتِ کاربر اختیاری است.
  */
 export function validateEntry(draft: EntryDraft): void {
   if (draft.accountId === null) throw new LedgerValidationError('no_account');
   if (!/^\d+(\.\d{1,4})?$/.test(draft.amount) || Number(draft.amount) <= 0) {
     throw new LedgerValidationError('amount_invalid');
-  }
-  if (draft.projectId !== null && draft.description.trim() === '') {
-    throw new LedgerValidationError('note_required');
   }
 }

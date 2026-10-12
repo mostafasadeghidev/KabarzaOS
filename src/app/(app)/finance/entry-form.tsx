@@ -6,8 +6,10 @@ import { useFormStatus } from 'react-dom';
 import type { EntryRow, FormOptions } from './ledger-view';
 import { ReceiptPicker } from './receipt-picker';
 import { SplitRows } from './split-rows';
+import { projectNoteTag, userNoteOf } from '@/domain/ledger/mirror';
+import { Badge } from '@/components/ui/badge';
 import {
-  rateFromAmounts, relocateParty, requiresDescription,
+  rateFromAmounts, relocateParty,
   selectableTags, settledCurrencyId, showsBillable, showsRecurring, showsSettled,
   showsUnitPicker, visibleParty, type Direction, type PartyState,
   billableFromTags, effectiveRateOf, rateOnDate, daysBetween, deductionFromRate, grossFromNet,
@@ -128,8 +130,13 @@ export function EntryForm({
   const [actual, setActual] = useState(keep('amountAccountOverride', editing?.amountAccountOverride ?? ''));
   /** «قابل بازپرداخت از کارفرما» — پیش‌فرض خاموش؛ دستهٔ علامت‌خورده روشنش می‌کند (۲.۲۴.۰). */
   const [billable, setBillable] = useState(editing ? editing.billable : false);
-  const [descTouched, setDescTouched] = useState(false);
-  const [description, setDescription] = useState(keep('description', editing?.description ?? ''));
+  /**
+   * فقط یادداشتِ کاربر (۲.۲۹.۰) — برچسبِ خودکارِ «بابت پروژه: …» جدا و ثابت زیرِ
+   * همین خانه دیده می‌شود و سرور هنگامِ ذخیره می‌چسباندش؛ در ویرایش هم از متن جدا می‌شود.
+   */
+  const [description, setDescription] = useState(keep('description', userNoteOf(editing?.description ?? '')));
+  /** نامِ پروژه‌های حالتِ چندپروژه‌ای — برای برچسبِ خودکارِ هر سهم. */
+  const [splitLabels, setSplitLabels] = useState<string[]>([]);
 
   const peopleOptions: Option[] = useMemo(
     () => options.people.map((p) => ({
@@ -302,9 +309,6 @@ export function EntryForm({
   const onSettledChange = (value: string) => { setSettled(value); setDeductMode('settled'); };
   const onRateChange = (value: string) => { setRate(value); setDeductMode('rate'); };
   const onAmountChange = (value: string) => setAmount(value);
-
-  /* ── R-FORM-07 — توضیحاتِ اجباریِ ردیفِ پروژه‌دار ── */
-  const descMissing = (splitOn || requiresDescription(projectId)) && !description.trim();
 
   return (
     <>
@@ -494,6 +498,7 @@ export function EntryForm({
           entryDate={entryDate}
           amount={amount}
           onValidity={setSplitOk}
+          onLabels={setSplitLabels}
         />
       )}
 
@@ -690,13 +695,21 @@ export function EntryForm({
         <Textarea
           id="l-desc" name="description" rows={2}
           value={description}
-          onChange={(e) => { setDescription(e.target.value); setDescTouched(true); }}
+          placeholder={(splitOn || projectId) ? tr('اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم') : undefined}
+          onChange={(e) => setDescription(e.target.value)}
         />
-        {/* ⚠️ پیامِ فارسی، نه تولتیپِ انگلیسیِ required ِ مرورگر. */}
-        {descMissing && descTouched && (
-          <FieldError>
-            {tr("برای تراکنش‌های مرتبط با پروژه، نوشتن توضیحات الزامی است.")}
-          </FieldError>
+        {/*
+          برچسبِ خودکار، زنده (۲.۲۹.۰) — همان متنی که سرور هنگامِ ذخیره به انتهای
+          توضیحات می‌چسباند. همین برچسب توضیحاتِ ردیف است، پس نوشتنِ یادداشت اختیاری
+          است. ثابت است و در خانهٔ متن نیست تا با یادداشتِ کاربر قاطی نشود.
+        */}
+        {(splitOn ? splitLabels.length > 0 : Boolean(projectId && projectLabel)) && (
+          <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+            {tr('در توضیحات ثبت می‌شود:')}
+            {(splitOn ? splitLabels : [projectLabel]).map((label) => (
+              <Badge key={label} variant="secondary" className="font-normal">{projectNoteTag(label)}</Badge>
+            ))}
+          </p>
         )}
       </Field>
 

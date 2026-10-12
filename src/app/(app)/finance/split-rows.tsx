@@ -44,7 +44,7 @@ const money = (n: number) => groupDigits(String(Math.round(n * 100) / 100));
  */
 export function SplitRows({
   options, projectOptions, direction, receiverUserId, receiverIsMemberOf, currencyId, entryCode, entryDate, amount,
-  onValidity,
+  onValidity, onLabels,
 }: {
   options: FormOptions;
   projectOptions: Option[];
@@ -56,6 +56,8 @@ export function SplitRows({
   entryDate: string;
   amount: string;
   onValidity: (ok: boolean) => void;
+  /** نامِ پروژه‌های انتخاب‌شده — برچسبِ خودکارِ «بابت پروژه» در خانهٔ توضیحات (۲.۲۹.۰). */
+  onLabels?: (labels: string[]) => void;
 }) {
   const t = useT();
   const [mode, setMode] = useState<'contract' | 'account'>('contract');
@@ -107,6 +109,8 @@ export function SplitRows({
   const missingRate = computed.some((c) => c.differs && c.rate === null && (c.share > 0 || Number(c.row.deduction) > 0));
   const ok = total > 0 && rows.length >= 2 && filled && !missingRate && Math.abs(left) <= 0.01;
   useEffect(() => { onValidity(ok); }, [ok, onValidity]);
+  const labelsKey = rows.filter((r) => r.projectId && r.label).map((r) => r.label).join('\u0001');
+  useEffect(() => { onLabels?.(labelsKey ? labelsKey.split('\u0001') : []); }, [labelsKey, onLabels]);
 
   const anyMember = base.some((b) => b.member);
   const anyDiffers = base.some((b) => b.differs);

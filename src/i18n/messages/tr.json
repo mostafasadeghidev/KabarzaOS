@@ -4087,5 +4087,9 @@
   "سهمِ هر پروژه را بنویسم به": "Her projenin payını şu birimde gir",
   "هزینهٔ انتقال (همه)": "Transfer ücreti (tümü)",
   "هزینهٔ انتقال {pct}٪": "transfer ücreti %{pct}",
-  "هزینهٔ انتقالِ این پروژه": "Bu projenin transfer ücreti"
+  "هزینهٔ انتقالِ این پروژه": "Bu projenin transfer ücreti",
+  "خودکار اضافه می‌شود:": "Otomatik eklenir:",
+  "دلیلِ پرداخت — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Ödeme nedeni — ör. ön ödeme, tam ödeme, ikinci taksit",
+  "در توضیحات ثبت می‌شود:": "Açıklamaya kaydedilir:",
+  "اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "İsteğe bağlı — ör. ön ödeme, tam ödeme, ikinci taksit"
 }
