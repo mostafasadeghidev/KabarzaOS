@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
-  createEntry, deleteEntry, LedgerNotFoundError, transfer, updateEntry,
+  createEntry, createSplitEntries, deleteEntry, LedgerNotFoundError, SplitError, transfer, updateEntry,
+  type SplitPart,
 } from '@/server/finance/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { FiscalPeriodLockedError } from '@/domain/ledger/fiscal';
@@ -99,8 +100,32 @@ async function explain(error: unknown, fallback: string): Promise<string> {
     return 'کارکرد پیدا نشد.';
   }
   if (error instanceof UnitInstallmentError) return INSTALLMENT_MESSAGES[error.code];
+  if (error instanceof SplitError) {
+    if (error.code === 'sum_mismatch') return 'جمعِ سهم‌ها با مبلغِ کل برابر نیست.';
+    if (error.code === 'too_few') return 'برای تقسیم دست‌کم دو پروژه لازم است.';
+    return 'پروژه و سهمِ هر ردیف را کامل کنید.';
+  }
   if (error instanceof ForbiddenError) return 'دسترسی کافی ندارید.';
   return fallback;
+}
+
+/** سهم‌های «یک واریز برای چند پروژه» — JSON از فرم؛ کمتر از دو سهم = ردیفِ تکی. */
+function parseSplits(raw: FormDataEntryValue | null): SplitPart[] | null {
+  if (typeof raw !== 'string' || raw.trim() === '') return null;
+  try {
+    const list = JSON.parse(raw) as Array<Record<string, unknown>>;
+    if (!Array.isArray(list) || list.length < 2) return null;
+    const money = (v: unknown) => (/^\d+(\.\d{1,6})?$/.test(String(v ?? '')) ? String(v) : null);
+    return list.map((p) => ({
+      projectId: Number(p.projectId),
+      amount: money(p.amount) ?? '0',
+      amountSettled: money(p.amountSettled),
+      settledCurrencyId: Number(p.settledCurrencyId) > 0 ? Number(p.settledCurrencyId) : null,
+      fxRate: money(p.fxRate),
+    }));
+  } catch {
+    return null;
+  }
 }
 
 function feePct(raw: FormDataEntryValue | null): string | null {
@@ -222,9 +247,13 @@ export async function saveEntryAction(
   const fromUnitRaw = Number(formData.get('fromUnit'));
   const fromUnit = !entryId && Number.isInteger(fromUnitRaw) && fromUnitRaw > 0 ? fromUnitRaw : null;
 
+  // «یک واریز برای چند پروژه» (۲.۲۷.۰) — فقط ردیفِ تازه؛ هر سهم ردیفِ خودش می‌شود.
+  const splits = !entryId ? parseSplits(formData.get('splits')) : null;
+
   try {
     const actor = await requireActor();
     if (entryId) await updateEntry(actor, entryId, input);
+    else if (splits) await createSplitEntries(actor, { ...input, projectId: null }, splits);
     else {
       // ⚠️ اعتبارسنجیِ کارکرد **پیش از** ساختِ ردیف — وگرنه ردیفِ مالی می‌ماند و کارکرد نه.
       /**
@@ -265,10 +294,10 @@ export async function saveEntryAction(
   return { ok: true };
 }
 
-export async function deleteEntryAction(entryId: number): Promise<FinanceState> {
+export async function deleteEntryAction(entryId: number, wholeSplit = false): Promise<FinanceState> {
   try {
     const actor = await requireActor();
-    await deleteEntry(actor, entryId);
+    await deleteEntry(actor, entryId, { wholeSplit });
   } catch (error) {
     return { error: await explain(error, 'ردیف حذف نشد.') };
   }

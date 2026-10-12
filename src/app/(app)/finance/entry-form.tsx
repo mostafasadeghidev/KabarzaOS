@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { EntryRow, FormOptions } from './ledger-view';
 import { ReceiptPicker } from './receipt-picker';
+import { SplitRows } from './split-rows';
 import {
   rateFromAmounts, relocateParty, requiresDescription,
   selectableTags, settledCurrencyId, showsBillable, showsRecurring, showsSettled,
@@ -42,10 +43,10 @@ function dayAfter(iso: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-function SubmitButton({ label }: { label: string }) {
+function SubmitButton({ label, blocked = false }: { label: string; blocked?: boolean }) {
   const { pending } = useFormStatus();
   const tr = useT();
-  return <Button type="submit" disabled={pending}>{pending ? <><Spinner />{tr('در حالِ ثبت…')}</> : label}</Button>;
+  return <Button type="submit" disabled={pending || blocked}>{pending ? <><Spinner />{tr('در حالِ ثبت…')}</> : label}</Button>;
 }
 
 /**
@@ -107,6 +108,9 @@ export function EntryForm({
   /** هزینهٔ انتقالِ به عهدهٔ عضو، درصد (۲.۲۵.۰). */
   const [fee, setFee] = useState(editing?.transferFeePct ? String(Number(editing.transferFeePct)) : '');
   const [showFee, setShowFee] = useState(false);
+  /** «یک واریز برای چند پروژه» (۲.۲۷.۰) — حالت و درستیِ جمعِ سهم‌ها. */
+  const [splitOn, setSplitOn] = useState(false);
+  const [splitOk, setSplitOk] = useState(false);
   /** تاریخِ ردیف — نرخِ پیشنهادی از **همین روز** خوانده می‌شود، نه امروز. */
   const [entryDate, setEntryDate] = useState(keep('entryDate', editing?.entryDate ?? today));
   const [amount, setAmount] = useState(keep('amount', editing?.amount ?? ''));
@@ -294,7 +298,7 @@ export function EntryForm({
   const onAmountChange = (value: string) => setAmount(value);
 
   /* ── R-FORM-07 — توضیحاتِ اجباریِ ردیفِ پروژه‌دار ── */
-  const descMissing = requiresDescription(projectId) && !description.trim();
+  const descMissing = (splitOn || requiresDescription(projectId)) && !description.trim();
 
   return (
     <>
@@ -359,13 +363,31 @@ export function EntryForm({
       <div className="grid items-start gap-3 sm:grid-cols-2">
         <Field>
           <FieldLabel htmlFor="l-project">{tr("بابت (پروژه)")}</FieldLabel>
-          <Combobox
-            id="l-project"
-            options={projectOptions}
-            value={{ id: projectId, label: projectLabel }}
-            onChange={(v) => { setProjectId(v.id); setProjectLabel(v.label); }}
-            placeholder={tr("جستجوی پروژه…")}
-          />
+          {splitOn ? (
+            <p className="flex h-9 items-center justify-between gap-2 rounded-md border border-dashed px-3 text-sm text-muted-foreground">
+              {tr('چند پروژه — پایینِ فرم')}
+              <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setSplitOn(false)}>
+                {tr('یک پروژه')}
+              </Button>
+            </p>
+          ) : (
+            <Combobox
+              id="l-project"
+              options={projectOptions}
+              value={{ id: projectId, label: projectLabel }}
+              onChange={(v) => { setProjectId(v.id); setProjectLabel(v.label); }}
+              placeholder={tr("جستجوی پروژه…")}
+            />
+          )}
+          {/* یک واریز برای چند پروژه (۲.۲۷.۰) — فقط ردیفِ تازه و فقط برداشت. */}
+          {!editing && !splitOn && direction === 'out' && (
+            <Button
+              type="button" variant="link" size="sm" className="h-auto w-fit p-0 text-xs"
+              onClick={() => { setSplitOn(true); setProjectId(null); setProjectLabel(''); setFromUnit(null); }}
+            >
+              {tr('تقسیم بین چند پروژه')}
+            </Button>
+          )}
         </Field>
         {shown === 'payer' ? (
           <Field>
@@ -451,6 +473,20 @@ export function EntryForm({
         )}
       </div>
 
+      {splitOn && (
+        <SplitRows
+          options={options}
+          projectOptions={projectOptions}
+          direction={direction}
+          receiverUserId={receiverUserId}
+          receiverIsMemberOf={(pid) => Boolean(receiverUserId) && (options.projectMemberIds[pid] ?? []).includes(receiverUserId!)}
+          currencyId={currencyId}
+          entryCode={entryCode}
+          entryDate={entryDate}
+          amount={amount}
+          onValidity={setSplitOk}
+        />
+      )}
 
       {/* ── R-FORM-02 — بازپرداخت از کارفرما ── */}
       {billableVisible && (
@@ -479,7 +515,8 @@ export function EntryForm({
         type="hidden" name="fxRate"
         value={sendSettled && differs && (deductMode === 'rate' || feeNum > 0) && usedRate !== null ? String(usedRate) : ''}
       />
-      <input type="hidden" name="transferFeePct" value={feeNum > 0 ? String(feeNum) : ''} />
+      {/* در حالتِ چندپروژه‌ای درصد را `SplitRows` می‌فرستد — دو ورودیِ هم‌نام نباید باشد. */}
+      {!splitOn && <input type="hidden" name="transferFeePct" value={feeNum > 0 ? String(feeNum) : ''} />}
 
       {/* ارزِ یکسان: یک خطِ روشن؛ «عددِ دیگر» فقط برای حالتِ نادری که کسر با مبلغ فرق دارد. */}
       {settledVisible && !differs && deductMode !== 'settled' && !feeOpen && Number(amount) > 0 && (
@@ -724,7 +761,10 @@ export function EntryForm({
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>{tr("انصراف")}</Button>
-        <SubmitButton label={editing ? tr('به‌روزرسانی ردیف') : tr('ثبت ردیف')} />
+        <SubmitButton
+          label={editing ? tr('به‌روزرسانی ردیف') : splitOn ? tr('ثبتِ ردیف‌های همهٔ پروژه‌ها') : tr('ثبت ردیف')}
+          blocked={splitOn && !splitOk}
+        />
       </DialogFooter>
     </>
   );

@@ -407,6 +407,13 @@
       "when": 1789698000028,
       "tag": "0057_ledger_transfer_fee",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1789698000029,
+      "tag": "0058_ledger_split_group",
+      "breakpoints": true
     }
   ]
 }

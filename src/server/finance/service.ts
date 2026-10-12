@@ -252,6 +252,14 @@ export async function getLedger(actor: Actor, input: LedgerFilter) {
       settledCurrencyId: projectPayments.settledCurrencyId,
       mirrorDirection: projectPayments.direction,
       transferGroup: ledger.transferGroup,
+      /** «یک واریز برای چند پروژه» (۲.۲۷.۰) — جایگاه و تعداد برای نشانِ «۱ از ۳». */
+      splitGroup: ledger.splitGroup,
+      splitCount: sql<number | null>`case when ${ledger.splitGroup} is null then null else
+        (select count(*)::int from ledger s where s.split_group = ${ledger.splitGroup}) end`,
+      splitIndex: sql<number | null>`case when ${ledger.splitGroup} is null then null else
+        (select count(*)::int from ledger s where s.split_group = ${ledger.splitGroup} and s.id <= ${ledger.id}) end`,
+      splitTotal: sql<string | null>`case when ${ledger.splitGroup} is null then null else
+        (select sum(s.amount)::text from ledger s where s.split_group = ${ledger.splitGroup}) end`,
     })
     .from(ledger)
     .leftJoin(payer, eq(payer.id, ledger.payerUserId))
@@ -438,6 +446,8 @@ export interface EntryInput {
   fxRate?: string | null;
   /** هزینهٔ انتقالِ به عهدهٔ عضو، درصد (۲.۲۵.۰) — فقط نگه‌داری و نمایش. */
   transferFeePct?: string | null;
+  /** گروهِ «یک واریز برای چند پروژه» (۲.۲۷.۰) — فقط هنگامِ ساخت، از `createSplitEntries`. */
+  splitGroup?: string | null;
 }
 
 /**
@@ -667,6 +677,7 @@ export async function createEntry(actor: Actor, rawInput: EntryInput): Promise<n
     projectId: input.projectId,
     vendorId: input.vendorId ?? null,
     receiptIds: input.addedReceiptIds?.length ? input.addedReceiptIds : null,
+    splitGroup: input.splitGroup ?? null,
     createdBy: actor.id,
   }).returning({ id: ledger.id });
 
@@ -675,6 +686,73 @@ export async function createEntry(actor: Actor, rawInput: EntryInput): Promise<n
   await mirrorPayment(id, input, amounts);
   await audit(actor, 'ledger.create', id, null, { ...input, computed: amounts });
   return id;
+}
+
+export class SplitError extends Error {
+  constructor(readonly code: 'too_few' | 'sum_mismatch' | 'part_invalid') {
+    super(`split refused: ${code}`);
+    this.name = 'SplitError';
+  }
+}
+
+/** یک سهم از «یک واریز برای چند پروژه». */
+export interface SplitPart {
+  projectId: number;
+  /** سهمِ این پروژه از مبلغِ کل، در ارزِ ردیف. */
+  amount: string;
+  amountSettled?: string | null;
+  settledCurrencyId?: number | null;
+  fxRate?: string | null;
+}
+
+/**
+ * یک واریز برای چند پروژه (۲.۲۷.۰) — هر پروژه یک ردیفِ دفترِ جدا با سهمِ خودش،
+ * همه با یک `split_group`، یک تاریخ و همان رسیدها.
+ *
+ * ⚠️ جمعِ سهم‌ها باید دقیقاً مبلغِ کل باشد (رواداریِ ۰٫۰۱) — وگرنه ماندهٔ حساب با
+ * واریزِ واقعی نمی‌خواند. «مبلغِ واقعیِ حساب» (با کارمزد) به نسبتِ سهم‌ها پخش
+ * می‌شود و آخرین سهم باقی‌مانده را می‌گیرد تا جمع دقیقاً همان بماند.
+ * ⚠️ ثبت تراکنشی نیست (`createEntry` خودش تراکنش ندارد)؛ اگر یکی شکست بخورد،
+ * ردیف‌های ساخته‌شدهٔ همین گروه پاک می‌شوند تا نیمه‌ثبت نماند.
+ */
+export async function createSplitEntries(actor: Actor, base: EntryInput, parts: SplitPart[]): Promise<number[]> {
+  if (parts.length < 2) throw new SplitError('too_few');
+  const total = Number(base.amount);
+  if (parts.some((p) => !(Number(p.amount) > 0) || !Number.isInteger(p.projectId) || p.projectId <= 0)) {
+    throw new SplitError('part_invalid');
+  }
+  const sum = parts.reduce((s, p) => s + Number(p.amount), 0);
+  if (Math.abs(sum - total) > 0.01) throw new SplitError('sum_mismatch');
+
+  const group = `sp-${Date.now()}-${actor.id}`;
+  const override = base.amountAccountOverride?.trim() ? Number(base.amountAccountOverride) : null;
+  let overrideLeft = override ?? 0;
+  const ids: number[] = [];
+  try {
+    for (const [i, p] of parts.entries()) {
+      const last = i === parts.length - 1;
+      let partOverride: string | null = null;
+      if (override !== null) {
+        const share = last ? overrideLeft : Math.round((override * Number(p.amount) / total) * 10_000) / 10_000;
+        overrideLeft -= share;
+        partOverride = share.toFixed(4);
+      }
+      ids.push(await createEntry(actor, {
+        ...base,
+        projectId: p.projectId,
+        amount: p.amount,
+        amountAccountOverride: partOverride,
+        amountSettled: p.amountSettled ?? null,
+        settledCurrencyId: p.settledCurrencyId ?? null,
+        fxRate: p.fxRate ?? null,
+        splitGroup: group,
+      }));
+    }
+  } catch (error) {
+    if (ids.length > 0) await deleteEntry(actor, ids[0]!, { wholeSplit: true }).catch(() => {});
+    throw error;
+  }
+  return ids;
 }
 
 /**
@@ -796,7 +874,12 @@ export async function updateEntry(actor: Actor, entryId: number, rawInput: Entry
 }
 
 /** حذفِ ردیف — قفلِ دوره اینجا هم اعمال می‌شود. */
-export async function deleteEntry(actor: Actor, entryId: number): Promise<void> {
+export async function deleteEntry(
+  actor: Actor,
+  entryId: number,
+  /** «یک واریز برای چند پروژه» (۲.۲۷.۰): کلِ گروه یا فقط همین ردیف. */
+  options: { wholeSplit?: boolean } = {},
+): Promise<void> {
   await assertCanBook(actor);
   const before = await loadEntry(actor, entryId);
   const lockDate = await currentLockDate();
@@ -806,10 +889,13 @@ export async function deleteEntry(actor: Actor, entryId: number): Promise<void> 
    * ⚠️ پورتِ `Ledger::delete()`: حذفِ **یک** لِگِ انتقال کلِ انتقال را می‌برد،
    * وگرنه یک حساب لِگش را از دست می‌داد و دیگری نگهش می‌داشت — نیمه‌مطابقت.
    * هر لِگ باید بیرونِ دورهٔ قفل باشد و در دامنهٔ کاربر.
+   * گروهِ چندپروژه‌ای برخلافِ انتقال اختیاری است: هر ردیف به‌تنهایی هم معتبر است.
    */
   const rows = before.transferGroup
     ? await db.select().from(ledger).where(eq(ledger.transferGroup, before.transferGroup))
-    : [before];
+    : options.wholeSplit && before.splitGroup
+      ? await db.select().from(ledger).where(eq(ledger.splitGroup, before.splitGroup))
+      : [before];
   for (const row of rows) {
     assertDeletable(lockDate, row.entryDate);
     if (row.id !== entryId) await loadAccount(actor, row.accountId);
