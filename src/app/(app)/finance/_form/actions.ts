@@ -122,6 +122,7 @@ function parseSplits(raw: FormDataEntryValue | null): SplitPart[] | null {
       amountSettled: money(p.amountSettled),
       settledCurrencyId: Number(p.settledCurrencyId) > 0 ? Number(p.settledCurrencyId) : null,
       fxRate: money(p.fxRate),
+      transferFeePct: feePct(String(p.transferFeePct ?? '')),
     }));
   } catch {
     return null;

@@ -4073,5 +4073,19 @@
   "کلِ این واریزِ گروهی حذف شود؟": "Supprimer tout ce virement groupé ?",
   "یک پروژه": "Un projet",
   "این ردیف یکی از {n} ردیفِ یک واریز است. «حذفِ کلِ گروه» همه را برمی‌دارد؛ برای حذفِ فقط همین سهم «انصراف» را بزنید.": "Cette ligne est l'une des {n} lignes d'un même virement. « Supprimer tout le groupe » les retire toutes ; pour ne supprimer que cette part, appuyez sur « Annuler ».",
-  "حذفِ کلِ گروه": "Supprimer tout le groupe"
+  "حذفِ کلِ گروه": "Supprimer tout le groupe",
+  "مبلغ (آنچه از حساب رفت)": "Montant (ce qui est sorti du compte)",
+  "مبلغ (آنچه به حساب آمد)": "Montant (ce qui est arrivé sur le compte)",
+  "نرخِ این پرداخت (بدونِ کارمزد): {rate}": "Taux de ce paiement (hors frais) : {rate}",
+  "(مبلغِ کل ÷ یوروی رسیده)": "(montant total ÷ euros reçus)",
+  "ارزِ حساب ({code})": "Devise du compte ({code})",
+  "ارزِ قرارداد ({code})": "Devise du contrat ({code})",
+  "ارزِ قراردادِ پروژه‌ها یکی نیست؛ سهم را به ارزِ حساب بنویسید.": "Les devises de contrat des projets diffèrent ; saisissez les parts dans la devise du compte.",
+  "از طلب کم شود": "Déduire du solde",
+  "از طلب کم می‌شود {gross} · به دستش رسید {net} · نرخِ این واریز: {rate}": "Déduit {gross} · reçu {net} · taux de ce virement : {rate}",
+  "سهم از واریز {share} · به دستش رسید {net} · از طلبش کم می‌شود {gross}": "Part du virement {share} · reçu {net} · déduit {gross}",
+  "سهمِ هر پروژه را بنویسم به": "Saisir la part de chaque projet en",
+  "هزینهٔ انتقال (همه)": "Frais de transfert (tous)",
+  "هزینهٔ انتقال {pct}٪": "frais de transfert {pct} %",
+  "هزینهٔ انتقالِ این پروژه": "Frais de transfert de ce projet"
 }

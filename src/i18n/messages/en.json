@@ -4073,5 +4073,19 @@
   "کلِ این واریزِ گروهی حذف شود؟": "Delete this whole grouped transfer?",
   "یک پروژه": "One project",
   "این ردیف یکی از {n} ردیفِ یک واریز است. «حذفِ کلِ گروه» همه را برمی‌دارد؛ برای حذفِ فقط همین سهم «انصراف» را بزنید.": "This row is one of {n} rows of a single transfer. \"Delete whole group\" removes all of them; to delete only this share, press \"Cancel\".",
-  "حذفِ کلِ گروه": "Delete whole group"
+  "حذفِ کلِ گروه": "Delete whole group",
+  "مبلغ (آنچه از حساب رفت)": "Amount (what left the account)",
+  "مبلغ (آنچه به حساب آمد)": "Amount (what reached the account)",
+  "نرخِ این پرداخت (بدونِ کارمزد): {rate}": "Rate of this payment (without the fee): {rate}",
+  "(مبلغِ کل ÷ یوروی رسیده)": "(total amount ÷ euros received)",
+  "ارزِ حساب ({code})": "Account currency ({code})",
+  "ارزِ قرارداد ({code})": "Contract currency ({code})",
+  "ارزِ قراردادِ پروژه‌ها یکی نیست؛ سهم را به ارزِ حساب بنویسید.": "The projects' contract currencies differ; enter shares in the account currency.",
+  "از طلب کم شود": "Deduct from balance",
+  "از طلب کم می‌شود {gross} · به دستش رسید {net} · نرخِ این واریز: {rate}": "Deducted {gross} · received {net} · rate of this transfer: {rate}",
+  "سهم از واریز {share} · به دستش رسید {net} · از طلبش کم می‌شود {gross}": "Share of transfer {share} · received {net} · deducted {gross}",
+  "سهمِ هر پروژه را بنویسم به": "Enter each project's share in",
+  "هزینهٔ انتقال (همه)": "Transfer fee (all)",
+  "هزینهٔ انتقال {pct}٪": "transfer fee {pct}%",
+  "هزینهٔ انتقالِ این پروژه": "Transfer fee for this project"
 }

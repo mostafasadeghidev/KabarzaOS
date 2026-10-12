@@ -2,6 +2,15 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.28.0]
+
+### Changed
+
+- **The ledger amount is what actually left (or reached) the account.** A new row's currency now defaults to the account's currency, and the field reads "Amount (what left the account)". Paying a member in tomans from a toman account means typing the tomans from the bank receipt; the euro deducted from the member goes in "Deduct from balance". Before, the currency jumped to the contract currency and the tomans had to go into an optional "paid from account" field.
+- **The transfer fee is a share of the deducted figure**, as in the old payment sheets: 120 EUR deducted with an 18 % fee means 98.4 EUR reached the member. Typing 4,000,000 tomans, 120 EUR and 18 % now shows "received 98.4 · fee 21.60 · deducted 120" and the payment's market rate (1 EUR = 40,650, without the fee), which is the rate saved for that day. Leaving the euro empty still fills it from the payment-day rate, grossed up by the fee. Before, the fee was added on top of the amount, so 120 with 18 % deducted 146.34.
+- **Split transfers can be entered in the contract currency.** "Enter each project's share in" switches between the contract currency (default) and the account currency. In contract-currency mode you type, per project, the euros deducted from the member; the transfer's rate is worked out as total amount ÷ euros received, and each project's share of the total is filled in so that the shares always add up exactly. The account-currency mode is the previous behaviour. If the projects' contract currencies differ, only the account-currency mode is offered.
+- **Transfer fee per project in a split.** "Transfer fee (all)" is optional; each project row has its own % that overrides it (for example 0 for a project without a fee). Euros received = deducted × (1 − fee), and each row shows its share, euros received and euros deducted.
+
 ## [2.27.0]
 
 ### Added

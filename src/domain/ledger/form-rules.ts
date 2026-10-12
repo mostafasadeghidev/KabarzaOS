@@ -330,6 +330,36 @@ export function grossFromNet(net: number, feePct: number): number | null {
   return Math.round((net / (1 - pct / 100)) * 100) / 100;
 }
 
+/**
+ * «یک واریز برای چند پروژه» با یوروی هر پروژه (۲.۲۸.۰).
+ *
+ * ورودی: مبلغِ کلِ حساب (تومانِ رسید)، و برای هر پروژه یوروی کسر از طلب و درصدِ
+ * هزینهٔ انتقالش. یوروی رسیده = کسر × (۱ − درصد). نرخ = تومانِ کل ÷ جمعِ یوروی
+ * رسیده (یا نرخی که کاربر نوشته)، و تومانِ هر پروژه = یوروی رسیده × نرخ.
+ * ⚠️ وقتی نرخ از همین دو عدد درمی‌آید، آخرین سهم باقی‌مانده را می‌گیرد تا جمعِ
+ * سهم‌ها **دقیقاً** مبلغِ کل شود (ماندهٔ حساب با رسید بخواند). با نرخِ دستی
+ * جمع ممکن است نخواند — فراخوان اختلاف را نشان می‌دهد.
+ */
+export function splitByDeduction(
+  total: number,
+  rows: ReadonlyArray<{ deduction: number; feePct: number }>,
+  typedRate: number | null = null,
+): { rate: number | null; nets: number[]; shares: number[] } {
+  const nets = rows.map((r) => {
+    const pct = Number.isFinite(r.feePct) && r.feePct > 0 && r.feePct < 100 ? r.feePct : 0;
+    return Number.isFinite(r.deduction) && r.deduction > 0 ? Math.round(r.deduction * (1 - pct / 100) * 100) / 100 : 0;
+  });
+  const netSum = nets.reduce((s, n) => s + n, 0);
+  const rate = typedRate && typedRate > 0 ? typedRate : (total > 0 && netSum > 0 ? total / netSum : null);
+  if (rate === null) return { rate: null, nets, shares: nets.map(() => 0) };
+  const shares = nets.map((n) => Math.round(n * rate * 100) / 100);
+  if (!(typedRate && typedRate > 0) && shares.length > 0) {
+    const others = shares.slice(0, -1).reduce((s, x) => s + x, 0);
+    shares[shares.length - 1] = Math.round((total - others) * 100) / 100;
+  }
+  return { rate: fxRound(rate), nets, shares };
+}
+
 /** آیا یکی از دسته‌های انتخاب‌شده «پیش‌فرض قابلِ بازپرداخت» است؟ */
 export function billableFromTags(
   selected: readonly number[],

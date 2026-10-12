@@ -4073,5 +4073,19 @@
   "کلِ این واریزِ گروهی حذف شود؟": "Diese ganze gruppierte Überweisung löschen?",
   "یک پروژه": "Ein Projekt",
   "این ردیف یکی از {n} ردیفِ یک واریز است. «حذفِ کلِ گروه» همه را برمی‌دارد؛ برای حذفِ فقط همین سهم «انصراف» را بزنید.": "Diese Zeile ist eine von {n} Zeilen einer Überweisung. „Ganze Gruppe löschen“ entfernt alle; um nur diesen Anteil zu löschen, „Abbrechen“ wählen.",
-  "حذفِ کلِ گروه": "Ganze Gruppe löschen"
+  "حذفِ کلِ گروه": "Ganze Gruppe löschen",
+  "مبلغ (آنچه از حساب رفت)": "Betrag (was vom Konto abging)",
+  "مبلغ (آنچه به حساب آمد)": "Betrag (was auf dem Konto einging)",
+  "نرخِ این پرداخت (بدونِ کارمزد): {rate}": "Kurs dieser Zahlung (ohne Gebühr): {rate}",
+  "(مبلغِ کل ÷ یوروی رسیده)": "(Gesamtbetrag ÷ erhaltene Euro)",
+  "ارزِ حساب ({code})": "Kontowährung ({code})",
+  "ارزِ قرارداد ({code})": "Vertragswährung ({code})",
+  "ارزِ قراردادِ پروژه‌ها یکی نیست؛ سهم را به ارزِ حساب بنویسید.": "Die Vertragswährungen der Projekte unterscheiden sich; Anteile in Kontowährung eingeben.",
+  "از طلب کم شود": "Vom Guthaben abziehen",
+  "از طلب کم می‌شود {gross} · به دستش رسید {net} · نرخِ این واریز: {rate}": "Abgezogen {gross} · erhalten {net} · Kurs dieser Überweisung: {rate}",
+  "سهم از واریز {share} · به دستش رسید {net} · از طلبش کم می‌شود {gross}": "Anteil {share} · erhalten {net} · abgezogen {gross}",
+  "سهمِ هر پروژه را بنویسم به": "Anteil je Projekt eingeben in",
+  "هزینهٔ انتقال (همه)": "Überweisungsgebühr (alle)",
+  "هزینهٔ انتقال {pct}٪": "Überweisungsgebühr {pct} %",
+  "هزینهٔ انتقالِ این پروژه": "Überweisungsgebühr für dieses Projekt"
 }
