@@ -4089,5 +4089,7 @@
   "هزینهٔ انتقال {pct}٪": "frais de transfert {pct} %",
   "هزینهٔ انتقالِ این پروژه": "Frais de transfert de ce projet",
   "خودکار اضافه می‌شود:": "Ajouté automatiquement :",
-  "دلیلِ پرداخت — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Motif du paiement — p. ex. acompte, paiement complet, deuxième versement"
+  "دلیلِ پرداخت — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Motif du paiement — p. ex. acompte, paiement complet, deuxième versement",
+  "در توضیحات ثبت می‌شود:": "Enregistré dans la description :",
+  "اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Facultatif — p. ex. acompte, paiement complet, deuxième versement"
 }

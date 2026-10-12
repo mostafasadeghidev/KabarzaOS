@@ -107,9 +107,12 @@ describe('گاردِ ۱ — مجوزِ مالی', () => {
 });
 
 describe('گاردِ ۳ — اعتبارسنجیِ ردیف', () => {
-  it('⚠️ ردیفِ پروژه‌ای بدونِ توضیحات ثبت نمی‌شود', async () => {
-    await expect(service.createEntry(manager(), entry({ projectId })))
-      .rejects.toThrow(LedgerValidationError);
+  it('ردیفِ پروژه‌ای بی‌توضیحات با برچسبِ خودکار ثبت می‌شود (۲.۲۹.۰)', async () => {
+    const id = await service.createEntry(manager(), entry({ projectId }));
+    const [row] = await db.select({ d: ledger.description }).from(ledger).where(eq(ledger.id, id));
+    expect(row?.d).toMatch(/^بابت پروژه: /);
+    // تمیزکاری: جمعِ ماندهٔ تست‌های بعدی به همین حساب وابسته است.
+    await service.deleteEntry(owner(), id);
   });
 
   it('با توضیحات ثبت می‌شود', async () => {

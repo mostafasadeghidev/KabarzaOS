@@ -121,23 +121,15 @@ describe('R-LEDGER-04 — انتقال دو لِگِ لینک‌شده است', 
   });
 });
 
-describe('R-LEDGER-12 — ردیفِ پروژه‌ای بدونِ توضیحات ثبت نمی‌شود', () => {
+describe('validateEntry — حساب و مبلغ؛ توضیحات اختیاری', () => {
   const draft = (over: Partial<EntryDraft> = {}): EntryDraft => ({
     amount: '100', accountId: 1, projectId: null, description: '', ...over,
   });
 
-  it('ردیفِ بی‌پروژه توضیحات لازم ندارد', () => {
+  it('توضیحات اختیاری است، با پروژه یا بی‌پروژه (۲.۲۹.۰)', () => {
+    // سرور «بابت پروژه: …» را خودش به شرح می‌چسباند.
     expect(() => validateEntry(draft())).not.toThrow();
-  });
-
-  it('⚠️ ردیفِ پروژه‌ای بدونِ توضیحات رد می‌شود', () => {
-    // نامِ پروژه عکسِ لحظه‌ای است؛ با حذفِ پروژه فقط توضیحات می‌ماند.
-    expect(() => validateEntry(draft({ projectId: 7 }))).toThrow(LedgerValidationError);
-    expect(() => validateEntry(draft({ projectId: 7, description: ' ' })))
-      .toThrow(LedgerValidationError);
-  });
-
-  it('با توضیحات ثبت می‌شود', () => {
+    expect(() => validateEntry(draft({ projectId: 7 }))).not.toThrow();
     expect(() => validateEntry(draft({ projectId: 7, description: 'پیش‌پرداخت' }))).not.toThrow();
   });
 
