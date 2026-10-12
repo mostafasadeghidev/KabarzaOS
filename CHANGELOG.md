@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.29.0]
+
+### Changed
+
+- **The automatic "For project: …" note is visible while you type.** As soon as a project is picked in the ledger form, the label that is added to the description on save ("بابت پروژه: Jureasy") appears under the description field as a fixed chip, and the field asks for the reason of the payment (prepayment, full payment, second instalment…). In a split transfer one chip per project is shown. Editing a row shows only your own note in the field, with the label as a chip, so it is no longer duplicated. The description is still required for project rows, in the form and on the server.
+
 ## [2.28.0]
 
 ### Changed

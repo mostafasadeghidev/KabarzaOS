@@ -4087,5 +4087,7 @@
   "سهمِ هر پروژه را بنویسم به": "Enter each project's share in",
   "هزینهٔ انتقال (همه)": "Transfer fee (all)",
   "هزینهٔ انتقال {pct}٪": "transfer fee {pct}%",
-  "هزینهٔ انتقالِ این پروژه": "Transfer fee for this project"
+  "هزینهٔ انتقالِ این پروژه": "Transfer fee for this project",
+  "خودکار اضافه می‌شود:": "Added automatically:",
+  "دلیلِ پرداخت — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Reason for the payment — e.g. prepayment, full payment, second instalment"
 }

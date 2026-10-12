@@ -4087,5 +4087,7 @@
   "سهمِ هر پروژه را بنویسم به": "Anteil je Projekt eingeben in",
   "هزینهٔ انتقال (همه)": "Überweisungsgebühr (alle)",
   "هزینهٔ انتقال {pct}٪": "Überweisungsgebühr {pct} %",
-  "هزینهٔ انتقالِ این پروژه": "Überweisungsgebühr für dieses Projekt"
+  "هزینهٔ انتقالِ این پروژه": "Überweisungsgebühr für dieses Projekt",
+  "خودکار اضافه می‌شود:": "Wird automatisch ergänzt:",
+  "دلیلِ پرداخت — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Zahlungsgrund — z. B. Anzahlung, vollständige Zahlung, zweite Rate"
 }

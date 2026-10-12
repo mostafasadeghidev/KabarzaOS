@@ -4087,5 +4087,7 @@
   "سهمِ هر پروژه را بنویسم به": "Saisir la part de chaque projet en",
   "هزینهٔ انتقال (همه)": "Frais de transfert (tous)",
   "هزینهٔ انتقال {pct}٪": "frais de transfert {pct} %",
-  "هزینهٔ انتقالِ این پروژه": "Frais de transfert de ce projet"
+  "هزینهٔ انتقالِ این پروژه": "Frais de transfert de ce projet",
+  "خودکار اضافه می‌شود:": "Ajouté automatiquement :",
+  "دلیلِ پرداخت — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Motif du paiement — p. ex. acompte, paiement complet, deuxième versement"
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { learnedRate, paymentNote, planPaymentMirror } from './mirror';
+import { learnedRate, paymentNote, planPaymentMirror, projectNoteTag, userNoteOf } from './mirror';
 
 const base = {
   direction: 'out' as const,
@@ -102,5 +102,19 @@ describe('آموختنِ نرخ از تسویه', () => {
     expect(learnedRate({
       amount: '100', amountSettled: '0', currencyId: 1, settledCurrencyId: 2,
     })).toBeNull();
+  });
+});
+
+describe('userNoteOf — یادداشتِ کاربر بی‌برچسبِ خودکار (۲.۲۹.۰)', () => {
+  it('برچسبِ انتها برداشته می‌شود و ذخیرهٔ دوباره همان متن را می‌سازد', () => {
+    const saved = paymentNote('پیش‌پرداخت', 'Jureasy');
+    expect(userNoteOf(saved)).toBe('پیش‌پرداخت');
+    expect(paymentNote(userNoteOf(saved), 'Jureasy')).toBe(saved);
+  });
+  it('ردیفی که فقط برچسب دارد یادداشتِ خالی می‌دهد', () => {
+    expect(userNoteOf(projectNoteTag('Jureasy'))).toBe('');
+  });
+  it('متنِ بی‌برچسب دست نمی‌خورد', () => {
+    expect(userNoteOf('اجارهٔ دفتر')).toBe('اجارهٔ دفتر');
   });
 });
