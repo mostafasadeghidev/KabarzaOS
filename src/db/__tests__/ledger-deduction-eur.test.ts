@@ -63,6 +63,21 @@ describe('یوروی ردیف = عددی که از طلبِ عضو کم شد', (
     expect(Number(pay!.eur)).toBe(105.26);
   });
 
+  it('Jureasy: ۴ میلیون با هزینهٔ انتقالِ ۱۸٪ ← ۱۲۰ از طلب، نرخِ بازار (نه نرخِ با کارمزد) آموخته می‌شود', async () => {
+    const fid = await service.createEntry(owner(), {
+      accountId: acc, entryDate: '2021-09-24', direction: 'out', amount: '4000000', currencyId: irr,
+      amountSettled: '120', settledCurrencyId: eur, fxRate: '40650', transferFeePct: '18',
+      description: 'Jureasy', projectId: P, tagIds: [], officeId: null,
+      payerUserId: null, payerLabel: '', receiverUserId: M1, receiverLabel: 'علی',
+    });
+    const [row] = await db.select({ fee: ledger.transferFeePct }).from(ledger).where(eq(ledger.id, fid));
+    expect(Number(row!.fee)).toBe(18);
+    const [pay] = await db.select({ settled: projectPayments.amountSettled }).from(projectPayments).where(eq(projectPayments.ledgerId, fid));
+    expect(Number(pay!.settled)).toBe(120);
+    const rates = await db.select({ rate: exchangeRates.rate, date: exchangeRates.effectiveDate }).from(exchangeRates);
+    expect(Number(rates.find((r) => r.date === '2021-09-24')!.rate)).toBe(40650);
+  });
+
   it('بازمحاسبه با نرخِ تازه‌تر یوروی ردیف را از طلبِ عضو جدا نمی‌کند', async () => {
     await db.insert(exchangeRates).values({ fromCurrencyId: eur, toCurrencyId: irr, rate: '25000', effectiveDate: '2026-10-10' });
     await service.recomputeEur(owner());

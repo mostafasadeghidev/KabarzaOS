@@ -4042,5 +4042,9 @@
   "ماندهٔ پایانِ دوره": "Closing balance",
   "بستنِ این نما": "Close this view",
   "دارید ردیف‌های {range} را می‌بینید — فقط‌خواندنی.": "You are viewing the rows of {range} — read-only.",
-  "همهٔ دوره‌های بسته": "All closed periods"
+  "همهٔ دوره‌های بسته": "All closed periods",
+  "به دستِ «{who}» رسید: {net} · هزینهٔ انتقال (به عهدهٔ خودش): {fee} · از طلبش کم می‌شود: {gross}": "\"{who}\" received {net} · transfer fee (on them): {fee} · deducted from their balance: {gross}",
+  "هزینهٔ انتقال": "Transfer fee",
+  "هزینهٔ انتقال دارد": "Has a transfer fee",
+  "هزینهٔ انتقال (به عهدهٔ عضو)": "Transfer fee (paid by the member)"
 }

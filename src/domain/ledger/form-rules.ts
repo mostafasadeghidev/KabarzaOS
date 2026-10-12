@@ -320,6 +320,16 @@ export function deductionFromRate(amount: number, rate: number): number | null {
   return Math.round((amount / rate) * 100) / 100;
 }
 
+/**
+ * هزینهٔ انتقالِ به عهدهٔ عضو (۲.۲۵.۰): آنچه به دستش رسید (خالص) ← آنچه از طلبش
+ * کم می‌شود: `خالص ÷ (۱ − درصد/۱۰۰)`. ۹۸٫۴ با ۱۸٪ ← ۱۲۰. درصدِ نامعتبر = بی‌هزینه.
+ */
+export function grossFromNet(net: number, feePct: number): number | null {
+  if (!Number.isFinite(net) || net <= 0) return null;
+  const pct = Number.isFinite(feePct) && feePct > 0 && feePct < 100 ? feePct : 0;
+  return Math.round((net / (1 - pct / 100)) * 100) / 100;
+}
+
 /** آیا یکی از دسته‌های انتخاب‌شده «پیش‌فرض قابلِ بازپرداخت» است؟ */
 export function billableFromTags(
   selected: readonly number[],

@@ -9,9 +9,10 @@ import {
   rateFromAmounts, relocateParty, requiresDescription,
   selectableTags, settledCurrencyId, showsBillable, showsRecurring, showsSettled,
   showsUnitPicker, visibleParty, type Direction, type PartyState,
-  billableFromTags, effectiveRateOf, rateOnDate, daysBetween, deductionFromRate,
+  billableFromTags, effectiveRateOf, rateOnDate, daysBetween, deductionFromRate, grossFromNet,
 } from '@/domain/ledger/form-rules';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
+import { groupDigits, ungroupDigits } from '@/lib/number-input';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Combobox, MultiSelect, type Option } from '@/components/ui/combobox';
@@ -103,6 +104,9 @@ export function EntryForm({
   const [deductMode, setDeductMode] = useState<'auto' | 'rate' | 'settled'>(
     editing?.amountSettled ? 'settled' : 'auto',
   );
+  /** هزینهٔ انتقالِ به عهدهٔ عضو، درصد (۲.۲۵.۰). */
+  const [fee, setFee] = useState(editing?.transferFeePct ? String(Number(editing.transferFeePct)) : '');
+  const [showFee, setShowFee] = useState(false);
   /** تاریخِ ردیف — نرخِ پیشنهادی از **همین روز** خوانده می‌شود، نه امروز. */
   const [entryDate, setEntryDate] = useState(keep('entryDate', editing?.entryDate ?? today));
   const [amount, setAmount] = useState(keep('amount', editing?.amount ?? ''));
@@ -261,16 +265,29 @@ export function EntryForm({
   const usedRate = deductMode === 'rate' ? (Number(rate) > 0 ? Number(rate) : null)
     : deductMode === 'settled' ? rateFromAmounts(Number(amount), Number(settled))
     : suggested?.rate ?? null;
-  const deduction = deductMode === 'settled' ? settled
-    : differs ? String(deductionFromRate(Number(amount), usedRate ?? 0) ?? '')
-    : amount;
   const receiverIsMember = direction === 'out' && Boolean(receiverUserId) && membersHere.has(receiverUserId!);
+  /**
+   * هزینهٔ انتقالِ به عهدهٔ عضو (۲.۲۵.۰) — آنچه به دستش رسید «خالص» است و از
+   * طلبش «خالص ÷ (۱ − درصد)» کم می‌شود: ۹۸٫۴ با ۱۸٪ ← ۱۲۰. نرخِ روز دست نمی‌خورد،
+   * پس نرخِ بازار (نه نرخِ آلوده به کارمزد) در جدولِ نرخ‌ها می‌نشیند.
+   */
+  const feeVisible = settledVisible && receiverIsMember;
+  const feeNum = feeVisible && deductMode !== 'settled' && Number(fee) > 0 && Number(fee) < 100 ? Number(fee) : 0;
+  const net = deductMode === 'settled' ? null
+    : differs ? deductionFromRate(Number(amount), usedRate ?? 0)
+    : (Number(amount) > 0 ? Number(amount) : null);
+  const deduction = deductMode === 'settled' ? settled
+    : feeNum > 0 ? String(grossFromNet(net ?? 0, feeNum) ?? '')
+    : differs ? String(net ?? '')
+    : amount;
   const deductWho = (shown === 'payer' ? party.payer.label : party.receiver.label) || projectLabel;
   const deductLabel = receiverIsMember
     ? tr('از طلبِ «{who}» کم شود', { who: deductWho })
     : tr('برای «{who}» حساب شود', { who: deductWho });
   /** فقط وقتی چیزی برای ذخیره هست: ارزِ متفاوت، یا عددِ دستی/کارکرد. */
-  const sendSettled = settledVisible && (differs || deductMode === 'settled') && Number(deduction) > 0;
+  const sendSettled = settledVisible && (differs || deductMode === 'settled' || feeNum > 0) && Number(deduction) > 0;
+  /** خانهٔ درصد باز است؟ — با دکمهٔ «هزینهٔ انتقال» یا وقتی ردیف از قبل هزینه دارد. */
+  const feeOpen = feeVisible && (showFee || Number(fee) > 0);
 
   const onSettledChange = (value: string) => { setSettled(value); setDeductMode('settled'); };
   const onRateChange = (value: string) => { setRate(value); setDeductMode('rate'); };
@@ -454,25 +471,39 @@ export function EntryForm({
       {/* ── R-FORM-05/09 — «از طلبِ … کم شود» (۲.۲۵.۰) ── */}
       <input type="hidden" name="amountSettled" value={sendSettled ? deduction : ''} />
       <input type="hidden" name="settledCurrencyId" value={sendSettled ? String(contractCurrency ?? '') : ''} />
-      {/* نرخ فقط وقتی کاربر خودش نوشته — پیشنهادِ تاریخچه دوباره ذخیره نمی‌شود. */}
-      <input type="hidden" name="fxRate" value={sendSettled && deductMode === 'rate' ? rate : ''} />
+      {/*
+        نرخ وقتی کاربر خودش نوشته — و وقتی هزینهٔ انتقال هست (۲.۲۵.۰): بی‌آن سرور نرخ
+        را از «مبلغ ÷ عددِ کسرشده» می‌ساخت که کارمزد داخلش بود (۳۳٬۳۳۳ به‌جای ۴۰٬۶۵۰).
+      */}
+      <input
+        type="hidden" name="fxRate"
+        value={sendSettled && differs && (deductMode === 'rate' || feeNum > 0) && usedRate !== null ? String(usedRate) : ''}
+      />
+      <input type="hidden" name="transferFeePct" value={feeNum > 0 ? String(feeNum) : ''} />
 
       {/* ارزِ یکسان: یک خطِ روشن؛ «عددِ دیگر» فقط برای حالتِ نادری که کسر با مبلغ فرق دارد. */}
-      {settledVisible && !differs && deductMode !== 'settled' && Number(amount) > 0 && (
+      {settledVisible && !differs && deductMode !== 'settled' && !feeOpen && Number(amount) > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300">
           <span>
-            {deductLabel}: <span dir="ltr" className="num font-medium">{amount} {entryCode}</span>
+            {deductLabel}: <span dir="ltr" className="num font-medium">{groupDigits(ungroupDigits(amount))} {entryCode}</span>
           </span>
-          <Button
-            type="button" variant="link" size="sm" className="h-auto p-0 text-xs"
-            onClick={() => { setSettled(amount); setDeductMode('settled'); }}
-          >
-            {tr('عددِ دیگری کم شود')}
-          </Button>
+          <span className="flex flex-wrap gap-3">
+            {feeVisible && (
+              <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setShowFee(true)}>
+                {tr('هزینهٔ انتقال دارد')}
+              </Button>
+            )}
+            <Button
+              type="button" variant="link" size="sm" className="h-auto p-0 text-xs"
+              onClick={() => { setSettled(amount); setDeductMode('settled'); }}
+            >
+              {tr('عددِ دیگری کم شود')}
+            </Button>
+          </span>
         </div>
       )}
 
-      {settledVisible && (differs || deductMode === 'settled') && (
+      {settledVisible && (differs || deductMode === 'settled' || feeOpen) && (
         <FieldSet variant="box">
           <FieldLegend>{deductLabel}</FieldLegend>
           <div className="flex flex-wrap items-center gap-2">
@@ -502,7 +533,34 @@ export function EntryForm({
                 </InputGroupAddon>
               </InputGroup>
             )}
+
+            {/* هزینهٔ انتقالِ به عهدهٔ عضو (۲.۲۵.۰) — فقط پرداخت به عضوِ پروژه. */}
+            {feeOpen && deductMode !== 'settled' && (
+              <InputGroup className="w-56">
+                <InputGroupAddon>
+                  <InputGroupText>{tr('هزینهٔ انتقال')}</InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  inputMode="decimal" className="num" aria-label={tr('هزینهٔ انتقال')}
+                  placeholder="0" value={fee} onChange={(e) => setFee(e.target.value)}
+                />
+                <InputGroupAddon align="inline-end">
+                  <InputGroupText>%</InputGroupText>
+                </InputGroupAddon>
+              </InputGroup>
+            )}
           </div>
+
+          {feeNum > 0 && net !== null && (
+            <FieldDescription>
+              {tr('به دستِ «{who}» رسید: {net} · هزینهٔ انتقال (به عهدهٔ خودش): {fee} · از طلبش کم می‌شود: {gross}', {
+                who: deductWho,
+                net: `${groupDigits(String(net))} ${settledCode}`,
+                fee: `${groupDigits((Number(deduction) - net).toFixed(2))} ${settledCode}`,
+                gross: `${groupDigits(deduction)} ${settledCode}`,
+              })}
+            </FieldDescription>
+          )}
 
           {differs && deductMode === 'auto' && suggested && (
             <FieldDescription>

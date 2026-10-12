@@ -4042,5 +4042,9 @@
   "ماندهٔ پایانِ دوره": "Saldo final",
   "بستنِ این نما": "Fechar esta vista",
   "دارید ردیف‌های {range} را می‌بینید — فقط‌خواندنی.": "Está a ver as linhas de {range} — só leitura.",
-  "همهٔ دوره‌های بسته": "Todos os períodos fechados"
+  "همهٔ دوره‌های بسته": "Todos os períodos fechados",
+  "به دستِ «{who}» رسید: {net} · هزینهٔ انتقال (به عهدهٔ خودش): {fee} · از طلبش کم می‌شود: {gross}": "«{who}» recebeu {net} · taxa de transferência (a cargo dele): {fee} · descontado do saldo: {gross}",
+  "هزینهٔ انتقال": "Taxa de transferência",
+  "هزینهٔ انتقال دارد": "Tem taxa de transferência",
+  "هزینهٔ انتقال (به عهدهٔ عضو)": "Taxa de transferência (a cargo do membro)"
 }

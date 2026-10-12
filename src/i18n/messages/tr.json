@@ -4042,5 +4042,9 @@
   "ماندهٔ پایانِ دوره": "Dönem sonu bakiyesi",
   "بستنِ این نما": "Bu görünümü kapat",
   "دارید ردیف‌های {range} را می‌بینید — فقط‌خواندنی.": "{range} satırlarını görüyorsunuz — salt okunur.",
-  "همهٔ دوره‌های بسته": "Tüm kapalı dönemler"
+  "همهٔ دوره‌های بسته": "Tüm kapalı dönemler",
+  "به دستِ «{who}» رسید: {net} · هزینهٔ انتقال (به عهدهٔ خودش): {fee} · از طلبش کم می‌شود: {gross}": "«{who}» aldı: {net} · transfer ücreti (kendisine ait): {fee} · alacağından düşülen: {gross}",
+  "هزینهٔ انتقال": "Transfer ücreti",
+  "هزینهٔ انتقال دارد": "Transfer ücreti var",
+  "هزینهٔ انتقال (به عهدهٔ عضو)": "Transfer ücreti (üyeye ait)"
 }

@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.26.0]
+
+### Added
+
+- **Transfer fee paid by the member** in the ledger form. On a payment to a project member, "Has a transfer fee" opens a percentage field next to "Deduct from balance". The amount and the payment-day rate give what reached the member; the deducted figure becomes that divided by (1 − fee): 98.4 EUR received with an 18 % fee deducts 120 EUR, so the project is fully settled. The form spells out received / fee / deducted, the market rate (not the fee-inclusive one) is saved as that day's rate, and the row's details show the fee. Stored on the ledger row (migration `0057_ledger_transfer_fee`).
+- **Thousands separators in every amount field** while typing (for example 4,000,000). The value saved is still the plain number; Persian or Arabic digits and the Persian decimal mark are converted as you type.
+
 ## [2.25.0]
 
 ### Added
