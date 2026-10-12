@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.30.1]
+
+### Fixed
+
+- **The project's transactions table lines up in right-to-left languages.** The two-line amount cells ("From account" with the account name, "Value for the project" with the transfer fee) now sit under their headers; the account name and fee line used to drift to the other side. The overpaid figure in the team table is aligned the same way, the description column no longer collapses to one word per line on narrow screens, and it leaves out the automatic "For project: …" label, which is the same project.
+
 ## [2.30.0]
 
 ### Changed

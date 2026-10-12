@@ -21,6 +21,7 @@ import { useT } from '@/i18n/client';
 import { removeQaRoleAction } from '../_form/tab-actions';
 import { useConfirm } from '@/components/ui/confirm';
 import { summarizeProject } from '@/domain/team-money/payments';
+import { userNoteOf } from '@/domain/ledger/mirror';
 import { PAY_STATUS_LABELS } from './my-money-tab';
 import { Checkbox } from '@/components/ui/checkbox';
 import { StatCard } from '@/components/stat-card';
@@ -81,6 +82,21 @@ const DIRECTION_LABEL: Record<string, string> = {
   member_payout: 'پرداخت به عضو',
   project_expense: 'هزینه',
 };
+
+/**
+ * سلولِ مبلغ با یک خطِ توضیح زیرش (۲.۳۰.۰) — هم‌ترازِ ستون‌های عددی.
+ * ⚠️ نه `TableNumericCell`: آن همه‌چیز را در `span.num` ِ چپ‌به‌راست می‌پیچد و
+ * خطِ دوم (نامِ حساب، کارمزد) در RTL به سمتِ چپ می‌افتاد. اینجا فقط خودِ عدد
+ * `num` است و خطِ دوم جهتِ صفحه را دارد.
+ */
+function StackedAmountCell({ value, sub }: { value: React.ReactNode; sub?: React.ReactNode }) {
+  return (
+    <TableCell className="whitespace-nowrap ltr:text-end rtl:text-start">
+      <span className="num">{value}</span>
+      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
+    </TableCell>
+  );
+}
 
 function day(value: Date | string | null): string {
   if (!value) return '—';
@@ -191,7 +207,7 @@ export function FinanceTab({
                       ? <TableNumericCell>{withCode(m.remaining, m.currencyCode)}</TableNumericCell>
                       : m.paid - m.agreed > 0.001
                         ? (
-                          <TableCell className="text-end text-amber-700 dark:text-amber-500">
+                          <TableCell className="whitespace-nowrap text-amber-700 ltr:text-end rtl:text-start dark:text-amber-500">
                             {t('اضافه‌پرداخت')}{' '}
                             <bdi dir="ltr" className="tabular-nums">{withCode(m.paid - m.agreed, m.currencyCode)}</bdi>
                           </TableCell>
@@ -229,7 +245,8 @@ export function FinanceTab({
                 const fee = Number(p.transferFeePct ?? 0);
                 return (
                   <TableRow key={p.id}>
-                    <TableCell>{p.note || '—'}</TableCell>
+                    {/* برچسبِ «بابت پروژه: …» اینجا، داخلِ صفحهٔ همان پروژه، تکراری است. */}
+                    <TableCell className="min-w-48">{userNoteOf(p.note) || '—'}</TableCell>
                     <TableCell>
                       <span className="inline-flex items-center gap-1 whitespace-nowrap">
                         {incoming
@@ -243,17 +260,12 @@ export function FinanceTab({
                     </TableCell>
                     <TableNumericCell>{day(p.paidAt)}</TableNumericCell>
                     {/* مبلغی که واقعاً از حساب رفت یا به آن رسید — با ارز و نامِ حساب. */}
-                    <TableNumericCell>
-                      <div>{withCode(p.amount, p.currencyCode ?? null)}</div>
-                      {p.accountName && <div className="text-xs text-muted-foreground">{p.accountName}</div>}
-                    </TableNumericCell>
+                    <StackedAmountCell value={withCode(p.amount, p.currencyCode ?? null)} sub={p.accountName} />
                     {/* پورتِ ستونِ «معادل (محاسبه)»: ارزشِ ردیف در ارزِ پروژه، نه مبلغِ خام. */}
-                    <TableNumericCell>
-                      <div>{p.countedValue ? money(p.countedValue) : '—'}</div>
-                      {fee > 0 && (
-                        <div className="text-xs text-muted-foreground">{t('کارمزدِ انتقال {pct}٪', { pct: format(String(fee)) })}</div>
-                      )}
-                    </TableNumericCell>
+                    <StackedAmountCell
+                      value={p.countedValue ? money(p.countedValue) : '—'}
+                      sub={fee > 0 ? t('کارمزدِ انتقال {pct}٪', { pct: format(String(fee)) }) : null}
+                    />
                     <TableCell>
                       {(p.receiptIds?.length ?? 0) > 0 ? (
                         <a
