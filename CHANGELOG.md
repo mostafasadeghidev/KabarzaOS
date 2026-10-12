@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.30.0]
+
+### Changed
+
+- **The project's finance tab is split into "Client" and "Team".** The client part keeps price, billable expenses, total due, paid, remaining and status. A new "Team" part (global project or finance managers only, never clients) shows what was agreed with the members, what has been paid to them and what is still owed, with one row per member; overpayments are shown as "Overpaid …" instead of "settled". In a unit-based project the agreed figure is the sum of the member's work entries.
+- **A project without a price says so.** With no price and no billable expenses, the price reads "Not set", total due and remaining show "—" and the status is "No price set" instead of "Unpaid".
+- **The transactions table shows what really moved.** "From account" is the amount that left or reached the account, with its currency and the account name (for example 4,000,000 IRT · Blue); "Value for the project" is what the row counts for in the project currency, with the transfer fee under it. The type has an in/out arrow and the member's name. Before, the amount column showed the settled figure without a currency, so a toman payment looked like "120.00".
+
+### Fixed
+
+- **Client totals are converted to the project currency.** Paid and billable expenses were raw sums of the amounts, so a payment in tomans was added to a euro price as if it were euros. Each row now counts with the same "value for the project" as the table (the nominal amount when no rate is known).
+
 ## [2.29.0]
 
 ### Changed

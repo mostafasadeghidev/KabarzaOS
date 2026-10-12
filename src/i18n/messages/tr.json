@@ -4091,5 +4091,16 @@
   "خودکار اضافه می‌شود:": "Otomatik eklenir:",
   "دلیلِ پرداخت — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Ödeme nedeni — ör. ön ödeme, tam ödeme, ikinci taksit",
   "در توضیحات ثبت می‌شود:": "Açıklamaya kaydedilir:",
-  "اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "İsteğe bağlı — ör. ön ödeme, tam ödeme, ikinci taksit"
+  "اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "İsteğe bağlı — ör. ön ödeme, tam ödeme, ikinci taksit",
+  "ارزش برای پروژه": "Proje için değer",
+  "تراکنش‌ها": "İşlemler",
+  "توافق": "Anlaşılan",
+  "توافق با اعضا": "Üyelerle anlaşılan",
+  "قیمت ثبت نشده": "Fiyat girilmedi",
+  "قیمتِ پروژه و آنچه کارفرما پرداخته است.": "Proje fiyatı ve müşterinin ödediği tutar.",
+  "مانده به اعضا": "Üyelere kalan",
+  "مبلغِ توافق‌شده با اعضا و آنچه به آنها پرداخت شده است.": "Üyelerle anlaşılan tutar ve onlara ödenen.",
+  "پرداخت‌شده به اعضا": "Üyelere ödenen",
+  "کارمزدِ انتقال {pct}٪": "%{pct} transfer ücreti",
+  "اضافه‌پرداخت": "Fazla ödeme"
 }

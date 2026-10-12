@@ -4091,5 +4091,16 @@
   "خودکار اضافه می‌شود:": "Wird automatisch ergänzt:",
   "دلیلِ پرداخت — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Zahlungsgrund — z. B. Anzahlung, vollständige Zahlung, zweite Rate",
   "در توضیحات ثبت می‌شود:": "Wird als Beschreibung gespeichert:",
-  "اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Optional — z. B. Anzahlung, vollständige Zahlung, zweite Rate"
+  "اختیاری — مثلاً پیش‌پرداخت، پرداختِ کامل، قسطِ دوم": "Optional — z. B. Anzahlung, vollständige Zahlung, zweite Rate",
+  "ارزش برای پروژه": "Wert für das Projekt",
+  "تراکنش‌ها": "Buchungen",
+  "توافق": "Vereinbart",
+  "توافق با اعضا": "Mit Mitgliedern vereinbart",
+  "قیمت ثبت نشده": "Kein Preis festgelegt",
+  "قیمتِ پروژه و آنچه کارفرما پرداخته است.": "Projektpreis und was der Kunde bezahlt hat.",
+  "مانده به اعضا": "Noch an Mitglieder offen",
+  "مبلغِ توافق‌شده با اعضا و آنچه به آنها پرداخت شده است.": "Mit den Mitgliedern vereinbarte Beträge und was ihnen gezahlt wurde.",
+  "پرداخت‌شده به اعضا": "An Mitglieder gezahlt",
+  "کارمزدِ انتقال {pct}٪": "{pct} % Überweisungsgebühr",
+  "اضافه‌پرداخت": "Überzahlt"
 }

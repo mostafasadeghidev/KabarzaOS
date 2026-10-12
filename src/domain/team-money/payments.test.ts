@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  paymentStatus, remaining, summarizeProject, rowValueIn, contractBalance,
+  paymentStatus, remaining, summarizeProject, rowValueIn, contractBalance, teamSummary,
   outstandingTotal, requestableAmount, assertRequestAllowed,
   markPaid, unpaidWorkExcludingRequested, RequestValidationError,
   type RequestRow,
@@ -180,5 +180,50 @@ describe('R-TEAM-11 — کارِ پرداخت‌نشده نباید در دو ف
       { id: 10, amount: '10', status: 'rejected', unitEntryId: 3 },
     ];
     expect(unpaidWorkExcludingRequested(entries, reqs).map((e) => e.id)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('teamSummary — بخشِ «تیم» ِ تبِ مالیِ پروژه (۲.۳۰.۰)', () => {
+  const IRT = 3;
+  it('توافق و پرداختیِ هر عضو، با تسویه‌شده بر مبلغِ تومانی مقدم', () => {
+    const t = teamSummary({
+      members: [{ userId: 15, name: 'Ali', agreed: '120', currencyId: EUR }],
+      units: [],
+      payouts: [{ userId: 15, amount: '4000000', currencyId: IRT, amountSettled: '120', settledCurrencyId: EUR }],
+      isUnitBased: false,
+      projectCurrencyId: EUR,
+      source: rates,
+    });
+    expect(t).toMatchObject({ currencyId: EUR, agreed: 120, paid: 120, remaining: 0 });
+    expect(t.members).toEqual([{ userId: 15, name: 'Ali', currencyId: EUR, agreed: 120, paid: 120, remaining: 0 }]);
+  });
+
+  it('دو نقشِ یک عضو جمع می‌شوند و جمعِ کل به ارزِ پروژه تبدیل می‌شود', () => {
+    const t = teamSummary({
+      members: [
+        { userId: 1, name: 'A', agreed: '100', currencyId: USD },
+        { userId: 1, name: 'A', agreed: '100', currencyId: USD },
+        { userId: 2, name: 'B', agreed: '50', currencyId: EUR },
+      ],
+      units: [],
+      payouts: [],
+      isUnitBased: false,
+      projectCurrencyId: EUR,
+      source: rates,
+    });
+    expect(t.members.map((m) => [m.userId, m.agreed, m.currencyId])).toEqual([[1, 200, USD], [2, 50, EUR]]);
+    expect(t.agreed).toBeCloseTo(230, 6); // ۲۰۰ دلار × ۰٫۹ + ۵۰
+  });
+
+  it('پروژهٔ تعدادی: توافق = جمعِ ردیف‌های کارکرد', () => {
+    const t = teamSummary({
+      members: [{ userId: 3, name: 'S', agreed: '0', currencyId: EUR }],
+      units: [{ userId: 3, amount: '40', currencyId: EUR }, { userId: 3, amount: '60', currencyId: EUR }],
+      payouts: [{ userId: 3, amount: '30', currencyId: EUR }],
+      isUnitBased: true,
+      projectCurrencyId: EUR,
+      source: rates,
+    });
+    expect(t).toMatchObject({ agreed: 100, paid: 30, remaining: 70 });
   });
 });
