@@ -106,6 +106,11 @@ export async function saveCurrency(
   return rows[0]!.id;
 }
 
+/** اعشارِ همهٔ ارزها — قابِ برنامه آن را برای `formatIn` ثبت می‌کند (۲.۳۰.۲). */
+export async function currencyDecimalsList(): Promise<Array<{ code: string; decimals: number }>> {
+  return db.select({ code: currencies.code, decimals: currencies.decimals }).from(currencies);
+}
+
 /** ⚠️ R-SET-02 — پیش‌فرضِ یکتا: پرچمِ همه پاک، بعد یکی نشانده می‌شود. */
 export async function setDefaultCurrency(actor: Actor, id: number) {
   assertSettings(actor);

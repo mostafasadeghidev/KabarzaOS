@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { format, inputValue, splitMinutes, type Currency } from './money';
+import { decimalsOf, format, formatIn, inputValue, registerCurrencyDecimals, splitMinutes, type Currency } from './money';
 
 const EUR: Currency = { id: 1, code: 'EUR', symbol: '€', decimals: 2 };
 const TOMAN: Currency = { id: 2, code: 'IRT', symbol: 'تومان', decimals: 0 };
@@ -85,5 +85,21 @@ describe('G2 — دقتِ اعشاری روی پول', () => {
 
   it('مقدارِ منفی درست فرمت می‌شود', () => {
     expect(format('-1234.5', EUR)).toBe('€ -1,234.50');
+  });
+});
+
+describe('formatIn — اعشارِ ارز از تنظیمات (۲.۳۰.۲)', () => {
+  it('تومانِ بی‌اعشار، یورو با دو رقم، ارزِ ناشناخته دو رقم', () => {
+    registerCurrencyDecimals([{ code: 'IRT', decimals: 0 }, { code: 'EUR', decimals: 2 }]);
+    expect(formatIn('4000000.0000', 'IRT')).toBe('4,000,000');
+    expect(formatIn('98.4', 'EUR')).toBe('98.40');
+    expect(formatIn('12.5', 'XYZ')).toBe('12.50');
+    expect(formatIn('12.5', null)).toBe('12.50');
+  });
+
+  it('⚠️ صفر رقم واقعاً صفر است، نه «نبود» (falsy)', () => {
+    registerCurrencyDecimals([{ code: 'irt', decimals: 0 }]);
+    expect(decimalsOf('IRT')).toBe(0);
+    expect(formatIn('1499.6', 'IRT')).toBe('1,500');
   });
 });

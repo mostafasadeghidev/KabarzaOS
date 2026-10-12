@@ -59,13 +59,21 @@ const num = (v: FormDataEntryValue | null): number | null => {
 
 /* ---- ارز ---- */
 
+/** تعدادِ اعشار: عددِ صحیحِ ۰ تا ۶؛ خالی یا نامعتبر = ۲. */
+function decimalsInput(raw: FormDataEntryValue | null): number {
+  const text = String(raw ?? '').trim();
+  const n = Number(text);
+  return text !== '' && Number.isInteger(n) && n >= 0 && n <= 6 ? n : 2;
+}
+
 export async function saveCurrencyAction(_prev: SettingsState, formData: FormData) {
   return run((actor) => settings.saveCurrency(actor, {
     id: num(formData.get('id')),
     code: String(formData.get('code') ?? ''),
     name: String(formData.get('name') ?? ''),
     symbol: String(formData.get('symbol') ?? ''),
-    decimals: Number(formData.get('decimals') ?? 2) || 2,
+    // ⚠️ نه `|| 2`: صفر (تومان) falsy است و هر بار به ۲ برمی‌گشت.
+    decimals: decimalsInput(formData.get('decimals')),
     isActive: formData.get('isActive') !== null,
   }), 'ارز ذخیره نشد.');
 }

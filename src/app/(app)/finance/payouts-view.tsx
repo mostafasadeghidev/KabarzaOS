@@ -8,7 +8,7 @@ import {
   decideRequestAction, deleteRecurringAction, payRecurringAction,
   payRequestAction, payUnitAction, saveRecurringAction, type PayoutState,
 } from './_form/payout-actions';
-import { format } from '@/domain/money/money';
+import { format, formatIn } from '@/domain/money/money';
 import {
   BUCKET_LABELS, dueBucket, intervalLabel, KIND_LABELS, UNIT_LABELS,
   type DueBucket, type IntervalUnit,
@@ -387,9 +387,9 @@ export function PayoutsView({
                       {r.note && <span className="block text-xs text-muted-foreground">{r.note}</span>}
                     </TableCell>
                     <TableCell>{r.projectTitle ?? '—'}</TableCell>
-                    <TableNumericCell>{format(r.amount)} {r.currencyCode ?? ''}</TableNumericCell>
+                    <TableNumericCell>{formatIn(r.amount, r.currencyCode)} {r.currencyCode ?? ''}</TableNumericCell>
                     <TableNumericCell className="text-muted-foreground">
-                      {r.remaining === null ? '—' : `${format(r.remaining)} ${r.remainingCurrencyCode ?? ''}`}
+                      {r.remaining === null ? '—' : `${formatIn(r.remaining, r.remainingCurrencyCode)} ${r.remainingCurrencyCode ?? ''}`}
                     </TableNumericCell>
                     <TableNumericCell className="text-muted-foreground">{formatDate(r.createdAt, tz)}</TableNumericCell>
                     <TableCell>
@@ -491,11 +491,11 @@ export function PayoutsView({
                   <TableCell>{u.projectTitle ?? '—'}</TableCell>
                   <TableNumericCell>{format(u.quantity)}</TableNumericCell>
                   <TableNumericCell>
-                    {format(u.remaining ?? u.amount)} {u.currencyCode ?? ''}
+                    {formatIn(u.remaining ?? u.amount, u.currencyCode)} {u.currencyCode ?? ''}
                     {/* بخشی پرداخت‌شده: مانده بزرگ، کلِ مبلغ کوچک زیرش. */}
                     {Number(u.paidAmount ?? 0) > 0 && (
                       <span className="block text-xs text-muted-foreground">
-                        {tr('مانده از {total}', { total: format(u.amount) })}
+                        {tr('مانده از {total}', { total: formatIn(u.amount, u.currencyCode) })}
                       </span>
                     )}
                   </TableNumericCell>
@@ -538,7 +538,7 @@ export function PayoutsView({
                 <TableNumericCell>{p.paidAt ?? '—'}</TableNumericCell>
                 <TableCell><UserName userId={p.userId} name={p.userName ?? '—'} size="sm" /></TableCell>
                 <TableCell>{t(PAY_DIRECTION_LABELS[p.direction] ?? p.direction)}</TableCell>
-                <TableNumericCell>{format(p.amount)} {p.currencyCode ?? ''}</TableNumericCell>
+                <TableNumericCell>{formatIn(p.amount, p.currencyCode)} {p.currencyCode ?? ''}</TableNumericCell>
                 <TableCell className="text-muted-foreground">{p.note || '—'}</TableCell>
                 <TableCell>
                   {p.receiptId ? (
@@ -651,7 +651,7 @@ export function PayoutsView({
                 aria-pressed={v.vendorId !== null && expenseVendors.includes(v.vendorId)}
                 className="rounded-full font-normal"
               >
-                {v.vendor}: <span className="num">{format(v.total)} {v.code}</span>
+                {v.vendor}: <span className="num">{formatIn(v.total, v.code)} {v.code}</span>
               </Button>
               </Hint>
             ))}
@@ -703,7 +703,7 @@ export function PayoutsView({
                           <span className="ms-2 text-xs text-muted-foreground">{r.accountName}</span>
                         )}
                       </TableCell>
-                      <TableNumericCell>{format(r.amount)} {r.currencyCode ?? ''}</TableNumericCell>
+                      <TableNumericCell>{formatIn(r.amount, r.currencyCode)} {r.currencyCode ?? ''}</TableNumericCell>
                       <TableNumericCell className="text-muted-foreground">
                         {r.amountEur === null ? '—' : format(r.amountEur)}
                       </TableNumericCell>
@@ -870,7 +870,7 @@ export function PayoutsView({
             <form action={unitAction} className="grid gap-3">
               <input type="hidden" name="unitEntryId" value={unitTarget.id} />
               <p className="flex flex-wrap items-center gap-1.5 text-sm">
-                <UserName userId={unitTarget.userId} name={unitTarget.userName} size="sm" /> — {unitTarget.projectTitle} — <span className="num">{format(unitTarget.amount)} {unitTarget.currencyCode ?? ''}</span>
+                <UserName userId={unitTarget.userId} name={unitTarget.userName} size="sm" /> — {unitTarget.projectTitle} — <span className="num">{formatIn(unitTarget.amount, unitTarget.currencyCode)} {unitTarget.currencyCode ?? ''}</span>
               </p>
               {/* قسط (۲.۲۵.۰): پیش‌فرض کلِ مانده؛ کمتر بنویسید تا ردیف «بخشی پرداخت‌شده» بماند. */}
               <Field>

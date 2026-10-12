@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.30.2]
+
+### Fixed
+
+- **"Decimals" of a currency can be set to 0.** Saving 0 (tomans) stored 2, because the form read the value with `|| 2` and 0 counts as empty there. The field now accepts whole numbers from 0 to 6; an empty or invalid value still means 2.
+- **Amounts follow their currency's decimals.** Most screens formatted amounts with a fixed two decimals and wrote the currency code next to them, so 4,000,000 IRT showed as "4,000,000.00 IRT" whatever the setting said. The app shell now loads every currency's decimals once, and the project finance tab, the account ledger (rows and totals), the ledger row details and the payouts page format by the currency shown next to the figure.
+
 ## [2.30.1]
 
 ### Fixed
