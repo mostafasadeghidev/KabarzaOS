@@ -285,7 +285,7 @@ export function AvailabilityBoard(props: BoardProps) {
             <ul className="grid gap-1 text-sm">
               {props.online.map((o) => (
                 <li key={o.id} className="flex items-center gap-1.5">
-                  <PresenceDot state={o.state} userId={o.id} />
+                  {/* نقطه همان نشانِ آواتار است (۲.۳۲.۰)؛ نقطهٔ جدا تکراری بود. */}
                   <UserName userId={o.id} name={o.name} />
                   <span className="ms-auto text-xs text-muted-foreground">
                     {tr(PRESENCE_LABELS[o.state])} · {ago(o.seen, tr)}

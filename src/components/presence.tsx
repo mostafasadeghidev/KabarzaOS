@@ -42,6 +42,7 @@ function writeSent(at: number) {
 interface LivePresence {
   states: Record<number, PresenceState>;
   register: (id: number) => () => void;
+  watchOthers: boolean;
 }
 
 const PresenceContext = createContext<LivePresence | null>(null);
@@ -62,19 +63,34 @@ const PresenceContext = createContext<LivePresence | null>(null);
 export function PresenceProvider({
   enabled,
   ping = PRESENCE_DEFAULTS.ping,
+  watchOthers = true,
   children,
 }: {
   enabled: boolean;
   ping?: number;
+  /** بیننده حضورِ دیگران را می‌بیند؟ کارفرما نه (۲.۳۲.۰) — نشانِ آواتارها برایش اصلاً ساخته نمی‌شود. */
+  watchOthers?: boolean;
   children: React.ReactNode;
 }) {
   const interval = ping > 0 ? ping : PRESENCE_DEFAULTS.ping;
   const [states, setStates] = useState<Record<number, PresenceState>>({});
   // شناسه ← تعدادِ نقطه‌های سوارشده با آن شناسه.
   const watched = useRef(new Map<number, number>());
+  const refreshRef = useRef<(() => void) | null>(null);
+  const soon = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const register = useCallback((id: number) => {
+    const isNew = !watched.current.has(id);
     watched.current.set(id, (watched.current.get(id) ?? 0) + 1);
+    /**
+     * ⚠️ شناسهٔ تازه (۲.۳۲.۰): نشانِ آواتار رنگِ سرور ندارد و تا ضربانِ بعدی
+     * (یک دقیقه) خالی می‌ماند. یک پرسشِ جمعی کمی بعد از سوارشدن — چند صد
+     * آواتارِ یک صفحه با یک درخواست.
+     */
+    if (isNew && refreshRef.current) {
+      if (soon.current) clearTimeout(soon.current);
+      soon.current = setTimeout(() => refreshRef.current?.(), 250);
+    }
     return () => {
       const n = (watched.current.get(id) ?? 1) - 1;
       if (n <= 0) watched.current.delete(id);
@@ -110,6 +126,8 @@ export function PresenceProvider({
     };
 
     const tick = () => { beat(isFocused()); refresh(); };
+    refreshRef.current = refresh;
+    if (watched.current.size > 0) refresh();
 
     beat(isFocused());
     const timer = setInterval(tick, interval * 1000);
@@ -130,6 +148,8 @@ export function PresenceProvider({
 
     return () => {
       alive = false;
+      refreshRef.current = null;
+      if (soon.current) clearTimeout(soon.current);
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
@@ -138,7 +158,7 @@ export function PresenceProvider({
     };
   }, [enabled, interval]);
 
-  const value = useMemo(() => ({ states, register }), [states, register]);
+  const value = useMemo(() => ({ states, register, watchOthers }), [states, register, watchOthers]);
   return <PresenceContext.Provider value={enabled ? value : null}>{children}</PresenceContext.Provider>;
 }
 
@@ -175,5 +195,26 @@ export function PresenceDot({
         className={`inline-block size-2 shrink-0 rounded-full ${DOT_CLASS[shown]} ${className}`}
       />
     </Hint>
+  );
+}
+
+/**
+ * نشانِ حضور روی گوشهٔ آواتار (۲.۳۲.۰) — همان سه رنگِ `PresenceDot`، هر جا که
+ * چهرهٔ یک عضو هست. حضورِ خاموش، کارفرما (`watchOthers`) یا شخصی بیرون از
+ * دامنهٔ بیننده (سرور چیزی برایش نمی‌فرستد) ← هیچ نشانی.
+ */
+export function PresenceBadge({ userId }: { userId: number }) {
+  const t = useT();
+  const live = useContext(PresenceContext);
+  const register = live?.watchOthers ? live.register : undefined;
+  useEffect(() => (register ? register(userId) : undefined), [userId, register]);
+  const state = live?.watchOthers ? live.states[userId] : undefined;
+  if (!state) return null;
+  return (
+    <span
+      data-slot="avatar-badge"
+      aria-label={t(PRESENCE_LABELS[state])}
+      className={`absolute end-0 bottom-0 z-10 size-[30%] min-h-1.5 min-w-1.5 max-h-3 max-w-3 rounded-full ring-2 ring-background ${DOT_CLASS[state]}`}
+    />
   );
 }

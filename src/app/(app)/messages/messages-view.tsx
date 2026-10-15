@@ -15,6 +15,7 @@ import { ComposeDialog } from './compose-dialog';
 import { groupInbox } from '@/domain/messaging/labels';
 import { monogram } from '@/domain/files/monogram';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PresenceBadge } from '@/components/presence';
 import { DefaultAvatar } from '@/components/default-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -123,6 +124,7 @@ function ChatAvatar({ label, userId, size = 'default' }: {
           {letter}
         </AvatarFallback>
       )}
+      {userId ? <PresenceBadge userId={userId} /> : null}
     </Avatar>
   );
 }

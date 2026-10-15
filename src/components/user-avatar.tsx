@@ -5,6 +5,7 @@ import { avatarColor, avatarInitials } from '@/domain/people/avatar';
 import { cn } from '@/lib/utils';
 import { DefaultAvatar } from '@/components/default-avatar';
 import { Hint } from '@/components/ui/tooltip';
+import { PresenceBadge } from '@/components/presence';
 
 /**
  * آواتارِ یک عضو — **تنها** جایی که چهرهٔ اعضا کنارِ نامشان رندر می‌شود.
@@ -29,6 +30,7 @@ export function UserAvatar({
   name,
   size = 'sm',
   className,
+  presence = true,
 }: {
   /** تهی = شخصِ ناشناس یا نامِ پنهان‌شده؛ عکسی درخواست نمی‌شود. */
   userId: number | null | undefined;
@@ -36,6 +38,8 @@ export function UserAvatar({
   name: string | null | undefined;
   size?: AvatarSize;
   className?: string;
+  /** نشانِ حضور روی گوشه (۲.۳۲.۰) — جایی که نقطهٔ جدا کنارش هست، خاموش. */
+  presence?: boolean;
 }) {
   const label = name?.trim() || '?';
   return (
@@ -62,6 +66,8 @@ export function UserAvatar({
           )}
         />
       </AvatarFallback>
+      {/* حضور (۲.۳۲.۰) — شخصِ ماسک‌شده (بی‌شناسه) هرگز. */}
+      {userId && presence ? <PresenceBadge userId={userId} /> : null}
     </Avatar>
     </Hint>
   );

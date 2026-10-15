@@ -18,7 +18,7 @@ import { listNotifications } from '@/server/notifications/service';
 import { TelegramNudge } from '@/components/telegram-nudge';
 import { shouldShowTelegramNudge } from './_actions/telegram-nudge';
 import { hasTeamScope } from '@/server/team/service';
-import { hasTeamAvailability } from '@/server/availability/service';
+import { hasTeamAvailability, seesTeamPresence } from '@/server/availability/service';
 import { NotificationBell } from '@/components/notification-bell';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { roleTagsOf } from '@/server/people/repository';
@@ -310,7 +310,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           حضورِ زنده — ضربانِ خودِ کاربر و تازه‌شدنِ نقطه‌های حضورِ صفحه.
           ⚠️ وقتی حضور خاموش است هیچ درخواستی نمی‌فرستد؛ فقط فرزندان را رندر می‌کند.
         */}
-        <PresenceProvider enabled={system.presenceEnabled} ping={system.presencePing}>
+        <PresenceProvider enabled={system.presenceEnabled} ping={system.presencePing} watchOthers={seesTeamPresence(actor)}>
           <CurrencyDecimals list={decimals}>{children}</CurrencyDecimals>
         </PresenceProvider>
         {/* صفحه‌ها همان فهرستِ منو است — یعنی همان فیلترِ مجوزِ سمتِ سرور. */}

@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.32.0]
+
+### Added
+
+- **Online status on every team member's avatar.** The green / yellow / grey dot from the Members page (active / idle / offline) now sits on the corner of each team member's photo wherever it appears: project members, task assignees, comments and reviews, messages and channels, Team, the finance tabs and the people pickers. It updates live, like the Members page. All the avatars on a page are fetched in one request shortly after they appear, so the dots no longer wait a full minute for the next heartbeat.
+
+### Changed
+
+- **Every internal user sees colleagues' online status.** Before, only members managers (or an office manager for their own office) could see it. Now any team member, admin, finance user or owner sees the status of active internal colleagues. Clients see no one's status, and a client's status is never shown to anyone. Turning presence off in Settings → System still hides it everywhere.
+- The avatar no longer clips its own corner badge: the rounding moved from the avatar frame to the photo and the fallback.
+
 ## [2.31.0]
 
 ### Added
