@@ -16,6 +16,8 @@ import { CatalogError, catalogMessage } from '@/domain/settings/catalogs';
 import { saveSystemConfig } from '@/server/settings/system-service';
 import { closePeriod, reopenPeriod } from '@/server/finance/service';
 import { saveTelegramSettings, telegramCredentials, telegramEnabled } from '@/server/settings/telegram-service';
+import { saveTurnstileKeys, setTurnstileEnabled, testTurnstile } from '@/server/settings/turnstile-service';
+import { headers } from 'next/headers';
 import { getT } from '@/i18n/server';
 import {
   deleteLibraryItem, deleteLibraryMedia, ONBOARDING_MESSAGES, OnboardingError, saveLibraryItem,
@@ -548,4 +550,41 @@ export async function saveTelegramAction(
   }
   revalidatePath('/settings');
   return { message: result === 'cleared' ? 'اتصالِ بات پاک شد.' : 'اعتبارِ بات ذخیره شد.' };
+}
+
+/* ---- کپچای کلودفلر (۲.۳۱.۰) — فقط مالک ---- */
+
+export async function saveTurnstileKeysAction(_prev: SystemState, formData: FormData): Promise<SystemState> {
+  const actor = await requireActor();
+  if (!actor.roles.includes('owner')) return { error: 'فقط مدیرِ کل.' };
+  const result = await saveTurnstileKeys(actor, {
+    siteKey: String(formData.get('siteKey') ?? ''),
+    secret: String(formData.get('secretKey') ?? ''),
+    clear: formData.get('clear') === '1',
+  });
+  if (result === 'env_locked') return { error: 'کلیدها از متغیرهای محیطی می‌آیند و از اینجا قابلِ تغییر نیستند.' };
+  if (result === 'invalid') return { error: 'کلیدِ عمومی یا محرمانه معتبر نیست.' };
+  revalidatePath('/settings');
+  return { message: result === 'cleared' ? 'کلیدهای کپچا پاک شد و کپچا خاموش است.' : 'کلیدها ذخیره شد؛ حالا آزمون را انجام دهید.' };
+}
+
+export async function testTurnstileAction(token: string): Promise<SystemState> {
+  const actor = await requireActor();
+  if (!actor.roles.includes('owner')) return { error: 'فقط مدیرِ کل.' };
+  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
+  const result = await testTurnstile(actor, token, ip);
+  if (result === 'no_keys') return { error: 'ابتدا هر دو کلید را ذخیره کنید.' };
+  if (result === 'failed') return { error: 'کلودفلر این آزمون را نپذیرفت؛ کلیدِ محرمانه یا دامنهٔ ویجت را بررسی کنید.' };
+  revalidatePath('/settings');
+  return { message: 'آزمون موفق بود؛ حالا می‌توانید کپچا را روشن کنید.' };
+}
+
+export async function setTurnstileEnabledAction(on: boolean): Promise<SystemState> {
+  const actor = await requireActor();
+  if (!actor.roles.includes('owner')) return { error: 'فقط مدیرِ کل.' };
+  const result = await setTurnstileEnabled(actor, on);
+  if (result === 'env_locked') return { error: 'کلیدها از متغیرهای محیطی می‌آیند و از اینجا قابلِ تغییر نیستند.' };
+  if (result === 'not_verified') return { error: 'پیش از روشن‌کردن، آزمونِ کلیدها باید موفق باشد.' };
+  revalidatePath('/settings');
+  return { message: result === 'on' ? 'کپچا روشن شد.' : 'کپچا خاموش شد.' };
 }

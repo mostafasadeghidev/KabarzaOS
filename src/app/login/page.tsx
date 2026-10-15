@@ -5,6 +5,7 @@ import { PublicShell } from '@/components/public-shell';
 import { LoginForm } from './login-form';
 import { pageTitle } from '@/i18n/page-title';
 import { safeNextPath } from '@/domain/auth/next-path';
+import { publicTurnstileSiteKey } from '@/server/settings/turnstile-service';
 
 export const generateMetadata = pageTitle('ورود به حساب');
 
@@ -15,10 +16,10 @@ export const generateMetadata = pageTitle('ورود به حساب');
  */
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ reset?: string; next?: string }> }) {
   if (!(await isInstalled())) redirect('/setup');
-  const [{ reset, next }, brand] = await Promise.all([searchParams, publicBrand()]);
+  const [{ reset, next }, brand, turnstileSiteKey] = await Promise.all([searchParams, publicBrand(), publicTurnstileSiteKey()]);
   return (
     <PublicShell brand={brand}>
-      <LoginForm notice={reset === '1' ? 'رمزِ تازه ذخیره شد؛ اکنون وارد شوید.' : undefined} next={safeNextPath(next) === '/' ? undefined : safeNextPath(next)} />
+      <LoginForm notice={reset === '1' ? 'رمزِ تازه ذخیره شد؛ اکنون وارد شوید.' : undefined} next={safeNextPath(next) === '/' ? undefined : safeNextPath(next)} turnstileSiteKey={turnstileSiteKey} />
     </PublicShell>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import Link from 'next/link';
 import { requestResetAction, type ForgotState } from './actions';
 import { Button } from '@/components/ui/button';
@@ -11,11 +11,13 @@ import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert, CircleCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { TurnstileWidget } from '@/components/turnstile-widget';
 
 /** فرمِ «رمزم را فراموش کرده‌ام» — همان کارتِ صفحهٔ ورود؛ پوسته از `PublicShell`. */
-export function ForgotForm() {
+export function ForgotForm({ turnstileSiteKey = null }: { turnstileSiteKey?: string | null } = {}) {
   const t = useT();
   const [state, formAction, pending] = useActionState<ForgotState, FormData>(requestResetAction, {});
+  const [captcha, setCaptcha] = useState<string | null>(null);
 
   return (
     <Card>
@@ -53,8 +55,11 @@ export function ForgotForm() {
                   </AlertDescription>
                 </Alert>
               )}
+              {turnstileSiteKey && (
+                <TurnstileWidget siteKey={turnstileSiteKey} onToken={setCaptcha} resetSignal={state} />
+              )}
               <Field>
-                <Button type="submit" disabled={pending}>
+                <Button type="submit" disabled={pending || (Boolean(turnstileSiteKey) && !captcha)}>
                   {pending ? <><Spinner />{t('در حالِ ارسال…')}</> : t('ارسالِ لینک')}
                 </Button>
                 <FieldDescription className="text-center">

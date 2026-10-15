@@ -19,9 +19,11 @@ import {
 import { StaffSection, type StaffRow } from './staff-section';
 import { ReportSection } from './report-section';
 import { SystemSection, TelegramSection } from './system-section';
+import { SecuritySection } from './security-section';
 import { OnboardingLibrary, type OnboardingLibraryData } from './onboarding-library';
 import { BackupSection, type BackupView } from './backup-section';
 import type { TelegramSettingsView } from '@/server/settings/telegram-service';
+import type { TurnstileSettingsView } from '@/server/settings/turnstile-service';
 import { FiscalSection, type ClosingPreview } from './fiscal-section';
 import type { SystemConfig } from '@/domain/settings/system';
 import type { ReportConfig } from '@/domain/scheduler/daily-report';
@@ -89,6 +91,8 @@ export interface SettingsData {
   onboarding: OnboardingLibraryData | null;
   /** پشتیبان‌گیری — فقط برای مالک؛ برای بقیه `null`. */
   backup: BackupView | null;
+  /** کپچای کلودفلر — فقط مالک؛ کلیدِ محرمانه در آن نیست. */
+  turnstile: TurnstileSettingsView | null;
   qaItems: Array<{
     id: number; title: string; description: string;
     roleTagId: number | null; isTask: boolean; sortOrder: number;
@@ -129,6 +133,8 @@ const TABS = [
   // باتِ تلگرام و گزارشِ روزانه — جدا از «سامانه» تا هر تب یک دکمهٔ ذخیره داشته باشد.
   { key: 'notify', label: 'اطلاع‌رسانی', ownerOnly: true },
   { key: 'backup', label: 'پشتیبان‌گیری', ownerOnly: true },
+  // کپچای کلودفلر (۲.۳۱.۰) — کلیدِ محرمانه، پس فقط مالک.
+  { key: 'security', label: 'امنیت', ownerOnly: true },
   { key: 'fiscal', label: 'دورهٔ مالی', ownerOnly: true },
 ] as const;
 
@@ -704,6 +710,8 @@ export function SettingsView({
       )}
 
       {tab === 'backup' && data.isOwner && data.backup && <BackupSection view={data.backup} />}
+
+      {tab === 'security' && data.isOwner && data.turnstile && <SecuritySection turnstile={data.turnstile} />}
 
       {tab === 'notify' && data.isOwner && (
         <div className="grid gap-6">

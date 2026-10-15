@@ -142,6 +142,11 @@ export const ACTION_LABELS: Record<string, string> = {
   'settings.system': 'تنظیماتِ سامانه',
   'settings.telegram.save': 'تنظیمِ ربات تلگرام',
   'settings.telegram.clear': 'حذفِ ربات تلگرام',
+  'settings.turnstile.save': 'ذخیرهٔ کلیدهای کپچا',
+  'settings.turnstile.clear': 'حذفِ کلیدهای کپچا',
+  'settings.turnstile.verified': 'آزمونِ موفقِ کپچا',
+  'settings.turnstile.on': 'روشن‌کردنِ کپچا',
+  'settings.turnstile.off': 'خاموش‌کردنِ کپچا',
 
   // دفترِ دسترسی‌های بیرونی
   'service.create': 'سرویسِ جدید',
