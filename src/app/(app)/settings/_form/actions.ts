@@ -17,6 +17,7 @@ import { saveSystemConfig } from '@/server/settings/system-service';
 import { closePeriod, reopenPeriod } from '@/server/finance/service';
 import { saveTelegramSettings, telegramCredentials, telegramEnabled } from '@/server/settings/telegram-service';
 import { saveTurnstileKeys, setTurnstileEnabled, testTurnstile } from '@/server/settings/turnstile-service';
+import { saveSmtpSettings } from '@/server/settings/smtp-service';
 import { headers } from 'next/headers';
 import { getT } from '@/i18n/server';
 import {
@@ -587,4 +588,43 @@ export async function setTurnstileEnabledAction(on: boolean): Promise<SystemStat
   if (result === 'not_verified') return { error: 'پیش از روشن‌کردن، آزمونِ کلیدها باید موفق باشد.' };
   revalidatePath('/settings');
   return { message: result === 'on' ? 'کپچا روشن شد.' : 'کپچا خاموش شد.' };
+}
+
+/* ---- ایمیلِ خروجی (SMTP) از پنل (۲.۳۲.۰) — فقط مالک ---- */
+
+export async function saveSmtpAction(_prev: SystemState, formData: FormData): Promise<SystemState> {
+  const actor = await requireActor();
+  if (!actor.roles.includes('owner')) return { error: 'فقط مدیرِ کل.' };
+  const result = await saveSmtpSettings(actor, {
+    host: String(formData.get('smtpHost') ?? ''),
+    port: String(formData.get('smtpPort') ?? ''),
+    user: String(formData.get('smtpUser') ?? ''),
+    password: String(formData.get('smtpPassword') ?? ''),
+    from: String(formData.get('smtpFrom') ?? ''),
+    clear: formData.get('clear') === '1',
+  });
+  if (result === 'env_locked') return { error: 'تنظیماتِ ایمیل از متغیرهای محیطی می‌آید و از اینجا قابلِ تغییر نیست.' };
+  if (result === 'invalid_host') return { error: 'نشانیِ سرورِ SMTP معتبر نیست.' };
+  if (result === 'invalid_from') return { error: 'نشانیِ فرستنده معتبر نیست.' };
+  revalidatePath('/settings');
+  return { message: result === 'cleared' ? 'تنظیماتِ ایمیل پاک شد؛ ایمیلی فرستاده نمی‌شود.' : 'تنظیماتِ ایمیل ذخیره شد؛ ایمیلِ آزمایشی بفرستید.' };
+}
+
+export async function sendTestMailAction(): Promise<SystemState> {
+  const actor = await requireActor();
+  if (!actor.roles.includes('owner')) return { error: 'فقط مدیرِ کل.' };
+  const [me] = await db.select({ email: users.email }).from(users).where(eq(users.id, actor.id));
+  const t = await getT();
+  // ⚠️ ایمپورتِ پویا — همان دلیلِ `sendReportTestAction`: nodemailer نباید به باندلِ کلاینت برسد.
+  const { sendMailDetailed } = await import('@/server/mail/transport');
+  const result = await sendMailDetailed(
+    me?.email ?? '',
+    t('ایمیلِ آزمایشیِ کبرزا'),
+    t('اگر این ایمیل را می‌بینید، تنظیماتِ ایمیلِ خروجی درست کار می‌کند.'),
+  );
+  if (result.ok) return { message: 'ایمیلِ آزمایشی به نشانیِ شما فرستاده شد؛ صندوق (و هرزنامه) را ببینید.' };
+  if (result.reason === 'disabled') return { error: 'ایمیلِ خروجی تنظیم نشده است.' };
+  if (result.reason === 'no_recipient') return { error: 'حسابِ شما نشانیِ ایمیل ندارد.' };
+  // ⚠️ متنِ خطای سرورِ ایمیل (انگلیسی) همان‌طور نشان داده می‌شود — بی‌آن، علتِ شکست حدس زدنی بود.
+  return { error: `${t('سرورِ ایمیل نپذیرفت:')} ${result.detail ?? ''}`.trim() };
 }

@@ -147,6 +147,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'settings.turnstile.verified': 'آزمونِ موفقِ کپچا',
   'settings.turnstile.on': 'روشن‌کردنِ کپچا',
   'settings.turnstile.off': 'خاموش‌کردنِ کپچا',
+  'settings.smtp.save': 'تنظیمِ ایمیلِ خروجی',
+  'settings.smtp.clear': 'حذفِ تنظیمِ ایمیلِ خروجی',
 
   // دفترِ دسترسی‌های بیرونی
   'service.create': 'سرویسِ جدید',

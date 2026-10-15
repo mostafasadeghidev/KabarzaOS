@@ -7,6 +7,7 @@ Versioning follows [SemVer](https://semver.org/).
 ### Added
 
 - **Online status on every team member's avatar.** The green / yellow / grey dot from the Members page (active / idle / offline) now sits on the corner of each team member's photo wherever it appears: project members, task assignees, comments and reviews, messages and channels, Team, the finance tabs and the people pickers. It updates live, like the Members page. All the avatars on a page are fetched in one request shortly after they appear, so the dots no longer wait a full minute for the next heartbeat.
+- **Outgoing email (SMTP) can be set in the panel.** Settings → Notifications has server, port, user name, password and sender address, plus "Send me a test email", which shows the mail server's own error when it fails. Password resets, invitations for new members and email notifications all go this way. The password is stored encrypted (the same AES-GCM box as the CAPTCHA secret and the users' AI keys), never sent to the browser and never written to the activity log; an empty password field keeps the current one. `SMTP_*` in `.env` still wins, all together: when `SMTP_HOST` is set, nothing is read from the panel and the form is read-only. The mail sender is rebuilt when the settings change, so no restart is needed.
 
 ### Changed
 
