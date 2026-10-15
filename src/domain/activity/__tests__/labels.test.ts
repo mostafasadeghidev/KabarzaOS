@@ -73,6 +73,7 @@ describe('برچسبِ رویدادها', () => {
       'project.delete.none', 'project.delete.detach', 'project.delete.purge',
       'request.approved', 'request.rejected',
       'settings.telegram.save', 'settings.telegram.clear',
+      'settings.turnstile.on', 'settings.turnstile.off',
     ]) {
       expect(ACTION_LABELS[key], key).toBeDefined();
     }

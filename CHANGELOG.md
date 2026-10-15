@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.31.0]
+
+### Added
+
+- **Cloudflare CAPTCHA (Turnstile) on sign-in and "forgot password".** The owner sets it up in Settings → Security in three steps: save the site key and secret key from the Cloudflare dashboard, pass a test (the widget is shown right there and its answer is checked with Cloudflare), then turn it on. The server checks the answer before it looks at the password or sends any email, so a bot never reaches the password check or the failed-attempt counter. The Telegram bot, the Claude (MCP) connection, the Telegram mini app and the APIs are not affected. The "set a new password" page needs no CAPTCHA because it only opens from the secret link in the email.
+- **Safeguards against locking yourself out.** It cannot be turned on until a test with the same keys has passed, and saving new keys turns it off again until they are tested. `TURNSTILE_DISABLED=1` in the server's `.env` turns it off whatever the settings say. `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` in `.env` override the stored keys; the settings form is then read-only.
+- The secret key is stored encrypted (the same AES-GCM box as the users' AI keys), never sent to the browser and never written to the activity log.
+
 ## [2.30.2]
 
 ### Fixed

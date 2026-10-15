@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import Link from 'next/link';
 import { login } from './actions';
 import type { LoginState } from './schema';
@@ -12,14 +12,17 @@ import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert, CircleCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { TurnstileWidget } from '@/components/turnstile-widget';
 
 /**
  * فرمِ ورود — بلوکِ login ِ shadcn: کارت، `FieldGroup`، پیوندِ «فراموشی» کنارِ
  * برچسبِ رمز. پوسته و نشانِ برند از `PublicShell` می‌آید (صفحه آن را می‌سازد).
  */
-export function LoginForm({ notice, next }: { notice?: string; next?: string } = {}) {
+export function LoginForm({ notice, next, turnstileSiteKey = null }: { notice?: string; next?: string; turnstileSiteKey?: string | null } = {}) {
   const t = useT();
   const [state, formAction, pending] = useActionState<LoginState, FormData>(login, {});
+  // کپچا (۲.۳۱.۰) — دکمه تا پاسخِ ویجت نیامده خاموش است؛ کپچای خاموش = همیشه آماده.
+  const [captcha, setCaptcha] = useState<string | null>(null);
 
   return (
     <Card>
@@ -69,8 +72,12 @@ export function LoginForm({ notice, next }: { notice?: string; next?: string } =
               </Alert>
             )}
 
+            {turnstileSiteKey && (
+              <TurnstileWidget siteKey={turnstileSiteKey} onToken={setCaptcha} resetSignal={state} />
+            )}
+
             <Field>
-              <Button type="submit" disabled={pending}>
+              <Button type="submit" disabled={pending || (Boolean(turnstileSiteKey) && !captcha)}>
                 {pending ? <><Spinner />{t('در حال ورود…')}</> : t('ورود')}
               </Button>
             </Field>

@@ -13,6 +13,8 @@ import { sessionSecret, currentActor } from '@/server/auth';
 import { loginSchema, type LoginState } from './schema';
 import { markOffline } from '@/server/people/presence-service';
 import { safeNextPath } from '@/domain/auth/next-path';
+import { verifyTurnstile } from '@/server/settings/turnstile-service';
+import { TURNSTILE_FIELD } from '@/domain/settings/turnstile';
 
 
 /** شمارندهٔ شکست‌های ورود — یک نمونه برای عمرِ فرایند (R-AUTH: پنجرهٔ ۱۵ دقیقه، سقفِ ۱۰). */
@@ -32,6 +34,7 @@ const MESSAGES: Record<string, string> = {
   invalid_credentials: 'ایمیل یا رمز عبور نادرست است.',
   inactive: 'این حساب غیرفعال است.',
   rate_limited: 'تلاش‌های ناموفق زیاد بوده؛ کمی بعد دوباره تلاش کنید.',
+  captcha: 'بررسیِ «ربات نیستم» انجام نشد؛ دوباره تلاش کنید.',
 };
 
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
@@ -77,6 +80,8 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   // ⚠️ محدودکننده پیش از این در دامنه بود ولی هیچ شمارنده‌ای نمی‌گرفت — عملاً خاموش.
   // ⚠️ بیرونِ درخواست (تست/اسکریپت) headers() پرتاب می‌کند؛ آنجا IP نداریم — فقط شناسه شمرده می‌شود.
   const ip = await clientIp();
+  // کپچا (۲.۳۱.۰) پیش از هر چیز — ربات به سنجشِ رمز و شمارندهٔ شکست هم نمی‌رسد.
+  if (!(await verifyTurnstile(formData.get(TURNSTILE_FIELD), ip))) return { error: MESSAGES['captcha']! };
   const keys = throttleKeys(parsed.data.email, ip);
   const result = await attemptLogin(lookup, parsed.data.email, parsed.data.password, {
     recentFailures: worstFailures(failures, keys),
