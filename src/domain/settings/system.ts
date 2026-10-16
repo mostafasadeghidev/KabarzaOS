@@ -23,6 +23,15 @@ import { DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n/config';
 export const PULSE_CHOICES = [30, 45, 60, 120] as const;
 export const CHATPOLL_CHOICES = [5, 7, 10, 15] as const;
 
+/**
+ * سقف‌های دستیارِ تلگرام (۲.۳۵.۰) — دقیقه و تعدادِ عکس. فهرستِ بسته، نه عددِ آزاد:
+ * هر دقیقهٔ صدا و هر عکس از سهمیهٔ هوشِ مصنوعیِ خودِ کاربر کم می‌کند و ویدیوی
+ * بلند وقتِ سرور را می‌گیرد.
+ */
+export const AI_VOICE_CHOICES = [1, 3, 5, 10, 15, 30] as const;
+export const AI_MEDIA_CHOICES = [5, 10, 15, 30, 60] as const;
+export const AI_FRAMES_CHOICES = [12, 24, 36, 48] as const;
+
 /** بیشینهٔ نگهداریِ پیام‌ها — نسخهٔ قبلی روی ۳۶۵ روز مهار می‌کند. */
 export const MAX_PURGE_DAYS = 365;
 
@@ -65,6 +74,12 @@ export interface SystemConfig {
    * چک‌لیستی ساخته می‌شود. خاموش‌کردن داده را پاک نمی‌کند؛ فقط پنهانش می‌کند.
    */
   onboardingEnabled: boolean;
+  /** سقفِ ویسی که کاربر خودش به دستیار می‌فرستد (دقیقه). */
+  aiVoiceMinutes: number;
+  /** سقفِ ویدیو، Loom و ویسِ نقل‌شده (دقیقه) — بیشتر از آن کوتاه یا رد می‌شود. */
+  aiMediaMinutes: number;
+  /** بیشترینِ عکسِ صحنه از هر ویدیو. */
+  aiVideoFrames: number;
 }
 
 export const DEFAULT_SYSTEM: SystemConfig = {
@@ -83,6 +98,9 @@ export const DEFAULT_SYSTEM: SystemConfig = {
   chatPollInterval: 7,
   ownerTeamView: false,
   onboardingEnabled: false,
+  aiVoiceMinutes: 3,
+  aiMediaMinutes: 15,
+  aiVideoFrames: 24,
 };
 
 function fromChoices(value: unknown, choices: readonly number[], fallback: number): number {
@@ -134,5 +152,8 @@ export function normalizeSystem(input: Partial<Record<keyof SystemConfig, unknow
     ),
     ownerTeamView: bool(input.ownerTeamView, DEFAULT_SYSTEM.ownerTeamView),
     onboardingEnabled: bool(input.onboardingEnabled, DEFAULT_SYSTEM.onboardingEnabled),
+    aiVoiceMinutes: fromChoices(input.aiVoiceMinutes, AI_VOICE_CHOICES, DEFAULT_SYSTEM.aiVoiceMinutes),
+    aiMediaMinutes: fromChoices(input.aiMediaMinutes, AI_MEDIA_CHOICES, DEFAULT_SYSTEM.aiMediaMinutes),
+    aiVideoFrames: fromChoices(input.aiVideoFrames, AI_FRAMES_CHOICES, DEFAULT_SYSTEM.aiVideoFrames),
   };
 }

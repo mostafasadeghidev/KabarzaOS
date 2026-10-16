@@ -5,6 +5,7 @@ import { attachments, projectClients, projectMembers, projects, tags, tasks, use
 import { handleUpdate, resetBotState, setTelegramApi, type TgMessage, type TgUpdate } from '@/server/telegram/bot';
 import { resetAgentState } from '@/server/ai/agent';
 import { saveAiConnection } from '@/server/ai/connections';
+import { saveSystemConfig } from '@/server/settings/system-service';
 import type { Actor } from '@/domain/access/permissions';
 
 /**
@@ -183,6 +184,26 @@ describe('ویدیو', () => {
     await handleUpdate(update({ chat: { id: CHAT, type: 'private' }, video: { file_id: 'v2', file_size: 50 * 1024 * 1024 } }));
     expect(ai).toHaveLength(0);
     expect(texts()[0]).toContain('۲۰ مگابایت');
+  });
+});
+
+describe('سقف‌های قابلِ تنظیم (۲.۳۵.۰)', () => {
+  const owner = as(0, ['owner']);
+  afterEach(async () => { await saveSystemConfig(owner, { aiVoiceMinutes: 3, aiMediaMinutes: 15 }); });
+
+  it('ویسِ خودِ کاربر طبقِ تنظیمات پذیرفته یا رد می‌شود', async () => {
+    const voice = (n: number) => update({ chat: { id: CHAT, type: 'private' }, voice: { file_id: `vv${n}`, duration: 300, file_size: 3000 } });
+    let ai = fakeWorld([() => say('شنیدم.')]);
+    await handleUpdate(voice(1));
+    expect(ai).toHaveLength(0);
+    expect(texts().at(-1)).toContain('بیش از 3 دقیقه');
+
+    await saveSystemConfig(owner, { aiVoiceMinutes: 10 });
+    sent = [];
+    ai = fakeWorld([() => say('شنیدم.')]);
+    await handleUpdate(voice(2));
+    expect(ai).toHaveLength(1);
+    expect(texts()).toContain('شنیدم.');
   });
 });
 

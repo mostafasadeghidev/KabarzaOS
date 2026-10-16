@@ -7,7 +7,7 @@ import {
   testTelegramAction, type SystemState,
 } from './_form/actions';
 import {
-  CHATPOLL_CHOICES, MAX_PURGE_DAYS, PULSE_CHOICES, type SystemConfig,
+  AI_FRAMES_CHOICES, AI_MEDIA_CHOICES, AI_VOICE_CHOICES, CHATPOLL_CHOICES, MAX_PURGE_DAYS, PULSE_CHOICES, type SystemConfig,
 } from '@/domain/settings/system';
 import { IDLE_CHOICES, OFFLINE_CHOICES, PING_CHOICES } from '@/domain/people/presence';
 import { allTimezones } from '@/domain/people/profile';
@@ -54,6 +54,22 @@ function Seconds({
     >
       {choices.map((c) => (
         <NativeSelectOption key={c} value={c}>{tr('{n} ثانیه', { n: c })}</NativeSelectOption>
+      ))}
+    </NativeSelect>
+  );
+}
+
+/** فهرستِ بستهٔ عددها با برچسبِ واحد (دقیقه، عکس). */
+function Choice({
+  id, name, value, choices, unit,
+}: {
+  id: string; name: string; value: number; choices: readonly number[]; unit: string;
+}) {
+  const tr = useT();
+  return (
+    <NativeSelect id={id} name={name} defaultValue={value}>
+      {choices.map((c) => (
+        <NativeSelectOption key={c} value={c}>{tr(unit, { n: c })}</NativeSelectOption>
       ))}
     </NativeSelect>
   );
@@ -301,6 +317,27 @@ export function SystemSection({ config, health, bucket, isOwner }: {
             />
           </div>
         </div>
+      </Panel>
+
+      {/* ۲.۳۵.۰ — سقف‌های دستیارِ تلگرام؛ هزینه با کلیدِ هوشِ مصنوعیِ خودِ هر کاربر است. */}
+      <Panel title={t("دستیارِ تلگرام")}>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field>
+            <FieldLabel htmlFor="s-ai-voice">{t("سقفِ ویسِ خودِ کاربر")}</FieldLabel>
+            <Choice id="s-ai-voice" name="aiVoiceMinutes" value={config.aiVoiceMinutes} choices={AI_VOICE_CHOICES} unit="{n} دقیقه" />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="s-ai-media">{t("سقفِ ویدیو، Loom و ویسِ دیگران")}</FieldLabel>
+            <Choice id="s-ai-media" name="aiMediaMinutes" value={config.aiMediaMinutes} choices={AI_MEDIA_CHOICES} unit="{n} دقیقه" />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="s-ai-frames">{t("عکس از هر ویدیو")}</FieldLabel>
+            <Choice id="s-ai-frames" name="aiVideoFrames" value={config.aiVideoFrames} choices={AI_FRAMES_CHOICES} unit="{n} عکس" />
+          </Field>
+        </div>
+        <FieldDescription>
+          {tr("هر دقیقهٔ صدا و هر عکس از سهمیهٔ هوشِ مصنوعیِ خودِ هر کاربر کم می‌کند. ویدیوی بلندتر از سقف فقط تا همان‌جا دیده می‌شود؛ ویسِ بلندتر رد می‌شود.")}
+        </FieldDescription>
       </Panel>
 
       <Panel title={t("پیام‌ها")}>

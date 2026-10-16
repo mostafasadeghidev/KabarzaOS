@@ -37,9 +37,9 @@ import {
   askAgent, forgetConversation, pendingOwner, resolveChoice, resolvePending,
   type AgentResult, type GroupScope, type MediaItem,
 } from '@/server/ai/agent';
-import { MAX_MEDIA_AUDIO_BYTES, MAX_VOICE_BYTES, MAX_VOICE_SECONDS, transcribe, transcriptionModel } from '@/server/ai/transcribe';
+import { MAX_MEDIA_AUDIO_BYTES, transcribe, transcriptionModel } from '@/server/ai/transcribe';
 import type { ContentPart } from '@/domain/ai/chat';
-import { clock, imageMessage, MAX_VIDEO_SECONDS, parseLoomUrl, quotedVoiceMessage, videoMessage, withoutLoomUrl, type Segment } from '@/domain/ai/media';
+import { clock, imageMessage, parseLoomUrl, quotedVoiceMessage, videoMessage, withoutLoomUrl, type Segment } from '@/domain/ai/media';
 import { downloadSmall, extractVideo, extractVideoBytes, loomVideo, type ExtractedVideo } from '@/server/ai/media';
 import {
   bullet, bulletHtml, clip, code, dueHtml, esc, heading, hint, hm, HTML, isParseError, mdToHtml,
@@ -1431,6 +1431,8 @@ async function onVideo(chatId: number, who: Who, src: VideoSource, instruction: 
     await send(chatId, `⚠️ ${esc(who.tr('ویدیو بزرگ‌تر از ۲۰ مگابایت است (سقفِ تلگرام برای ربات)؛ لینکِ Loom یا نسخهٔ کوتاه‌ترش را بفرستید.'))}`, undefined, opts.replyTo);
     return;
   }
+  const sys = await getSystemConfig();
+  const limits = { maxSeconds: sys.aiMediaMinutes * 60, maxFrames: sys.aiVideoFrames };
   const status = await sendStatus(chatId, `🎬 ${esc(who.tr('در حالِ دیدنِ ویدیو… ممکن است یکی‌دو دقیقه طول بکشد.'))}`, opts.replyTo);
   const say = (text: string) => (status ? edit(chatId, status, text) : send(chatId, text, undefined, opts.replyTo));
   await api('sendChatAction', { chat_id: chatId, action: 'typing' });
@@ -1450,7 +1452,7 @@ async function onVideo(chatId: number, who: Who, src: VideoSource, instruction: 
     title = loom.title;
     url = src.url;
     duration = loom.duration;
-    extracted = await extractVideo(loom.mediaUrl);
+    extracted = await extractVideo(loom.mediaUrl, limits);
     if (!extracted) {
       const blob = await downloadSmall(loom.mediaUrl, MAX_MEDIA_AUDIO_BYTES);
       if (blob) raw = { blob, name: 'video.mp4' };
@@ -1464,7 +1466,7 @@ async function onVideo(chatId: number, who: Who, src: VideoSource, instruction: 
     const ext = (src.file.mime_type ?? 'video/mp4').split('/')[1]?.replace(/[^a-z0-9]/gi, '') || 'mp4';
     title = src.file.file_name ?? '';
     duration = src.file.duration ?? 0;
-    extracted = await extractVideoBytes(bytes, ext);
+    extracted = await extractVideoBytes(bytes, ext, limits);
     if (!extracted && bytes.length <= MAX_MEDIA_AUDIO_BYTES) raw = { blob: new Blob([new Uint8Array(bytes)], { type: src.file.mime_type ?? 'video/mp4' }), name: `video.${ext}` };
   }
   if (extracted?.duration) duration = extracted.duration;
@@ -1488,7 +1490,7 @@ async function onVideo(chatId: number, who: Who, src: VideoSource, instruction: 
     await say([`⚠️ ${esc(who.tr('از این ویدیو چیزی فهمیده نشد — نه صدا، نه تصویر.'))}`, ...notes.map((n) => hint(n))].join(NL));
     return;
   }
-  if (extracted?.truncated) notes.push(who.tr('ویدیو بیش از ۱۵ دقیقه است؛ فقط ۱۵ دقیقهٔ اول دیده شد.'));
+  if (extracted?.truncated) notes.push(who.tr('ویدیو بیش از {minutes} دقیقه است؛ فقط {minutes} دقیقهٔ اول دیده شد.', { minutes: sys.aiMediaMinutes }));
   await say([
     `🎬 <b>${esc(who.tr('ویدیو دیده شد'))}</b>${title ? ` — ${esc(clip(title, 80))}` : ''}`,
     `⏱ ${clock(duration)} · 🖼 ${frames.length} · 🎤 ${segments.length > 0 ? '✓' : '—'}`,
@@ -1499,7 +1501,7 @@ async function onVideo(chatId: number, who: Who, src: VideoSource, instruction: 
     id: `frame@${Math.round(f.t)}`, name: `frame-${clock(f.t).replace(/:/g, '-')}.jpg`, mime: 'image/jpeg', bytes: new Uint8Array(f.jpeg), t: f.t,
   }));
   const content = videoMessage({
-    instruction, title, url, duration, truncated: extracted?.truncated, segments,
+    instruction, title, url, duration, truncated: extracted?.truncated, limitSeconds: limits.maxSeconds, segments,
     frames: frames.map((f) => ({ t: f.t, dataUrl: `data:image/jpeg;base64,${f.jpeg.toString('base64')}` })),
   });
   await askAi(chatId, who, content, { ...opts, media });
@@ -1600,9 +1602,11 @@ async function onGroupMessage(msg: TgMessage) {
 /**
  * `quoted`: ویسِ کسِ دیگری که کاربر به آن پاسخ داده (۲.۳۴.۱) — متنش **داده** است و
  * درخواست همان متنِ پاسخِ کاربر («از این تسک دربیار»). پیش از این خودِ ویس
- * درخواستِ پرسنده حساب می‌شد و نوشتهٔ او نادیده می‌ماند. ویسِ نقل‌شده تا ۱۵ دقیقه.
+ * درخواستِ پرسنده حساب می‌شد و نوشتهٔ او نادیده می‌ماند. سقفِ هر دو در تنظیماتِ سامانه است (۲.۳۵.۰).
  */
 async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = {}, quoted?: { instruction: string }) {
+  // سقف‌ها از تنظیماتِ سامانه (۲.۳۵.۰)؛ حجم همیشه تا سقفِ دانلودِ تلگرام.
+  const sys = await getSystemConfig();
   const menu = async () => (opts.scope ? undefined : await menuFor(who));
   const all = await loadAiSecrets(who.actor.id);
   // اولین اتصالی که صدا می‌فهمد — DeepSeek برای متن و Groq برای ویس کنارِ هم کار می‌کنند.
@@ -1615,12 +1619,10 @@ async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = 
     await send(chatId, `🎤 ${esc(who.tr('هوشِ مصنوعیِ فعلیِ شما ({name}) صدا را به متن تبدیل نمی‌کند؛ برای ویس Groq (رایگان) یا OpenAI را وصل کنید. تا آن موقع بنویسید.', { name: PROVIDERS[secret.provider]?.label ?? secret.provider }))}`, await menu(), opts.replyTo);
     return;
   }
-  const maxSeconds = quoted ? MAX_VIDEO_SECONDS : MAX_VOICE_SECONDS;
-  const maxBytes = quoted ? MAX_MEDIA_AUDIO_BYTES : MAX_VOICE_BYTES;
-  if ((voice.duration ?? 0) > maxSeconds || (voice.file_size ?? 0) > maxBytes) {
-    await send(chatId, `⚠️ ${esc(quoted
-      ? who.tr('پیامِ صوتی بیش از ۱۵ دقیقه است؛ کوتاه‌ترش را بفرستید.')
-      : who.tr('پیامِ صوتی بیش از ۳ دقیقه است؛ کوتاه‌تر بفرستید یا بنویسید.'))}`, undefined, opts.replyTo);
+  const minutes = quoted ? sys.aiMediaMinutes : sys.aiVoiceMinutes;
+  const maxBytes = Math.min(MAX_FILE_BYTES, MAX_MEDIA_AUDIO_BYTES);
+  if ((voice.duration ?? 0) > minutes * 60 || (voice.file_size ?? 0) > maxBytes) {
+    await send(chatId, `⚠️ ${esc(who.tr('پیامِ صوتی بیش از {minutes} دقیقه است؛ کوتاه‌ترش را بفرستید.', { minutes }))}`, undefined, opts.replyTo);
     return;
   }
   await api('sendChatAction', { chat_id: chatId, action: 'typing' });
@@ -1644,7 +1646,7 @@ async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = 
 }
 
 /** دانلودِ فایلِ صوتی از تلگرام — فقط در حافظه. */
-async function downloadVoice(fileId: string, maxBytes = MAX_VOICE_BYTES): Promise<Blob | null> {
+async function downloadVoice(fileId: string, maxBytes: number): Promise<Blob | null> {
   const info = await api('getFile', { file_id: fileId }) as { ok?: boolean; result?: { file_path?: string; file_size?: number } } | null;
   const path = info?.result?.file_path;
   if (!info?.ok || !path || (info.result?.file_size ?? 0) > maxBytes) return null;

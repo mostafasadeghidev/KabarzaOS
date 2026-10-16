@@ -25,6 +25,15 @@ describe('تنظیماتِ سامانه', () => {
     expect(normalizeSystem({ pulseInterval: 30 }).pulseInterval).toBe(30);
   });
 
+  it('سقف‌های دستیارِ تلگرام فقط از فهرستِ مجاز (۲.۳۵.۰)', () => {
+    expect(normalizeSystem({}).aiVoiceMinutes).toBe(3);
+    expect(normalizeSystem({ aiVoiceMinutes: '10', aiMediaMinutes: 60, aiVideoFrames: 48 }))
+      .toMatchObject({ aiVoiceMinutes: 10, aiMediaMinutes: 60, aiVideoFrames: 48 });
+    // عددِ دلخواه (مثلاً ۱۰۰۰ دقیقه) سهمیه و سرور را می‌خورد ← پیش‌فرض.
+    expect(normalizeSystem({ aiVoiceMinutes: 1000, aiMediaMinutes: 7, aiVideoFrames: 500 }))
+      .toMatchObject({ aiVoiceMinutes: 3, aiMediaMinutes: 15, aiVideoFrames: 24 });
+  });
+
   it("⚠️ رشتهٔ '0' خاموش است — نه truthy", () => {
     expect(normalizeSystem({ presenceEnabled: '0' }).presenceEnabled).toBe(false);
     expect(normalizeSystem({ pulseEnabled: '0' }).pulseEnabled).toBe(false);

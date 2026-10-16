@@ -2,11 +2,15 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
-## [2.34.1]
+## [2.35.0]
+
+### Added
+
+- **The assistant's limits are settings.** Settings → System → "Telegram assistant" has three choices: the longest voice note a user can send as a request (1, 3, 5, 10, 15 or 30 minutes; default 3), the longest video, Loom or quoted voice note (5, 10, 15, 30 or 60 minutes; default 15; a longer video is watched up to the limit, a longer voice note is refused), and how many frames are taken from a video (12, 24, 36 or 48; default 24). Each minute and frame uses the user's own AI quota, so the values are a closed list, like the other intervals. Changes are in the activity log. The ffmpeg time limit grows with the video length.
 
 ### Fixed
 
-- **Replying to someone else's voice note now works as expected.** When a team member replied to a voice note in the project group (or in the private chat) with "/ask make tasks from this", the voice itself was taken as their request and what they wrote was ignored. Now what they wrote is the request and the voice note's transcript is treated as data to work on, never as instructions. With nothing written, the assistant summarizes the voice note and lists the tasks in it before creating anything. A quoted voice note may be up to 15 minutes (your own voice requests stay at 3).
+- **Replying to someone else's voice note now works as expected.** When a team member replied to a voice note in the project group (or in the private chat) with "/ask make tasks from this", the voice itself was taken as their request and what they wrote was ignored. Now what they wrote is the request and the voice note's transcript is treated as data to work on, never as instructions. With nothing written, the assistant summarizes the voice note and lists the tasks in it before creating anything. A quoted voice note uses the video limit above; your own voice request uses the voice limit. Both also stop at Telegram's 20 MB download limit.
 
 ## [2.34.0]
 
