@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { Archive, ExternalLink, FolderKanban, MessagesSquare } from 'lucide-react';
+import { Archive, ExternalLink, FolderKanban, MessagesSquare, Send } from 'lucide-react';
 import { createProjectGroupAction } from '../../messages/_form/actions';
 import { ThreadPane } from '../../messages/thread-pane';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,27 @@ export interface ProjectChat {
   archived: boolean;
   /** پولِ گفت‌وگوی زنده — همان تنظیمِ سامانه که صفحهٔ «پیام‌ها» می‌گیرد. */
   poll: { enabled: boolean; seconds: number };
+  /** لینکِ عضویتِ گروهِ تلگرامِ پروژه (۲.۳۶.۰) — فقط برای کسی که حقِ عضویت دارد. */
+  telegramInvite: string | null;
+}
+
+/** «پیوستن در تلگرام» — بالای تب، با گروهِ برنامه یا بی آن. */
+function TelegramJoin({ link }: { link: string | null }) {
+  const t = useT();
+  if (!link) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card px-4 py-3">
+      <p className="text-sm text-muted-foreground">
+        {t('این پروژه گروهِ تلگرام هم دارد؛ ربات عضویتِ اعضای تیم را خودکار تأیید می‌کند.')}
+      </p>
+      <Button asChild size="sm" variant="outline">
+        <a href={link} target="_blank" rel="noopener noreferrer">
+          <Send />
+          {t('پیوستن در تلگرام')}
+        </a>
+      </Button>
+    </div>
+  );
 }
 
 /**
@@ -45,6 +66,8 @@ export function ChatTab({ projectId, chat, viewerId }: { projectId: number; chat
 
   if (threadId === null) {
     return (
+      <div className="grid gap-3">
+      <TelegramJoin link={chat.telegramInvite} />
       <div className="grid gap-4 rounded-xl border bg-card p-5">
         <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -73,11 +96,13 @@ export function ChatTab({ projectId, chat, viewerId }: { projectId: number; chat
           </Button>
         </div>
       </div>
+      </div>
     );
   }
 
   return (
     <div className="grid gap-2">
+      <TelegramJoin link={chat.telegramInvite} />
       {/*
         ⚠️ ارتفاعِ ثابت، مثلِ صفحهٔ «پیام‌ها»: پیام‌ها خودشان اسکرول می‌خورند و
         کادرِ ارسال همیشه پیداست — نه اینکه گفتگوی بلند کلِ صفحه را دراز کند.

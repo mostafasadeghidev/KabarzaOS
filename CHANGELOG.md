@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.36.0]
+
+### Added
+
+- **The project's Telegram group fills itself.** The "Add the bot to a group" link now asks Telegram to add the bot as an admin (with add members, restrict members, delete and pin), so there is no separate step. Once the group is connected and the bot is an admin, the bot creates the group's own join link (join requests on) and sends it to every team member of the project: a private Telegram message with a "Join the group" button, and an in-app notification (and email, by the user's settings). It posts in the group how many were invited.
+- **Only the project's team gets in.** Every join request is checked by the bot: approved only for an active user who connected their Telegram in the app, can see the project and is not only a client. Others, including clients and strangers with a leaked link, are declined and get a short private message saying why.
+- **The group follows the team.** Someone added to the project is invited automatically. Someone removed from the project or whose access is cut is removed from the group (banned and unbanned at once, so they can come back if re-added); restoring access invites them again.
+- The "Group chat" tab has a "Join on Telegram" button for the people allowed to join. Managers get "Invite the team again" on the project's Telegram group panel, and a note when the bot is not an admin yet.
+- When a basic group turns into a supergroup (Telegram changes its id, often when the bot becomes admin), the project follows the new id and gets a new join link. When the bot is removed from the group, the group is disconnected from the project. Disconnecting or switching the group revokes the old join link.
+- The bot now also receives `my_chat_member` and `chat_join_request` updates; the webhook is re-registered on restart, so nothing needs doing on the server.
+- Migration `0059`: `projects.telegram_group_invite`.
+
 ## [2.35.0]
 
 ### Added

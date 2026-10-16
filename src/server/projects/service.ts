@@ -334,6 +334,17 @@ async function assertMemberRoleTags(ids: ReadonlyArray<number | null | undefined
   if (wanted.some((id) => !roles.has(id))) throw new NotFoundError();
 }
 
+/**
+ * گروهِ تلگرامِ پروژه (۲.۳۶.۰): تازه‌وارد دعوت و رفته بیرون می‌شود. بی‌انتظار و
+ * با import ِ پویا — کارِ اصلی منتظرِ تلگرام نمی‌ماند و وابستگیِ چرخه‌ای ساخته نمی‌شود.
+ */
+function syncTelegramGroup(projectId: number, change: { invite?: number[]; remove?: number[] }) {
+  if (!change.invite?.length && !change.remove?.length) return;
+  void import('@/server/telegram/group-members')
+    .then((m) => m.syncGroupMembers(projectId, change))
+    .catch(() => {});
+}
+
 export async function setMembers(actor: Actor, projectId: number, desired: MemberInput[]) {
   await getProject(actor, projectId); // گاردِ scope
   await assertCanManageProject(actor, projectId);
@@ -403,6 +414,11 @@ export async function setMembers(actor: Actor, projectId: number, desired: Membe
     .filter((uid) => !existing.some((e) => e.userId === uid && !deleted.has(e.id))
       && !desired.some((d) => d.userId === uid));
   await notifyOwnersOfTeamChange(actor, projectId, removedUsers, 'removed');
+  const had0 = new Set(existing.map((m) => m.userId));
+  syncTelegramGroup(projectId, {
+    remove: removedUsers,
+    invite: [...new Set(diff.toInsert.map((m) => m.userId).filter((id) => !had0.has(id)))],
+  });
 
   /**
    * ⚠️ تسکِ نقشیِ منتظر → به عضوِ تازه.
@@ -566,6 +582,8 @@ export async function setProjectAccess(
     { userId },
   );
   if (blocked) await notifyOwnersOfTeamChange(actor, projectId, [userId], 'blocked');
+  // قطع ← بیرون از گروهِ تلگرام؛ وصلِ دوبارهٔ عضو (نه کارفرما) ← دعوتِ دوباره.
+  syncTelegramGroup(projectId, blocked ? { remove: [userId] } : memberResult.length > 0 ? { invite: [userId] } : {});
   return touched;
 }
 
@@ -1287,6 +1305,9 @@ export async function addProjectMember(
     const role = plan.roleTagId ? ((await roleNamesOf([plan.roleTagId])).get(plan.roleTagId) ?? '') : '';
     await notify([input.userId], signedNotice(projectId, project.title, { client: false, role }));
   }
+  if (plan.action !== 'raise' && !existing.some((m) => m.userId === input.userId)) {
+    syncTelegramGroup(projectId, { invite: [input.userId] });
+  }
   return plan;
 }
 
@@ -1313,7 +1334,10 @@ export async function removeProjectMember(actor: Actor, projectId: number, membe
   // ⚠️ عضوِ دو-نقشه با حذفِ یک ردیف هنوز عضو است — آن «حذف از پروژه» نیست.
   const left = await db.select({ id: projectMembers.id }).from(projectMembers)
     .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, row.userId)));
-  if (left.length === 0) await notifyOwnersOfTeamChange(actor, projectId, [row.userId], 'removed');
+  if (left.length === 0) {
+    await notifyOwnersOfTeamChange(actor, projectId, [row.userId], 'removed');
+    syncTelegramGroup(projectId, { remove: [row.userId] });
+  }
   return row.userId;
 }
 

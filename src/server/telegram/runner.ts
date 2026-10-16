@@ -43,6 +43,13 @@ async function tg(token: string, method: string, payload: Record<string, unknown
 const fingerprint = (token: string) => createHash('sha256').update(token).digest('hex').slice(0, 12);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * ۲.۳۶.۰: `my_chat_member` (ربات مدیر شد / از گروه بیرون رفت) و `chat_join_request`
+ * (درخواستِ عضویت با لینکِ گروه) هم. ⚠️ وب‌هوک با هر راه‌اندازیِ دوباره ثبت می‌شود،
+ * پس سرورِ به‌روزشده این‌ها را بی کارِ دستی می‌گیرد.
+ */
+const ALLOWED_UPDATES = ['message', 'callback_query', 'my_chat_member', 'chat_join_request'];
+
 let started = false;
 
 export function startTelegramRunner(): void {
@@ -65,7 +72,7 @@ async function webhookLoop() {
         const out = await tg(token, 'setWebhook', {
           url,
           secret_token: webhookSecret(token),
-          allowed_updates: ['message', 'callback_query'],
+          allowed_updates: ALLOWED_UPDATES,
         });
         if (out.ok) {
           configured = fingerprint(token);
@@ -104,7 +111,7 @@ async function pollLoop() {
         offset = 0;
       }
       const out = await tg(token, 'getUpdates', {
-        offset, timeout: 25, allowed_updates: ['message', 'callback_query'],
+        offset, timeout: 25, allowed_updates: ALLOWED_UPDATES,
       }, 35_000);
       if (!out.ok || !Array.isArray(out.result)) {
         await sleep(out.error_code === 409 ? 30_000 : 5_000);

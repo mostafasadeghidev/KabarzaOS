@@ -24,6 +24,7 @@ import { decideRequest, listRequests } from '@/server/finance/payouts';
 import { canManageSection, canViewSection } from '@/domain/access/permissions';
 import { MUTABLE_REMINDERS } from '@/server/notifications/service';
 import { linkProjectGroup } from './group';
+import { answerJoinRequest, forgetGroup, migrateGroup, projectOfGroup, setupGroup } from './group-members';
 import { canViewProject, isClientOnly } from '@/server/projects/authority';
 import { listMeetings, listReminders } from '@/server/meetings/service';
 import { getSystemConfig } from '@/server/settings/system-service';
@@ -74,12 +75,18 @@ export interface TgMessage {
   video?: TgVideo; video_note?: TgVideo;
   /** پیامی که این پیام پاسخِ آن است — «این ویدیو را بازبینی کن» زیرِ ویدیوی قبلی. */
   reply_to_message?: TgMessage;
+  /** گروهِ عادی سوپرگروه شد — شناسهٔ تازه (۲.۳۶.۰). */
+  migrate_to_chat_id?: number;
 }
 export interface TgVideo extends TgFile { duration?: number }
 export interface TgUpdate {
   update_id: number;
   message?: TgMessage;
   callback_query?: { id: string; data?: string; from: TgUser; message?: TgMessage };
+  /** وضعیتِ خودِ ربات در یک گروه عوض شد (۲.۳۶.۰). */
+  my_chat_member?: { chat: TgChat; new_chat_member?: { status?: string } };
+  /** درخواستِ عضویت با لینکِ گروه (۲.۳۶.۰). */
+  chat_join_request?: { chat: TgChat; from: TgUser; user_chat_id?: number };
 }
 
 type Api = (method: string, payload: Record<string, unknown>) => Promise<unknown>;
@@ -1672,6 +1679,12 @@ async function sendNotLinked(chatId: number) {
 async function onMessage(msg: TgMessage) {
   // گروه: «/start <token>» ِ وصل‌کردنِ گروهِ پروژه (۲.۱۴.۰)، یا صدازدنِ دستیار (۲.۳۴.۰).
   if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
+    // گروهِ عادی سوپرگروه شد (مثلاً با مدیر شدنِ ربات) — پروژه دنبالِ شناسهٔ تازه برود.
+    if (msg.migrate_to_chat_id) {
+      const projectId = await migrateGroup(msg.chat.id, msg.migrate_to_chat_id);
+      if (projectId) await announceSetup(msg.migrate_to_chat_id, projectId);
+      return;
+    }
     const [c, token] = (msg.text ?? '').trim().split(/\s+/);
     if ((c ?? '').toLowerCase().replace(/@.*$/, '') === '/start' && token) {
       const title = await linkProjectGroup(token, msg.chat.id);
@@ -1684,6 +1697,9 @@ async function onMessage(msg: TgMessage) {
         ].join(NL)
         // ⚠️ لینکِ گروه از صفحهٔ پروژه می‌آید، نه از پروفایل.
         : `⚠️ ${esc(tr('این لینک معتبر نیست یا قبلاً استفاده شده؛ از تبِ «مدیریت» ِ پروژه دوباره «افزودنِ ربات به گروه» را بزنید.'))}`);
+      // ۲.۳۶.۰: لینکِ عضویت و دعوتِ تیم — اگر ربات مدیر است.
+      const project = title ? await projectOfGroup(msg.chat.id) : null;
+      if (project) await announceSetup(msg.chat.id, project.id);
       return;
     }
     await onGroupMessage(msg);
@@ -1849,6 +1865,28 @@ async function onMessage(msg: TgMessage) {
   }
 }
 
+/* ---------------- گروهِ پروژه: مدیر شدنِ ربات و دعوتِ اعضا (۲.۳۶.۰) ---------------- */
+
+/** نتیجهٔ راه‌اندازیِ گروه، در خودِ گروه. */
+async function announceSetup(chatId: number, projectId: number) {
+  const { state, sent } = await setupGroup(projectId);
+  const tr = await translatorFor((await systemLocale()).locale);
+  if (state === 'invited') {
+    await send(chatId, `📨 ${esc(tr('لینکِ عضویت برای {n} عضوِ تیمِ پروژه در تلگرام و برنامه فرستاده شد. ربات فقط اعضای تیمِ همین پروژه را می‌پذیرد.', { n: sent }))}`);
+  } else if (state === 'need_admin') {
+    await send(chatId, `ℹ️ ${esc(tr('ربات را مدیرِ گروه کنید (با اجازهٔ «افزودنِ اعضا» و «محدود کردنِ اعضا») تا اعضای تیم خودکار دعوت شوند.'))}`);
+  }
+}
+
+/** ربات در گروهی مدیر شد ← دعوت؛ بیرون رفت ← گروه از پروژه جدا. */
+async function onBotStatus(change: NonNullable<TgUpdate['my_chat_member']>) {
+  const status = change.new_chat_member?.status ?? '';
+  const project = await projectOfGroup(change.chat.id);
+  if (!project) return;
+  if (status === 'administrator') return announceSetup(change.chat.id, project.id);
+  if (status === 'left' || status === 'kicked') await forgetGroup(change.chat.id);
+}
+
 /* ---------------- ورودی ---------------- */
 
 /** به‌روزرسانی‌های دیده‌شده — تلگرام در خطا دوباره می‌فرستد. */
@@ -1868,6 +1906,11 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
   try {
     if (update.message) await onMessage(update.message);
     else if (update.callback_query) await onCallback(update.callback_query);
+    else if (update.my_chat_member) await onBotStatus(update.my_chat_member);
+    else if (update.chat_join_request) {
+      const r = update.chat_join_request;
+      await answerJoinRequest(r.chat.id, r.from.id, r.user_chat_id);
+    }
   } catch (error) {
     console.error('[telegram] update failed', error instanceof Error ? error.message : error);
   }
