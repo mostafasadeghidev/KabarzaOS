@@ -1238,8 +1238,13 @@ async function deliver(chatId: number, who: Who, result: AgentResult) {
     case 'busy':
       await send(chatId, `⏳ ${esc(who.tr('پیام‌ها زیاد شد؛ چند دقیقه صبر کنید. تا آن موقع دکمه‌ها کار می‌کنند.'))}`, await menuFor(who));
       return;
-    default:
-      await send(chatId, `⚠️ ${esc(who.tr('هوشِ مصنوعی جواب نداد؛ کمی بعد دوباره امتحان کنید یا از دکمه‌ها استفاده کنید.'))}`, await menuFor(who));
+    default: {
+      // ⚠️ متنِ خطای ارائه‌دهنده (۲.۳۲.۰) — مثلاً «این مدل max_tokens را نمی‌پذیرد» یا «مدل پیدا نشد».
+      // پیش از این فقط «جواب نداد» می‌آمد و علت حدس‌زدنی بود. کلید هرگز در این متن نیست.
+      const detail = result.kind === 'error' && result.detail ? `
+<code>${esc(result.detail)}</code>` : '';
+      await send(chatId, `⚠️ ${esc(who.tr('هوشِ مصنوعی جواب نداد؛ کمی بعد دوباره امتحان کنید یا از دکمه‌ها استفاده کنید.'))}${detail}`, await menuFor(who));
+    }
   }
 }
 

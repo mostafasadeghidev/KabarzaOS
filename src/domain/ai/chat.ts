@@ -56,6 +56,43 @@ export function classifyProviderError(status: number, body: string): 'quota' | '
   return 'other';
 }
 
+/**
+ * تطبیقِ درخواست با مدل (۲.۳۲.۰). مدل‌های تازهٔ OpenAI (سری‌های o، gpt-5 و gpt-6)
+ * `max_tokens` را نمی‌پذیرند و `max_completion_tokens` می‌خواهند، و بعضی هم دمای
+ * غیرپیش‌فرض را رد می‌کنند. پیش از این همان خطای ۴۰۰ «پاسخ نداد» می‌شد.
+ * از روی متنِ خطا بدنهٔ تازه می‌سازد؛ چیزی برای عوض‌کردن نبود ← null.
+ * ⚠️ سقفِ تازه بزرگ‌تر است: در این مدل‌ها توکن‌های «فکرکردن» هم از همین سقف کم می‌شود.
+ */
+export function adaptRequest(body: Record<string, unknown>, errorBody: string): Record<string, unknown> | null {
+  const next = { ...body };
+  let changed = false;
+  if ('max_tokens' in next && /max_tokens/.test(errorBody) && /max_completion_tokens|unsupported/i.test(errorBody)) {
+    delete next.max_tokens;
+    next.max_completion_tokens = 4000;
+    changed = true;
+  }
+  if ('temperature' in next && /temperature/.test(errorBody) && /unsupported|not support|only the default/i.test(errorBody)) {
+    delete next.temperature;
+    changed = true;
+  }
+  // gpt-6 در chat/completions ابزار را فقط با `reasoning_effort: none` می‌پذیرد (پاسخِ واقعیِ OpenAI).
+  if (next.reasoning_effort !== 'none' && /reasoning_effort/.test(errorBody) && /'none'|"none"|none/.test(errorBody)) {
+    next.reasoning_effort = 'none';
+    changed = true;
+  }
+  return changed ? next : null;
+}
+
+/** پیامِ خطای ارائه‌دهنده برای نمایش و لاگ — فقط متنِ کوتاه، نه کلِ بدنه. */
+export function providerErrorText(errorBody: string): string {
+  try {
+    const parsed = JSON.parse(errorBody) as { error?: { message?: string } | string; message?: string };
+    const m = typeof parsed.error === 'string' ? parsed.error : parsed.error?.message ?? parsed.message;
+    if (m) return m.slice(0, 200);
+  } catch { /* متنِ خام */ }
+  return errorBody.replace(/\s+/g, ' ').trim().slice(0, 200);
+}
+
 /** پیامِ تلگرام حداکثر ۴۰۹۶ نویسه است. */
 export function clip(text: string, max = 3900): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;

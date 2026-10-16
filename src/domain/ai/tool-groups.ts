@@ -56,6 +56,8 @@ export const GROUP_HINTS: Record<string, string> = {
   hours: 'list/edit my time entries, loggable projects, long-timer decisions',
   finance_reports: 'dashboard, reports, finance accounts/ledger, payment requests, recurring payments, my money, activity log',
   profile: 'my profile, timezone, notification preferences',
-  sensitive: 'money, payments, deleting, people and access, project settings, system settings (needs the user\'s sensitive permission)',
+  // ⚠️ «ساختن/ویرایشِ پروژه» صریح آمده (۲.۳۲.۰): پیش از این نبود و مدل به‌جای بارگذاریِ
+  // این دسته، با ابزارِ همیشه‌حاضرِ create_task «تسک» می‌ساخت.
+  sensitive: 'create, edit, archive or delete projects; project members, prices and status; money, payments, deleting, people and access, system settings (needs the user\'s sensitive permission)',
   other: 'anything else',
 };
