@@ -2,6 +2,24 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.32.0]
+
+### Added
+
+- **Online status on every team member's avatar.** The green / yellow / grey dot from the Members page (active / idle / offline) now sits on the corner of each team member's photo wherever it appears: project members, task assignees, comments and reviews, messages and channels, Team, the finance tabs and the people pickers. It updates live, like the Members page. All the avatars on a page are fetched in one request shortly after they appear, so the dots no longer wait a full minute for the next heartbeat.
+- **Outgoing email (SMTP) can be set in the panel.** Settings → Notifications has server, port, user name, password and sender address, plus "Send me a test email", which shows the mail server's own error when it fails. Password resets, invitations for new members and email notifications all go this way. The password is stored encrypted (the same AES-GCM box as the CAPTCHA secret and the users' AI keys), never sent to the browser and never written to the activity log; an empty password field keeps the current one. `SMTP_*` in `.env` still wins, all together: when `SMTP_HOST` is set, nothing is read from the panel and the form is read-only. The mail sender is rebuilt when the settings change, so no restart is needed.
+
+### Fixed
+
+- **The Telegram AI works with the newer OpenAI models (for example gpt-6-astra).** They reject `max_tokens` (they want `max_completion_tokens`) and accept function tools only through OpenAI's newer Responses API, so every message ended with "The AI didn't respond". The bot now adapts the request from the provider's own error (token limit, temperature), switches a model to the Responses API when the provider asks for it, remembers both per model so later messages go straight through, and drops regex patterns the Responses API cannot read from the tool schemas (the server still validates them).
+- **"The AI didn't respond" now says why.** The provider's short error message is shown under it in Telegram and written to the server log (never the key). Before, the reason was thrown away.
+- **"Add a new project …" no longer becomes a task in some other project.** Creating a project is in the bot's "sensitive" tools, but nothing told the model so; with sensitive actions on it still used the always-loaded "create task" and picked the first project of the list (Adlib). The sensitive group now says it covers creating and editing projects, and the bot is told never to swap the requested action for a different one and never to pick a project the user did not name.
+
+### Changed
+
+- **Every internal user sees colleagues' online status.** Before, only members managers (or an office manager for their own office) could see it. Now any team member, admin, finance user or owner sees the status of active internal colleagues. Clients see no one's status, and a client's status is never shown to anyone. Turning presence off in Settings → System still hides it everywhere.
+- The avatar no longer clips its own corner badge: the rounding moved from the avatar frame to the photo and the fallback.
+
 ## [2.31.0]
 
 ### Added

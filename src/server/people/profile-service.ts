@@ -78,7 +78,7 @@ export async function getMyProfile(actor: Actor) {
       telegramMuted: me.telegramMuted ?? [],
       briefAt: me.briefAt,
       // ⚠️ بدونِ mailer، به‌جای گزینه‌هایی که کار نمی‌کنند، حقیقت گفته می‌شود.
-      mailerReady: mailEnabled(),
+      mailerReady: await mailEnabled(),
     },
   };
 }

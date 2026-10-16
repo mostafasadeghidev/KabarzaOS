@@ -4,9 +4,10 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { Actor } from '@/domain/access/permissions';
 import { authHeaders, PROVIDERS } from '@/domain/ai/providers';
 import {
-  allow, classifyProviderError, clip, parseArgs, toOpenAiTools, trimHistory,
+  adaptRequest, allow, classifyProviderError, clip, providerErrorText, parseArgs, toOpenAiTools, trimHistory,
   type ChatMessage, type McpToolInfo, type ToolCall,
 } from '@/domain/ai/chat';
+import { fromResponsesOutput, toResponsesInput, toResponsesTools, wantsResponsesApi } from '@/domain/ai/responses';
 import { buildMcpServer } from '@/server/mcp/server';
 import { GROUP_HINTS, groupOf } from '@/domain/ai/tool-groups';
 import { listProjects } from '@/server/projects/service';
@@ -31,7 +32,8 @@ export type AgentResult =
   | { kind: 'quota' }
   | { kind: 'auth' }
   | { kind: 'busy' }
-  | { kind: 'error' };
+  /** `detail`: متنِ کوتاهِ خطای ارائه‌دهنده (۲.۳۲.۰) — تا کاربر بداند مدل چه گفت. */
+  | { kind: 'error'; detail?: string };
 
 export interface AgentContext {
   actor: Actor;
@@ -173,37 +175,121 @@ async function projectOptions(actor: Actor) {
 
 type Completion =
   | { ok: true; message: { content: string | null; tool_calls?: ToolCall[] } }
-  | { ok: false; reason: 'quota' | 'auth' | 'no_tools' | 'other' };
+  | { ok: false; reason: 'quota' | 'auth' | 'no_tools' | 'other'; detail?: string };
 
-async function complete(secret: AiSecret, messages: ChatMessage[], tools: ReturnType<typeof toOpenAiTools> | null): Promise<Completion> {
+/**
+ * شکلِ پذیرفته‌شدهٔ بدنه برای هر مدل (۲.۳۲.۰) — پس از یک بار تطبیق
+ * (`adaptRequest`)، پیام‌های بعدی مستقیم با همان شکل می‌روند، نه هر بار دو درخواست.
+ */
+const requestShape = new Map<string, (body: Record<string, unknown>) => Record<string, unknown>>();
+/** مدل‌هایی که فقط از رابطِ Responses ابزار می‌پذیرند (۲.۳۲.۰) — پس از اولین بار مستقیم آنجا. */
+const responsesOnly = new Set<string>();
+
+/**
+ * همان تماس از راهِ `/v1/responses` ِ OpenAI — شکلِ پیام‌ها و پاسخ ترجمه می‌شود
+ * (`domain/ai/responses`)، پس بقیهٔ حلقهٔ ربات دست نمی‌خورد.
+ */
+async function completeResponses(secret: AiSecret, messages: ChatMessage[], tools: ReturnType<typeof toOpenAiTools> | null): Promise<Completion> {
   let res: Response;
   try {
-    res = await fetch(`${secret.baseUrl}/chat/completions`, {
+    res = await fetch(`${secret.baseUrl}/responses`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...authHeaders(secret.provider, secret.apiKey) },
       body: JSON.stringify({
         model: secret.model,
-        messages,
-        ...(tools && tools.length > 0 ? { tools, tool_choice: 'auto' } : {}),
-        max_tokens: 1200,
-        temperature: 0.2,
+        input: toResponsesInput(messages),
+        ...(tools && tools.length > 0 ? { tools: toResponsesTools(tools) } : {}),
+        max_output_tokens: 4000,
+        store: false,
       }),
       redirect: 'error',
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(120_000),
     });
-  } catch {
-    return { ok: false, reason: 'other' };
+  } catch (error) {
+    const detail = error instanceof Error ? error.message.slice(0, 200) : undefined;
+    console.error('[ai]', secret.provider, secret.model, 'responses network', detail);
+    return { ok: false, reason: 'other', detail };
   }
   if (!res.ok) {
-    return { ok: false, reason: classifyProviderError(res.status, await res.text().catch(() => '')) };
+    const errorBody = await res.text().catch(() => '');
+    const detail = providerErrorText(errorBody);
+    console.error('[ai]', secret.provider, secret.model, 'responses', res.status, detail);
+    return { ok: false, reason: classifyProviderError(res.status, errorBody), detail };
   }
-  const data = await res.json().catch(() => null) as { choices?: Array<{ message?: { content?: string | null; tool_calls?: ToolCall[] } }>; error?: { message?: string } } | null;
-  const message = data?.choices?.[0]?.message;
+  const message = fromResponsesOutput(await res.json().catch(() => null));
   if (!message) {
-    // بعضی سرویس‌ها خطای سهمیه را با ۲۰۰ و بدنهٔ `error` برمی‌گردانند.
-    return { ok: false, reason: classifyProviderError(200, data?.error?.message ?? '') };
+    console.error('[ai]', secret.provider, secret.model, 'responses', 'empty output');
+    return { ok: false, reason: 'other', detail: 'empty response' };
   }
-  return { ok: true, message: { content: message.content ?? null, tool_calls: message.tool_calls?.filter((c) => c?.function?.name) } };
+  return { ok: true, message };
+}
+
+async function complete(secret: AiSecret, messages: ChatMessage[], tools: ReturnType<typeof toOpenAiTools> | null): Promise<Completion> {
+  const shapeKey = `${secret.baseUrl}|${secret.model}`;
+  if (responsesOnly.has(shapeKey)) return completeResponses(secret, messages, tools);
+  const base: Record<string, unknown> = {
+    model: secret.model,
+    messages,
+    ...(tools && tools.length > 0 ? { tools, tool_choice: 'auto' } : {}),
+    max_tokens: 1200,
+    temperature: 0.2,
+  };
+  let body = requestShape.get(shapeKey)?.(base) ?? base;
+
+  // حداکثر دو تطبیق: سقفِ توکن، سپس دما.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(`${secret.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...authHeaders(secret.provider, secret.apiKey) },
+        body: JSON.stringify(body),
+        redirect: 'error',
+        signal: AbortSignal.timeout(90_000),
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message.slice(0, 200) : undefined;
+      console.error('[ai]', secret.provider, secret.model, 'network', detail);
+      return { ok: false, reason: 'other', detail };
+    }
+    if (!res.ok) {
+      const errorBody = await res.text().catch(() => '');
+      // مدلی که ابزار را فقط از رابطِ Responses می‌پذیرد (پیامِ خودِ OpenAI) — همان‌جا برو.
+      if (res.status === 400 && secret.provider === 'openai' && wantsResponsesApi(errorBody)) {
+        responsesOnly.add(shapeKey);
+        return completeResponses(secret, messages, tools);
+      }
+      if (res.status === 400) {
+        const adapted = adaptRequest(body, errorBody);
+        if (adapted) {
+          const removed = Object.keys(base).filter((k) => !(k in adapted));
+          const added = Object.entries(adapted).filter(([k]) => !(k in base));
+          requestShape.set(shapeKey, (b) => {
+            const out = { ...b };
+            for (const k of removed) delete out[k];
+            for (const [k, v] of added) out[k] = v;
+            return out;
+          });
+          body = adapted;
+          continue;
+        }
+      }
+      // ⚠️ فقط وضعیت و متنِ کوتاهِ خطا در لاگ — کلید هرگز. پیش از این خطا بی‌صدا دور ریخته می‌شد.
+      const detail = providerErrorText(errorBody);
+      console.error('[ai]', secret.provider, secret.model, res.status, detail);
+      return { ok: false, reason: classifyProviderError(res.status, errorBody), detail };
+    }
+    const data = await res.json().catch(() => null) as { choices?: Array<{ message?: { content?: string | null; tool_calls?: ToolCall[] } }>; error?: { message?: string } } | null;
+    const message = data?.choices?.[0]?.message;
+    if (!message) {
+      // بعضی سرویس‌ها خطای سهمیه را با ۲۰۰ و بدنهٔ `error` برمی‌گردانند.
+      const detail = (data?.error?.message ?? '').slice(0, 200) || undefined;
+      console.error('[ai]', secret.provider, secret.model, 200, detail ?? 'empty response');
+      return { ok: false, reason: classifyProviderError(200, data?.error?.message ?? ''), detail };
+    }
+    return { ok: true, message: { content: message.content ?? null, tool_calls: message.tool_calls?.filter((c) => c?.function?.name) } };
+  }
+  return { ok: false, reason: 'other', detail: 'request could not be adapted to this model' };
 }
 
 /** ساعتِ محلیِ الان — برای «دو ساعت دیگر یادم بنداز». */
@@ -217,7 +303,7 @@ function localNow(tz: string): string {
 
 type AnyCompletion =
   | { ok: true; message: { content: string | null; tool_calls?: ToolCall[] }; noTools: boolean }
-  | { ok: false; reason: 'quota' | 'auth' | 'other' };
+  | { ok: false; reason: 'quota' | 'auth' | 'other'; detail?: string };
 
 /**
  * امتحانِ اتصال‌ها به ترتیبِ اولویت. ⚠️ همان پیام‌ها (کلِ گفت‌وگو) به بعدی می‌رود،
@@ -226,6 +312,7 @@ type AnyCompletion =
  */
 async function completeAny(ctx: AgentContext, messages: ChatMessage[], tools: unknown[] | null): Promise<AnyCompletion> {
   const reasons: string[] = [];
+  let detail: string | undefined;
   let plainOnly: number | null = null;
   for (let i = ctx.active ?? 0; i < ctx.secrets.length; i++) {
     const out = await complete(ctx.secrets[i]!, messages, tools as Parameters<typeof complete>[2]);
@@ -238,6 +325,7 @@ async function completeAny(ctx: AgentContext, messages: ChatMessage[], tools: un
       continue;
     }
     reasons.push(out.reason);
+    detail ??= out.detail;
   }
   if (plainOnly !== null) {
     const out = await complete(ctx.secrets[plainOnly]!, messages, null);
@@ -249,7 +337,7 @@ async function completeAny(ctx: AgentContext, messages: ChatMessage[], tools: un
   }
   if (reasons.includes('quota')) return { ok: false, reason: 'quota' };
   if (reasons.length > 0 && reasons.every((r) => r === 'auth')) return { ok: false, reason: 'auth' };
-  return { ok: false, reason: 'other' };
+  return { ok: false, reason: 'other', detail };
 }
 
 /** نامِ اتصالی که جواب داد، وقتی اولی نبود — تا کاربر بداند جابه‌جا شده. */
@@ -265,7 +353,12 @@ function systemPrompt(ctx: AgentContext): string {
     `Today is ${ctx.today}; the local time now is ${localNow(ctx.timezone)} (${ctx.timezone}).`,
     'For meetings use list_my_meetings; for personal reminders use list_my_reminders, create_reminder (local time) and delete_reminder.',
     `Only common tools are loaded; call ${LOAD_TOOLS} to get more (projects, team, meetings_messages, hours, finance_reports, profile${ctx.sensitive ? ', sensitive' : ''}). You can do anything the user can do in the app.`,
-    ...(ctx.sensitive ? [] : ['Money, payments, deleting, people/access and settings are not enabled for this bot; if asked, tell the user they can allow "sensitive actions" in Profile → AI assistant.']),
+    ...(ctx.sensitive
+      ? [`Creating, editing, archiving or deleting projects and adding project members are in the "sensitive" group: call ${LOAD_TOOLS} with "sensitive" first.`]
+      : ['Creating or editing projects, project members, money, payments, deleting, people/access and settings are not enabled for this bot; if asked, tell the user they can allow "sensitive actions" in Profile → AI assistant.']),
+    // ⚠️ دو قاعدهٔ ۲.۳۲.۰ — از یک خطای واقعی: «پروژهٔ تازه بساز» به «تسک در پروژهٔ Adlib» تبدیل شد.
+    `Never replace the requested action with a different one (for example never create a task when the user asked for a project). If no loaded tool does it, call ${LOAD_TOOLS} for the right group; if it is still not available, say plainly that you cannot do it and why.`,
+    `Never choose a project the user did not name. Do not default to the first project of a list; call ${PICK_PROJECT} instead.`,
     'Use the tools to read real data; never invent tasks, projects, ids or hours.',
     'Find ids with search or list_projects before project tools.',
     'For changes (logging hours, timers, tasks, comments, messages) just call the tool: the app asks the user to confirm with buttons, so do not ask "are you sure" yourself.',
@@ -308,7 +401,7 @@ async function loop(ctx: AgentContext, messages: ChatMessage[]): Promise<AgentRe
       if (!out.ok) {
         if (out.reason === 'quota') return { kind: 'quota' };
         if (out.reason === 'auth') return { kind: 'auth' };
-        return { kind: 'error' };
+        return { kind: 'error', detail: out.detail };
       }
 
       const calls = out.message.tool_calls ?? [];

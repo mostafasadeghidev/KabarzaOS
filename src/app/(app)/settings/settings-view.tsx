@@ -20,10 +20,12 @@ import { StaffSection, type StaffRow } from './staff-section';
 import { ReportSection } from './report-section';
 import { SystemSection, TelegramSection } from './system-section';
 import { SecuritySection } from './security-section';
+import { MailSection } from './mail-section';
 import { OnboardingLibrary, type OnboardingLibraryData } from './onboarding-library';
 import { BackupSection, type BackupView } from './backup-section';
 import type { TelegramSettingsView } from '@/server/settings/telegram-service';
 import type { TurnstileSettingsView } from '@/server/settings/turnstile-service';
+import type { SmtpSettingsView } from '@/server/settings/smtp-service';
 import { FiscalSection, type ClosingPreview } from './fiscal-section';
 import type { SystemConfig } from '@/domain/settings/system';
 import type { ReportConfig } from '@/domain/scheduler/daily-report';
@@ -93,6 +95,8 @@ export interface SettingsData {
   backup: BackupView | null;
   /** کپچای کلودفلر — فقط مالک؛ کلیدِ محرمانه در آن نیست. */
   turnstile: TurnstileSettingsView | null;
+  /** ایمیلِ خروجی — فقط مالک؛ رمز در آن نیست. */
+  smtp: SmtpSettingsView | null;
   qaItems: Array<{
     id: number; title: string; description: string;
     roleTagId: number | null; isTask: boolean; sortOrder: number;
@@ -715,6 +719,8 @@ export function SettingsView({
 
       {tab === 'notify' && data.isOwner && (
         <div className="grid gap-6">
+          {data.smtp && <MailSection smtp={data.smtp} />}
+          {data.smtp && <Separator />}
           <TelegramSection telegram={data.telegram} />
           <Separator />
           <ReportSection config={data.reportConfig} />

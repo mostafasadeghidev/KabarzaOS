@@ -7,6 +7,7 @@ import { getReportConfig } from '@/server/scheduler/daily-report';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { getTelegramSettings } from '@/server/settings/telegram-service';
 import { getTurnstileSettings } from '@/server/settings/turnstile-service';
+import { getSmtpSettings } from '@/server/settings/smtp-service';
 import { lastTickAt } from '@/server/scheduler/service';
 import { bucketCheck } from '@/server/files/bucket-probe';
 import { schedulerHealth } from '@/domain/scheduler/health';
@@ -86,6 +87,8 @@ export default async function SettingsPage({
       backup: actor.roles.includes('owner') ? await getBackupView(actor).catch(() => null) : null,
       // کپچا — فقط مالک؛ کلیدِ محرمانه در این شیء نیست.
       turnstile: actor.roles.includes('owner') ? await getTurnstileSettings(actor).catch(() => null) : null,
+      // ایمیلِ خروجی — فقط مالک؛ رمز در این شیء نیست.
+      smtp: actor.roles.includes('owner') ? await getSmtpSettings(actor).catch(() => null) : null,
       onboarding: systemConfig.onboardingEnabled
         ? await Promise.all([listLibrary(actor), assignOptions()])
           // «+ ساختِ سرویسِ تازه» فقط برای کسی که دفترِ دسترسی‌ها را اداره می‌کند.

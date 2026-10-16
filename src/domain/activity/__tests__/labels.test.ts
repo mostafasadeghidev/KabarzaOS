@@ -74,6 +74,7 @@ describe('برچسبِ رویدادها', () => {
       'request.approved', 'request.rejected',
       'settings.telegram.save', 'settings.telegram.clear',
       'settings.turnstile.on', 'settings.turnstile.off',
+      'settings.smtp.save', 'settings.smtp.clear',
     ]) {
       expect(ACTION_LABELS[key], key).toBeDefined();
     }

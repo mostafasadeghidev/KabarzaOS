@@ -60,7 +60,7 @@ export async function requestPasswordReset(identifier: string, now = new Date())
   ));
   const user = rows[0];
   if (!user || !canSignIn(user.memberState as MemberState, user.deletedAt !== null)) return;
-  if (!mailEnabled()) return;
+  if (!(await mailEnabled())) return;
 
   const token = await issueResetToken(user.id, false, now);
   const t = await getT();
@@ -106,7 +106,7 @@ export async function sendInvite(actor: Actor, userId: number, role: Role, isNew
   const rows = await db.select({ email: users.email }).from(users).where(eq(users.id, userId));
   const email = rows[0]?.email ?? '';
   if (!email.includes('@')) return 'no_user';
-  if (!mailEnabled()) return 'no_mail';
+  if (!(await mailEnabled())) return 'no_mail';
 
   const t = await getT();
   const link = isNew ? resetLink(await issueResetToken(userId, true)) : null;

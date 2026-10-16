@@ -335,18 +335,37 @@ export async function livePresence(actor: Actor, ids: number[]): Promise<Record<
   if (ids.length === 0) return {};
   const system = await getSystemConfig();
   if (!system.presenceEnabled) return {};
-
-  let people: Array<{ id: number }>;
-  try {
-    ({ people } = await visiblePeople(actor));
-  } catch (error) {
-    if (error instanceof ForbiddenError) return {};
-    throw error;
-  }
-  const allowed = new Set(people.map((p) => p.id));
-  const wanted = [...new Set(ids)].filter((id) => allowed.has(id));
-  const states = await presenceFor(wanted);
+  /**
+   * ⚠️ نشانِ حضور روی همهٔ آواتارها (۲.۳۲.۰): هر عضوِ **داخلی** حضورِ همکارانِ
+   * داخلیِ فعال را می‌بیند — مثلِ هر پیام‌رسانِ تیمی. کارفرما هیچ‌کس را
+   * (همان‌طور که عکسِ اعضا را هم نمی‌بیند)، و حضورِ کارفرما به کسی داده
+   * نمی‌شود. پیش از این فقط `members.view` یا مدیرِ دفتر می‌دید.
+   */
+  if (!isInternal(actor.roles)) return {};
+  const unique = [...new Set(ids)];
+  const internal = await db
+    .selectDistinct({ id: users.id })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .where(and(
+      inArray(users.id, unique),
+      inArray(userRoles.role, [...INTERNAL_ROLES]),
+      eq(users.memberState, 'active'),
+      isNull(users.deletedAt),
+    ));
+  const states = await presenceFor(internal.map((r) => r.id));
   return Object.fromEntries(states);
+}
+
+const INTERNAL_ROLES = ['owner', 'admin', 'finance', 'member'] as const;
+
+function isInternal(roles: readonly string[]): boolean {
+  return roles.some((r) => (INTERNAL_ROLES as readonly string[]).includes(r));
+}
+
+/** این بیننده حضورِ دیگران را می‌بیند؟ (برای قابِ برنامه؛ کارفرما نه.) */
+export function seesTeamPresence(actor: Actor): boolean {
+  return isInternal(actor.roles);
 }
 
 export async function onlineNow(actor: Actor): Promise<Array<{

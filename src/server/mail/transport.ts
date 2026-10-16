@@ -1,46 +1,53 @@
 import nodemailer, { type Transporter } from 'nodemailer';
+import { smtpFingerprint, type SmtpConfig } from '@/domain/settings/smtp';
+import { smtpConfig } from '@/server/settings/smtp-service';
 
 /**
  * فرستندهٔ ایمیل.
  *
- * ⚠️ **اختیاری است.** بدونِ `SMTP_HOST` هیچ ایمیلی فرستاده نمی‌شود و این
- * خطا نیست: نسخهٔ قبلی هم روی سایتی که mailer ندارد بی‌صدا رد می‌شود. اعلانِ
- * داخلِ اپ همیشه نوشته شده، پس چیزی گم نمی‌شود.
+ * ⚠️ **اختیاری است.** بی‌پیکربندی هیچ ایمیلی فرستاده نمی‌شود و این خطا نیست:
+ * نسخهٔ قبلی هم روی سایتی که mailer ندارد بی‌صدا رد می‌شود. اعلانِ داخلِ اپ
+ * همیشه نوشته شده، پس چیزی گم نمی‌شود.
  *
- * ⚠️ ترابر یک بار ساخته و نگه داشته می‌شود؛ ساختنِ آن به‌ازای هر ایمیل یعنی
- * یک دست‌دادنِ TLS تازه برای هر اعلان.
+ * پیکربندی از `.env` (`SMTP_*`) یا از پنل (تنظیمات ← اطلاع‌رسانی، ۲.۳۲.۰)؛
+ * محیط برنده است (`smtp-service`).
+ *
+ * ⚠️ ترابر نگه داشته می‌شود؛ ساختنِ آن به‌ازای هر ایمیل یعنی یک دست‌دادنِ TLS
+ * تازه برای هر اعلان. با عوض‌شدنِ تنظیمات (اثرِ انگشت) دوباره ساخته می‌شود.
  */
 
 let cached: Transporter | null = null;
-let built = false;
+let cachedFor = '';
 
-export function mailEnabled(): boolean {
-  return Boolean(process.env.SMTP_HOST);
+export async function mailEnabled(): Promise<boolean> {
+  return (await smtpConfig()) !== null;
 }
 
-function transport(): Transporter | null {
-  if (built) return cached;
-  built = true;
-
-  if (!mailEnabled()) return (cached = null);
-
-  const port = Number(process.env.SMTP_PORT ?? 587);
-  const user = process.env.SMTP_USER ?? '';
-  const pass = process.env.SMTP_PASSWORD ?? '';
-
-  cached = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port,
+function build(config: SmtpConfig): Transporter {
+  return nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
     // ۴۶۵ یعنی TLS از ابتدا؛ بقیه با STARTTLS بالا می‌آیند.
-    secure: port === 465,
-    auth: user ? { user, pass } : undefined,
+    secure: config.port === 465,
+    auth: config.user ? { user: config.user, pass: config.pass } : undefined,
+    connectionTimeout: 15_000,
   });
-  return cached;
 }
 
-/** نشانیِ فرستنده — پیش‌فرضی امن تا پیکربندیِ ناقص ارسال را نشکند. */
-function from(): string {
-  return process.env.SMTP_FROM || process.env.SMTP_USER || 'kabarza@localhost';
+async function transport(): Promise<{ mailer: Transporter; from: string } | null> {
+  const config = await smtpConfig();
+  if (!config) {
+    cached = null;
+    cachedFor = '';
+    return null;
+  }
+  const fingerprint = smtpFingerprint(config);
+  if (!cached || cachedFor !== fingerprint) {
+    cached?.close();
+    cached = build(config);
+    cachedFor = fingerprint;
+  }
+  return { mailer: cached, from: config.from };
 }
 
 /**
@@ -48,20 +55,30 @@ function from(): string {
  * ارسال شکست خورد. صدا زننده نباید به‌خاطرش بشکند (R-NOTIF-03).
  */
 export async function sendMail(to: string, subject: string, text: string): Promise<boolean> {
-  const mailer = transport();
-  if (!mailer || !to) return false;
+  return (await sendMailDetailed(to, subject, text)).ok;
+}
 
+/** همان ارسال، با دلیلِ شکست — برای دکمهٔ «ایمیلِ آزمایشی» ِ تنظیمات. */
+export async function sendMailDetailed(
+  to: string, subject: string, text: string,
+): Promise<{ ok: true } | { ok: false; reason: 'disabled' | 'no_recipient' | 'failed'; detail?: string }> {
+  const t = await transport();
+  if (!t) return { ok: false, reason: 'disabled' };
+  if (!to) return { ok: false, reason: 'no_recipient' };
   try {
-    await mailer.sendMail({ from: from(), to, subject, text });
-    return true;
+    await t.mailer.sendMail({ from: t.from, to, subject, text });
+    return { ok: true };
   } catch (error) {
     console.error('[mail]', error);
-    return false;
+    // ⚠️ فقط پیامِ خطا، کوتاه — نه کلِ شیء (که ممکن است پیکربندی را هم داشته باشد).
+    const detail = error instanceof Error ? error.message.slice(0, 300) : undefined;
+    return { ok: false, reason: 'failed', detail };
   }
 }
 
 /** ⚠️ فقط برای تست — کشِ ترابر را خالی می‌کند. */
 export function resetTransport(): void {
+  cached?.close();
   cached = null;
-  built = false;
+  cachedFor = '';
 }
