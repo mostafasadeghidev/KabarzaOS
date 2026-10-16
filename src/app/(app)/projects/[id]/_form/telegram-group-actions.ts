@@ -1,7 +1,7 @@
 'use server';
 
 import { requireActor } from '@/server/auth';
-import { createProjectGroupLink, disconnectProjectGroup, projectGroupStatus } from '@/server/telegram/group';
+import { createProjectGroupLink, disconnectProjectGroup, projectGroupStatus, resendGroupInvites } from '@/server/telegram/group';
 
 /** گروهِ تلگرامِ پروژه (۲.۱۴.۰) — گارد در سرویس است (مدیرِ پروژه). */
 
@@ -17,6 +17,16 @@ export async function projectGroupLinkAction(projectId: number): Promise<{ link?
   try {
     const link = await createProjectGroupLink(await requireActor(), projectId);
     return link ? { link } : { error: 'ربات تلگرام هنوز راه‌اندازی نشده (تنظیمات ← تلگرام).' };
+  } catch {
+    return { error: 'دسترسی ندارید.' };
+  }
+}
+
+/** «دعوتِ دوبارهٔ اعضا» (۲.۳۶.۰). */
+export async function projectGroupInviteAction(projectId: number): Promise<{ sent?: number; error?: string }> {
+  try {
+    const sent = await resendGroupInvites(await requireActor(), projectId);
+    return sent === null ? { error: 'ربات هنوز مدیرِ گروه نیست؛ در تلگرام مدیرش کنید.' } : { sent };
   } catch {
     return { error: 'دسترسی ندارید.' };
   }

@@ -24,6 +24,7 @@ import { decideRequest, listRequests } from '@/server/finance/payouts';
 import { canManageSection, canViewSection } from '@/domain/access/permissions';
 import { MUTABLE_REMINDERS } from '@/server/notifications/service';
 import { linkProjectGroup } from './group';
+import { answerJoinRequest, forgetGroup, migrateGroup, projectOfGroup, setupGroup } from './group-members';
 import { canViewProject, isClientOnly } from '@/server/projects/authority';
 import { listMeetings, listReminders } from '@/server/meetings/service';
 import { getSystemConfig } from '@/server/settings/system-service';
@@ -37,9 +38,9 @@ import {
   askAgent, forgetConversation, pendingOwner, resolveChoice, resolvePending,
   type AgentResult, type GroupScope, type MediaItem,
 } from '@/server/ai/agent';
-import { MAX_MEDIA_AUDIO_BYTES, MAX_VOICE_BYTES, MAX_VOICE_SECONDS, transcribe, transcriptionModel } from '@/server/ai/transcribe';
+import { MAX_MEDIA_AUDIO_BYTES, transcribe, transcriptionModel } from '@/server/ai/transcribe';
 import type { ContentPart } from '@/domain/ai/chat';
-import { clock, imageMessage, parseLoomUrl, videoMessage, withoutLoomUrl, type Segment } from '@/domain/ai/media';
+import { clock, imageMessage, parseLoomUrl, quotedVoiceMessage, videoMessage, withoutLoomUrl, type Segment } from '@/domain/ai/media';
 import { downloadSmall, extractVideo, extractVideoBytes, loomVideo, type ExtractedVideo } from '@/server/ai/media';
 import {
   bullet, bulletHtml, clip, code, dueHtml, esc, heading, hint, hm, HTML, isParseError, mdToHtml,
@@ -74,12 +75,18 @@ export interface TgMessage {
   video?: TgVideo; video_note?: TgVideo;
   /** پیامی که این پیام پاسخِ آن است — «این ویدیو را بازبینی کن» زیرِ ویدیوی قبلی. */
   reply_to_message?: TgMessage;
+  /** گروهِ عادی سوپرگروه شد — شناسهٔ تازه (۲.۳۶.۰). */
+  migrate_to_chat_id?: number;
 }
 export interface TgVideo extends TgFile { duration?: number }
 export interface TgUpdate {
   update_id: number;
   message?: TgMessage;
   callback_query?: { id: string; data?: string; from: TgUser; message?: TgMessage };
+  /** وضعیتِ خودِ ربات در یک گروه عوض شد (۲.۳۶.۰). */
+  my_chat_member?: { chat: TgChat; new_chat_member?: { status?: string } };
+  /** درخواستِ عضویت با لینکِ گروه (۲.۳۶.۰). */
+  chat_join_request?: { chat: TgChat; from: TgUser; user_chat_id?: number };
 }
 
 type Api = (method: string, payload: Record<string, unknown>) => Promise<unknown>;
@@ -1431,6 +1438,8 @@ async function onVideo(chatId: number, who: Who, src: VideoSource, instruction: 
     await send(chatId, `⚠️ ${esc(who.tr('ویدیو بزرگ‌تر از ۲۰ مگابایت است (سقفِ تلگرام برای ربات)؛ لینکِ Loom یا نسخهٔ کوتاه‌ترش را بفرستید.'))}`, undefined, opts.replyTo);
     return;
   }
+  const sys = await getSystemConfig();
+  const limits = { maxSeconds: sys.aiMediaMinutes * 60, maxFrames: sys.aiVideoFrames };
   const status = await sendStatus(chatId, `🎬 ${esc(who.tr('در حالِ دیدنِ ویدیو… ممکن است یکی‌دو دقیقه طول بکشد.'))}`, opts.replyTo);
   const say = (text: string) => (status ? edit(chatId, status, text) : send(chatId, text, undefined, opts.replyTo));
   await api('sendChatAction', { chat_id: chatId, action: 'typing' });
@@ -1450,7 +1459,7 @@ async function onVideo(chatId: number, who: Who, src: VideoSource, instruction: 
     title = loom.title;
     url = src.url;
     duration = loom.duration;
-    extracted = await extractVideo(loom.mediaUrl);
+    extracted = await extractVideo(loom.mediaUrl, limits);
     if (!extracted) {
       const blob = await downloadSmall(loom.mediaUrl, MAX_MEDIA_AUDIO_BYTES);
       if (blob) raw = { blob, name: 'video.mp4' };
@@ -1464,7 +1473,7 @@ async function onVideo(chatId: number, who: Who, src: VideoSource, instruction: 
     const ext = (src.file.mime_type ?? 'video/mp4').split('/')[1]?.replace(/[^a-z0-9]/gi, '') || 'mp4';
     title = src.file.file_name ?? '';
     duration = src.file.duration ?? 0;
-    extracted = await extractVideoBytes(bytes, ext);
+    extracted = await extractVideoBytes(bytes, ext, limits);
     if (!extracted && bytes.length <= MAX_MEDIA_AUDIO_BYTES) raw = { blob: new Blob([new Uint8Array(bytes)], { type: src.file.mime_type ?? 'video/mp4' }), name: `video.${ext}` };
   }
   if (extracted?.duration) duration = extracted.duration;
@@ -1488,7 +1497,7 @@ async function onVideo(chatId: number, who: Who, src: VideoSource, instruction: 
     await say([`⚠️ ${esc(who.tr('از این ویدیو چیزی فهمیده نشد — نه صدا، نه تصویر.'))}`, ...notes.map((n) => hint(n))].join(NL));
     return;
   }
-  if (extracted?.truncated) notes.push(who.tr('ویدیو بیش از ۱۵ دقیقه است؛ فقط ۱۵ دقیقهٔ اول دیده شد.'));
+  if (extracted?.truncated) notes.push(who.tr('ویدیو بیش از {minutes} دقیقه است؛ فقط {minutes} دقیقهٔ اول دیده شد.', { minutes: sys.aiMediaMinutes }));
   await say([
     `🎬 <b>${esc(who.tr('ویدیو دیده شد'))}</b>${title ? ` — ${esc(clip(title, 80))}` : ''}`,
     `⏱ ${clock(duration)} · 🖼 ${frames.length} · 🎤 ${segments.length > 0 ? '✓' : '—'}`,
@@ -1499,7 +1508,7 @@ async function onVideo(chatId: number, who: Who, src: VideoSource, instruction: 
     id: `frame@${Math.round(f.t)}`, name: `frame-${clock(f.t).replace(/:/g, '-')}.jpg`, mime: 'image/jpeg', bytes: new Uint8Array(f.jpeg), t: f.t,
   }));
   const content = videoMessage({
-    instruction, title, url, duration, truncated: extracted?.truncated, segments,
+    instruction, title, url, duration, truncated: extracted?.truncated, limitSeconds: limits.maxSeconds, segments,
     frames: frames.map((f) => ({ t: f.t, dataUrl: `data:image/jpeg;base64,${f.jpeg.toString('base64')}` })),
   });
   await askAi(chatId, who, content, { ...opts, media });
@@ -1575,11 +1584,13 @@ async function onGroupMessage(msg: TgMessage) {
   const text = (isCommand ? rest.join(' ') : raw).replace(mentionRe ?? /$^/, '').trim();
   try {
     // رسانه در خودِ پیام، وگرنه در پیامی که به آن پاسخ داده (نه پیامِ خودِ ربات).
-    const media = mediaOf(msg) ?? (msg.reply_to_message && !replyToBot ? mediaOf(msg.reply_to_message) : null);
+    const own = mediaOf(msg);
+    const media = own ?? (msg.reply_to_message && !replyToBot ? mediaOf(msg.reply_to_message) : null);
     if (media?.kind === 'video') return await onVideo(chatId, who, { kind: 'telegram', file: media.file }, text, opts);
     if (media?.kind === 'image') return await onImage(chatId, who, media, text, opts);
     if (media?.kind === 'loom') return await onVideo(chatId, who, media, withoutLoomUrl(text), opts);
-    if (media?.kind === 'voice') return await onVoice(chatId, who, media.voice, opts);
+    // ویسِ خودش = درخواست؛ ویسِ دیگری که به آن پاسخ داده = داده، درخواست همین متن.
+    if (media?.kind === 'voice') return await onVoice(chatId, who, media.voice, opts, own ? undefined : { instruction: text });
     if (!text) {
       await send(chatId, hint(who.tr('بعد از /ask یا نامِ ربات، درخواست‌تان را بنویسید.')), undefined, replyTo);
       return;
@@ -1595,7 +1606,14 @@ async function onGroupMessage(msg: TgMessage) {
  * همان مسیرِ متنِ آزاد. ⚠️ ویسِ بلند یا بزرگ رد می‌شود؛ فایل فقط در حافظه است و
  * جایی ذخیره نمی‌شود.
  */
-async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = {}) {
+/**
+ * `quoted`: ویسِ کسِ دیگری که کاربر به آن پاسخ داده (۲.۳۴.۱) — متنش **داده** است و
+ * درخواست همان متنِ پاسخِ کاربر («از این تسک دربیار»). پیش از این خودِ ویس
+ * درخواستِ پرسنده حساب می‌شد و نوشتهٔ او نادیده می‌ماند. سقفِ هر دو در تنظیماتِ سامانه است (۲.۳۵.۰).
+ */
+async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = {}, quoted?: { instruction: string }) {
+  // سقف‌ها از تنظیماتِ سامانه (۲.۳۵.۰)؛ حجم همیشه تا سقفِ دانلودِ تلگرام.
+  const sys = await getSystemConfig();
   const menu = async () => (opts.scope ? undefined : await menuFor(who));
   const all = await loadAiSecrets(who.actor.id);
   // اولین اتصالی که صدا می‌فهمد — DeepSeek برای متن و Groq برای ویس کنارِ هم کار می‌کنند.
@@ -1608,12 +1626,14 @@ async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = 
     await send(chatId, `🎤 ${esc(who.tr('هوشِ مصنوعیِ فعلیِ شما ({name}) صدا را به متن تبدیل نمی‌کند؛ برای ویس Groq (رایگان) یا OpenAI را وصل کنید. تا آن موقع بنویسید.', { name: PROVIDERS[secret.provider]?.label ?? secret.provider }))}`, await menu(), opts.replyTo);
     return;
   }
-  if ((voice.duration ?? 0) > MAX_VOICE_SECONDS || (voice.file_size ?? 0) > MAX_VOICE_BYTES) {
-    await send(chatId, `⚠️ ${esc(who.tr('پیامِ صوتی بیش از ۳ دقیقه است؛ کوتاه‌تر بفرستید یا بنویسید.'))}`, undefined, opts.replyTo);
+  const minutes = quoted ? sys.aiMediaMinutes : sys.aiVoiceMinutes;
+  const maxBytes = Math.min(MAX_FILE_BYTES, MAX_MEDIA_AUDIO_BYTES);
+  if ((voice.duration ?? 0) > minutes * 60 || (voice.file_size ?? 0) > maxBytes) {
+    await send(chatId, `⚠️ ${esc(who.tr('پیامِ صوتی بیش از {minutes} دقیقه است؛ کوتاه‌ترش را بفرستید.', { minutes }))}`, undefined, opts.replyTo);
     return;
   }
   await api('sendChatAction', { chat_id: chatId, action: 'typing' });
-  const audio = await downloadVoice(voice.file_id);
+  const audio = await downloadVoice(voice.file_id, maxBytes);
   if (!audio) {
     await send(chatId, `⚠️ ${esc(who.tr('فایلِ صوتی از تلگرام گرفته نشد؛ دوباره بفرستید.'))}`, undefined, opts.replyTo);
     return;
@@ -1629,20 +1649,20 @@ async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = 
   }
   // کاربر ببیند ربات چه شنیده — اگر اشتباه فهمید، همین‌جا معلوم است.
   await send(chatId, `🎤 <i>«${esc(clip(out.text, 1000))}»</i>`, undefined, opts.replyTo);
-  await askAi(chatId, who, out.text, opts);
+  await askAi(chatId, who, quoted ? quotedVoiceMessage(quoted.instruction, out.text) : out.text, opts);
 }
 
 /** دانلودِ فایلِ صوتی از تلگرام — فقط در حافظه. */
-async function downloadVoice(fileId: string): Promise<Blob | null> {
+async function downloadVoice(fileId: string, maxBytes: number): Promise<Blob | null> {
   const info = await api('getFile', { file_id: fileId }) as { ok?: boolean; result?: { file_path?: string; file_size?: number } } | null;
   const path = info?.result?.file_path;
-  if (!info?.ok || !path || (info.result?.file_size ?? 0) > MAX_VOICE_BYTES) return null;
+  if (!info?.ok || !path || (info.result?.file_size ?? 0) > maxBytes) return null;
   const { token } = await telegramCredentials();
   if (!token) return null;
   const res = await fetch(`https://api.telegram.org/file/bot${token}/${path}`, { signal: AbortSignal.timeout(30_000) }).catch(() => null);
   if (!res?.ok) return null;
   const blob = await res.blob();
-  return blob.size > 0 && blob.size <= MAX_VOICE_BYTES ? blob : null;
+  return blob.size > 0 && blob.size <= maxBytes ? blob : null;
 }
 
 /* ---------------- پیام ---------------- */
@@ -1659,6 +1679,12 @@ async function sendNotLinked(chatId: number) {
 async function onMessage(msg: TgMessage) {
   // گروه: «/start <token>» ِ وصل‌کردنِ گروهِ پروژه (۲.۱۴.۰)، یا صدازدنِ دستیار (۲.۳۴.۰).
   if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
+    // گروهِ عادی سوپرگروه شد (مثلاً با مدیر شدنِ ربات) — پروژه دنبالِ شناسهٔ تازه برود.
+    if (msg.migrate_to_chat_id) {
+      const projectId = await migrateGroup(msg.chat.id, msg.migrate_to_chat_id);
+      if (projectId) await announceSetup(msg.migrate_to_chat_id, projectId);
+      return;
+    }
     const [c, token] = (msg.text ?? '').trim().split(/\s+/);
     if ((c ?? '').toLowerCase().replace(/@.*$/, '') === '/start' && token) {
       const title = await linkProjectGroup(token, msg.chat.id);
@@ -1671,6 +1697,9 @@ async function onMessage(msg: TgMessage) {
         ].join(NL)
         // ⚠️ لینکِ گروه از صفحهٔ پروژه می‌آید، نه از پروفایل.
         : `⚠️ ${esc(tr('این لینک معتبر نیست یا قبلاً استفاده شده؛ از تبِ «مدیریت» ِ پروژه دوباره «افزودنِ ربات به گروه» را بزنید.'))}`);
+      // ۲.۳۶.۰: لینکِ عضویت و دعوتِ تیم — اگر ربات مدیر است.
+      const project = title ? await projectOfGroup(msg.chat.id) : null;
+      if (project) await announceSetup(msg.chat.id, project.id);
       return;
     }
     await onGroupMessage(msg);
@@ -1826,6 +1855,7 @@ async function onMessage(msg: TgMessage) {
     if (quoted?.kind === 'video') return await onVideo(chatId, who, { kind: 'telegram', file: quoted.file }, text);
     if (quoted?.kind === 'image') return await onImage(chatId, who, quoted, text);
     if (quoted?.kind === 'loom') return await onVideo(chatId, who, quoted, text);
+    if (quoted?.kind === 'voice') return await onVoice(chatId, who, quoted.voice, {}, { instruction: text });
 
     if (!(await askAi(chatId, who, text))) {
       await send(chatId, `🤖 ${esc(who.tr('برای جوابِ هوشمند به متنِ آزاد، در پروفایل ← «دستیارِ هوشِ مصنوعی» یک ارائه‌دهنده وصل کنید. تا آن موقع:'))}`, await menuFor(who));
@@ -1833,6 +1863,28 @@ async function onMessage(msg: TgMessage) {
   } catch (error) {
     await send(chatId, explainError(who.tr, error), await menuFor(who));
   }
+}
+
+/* ---------------- گروهِ پروژه: مدیر شدنِ ربات و دعوتِ اعضا (۲.۳۶.۰) ---------------- */
+
+/** نتیجهٔ راه‌اندازیِ گروه، در خودِ گروه. */
+async function announceSetup(chatId: number, projectId: number) {
+  const { state, sent } = await setupGroup(projectId);
+  const tr = await translatorFor((await systemLocale()).locale);
+  if (state === 'invited') {
+    await send(chatId, `📨 ${esc(tr('لینکِ عضویت برای {n} عضوِ تیمِ پروژه در تلگرام و برنامه فرستاده شد. ربات فقط اعضای تیمِ همین پروژه را می‌پذیرد.', { n: sent }))}`);
+  } else if (state === 'need_admin') {
+    await send(chatId, `ℹ️ ${esc(tr('ربات را مدیرِ گروه کنید (با اجازهٔ «افزودنِ اعضا» و «محدود کردنِ اعضا») تا اعضای تیم خودکار دعوت شوند.'))}`);
+  }
+}
+
+/** ربات در گروهی مدیر شد ← دعوت؛ بیرون رفت ← گروه از پروژه جدا. */
+async function onBotStatus(change: NonNullable<TgUpdate['my_chat_member']>) {
+  const status = change.new_chat_member?.status ?? '';
+  const project = await projectOfGroup(change.chat.id);
+  if (!project) return;
+  if (status === 'administrator') return announceSetup(change.chat.id, project.id);
+  if (status === 'left' || status === 'kicked') await forgetGroup(change.chat.id);
 }
 
 /* ---------------- ورودی ---------------- */
@@ -1854,6 +1906,11 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
   try {
     if (update.message) await onMessage(update.message);
     else if (update.callback_query) await onCallback(update.callback_query);
+    else if (update.my_chat_member) await onBotStatus(update.my_chat_member);
+    else if (update.chat_join_request) {
+      const r = update.chat_join_request;
+      await answerJoinRequest(r.chat.id, r.from.id, r.user_chat_id);
+    }
   } catch (error) {
     console.error('[telegram] update failed', error instanceof Error ? error.message : error);
   }

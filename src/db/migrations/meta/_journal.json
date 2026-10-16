@@ -414,6 +414,13 @@
       "when": 1789698000029,
       "tag": "0058_ledger_split_group",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1789698000030,
+      "tag": "0059_project_group_invite",
+      "breakpoints": true
     }
   ]
 }

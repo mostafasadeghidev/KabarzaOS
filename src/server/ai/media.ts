@@ -54,7 +54,15 @@ export interface ExtractedVideo {
  * ورودی: مسیرِ فایلِ موقت یا نشانیِ HTTPS (Loom). یک بار خواندن، دو خروجی:
  * صدا برای متن و عکس هر چند ثانیه. ⚠️ نشانیِ دلخواه پذیرفته نمی‌شود — فقط Loom.
  */
-export async function extractVideo(input: string): Promise<ExtractedVideo | null> {
+export interface VideoLimits {
+  /** سقفِ ثانیه (تنظیمات)؛ بیشتر از آن کوتاه می‌شود. */
+  maxSeconds: number;
+  maxFrames: number;
+}
+
+const DEFAULT_LIMITS: VideoLimits = { maxSeconds: MAX_VIDEO_SECONDS, maxFrames: MAX_FRAMES };
+
+export async function extractVideo(input: string, limits: VideoLimits = DEFAULT_LIMITS): Promise<ExtractedVideo | null> {
   const remote = /^https:\/\//.test(input);
   if (remote && !isLoomMediaUrl(input)) return null;
   if (!(await ffmpegAvailable())) return null;
@@ -70,8 +78,10 @@ export async function extractVideo(input: string): Promise<ExtractedVideo | null
   const hasAudio = info.streams?.some((s) => s.codec_type === 'audio') ?? false;
   const hasVideo = info.streams?.some((s) => s.codec_type === 'video') ?? false;
   if (!hasAudio && !hasVideo) return null;
-  const duration = Math.min(full || MAX_VIDEO_SECONDS, MAX_VIDEO_SECONDS);
-  const gap = frameGap(duration);
+  const duration = Math.min(full || limits.maxSeconds, limits.maxSeconds);
+  const gap = frameGap(duration, limits.maxFrames);
+  // ویدیوی یک‌ساعته دانلود و رمزگشایی می‌خواهد؛ سقفِ زمان با طولِ ویدیو بالا می‌رود.
+  const timeout = Math.max(RUN_TIMEOUT_MS, duration * 500);
 
   const dir = await mkdtemp(join(tmpdir(), 'kbz-video-'));
   try {
@@ -79,9 +89,9 @@ export async function extractVideo(input: string): Promise<ExtractedVideo | null
     if (hasAudio) args.push('-map', '0:a:0', '-vn', '-ac', '1', '-ar', '16000', '-b:a', '32k', join(dir, 'audio.mp3'));
     if (hasVideo) {
       args.push('-map', '0:v:0', '-an', '-vf', `fps=1/${gap},scale='min(1280,iw)':-2`, '-q:v', '5',
-        '-frames:v', String(MAX_FRAMES + 2), join(dir, 'f_%03d.jpg'));
+        '-frames:v', String(limits.maxFrames + 2), join(dir, 'f_%03d.jpg'));
     }
-    const res = await run('ffmpeg', args);
+    const res = await run('ffmpeg', args, timeout);
     if (res.code !== 0) {
       console.error('[ai] ffmpeg', res.out.slice(0, 300));
       return null;
@@ -96,22 +106,22 @@ export async function extractVideo(input: string): Promise<ExtractedVideo | null
       const path = join(dir, name);
       return { t: i * gap, size: (await stat(path)).size, path };
     }));
-    const kept = dropStill(raw).slice(0, MAX_FRAMES);
+    const kept = dropStill(raw).slice(0, limits.maxFrames);
     const frames = await Promise.all(kept.map(async (f) => ({ t: f.t, jpeg: await readFile(f.path) })));
-    return { duration: full || duration, truncated: full > MAX_VIDEO_SECONDS, audio, frames };
+    return { duration: full || duration, truncated: full > limits.maxSeconds, audio, frames };
   } finally {
     await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
 }
 
 /** همان کار برای بایت‌های فایلِ تلگرام — در فایلِ موقت نوشته و بعد پاک می‌شود. */
-export async function extractVideoBytes(bytes: Uint8Array, ext = 'mp4'): Promise<ExtractedVideo | null> {
+export async function extractVideoBytes(bytes: Uint8Array, ext = 'mp4', limits: VideoLimits = DEFAULT_LIMITS): Promise<ExtractedVideo | null> {
   if (!(await ffmpegAvailable())) return null;
   const dir = await mkdtemp(join(tmpdir(), 'kbz-upload-'));
   try {
     const path = join(dir, `input.${ext.replace(/[^a-z0-9]/gi, '') || 'mp4'}`);
     await writeFile(path, bytes);
-    return await extractVideo(path);
+    return await extractVideo(path, limits);
   } finally {
     await rm(dir, { recursive: true, force: true }).catch(() => {});
   }

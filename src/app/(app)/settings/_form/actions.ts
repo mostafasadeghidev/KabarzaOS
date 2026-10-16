@@ -367,6 +367,9 @@ export async function saveSystemAction(
       chatPollInterval: formData.get('chatPollInterval'),
       ownerTeamView: formData.get('ownerTeamView') !== null,
       onboardingEnabled: formData.get('onboardingEnabled') !== null,
+      aiVoiceMinutes: formData.get('aiVoiceMinutes'),
+      aiMediaMinutes: formData.get('aiMediaMinutes'),
+      aiVideoFrames: formData.get('aiVideoFrames'),
     });
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'دسترسی ندارید.' };

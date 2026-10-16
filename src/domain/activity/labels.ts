@@ -180,6 +180,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'auth.telegram_login': 'ورود از مینی‌اپِ تلگرام',
   // ۲.۱۴.۰
   'project.telegram_group_on': 'وصلِ گروهِ تلگرام به پروژه',
+  'project.telegram_group_invite': 'دعوتِ اعضا به گروهِ تلگرام',
   'project.telegram_group_off': 'جداکردنِ گروهِ تلگرام از پروژه',
   'project.code': 'تغییرِ کدِ پروژه',
   'telegram.mute': 'خاموش‌کردنِ یادآورِ تلگرام',

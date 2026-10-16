@@ -8,6 +8,7 @@ import { notFound, redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { projectGroupSummary } from '@/server/messaging/service';
 import { getSystemConfig } from '@/server/settings/system-service';
+import { groupInviteFor } from '@/server/telegram/group-members';
 import { listUnitEntries, myRequests, myUnpaidUnits, unitStatusOptions } from '@/server/finance/member-service';
 import {
   getBidderView, getMemberTender, getMembersForm, getProjectFormOptions, getProjectTabs,
@@ -202,7 +203,7 @@ export default async function ProjectDetailPage({
    * نبودنش چیزی از او نمی‌گیرد: `TaskStatusPicker` برای غیرمدیر همان چیپِ
    * خواندنی را برمی‌گرداند، مثلِ `task_status_dropdown_html()` نسخهٔ قبلی.
    */
-  const [taskStatuses, taskFormOptions, qaForm, chat, reviews, clientOnly, reviewOptions, chatSystem] = await Promise.all([
+  const [taskStatuses, taskFormOptions, qaForm, chat, reviews, clientOnly, reviewOptions, chatSystem, telegramInvite] = await Promise.all([
     // پورتِ افزونه: هر شرکت‌کننده وضعیتِ تسک را عوض می‌کند (عضو تسکش را به ریویو می‌فرستد) — نه روی منجمد.
     detail.canInteract && !detail.isFrozen ? taskStatusOptionsFor(actor, project.id) : Promise.resolve([]),
     /**
@@ -221,6 +222,8 @@ export default async function ProjectDetailPage({
     // فرمِ «بازبینیِ تازه» فقط برای مدیرِ پروژهٔ نامنجمد — بقیه دکمه‌اش را نمی‌بینند.
     canManage && !detail.isFrozen ? reviewFormOptions(actor, project.id) : Promise.resolve(null),
     getSystemConfig(),
+    // لینکِ «پیوستن در تلگرام» (۲.۳۶.۰) — سرویس فقط به کسی می‌دهد که حقِ عضویت دارد.
+    groupInviteFor(actor, project.id).catch(() => null),
   ]);
 
   // فرم‌ها فقط وقتی خوانده می‌شوند که دکمه‌شان هم دیده شود.
@@ -444,7 +447,7 @@ export default async function ProjectDetailPage({
         data={{
           projectId: project.id,
           // گفتگو در خودِ تب (۲.۳۳.۰) — همان پولِ زندهٔ صفحهٔ «پیام‌ها».
-          chat: chat ? { ...chat, poll: { enabled: chatSystem.chatPollEnabled, seconds: chatSystem.chatPollInterval } } : null,
+          chat: chat ? { ...chat, poll: { enabled: chatSystem.chatPollEnabled, seconds: chatSystem.chatPollInterval }, telegramInvite } : null,
           title: project.title,
           isTender: project.isTender,
           isArchived: project.isArchived,

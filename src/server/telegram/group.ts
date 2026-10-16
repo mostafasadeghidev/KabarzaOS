@@ -16,6 +16,7 @@ import type { Actor } from '@/domain/access/permissions';
 import { assertCanManageProject } from '@/server/projects/authority';
 import { telegramCredentials } from '@/server/settings/telegram-service';
 import { bold, esc, HTML, isParseError, quote, stripHtml } from './format';
+import { BOT_ADMIN_RIGHTS, inviteToGroup, revokeInvite, setupGroup } from './group-members';
 
 /**
  * گروهِ تلگرامِ پروژه (۲.۱۴.۰).
@@ -39,9 +40,11 @@ async function audit(actor: Actor, action: string, projectId: number, after: Rec
 
 export async function projectGroupStatus(actor: Actor, projectId: number) {
   await assertCanManageProject(actor, projectId);
-  const [row] = await db.select({ groupId: projects.telegramGroupId }).from(projects).where(eq(projects.id, projectId));
+  const [row] = await db.select({ groupId: projects.telegramGroupId, invite: projects.telegramGroupInvite })
+    .from(projects).where(eq(projects.id, projectId));
   const { username } = await telegramCredentials();
-  return { connected: (row?.groupId ?? '') !== '', botReady: username !== '' };
+  // `inviteReady`: ربات مدیر است و لینکِ عضویت دارد (۲.۳۶.۰) — وگرنه پنل می‌گوید «ربات را مدیر کنید».
+  return { connected: (row?.groupId ?? '') !== '', botReady: username !== '', inviteReady: (row?.invite ?? '') !== '' };
 }
 
 /** لینکِ «افزودنِ ربات به گروه» با توکنِ تازه. */
@@ -51,11 +54,28 @@ export async function createProjectGroupLink(actor: Actor, projectId: number): P
   if (!username || !token) return null;
   const linkToken = randomBytes(18).toString('base64url');
   await db.update(projects).set({ telegramGroupToken: linkToken }).where(eq(projects.id, projectId));
-  return `https://t.me/${username}?startgroup=${linkToken}`;
+  // ⚠️ `admin=`: تلگرام ربات را از همان اول **مدیر** اضافه می‌کند (۲.۳۶.۰) و پیش از آن
+  // فهرستِ همین دسترسی‌ها را به کاربر نشان می‌دهد — دعوت و بیرون‌کردن بی آن نمی‌شود.
+  return `https://t.me/${username}?startgroup=${linkToken}&admin=${BOT_ADMIN_RIGHTS}`;
+}
+
+/**
+ * «دعوتِ دوبارهٔ اعضا» (۲.۳۶.۰) — مثلاً وقتی ربات بعداً مدیر شد. فقط مدیرِ پروژه.
+ * ربات هنوز مدیر نیست ← `null`.
+ */
+export async function resendGroupInvites(actor: Actor, projectId: number): Promise<number | null> {
+  await assertCanManageProject(actor, projectId);
+  const { state, sent } = await setupGroup(projectId);
+  if (state === 'need_admin' || state === 'none') return null;
+  const n = state === 'invited' ? sent : await inviteToGroup(projectId);
+  await audit(actor, 'project.telegram_group_invite', projectId, { sent: n });
+  return n;
 }
 
 export async function disconnectProjectGroup(actor: Actor, projectId: number): Promise<void> {
   await assertCanManageProject(actor, projectId);
+  // لینکِ عضویتِ گروهِ جداشده باطل می‌شود — دیگر کسی با آن نیاید.
+  await revokeInvite(projectId).catch(() => {});
   await db.update(projects).set({ telegramGroupId: '', telegramGroupToken: null }).where(eq(projects.id, projectId));
   await audit(actor, 'project.telegram_group_off', projectId);
 }
@@ -66,7 +86,9 @@ export async function linkProjectGroup(linkToken: string, chatId: number): Promi
   const [row] = await db.select({ id: projects.id, title: projects.title }).from(projects)
     .where(eq(projects.telegramGroupToken, linkToken));
   if (!row) return null;
-  await db.update(projects).set({ telegramGroupId: String(chatId), telegramGroupToken: null }).where(eq(projects.id, row.id));
+  // گروهِ قبلیِ همین پروژه: لینکش باطل (۲.۳۶.۰).
+  await revokeInvite(row.id).catch(() => {});
+  await db.update(projects).set({ telegramGroupId: String(chatId), telegramGroupToken: null, telegramGroupInvite: '' }).where(eq(projects.id, row.id));
   await db.insert(auditLog).values({
     actorType: 'system', actorId: null, action: 'project.telegram_group_on', objectType: 'project', objectId: row.id, after: { chatId },
   });
