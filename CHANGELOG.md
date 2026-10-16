@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.34.1]
+
+### Fixed
+
+- **Replying to someone else's voice note now works as expected.** When a team member replied to a voice note in the project group (or in the private chat) with "/ask make tasks from this", the voice itself was taken as their request and what they wrote was ignored. Now what they wrote is the request and the voice note's transcript is treated as data to work on, never as instructions. With nothing written, the assistant summarizes the voice note and lists the tasks in it before creating anything. A quoted voice note may be up to 15 minutes (your own voice requests stay at 3).
+
 ## [2.34.0]
 
 ### Added

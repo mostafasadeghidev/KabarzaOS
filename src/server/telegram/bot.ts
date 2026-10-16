@@ -39,7 +39,7 @@ import {
 } from '@/server/ai/agent';
 import { MAX_MEDIA_AUDIO_BYTES, MAX_VOICE_BYTES, MAX_VOICE_SECONDS, transcribe, transcriptionModel } from '@/server/ai/transcribe';
 import type { ContentPart } from '@/domain/ai/chat';
-import { clock, imageMessage, parseLoomUrl, videoMessage, withoutLoomUrl, type Segment } from '@/domain/ai/media';
+import { clock, imageMessage, MAX_VIDEO_SECONDS, parseLoomUrl, quotedVoiceMessage, videoMessage, withoutLoomUrl, type Segment } from '@/domain/ai/media';
 import { downloadSmall, extractVideo, extractVideoBytes, loomVideo, type ExtractedVideo } from '@/server/ai/media';
 import {
   bullet, bulletHtml, clip, code, dueHtml, esc, heading, hint, hm, HTML, isParseError, mdToHtml,
@@ -1575,11 +1575,13 @@ async function onGroupMessage(msg: TgMessage) {
   const text = (isCommand ? rest.join(' ') : raw).replace(mentionRe ?? /$^/, '').trim();
   try {
     // رسانه در خودِ پیام، وگرنه در پیامی که به آن پاسخ داده (نه پیامِ خودِ ربات).
-    const media = mediaOf(msg) ?? (msg.reply_to_message && !replyToBot ? mediaOf(msg.reply_to_message) : null);
+    const own = mediaOf(msg);
+    const media = own ?? (msg.reply_to_message && !replyToBot ? mediaOf(msg.reply_to_message) : null);
     if (media?.kind === 'video') return await onVideo(chatId, who, { kind: 'telegram', file: media.file }, text, opts);
     if (media?.kind === 'image') return await onImage(chatId, who, media, text, opts);
     if (media?.kind === 'loom') return await onVideo(chatId, who, media, withoutLoomUrl(text), opts);
-    if (media?.kind === 'voice') return await onVoice(chatId, who, media.voice, opts);
+    // ویسِ خودش = درخواست؛ ویسِ دیگری که به آن پاسخ داده = داده، درخواست همین متن.
+    if (media?.kind === 'voice') return await onVoice(chatId, who, media.voice, opts, own ? undefined : { instruction: text });
     if (!text) {
       await send(chatId, hint(who.tr('بعد از /ask یا نامِ ربات، درخواست‌تان را بنویسید.')), undefined, replyTo);
       return;
@@ -1595,7 +1597,12 @@ async function onGroupMessage(msg: TgMessage) {
  * همان مسیرِ متنِ آزاد. ⚠️ ویسِ بلند یا بزرگ رد می‌شود؛ فایل فقط در حافظه است و
  * جایی ذخیره نمی‌شود.
  */
-async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = {}) {
+/**
+ * `quoted`: ویسِ کسِ دیگری که کاربر به آن پاسخ داده (۲.۳۴.۱) — متنش **داده** است و
+ * درخواست همان متنِ پاسخِ کاربر («از این تسک دربیار»). پیش از این خودِ ویس
+ * درخواستِ پرسنده حساب می‌شد و نوشتهٔ او نادیده می‌ماند. ویسِ نقل‌شده تا ۱۵ دقیقه.
+ */
+async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = {}, quoted?: { instruction: string }) {
   const menu = async () => (opts.scope ? undefined : await menuFor(who));
   const all = await loadAiSecrets(who.actor.id);
   // اولین اتصالی که صدا می‌فهمد — DeepSeek برای متن و Groq برای ویس کنارِ هم کار می‌کنند.
@@ -1608,12 +1615,16 @@ async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = 
     await send(chatId, `🎤 ${esc(who.tr('هوشِ مصنوعیِ فعلیِ شما ({name}) صدا را به متن تبدیل نمی‌کند؛ برای ویس Groq (رایگان) یا OpenAI را وصل کنید. تا آن موقع بنویسید.', { name: PROVIDERS[secret.provider]?.label ?? secret.provider }))}`, await menu(), opts.replyTo);
     return;
   }
-  if ((voice.duration ?? 0) > MAX_VOICE_SECONDS || (voice.file_size ?? 0) > MAX_VOICE_BYTES) {
-    await send(chatId, `⚠️ ${esc(who.tr('پیامِ صوتی بیش از ۳ دقیقه است؛ کوتاه‌تر بفرستید یا بنویسید.'))}`, undefined, opts.replyTo);
+  const maxSeconds = quoted ? MAX_VIDEO_SECONDS : MAX_VOICE_SECONDS;
+  const maxBytes = quoted ? MAX_MEDIA_AUDIO_BYTES : MAX_VOICE_BYTES;
+  if ((voice.duration ?? 0) > maxSeconds || (voice.file_size ?? 0) > maxBytes) {
+    await send(chatId, `⚠️ ${esc(quoted
+      ? who.tr('پیامِ صوتی بیش از ۱۵ دقیقه است؛ کوتاه‌ترش را بفرستید.')
+      : who.tr('پیامِ صوتی بیش از ۳ دقیقه است؛ کوتاه‌تر بفرستید یا بنویسید.'))}`, undefined, opts.replyTo);
     return;
   }
   await api('sendChatAction', { chat_id: chatId, action: 'typing' });
-  const audio = await downloadVoice(voice.file_id);
+  const audio = await downloadVoice(voice.file_id, maxBytes);
   if (!audio) {
     await send(chatId, `⚠️ ${esc(who.tr('فایلِ صوتی از تلگرام گرفته نشد؛ دوباره بفرستید.'))}`, undefined, opts.replyTo);
     return;
@@ -1629,20 +1640,20 @@ async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = 
   }
   // کاربر ببیند ربات چه شنیده — اگر اشتباه فهمید، همین‌جا معلوم است.
   await send(chatId, `🎤 <i>«${esc(clip(out.text, 1000))}»</i>`, undefined, opts.replyTo);
-  await askAi(chatId, who, out.text, opts);
+  await askAi(chatId, who, quoted ? quotedVoiceMessage(quoted.instruction, out.text) : out.text, opts);
 }
 
 /** دانلودِ فایلِ صوتی از تلگرام — فقط در حافظه. */
-async function downloadVoice(fileId: string): Promise<Blob | null> {
+async function downloadVoice(fileId: string, maxBytes = MAX_VOICE_BYTES): Promise<Blob | null> {
   const info = await api('getFile', { file_id: fileId }) as { ok?: boolean; result?: { file_path?: string; file_size?: number } } | null;
   const path = info?.result?.file_path;
-  if (!info?.ok || !path || (info.result?.file_size ?? 0) > MAX_VOICE_BYTES) return null;
+  if (!info?.ok || !path || (info.result?.file_size ?? 0) > maxBytes) return null;
   const { token } = await telegramCredentials();
   if (!token) return null;
   const res = await fetch(`https://api.telegram.org/file/bot${token}/${path}`, { signal: AbortSignal.timeout(30_000) }).catch(() => null);
   if (!res?.ok) return null;
   const blob = await res.blob();
-  return blob.size > 0 && blob.size <= MAX_VOICE_BYTES ? blob : null;
+  return blob.size > 0 && blob.size <= maxBytes ? blob : null;
 }
 
 /* ---------------- پیام ---------------- */
@@ -1826,6 +1837,7 @@ async function onMessage(msg: TgMessage) {
     if (quoted?.kind === 'video') return await onVideo(chatId, who, { kind: 'telegram', file: quoted.file }, text);
     if (quoted?.kind === 'image') return await onImage(chatId, who, quoted, text);
     if (quoted?.kind === 'loom') return await onVideo(chatId, who, quoted, text);
+    if (quoted?.kind === 'voice') return await onVoice(chatId, who, quoted.voice, {}, { instruction: text });
 
     if (!(await askAi(chatId, who, text))) {
       await send(chatId, `🤖 ${esc(who.tr('برای جوابِ هوشمند به متنِ آزاد، در پروفایل ← «دستیارِ هوشِ مصنوعی» یک ارائه‌دهنده وصل کنید. تا آن موقع:'))}`, await menuFor(who));
