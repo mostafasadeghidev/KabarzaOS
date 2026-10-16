@@ -4158,5 +4158,6 @@
   "نشانیِ فرستنده معتبر نیست.": "The sender address is not valid.",
   "پورت": "Port",
   "تنظیماتِ ایمیل ذخیره شد؛ ایمیلِ آزمایشی بفرستید.": "Email settings saved; send a test email.",
-  "تنظیماتِ ایمیل پاک شد؛ ایمیلی فرستاده نمی‌شود.": "Email settings cleared; no email will be sent."
+  "تنظیماتِ ایمیل پاک شد؛ ایمیلی فرستاده نمی‌شود.": "Email settings cleared; no email will be sent.",
+  "باز کردن در «پیام‌ها»": "Open in Messages"
 }

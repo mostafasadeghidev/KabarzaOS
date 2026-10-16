@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.33.0]
+
+### Changed
+
+- **The project's group chat opens inside the project.** The "Group chat" tab now shows the conversation itself: messages, live updates, @mentions, sending, muting and deleting, all without leaving the project page. Creating the group from the tab opens it right there too. A small "Open in Messages" link is kept for the full inbox. Before, the tab only linked to the Messages page.
+- The conversation pane was taken out of the Messages page into one shared component, so the Messages page and the project tab use the same code and stay in step.
+
 ## [2.32.0]
 
 ### Added
