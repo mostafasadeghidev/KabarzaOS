@@ -1,5 +1,6 @@
 import { authHeaders, type ProviderId } from '@/domain/ai/providers';
 import { classifyProviderError } from '@/domain/ai/chat';
+import type { Segment } from '@/domain/ai/media';
 import type { AiSecret } from './connections';
 
 /**
@@ -25,16 +26,24 @@ export function transcriptionModel(provider: ProviderId): string | null {
 export const MAX_VOICE_SECONDS = 180;
 export const MAX_VOICE_BYTES = 8 * 1024 * 1024;
 
+/** سقفِ صدای ویدیو (۲.۳۴.۰) — سقفِ خودِ OpenAI و Groq ۲۵ مگابایت است. */
+export const MAX_MEDIA_AUDIO_BYTES = 24 * 1024 * 1024;
+
 export type Transcription =
-  | { ok: true; text: string }
+  | { ok: true; text: string; segments: Segment[] }
   | { ok: false; reason: 'unsupported' | 'quota' | 'auth' | 'other' };
 
-export async function transcribe(secret: AiSecret, audio: Blob, filename: string): Promise<Transcription> {
+/**
+ * `timed`: تکه‌های زمان‌دار هم برگردد (`verbose_json`) — برای ویدیو، تا هر مورد
+ * ثانیهٔ همان لحظه را داشته باشد.
+ */
+export async function transcribe(secret: AiSecret, audio: Blob, filename: string, opts: { timed?: boolean } = {}): Promise<Transcription> {
   const model = transcriptionModel(secret.provider);
   if (!model) return { ok: false, reason: 'unsupported' };
   const form = new FormData();
   form.append('file', audio, filename);
   form.append('model', model);
+  if (opts.timed) form.append('response_format', 'verbose_json');
   let res: Response;
   try {
     res = await fetch(`${secret.baseUrl}/audio/transcriptions`, {
@@ -42,7 +51,7 @@ export async function transcribe(secret: AiSecret, audio: Blob, filename: string
       headers: authHeaders(secret.provider, secret.apiKey),
       body: form,
       redirect: 'error',
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(opts.timed ? 180_000 : 60_000),
     });
   } catch {
     return { ok: false, reason: 'other' };
@@ -52,7 +61,14 @@ export async function transcribe(secret: AiSecret, audio: Blob, filename: string
     const kind = classifyProviderError(res.status, await res.text().catch(() => ''));
     return { ok: false, reason: kind === 'quota' || kind === 'auth' ? kind : 'other' };
   }
-  const data = await res.json().catch(() => null) as { text?: unknown } | null;
+  const data = await res.json().catch(() => null) as { text?: unknown; segments?: unknown } | null;
   const text = typeof data?.text === 'string' ? data.text.trim() : '';
-  return text ? { ok: true, text } : { ok: false, reason: 'other' };
+  const segments: Segment[] = Array.isArray(data?.segments)
+    ? (data.segments as Array<{ start?: unknown; end?: unknown; text?: unknown }>)
+      .filter((x) => typeof x?.start === 'number' && typeof x.text === 'string')
+      .map((x) => ({ start: x.start as number, end: typeof x.end === 'number' ? x.end : x.start as number, text: x.text as string }))
+    : [];
+  // ⚠️ ویدیوی بی‌صدا متنِ خالی دارد — برای ویدیو خطا نیست، فقط «حرفی زده نشد».
+  if (opts.timed) return { ok: true, text, segments };
+  return text ? { ok: true, text, segments } : { ok: false, reason: 'other' };
 }

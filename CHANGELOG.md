@@ -2,6 +2,25 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.34.0]
+
+### Added
+
+- **The Telegram assistant watches videos and Loom links.** Send a video (up to Telegram's 20 MB limit for bots) or a Loom share link, with or without a note such as "add these to a review on Alpha". The server pulls the audio and a still frame every few seconds (24 at most; identical frames are dropped) with ffmpeg, turns the speech into text with timestamps (Groq or OpenAI, with the user's own key) and gives both to the model, each labelled with its time. Without a note the assistant summarizes the video, lists every requested change with its timestamp and asks whether to add them as review items. When it creates a review it saves the Loom link on it, sets each item's start time, and attaches the frame from that moment to the item. Videos longer than 15 minutes are cut to the first 15. Private Loom videos cannot be read; the bot says to share them by link or send the file. Nothing is stored except the frames attached to confirmed items.
+- **The assistant sees images.** A photo or image sent with a caption goes straight to the assistant with the caption as the request; without a caption, the "where should this file go?" question has a new "Let the assistant look" button. A sent image can be attached to the task or review item the assistant creates. Replying to an earlier video, Loom link or image with a request works too.
+- **The assistant answers in the project's Telegram group.** In a group connected to a project, the bot answers when someone writes `/ask …`, replies to the bot's message, or mentions it (a plain @mention reaches the bot only when it is a group admin). Only people who connected their own Telegram and are on the project's team get an answer; clients and strangers get a short note and the model is not called. Each person's own AI key is used. In the group the project is fixed, and the personal tools (messages, reminders, hours, timers, inbox, notifications) and every tool group except "projects" are not given to the model, nor are sensitive actions; it is told that everyone in the group, possibly the client, reads the answer. Only the person who asked can press "Yes"; others get an alert. The group conversation is kept apart from the person's private chat with the bot.
+- `ffmpeg` is installed in the Docker image (its own layer). Without it, a video is understood from its audio only.
+
+### Changed
+
+- **One "Yes" for several actions.** When the model asks for several changes in one step (for example ten review items from one video), they are listed in one confirmation and done one after another with a single tap, each with the same permission checks and activity log as before. Before, each needed its own "Yes".
+- The assistant's short memory keeps the text of earlier messages but not their images, so later messages stay small; the video's timestamped transcript stays.
+- When no connected model accepts images, the request is retried without them and the reply says that only the audio and text were used, with a hint to connect Gemini (free) or ChatGPT.
+
+### Fixed
+
+- The `add_review_item` tool (Claude connection and Telegram) returned an object instead of the new task's id.
+
 ## [2.32.0]
 
 ### Added

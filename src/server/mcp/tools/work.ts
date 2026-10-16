@@ -16,7 +16,7 @@ import { addCustomTask, startOnboarding, toggleTask } from '@/server/onboarding/
 import { addLink, setAttachmentPinned } from '@/server/files/service';
 import { confirmPending, discardPending, resumePending, updateLog } from '@/server/timelogs/service';
 import { saveNotifyPrefs, saveTimezone, updateMyProfile } from '@/server/people/profile-service';
-import { DATE, ID, type Kit } from '../kit';
+import { ATTACH, DATE, ID, type Kit } from '../kit';
 
 /**
  * نوشتن‌های روزمره (۲.۱۳.۰) — همهٔ کارهای غیرحساسی که کاربر در سایت می‌کند.
@@ -164,14 +164,17 @@ export function registerWork(kit: Kit) {
       due_date: DATE.nullable().default(null),
       start_seconds: z.number().int().min(0).nullable().default(null), end_seconds: z.number().int().min(0).nullable().default(null),
       area: z.string().max(100).default(''), client_hidden: z.boolean().default(false),
+      // فقط در تلگرام با رسانه (۲.۳۴.۰): بی `attach`، عکسِ صحنهٔ همان ثانیه خودکار.
+      ...(kit.session.media ? { attach: ATTACH } : {}),
     },
   }, async (a) => write('add_review_item', a, async () => {
-    const id = await addReviewItem(actor, a.review_id, {
+    const media = kit.session.media?.((a as { attach?: string[] }).attach ?? [], { start: a.start_seconds }) ?? [];
+    const { taskId: id } = await addReviewItem(actor, a.review_id, {
       title: a.title, description: a.description, statusTagId: a.status_id, priorityTagId: a.priority_id,
       assignedTo: a.assignee_user_id, dueDate: a.due_date, isPrivate: false, roleTagIds: a.role_ids,
       start: a.start_seconds, end: a.end_seconds, area: a.area, clientHidden: a.client_hidden,
-    });
-    return { created: true, taskId: id };
+    }, media);
+    return { created: true, taskId: id, ...(media.length > 0 ? { attached: media.map((m) => m.name) } : {}) };
   }));
 
   /* ---------------- فایل و پیوند ---------------- */

@@ -8,8 +8,14 @@ export interface ToolCall {
   function: { name: string; arguments: string };
 }
 
+/** تکهٔ پیامِ چندرسانه‌ای (۲.۳۴.۰) — متن یا تصویر (نشانیِ data: ِ JPEG/PNG). */
+export type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
+
 export type ChatMessage =
-  | { role: 'system' | 'user'; content: string }
+  | { role: 'system'; content: string }
+  | { role: 'user'; content: string | ContentPart[] }
   | { role: 'assistant'; content: string | null; tool_calls?: ToolCall[] }
   | { role: 'tool'; tool_call_id: string; content: string };
 
@@ -98,11 +104,31 @@ export function clip(text: string, max = 3900): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
-/** آخرین n پیامِ متنی — حافظهٔ کوتاهِ گفت‌وگو؛ ردیف‌های ابزار نگه داشته نمی‌شوند. */
+/** متنِ پیامِ چندرسانه‌ای؛ جای هر تصویر «[image]». */
+export function partsText(content: string | ContentPart[]): string {
+  if (typeof content === 'string') return content;
+  return content.map((p) => (p.type === 'text' ? p.text : '[image]')).join('\n');
+}
+
+/** پیام تصویر دارد؟ */
+export function hasImages(messages: readonly ChatMessage[]): boolean {
+  return messages.some((m) => m.role === 'user' && Array.isArray(m.content) && m.content.some((p) => p.type === 'image_url'));
+}
+
+/** همان گفت‌وگو بی تصویر — برای مدلی که تصویر نمی‌پذیرد. */
+export function stripImages(messages: readonly ChatMessage[]): ChatMessage[] {
+  return messages.map((m) => (m.role === 'user' && Array.isArray(m.content) ? { role: 'user', content: partsText(m.content) } : m));
+}
+
+/**
+ * آخرین n پیامِ متنی — حافظهٔ کوتاهِ گفت‌وگو؛ ردیف‌های ابزار نگه داشته نمی‌شوند.
+ * ⚠️ تصویرها هم نه (۲.۳۴.۰): ده‌ها عکسِ ویدیو در حافظه هم سنگین است و هم هر پیامِ
+ * بعدی را گران می‌کند؛ متنِ زمان‌دارِ ویدیو می‌ماند.
+ */
 export function trimHistory(messages: ChatMessage[], keep = 12): ChatMessage[] {
   const plain = messages.filter((m) =>
     m.role === 'user' || (m.role === 'assistant' && !m.tool_calls?.length && typeof m.content === 'string' && m.content !== ''));
-  return plain.slice(-keep);
+  return stripImages(plain.slice(-keep));
 }
 
 /** پنجرهٔ ساده‌ی شمارش — n درخواست در هر پنجره. */

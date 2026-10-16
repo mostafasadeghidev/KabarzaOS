@@ -19,7 +19,7 @@ import { compose, contactManagement, getRecipients } from '@/server/messaging/se
 import { createReminder, deleteReminder, listMeetings, listReminders } from '@/server/meetings/service';
 import { formatDateTime, parseInZone } from '@/i18n/datetime';
 import { can } from '@/domain/access/permissions';
-import { DATE, run, todayIn, type Json, type Kit } from '../kit';
+import { ATTACH, DATE, run, todayIn, type Json, type Kit } from '../kit';
 
 /** ابزارهای پایه (۲.۷.۰ تا ۲.۱۲.۰): تسک، ساعت، پیام، جلسه و یادآور. */
 export function registerCore(kit: Kit) {
@@ -201,8 +201,11 @@ export function registerCore(kit: Kit) {
       description: z.string().max(5000).default(''),
       due_date: DATE.optional(),
       assignee_user_id: z.number().int().positive().optional(),
+      // فقط در تلگرام با رسانه (۲.۳۴.۰) — بیرون از آن این فیلد اصلاً نیست.
+      ...(kit.session.media ? { attach: ATTACH } : {}),
     },
   }, async (args) => write('create_task', args, async () => {
+    const media = kit.session.media?.((args as { attach?: string[] }).attach ?? []) ?? [];
     const id = await createTask(actor, args.project_id, {
       title: args.title,
       description: args.description,
@@ -211,8 +214,8 @@ export function registerCore(kit: Kit) {
       assignedTo: args.assignee_user_id ?? null,
       dueDate: args.due_date ?? null,
       isPrivate: false,
-    });
-    return { created: true, taskId: id };
+    }, { media });
+    return { created: true, taskId: id, ...(media.length > 0 ? { attached: media.map((m) => m.name) } : {}) };
   }));
 
   server.registerTool('set_task_status', {
