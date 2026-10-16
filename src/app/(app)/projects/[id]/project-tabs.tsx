@@ -248,7 +248,7 @@ export function ProjectTabs({
       {tab === 'info' && <TabPanel>{info}</TabPanel>}
 
       {tab === 'chat' && data.chat && (
-        <TabPanel width="reading"><ChatTab projectId={data.projectId} chat={data.chat} /></TabPanel>
+        <TabPanel width="reading"><ChatTab projectId={data.projectId} chat={data.chat} viewerId={data.currentUserId} /></TabPanel>
       )}
 
       {tab === 'tasks' && (
