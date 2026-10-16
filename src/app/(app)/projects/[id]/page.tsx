@@ -7,6 +7,7 @@ import { isClientOnly } from '@/server/projects/authority';
 import { notFound, redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { projectGroupSummary } from '@/server/messaging/service';
+import { getSystemConfig } from '@/server/settings/system-service';
 import { listUnitEntries, myRequests, myUnpaidUnits, unitStatusOptions } from '@/server/finance/member-service';
 import {
   getBidderView, getMemberTender, getMembersForm, getProjectFormOptions, getProjectTabs,
@@ -201,7 +202,7 @@ export default async function ProjectDetailPage({
    * نبودنش چیزی از او نمی‌گیرد: `TaskStatusPicker` برای غیرمدیر همان چیپِ
    * خواندنی را برمی‌گرداند، مثلِ `task_status_dropdown_html()` نسخهٔ قبلی.
    */
-  const [taskStatuses, taskFormOptions, qaForm, chat, reviews, clientOnly, reviewOptions] = await Promise.all([
+  const [taskStatuses, taskFormOptions, qaForm, chat, reviews, clientOnly, reviewOptions, chatSystem] = await Promise.all([
     // پورتِ افزونه: هر شرکت‌کننده وضعیتِ تسک را عوض می‌کند (عضو تسکش را به ریویو می‌فرستد) — نه روی منجمد.
     detail.canInteract && !detail.isFrozen ? taskStatusOptionsFor(actor, project.id) : Promise.resolve([]),
     /**
@@ -219,6 +220,7 @@ export default async function ProjectDetailPage({
     isClientOnly(actor, project.id),
     // فرمِ «بازبینیِ تازه» فقط برای مدیرِ پروژهٔ نامنجمد — بقیه دکمه‌اش را نمی‌بینند.
     canManage && !detail.isFrozen ? reviewFormOptions(actor, project.id) : Promise.resolve(null),
+    getSystemConfig(),
   ]);
 
   // فرم‌ها فقط وقتی خوانده می‌شوند که دکمه‌شان هم دیده شود.
@@ -441,7 +443,8 @@ export default async function ProjectDetailPage({
         initialReview={Number(query.review) > 0 ? Number(query.review) : null}
         data={{
           projectId: project.id,
-          chat,
+          // گفتگو در خودِ تب (۲.۳۳.۰) — همان پولِ زندهٔ صفحهٔ «پیام‌ها».
+          chat: chat ? { ...chat, poll: { enabled: chatSystem.chatPollEnabled, seconds: chatSystem.chatPollInterval } } : null,
           title: project.title,
           isTender: project.isTender,
           isArchived: project.isArchived,
