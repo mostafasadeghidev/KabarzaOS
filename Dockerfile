@@ -64,6 +64,15 @@ RUN set -eux; \
   rm -rf /var/lib/apt/lists/*; \
   pg_dump --version; rclone version | head -1
 
+# ffmpeg برای دستیارِ تلگرام (src/server/ai/media، ۲.۳۴.۰): صدا و عکسِ صحنه‌ها از
+# ویدیو و لینکِ Loom. لایهٔ جدا تا تغییرش لایهٔ پشتیبان‌گیری را دوباره نسازد.
+# بی آن، ویدیو فقط از راهِ صدا فهمیده می‌شود.
+RUN set -eux; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends ffmpeg; \
+  rm -rf /var/lib/apt/lists/*; \
+  ffmpeg -version | head -1
+
 # مهاجرت داخلِ خودِ اپ اجرا می‌شود (src/instrumentation.ts) — فقط فایل‌های
 # .sql لازم‌اند؛ درایور و migrator در باندلِ standalone حاضرند.
 COPY --from=build /app/.next/standalone ./

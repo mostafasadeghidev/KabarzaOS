@@ -124,6 +124,9 @@ export function todayIn(tz: string): string {
 
 export const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 export const ID = z.number().int().positive();
+/** شناسهٔ رسانه‌های گفت‌وگوی تلگرام، مثلاً «photo1» یا «frame@42» (۲.۳۴.۰). */
+export const ATTACH = z.array(z.string().max(40)).max(10).default([])
+  .describe('Media ids from this chat to attach, e.g. "photo1" or "frame@42".');
 
 export interface Kit {
   server: McpServer;

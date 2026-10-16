@@ -42,7 +42,13 @@ export function toResponsesInput(messages: readonly ChatMessage[]): unknown[] {
     if (m.role === 'system') {
       input.push({ role: 'developer', content: m.content });
     } else if (m.role === 'user') {
-      input.push({ role: 'user', content: m.content });
+      // تصویر در Responses «input_image» است، نه «image_url» (۲.۳۴.۰).
+      input.push({
+        role: 'user',
+        content: typeof m.content === 'string' ? m.content : m.content.map((p) => (p.type === 'text'
+          ? { type: 'input_text', text: p.text }
+          : { type: 'input_image', image_url: p.image_url.url })),
+      });
     } else if (m.role === 'assistant') {
       if (m.content) input.push({ role: 'assistant', content: m.content });
       for (const c of m.tool_calls ?? []) {

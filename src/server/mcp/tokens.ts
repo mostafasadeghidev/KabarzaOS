@@ -7,6 +7,7 @@ import {
   generateToken, hashToken, isScope, looksLikeToken, rateWindow, scopesFor, tokenPrefix, type TokenScope,
 } from '@/domain/mcp/tokens';
 import { loadActor } from '@/server/auth';
+import type { UploadBlob } from '@/server/files/service';
 
 /**
  * توکن‌های شخصیِ MCP (۲.۷.۰).
@@ -102,6 +103,12 @@ export interface TokenSession {
   name: string;
   /** ربات تلگرام (۲.۹.۰): همان ابزارها، بی توکن — `keyId` صفر است. */
   via?: 'telegram';
+  /**
+   * رسانه‌های همین گفت‌وگوی تلگرام (۲.۳۴.۰): عکسی که کاربر فرستاد یا عکسِ صحنه‌های
+   * ویدیو. فقط وقتی هست، تسک و موردِ بازبینی فیلدِ `attach` می‌گیرند. `start`: ثانیهٔ
+   * موردِ بازبینی — بی `attach`، عکسِ نزدیک‌ترین صحنه به همان لحظه.
+   */
+  media?: (ids: readonly string[], hint?: { start?: number | null }) => UploadBlob[];
 }
 
 /** شمارندهٔ درخواست‌ها به‌ازای هر کلید — در حافظهٔ همین فرایند. */

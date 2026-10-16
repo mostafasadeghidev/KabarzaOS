@@ -24,7 +24,7 @@ import { decideRequest, listRequests } from '@/server/finance/payouts';
 import { canManageSection, canViewSection } from '@/domain/access/permissions';
 import { MUTABLE_REMINDERS } from '@/server/notifications/service';
 import { linkProjectGroup } from './group';
-import { canViewProject } from '@/server/projects/authority';
+import { canViewProject, isClientOnly } from '@/server/projects/authority';
 import { listMeetings, listReminders } from '@/server/meetings/service';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { telegramCredentials } from '@/server/settings/telegram-service';
@@ -33,8 +33,14 @@ import {
 } from '@/server/timelogs/service';
 import { loadAiSecret, loadAiSecrets, type AiConnectionView } from '@/server/ai/connections';
 import { PROVIDERS, type ProviderId } from '@/domain/ai/providers';
-import { askAgent, forgetConversation, resolveChoice, resolvePending, type AgentResult } from '@/server/ai/agent';
-import { MAX_VOICE_BYTES, MAX_VOICE_SECONDS, transcribe, transcriptionModel } from '@/server/ai/transcribe';
+import {
+  askAgent, forgetConversation, pendingOwner, resolveChoice, resolvePending,
+  type AgentResult, type GroupScope, type MediaItem,
+} from '@/server/ai/agent';
+import { MAX_MEDIA_AUDIO_BYTES, MAX_VOICE_BYTES, MAX_VOICE_SECONDS, transcribe, transcriptionModel } from '@/server/ai/transcribe';
+import type { ContentPart } from '@/domain/ai/chat';
+import { clock, imageMessage, parseLoomUrl, videoMessage, withoutLoomUrl, type Segment } from '@/domain/ai/media';
+import { downloadSmall, extractVideo, extractVideoBytes, loomVideo, type ExtractedVideo } from '@/server/ai/media';
 import {
   bullet, bulletHtml, clip, code, dueHtml, esc, heading, hint, hm, HTML, isParseError, mdToHtml,
   moreHtml, NL, splitHtml, stripHtml, subline, truncateHtml, whenHtml,
@@ -44,8 +50,9 @@ import {
  * ربات تلگرام (۲.۹.۰) — دستورها و دکمه‌ها، و «مغزِ» هوشمند برای متنِ آزاد.
  *
  * ⚠️ قاعده‌ها:
- *  1. فقط **چتِ خصوصی**؛ پیامِ گروه نادیده گرفته می‌شود — دادهٔ یک نفر نباید
- *     جلوی بقیهٔ اعضای گروه بیاید.
+ *  1. چتِ خصوصی؛ در گروه فقط **گروهِ وصل‌شدهٔ یک پروژه** و فقط وقتی کسی ربات را
+ *     صدا بزند (۲.۳۴.۰: `/ask`، منشن یا پاسخ به ربات) — با ابزارهای همان پروژه و
+ *     بی هیچ دادهٔ شخصی، چون جواب را همهٔ گروه می‌بینند.
  *  2. کاربر از روی `users.telegram_chat_id` شناخته می‌شود (اتصال از پروفایل)
  *     و هر کار با **دسترسیِ خودِ او** و سرویس‌های موجود انجام می‌شود.
  *  3. عضوِ سابق یا قطع‌شده هیچ کاری نمی‌تواند (همان گاردِ MCP).
@@ -55,7 +62,7 @@ import {
 
 /* ---------------- رابطِ تلگرام ---------------- */
 
-export interface TgUser { id: number }
+export interface TgUser { id: number; is_bot?: boolean; username?: string }
 export interface TgChat { id: number; type?: string }
 export interface TgVoice { file_id: string; duration?: number; file_size?: number; mime_type?: string }
 export interface TgFile { file_id: string; file_size?: number; file_name?: string; mime_type?: string }
@@ -63,7 +70,12 @@ export interface TgMessage {
   message_id: number; text?: string; chat: TgChat; from?: TgUser; voice?: TgVoice; audio?: TgVoice;
   /** عکس (چند اندازه؛ آخری بزرگ‌ترین) و فایل (۲.۱۴.۰). */
   photo?: TgFile[]; document?: TgFile; caption?: string;
+  /** ویدیو و ویدیوی گرد (۲.۳۴.۰). */
+  video?: TgVideo; video_note?: TgVideo;
+  /** پیامی که این پیام پاسخِ آن است — «این ویدیو را بازبینی کن» زیرِ ویدیوی قبلی. */
+  reply_to_message?: TgMessage;
 }
+export interface TgVideo extends TgFile { duration?: number }
 export interface TgUpdate {
   update_id: number;
   message?: TgMessage;
@@ -174,7 +186,7 @@ async function postHtml(method: 'sendMessage' | 'editMessageText', payload: Reco
  * متنِ بلند ← چند تکه از مرزِ خط (۲.۱۶.۲؛ ۲.۲۳.۰: بی‌شکستنِ تگ‌ها). ⚠️ پیش از
  * این پیامِ بیش از ۴۰۹۶ نویسه بی‌صدا رد می‌شد و کاربر هیچ نمی‌دید.
  */
-async function send(chatId: number, text: string, keyboard?: Keyboard) {
+async function send(chatId: number, text: string, keyboard?: Keyboard, replyTo?: number) {
   const parts = splitHtml(text, MAX_TEXT);
   for (const [i, part] of parts.entries()) {
     const last = i === parts.length - 1;
@@ -182,6 +194,8 @@ async function send(chatId: number, text: string, keyboard?: Keyboard) {
       chat_id: chatId,
       text: part,
       disable_web_page_preview: true,
+      // در گروه جواب زیرِ همان پیامِ پرسش (۲.۳۴.۰) — معلوم باشد جوابِ کیست.
+      ...(replyTo && i === 0 ? { reply_parameters: { message_id: replyTo, allow_sending_without_reply: true } } : {}),
       // دکمه‌ها زیرِ تکهٔ آخر.
       ...(keyboard && last ? { reply_markup: { inline_keyboard: keyboard } } : {}),
     });
@@ -196,6 +210,15 @@ async function edit(chatId: number, messageId: number, text: string, keyboard?: 
     disable_web_page_preview: true,
     reply_markup: { inline_keyboard: keyboard ?? [] },
   });
+}
+
+/** فرستادن و گرفتنِ شناسهٔ پیام — برای «در حالِ دیدنِ ویدیو…» که بعد عوض می‌شود. */
+async function sendStatus(chatId: number, text: string, replyTo?: number): Promise<number | null> {
+  const res = await postHtml('sendMessage', {
+    chat_id: chatId, text, disable_web_page_preview: true,
+    ...(replyTo ? { reply_parameters: { message_id: replyTo, allow_sending_without_reply: true } } : {}),
+  }) as { result?: { message_id?: number } } | null;
+  return res?.result?.message_id ?? null;
 }
 
 /** پیام را تازه کن (دکمهٔ زیرِ همان پیام) یا پیامِ نو بفرست. */
@@ -458,7 +481,15 @@ const pendingReplies = new Map<number, { target: ReplyTarget; at: number }>();
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 /** فایلِ فرستاده‌شده تا کاربر بگوید کجا برود — ۱۰ دقیقه، فقط در حافظه. */
-const pendingFiles = new Map<number, { file: TgFile; name: string; mime: string; caption: string; at: number }>();
+const pendingFiles = new Map<number, { file: TgFile; name: string; mime: string; caption: string; messageId: number; at: number }>();
+
+/** تصویری که مدل می‌تواند ببیند. */
+const VISION_MIME = /^image\/(jpeg|png|webp)$/;
+
+/** کاربر هوشِ مصنوعیِ آماده دارد؟ */
+async function hasAi(who: Who): Promise<boolean> {
+  return (await loadAiSecrets(who.actor.id)).some((x) => x.model);
+}
 
 async function downloadTelegramFile(fileId: string): Promise<Uint8Array | null> {
   const info = await api('getFile', { file_id: fileId }) as { ok?: boolean; result?: { file_path?: string; file_size?: number } } | null;
@@ -482,9 +513,18 @@ async function onFile(chatId: number, who: Who, msg: TgMessage) {
   }
   const name = msg.document?.file_name || (photo ? `photo-${msg.message_id}.jpg` : 'file');
   const mime = msg.document?.mime_type || (photo ? 'image/jpeg' : 'application/octet-stream');
-  pendingFiles.set(chatId, { file, name, mime, caption: (msg.caption ?? '').trim(), at: Date.now() });
+  const caption = (msg.caption ?? '').trim();
+  const vision = VISION_MIME.test(mime) && await hasAi(who);
+  // ۲.۳۴.۰: عکس با توضیح ← مستقیم به هوشِ مصنوعی؛ توضیح همان دستور است
+  // («این را به بازبینیِ X اضافه کن»). بی توضیح، همان پرسشِ «کجا برود؟» با دکمهٔ 🤖.
+  if (vision && caption) {
+    await onImage(chatId, who, { file, name, mime, messageId: msg.message_id }, caption);
+    return;
+  }
+  pendingFiles.set(chatId, { file, name, mime, caption, messageId: msg.message_id, at: Date.now() });
   // نامِ فایل زیرِ پرسش — کاربر ببیند دربارهٔ کدام فایل می‌پرسیم.
   await send(chatId, [heading('📎', who.tr('این فایل کجا برود؟')), `📄 ${esc(clip(name, 80))}`].join(NL), [
+    ...(vision ? [[{ text: `🤖 ${who.tr('دستیار ببیند')}`, callback_data: 'f:a' }]] : []),
     [{ text: `📁 ${who.tr('فایل‌های پروژه')}`, callback_data: 'f:p' }, { text: `📌 ${who.tr('پیوست به تسک')}`, callback_data: 'f:t' }],
     [{ text: `✖️ ${who.tr('لغو')}`, callback_data: 'f:x' }],
   ]);
@@ -704,6 +744,8 @@ async function showHelp(chatId: number, who: Who) {
     '',
     // ۲.۲۳.۰: راهِ بازکردنِ کارتِ تسک با شماره جایی گفته نشده بود.
     hint(who.tr('شمارهٔ تسک (مثلاً ALZ-325) را بفرستید تا کارتش باز شود.')),
+    // ۲.۳۴.۰
+    hint(who.tr('ویدیو، لینکِ Loom، عکس یا پیامِ صوتی هم بفرستید و بنویسید چه کنم؛ دستیار می‌بیند و می‌شنود و مثلاً موردهای بازبینی و تسک می‌سازد.')),
   ];
   await send(chatId, tidy(lines), await menuFor(who));
 }
@@ -875,8 +917,9 @@ const DURATIONS = [15, 30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480];
 /* ---------------- دکمه‌ها ---------------- */
 
 async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
-  await api('answerCallbackQuery', { callback_query_id: update.id });
   const msg = update.message;
+  if (msg && (msg.chat.type === 'group' || msg.chat.type === 'supergroup')) return await onGroupCallback(update, msg);
+  await api('answerCallbackQuery', { callback_query_id: update.id });
   if (!msg || (msg.chat.type && msg.chat.type !== 'private')) return;
   const chatId = msg.chat.id;
   const who = await whoIs(chatId);
@@ -940,6 +983,17 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
     // 📎 فایل: کجا برود؟
     if (kind === 'f') {
       if (op === 'x') { pendingFiles.delete(chatId); await edit(chatId, msg.message_id, `✖️ ${esc(who.tr('لغو شد.'))}`); return; }
+      // 🤖 دستیار عکس را ببیند (۲.۳۴.۰).
+      if (op === 'a') {
+        const item = pendingFiles.get(chatId);
+        pendingFiles.delete(chatId);
+        if (!item || Date.now() - item.at > 10 * 60_000) {
+          await edit(chatId, msg.message_id, `⚠️ ${esc(who.tr('این درخواست منقضی شده است؛ دوباره بپرسید.'))}`);
+          return;
+        }
+        await edit(chatId, msg.message_id, `🤖 ${esc(who.tr('دستیار دارد عکس را می‌بیند…'))}`);
+        return await onImage(chatId, who, item, item.caption);
+      }
       if (op === 'p' || op === 't') {
         const list = await fileProjects(who);
         const rows: Keyboard = list.map((pr) => [{ text: pr.title.slice(0, 60), callback_data: `f:${op === 'p' ? 'pp' : 'tp'}:${pr.id}` }]);
@@ -1027,23 +1081,55 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
       await deliver(chatId, who, result);
       return;
     }
-    if (kind === 'a' && (op === 'y' || op === 'n') && a) {
-      await edit(chatId, msg.message_id, op === 'y' ? `⏳ ${esc(who.tr('در حالِ انجام…'))}` : `✖️ ${esc(who.tr('لغو شد.'))}`);
-      await api('sendChatAction', { chat_id: chatId, action: 'typing' });
-      const result = await resolvePending(who.actor.id, a, op === 'y');
-      if (!result) {
-        await edit(chatId, msg.message_id, `⚠️ ${esc(who.tr('این درخواست منقضی شده است؛ دوباره بپرسید.'))}`);
-        return;
-      }
-      // ⚠️ «⏳ در حالِ انجام…» آویزان نماند — همان پیام «✅ انجام شد» می‌شود.
-      if (op === 'y') {
-        await edit(chatId, msg.message_id, `✅ ${esc(who.tr('انجام شد'))}`);
-        await deliver(chatId, who, result);
-      }
-      return;
-    }
+    if (kind === 'a' && (op === 'y' || op === 'n') && a) return await answerConfirm(chatId, who, msg.message_id, a, op === 'y');
   } catch (error) {
     await send(chatId, explainError(who.tr, error), await menuFor(who));
+  }
+}
+
+/** «بله/خیر» ِ کارِ هوشِ مصنوعی — چتِ خصوصی و گروه. */
+async function answerConfirm(chatId: number, who: Who, messageId: number, id: string, approve: boolean, scope?: GroupScope) {
+  await edit(chatId, messageId, approve ? `⏳ ${esc(who.tr('در حالِ انجام…'))}` : `✖️ ${esc(who.tr('لغو شد.'))}`);
+  await api('sendChatAction', { chat_id: chatId, action: 'typing' });
+  const result = await resolvePending(who.actor.id, id, approve);
+  if (!result) {
+    await edit(chatId, messageId, `⚠️ ${esc(who.tr('این درخواست منقضی شده است؛ دوباره بپرسید.'))}`);
+    return;
+  }
+  // ⚠️ «⏳ در حالِ انجام…» آویزان نماند — همان پیام «✅ انجام شد» می‌شود.
+  if (approve) {
+    await edit(chatId, messageId, `✅ ${esc(who.tr('انجام شد'))}`);
+    await deliver(chatId, who, result, { scope, replyTo: scope ? messageId : undefined });
+  }
+}
+
+/**
+ * دکمه در گروهِ پروژه (۲.۳۴.۰). ⚠️ فقط «بله/خیر» ِ دستیار، و فقط کسی که پرسیده —
+ * بقیهٔ اعضا با یک هشدارِ کوتاه کنار می‌روند و کاری به نامِ دیگری انجام نمی‌شود.
+ */
+async function onGroupCallback(update: NonNullable<TgUpdate['callback_query']>, msg: TgMessage) {
+  const [kind, op, id] = (update.data ?? '').split(':');
+  if (kind !== 'a' || (op !== 'y' && op !== 'n') || !id) {
+    await api('answerCallbackQuery', { callback_query_id: update.id });
+    return;
+  }
+  const owner = pendingOwner(id);
+  const who = await whoIs(update.from.id);
+  if (!who || owner !== who.actor.id) {
+    const tr = who?.tr ?? await translatorFor((await systemLocale()).locale);
+    await api('answerCallbackQuery', {
+      callback_query_id: update.id, show_alert: true,
+      text: owner === null ? tr('این درخواست منقضی شده است؛ دوباره بپرسید.') : tr('فقط کسی که پرسیده می‌تواند تأیید کند.'),
+    });
+    return;
+  }
+  await api('answerCallbackQuery', { callback_query_id: update.id });
+  const scope = await groupScope(msg.chat.id);
+  if (!scope) return;
+  try {
+    await answerConfirm(msg.chat.id, who, msg.message_id, id, op === 'y', scope);
+  } catch (error) {
+    await send(msg.chat.id, explainError(who.tr, error), undefined, msg.message_id);
   }
 }
 
@@ -1169,6 +1255,8 @@ const ARG_LABELS: Record<string, string> = {
   text: 'متن', title: 'عنوان', description: 'توضیح', hours: 'ساعت', minutes: 'دقیقه',
   date: 'تاریخ', due_date: 'مهلت', status: 'وضعیت', at: 'زمان', reminder_id: 'یادآور',
   amount: 'مبلغ', direction: 'نوع', account_id: 'حساب', user_id: 'شخص', state: 'وضعیت', role: 'نقش', note: 'یادداشت', name: 'نام', decision: 'تصمیم', confirm_title: 'تأییدِ نام', action: 'کار', archived: 'بایگانی', blocked: 'قطعِ دسترسی',
+  // ۲.۳۴.۰ — بازبینی از ویدیو
+  start_seconds: 'لحظهٔ ویدیو', end_seconds: 'تا لحظهٔ', video_url: 'لینکِ ویدیو', source: 'منبع', attach: 'پیوست', area: 'بخش',
 };
 
 async function describeArgs(actor: Actor, tr: Translator, args: Record<string, unknown>): Promise<string[]> {
@@ -1191,73 +1279,315 @@ async function describeArgs(actor: Actor, tr: Translator, args: Record<string, u
   const skip = new Set(['project_id', 'task_id', 'recipient_user_ids', 'assignee_user_id']);
   for (const [k, v] of Object.entries(args)) {
     if (skip.has(k) || v === '' || v === null || v === undefined || v === 0) continue;
+    if (Array.isArray(v) && v.length === 0) continue;
     const label = ARG_LABELS[k] ? tr(ARG_LABELS[k]!) : k;
-    lines.push(row(label, clip(String(typeof v === 'object' ? JSON.stringify(v) : v), 300)));
+    // ثانیهٔ ویدیو ← «۱:۲۴»، نه «84».
+    const value = k.endsWith('_seconds') && typeof v === 'number' ? clock(v) : String(typeof v === 'object' ? JSON.stringify(v) : v);
+    lines.push(row(label, clip(value, 300)));
   }
   return lines;
 }
 
-async function deliver(chatId: number, who: Who, result: AgentResult) {
+/**
+ * چند کار در یک تأیید (۲.۳۴.۰): یک خط برای هر کار — عنوان و لحظهٔ ویدیو؛ پروژهٔ
+ * مشترک یک بار بالای فهرست.
+ */
+async function describeBatch(who: Who, items: ReadonlyArray<{ tool: string; args: Record<string, unknown> }>): Promise<string[]> {
+  if (items.length === 1) {
+    const [only] = items;
+    return [`🛠 ${esc(who.tr(WRITE_TITLES[only!.tool] ?? only!.tool))}`, ...(await describeArgs(who.actor, who.tr, only!.args))];
+  }
+  const lines: string[] = [];
+  const pid = items[0]!.args.project_id;
+  if (typeof pid === 'number' && items.every((i) => i.args.project_id === pid)) {
+    lines.push(`• ${esc(who.tr('پروژه'))}: <b>${esc(await projectTitle(who.actor, pid))}</b>`);
+  }
+  for (const [i, item] of items.entries()) {
+    const label = String(item.args.title ?? item.args.text ?? item.args.name ?? '').trim();
+    const at = typeof item.args.start_seconds === 'number' ? ` · ⏱ ${clock(item.args.start_seconds)}` : '';
+    lines.push(`${i + 1}. ${esc(who.tr(WRITE_TITLES[item.tool] ?? item.tool))}${label ? `: <b>${esc(clip(label, 120))}</b>` : ''}${at}`);
+  }
+  return lines;
+}
+
+interface AiOpts {
+  /** گروهِ پروژه (۲.۳۴.۰) — جواب زیرِ پیامِ پرسش و بی منوی شخصی. */
+  scope?: GroupScope;
+  replyTo?: number;
+  media?: MediaItem[];
+}
+
+async function deliver(chatId: number, who: Who, result: AgentResult, opts: AiOpts = {}) {
+  const { replyTo } = opts;
+  // ⚠️ منوی شخصی (تسک‌ها، ساعت، …) در گروه نه.
+  const menu = async () => (opts.scope ? undefined : await menuFor(who));
+  // مدلِ وصل‌شده تصویر نمی‌بیند — کاربر بداند جواب فقط از صدا/متن است.
+  const blind = 'noVision' in result && result.noVision
+    ? `${NL}${NL}${hint(`🙈 ${who.tr('مدلِ هوشِ مصنوعیِ شما تصویر نمی‌بیند؛ فقط صدا و متن دیده شد. برای دیدنِ تصویر Gemini (رایگان) یا ChatGPT را وصل کنید.')}`)}`
+    : '';
   switch (result.kind) {
     case 'reply':
       // ⚠️ وقتی اولی جواب نداد، کاربر ببیند کدام جایگزین جواب داد.
       // ⚠️ جوابِ خالی ← کاربر پس از «در حالِ نوشتن…» بی‌پاسخ نماند.
-      if (!result.text?.trim()) { await send(chatId, `⚠️ ${esc(who.tr('هوشِ مصنوعی جوابی نداد؛ دوباره بپرسید.'))}`); return; }
+      if (!result.text?.trim()) { await send(chatId, `⚠️ ${esc(who.tr('هوشِ مصنوعی جوابی نداد؛ دوباره بپرسید.'))}`, undefined, replyTo); return; }
       // ⚠️ جوابِ مدل Markdown است؛ mdToHtml اول همه چیز را escape می‌کند و بعد فقط
       // پررنگ/کد/فهرست/پیوندِ https را به تگِ تلگرام برمی‌گرداند.
-      await send(chatId, result.via ? `${mdToHtml(result.text)}${NL}${NL}${hint(`↪️ ${who.tr('با {name}', { name: result.via })}`)}` : mdToHtml(result.text));
+      await send(chatId, `${result.via ? `${mdToHtml(result.text)}${NL}${NL}${hint(`↪️ ${who.tr('با {name}', { name: result.via })}`)}` : mdToHtml(result.text)}${blind}`, undefined, replyTo);
       return;
     case 'confirm': {
       const lines = [
         ...(result.note ? [mdToHtml(result.note), ''] : []),
         // ⚠️ کارِ حساس (پول، حذف، دسترسی، تنظیمات) پیش از پرسش هشدارِ جدا می‌گیرد.
         ...(result.sensitive ? [heading('⚠️', who.tr('کارِ حساس — پیش از «بله» دقیق بخوانید.')), ''] : []),
-        heading('❓', who.tr('این کار انجام شود؟')),
-        `🛠 ${esc(who.tr(WRITE_TITLES[result.tool] ?? result.tool))}`,
-        ...(await describeArgs(who.actor, who.tr, result.args)),
+        heading('❓', result.items.length > 1
+          ? who.tr('این {count} کار انجام شود؟', { count: result.items.length })
+          : who.tr('این کار انجام شود؟')),
+        ...(await describeBatch(who, result.items)),
       ];
-      await send(chatId, lines.join(NL), [[
+      await send(chatId, `${lines.join(NL)}${blind}`, [[
         { text: `✅ ${who.tr('بله')}`, callback_data: `a:y:${result.id}` },
         { text: `✖️ ${who.tr('خیر')}`, callback_data: `a:n:${result.id}` },
-      ]]);
+      ]], replyTo);
       return;
     }
     case 'choose': {
       // ⚠️ دکمه‌ها همان پروژه‌هایی‌اند که کاربر در برنامه می‌بیند؛ سرور دوباره می‌سنجد.
       const rows: Keyboard = result.options.map((o) => [{ text: o.title.slice(0, 60), callback_data: `p:${result.id}:${o.id}` }]);
       rows.push([{ text: `✖️ ${who.tr('هیچ‌کدام')}`, callback_data: `p:${result.id}:0` }]);
-      await send(chatId, heading('📁', result.question || who.tr('کدام پروژه؟')), rows);
+      await send(chatId, heading('📁', result.question || who.tr('کدام پروژه؟')), rows, replyTo);
       return;
     }
     case 'quota':
-      await send(chatId, `⏳ ${esc(who.tr('سهمیهٔ هوشِ مصنوعیِ شما فعلاً تمام شده است؛ تا آن موقع از دکمه‌ها استفاده کنید.'))}`, await menuFor(who));
+      await send(chatId, `⏳ ${esc(who.tr('سهمیهٔ هوشِ مصنوعیِ شما فعلاً تمام شده است؛ تا آن موقع از دکمه‌ها استفاده کنید.'))}`, await menu(), replyTo);
       return;
     case 'auth':
-      await send(chatId, `🔑 ${esc(who.tr('کلیدِ هوشِ مصنوعیِ شما دیگر کار نمی‌کند؛ در پروفایل دوباره وصلش کنید.'))}`, await menuFor(who));
+      await send(chatId, `🔑 ${esc(who.tr('کلیدِ هوشِ مصنوعیِ شما دیگر کار نمی‌کند؛ در پروفایل دوباره وصلش کنید.'))}`, await menu(), replyTo);
       return;
     case 'busy':
-      await send(chatId, `⏳ ${esc(who.tr('پیام‌ها زیاد شد؛ چند دقیقه صبر کنید. تا آن موقع دکمه‌ها کار می‌کنند.'))}`, await menuFor(who));
+      await send(chatId, `⏳ ${esc(who.tr('پیام‌ها زیاد شد؛ چند دقیقه صبر کنید. تا آن موقع دکمه‌ها کار می‌کنند.'))}`, await menu(), replyTo);
       return;
     default: {
       // ⚠️ متنِ خطای ارائه‌دهنده (۲.۳۲.۰) — مثلاً «این مدل max_tokens را نمی‌پذیرد» یا «مدل پیدا نشد».
       // پیش از این فقط «جواب نداد» می‌آمد و علت حدس‌زدنی بود. کلید هرگز در این متن نیست.
       const detail = result.kind === 'error' && result.detail ? `
 <code>${esc(result.detail)}</code>` : '';
-      await send(chatId, `⚠️ ${esc(who.tr('هوشِ مصنوعی جواب نداد؛ کمی بعد دوباره امتحان کنید یا از دکمه‌ها استفاده کنید.'))}${detail}`, await menuFor(who));
+      await send(chatId, `⚠️ ${esc(who.tr('هوشِ مصنوعی جواب نداد؛ کمی بعد دوباره امتحان کنید یا از دکمه‌ها استفاده کنید.'))}${detail}`, await menu(), replyTo);
     }
   }
 }
 
-async function askAi(chatId: number, who: Who, text: string): Promise<boolean> {
+async function askAi(chatId: number, who: Who, input: string | ContentPart[], opts: AiOpts = {}): Promise<boolean> {
   const secrets = (await loadAiSecrets(who.actor.id)).filter((x) => x.model);
   if (secrets.length === 0) return false;
   await api('sendChatAction', { chat_id: chatId, action: 'typing' });
   const result = await askAgent({
-    actor: who.actor, userName: who.name, secrets, sensitive: who.aiSensitive,
+    actor: who.actor, userName: who.name, secrets, sensitive: who.aiSensitive, scope: opts.scope,
     language: LOCALE_NAMES[who.locale], today: todayIn(who.tz), timezone: who.tz,
-  }, text);
-  await deliver(chatId, who, result);
+  }, input, Date.now(), opts.media ?? []);
+  await deliver(chatId, who, result, opts);
   return true;
+}
+
+/* ---------------- عکس و ویدیو برای دستیار (۲.۳۴.۰) ---------------- */
+
+/** «به دستیار وصل نیستید» — در خصوصی با منو، در گروه بی آن. */
+async function sendNoAi(chatId: number, who: Who, opts: AiOpts) {
+  await send(chatId, `🤖 ${esc(who.tr('برای این کار، در پروفایل ← «دستیارِ هوشِ مصنوعی» یک ارائه‌دهنده وصل کنید.'))}`,
+    opts.scope ? undefined : await menuFor(who), opts.replyTo);
+}
+
+/**
+ * عکس ← دستیار. ⚠️ عکس فقط در حافظهٔ گفت‌وگوست؛ اگر کاربر پیوستش را به تسک
+ * تأیید کند (`attach`) همان‌جا ذخیره می‌شود، وگرنه با پایانِ حافظه از بین می‌رود.
+ */
+async function onImage(
+  chatId: number, who: Who, image: { file: TgFile; name: string; mime: string; messageId: number }, instruction: string, opts: AiOpts = {},
+) {
+  if (!(await hasAi(who))) return sendNoAi(chatId, who, opts);
+  await api('sendChatAction', { chat_id: chatId, action: 'typing' });
+  const bytes = await downloadTelegramFile(image.file.file_id);
+  if (!bytes) {
+    await send(chatId, `⚠️ ${esc(who.tr('فایل از تلگرام گرفته نشد؛ دوباره بفرستید.'))}`, undefined, opts.replyTo);
+    return;
+  }
+  const id = `photo-${image.messageId}`;
+  const dataUrl = `data:${image.mime};base64,${Buffer.from(bytes).toString('base64')}`;
+  await askAi(chatId, who, imageMessage(instruction, dataUrl, id), {
+    ...opts, media: [{ id, name: image.name, mime: image.mime, bytes }],
+  });
+}
+
+type VideoSource = { kind: 'telegram'; file: TgVideo } | { kind: 'loom'; id: string; url: string };
+
+/**
+ * ویدیو ← دستیار: صدا با زمان به متن، و هر چند ثانیه یک عکس از صحنه؛ هر دو با
+ * زمانِ هرکدام به مدل می‌رود. ⚠️ فایل و صدا و عکس‌ها فقط در حافظه/پوشهٔ موقت‌اند؛
+ * فقط عکسی می‌ماند که به موردِ بازبینیِ تأییدشده پیوست شود.
+ */
+async function onVideo(chatId: number, who: Who, src: VideoSource, instruction: string, opts: AiOpts = {}) {
+  const secrets = (await loadAiSecrets(who.actor.id)).filter((x) => x.model);
+  if (secrets.length === 0) return sendNoAi(chatId, who, opts);
+  if (src.kind === 'telegram' && (src.file.file_size ?? 0) > MAX_FILE_BYTES) {
+    await send(chatId, `⚠️ ${esc(who.tr('ویدیو بزرگ‌تر از ۲۰ مگابایت است (سقفِ تلگرام برای ربات)؛ لینکِ Loom یا نسخهٔ کوتاه‌ترش را بفرستید.'))}`, undefined, opts.replyTo);
+    return;
+  }
+  const status = await sendStatus(chatId, `🎬 ${esc(who.tr('در حالِ دیدنِ ویدیو… ممکن است یکی‌دو دقیقه طول بکشد.'))}`, opts.replyTo);
+  const say = (text: string) => (status ? edit(chatId, status, text) : send(chatId, text, undefined, opts.replyTo));
+  await api('sendChatAction', { chat_id: chatId, action: 'typing' });
+
+  let title = '';
+  let url: string | undefined;
+  let duration = 0;
+  let extracted: ExtractedVideo | null = null;
+  // بی ffmpeg: خودِ فایل به Whisper می‌رود (فقط صدا).
+  let raw: { blob: Blob; name: string } | null = null;
+  if (src.kind === 'loom') {
+    const loom = await loomVideo(src.id);
+    if (!loom) {
+      await say(`⚠️ ${esc(who.tr('این ویدیوی Loom خوانده نشد. اگر خصوصی است، دسترسی‌اش را «هر کس با لینک» کنید یا خودِ فایل را بفرستید.'))}`);
+      return;
+    }
+    title = loom.title;
+    url = src.url;
+    duration = loom.duration;
+    extracted = await extractVideo(loom.mediaUrl);
+    if (!extracted) {
+      const blob = await downloadSmall(loom.mediaUrl, MAX_MEDIA_AUDIO_BYTES);
+      if (blob) raw = { blob, name: 'video.mp4' };
+    }
+  } else {
+    const bytes = await downloadTelegramFile(src.file.file_id);
+    if (!bytes) {
+      await say(`⚠️ ${esc(who.tr('ویدیو از تلگرام گرفته نشد؛ دوباره بفرستید.'))}`);
+      return;
+    }
+    const ext = (src.file.mime_type ?? 'video/mp4').split('/')[1]?.replace(/[^a-z0-9]/gi, '') || 'mp4';
+    title = src.file.file_name ?? '';
+    duration = src.file.duration ?? 0;
+    extracted = await extractVideoBytes(bytes, ext);
+    if (!extracted && bytes.length <= MAX_MEDIA_AUDIO_BYTES) raw = { blob: new Blob([new Uint8Array(bytes)], { type: src.file.mime_type ?? 'video/mp4' }), name: `video.${ext}` };
+  }
+  if (extracted?.duration) duration = extracted.duration;
+
+  // صدا ← متنِ زمان‌دار، با اولین اتصالی که صدا می‌فهمد.
+  let segments: Segment[] = [];
+  const notes: string[] = [];
+  const audio = extracted?.audio ? { blob: extracted.audio, name: 'audio.mp3' } : raw;
+  if (audio) {
+    const ear = (await loadAiSecrets(who.actor.id)).find((x) => transcriptionModel(x.provider));
+    if (!ear) {
+      notes.push(who.tr('صدای ویدیو فهمیده نشد؛ برای صدا Groq (رایگان) یا OpenAI را هم وصل کنید.'));
+    } else {
+      const out = await transcribe(ear, audio.blob, audio.name, { timed: true });
+      if (out.ok) segments = out.segments.length > 0 ? out.segments : out.text ? [{ start: 0, end: duration, text: out.text }] : [];
+      else notes.push(who.tr('صدای ویدیو به متن تبدیل نشد.'));
+    }
+  }
+  const frames = extracted?.frames ?? [];
+  if (segments.length === 0 && frames.length === 0) {
+    await say([`⚠️ ${esc(who.tr('از این ویدیو چیزی فهمیده نشد — نه صدا، نه تصویر.'))}`, ...notes.map((n) => hint(n))].join(NL));
+    return;
+  }
+  if (extracted?.truncated) notes.push(who.tr('ویدیو بیش از ۱۵ دقیقه است؛ فقط ۱۵ دقیقهٔ اول دیده شد.'));
+  await say([
+    `🎬 <b>${esc(who.tr('ویدیو دیده شد'))}</b>${title ? ` — ${esc(clip(title, 80))}` : ''}`,
+    `⏱ ${clock(duration)} · 🖼 ${frames.length} · 🎤 ${segments.length > 0 ? '✓' : '—'}`,
+    ...notes.map((n) => hint(n)),
+  ].join(NL));
+
+  const media: MediaItem[] = frames.map((f) => ({
+    id: `frame@${Math.round(f.t)}`, name: `frame-${clock(f.t).replace(/:/g, '-')}.jpg`, mime: 'image/jpeg', bytes: new Uint8Array(f.jpeg), t: f.t,
+  }));
+  const content = videoMessage({
+    instruction, title, url, duration, truncated: extracted?.truncated, segments,
+    frames: frames.map((f) => ({ t: f.t, dataUrl: `data:image/jpeg;base64,${f.jpeg.toString('base64')}` })),
+  });
+  await askAi(chatId, who, content, { ...opts, media });
+}
+
+/** رسانهٔ یک پیام برای دستیار: ویدیو، عکس، صدا یا لینکِ Loom. */
+function mediaOf(msg: TgMessage):
+  | { kind: 'video'; file: TgVideo }
+  | { kind: 'image'; file: TgFile; name: string; mime: string; messageId: number }
+  | { kind: 'voice'; voice: TgVoice }
+  | { kind: 'loom'; id: string; url: string }
+  | null {
+  const doc = msg.document;
+  const video = msg.video ?? msg.video_note ?? (doc?.mime_type?.startsWith('video/') ? doc : undefined);
+  if (video) return { kind: 'video', file: video };
+  const photo = msg.photo?.at(-1);
+  if (photo) return { kind: 'image', file: photo, name: `photo-${msg.message_id}.jpg`, mime: 'image/jpeg', messageId: msg.message_id };
+  if (doc?.mime_type && VISION_MIME.test(doc.mime_type)) {
+    return { kind: 'image', file: doc, name: doc.file_name || `image-${msg.message_id}`, mime: doc.mime_type, messageId: msg.message_id };
+  }
+  const voice = msg.voice ?? msg.audio;
+  if (voice) return { kind: 'voice', voice };
+  const loom = parseLoomUrl(`${msg.text ?? ''} ${msg.caption ?? ''}`);
+  return loom ? { kind: 'loom', ...loom } : null;
+}
+
+/* ---------------- گروهِ پروژه (۲.۳۴.۰) ---------------- */
+
+/** گروهِ وصل‌شده ← پروژه‌اش؛ گروهِ ناشناس ← null. */
+async function groupScope(chatId: number): Promise<GroupScope | null> {
+  const [row] = await db.select({ id: projects.id, title: projects.title }).from(projects)
+    .where(eq(projects.telegramGroupId, String(chatId)));
+  return row ? { chatId, projectId: row.id, projectTitle: row.title } : null;
+}
+
+/**
+ * پیام در گروهِ پروژه. ربات فقط وقتی جواب می‌دهد که صدایش بزنند: `/ask …`، منشنِ
+ * `@ربات` یا پاسخ به پیامِ خودِ ربات. ⚠️ پرسنده باید تلگرامش را در برنامه وصل کرده
+ * و عضوِ تیمِ همین پروژه باشد — کارفرما و ناشناس جوابِ کوتاه می‌گیرند. هزینه با
+ * کلیدِ هوشِ مصنوعیِ خودِ پرسنده است.
+ * ⚠️ تلگرام در حالتِ privacy فقط دستورها و پاسخ به ربات را می‌فرستد؛ منشنِ ساده
+ * وقتی می‌رسد که ربات مدیرِ گروه باشد.
+ */
+async function onGroupMessage(msg: TgMessage) {
+  const chatId = msg.chat.id;
+  const raw = (msg.text ?? msg.caption ?? '').trim();
+  const bot = (await telegramCredentials()).username.toLowerCase();
+  const [first = '', ...rest] = raw.split(/\s+/);
+  const command = first.toLowerCase();
+  const isCommand = /^\/(ask|ai)(@[\w]+)?$/.test(command) && (!command.includes('@') || command.endsWith(`@${bot}`));
+  const mentionRe = bot ? new RegExp(`@${bot}\\b`, 'gi') : null;
+  const mentioned = mentionRe ? mentionRe.test(raw) : false;
+  const replyToBot = msg.reply_to_message?.from?.is_bot === true && (msg.reply_to_message.from.username ?? '').toLowerCase() === bot;
+  if (!isCommand && !mentioned && !replyToBot) return;
+  const from = msg.from;
+  if (!from || from.is_bot) return;
+  const scope = await groupScope(chatId);
+  if (!scope) return;
+  const replyTo = msg.message_id;
+
+  const who = await whoIs(from.id);
+  if (!who) {
+    const tr = await translatorFor((await systemLocale()).locale);
+    await send(chatId, `⚠️ ${esc(tr('اول تلگرامِ خودتان را در برنامه وصل کنید (پروفایل ← «اعلان‌ها و تلگرام»)؛ بعد اینجا جواب می‌دهم.'))}`, undefined, replyTo);
+    return;
+  }
+  // ⚠️ فقط اعضای تیمِ همین پروژه؛ کارفرما نه — ابزارها به نامِ پرسنده کار می‌کنند.
+  if (!(await canViewProject(who.actor, scope.projectId)) || await isClientOnly(who.actor, scope.projectId)) {
+    await send(chatId, `⚠️ ${esc(who.tr('دستیارِ این گروه فقط برای اعضای تیمِ همین پروژه است.'))}`, undefined, replyTo);
+    return;
+  }
+  const opts: AiOpts = { scope, replyTo };
+  const text = (isCommand ? rest.join(' ') : raw).replace(mentionRe ?? /$^/, '').trim();
+  try {
+    // رسانه در خودِ پیام، وگرنه در پیامی که به آن پاسخ داده (نه پیامِ خودِ ربات).
+    const media = mediaOf(msg) ?? (msg.reply_to_message && !replyToBot ? mediaOf(msg.reply_to_message) : null);
+    if (media?.kind === 'video') return await onVideo(chatId, who, { kind: 'telegram', file: media.file }, text, opts);
+    if (media?.kind === 'image') return await onImage(chatId, who, media, text, opts);
+    if (media?.kind === 'loom') return await onVideo(chatId, who, media, withoutLoomUrl(text), opts);
+    if (media?.kind === 'voice') return await onVoice(chatId, who, media.voice, opts);
+    if (!text) {
+      await send(chatId, hint(who.tr('بعد از /ask یا نامِ ربات، درخواست‌تان را بنویسید.')), undefined, replyTo);
+      return;
+    }
+    if (!(await askAi(chatId, who, text, opts))) await sendNoAi(chatId, who, opts);
+  } catch (error) {
+    await send(chatId, explainError(who.tr, error), undefined, replyTo);
+  }
 }
 
 /**
@@ -1265,26 +1595,27 @@ async function askAi(chatId: number, who: Who, text: string): Promise<boolean> {
  * همان مسیرِ متنِ آزاد. ⚠️ ویسِ بلند یا بزرگ رد می‌شود؛ فایل فقط در حافظه است و
  * جایی ذخیره نمی‌شود.
  */
-async function onVoice(chatId: number, who: Who, voice: TgVoice) {
+async function onVoice(chatId: number, who: Who, voice: TgVoice, opts: AiOpts = {}) {
+  const menu = async () => (opts.scope ? undefined : await menuFor(who));
   const all = await loadAiSecrets(who.actor.id);
   // اولین اتصالی که صدا می‌فهمد — DeepSeek برای متن و Groq برای ویس کنارِ هم کار می‌کنند.
   const secret = all.find((x) => transcriptionModel(x.provider)) ?? all[0];
   if (!secret) {
-    await send(chatId, `🎤 ${esc(who.tr('برای فهمیدنِ پیامِ صوتی، اول یک هوشِ مصنوعی وصل کنید (Groq رایگان است). تا آن موقع بنویسید یا از دکمه‌ها استفاده کنید.'))}`, await menuFor(who));
+    await send(chatId, `🎤 ${esc(who.tr('برای فهمیدنِ پیامِ صوتی، اول یک هوشِ مصنوعی وصل کنید (Groq رایگان است). تا آن موقع بنویسید یا از دکمه‌ها استفاده کنید.'))}`, await menu(), opts.replyTo);
     return;
   }
   if (!transcriptionModel(secret.provider)) {
-    await send(chatId, `🎤 ${esc(who.tr('هوشِ مصنوعیِ فعلیِ شما ({name}) صدا را به متن تبدیل نمی‌کند؛ برای ویس Groq (رایگان) یا OpenAI را وصل کنید. تا آن موقع بنویسید.', { name: PROVIDERS[secret.provider]?.label ?? secret.provider }))}`, await menuFor(who));
+    await send(chatId, `🎤 ${esc(who.tr('هوشِ مصنوعیِ فعلیِ شما ({name}) صدا را به متن تبدیل نمی‌کند؛ برای ویس Groq (رایگان) یا OpenAI را وصل کنید. تا آن موقع بنویسید.', { name: PROVIDERS[secret.provider]?.label ?? secret.provider }))}`, await menu(), opts.replyTo);
     return;
   }
   if ((voice.duration ?? 0) > MAX_VOICE_SECONDS || (voice.file_size ?? 0) > MAX_VOICE_BYTES) {
-    await send(chatId, `⚠️ ${esc(who.tr('پیامِ صوتی بیش از ۳ دقیقه است؛ کوتاه‌تر بفرستید یا بنویسید.'))}`);
+    await send(chatId, `⚠️ ${esc(who.tr('پیامِ صوتی بیش از ۳ دقیقه است؛ کوتاه‌تر بفرستید یا بنویسید.'))}`, undefined, opts.replyTo);
     return;
   }
   await api('sendChatAction', { chat_id: chatId, action: 'typing' });
   const audio = await downloadVoice(voice.file_id);
   if (!audio) {
-    await send(chatId, `⚠️ ${esc(who.tr('فایلِ صوتی از تلگرام گرفته نشد؛ دوباره بفرستید.'))}`);
+    await send(chatId, `⚠️ ${esc(who.tr('فایلِ صوتی از تلگرام گرفته نشد؛ دوباره بفرستید.'))}`, undefined, opts.replyTo);
     return;
   }
   const out = await transcribe(secret, audio, 'voice.ogg');
@@ -1293,12 +1624,12 @@ async function onVoice(chatId: number, who: Who, voice: TgVoice) {
       ? who.tr('سهمیهٔ هوشِ مصنوعیِ شما فعلاً تمام شده است؛ تا آن موقع از دکمه‌ها استفاده کنید.')
       : out.reason === 'auth'
         ? who.tr('کلیدِ هوشِ مصنوعیِ شما دیگر کار نمی‌کند؛ در پروفایل دوباره وصلش کنید.')
-        : who.tr('صدا به متن تبدیل نشد؛ لطفاً بنویسید.'))}`, await menuFor(who));
+        : who.tr('صدا به متن تبدیل نشد؛ لطفاً بنویسید.'))}`, await menu(), opts.replyTo);
     return;
   }
   // کاربر ببیند ربات چه شنیده — اگر اشتباه فهمید، همین‌جا معلوم است.
-  await send(chatId, `🎤 <i>«${esc(clip(out.text, 1000))}»</i>`);
-  await askAi(chatId, who, out.text);
+  await send(chatId, `🎤 <i>«${esc(clip(out.text, 1000))}»</i>`, undefined, opts.replyTo);
+  await askAi(chatId, who, out.text, opts);
 }
 
 /** دانلودِ فایلِ صوتی از تلگرام — فقط در حافظه. */
@@ -1326,22 +1657,36 @@ async function sendNotLinked(chatId: number) {
 }
 
 async function onMessage(msg: TgMessage) {
-  // ⚠️ در گروه فقط «/start <token>» ِ وصل‌کردنِ گروهِ پروژه (۲.۱۴.۰)؛ هیچ دادهٔ دیگری.
+  // گروه: «/start <token>» ِ وصل‌کردنِ گروهِ پروژه (۲.۱۴.۰)، یا صدازدنِ دستیار (۲.۳۴.۰).
   if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
     const [c, token] = (msg.text ?? '').trim().split(/\s+/);
     if ((c ?? '').toLowerCase().replace(/@.*$/, '') === '/start' && token) {
       const title = await linkProjectGroup(token, msg.chat.id);
       const tr = await translatorFor((await systemLocale()).locale);
       await send(msg.chat.id, title
-        ? `✅ ${esc(tr('این گروه به پروژهٔ «{project}» وصل شد؛ کامنت‌ها و تسک‌های تازه و انجام‌شده اینجا هم می‌آیند.', { project: title }))}`
+        ? [
+          `✅ ${esc(tr('این گروه به پروژهٔ «{project}» وصل شد؛ کامنت‌ها و تسک‌های تازه و انجام‌شده اینجا هم می‌آیند.', { project: title }))}`,
+          '',
+          `🤖 ${esc(tr('برای پرسیدن از دستیار: «/ask» و بعد درخواست، یا پاسخ به پیامِ ربات. ویدیو، لینکِ Loom، عکس و ویس هم می‌فهمد. برای منشنِ ساده با @ربات را مدیرِ گروه کنید.'))}`,
+        ].join(NL)
         // ⚠️ لینکِ گروه از صفحهٔ پروژه می‌آید، نه از پروفایل.
         : `⚠️ ${esc(tr('این لینک معتبر نیست یا قبلاً استفاده شده؛ از تبِ «مدیریت» ِ پروژه دوباره «افزودنِ ربات به گروه» را بزنید.'))}`);
+      return;
     }
+    await onGroupMessage(msg);
     return;
   }
   if (msg.chat.type && msg.chat.type !== 'private') return;
   const chatId = msg.chat.id;
   const text = (msg.text ?? '').trim();
+  // 🎬 ویدیو (۲.۳۴.۰) — کپشن همان دستور است.
+  const video = msg.video ?? msg.video_note ?? (msg.document?.mime_type?.startsWith('video/') ? msg.document : undefined);
+  if (video) {
+    const who = await whoIs(chatId);
+    if (who) await onVideo(chatId, who, { kind: 'telegram', file: video }, (msg.caption ?? '').trim());
+    else await sendNotLinked(chatId);
+    return;
+  }
   if (!text && (msg.photo || msg.document)) {
     const who = await whoIs(chatId);
     if (who) await onFile(chatId, who, msg);
@@ -1472,6 +1817,15 @@ async function onMessage(msg: TgMessage) {
         return;
     }
     if (cmd.startsWith('/')) return await showMenu(chatId, who);
+
+    // 🎬 لینکِ Loom (۲.۳۴.۰) — بقیهٔ متن همان دستور است.
+    const loom = parseLoomUrl(text);
+    if (loom) return await onVideo(chatId, who, { kind: 'loom', ...loom }, withoutLoomUrl(text));
+    // پاسخ به ویدیو/عکسی که قبلاً فرستاده شده: «این را بازبینی کن».
+    const quoted = msg.reply_to_message ? mediaOf(msg.reply_to_message) : null;
+    if (quoted?.kind === 'video') return await onVideo(chatId, who, { kind: 'telegram', file: quoted.file }, text);
+    if (quoted?.kind === 'image') return await onImage(chatId, who, quoted, text);
+    if (quoted?.kind === 'loom') return await onVideo(chatId, who, quoted, text);
 
     if (!(await askAi(chatId, who, text))) {
       await send(chatId, `🤖 ${esc(who.tr('برای جوابِ هوشمند به متنِ آزاد، در پروفایل ← «دستیارِ هوشِ مصنوعی» یک ارائه‌دهنده وصل کنید. تا آن موقع:'))}`, await menuFor(who));
