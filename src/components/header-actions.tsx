@@ -33,7 +33,7 @@ export function HeaderActionsSlot() {
         'flex shrink-0 items-center gap-2 whitespace-nowrap empty:hidden',
         // ⚠️ فرزندِ مستقیم، نه `data-slot=button`: دکمه‌ای که با `asChild` ماشهٔ دیالوگ است
         // `data-slot` ِ خودش را می‌گیرد. هم‌قدِ جستجو (h-8) تا نوار یک‌دست بماند.
-        '[&>*]:h-8 max-sm:[&>*]:gap-0 max-sm:[&>*]:px-2 max-sm:[&>*]:text-[0px]',
+        '[&>*]:h-8 max-sm:[&>*:has(svg)]:gap-0 max-sm:[&>*:has(svg)]:px-2 max-sm:[&>*:has(svg)]:text-[0px]',
       )}
     />
   );

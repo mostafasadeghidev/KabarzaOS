@@ -3,7 +3,7 @@
 import { useDialogOpen, withFreshOpen } from '@/hooks/use-fresh-key';
 import { useActionState, useEffect, useId, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { createProjectAction, updateProjectAction } from './actions';
 import type { FormState } from './schema';
 import { BootstrapSections, FilePicker, type BootstrapOptions } from './bootstrap-sections';
@@ -214,7 +214,7 @@ function ProjectDialogBody({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {isEdit ? <Button variant="outline">{tr("ویرایش")}</Button> : <Button>{tr("افزودن پروژه")}</Button>}
+        {isEdit ? <Button variant="outline">{tr("ویرایش")}</Button> : <Button><Plus className="size-4" />{tr("افزودن پروژه")}</Button>}
       </DialogTrigger>
 
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">

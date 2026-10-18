@@ -115,39 +115,8 @@ export function ProjectGrid({
 
   return (
     <>
-      {/*
-        ⚠️ دکمهٔ «پروژهٔ جدید» به نوارِ بالا می‌رود (۲.۳۸.۰، `PageHeader` ِ صفحهٔ
-        منو)؛ جستجو روی خودِ صفحه، بالای تب‌ها می‌ماند — تب‌های وضعیت آن‌قدر
-        زیادند که کنارِ هم در یک ردیف جا نمی‌شوند.
-      */}
-      <PageHeader title={header.title} description={header.description} actions={header.actions}>
-        <SearchInput
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          // Enter = بازکردنِ نخستین نتیجه — همان کاری که کاربر بعدش با ماوس می‌کرد.
-          onKeyDown={(e) => {
-            const first = hits[0];
-            if (e.key === 'Enter' && first) router.push(`/projects/${first.id}`);
-          }}
-          placeholder={tr("جستجوی نام پروژه…")}
-        />
-      </PageHeader>
-
-      {searching && (
-        hits.length === 0 ? (
-          <EmptyState title={tr('نتیجه‌ای نیست')} description={tr('در همهٔ پروژه‌ها جستجو شد.')} />
-        ) : (
-          <>
-            <p className="text-xs text-muted-foreground">
-              {tr('{n} نتیجه در همهٔ پروژه‌ها', { n: hits.length })}
-            </p>
-            <ul className="grid gap-1.5">
-              {hitPager.slice.map((p) => <SearchHit key={p.id} project={p} />)}
-            </ul>
-            <CardPager {...hitPager} />
-          </>
-        )
-      )}
+      {/* دکمهٔ «پروژهٔ جدید» به نوارِ بالا می‌رود (۲.۳۸.۰، `PageHeader` ِ صفحهٔ منو). */}
+      <PageHeader title={header.title} description={header.description} actions={header.actions} />
 
       {!searching && relations.length > 1 && (
         <div className="overflow-x-auto overflow-y-hidden">
@@ -165,20 +134,58 @@ export function ProjectGrid({
         </div>
       )}
 
-      {/* shadcn Tabs — روی صفحهٔ باریک پیمایشِ افقی، به‌جای شکستنِ خط. */}
-      {!searching && (<>
-      <div className="overflow-x-auto overflow-y-hidden">
-        <Tabs value={tab} onValueChange={(v) => selectTab(v as typeof tab)}>
-          <TabsList className="w-max">
-            {shownTabs.filter((t) => !t.hidden || t.key === tab).map((t) => (
-              <TabsTrigger key={t.key} value={t.key} className="flex-none px-3">
-                {tr(t.label)}
-                <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{t.count}</Badge>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+      {/*
+        ⚠️ جستجو و تب‌های وضعیت در **یک** ردیف (۲.۳۸.۱): پیش از این جستجو تنها
+        بالای تب‌ها می‌نشست و یک ردیفِ کامل را برای یک کادر می‌گرفت. تب‌ها
+        `min-w-0` و پیمایشِ افقی دارند تا جستجو هرگز به ردیفِ بعد هل داده نشود؛
+        هنگامِ جستجو تب‌ها کنار می‌روند و کادر سرِ جایش می‌ماند.
+      */}
+      <div className="flex flex-wrap items-center gap-2 @3xl/main:flex-nowrap">
+        {!searching && (
+          // shadcn Tabs — روی صفحهٔ باریک پیمایشِ افقی، به‌جای شکستنِ خط.
+          <div className="scrollbar-none min-w-0 basis-full overflow-x-auto overflow-y-hidden @3xl/main:flex-1 @3xl/main:basis-auto">
+            <Tabs value={tab} onValueChange={(v) => selectTab(v as typeof tab)}>
+              <TabsList className="w-max">
+                {shownTabs.filter((t) => !t.hidden || t.key === tab).map((t) => (
+                  <TabsTrigger key={t.key} value={t.key} className="flex-none px-3">
+                    {tr(t.label)}
+                    <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{t.count}</Badge>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
+        )}
+        <SearchInput
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          // Enter = بازکردنِ نخستین نتیجه — همان کاری که کاربر بعدش با ماوس می‌کرد.
+          onKeyDown={(e) => {
+            const first = hits[0];
+            if (e.key === 'Enter' && first) router.push(`/projects/${first.id}`);
+          }}
+          placeholder={tr("جستجوی نام پروژه…")}
+          containerClassName="shrink-0 ms-auto"
+        />
       </div>
+
+      {searching && (
+        hits.length === 0 ? (
+          <EmptyState title={tr('نتیجه‌ای نیست')} description={tr('در همهٔ پروژه‌ها جستجو شد.')} />
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground">
+              {tr('{n} نتیجه در همهٔ پروژه‌ها', { n: hits.length })}
+            </p>
+            <ul className="grid gap-1.5">
+              {hitPager.slice.map((p) => <SearchHit key={p.id} project={p} />)}
+            </ul>
+            <CardPager {...hitPager} />
+          </>
+        )
+      )}
+
+      {!searching && (<>
 
       {visible.length === 0 ? (
         <EmptyState title={tr('پروژه‌ای در این دسته نیست')} />
