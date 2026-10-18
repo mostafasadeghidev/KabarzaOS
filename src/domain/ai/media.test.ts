@@ -4,6 +4,7 @@ import {
 } from './media';
 import { hasImages, stripImages, trimHistory, type ChatMessage } from './chat';
 import { toResponsesInput } from './responses';
+import { calendarAround } from './chat';
 
 describe('video helpers', () => {
   it('formats clock times', () => {
@@ -50,6 +51,16 @@ describe('video helpers', () => {
     expect((parts[0] as { text: string }).text).toContain('1:30 long');
     expect(parts[1]).toEqual({ type: 'text', text: '[frame 0:42 = 42s]' });
     expect(parts[2]).toEqual({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,AAA' } });
+  });
+});
+
+describe('calendar for weekday names', () => {
+  it('lists the days around today with their weekday', () => {
+    const c = calendarAround('2026-10-16');
+    expect(c).toContain('Thursday 2026-10-15');
+    expect(c).toContain('Friday 2026-10-16');
+    expect(c.split(', ')).toHaveLength(15);
+    expect(calendarAround('bad')).toBe('');
   });
 });
 

@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.37.1]
+
+### Fixed
+
+- **The Telegram assistant no longer says "Done" when the server refused.** After "Yes" the bot showed "✅ Done" whatever happened, then the model said it failed. It now reads the server's own result: "✅ Done", "⚠️ Partly not done" or "⚠️ Not done".
+- **A guessed project is caught before the user is asked.** A weak model logged hours on project id 11 (a project the user is not on) without looking it up. A change on a project the user cannot see, or hours on a project they cannot log time on, now goes back to the model with what to do instead (find the id with list_projects, or loggable_projects for hours) and is never shown as a confirmation. The server's own checks are unchanged.
+- **Weekdays.** The model is given the 15 days around today with their weekday names, so "Thursday" becomes a date instead of a question back to the user.
+- **Clearer refusals.** "Cannot log time" now says why (not on the project's team, closed or archived project, an owner who is not a team member) and points to loggable_projects, instead of a generic "you do not have permission". The rule "never guess an id; ids come from list_projects, loggable_projects or search (only kind project)" is in the instructions and in log_hours' description, and loggable_projects is always loaded.
+- **Language.** The model is told the language by its English and native name (for example "Persian (فارسی)") and to use only that language and script; a free model had put a Chinese word into a Persian answer.
+
 ## [2.37.0]
 
 ### Added

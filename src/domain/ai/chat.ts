@@ -142,3 +142,17 @@ export function allow(
   if (state.count >= limit) return { allowed: false, state };
   return { allowed: true, state: { start: state.start, count: state.count + 1 } };
 }
+
+/**
+ * «پنجشنبه» → تاریخ (۲.۳۷.۱): مدل روزِ هفته را از تاریخ حساب نمی‌کند و از کاربر
+ * «تاریخِ دقیق» می‌پرسید. هفت روزِ پیش و پس با نامِ روز به مدل داده می‌شود.
+ */
+export function calendarAround(today: string): string {
+  const base = new Date(`${today}T12:00:00Z`);
+  if (Number.isNaN(base.getTime())) return '';
+  const day = (offset: number) => {
+    const d = new Date(base.getTime() + offset * 86_400_000);
+    return `${d.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })} ${d.toISOString().slice(0, 10)}`;
+  };
+  return Array.from({ length: 15 }, (_, i) => day(i - 7)).join(', ');
+}
