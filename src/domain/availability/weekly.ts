@@ -83,8 +83,15 @@ export function formatSlots(slots: readonly Slot[], t: Translator = SOURCE): str
  * ⚠️ اگر بیش از یک بازه باشد «…» می‌گیرد، وگرنه با یک بلوکِ پیوسته اشتباه
  * گرفته می‌شود.
  */
+/**
+ * نشانِ «تمام روز» در خلاصهٔ خانه — **کلیدِ ترجمه** است، نه متنِ نهایی.
+ * ⚠️ هر جا نمایش داده می‌شود باید از `t()` رد شود؛ تبِ «مدیریت» ِ پروژه آن را
+ * خام نشان می‌داد و در انگلیسی «تمام روز» ِ فارسی می‌آمد (۲.۳۸.۰).
+ */
+export const ALL_DAY_SPAN = 'تمام روز';
+
 export function slotsSpan(slots: readonly Slot[]): string {
-  if (slots.length === 0) return 'تمام روز';
+  if (slots.length === 0) return ALL_DAY_SPAN;
   let from = slots[0]!.from;
   let to = slots[0]!.to;
   for (const s of slots) {

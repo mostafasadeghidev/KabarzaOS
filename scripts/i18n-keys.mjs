@@ -85,7 +85,10 @@ export function usedKeys(root = 'src') {
   // per-type field labels in domain/tags/groups.ts. They never sit inside
   // t() and are not in a LABELS map, so nothing else here sees them.
   const ret = /\breturn\s+'([^'\n]*[؀-ۿ][^'\n]*)'/g;
-  const map = /\bconst\s+([A-Z][A-Z0-9_]*_(?:LABELS?|NAMES?|TITLES?))\b[^=]*=\s*\{/g;
+  // ⚠️ `HINTS` / `ERRORS` / `MESSAGES` بعداً اضافه شدند (۲.۳۸.۰): راهنمای نوع‌های
+  // کتابخانهٔ کد (`KIND_HINTS`) و پیامِ خطاهای سرویس‌ها (`ENTRY_ERRORS`) با `t()`
+  // نمایش داده می‌شدند ولی چون نامِ نگاشت این‌ها بود، در هیچ زبانی کلید نداشتند.
+  const map = /\bconst\s+([A-Z][A-Z0-9_]*_(?:LABELS?|NAMES?|TITLES?|HINTS?|ERRORS|MESSAGES))\b[^=]*=\s*\{/g;
 
   for (const file of walk(root)) {
     const src = readFileSync(file, 'utf8');

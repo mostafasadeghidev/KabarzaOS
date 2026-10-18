@@ -124,7 +124,7 @@ export function ProjectBoard({
                         <TableCell>{p.officeName ?? '—'}</TableCell>
                         <TableNumericCell>{p.regDate ?? '—'}</TableNumericCell>
                       </>
-                    ) : <TableCell>{p.roles && p.roles.length > 0 ? p.roles.join('، ') : '—'}</TableCell>}
+                    ) : <TableCell>{p.roles && p.roles.length > 0 ? p.roles.join(tr('، ')) : '—'}</TableCell>}
                     <TableCell>
                       <ProjectStatus name={p.statusName} group={p.statusGroup} color={p.statusColor} />
                     </TableCell>

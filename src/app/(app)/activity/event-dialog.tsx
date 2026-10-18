@@ -70,7 +70,7 @@ function Value({
     const ids = (Array.isArray(value) ? value : [value]).map(Number).filter((n) => Number.isInteger(n) && n > 0);
     if (ids.length > 0) {
       // شناسه‌ای که دیگر نیست (تگ یا فردِ حذف‌شده) — «حذف‌شده #۱۰»، نه «#۱۰» ِ گنگ.
-      return <>{ids.map((id) => refs[refKey(refKind, id)] ?? `${tr('حذف‌شده')} #${id}`).join('، ')}</>;
+      return <>{ids.map((id) => refs[refKey(refKind, id)] ?? `${tr('حذف‌شده')} #${id}`).join(tr('، '))}</>;
     }
   }
 
@@ -83,7 +83,7 @@ function Value({
 
   if (Array.isArray(value)) {
     if (value.every((v) => typeof v !== 'object' || v === null)) {
-      return <>{value.map((v) => VALUE_LABELS[field]?.[String(v)] ? tr(VALUE_LABELS[field]![String(v)]!) : String(v)).join('، ')}</>;
+      return <>{value.map((v) => VALUE_LABELS[field]?.[String(v)] ? tr(VALUE_LABELS[field]![String(v)]!) : String(v)).join(tr('، '))}</>;
     }
     return (
       <span className="grid gap-1.5">

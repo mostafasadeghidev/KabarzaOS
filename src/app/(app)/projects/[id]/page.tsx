@@ -45,7 +45,6 @@ import { PageHeader, PageShell, Panel } from '@/components/page-shell';
 import { SiteLinksBody } from '@/components/site-links';
 import { UnitEntriesSection, type UnitSectionData } from './unit-entries-section';
 import { canSeeSiteLinks } from '@/domain/projects/site-links';
-import { StatCard } from '@/components/stat-card';
 import { pageTitle } from '@/i18n/page-title';
 import { Hint } from '@/components/ui/tooltip';
 
@@ -266,7 +265,7 @@ export default async function ProjectDetailPage({
         back={{ href: '/projects', label: t("پروژه‌ها") }}
         title={project.title}
         // تصویرِ شاخص کنارِ عنوان (dash-3 #56) — بی‌تصویر، تک‌نگارِ رنگی.
-        media={<Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} size={105} height={55} />}
+        media={<Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} size={72} height={40} />}
         description={project.description ? (
           // توضیحِ پروژه — پیش از این فقط داخلِ فرمِ ویرایش دیده می‌شد.
           // پیوندهای توضیح (فیگما، سایتِ آزمایشی) کلیک‌پذیرند؛ پخش‌کنندهٔ ویدئو در سربرگ جا نمی‌شود.
@@ -361,49 +360,40 @@ export default async function ProjectDetailPage({
       )}
 
       {/*
-        پورتِ `kteam-detail-meta`: تاریخِ ثبت، ددلاین با شمارش، پیشرفت، ساعت.
+        نوارِ خلاصهٔ پروژه (۲.۳۸.۰) — تاریخِ ثبت، ددلاین، پیشرفت، ساعت‌ها، اعضا،
+        تسک‌ها و کامنت‌های باز در **یک** ردیفِ کم‌ارتفاع.
 
-        ⚠️ شبکهٔ برچسب/مقدار، نه یک سطرِ درهم: پیش از این هر پنج قلم پشتِ هم
-        در یک خط می‌نشستند («تاریخ ثبت: … ددلاین: … درصد پیشرفت: …») و چشم
-        مرزِ قلم‌ها را پیدا نمی‌کرد. حالا برچسبِ کوچک بالا و مقدارِ پررنگ
-        پایین است — همان الگویی که shadcn برای فراداده به کار می‌برد.
+        ⚠️ پیش از این یک شبکهٔ فراداده و زیرش سه کارتِ بزرگِ عددی بود و تب‌ها —
+        که کارِ اصلیِ صفحه‌اند — تا نیمهٔ صفحه پایین می‌رفتند. عددها همان‌اند؛
+        «تسکِ باز» و «کامنتِ باز» حالا پیوندِ مستقیم به تبِ خودشان‌اند.
+        ⚠️ قیمتِ پروژه عمداً اینجا نیست؛ جایش تبِ مالی است.
       */}
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm @2xl/main:grid-cols-3 @5xl/main:grid-cols-5">
-        <div className="grid gap-0.5">
-          <dt className="text-xs text-muted-foreground">{t("تاریخ ثبت")}</dt>
-          <dd className="num font-medium">{project.regDate ?? '—'}</dd>
-        </div>
-        <div className="grid gap-0.5">
-          <dt className="text-xs text-muted-foreground">{t("ددلاین")}</dt>
-          <dd className="font-medium">
-            <span className="num">{project.deadline ?? '—'}</span>
-            {deadlineHint && (
-              <span className="ms-1 text-xs font-normal text-muted-foreground">({deadlineHint})</span>
-            )}
-          </dd>
-        </div>
-        <div className="grid gap-0.5">
-          <dt className="text-xs text-muted-foreground">{t("درصد پیشرفت")}</dt>
-          <dd className="font-medium">
-            <span className="num">{percent}%</span>
-            <span className="ms-1 text-xs font-normal text-muted-foreground tabular-nums">
-              ({detail.meta.doneTasks}/{detail.meta.totalTasks} {t("تسک")})
-            </span>
-          </dd>
-        </div>
+      <div className="flex flex-wrap overflow-hidden rounded-xl border bg-card text-sm">
+        <Fact label={t("تاریخ ثبت")}><span className="num">{project.regDate ?? '—'}</span></Fact>
+        <Fact label={t("ددلاین")}>
+          <span className="num">{project.deadline ?? '—'}</span>
+          {deadlineHint && <span className="ms-1 text-xs font-normal text-muted-foreground">({deadlineHint})</span>}
+        </Fact>
+        <Fact label={t("درصد پیشرفت")}>
+          <span className="num">{percent}%</span>
+          <span className="ms-1 text-xs font-normal text-muted-foreground tabular-nums">
+            ({detail.meta.doneTasks}/{detail.meta.totalTasks})
+          </span>
+        </Fact>
         {detail.meta.myMinutes !== null && (
-          <div className="grid gap-0.5">
-            <dt className="text-xs text-muted-foreground">{t("ساعت کاری شما")}</dt>
-            <dd className="num font-medium">{hoursLabel(detail.meta.myMinutes)}</dd>
-          </div>
+          <Fact label={t("ساعت کاری شما")}><span className="num">{hoursLabel(detail.meta.myMinutes)}</span></Fact>
         )}
         {detail.meta.teamMinutes !== null && (
-          <div className="grid gap-0.5">
-            <dt className="text-xs text-muted-foreground">{t("ساعت کاری تیم")}</dt>
-            <dd className="num font-medium">{hoursLabel(detail.meta.teamMinutes)}</dd>
-          </div>
+          <Fact label={t("ساعت کاری تیم")}><span className="num">{hoursLabel(detail.meta.teamMinutes)}</span></Fact>
         )}
-      </dl>
+        <Fact label={t("اعضا")}><span className="tabular-nums">{members.length}</span></Fact>
+        <Fact label={t("تسکِ باز")} href={`/projects/${project.id}?tab=tasks`}>
+          <span className="tabular-nums">{openTasks.length}</span>
+        </Fact>
+        <Fact label={t("کامنتِ باز")} href={`/projects/${project.id}?tab=comments`}>
+          <span className="tabular-nums">{openComments}</span>
+        </Fact>
+      </div>
 
       {/* خویشاوندیِ پروژه‌ها سطرِ خودش را دارد: عنوان‌ها بلندند و در شبکه نمی‌نشینند. */}
       {(detail.meta.parent || detail.meta.children.length > 0) && (
@@ -429,19 +419,6 @@ export default async function ProjectDetailPage({
           )}
         </div>
       )}
-
-      {/*
-        ⚠️ کارت‌های سرِ صفحه «کارِ باز» را می‌گویند، نه پول: قیمتِ پروژه جای
-        خودش را در تبِ مالی دارد و اینجا فقط یک عددِ ایستا بود که هر بار که
-        کارفرما یا عضو صفحه را باز می‌کرد، مبلغِ قرارداد را جلوی چشمش
-        می‌گذاشت. جایش «کامنتِ باز» نشسته — رشته‌هایی که تازه‌ترین پیامشان
-        هنوز بسته نشده و منتظرِ کسی هستند.
-      */}
-      <div className="grid gap-4 @xl/main:grid-cols-3">
-        <StatCard label={t("اعضا")} value={members.length} />
-        <StatCard label={t("تسکِ باز")} value={openTasks.length} />
-        <StatCard label={t("کامنتِ باز")} value={openComments} />
-      </div>
 
       <CreatedNotice
         created={query.created === '1'}
@@ -627,5 +604,25 @@ export default async function ProjectDetailPage({
       />
 
     </PageShell>
+  );
+}
+
+/**
+ * یک خانهٔ نوارِ خلاصه — برچسبِ کوچک بالا، مقدار پایین؛ با `href` کلِ خانه پیوند است.
+ * ⚠️ خطِ جداکننده با `border-s` روی هر خانه جز اولی، تا در راست‌به‌چپ و
+ * چپ‌به‌راست هر دو درست بنشیند.
+ */
+function Fact({ label, href, children }: { label: string; href?: string; children: React.ReactNode }) {
+  const body = (
+    <>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="font-medium">{children}</span>
+    </>
+  );
+  const cls = 'grid min-w-28 flex-1 gap-0.5 border-s px-4 py-2.5 first:border-s-0';
+  return href ? (
+    <Link href={href} scroll={false} className={`${cls} transition-colors hover:bg-muted/60`}>{body}</Link>
+  ) : (
+    <div className={cls}>{body}</div>
   );
 }

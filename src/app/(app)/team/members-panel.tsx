@@ -211,7 +211,7 @@ function MemberCards({ members, query }: { members: MembersData['members']; quer
                     )}
                   </span>
                   <span className="block truncate text-xs text-muted-foreground">
-                    {m.roleNames.length > 0 ? m.roleNames.join('، ') : tr('عضو')}
+                    {m.roleNames.length > 0 ? m.roleNames.join(tr('، ')) : tr('عضو')}
                   </span>
                   <span className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
                     <Clock className="size-3" aria-hidden />

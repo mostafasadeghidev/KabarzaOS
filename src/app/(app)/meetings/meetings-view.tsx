@@ -12,6 +12,7 @@ import { MeetingForm, type MeetingFormOptions, type MeetingView } from './meetin
 import { LEAD_OPTIONS, leadLabel } from '@/domain/meetings/reminders';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { HeaderAction } from '@/components/header-actions';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -141,11 +142,14 @@ export function MeetingsView({
           </div>
         </Tabs>
 
+        {/* دکمهٔ اصلیِ صفحه در نوارِ بالا (۲.۳۸.۰). */}
         {tab === 'meetings' && canManage && (
-          <Button size="sm" onClick={() => { setEditing(null); setFormOpen(true); }}>
-            <Plus className="size-4" />
-            {tr("جلسهٔ جدید")}
-          </Button>
+          <HeaderAction>
+            <Button size="sm" onClick={() => { setEditing(null); setFormOpen(true); }}>
+              <Plus className="size-4" />
+              {tr("جلسهٔ جدید")}
+            </Button>
+          </HeaderAction>
         )}
       </div>
 

@@ -7,6 +7,7 @@ import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { usePageCrumb } from '@/components/page-crumb';
+import { useNavStack } from '@/components/nav-history';
 import { useT } from '@/i18n/client';
 
 export interface CrumbPage {
@@ -45,7 +46,17 @@ export function HeaderBreadcrumb({ pages }: { pages: CrumbPage[] }) {
   if (section) crumbs.push({ href: section.href, label: tr(section.label) });
 
   const deeper = section ? pathname !== section.href : true;
-  if (crumb && deeper) {
+  const trail = useTrail(pages, pathname);
+  if (trail && crumb && deeper) {
+    /**
+     * ⚠️ مسیرِ واقعیِ کاربر (۲.۳۸.۰): از «گزارش‌ها ← علی» روی Adlib که زد،
+     * «گزارش‌ها › علی › Adlib» — نه «پروژه‌ها › Adlib» که بخشِ ثابتِ آدرس
+     * بود و کاربر را به جایی می‌برد که از آن نیامده بود.
+     */
+    crumbs.length = 0;
+    for (const entry of trail) crumbs.push(entry);
+    crumbs.push({ label: crumb.title });
+  } else if (crumb && deeper) {
     const back = crumb.back;
     const backPath = back?.href.split('?')[0];
     if (back && backPath !== section?.href && backPath !== pathname) {
@@ -80,3 +91,37 @@ export function HeaderBreadcrumb({ pages }: { pages: CrumbPage[] }) {
     </Breadcrumb>
   );
 }
+
+/** بیشترِ خانه‌ها پیش از صفحهٔ فعلی؛ بیشتر از این، وسطی‌ها «…» می‌شوند. */
+const MAX_TRAIL = 3;
+
+/**
+ * راهی که کاربر در همین زبانه تا اینجا آمده — از آخرین صفحهٔ منو تا صفحهٔ
+ * قبلی. `null` یعنی تاریخچه کمکی نمی‌کند (ورودِ مستقیم، رفرش بی‌پشته، یا
+ * پشته‌ای که به صفحهٔ منو نمی‌رسد)؛ آن‌وقت همان «بخش › عنوان» ِ آدرس.
+ */
+function useTrail(pages: CrumbPage[], pathname: string): Array<{ href?: string; label: string }> | null {
+  const tr = useT();
+  const stack = useNavStack();
+  if (!stack || stack.length < 2) return null;
+  const top = stack[stack.length - 1]!;
+  if (top.path !== pathname) return null;
+  const menu = new Map(pages.map((p) => [p.href, p.label]));
+  const out: Array<{ href?: string; label: string }> = [];
+  for (let i = stack.length - 2; i >= 0; i -= 1) {
+    const entry = stack[i]!;
+    const menuLabel = menu.get(entry.path);
+    if (menuLabel) {
+      out.unshift({ href: entry.href, label: tr(menuLabel) });
+      // فقط وقتی راه از صفحهٔ منوی **دیگری** آمده معنا دارد؛ وگرنه همان بخشِ آدرس کافی است.
+      if (out.length === 1) return null;
+      if (out.length > MAX_TRAIL) out.splice(1, out.length - MAX_TRAIL, { label: '…' });
+      return out;
+    }
+    if (!entry.title) return null;
+    out.unshift({ href: entry.href, label: entry.title });
+    if (out.length > 8) return null;
+  }
+  return null;
+}
+

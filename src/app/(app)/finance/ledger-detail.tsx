@@ -112,7 +112,7 @@ export function LedgerDetail({
       ? <UserName userId={entry.receiverUserId} name={entry.receiverName} size="sm" />
       : (entry.receiverLabel || '—')]);
     rows.push([t('بابت'), entry.projectTitle ?? '—']);
-    rows.push([t('تگ‌ها'), tags.length > 0 ? tags.join('، ') : '—']);
+    rows.push([t('تگ‌ها'), tags.length > 0 ? tags.join(t('، ')) : '—']);
     rows.push([t('توضیحات'), entry.description || '—']);
   }
 

@@ -164,6 +164,7 @@ export function ManualLogForm({ projects, canLogGeneral, today }: {
       </div>
       <p className="text-xs text-muted-foreground">
         {t("ثبتِ همان روز و همان پروژه با ثبتِ قبلی ادغام می‌شود، نه ردیفِ تازه.")}
+        {' '}{t("ساعت‌های ثبت‌شده تا ۲ هفته قابل ویرایش‌اند.")}
       </p>
     </form>
   );

@@ -4,7 +4,7 @@ import { UserName } from '@/components/user-avatar';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { CalendarDays, LayoutGrid, Table2, Timer, TreePalm, Users } from 'lucide-react';
-import { formatSlots, WEEKDAYS, type Slot } from '@/domain/availability/weekly';
+import { ALL_DAY_SPAN, formatSlots, WEEKDAYS, type Slot } from '@/domain/availability/weekly';
 import type { CellState } from '@/domain/availability/team';
 import type { PresenceState } from '@/domain/people/presence';
 import { PRESENCE_LABELS } from '@/domain/people/presence';
@@ -224,7 +224,7 @@ export function AvailabilityBoard(props: BoardProps) {
                             {cell.span && <> {tr("تا")} <span className="num">{cell.span}</span></>}
                           </span>
                         ) : cell.state === 'avail' ? (
-                          (cell.span === 'تمام روز' ? tr('تمام روز') : <span className="num">{cell.span}</span>)
+                          (cell.span === ALL_DAY_SPAN ? tr('تمام روز') : <span className="num">{cell.span}</span>)
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}

@@ -153,7 +153,7 @@ export default async function TeamMemberPage({
         )}
         description={(
           <>
-            {data.person?.roleNames.length ? data.person.roleNames.join('، ') : t('عضو')}
+            {data.person?.roleNames.length ? data.person.roleNames.join(t('، ')) : t('عضو')}
             {' · '}
             {t(RANGE_LABELS[(data.period.range ?? 'week') as RangeKey])} · {t('مجموع')}{' '}
             <span className="num">{hoursLabel(total)}</span>
@@ -187,7 +187,7 @@ export default async function TeamMemberPage({
               {data.openProjects.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell><Link href={`/projects/${p.id}`} className="hover:underline">{p.title}</Link></TableCell>
-                  <TableCell>{p.roles.length > 0 ? p.roles.join('، ') : '—'}</TableCell>
+                  <TableCell>{p.roles.length > 0 ? p.roles.join(t('، ')) : '—'}</TableCell>
                   <TableCell>
                     <span className="flex items-center gap-2">
                       <Progress value={p.progress} className="w-24" aria-label={t("درصد پیشرفت")} />
