@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageCrumb } from '@/components/page-crumb';
 import { HistoryBackLink } from '@/components/nav-history';
+import { HeaderAction } from '@/components/header-actions';
 
 /**
  * پوسته و سرصفحهٔ مشترکِ همهٔ صفحه‌ها.
@@ -78,16 +79,34 @@ export function PageHeader({
   media?: React.ReactNode;
   children?: React.ReactNode;
 }) {
+  /**
+   * ⚠️ صفحهٔ منو (بی `back`) عنوان و توضیحِ دیدنی ندارد (۲.۳۸.۰): نامِ بخش
+   * همین حالا در نوارِ بالا (مسیرِ صفحه) و در منو هست، و ردیفِ «پروژه‌ها /
+   * ۵۳ پروژهٔ فعال» فقط محتوا را پایین می‌برد. عنوان برای صفحه‌خوان می‌ماند
+   * (`sr-only`) و دکمهٔ اصلیِ صفحه به نوارِ بالا، کنارِ جستجو، می‌رود.
+   * صفحهٔ جزئیات (پروژه، عضو، موردِ کتابخانه) عنوانش را نگه می‌دارد — آنجا
+   * عنوان خودِ محتواست.
+   */
+  if (!back) {
+    return (
+      <>
+        <PageCrumb title={typeof title === 'string' ? title : undefined} />
+        <h1 className="sr-only">{title}</h1>
+        <HeaderAction>{actions}</HeaderAction>
+        {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
+      </>
+    );
+  }
   return (
     <header className="grid gap-2">
-      {/* عنوان به نوارِ بالای محتوا هم می‌رود («بخش › عنوان») — فقط عنوانِ رشته‌ای. */}
+      {/* عنوان به نوارِ بالا هم می‌رود («بخش › عنوان») — فقط عنوانِ رشته‌ای. */}
       <PageCrumb
         title={typeof title === 'string' ? title : undefined}
-        backHref={back?.href}
-        backLabel={typeof back?.label === 'string' ? back.label : undefined}
+        backHref={back.href}
+        backLabel={typeof back.label === 'string' ? back.label : undefined}
       />
       {/* به صفحه‌ای که از آن آمده‌ای؛ بی‌تاریخچه به صفحهٔ مادر (nav-history). */}
-      {back && <HistoryBackLink href={back.href}>{back.label}</HistoryBackLink>}
+      <HistoryBackLink href={back.href}>{back.label}</HistoryBackLink>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           {media}
@@ -108,10 +127,6 @@ export function PageHeader({
   );
 }
 
-/**
- * پیوندِ «برگشت به صفحهٔ مادر» — یک شکل همه‌جا (سرصفحه، فاکتور).
- * برچسب نامِ صفحهٔ مادر است؛ پیکان جهتِ برگشت را می‌گوید.
- */
 export function BackLink({ href, children }: { href: string; children: React.ReactNode }) {
   // ⚠️ همان شکلِ `HistoryBackLink` (۲.۲۵.۰): دکمهٔ واقعی، نه متنِ کم‌رنگ.
   return (

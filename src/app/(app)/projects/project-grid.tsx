@@ -116,29 +116,22 @@ export function ProjectGrid({
   return (
     <>
       {/*
-        ⚠️ جستجو کنارِ دکمهٔ اصلی در سرصفحه، نه زیرِ تب‌ها: پیش از این تنها و
-        بی‌قرینه زیرِ نوارِ تب می‌نشست — و تب‌های وضعیت آن‌قدر زیادند که کنارِ
-        هم در یک ردیف جا نمی‌شوند.
+        ⚠️ دکمهٔ «پروژهٔ جدید» به نوارِ بالا می‌رود (۲.۳۸.۰، `PageHeader` ِ صفحهٔ
+        منو)؛ جستجو روی خودِ صفحه، بالای تب‌ها می‌ماند — تب‌های وضعیت آن‌قدر
+        زیادند که کنارِ هم در یک ردیف جا نمی‌شوند.
       */}
-      <PageHeader
-        title={header.title}
-        description={header.description}
-        actions={(
-          <>
-            <SearchInput
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              // Enter = بازکردنِ نخستین نتیجه — همان کاری که کاربر بعدش با ماوس می‌کرد.
-              onKeyDown={(e) => {
-                const first = hits[0];
-                if (e.key === 'Enter' && first) router.push(`/projects/${first.id}`);
-              }}
-              placeholder={tr("جستجوی نام پروژه…")}
-            />
-            {header.actions}
-          </>
-        )}
-      />
+      <PageHeader title={header.title} description={header.description} actions={header.actions}>
+        <SearchInput
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          // Enter = بازکردنِ نخستین نتیجه — همان کاری که کاربر بعدش با ماوس می‌کرد.
+          onKeyDown={(e) => {
+            const first = hits[0];
+            if (e.key === 'Enter' && first) router.push(`/projects/${first.id}`);
+          }}
+          placeholder={tr("جستجوی نام پروژه…")}
+        />
+      </PageHeader>
 
       {searching && (
         hits.length === 0 ? (

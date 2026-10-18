@@ -2,6 +2,24 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.38.0]
+
+### Changed
+
+- **Menu pages have no title row.** The big title and the line under it ("Projects / 53 active projects", "Meetings / 2 upcoming", the dashboard greeting…) are gone from every menu page; the page name is already in the top bar and the menu, so the content starts higher. Detail pages (a project, a member, a library entry) keep their title. The title stays for screen readers.
+- **The main "add" button is in the top bar,** next to search and notifications: New project, New meeting, Add member/client, Add access, New entry in the code library, New message, and so on. It never wraps the bar or pushes search and notifications aside in any language; only the breadcrumb gets shorter. On a phone only its icon shows. Search fields and filters stay on the page.
+- **The sidebar toggle is inside the sidebar,** next to the logo. When the sidebar is collapsed, the toggle is all that is left at the top of the icon rail. On a phone the menu button stays in the top bar. The labels are translated and the icon follows the sidebar's side.
+- **The project page is shorter above the tabs.** Registration date, deadline, progress, your hours, team hours, members, open tasks and open comments are one compact strip instead of a grid plus three large cards; open tasks and open comments link to their tabs. The project image is smaller.
+- **The breadcrumb follows where you came from.** From Reports → a member → a project, it reads "Reports › member › project" and each part takes you back there, instead of "Projects › project". Opening a page straight from the menu or a link still shows its own section. Going back to a page already in the trail shortens the trail.
+
+### Fixed
+
+- The dashboard charts (team working-hours trend, project statuses, member working hours) were mirrored right-to-left in every language. They are now mirrored only for Persian, Arabic and Kurdish.
+- "All day" in the availability column of the project's Management tab showed in Persian in every language.
+- Lists of roles and names were joined with the Persian comma ("Designer، Developer") in other languages, on the project, team, report, task board, activity and ledger pages.
+- Persian «» quotes in English, German and Turkish texts are now the language's own quotes.
+- 16 texts had no translation because the key scanner skipped label maps named `*_HINTS`, `*_ERRORS` and `*_MESSAGES` (code library type hints and errors, installment messages). The scanner now reads them, so the translation test catches such gaps.
+
 ## [2.37.0]
 
 ### Added

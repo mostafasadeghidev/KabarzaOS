@@ -6,6 +6,7 @@ import { PersonCard, type PersonView, type SectionConfig } from './person-card';
 import { PersonDialog, type PersonFormOptions } from './person-dialog';
 import { AccessDialog } from './access-dialog';
 import { Button } from '@/components/ui/button';
+import { HeaderAction } from '@/components/header-actions';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardPager, useCardPage } from '@/components/ui/card-pager';
 import { useToast } from '@/components/ui/toast';
@@ -98,11 +99,14 @@ export function PeopleGrid({
           )}
         </div>
 
+        {/* دکمهٔ اصلیِ صفحه در نوارِ بالا (۲.۳۸.۰). */}
         {canManage && (
-          <Button size="sm" onClick={openAdd}>
-            <Plus className="size-4" />
-            {t(section.addLabel)}
-          </Button>
+          <HeaderAction>
+            <Button size="sm" onClick={openAdd}>
+              <Plus className="size-4" />
+              {t(section.addLabel)}
+            </Button>
+          </HeaderAction>
         )}
       </div>
 

@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react';
 import {
   FolderKanban, Users, Wallet, BarChart3, CalendarCheck, CalendarDays, MessageSquare,
   LayoutDashboard, Building2, Settings, Activity, Clock, UsersRound, UserCircle, ListChecks,
-  KeyRound, ChevronDown, Sprout, CalendarClock, Library,
+  KeyRound, ChevronDown, Sprout, CalendarClock, Library, PanelLeftClose, PanelLeftOpen, PanelRightClose,
+  PanelRightOpen, PanelLeft, PanelRight,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -21,6 +22,7 @@ import { isRtl, type Locale } from '@/i18n/config';
 import { useT } from '@/i18n/client';
 import { LiveCount, usePulse } from '@/components/pulse';
 import { Badge } from '@/components/ui/badge';
+import { Hint } from '@/components/ui/tooltip';
 
 /**
  * سایدبارِ اپ.
@@ -254,7 +256,14 @@ export function AppSidebar({
   return (
     <Sidebar side={isRtl(locale) ? 'right' : 'left'} collapsible="icon" variant="sidebar">
       <SidebarHeader>
-        <SidebarMenu>
+        {/*
+          ⚠️ دکمهٔ جمع/باز کردن **داخلِ** سایدبار، کنارِ لوگو (۲.۳۸.۰) — نه در نوارِ
+          بالای محتوا. در حالتِ جمع‌شده نام و لوگو پنهان می‌شوند و همین دکمه
+          تنها چیزِ سرِ ستون است (مثلِ سایدبارِ WebAPP). روی موبایل سایدبار کشوست
+          و دکمهٔ بازکردنش در نوارِ بالا می‌ماند (`MobileSidebarTrigger`).
+        */}
+        <div className="flex items-center gap-1 group-data-[collapsible=icon]:justify-center">
+        <SidebarMenu className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/" prefetch={false}>
@@ -283,6 +292,8 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <SidebarFold rtl={isRtl(locale)} />
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
@@ -317,3 +328,49 @@ export function AppSidebar({
     </Sidebar>
   );
 }
+
+/**
+ * جمع/باز کردنِ سایدبار — کنارِ لوگو، با برچسبِ ترجمه‌شده و آیکونی که جهتِ
+ * خودِ سایدبار را نشان می‌دهد (در راست‌به‌چپ سایدبار سمتِ راست است).
+ * ⚠️ روی موبایل پنهان: آنجا سایدبار کشوست و با کلیک بیرون بسته می‌شود.
+ */
+function SidebarFold({ rtl }: { rtl: boolean }) {
+  const t = useT();
+  const { state, toggleSidebar } = useSidebar();
+  const collapsed = state === 'collapsed';
+  const Icon = rtl
+    ? (collapsed ? PanelRightOpen : PanelRightClose)
+    : (collapsed ? PanelLeftOpen : PanelLeftClose);
+  const label = collapsed ? t('باز کردنِ منو') : t('جمع کردنِ منو');
+  return (
+    <Hint label={label} side={rtl ? 'left' : 'right'}>
+      <button
+        type="button"
+        onClick={toggleSidebar}
+        aria-label={label}
+        aria-expanded={!collapsed}
+        className="hidden size-8 shrink-0 items-center justify-center rounded-md text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground md:flex"
+      >
+        <Icon className="size-4" aria-hidden />
+      </button>
+    </Hint>
+  );
+}
+
+/** دکمهٔ بازکردنِ کشوی منو روی موبایل — در نوارِ بالا. */
+export function MobileSidebarTrigger({ rtl }: { rtl: boolean }) {
+  const t = useT();
+  const { toggleSidebar } = useSidebar();
+  const Icon = rtl ? PanelRight : PanelLeft;
+  return (
+    <button
+      type="button"
+      onClick={toggleSidebar}
+      aria-label={t('باز کردنِ منو')}
+      className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground md:hidden"
+    >
+      <Icon className="size-4" aria-hidden />
+    </button>
+  );
+}
+

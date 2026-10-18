@@ -4392,5 +4392,21 @@
   "یک کپی از همین مورد ساخته و به‌جای این روی همان پروژه ثبت می‌شود؛ تغییرهایش به بقیهٔ پروژه‌ها نمی‌رسد.": "Se crea una copia de este elemento y se registra en ese proyecto en lugar de este; los cambios no afectan a los demás proyectos.",
   "یک کپی برای این پروژه ساخته می‌شود و اصلی دست نمی‌خورد.": "Se crea una copia para este proyecto y el original no se toca.",
   "— انتخابِ پروژه —": "— Elegir proyecto —",
-  "— هیچ‌کدام / عمومی —": "— Ninguno / general —"
+  "— هیچ‌کدام / عمومی —": "— Ninguno / general —",
+  "باز کردنِ منو": "Expandir menú",
+  "جمع کردنِ منو": "Contraer menú",
+  "این مورد بایگانی شده است؛ اول از بایگانی درش بیاورید.": "Esta entrada está archivada; primero desarchívala.",
+  "این مورد روی پروژه‌هایی نصب است؛ به‌جای حذف، بایگانی‌اش کنید.": "Esta entrada está instalada en proyectos; archívala en lugar de eliminarla.",
+  "این کارکرد مانده‌ای برای پرداخت ندارد.": "Esta fila de trabajo no tiene nada pendiente de pago.",
+  "به این پروژه دسترسی ندارید.": "No tienes acceso a este proyecto.",
+  "توضیحِ جای دقیق را در یادداشتِ همین تکه بنویسید": "Describe el lugar exacto en la nota de este fragmento",
+  "دانشِ تیم: روشِ کار، ترفند، آموزش یا چک‌لیست.": "Conocimiento del equipo: un método, un truco, un tutorial o una lista de verificación.",
+  "راهنمای قدم‌به‌قدم برای کارفرما، مثلاً «قیمت‌ها را از کجا عوض کنم».": "Una guía paso a paso para el cliente, p. ej. «Dónde cambio los precios».",
+  "مبلغِ قسط از ماندهٔ این کارکرد بیشتر است.": "La cuota supera lo que queda de esta fila de trabajo.",
+  "مبلغِ قسط معتبر نیست.": "El importe de la cuota no es válido.",
+  "متن یا کد از اندازهٔ مجاز بلندتر است.": "El texto o el código supera la longitud permitida.",
+  "مثلاً فایلِ CSS/JS روی CDN، یا تنظیمِ یک سرویسِ دیگر": "p. ej. un archivo CSS/JS en un CDN o un ajuste en otro servicio",
+  "کدِ سفارشی‌ای که در سایت نصب می‌شود — با جای نصب و تنظیمات.": "Código personalizado que se instala en el sitio, con dónde va y sus ajustes.",
+  "یک «کد» دست‌کم یک تکه‌کد لازم دارد.": "Una entrada de «código» necesita al menos un fragmento.",
+  "یک المنتِ Embed (</>) در همان جایی از صفحه که نوشته شده": "Un elemento Embed (</>) en el lugar de la página indicado"
 }

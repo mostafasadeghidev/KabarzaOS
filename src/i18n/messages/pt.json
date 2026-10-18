@@ -4392,5 +4392,21 @@
   "یک کپی از همین مورد ساخته و به‌جای این روی همان پروژه ثبت می‌شود؛ تغییرهایش به بقیهٔ پروژه‌ها نمی‌رسد.": "Cria uma cópia deste item e regista-a neste projeto no lugar do original; as alterações não afetam os outros projetos.",
   "یک کپی برای این پروژه ساخته می‌شود و اصلی دست نمی‌خورد.": "Cria-se uma cópia para este projeto e o original não é alterado.",
   "— انتخابِ پروژه —": "— Selecionar projeto —",
-  "— هیچ‌کدام / عمومی —": "— Nenhum / geral —"
+  "— هیچ‌کدام / عمومی —": "— Nenhum / geral —",
+  "باز کردنِ منو": "Expandir menu",
+  "جمع کردنِ منو": "Recolher menu",
+  "این مورد بایگانی شده است؛ اول از بایگانی درش بیاورید.": "Esta entrada está arquivada; desarquive-a primeiro.",
+  "این مورد روی پروژه‌هایی نصب است؛ به‌جای حذف، بایگانی‌اش کنید.": "Esta entrada está instalada em projetos; arquive-a em vez de excluí-la.",
+  "این کارکرد مانده‌ای برای پرداخت ندارد.": "Esta linha de trabalho não tem nada a pagar.",
+  "به این پروژه دسترسی ندارید.": "Você não tem acesso a este projeto.",
+  "توضیحِ جای دقیق را در یادداشتِ همین تکه بنویسید": "Descreva o local exato na nota deste trecho",
+  "دانشِ تیم: روشِ کار، ترفند، آموزش یا چک‌لیست.": "Conhecimento da equipe: método, truque, tutorial ou checklist.",
+  "راهنمای قدم‌به‌قدم برای کارفرما، مثلاً «قیمت‌ها را از کجا عوض کنم».": "Um guia passo a passo para o cliente, ex.: «Onde altero os preços».",
+  "مبلغِ قسط از ماندهٔ این کارکرد بیشتر است.": "A parcela é maior do que o restante desta linha de trabalho.",
+  "مبلغِ قسط معتبر نیست.": "O valor da parcela não é válido.",
+  "متن یا کد از اندازهٔ مجاز بلندتر است.": "O texto ou código excede o tamanho permitido.",
+  "مثلاً فایلِ CSS/JS روی CDN، یا تنظیمِ یک سرویسِ دیگر": "ex.: um arquivo CSS/JS numa CDN ou uma configuração em outro serviço",
+  "کدِ سفارشی‌ای که در سایت نصب می‌شود — با جای نصب و تنظیمات.": "Código personalizado instalado no site — com onde vai e suas configurações.",
+  "یک «کد» دست‌کم یک تکه‌کد لازم دارد.": "Uma entrada de «código» precisa de pelo menos um trecho.",
+  "یک المنتِ Embed (</>) در همان جایی از صفحه که نوشته شده": "Um elemento Embed (</>) no local da página indicado"
 }

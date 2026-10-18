@@ -1,5 +1,6 @@
 'use client';
 
+import { ALL_DAY_SPAN } from '@/domain/availability/weekly';
 import { UserName, avatarFor } from '@/components/user-avatar';
 import { useActionState, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -97,7 +98,7 @@ export function TeamMatrix({
           <TableRow key={r.id}>
             <TableCell>
               <UserName userId={r.id} name={r.name} size="sm" nameClassName="font-medium" />
-              {r.roles.length > 0 && <span className="block text-[11px] text-muted-foreground">{r.roles.join('، ')}</span>}
+              {r.roles.length > 0 && <span className="block text-[11px] text-muted-foreground">{r.roles.join(t('، '))}</span>}
             </TableCell>
             {r.cells.map((c, i) => (
               <Hint key={i} label={c.tip || undefined}>
@@ -107,7 +108,7 @@ export function TeamMatrix({
                       <TreePalm className="size-3.5 shrink-0" aria-hidden />
                       {t("مرخصی")}{c.span ? <> {t("تا")} <span className="num">{c.span}</span></> : null}
                     </span>
-                  ) : c.state === 'avail' ? (c.span ? <span className="num">{c.span}</span> : t("تمام روز")) : '·'}
+                  ) : c.state === 'avail' ? (c.span && c.span !== ALL_DAY_SPAN ? <span className="num">{c.span}</span> : t("تمام روز")) : '·'}
                 </TableCell>
               </Hint>
             ))}

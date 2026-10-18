@@ -52,7 +52,7 @@ export function CreatedNotice({ created, incomplete }: { created: boolean; incom
       <AlertDescription className="flex flex-wrap items-center gap-2">
         <span className="min-w-0 flex-1">
           {tr('پروژه ساخته شد، ولی این بخش‌ها ثبت نشدند؛ از تب‌های خودشان دوباره اضافه کنید: {parts}', {
-            parts: missing.map((m) => tr(STEP_LABELS[m] ?? m)).join('، '),
+            parts: missing.map((m) => tr(STEP_LABELS[m] ?? m)).join(tr('، ')),
           })}
         </span>
         <Button type="button" size="icon-sm" variant="ghost" aria-label={tr('بستن')} onClick={() => setMissing([])}>

@@ -5,13 +5,16 @@ import {
   ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig,
 } from '@/components/ui/chart';
 import type { MemberHours, StatusSlice, WeeklyPoint } from '@/server/dashboard';
-import { useT } from '@/i18n/client';
+import { useLocale, useT } from '@/i18n/client';
+import { isRtl } from '@/i18n/config';
 
 /**
  * نمودارهای داشبورد — سه نمودارِ نسخهٔ قبلی با کامپوننتِ رسمیِ shadcn/recharts.
  *
- * ⚠️ RTL: recharts محورها را چپ‌به‌راست می‌چیند. برای فارسی
- * `reversed` روی محورِ X و `orientation="right"` روی محورِ Y گذاشته می‌شود.
+ * ⚠️ جهت با **زبانِ کاربر**، نه ثابت: recharts محورها را چپ‌به‌راست می‌چیند.
+ * فقط برای زبانِ راست‌به‌چپ `reversed` روی محورِ X و محورِ Y در سمتِ راست
+ * گذاشته می‌شود. پیش از ۲.۳۸.۰ این آینه‌شدن ثابت بود و در انگلیسی و
+ * آلمانی هم نمودار از راست شروع می‌شد.
  *
  * ⚠️ و سطحِ نمودار (`.recharts-surface`) صریحاً LTR می‌ماند: recharts مختصاتِ متنِ محور را با
  * `textAnchor="start"` می‌دهد و در جریانِ RTL این یعنی «از این نقطه به
@@ -43,6 +46,12 @@ function useHoursConfig(): ChartConfig {
   return { hours: { label: t('ساعت'), color: 'var(--color-primary)' } };
 }
 
+/** آینه‌کردنِ محورها فقط برای زبانِ راست‌به‌چپ. */
+function useAxes() {
+  const rtl = isRtl(useLocale());
+  return { reversed: rtl, side: (rtl ? 'right' : 'left') as 'right' | 'left' };
+}
+
 function useCountConfig(): ChartConfig {
   const t = useT();
   return { count: { label: t('پروژه'), color: 'var(--color-primary)' } };
@@ -51,6 +60,7 @@ function useCountConfig(): ChartConfig {
 /** روندِ هفتگیِ ساعتِ تیم — شش پنجرهٔ ۷روزه. */
 export function WeeklyTrendChart({ data }: { data: WeeklyPoint[] }) {
   const hoursConfig = useHoursConfig();
+  const { reversed, side } = useAxes();
   return (
     <ChartContainer config={hoursConfig} className="aspect-auto h-56 w-full">
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
@@ -61,8 +71,8 @@ export function WeeklyTrendChart({ data }: { data: WeeklyPoint[] }) {
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} strokeDasharray="3 3" stroke={GRID} />
-        <XAxis dataKey="label" reversed tickLine={false} axisLine={false} tickMargin={8} tick={TICK} />
-        <YAxis orientation="right" tickLine={false} axisLine={false} width={34} tick={TICK} />
+        <XAxis dataKey="label" reversed={reversed} tickLine={false} axisLine={false} tickMargin={8} tick={TICK} />
+        <YAxis orientation={side} tickLine={false} axisLine={false} width={34} tick={TICK} />
         <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
         <Area
           dataKey="hours"
@@ -79,15 +89,16 @@ export function WeeklyTrendChart({ data }: { data: WeeklyPoint[] }) {
 /** ساعتِ کاریِ اعضا در ۳۰ روزِ گذشته — میلهٔ افقی. */
 export function MemberHoursChart({ data }: { data: MemberHours[] }) {
   const hoursConfig = useHoursConfig();
+  const { reversed, side } = useAxes();
   return (
     <ChartContainer config={hoursConfig} className="aspect-auto h-56 w-full [&_.recharts-surface]:[direction:ltr]">
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
         <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={GRID} />
-        <XAxis type="number" reversed tickLine={false} axisLine={false} tick={TICK} />
+        <XAxis type="number" reversed={reversed} tickLine={false} axisLine={false} tick={TICK} />
         <YAxis
           type="category"
           dataKey="name"
-          orientation="right"
+          orientation={side}
           tickLine={false}
           axisLine={false}
           width={90}
@@ -103,15 +114,16 @@ export function MemberHoursChart({ data }: { data: MemberHours[] }) {
 /** توزیعِ وضعیتِ پروژه‌ها. */
 export function StatusChart({ data }: { data: StatusSlice[] }) {
   const countConfig = useCountConfig();
+  const { reversed, side } = useAxes();
   return (
     <ChartContainer config={countConfig} className="aspect-auto h-56 w-full [&_.recharts-surface]:[direction:ltr]">
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
         <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={GRID} />
-        <XAxis type="number" reversed tickLine={false} axisLine={false} allowDecimals={false} tick={TICK} />
+        <XAxis type="number" reversed={reversed} tickLine={false} axisLine={false} allowDecimals={false} tick={TICK} />
         <YAxis
           type="category"
           dataKey="status"
-          orientation="right"
+          orientation={side}
           tickLine={false}
           axisLine={false}
           width={110}

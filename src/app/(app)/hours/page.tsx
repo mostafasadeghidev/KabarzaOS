@@ -66,10 +66,6 @@ export default async function HoursPage({
         description={(
           <>{t("تایمر روی سرور می‌شمارد؛ بستنِ مرورگر چیزی را از بین نمی‌برد.")}</>
         )}
-        actions={(
-          /* پورتِ یادداشتِ سربرگِ افزونه. */
-          <span className="text-xs text-muted-foreground">{t("ساعت‌های ثبت‌شده تا ۲ هفته قابل ویرایش‌اند.")}</span>
-        )}
       />
 
       <HoursView

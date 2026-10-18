@@ -17,6 +17,7 @@ import type { MemberState } from '@/domain/people/offboarding';
 import { stateLabel } from '@/domain/people/offboarding';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { HeaderAction } from '@/components/header-actions';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -272,11 +273,14 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                   {tr("خروجی CSV")}
                 </a>
               </Button>
+              {/* دکمهٔ اصلیِ صفحه در نوارِ بالا (۲.۳۸.۰)؛ خروجی کنارِ فیلترها می‌ماند. */}
               {data.canManage && (
-                <Button size="sm" onClick={() => openGrant(null)}>
-                  <Plus className="size-4" />
-                  {tr("ثبتِ دسترسی")}
-                </Button>
+                <HeaderAction>
+                  <Button size="sm" onClick={() => openGrant(null)}>
+                    <Plus className="size-4" />
+                    {tr("ثبتِ دسترسی")}
+                  </Button>
+                </HeaderAction>
               )}
             </div>
           </div>

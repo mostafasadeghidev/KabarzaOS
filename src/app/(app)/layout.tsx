@@ -3,9 +3,9 @@ import { getCompany } from '@/server/people/profile-service';
 import { redirect } from 'next/navigation';
 import { currentSession } from '@/server/auth';
 import { can, canViewSection, type Permission, type Role, type Section } from '@/domain/access/permissions';
-import { AppSidebar, type NavItem } from '@/components/app-sidebar';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
+import { AppSidebar, MobileSidebarTrigger, type NavItem } from '@/components/app-sidebar';
+import { HeaderActionsSlot } from '@/components/header-actions';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { HeaderBreadcrumb } from '@/components/header-breadcrumb';
 import { NavHistory } from '@/components/nav-history';
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette';
@@ -34,6 +34,7 @@ import { CurrencyDecimals } from '@/components/currency-decimals';
 import { BucketWarning } from '@/components/bucket-warning';
 import { bucketCheck, cachedBucketCheck } from '@/server/files/bucket-probe';
 import { isFresh } from '@/domain/files/probe';
+import { isRtl } from '@/i18n/config';
 import { canUseLibrary } from '@/domain/library/model';
 
 /**
@@ -278,8 +279,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       />
       <SidebarInset>
         <header data-app-chrome className="flex h-12 items-center gap-2 border-b px-4">
-          <SidebarTrigger />
-          <Separator orientation="vertical" className="me-1 data-[orientation=vertical]:h-4" />
+          {/* دکمهٔ جمع/باز کردن حالا داخلِ سایدبار است (۲.۳۸.۰)؛ این فقط کشوی موبایل را باز می‌کند. */}
+          <MobileSidebarTrigger rtl={isRtl(session.locale ?? system.defaultLocale)} />
           {/*
             مسیرِ صفحه به‌جای نامِ ثابتِ برند (که در سرِ سایدبار هست): «بخش ›
             عنوانِ صفحه». فهرستِ بخش‌ها همان منوی فیلترشدهٔ سرور است، به‌علاوهٔ
@@ -296,7 +297,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               { href: '/comments', label: t('کامنت‌های نیازمند بررسی') },
             ]}
           />
-          <div className="ms-auto flex items-center gap-2">
+          <div className="ms-auto flex shrink-0 items-center gap-2">
+            {/* دکمهٔ اصلیِ صفحه («پروژهٔ جدید»…) — خودِ صفحه با `HeaderAction` اینجا می‌گذاردش. */}
+            <HeaderActionsSlot />
             <CommandPaletteTrigger />
             <NotificationBell
               items={bell.items}

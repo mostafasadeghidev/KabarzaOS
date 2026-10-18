@@ -60,18 +60,20 @@ export interface TaskBoardOptions {
 }
 
 /** «برای چه کسی» — پورتِ `task_assignee_text`: نفر و/یا نقش‌ها. */
-export function assigneeText(task: Pick<BoardTask, 'assigneeName' | 'roleNames'>): string {
+export function assigneeText(task: Pick<BoardTask, 'assigneeName' | 'roleNames'>, sep = '، '): string {
   const parts = [task.assigneeName, ...task.roleNames].filter((p): p is string => Boolean(p));
-  return parts.length > 0 ? parts.join('، ') : '—';
+  return parts.length > 0 ? parts.join(sep) : '—';
 }
 
 /** «برای چه کسی» با آواتارِ مسئولِ مستقیم؛ نقش‌ها پس از نام. */
 export function Assignee({ task }: { task: Pick<BoardTask, 'assigneeId' | 'assigneeName' | 'roleNames'> }) {
-  if (!task.assigneeName) return <>{assigneeText(task)}</>;
+  const tr = useT();
+  const sep = tr('، ');
+  if (!task.assigneeName) return <>{assigneeText(task, sep)}</>;
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       <UserName userId={task.assigneeId} name={task.assigneeName} />
-      {task.roleNames.length > 0 && <span className="text-muted-foreground">، {task.roleNames.join('، ')}</span>}
+      {task.roleNames.length > 0 && <span className="text-muted-foreground">{sep}{task.roleNames.join(sep)}</span>}
     </span>
   );
 }

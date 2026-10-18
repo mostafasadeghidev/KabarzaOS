@@ -4392,5 +4392,21 @@
   "یک کپی از همین مورد ساخته و به‌جای این روی همان پروژه ثبت می‌شود؛ تغییرهایش به بقیهٔ پروژه‌ها نمی‌رسد.": "Une copie de cet élément est créée et enregistrée sur ce projet à la place de celui-ci ; les modifications n'affectent pas les autres projets.",
   "یک کپی برای این پروژه ساخته می‌شود و اصلی دست نمی‌خورد.": "Une copie est créée pour ce projet et l'original n'est pas modifié.",
   "— انتخابِ پروژه —": "— Choisir un projet —",
-  "— هیچ‌کدام / عمومی —": "— Aucun / général —"
+  "— هیچ‌کدام / عمومی —": "— Aucun / général —",
+  "باز کردنِ منو": "Déplier le menu",
+  "جمع کردنِ منو": "Replier le menu",
+  "این مورد بایگانی شده است؛ اول از بایگانی درش بیاورید.": "Cette entrée est archivée ; désarchivez-la d’abord.",
+  "این مورد روی پروژه‌هایی نصب است؛ به‌جای حذف، بایگانی‌اش کنید.": "Cette entrée est installée sur des projets ; archivez-la au lieu de la supprimer.",
+  "این کارکرد مانده‌ای برای پرداخت ندارد.": "Il ne reste rien à payer sur cette ligne de travail.",
+  "به این پروژه دسترسی ندارید.": "Vous n’avez pas accès à ce projet.",
+  "توضیحِ جای دقیق را در یادداشتِ همین تکه بنویسید": "Décrivez l’emplacement exact dans la note de cet extrait",
+  "دانشِ تیم: روشِ کار، ترفند، آموزش یا چک‌لیست.": "Savoir de l’équipe : méthode, astuce, tutoriel ou checklist.",
+  "راهنمای قدم‌به‌قدم برای کارفرما، مثلاً «قیمت‌ها را از کجا عوض کنم».": "Un guide pas à pas pour le client, p. ex. « Où modifier les prix ».",
+  "مبلغِ قسط از ماندهٔ این کارکرد بیشتر است.": "Le versement dépasse le reste de cette ligne de travail.",
+  "مبلغِ قسط معتبر نیست.": "Le montant du versement n’est pas valide.",
+  "متن یا کد از اندازهٔ مجاز بلندتر است.": "Le texte ou le code dépasse la longueur autorisée.",
+  "مثلاً فایلِ CSS/JS روی CDN، یا تنظیمِ یک سرویسِ دیگر": "p. ex. un fichier CSS/JS sur un CDN, ou un réglage dans un autre service",
+  "کدِ سفارشی‌ای که در سایت نصب می‌شود — با جای نصب و تنظیمات.": "Code personnalisé installé sur le site — avec son emplacement et ses réglages.",
+  "یک «کد» دست‌کم یک تکه‌کد لازم دارد.": "Une entrée « code » nécessite au moins un extrait.",
+  "یک المنتِ Embed (</>) در همان جایی از صفحه که نوشته شده": "Un élément Embed (</>) à l’endroit de la page indiqué"
 }

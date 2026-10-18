@@ -22,7 +22,8 @@ import { Button } from '@/components/ui/button';
  *   ناوبری)؛ پس تبِ انتخاب‌شده (`?tab=`) هم برمی‌گردد.
  * - بی‌تاریخچه (پیوندِ مستقیم، زبانهٔ تازه) همان صفحهٔ مادر می‌ماند.
  */
-interface Entry { path: string; href: string; title: string }
+export interface NavEntry { path: string; href: string; title: string }
+type Entry = NavEntry;
 
 const KEY = 'kabarza.nav';
 const MAX = 30;
@@ -71,9 +72,15 @@ export function NavHistory() {
     const stack = read();
     const top = stack[stack.length - 1];
     if (top?.path === pathname) return;
-    const prev = stack[stack.length - 2];
     const href = location.pathname + location.search + location.hash;
-    if (prev?.path === pathname) write(stack.slice(0, -1));
+    /**
+     * ⚠️ برگشت به صفحه‌ای که **هر جای** پشته هست (نه فقط یکی مانده به آخر)
+     * پشته را تا همان‌جا کوتاه می‌کند (۲.۳۸.۰) — کلیک روی «گزارش‌ها» در مسیرِ
+     * «گزارش‌ها › علی › Adlib» یعنی برگشت به آن، نه قدمِ تازه؛ وگرنه مسیر
+     * «… › Adlib › گزارش‌ها» می‌شد.
+     */
+    const at = stack.map((e) => e.path).lastIndexOf(pathname);
+    if (at >= 0) write(stack.slice(0, at + 1));
     else write([...stack, { path: pathname, href, title: '' }]);
   }, [pathname]);
 
@@ -108,6 +115,11 @@ export function dropPrevious(isForm: (path: string) => boolean): void {
   const stack = read();
   const prev = stack[stack.length - 2];
   if (prev && isForm(prev.path)) write([...stack.slice(0, -2), stack[stack.length - 1]!]);
+}
+
+/** کلِ پشتهٔ این زبانه — مسیرِ صفحه (breadcrumb) راهی را که کاربر آمده نشان می‌دهد. */
+export function useNavStack(): NavEntry[] | null {
+  return useSyncExternalStore(subscribe, read, () => null);
 }
 
 /** صفحهٔ قبلی در همین زبانه، اگر باشد. */
