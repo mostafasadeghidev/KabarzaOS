@@ -134,8 +134,19 @@ export async function canViewFile(actor: Actor, fileId: number): Promise<boolean
   const attached = await db.select({
     projectId: attachments.projectId, taskId: attachments.taskId, commentId: attachments.commentId,
     reviewId: attachments.reviewId, onboardingItemId: attachments.onboardingItemId,
+    libraryEntryId: attachments.libraryEntryId,
   }).from(attachments).where(eq(attachments.fileId, fileId));
   for (const row of attached) {
+    /**
+     * تصویرِ موردِ کتابخانهٔ کد و راهنما (۲.۳۷.۰): همهٔ تیم، و کارفرما فقط
+     * تصویرِ راهنمایی که برای پروژهٔ خودش «کارفرما ببیند» خورده — همان گاردِ
+     * تبِ پروژه (`server/library/service`).
+     */
+    if (row.libraryEntryId) {
+      const { canSeeLibraryMedia } = await import('@/server/library/service');
+      if (await canSeeLibraryMedia(actor, row.libraryEntryId)) return true;
+      continue;
+    }
     /**
      * فایلِ راهنمای آنبوردینگ (۲.۶.۰): پرونده‌خوانِ اعضا و ویرایشگرِ کتابخانه،
      * و از بقیه فقط کسی که کاری از همان آیتم در چک‌لیست دارد — خودِ عضوِ تازه
@@ -459,7 +470,8 @@ export async function deleteAttachment(actor: Actor, attachmentId: number) {
   const row = rows[0];
   // ⚠️ فایلِ راهنمای آنبوردینگ مسیرِ حذفِ خودش را دارد (`deleteLibraryMedia`، با
   // `settings.manage`)؛ اینجا گاردِ پروژه است و «مدیرِ پروژه‌ها» نباید از این راه پاکش کند.
-  if (!row || row.onboardingItemId) throw new FileNotFoundError();
+  // ⚠️ تصویرِ کتابخانهٔ کد و راهنما هم مسیرِ خودش را دارد (`deleteLibraryMedia`).
+  if (!row || row.onboardingItemId || row.libraryEntryId) throw new FileNotFoundError();
 
   if (row.projectId) await assertProjectAccess(actor, row.projectId);
   // ⚠️ پروژهٔ منجمد پیوستش هم حذف نمی‌شود — همان قفلی که افزودن دارد (`block_if_frozen`).

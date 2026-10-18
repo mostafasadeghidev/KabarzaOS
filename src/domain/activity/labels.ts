@@ -164,6 +164,18 @@ export const ACTION_LABELS: Record<string, string> = {
   'onboarding_item.update': 'ویرایشِ آیتمِ آنبوردینگ',
   'onboarding_item.delete': 'حذفِ آیتمِ آنبوردینگ',
   'onboarding_item.media_delete': 'حذفِ فایلِ راهنمای آنبوردینگ',
+
+  // کتابخانهٔ کد و راهنما (۲.۳۷.۰)
+  'library.create': 'ثبتِ مورد در کتابخانهٔ کد',
+  'library.update': 'ویرایشِ موردِ کتابخانهٔ کد',
+  'library.archive': 'بایگانیِ موردِ کتابخانهٔ کد',
+  'library.unarchive': 'درآوردنِ موردِ کتابخانهٔ کد از بایگانی',
+  'library.delete': 'حذفِ موردِ کتابخانهٔ کد',
+  'library.media_delete': 'حذفِ تصویرِ موردِ کتابخانهٔ کد',
+  'library.restore': 'بازگرداندنِ نسخهٔ قبلیِ موردِ کتابخانه',
+  'library.install': 'ثبتِ نصبِ کد روی پروژه',
+  'library.uninstall': 'برداشتنِ کد از پروژه',
+  'library.fork': 'ساختِ نسخهٔ جدای کد برای پروژه',
   'onboarding.start': 'شروع یا همگام‌سازیِ آنبوردینگ',
   'onboarding.sync': 'به‌روزرسانیِ آنبوردینگ از کتابخانه',
   // اتصالِ هوشِ مصنوعی (MCP) — ۲.۷.۰ و ۲.۸.۰

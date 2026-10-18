@@ -10,3 +10,4 @@ export * from './payments';
 export * from './comms';
 export * from './kabarza';
 export * from './onboarding';
+export * from './library';

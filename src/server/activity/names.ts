@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
-  accounts, currencies, ledger, meetings, offices, onboardingItems, paymentRequests, projects,
+  accounts, currencies, ledger, libraryEntries, meetings, offices, onboardingItems, paymentRequests, projects,
   qaItems, recurringExpenses, serviceGrants, services, tags, tasks, tenderBids, timelogs,
   unitEntries, users, vendors,
 } from '@/db/schema';
@@ -81,6 +81,8 @@ const LOADERS: Partial<Record<SubjectKind | RefKind, Loader>> = {
     .then((rows) => rows.map((r) => ({ id: r.id, name: [r.service, r.person].filter(Boolean).join(' — ') }))),
   onboarding_item: (ids) => db.select({ id: onboardingItems.id, name: onboardingItems.title })
     .from(onboardingItems).where(inArray(onboardingItems.id, ids)),
+  library_entry: (ids) => db.select({ id: libraryEntries.id, name: libraryEntries.title })
+    .from(libraryEntries).where(inArray(libraryEntries.id, ids)),
 };
 
 /**

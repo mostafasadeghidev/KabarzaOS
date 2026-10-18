@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import {
   FolderKanban, Users, Wallet, BarChart3, CalendarCheck, CalendarDays, MessageSquare,
   LayoutDashboard, Building2, Settings, Activity, Clock, UsersRound, UserCircle, ListChecks,
-  KeyRound, ChevronDown, Sprout, CalendarClock,
+  KeyRound, ChevronDown, Sprout, CalendarClock, Library,
 } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
@@ -40,7 +40,7 @@ import { Badge } from '@/components/ui/badge';
 export type NavIcon =
   | 'overview' | 'projects' | 'members' | 'clients'
   | 'finance' | 'reports' | 'meetings' | 'messages' | 'settings' | 'activity' | 'hours' | 'team'
-  | 'profile' | 'tasks' | 'availability' | 'access' | 'onboarding' | 'schedule';
+  | 'profile' | 'tasks' | 'availability' | 'access' | 'onboarding' | 'schedule' | 'library';
 
 export interface NavItem {
   href: string;
@@ -67,6 +67,7 @@ const ICONS: Record<NavIcon, typeof FolderKanban> = {
   availability: CalendarCheck,
   access: KeyRound,
   onboarding: Sprout,
+  library: Library,
   // «برنامهٔ من» — جدا از تقویمِ تیمی («حضور و مرخصیِ تیم»).
   schedule: CalendarClock,
 };
