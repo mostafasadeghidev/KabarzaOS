@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.38.1]
+
+### Changed
+
+- **Projects: search sits in the status-tab row.** The "Search project name" box is at the end of the row of status tabs instead of on its own line above them. The tabs scroll sideways (no visible scrollbar) so the box is never pushed to the next line; while searching, the tabs step aside and the box stays where it is. On a phone the box goes under the tabs.
+
+### Fixed
+
+- On a phone, a top-bar button without an icon ("Add project") became an empty sliver because its text was hidden. Only buttons with an icon are shortened to the icon now, and "Add project" has a + icon like the others.
+
 ## [2.38.0]
 
 ### Changed
