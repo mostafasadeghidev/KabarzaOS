@@ -1103,9 +1103,16 @@ async function answerConfirm(chatId: number, who: Who, messageId: number, id: st
     await edit(chatId, messageId, `⚠️ ${esc(who.tr('این درخواست منقضی شده است؛ دوباره بپرسید.'))}`);
     return;
   }
-  // ⚠️ «⏳ در حالِ انجام…» آویزان نماند — همان پیام «✅ انجام شد» می‌شود.
+  // ⚠️ «⏳ در حالِ انجام…» آویزان نماند — همان پیام نتیجه می‌شود.
+  // ⚠️ ۲.۳۷.۱: «✅» فقط وقتی سرور واقعاً انجام داد؛ پیش از این ردِ سرور هم «انجام شد» بود.
   if (approve) {
-    await edit(chatId, messageId, `✅ ${esc(who.tr('انجام شد'))}`);
+    const failed = result.done?.failed ?? 0;
+    const total = result.done?.total ?? 1;
+    await edit(chatId, messageId, failed === 0
+      ? `✅ ${esc(who.tr('انجام شد'))}`
+      : failed < total
+        ? `⚠️ ${esc(who.tr('بخشی انجام نشد'))}`
+        : `⚠️ ${esc(who.tr('انجام نشد'))}`);
     await deliver(chatId, who, result, { scope, replyTo: scope ? messageId : undefined });
   }
 }
@@ -1317,6 +1324,11 @@ async function describeBatch(who: Who, items: ReadonlyArray<{ tool: string; args
   return lines;
 }
 
+const LANGUAGE_EN: Record<Locale, string> = {
+  fa: 'Persian', en: 'English', ar: 'Arabic', ckb: 'Central Kurdish (Sorani)', de: 'German',
+  es: 'Spanish', fr: 'French', pt: 'Portuguese', tr: 'Turkish',
+};
+
 interface AiOpts {
   /** گروهِ پروژه (۲.۳۴.۰) — جواب زیرِ پیامِ پرسش و بی منوی شخصی. */
   scope?: GroupScope;
@@ -1389,7 +1401,8 @@ async function askAi(chatId: number, who: Who, input: string | ContentPart[], op
   await api('sendChatAction', { chat_id: chatId, action: 'typing' });
   const result = await askAgent({
     actor: who.actor, userName: who.name, secrets, sensitive: who.aiSensitive, scope: opts.scope,
-    language: LOCALE_NAMES[who.locale], today: todayIn(who.tz), timezone: who.tz,
+    // نامِ انگلیسی کنارِ نامِ بومی (۲.۳۷.۱) — مدلِ ضعیف با «فارسی» ِ تنها کلمهٔ چینی وسطِ جواب گذاشت.
+    language: `${LANGUAGE_EN[who.locale]} (${LOCALE_NAMES[who.locale]})`, today: todayIn(who.tz), timezone: who.tz,
   }, input, Date.now(), opts.media ?? []);
   await deliver(chatId, who, result, opts);
   return true;

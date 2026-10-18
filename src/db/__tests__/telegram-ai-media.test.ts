@@ -207,6 +207,41 @@ describe('سقف‌های قابلِ تنظیم (۲.۳۵.۰)', () => {
   });
 });
 
+describe('دقتِ دستیار — بازسازیِ خطای واقعی (۲.۳۷.۱)', () => {
+  it('شناسهٔ پروژهٔ حدسی به کاربر نشان داده نمی‌شود و به مدل برمی‌گردد', async () => {
+    const [other] = await db.insert(projects).values({ title: 'پروژهٔ دیگران', scope: 'company' }).returning({ id: projects.id });
+    const ai = fakeWorld([
+      () => calls([{ name: 'log_hours', args: { project_id: other!.id, date: '2026-10-15', hours: 1, minutes: 45 } }]),
+      () => say('این پروژه در فهرستِ شما نیست.'),
+    ]);
+    await handleUpdate(update({ chat: { id: CHAT, type: 'private' }, text: 'برای پروژه test پنجشنبه ۱ ساعت و ۴۵ دقیقه ثبت کن' }));
+    expect(buttons().some((b) => b.callback_data?.startsWith('a:y:'))).toBe(false);
+    expect(JSON.stringify(ai[1]!.messages)).toContain('Never guess ids');
+    expect(texts()).toContain('این پروژه در فهرستِ شما نیست.');
+  });
+
+  it('ردِ سرور پس از «بله» دیگر «✅ انجام شد» نیست', async () => {
+    const ai = fakeWorld([
+      () => calls([{ name: 'log_hours', args: { project_id: PROJECT, hours: 0, minutes: 0 } }]),
+      () => say('ثبت نشد چون مدت صفر بود.'),
+    ]);
+    await handleUpdate(update({ chat: { id: CHAT, type: 'private' }, text: 'صفر دقیقه ثبت کن' }));
+    await handleUpdate(press(CHAT, buttons().find((b) => b.callback_data?.startsWith('a:y:'))!.callback_data!));
+    expect(texts()).toContain('⚠️ انجام نشد');
+    expect(texts()).not.toContain('✅ انجام شد');
+    expect(JSON.stringify(ai[1]!.messages)).toContain('duration must be more than zero');
+  });
+
+  it('مدل روزهای هفته و نامِ انگلیسیِ زبان را دارد؛ loggable_projects همیشه هست', async () => {
+    const ai = fakeWorld([() => say('باشه')]);
+    await handleUpdate(update({ chat: { id: CHAT, type: 'private' }, text: 'سلام' }));
+    const system = systemText(ai[0]!);
+    expect(system).toMatch(/Thursday \d{4}-\d{2}-\d{2}/);
+    expect(system).toContain('Persian (فارسی)');
+    expect(toolNames(ai[0]!)).toContain('loggable_projects');
+  });
+});
+
 describe('دستیار در گروهِ پروژه', () => {
   const inGroup = (from: number, text: string, extra: Partial<TgMessage> = {}) =>
     update({ chat: { id: GROUP, type: 'supergroup' }, from: { id: from }, text, ...extra });

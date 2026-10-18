@@ -46,10 +46,18 @@ const TIMER_MESSAGES: Record<TimerError['code'], string> = {
 };
 
 /** خطای سرویس ← پیامِ قابلِ‌فهم برای مدل؛ جزئیاتِ داخلی بیرون نمی‌رود. */
+const FORBIDDEN_HINTS: Record<string, string> = {
+  'timelog.forbidden': 'this user cannot log time on that project (not on its team, the project is closed, archived or frozen, or an owner who is not a team member). loggable_projects lists where they can.',
+  'timelog.zero': 'the duration must be more than zero.',
+};
+
 export function explain(error: unknown): string {
   if (error instanceof TimerError) return TIMER_MESSAGES[error.code];
   if (error instanceof RateLimitedError) return 'A new message was sent less than 30 seconds ago. Wait a little and try again.';
   if (error instanceof ForbiddenError) {
+    // ۲.۳۷.۱: علتِ مشخص به‌جای «اجازه ندارید» ِ کلی — مدل بتواند راهِ درست را بگوید.
+    const specific = FORBIDDEN_HINTS[error.required];
+    if (specific) return `Not allowed: ${specific}`;
     return `Not allowed (${error.message}). The user does not have permission for this, or this connection lacks the needed access level.`;
   }
   if (error instanceof Error && /not.?found/i.test(error.name + error.message)) return 'Not found.';

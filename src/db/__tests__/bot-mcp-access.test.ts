@@ -281,6 +281,12 @@ describe('ربات — هوشِ مصنوعی نمی‌تواند از دسترس
       await handleUpdate(msg(CHAT.A, `do ${tool}`));
       const yes = sent.flatMap((s) => ((s.payload.reply_markup as { inline_keyboard?: Array<Array<{ callback_data?: string }>> })?.inline_keyboard ?? []).flat())
         .find((b) => b.callback_data?.startsWith('a:y:'));
+      // ۲.۳۷.۱: کار روی پروژهٔ نادیدنی پیش از «بله» به مدل برمی‌گردد (دکمه‌ای نیست)؛
+      // بقیه دکمه می‌گیرند و سرور پس از «بله» رد می‌کند. در هر دو حالت چیزی نوشته نمی‌شود.
+      if (typeof args.project_id === 'number' && !yes) {
+        expect(out(), tool).not.toMatch(/SECRET/);
+        continue;
+      }
       expect(yes, tool).toBeDefined();
       await handleUpdate(press(CHAT.A, yes!.callback_data!));
       expect(seen.join('\n'), tool).not.toMatch(/SECRET/);
