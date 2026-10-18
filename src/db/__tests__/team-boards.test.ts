@@ -228,3 +228,18 @@ describe('تسکِ نقشی جزوِ کارِ عضو است (visible_to_user)', 
     expect(board.forMember).toBeNull();
   });
 });
+
+describe('پروژهٔ بی‌دفتر (۲.۳۸.۲)', () => {
+  it('⚠️ مدیرِ کل تسک‌هایش را در «تیمِ من» می‌بیند؛ مدیرِ دفتر نه', async () => {
+    const [own] = await db.insert(users).values({ email: 'own@t', name: 'مالک' }).returning({ id: users.id });
+    await db.insert(userRoles).values({ userId: own!.id, role: 'owner' });
+    const [office] = await db.select({ id: offices.id }).from(offices).limit(1);
+    await db.insert(userOffices).values({ userId: own!.id, officeId: office!.id, manages: true });
+    const [orphan] = await db.insert(projects).values({ title: 'بی‌دفتر', price: '0' }).returning({ id: projects.id });
+    await db.insert(tasks).values({ projectId: orphan!.id, title: 'تسکِ بی‌دفتر', statusTagId: todo, createdBy: own!.id });
+
+    const owner: Actor = { id: own!.id, roles: ['owner'], permissions: [], privateAccess: false };
+    expect((await teamTasks(owner)).rows.map((r) => r.title)).toContain('تسکِ بی‌دفتر');
+    expect((await teamTasks(manager())).rows.map((r) => r.title)).not.toContain('تسکِ بی‌دفتر');
+  });
+});

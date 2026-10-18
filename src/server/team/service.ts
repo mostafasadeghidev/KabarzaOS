@@ -1,6 +1,6 @@
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
-import { and, desc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   comments, projectMembers, projects, tags, tasks, taskRoles, timelogs, userOffices, users, userRoles, tagRelations,
@@ -78,7 +78,14 @@ async function assertTeamScope(actor: Actor): Promise<number[]> {
   return offices;
 }
 
-/** پروژه‌های دفاترِ تحتِ مدیریت. */
+/**
+ * پروژه‌های دفاترِ تحتِ مدیریت.
+ *
+ * ⚠️ مدیرِ کل پروژه‌های **بی‌دفتر** را هم می‌گیرد (۲.۳۸.۲): پروژه‌ای که دفترش
+ * خالی مانده بود در هیچ دفتری نبود و تسک‌هایش از «تیمِ من» ِ هیچ‌کس — حتی
+ * مدیرِ کل — دیده نمی‌شد (پروژهٔ «Test» روی سرور). مدیرِ دفتر همچنان فقط
+ * پروژه‌های دفترِ خودش را دارد؛ پروژهٔ بی‌دفتر مالِ هیچ دفتری نیست.
+ */
 async function officeProjectIds(actor: Actor, offices: number[]): Promise<number[]> {
   if (offices.length === 0) return [];
   const rows = await db
@@ -86,7 +93,9 @@ async function officeProjectIds(actor: Actor, offices: number[]): Promise<number
     .from(projects)
     .where(and(
       isNull(projects.deletedAt),
-      inArray(projects.officeId, offices),
+      isOwner(actor)
+        ? or(inArray(projects.officeId, offices), isNull(projects.officeId))!
+        : inArray(projects.officeId, offices),
       inArray(projects.scope, visibleScopes(actor)),
     ));
   return rows.map((r) => r.id);

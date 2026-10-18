@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.38.2]
+
+### Fixed
+
+- **My team now shows projects that have no office to the owner.** A project whose office was left empty belonged to no office, so its tasks never appeared in My team for anyone, not even the owner (the "Test" project on the server). The owner now sees these projects in every tab of My team (overview, projects, open tasks, review, comments). Office managers still see only their own offices' projects.
+
 ## [2.38.1]
 
 ### Changed
