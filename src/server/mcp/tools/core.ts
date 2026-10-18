@@ -156,7 +156,7 @@ export function registerCore(kit: Kit) {
 
   server.registerTool('log_hours', {
     title: 'Log work hours',
-    description: 'Log time on a project (or general work with project_id omitted). Same day and project merge into one entry.',
+    description: 'Log time on a project (or general work with project_id omitted). project_id must come from list_projects, loggable_projects or search; never guess it. date is YYYY-MM-DD. Same day and project merge into one entry.',
     inputSchema: {
       project_id: z.number().int().positive().optional(),
       date: DATE.optional(),

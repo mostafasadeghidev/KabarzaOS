@@ -11,7 +11,7 @@
 
 export const CORE_TOOLS = new Set([
   'whoami', 'list_my_tasks', 'search', 'list_projects', 'get_project', 'list_task_statuses',
-  'my_hours', 'log_hours', 'start_timer', 'stop_timer',
+  'my_hours', 'log_hours', 'loggable_projects', 'start_timer', 'stop_timer',
   'create_task', 'set_task_status', 'add_comment', 'get_task', 'find_task', 'update_task', 'add_task_note',
   'list_my_meetings', 'list_my_reminders', 'create_reminder', 'delete_reminder',
   'list_message_recipients', 'send_message', 'message_management', 'list_inbox', 'read_thread', 'reply_message',
@@ -33,7 +33,8 @@ export const TOOL_GROUPS: Record<string, readonly string[]> = {
     'meeting_form_options', 'meeting_candidates', 'create_meeting', 'update_meeting',
     'mute_conversation', 'create_channel', 'create_project_group', 'mark_notification_read',
   ],
-  hours: ['list_time_logs', 'loggable_projects', 'update_time_log', 'resolve_long_timer'],
+  // `loggable_projects` همیشه هست (۲.۳۷.۱) — ثبتِ ساعت بی آن شناسه را حدس می‌زد.
+  hours: ['list_time_logs', 'update_time_log', 'resolve_long_timer'],
   finance_reports: [
     'get_dashboard', 'get_report', 'finance_accounts', 'finance_ledger', 'payment_requests',
     'recurring_payments', 'my_money', 'list_activity',
