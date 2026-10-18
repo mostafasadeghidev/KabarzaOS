@@ -50,7 +50,7 @@ export type SubjectKind =
   | 'user' | 'project' | 'task' | 'bid' | 'ledger' | 'account' | 'unit' | 'payment_request'
   | 'recurring' | 'meeting' | 'timelog' | 'currency' | 'tag' | 'office' | 'vendor' | 'qa_item'
   | 'service' | 'service_grant' | 'onboarding_item' | 'company' | 'settings' | 'backup' | 'fiscal'
-  | 'api_key';
+  | 'api_key' | 'library_entry';
 
 /** نامِ نوعِ «مورد» — کنارِ نامش در فهرست و سرِ دیالوگ. */
 export const SUBJECT_LABELS: Record<SubjectKind, string> = {
@@ -79,6 +79,8 @@ export const SUBJECT_LABELS: Record<SubjectKind, string> = {
   fiscal: 'دورهٔ مالی',
   // توکنِ MCP — نامِ توکن در خودِ رویداد عکس گرفته می‌شود (۲.۷.۰).
   api_key: 'توکنِ MCP',
+  // کتابخانهٔ کد و راهنما (۲.۳۷.۰).
+  library_entry: 'موردِ کتابخانهٔ کد',
 };
 
 /**
@@ -122,6 +124,7 @@ export function subjectKind(action: string, objectType: string): SubjectKind | n
     case 'company': return 'company';
     case 'backup': return 'backup';
     case 'api_key': return 'api_key';
+    case 'library_entry': return 'library_entry';
     default: return null;
   }
 }

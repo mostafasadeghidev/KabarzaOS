@@ -421,6 +421,13 @@
       "when": 1789698000030,
       "tag": "0059_project_group_invite",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1789698000031,
+      "tag": "0060_library",
+      "breakpoints": true
     }
   ]
 }

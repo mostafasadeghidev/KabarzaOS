@@ -456,3 +456,52 @@
     display: none !important;
   }
 }
+
+/*
+ * رنگ‌بندیِ کد در کتابخانهٔ کد و راهنما (۲.۳۷.۰) — highlight.js.
+ * ⚠️ رنگ‌ها ملایم و هم‌خانوادهٔ پالتِ اپ، با دستهٔ جدا برای حالتِ تیره؛ زمینه را
+ * خودِ قابِ کد می‌دهد (`bg-muted/60`)، نه این‌جا.
+ */
+.code-view .hljs-comment,
+.code-view .hljs-quote,
+.code-view .hljs-meta { color: oklch(0.55 0.02 260); }
+.code-view .hljs-comment { font-style: italic; }
+.code-view .hljs-keyword,
+.code-view .hljs-selector-tag,
+.code-view .hljs-built_in { color: oklch(0.5 0.17 300); }
+.code-view .hljs-string,
+.code-view .hljs-regexp { color: oklch(0.5 0.13 150); }
+.code-view .hljs-number,
+.code-view .hljs-literal { color: oklch(0.56 0.15 50); }
+.code-view .hljs-title,
+.code-view .hljs-section,
+.code-view .hljs-tag,
+.code-view .hljs-name,
+.code-view .hljs-selector-class,
+.code-view .hljs-selector-id { color: oklch(0.5 0.15 255); }
+.code-view .hljs-attr,
+.code-view .hljs-attribute,
+.code-view .hljs-variable,
+.code-view .hljs-template-variable,
+.code-view .hljs-property { color: oklch(0.53 0.14 30); }
+.dark .code-view .hljs-comment,
+.dark .code-view .hljs-quote,
+.dark .code-view .hljs-meta { color: oklch(0.68 0.02 260); }
+.dark .code-view .hljs-keyword,
+.dark .code-view .hljs-selector-tag,
+.dark .code-view .hljs-built_in { color: oklch(0.78 0.12 300); }
+.dark .code-view .hljs-string,
+.dark .code-view .hljs-regexp { color: oklch(0.8 0.13 150); }
+.dark .code-view .hljs-number,
+.dark .code-view .hljs-literal { color: oklch(0.82 0.12 60); }
+.dark .code-view .hljs-title,
+.dark .code-view .hljs-section,
+.dark .code-view .hljs-tag,
+.dark .code-view .hljs-name,
+.dark .code-view .hljs-selector-class,
+.dark .code-view .hljs-selector-id { color: oklch(0.78 0.12 255); }
+.dark .code-view .hljs-attr,
+.dark .code-view .hljs-attribute,
+.dark .code-view .hljs-variable,
+.dark .code-view .hljs-template-variable,
+.dark .code-view .hljs-property { color: oklch(0.8 0.11 40); }

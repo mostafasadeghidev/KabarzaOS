@@ -2,6 +2,23 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.37.0]
+
+### Added
+
+- **Code library.** A new "Code library" page (Operations menu) for the custom code the team writes for client sites, step-by-step guides for clients, and team notes. Each entry has a type (code, client guide, tutorial/note), platform (Webflow, WordPress, Shopify, HTML, other), status (draft, ready, deprecated) and free topics. Search looks in the title, summary, steps and topics, and inside the code and option names too, so "macy" or "data-flow-price" finds the entry that uses it. Filters for type, platform, topic, project, "mine" and archived live in the URL.
+- **Entries explain how to use them.** An entry can hold several code snippets, each with its language, where to install it (site head, before the end of body, one page's head or body, an Embed element, an external file, other), the exact spot in plain words, and the Webflow settings path shown next to it. It also has numbered install steps, warnings, dependencies, a settings table (attribute, class, ID, variable or setting, what it does, default value), a description in which Loom and YouTube links play, images (drop or paste), a live demo link and related entries (for example a pricing script and its client guide). Code is shown highlighted with line numbers and a copy button (one snippet or all); long code is collapsed.
+- **Shared or project-only follows from where it is installed.** "Installed on projects" lists every project the entry is on, with where on the site and the values used on that project. Installing the same entry on another project links it, so a fix reaches every site; "Separate copy for this project" makes an independent copy that replaces the link on that project and records which entry it came from. A new entry written for a project (its origin) is installed there automatically. Project names the viewer cannot see are only counted.
+- **"Code & guides" tab on the project page.** The team sees what is installed on the project, grouped by type, with where it is and the project's values; members working on the project can add an existing entry from the library, write a new one for the project, edit the install note, make a separate copy, or remove it. Clients see a "Guides" tab only when a client guide marked "Client can see" is installed on their project, with the steps, warnings, settings table, description and images, read-only. Drafts, archived entries and code never reach a client.
+- **History.** Every save keeps the previous version; any version can be opened (code, steps and options) and restored, and the current one is kept before restoring.
+- **Who can do what.** Owner, admin and members use the library; the finance role and clients do not. The author edits an entry, and so does anyone with global project management; others make a separate copy for their project. Installing needs to be working on that project. An entry installed somewhere can be archived but not deleted. Images follow the same rules, including for clients.
+- Library actions (create, update, archive, delete, install, remove, separate copy, restore, image removal) are in the activity log with the entry's name.
+- Migration `0060`: `library_entries`, `library_blocks`, `library_options`, `library_projects`, `library_relations`, `library_revisions`, and `attachments.library_entry_id`.
+
+### Changed
+
+- After saving a new entry, "Back" goes to the page you came from, not to the empty form.
+
 ## [2.36.0]
 
 ### Added

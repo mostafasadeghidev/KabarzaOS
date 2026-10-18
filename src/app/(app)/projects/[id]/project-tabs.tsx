@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { ChatTab, type ProjectChat } from './chat-tab';
+import { LibraryTab, type ProjectLibraryData } from './library-tab';
+import type { ClientGuide } from '@/server/library/service';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { TasksTab, type TaskItem, type TaskStatusOption } from './tasks-tab';
 import type { TaskFormOptions } from './add-task-dialog';
@@ -36,6 +38,10 @@ export interface ProjectTabsData {
   projectId: number;
   /** گروهِ گفتگوی پروژه — فقط برای تیم؛ کارفرما و غیرعضو `null`. */
   chat: ProjectChat | null;
+  /** «کد و راهنما» (۲.۳۷.۰) — نصب‌های پروژه برای تیم؛ `null` برای کارفرما. */
+  library: ProjectLibraryData | null;
+  /** راهنماهای «کارفرما ببیند» — فقط برای کارفرمای همین پروژه. */
+  clientGuides: ClientGuide[] | null;
   title: string;
   isTender: boolean;
   isArchived: boolean;
@@ -140,6 +146,15 @@ export function ProjectTabs({
     ...(data.reviews.length > 0 || data.reviewFormOptions
       ? [{ key: 'reviews', label: 'بازبینی‌ها', badge: data.reviews.length }] : []),
     { key: 'files', label: 'فایل‌ها', badge: data.files.length },
+    /**
+     * کد و راهنما — تیم همیشه (تا کدِ تازه را از همین‌جا ثبت کند)، کارفرما
+     * فقط وقتی راهنمایی برایش هست.
+     */
+    ...(data.library
+      ? [{ key: 'library', label: 'کد و راهنما', badge: data.library.items.length }]
+      : data.clientGuides && data.clientGuides.length > 0
+        ? [{ key: 'library', label: 'راهنماها', badge: data.clientGuides.length }]
+        : []),
     { key: 'comments', label: 'کامنت‌ها', badge: data.comments.length },
     /**
      * ⚠️ **یک** تبِ مالی، نه دو تا — همان کاری که نسخهٔ قبلی می‌کند
@@ -289,6 +304,10 @@ export function ProjectTabs({
           canManage={data.canDeleteAnyFile}
           currentUserId={data.currentUserId}
         /></TabPanel>
+      )}
+
+      {tab === 'library' && (
+        <TabPanel width="reading"><LibraryTab projectId={data.projectId} data={data.library} clientGuides={data.clientGuides} /></TabPanel>
       )}
 
       {tab === 'comments' && (

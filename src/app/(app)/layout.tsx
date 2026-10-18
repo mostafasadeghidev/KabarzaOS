@@ -34,6 +34,7 @@ import { CurrencyDecimals } from '@/components/currency-decimals';
 import { BucketWarning } from '@/components/bucket-warning';
 import { bucketCheck, cachedBucketCheck } from '@/server/files/bucket-probe';
 import { isFresh } from '@/domain/files/probe';
+import { canUseLibrary } from '@/domain/library/model';
 
 /**
  * چیدمانِ اپ — سایدبار + محتوا.
@@ -176,6 +177,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    */
   if (hasPersonalMoney(actor)) {
     items.push({ href: '/my-money', label: t("امور مالی"), icon: 'finance', group: 'operations' });
+  }
+
+  /**
+   * «کتابخانهٔ کد» (۲.۳۷.۰) — مالِ تیم (مالک، همکارِ ادمین، عضو)، نه مالی و نه
+   * کارفرما؛ کارفرما راهنمای پروژه‌اش را در تبِ همان پروژه می‌بیند.
+   */
+  if (canUseLibrary(actor)) {
+    items.push({ href: '/library', label: t("کتابخانهٔ کد"), icon: 'library', group: 'operations' });
   }
 
   if (await hasTeamScope(actor)) {

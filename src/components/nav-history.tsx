@@ -98,6 +98,18 @@ export function NavHistory() {
   return null;
 }
 
+/**
+ * صفحهٔ فرمی که پس از ذخیره پشتِ سر ماند از پشته برداشته می‌شود (۲.۳۷.۰).
+ *
+ * ⚠️ بی‌این، «برگشت» ِ صفحهٔ موردِ تازه‌ساخته دوباره به فرمِ خالیِ «ثبتِ
+ * موردِ تازه» می‌رفت، نه به جایی که کاربر از آن آمده بود.
+ */
+export function dropPrevious(isForm: (path: string) => boolean): void {
+  const stack = read();
+  const prev = stack[stack.length - 2];
+  if (prev && isForm(prev.path)) write([...stack.slice(0, -2), stack[stack.length - 1]!]);
+}
+
 /** صفحهٔ قبلی در همین زبانه، اگر باشد. */
 function usePrevious(): Entry | null {
   const stack = useSyncExternalStore(subscribe, read, () => null);
