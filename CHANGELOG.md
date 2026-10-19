@@ -14,6 +14,13 @@ Versioning follows [SemVer](https://semver.org/).
 - **Clearer group messages.** A new task shows a heading, the title, a short quote of its description, then the owner, due date and priority each on their own line. A finished task shows who did it and the project's progress bar (for example `▰▰▰▱▱▱▱▱▱▱ 3/10`). A new comment shows who wrote it above the quote.
 - **Direct messages arrive whole in Telegram.** A message notification now carries up to 1,000 characters of the message (mentions and group messages 400) instead of the first 120.
 
+## [2.39.0]
+
+### Changed
+
+- **A task's status belongs to whoever does the work.** Before, anyone working on a project could change the status of any task they could see, so a developer could mark a colleague's task done or send it back. Now the status can be changed by: the project, office or global manager (always); the assignee, for an assigned task; and for a task with no assignee, a member holding one of its roles that nobody else has claimed, or the task's creator. The creator of a task assigned to someone else can still edit its text but not its status.
+- The rule is enforced on the server for every path (project tasks tab, task dialog, review items, task edit form, Telegram assistant and MCP tools), and the status picker turns into a read-only chip where the viewer may not change it. A refused change explains who can change it.
+
 ## [2.38.2]
 
 ### Fixed

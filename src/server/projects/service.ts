@@ -39,6 +39,7 @@ import {
   canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation, canInteractWithProject, managedOfficeProjectIds, pmProjectIds,
   isProjectFrozen, isClientOnly,
 } from './authority';
+import { canSetTaskStatus } from '@/domain/projects/task-status-authority';
 import { canEditTeamMoney, canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
 import { visiblePayments } from '@/domain/access/project-payments';
 import { canCreateProject, canManageProject as decideManage, mayCreateProjects, PM_CAP } from '@/domain/access/project-scope';
@@ -762,6 +763,10 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
    * صفحه می‌ماند و با View Source خوانده می‌شد.
    */
   const viewer = await viewerContext(actor, projectId, canManage, members);
+  // نقش‌های خودِ بیننده روی این پروژه — قاعدهٔ «وضعیتِ تسک دستِ کیست» (۲.۳۹.۰).
+  const myRoleTagIds = members
+    .filter((m) => m.userId === actor.id && m.roleTagId !== null)
+    .map((m) => m.roleTagId!);
 
   return {
     project,
@@ -778,6 +783,15 @@ export async function getProjectDetail(actor: Actor, projectId: number) {
        * وجودِ تسکِ پنهان از او لو می‌رفت. اینجا، نه در UI — payload ِ صفحه.
        */
       number: clientOnly ? null : t.number,
+      /** انتخابگرِ وضعیت فقط برای صاحبِ کار یا مدیر (۲.۳۹.۰) — سرور هم همین را می‌سنجد. */
+      canSetStatus: canSetTaskStatus({
+        userId: actor.id,
+        managesProject: canManage,
+        assignedTo: t.assignedTo,
+        createdBy: t.createdBy,
+        roles: allRoles.filter((r) => r.taskId === t.id),
+        userRoleTagIds: myRoleTagIds,
+      }),
       /**
        * ⚠️ «منتظرِ …» — تسکی که وابستگی‌اش هنوز تمام نشده. بدونِ این نشان،
        * کارتِ «در نوبت» می‌گفت کاری نکن ولی نمی‌گفت **منتظرِ چه**.
@@ -1790,6 +1804,30 @@ export async function taskStatusOptionsFor(actor: Actor, projectId: number) {
   return repo.taskStatusTags();
 }
 
+/**
+ * قاعدهٔ «وضعیتِ این تسک دستِ کیست» روی دیتابیس — تصمیم در
+ * `domain/projects/task-status-authority`. مدیر بی‌کوئری رد می‌شود.
+ */
+async function mayChangeTaskStatus(
+  actor: Actor,
+  task: { id: number; projectId: number; assignedTo: number | null; createdBy: number | null },
+  managesProject: boolean,
+): Promise<boolean> {
+  if (managesProject) return true;
+  const [roles, relation] = await Promise.all([
+    repo.taskRolesFor([task.id]),
+    projectRelation(actor.id, task.projectId),
+  ]);
+  return canSetTaskStatus({
+    userId: actor.id,
+    managesProject,
+    assignedTo: task.assignedTo,
+    createdBy: task.createdBy,
+    roles,
+    userRoleTagIds: relation.roleTagIds,
+  });
+}
+
 /** تغییرِ وضعیتِ تسک از تبِ تسک‌ها — قرینهٔ `setProjectStatus`. */
 export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: number | null) {
   const task = await repo.getTask(taskId);
@@ -1808,6 +1846,8 @@ export async function setTaskStatus(actor: Actor, taskId: number, statusTagId: n
    */
   const [visible] = filterVisibleFor(actor, [task], managesTask, await isClientOnly(actor, task.projectId));
   if (!visible) throw new NotFoundError();
+  // ⚠️ دیدن کافی نیست (۲.۳۹.۰): وضعیت را فقط صاحبِ کار یا مدیر عوض می‌کند.
+  if (!(await mayChangeTaskStatus(actor, task, managesTask))) throw new ForbiddenError('task.status_not_yours');
 
   /**
    * ⚠️ این گارد **نبود**: پروژهٔ منجمد هر نوشتنِ دیگری را رد می‌کند، ولی
@@ -2616,6 +2656,14 @@ export async function updateTask(
   // ⚠️ پروژهٔ منجمد ویرایش نمی‌شود — این گارد اینجا **نبود**، برخلافِ حذف.
   await assertNotFrozen(before.projectId, actor);
   await assertTaskTags(input);
+  /**
+   * ⚠️ سازنده‌ای که مدیر نیست متنِ تسکش را ویرایش می‌کند، ولی وضعیتِ کاری که
+   * به **دیگری** سپرده شده دستِ او نیست (۲.۳۹.۰) — همان قاعدهٔ `setTaskStatus`؛
+   * وگرنه از راهِ فرمِ ویرایش دورش می‌زد.
+   */
+  if (input.statusTagId !== before.statusTagId && !(await mayChangeTaskStatus(actor, before, canManage))) {
+    throw new ForbiddenError('task.status_not_yours');
+  }
 
   const assignment = await resolveTaskAssignment(actor, before.projectId, canManage, input);
   const uploads = await storeUploads(actor, media);
@@ -2943,6 +2991,15 @@ export async function getTaskDetail(actor: Actor, taskId: number) {
      */
     canEdit: (canManage || task.createdBy === actor.id) && !frozen,
     canInteract: canInteract && !frozen,
+    /** وضعیت فقط برای صاحبِ کار یا مدیر (۲.۳۹.۰). */
+    canSetStatus: canInteract && !frozen && canSetTaskStatus({
+      userId: actor.id,
+      managesProject: canManage,
+      assignedTo: task.assignedTo,
+      createdBy: task.createdBy,
+      roles,
+      userRoleTagIds: members.filter((m) => m.userId === actor.id && m.roleTagId !== null).map((m) => m.roleTagId!),
+    }),
   };
 }
 

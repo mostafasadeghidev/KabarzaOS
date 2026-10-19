@@ -176,7 +176,7 @@ function TaskDialogBody({
               <TaskStatusPicker
                 task={task}
                 options={data?.statuses ?? []}
-                canManage={(data?.detail.canInteract ?? false) && (data?.statuses.length ?? 0) > 0}
+                canManage={(data?.detail.canSetStatus ?? false) && (data?.statuses.length ?? 0) > 0}
                 onChanged={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
               />
               {task.assigneeName && (

@@ -4416,5 +4416,6 @@
   "مثلاً فایلِ CSS/JS روی CDN، یا تنظیمِ یک سرویسِ دیگر": "ex.: um arquivo CSS/JS numa CDN ou uma configuração em outro serviço",
   "کدِ سفارشی‌ای که در سایت نصب می‌شود — با جای نصب و تنظیمات.": "Código personalizado instalado no site — com onde vai e suas configurações.",
   "یک «کد» دست‌کم یک تکه‌کد لازم دارد.": "Uma entrada de «código» precisa de pelo menos um trecho.",
-  "یک المنتِ Embed (</>) در همان جایی از صفحه که نوشته شده": "Um elemento Embed (</>) no local da página indicado"
+  "یک المنتِ Embed (</>) در همان جایی از صفحه که نوشته شده": "Um elemento Embed (</>) no local da página indicado",
+  "وضعیتِ این تسک را فقط مسئولِ آن یا مدیرِ پروژه عوض می‌کند.": "Só o responsável pela tarefa ou o gestor do projeto pode alterar o seu estado."
 }
