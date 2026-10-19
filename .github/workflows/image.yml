@@ -26,9 +26,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      # ⚠️ بی `version`: نسخه از `packageManager` ِ package.json خوانده می‌شود. هر دو با هم
+      # خطای «Multiple versions of pnpm specified» می‌دهند (اولین اجرای ۲.۴۰.۱ همین‌جا ایستاد).
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
       - uses: actions/setup-node@v4
         with:
           node-version: 22

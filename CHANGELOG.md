@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.41.1]
+
+### Fixed
+
+- The image workflow stopped at its first step ("Multiple versions of pnpm specified"): the pnpm version was given both in the workflow and in `package.json` (`packageManager`). The workflow now reads it from `package.json` only, so the check and the image build run.
+
 ## [2.41.0]
 
 ### Added
