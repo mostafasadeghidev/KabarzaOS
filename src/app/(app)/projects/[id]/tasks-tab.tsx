@@ -58,6 +58,8 @@ export interface TaskItem {
   assignedTo: number | null;
   assigneeName: string | null;
   roles: TaskRole[];
+  /** بیننده وضعیتِ این تسک را عوض می‌کند — صاحبِ کار یا مدیر (۲.۳۹.۰). */
+  canSetStatus?: boolean;
   /** کارتِ تسک — اولویت، توضیح، شمار/آخرین یادداشت (پورتِ `task_notes_summary`). */
   priorityName?: string | null;
   priorityColor?: string | null;
@@ -606,7 +608,7 @@ export function TasksTab({
                 <span className={t.statusGroup === 'complete' ? 'text-muted-foreground line-through' : undefined}>{t.title}</span>
               </span>
               <span data-stop onClick={(e) => e.stopPropagation()}>
-                <TaskStatusPicker task={t} options={statuses} canManage={(canManage || canInteract) && !isFrozen && statuses.length > 0} />
+                <TaskStatusPicker task={t} options={statuses} canManage={(canManage || canInteract) && !isFrozen && statuses.length > 0 && t.canSetStatus !== false} />
               </span>
             </div>
             <TaskExtras task={t} />
