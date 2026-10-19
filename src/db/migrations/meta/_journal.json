@@ -428,6 +428,13 @@
       "when": 1789698000031,
       "tag": "0060_library",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1789698000032,
+      "tag": "0061_telegram_prefs",
+      "breakpoints": true
     }
   ]
 }

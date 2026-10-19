@@ -101,7 +101,7 @@ export async function linkProjectGroup(linkToken: string, chatId: number): Promi
  * پیوندِ معمولی؛ و فقط با `APP_URL` ِ HTTPS (پیوندِ http/localhost را رد می‌کند).
  * ⚠️ بی شمارهٔ تسک در نشانی — کارفرما ممکن است عضوِ گروه باشد.
  */
-async function openButton(path: string, label: string) {
+export async function openButton(path: string, label: string) {
   // ۲.۴۰.۰: با نامِ کوتاهِ مینی‌اپ، لینکِ مستقیم — داخلِ تلگرام باز می‌شود و همان صفحه را می‌آورد.
   const [{ telegramAppName }, { username }] = await Promise.all([getSystemConfig(), telegramCredentials()]);
   const direct = telegramAppName ? miniAppDirectLink(username, telegramAppName, path) : null;

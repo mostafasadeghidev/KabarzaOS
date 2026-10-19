@@ -1,4 +1,5 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
+import { normalizePrefs } from '@/domain/telegram/prefs';
 import { eq, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, company, files, users } from '@/db/schema';
@@ -51,6 +52,7 @@ export async function getMyProfile(actor: Actor) {
       telegramOff: users.telegramOff,
       telegramMuted: users.telegramMuted,
       briefAt: users.briefAt,
+      telegramPrefs: users.telegramPrefs,
     })
     .from(users)
     .where(eq(users.id, actor.id));
@@ -77,6 +79,8 @@ export async function getMyProfile(actor: Actor) {
       /** یادآورهای بی‌صدا در تلگرام و ساعتِ گزارشِ صبحگاهی (۲.۱۴.۰). */
       telegramMuted: me.telegramMuted ?? [],
       briefAt: me.briefAt,
+      /** دسته‌های خاموش در تلگرام، ساعتِ سکوت و گزارشِ عصر (۲.۴۱.۰). */
+      telegramPrefs: normalizePrefs(me.telegramPrefs),
       // ⚠️ بدونِ mailer، به‌جای گزینه‌هایی که کار نمی‌کنند، حقیقت گفته می‌شود.
       mailerReady: await mailEnabled(),
     },
@@ -466,12 +470,17 @@ export async function updateMyProfile(
  * یادآورهای تلگرام (۲.۱۴.۰): کدام یادآورِ خودکار در تلگرام بیاید و گزارشِ
  * صبحگاهی چه ساعتی. ⚠️ فقط انواعِ مجاز؛ ساعتِ نامعتبر = خاموش.
  */
-export async function saveTelegramPrefs(actor: Actor, input: { briefAt: string; muted: string[] }) {
+export async function saveTelegramPrefs(
+  actor: Actor,
+  input: { briefAt: string; muted: string[]; prefs?: { off: string[]; quiet: { from: string; to: string } | null; evening: string } },
+) {
   const allowed = new Set(['timer_running', 'no_timelog', 'meeting_soon', 'onboarding.overdue', 'brief']);
   const briefAt = /^([01]\d|2[0-3]):[0-5]\d$/.test(input.briefAt.trim()) ? input.briefAt.trim() : '';
   await db.update(users).set({
     briefAt,
     telegramMuted: [...new Set(input.muted.filter((m) => allowed.has(m)))],
+    // ۲.۴۱.۰ — همان مهارِ ربات: دستهٔ ناشناخته، ساعتِ نامعتبر یا بازهٔ صفر دور ریخته می‌شود.
+    ...(input.prefs ? { telegramPrefs: normalizePrefs(input.prefs) as unknown as Record<string, unknown> } : {}),
     updatedAt: new Date(),
   }).where(eq(users.id, actor.id));
 }

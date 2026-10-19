@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.41.0]
+
+### Added
+
+- **Bot settings inside Telegram.** "⚙️ Bot settings" in the bot's menu (and `/settings`) changes everything with one tap per button, editing the same message: each notification category on or off for Telegram (tasks, projects, money, meetings and reminders, messages), quiet hours (off, 22–08, 23–08, 00–09, 21–07), the morning report time or off, the evening report time or off, and the language (the same as the app's). Every change is in the activity log.
+- **Choose what comes to Telegram.** A category turned off stops only in Telegram; the in-app notification and the email stay. Before, only email had categories. The same switches are in Profile → Notifications & Telegram.
+- **Quiet hours.** Nothing is sent to Telegram during them (in the user's own time zone; overnight ranges cross midnight). When they end, one "During quiet hours" message lists what arrived meanwhile, skipping turned-off categories. If the scheduler was down, the summary is not sent later than two hours after the end.
+- **Evening report.** At the chosen time on work days (not on leave), at most once a day: tasks finished today, time logged today (or a note that none was logged), tomorrow's deadlines and meetings, and overdue tasks, with buttons for my tasks, log time and settings. Nothing is sent when all of it is empty.
+- Migration `0061`: `users.telegram_prefs` (jsonb).
+
+### Fixed
+
+- **"/" commands in project groups.** Groups showed the private chat's command menu, and `/menu@bot`, `/help@bot` or `/keyboard@bot` went to the AI, which answered "I cannot assist with that". Groups now have their own menu (`/ask`, `/tasks`, `/help`). `/help` explains the bot in the group. `/tasks` lists the project's open tasks that the client could see too (not private, not hidden from client, without names), for linked team members of the project only. Any other command gets "this works only in a private chat with the bot" with a button to open it. A command meant for another bot is ignored.
+
 ## [2.40.1]
 
 ### Changed

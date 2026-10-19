@@ -1,5 +1,6 @@
 'use server';
 
+import { TG_CATEGORIES } from '@/domain/telegram/prefs';
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
@@ -129,9 +130,16 @@ export async function saveNotifyAction(
     if (formData.get('tgPrefs') !== null) {
       const on = new Set(formData.getAll('tgOn').map(String));
       const kinds = ['timer_running', 'no_timelog', 'meeting_soon', 'onboarding.overdue', 'brief'];
+      const cats = new Set(formData.getAll('tgCat').map(String));
       await saveTelegramPrefs(actor, {
         briefAt: on.has('brief') ? String(formData.get('briefAt') ?? '') : '',
         muted: kinds.filter((k) => !on.has(k)),
+        // ۲.۴۱.۰ — فهرستِ **خاموش‌ها**، مثلِ ایمیل: دستهٔ تازه پیش‌فرض روشن است.
+        prefs: {
+          off: TG_CATEGORIES.filter((c) => !cats.has(c)),
+          quiet: on.has('quiet') ? { from: String(formData.get('quietFrom') ?? ''), to: String(formData.get('quietTo') ?? '') } : null,
+          evening: on.has('evening') ? String(formData.get('eveningAt') ?? '') : '',
+        },
       });
     }
   } catch (error) {
