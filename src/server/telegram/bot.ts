@@ -23,7 +23,7 @@ import { listAbsences as listTeamAbsences } from '@/server/activity/service';
 import { decideRequest, listRequests } from '@/server/finance/payouts';
 import { canManageSection, canViewSection } from '@/domain/access/permissions';
 import { MUTABLE_REMINDERS } from '@/server/notifications/service';
-import { linkProjectGroup } from './group';
+import { groupLocale, linkProjectGroup } from './group';
 import { answerJoinRequest, forgetGroup, migrateGroup, projectOfGroup, setupGroup } from './group-members';
 import { canViewProject, isClientOnly } from '@/server/projects/authority';
 import { listMeetings, listReminders } from '@/server/meetings/service';
@@ -1141,7 +1141,7 @@ async function onGroupCallback(update: NonNullable<TgUpdate['callback_query']>, 
   const scope = await groupScope(msg.chat.id);
   if (!scope) return;
   try {
-    await answerConfirm(msg.chat.id, who, msg.message_id, id, op === 'y', scope);
+    await answerConfirm(msg.chat.id, await inGroup(who), msg.message_id, id, op === 'y', scope);
   } catch (error) {
     await send(msg.chat.id, explainError(who.tr, error), undefined, msg.message_id);
   }
@@ -1565,6 +1565,12 @@ async function groupScope(chatId: number): Promise<GroupScope | null> {
  * ⚠️ تلگرام در حالتِ privacy فقط دستورها و پاسخ به ربات را می‌فرستد؛ منشنِ ساده
  * وقتی می‌رسد که ربات مدیرِ گروه باشد.
  */
+/** همان نفر، با متنِ ربات به زبانِ گروه (۲.۴۰.۰) — نه زبانِ پنلِ خودش؛ گروه یک زبان دارد. */
+async function inGroup(who: Who): Promise<Who> {
+  const locale = await groupLocale();
+  return { ...who, locale, tr: await translatorFor(locale) };
+}
+
 async function onGroupMessage(msg: TgMessage) {
   const chatId = msg.chat.id;
   const raw = (msg.text ?? msg.caption ?? '').trim();
@@ -1582,12 +1588,14 @@ async function onGroupMessage(msg: TgMessage) {
   if (!scope) return;
   const replyTo = msg.message_id;
 
-  const who = await whoIs(from.id);
-  if (!who) {
-    const tr = await translatorFor((await systemLocale()).locale);
+  const person = await whoIs(from.id);
+  if (!person) {
+    const tr = await translatorFor(await groupLocale());
     await send(chatId, `⚠️ ${esc(tr('اول تلگرامِ خودتان را در برنامه وصل کنید (پروفایل ← «اعلان‌ها و تلگرام»)؛ بعد اینجا جواب می‌دهم.'))}`, undefined, replyTo);
     return;
   }
+  // متن‌ها و جوابِ دستیار در گروه به زبانِ گروه (۲.۴۰.۰)؛ دسترسی همان پرسنده.
+  const who = await inGroup(person);
   // ⚠️ فقط اعضای تیمِ همین پروژه؛ کارفرما نه — ابزارها به نامِ پرسنده کار می‌کنند.
   if (!(await canViewProject(who.actor, scope.projectId)) || await isClientOnly(who.actor, scope.projectId)) {
     await send(chatId, `⚠️ ${esc(who.tr('دستیارِ این گروه فقط برای اعضای تیمِ همین پروژه است.'))}`, undefined, replyTo);
@@ -1701,7 +1709,7 @@ async function onMessage(msg: TgMessage) {
     const [c, token] = (msg.text ?? '').trim().split(/\s+/);
     if ((c ?? '').toLowerCase().replace(/@.*$/, '') === '/start' && token) {
       const title = await linkProjectGroup(token, msg.chat.id);
-      const tr = await translatorFor((await systemLocale()).locale);
+      const tr = await translatorFor(await groupLocale());
       await send(msg.chat.id, title
         ? [
           `✅ ${esc(tr('این گروه به پروژهٔ «{project}» وصل شد؛ کامنت‌ها و تسک‌های تازه و انجام‌شده اینجا هم می‌آیند.', { project: title }))}`,
@@ -1883,7 +1891,7 @@ async function onMessage(msg: TgMessage) {
 /** نتیجهٔ راه‌اندازیِ گروه، در خودِ گروه. */
 async function announceSetup(chatId: number, projectId: number) {
   const { state, sent } = await setupGroup(projectId);
-  const tr = await translatorFor((await systemLocale()).locale);
+  const tr = await translatorFor(await groupLocale());
   if (state === 'invited') {
     await send(chatId, `📨 ${esc(tr('لینکِ عضویت برای {n} عضوِ تیمِ پروژه در تلگرام و برنامه فرستاده شد. ربات فقط اعضای تیمِ همین پروژه را می‌پذیرد.', { n: sent }))}`);
   } else if (state === 'need_admin') {

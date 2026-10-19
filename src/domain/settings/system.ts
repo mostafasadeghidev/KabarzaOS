@@ -80,6 +80,11 @@ export interface SystemConfig {
   aiMediaMinutes: number;
   /** بیشترینِ عکسِ صحنه از هر ویدیو. */
   aiVideoFrames: number;
+  /**
+   * نامِ کوتاهِ مینی‌اپ در BotFather (۲.۴۰.۰) — دکمه‌های پیامِ گروه با لینکِ
+   * `t.me/<ربات>/<این نام>` داخلِ تلگرام باز می‌شوند. خالی = همان لینکِ مرورگر.
+   */
+  telegramAppName: string;
 }
 
 export const DEFAULT_SYSTEM: SystemConfig = {
@@ -101,6 +106,7 @@ export const DEFAULT_SYSTEM: SystemConfig = {
   aiVoiceMinutes: 3,
   aiMediaMinutes: 15,
   aiVideoFrames: 24,
+  telegramAppName: '',
 };
 
 function fromChoices(value: unknown, choices: readonly number[], fallback: number): number {
@@ -113,6 +119,13 @@ function zone(value: unknown): string {
   const v = String(value ?? '').trim();
   if (v === '') return '';
   try { new Intl.DateTimeFormat('en', { timeZone: v }); return v; } catch { return ''; }
+}
+
+/** نامِ کوتاهِ مینی‌اپ — همان قاعدهٔ BotFather؛ «t.me/bot/crm» هم پذیرفته و `crm` برداشته می‌شود. */
+function appName(value: unknown): string {
+  const v = String(value ?? '').trim().replace(/^https?:\/\//, '').split(/[/?#]/).filter(Boolean);
+  const name = (/^t\.me$/i.test(v[0] ?? '') ? v[2] : v[0]) ?? '';
+  return /^[A-Za-z0-9_]{3,64}$/.test(name) ? name : '';
 }
 
 function bool(value: unknown, fallback: boolean): boolean {
@@ -155,5 +168,6 @@ export function normalizeSystem(input: Partial<Record<keyof SystemConfig, unknow
     aiVoiceMinutes: fromChoices(input.aiVoiceMinutes, AI_VOICE_CHOICES, DEFAULT_SYSTEM.aiVoiceMinutes),
     aiMediaMinutes: fromChoices(input.aiMediaMinutes, AI_MEDIA_CHOICES, DEFAULT_SYSTEM.aiMediaMinutes),
     aiVideoFrames: fromChoices(input.aiVideoFrames, AI_FRAMES_CHOICES, DEFAULT_SYSTEM.aiVideoFrames),
+    telegramAppName: appName(input.telegramAppName),
   };
 }

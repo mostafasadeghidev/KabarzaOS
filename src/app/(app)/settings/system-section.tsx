@@ -338,6 +338,14 @@ export function SystemSection({ config, health, bucket, isOwner }: {
         <FieldDescription>
           {tr("هر دقیقهٔ صدا و هر عکس از سهمیهٔ هوشِ مصنوعیِ خودِ هر کاربر کم می‌کند. ویدیوی بلندتر از سقف فقط تا همان‌جا دیده می‌شود؛ ویسِ بلندتر رد می‌شود.")}
         </FieldDescription>
+        {/* ۲.۴۰.۰ — دکمه‌های پیامِ گروه داخلِ تلگرام باز شوند. */}
+        <Field className="max-w-sm">
+          <FieldLabel htmlFor="s-tg-app">{t("مینی‌اپ در BotFather (نامِ کوتاه یا لینک)")}</FieldLabel>
+          <Input id="s-tg-app" name="telegramAppName" dir="ltr" placeholder="t.me/bot/app" defaultValue={config.telegramAppName} />
+          <FieldDescription>
+            {tr("با این، دکمهٔ «مشاهده در Kabarza» زیرِ پیام‌های گروه همان صفحه را داخلِ تلگرام باز می‌کند. نشانیِ مینی‌اپ در BotFather باید «/tg» ِ همین سایت باشد. خالی = در مرورگر.")}
+          </FieldDescription>
+        </Field>
       </Panel>
 
       <Panel title={t("پیام‌ها")}>

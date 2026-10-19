@@ -1,10 +1,14 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 import { and, eq } from 'drizzle-orm';
 import { db, sql } from '../client';
-import { notifications, projectClients, projectMembers, projects, tags, userRoles, users } from '../schema';
+import { notifications, projectClients, projectMembers, projects, tags, tasks, userRoles, users } from '../schema';
 import { handleUpdate, resetBotState, setTelegramApi, type TgUpdate } from '@/server/telegram/bot';
 import { createProjectGroupLink } from '@/server/telegram/group';
 import { groupInviteFor } from '@/server/telegram/group-members';
+import { announceComment, announceTask } from '@/server/telegram/group';
+import { miniAppLogin } from '@/server/telegram/webapp';
+import { decodeStartParam, encodeStartParam, signInitData } from '@/domain/telegram/webapp';
+import { saveSystemConfig } from '@/server/settings/system-service';
 import { addProjectMember, setProjectAccess } from '@/server/projects/service';
 import type { Actor } from '@/domain/access/permissions';
 
@@ -48,6 +52,8 @@ beforeAll(async () => {
   P = p!.id;
   await db.insert(projectMembers).values({ projectId: P, userId: MEMBER, roleTagId: ROLE });
   await db.insert(projectClients).values({ projectId: P, userId: CLIENT });
+  // پیکربندیِ سامانه بینِ فایل‌های تست می‌ماند — زبانِ پیش‌فرض صریح.
+  await saveSystemConfig(as(OWNER, ['owner']), { defaultLocale: 'fa' });
 });
 
 beforeEach(() => {
@@ -146,5 +152,55 @@ describe('گروهِ تلگرامِ پروژه با دعوتِ خودکار', ()
     const [row] = await db.select().from(projects).where(eq(projects.id, P));
     expect(row!.telegramGroupId).toBe('');
     expect(row!.telegramGroupInvite).toBe('');
+  });
+
+  it('با نامِ کوتاهِ مینی‌اپ، دکمهٔ پیامِ گروه لینکِ مستقیم است و مقصد را می‌برد (۲.۴۰.۰)', async () => {
+    await db.update(projects).set({ telegramGroupId: String(GROUP) }).where(eq(projects.id, P));
+    await saveSystemConfig(as(OWNER, ['owner']), { telegramAppName: 'https://t.me/kabarza_bot/crm' });
+    try {
+      await announceComment(P, MEMBER, 'سلام');
+      const post = method('sendMessage').find((c) => c.body.chat_id === String(GROUP));
+      const url = JSON.stringify(post?.body.reply_markup).match(/https:\/\/t\.me\/kabarza_bot\/crm\?startapp=([A-Za-z0-9_-]+)/);
+      expect(url).not.toBeNull();
+      expect(decodeStartParam(url![1]!)).toBe(`/projects/${P}?tab=comments`);
+    } finally {
+      await saveSystemConfig(as(OWNER, ['owner']), { telegramAppName: '' });
+    }
+  });
+
+  it('ورودِ مینی‌اپ با start_param ِ امضاشده به همان صفحه می‌رود', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const initData = signInitData({
+      auth_date: String(now), user: JSON.stringify({ id: C.member }), start_param: encodeStartParam(`/projects/${P}?tab=tasks`)!,
+    }, process.env.TELEGRAM_BOT_TOKEN!);
+    const out = await miniAppLogin(initData);
+    expect(out).toMatchObject({ ok: true, userId: MEMBER, next: `/projects/${P}?tab=tasks` });
+    const evil = signInitData({ auth_date: String(now), user: JSON.stringify({ id: C.member }), start_param: encodeStartParam('//evil.com')! }, process.env.TELEGRAM_BOT_TOKEN!);
+    expect(await miniAppLogin(evil)).toMatchObject({ ok: true, next: null });
+  });
+
+  it('زبانِ گروه = زبانِ مدیرِ کل، نه پیش‌فرضِ سامانه؛ پیامِ انجام‌شده با پیشرفت (۲.۴۰.۰)', async () => {
+    await db.update(projects).set({ telegramGroupId: String(GROUP) }).where(eq(projects.id, P));
+    const [task] = await db.insert(tasks).values({ projectId: P, title: 'Style your message box', createdBy: OWNER }).returning({ id: tasks.id });
+    try {
+      await saveSystemConfig(as(OWNER, ['owner']), { defaultLocale: 'en' });
+      await db.update(users).set({ locale: 'fa' }).where(eq(users.id, OWNER));
+      await announceTask(task!.id, 'done', MEMBER);
+      const post = method('sendMessage').find((c) => c.body.chat_id === String(GROUP));
+      const text = String(post?.body.text);
+      expect(text).toContain('تسک انجام شد');
+      expect(text).toContain('Style your message box');
+      expect(text).toContain('دولوپر');
+      expect(text).toMatch(/▰|▱/);
+      expect(text).not.toContain('Done');
+
+      calls = [];
+      await db.update(users).set({ locale: 'en' }).where(eq(users.id, OWNER));
+      await announceComment(P, MEMBER, 'hello');
+      expect(String(method('sendMessage').find((c) => c.body.chat_id === String(GROUP))?.body.text)).toContain('New comment');
+    } finally {
+      await saveSystemConfig(as(OWNER, ['owner']), { defaultLocale: 'fa' });
+      await db.update(users).set({ locale: null }).where(eq(users.id, OWNER));
+    }
   });
 });

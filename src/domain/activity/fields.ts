@@ -142,6 +142,7 @@ export const FIELD_LABELS: Record<string, string> = {
   aiVoiceMinutes: 'سقفِ ویسِ دستیار (دقیقه)',
   aiMediaMinutes: 'سقفِ ویدیو و ویسِ نقل‌شده (دقیقه)',
   aiVideoFrames: 'عکس از هر ویدیو',
+  telegramAppName: 'نامِ کوتاهِ مینی‌اپِ تلگرام',
   defaultLocale: 'زبانِ پیش‌فرض',
   msgPurgeDays: 'پاک‌سازیِ پیام‌ها (روز)',
   onboardingEnabled: 'آنبوردینگ',

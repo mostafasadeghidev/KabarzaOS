@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.40.0]
+
+### Added
+
+- **Group message buttons open inside Telegram.** With the mini app's short name set (Settings → System → Telegram assistant; the name or the whole `t.me/<bot>/<name>` link), the "View in Kabarza" and "Reply in Kabarza" buttons under the project group's messages become Telegram mini app direct links (`t.me/<bot>/<name>?startapp=…`), which open the app inside Telegram, also in groups, right on that page. Telegram does not allow plain mini app buttons in groups, so before this they opened the browser. The target travels in the signed `start_param` and is accepted only as an internal path. Without the name the buttons stay browser links. If the mini app URL in BotFather is the site's root instead of `/tg`, the login page forwards it to `/tg`.
+
+### Changed
+
+- **Project group messages speak the owner's language.** The group's language is now the language of the first active owner, then the system default. Role names are in that language too. Before, it was the system default only, which produced "✅ Done … by دولوپر". When the assistant answers in a group, it also uses the group's language; private chats with the bot keep each person's own language.
+- **Clearer group messages.** A new task shows a heading, the title, a short quote of its description, then the owner, due date and priority each on their own line. A finished task shows who did it and the project's progress bar (for example `▰▰▰▱▱▱▱▱▱▱ 3/10`). A new comment shows who wrote it above the quote.
+- **Direct messages arrive whole in Telegram.** A message notification now carries up to 1,000 characters of the message (mentions and group messages 400) instead of the first 120.
+
 ## [2.38.2]
 
 ### Fixed

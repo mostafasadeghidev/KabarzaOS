@@ -368,7 +368,7 @@ describe('وضعیتِ هوشِ مصنوعی در ربات و مینی‌اپ (�
     try {
       const now = String(Math.floor(Date.now() / 1000));
       const as = (id: number) => signInitData({ auth_date: now, user: JSON.stringify({ id }) }, token);
-      expect(await miniAppLogin(as(CHAT))).toEqual({ ok: true, userId: MEMBER });
+      expect(await miniAppLogin(as(CHAT))).toEqual({ ok: true, userId: MEMBER, next: null });
       expect(await miniAppLogin(as(123))).toEqual({ ok: false, reason: 'not_linked' });
       expect(await miniAppLogin(signInitData({ auth_date: now, user: JSON.stringify({ id: CHAT }) }, '999:wrong'))).toEqual({ ok: false, reason: 'invalid' });
       expect(await miniAppLogin('')).toEqual({ ok: false, reason: 'invalid' });

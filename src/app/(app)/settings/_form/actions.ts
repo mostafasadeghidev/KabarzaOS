@@ -370,6 +370,7 @@ export async function saveSystemAction(
       aiVoiceMinutes: formData.get('aiVoiceMinutes'),
       aiMediaMinutes: formData.get('aiMediaMinutes'),
       aiVideoFrames: formData.get('aiVideoFrames'),
+      telegramAppName: formData.get('telegramAppName'),
     });
   } catch (error) {
     if (error instanceof ForbiddenError) return { error: 'دسترسی ندارید.' };
