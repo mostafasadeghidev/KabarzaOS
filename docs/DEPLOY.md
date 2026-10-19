@@ -32,6 +32,27 @@ Updating is the same command:
 git pull && docker compose up -d --build
 ```
 
+### Updating with the prebuilt image (recommended on a shared server)
+
+Every merge into `main` is checked (TypeScript and unit tests) and built into an
+image by GitHub Actions (`.github/workflows/image.yml`), published as
+`ghcr.io/mostafasadeghidev/kabarzaos` with the tags `latest`, the version
+(e.g. `2.40.1`) and `sha-<commit>`. Building on the server took 1.1–1.6 GB of
+memory and could stop other apps on the same machine; pulling the image does not.
+
+```bash
+git pull && docker compose pull app && docker compose up -d
+```
+
+- The repository is private, so the server logs in once with a GitHub token
+  that has only `read:packages`:
+  `echo <token> | docker login ghcr.io -u <github-user> --password-stdin`.
+- To run a specific version (for example to roll back), set
+  `KABARZA_IMAGE=ghcr.io/mostafasadeghidev/kabarzaos:2.40.0` in `.env` and run
+  `docker compose up -d`.
+- `docker compose up -d --build` still works and builds the same image locally
+  (with the type check) when the registry is not reachable.
+
 `install.sh` wraps this and adds three conveniences: it generates a unique
 database password instead of using the built-in default, picks a free host
 port if 3000 is taken, and waits until the app reports healthy before

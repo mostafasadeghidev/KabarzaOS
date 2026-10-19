@@ -16,6 +16,13 @@ Versioning follows [SemVer](https://semver.org/).
 
 - **"/" commands in project groups.** Groups showed the private chat's command menu, and `/menu@bot`, `/help@bot` or `/keyboard@bot` went to the AI, which answered "I cannot assist with that". Groups now have their own menu (`/ask`, `/tasks`, `/help`). `/help` explains the bot in the group. `/tasks` lists the project's open tasks that the client could see too (not private, not hidden from client, without names), for linked team members of the project only. Any other command gets "this works only in a private chat with the bot" with a button to open it. A command meant for another bot is ignored.
 
+## [2.40.1]
+
+### Changed
+
+- **The production image is built by GitHub Actions, not on the server.** Building with `docker compose up -d --build` on the server took 1.1–1.6 GB of memory and could stop other apps on the same machine. Every merge into `main` now runs the TypeScript check and the unit tests, then builds the image and publishes it as `ghcr.io/mostafasadeghidev/kabarzaos` (`latest`, the version and `sha-<commit>`). The server updates with `git pull && docker compose pull app && docker compose up -d`; an older version can be run again with `KABARZA_IMAGE`. Building on the server with `--build` still works as before.
+- The type check inside `next build` is skipped only for this image (`SKIP_TYPECHECK=1`), because the workflow runs it separately first and does not build when it fails. Any other build still checks types.
+
 ## [2.40.0]
 
 ### Added

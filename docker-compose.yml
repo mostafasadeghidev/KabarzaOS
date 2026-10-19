@@ -1,5 +1,10 @@
 # استقرارِ تولید — یک فرمان:  docker compose up -d --build
 #
+# ⚠️ ایمیجِ آماده (۲.۴۰.۱): GitHub Actions با هر ادغام در main ایمیج را می‌سازد و در
+# ghcr.io منتشر می‌کند. به‌روزرسانی بی‌ساختن روی سرور (حافظهٔ سرور را نمی‌گیرد):
+#   git pull && docker compose pull app && docker compose up -d
+# `--build` همچنان کار می‌کند و ایمیج را محلی می‌سازد (مثلاً بی دسترسی به ghcr).
+#
 # ⚠️ عمداً نامش docker-compose.yml است، نه docker-compose.prod.yml: ابزارهای
 # استقرار (Coolify، Portainer، Dokploy) و خودِ `docker compose` بدونِ سوئیچ
 # همین نام را برمی‌دارند. محیطِ توسعه در docker-compose.dev.yml است.
@@ -14,6 +19,10 @@
 
 services:
   app:
+    # ⚠️ `image` و `build` هر دو: `pull` ایمیجِ آماده را می‌گیرد و `--build` همان را
+    # محلی می‌سازد و با همین نام برچسب می‌زند. برای یک نسخهٔ مشخص (برگشت):
+    # KABARZA_IMAGE=ghcr.io/mostafasadeghidev/kabarzaos:2.40.0
+    image: ${KABARZA_IMAGE:-ghcr.io/mostafasadeghidev/kabarzaos:latest}
     build: .
     restart: unless-stopped
     # ⚠️ نامِ یکتا روی شبکه. نامِ سرویس (`app`, `db`) روی **هر** شبکه‌ای که
