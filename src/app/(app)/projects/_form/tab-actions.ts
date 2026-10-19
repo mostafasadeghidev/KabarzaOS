@@ -39,6 +39,10 @@ export async function setTaskStatusAction(taskId: number, statusTagId: number | 
   } catch (error) {
     // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
     if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
+    // ۲.۳۹.۰ — وضعیت مالِ صاحبِ کار است؛ پیام بگوید چرا، نه فقط «اجازه ندارید».
+    if (error instanceof ForbiddenError && error.required === 'task.status_not_yours') {
+      return { error: 'وضعیتِ این تسک را فقط مسئولِ آن یا مدیرِ پروژه عوض می‌کند.' };
+    }
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ تغییرِ وضعیتِ تسک ندارید.' };
     return { error: 'وضعیتِ تسک ثبت نشد.' };
   }

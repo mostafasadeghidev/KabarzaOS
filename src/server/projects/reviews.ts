@@ -18,6 +18,7 @@ import { assertNotFrozen, canInteractWithProject, canManageProject, isProjectFro
 import * as repo from './repository';
 import { createTask, getProject, getTaskFormOptions, NotFoundError, viewerContext, type TaskInput } from './service';
 import { canManageSection } from '@/domain/access/permissions';
+import { canSetTaskStatus } from '@/domain/projects/task-status-authority';
 
 /**
  * بازبینی‌های پروژه (۱.۱۱۶.۰).
@@ -273,6 +274,15 @@ export async function getReview(actor: Actor, reviewId: number) {
       mediaCount: i.mediaCount,
       done: i.done,
       roles: itemRoles.filter((r) => r.taskId === i.id).map((r) => r.roleName ?? ''),
+      /** وضعیتِ مورد فقط برای صاحبِ کار یا مدیر (۲.۳۹.۰). */
+      canSetStatus: canSetTaskStatus({
+        userId: actor.id,
+        managesProject: viewer.manages,
+        assignedTo: i.assignedTo,
+        createdBy: i.createdBy,
+        roles: itemRoles.filter((r) => r.taskId === i.id),
+        userRoleTagIds: members.filter((m) => m.userId === actor.id && m.roleTagId !== null).map((m) => m.roleTagId!),
+      }),
     })),
     progress: reviewProgress(items),
     canManage,

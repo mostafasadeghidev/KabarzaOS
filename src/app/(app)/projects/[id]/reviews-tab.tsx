@@ -523,7 +523,7 @@ function ItemRow({
         <TaskStatusPicker
           task={{ id: item.id, statusTagId: item.statusTagId, statusName: item.statusName, statusColor: item.statusColor, isReview: null }}
           options={statuses}
-          canManage={canChangeStatus}
+          canManage={canChangeStatus && item.canSetStatus !== false}
           onChanged={onChanged}
         />
       </div>

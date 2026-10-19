@@ -4410,5 +4410,6 @@
   "مثلاً فایلِ CSS/JS روی CDN، یا تنظیمِ یک سرویسِ دیگر": "e.g. a CSS/JS file on a CDN, or a setting in another service",
   "کدِ سفارشی‌ای که در سایت نصب می‌شود — با جای نصب و تنظیمات.": "Custom code installed on the site — with where it goes and its settings.",
   "یک «کد» دست‌کم یک تکه‌کد لازم دارد.": "A “code” entry needs at least one snippet.",
-  "یک المنتِ Embed (</>) در همان جایی از صفحه که نوشته شده": "An Embed element (</>) at the spot on the page that's described"
+  "یک المنتِ Embed (</>) در همان جایی از صفحه که نوشته شده": "An Embed element (</>) at the spot on the page that's described",
+  "وضعیتِ این تسک را فقط مسئولِ آن یا مدیرِ پروژه عوض می‌کند.": "Only the task's assignee or the project manager can change its status."
 }
