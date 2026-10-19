@@ -18,6 +18,12 @@ WORKDIR /app
 RUN npm install -g pnpm@11
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# ⚠️ بررسیِ TypeScript ِ داخلِ `next build` پرمصرف‌ترین بخشِ ساخت است. GitHub
+# Actions (.github/workflows/image.yml) آن را **پیش از** ساخت جدا اجرا می‌کند و
+# این‌جا با SKIP_TYPECHECK=1 خاموش است. ساختِ دستی روی سرور (بی این آرگومان)
+# مثلِ قبل بررسی می‌کند.
+ARG SKIP_TYPECHECK=0
+ENV SKIP_TYPECHECK=${SKIP_TYPECHECK}
 # ⚠️ برای build به دیتابیس نیازی نیست — همهٔ صفحه‌ها dynamic اند.
 RUN pnpm build
 
