@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.40.1]
+
+### Changed
+
+- **The production image is built by GitHub Actions, not on the server.** Building with `docker compose up -d --build` on the server took 1.1–1.6 GB of memory and could stop other apps on the same machine. Every merge into `main` now runs the TypeScript check and the unit tests, then builds the image and publishes it as `ghcr.io/mostafasadeghidev/kabarzaos` (`latest`, the version and `sha-<commit>`). The server updates with `git pull && docker compose pull app && docker compose up -d`; an older version can be run again with `KABARZA_IMAGE`. Building on the server with `--build` still works as before.
+- The type check inside `next build` is skipped only for this image (`SKIP_TYPECHECK=1`), because the workflow runs it separately first and does not build when it fails. Any other build still checks types.
+
 ## [2.40.0]
 
 ### Added

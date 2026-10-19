@@ -10,8 +10,14 @@ const nextConfig: NextConfig = {
    * node_modules ِ standalone خوانده شود — همان‌جا که واقعاً هست.
    */
   serverExternalPackages: ['@node-rs/argon2'],
-  // خطاهای تایپ هرگز در بیلد نادیده گرفته نمی‌شوند (REQUIREMENTS الف-۱)
-  typescript: { ignoreBuildErrors: false },
+  /**
+   * خطاهای تایپ هرگز نادیده گرفته نمی‌شوند (REQUIREMENTS الف-۱) — فقط **جای**
+   * بررسی عوض می‌شود: ایمیجِ GitHub Actions `tsc --noEmit` را پیش از ساخت جدا
+   * اجرا می‌کند و ساختِ ایمیج را فقط با قبول‌شدنش شروع می‌کند، پس داخلِ
+   * `next build` دوباره نمی‌سنجد (SKIP_TYPECHECK=1، حافظهٔ کمتر). هر ساختِ
+   * دیگری — دستی، روی سرور یا محلی — مثلِ قبل می‌سنجد.
+   */
+  typescript: { ignoreBuildErrors: process.env.SKIP_TYPECHECK === '1' },
   /**
    * ⚠️ `staleTimes.dynamic: 0` تنها نیمِ راه است و `static: 0` را Next
    * نمی‌پذیرد (کمینه‌اش ۳۰ ثانیه است و کلِ بلوک را نامعتبر می‌کند). پس

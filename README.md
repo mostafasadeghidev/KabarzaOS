@@ -21,6 +21,8 @@ Update:
 
 ```bash
 git pull && docker compose up -d --build
+# or, without building on the server (prebuilt image from GitHub Actions):
+# git pull && docker compose pull app && docker compose up -d
 ```
 
 Coolify, optional variables and backups: [`docs/DEPLOY.md`](docs/DEPLOY.md).
