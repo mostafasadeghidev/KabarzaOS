@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { TG_CATEGORIES, TG_CATEGORY_LABELS } from '@/domain/telegram/prefs';
 import { useFormStatus } from 'react-dom';
 import { Bell, Bot, Building2, CreditCard, Clock, KeyRound, Send, Lock, UserRound } from 'lucide-react';
 import { McpPanel, type McpGrantView, type McpTokenView } from './mcp-panel';
@@ -54,6 +55,8 @@ export interface ProfileData {
     /** یادآورهای بی‌صدا در تلگرام و ساعتِ گزارشِ صبحگاهی (۲.۱۴.۰). */
     telegramMuted: string[];
     briefAt: string;
+    /** دسته‌های خاموش در تلگرام، ساعتِ سکوت و گزارشِ عصر (۲.۴۱.۰). */
+    telegramPrefs: { off: string[]; quiet: { from: string; to: string } | null; evening: string };
     /** بدونِ mailer، گزینه‌های ایمیل بی‌اثرند و همین گفته می‌شود. */
     mailerReady: boolean;
   };
@@ -514,10 +517,30 @@ export function ProfileView({ data }: { data: ProfileData }) {
                     <Switch name="telegramOn" defaultChecked={data.notify.telegramOn} />
                     {tr("دریافتِ اعلان در تلگرام")}
                   </label>
-                  {/* ⚠️ خاموش‌کردنِ دسته فقط ایمیل را ساکت می‌کند (R-NOTIF-04). */}
-                  <p className="text-xs text-muted-foreground">
-                    {tr('تلگرام همهٔ رویدادها را می‌گیرد؛ دسته‌بندیِ بالا فقط ایمیل را ساکت می‌کند.')}
-                  </p>
+                  {/* ⚠️ دسته‌های بالا فقط ایمیل‌اند (R-NOTIF-04)؛ تلگرام دسته‌های خودش را دارد (۲.۴۱.۰). */}
+                  <fieldset className="grid gap-2 rounded-lg border p-3">
+                    <legend className="px-1 text-xs font-medium text-muted-foreground">{tr('آنچه در تلگرام بیاید')}</legend>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                      {TG_CATEGORIES.map((c) => (
+                        <label key={c} className="flex items-center gap-1.5 text-sm">
+                          <Switch name="tgCat" value={c} defaultChecked={!data.notify.telegramPrefs.off.includes(c)} />
+                          {tr(TG_CATEGORY_LABELS[c])}
+                        </label>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <label className="flex items-center gap-1.5">
+                        <Switch name="tgOn" value="quiet" defaultChecked={data.notify.telegramPrefs.quiet !== null} />
+                        {tr('ساعتِ سکوت از')}
+                      </label>
+                      <Input type="time" name="quietFrom" defaultValue={data.notify.telegramPrefs.quiet?.from ?? '23:00'} className="w-28" dir="ltr" />
+                      <span>{tr('تا')}</span>
+                      <Input type="time" name="quietTo" defaultValue={data.notify.telegramPrefs.quiet?.to ?? '08:00'} className="w-28" dir="ltr" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {tr('دستهٔ خاموش فقط در تلگرام نمی‌آید؛ در برنامه و ایمیل می‌ماند. در ساعتِ سکوت چیزی فرستاده نمی‌شود و پایانش یک خلاصه می‌آید.')}
+                    </p>
+                  </fieldset>
                   {/*
                     یادآورهای تلگرام (۲.۱۴.۰). ⚠️ هر کدام حداکثر یک بار در روز، فقط روزِ
                     کاری و نه در مرخصی؛ زیرِ هر پیام هم «🔕 دیگر نفرست» هست.
@@ -531,6 +554,14 @@ export function ProfileView({ data }: { data: ProfileData }) {
                         {tr('گزارشِ صبحگاهی ساعتِ')}
                       </label>
                       <Input type="time" name="briefAt" defaultValue={data.notify.briefAt || '08:30'} className="w-28" dir="ltr" />
+                    </div>
+                    {/* ۲.۴۱.۰ — گزارشِ عصر: کارهای امروز، ساعتِ ثبت‌شده و کارِ فردا. */}
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <label className="flex items-center gap-1.5">
+                        <Switch name="tgOn" value="evening" defaultChecked={data.notify.telegramPrefs.evening !== ''} />
+                        {tr('گزارشِ عصر ساعتِ')}
+                      </label>
+                      <Input type="time" name="eveningAt" defaultValue={data.notify.telegramPrefs.evening || '18:00'} className="w-28" dir="ltr" />
                     </div>
                     {([
                       ['no_timelog', 'یادآوریِ ثبتِ ساعت (اگر روزِ کاری چیزی ثبت نشده)'],

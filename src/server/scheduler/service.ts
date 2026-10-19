@@ -15,6 +15,7 @@ import { notifyOverdueOnboarding } from '@/server/onboarding/service';
 import { runBackupIfDue } from '@/server/backup/run';
 import { formatDateTime } from '@/i18n/datetime';
 import { briefDue } from '@/domain/telegram/brief';
+import { eveningDue, normalizePrefs, quietEnded, quietLength } from '@/domain/telegram/prefs';
 import { weekdayOfDate } from '@/domain/availability/weekly';
 
 /**
@@ -56,6 +57,10 @@ export interface TickReport {
   backup: boolean;
   /** گزارشِ صبحگاهیِ تلگرام — شمارِ فرستاده‌ها (۲.۱۴.۰). */
   briefs: number;
+  /** گزارشِ عصرِ تلگرام (۲.۴۱.۰). */
+  evenings: number;
+  /** خلاصهٔ پایانِ ساعتِ سکوت (۲.۴۱.۰). */
+  quietDigests: number;
 }
 
 /* ------------------------------------------------------------------ *
@@ -371,6 +376,69 @@ async function runMorningBriefs(now: Date): Promise<number> {
 }
 
 /* ------------------------------------------------------------------ *
+ * گزارشِ عصر و خلاصهٔ پایانِ سکوت (۲.۴۱.۰)
+ * ------------------------------------------------------------------ */
+
+const hhmm = (p: { hour: number; minute: number }) => `${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
+
+async function telegramUsers() {
+  const { telegramEnabled } = await import('@/server/settings/telegram-service');
+  if (!(await telegramEnabled())) return [];
+  return db.select({
+    id: users.id, timezone: users.timezone, prefs: users.telegramPrefs,
+    memberState: users.memberState, deletedAt: users.deletedAt,
+  }).from(users).where(and(sql`${users.telegramChatId} <> ''`, eq(users.telegramOff, false)));
+}
+
+/** گزارشِ عصر — همان قاعده‌های «مزاحم نشدن» ِ گزارشِ صبح: یک بار، روزِ کاری، نه در مرخصی. */
+async function runEveningReports(now: Date): Promise<number> {
+  const systemTz = (await getSystemConfig()).timezone;
+  let sent = 0;
+  for (const u of await telegramUsers()) {
+    if (u.memberState !== 'active' || u.deletedAt !== null) continue;
+    const prefs = normalizePrefs(u.prefs);
+    if (!prefs.evening) continue;
+    const local = localParts(now, u.timezone || systemTz);
+    const key = `evening:${u.id}`;
+    const [stamp, slots, absent] = await Promise.all([
+      readStamp(key),
+      db.selectDistinct({ weekday: availabilitySlots.weekday }).from(availabilitySlots).where(eq(availabilitySlots.userId, u.id)),
+      db.select({ id: absences.id }).from(absences)
+        .where(and(eq(absences.userId, u.id), lte(absences.fromDate, local.date), gte(absences.toDate, local.date))),
+    ]);
+    if (!eveningDue({
+      at: prefs.evening, local: { date: local.date, time: hhmm(local) }, lastSent: stamp,
+      workDays: slots.map((s) => s.weekday), weekday: weekdayOfDate(local.date) ?? 0, onLeave: absent.length > 0,
+    })) continue;
+    // ⚠️ مهر پیش از ارسال — همان قاعدهٔ گزارشِ صبح.
+    await writeStamp(key, local.date);
+    const { sendEveningReport } = await import('@/server/telegram/bot');
+    if (await sendEveningReport(u.id).catch(() => false)) sent += 1;
+  }
+  return sent;
+}
+
+/** پایانِ ساعتِ سکوت ← یک پیام با اعلان‌هایی که در این بازه به تلگرام نرفتند. */
+async function runQuietDigests(now: Date): Promise<number> {
+  const systemTz = (await getSystemConfig()).timezone;
+  let sent = 0;
+  for (const u of await telegramUsers()) {
+    if (u.memberState !== 'active' || u.deletedAt !== null) continue;
+    const prefs = normalizePrefs(u.prefs);
+    if (!prefs.quiet) continue;
+    const local = localParts(now, u.timezone || systemTz);
+    const key = `quiet:${u.id}`;
+    if (!quietEnded(hhmm(local), local.date, prefs.quiet, await readStamp(key))) continue;
+    await writeStamp(key, local.date);
+    // بازه: از آغازِ سکوت تا الان (پایانِ سکوت + چند دقیقهٔ تیک).
+    const since = new Date(now.getTime() - (quietLength(prefs.quiet) + 125) * 60_000);
+    const { sendQuietDigest } = await import('@/server/telegram/bot');
+    if (await sendQuietDigest(u.id, since, prefs.off).catch(() => false)) sent += 1;
+  }
+  return sent;
+}
+
+/* ------------------------------------------------------------------ *
  * تیک
  * ------------------------------------------------------------------ */
 
@@ -378,6 +446,7 @@ async function runMorningBriefs(now: Date): Promise<number> {
 export async function runTick(now = new Date()): Promise<TickReport> {
   const report: TickReport = {
     reminders: 0, meetings: 0, timers: 0, nudges: 0, cleaned: false, dailyReport: false, onboarding: 0, backup: false, briefs: 0,
+    evenings: 0, quietDigests: 0,
   };
 
   const jobs: Array<[keyof TickReport, () => Promise<number | boolean>]> = [
@@ -389,6 +458,8 @@ export async function runTick(now = new Date()): Promise<TickReport> {
     ['onboarding', () => notifyOverdueOnboarding(now)],
     ['backup', () => runBackupIfDue(now)],
     ['briefs', () => runMorningBriefs(now)],
+    ['evenings', () => runEveningReports(now)],
+    ['quietDigests', () => runQuietDigests(now)],
     ['cleaned', () => runCleanup(now)],
   ];
 

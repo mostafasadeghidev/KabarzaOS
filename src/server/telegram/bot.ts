@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, sql } from 'drizzle-orm';
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { format as formatMoney } from '@/domain/money/money';
 import { payoutLevel } from '@/server/finance/payouts';
@@ -6,9 +6,15 @@ import { parseTaskRef, taskRefGlobal, type ParsedTaskRef } from '@/domain/projec
 import { findTaskByRef } from '@/server/projects/task-numbers';
 import { taskCard } from '@/server/telegram/task-card';
 import { db } from '@/db/client';
-import { auditLog, projects, tasks, users } from '@/db/schema';
+import { auditLog, notifications, projects, tags, tasks, timelogs, users } from '@/db/schema';
+import { tagName } from '@/db/tag-name';
+import { categoryOf } from '@/domain/notifications/gateway';
+import {
+  BRIEF_CHOICES, EVENING_CHOICES, QUIET_PRESETS, TG_CATEGORIES, TG_CATEGORY_LABELS, nextChoice, normalizePrefs, sameQuiet,
+  type TelegramPrefs, type TgCategory,
+} from '@/domain/telegram/prefs';
 import type { Actor } from '@/domain/access/permissions';
-import { isLocale, LOCALE_NAMES, type Locale } from '@/i18n/config';
+import { isLocale, LOCALES, LOCALE_NAMES, type Locale } from '@/i18n/config';
 import { createTranslator, type Translator } from '@/i18n/translate';
 import { loadMessages } from '@/i18n/server';
 import { loadActor } from '@/server/auth';
@@ -23,7 +29,7 @@ import { listAbsences as listTeamAbsences } from '@/server/activity/service';
 import { decideRequest, listRequests } from '@/server/finance/payouts';
 import { canManageSection, canViewSection } from '@/domain/access/permissions';
 import { MUTABLE_REMINDERS } from '@/server/notifications/service';
-import { groupLocale, linkProjectGroup } from './group';
+import { groupLocale, linkProjectGroup, openButton } from './group';
 import { answerJoinRequest, forgetGroup, migrateGroup, projectOfGroup, setupGroup } from './group-members';
 import { canViewProject, isClientOnly } from '@/server/projects/authority';
 import { listMeetings, listReminders } from '@/server/meetings/service';
@@ -347,6 +353,8 @@ function menu(tr: Translator, timer?: TimerView, roles?: { manager: boolean; own
   return [
     ...work,
     [{ text: `📅 ${tr('جلسه‌ها و یادآورها')}`, callback_data: 'm:meet' }, { text: `🤖 ${tr('هوشِ مصنوعی')}`, callback_data: 'm:ai' }],
+    // ۲.۴۱.۰ — چه بیاید، ساعتِ سکوت، گزارش‌ها و زبان، همه از داخلِ ربات.
+    [{ text: `⚙️ ${tr('تنظیماتِ ربات')}`, callback_data: 'm:set' }],
     ...(app ? [[app]] : []),
     ...(roles?.manager || roles?.company
       ? [[
@@ -1032,6 +1040,8 @@ async function onCallback(update: NonNullable<TgUpdate['callback_query']>) {
     }
     if (kind === 'm' && op === 'ai') return await showAi(chatId, who, msg.message_id);
     if (kind === 'm' && op === 'meet') return await showMeetings(chatId, who, msg.message_id);
+    if (kind === 'm' && op === 'set') return await showSettings(chatId, who, msg.message_id);
+    if (kind === 's') return await onSettingsButton(chatId, who, msg.message_id, op ?? '', a ?? '');
     if (kind === 'm' && op === 'tasks') return await showTasks(chatId, who);
     if (kind === 'm' && op === 'hours') return await showHours(chatId, who);
     if (kind === 't' && op === 'p') return await timerStart(chatId, who, msg.message_id);
@@ -1581,6 +1591,11 @@ async function onGroupMessage(msg: TgMessage) {
   const mentionRe = bot ? new RegExp(`@${bot}\\b`, 'gi') : null;
   const mentioned = mentionRe ? mentionRe.test(raw) : false;
   const replyToBot = msg.reply_to_message?.from?.is_bot === true && (msg.reply_to_message.from.username ?? '').toLowerCase() === bot;
+  // ۲.۴۱.۰: دستورهای «/» ِ گروه قطعی‌اند، نه هوشِ مصنوعی — پیش از این «/menu@ربات» منشن
+  // حساب می‌شد و مدل «نمی‌توانم» جواب می‌داد. دستورِ رباتِ دیگری هم نادیده.
+  const slash = /^\/([a-z_]+)(?:@(\w+))?$/i.exec(first);
+  if (slash?.[2] && slash[2].toLowerCase() !== bot) return;
+  if (slash && !['ask', 'ai'].includes(slash[1]!.toLowerCase())) return await groupCommand(msg, slash[1]!.toLowerCase(), bot);
   if (!isCommand && !mentioned && !replyToBot) return;
   const from = msg.from;
   if (!from || from.is_bot) return;
@@ -1859,6 +1874,8 @@ async function onMessage(msg: TgMessage) {
         return await pickProject(chatId, who, 'l:j', heading('➕', who.tr('ساعت روی کدام پروژه ثبت شود؟')));
       case '/ai':
         return await showAi(chatId, who);
+      case '/settings':
+        return await showSettings(chatId, who);
       case '/meetings':
         return await showMeetings(chatId, who);
       case '/new':
@@ -1884,6 +1901,249 @@ async function onMessage(msg: TgMessage) {
   } catch (error) {
     await send(chatId, explainError(who.tr, error), await menuFor(who));
   }
+}
+
+/* ---------------- دستورهای گروه (۲.۴۱.۰) ---------------- */
+
+/** «/tasks»، «/help» و دستورهای شخصی در گروه — بی هوشِ مصنوعی. */
+async function groupCommand(msg: TgMessage, name: string, bot: string) {
+  const chatId = msg.chat.id;
+  const replyTo = msg.message_id;
+  const scope = await groupScope(chatId);
+  if (!scope) return;
+  const tr = await translatorFor(await groupLocale());
+  const privateChat: Keyboard | undefined = bot ? [[{ text: `💬 ${tr('چتِ خصوصی با ربات')}`, url: `https://t.me/${bot}` }]] : undefined;
+
+  if (name === 'help' || name === 'start') {
+    await send(chatId, tidy([
+      heading('ℹ️', tr('ربات در گروهِ پروژه')),
+      '',
+      `${RLM}/ask — ${esc(tr('پرسش یا درخواست از دستیار؛ پاسخ به پیامِ ربات هم همین کار را می‌کند.'))}`,
+      `${RLM}/tasks — ${esc(tr('تسک‌های بازِ این پروژه'))}`,
+      '',
+      hint(tr('ویدیو، لینکِ Loom، عکس یا ویس را هم با /ask بفرستید یا روی‌شان پاسخ بدهید.')),
+      hint(tr('کارهای شخصی (ساعت، تایمر، تنظیماتِ اعلان) در چتِ خصوصی با ربات است.')),
+    ]), privateChat, replyTo);
+    return;
+  }
+  if (name === 'tasks') {
+    // ⚠️ همان گاردِ دستیار: فقط عضوِ تیمِ همین پروژه که تلگرامش وصل است.
+    const person = msg.from ? await whoIs(msg.from.id) : null;
+    if (!person || !(await canViewProject(person.actor, scope.projectId)) || await isClientOnly(person.actor, scope.projectId)) {
+      await send(chatId, `⚠️ ${esc(tr('این دستور فقط برای اعضای تیمِ همین پروژه است که تلگرامشان را در برنامه وصل کرده‌اند.'))}`, undefined, replyTo);
+      return;
+    }
+    await showGroupTasks(chatId, scope, tr, await groupLocale(), replyTo);
+    return;
+  }
+  await send(chatId, `🔒 ${esc(tr('این دستور فقط در چتِ خصوصی با ربات کار می‌کند.'))}`, privateChat, replyTo);
+}
+
+/**
+ * تسک‌های بازِ پروژه در گروه — فقط آنچه کارفرما هم در برنامه می‌بیند (نه خصوصی، نه
+ * «پنهان از کارفرما») و بی نامِ افراد؛ نزدیک‌ترین مهلت اول.
+ */
+async function showGroupTasks(chatId: number, scope: GroupScope, tr: Translator, locale: Locale, replyTo: number) {
+  const status = tagName(locale);
+  const rows = await db.select({ title: tasks.title, dueDate: tasks.dueDate, status }).from(tasks)
+    .leftJoin(tags, eq(tags.id, tasks.statusTagId))
+    .where(and(
+      eq(tasks.projectId, scope.projectId), isNull(tasks.deletedAt), eq(tasks.isPrivate, false), eq(tasks.clientHidden, false),
+      sql`not coalesce(${tags.isClosed}, false) and coalesce(${tags.statusGroup}, '') <> 'complete'`,
+    ))
+    .orderBy(sql`${tasks.dueDate} asc nulls last`, asc(tasks.id))
+    .limit(40);
+  const today = todayIn((await systemLocale()).tz);
+  const shown = rows.slice(0, 15);
+  const lines = [
+    heading('📋', tr('تسک‌های بازِ «{project}»', { project: scope.projectTitle }), rows.length),
+    '',
+    ...(shown.length === 0 ? [esc(tr('تسکِ بازی نیست.'))] : shown.map((r) => bulletHtml(`<b>${esc(clip(r.title, 90))}</b>`, esc(r.status ?? ''), dueHtml(r.dueDate, today, tr)))),
+    moreHtml(rows.length, shown.length, tr),
+  ];
+  const button = await openButton(`/projects/${scope.projectId}?tab=tasks`, tr('مشاهده در Kabarza'));
+  await send(chatId, tidy(lines), button?.inline_keyboard, replyTo);
+}
+
+/* ---------------- تنظیماتِ ربات (۲.۴۱.۰) ---------------- */
+
+async function loadPrefs(userId: number) {
+  const [row] = await db.select({ prefs: users.telegramPrefs, briefAt: users.briefAt, muted: users.telegramMuted })
+    .from(users).where(eq(users.id, userId));
+  return { prefs: normalizePrefs(row?.prefs), briefAt: row?.briefAt ?? '', muted: row?.muted ?? [] };
+}
+
+async function savePrefs(who: Who, prefs: TelegramPrefs, change: Record<string, unknown>) {
+  await db.update(users).set({ telegramPrefs: prefs as unknown as Record<string, unknown>, updatedAt: new Date() }).where(eq(users.id, who.actor.id));
+  await audit(who, 'telegram.prefs', change);
+}
+
+/**
+ * «⚙️ تنظیماتِ ربات»: هر دسته روشن/خاموش، ساعتِ سکوت، گزارشِ صبح و عصر، زبان —
+ * هر دکمه با یک ضربه عوض می‌شود و همین پیام تازه می‌شود.
+ */
+async function showSettings(chatId: number, who: Who, messageId?: number) {
+  const { prefs, briefAt, muted } = await loadPrefs(who.actor.id);
+  const briefOn = briefAt !== '' && !muted.includes('brief');
+  const off = (k: TgCategory) => prefs.off.includes(k);
+  const quiet = prefs.quiet ? `${prefs.quiet.from}–${prefs.quiet.to}` : who.tr('خاموش');
+  const lines = [
+    heading('⚙️', who.tr('تنظیماتِ ربات')),
+    '',
+    esc(who.tr('روی هر دکمه بزنید تا عوض شود.')),
+    hint(who.tr('دستهٔ خاموش فقط در تلگرام نمی‌آید؛ در برنامه و ایمیل می‌ماند. در ساعتِ سکوت چیزی فرستاده نمی‌شود و پایانش یک خلاصه می‌آید.')),
+  ];
+  const rows: Keyboard = [];
+  for (let i = 0; i < TG_CATEGORIES.length; i += 2) {
+    rows.push(TG_CATEGORIES.slice(i, i + 2).map((k) => ({
+      text: `${off(k) ? '🔕' : '✅'} ${who.tr(TG_CATEGORY_LABELS[k])}`, callback_data: `s:c:${k}`,
+    })));
+  }
+  rows.push([{ text: `🌙 ${who.tr('ساعتِ سکوت')}: ${quiet}`, callback_data: 's:q' }]);
+  rows.push([
+    { text: `☀️ ${who.tr('گزارشِ صبح')}: ${briefOn ? briefAt : who.tr('خاموش')}`, callback_data: 's:b' },
+    { text: `🌆 ${who.tr('گزارشِ عصر')}: ${prefs.evening || who.tr('خاموش')}`, callback_data: 's:e' },
+  ]);
+  rows.push([{ text: `🌐 ${who.tr('زبان')}: ${LOCALE_NAMES[who.locale]}`, callback_data: 's:l' }]);
+  rows.push(backRow(who.tr));
+  await show(chatId, lines.join(NL), rows, messageId);
+}
+
+async function onSettingsButton(chatId: number, who: Who, messageId: number, op: string, arg: string) {
+  const { prefs, briefAt, muted } = await loadPrefs(who.actor.id);
+  if (op === 'c' && (TG_CATEGORIES as readonly string[]).includes(arg)) {
+    const k = arg as TgCategory;
+    const next = { ...prefs, off: prefs.off.includes(k) ? prefs.off.filter((x) => x !== k) : [...prefs.off, k] };
+    await savePrefs(who, next, { category: k, on: !next.off.includes(k) });
+  } else if (op === 'q') {
+    const quiet = nextChoice(QUIET_PRESETS, prefs.quiet, sameQuiet);
+    await savePrefs(who, { ...prefs, quiet }, { quiet });
+  } else if (op === 'e') {
+    const evening = nextChoice(EVENING_CHOICES as readonly string[], prefs.evening);
+    await savePrefs(who, { ...prefs, evening }, { evening });
+  } else if (op === 'b') {
+    const current = briefAt !== '' && !muted.includes('brief') ? briefAt : '';
+    const next = nextChoice(BRIEF_CHOICES as readonly string[], current);
+    // «خاموش» = ساعتِ خالی؛ ساعتِ تازه «🔕 نفرست» ِ قبلی را هم برمی‌دارد.
+    await db.update(users).set({
+      briefAt: next, telegramMuted: muted.filter((m) => m !== 'brief'), updatedAt: new Date(),
+    }).where(eq(users.id, who.actor.id));
+    await audit(who, 'telegram.prefs', { brief: next });
+  } else if (op === 'l') {
+    const rows: Keyboard = [];
+    for (let i = 0; i < LOCALES.length; i += 3) {
+      rows.push(LOCALES.slice(i, i + 3).map((l) => ({ text: `${l === who.locale ? '✅ ' : ''}${LOCALE_NAMES[l]}`, callback_data: `s:L:${l}` })));
+    }
+    rows.push(backRow(who.tr, 'm:set'));
+    await edit(chatId, messageId, heading('🌐', who.tr('زبانِ ربات و برنامه')), rows);
+    return;
+  } else if (op === 'L' && isLocale(arg)) {
+    // همان زبانِ پروفایل — ربات و برنامه یک زبان دارند.
+    await db.update(users).set({ locale: arg, updatedAt: new Date() }).where(eq(users.id, who.actor.id));
+    await audit(who, 'telegram.prefs', { locale: arg });
+    const fresh = await whoById(who.actor.id);
+    if (fresh) {
+      await localizeChatMenu(chatId, fresh);
+      await postHtml('sendMessage', { chat_id: chatId, text: `✅ ${esc(fresh.tr('زبان عوض شد.'))}`, reply_markup: replyKeyboard(fresh) });
+      return await showSettings(chatId, fresh, messageId);
+    }
+  }
+  await showSettings(chatId, who, messageId);
+}
+
+/* ---------------- گزارشِ عصر و خلاصهٔ پایانِ سکوت (۲.۴۱.۰) ---------------- */
+
+function dayAfter(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * گزارشِ عصر: کارهای انجام‌شدهٔ امروز، ساعتِ ثبت‌شده، ددلاین‌ها و جلسه‌های فردا و
+ * دیرکردها. گزارشِ کاملاً خالی فرستاده نمی‌شود (همان قاعدهٔ گزارشِ صبح).
+ */
+export async function sendEveningReport(userId: number): Promise<boolean> {
+  const [row] = await db.select({ chatId: users.telegramChatId }).from(users).where(eq(users.id, userId));
+  if (!row?.chatId) return false;
+  const who = await whoById(userId);
+  if (!who) return false;
+  const tz = who.tz || 'UTC';
+  const today = todayIn(tz);
+  const tomorrow = dayAfter(today);
+  const [inbox, meetingsList, done, logged] = await Promise.all([
+    myTasks(who.actor),
+    listMeetings(who.actor).then((r) => r.meetings).catch(() => []),
+    db.select({ title: tasks.title, projectTitle: projects.title }).from(tasks)
+      .innerJoin(tags, eq(tags.id, tasks.statusTagId))
+      .leftJoin(projects, eq(projects.id, tasks.projectId))
+      .where(and(
+        eq(tasks.assignedTo, userId), isNull(tasks.deletedAt),
+        sql`(${tags.statusGroup} = 'complete' or ${tags.isClosed})`,
+        sql`(${tasks.updatedAt} at time zone ${tz})::date = ${today}::date`,
+      )).limit(30),
+    who.owner
+      ? Promise.resolve([{ minutes: 0 }])
+      : db.select({ minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int` }).from(timelogs)
+        .where(and(eq(timelogs.userId, userId), eq(timelogs.logDate, today))),
+  ]);
+  const minutes = logged[0]?.minutes ?? 0;
+  const dayOf = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(d);
+  const timeOf = (d: Date) => new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+  const dueTomorrow = inbox.active.filter((t) => t.dueDate === tomorrow);
+  const meetingsTomorrow = meetingsList.filter((m) => dayOf(new Date(m.meetAt)) === tomorrow);
+  const overdue = inbox.active.filter((t) => t.dueDate && t.dueDate < today);
+  if (done.length + dueTomorrow.length + meetingsTomorrow.length + overdue.length === 0 && minutes === 0) return false;
+
+  const lines = [`🌆 <b>${esc(who.tr('عصر بخیر {name}!', { name: who.name }))}</b>`];
+  const section = <T>(icon: string, title: string, list: T[], max: number, line: (x: T) => string) => {
+    if (list.length === 0) return;
+    lines.push('', heading(icon, title, list.length), ...list.slice(0, max).map(line), moreHtml(list.length, max, who.tr));
+  };
+  section('✅', who.tr('کارهای انجام‌شدهٔ امروز'), done, 8, (t) => bulletHtml(esc(clip(t.title, 90)), esc(t.projectTitle ?? '')));
+  if (!who.owner) {
+    lines.push('', minutes > 0
+      ? `⏱ ${esc(who.tr('ساعتِ ثبت‌شدهٔ امروز'))}: <b>${hm(minutes)}</b>`
+      : `⏱ ${esc(who.tr('امروز هنوز ساعتی ثبت نکرده‌اید.'))}`);
+  }
+  section('📌', who.tr('ددلاینِ فردا'), dueTomorrow, 6, (t) => bulletHtml(taskHead(t), esc(t.projectTitle ?? '')));
+  section('📅', who.tr('جلسه‌های فردا'), meetingsTomorrow, 5,
+    (m) => bulletHtml(`<b>${timeOf(new Date(m.meetAt))}</b>`, esc(m.title), esc(m.projectTitle ?? '')));
+  section('⚠️', who.tr('دیرکرد'), overdue, 5, (t) => bulletHtml(taskHead(t), esc(t.projectTitle ?? ''), esc(t.dueDate ?? '')));
+
+  const keyboard: Keyboard = [
+    [
+      { text: `📋 ${who.tr('تسک‌های من')}`, callback_data: 'm:tasks' },
+      ...(who.owner ? [] : [{ text: `➕ ${who.tr('ثبتِ ساعت')}`, callback_data: 'l:p' }]),
+    ],
+    [{ text: `⚙️ ${who.tr('تنظیماتِ ربات')}`, callback_data: 'm:set' }],
+  ];
+  await send(Number(row.chatId), tidy(lines), keyboard);
+  return true;
+}
+
+/**
+ * پایانِ ساعتِ سکوت: اعلان‌هایی که در این بازه در برنامه نشستند ولی به تلگرام نرفتند،
+ * در یک پیام. دسته‌های خاموش اینجا هم نمی‌آیند.
+ */
+export async function sendQuietDigest(userId: number, since: Date, off: readonly string[]): Promise<boolean> {
+  const [row] = await db.select({ chatId: users.telegramChatId }).from(users).where(eq(users.id, userId));
+  if (!row?.chatId) return false;
+  const who = await whoById(userId);
+  if (!who) return false;
+  const rows = await db.select({ type: notifications.type, title: notifications.title }).from(notifications)
+    .where(and(eq(notifications.userId, userId), gte(notifications.createdAt, since)))
+    .orderBy(desc(notifications.id)).limit(60);
+  const list = rows.filter((r) => !off.includes(categoryOf(r.type)));
+  if (list.length === 0) return false;
+  const open = appButton(who.tr, '/notifications', 'همهٔ اعلان‌ها');
+  await send(Number(row.chatId), tidy([
+    heading('🌅', who.tr('در ساعتِ سکوت'), list.length),
+    '',
+    ...list.slice(0, 10).map((r) => bulletHtml(esc(clip(r.title, 120)))),
+    moreHtml(list.length, 10, who.tr),
+  ]), [[...(open ? [open] : []), { text: `⚙️ ${who.tr('تنظیماتِ ربات')}`, callback_data: 'm:set' }]]);
+  return true;
 }
 
 /* ---------------- گروهِ پروژه: مدیر شدنِ ربات و دعوتِ اعضا (۲.۳۶.۰) ---------------- */
@@ -1956,6 +2216,7 @@ function commandList(tr: Translator, roles?: { owner: boolean; manager: boolean;
     { command: 'meetings', description: tr('جلسه‌ها و یادآورها') },
     { command: 'ai', description: tr('هوشِ مصنوعی') },
     { command: 'new', description: tr('گفت‌وگوی تازه با هوشِ مصنوعی') },
+    { command: 'settings', description: tr('تنظیماتِ ربات') },
     { command: 'keyboard', description: tr('نمایشِ میان‌برها') },
     { command: 'help', description: tr('راهنما') },
   ];
@@ -1995,6 +2256,9 @@ export async function registerCommands(): Promise<void> {
     await api('setMyDescription', { description: d.description, language_code: code });
     await api('setMyShortDescription', { short_description: d.short, language_code: code });
   }
+  // منوی «/» در گروه‌ها (۲.۴۱.۰) — پیش از این همان منوی چتِ خصوصی می‌آمد و هر دستور به هوشِ مصنوعی می‌رفت.
+  const groupLang = await translatorFor(await groupLocale());
+  await api('setMyCommands', { commands: groupCommands(groupLang), scope: { type: GROUPS_SCOPE } });
   // دکمهٔ کنارِ جعبهٔ پیام: مینی‌اپ (فقط با HTTPS) — پیش‌فرض؛ هر چت در /start به زبانِ خودش.
   const url = miniAppUrl('/');
   if (url) {
@@ -2012,6 +2276,17 @@ async function localizeChatMenu(chatId: number, who: Who) {
 
 /** دامنهٔ «فقط همین چت» برای منوی دستورها — ثابتِ جدا (قاعدهٔ `gateway.test`). */
 const CHAT_SCOPE = 'chat';
+/** دامنهٔ «همهٔ گروه‌ها» (۲.۴۱.۰) — ثابتِ جدا، به همان دلیل. */
+const GROUPS_SCOPE = 'all_group_chats';
+
+/** دستورهای ربات در گروهِ پروژه. */
+function groupCommands(tr: Translator) {
+  return [
+    { command: 'ask', description: tr('پرسش از دستیار') },
+    { command: 'tasks', description: tr('تسک‌های بازِ این پروژه') },
+    { command: 'help', description: tr('راهنما') },
+  ];
+}
 
 /** فقط برای تست. */
 export function resetBotState() {

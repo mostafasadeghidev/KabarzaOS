@@ -79,6 +79,11 @@ export const users = pgTable('users', {
   telegramMuted: text('telegram_muted').array().notNull().default(sql`'{}'::text[]`),
   /** ساعتِ گزارشِ صبحگاهی (HH:MM، وقتِ خودِ کاربر)؛ خالی = خاموش. */
   briefAt: text('brief_at').notNull().default('08:30'),
+  /**
+   * ترجیحاتِ تلگرام (۲.۴۱.۰): دسته‌های خاموش، ساعتِ سکوت، ساعتِ گزارشِ عصر —
+   * شکلش در `domain/telegram/prefs` (`normalizePrefs`).
+   */
+  telegramPrefs: jsonb('telegram_prefs').notNull().default({}).$type<Record<string, unknown>>(),
 
   /**
    * حضورِ زنده — دو مهر: آخرین ضربان (هر تبی) و آخرین ضربانِ تبِ **متمرکز**.

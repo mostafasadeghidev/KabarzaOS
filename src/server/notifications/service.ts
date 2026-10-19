@@ -7,7 +7,8 @@ import { getSystemConfig } from '@/server/settings/system-service';
 import { db } from '@/db/client';
 import { notifications, users } from '@/db/schema';
 import type { Actor } from '@/domain/access/permissions';
-import { matchesTarget, planDelivery, type Recipient } from '@/domain/notifications/gateway';
+import { categoryOf, matchesTarget, planDelivery, type Recipient } from '@/domain/notifications/gateway';
+import { inQuiet, normalizePrefs } from '@/domain/telegram/prefs';
 import { sendMail } from '@/server/mail/transport';
 import { telegramCredentials } from '@/server/settings/telegram-service';
 import { taskCard, type TaskCardFile } from '@/server/telegram/task-card';
@@ -89,6 +90,7 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
       telegramChatId: users.telegramChatId,
       telegramOff: users.telegramOff,
       telegramMuted: users.telegramMuted,
+      telegramPrefs: users.telegramPrefs,
       locale: users.locale,
       timezone: users.timezone,
     })
@@ -122,6 +124,21 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
   const addressOf = (r: (typeof rows)[number]) => (r.notifyEmail.trim() || r.email).trim();
   const byId = new Map(rows.map((r) => [r.userId, r]));
 
+  /**
+   * ۲.۴۱.۰: دستهٔ خاموش‌شده در تلگرام، یا ساعتِ سکوتِ همین نفر (به وقتِ خودش) ←
+   * فقط تلگرام نمی‌رود؛ ردیفِ برنامه و ایمیل سرِ جایش است و پایانِ سکوت خلاصه‌اش می‌آید.
+   */
+  const category = categoryOf(input.type);
+  const telegramHeld = (r: (typeof rows)[number]) => {
+    const prefs = normalizePrefs(r.telegramPrefs);
+    if ((prefs.off as string[]).includes(category)) return true;
+    if (!prefs.quiet) return false;
+    const time = new Intl.DateTimeFormat('en-GB', {
+      timeZone: r.timezone || systemTz || 'UTC', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).format(new Date());
+    return inQuiet(time, prefs.quiet);
+  };
+
   const recipients: Recipient[] = rows.map((r) => ({
     userId: r.userId,
     // R-NOTIF-02 — «قطع‌شده» و حذف‌شده هیچ اعلانی نمی‌گیرند. «فقط مالی» تنها
@@ -134,7 +151,7 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
     hasEmail: !r.notifyEmailOff && addressOf(r) !== '',
     mutedEmailCategories: r.notifyEmailMuted as Recipient['mutedEmailCategories'],
     // ⚠️ نوعی که کاربر در تلگرام «دیگر نفرست» زده، فقط از تلگرام حذف می‌شود.
-    hasTelegram: !r.telegramOff && r.telegramChatId !== '' && !(r.telegramMuted ?? []).includes(input.type),
+    hasTelegram: !r.telegramOff && r.telegramChatId !== '' && !(r.telegramMuted ?? []).includes(input.type) && !telegramHeld(r),
   }));
 
   const plan = planDelivery(input.type, recipients).map((p) => ({
