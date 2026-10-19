@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { safeNextPath } from '@/domain/auth/next-path';
 
 /**
  * اعتبارسنجیِ `initData` ِ مینی‌اپِ تلگرام (۲.۱۰.۰).
@@ -15,7 +16,8 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
  */
 
 export type WebAppCheck =
-  | { ok: true; telegramUserId: number; authDate: number }
+  /** `startParam`: پارامترِ لینکِ مستقیمِ مینی‌اپ (۲.۴۰.۰) — جزوِ رشتهٔ امضاشده. */
+  | { ok: true; telegramUserId: number; authDate: number; startParam: string }
   | { ok: false; reason: 'malformed' | 'bad_signature' | 'expired' };
 
 export function verifyInitData(
@@ -50,7 +52,33 @@ export function verifyInitData(
     return { ok: false, reason: 'malformed' };
   }
   if (typeof user?.id !== 'number' || !Number.isSafeInteger(user.id) || user.id <= 0) return { ok: false, reason: 'malformed' };
-  return { ok: true, telegramUserId: user.id, authDate };
+  return { ok: true, telegramUserId: user.id, authDate, startParam: params.get('start_param') ?? '' };
+}
+
+/**
+ * مسیرِ داخلی ← `startapp` ِ لینکِ مستقیمِ مینی‌اپ (۲.۴۰.۰). تلگرام فقط
+ * `[A-Za-z0-9_-]` تا ۵۱۲ نویسه می‌پذیرد؛ base64url همین است.
+ */
+export function encodeStartParam(path: string): string | null {
+  const value = Buffer.from(path, 'utf8').toString('base64url');
+  return value.length > 0 && value.length <= 512 ? value : null;
+}
+
+/**
+ * `startapp` ← مسیرِ داخلی، یا null. ⚠️ فقط مسیرِ همین سایت (همان `safeNextPath`):
+ * لینکی که کسی دست‌کاری کند کاربر را بیرون نمی‌برد.
+ */
+export function decodeStartParam(raw: string): string | null {
+  if (!/^[A-Za-z0-9_-]{1,512}$/.test(raw)) return null;
+  const path = Buffer.from(raw, 'base64url').toString('utf8');
+  return path !== '/' && safeNextPath(path) === path ? path : null;
+}
+
+/** لینکِ مستقیمِ مینی‌اپ: `t.me/<ربات>/<نامِ کوتاه>?startapp=…` — در گروه هم داخلِ تلگرام باز می‌شود. */
+export function miniAppDirectLink(username: string, appName: string, path: string): string | null {
+  if (!/^[A-Za-z0-9_]{3,64}$/.test(username) || !/^[A-Za-z0-9_]{3,64}$/.test(appName)) return null;
+  const start = encodeStartParam(path);
+  return start ? `https://t.me/${username}/${appName}?startapp=${start}` : null;
 }
 
 /** ساختِ initData ِ امضاشده — فقط برای تست. */

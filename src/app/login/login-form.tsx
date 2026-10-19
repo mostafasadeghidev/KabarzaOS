@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { login } from './actions';
 import type { LoginState } from './schema';
@@ -19,6 +19,11 @@ import { TurnstileWidget } from '@/components/turnstile-widget';
  * برچسبِ رمز. پوسته و نشانِ برند از `PublicShell` می‌آید (صفحه آن را می‌سازد).
  */
 export function LoginForm({ notice, next, turnstileSiteKey = null }: { notice?: string; next?: string; turnstileSiteKey?: string | null } = {}) {
+  // ۲.۴۰.۰: مینی‌اپِ تلگرام که در BotFather به نشانیِ اصلیِ سایت (نه «/tg») تنظیم شده، اینجا
+  // می‌رسد؛ امضای تلگرام در `#tgWebAppData` است ← همان ورودِ «/tg».
+  useEffect(() => {
+    if (window.location.hash.includes('tgWebAppData=')) window.location.replace(`/tg${window.location.hash}`);
+  }, []);
   const t = useT();
   const [state, formAction, pending] = useActionState<LoginState, FormData>(login, {});
   // کپچا (۲.۳۱.۰) — دکمه تا پاسخِ ویجت نیامده خاموش است؛ کپچای خاموش = همیشه آماده.

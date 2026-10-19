@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, users } from '@/db/schema';
-import { verifyInitData } from '@/domain/telegram/webapp';
+import { decodeStartParam, verifyInitData } from '@/domain/telegram/webapp';
 import { loadActor } from '@/server/auth';
 import { telegramCredentials } from '@/server/settings/telegram-service';
 
@@ -15,7 +15,8 @@ import { telegramCredentials } from '@/server/settings/telegram-service';
  */
 
 export type MiniAppLogin =
-  | { ok: true; userId: number }
+  /** `next`: مقصدِ لینکِ مستقیمِ مینی‌اپ، اگر بود (۲.۴۰.۰). */
+  | { ok: true; userId: number; next: string | null }
   | { ok: false; reason: 'off' | 'invalid' | 'not_linked' | 'inactive' };
 
 export async function miniAppLogin(initData: string): Promise<MiniAppLogin> {
@@ -35,5 +36,5 @@ export async function miniAppLogin(initData: string): Promise<MiniAppLogin> {
     actorType: 'user', actorId: row.id, action: 'auth.telegram_login',
     objectType: 'user', objectId: row.id, after: { via: 'telegram_mini_app' },
   });
-  return { ok: true, userId: row.id };
+  return { ok: true, userId: row.id, next: decodeStartParam(check.startParam) };
 }

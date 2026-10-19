@@ -531,7 +531,8 @@ async function notifyMessage(
     type: 'message.received',
     named: input.kind === 'new' ? 'پیام جدید از {name}' : 'پاسخِ تازه از {name}',
     masked: input.kind === 'new' ? 'پیام جدید از مدیریت' : 'پاسخِ تازه از مدیریت',
-    body: input.body.slice(0, 120),
+    // ۲.۴۰.۰: متنِ کاملِ پیام (تا ۱۰۰۰) — در تلگرام خودِ پیام خوانده شود، نه فقط ۱۲۰ نویسهٔ اولش.
+    body: input.body.slice(0, 1000),
     url: input.url,
   });
 }
@@ -594,7 +595,7 @@ async function notifyGroup(
   const names = new Map((await db.select({ id: users.id, name: users.name }).from(users)
     .where(inArray(users.id, [...new Set([0, ...mentions.ids])]))).map((r) => [r.id, r.name]));
   const snippet = mentionsToPlain(body, (id) => (mgmt.has(id) ? MANAGEMENT : names.get(id) ?? '#'), ALL_LABEL)
-    .slice(0, 120);
+    .slice(0, 400);
   const where = groupLabel(group);
   const url = `/messages/${group.id}`;
 
@@ -719,7 +720,7 @@ export async function contactManagement(actor: Actor, body: string): Promise<num
   await notify(managers, {
     type: 'message.received',
     title: 'پیام به مدیریت',
-    body: text.slice(0, 120),
+    body: text.slice(0, 1000),
     url: `/messages/${threadId}`,
   });
 
@@ -1065,7 +1066,7 @@ export async function createChannel(
     type: 'message.channel',
     named: 'به کانالِ «{where}» اضافه شدید',
     masked: 'به کانالِ «{where}» اضافه شدید',
-    params: { where: title }, body: first.slice(0, 120), url: `/messages/${threadId}`,
+    params: { where: title }, body: first.slice(0, 400), url: `/messages/${threadId}`,
     channels: { email: false, telegram: false },
   });
   return threadId;

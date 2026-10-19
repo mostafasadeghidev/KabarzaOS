@@ -34,6 +34,13 @@ describe('تنظیماتِ سامانه', () => {
       .toMatchObject({ aiVoiceMinutes: 3, aiMediaMinutes: 15, aiVideoFrames: 24 });
   });
 
+  it('نامِ کوتاهِ مینی‌اپ: نام یا لینکِ t.me، وگرنه خالی (۲.۴۰.۰)', () => {
+    expect(normalizeSystem({ telegramAppName: 'crm' }).telegramAppName).toBe('crm');
+    expect(normalizeSystem({ telegramAppName: 'https://t.me/kabarzateambot/crm' }).telegramAppName).toBe('crm');
+    expect(normalizeSystem({ telegramAppName: 't.me/kabarzateambot/crm?startapp=x' }).telegramAppName).toBe('crm');
+    expect(normalizeSystem({ telegramAppName: 'bad name!' }).telegramAppName).toBe('');
+  });
+
   it("⚠️ رشتهٔ '0' خاموش است — نه truthy", () => {
     expect(normalizeSystem({ presenceEnabled: '0' }).presenceEnabled).toBe(false);
     expect(normalizeSystem({ pulseEnabled: '0' }).pulseEnabled).toBe(false);

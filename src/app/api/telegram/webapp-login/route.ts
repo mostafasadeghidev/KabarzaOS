@@ -18,5 +18,6 @@ export async function POST(req: Request) {
 
   const token = await createSessionToken({ userId: result.userId }, sessionSecret());
   (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions());
-  return Response.json({ ok: true, to: safeNextPath(body?.next) });
+  // مقصدِ لینکِ مستقیم (از رشتهٔ امضاشده) بر `next` ِ صفحه مقدم است (۲.۴۰.۰).
+  return Response.json({ ok: true, to: result.next ?? safeNextPath(body?.next) });
 }

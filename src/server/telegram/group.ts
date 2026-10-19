@@ -1,8 +1,8 @@
 import { randomBytes } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from '@/db/client';
-import { auditLog, projects, tags, tasks, users } from '@/db/schema';
+import { auditLog, projectMembers, projects, tags, taskRoles, tasks, userRoles, users } from '@/db/schema';
 import { tagName } from '@/db/tag-name';
 import * as repo from '@/server/projects/repository';
 import {
@@ -10,12 +10,13 @@ import {
 } from '@/domain/access/viewer-names';
 import { createTranslator } from '@/i18n/translate';
 import { loadMessages } from '@/i18n/server';
-import { isLocale } from '@/i18n/config';
+import { isLocale, type Locale } from '@/i18n/config';
 import { getSystemConfig } from '@/server/settings/system-service';
 import type { Actor } from '@/domain/access/permissions';
 import { assertCanManageProject } from '@/server/projects/authority';
 import { telegramCredentials } from '@/server/settings/telegram-service';
 import { bold, esc, HTML, isParseError, quote, stripHtml } from './format';
+import { miniAppDirectLink } from '@/domain/telegram/webapp';
 import { BOT_ADMIN_RIGHTS, inviteToGroup, revokeInvite, setupGroup } from './group-members';
 
 /**
@@ -100,7 +101,11 @@ export async function linkProjectGroup(linkToken: string, chatId: number): Promi
  * پیوندِ معمولی؛ و فقط با `APP_URL` ِ HTTPS (پیوندِ http/localhost را رد می‌کند).
  * ⚠️ بی شمارهٔ تسک در نشانی — کارفرما ممکن است عضوِ گروه باشد.
  */
-function openButton(path: string, label: string) {
+async function openButton(path: string, label: string) {
+  // ۲.۴۰.۰: با نامِ کوتاهِ مینی‌اپ، لینکِ مستقیم — داخلِ تلگرام باز می‌شود و همان صفحه را می‌آورد.
+  const [{ telegramAppName }, { username }] = await Promise.all([getSystemConfig(), telegramCredentials()]);
+  const direct = telegramAppName ? miniAppDirectLink(username, telegramAppName, path) : null;
+  if (direct) return { inline_keyboard: [[{ text: `${label} ↗`, url: direct }]] };
   const base = (process.env.APP_URL ?? '').trim().replace(/\/$/, '');
   if (!base.startsWith('https://')) return undefined;
   return { inline_keyboard: [[{ text: `${label} ↗`, url: `${base}${path}` }]] };
@@ -136,10 +141,25 @@ export async function postToProjectGroup(
   }
 }
 
-/** متنِ رویداد به زبانِ پیش‌فرضِ سامانه — گروه یک زبان دارد. */
-async function groupTr() {
+/**
+ * زبانِ گروه‌های تلگرام (۲.۴۰.۰): زبانِ **مدیرِ کل** (نخستین مالکِ فعال)، وگرنه زبانِ
+ * پیش‌فرضِ سامانه. ⚠️ پیش از این فقط زبانِ پیش‌فرضِ سامانه بود؛ روی سرور «English» بود
+ * و پیامِ گروه «✅ Done … by دولوپر» می‌شد — نیمی انگلیسی، نیمی فارسی.
+ * پیامِ خصوصیِ ربات به هر کس همچنان به زبانِ پنلِ خودِ اوست.
+ */
+export async function groupLocale(): Promise<Locale> {
+  const [owner] = await db.select({ locale: users.locale }).from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .where(and(eq(userRoles.role, 'owner'), eq(users.memberState, 'active'), isNull(users.deletedAt)))
+    .orderBy(users.id).limit(1);
+  if (owner?.locale && isLocale(owner.locale)) return owner.locale;
   const { defaultLocale } = await getSystemConfig();
-  const locale = isLocale(defaultLocale) ? defaultLocale : 'fa';
+  return isLocale(defaultLocale) ? defaultLocale : 'fa';
+}
+
+/** متنِ گروه به زبانِ گروه — گروه یک زبان دارد. */
+export async function groupTr() {
+  const locale = await groupLocale();
   return { tr: createTranslator(await loadMessages(locale), locale), locale };
 }
 
@@ -152,10 +172,13 @@ async function hasGroup(projectId: number): Promise<boolean> {
  * نام در گروه — **همان چیزی که کارفرما در برنامه می‌بیند**، چون کارفرما ممکن
  * است عضوِ گروه باشد: عضو با نامِ نقشش («دولوپر»)، دستیارِ مدیر با همین عنوان.
  * و چون اعضا هم در گروه‌اند، نامِ کارفرما هم «کارفرما» می‌شود (قاعدهٔ عضو).
+ * ⚠️ نامِ نقش به **زبانِ گروه** (۲.۴۰.۰)، نه زبانِ درخواستِ جاری.
  */
-async function groupNamer(projectId: number, tr: (s: string) => string) {
+async function groupNamer(projectId: number, tr: (s: string) => string, locale: Locale) {
   const [members, clientIds, assistants] = await Promise.all([
-    repo.listMembers(projectId),
+    db.select({ userId: projectMembers.userId, roleName: tagName(locale) }).from(projectMembers)
+      .leftJoin(tags, eq(tags.id, projectMembers.roleTagId))
+      .where(eq(projectMembers.projectId, projectId)).orderBy(projectMembers.id),
     repo.listClientIds(projectId),
     repo.assistantUserIds(),
   ]);
@@ -173,55 +196,73 @@ async function groupNamer(projectId: number, tr: (s: string) => string) {
   };
 }
 
+/** نوارِ پیشرفت — «▰▰▰▱▱ ۶ از ۱۰». */
+function progressBar(done: number, total: number): string {
+  if (total <= 0) return '';
+  const filled = Math.round((done / total) * 10);
+  return `${'▰'.repeat(filled)}${'▱'.repeat(10 - filled)} ${done}/${total}`;
+}
+
+/** خطِ «برچسب: مقدار» با مقدارِ پررنگ. */
+function field(icon: string, label: string, value: string): string {
+  return `${icon} ${esc(label)}: ${bold(value)}`;
+}
+
 /**
- * تسکِ تازه یا انجام‌شده ← گروه (۲.۱۶.۲: سبکِ تازه). ⚠️ تسکِ خصوصی و «پنهان
- * از کارفرما» هرگز؛ شمارهٔ تسک هم نه (کارفرما نمی‌بیندش). بی‌انتظار صدا زده
- * می‌شود؛ خطایش هیچ‌جا نمی‌رود.
+ * تسکِ تازه یا انجام‌شده ← گروه (۲.۱۶.۲؛ ۲.۴۰.۰: قالبِ تازه — سرتیتر، عنوان، خلاصهٔ
+ * توضیح، مسئول/مهلت/اولویت هر کدام در یک خط، و پیشرفتِ پروژه پس از انجام). ⚠️ تسکِ
+ * خصوصی و «پنهان از کارفرما» هرگز؛ شمارهٔ تسک هم نه (کارفرما نمی‌بیندش). بی‌انتظار
+ * صدا زده می‌شود؛ خطایش هیچ‌جا نمی‌رود.
  */
 export async function announceTask(taskId: number, kind: 'new' | 'done', actorId?: number): Promise<void> {
   try {
     const { tr, locale } = await groupTr();
     const priority = alias(tags, 'group_priority');
     const [t] = await db.select({
-      title: tasks.title, projectId: tasks.projectId, isPrivate: tasks.isPrivate, clientHidden: tasks.clientHidden,
-      deletedAt: tasks.deletedAt, dueDate: tasks.dueDate, assignedTo: tasks.assignedTo, assigneeName: users.name,
-      priority: tagName(locale, priority),
+      title: tasks.title, description: tasks.description, projectId: tasks.projectId, isPrivate: tasks.isPrivate,
+      clientHidden: tasks.clientHidden, deletedAt: tasks.deletedAt, dueDate: tasks.dueDate, assignedTo: tasks.assignedTo,
+      assigneeName: users.name, priority: tagName(locale, priority),
     }).from(tasks)
       .leftJoin(users, eq(users.id, tasks.assignedTo))
       .leftJoin(priority, eq(priority.id, tasks.priorityTagId))
       .where(eq(tasks.id, taskId));
     if (!t || t.isPrivate || t.clientHidden || t.deletedAt) return;
     if (!(await hasGroup(t.projectId))) return;
-    const name = await groupNamer(t.projectId, tr);
+    const name = await groupNamer(t.projectId, tr, locale);
+    const button = await openButton(`/projects/${t.projectId}?tab=tasks`, tr('مشاهده در Kabarza'));
 
     if (kind === 'done') {
       const [by] = actorId ? await db.select({ name: users.name }).from(users).where(eq(users.id, actorId)) : [];
       const who = by ? name(actorId!, by.name) : '';
-      // ۲.۲۳.۰: همان قالبِ «تسکِ تازه» — سرتیتر، عنوانِ پررنگ، و دکمهٔ «مشاهده».
-      await postToProjectGroup(
-        t.projectId,
-        [`✅ ${bold(tr('انجام شد'))}`, bold(t.title), ...(who ? [`<i>${esc(tr('توسطِ {name}', { name: who }))}</i>`] : [])].join('\n'),
-        openButton(`/projects/${t.projectId}?tab=tasks`, tr('مشاهده در Kabarza')),
-      );
+      const progress = await repo.taskProgressFor(t.projectId);
+      const bar = progressBar(progress.done, progress.total);
+      await postToProjectGroup(t.projectId, [
+        `✅ ${bold(tr('تسک انجام شد'))}`,
+        '',
+        `📌 ${bold(t.title)}`,
+        ...(who ? [field('👤', tr('انجام‌دهنده'), who)] : []),
+        ...(bar ? ['', `📊 ${esc(tr('پیشرفتِ پروژه'))}`, `<code>${esc(bar)}</code>`] : []),
+      ].join('\n'), button);
       return;
     }
 
-    // مسئول: شخص (با ماسک) یا نقش‌های تسک.
+    // مسئول: شخص (با ماسک) یا نقش‌های تسک — هر دو به زبانِ گروه.
     let owner = name(t.assignedTo, t.assigneeName);
     if (!owner) {
-      const roles = await repo.taskRolesFor([taskId]);
-      owner = roles.map((r) => r.roleName).filter(Boolean).join('، ');
+      const roles = await db.select({ name: tagName(locale) }).from(taskRoles)
+        .leftJoin(tags, eq(tags.id, taskRoles.roleTagId)).where(eq(taskRoles.taskId, taskId));
+      owner = roles.map((r) => r.name).filter(Boolean).join('، ');
     }
-    const meta = [
-      owner && `👤 ${esc(owner)}`,
-      t.dueDate && `📅 ${esc(t.dueDate)}`,
-      t.priority && `⚡ ${esc(t.priority)}`,
-    ].filter(Boolean).join(' · ');
-    await postToProjectGroup(
-      t.projectId,
-      [`🆕 ${bold(tr('تسکِ تازه'))}`, bold(t.title), ...(meta ? [meta] : [])].join('\n'),
-      openButton(`/projects/${t.projectId}?tab=tasks`, tr('مشاهده در Kabarza')),
-    );
+    const summary = (t.description ?? '').replace(/\s+/g, ' ').trim();
+    await postToProjectGroup(t.projectId, [
+      `🆕 ${bold(tr('تسکِ تازه'))}`,
+      '',
+      `📌 ${bold(t.title)}`,
+      ...(summary ? [quote(summary, 300)] : []),
+      ...(owner ? [field('👤', tr('مسئول'), owner)] : []),
+      ...(t.dueDate ? [field('📅', tr('مهلت'), t.dueDate)] : []),
+      ...(t.priority ? [field('⚡', tr('اولویت'), t.priority)] : []),
+    ].join('\n'), button);
   } catch {
     // جانبی.
   }
@@ -231,14 +272,14 @@ export async function announceTask(taskId: number, kind: 'new' | 'done', actorId
 export async function announceComment(projectId: number, userId: number, text: string): Promise<void> {
   try {
     if (!text.trim() || !(await hasGroup(projectId))) return;
-    const { tr } = await groupTr();
+    const { tr, locale } = await groupTr();
     const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId));
-    const who = (await groupNamer(projectId, tr))(userId, u?.name ?? '') || tr(FALLBACK_MEMBER_LABEL);
+    const who = (await groupNamer(projectId, tr, locale))(userId, u?.name ?? '') || tr(FALLBACK_MEMBER_LABEL);
     // نقل‌قولِ بلند در تلگرام جمع‌شده نشان داده می‌شود (۲.۲۳.۰).
     await postToProjectGroup(
       projectId,
-      `💬 ${bold(who)}\n${quote(text, 1500)}`,
-      openButton(`/projects/${projectId}?tab=comments`, tr('پاسخ در Kabarza')),
+      [`💬 ${bold(tr('کامنتِ تازه'))}`, field('👤', tr('از'), who), quote(text, 1500)].join('\n'),
+      await openButton(`/projects/${projectId}?tab=comments`, tr('پاسخ در Kabarza')),
     );
   } catch {
     // جانبی.
