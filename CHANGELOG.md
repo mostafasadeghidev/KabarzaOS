@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.43.1]
+
+### Fixed
+
+- **The project chat tab no longer asks a Telegram group member to join.** It used to show "this project also has a Telegram group" with a "Join on Telegram" button to every team member, even those already in the group. The app now asks Telegram whether the viewer is in the group: a member sees "You're a member of this project's Telegram group" with an "Open group" button; someone who has not connected Telegram in their profile is told to connect it first (otherwise the bot can't recognize them and declines the join request), with a button to the profile; everyone else sees the join button as before. If Telegram doesn't answer within 3 seconds the page shows the join button as before and doesn't wait.
+
 ## [2.43.0]
 
 ### Added

@@ -215,11 +215,46 @@ export async function migrateGroup(fromChatId: number, toChatId: number): Promis
   return rows[0]?.id ?? null;
 }
 
-/** لینکِ «پیوستن» برای صفحهٔ پروژه — فقط برای کسی که حقِ عضویت دارد. */
-export async function groupInviteFor(actor: Actor, projectId: number): Promise<string | null> {
+export interface GroupInvite {
+  link: string;
+  /** تلگرامش را در برنامه وصل کرده؟ بی آن ربات او را نمی‌شناسد و درخواستش را رد می‌کند. */
+  connected: boolean;
+  /** همین الان عضوِ گروه است؟ `null` = وصل نیست یا تلگرام جواب نداد — نامعلوم. */
+  joined: boolean | null;
+}
+
+/** وضعیت‌هایی که یعنی «داخلِ گروه است». `restricted` فقط با `is_member`. */
+const INSIDE = new Set(['creator', 'administrator', 'member']);
+
+/**
+ * عضویتِ واقعی از خودِ تلگرام (۲.۴۳.۱) — ربات مدیرِ گروه است و `getChatMember` را دارد.
+ * ⚠️ مهلتِ کوتاه: این روی بارگذاریِ صفحهٔ پروژه است؛ تلگرامِ کند صفحه را نگه نمی‌دارد،
+ * فقط وضعیت «نامعلوم» می‌شود و همان دکمهٔ «پیوستن» ِ قبلی می‌آید.
+ */
+async function isInGroup(chatId: string, telegramUserId: string): Promise<boolean | null> {
+  const { token } = await telegramCredentials();
+  if (!token) return null;
+  const res = await fetch(`https://api.telegram.org/bot${token}/getChatMember`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, user_id: Number(telegramUserId) }),
+    signal: AbortSignal.timeout(3_000),
+  }).catch(() => null);
+  const out = res ? (await res.json().catch(() => null)) as TgResult : null;
+  if (!out?.ok || !out.result) return null;
+  const m = out.result as { status?: string; is_member?: boolean };
+  return INSIDE.has(m.status ?? '') || (m.status === 'restricted' && m.is_member === true);
+}
+
+/** لینکِ «پیوستن» و وضعیتِ عضویت برای صفحهٔ پروژه — فقط برای کسی که حقِ عضویت دارد. */
+export async function groupInviteFor(actor: Actor, projectId: number): Promise<GroupInvite | null> {
   const row = await groupRow(projectId);
   if (!row?.invite) return null;
-  return (await mayJoinGroup(actor.id, projectId)) ? row.invite : null;
+  if (!(await mayJoinGroup(actor.id, projectId))) return null;
+  const [me] = await db.select({ chatId: users.telegramChatId }).from(users).where(eq(users.id, actor.id));
+  // ⚠️ در چتِ خصوصی شناسهٔ چت همان شناسهٔ کاربرِ تلگرام است.
+  const tgId = me?.chatId ?? '';
+  return { link: row.invite, connected: tgId !== '', joined: tgId ? await isInGroup(String(row.chatId), tgId) : null };
 }
 
 /** لینکِ عضویت باطل می‌شود — گروه جدا شد یا به گروهِ دیگری وصل شد. */
