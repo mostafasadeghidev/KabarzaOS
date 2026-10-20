@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { Archive, ExternalLink, FolderKanban, MessagesSquare, Send } from 'lucide-react';
+import { Archive, CircleCheck, ExternalLink, FolderKanban, MessagesSquare, Send } from 'lucide-react';
 import { createProjectGroupAction } from '../../messages/_form/actions';
 import { ThreadPane } from '../../messages/thread-pane';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,11 @@ export interface ProjectChat {
   archived: boolean;
   /** پولِ گفت‌وگوی زنده — همان تنظیمِ سامانه که صفحهٔ «پیام‌ها» می‌گیرد. */
   poll: { enabled: boolean; seconds: number };
-  /** لینکِ عضویتِ گروهِ تلگرامِ پروژه (۲.۳۶.۰) — فقط برای کسی که حقِ عضویت دارد. */
-  telegramInvite: string | null;
+  /**
+   * لینکِ عضویتِ گروهِ تلگرامِ پروژه (۲.۳۶.۰) — فقط برای کسی که حقِ عضویت دارد —
+   * و وضعیتِ عضویتِ واقعی از تلگرام (۲.۴۳.۴).
+   */
+  telegramInvite: { link: string; connected: boolean; joined: boolean | null } | null;
 }
 
 /**
@@ -55,20 +58,36 @@ function useFillViewport<T extends HTMLElement>(active: boolean, minPx = 320, ga
   return { ref, height };
 }
 
-/** «پیوستن در تلگرام» — بالای تب، با گروهِ برنامه یا بی آن. */
-function TelegramJoin({ link }: { link: string | null }) {
+/**
+ * «پیوستن در تلگرام» — بالای تب، با گروهِ برنامه یا بی آن. ۲.۴۳.۴: کسی که از قبل
+ * عضو است دعوت نمی‌بیند؛ کسی که تلگرامش وصل نیست می‌فهمد ربات او را نمی‌شناسد.
+ */
+function TelegramJoin({ invite }: { invite: ProjectChat['telegramInvite'] }) {
   const t = useT();
-  if (!link) return null;
+  if (!invite) return null;
+  const joined = invite.joined === true;
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card px-4 py-3">
-      <p className="text-sm text-muted-foreground">
-        {t('این پروژه گروهِ تلگرام هم دارد؛ ربات عضویتِ اعضای تیم را خودکار تأیید می‌کند.')}
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        {joined && <CircleCheck className="size-4 shrink-0 text-success" />}
+        {joined
+          ? t('شما عضوِ گروهِ تلگرامِ این پروژه هستید.')
+          : invite.connected
+            ? t('این پروژه گروهِ تلگرام هم دارد؛ ربات عضویتِ اعضای تیم را خودکار تأیید می‌کند.')
+            : t('این پروژه گروهِ تلگرام هم دارد. اول تلگرامتان را در پروفایل وصل کنید؛ وگرنه ربات شما را نمی‌شناسد و درخواستِ عضویت رد می‌شود.')}
       </p>
       <Button asChild size="sm" variant="outline">
-        <a href={link} target="_blank" rel="noopener noreferrer">
-          <Send />
-          {t('پیوستن در تلگرام')}
-        </a>
+        {!joined && !invite.connected ? (
+          <Link href="/profile">
+            <Send />
+            {t('وصلِ تلگرام')}
+          </Link>
+        ) : (
+          <a href={invite.link} target="_blank" rel="noopener noreferrer">
+            <Send />
+            {joined ? t('باز کردنِ گروه') : t('پیوستن در تلگرام')}
+          </a>
+        )}
       </Button>
     </div>
   );
@@ -99,7 +118,7 @@ export function ChatTab({ projectId, chat, viewerId }: { projectId: number; chat
   if (threadId === null) {
     return (
       <div className="grid gap-3">
-      <TelegramJoin link={chat.telegramInvite} />
+      <TelegramJoin invite={chat.telegramInvite} />
       <div className="grid gap-4 rounded-xl border bg-card p-5">
         <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -134,7 +153,7 @@ export function ChatTab({ projectId, chat, viewerId }: { projectId: number; chat
 
   return (
     <div className="grid gap-2">
-      <TelegramJoin link={chat.telegramInvite} />
+      <TelegramJoin invite={chat.telegramInvite} />
       {/* پیوندِ «پیام‌ها» بالای کادر (۲.۴۳.۳) — کادرِ ارسال آخرین چیزِ صفحه است. */}
       <div className="flex justify-end">
         <Button asChild variant="ghost" size="sm" className="text-muted-foreground">

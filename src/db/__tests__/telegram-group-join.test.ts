@@ -26,6 +26,8 @@ const as = (id: number, roles: Actor['roles']): Actor => ({ id, roles, permissio
 /** همهٔ فراخوان‌های تلگرام — از ربات (setTelegramApi) و از سرویسِ گروه (fetch). */
 let calls: Array<{ method: string; body: Record<string, unknown> }> = [];
 let nextId = 1;
+/** چه کسانی الان در گروه‌اند — جوابِ جعلیِ `getChatMember`. */
+const inGroup = new Set<number>();
 const method = (name: string) => calls.filter((c) => c.method === name);
 const dmTo = (chat: number) => method('sendMessage').filter((c) => String(c.body.chat_id) === String(chat));
 
@@ -67,6 +69,7 @@ beforeEach(() => {
     const body = init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {};
     calls.push({ method: m, body });
     if (m === 'createChatInviteLink') return Response.json({ ok: true, result: { invite_link: INVITE } });
+    if (m === 'getChatMember') return Response.json({ ok: true, result: { status: inGroup.has(Number(body.user_id)) ? 'member' : 'left' } });
     return Response.json({ ok: true, result: {} });
   }));
 });
@@ -124,9 +127,17 @@ describe('گروهِ تلگرامِ پروژه با دعوتِ خودکار', ()
   });
 
   it('لینکِ «پیوستن» در صفحهٔ پروژه فقط برای کسی که حقِ عضویت دارد', async () => {
-    expect(await groupInviteFor(as(MEMBER, ['member']), P)).toBe(INVITE);
+    expect(await groupInviteFor(as(MEMBER, ['member']), P)).toEqual({ link: INVITE, connected: true, joined: false });
     expect(await groupInviteFor(as(CLIENT, ['client']), P)).toBeNull();
     expect(await groupInviteFor(as(OTHER, ['member']), P)).toBeNull();
+  });
+
+  it('کسی که از قبل در گروه است «عضو» دیده می‌شود؛ تلگرامِ بی‌جواب = نامعلوم', async () => {
+    inGroup.add(C.member);
+    expect((await groupInviteFor(as(MEMBER, ['member']), P))?.joined).toBe(true);
+    inGroup.clear();
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline'); }));
+    expect((await groupInviteFor(as(MEMBER, ['member']), P))?.joined).toBeNull();
   });
 
   it('عضوِ تازهٔ پروژه خودکار دعوت می‌شود', async () => {
