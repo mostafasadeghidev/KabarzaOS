@@ -18,6 +18,7 @@ import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { UserMenu } from '@/components/user-menu';
+import { HideAmountsToggle } from '@/components/amount-privacy';
 import { isRtl, type Locale } from '@/i18n/config';
 import { useT } from '@/i18n/client';
 import { LiveCount, usePulse } from '@/components/pulse';
@@ -310,6 +311,10 @@ export function AppSidebar({
 
       <SidebarFooter>
         <SidebarMenu>
+          {/* پنهان‌کردنِ مبلغ‌ها در همهٔ برنامه جز گزارش‌ها — پیش‌فرض روشن (۲.۴۳.۰). */}
+          <SidebarMenuItem>
+            <HideAmountsToggle />
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <UserMenu
               userName={userName}

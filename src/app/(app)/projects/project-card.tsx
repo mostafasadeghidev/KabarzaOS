@@ -2,7 +2,6 @@
 
 import { UserAvatar } from '@/components/user-avatar';
 import Link from 'next/link';
-import { useState } from 'react';
 import { ChevronDown, CornerDownLeft, MessageSquare, ListChecks } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -18,6 +17,7 @@ import { StatusPicker, type StatusOption } from './status-picker';
 import { CardQuickAdd, type CardOptions } from './card-quick-add';
 import { useT } from '@/i18n/client';
 import { Hint } from '@/components/ui/tooltip';
+import { Amount } from '@/components/amount-privacy';
 
 /**
  * کارتِ پروژه — بازسازیِ.
@@ -34,28 +34,6 @@ const URGENCY: Record<string, { bar: string; text: string }> = {
   soon: { bar: 'bg-orange-500', text: 'text-orange-700 dark:text-orange-500' },
   over: { bar: 'bg-destructive', text: 'text-destructive' },
 };
-
-/**
- * مبلغ به‌صورتِ پیش‌فرض پوشانده است — دقیقاً مثلِ نسخهٔ قبلی.
- * ⚠️ عمدی است: کارت‌ها روی نمایشگرِ مشترک باز می‌مانند و مبلغِ پروژه نباید
- * بی‌اجازه دیده شود.
- */
-function MaskedPrice({ value }: { value: string }) {
-  const t = useT();
-  const [shown, setShown] = useState(false);
-  return (
-    <Hint label={t("برای نمایش/پنهان‌کردن کلیک کنید")}>
-      <button
-        type="button"
-        onClick={() => setShown((s) => !s)}
-        aria-label={t("برای نمایش/پنهان‌کردن کلیک کنید")}
-        className="num font-semibold tracking-wider text-foreground tabular-nums"
-      >
-        {shown ? value : '•••••'}
-      </button>
-    </Hint>
-  );
-}
 
 export function ProjectCard({
   project,
@@ -193,11 +171,15 @@ export function ProjectCard({
               نه قیمتِ تنها؛ کارفرما همین جمع را بدهکار است.
             */}
             {/* کدِ ارز کنارِ عدد — «۱۲٬۵۰۰» بی‌ارز معلوم نمی‌کرد یورو است یا ریال. */}
-            <MaskedPrice
-              value={`${format(
+            {/*
+              ⚠️ پوشانده با کلیدِ سراسریِ «پنهان‌کردنِ مبلغ‌ها» (۲.۴۳.۰) — پیش از این
+              فقط همین کارت همیشه پوشانده بود؛ کارت‌ها روی نمایشگرِ مشترک باز می‌مانند.
+            */}
+            <Amount className="font-semibold text-foreground">
+              {`${format(
                 String(summarizeProject(project.price, project.billableExpenses, '0').totalDue),
               )} ${project.currencyCode ?? ''}`.trim()}
-            />
+            </Amount>
           </div>
         )}
       </div>

@@ -45,6 +45,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { SearchInput } from '@/components/ui/search-input';
 import { useSearchParams } from 'next/navigation';
 import { Hint } from '@/components/ui/tooltip';
+import { Amount } from '@/components/amount-privacy';
 
 export interface RequestRow {
   id: number;
@@ -387,9 +388,9 @@ export function PayoutsView({
                       {r.note && <span className="block text-xs text-muted-foreground">{r.note}</span>}
                     </TableCell>
                     <TableCell>{r.projectTitle ?? '—'}</TableCell>
-                    <TableNumericCell>{formatIn(r.amount, r.currencyCode)} {r.currencyCode ?? ''}</TableNumericCell>
+                    <TableNumericCell><Amount>{formatIn(r.amount, r.currencyCode)} {r.currencyCode ?? ''}</Amount></TableNumericCell>
                     <TableNumericCell className="text-muted-foreground">
-                      {r.remaining === null ? '—' : `${formatIn(r.remaining, r.remainingCurrencyCode)} ${r.remainingCurrencyCode ?? ''}`}
+                      {r.remaining === null ? '—' : <Amount>{`${formatIn(r.remaining, r.remainingCurrencyCode)} ${r.remainingCurrencyCode ?? ''}`}</Amount>}
                     </TableNumericCell>
                     <TableNumericCell className="text-muted-foreground">{formatDate(r.createdAt, tz)}</TableNumericCell>
                     <TableCell>
@@ -491,11 +492,11 @@ export function PayoutsView({
                   <TableCell>{u.projectTitle ?? '—'}</TableCell>
                   <TableNumericCell>{format(u.quantity)}</TableNumericCell>
                   <TableNumericCell>
-                    {formatIn(u.remaining ?? u.amount, u.currencyCode)} {u.currencyCode ?? ''}
+                    <Amount>{formatIn(u.remaining ?? u.amount, u.currencyCode)} {u.currencyCode ?? ''}</Amount>
                     {/* بخشی پرداخت‌شده: مانده بزرگ، کلِ مبلغ کوچک زیرش. */}
                     {Number(u.paidAmount ?? 0) > 0 && (
                       <span className="block text-xs text-muted-foreground">
-                        {tr('مانده از {total}', { total: formatIn(u.amount, u.currencyCode) })}
+                        <Amount>{tr('مانده از {total}', { total: formatIn(u.amount, u.currencyCode) })}</Amount>
                       </span>
                     )}
                   </TableNumericCell>
@@ -538,7 +539,7 @@ export function PayoutsView({
                 <TableNumericCell>{p.paidAt ?? '—'}</TableNumericCell>
                 <TableCell><UserName userId={p.userId} name={p.userName ?? '—'} size="sm" /></TableCell>
                 <TableCell>{t(PAY_DIRECTION_LABELS[p.direction] ?? p.direction)}</TableCell>
-                <TableNumericCell>{formatIn(p.amount, p.currencyCode)} {p.currencyCode ?? ''}</TableNumericCell>
+                <TableNumericCell><Amount>{formatIn(p.amount, p.currencyCode)} {p.currencyCode ?? ''}</Amount></TableNumericCell>
                 <TableCell className="text-muted-foreground">{p.note || '—'}</TableCell>
                 <TableCell>
                   {p.receiptId ? (
@@ -633,7 +634,7 @@ export function PayoutsView({
         {recurring.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="me-2">
-              {tr('جمعِ معادلِ یورو: {sum}', { sum: format(eurTotal.toFixed(2)) })}
+              <Amount>{tr('جمعِ معادلِ یورو: {sum}', { sum: format(eurTotal.toFixed(2)) })}</Amount>
               {eurMissing > 0 && ` (${tr('{n} مورد بی‌نرخ', { n: eurMissing })})`}
             </span>
             {vendorSummary.map((v) => (
@@ -651,7 +652,7 @@ export function PayoutsView({
                 aria-pressed={v.vendorId !== null && expenseVendors.includes(v.vendorId)}
                 className="rounded-full font-normal"
               >
-                {v.vendor}: <span className="num">{formatIn(v.total, v.code)} {v.code}</span>
+                {v.vendor}: <Amount className="num">{formatIn(v.total, v.code)} {v.code}</Amount>
               </Button>
               </Hint>
             ))}
@@ -703,9 +704,9 @@ export function PayoutsView({
                           <span className="ms-2 text-xs text-muted-foreground">{r.accountName}</span>
                         )}
                       </TableCell>
-                      <TableNumericCell>{formatIn(r.amount, r.currencyCode)} {r.currencyCode ?? ''}</TableNumericCell>
+                      <TableNumericCell><Amount>{formatIn(r.amount, r.currencyCode)} {r.currencyCode ?? ''}</Amount></TableNumericCell>
                       <TableNumericCell className="text-muted-foreground">
-                        {r.amountEur === null ? '—' : format(r.amountEur)}
+                        {r.amountEur === null ? '—' : <Amount>{format(r.amountEur)}</Amount>}
                       </TableNumericCell>
                       <TableNumericCell>{r.nextDueDate}</TableNumericCell>
                       {canManage && (
@@ -771,7 +772,7 @@ export function PayoutsView({
           {rejectTarget && (
             <div className="grid gap-3">
               <p className="flex items-center gap-1.5 text-sm">
-                <UserName userId={rejectTarget.userId} name={rejectTarget.userName} size="sm" /> — <span className="num">{format(rejectTarget.amount)}</span>
+                <UserName userId={rejectTarget.userId} name={rejectTarget.userName} size="sm" /> — <Amount className="num">{format(rejectTarget.amount)}</Amount>
               </p>
               <Textarea
                 aria-label={tr("دلیل رد (اختیاری)")}
@@ -813,7 +814,7 @@ export function PayoutsView({
             <form action={payAction} className="grid gap-3">
               <input type="hidden" name="requestId" value={payTarget.id} />
               <p className="flex items-center gap-1.5 text-sm">
-                <UserName userId={payTarget.userId} name={payTarget.userName} size="sm" /> — <span className="num">{format(payTarget.amount)}</span>
+                <UserName userId={payTarget.userId} name={payTarget.userName} size="sm" /> — <Amount className="num">{format(payTarget.amount)}</Amount>
               </p>
 
               <Field>
@@ -870,7 +871,7 @@ export function PayoutsView({
             <form action={unitAction} className="grid gap-3">
               <input type="hidden" name="unitEntryId" value={unitTarget.id} />
               <p className="flex flex-wrap items-center gap-1.5 text-sm">
-                <UserName userId={unitTarget.userId} name={unitTarget.userName} size="sm" /> — {unitTarget.projectTitle} — <span className="num">{formatIn(unitTarget.amount, unitTarget.currencyCode)} {unitTarget.currencyCode ?? ''}</span>
+                <UserName userId={unitTarget.userId} name={unitTarget.userName} size="sm" /> — {unitTarget.projectTitle} — <Amount className="num">{formatIn(unitTarget.amount, unitTarget.currencyCode)} {unitTarget.currencyCode ?? ''}</Amount>
               </p>
               {/* قسط (۲.۲۵.۰): پیش‌فرض کلِ مانده؛ کمتر بنویسید تا ردیف «بخشی پرداخت‌شده» بماند. */}
               <Field>

@@ -14,6 +14,7 @@ import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDate } from '@/i18n/datetime';
 import { Section } from '@/components/page-shell';
+import { Amount } from '@/components/amount-privacy';
 
 export interface UnitRow {
   id: number;
@@ -152,23 +153,23 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
         <Section title={t("درخواستِ پرداخت")}>
 
           <div className="flex flex-wrap gap-4 text-sm">
-            <span>{t("مبلغ توافقی شما:")} <b className="num">{format(data.agreed)} {data.currencyCode}</b></span>
-            <span>{t("به شما پرداخت‌شده:")} <b className="num">{format(data.paid)} {data.currencyCode}</b></span>
+            <span>{t("مبلغ توافقی شما:")} <b className="num"><Amount>{format(data.agreed)} {data.currencyCode}</Amount></b></span>
+            <span>{t("به شما پرداخت‌شده:")} <b className="num"><Amount>{format(data.paid)} {data.currencyCode}</Amount></b></span>
             <span>
-              {t("ماندهٔ قرارداد:")} <b className="num">{format(data.remaining)} {data.currencyCode}</b>
+              {t("ماندهٔ قرارداد:")} <b className="num"><Amount>{format(data.remaining)} {data.currencyCode}</Amount></b>
               <Badge variant={data.status === 'paid' ? 'success' : data.status === 'partial' ? 'warning' : 'outline'} className="ms-1">
                 {t(PAY_STATUS_LABELS[data.status] ?? data.status)}
               </Badge>
             </span>
-            <span>{t("درخواست‌های باز:")} <b className="num">{format(data.outstanding)} {data.currencyCode}</b></span>
-            <span>{t("قابلِ درخواست:")} <b className="num">{format(data.available)} {data.currencyCode}</b></span>
+            <span>{t("درخواست‌های باز:")} <b className="num"><Amount>{format(data.outstanding)} {data.currencyCode}</Amount></b></span>
+            <span>{t("قابلِ درخواست:")} <b className="num"><Amount>{format(data.available)} {data.currencyCode}</Amount></b></span>
           </div>
 
           {data.requests.length > 0 && (
             <ul className="grid gap-1">
               {data.requests.map((r) => (
                 <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
-                  <b className="num">{format(r.amount)}</b>
+                  <b className="num"><Amount>{format(r.amount)}</Amount></b>
                   <span className="num text-xs text-muted-foreground">{formatDate(r.createdAt, tz)}</span>
                   <Badge variant={r.status === 'paid' ? 'success' : 'outline'}>
                     {t(REQUEST_STATUS_LABELS[r.status] ?? r.status)}
@@ -212,7 +213,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
                 {data.payouts.map((p) => (
                   <li key={p.id} className="flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
                     <span className="num text-xs text-muted-foreground">{p.paidAt ?? '—'}</span>
-                    <b className="num">{format(p.amountSettled ?? p.amount)} {p.currencyCode ?? ''}</b>
+                    <b className="num"><Amount>{format(p.amountSettled ?? p.amount)} {p.currencyCode ?? ''}</Amount></b>
                     {p.note && <span className="text-xs text-muted-foreground">{p.note}</span>}
                     {(p.receiptIds?.length ?? 0) > 0 && (
                       <a href={`/api/files/${p.receiptIds![0]}`} target="_blank" rel="noopener" className="text-xs text-primary hover:underline">

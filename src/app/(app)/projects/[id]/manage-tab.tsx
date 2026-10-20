@@ -33,6 +33,7 @@ import { Panel } from '@/components/page-shell';
 import { TelegramGroupPanel } from './telegram-group-panel';
 import { ProjectCodePanel } from './project-code-panel';
 import { Hint } from '@/components/ui/tooltip';
+import { Amount } from '@/components/amount-privacy';
 
 /**
  * تبِ مدیریت — بازسازیِ `manage_tab_html()`:
@@ -517,15 +518,15 @@ function LightenBox({
           </div>
           <div className="flex gap-1">
             <dt className="text-muted-foreground">{t("قیمت:")}</dt>
-            <dd className="num">{format(summary.price)}</dd>
+            <dd className="num"><Amount>{format(summary.price)}</Amount></dd>
           </div>
           <div className="flex gap-1">
             <dt className="text-muted-foreground">{t("دریافتی کارفرما:")}</dt>
-            <dd className="num">{format(summary.clientPaidEur)}</dd>
+            <dd className="num"><Amount>{format(summary.clientPaidEur)}</Amount></dd>
           </div>
           <div className="flex gap-1">
             <dt className="text-muted-foreground">{t("پرداختی به اعضا:")}</dt>
-            <dd className="num">{format(summary.memberPaidEur)}</dd>
+            <dd className="num"><Amount>{format(summary.memberPaidEur)}</Amount></dd>
           </div>
         </dl>
         {summary.wasTender && <Badge variant="outline">{t("پیش‌تر مناقصه بوده")}</Badge>}

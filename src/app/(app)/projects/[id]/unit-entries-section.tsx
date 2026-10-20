@@ -32,6 +32,7 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { ProjectStatus } from '../project-status';
 import { Section } from '@/components/page-shell';
 import { IconButton } from '@/components/ui/icon-button';
+import { Amount } from '@/components/amount-privacy';
 
 /** دادهٔ لازمِ بخشِ کارکردها — زیرمجموعهٔ دادهٔ «پولِ من». */
 export interface UnitSectionData {
@@ -293,7 +294,7 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                         </IconButton>
                       </span>
                     ) : (
-                      <>{format(u.amount)} {u.currencyCode}</>
+                      <Amount>{format(u.amount)} {u.currencyCode}</Amount>
                     )}
                   </TableNumericCell>
                   <TableCell>
@@ -312,7 +313,7 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                             <Hint label={(
                               <span className="grid gap-0.5">
                                 {list.map((p, i) => (
-                                  <span key={i} className="num">{p.paidAt} · {format(p.amount)} {u.currencyCode ?? ''}</span>
+                                  <span key={i} className="num">{p.paidAt} · <Amount>{format(p.amount)} {u.currencyCode ?? ''}</Amount></span>
                                 ))}
                               </span>
                             )}>
@@ -321,7 +322,7 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                           ) : badge}
                           {label === 'partial' && (
                             <span className="text-[11px] text-muted-foreground">
-                              {t('مانده {left}', { left: format(u.remaining ?? '0') })}
+                              <Amount>{t('مانده {left}', { left: format(u.remaining ?? '0') })}</Amount>
                             </span>
                           )}
                         </span>
@@ -400,11 +401,11 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
 
       {data.asMember && (
         <p className="flex flex-wrap gap-4 text-sm">
-          <span><b>{t("جمعِ پرداخت‌نشده:")}</b> <span className="num">{format(data.myUnpaidUnits)}</span></span>
+          <span><b>{t("جمعِ پرداخت‌نشده:")}</b> <Amount className="num">{format(data.myUnpaidUnits)}</Amount></span>
           {/* پورتِ جمعِ «پرداخت‌شده» ِ ردیف‌های تعدادی. */}
-          <span><b>{t("جمعِ پرداخت‌شده:")}</b> <span className="num">{format(
+          <span><b>{t("جمعِ پرداخت‌شده:")}</b> <Amount className="num">{format(
             data.units.filter((u) => u.isMine && u.status === 'paid').reduce((sum, u) => sum + Number(u.amount), 0).toFixed(4),
-          )}</span></span>
+          )}</Amount></span>
         </p>
       )}
       {rowError && <p className="text-xs text-destructive">{rowError}</p>}

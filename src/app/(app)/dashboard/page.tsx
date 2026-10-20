@@ -22,6 +22,7 @@ import { hasTeamScope, teamOverview } from '@/server/team/service';
 import { TeamOverviewCards } from '../team/overview-cards';
 import { DashboardTimeLog } from './time-log-card';
 import { pageTitle } from '@/i18n/page-title';
+import { Amount } from '@/components/amount-privacy';
 
 export const generateMetadata = pageTitle('نمای کلی');
 
@@ -380,7 +381,7 @@ export default async function DashboardPage({
                   {risk.expenseDues.slice(0, 8).map((e) => (
                     <li key={e.id} className="contents">
                       <span className="truncate">{e.title}</span>
-                      <span className="num text-end text-muted-foreground" dir="ltr">{e.amount}</span>
+                      <span className="num text-end text-muted-foreground" dir="ltr"><Amount>{e.amount}</Amount></span>
                       <span className={`num text-xs ${e.overdue ? 'text-destructive' : 'text-muted-foreground'}`}>{e.due}</span>
                     </li>
                   ))}

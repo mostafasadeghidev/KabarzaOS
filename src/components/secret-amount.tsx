@@ -1,8 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useT } from '@/i18n/client';
-import { Hint } from '@/components/ui/tooltip';
+import { Amount } from '@/components/amount-privacy';
 
 /**
  * مبلغی که پیش‌فرض پوشیده است و با کلیک باز می‌شود.
@@ -12,6 +10,9 @@ import { Hint } from '@/components/ui/tooltip';
  * اول روی صفحه باشد. این **پوششِ نمایشی** است، نه گاردِ دسترسی: عدد از
  * سرور آمده و کسی که حقِ دیدنش را ندارد اصلاً آن را نمی‌گیرد (گاردِ واقعی
  * در `domain/access/project-money` است).
+ *
+ * از ۲.۴۳.۰ همان `Amount` است: کلیدِ «پنهان‌کردنِ مبلغ‌ها» ِ سایدبار اگر خاموش
+ * باشد، اینجا هم عدد پیدا است.
  */
 export function SecretAmount({
   value,
@@ -21,23 +22,5 @@ export function SecretAmount({
   value: string;
   className?: string;
 }) {
-  const t = useT();
-  const [shown, setShown] = useState(false);
-
-  const label = shown ? t('پنهان‌کردن') : t('نمایشِ مبلغ');
-  return (
-    <Hint label={label}>
-      <button
-        type="button"
-        // ⚠️ کلیک نباید کارتِ زیرین را هم باز کند.
-        onClick={(e) => { e.stopPropagation(); setShown((v) => !v); }}
-        aria-label={label}
-        className={`rounded outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
-          shown ? '' : 'text-muted-foreground'
-        } ${className}`}
-      >
-        {shown ? value : '•••'}
-      </button>
-    </Hint>
-  );
+  return <Amount className={className}>{value}</Amount>;
 }

@@ -42,6 +42,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { StatCard } from '@/components/stat-card';
 import { FileInput } from '@/components/ui/file-input';
 import { Hint } from '@/components/ui/tooltip';
+import { Amount } from '@/components/amount-privacy';
 
 /** یک حساب — همان شکلی که `listAccounts` برمی‌گرداند. */
 export interface AccountOption {
@@ -329,7 +330,7 @@ export function LedgerView({
           <StatCard
             key={c.label}
             label={t(c.label)}
-            value={c.value}
+            value={<Amount>{c.value}</Amount>}
             emphasis={c.strong ? 'strong' : 'quiet'}
           />
         ))}
@@ -395,7 +396,7 @@ export function LedgerView({
                 <TableCell>{e.description || '—'}</TableCell>
                 {/* پورتِ `amount_html`/`amount_color`: علامت و رنگ جهت را می‌گویند. */}
                 <TableNumericCell className={e.direction === 'in' ? 'text-emerald-700 dark:text-emerald-500' : 'text-destructive'}>
-                  {e.direction === 'in' ? '+' : '−'}{formatIn(e.amountAccount, currencyCode)}
+                  <Amount>{e.direction === 'in' ? '+' : '−'}{formatIn(e.amountAccount, currencyCode)}</Amount>
                 </TableNumericCell>
                 {/* عضوِ سامانه با آواتار؛ طرف‌حسابِ بیرونی (برچسبِ آزاد) فقط نام. */}
                 <TableCell>{e.payerName ? <UserName userId={e.payerUserId} name={e.payerName} /> : (e.payerLabel || '—')}</TableCell>
@@ -404,7 +405,7 @@ export function LedgerView({
                 <TableCell className="text-muted-foreground">{e.lastActor ?? '—'}</TableCell>
                 {showEur && (
                   <TableNumericCell className="text-muted-foreground">
-                    {e.eurDisplay === null ? '—' : formatIn(e.eurDisplay, baseCode)}
+                    {e.eurDisplay === null ? '—' : <Amount>{formatIn(e.eurDisplay, baseCode)}</Amount>}
                   </TableNumericCell>
                 )}
                 <TableCell>

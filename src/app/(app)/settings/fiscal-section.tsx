@@ -16,6 +16,7 @@ import { format } from '@/domain/money/money';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Panel } from '@/components/page-shell';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
+import { Amount } from '@/components/amount-privacy';
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -99,7 +100,7 @@ export function FiscalSection({
                 {closing.accounts.map((a) => (
                   <TableRow key={a.id}>
                     <TableCell>{a.label}</TableCell>
-                    <TableNumericCell>{format(a.balance)} {a.currencyCode ?? ''}</TableNumericCell>
+                    <TableNumericCell><Amount>{format(a.balance)} {a.currencyCode ?? ''}</Amount></TableNumericCell>
                   </TableRow>
                 ))}
               </TableBody>

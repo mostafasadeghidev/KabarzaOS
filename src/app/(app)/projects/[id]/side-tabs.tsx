@@ -31,6 +31,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Item, ItemActions, ItemContent, ItemGroup } from '@/components/ui/item';
 import { useRouter } from 'next/navigation';
 import { TaskDialog } from './task-dialog';
+import { Amount } from '@/components/amount-privacy';
 
 /* ------------------------------------------------------------------ *
  * تبِ مالی — `finance` panel ِ مودالِ نسخهٔ قبلی.
@@ -129,7 +130,8 @@ export function FinanceTab({
 
   // پورتِ `Payments::summary` (R-TEAM-04): بدهیِ کل = قیمت + هزینه‌های قابلِ صورتحساب؛ مانده کف‌بندی؛ وضعیتِ سه‌حالته.
   const summary = summarizeProject(price, finance.projectExpense, finance.incoming);
-  const withCode = (v: string | number, code: string | null) => `${formatIn(String(v), code)}${code ? ` ${code}` : ''}`;
+  // ⚠️ هر مبلغِ این تب‌ها از همین می‌گذرد — پس کلیدِ «پنهان‌کردنِ مبلغ‌ها» همه را می‌گیرد (۲.۴۳.۰).
+  const withCode = (v: string | number, code: string | null) => <Amount>{`${formatIn(String(v), code)}${code ? ` ${code}` : ''}`}</Amount>;
   const money = (v: string | number) => withCode(v, currencyCode);
   /**
    * ⚠️ قیمتِ صفر یعنی «هنوز ثبت نشده»، نه «پرداخت‌نشده» (۲.۳۰.۰): پیش از این
@@ -843,7 +845,7 @@ export function BidsTab({
               <TableRow key={b.id}>
                 <TableCell><UserName userId={b.userId} name={b.userName ?? '—'} size="sm" /></TableCell>
                 <TableCell>{b.roleName ?? '—'}</TableCell>
-                <TableNumericCell>{format(b.amount)}{b.currencyCode ? ` ${b.currencyCode}` : ''}</TableNumericCell>
+                <TableNumericCell><Amount>{format(b.amount)}{b.currencyCode ? ` ${b.currencyCode}` : ''}</Amount></TableNumericCell>
                 <TableCell><Badge variant={s.variant}>{t(s.label)}</Badge></TableCell>
                 <TableCell className="max-w-64 text-xs whitespace-pre-wrap text-muted-foreground">{b.note || '—'}</TableCell>
                 {canManage && (
