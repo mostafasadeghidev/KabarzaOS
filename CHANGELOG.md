@@ -2,11 +2,35 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
-## [2.43.1]
+## [2.43.4]
 
 ### Fixed
 
 - **The project chat tab no longer asks a Telegram group member to join.** It used to show "this project also has a Telegram group" with a "Join on Telegram" button to every team member, even those already in the group. The app now asks Telegram whether the viewer is in the group: a member sees "You're a member of this project's Telegram group" with an "Open group" button; someone who has not connected Telegram in their profile is told to connect it first (otherwise the bot can't recognize them and declines the join request), with a button to the profile; everyone else sees the join button as before. If Telegram doesn't answer within 3 seconds the page shows the join button as before and doesn't wait.
+
+## [2.43.3]
+
+### Changed
+
+- **The project chat fits the window.** On a project's Group chat tab, the conversation box now runs from its place on the page to the bottom of the window, so the message box and Send button sit at the bottom of the screen without scrolling. It was a fixed height that pushed them below the fold. The "Open in Messages" link moved above the box. On a very short window the box keeps a minimum height.
+
+## [2.43.2]
+
+### Changed
+
+- **"Hide amounts" moved into the account menu**, under Palette, next to the other display preferences, instead of a separate row in the sidebar footer. It works the same way.
+- **The payment request summary on a project's Finance tab is now small tiles** (agreed, paid, remaining with its status, open requests, available to request) instead of five "label: amount" pairs on one line. "Available to request" is highlighted.
+
+### Fixed
+
+- **The account button in the sidebar shows the default avatar** for a user without a profile picture, like everywhere else in the app. It showed the name's initials instead.
+
+## [2.43.1]
+
+### Fixed
+
+- **Date columns no longer run into the next column.** Dates were aligned like amounts (to the right in English), so in tables such as Work hours the date sat against the Project column and read as one. Date and time columns now start-align like text, through a new `TableDateCell`, in 28 tables: work hours, finance (ledger, payouts, recurring expenses), my money, project payments and unit entries, dashboards, tasks, team boards, absences, activity, onboarding, backups, exchange rates and reports.
+- In left-to-right languages, a text column that follows an amount column gets extra space, so the two no longer touch either.
 
 ## [2.43.0]
 

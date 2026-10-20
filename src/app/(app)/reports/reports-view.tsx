@@ -11,7 +11,7 @@ import { hoursLabel } from '@/domain/reports/summary';
 import { REPORT_TABS } from '@/domain/access/staff-levels';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
 import { ltr } from '@/i18n/bidi';
 import { Download, TriangleAlert, CircleAlert } from 'lucide-react';
@@ -581,7 +581,7 @@ export function ReportsView({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead numeric>{tr("ماه")}</TableHead>
+                    <TableHead>{tr("ماه")}</TableHead>
                     <TableHead className="w-1/2">{tr("روند")}</TableHead>
                     <TableHead numeric>{tr("مبلغ (یورو)")}</TableHead>
                   </TableRow>
@@ -589,7 +589,7 @@ export function ReportsView({
                 <TableBody>
                   {expenseStats.byMonth.map((m) => (
                     <TableRow key={m.ym}>
-                      <TableNumericCell>{m.ym}</TableNumericCell>
+                      <TableDateCell>{m.ym}</TableDateCell>
                       <TableCell>
                         {/* پورتِ نوارِ روند: درصدِ هر ماه نسبت به پرترین ماه. */}
                         <Progress value={m.pct} aria-label={m.ym} />
@@ -607,7 +607,7 @@ export function ReportsView({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead numeric>{tr("تاریخ")}</TableHead>
+                    <TableHead>{tr("تاریخ")}</TableHead>
                     <TableHead>{tr("شرح")}</TableHead>
                     <TableHead>{tr("حساب")}</TableHead>
                     <TableHead>{tr("جهت")}</TableHead>
@@ -617,7 +617,7 @@ export function ReportsView({
                 <TableBody>
                   {expensesView.rows.map((r) => (
                     <TableRow key={r.id}>
-                      <TableNumericCell>{r.entryDate}</TableNumericCell>
+                      <TableDateCell>{r.entryDate}</TableDateCell>
                       <TableCell>{r.description || '—'}</TableCell>
                       <TableCell>{r.accountName ?? '—'}</TableCell>
                       <TableCell>{tr(r.direction === 'in' ? 'درآمد' : 'هزینه')}</TableCell>
@@ -825,8 +825,8 @@ export function ReportsView({
                 <TableHeader>
                   <TableRow>
                     <TableHead>{tr("عضو")}</TableHead>
-                    <TableHead numeric>{tr("از")}</TableHead>
-                    <TableHead numeric>{tr("تا")}</TableHead>
+                    <TableHead>{tr("از")}</TableHead>
+                    <TableHead>{tr("تا")}</TableHead>
                     <TableHead>{tr("توضیح")}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -834,8 +834,8 @@ export function ReportsView({
                   {attendanceView.rows.map((l, i) => (
                     <TableRow key={`${l.userId}-${l.fromDate}-${i}`}>
                       <TableCell><UserName userId={l.userId} name={l.name} size="sm" /></TableCell>
-                      <TableNumericCell>{l.fromDate}</TableNumericCell>
-                      <TableNumericCell>{l.toDate}</TableNumericCell>
+                      <TableDateCell>{l.fromDate}</TableDateCell>
+                      <TableDateCell>{l.toDate}</TableDateCell>
                       <TableCell>{l.note || '—'}</TableCell>
                     </TableRow>
                   ))}
@@ -894,7 +894,7 @@ export function ReportsView({
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr("حساب")}</TableHead>
-                  <TableHead numeric>{tr("از")}</TableHead>
+                  <TableHead>{tr("از")}</TableHead>
                   <TableHead numeric>{tr("واریز")}</TableHead>
                   <TableHead numeric>{tr("برداشت")}</TableHead>
                   <TableHead numeric>{tr("مانده")}</TableHead>
@@ -915,7 +915,7 @@ export function ReportsView({
                         </span>
                       )}
                     </TableCell>
-                    <TableNumericCell>{r.periodStart}</TableNumericCell>
+                    <TableDateCell>{r.periodStart}</TableDateCell>
                     <TableNumericCell>{format(r.deposits)}</TableNumericCell>
                     <TableNumericCell>{format(r.withdrawals)}</TableNumericCell>
                     <TableNumericCell className="font-semibold">

@@ -18,6 +18,8 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Button } from '@/components/ui/button';
 import { Hint } from '@/components/ui/tooltip';
 import { TagChip } from '@/components/ui/tag-chip';
+import { DefaultAvatar } from '@/components/default-avatar';
+import { HideAmountsRow } from '@/components/amount-privacy';
 
 /**
  * منویِ کاربر در فوترِ سایدبار.
@@ -101,9 +103,18 @@ export function UserMenu({
               className="aspect-square size-8 shrink-0 rounded-md object-cover"
             />
           ) : (
-            <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary/15 text-foreground">
-              <span className="text-xs font-semibold">{initials(userName)}</span>
-            </div>
+            /*
+              ⚠️ بی‌عکس ← همان آواتارِ پیش‌فرضِ همهٔ برنامه (۲.۴۳.۲)؛ پیش از این
+              فقط اینجا حروفِ اول می‌آمد. حروف فقط اگر خودِ تصویر بار نشد.
+            */
+            <DefaultAvatar
+              className="aspect-square size-8 shrink-0 rounded-md"
+              fallback={(
+                <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary/15 text-foreground">
+                  <span className="text-xs font-semibold">{initials(userName)}</span>
+                </div>
+              )}
+            />
           )}
           <div className="grid flex-1 text-start leading-tight">
             <span className="truncate text-sm font-medium">{userName}</span>
@@ -229,6 +240,9 @@ export function UserMenu({
             </div>
           </div>
         </div>
+
+        {/* پنهان‌کردنِ مبلغ‌ها (۲.۴۳.۰) — از ۲.۴۳.۲ اینجا، کنارِ بقیهٔ ترجیح‌های نمایش. */}
+        <HideAmountsRow />
 
         <DropdownMenuSeparator />
 

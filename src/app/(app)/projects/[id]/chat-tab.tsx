@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useLayoutEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { Archive, CircleCheck, ExternalLink, FolderKanban, MessagesSquare, Send } from 'lucide-react';
 import { createProjectGroupAction } from '../../messages/_form/actions';
@@ -22,13 +22,44 @@ export interface ProjectChat {
   poll: { enabled: boolean; seconds: number };
   /**
    * لینکِ عضویتِ گروهِ تلگرامِ پروژه (۲.۳۶.۰) — فقط برای کسی که حقِ عضویت دارد —
-   * و وضعیتِ عضویتِ واقعی از تلگرام (۲.۴۳.۱).
+   * و وضعیتِ عضویتِ واقعی از تلگرام (۲.۴۳.۴).
    */
   telegramInvite: { link: string; connected: boolean; joined: boolean | null } | null;
 }
 
 /**
- * «پیوستن در تلگرام» — بالای تب، با گروهِ برنامه یا بی آن. ۲.۴۳.۱: کسی که از قبل
+ * ارتفاعِ کادرِ گفتگو = از جای خودش تا پایینِ پنجره (۲.۴۳.۳)، تا کادرِ ارسال
+ * بی اسکرول همان پایینِ صفحه دیده شود. ⚠️ فاصله از **بالای سند** سنجیده می‌شود،
+ * نه از بالای پنجره، تا با اسکرولِ صفحه ارتفاع عوض نشود؛ `gapPx` همان پدینگِ پایینِ
+ * `PageShell` است. کمینه ۲۰rem: روی
+ * پنجرهٔ کوتاه کمی اسکرول بهتر از گفتگوی دوخطی است.
+ */
+function useFillViewport<T extends HTMLElement>(active: boolean, minPx = 320, gapPx = 32) {
+  const ref = useRef<T>(null);
+  const [height, setHeight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => {
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      setHeight(Math.max(minPx, Math.round(window.innerHeight - top - gapPx)));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    // بنرِ بالای صفحه (تایمر، تلگرام…) که دیرتر می‌آید جای کادر را جابه‌جا می‌کند.
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.body);
+    return () => {
+      window.removeEventListener('resize', measure);
+      ro.disconnect();
+    };
+    // ⚠️ `active`: کادر بعد از «ساختِ گروه» تازه به صفحه می‌آید.
+  }, [active, minPx, gapPx]);
+  return { ref, height };
+}
+
+/**
+ * «پیوستن در تلگرام» — بالای تب، با گروهِ برنامه یا بی آن. ۲.۴۳.۴: کسی که از قبل
  * عضو است دعوت نمی‌بیند؛ کسی که تلگرامش وصل نیست می‌فهمد ربات او را نمی‌شناسد.
  */
 function TelegramJoin({ invite }: { invite: ProjectChat['telegramInvite'] }) {
@@ -76,6 +107,7 @@ export function ChatTab({ projectId, chat, viewerId }: { projectId: number; chat
   const [pending, startTransition] = useTransition();
   // گروهِ تازه‌ساخته همین‌جا باز می‌شود، نه با رفتن به صفحهٔ «پیام‌ها».
   const [threadId, setThreadId] = useState<number | null>(chat.threadId);
+  const pane = useFillViewport<HTMLDivElement>(threadId !== null);
 
   const create = () => startTransition(async () => {
     const result = await createProjectGroupAction(projectId);
@@ -122,11 +154,25 @@ export function ChatTab({ projectId, chat, viewerId }: { projectId: number; chat
   return (
     <div className="grid gap-2">
       <TelegramJoin invite={chat.telegramInvite} />
+      {/* پیوندِ «پیام‌ها» بالای کادر (۲.۴۳.۳) — کادرِ ارسال آخرین چیزِ صفحه است. */}
+      <div className="flex justify-end">
+        <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+          <Link href={`/messages/${threadId}`}>
+            <ExternalLink />
+            {t('باز کردن در «پیام‌ها»')}
+          </Link>
+        </Button>
+      </div>
       {/*
-        ⚠️ ارتفاعِ ثابت، مثلِ صفحهٔ «پیام‌ها»: پیام‌ها خودشان اسکرول می‌خورند و
+        ⚠️ ارتفاعِ محدود، مثلِ صفحهٔ «پیام‌ها»: پیام‌ها خودشان اسکرول می‌خورند و
         کادرِ ارسال همیشه پیداست — نه اینکه گفتگوی بلند کلِ صفحه را دراز کند.
+        ارتفاع تا پایینِ پنجره (`useFillViewport`)؛ پیش از اندازه‌گیری همان قبلی.
       */}
-      <div className="flex h-[min(36rem,calc(100svh-12rem))] min-h-[24rem] flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs">
+      <div
+        ref={pane.ref}
+        style={pane.height !== null ? { height: pane.height } : undefined}
+        className="flex h-[min(36rem,calc(100svh-12rem))] min-h-[20rem] flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs"
+      >
         <ThreadPane
           threadId={threadId}
           viewerId={viewerId}
@@ -135,14 +181,6 @@ export function ChatTab({ projectId, chat, viewerId }: { projectId: number; chat
           showProjectLink={false}
           onClose={() => setThreadId(null)}
         />
-      </div>
-      <div className="flex justify-end">
-        <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
-          <Link href={`/messages/${threadId}`}>
-            <ExternalLink />
-            {t('باز کردن در «پیام‌ها»')}
-          </Link>
-        </Button>
       </div>
     </div>
   );

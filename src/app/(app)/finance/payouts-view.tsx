@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader,
-  TableNumericCell, TableRow,
+  TableDateCell, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { Section } from '@/components/page-shell';
 import { formatDate } from '@/i18n/datetime';
@@ -371,7 +371,7 @@ export function PayoutsView({
                 <TableHead>{t("پروژه")}</TableHead>
                 <TableHead numeric>{t("مبلغ")}</TableHead>
                 <TableHead numeric>{t("ماندهٔ قرارداد")}</TableHead>
-                <TableHead numeric>{t("تاریخ")}</TableHead>
+                <TableHead>{t("تاریخ")}</TableHead>
                 <TableHead>{t("وضعیت")}</TableHead>
                 <TableHead>{t("اطلاعات بانکی")}</TableHead>
                 {canManage && <TableActionsHead />}
@@ -392,7 +392,7 @@ export function PayoutsView({
                     <TableNumericCell className="text-muted-foreground">
                       {r.remaining === null ? '—' : <Amount>{`${formatIn(r.remaining, r.remainingCurrencyCode)} ${r.remainingCurrencyCode ?? ''}`}</Amount>}
                     </TableNumericCell>
-                    <TableNumericCell className="text-muted-foreground">{formatDate(r.createdAt, tz)}</TableNumericCell>
+                    <TableDateCell className="text-muted-foreground">{formatDate(r.createdAt, tz)}</TableDateCell>
                     <TableCell>
                       <Badge variant={s.variant}>{t(s.label)}</Badge>
                       {r.decisionNote && (
@@ -476,7 +476,7 @@ export function PayoutsView({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead numeric>{t("تاریخ")}</TableHead>
+                <TableHead>{t("تاریخ")}</TableHead>
                 <TableHead>{t("عضو")}</TableHead>
                 <TableHead>{t("پروژه")}</TableHead>
                 <TableHead numeric>{t("تعداد")}</TableHead>
@@ -487,7 +487,7 @@ export function PayoutsView({
             <TableBody>
               {unpaidUnits.map((u) => (
                 <TableRow key={u.id}>
-                  <TableNumericCell>{u.entryDate}</TableNumericCell>
+                  <TableDateCell>{u.entryDate}</TableDateCell>
                   <TableCell><UserName userId={u.userId} name={u.userName ?? '—'} size="sm" /></TableCell>
                   <TableCell>{u.projectTitle ?? '—'}</TableCell>
                   <TableNumericCell>{format(u.quantity)}</TableNumericCell>
@@ -525,7 +525,7 @@ export function PayoutsView({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead numeric>{t("تاریخ")}</TableHead>
+              <TableHead>{t("تاریخ")}</TableHead>
               <TableHead>{t("طرف")}</TableHead>
               <TableHead>{t("نوع")}</TableHead>
               <TableHead numeric>{t("مبلغ")}</TableHead>
@@ -536,7 +536,7 @@ export function PayoutsView({
           <TableBody>
             {detachedPayments.map((p) => (
               <TableRow key={p.id}>
-                <TableNumericCell>{p.paidAt ?? '—'}</TableNumericCell>
+                <TableDateCell>{p.paidAt ?? '—'}</TableDateCell>
                 <TableCell><UserName userId={p.userId} name={p.userName ?? '—'} size="sm" /></TableCell>
                 <TableCell>{t(PAY_DIRECTION_LABELS[p.direction] ?? p.direction)}</TableCell>
                 <TableNumericCell><Amount>{formatIn(p.amount, p.currencyCode)} {p.currencyCode ?? ''}</Amount></TableNumericCell>
@@ -673,7 +673,7 @@ export function PayoutsView({
                 <TableHead>{t("هزینه")}</TableHead>
                 <TableHead numeric>{t("مبلغ")}</TableHead>
                 <TableHead numeric>{t("معادل یورو")}</TableHead>
-                <TableHead numeric>{t("سررسیدِ بعدی")}</TableHead>
+                <TableHead>{t("سررسیدِ بعدی")}</TableHead>
                 {canManage && <TableActionsHead />}
               </TableRow>
             </TableHeader>
@@ -708,7 +708,7 @@ export function PayoutsView({
                       <TableNumericCell className="text-muted-foreground">
                         {r.amountEur === null ? '—' : <Amount>{format(r.amountEur)}</Amount>}
                       </TableNumericCell>
-                      <TableNumericCell>{r.nextDueDate}</TableNumericCell>
+                      <TableDateCell>{r.nextDueDate}</TableDateCell>
                       {canManage && (
                         <TableActionsCell>
                           <Hint label={r.accountId === null ? tr('بدونِ حساب فقط سررسید جلو می‌رود') : undefined}>
