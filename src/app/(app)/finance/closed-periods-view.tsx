@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
 import { ltr } from '@/i18n/bidi';
+import { Amount } from '@/components/amount-privacy';
 
 /**
  * آیکونِ پیوند که تا باز شدنِ صفحهٔ مقصد چرخنده می‌شود (۲.۲۵.۰) — دفترکل با
@@ -89,9 +90,9 @@ export function ClosedPeriodsView({ periods, isOwner }: { periods: ClosedPeriod[
                   return (
                     <TableRow key={a.accountId}>
                       <TableCell className="font-medium">{a.accountName}</TableCell>
-                      <TableNumericCell>{format(a.deposits)} {a.currencyCode ?? ''}</TableNumericCell>
-                      <TableNumericCell>{format(a.withdrawals)} {a.currencyCode ?? ''}</TableNumericCell>
-                      <TableNumericCell className="font-semibold">{format(a.closingBalance)} {a.currencyCode ?? ''}</TableNumericCell>
+                      <TableNumericCell><Amount>{format(a.deposits)} {a.currencyCode ?? ''}</Amount></TableNumericCell>
+                      <TableNumericCell><Amount>{format(a.withdrawals)} {a.currencyCode ?? ''}</Amount></TableNumericCell>
+                      <TableNumericCell className="font-semibold"><Amount>{format(a.closingBalance)} {a.currencyCode ?? ''}</Amount></TableNumericCell>
                       <TableActionsCell>
                         <Button asChild size="sm" variant="outline">
                           <Link href={`/finance?tab=ledger&${range}&all=1`}><PendingIcon icon={<Eye className="size-3.5" />} />{t('ردیف‌ها')}</Link>

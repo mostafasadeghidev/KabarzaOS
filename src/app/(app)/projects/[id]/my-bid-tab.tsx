@@ -12,6 +12,7 @@ import { Field, FieldLabel } from '@/components/ui/field';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { SectionHeader } from '@/components/page-shell';
+import { Amount } from '@/components/amount-privacy';
 
 export interface MyBidData {
   projectId: number;
@@ -48,7 +49,7 @@ function RoleBid({ projectId, role }: { projectId: number; role: MyBidData['open
         {role.roleName}
         {/* ⚠️ سقفِ صفر یعنی «بدونِ سقف»، نه سقفِ صفر. */}
         <span className="ms-2 text-xs font-normal text-muted-foreground">
-          {t('سقف: {cap}', { cap: cap > 0 ? format(role.cap!) : t('بدون سقف') })}
+          {cap > 0 ? <Amount>{t('سقف: {cap}', { cap: format(role.cap!) })}</Amount> : t('سقف: {cap}', { cap: t('بدون سقف') })}
         </span>
       </h4>
 

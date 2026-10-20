@@ -28,6 +28,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SectionHeader } from '@/components/page-shell';
+import { Amount } from '@/components/amount-privacy';
 
 // همان شکلِ `listAccounts` — یک تعریف برای هر دو تب.
 export type { AccountOption as AccountRow } from './ledger-view';
@@ -140,9 +141,9 @@ export function AccountsView({
                 </TableCell>
                 <TableCell className="num">{a.currencyCode ?? '—'}</TableCell>
                 <TableCell>{a.officeName ?? '—'}</TableCell>
-                <TableNumericCell>{format(a.openingBalance)}</TableNumericCell>
+                <TableNumericCell><Amount>{format(a.openingBalance)}</Amount></TableNumericCell>
                 {/* ماندهٔ فعلی — پورتِ `balance_fmt`؛ پیش از این فقط ماندهٔ اولیه دیده می‌شد. */}
-                <TableNumericCell className="font-medium">{format(a.balance)}</TableNumericCell>
+                <TableNumericCell className="font-medium"><Amount>{format(a.balance)}</Amount></TableNumericCell>
                 <TableCell>
                   {a.isActive ? null : <Badge variant="outline">{t("غیرفعال")}</Badge>}
                 </TableCell>

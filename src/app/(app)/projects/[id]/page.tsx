@@ -47,6 +47,7 @@ import { UnitEntriesSection, type UnitSectionData } from './unit-entries-section
 import { canSeeSiteLinks } from '@/domain/projects/site-links';
 import { pageTitle } from '@/i18n/page-title';
 import { Hint } from '@/components/ui/tooltip';
+import { Amount } from '@/components/amount-privacy';
 
 export const generateMetadata = pageTitle('پروژه‌ها');
 
@@ -557,7 +558,7 @@ export default async function ProjectDetailPage({
                           {m.roleName ? <TagChip color={m.roleColor}>{m.roleName}</TagChip> : '—'}
                         </TableCell>
                         {canSeeAgreedAmounts && (
-                          <TableNumericCell>{format(m.agreedAmount)}</TableNumericCell>
+                          <TableNumericCell><Amount>{format(m.agreedAmount)}</Amount></TableNumericCell>
                         )}
                         {canManage && (
                           <TableActionsCell>

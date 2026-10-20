@@ -15,6 +15,7 @@ import {
   Attachment, AttachmentAction, AttachmentActions, AttachmentContent, AttachmentMedia,
   AttachmentTitle, AttachmentTrigger,
 } from '@/components/ui/attachment';
+import { Amount } from '@/components/amount-privacy';
 
 export interface BidderData {
   project: {
@@ -80,7 +81,7 @@ export function BidderView({ data, tab: requested }: { data: BidderData; tab?: s
                 <span className="font-medium">{r.roleName}</span>
                 {/* ⚠️ بی `num`: جملهٔ فارسی است؛ فقط خودِ عدد چپ‌به‌راست می‌شود (ltr). */}
                 <span className="text-xs text-muted-foreground">
-                  {r.cap ? t('سقف {cap}', { cap: ltr(format(r.cap)) }) : t('بدون سقف')}
+                  {r.cap ? <Amount>{t('سقف {cap}', { cap: ltr(format(r.cap)) })}</Amount> : t('بدون سقف')}
                 </span>
                 {r.state === 'awarded' && <Badge variant="outline">{t('واگذار شد')}</Badge>}
                 {r.state === 'mine' && <Badge variant="success">{t('برنده')}</Badge>}

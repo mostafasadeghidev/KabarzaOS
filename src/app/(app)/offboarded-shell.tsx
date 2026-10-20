@@ -11,6 +11,7 @@ import { t } from '@/i18n/server';
 import { Button } from '@/components/ui/button';
 import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { LogOut } from 'lucide-react';
+import { Amount } from '@/components/amount-privacy';
 
 /**
  * نمای عضوِ سابقِ «فقط مالی» — پورتِ `render_offboarded_finance()`.
@@ -64,10 +65,10 @@ export async function OffboardedShell({ actor }: { actor: Actor }) {
                 <TableRow key={row.projectId}>
                   {/* ⚠️ برچسبِ ساده، نه پیوند. */}
                   <TableCell>{row.title}</TableCell>
-                  <TableNumericCell>{format(row.agreed)} {row.currencyCode}</TableNumericCell>
-                  <TableNumericCell>{format(row.paid)} {row.currencyCode}</TableNumericCell>
+                  <TableNumericCell><Amount>{format(row.agreed)} {row.currencyCode}</Amount></TableNumericCell>
+                  <TableNumericCell><Amount>{format(row.paid)} {row.currencyCode}</Amount></TableNumericCell>
                   <TableNumericCell className="font-semibold">
-                    {format(row.remaining)} {row.currencyCode}
+                    <Amount>{format(row.remaining)} {row.currencyCode}</Amount>
                   </TableNumericCell>
                 </TableRow>
               ))}
@@ -81,7 +82,7 @@ export async function OffboardedShell({ actor }: { actor: Actor }) {
           <ul className="grid gap-1">
             {settlement.noProjectPayouts.map((p) => (
               <li key={p.id} className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 text-sm">
-                <span className="num font-medium">{format(p.amount)}</span>
+                <Amount className="num font-medium">{format(p.amount)}</Amount>
                 {p.paidAt && <span className="num text-xs text-muted-foreground">{p.paidAt}</span>}
                 {p.note && <span className="text-xs text-muted-foreground">{p.note}</span>}
               </li>

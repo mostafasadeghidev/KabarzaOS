@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.43.0]
+
+### Added
+
+- **"Hide amounts" switch in the sidebar**, above the account menu, on by default. While it is on, every amount in the app (project cards, project money tabs, finance, payouts, ledger, my money, access costs, dashboard) shows as "•••••" and is revealed by clicking it, one amount at a time — the same behaviour the project card already had. Turning it off shows all amounts. The choice is kept per browser, so a shared office screen and a personal laptop can differ. Reports always show amounts, and so does the printable invoice. The server always renders the hidden version, so no amount flashes before the choice is read.
+
 ## [2.42.1]
 
 ### Changed

@@ -38,6 +38,7 @@ import { useActionToast, useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm';
 import { formatDate } from '@/i18n/datetime';
 import { useT, useTimeZone } from '@/i18n/client';
+import { Amount } from '@/components/amount-privacy';
 
 /**
  * دفترِ دسترسی‌های بیرونی.
@@ -379,7 +380,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
           {tr("هزینهٔ ماهانهٔ اشتراک‌های فعال:")}{' '}
           {data.costTotals.map((c) => (
             <span key={c.currencyId} className="num me-3">
-              {formatMoney(c.monthly)} {c.currencyCode}
+              <Amount>{formatMoney(c.monthly)} {c.currencyCode}</Amount>
             </span>
           ))}
         </p>
@@ -418,7 +419,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
               cell: (s: ServiceRow) => (s.cost
                 ? (
                   <span className="num">
-                    {formatMoney(s.cost.monthly)} {s.cost.currencyCode}
+                    <Amount>{formatMoney(s.cost.monthly)} {s.cost.currencyCode}</Amount>
                   </span>
                 )
                 : '—'),
@@ -426,7 +427,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
               header: 'سرانه',
               numeric: true,
               cell: (s: ServiceRow) => (s.cost?.perUser
-                ? <span className="num">{formatMoney(s.cost.perUser)}</span>
+                ? <Amount className="num">{formatMoney(s.cost.perUser)}</Amount>
                 : '—'),
             }] : []),
             {

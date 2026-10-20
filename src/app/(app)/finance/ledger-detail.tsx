@@ -19,6 +19,7 @@ import { Hint } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { formatDateTime } from '@/i18n/datetime';
 import { useT, useTimeZone } from '@/i18n/client';
+import { Amount } from '@/components/amount-privacy';
 
 /**
  * بندانگشتیِ رسید — تصویر با بزرگ‌نمایی، فایلِ دیگر با پیوندِ تبِ جدید
@@ -92,16 +93,16 @@ export function LedgerDetail({
     const tags = entry.tagIds.map((id) => tagName.get(id)).filter((n): n is string => Boolean(n));
     rows.push([t('تاریخ'), entry.entryDate]);
     rows.push([t('جهت'), entry.direction === 'out' ? t('برداشت / هزینه') : t('واریز / درآمد')]);
-    rows.push([t('مبلغ'), `${entry.direction === 'out' ? '−' : '+'}${formatIn(entry.amountAccount, currencyCode)} ${currencyCode ?? ''}`.trim()]);
-    if (showEur) rows.push([t('معادل یورو'), entry.eurDisplay === null ? '—' : format(entry.eurDisplay)]);
+    rows.push([t('مبلغ'), <Amount>{`${entry.direction === 'out' ? '−' : '+'}${formatIn(entry.amountAccount, currencyCode)} ${currencyCode ?? ''}`.trim()}</Amount>]);
+    if (showEur) rows.push([t('معادل یورو'), entry.eurDisplay === null ? '—' : <Amount>{format(entry.eurDisplay)}</Amount>]);
     if (entry.amountSettled) {
       const code = entry.settledCurrencyId ? currencyCodeOf(entry.settledCurrencyId) : '';
-      rows.push([t('معادلِ تسویه'), `${formatIn(entry.amountSettled, code)} ${code}`.trim()]);
+      rows.push([t('معادلِ تسویه'), <Amount>{`${formatIn(entry.amountSettled, code)} ${code}`.trim()}</Amount>]);
       // هزینهٔ انتقالِ به عهدهٔ عضو (۲.۲۵.۰): درصد و سهمش از همان عددِ کسرشده.
       const pct = Number(entry.transferFeePct ?? 0);
       if (pct > 0) {
         const feeAmount = (Number(entry.amountSettled) * pct / 100).toFixed(2);
-        rows.push([t('هزینهٔ انتقال (به عهدهٔ عضو)'), `${pct}% · ${formatIn(feeAmount, code)} ${code}`.trim()]);
+        rows.push([t('هزینهٔ انتقال (به عهدهٔ عضو)'), <>{pct}% · <Amount>{`${formatIn(feeAmount, code)} ${code}`.trim()}</Amount></>]);
       }
     }
     // عضوِ سامانه با آواتار؛ طرف‌حسابِ بیرونی (برچسبِ آزاد) فقط نام.

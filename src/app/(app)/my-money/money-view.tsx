@@ -14,6 +14,7 @@ import { useT, useTimeZone } from '@/i18n/client';
 import { formatDate } from '@/i18n/datetime';
 import { Section } from '@/components/page-shell';
 import { Button } from '@/components/ui/button';
+import { Amount } from '@/components/amount-privacy';
 
 /** برچسبِ وضعیتِ پرداخت — همان سه حالتِ `Payments::status_label`. */
 const STATUS_LABEL: Record<string, string> = {
@@ -37,7 +38,7 @@ function StatusChip({ status }: { status: string }) {
 }
 
 function money(value: string, code: string | null) {
-  return `${format(value)}${code ? ` ${code}` : ''}`;
+  return <Amount>{`${format(value)}${code ? ` ${code}` : ''}`}</Amount>;
 }
 
 /** جدولِ ردیف‌های پرداخت — تاریخ، مبلغ، معادلِ محاسبه‌شده، توضیح، رسید. */
@@ -108,7 +109,7 @@ function Row({
   href: string;
   /** متنِ پیوند — برای عضو «درخواست پرداخت» که مستقیم به تبِ مالیِ پروژه می‌رود. */
   linkLabel?: string;
-  chips: Array<{ label: string; value: string; strong?: boolean }>;
+  chips: Array<{ label: string; value: React.ReactNode; strong?: boolean }>;
   status: string;
   children: React.ReactNode;
 }) {
