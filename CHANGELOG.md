@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.42.1]
+
+### Changed
+
+- **The back button above page titles is gone** (project, member report, team member, code library entry, onboarding, invoice and the other detail pages). The breadcrumb in the top bar already shows the way you came (for example Reports › member › project) and every part of it is a link, so the two did the same job. On a phone the breadcrumb now also shows the previous page, so going back is still one tap.
+
 ## [2.42.0]
 
 ### Changed
