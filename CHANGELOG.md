@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.43.3]
+
+### Changed
+
+- **The project chat fits the window.** On a project's Group chat tab, the conversation box now runs from its place on the page to the bottom of the window, so the message box and Send button sit at the bottom of the screen without scrolling. It was a fixed height that pushed them below the fold. The "Open in Messages" link moved above the box. On a very short window the box keeps a minimum height.
+
 ## [2.43.2]
 
 ### Changed
