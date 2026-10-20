@@ -22,6 +22,7 @@ import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { needsExplicitRole, roleChoices } from '@/domain/projects/project-roles';
 import { useFreshKey } from '@/hooks/use-fresh-key';
 
 export interface MemberRow {
@@ -45,6 +46,9 @@ export interface MembersFormData {
   roles: Array<{ id: number; name: string }>;
   /** نقش‌های هر نفر؛ نبودنِ کلید یعنی نقشی ثبت نشده — آن‌وقت همهٔ نقش‌ها. */
   memberRoles?: Record<number, number[]>;
+  /** نقش‌های «مدیر پروژه» — برای همه قابلِ انتخاب، با `canAssignPm` (۲.۴۲.۰). */
+  pmRoleIds?: number[];
+  canAssignPm?: boolean;
   currencies: Array<{ id: number; code: string; isDefault: boolean }>;
   /**
    * ستون‌های مبلغ و ارز — فقط مدیرِ سراسری و مالی (۱.۱۱۹.۱). مدیرِ پروژه/تیم
@@ -224,27 +228,37 @@ function MembersDialogBody({ data, open, setOpen }: { data: MembersFormData; ope
                     </TableCell>
 
                     <TableCell>
-                      <NativeSelect
-                        name="memberRole"
-                        size="sm" containerClassName="w-full"
-                        value={row.roleTagId ?? ''}
-                        onChange={(e) => patch(i, { roleTagId: e.target.value ? Number(e.target.value) : null })}
-                      >
-                        <NativeSelectOption value="">{t("— نقشِ خودش —")}</NativeSelectOption>
-                        {/*
-                          ⚠️ فقط نقش‌های همین نفر (D#90) — مثلِ افزودنِ سریع و فرمِ ساخت؛
-                          نقشِ فعلیِ ردیف همیشه می‌ماند تا ویرایش آن را بی‌صدا پاک نکند.
-                          نفری که هیچ نقشی ندارد، همهٔ نقش‌ها را می‌بیند.
-                        */}
-                        {data.roles
-                          .filter((r) => {
-                            const own = row.userId !== null ? data.memberRoles?.[row.userId] : undefined;
-                            return !own || own.length === 0 || own.includes(r.id) || r.id === row.roleTagId;
-                          })
-                          .map((r) => (
-                            <NativeSelectOption key={r.id} value={r.id}>{r.name}</NativeSelectOption>
-                          ))}
-                      </NativeSelect>
+                      {(() => {
+                        const own = row.userId !== null ? (data.memberRoles?.[row.userId] ?? []) : [];
+                        const pm = data.pmRoleIds ?? [];
+                        /**
+                         * ⚠️ نقش‌های همین نفر (D#90) به‌علاوهٔ «مدیر پروژه» برای همه (۲.۴۲.۰)؛
+                         * نقشِ فعلیِ ردیف همیشه می‌ماند تا ویرایش آن را بی‌صدا پاک نکند.
+                         * با چند نقشِ کاری «نقشِ خودش» مبهم است — انتخاب اجباری می‌شود.
+                         */
+                        const choices = new Set(roleChoices({
+                          allRoleIds: data.roles.map((r) => r.id),
+                          pmRoleIds: pm,
+                          ownRoleIds: own,
+                          canAssignPm: data.canAssignPm ?? false,
+                          currentRoleId: row.roleTagId,
+                        }));
+                        const mustPick = needsExplicitRole(own, pm);
+                        return (
+                          <NativeSelect
+                            name="memberRole"
+                            size="sm" containerClassName="w-full"
+                            value={row.roleTagId ?? ''}
+                            required={mustPick && row.userId !== null}
+                            onChange={(e) => patch(i, { roleTagId: e.target.value ? Number(e.target.value) : null })}
+                          >
+                            <NativeSelectOption value="">{mustPick ? t("— انتخابِ نقش —") : t("— نقشِ خودش —")}</NativeSelectOption>
+                            {data.roles.filter((r) => choices.has(r.id)).map((r) => (
+                              <NativeSelectOption key={r.id} value={r.id}>{r.name}</NativeSelectOption>
+                            ))}
+                          </NativeSelect>
+                        );
+                      })()}
                     </TableCell>
 
                     {money && (

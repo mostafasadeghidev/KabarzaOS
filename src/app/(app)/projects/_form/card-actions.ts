@@ -57,6 +57,7 @@ export async function addMemberAction(_prev: CardActionState, formData: FormData
   } catch (error) {
     if (error instanceof ForbiddenError) {
       if (error.required === 'member.inactive') return { error: 'این عضو غیرفعال است و دوباره به پروژه اضافه نمی‌شود.' };
+      if (error.required === 'project.pm_assign') return { error: '«مدیر پروژه» را فقط مدیرِ کل یا مدیرِ دفترِ همین پروژه تعیین می‌کند.' };
       return { error: 'اجازهٔ افزودنِ عضو ندارید.' };
     }
     return { error: 'عضو اضافه نشد.' };

@@ -4447,5 +4447,7 @@
   "کدِ سفارشی‌ای که در سایت نصب می‌شود — با جای نصب و تنظیمات.": "Código personalizado que se instala en el sitio, con dónde va y sus ajustes.",
   "یک «کد» دست‌کم یک تکه‌کد لازم دارد.": "Una entrada de «código» necesita al menos un fragmento.",
   "یک المنتِ Embed (</>) در همان جایی از صفحه که نوشته شده": "Un elemento Embed (</>) en el lugar de la página indicado",
-  "وضعیتِ این تسک را فقط مسئولِ آن یا مدیرِ پروژه عوض می‌کند.": "Solo la persona asignada o el responsable del proyecto puede cambiar el estado de esta tarea."
+  "وضعیتِ این تسک را فقط مسئولِ آن یا مدیرِ پروژه عوض می‌کند.": "Solo la persona asignada o el responsable del proyecto puede cambiar el estado de esta tarea.",
+  "«مدیر پروژه» را فقط مدیرِ کل یا مدیرِ دفترِ همین پروژه تعیین می‌کند.": "Solo el propietario o el responsable de la oficina de este proyecto puede asignar el jefe de proyecto.",
+  "— انتخابِ نقش —": "— Elige un rol —"
 }

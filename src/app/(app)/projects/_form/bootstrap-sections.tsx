@@ -14,6 +14,8 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { TagChip } from '@/components/ui/tag-chip';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+import { roleChoices } from '@/domain/projects/project-roles';
+
 export interface BootstrapOptions {
   /** اعضای قابلِ افزودن — نامِ فرد به‌علاوهٔ ایمیل برای تفکیکِ هم‌نام‌ها. */
   people: ComboOption[];
@@ -31,6 +33,9 @@ export interface BootstrapOptions {
   qaItems?: Array<{ id: number; title: string; roleTagId: number; isTask: boolean }>;
   /** نقش‌های امضاشده روی هر عضو — `{ userId: tagId[] }`. */
   memberRoles: Record<number, number[]>;
+  /** نقش‌های «مدیر پروژه» — برای همه قابلِ انتخاب (۲.۴۲.۰). */
+  pmRoleIds?: number[];
+  canAssignPm?: boolean;
 }
 
 interface MemberRow {
@@ -142,11 +147,19 @@ export function BootstrapSections({
 
   const defaultCurrency = options.defaultCurrencyId ? String(options.defaultCurrencyId) : '';
 
-  /** نقش‌های امضاشده روی یک فرد؛ بدونِ انتخابِ فرد، خالی. */
+  /**
+   * نقش‌های امضاشده روی یک فرد به‌علاوهٔ «مدیر پروژه» (۲.۴۲.۰)؛ بدونِ انتخابِ فرد، خالی.
+   * ⚠️ نفرِ بی‌نقش اینجا هم همه را می‌بیند — همان قاعدهٔ فرمِ اعضا.
+   */
   const rolesFor = (userId: number | null) => {
     if (userId === null) return [];
-    const mine = new Set(options.memberRoles[userId] ?? []);
-    return options.roleTags.filter((t) => mine.has(t.id));
+    const choices = new Set(roleChoices({
+      allRoleIds: options.roleTags.map((t) => t.id),
+      pmRoleIds: options.pmRoleIds ?? [],
+      ownRoleIds: options.memberRoles[userId] ?? [],
+      canAssignPm: options.canAssignPm ?? false,
+    }));
+    return options.roleTags.filter((t) => choices.has(t.id));
   };
 
   const roleOptions: ComboOption[] = options.roleTags.map((t) => ({ value: t.id, label: t.label }));

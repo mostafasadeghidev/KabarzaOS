@@ -1,6 +1,6 @@
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
-import { asc, and, desc, eq, inArray, isNull, sql, or, gte, lte } from 'drizzle-orm';
+import { asc, and, desc, eq, inArray, isNull, ne, sql, or, gte, lte } from 'drizzle-orm';
 import { contractBalance, rowValueIn, summarizeProject } from '@/domain/team-money/payments';
 import { rateSource } from '@/server/finance/rates';
 import { alias } from 'drizzle-orm/pg-core';
@@ -585,11 +585,20 @@ export async function primaryRoleOf(userIds: number[]): Promise<Map<number, numb
       eq(tagRelations.objectType, 'user'),
       inArray(tagRelations.objectId, userIds),
       eq(tags.type, 'member_role'),
+      // ⚠️ «نقشِ خودش» هرگز «مدیر پروژه» نیست (۲.۴۲.۰) — اختیارِ مدیری فقط با انتخابِ صریح.
+      ne(tags.grantsCap, 'pm'),
     ))
     .orderBy(tags.sortOrder, tags.id);
 
   for (const r of rows) if (!out.has(r.userId)) out.set(r.userId, r.tagId);
   return out;
+}
+
+/** نقش‌های «مدیر پروژه» (`grants_cap = pm`) — برای همه قابلِ انتخاب روی پروژه (۲.۴۲.۰). */
+export async function pmRoleTagIds(): Promise<number[]> {
+  const rows = await db.select({ id: tags.id }).from(tags)
+    .where(and(eq(tags.type, 'member_role'), eq(tags.grantsCap, 'pm')));
+  return rows.map((r) => r.id);
 }
 
 /**
