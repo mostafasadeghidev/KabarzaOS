@@ -21,7 +21,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Field, FieldLabel } from '@/components/ui/field';
 import {
-  Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+  Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
@@ -173,7 +173,7 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
           <TableHeader>
             <TableRow>
               <TableHead>{t("نام")}</TableHead>
-              <TableHead numeric>{t("تاریخ")}</TableHead>
+              <TableHead>{t("تاریخ")}</TableHead>
               {data.seesAll && <TableHead>{t("عضو")}</TableHead>}
               <TableHead numeric>{t("تعداد")}</TableHead>
               <TableHead numeric>{t("ساعت")}</TableHead>
@@ -237,7 +237,7 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                       </span>
                     )}
                   </TableCell>
-                  <TableNumericCell>{u.entryDate}</TableNumericCell>
+                  <TableDateCell>{u.entryDate}</TableDateCell>
                   {data.seesAll && <TableCell><UserName userId={u.userId} name={u.userName ?? `#${u.userId}`} /></TableCell>}
                   <TableNumericCell>{Number(u.quantity)}</TableNumericCell>
                   <TableNumericCell>{u.minutes > 0 ? hoursLabel(u.minutes) : '—'}</TableNumericCell>

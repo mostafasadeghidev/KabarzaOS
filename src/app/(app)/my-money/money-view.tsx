@@ -8,7 +8,7 @@ import { format } from '@/domain/money/money';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDate } from '@/i18n/datetime';
@@ -59,7 +59,7 @@ function PaymentLines({
     <Table frame={frame}>
       <TableHeader>
         <TableRow>
-          <TableHead numeric>{t('تاریخ')}</TableHead>
+          <TableHead>{t('تاریخ')}</TableHead>
           <TableHead numeric>{t('مبلغ')}</TableHead>
           {showCounted && <TableHead numeric>{t('معادل (محاسبه)')}</TableHead>}
           <TableHead>{t('توضیحات')}</TableHead>
@@ -69,7 +69,7 @@ function PaymentLines({
       <TableBody>
         {lines.map((l) => (
           <TableRow key={l.id}>
-            <TableNumericCell>{l.paidAt}</TableNumericCell>
+            <TableDateCell>{l.paidAt}</TableDateCell>
             <TableNumericCell>{money(l.amount, l.currencyCode)}</TableNumericCell>
             {showCounted && (
               <TableNumericCell className="text-muted-foreground">
@@ -255,7 +255,7 @@ export function MyMoneyView({
                         <Table frame={false}>
                           <TableHeader>
                             <TableRow>
-                              <TableHead numeric>{t('تاریخ')}</TableHead>
+                              <TableHead>{t('تاریخ')}</TableHead>
                               <TableHead numeric>{t('تعداد')}</TableHead>
                               <TableHead numeric>{t('مبلغ')}</TableHead>
                               <TableHead>{t('وضعیت')}</TableHead>
@@ -264,7 +264,7 @@ export function MyMoneyView({
                           <TableBody>
                             {p.units.map((u) => (
                               <TableRow key={u.id}>
-                                <TableNumericCell>{u.entryDate}</TableNumericCell>
+                                <TableDateCell>{u.entryDate}</TableDateCell>
                                 <TableNumericCell>{u.quantity}</TableNumericCell>
                                 <TableNumericCell>{money(u.amount, p.currencyCode)}</TableNumericCell>
                                 <TableCell>

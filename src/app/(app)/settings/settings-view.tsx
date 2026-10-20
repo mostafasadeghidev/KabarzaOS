@@ -261,7 +261,8 @@ export function SettingsView({
               { header: 'از', cell: (r) => currencyName(r.fromCurrencyId) },
               { header: 'به', cell: (r) => currencyName(r.toCurrencyId) },
               { header: 'نرخ', cell: (r) => displayRate(r.rate), numeric: true },
-              { header: 'تاریخ', cell: (r) => r.effectiveDate, numeric: true },
+              // تاریخ ابتداچین است، نه عددی (۲.۴۳.۱) — رقم‌ها با `num` چپ‌به‌راست می‌مانند.
+              { header: 'تاریخ', cell: (r) => <span className="num">{r.effectiveDate}</span> },
             ]}
             saveAction={saveRateAction}
             deleteAction={(r) => deleteRateAction(r.fromCurrencyId, r.toCurrencyId)}

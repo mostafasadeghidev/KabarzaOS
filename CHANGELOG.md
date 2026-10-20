@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.43.1]
+
+### Fixed
+
+- **Date columns no longer run into the next column.** Dates were aligned like amounts (to the right in English), so in tables such as Work hours the date sat against the Project column and read as one. Date and time columns now start-align like text, through a new `TableDateCell`, in 28 tables: work hours, finance (ledger, payouts, recurring expenses), my money, project payments and unit entries, dashboards, tasks, team boards, absences, activity, onboarding, backups, exchange rates and reports.
+- In left-to-right languages, a text column that follows an amount column gets extra space, so the two no longer touch either.
+
 ## [2.43.0]
 
 ### Added

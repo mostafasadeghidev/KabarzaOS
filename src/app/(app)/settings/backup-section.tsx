@@ -28,7 +28,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+  Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { Panel } from '@/components/page-shell';
 import { useActionToast, useToast } from '@/components/ui/toast';
@@ -496,7 +496,7 @@ function LocalPanel({ view }: { view: BackupView }) {
           <TableHeader>
             <TableRow>
               <TableHead>{tr('فایل')}</TableHead>
-              <TableHead numeric>{tr('زمان')}</TableHead>
+              <TableHead>{tr('زمان')}</TableHead>
               <TableHead numeric>{tr('حجم')}</TableHead>
               <TableActionsHead />
             </TableRow>
@@ -505,7 +505,7 @@ function LocalPanel({ view }: { view: BackupView }) {
             {view.local.map((b) => (
               <TableRow key={b.name}>
                 <TableCell dir="ltr" className="font-mono text-xs">{b.name}</TableCell>
-                <TableNumericCell>{formatDateTime(b.at, tz)}</TableNumericCell>
+                <TableDateCell>{formatDateTime(b.at, tz)}</TableDateCell>
                 <TableNumericCell>{humanSize(b.size, tr)}</TableNumericCell>
                 <TableActionsCell>
                   <IconButton variant="ghost" className="size-8" label={tr('دانلود')} onClick={() => setTarget(b.name)}>

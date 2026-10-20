@@ -7,7 +7,7 @@ import { ForbiddenError } from '@/domain/access/guard';
 import { hoursLabel } from '@/domain/reports/summary';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { primeTranslations, t } from '@/i18n/server';
 import { HoursFilter } from './hours-filter';
@@ -171,7 +171,7 @@ export default async function MemberHoursPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead numeric>{t('تاریخ')}</TableHead>
+                  <TableHead>{t('تاریخ')}</TableHead>
                   <TableHead numeric>{t('ساعت کاری')}</TableHead>
                   <TableHead>{t('شرح')}</TableHead>
                 </TableRow>
@@ -179,7 +179,7 @@ export default async function MemberHoursPage({
               <TableBody>
                 {data.entries.map((e) => (
                   <TableRow key={e.id}>
-                    <TableNumericCell>{e.logDate}</TableNumericCell>
+                    <TableDateCell>{e.logDate}</TableDateCell>
                     <TableNumericCell>{hoursLabel(e.minutes)}</TableNumericCell>
                     <TableCell>{e.description || '—'}</TableCell>
                   </TableRow>
