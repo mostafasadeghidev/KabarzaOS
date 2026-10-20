@@ -13,6 +13,8 @@ import { useT } from '@/i18n/client';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 
+import { needsExplicitRole, roleChoices } from '@/domain/projects/project-roles';
+
 /**
  * افزودنِ سریعِ عضو و کارفرما از خودِ کارت.:
  * دو دکمهٔ کوچک که فرمِ درجا را باز می‌کنند.
@@ -34,6 +36,10 @@ export interface CardOptions {
   canEditMoney: boolean;
   /** ارزهای فعال — ستونِ «ارز» ِ عضوِ تازه. */
   currencies: Array<{ id: number; code: string }>;
+  /** نقش‌های «مدیر پروژه» — برای همه قابلِ انتخاب (۲.۴۲.۰). */
+  pmRoleIds?: number[];
+  /** پروژه‌هایی که بیننده در آن‌ها «مدیر پروژه» تعیین می‌کند؛ `null` = همه. */
+  pmAssignableIds?: number[] | null;
 }
 
 
@@ -129,20 +135,34 @@ export function CardQuickAdd({
               ⚠️ تا عضوی انتخاب نشده، نقشی هم پیشنهاد نمی‌شود: نقشِ معتبر به
               خودِ فرد بستگی دارد. پس از انتخاب، فقط نقش‌های همان فرد می‌مانند.
             */}
-            <NativeSelect
-              name="roleTagId"
-              size="sm" className="h-7 text-xs" containerClassName="min-w-0 flex-1"
-              defaultValue=""
-              key={pickedUser}
-              disabled={pickedUser === ''}
-            >
-              <NativeSelectOption value="">{t("— نقشِ خودش —")}</NativeSelectOption>
-              {options.roles
-                .filter((r) => (options.roleMap[Number(pickedUser)] ?? []).includes(r.id))
-                .map((r) => (
-                  <NativeSelectOption key={r.id} value={r.id}>{r.name}</NativeSelectOption>
-                ))}
-            </NativeSelect>
+            {(() => {
+              const own = options.roleMap[Number(pickedUser)] ?? [];
+              const pm = options.pmRoleIds ?? [];
+              // نقش‌های خودِ نفر + «مدیر پروژه» برای همه (۲.۴۲.۰)؛ با چند نقش، انتخاب اجباری.
+              const choices = new Set(roleChoices({
+                allRoleIds: options.roles.map((r) => r.id),
+                pmRoleIds: pm,
+                ownRoleIds: own,
+                canAssignPm: options.pmAssignableIds === undefined || options.pmAssignableIds === null
+                  || options.pmAssignableIds.includes(projectId),
+              }));
+              const mustPick = pickedUser !== '' && needsExplicitRole(own, pm);
+              return (
+                <NativeSelect
+                  name="roleTagId"
+                  size="sm" className="h-7 text-xs" containerClassName="min-w-0 flex-1"
+                  defaultValue=""
+                  key={pickedUser}
+                  disabled={pickedUser === ''}
+                  required={mustPick}
+                >
+                  <NativeSelectOption value="">{mustPick ? t("— انتخابِ نقش —") : t("— نقشِ خودش —")}</NativeSelectOption>
+                  {pickedUser !== '' && options.roles.filter((r) => choices.has(r.id)).map((r) => (
+                    <NativeSelectOption key={r.id} value={r.id}>{r.name}</NativeSelectOption>
+                  ))}
+                </NativeSelect>
+              );
+            })()}
             {options.canEditMoney && (isUnitBased ? (
               <Input
                 name="unitRate"

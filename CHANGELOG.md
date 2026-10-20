@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.42.0]
+
+### Changed
+
+- **Project manager is a role on a project, not on a person.** When adding someone to a project (members dialog, quick add on the card, new-project form), "Project manager" is offered for everyone, whether or not it is on their profile. A developer can be the manager of one project and a plain developer everywhere else. Before, only people with the role on their profile could get it, and removing it from the profile left them as manager of every project they had been given (the "Test" user on the server).
+- **Only the owner, a global project manager or the manager of the project's office can make someone project manager** (or remove one). A project manager still manages the members of their project but cannot create another project manager. The server enforces this for every path; a refused change says who can do it.
+- **"Own role" never means project manager.** Adding someone with "own role" uses their first work role; the project manager role is only given when chosen. Someone with two or more work roles (e.g. developer and designer) must have a role chosen; "own role" is offered only when it is unambiguous.
+
 ## [2.41.1]
 
 ### Fixed

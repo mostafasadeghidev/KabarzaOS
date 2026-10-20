@@ -37,9 +37,10 @@ import { announceComment, announceTask } from '@/server/telegram/group';
 import {
   assertCanInteractWithProject, assertCanManageProject, assertCanViewProject, assertNotFrozen,
   canManageProject, canViewProject, membershipProjectIds, moneyAudience, projectRelation, canInteractWithProject, managedOfficeProjectIds, pmProjectIds,
-  isProjectFrozen, isClientOnly,
+  isProjectFrozen, isClientOnly, canAssignProjectManager,
 } from './authority';
 import { canSetTaskStatus } from '@/domain/projects/task-status-authority';
+import { changesProjectManagers } from '@/domain/projects/project-roles';
 import { canEditTeamMoney, canSeeProjectFinance, canSeeProjectPrice } from '@/domain/access/project-money';
 import { visiblePayments } from '@/domain/access/project-payments';
 import { canCreateProject, canManageProject as decideManage, mayCreateProjects, PM_CAP } from '@/domain/access/project-scope';
@@ -351,11 +352,17 @@ export async function setMembers(actor: Actor, projectId: number, desired: Membe
   await assertCanManageProject(actor, projectId);
   await assertMemberRoleTags(desired.map((d) => d.roleTagId));
 
-  const [existing, inactive, owed] = await Promise.all([
+  const [existing, inactive, owed, pmRoles] = await Promise.all([
     repo.listMembers(projectId),
     repo.inactiveUserIds(),
     repo.owedUserIds(projectId),
+    repo.pmRoleTagIds(),
   ]);
+  // ⚠️ گذاشتن یا برداشتنِ «مدیر پروژه» اختیارِ جدا می‌خواهد (۲.۴۲.۰) — نه خودِ مدیرِ پروژه.
+  if (changesProjectManagers(existing, desired.map((d) => ({ userId: d.userId, roleTagId: d.roleTagId ?? null })), pmRoles)
+    && !(await canAssignProjectManager(actor, projectId))) {
+    throw new ForbiddenError('project.pm_assign');
+  }
   /**
    * ⚠️ مدیرِ پروژه/تیم مبلغ را نمی‌بیند، پس فرمش هم مبلغی نمی‌فرستد: مبلغِ
    * ردیف‌های موجود از دیتابیس نگه داشته می‌شود و عضوِ تازه صفر می‌گیرد تا
@@ -1116,6 +1123,13 @@ export async function getProjectFormOptions(actor: Actor, excludeId?: number) {
     qaItems: qaRows.map(({ id, title, roleTagId, isTask }) => ({ id, title, roleTagId, isTask })),
     /** نقش‌های هر عضو — فرم فقط همان‌ها را پیشنهاد می‌دهد. */
     memberRoles,
+    /**
+     * «مدیر پروژه» برای هر عضو (۲.۴۲.۰). سازندهٔ پروژه مدیرِ سراسری یا مدیرِ دفتر
+     * است، پس می‌تواند تعیینش کند؛ `setMembers` باز هم روی همان پروژه می‌سنجد.
+     */
+    pmRoleIds: await repo.pmRoleTagIds(),
+    canAssignPm: authority.hasGlobalManage || (await managedOfficeProjectIds(actor.id)).length > 0
+      || scopedOffices !== undefined,
   };
 }
 
@@ -1159,6 +1173,9 @@ export async function getMembersForm(actor: Actor, projectId: number) {
     roles,
     /** `userId → نقش‌هایش` — همان محدودیتِ افزودنِ سریع و فرمِ ساخت (D#90). */
     memberRoles: roleMap,
+    /** «مدیر پروژه» برای همه قابلِ انتخاب است، ولی فقط با این اختیار (۲.۴۲.۰). */
+    pmRoleIds: await repo.pmRoleTagIds(),
+    canAssignPm: await canAssignProjectManager(actor, projectId),
     /** ستون‌های مبلغ و ارز — فقط مدیرِ سراسری و مالی. */
     canEditMoney: money,
     currencies: currencyRows,
@@ -1277,6 +1294,10 @@ export async function addProjectMember(
   const project = await getProject(actor, projectId); // گاردِ scope
   await assertCanManageProject(actor, projectId);
   await assertMemberRoleTags([input.roleTagId]);
+  if (input.roleTagId && (await repo.pmRoleTagIds()).includes(input.roleTagId)
+    && !(await canAssignProjectManager(actor, projectId))) {
+    throw new ForbiddenError('project.pm_assign');
+  }
 
   const [existing, inactive, primaryRoleOf] = await Promise.all([
     repo.listMembers(projectId),
@@ -1514,7 +1535,15 @@ export async function getCardOptions(actor: Actor) {
     // منوی وضعیتِ کارت — مدیرِ دفتر مجوزِ «دیدنِ بخشِ پروژه‌ها» را ندارد که از راهِ دیگر بخواندش.
     repo.statusTags(),
   ]);
-  return { team, roles, clients, roleMap, currencies, statuses, manageableIds, canEditMoney: canEditTeamMoney(actor) };
+  /**
+   * «مدیر پروژه» روی کارت (۲.۴۲.۰): مدیرِ سراسری همه‌جا، مدیرِ دفتر روی پروژه‌های
+   * دفترش؛ مدیرِ پروژهٔ تنها هیچ‌جا. `null` = همهٔ پروژه‌ها.
+   */
+  const pmAssignableIds = all ? null : await managedOfficeProjectIds(actor.id);
+  return {
+    team, roles, clients, roleMap, currencies, statuses, manageableIds, canEditMoney: canEditTeamMoney(actor),
+    pmRoleIds: await repo.pmRoleTagIds(), pmAssignableIds,
+  };
 }
 
 /**

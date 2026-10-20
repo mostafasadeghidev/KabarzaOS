@@ -4447,5 +4447,7 @@
   "کدِ سفارشی‌ای که در سایت نصب می‌شود — با جای نصب و تنظیمات.": "Sitede kurulan özel kod — kurulum yeri ve ayarlarıyla.",
   "یک «کد» دست‌کم یک تکه‌کد لازم دارد.": "Bir “kod” kaydı en az bir parça gerektirir.",
   "یک المنتِ Embed (</>) در همان جایی از صفحه که نوشته شده": "Sayfada belirtilen yerde bir Embed öğesi (</>)",
-  "وضعیتِ این تسک را فقط مسئولِ آن یا مدیرِ پروژه عوض می‌کند.": "Bu görevin durumunu yalnızca sorumlusu veya proje yöneticisi değiştirebilir."
+  "وضعیتِ این تسک را فقط مسئولِ آن یا مدیرِ پروژه عوض می‌کند.": "Bu görevin durumunu yalnızca sorumlusu veya proje yöneticisi değiştirebilir.",
+  "«مدیر پروژه» را فقط مدیرِ کل یا مدیرِ دفترِ همین پروژه تعیین می‌کند.": "Proje yöneticisini yalnızca sahip veya bu projenin ofis yöneticisi atayabilir.",
+  "— انتخابِ نقش —": "— Rol seçin —"
 }

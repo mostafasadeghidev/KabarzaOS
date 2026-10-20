@@ -118,6 +118,8 @@ export default async function ProjectsPage({
             people: formOptions.people.map((p) => ({ value: p.id, label: p.name, media: <UserAvatar userId={p.id} name={p.name} size="xs" /> })),
             clients: formOptions.clientPeople.map((c) => ({ value: c.id, label: c.name, media: <UserAvatar userId={c.id} name={c.name} size="xs" /> })),
             memberRoles: formOptions.memberRoles,
+            pmRoleIds: formOptions.pmRoleIds,
+            canAssignPm: formOptions.canAssignPm,
             roleTags: formOptions.roleTags,
             priorities: formOptions.priorities.map((p) => ({ id: p.id, label: p.name })),
             currencies: formOptions.currencies.map((c) => ({ id: c.id, label: c.code })),

@@ -288,6 +288,18 @@ export async function pmProjectIds(userId: number): Promise<number[]> {
   return [...new Set(rows.map((r) => r.projectId))];
 }
 
+/**
+ * چه کسی «مدیر پروژه» تعیین می‌کند (۲.۴۲.۰) — مدیرِ سراسریِ پروژه‌ها، یا مدیرِ
+ * دفترِ همین پروژه.
+ *
+ * ⚠️ خودِ مدیرِ پروژه نه: او اعضا را می‌گرداند، ولی اگر می‌توانست کسِ دیگری را
+ * هم مدیر کند، هر مدیرِ پروژه می‌توانست اختیارِ مدیری را بی‌اجازه پخش کند.
+ */
+export async function canAssignProjectManager(actor: Actor, projectId: number): Promise<boolean> {
+  if (canManageSection(actor, 'projects')) return true;
+  return (await managedOfficeProjectIds(actor.id)).includes(projectId);
+}
+
 export async function managedOfficeProjectIds(userId: number): Promise<number[]> {
   const managed = await db.select({ officeId: userOffices.officeId })
     .from(userOffices)

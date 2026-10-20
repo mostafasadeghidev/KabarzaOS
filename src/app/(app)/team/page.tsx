@@ -82,6 +82,8 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
                   people: form.people.map((p) => ({ value: p.id, label: p.name, media: <UserAvatar userId={p.id} name={p.name} size="xs" /> })),
                   clients: form.clientPeople.map((c) => ({ value: c.id, label: c.name, media: <UserAvatar userId={c.id} name={c.name} size="xs" /> })),
                   memberRoles: form.memberRoles,
+                  pmRoleIds: form.pmRoleIds,
+                  canAssignPm: form.canAssignPm,
                   roleTags: form.roleTags,
                   priorities: form.priorities.map((p) => ({ id: p.id, label: p.name })),
                   currencies: form.currencies.map((c) => ({ id: c.id, label: c.code })),

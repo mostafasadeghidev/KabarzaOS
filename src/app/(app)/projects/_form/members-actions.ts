@@ -74,6 +74,8 @@ export async function setMembersAction(
       keptFormer: diff.keptFormerNames,
     };
   } catch (error) {
+    // ۲.۴۲.۰ — گذاشتن یا برداشتنِ «مدیر پروژه» اختیارِ جدا می‌خواهد.
+    if (error instanceof ForbiddenError && error.required === 'project.pm_assign') return { error: '«مدیر پروژه» را فقط مدیرِ کل یا مدیرِ دفترِ همین پروژه تعیین می‌کند.' };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ تغییرِ اعضا ندارید.' };
     throw error;
   }
