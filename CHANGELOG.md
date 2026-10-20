@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.43.2]
+
+### Changed
+
+- **"Hide amounts" moved into the account menu**, under Palette, next to the other display preferences, instead of a separate row in the sidebar footer. It works the same way.
+- **The payment request summary on a project's Finance tab is now small tiles** (agreed, paid, remaining with its status, open requests, available to request) instead of five "label: amount" pairs on one line. "Available to request" is highlighted.
+
+### Fixed
+
+- **The account button in the sidebar shows the default avatar** for a user without a profile picture, like everywhere else in the app. It showed the name's initials instead.
+
 ## [2.43.1]
 
 ### Fixed

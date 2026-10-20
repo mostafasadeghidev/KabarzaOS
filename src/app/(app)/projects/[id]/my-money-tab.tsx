@@ -152,18 +152,35 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
       {(
         <Section title={t("درخواستِ پرداخت")}>
 
-          <div className="flex flex-wrap gap-4 text-sm">
-            <span>{t("مبلغ توافقی شما:")} <b className="num"><Amount>{format(data.agreed)} {data.currencyCode}</Amount></b></span>
-            <span>{t("به شما پرداخت‌شده:")} <b className="num"><Amount>{format(data.paid)} {data.currencyCode}</Amount></b></span>
-            <span>
-              {t("ماندهٔ قرارداد:")} <b className="num"><Amount>{format(data.remaining)} {data.currencyCode}</Amount></b>
-              <Badge variant={data.status === 'paid' ? 'success' : data.status === 'partial' ? 'warning' : 'outline'} className="ms-1">
-                {t(PAY_STATUS_LABELS[data.status] ?? data.status)}
-              </Badge>
-            </span>
-            <span>{t("درخواست‌های باز:")} <b className="num"><Amount>{format(data.outstanding)} {data.currencyCode}</Amount></b></span>
-            <span>{t("قابلِ درخواست:")} <b className="num"><Amount>{format(data.available)} {data.currencyCode}</Amount></b></span>
-          </div>
+          {/*
+            کاشی‌های کوچک (۲.۴۳.۲): پیش از این پنج «برچسب: مبلغ» پشتِ هم در یک
+            سطر بودند و معلوم نبود هر عدد مالِ کدام برچسب است.
+          */}
+          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+            {([
+              ['مبلغ توافقی شما:', data.agreed, false],
+              ['به شما پرداخت‌شده:', data.paid, false],
+              ['ماندهٔ قرارداد:', data.remaining, false],
+              ['درخواست‌های باز:', data.outstanding, false],
+              ['قابلِ درخواست:', data.available, true],
+            ] as const).map(([label, value, strong]) => (
+              <div
+                key={label}
+                className={`grid gap-1 rounded-lg border px-3 py-2 ${strong ? 'border-primary/40 bg-primary/5' : 'bg-card'}`}
+              >
+                {/* همان کلیدِ ترجمه؛ دونقطهٔ آخر فقط در جملهٔ پشتِ‌هم لازم بود. */}
+                <dt className="text-xs text-muted-foreground">{t(label).replace(/\s*[:：]\s*$/, '')}</dt>
+                <dd className="flex flex-wrap items-center gap-1.5 text-sm font-semibold">
+                  <Amount className="num">{format(value)} {data.currencyCode}</Amount>
+                  {label === 'ماندهٔ قرارداد:' && (
+                    <Badge variant={data.status === 'paid' ? 'success' : data.status === 'partial' ? 'warning' : 'outline'} className="font-normal">
+                      {t(PAY_STATUS_LABELS[data.status] ?? data.status)}
+                    </Badge>
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
 
           {data.requests.length > 0 && (
             <ul className="grid gap-1">
