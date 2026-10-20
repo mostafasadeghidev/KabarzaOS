@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageCrumb } from '@/components/page-crumb';
-import { HistoryBackLink } from '@/components/nav-history';
 import { HeaderAction } from '@/components/header-actions';
 
 /**
@@ -105,8 +104,12 @@ export function PageHeader({
         backHref={back.href}
         backLabel={typeof back.label === 'string' ? back.label : undefined}
       />
-      {/* به صفحه‌ای که از آن آمده‌ای؛ بی‌تاریخچه به صفحهٔ مادر (nav-history). */}
-      <HistoryBackLink href={back.href}>{back.label}</HistoryBackLink>
+      {/*
+        ⚠️ دکمهٔ «برگشت» ِ بالای صفحه برداشته شد (۲.۴۲.۱): مسیرِ صفحه در نوارِ بالا
+        همان راهِ واقعیِ کاربر را نشان می‌دهد («گزارش‌ها › علی › Adlib») و هر
+        قسمتش کلیک‌پذیر است؛ دو راهِ برگشتِ کنارِ هم فقط جا می‌گرفت. `back` هنوز
+        به مسیرِ صفحه می‌رسد (PageCrumb) — جایی که تاریخچه نیست، همان والد است.
+      */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           {media}

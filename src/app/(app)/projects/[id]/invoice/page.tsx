@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { primeTranslations, t } from '@/i18n/server';
 import { ltr } from '@/i18n/bidi';
 import { PrintButton } from '@/components/print-button';
-import { BackLink, PageHeader, PageShell, Section } from '@/components/page-shell';
+import { PageHeader, PageShell, Section } from '@/components/page-shell';
 import { pageTitle } from '@/i18n/page-title';
 
 export const generateMetadata = pageTitle('فاکتور');
@@ -61,7 +61,8 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   return (
     <main className="mx-auto grid w-full max-w-3xl gap-6 p-6 print:max-w-none print:p-0">
       <div className="flex items-center justify-between print:hidden">
-        <BackLink href={`/projects/${id}`}>{data.project.title}</BackLink>
+        {/* بی دکمهٔ برگشت (۲.۴۲.۱) — مسیرِ صفحه در نوارِ بالا برمی‌گرداند. */}
+        <span />
         <div className="flex items-center gap-3">
           {!data.issuable && (
             <span className="text-xs text-amber-700 dark:text-amber-500">

@@ -74,8 +74,14 @@ export function HeaderBreadcrumb({ pages }: { pages: CrumbPage[] }) {
           const last = i === crumbs.length - 1;
           return (
             <Fragment key={`${c.href ?? ''}|${c.label}`}>
-              {i > 0 && <BreadcrumbSeparator className="hidden sm:block" />}
-              <BreadcrumbItem className={last ? 'min-w-0' : 'hidden sm:inline-flex'}>
+              {/*
+                ⚠️ روی موبایل صفحهٔ **قبلی** هم دیده می‌شود (۲.۴۲.۱): دکمهٔ «برگشت» ِ
+                سرصفحه برداشته شد و این تنها راهِ برگشت در خودِ برنامه است.
+              */}
+              {i > 0 && <BreadcrumbSeparator className={i === crumbs.length - 1 ? undefined : 'hidden sm:block'} />}
+              <BreadcrumbItem
+                className={last ? 'min-w-0' : i === crumbs.length - 2 ? 'max-w-[40%] shrink-0 truncate' : 'hidden sm:inline-flex'}
+              >
                 {last || !c.href ? (
                   <BreadcrumbPage className="block truncate">{c.label}</BreadcrumbPage>
                 ) : (
