@@ -3,13 +3,13 @@
 import { usePathname } from 'next/navigation';
 import { useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { SidebarMenuButton } from '@/components/ui/sidebar';
+import { Switch } from '@/components/ui/switch';
 import { Hint } from '@/components/ui/tooltip';
 import { useT } from '@/i18n/client';
 import { cn } from '@/lib/utils';
 
 /**
- * «پنهان‌کردنِ مبلغ‌ها» (۲.۴۳.۰) — کلیدِ سراسریِ سایدبار، پیش‌فرض **روشن**.
+ * «پنهان‌کردنِ مبلغ‌ها» (۲.۴۳.۰) — کلیدِ سراسریِ منوی حساب، پیش‌فرض **روشن**.
  *
  * وقتی روشن است هر مبلغی که با `<Amount>` نشان داده می‌شود «•••••» است و با یک
  * کلیک (فقط همان یکی) دیده می‌شود — همان رفتارِ قدیمیِ کارتِ پروژه، حالا در
@@ -90,34 +90,22 @@ export function Amount({ children, className }: { children: ReactNode; className
 }
 
 /**
- * کلیدِ سایدبار — بالای منوی حساب. ⚠️ کلِ ردیف خودش کلید است (`role="switch"`)
- * تا در سایدبارِ جمع‌شده هم فقط با آیکون و راهنما کار کند.
+ * ردیفِ منوی حساب (۲.۴۳.۲) — زیرِ «پالت»، با همان شکلِ ردیف‌های «زبان/ظاهر».
+ * ⚠️ `DropdownMenuItem` نیست: کلیک روی کلید نباید منو را ببندد.
  */
-export function HideAmountsToggle() {
+export function HideAmountsRow() {
   const t = useT();
   const hide = useHideAmounts();
   const Icon = hide ? EyeOff : Eye;
-  const label = t('پنهان‌کردنِ مبلغ‌ها');
   return (
-    <SidebarMenuButton
-      role="switch"
-      aria-checked={hide}
-      tooltip={label}
-      onClick={() => setHideAmounts(!hide)}
-    >
-      <Icon />
-      <span className="flex-1 truncate">{label}</span>
-      {/* فقط نما — همان شکلِ `Switch` ِ کوچک. */}
-      <span
-        aria-hidden
-        data-state={hide ? 'checked' : 'unchecked'}
-        className="inline-flex h-3.5 w-6 shrink-0 items-center rounded-full bg-input p-px transition-colors data-[state=checked]:bg-primary"
-      >
-        <span
-          data-state={hide ? 'checked' : 'unchecked'}
-          className="block size-3 rounded-full bg-background transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] rtl:data-[state=checked]:-translate-x-[calc(100%-2px)]"
-        />
-      </span>
-    </SidebarMenuButton>
+    <div className="px-2 py-1.5">
+      <label htmlFor="um-hide-amounts" className="flex cursor-pointer items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Icon className="size-3.5" />
+          {t('پنهان‌کردنِ مبلغ‌ها')}
+        </span>
+        <Switch id="um-hide-amounts" size="sm" checked={hide} onCheckedChange={setHideAmounts} />
+      </label>
+    </div>
   );
 }
