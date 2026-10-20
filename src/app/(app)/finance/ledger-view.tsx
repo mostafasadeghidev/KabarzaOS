@@ -28,7 +28,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { ltr } from '@/i18n/bidi';
@@ -352,7 +352,7 @@ export function LedgerView({
           <TableHeader>
             <TableRow>
               <TableHead numeric>#</TableHead>
-              <TableHead numeric>{t("تاریخ")}</TableHead>
+              <TableHead>{t("تاریخ")}</TableHead>
               <TableHead>{t("تگ‌ها")}</TableHead>
               <TableHead>{t("توضیحات")}</TableHead>
               <TableHead numeric>{t("مبلغ")}</TableHead>
@@ -374,11 +374,11 @@ export function LedgerView({
                     {rowNumber(i)}
                   </button>
                 </TableNumericCell>
-                <TableNumericCell>
+                <TableDateCell>
                   <button type="button" className="underline-offset-2 hover:underline" onClick={() => setDetail(e)}>
                     {e.entryDate}
                   </button>
-                </TableNumericCell>
+                </TableDateCell>
                 <TableCell>
                   <span className="flex flex-wrap gap-1">
                     {e.isTransfer && <Badge variant="secondary">{t("انتقال")}</Badge>}

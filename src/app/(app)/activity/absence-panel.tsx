@@ -12,7 +12,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
@@ -129,8 +129,8 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead numeric>{tr('از')}</TableHead>
-                <TableHead numeric>{tr('تا')}</TableHead>
+                <TableHead>{tr('از')}</TableHead>
+                <TableHead>{tr('تا')}</TableHead>
                 <TableHead>{tr('توضیح')}</TableHead>
                 <TableActionsHead />
               </TableRow>
@@ -138,8 +138,8 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
             <TableBody>
               {data.mine.map((a) => (
                 <TableRow key={a.id}>
-                  <TableNumericCell>{a.fromDate}</TableNumericCell>
-                  <TableNumericCell>{a.toDate}</TableNumericCell>
+                  <TableDateCell>{a.fromDate}</TableDateCell>
+                  <TableDateCell>{a.toDate}</TableDateCell>
                   <TableCell>{a.note || '—'}</TableCell>
                   <TableActionsCell>
                       <IconButton

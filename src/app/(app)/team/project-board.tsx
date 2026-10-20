@@ -14,7 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { ProjectStatus } from '@/app/(app)/projects/project-status';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
 
@@ -102,7 +102,7 @@ export function ProjectBoard({
                   {mode === 'manage' ? (
                     <>
                       <TableHead>{tr('دفتر')}</TableHead>
-                      <TableHead numeric>{tr('تاریخ')}</TableHead>
+                      <TableHead>{tr('تاریخ')}</TableHead>
                     </>
                   ) : <TableHead>{tr('نقش')}</TableHead>}
                   <TableHead>{tr('وضعیت پروژه')}</TableHead>
@@ -122,7 +122,7 @@ export function ProjectBoard({
                     {mode === 'manage' ? (
                       <>
                         <TableCell>{p.officeName ?? '—'}</TableCell>
-                        <TableNumericCell>{p.regDate ?? '—'}</TableNumericCell>
+                        <TableDateCell>{p.regDate ?? '—'}</TableDateCell>
                       </>
                     ) : <TableCell>{p.roles && p.roles.length > 0 ? p.roles.join(tr('، ')) : '—'}</TableCell>}
                     <TableCell>

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
@@ -90,7 +90,7 @@ export function ActivityView({
                 <TableHead>{tr("رویداد")}</TableHead>
                 <TableHead>{tr("مورد")}</TableHead>
                 <TableHead>{tr("کاربر")}</TableHead>
-                <TableHead numeric>{tr("زمان")}</TableHead>
+                <TableHead>{tr("زمان")}</TableHead>
                 <TableHead className="w-8"><span className="sr-only">{tr("جزئیات")}</span></TableHead>
               </TableRow>
             </TableHeader>
@@ -121,7 +121,7 @@ export function ActivityView({
                       ? <UserName userId={e.actorId} name={e.actorName} size="sm" />
                       : (e.actorType === 'system' ? tr('سامانه') : '—')}
                   </TableCell>
-                  <TableNumericCell>{when(e.createdAt, tz)}</TableNumericCell>
+                  <TableDateCell>{when(e.createdAt, tz)}</TableDateCell>
                   <TableCell className="w-8 text-muted-foreground">
                     <ChevronLeft aria-hidden className="size-4 ltr:-scale-x-100" />
                   </TableCell>

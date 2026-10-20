@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { PageHeader, PageShell, Panel } from '@/components/page-shell';
 import { primeTranslations, t } from '@/i18n/server';
@@ -86,7 +86,7 @@ export default async function OnboardingPage() {
                 <TableHead className="w-56">{t('پیشرفت')}</TableHead>
                 <TableHead numeric>{t('انجام شده')}</TableHead>
                 <TableHead numeric>{t('عقب‌افتاده')}</TableHead>
-                <TableHead numeric>{t('شروع')}</TableHead>
+                <TableHead>{t('شروع')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -107,7 +107,7 @@ export default async function OnboardingPage() {
                     <TableNumericCell>
                       {p.overdue > 0 ? <Badge variant="warning">{p.overdue}</Badge> : '—'}
                     </TableNumericCell>
-                    <TableNumericCell>{formatDate(p.startedAt)}</TableNumericCell>
+                    <TableDateCell>{formatDate(p.startedAt)}</TableDateCell>
                   </TableRow>
                 );
               })}

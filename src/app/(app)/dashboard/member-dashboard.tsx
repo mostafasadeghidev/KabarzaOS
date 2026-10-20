@@ -6,7 +6,7 @@ import { SecretAmount } from '@/components/secret-amount';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectStatus } from '../projects/project-status';
-import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow } from '@/components/ui/table';
 import { t } from '@/i18n/server';
 import { formatDateTime } from '@/i18n/datetime';
 import { StatCard } from '@/components/stat-card';
@@ -99,9 +99,9 @@ function MemberBlock({
               <TableRow>
                 <TableHead>{t('نام')}</TableHead>
                 <TableHead>{t('نقش شما')}</TableHead>
-                <TableHead numeric>{t('تاریخ شروع')}</TableHead>
+                <TableHead>{t('تاریخ شروع')}</TableHead>
                 <TableHead>{t('وضعیت پروژه')}</TableHead>
-                <TableHead numeric>{t('ددلاین')}</TableHead>
+                <TableHead>{t('ددلاین')}</TableHead>
                 <TableHead numeric>{t('ساعت کاری شما')}</TableHead>
                 <TableHead numeric>{t('تسک‌های باقی‌مانده')}</TableHead>
                 <TableHead numeric>{t('درصد پیشرفت')}</TableHead>
@@ -118,9 +118,9 @@ function MemberBlock({
                     </Link>
                   </TableCell>
                   <TableCell>{p.myRoles.length > 0 ? p.myRoles.join(t('، ')) : '—'}</TableCell>
-                  <TableNumericCell>{p.regDate ?? '—'}</TableNumericCell>
+                  <TableDateCell>{p.regDate ?? '—'}</TableDateCell>
                   <TableCell><ProjectStatus name={p.statusName} group={p.statusGroup} color={p.statusColor} /></TableCell>
-                  <TableNumericCell>{p.deadline ?? '—'}</TableNumericCell>
+                  <TableDateCell>{p.deadline ?? '—'}</TableDateCell>
                   <TableNumericCell>{hours(p.myMinutes)}</TableNumericCell>
                   <TableNumericCell>{p.myOpenTasks}</TableNumericCell>
                   <TableNumericCell>{p.percent}%</TableNumericCell>
@@ -156,7 +156,7 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
                 {/* ⚠️ سرستون و مقدار باید یک‌جور تراز شوند؛ ستونِ عددی
                     مقدارش `text-end` بود و سرستونش نه — در راست‌به‌چپ
                     عدد زیرِ سرستونِ خودش دیده نمی‌شد. */}
-                <TableHead numeric>{t('تاریخ ثبت')}</TableHead>
+                <TableHead>{t('تاریخ ثبت')}</TableHead>
                 <TableHead numeric>{t('قیمت')}</TableHead>
                 <TableHead>{t('وضعیت پروژه')}</TableHead>
                 <TableHead>{t('وضعیت پرداخت')}</TableHead>
@@ -176,7 +176,7 @@ function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection;
                       {p.title}
                     </Link>
                   </TableCell>
-                  <TableNumericCell>{p.regDate ?? '—'}</TableNumericCell>
+                  <TableDateCell>{p.regDate ?? '—'}</TableDateCell>
                   <TableNumericCell>
                     <SecretAmount value={`${format(p.price)} ${p.currencyCode ?? ''}`} />
                   </TableNumericCell>

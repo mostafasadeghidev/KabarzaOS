@@ -1,6 +1,6 @@
 import { UserName } from '@/components/user-avatar';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { Section } from '@/components/page-shell';
 import { t } from '@/i18n/server';
@@ -18,8 +18,8 @@ export function TeamAbsences({
           <TableHeader>
             <TableRow>
               <TableHead>{t("عضو")}</TableHead>
-              <TableHead numeric>{t("از")}</TableHead>
-              <TableHead numeric>{t("تا")}</TableHead>
+              <TableHead>{t("از")}</TableHead>
+              <TableHead>{t("تا")}</TableHead>
               <TableHead>{t("توضیح")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -27,8 +27,8 @@ export function TeamAbsences({
             {rows.map((a) => (
               <TableRow key={a.id}>
                 <TableCell><UserName userId={a.userId} name={a.userName ?? '—'} size="sm" /></TableCell>
-                <TableNumericCell>{a.fromDate}</TableNumericCell>
-                <TableNumericCell>{a.toDate}</TableNumericCell>
+                <TableDateCell>{a.fromDate}</TableDateCell>
+                <TableDateCell>{a.toDate}</TableDateCell>
                 <TableCell>{a.note || '—'}</TableCell>
               </TableRow>
             ))}

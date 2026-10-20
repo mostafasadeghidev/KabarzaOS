@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useActionToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { removeQaRoleAction } from '../_form/tab-actions';
@@ -92,7 +92,7 @@ const DIRECTION_LABEL: Record<string, string> = {
  */
 function StackedAmountCell({ value, sub }: { value: React.ReactNode; sub?: React.ReactNode }) {
   return (
-    <TableCell className="whitespace-nowrap ltr:text-end rtl:text-start">
+    <TableCell data-numeric className="whitespace-nowrap ltr:text-end rtl:text-start">
       <span className="num">{value}</span>
       {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
     </TableCell>
@@ -209,7 +209,7 @@ export function FinanceTab({
                       ? <TableNumericCell>{withCode(m.remaining, m.currencyCode)}</TableNumericCell>
                       : m.paid - m.agreed > 0.001
                         ? (
-                          <TableCell className="whitespace-nowrap text-amber-700 ltr:text-end rtl:text-start dark:text-amber-500">
+                          <TableCell data-numeric className="whitespace-nowrap text-amber-700 ltr:text-end rtl:text-start dark:text-amber-500">
                             {t('اضافه‌پرداخت')}{' '}
                             <bdi dir="ltr" className="tabular-nums">{withCode(m.paid - m.agreed, m.currencyCode)}</bdi>
                           </TableCell>
@@ -235,7 +235,7 @@ export function FinanceTab({
               <TableRow>
                 <TableHead>{t("شرح")}</TableHead>
                 <TableHead>{t("نوع")}</TableHead>
-                <TableHead numeric>{t("تاریخ")}</TableHead>
+                <TableHead>{t("تاریخ")}</TableHead>
                 <TableHead numeric>{t("از حساب")}</TableHead>
                 <TableHead numeric>{t("ارزش برای پروژه")}</TableHead>
                 <TableHead>{t("رسید")}</TableHead>
@@ -260,7 +260,7 @@ export function FinanceTab({
                         <div className="text-xs text-muted-foreground"><UserName userId={p.userId} name={p.userName} /></div>
                       )}
                     </TableCell>
-                    <TableNumericCell>{day(p.paidAt)}</TableNumericCell>
+                    <TableDateCell>{day(p.paidAt)}</TableDateCell>
                     {/* مبلغی که واقعاً از حساب رفت یا به آن رسید — با ارز و نامِ حساب. */}
                     <StackedAmountCell value={withCode(p.amount, p.currencyCode ?? null)} sub={p.accountName} />
                     {/* پورتِ ستونِ «معادل (محاسبه)»: ارزشِ ردیف در ارزِ پروژه، نه مبلغِ خام. */}

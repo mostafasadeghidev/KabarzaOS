@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Lock, MessageSquare } from 'lucide-react';
 import type { InboxTask } from '@/server/projects/service';
-import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow } from '@/components/ui/table';
+import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
 import { ClaimTaskButton } from './inbox-claim';
 import { TaskDialog } from '../projects/[id]/task-dialog';
@@ -115,7 +115,7 @@ export function TaskTable({
               <TableHead>{t("اولویت")}</TableHead>
               <TableHead>{t("وضعیت")}</TableHead>
               <TableHead>{t("پروژه")}</TableHead>
-              <TableHead numeric>{t("ددلاین")}</TableHead>
+              <TableHead>{t("ددلاین")}</TableHead>
               <TableActionsHead />
             </TableRow>
           </TableHeader>
@@ -189,7 +189,7 @@ export function TaskTable({
                     {task.projectTitle}
                   </Link>
                 </TableCell>
-                <TableNumericCell className="text-muted-foreground">{task.dueDate ?? '—'}</TableNumericCell>
+                <TableDateCell className="text-muted-foreground">{task.dueDate ?? '—'}</TableDateCell>
 
                 <TableActionsCell onClick={(e) => e.stopPropagation()}>
                   {task.claimable && <ClaimTaskButton taskId={task.id} projectId={task.projectId} />}

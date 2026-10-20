@@ -17,7 +17,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { TagChip } from '@/components/ui/tag-chip';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow,
 } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
 import { TaskDialog } from '../projects/[id]/task-dialog';
@@ -236,7 +236,7 @@ export function TaskBoard({ board, options }: { board: TaskBoardData; options: T
               <TableHead>{tr('پروژه')}</TableHead>
               <TableHead>{tr('تخصیص')}</TableHead>
               <TableHead>{tr('اولویت')}</TableHead>
-              <TableHead numeric>{tr('ددلاین')}</TableHead>
+              <TableHead>{tr('ددلاین')}</TableHead>
               <TableHead>{tr('وضعیت')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -251,7 +251,7 @@ export function TaskBoard({ board, options }: { board: TaskBoardData; options: T
                 <TableCell>
                   {task.priorityName ? <TagChip color={task.priorityColor}>{task.priorityName}</TagChip> : '—'}
                 </TableCell>
-                <TableNumericCell>{task.dueDate ?? '—'}</TableNumericCell>
+                <TableDateCell>{task.dueDate ?? '—'}</TableDateCell>
                 <TableCell>
                   {task.statusName ? <TagChip color={task.statusColor}>{task.statusName}</TagChip> : '—'}
                 </TableCell>

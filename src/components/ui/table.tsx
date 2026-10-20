@@ -30,7 +30,16 @@ export function Table({
     >
       <table
         data-slot="table"
-        className={cn('w-full caption-bottom text-sm', className)}
+        className={cn(
+          'w-full caption-bottom text-sm',
+          /*
+            ⚠️ در چپ‌به‌راست ستونِ عددی راست‌چین است و ستونِ متنیِ بعدی چپ‌چین؛
+            دو متن به هم می‌رسیدند و با فاصلهٔ معمولیِ سلول یکی خوانده می‌شدند
+            (۲.۴۳.۱). فاصلهٔ بیشتر فقط همان‌جا. در راست‌به‌چپ هر دو راست‌چین‌اند.
+          */
+          'ltr:[&_[data-numeric]+:not([data-numeric])]:ps-6',
+          className,
+        )}
         {...props}
       />
     </div>
@@ -74,6 +83,7 @@ export function TableHead({
 }) {
   return (
     <th
+      data-numeric={numeric || undefined}
       className={cn(
         'h-9 px-3 text-start align-middle text-xs font-medium whitespace-nowrap text-muted-foreground',
         numeric && NUMERIC_ALIGN,
@@ -104,7 +114,22 @@ export function TableCell({ className, ...props }: React.TdHTMLAttributes<HTMLTa
  */
 export function TableNumericCell({ className, children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={cn('px-3 py-2 align-middle whitespace-nowrap', NUMERIC_ALIGN, className)} {...props}>
+    <td data-numeric className={cn('px-3 py-2 align-middle whitespace-nowrap', NUMERIC_ALIGN, className)} {...props}>
+      <span className="num">{children}</span>
+    </td>
+  );
+}
+
+/**
+ * سلولِ تاریخ/زمان (۲.۴۳.۱) — رقم‌ها چپ‌به‌راست، ولی ستون مثلِ متن **ابتدا**چین.
+ *
+ * ⚠️ تاریخ کمیت نیست که رقمِ یکانش زیرِ هم بیاید؛ همهٔ تاریخ‌ها هم‌طول‌اند.
+ * با ترازِ عددی، در انگلیسی تاریخ به لبهٔ راست می‌رفت و به ستونِ متنیِ بعدی
+ * («پروژه») می‌چسبید. سرستونش `<TableHead>` ِ ساده است، نه `numeric`.
+ */
+export function TableDateCell({ className, children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
+  return (
+    <td className={cn('px-3 py-2 text-start align-middle whitespace-nowrap', className)} {...props}>
       <span className="num">{children}</span>
     </td>
   );

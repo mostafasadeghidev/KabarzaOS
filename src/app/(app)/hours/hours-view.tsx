@@ -358,7 +358,7 @@ export function HoursView({ data }: { data: HoursData }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead numeric>{t("تاریخ")}</TableHead>
+              <TableHead>{t("تاریخ")}</TableHead>
               <TableHead>{t("پروژه")}</TableHead>
               <TableHead>{t("توضیح")}</TableHead>
               <TableHead numeric>{t("مدت")}</TableHead>
@@ -369,7 +369,7 @@ export function HoursView({ data }: { data: HoursData }) {
             {data.logs.map((l) => (
               <TableRow key={l.id}>
                 {/* روزِ هفته کنارِ تاریخ (۲.۱۰.۰). ⚠️ `num` فقط دورِ خودِ تاریخ؛ نامِ فارسیِ روز داخلش نمی‌رود (تستِ bidi). */}
-                <TableCell className="whitespace-nowrap ltr:text-end rtl:text-start">
+                <TableCell className="whitespace-nowrap">
                   <span className="num">{l.logDate}</span>
                   {weekdayOfDate(l.logDate) !== null && (
                     <span className="ms-1.5 text-xs text-muted-foreground">{t(WEEKDAYS[weekdayOfDate(l.logDate)!]!)}</span>
