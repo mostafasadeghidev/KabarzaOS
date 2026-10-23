@@ -24,6 +24,7 @@ import { getSystemConfig } from '@/server/settings/system-service';
 import { roleTagsOf } from '@/server/people/repository';
 import { avatarsFor } from '@/server/files/service';
 import { hasPersonalMoney } from '@/server/finance/my-money';
+import { canManageOfficeClients } from '@/server/people/service';
 import { t } from '@/i18n/server';
 import { canUseTimesheet, timerState } from '@/server/timelogs/service';
 import { TimerBanner } from '@/components/timer-banner';
@@ -151,6 +152,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   // پورتِ افزونه: «ساعت کاری» برای هر که می‌تواند ساعت بزند (عضو، مالک، مالی، مدیرِ دفتر).
   const showHours = await canUseTimesheet(actor);
+  const officeClients = await canManageOfficeClients(actor);
   const items: NavItem[] = NAV
     .filter((item) => {
       if (item.memberOnly) return showHours;
@@ -159,7 +161,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           || (item.orPermissions ?? []).some((p) => can(actor, p))
           || Boolean(item.orMember && isMember);
       }
-      return canViewSection(actor, item.section!) || membershipHrefs.has(item.href);
+      return canViewSection(actor, item.section!) || membershipHrefs.has(item.href)
+        // «کارفرمایان» برای مدیرِ دفتر، فقط کارفرماهای دفترِ خودش (۲.۴۴.۰).
+        || (item.href === '/clients' && officeClients);
     })
     .map(({ href, label, icon, group }) => ({ href, label, icon, group }));
 

@@ -78,6 +78,7 @@ export function PersonCard({
   person,
   section,
   canManage,
+  canDelete = true,
   canViewReports,
   isOwner,
   onEdit,
@@ -89,6 +90,8 @@ export function PersonCard({
   /** پیوندِ نام به پروفایلِ گزارش‌ها ساخته شود؟ سرور تصمیم می‌گیرد. */
   canViewReports: boolean;
   canManage: boolean;
+  /** ⚠️ مدیرِ دفتر در «کارفرمایانِ دفترِ من» می‌سازد و ویرایش می‌کند، ولی حذف نه (۲.۴۴.۰). */
+  canDelete?: boolean;
   /** ⚠️ فقط مالک «دسترسی‌ها» را می‌بیند (R-RBAC-10). */
   isOwner: boolean;
   onEdit: (person: PersonView) => void;
@@ -232,7 +235,8 @@ export function PersonCard({
                   </DropdownMenuItem>
                 )}
 
-                <DropdownMenuSeparator />
+                {canDelete && <DropdownMenuSeparator />}
+                {canDelete && (
                 <DropdownMenuItem
                   variant="destructive"
                   onSelect={async () => {
@@ -245,6 +249,7 @@ export function PersonCard({
                   <Trash2 className="size-3.5" />
                   {tr("حذف")}
                 </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}

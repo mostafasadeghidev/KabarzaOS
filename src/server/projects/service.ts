@@ -2338,7 +2338,7 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
   const dependencyOptions = filterVisibleFor(actor, allTasks, canManageProjectNow, await isClientOnly(actor, projectId))
     .map((t) => ({ id: t.id, title: t.title }));
 
-  const clientNames = await repo.userNames([...clientIds]);
+  const clientNames = await repo.userNames([...clientIds, actor.id]);
 
   /**
    * ⚠️ کارفرمای خالص تسک را فقط به **نقش** می‌دهد، نه به شخص — پورتِ
@@ -2370,6 +2370,12 @@ export async function getTaskFormOptions(actor: Actor, projectId: number, curren
         [
           ...members.map((m) => ({ userId: m.userId, name: nameForViewer(m.userId, m.userName, viewer), roleName: m.roleName })),
           ...(canManageProjectNow ? admins.map((a) => ({ userId: a.userId, name: a.name, roleName: MANAGER_ROLE_LABEL })) : []),
+          /**
+           * ⚠️ خودِ مدیر هم (۲.۴۴.۰): مدیرِ دفتری که پروژه را مدیریت می‌کند ولی
+           * عضوش نیست، تسک را به خودش نمی‌توانست بدهد. اگر عضو یا ادمین باشد،
+           * همان ردیفِ قبلی می‌ماند (تکراری حذف می‌شود).
+           */
+          ...(canManageProjectNow ? [{ userId: actor.id, name: clientNames.get(actor.id) ?? String(actor.id), roleName: MANAGER_ROLE_LABEL }] : []),
         ],
         [...clientIds].map((id) => ({
           userId: id, name: nameForViewer(id, clientNames.get(id) ?? String(id), viewer), isClient: true,
@@ -2652,7 +2658,10 @@ async function resolveTaskAssignment(
   return resolveAssignment(
     { assignedTo: input.assignedTo, roleTagIds: input.roleTagIds ?? [] },
     {
-      projectUserIds: new Set([...members.map((m) => m.userId), ...clientIds, ...admins.map((a) => a.userId)]),
+      // خودِ مدیر هم — همان فهرستِ `getTaskFormOptions` (۲.۴۴.۰).
+      projectUserIds: new Set([
+        ...members.map((m) => m.userId), ...clientIds, ...admins.map((a) => a.userId), ...(canManage ? [actor.id] : []),
+      ]),
       memberRoleTagIds: new Set(roleTags.map((r) => r.id)),
       rolesOnly: !assignableToPeople(viewer),
     },

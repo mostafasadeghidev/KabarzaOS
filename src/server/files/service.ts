@@ -551,7 +551,9 @@ export async function setAvatar(
   blob: { name: string; mime: string; bytes: Uint8Array },
 ) {
   // آدم می‌تواند آواتارِ خودش را عوض کند؛ آواتارِ دیگری فقط با مدیریتِ اعضا.
-  if (userId !== actor.id && !canManageSection(actor, 'members')) {
+  if (userId !== actor.id && !canManageSection(actor, 'members')
+    // مدیرِ دفتر برای کارفرمای دفترِ خودش (۲.۴۴.۰).
+    && !(await (await import('@/server/people/service')).isOfficeClientOf(actor, userId))) {
     throw new ForbiddenError('members.manage');
   }
 
@@ -575,7 +577,9 @@ export async function setAvatar(
  * `set_avatar_id(0)`. پیش از این کاربر فقط می‌توانست عکس را **عوض** کند.
  */
 export async function removeAvatar(actor: Actor, userId: number): Promise<void> {
-  if (userId !== actor.id && !canManageSection(actor, 'members')) {
+  if (userId !== actor.id && !canManageSection(actor, 'members')
+    // مدیرِ دفتر برای کارفرمای دفترِ خودش (۲.۴۴.۰).
+    && !(await (await import('@/server/people/service')).isOfficeClientOf(actor, userId))) {
     throw new ForbiddenError('members.manage');
   }
   const previous = await db.select({ fileId: userAvatars.fileId })

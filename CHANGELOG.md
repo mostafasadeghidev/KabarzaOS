@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.44.0]
+
+### Added
+
+- **Office managers manage their office's clients.** A team manager (office manager) now sees "Clients" in the menu without the "Members and clients" access. There they see the clients of the offices they manage, create new clients (always placed in one of their offices), edit them, set their login password and picture, and send the invite. They cannot delete a client, add the client role to an existing user, change anyone who is not only a client, or touch members. Editing never removes a client from an office outside their own. Until now this needed the "Members and clients" access, which also allowed editing every member.
+- **A manager can assign a task to themselves.** Someone who manages a project without being its member (for example the office manager) is now in the task's assignee list. Before, they could only assign it to the project's members and the admins.
+
 ## [2.43.5]
 
 ### Fixed

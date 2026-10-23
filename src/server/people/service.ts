@@ -47,20 +47,75 @@ async function audit(actor: Actor, action: string, objectId: number, before?: un
   });
 }
 
+/** دفاتری که این کاربر مدیرشان است (`user_offices.manages`). */
+async function managedOffices(userId: number): Promise<number[]> {
+  const rows = await db.select({ id: userOffices.officeId }).from(userOffices)
+    .where(and(eq(userOffices.userId, userId), eq(userOffices.manages, true)));
+  return rows.map((r) => r.id);
+}
+
+/**
+ * «کارفرمایانِ دفترِ من» (۲.۴۴.۰) — مدیرِ دفتر بی دسترسیِ «اعضا» کارفرما می‌سازد.
+ *
+ * - `null` = دسترسیِ کاملِ «اعضا و کارفرمایان» (`members.manage`)؛ هیچ محدودیتی.
+ * - آرایه = دفاترِ تحتِ مدیریت: فقط کارفرماهای همین دفاتر، فقط نقشِ «کارفرما».
+ *
+ * ⚠️ چرا: در آژانس، مدیرِ تیم معمولاً کارفرمای پروژه‌هایش را خودش وارد می‌کند؛
+ * تا امروز برای این کار باید دسترسیِ «اعضا» می‌گرفت که ویرایشِ همهٔ اعضا را هم
+ * می‌داد. این دامنه به هیچ عضوی، رمزِ هیچ عضوی و حذفِ هیچ‌کس نمی‌رسد.
+ */
+async function clientScope(actor: Actor, role: Role): Promise<number[] | null> {
+  if (canManageSection(actor, 'members')) return null;
+  const offices = role === 'client' ? await managedOffices(actor.id) : [];
+  if (offices.length === 0) assertCanManage(actor, 'members'); // همان خطای قبلی
+  return offices;
+}
+
+/** آیا هدف فقط کارفرماست و دست‌کم در یکی از این دفاتر؟ */
+async function assertScopedClient(userId: number, offices: number[]): Promise<void> {
+  const [roles, rel] = await Promise.all([repo.rolesOf(userId), relationsOf(userId)]);
+  if (roles.length !== 1 || roles[0] !== 'client') throw new ForbiddenError('members.manage');
+  if (!rel.officeIds.some((id) => offices.includes(id))) throw new ForbiddenError('office.out_of_scope');
+}
+
+/** آیا `userId` کارفرمای یکی از دفاترِ تحتِ مدیریتِ این کاربر است؟ (تصویرِ پروفایل) */
+export async function isOfficeClientOf(actor: Actor, userId: number): Promise<boolean> {
+  const offices = await managedOffices(actor.id);
+  if (offices.length === 0) return false;
+  return assertScopedClient(userId, offices).then(() => true, () => false);
+}
+
+/** آیا کاربر «کارفرمایانِ دفترِ من» را دارد؟ برای منو. */
+export async function canManageOfficeClients(actor: Actor): Promise<boolean> {
+  return !canManageSection(actor, 'members') && (await managedOffices(actor.id)).length > 0;
+}
+
 /** فهرستِ افراد + گزینه‌های فیلتر و فرم. */
 export async function listPeople(actor: Actor, role: Role) {
-  assertCanView(actor, 'members');
+  /**
+   * ⚠️ مدیرِ دفتر در «کارفرمایان» فقط کارفرماهای دفاترِ خودش را می‌بیند
+   * (۲.۴۴.۰)؛ کسی که «اعضا» را می‌بیند همان فهرستِ کامل را دارد.
+   */
+  const scoped = role === 'client' && !canManageSection(actor, 'members')
+    ? await managedOffices(actor.id) : [];
+  const limited = scoped.length > 0;
+  if (!limited) assertCanView(actor, 'members');
 
-  const canManage = canManageSection(actor, 'members');
+  const canManage = limited || canManageSection(actor, 'members');
 
-  const [peopleRows, officeList, roleTags, candidates] = await Promise.all([
+  const [allRows, allOffices, roleTags, candidates] = await Promise.all([
     repo.listByRole(role),
     repo.officeOptions(),
     repo.roleTagOptions(),
     // ⚠️ فهرستِ کاندیداها فقط برای مدیر خوانده می‌شود؛ کسی که دکمهٔ افزودن
-    // را نمی‌بیند، نباید فهرستِ کاربرانِ سامانه را هم بگیرد.
-    canManage ? editableCandidates(actor, role) : Promise.resolve([]),
+    // را نمی‌بیند، نباید فهرستِ کاربرانِ سامانه را هم بگیرد. مدیرِ دفتر هم نه:
+    // افزودنِ نقشِ کارفرما به کاربرِ موجود (شاید یک عضو) مالِ مدیرِ اعضاست.
+    canManage && !limited ? editableCandidates(actor, role) : Promise.resolve([]),
   ]);
+  const peopleRows = limited && !canViewSection(actor, 'members')
+    ? allRows.filter((p) => p.offices.some((o) => scoped.includes(o.id)))
+    : allRows;
+  const officeList = limited ? allOffices.filter((o) => scoped.includes(o.id)) : allOffices;
 
   /**
    * دسترسی‌های بیرونیِ بازِ هر نفر — بجِ کارت. بدونِ این، مدیری که همین حالا
@@ -83,6 +138,8 @@ export async function listPeople(actor: Actor, role: Role) {
     canViewReports: canViewSection(actor, 'reports'),
     // ⚠️ فقط مالک دکمهٔ «دسترسی‌ها» را می‌بیند (R-RBAC-10).
     isOwner: actor.roles.includes('owner'),
+    /** «کارفرمایانِ دفترِ من» — حذف نیست و دفترها همان دفاترِ تحتِ مدیریت‌اند. */
+    officeScoped: limited,
   };
 }
 
@@ -128,7 +185,15 @@ function resolvePrivateAccess(
 
 /** ساختِ فرد — نقشِ بخش را هم می‌گیرد. */
 export async function createPerson(actor: Actor, role: Role, input: PersonInput): Promise<number> {
-  assertCanManage(actor, 'members');
+  const scope = await clientScope(actor, role);
+  if (scope) {
+    /**
+     * ⚠️ مدیرِ دفتر: کارفرما همیشه در دستِ‌کم یکی از دفاترِ خودش ساخته می‌شود
+     * (وگرنه از فهرستش ناپدید می‌شد)، بی نقش‌تگ و بی مدیریتِ دفتر.
+     */
+    const picked = input.officeIds.filter((id) => scope.includes(id));
+    input = { ...input, tagIds: [], managedOfficeIds: [], privateAccess: false, officeIds: picked.length > 0 ? picked : scope };
+  }
 
   const email = normalizeIdentifier(input.email);
   const username = normalizeIdentifier(input.username ?? '');
@@ -268,11 +333,29 @@ function editableCandidates(actor: Actor, role: Role) {
 
 /** ویرایشِ فرد. */
 export async function updatePerson(actor: Actor, userId: number, input: PersonInput) {
-  assertCanManage(actor, 'members');
+  const scope = await clientScope(actor, 'client');
   const before = await repo.getPerson(userId);
   if (!before) throw new PersonNotFoundError();
   await assertEditableTarget(actor, userId);
   const relationsBefore = await relationsOf(userId);
+  if (scope) {
+    await assertScopedClient(userId, scope);
+    /**
+     * ⚠️ دفترهای بیرون از دامنه دست‌نخورده می‌مانند — مدیرِ دفترِ آلمان نباید
+     * کارفرما را از دفترِ دیگری بیرون بیندازد. دفترِ داخلِ دامنه هم دست‌کم
+     * یکی می‌ماند. نقش‌تگ و مدیریتِ دفتر همان قبلی.
+     */
+    const inside = input.officeIds.filter((id) => scope.includes(id));
+    const outside = relationsBefore.officeIds.filter((id) => !scope.includes(id));
+    const keep = inside.length > 0 ? inside : relationsBefore.officeIds.filter((id) => scope.includes(id));
+    input = {
+      ...input,
+      tagIds: relationsBefore.tagIds,
+      managedOfficeIds: relationsBefore.managedOfficeIds,
+      privateAccess: before.privateAccess,
+      officeIds: [...new Set([...keep, ...outside])],
+    };
+  }
 
   /**
    * ⚠️ ایمیل و نامِ کاربری با هم و بی‌اعتنا به حروف بررسی می‌شوند — همان
@@ -633,7 +716,9 @@ export async function setPersonPassword(
   userId: number,
   password: string,
 ): Promise<void> {
-  assertCanManage(actor, 'members');
+  // مدیرِ دفتر رمزِ ورودِ کارفرمای دفترِ خودش را می‌گذارد (۲.۴۴.۰)، نه هیچ عضوی را.
+  const scope = await clientScope(actor, 'client');
+  if (scope) await assertScopedClient(userId, scope);
   if (userId === actor.id) throw new ForbiddenError('password.use_profile');
 
   const policy = checkPasswordPolicy(password);
