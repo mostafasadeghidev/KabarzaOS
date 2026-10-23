@@ -154,6 +154,24 @@ export async function teamScope(actor: Actor): Promise<TeamScope> {
   };
 }
 
+/**
+ * ساعتِ داخلِ دامنهٔ «تیمِ من»: ساعتِ پروژه‌های دفتر، به‌علاوهٔ «کارِ عمومی» (بی‌پروژه)
+ * ِ اعضای **خودِ** دفتر (۲.۴۳.۵).
+ *
+ * ⚠️ پیش از این فقط `inArray(projectId, …)` بود که ردیفِ بی‌پروژه (`null`) را
+ * کنار می‌گذاشت: ساعتِ تایمرِ عمومی در «ساعتِ کاری» بود ولی در «تیمِ من» نه.
+ * کارِ عمومیِ کسی از دفترِ دیگر که فقط روی پروژهٔ این دفتر کار کرده دیده
+ * نمی‌شود — آن مالِ مدیرِ دفترِ خودش است.
+ */
+function scopedHours(scope: TeamScope) {
+  const parts = [];
+  if (scope.projectIds.length > 0) parts.push(inArray(timelogs.projectId, scope.projectIds));
+  if (scope.officeMembers.length > 0) {
+    parts.push(and(isNull(timelogs.projectId), inArray(timelogs.userId, scope.officeMembers))!);
+  }
+  return parts.length > 0 ? or(...parts)! : sql`false`;
+}
+
 /** تسکِ «باز» — نه بسته، نه در ریویو (پورتِ `open_for_projects`). بی‌وضعیت باز است. */
 const OPEN_TASK = sql`coalesce(${tags.isClosed}, false) = false and coalesce(${tags.isReview}, false) = false`;
 
@@ -571,7 +589,7 @@ export async function teamMembers(actor: Actor, input: { range?: string; from?: 
   if (scope.monitorable.length === 0) return empty;
 
   const conditions = [inArray(timelogs.userId, scope.monitorable)];
-  conditions.push(scope.projectIds.length > 0 ? inArray(timelogs.projectId, scope.projectIds) : sql`false`);
+  conditions.push(scopedHours(scope));
   if (period.from) conditions.push(gte(timelogs.logDate, period.from));
   if (period.to) conditions.push(lte(timelogs.logDate, period.to));
 
@@ -660,7 +678,7 @@ export async function teamMember(
 
   const period = resolveRange(input, new Date());
   const conditions = [eq(timelogs.userId, userId)];
-  if (scope.projectIds.length > 0) conditions.push(inArray(timelogs.projectId, scope.projectIds));
+  if (scope.projectIds.length > 0) conditions.push(scopedHours(scope));
   if (period.from) conditions.push(gte(timelogs.logDate, period.from));
   if (period.to) conditions.push(lte(timelogs.logDate, period.to));
 
@@ -728,7 +746,7 @@ export async function teamMember(
     db.select({ projectId: timelogs.projectId, projectTitle: projects.title, minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int` })
       .from(timelogs)
       .leftJoin(projects, eq(projects.id, timelogs.projectId))
-      .where(and(eq(timelogs.userId, userId), scope.projectIds.length > 0 ? inArray(timelogs.projectId, scope.projectIds) : sql`false`))
+      .where(and(eq(timelogs.userId, userId), scopedHours(scope)))
       .groupBy(timelogs.projectId, projects.title)
       .orderBy(sql`sum(${timelogs.minutes}) desc`),
     me ? matrixForIds([{ id: me.id, name: me.name }]) : Promise.resolve([]),

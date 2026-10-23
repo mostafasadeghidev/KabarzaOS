@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.43.5]
+
+### Fixed
+
+- **General work hours count in My team.** Time logged without a project (for example with the timer on "No project") showed in Work hours but not in My team: the team hours, a member's period total and their hours by project only counted hours on the office's projects. General work of the office's own members now counts and shows as a "General work" row. General work of people from other offices who only worked on this office's projects stays out.
+- **Client QA items have a "Client" badge** in a project's QA list. Items for the team's roles had their role badge, but client items had none.
+
 ## [2.43.4]
 
 ### Fixed

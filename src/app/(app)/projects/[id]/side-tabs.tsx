@@ -623,7 +623,8 @@ export function QaTab({
                 )}
               </span>
               <span className="flex shrink-0 items-center gap-2">
-                {q.roleName && <Badge variant="secondary">{q.roleName}</Badge>}
+                {/* آیتمِ کارفرما (بی نقش) هم نشانِ «کارفرما» می‌گیرد (۲.۴۳.۵) — پیش از این بی‌برچسب بود. */}
+                {(q.roleName || !q.roleTagId) && <Badge variant="secondary">{q.roleName ?? t('کارفرما')}</Badge>}
                 {q.taskId && (
                   <TagChip color={q.taskStatusColor}>
                     {t('تسک')}{q.taskStatusName ? `: ${q.taskStatusName}` : ''}
