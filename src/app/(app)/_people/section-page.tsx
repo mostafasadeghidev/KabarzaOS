@@ -76,6 +76,7 @@ export async function PeopleSectionPage({ section }: { section: SectionConfig })
           onboarding: section.role === 'member' && (await getSystemConfig()).onboardingEnabled,
         }}
         canManage={data.canManage}
+        officeScoped={data.officeScoped}
         canViewReports={data.canViewReports}
         isOwner={data.isOwner}
       />

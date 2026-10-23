@@ -32,6 +32,7 @@ export function PeopleGrid({
   options,
   section,
   canManage,
+  officeScoped = false,
   canViewReports,
   isOwner,
 }: {
@@ -40,6 +41,8 @@ export function PeopleGrid({
   options: PersonFormOptions;
   section: SectionConfig;
   canManage: boolean;
+  /** «کارفرمایانِ دفترِ من» (۲.۴۴.۰) — مدیرِ دفتر حذف نمی‌کند. */
+  officeScoped?: boolean;
   canViewReports: boolean;
   isOwner: boolean;
 }) {
@@ -143,6 +146,7 @@ export function PeopleGrid({
               person={p}
               section={section}
               canManage={canManage}
+              canDelete={!officeScoped}
               canViewReports={canViewReports}
               isOwner={isOwner}
               onEdit={openEdit}
