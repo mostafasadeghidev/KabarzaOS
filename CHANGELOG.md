@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.44.1]
+
+### Security
+
+- **Next.js 16.3.8 → 16.4.3** for the October 14, 2026 security release. It fixes a denial of service in Server Actions (GHSA-p3m5-59mp-jv5r), which the app uses for every form, and two remote code execution flaws: `use cache` returning typed arrays (GHSA-673q-mjm6-r5xr; the app does not use `use cache`) and SVG image optimization (CVE-2026-96889; `sharp` was already 0.35.5).
+- **React and React DOM 19.2.8 → 19.2.9**, the upstream fix for the same Server Functions denial of service (GHSA-h3gv-c5rc-p453).
+- **Nodemailer 10.0.15 → 10.2.1**: three address-parser flaws that could change who an email goes to.
+- **Zod 4.4.3 → 4.6.7** and the MCP SDK 1.32.1 → 1.32.2, with its dependencies updated: `body-parser` 2.4.0 (denial of service with a compressed request), `fast-uri` 3.1.9 and `ip-address` 10.7.5.
+- Test tools only (not in the image): Vitest 4.1.12 and Vite 8.3.5.
+- `pnpm audit` now reports no known vulnerabilities.
+- The image build always pulls the latest `node:22-slim` base, so a cached older base can no longer skip a Node.js security patch. The current image already has Node 22.23.4, from the October 21 Node.js security release.
+
 ## [2.44.0]
 
 ### Added
