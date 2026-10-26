@@ -78,6 +78,9 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
+          # ⚠️ همیشه آخرین `node:22-slim` (۲.۴۴.۱): با کشِ قدیمیِ پایه، ایمیج وصلهٔ
+          # امنیتیِ تازهٔ Node را نمی‌گرفت (ساختِ محلی ۲۲.۲۳.۳ داد، نه ۲۲.۲۳.۴).
+          pull: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |

@@ -16,3 +16,6 @@ overrides:
   '@esbuild-kit/core-utils>esbuild': ^0.25.0
   # next خودش sharp ِ ۰.۳۵.۴ را سنجاق کرده (librsvg ِ آسیب‌پذیر) — یک نسخه برای همه.
   sharp: ^0.35.5
+  # vite < 8.2.4 (۲.۴۴.۱) — launch-editor و `server.fs` (فقط ابزارِ تستِ vitest، نه ایمیج).
+  # vitest ِ ۴.۱.۱۲ هنوز ۸.۲.۲ را قفل می‌کرد؛ محدودهٔ خودش ^8 است.
+  vite: ^8.2.4
