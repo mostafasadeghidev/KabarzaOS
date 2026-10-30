@@ -797,7 +797,8 @@ export function EntryForm({
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>{tr("انصراف")}</Button>
         <SubmitButton
-          label={editing ? tr('به‌روزرسانی ردیف') : splitOn ? tr('ثبتِ ردیف‌های همهٔ پروژه‌ها') : tr('ثبت ردیف')}
+          // ⚠️ نامِ حساب روی خودِ دکمه (۲.۴۵.۰) — آخرین جایی که چشم پیش از ثبت می‌بیند.
+          label={editing ? tr('به‌روزرسانی ردیف') : splitOn ? tr('ثبتِ ردیف‌های همهٔ پروژه‌ها') : account ? tr('ثبت در «{account}»', { account: account.name }) : tr('ثبت ردیف')}
           blocked={splitOn && !splitOk}
         />
       </DialogFooter>

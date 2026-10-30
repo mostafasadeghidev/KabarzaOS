@@ -4453,5 +4453,12 @@
   "یک المنتِ Embed (</>) در همان جایی از صفحه که نوشته شده": "Sayfada belirtilen yerde bir Embed öğesi (</>)",
   "وضعیتِ این تسک را فقط مسئولِ آن یا مدیرِ پروژه عوض می‌کند.": "Bu görevin durumunu yalnızca sorumlusu veya proje yöneticisi değiştirebilir.",
   "«مدیر پروژه» را فقط مدیرِ کل یا مدیرِ دفترِ همین پروژه تعیین می‌کند.": "Proje yöneticisini yalnızca sahip veya bu projenin ofis yöneticisi atayabilir.",
-  "— انتخابِ نقش —": "— Rol seçin —"
+  "— انتخابِ نقش —": "— Rol seçin —",
+  "تغییرِ حساب": "Hesabı değiştir",
+  "ثبت در «{account}»": "“{account}” hesabına kaydet",
+  "ثبت ردیف جدید در حسابِ": "Hesapta yeni kayıt",
+  "حسابِ فعلی": "Mevcut hesap",
+  "ردیف‌های تازه در همین حساب ثبت می‌شوند. بعداً از بالای دفترکل عوضش کنید.": "Yeni kayıtlar bu hesaba kaydedilir. Daha sonra defterin üstünden değiştirebilirsiniz.",
+  "ویرایش ردیف در حسابِ": "Hesaptaki kaydı düzenle",
+  "کدام حساب را می‌خواهید ببینید؟": "Hangi hesabı görmek istiyorsunuz?"
 }
