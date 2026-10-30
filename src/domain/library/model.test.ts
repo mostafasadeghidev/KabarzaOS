@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Actor } from '@/domain/access/permissions';
 import {
-  canDeleteEntry, canEditEntry, canUseLibrary, cleanEntry, defaultPlacement, lines, normalizeTopics, safeUrl,
-  type EntryInput,
+  canDeleteEntry, canEditEntry, canSuggestEdit, canUseLibrary, changedParts, cleanEntry, defaultPlacement, lineDiff,
+  lines, normalizeTopics, safeUrl, type EntryInput, type SuggestedContent,
 } from './model';
 
 const actor = (roles: Actor['roles'], id = 7, permissions: Actor['permissions'] = []): Actor => ({
@@ -134,5 +134,46 @@ describe('کتابخانهٔ کد — دسترسی', () => {
     expect(canDeleteEntry(actor(['member'], 7), { authorId: 7 }, 0)).toBe(true);
     expect(canDeleteEntry(actor(['member'], 7), { authorId: 7 }, 1)).toBe(false);
     expect(canDeleteEntry(actor(['owner'], 1), { authorId: 7 }, 3)).toBe(false);
+  });
+});
+
+describe('پیشنهادِ ویرایش (۲.۴۶.۰)', () => {
+  it('⚠️ فقط کسی که کتابخانه را دارد و نمی‌تواند مستقیم ویرایش کند', () => {
+    expect(canSuggestEdit(actor(['member'], 8), { authorId: 7 })).toBe(true);
+    expect(canSuggestEdit(actor(['member'], 7), { authorId: 7 })).toBe(false);
+    expect(canSuggestEdit(actor(['owner'], 1), { authorId: 7 })).toBe(false);
+    expect(canSuggestEdit(actor(['client'], 8), { authorId: 7 })).toBe(false);
+    expect(canSuggestEdit(actor(['finance'], 8), { authorId: 7 })).toBe(false);
+  });
+
+  const base: SuggestedContent = {
+    title: 'Masonry', summary: '', topics: ['CMS'], body: '', steps: 'a\nb', warnings: '', dependencies: '', demoUrl: '',
+    blocks: [{ label: 'init', language: 'js', placement: 'site_body_end', placementNote: '', code: 'x()' }],
+    options: [],
+  };
+
+  it('بخش‌های عوض‌شده — و خالی وقتی چیزی عوض نشده', () => {
+    expect(changedParts(base, { ...base })).toEqual([]);
+    expect(changedParts(base, { ...base, title: 'Grid', topics: ['CMS', 'grid'] })).toEqual(['title', 'topics']);
+    expect(changedParts(base, { ...base, blocks: [{ ...base.blocks[0]!, code: 'y()' }] })).toEqual(['blocks']);
+  });
+
+  it('تفاوتِ خط‌به‌خط: افزوده، حذف‌شده و بی‌تغییر', () => {
+    expect(lineDiff('a\nb\nc', 'a\nB\nc')).toEqual([
+      { op: 'same', text: 'a' }, { op: 'del', text: 'b' }, { op: 'add', text: 'B' }, { op: 'same', text: 'c' },
+    ]);
+    expect(lineDiff('', 'x')).toEqual([{ op: 'add', text: 'x' }]);
+    expect(lineDiff('x', '')).toEqual([{ op: 'del', text: 'x' }]);
+    expect(lineDiff('a\nb', 'a\nb').every((l) => l.op === 'same')).toBe(true);
+  });
+
+  it('⚠️ متنِ خیلی بلند: بی جدولِ سنگین، ولی همچنان درست', () => {
+    const before = `h\n${Array.from({ length: 50 }, (_, i) => `old${i}`).join('\n')}\nt`;
+    const after = `h\n${Array.from({ length: 50 }, (_, i) => `new${i}`).join('\n')}\nt`;
+    const out = lineDiff(before, after, 100);
+    expect(out[0]).toEqual({ op: 'same', text: 'h' });
+    expect(out.at(-1)).toEqual({ op: 'same', text: 't' });
+    expect(out.filter((l) => l.op === 'del')).toHaveLength(50);
+    expect(out.filter((l) => l.op === 'add')).toHaveLength(50);
   });
 });

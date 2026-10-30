@@ -22,6 +22,7 @@ export default async function LibraryPage({
 }: {
   searchParams: Promise<{
     q?: string; kind?: string; platform?: string; topic?: string; project?: string; mine?: string; archived?: string;
+    review?: string;
   }>;
 }) {
   await primeTranslations();
@@ -46,13 +47,16 @@ export default async function LibraryPage({
     projectId: Number(sp.project) > 0 ? Number(sp.project) : undefined,
     mine: sp.mine === '1',
     archived: sp.archived === '1',
+    review: sp.review === '1',
   };
-  const [entries, topics, projects, all] = await Promise.all([
+  const [entries, topics, projects, all, toReview] = await Promise.all([
     listEntries(actor, filter),
     libraryTopics(actor),
     projectOptions(actor),
     // شمارِ هر نوع برای قرص‌های فیلتر — بی‌فیلترِ نوع، با بقیهٔ فیلترها.
     listEntries(actor, { ...filter, kind: '' }),
+    // «پیشنهادهای منتظرِ من» — فقط شمار، بی‌فیلترِ دیگر.
+    listEntries(actor, { review: true }),
   ]);
   const counts = { all: all.length, code: 0, guide: 0, note: 0 };
   for (const e of all) counts[e.kind] += 1;
@@ -73,6 +77,7 @@ export default async function LibraryPage({
         topics={topics}
         projects={projects}
         counts={counts}
+        toReview={toReview.length}
         filter={{ ...filter, projectId: filter.projectId ?? null }}
       />
     </PageShell>

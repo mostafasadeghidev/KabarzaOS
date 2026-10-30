@@ -3,7 +3,7 @@ import { canManageSection } from '@/domain/access/permissions';
 import {
   LIBRARY_KINDS, LIBRARY_LANGUAGES, LIBRARY_OPTION_KINDS, LIBRARY_PLACEMENTS, LIBRARY_PLATFORMS, LIBRARY_STATUSES,
   type LibraryKind, type LibraryLanguage, type LibraryOptionKind, type LibraryPlacement, type LibraryPlatform,
-  type LibraryStatus,
+  type LibraryStatus, type LibrarySuggestionStatus,
 } from './kinds';
 
 export {
@@ -11,6 +11,7 @@ export {
 };
 export type {
   LibraryKind, LibraryLanguage, LibraryOptionKind, LibraryPlacement, LibraryPlatform, LibraryStatus,
+  LibrarySuggestionStatus,
 };
 
 /**
@@ -327,3 +328,138 @@ export const STATUS_TONE: Record<LibraryStatus, 'secondary' | 'success' | 'warni
   ready: 'success',
   deprecated: 'warning',
 };
+
+/* ------------------------------------------------------------------ *
+ * پیشنهادِ ویرایش (۲.۴۶.۰)
+ * ------------------------------------------------------------------ */
+
+/**
+ * پیشنهاد مالِ کسی است که کتابخانه را دارد ولی **نمی‌تواند** مستقیم ویرایش
+ * کند؛ نویسنده و مدیر خودشان ذخیره می‌کنند.
+ */
+export function canSuggestEdit(actor: Actor, entry: { authorId: number | null }): boolean {
+  return canUseLibrary(actor) && !canEditEntry(actor, entry);
+}
+
+/** فیلدهای متنیِ ساده‌ای که پیشنهاد می‌تواند عوض کند. */
+export const SUGGESTION_TEXT_FIELDS = ['title', 'summary', 'steps', 'warnings', 'dependencies', 'body', 'demoUrl'] as const;
+export type SuggestionTextField = (typeof SUGGESTION_TEXT_FIELDS)[number];
+export type SuggestionPart = SuggestionTextField | 'topics' | 'blocks' | 'options';
+
+/** برچسبِ هر بخش در صفحهٔ تفاوت. */
+export const SUGGESTION_PART_LABELS: Record<SuggestionPart, string> = {
+  title: 'عنوان',
+  summary: 'در یک جمله',
+  steps: 'گام‌ها',
+  warnings: 'هشدارها',
+  dependencies: 'پیش‌نیازها',
+  body: 'توضیحات',
+  demoUrl: 'نمونهٔ زنده',
+  topics: 'برچسب‌ها',
+  blocks: 'کدها',
+  options: 'تنظیمات و گزینه‌ها',
+};
+
+/**
+ * محتوایی که یک پیشنهاد عوض می‌کند.
+ * ⚠️ نوع، وضعیت، پلتفرم، «کارفرما ببیند»، مبدأ، مرتبط‌ها و تصویرها نه —
+ * این‌ها تصمیمِ نویسنده‌اند و پیشنهادِ متن نباید بی‌صدا آن‌ها را عوض کند.
+ */
+export interface SuggestedContent {
+  title: string;
+  summary: string;
+  topics: string[];
+  body: string;
+  steps: string;
+  warnings: string;
+  dependencies: string;
+  demoUrl: string;
+  blocks: CleanBlock[];
+  options: CleanOption[];
+}
+
+export const SUGGESTION_STATUS_LABELS: Record<LibrarySuggestionStatus, string> = {
+  pending: 'منتظرِ بررسی',
+  accepted: 'پذیرفته شد',
+  rejected: 'رد شد',
+  withdrawn: 'پس گرفته شد',
+};
+
+/** سقفِ «چه چیزی را بهتر کردید». */
+export const SUGGESTION_NOTE_LIMIT = 1000;
+
+/** فقط بخشِ محتوایی — از موردِ تمیزشده، عکسِ تاریخچه یا جزئیاتِ صفحه. */
+export function contentOf(e: SuggestedContent): SuggestedContent {
+  return {
+    title: e.title, summary: e.summary, topics: [...e.topics], body: e.body, steps: e.steps,
+    warnings: e.warnings, dependencies: e.dependencies, demoUrl: e.demoUrl,
+    blocks: e.blocks.map(({ label, language, placement, placementNote, code }) => ({ label, language, placement, placementNote, code })),
+    options: e.options.map(({ name, kind, description, defaultValue }) => ({ name, kind, description, defaultValue })),
+  };
+}
+
+/** کدام بخش‌ها فرق دارند — خالی یعنی پیشنهاد چیزی را عوض نمی‌کند. */
+export function changedParts(before: SuggestedContent, after: SuggestedContent): SuggestionPart[] {
+  const a = contentOf(before);
+  const b = contentOf(after);
+  const out: SuggestionPart[] = [];
+  for (const f of SUGGESTION_TEXT_FIELDS) if (a[f] !== b[f]) out.push(f);
+  if (JSON.stringify(a.topics) !== JSON.stringify(b.topics)) out.push('topics');
+  if (JSON.stringify(a.blocks) !== JSON.stringify(b.blocks)) out.push('blocks');
+  if (JSON.stringify(a.options) !== JSON.stringify(b.options)) out.push('options');
+  return out;
+}
+
+export interface DiffLine { op: 'same' | 'add' | 'del'; text: string }
+
+/**
+ * تفاوتِ خط‌به‌خط (LCS) — برای کد و متن‌های چندخطی.
+ *
+ * ⚠️ سرِ مشترک و تهِ مشترک اول جدا می‌شوند تا جدول فقط وسطِ عوض‌شده را
+ * بسازد. اگر وسط هنوز خیلی بزرگ بود، همهٔ قبلی «حذف» و همهٔ بعدی «افزوده»
+ * می‌آید — درست، فقط کمتر دقیق.
+ */
+export function lineDiff(before: string, after: string, maxCells = 4_000_000): DiffLine[] {
+  const a = before === '' ? [] : before.split('\n');
+  const b = after === '' ? [] : after.split('\n');
+  let start = 0;
+  while (start < a.length && start < b.length && a[start] === b[start]) start += 1;
+  let endA = a.length;
+  let endB = b.length;
+  while (endA > start && endB > start && a[endA - 1] === b[endB - 1]) { endA -= 1; endB -= 1; }
+  const same = (text: string): DiffLine => ({ op: 'same', text });
+  const head = a.slice(0, start).map(same);
+  const tail = a.slice(endA).map(same);
+  const midA = a.slice(start, endA);
+  const midB = b.slice(start, endB);
+  const n = midA.length;
+  const m = midB.length;
+  if (n * m > maxCells) {
+    return [
+      ...head,
+      ...midA.map((text): DiffLine => ({ op: 'del', text })),
+      ...midB.map((text): DiffLine => ({ op: 'add', text })),
+      ...tail,
+    ];
+  }
+  const w = m + 1;
+  const len = new Uint32Array((n + 1) * w);
+  for (let i = n - 1; i >= 0; i -= 1) {
+    for (let j = m - 1; j >= 0; j -= 1) {
+      len[i * w + j] = midA[i] === midB[j]
+        ? len[(i + 1) * w + j + 1]! + 1
+        : Math.max(len[(i + 1) * w + j]!, len[i * w + j + 1]!);
+    }
+  }
+  const mid: DiffLine[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < n && j < m) {
+    if (midA[i] === midB[j]) { mid.push(same(midA[i]!)); i += 1; j += 1; }
+    else if (len[(i + 1) * w + j]! >= len[i * w + j + 1]!) { mid.push({ op: 'del', text: midA[i]! }); i += 1; }
+    else { mid.push({ op: 'add', text: midB[j]! }); j += 1; }
+  }
+  while (i < n) mid.push({ op: 'del', text: midA[i++]! });
+  while (j < m) mid.push({ op: 'add', text: midB[j++]! });
+  return [...head, ...mid, ...tail];
+}

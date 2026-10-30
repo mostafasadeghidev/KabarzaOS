@@ -176,6 +176,11 @@ export const ACTION_LABELS: Record<string, string> = {
   'library.install': 'ثبتِ نصبِ کد روی پروژه',
   'library.uninstall': 'برداشتنِ کد از پروژه',
   'library.fork': 'ساختِ نسخهٔ جدای کد برای پروژه',
+  // پیشنهادِ ویرایش (۲.۴۶.۰)
+  'library.suggest': 'پیشنهادِ ویرایش برای موردِ کتابخانه',
+  'library.suggestion_accept': 'پذیرفتنِ پیشنهادِ ویرایشِ کتابخانه',
+  'library.suggestion_reject': 'ردِ پیشنهادِ ویرایشِ کتابخانه',
+  'library.suggestion_withdraw': 'پس‌گرفتنِ پیشنهادِ ویرایشِ کتابخانه',
   'onboarding.start': 'شروع یا همگام‌سازیِ آنبوردینگ',
   'onboarding.sync': 'به‌روزرسانیِ آنبوردینگ از کتابخانه',
   // اتصالِ هوشِ مصنوعی (MCP) — ۲.۷.۰ و ۲.۸.۰

@@ -6,8 +6,9 @@ import { requireActor } from '@/server/auth';
 import { ForbiddenError } from '@/domain/access/guard';
 import type { EntryInput } from '@/domain/library/model';
 import {
-  deleteEntry, deleteLibraryMedia, forkForProject, getRevision, installOnProject, LIBRARY_MESSAGES, LibraryError,
-  removeInstall, restoreRevision, saveEntry, setEntryArchived, updateInstall, type Snapshot,
+  deleteEntry, deleteLibraryMedia, forkForProject, getRevision, getSuggestionDiff, installOnProject, LIBRARY_MESSAGES,
+  LibraryError, removeInstall, restoreRevision, reviewSuggestion, saveEntry, setEntryArchived, suggestEdit,
+  updateInstall, withdrawSuggestion, type Snapshot, type SuggestionDiff,
 } from '@/server/library/service';
 import { mediaError, mediaFrom } from '../../projects/_form/media-form';
 
@@ -172,4 +173,51 @@ export async function revisionAction(entryId: number, revisionId: number): Promi
   } catch (error) {
     return { error: explain(error, 'پیدا نشد.') };
   }
+}
+
+/* ---------- پیشنهادِ ویرایش (۲.۴۶.۰) ---------- */
+
+export async function suggestEditAction(_prev: LibraryState, formData: FormData): Promise<LibraryState> {
+  const input = parsePayload(formData.get('payload'));
+  const id = Number(formData.get('id'));
+  if (!input || !Number.isInteger(id) || id <= 0) return { error: 'فرم خوانده نشد؛ دوباره امتحان کنید.' };
+  try {
+    await suggestEdit(await requireActor(), id, input, String(formData.get('note') ?? ''));
+  } catch (error) {
+    return { error: explain(error, 'فرستاده نشد.') };
+  }
+  refresh(id);
+  redirect(`/library/${id}?suggested=1`);
+}
+
+export async function suggestionDiffAction(suggestionId: number): Promise<{ diff?: SuggestionDiff; error?: string }> {
+  try {
+    return { diff: await getSuggestionDiff(await requireActor(), suggestionId) };
+  } catch (error) {
+    return { error: explain(error, 'پیدا نشد.') };
+  }
+}
+
+export async function reviewSuggestionAction(
+  suggestionId: number, decision: 'accept' | 'reject', note: string,
+): Promise<LibraryState> {
+  let entryId: number;
+  try {
+    entryId = await reviewSuggestion(await requireActor(), suggestionId, decision, note);
+  } catch (error) {
+    return { error: explain(error, 'انجام نشد.') };
+  }
+  refresh(entryId);
+  return { message: decision === 'accept' ? 'پیشنهاد پذیرفته و اعمال شد.' : 'پیشنهاد رد شد.' };
+}
+
+export async function withdrawSuggestionAction(suggestionId: number): Promise<LibraryState> {
+  let entryId: number;
+  try {
+    entryId = await withdrawSuggestion(await requireActor(), suggestionId);
+  } catch (error) {
+    return { error: explain(error, 'انجام نشد.') };
+  }
+  refresh(entryId);
+  return { message: 'پیشنهاد پس گرفته شد.' };
 }

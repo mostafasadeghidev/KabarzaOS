@@ -75,7 +75,7 @@ export function structuredBody(type: string, body: string): BodyRow[] | null {
 export type NotificationTone = 'good' | 'bad' | null;
 
 export function toneOf(type: string): NotificationTone {
-  if (type === 'payment.approved' || type === 'payment.paid') return 'good';
-  if (type === 'payment.rejected') return 'bad';
+  if (type === 'payment.approved' || type === 'payment.paid' || type === 'library.suggestion_accepted') return 'good';
+  if (type === 'payment.rejected' || type === 'library.suggestion_rejected') return 'bad';
   return null;
 }
