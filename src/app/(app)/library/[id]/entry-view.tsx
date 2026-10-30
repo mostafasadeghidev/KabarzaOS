@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Archive, ArchiveRestore, Copy, FolderKanban, GitFork, History, Info, Link2, MoreHorizontal, Pencil, Plus,
-  RotateCcw, Trash2,
+  AlertTriangle, Archive, ArchiveRestore, Check, Copy, FolderKanban, GitFork, GitPullRequestArrow, History, Info,
+  Link2, MoreHorizontal, Pencil, Plus, RotateCcw, Trash2, Undo2, X,
 } from 'lucide-react';
 import { PageHeader, Panel } from '@/components/page-shell';
 import { dropPrevious } from '@/components/nav-history';
@@ -27,12 +27,18 @@ import { useConfirm } from '@/components/ui/confirm';
 import { useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDate, formatDateTime } from '@/i18n/datetime';
-import { KIND_LABELS } from '@/domain/library/model';
-import type { EntryDetail, InstallView, ProjectOption, Snapshot } from '@/server/library/service';
+import { Badge } from '@/components/ui/badge';
+import { UserAvatar } from '@/components/user-avatar';
+import { KIND_LABELS, SUGGESTION_PART_LABELS, SUGGESTION_STATUS_LABELS } from '@/domain/library/model';
+import type {
+  EntryDetail, InstallView, ProjectOption, Snapshot, SuggestionDiff, SuggestionView,
+} from '@/server/library/service';
 import {
   deleteEntryAction, deleteMediaAction, forkAction, installAction, removeInstallAction, restoreRevisionAction,
-  revisionAction, setArchivedAction, updateInstallAction,
+  reviewSuggestionAction, revisionAction, setArchivedAction, suggestionDiffAction, updateInstallAction,
+  withdrawSuggestionAction,
 } from '../_form/actions';
+import { SuggestionDiffView } from '../suggestion-diff';
 import { EntryContent } from '../entry-content';
 import { KindBadge, KindIcon, PlatformBadge, StatusBadge, TopicChips } from '../entry-bits';
 
@@ -40,10 +46,16 @@ export function EntryView({
   entry,
   projects,
   justSaved,
+  justSuggested = false,
+  openSuggestion = null,
 }: {
   entry: EntryDetail;
   projects: ProjectOption[];
   justSaved: boolean;
+  /** پس از «فرستادنِ پیشنهاد». */
+  justSuggested?: boolean;
+  /** از اعلان آمده — همان پیشنهاد باز می‌شود. */
+  openSuggestion?: number | null;
 }) {
   const tr = useT();
   const tz = useTimeZone();
@@ -64,6 +76,18 @@ export function EntryView({
     router.replace(`/library/${entry.id}`, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [justSaved]);
+
+  useEffect(() => {
+    if (!justSuggested || announced.current) return;
+    announced.current = true;
+    show(tr('پیشنهاد برای نویسنده فرستاده شد.'));
+    setTimeout(() => dropPrevious((path) => /^\/library\/\d+\/suggest$/.test(path)), 0);
+    router.replace(`/library/${entry.id}`, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [justSuggested]);
+
+  const pendingSuggestions = entry.suggestions.filter((s) => s.status === 'pending');
+  const myPending = pendingSuggestions.some((s) => s.canWithdraw);
 
   const archive = (archived: boolean) => startTransition(async () => {
     const r = await setArchivedAction(entry.id, archived);
@@ -91,7 +115,16 @@ export function EntryView({
         title={entry.title}
         media={<KindIcon kind={entry.kind} className="size-11" />}
         description={entry.summary || undefined}
-        actions={entry.canEdit ? (
+        actions={entry.canSuggest ? (
+          entry.archived ? undefined : (
+            <Button asChild variant={myPending ? 'outline' : 'default'}>
+              <Link href={`/library/${entry.id}/suggest`}>
+                <GitPullRequestArrow />
+                {myPending ? tr('ویرایشِ پیشنهادِ من') : tr('پیشنهادِ ویرایش')}
+              </Link>
+            </Button>
+          )
+        ) : entry.canEdit ? (
           <>
             <Button asChild>
               <Link href={`/library/${entry.id}/edit`}><Pencil />{tr('ویرایش')}</Link>
@@ -129,6 +162,16 @@ export function EntryView({
         <TopicChips topics={entry.topics} />
       </PageHeader>
 
+      {entry.canEdit && pendingSuggestions.length > 0 && (
+        <Alert>
+          <GitPullRequestArrow />
+          <AlertDescription>
+            {pendingSuggestions.length === 1
+              ? tr('یک پیشنهادِ ویرایش منتظرِ بررسیِ شماست — در بخشِ «پیشنهادها» بازش کنید.')
+              : tr('{n} پیشنهادِ ویرایش منتظرِ بررسیِ شماست — در بخشِ «پیشنهادها» بازشان کنید.', { n: pendingSuggestions.length })}
+          </AlertDescription>
+        </Alert>
+      )}
       {entry.archived && (
         <Alert>
           <Archive />
@@ -208,6 +251,7 @@ export function EntryView({
             </Panel>
           )}
 
+          {entry.suggestions.length > 0 && <SuggestionsPanel entry={entry} openId={openSuggestion} />}
           {entry.revisions.length > 0 && <HistoryPanel entry={entry} />}
         </aside>
       </div>
@@ -471,5 +515,176 @@ function HistoryPanel({ entry }: { entry: EntryDetail }) {
         </Dialog>
       )}
     </Panel>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * پیشنهادهای ویرایش (۲.۴۶.۰)
+ * ------------------------------------------------------------------ */
+
+const SUGGESTION_TONE: Record<SuggestionView['status'], 'warning' | 'success' | 'destructive' | 'secondary'> = {
+  pending: 'warning',
+  accepted: 'success',
+  rejected: 'destructive',
+  withdrawn: 'secondary',
+};
+
+function SuggestionsPanel({ entry, openId }: { entry: EntryDetail; openId: number | null }) {
+  const tr = useT();
+  const tz = useTimeZone();
+  const { show } = useToast();
+  const [viewing, setViewing] = useState<SuggestionDiff | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const open = (id: number) => startTransition(async () => {
+    const r = await suggestionDiffAction(id);
+    if (r.diff) setViewing(r.diff);
+    else show(tr(r.error ?? 'پیدا نشد.'), 'error');
+  });
+
+  // از اعلان آمده — همان یکی را باز کن. ⚠️ ref: اثرِ دوباره در حالتِ توسعه.
+  const opened = useRef(false);
+  useEffect(() => {
+    if (!openId || opened.current) return;
+    opened.current = true;
+    if (entry.suggestions.some((s) => s.id === openId)) open(openId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openId]);
+
+  return (
+    <Panel
+      title={tr('پیشنهادها')}
+      icon={<GitPullRequestArrow />}
+      description={tr('تغییرهایی که همکاران برای این مورد فرستاده‌اند.')}
+    >
+      <ul className="grid gap-1">
+        {entry.suggestions.map((s) => (
+          <li key={s.id}>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => open(s.id)}
+              className="grid w-full gap-1 rounded-md px-2 py-1.5 text-start hover:bg-muted"
+            >
+              <span className="flex items-center justify-between gap-2">
+                <span className="flex min-w-0 items-center gap-1.5 text-sm">
+                  {s.authorId && <UserAvatar userId={s.authorId} name={s.authorName ?? ''} size="xs" presence={false} />}
+                  <span className="truncate font-medium">{s.authorName ?? tr('نامشخص')}</span>
+                </span>
+                <Badge variant={SUGGESTION_TONE[s.status]} className="shrink-0">{tr(SUGGESTION_STATUS_LABELS[s.status])}</Badge>
+              </span>
+              {s.note && <span className="line-clamp-2 text-xs text-muted-foreground" dir="auto">{s.note}</span>}
+              <span className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                <span className="num">{formatDate(s.updatedAt, tz)}</span>
+                {s.parts.length > 0 && <span>· {s.parts.map((p) => tr(SUGGESTION_PART_LABELS[p])).join('، ')}</span>}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {viewing && <SuggestionDialog entryId={entry.id} diff={viewing} onClose={() => setViewing(null)} />}
+    </Panel>
+  );
+}
+
+function SuggestionDialog({ entryId, diff, onClose }: { entryId: number; diff: SuggestionDiff; onClose: () => void }) {
+  const tr = useT();
+  const tz = useTimeZone();
+  const { show } = useToast();
+  const confirm = useConfirm();
+  const [reply, setReply] = useState('');
+  const [pending, startTransition] = useTransition();
+  const s = diff.suggestion;
+
+  const decide = (decision: 'accept' | 'reject') => startTransition(async () => {
+    const r = await reviewSuggestionAction(s.id, decision, reply);
+    show(tr(r.error ?? r.message ?? 'انجام شد.'), r.error ? 'error' : 'success');
+    if (!r.error) onClose();
+  });
+
+  const accept = async () => {
+    const ok = await confirm({
+      title: tr('این پیشنهاد اعمال شود؟'),
+      description: tr('نسخهٔ فعلی در تاریخچه می‌ماند و می‌شود به آن برگشت. تغییر به همهٔ پروژه‌هایی که این مورد رویشان نصب است می‌رسد.'),
+      confirmLabel: tr('پذیرفتن و اعمال'),
+    });
+    if (ok) decide('accept');
+  };
+
+  const withdraw = () => startTransition(async () => {
+    const r = await withdrawSuggestionAction(s.id);
+    show(tr(r.error ?? r.message ?? 'انجام شد.'), r.error ? 'error' : 'success');
+    if (!r.error) onClose();
+  });
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex flex-wrap items-center gap-2">
+            {tr('پیشنهادِ {name}', { name: s.authorName ?? tr('نامشخص') })}
+            <Badge variant={SUGGESTION_TONE[s.status]}>{tr(SUGGESTION_STATUS_LABELS[s.status])}</Badge>
+          </DialogTitle>
+          <DialogDescription className="num">{formatDateTime(s.updatedAt, tz)}</DialogDescription>
+        </DialogHeader>
+        <div className="grid max-h-[62vh] gap-4 overflow-y-auto">
+          {s.note && <p className="whitespace-pre-wrap rounded-lg bg-muted/60 p-3 text-sm" dir="auto">{s.note}</p>}
+          {s.stale && (
+            <Alert variant="warning">
+              <AlertTriangle />
+              <AlertDescription>
+                {tr('این مورد بعد از فرستادنِ پیشنهاد ویرایش شده است. تفاوتِ زیر با نسخهٔ فعلی است؛ اگر تغییری از قلم افتاده، با پذیرفتن برمی‌گردد.')}
+              </AlertDescription>
+            </Alert>
+          )}
+          {s.status === 'pending' ? (
+            <SuggestionDiffView before={diff.before} after={diff.after} />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {s.reviewedByName
+                ? tr('{status} · {name} · {date}', {
+                  status: tr(SUGGESTION_STATUS_LABELS[s.status]),
+                  name: s.reviewedByName,
+                  date: s.reviewedAt ? formatDateTime(s.reviewedAt, tz) : '',
+                })
+                : tr(SUGGESTION_STATUS_LABELS[s.status])}
+            </p>
+          )}
+          {s.reviewNote && (
+            <p className="whitespace-pre-wrap border-s-2 ps-3 text-sm" dir="auto">{s.reviewNote}</p>
+          )}
+          {s.canReview && (
+            <div className="grid gap-1.5">
+              <Label htmlFor="suggestion-reply">{tr('پیام به پیشنهاددهنده (اختیاری)')}</Label>
+              <Textarea
+                id="suggestion-reply"
+                rows={2}
+                value={reply}
+                onChange={(e) => setReply(e.target.value)}
+                dir="auto"
+                placeholder={tr('مثلاً: ممنون! / این حالت روی Safari جواب نمی‌دهد چون…')}
+              />
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{tr('بستن')}</Button>
+          {s.canWithdraw && (
+            <>
+              <Button variant="outline" onClick={withdraw} disabled={pending}><Undo2 />{tr('پس گرفتن')}</Button>
+              <Button asChild variant="outline">
+                <Link href={`/library/${entryId}/suggest`}><Pencil />{tr('ویرایشِ پیشنهاد')}</Link>
+              </Button>
+            </>
+          )}
+          {s.canReview && (
+            <>
+              <Button variant="outline" onClick={() => decide('reject')} disabled={pending}><X />{tr('رد')}</Button>
+              <Button onClick={accept} disabled={pending}>{pending ? <Spinner /> : <Check />}{tr('پذیرفتن و اعمال')}</Button>
+            </>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

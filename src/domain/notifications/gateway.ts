@@ -34,6 +34,10 @@ const CATEGORY_OF: Record<string, NotifyCategory> = {
   'onboarding.started': 'tasks',
   'onboarding.assigned': 'tasks',
   'onboarding.overdue': 'tasks',
+  // پیشنهادِ ویرایش در کتابخانهٔ کد (۲.۴۶.۰) — بررسیِ کارِ همکار، همان دستهٔ «تسک».
+  'library.suggestion': 'tasks',
+  'library.suggestion_accepted': 'tasks',
+  'library.suggestion_rejected': 'tasks',
 
   // پروژه
   'project.signed': 'projects',

@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowDown, ArrowUp, BookOpenText, Code2, FileText, ImagePlus, Lightbulb, Link2, ListChecks, Plus,
-  SlidersHorizontal, Trash2,
+  ArrowDown, ArrowUp, BookOpenText, Code2, FileText, GitPullRequestArrow, ImagePlus, Lightbulb, Link2, ListChecks,
+  Plus, SlidersHorizontal, Trash2,
 } from 'lucide-react';
 import { Panel } from '@/components/page-shell';
 import { Button } from '@/components/ui/button';
@@ -25,11 +25,11 @@ import { cn } from '@/lib/utils';
 import {
   defaultPlacement, KIND_HINTS, KIND_LABELS, LANGUAGE_LABELS, LIBRARY_KINDS, LIBRARY_LANGUAGES,
   LIBRARY_OPTION_KINDS, LIBRARY_PLACEMENTS, LIBRARY_PLATFORMS, LIBRARY_STATUSES, OPTION_KIND_LABELS,
-  PLACEMENT_HINTS, PLACEMENT_LABELS, PLATFORM_LABELS, STATUS_LABELS,
+  PLACEMENT_HINTS, PLACEMENT_LABELS, PLATFORM_LABELS, STATUS_LABELS, SUGGESTION_NOTE_LIMIT,
   type LibraryKind, type LibraryLanguage, type LibraryOptionKind, type LibraryPlacement,
 } from '@/domain/library/model';
 import type { EntryDetail, EntryLink, LibraryMedia, ProjectOption } from '@/server/library/service';
-import { deleteMediaAction, saveEntryAction, type LibraryState } from './_form/actions';
+import { deleteMediaAction, saveEntryAction, suggestEditAction, type LibraryState } from './_form/actions';
 
 interface BlockDraft {
   key: number;
@@ -64,6 +64,9 @@ const emptyBlock = (language: LibraryLanguage = 'js'): BlockDraft => ({
  * چه چیزی آنجا به کارِ کسی می‌آید که شش ماه بعد این کد را نصب می‌کند.
  * ⚠️ داده با یک JSON ِ پنهان می‌رود (تکه‌کد و گزینه آرایه‌اند)؛ تصویرها
  * با همان ورودیِ رسانهٔ بقیهٔ اپ (`MediaPicker`، نامِ `media`).
+ * ⚠️ حالتِ «پیشنهاد» (۲.۴۶.۰): همان فرم برای کسی که نویسنده نیست — فقط
+ * محتوا؛ نوع، وضعیت، پلتفرم، مبدأ، «کارفرما ببیند»، تصویر و مرتبط‌ها پنهان‌اند
+ * چون پیشنهاد آن‌ها را عوض نمی‌کند (`SuggestedContent`).
  */
 export function EntryForm({
   entry,
@@ -72,6 +75,8 @@ export function EntryForm({
   topics,
   defaultProjectId = null,
   defaultKind = 'code',
+  mode = 'edit',
+  initialNote = '',
 }: {
   entry: EntryDetail | null;
   projects: ProjectOption[];
@@ -80,10 +85,18 @@ export function EntryForm({
   /** از تبِ پروژه آمده — پروژهٔ مبدأ و نصبِ خودکار. */
   defaultProjectId?: number | null;
   defaultKind?: LibraryKind;
+  /** «پیشنهادِ ویرایش» برای موردِ همکار — ذخیره نمی‌شود، برای نویسنده فرستاده می‌شود. */
+  mode?: 'edit' | 'suggest';
+  /** پیشنهادِ بازِ قبلیِ خودِ کاربر. */
+  initialNote?: string;
 }) {
   const tr = useT();
   const { show } = useToast();
-  const [state, formAction, pending] = useActionState<LibraryState, FormData>(saveEntryAction, {});
+  const suggest = mode === 'suggest';
+  const [state, formAction, pending] = useActionState<LibraryState, FormData>(
+    suggest ? suggestEditAction : saveEntryAction, {},
+  );
+  const [note, setNote] = useState(initialNote);
 
   const [kind, setKind] = useState<LibraryKind>(entry?.kind ?? defaultKind);
   const [title, setTitle] = useState(entry?.title ?? '');
@@ -155,8 +168,31 @@ export function EntryForm({
       <input type="hidden" name="payload" value={payload} />
       {entry && <input type="hidden" name="id" value={entry.id} />}
 
+      {suggest && (
+        <Panel
+          title={tr('پیشنهادِ شما')}
+          icon={<GitPullRequestArrow />}
+          description={tr('تغییرها مستقیم ذخیره نمی‌شوند: نویسنده تفاوت را می‌بیند و می‌پذیرد یا رد می‌کند.')}
+        >
+          <Field>
+            <FieldLabel htmlFor="lib-suggest-note">{tr('چه چیزی را بهتر کردید و چرا؟')}</FieldLabel>
+            <Textarea
+              id="lib-suggest-note"
+              name="note"
+              rows={3}
+              required
+              maxLength={SUGGESTION_NOTE_LIMIT}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              dir="auto"
+              placeholder={tr('مثلاً: روی موبایل گرید به‌هم می‌ریخت؛ breakpoint اضافه کردم.')}
+            />
+          </Field>
+        </Panel>
+      )}
+
       {/* ---------- نوع ---------- */}
-      <Panel title={tr('این چیست؟')} description={tr('نوع تعیین می‌کند کدام بخش‌ها مهم‌اند و چه کسی آن را می‌بیند.')}>
+      {!suggest && <Panel title={tr('این چیست؟')} description={tr('نوع تعیین می‌کند کدام بخش‌ها مهم‌اند و چه کسی آن را می‌بیند.')}>
         <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
           {LIBRARY_KINDS.map((k) => {
             const Icon = KIND_ICON[k];
@@ -185,7 +221,7 @@ export function EntryForm({
             );
           })}
         </div>
-      </Panel>
+      </Panel>}
 
       {/* ---------- مشخصات ---------- */}
       <Panel title={tr('مشخصات')} icon={<FileText />}>
@@ -212,7 +248,7 @@ export function EntryForm({
             placeholder={tr('همین جمله روی کارت و بالای صفحه دیده می‌شود.')}
           />
         </Field>
-        <div className="grid gap-3 sm:grid-cols-3">
+        {!suggest && <div className="grid gap-3 sm:grid-cols-3">
           <Field>
             <FieldLabel htmlFor="lib-platform">{tr('پلتفرم')}</FieldLabel>
             <NativeSelect id="lib-platform" value={platform} onChange={(e) => setPlatform(e.target.value)} containerClassName="w-full">
@@ -234,7 +270,7 @@ export function EntryForm({
               ))}
             </SearchableSelect>
           </Field>
-        </div>
+        </div>}
         {!entry && origin && (
           <p className="text-xs text-muted-foreground">{tr('پس از ذخیره، روی همین پروژه «نصب‌شده» ثبت می‌شود.')}</p>
         )}
@@ -273,7 +309,7 @@ export function EntryForm({
             </datalist>
           </div>
         </Field>
-        {kind === 'guide' && (
+        {kind === 'guide' && !suggest && (
           <label className="flex items-start gap-3 rounded-lg bg-muted/60 p-3">
             <Switch checked={clientVisible} onCheckedChange={setClientVisible} className="mt-0.5" />
             <span className="grid gap-0.5">
@@ -437,22 +473,30 @@ export function EntryForm({
       </Panel>
 
       {/* ---------- توضیحات و تصویر ---------- */}
-      <Panel title={tr('توضیحات، ویدیو و تصویر')} icon={<ImagePlus />}>
-        <MediaPicker>
+      <Panel title={suggest ? tr('توضیحات') : tr('توضیحات، ویدیو و تصویر')} icon={<ImagePlus />}>
+        {suggest ? (
+          // ⚠️ پیشنهاد تصویر نمی‌برد — فایل صاحب دارد و پیشنهادِ ردشده نباید فایلِ یتیم بسازد.
           <Field>
             <FieldLabel htmlFor="lib-body">{tr('توضیحات')}</FieldLabel>
-            <Textarea
-              id="lib-body"
-              rows={6}
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              dir="auto"
-              placeholder={tr('چرا این‌طور نوشته شد، محدودیت‌ها، راهِ دیگر… پیوندِ Loom یا YouTube همین‌جا پخش می‌شود.')}
-            />
-            <FieldDescription>{tr('تصویر را بکشید و رها کنید یا Ctrl+V بزنید.')}</FieldDescription>
+            <Textarea id="lib-body" rows={6} value={body} onChange={(e) => setBody(e.target.value)} dir="auto" />
           </Field>
-        </MediaPicker>
-        {media.length > 0 && (
+        ) : (
+          <MediaPicker>
+            <Field>
+              <FieldLabel htmlFor="lib-body">{tr('توضیحات')}</FieldLabel>
+              <Textarea
+                id="lib-body"
+                rows={6}
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                dir="auto"
+                placeholder={tr('چرا این‌طور نوشته شد، محدودیت‌ها، راهِ دیگر… پیوندِ Loom یا YouTube همین‌جا پخش می‌شود.')}
+              />
+              <FieldDescription>{tr('تصویر را بکشید و رها کنید یا Ctrl+V بزنید.')}</FieldDescription>
+            </Field>
+          </MediaPicker>
+        )}
+        {!suggest && media.length > 0 && (
           <MediaGallery
             items={media}
             projectId={0}
@@ -471,7 +515,7 @@ export function EntryForm({
       </Panel>
 
       {/* ---------- مرتبط ---------- */}
-      {entries.filter((e) => e.id !== entry?.id).length > 0 && (
+      {!suggest && entries.filter((e) => e.id !== entry?.id).length > 0 && (
         <Panel
           title={tr('موردهای مرتبط')}
           icon={<Link2 />}
@@ -493,7 +537,8 @@ export function EntryForm({
         </Button>
         <Button type="submit" disabled={pending}>
           {pending && <Spinner />}
-          {entry ? tr('ذخیرهٔ تغییرها') : tr('ثبت در کتابخانه')}
+          {suggest ? <GitPullRequestArrow /> : null}
+          {suggest ? tr('فرستادنِ پیشنهاد') : entry ? tr('ذخیرهٔ تغییرها') : tr('ثبت در کتابخانه')}
         </Button>
       </div>
     </form>

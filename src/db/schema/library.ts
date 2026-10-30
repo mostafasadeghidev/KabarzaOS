@@ -5,6 +5,7 @@ import { users } from './access';
 import { projects } from './projects';
 import type {
   LibraryKind, LibraryLanguage, LibraryOptionKind, LibraryPlacement, LibraryPlatform, LibraryStatus,
+  LibrarySuggestionStatus,
 } from '../../domain/library/kinds';
 
 export * from '../../domain/library/kinds';
@@ -131,3 +132,31 @@ export const libraryRevisions = pgTable('library_revisions', {
   snapshot: jsonb('snapshot').notNull(),
   createdAt: stamps.createdAt,
 }, (t) => [index('library_revisions_entry_ix').on(t.entryId, t.createdAt)]);
+
+/**
+ * پیشنهادِ ویرایش (۲.۴۶.۰) — عضوی که نویسنده نیست، تغییرش را اینجا می‌فرستد.
+ *
+ * ⚠️ `proposed` فقط **محتوا** را دارد (`SuggestedContent`): عنوان، متن‌ها،
+ * برچسب‌ها، تکه‌کدها و گزینه‌ها. نوع، وضعیت، «کارفرما ببیند»، پروژهٔ مبدأ،
+ * مرتبط‌ها و تصویرها تصمیمِ نویسنده‌اند و با پیشنهاد عوض نمی‌شوند.
+ * ⚠️ `base_updated_at` = زمانِ آخرین ویرایشِ مورد هنگامِ فرستادن — اگر مورد
+ * بعداً عوض شد، بررسی‌کننده هشدار می‌بیند؛ تفاوت همیشه با نسخهٔ **فعلی** است.
+ */
+export const librarySuggestions = pgTable('library_suggestions', {
+  id: pk(),
+  entryId: fk('entry_id').notNull().references(() => libraryEntries.id, { onDelete: 'cascade' }),
+  authorId: fk('author_id').references(() => users.id, { onDelete: 'set null' }),
+  /** «چه چیزی را بهتر کردید و چرا». */
+  note: text('note').notNull().default(''),
+  proposed: jsonb('proposed').notNull(),
+  baseUpdatedAt: ts('base_updated_at').notNull(),
+  status: text('status').notNull().default('pending').$type<LibrarySuggestionStatus>(),
+  reviewedBy: fk('reviewed_by').references(() => users.id, { onDelete: 'set null' }),
+  reviewedAt: ts('reviewed_at'),
+  reviewNote: text('review_note').notNull().default(''),
+  ...stamps,
+}, (t) => [
+  check('library_suggestions_status_ck', sql`${t.status} in ('pending','accepted','rejected','withdrawn')`),
+  index('library_suggestions_entry_ix').on(t.entryId, t.createdAt),
+  uniqueIndex('library_suggestions_open_uq').on(t.entryId, t.authorId).where(sql`status = 'pending'`),
+]);

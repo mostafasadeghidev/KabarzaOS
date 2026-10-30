@@ -26,3 +26,7 @@ export type LibraryPlacement = (typeof LIBRARY_PLACEMENTS)[number];
 /** گونهٔ یک «گزینهٔ قابلِ تنظیم» — چیزی که نصب‌کننده یا کارفرما عوضش می‌کند. */
 export const LIBRARY_OPTION_KINDS = ['attribute', 'class', 'id', 'variable', 'setting'] as const;
 export type LibraryOptionKind = (typeof LIBRARY_OPTION_KINDS)[number];
+
+/** پیشنهادِ ویرایش (۲.۴۶.۰): باز، پذیرفته، رد، پس‌گرفته. */
+export const LIBRARY_SUGGESTION_STATUSES = ['pending', 'accepted', 'rejected', 'withdrawn'] as const;
+export type LibrarySuggestionStatus = (typeof LIBRARY_SUGGESTION_STATUSES)[number];

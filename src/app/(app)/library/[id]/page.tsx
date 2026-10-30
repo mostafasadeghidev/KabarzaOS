@@ -15,7 +15,7 @@ export default async function LibraryEntryPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; suggested?: string; suggestion?: string }>;
 }) {
   await primeTranslations();
   const actor = await currentActor();
@@ -39,10 +39,18 @@ export default async function LibraryEntryPage({
     throw error;
   }
   const projects = await projectOptions(actor);
+  const sp = await searchParams;
+  const openSuggestion = Number(sp.suggestion);
 
   return (
     <PageShell>
-      <EntryView entry={entry} projects={projects} justSaved={(await searchParams).saved === '1'} />
+      <EntryView
+        entry={entry}
+        projects={projects}
+        justSaved={sp.saved === '1'}
+        justSuggested={sp.suggested === '1'}
+        openSuggestion={Number.isInteger(openSuggestion) && openSuggestion > 0 ? openSuggestion : null}
+      />
     </PageShell>
   );
 }

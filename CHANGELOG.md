@@ -2,6 +2,15 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.46.0]
+
+### Added
+
+- **Suggest an edit in the code library.** A team member who is not the author of an item could only make a separate copy for one project, so a fix to a colleague's code never reached the original. Now "Suggest an edit" opens the same form with the item's current content and a required "What did you improve, and why?" field. Only the content can be suggested: title, summary, steps, warnings, prerequisites, description, demo link, tags, code snippets and options. Kind, status, platform, origin project, "client can see", related items and images stay the author's decision.
+- **The author reviews the change before it applies.** The author is notified (or the owners, if the item has no author any more). The item page lists suggestions with their status, and the review dialog shows only what changed: a line-by-line diff for code and multi-line text, and before/after for short fields, tags and options. "Accept and apply" saves it like a normal edit: the current version goes into the history and can be restored, and the suggester is shown as the last editor. "Reject" changes nothing. Either way the suggester is notified, with an optional message. Global project managers can review too.
+- One open suggestion per person per item: sending again updates it, and "Edit my suggestion" opens the form with it filled in. The suggester can withdraw it. If the author edits the item after the suggestion was sent, the dialog warns that the diff is against the current version.
+- Library cards show how many suggestions are waiting, and a "Suggestions waiting for me" filter appears when there are some to review.
+
 ## [2.45.0]
 
 ### Added

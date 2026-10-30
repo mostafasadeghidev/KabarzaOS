@@ -2,19 +2,23 @@ import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, or, sql, type SQL }
 import { db } from '@/db/client';
 import {
   attachments, auditLog, files, libraryBlocks, libraryEntries, libraryOptions, libraryProjects, libraryRelations,
-  libraryRevisions, projectClients, projects, users,
+  libraryRevisions, librarySuggestions, projectClients, projects, users,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { visibleScopes } from '@/domain/access/guard';
 import {
-  canDeleteEntry, canEditEntry, canUseLibrary, cleanEntry, ENTRY_ERRORS, isKind, isPlatform,
+  canDeleteEntry, canEditEntry, canSuggestEdit, canUseLibrary, changedParts, cleanEntry, contentOf, ENTRY_ERRORS,
+  isKind, isPlatform, SUGGESTION_NOTE_LIMIT,
   type CleanBlock, type CleanEntry, type CleanOption, type EntryError, type EntryInput, type LibraryKind,
   type LibraryLanguage, type LibraryOptionKind, type LibraryPlacement, type LibraryPlatform, type LibraryStatus,
+  type LibrarySuggestionStatus, type SuggestedContent, type SuggestionPart,
 } from '@/domain/library/model';
 import {
   canInteractWithProject, canViewProject, managedOfficeProjectIds, membershipProjectIds,
 } from '@/server/projects/authority';
 import { discardUploads, removeFiles, storeUploads, type UploadBlob } from '@/server/files/service';
+import { notify } from '@/server/notifications/service';
+import { ownerIds } from '@/server/notifications/audience';
 
 /**
  * کتابخانهٔ کد و راهنما (۲.۳۷.۰) — تنها دروازهٔ UI، اکشن‌ها و ابزارها.
@@ -24,10 +28,13 @@ import { discardUploads, removeFiles, storeUploads, type UploadBlob } from '@/se
  *  · ویرایش: نویسنده یا مدیرِ سراسریِ پروژه‌ها — `canEditEntry`؛
  *  · نصب روی پروژه: هر کسی که روی **همان پروژه** کار می‌کند — `canInteractWithProject`؛
  *  · کارفرما: فقط راهنمای «کارفرما ببیند» ِ پروژهٔ خودش، فقط‌خواندنی.
+ *  · پیشنهادِ ویرایش (۲.۴۶.۰): بقیهٔ تیم — `canSuggestEdit`؛ پذیرفتن با ویرایشگر.
  */
 
 export class LibraryError extends Error {
-  constructor(readonly code: 'not_found' | 'forbidden' | 'installed' | 'bad_project' | 'archived' | EntryError) {
+  constructor(readonly code:
+    | 'not_found' | 'forbidden' | 'installed' | 'bad_project' | 'archived'
+    | 'can_edit' | 'note_required' | 'no_change' | 'decided' | EntryError) {
     super(`library: ${code}`);
     this.name = 'LibraryError';
   }
@@ -40,6 +47,10 @@ export const LIBRARY_MESSAGES: Record<LibraryError['code'], string> = {
   installed: 'این مورد روی پروژه‌هایی نصب است؛ به‌جای حذف، بایگانی‌اش کنید.',
   bad_project: 'به این پروژه دسترسی ندارید.',
   archived: 'این مورد بایگانی شده است؛ اول از بایگانی درش بیاورید.',
+  can_edit: 'این مورد را خودتان می‌توانید مستقیم ویرایش کنید.',
+  note_required: 'بنویسید چه چیزی را بهتر کردید.',
+  no_change: 'چیزی عوض نشده است.',
+  decided: 'این پیشنهاد پیش از این بررسی شده است.',
 };
 
 function assertUse(actor: Actor): void {
@@ -72,6 +83,8 @@ export interface EntryCard {
   languages: LibraryLanguage[];
   clientVisible: boolean;
   archived: boolean;
+  /** پیشنهادهای ویرایشِ منتظرِ بررسی (۲.۴۶.۰). */
+  pendingSuggestions: number;
 }
 
 export interface BlockView {
@@ -118,6 +131,25 @@ export interface EntryLink { id: number; title: string; kind: LibraryKind; archi
 
 export interface RevisionView { id: number; authorName: string | null; createdAt: Date }
 
+export interface SuggestionView {
+  id: number;
+  authorId: number | null;
+  authorName: string | null;
+  note: string;
+  status: LibrarySuggestionStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  reviewedByName: string | null;
+  reviewedAt: Date | null;
+  reviewNote: string;
+  /** بخش‌هایی که با نسخهٔ **فعلی** فرق دارند — فقط برای پیشنهادِ باز. */
+  parts: SuggestionPart[];
+  /** مورد پس از فرستادنِ پیشنهاد ویرایش شده است. */
+  stale: boolean;
+  canReview: boolean;
+  canWithdraw: boolean;
+}
+
 export interface EntryDetail extends EntryCard {
   body: string;
   steps: string;
@@ -138,7 +170,11 @@ export interface EntryDetail extends EntryCard {
   forks: EntryLink[];
   media: LibraryMedia[];
   revisions: RevisionView[];
+  /** پیشنهادهای باز اول، بعد سی‌تای آخرِ بررسی‌شده. */
+  suggestions: SuggestionView[];
   canEdit: boolean;
+  /** بیننده نویسنده نیست ولی می‌تواند تغییر پیشنهاد دهد. */
+  canSuggest: boolean;
   canDelete: boolean;
 }
 
@@ -158,6 +194,8 @@ export interface LibraryFilter {
   projectId?: number;
   mine?: boolean;
   archived?: boolean;
+  /** فقط موردهایی که پیشنهادِ بازی دارند و بیننده بررسی‌شان می‌کند. */
+  review?: boolean;
 }
 
 /* ------------------------------------------------------------------ *
@@ -165,6 +203,7 @@ export interface LibraryFilter {
  * ------------------------------------------------------------------ */
 
 const installsCount = sql<number>`(select count(*)::int from library_projects lp where lp.entry_id = ${libraryEntries.id})`;
+const pendingCount = sql<number>`(select count(*)::int from library_suggestions ls where ls.entry_id = ${libraryEntries.id} and ls.status = 'pending')`;
 const languagesOf = sql<LibraryLanguage[]>`coalesce((select array_agg(distinct lb.language) from library_blocks lb where lb.entry_id = ${libraryEntries.id}), '{}'::text[])`;
 
 const cardColumns = {
@@ -182,12 +221,13 @@ const cardColumns = {
   languages: languagesOf,
   clientVisible: libraryEntries.clientVisible,
   archivedAt: libraryEntries.archivedAt,
+  pendingSuggestions: pendingCount,
 };
 
 interface CardRow {
   id: number; kind: LibraryKind; title: string; summary: string; platform: LibraryPlatform; status: LibraryStatus;
   topics: string[]; authorId: number | null; authorName: string | null; updatedAt: Date; installs: number;
-  languages: LibraryLanguage[] | null; clientVisible: boolean; archivedAt: Date | null;
+  languages: LibraryLanguage[] | null; clientVisible: boolean; archivedAt: Date | null; pendingSuggestions: number;
 }
 
 function toCard(r: CardRow): EntryCard {
@@ -195,7 +235,7 @@ function toCard(r: CardRow): EntryCard {
     id: r.id, kind: r.kind, title: r.title, summary: r.summary, platform: r.platform, status: r.status,
     topics: r.topics ?? [], authorId: r.authorId, authorName: r.authorName, updatedAt: r.updatedAt,
     installs: Number(r.installs), languages: r.languages ?? [], clientVisible: r.clientVisible,
-    archived: r.archivedAt !== null,
+    archived: r.archivedAt !== null, pendingSuggestions: Number(r.pendingSuggestions),
   };
 }
 
@@ -211,6 +251,11 @@ export async function listEntries(actor: Actor, filter: LibraryFilter = {}): Pro
   if (filter.platform && isPlatform(filter.platform)) where.push(eq(libraryEntries.platform, filter.platform));
   if (filter.topic) where.push(sql`${filter.topic} = any(${libraryEntries.topics})`);
   if (filter.mine) where.push(eq(libraryEntries.authorId, actor.id));
+  if (filter.review) {
+    where.push(sql`${pendingCount} > 0`);
+    // ⚠️ همان قاعدهٔ `canEditEntry`: نویسنده، یا مدیرِ سراسریِ پروژه‌ها همه را.
+    if (!canManageSection(actor, 'projects')) where.push(eq(libraryEntries.authorId, actor.id));
+  }
   if (filter.projectId) {
     where.push(sql`exists (select 1 from library_projects lp where lp.entry_id = ${libraryEntries.id} and lp.project_id = ${filter.projectId})`);
   }
@@ -363,7 +408,7 @@ export async function getEntry(actor: Actor, id: number): Promise<EntryDetail> {
   const card = toCard(row as CardRow);
   const editable = canEditEntry(actor, entry);
 
-  const [blocks, options, installRows, related, forks, revisions, updater, viewable, workable] = await Promise.all([
+  const [blocks, options, installRows, related, forks, revisions, updater, viewable, workable, suggestionRows] = await Promise.all([
     blocksOf(id),
     optionsOf(id),
     db.select({
@@ -384,7 +429,15 @@ export async function getEntry(actor: Actor, id: number): Promise<EntryDetail> {
     entry.updatedBy ? db.select({ name: users.name }).from(users).where(eq(users.id, entry.updatedBy)) : Promise.resolve([]),
     viewableProjectIds(actor),
     workableProjectIds(actor),
+    db.select().from(librarySuggestions).where(eq(librarySuggestions.entryId, id))
+      .orderBy(desc(librarySuggestions.updatedAt)).limit(60),
   ]);
+  // پیشنهادهای باز همه، بسته‌ها سی‌تای آخر.
+  const shownSuggestions = [
+    ...suggestionRows.filter((s) => s.status === 'pending'),
+    ...suggestionRows.filter((s) => s.status !== 'pending').slice(0, 30),
+  ];
+  const suggestions = await suggestionViews(actor, entry, shownSuggestions, contentOf({ ...entry, blocks, options }));
 
   const canSee = (pid: number) => viewable === 'all' || viewable.includes(pid);
   const canWork = (pid: number) => workable === 'all' || workable.includes(pid);
@@ -423,9 +476,45 @@ export async function getEntry(actor: Actor, id: number): Promise<EntryDetail> {
     forks: forks.map((f) => ({ id: f.id, title: f.title, kind: f.kind, archived: f.archivedAt !== null })),
     media: media.get(id) ?? [],
     revisions,
+    suggestions,
     canEdit: editable,
+    canSuggest: canSuggestEdit(actor, entry),
     canDelete: canDeleteEntry(actor, entry, installRows.length),
   };
+}
+
+/** ردیف‌های پیشنهاد → شکلِ صفحه؛ بخش‌های عوض‌شده نسبت به نسخهٔ فعلی. */
+async function suggestionViews(
+  actor: Actor,
+  entry: typeof libraryEntries.$inferSelect,
+  rows: Array<typeof librarySuggestions.$inferSelect>,
+  current: SuggestedContent,
+): Promise<SuggestionView[]> {
+  if (rows.length === 0) return [];
+  const ids = [...new Set(rows.flatMap((r) => [r.authorId, r.reviewedBy]).filter((v): v is number => v !== null))];
+  const names = ids.length > 0
+    ? new Map((await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, ids))).map((u) => [u.id, u.name]))
+    : new Map<number, string>();
+  const editable = canEditEntry(actor, entry);
+  return rows.map((r) => {
+    const open = r.status === 'pending';
+    return {
+      id: r.id,
+      authorId: r.authorId,
+      authorName: r.authorId ? names.get(r.authorId) ?? null : null,
+      note: r.note,
+      status: r.status,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      reviewedByName: r.reviewedBy ? names.get(r.reviewedBy) ?? null : null,
+      reviewedAt: r.reviewedAt,
+      reviewNote: r.reviewNote,
+      parts: open ? changedParts(current, r.proposed as SuggestedContent) : [],
+      stale: open && entry.updatedAt.getTime() > r.baseUpdatedAt.getTime(),
+      canReview: open && editable,
+      canWithdraw: open && r.authorId === actor.id,
+    };
+  });
 }
 
 /** فرمِ ویرایش — همان جزئیات، فقط برای ویرایشگر. */
@@ -607,6 +696,210 @@ export async function restoreRevision(actor: Actor, entryId: number, revisionId:
     await writeContent(tx, entryId, snap.blocks, snap.options);
   });
   await audit(actor, 'library.restore', entryId, null, { revisionId });
+}
+
+/* ------------------------------------------------------------------ *
+ * پیشنهادِ ویرایش (۲.۴۶.۰)
+ * ------------------------------------------------------------------ */
+
+/**
+ * ⚠️ چرا: عضوی که نویسنده نیست تا امروز فقط می‌توانست «نسخهٔ جدا» بسازد؛
+ * اصلاحِ یک باگ در کدِ همکار به‌جای اینکه به همهٔ پروژه‌ها برسد، یک نسخهٔ
+ * موازی می‌ساخت. حالا تغییر را پیشنهاد می‌دهد، نویسنده (یا مدیرِ پروژه‌ها)
+ * تفاوت را می‌بیند و با یک کلیک می‌پذیرد — هیچ چیز بی‌تأیید جا نمی‌افتد.
+ */
+
+/** محتوای فعلیِ یک مورد — پایهٔ مقایسه. */
+async function currentContent(entry: typeof libraryEntries.$inferSelect): Promise<SuggestedContent> {
+  const [blocks, options] = await Promise.all([blocksOf(entry.id), optionsOf(entry.id)]);
+  return contentOf({ ...entry, blocks, options });
+}
+
+/**
+ * پاک‌سازیِ محتوای پیشنهادی با قاعده‌های **خودِ مورد**: نوع، وضعیت و بقیه از
+ * موردِ فعلی می‌آیند تا مثلاً «کد» بی‌تکه‌کد پذیرفته نشود.
+ */
+function cleanProposal(
+  entry: typeof libraryEntries.$inferSelect,
+  input: Pick<EntryInput, 'title' | 'summary' | 'topics' | 'body' | 'steps' | 'warnings' | 'dependencies' | 'demoUrl' | 'blocks' | 'options'>,
+): SuggestedContent {
+  const cleaned = cleanEntry({
+    ...input,
+    kind: entry.kind,
+    platform: entry.platform,
+    status: entry.status,
+    clientVisible: entry.clientVisible,
+    originProjectId: entry.originProjectId,
+    relatedIds: [],
+  });
+  if (!cleaned.ok) throw new LibraryError(cleaned.error);
+  return contentOf(cleaned.entry);
+}
+
+async function loadSuggestion(id: number) {
+  const [row] = await db.select().from(librarySuggestions).where(eq(librarySuggestions.id, id));
+  if (!row) throw new LibraryError('not_found');
+  return row;
+}
+
+/** چه کسی پیشنهاد را بررسی می‌کند: نویسنده؛ اگر نویسنده‌ای نمانده، مالک‌ها. */
+async function reviewerIds(entry: typeof libraryEntries.$inferSelect): Promise<number[]> {
+  if (entry.authorId) {
+    const [author] = await db.select({ id: users.id }).from(users)
+      .where(and(eq(users.id, entry.authorId), isNull(users.deletedAt)));
+    if (author) return [author.id];
+  }
+  return ownerIds();
+}
+
+/** فرمِ پیشنهاد — جزئیاتِ مورد، و اگر پیشنهادِ بازی از خودِ کاربر هست، همان. */
+export async function getEntryForSuggest(
+  actor: Actor,
+  id: number,
+): Promise<{ entry: EntryDetail; draft: { content: SuggestedContent; note: string } | null }> {
+  const entry = await getEntry(actor, id);
+  if (!entry.canSuggest) throw new LibraryError(entry.canEdit ? 'can_edit' : 'forbidden');
+  const [mine] = await db.select({ proposed: librarySuggestions.proposed, note: librarySuggestions.note })
+    .from(librarySuggestions)
+    .where(and(
+      eq(librarySuggestions.entryId, id),
+      eq(librarySuggestions.authorId, actor.id),
+      eq(librarySuggestions.status, 'pending'),
+    ));
+  return { entry, draft: mine ? { content: mine.proposed as SuggestedContent, note: mine.note } : null };
+}
+
+/**
+ * فرستادنِ پیشنهاد. ⚠️ هر نفر روی هر مورد **یک** پیشنهادِ باز دارد —
+ * فرستادنِ دوباره همان را تازه می‌کند، نه اینکه صفِ بررسی را پر کند.
+ */
+export async function suggestEdit(actor: Actor, entryId: number, input: EntryInput, note: string): Promise<number> {
+  assertUse(actor);
+  const entry = await loadEntry(entryId);
+  if (!canSuggestEdit(actor, entry)) throw new LibraryError('can_edit');
+  if (entry.archivedAt) throw new LibraryError('archived');
+  const why = note.trim().slice(0, SUGGESTION_NOTE_LIMIT);
+  if (!why) throw new LibraryError('note_required');
+
+  const proposed = cleanProposal(entry, input);
+  if (changedParts(await currentContent(entry), proposed).length === 0) throw new LibraryError('no_change');
+
+  const [open] = await db.select({ id: librarySuggestions.id }).from(librarySuggestions)
+    .where(and(
+      eq(librarySuggestions.entryId, entryId),
+      eq(librarySuggestions.authorId, actor.id),
+      eq(librarySuggestions.status, 'pending'),
+    ));
+  let id: number;
+  if (open) {
+    await db.update(librarySuggestions)
+      .set({ proposed, note: why, baseUpdatedAt: entry.updatedAt, updatedAt: new Date() })
+      .where(eq(librarySuggestions.id, open.id));
+    id = open.id;
+  } else {
+    const [row] = await db.insert(librarySuggestions)
+      .values({ entryId, authorId: actor.id, proposed, note: why, baseUpdatedAt: entry.updatedAt })
+      .returning({ id: librarySuggestions.id });
+    id = row!.id;
+  }
+  await audit(actor, 'library.suggest', entryId, null, { suggestionId: id });
+  const [me] = await db.select({ name: users.name }).from(users).where(eq(users.id, actor.id));
+  await notify((await reviewerIds(entry)).filter((u) => u !== actor.id), {
+    type: 'library.suggestion',
+    title: '{name} برای «{entry}» پیشنهادِ ویرایش فرستاد',
+    body: '{note}',
+    params: { name: me?.name ?? '', entry: entry.title, note: why },
+    url: `/library/${entryId}?suggestion=${id}`,
+  });
+  return id;
+}
+
+export interface SuggestionDiff {
+  suggestion: SuggestionView;
+  /** نسخهٔ **فعلیِ** مورد — نه نسخه‌ای که پیشنهاد رویش نوشته شد. */
+  before: SuggestedContent;
+  after: SuggestedContent;
+}
+
+/** تفاوتِ یک پیشنهاد با نسخهٔ فعلی — هر کسی که کتابخانه را دارد می‌بیند. */
+export async function getSuggestionDiff(actor: Actor, suggestionId: number): Promise<SuggestionDiff> {
+  assertUse(actor);
+  const row = await loadSuggestion(suggestionId);
+  const entry = await loadEntry(row.entryId);
+  const before = await currentContent(entry);
+  const after = row.proposed as SuggestedContent;
+  const [view] = await suggestionViews(actor, entry, [row], before);
+  return { suggestion: view!, before, after };
+}
+
+/**
+ * پذیرفتن یا رد — فقط کسی که مورد را ویرایش می‌کند.
+ *
+ * ⚠️ پذیرفتن همان مسیرِ «ذخیره» است: نسخهٔ فعلی اول در تاریخچه می‌نشیند و
+ * با «بازگرداندن» برمی‌گردد. «آخرین ویرایش» به نامِ پیشنهاددهنده ثبت می‌شود.
+ * ⚠️ وضعیت با شرطِ `pending` عوض می‌شود: دو بررسی‌کنندهٔ هم‌زمان یک پیشنهاد
+ * را دو بار اعمال نمی‌کنند.
+ */
+export async function reviewSuggestion(
+  actor: Actor,
+  suggestionId: number,
+  decision: 'accept' | 'reject',
+  reviewNote = '',
+): Promise<number> {
+  assertUse(actor);
+  const row = await loadSuggestion(suggestionId);
+  if (row.status !== 'pending') throw new LibraryError('decided');
+  const entry = await loadEntry(row.entryId);
+  if (!canEditEntry(actor, entry)) throw new LibraryError('forbidden');
+  const note = reviewNote.trim().slice(0, SUGGESTION_NOTE_LIMIT);
+  const decided = { reviewedBy: actor.id, reviewedAt: new Date(), reviewNote: note, updatedAt: new Date() };
+
+  if (decision === 'accept') {
+    if (entry.archivedAt) throw new LibraryError('archived');
+    const content = cleanProposal(entry, row.proposed as SuggestedContent);
+    const before = snapshotOf(entry, await blocksOf(entry.id), await optionsOf(entry.id));
+    await db.transaction(async (tx) => {
+      const done = await tx.update(librarySuggestions).set({ ...decided, status: 'accepted' })
+        .where(and(eq(librarySuggestions.id, suggestionId), eq(librarySuggestions.status, 'pending')))
+        .returning({ id: librarySuggestions.id });
+      if (done.length === 0) throw new LibraryError('decided');
+      await tx.insert(libraryRevisions).values({ entryId: entry.id, authorId: row.authorId ?? actor.id, snapshot: before });
+      const { blocks, options, ...fields } = content;
+      await tx.update(libraryEntries).set({ ...fields, updatedBy: row.authorId ?? actor.id, updatedAt: new Date() })
+        .where(eq(libraryEntries.id, entry.id));
+      await writeContent(tx, entry.id, blocks, options);
+    });
+  } else {
+    const done = await db.update(librarySuggestions).set({ ...decided, status: 'rejected' })
+      .where(and(eq(librarySuggestions.id, suggestionId), eq(librarySuggestions.status, 'pending')))
+      .returning({ id: librarySuggestions.id });
+    if (done.length === 0) throw new LibraryError('decided');
+  }
+
+  await audit(actor, decision === 'accept' ? 'library.suggestion_accept' : 'library.suggestion_reject', entry.id, null, { suggestionId });
+  if (row.authorId && row.authorId !== actor.id) {
+    await notify([row.authorId], {
+      type: decision === 'accept' ? 'library.suggestion_accepted' : 'library.suggestion_rejected',
+      title: decision === 'accept' ? 'پیشنهادِ شما برای «{entry}» پذیرفته شد' : 'پیشنهادِ شما برای «{entry}» رد شد',
+      body: note ? '{note}' : undefined,
+      params: { entry: entry.title, note },
+      url: `/library/${entry.id}?suggestion=${suggestionId}`,
+    });
+  }
+  return entry.id;
+}
+
+/** پس‌گرفتنِ پیشنهادِ بازِ خود. */
+export async function withdrawSuggestion(actor: Actor, suggestionId: number): Promise<number> {
+  assertUse(actor);
+  const row = await loadSuggestion(suggestionId);
+  if (row.authorId !== actor.id) throw new LibraryError('forbidden');
+  const done = await db.update(librarySuggestions).set({ status: 'withdrawn', updatedAt: new Date() })
+    .where(and(eq(librarySuggestions.id, suggestionId), eq(librarySuggestions.status, 'pending')))
+    .returning({ id: librarySuggestions.id });
+  if (done.length === 0) throw new LibraryError('decided');
+  await audit(actor, 'library.suggestion_withdraw', row.entryId, null, { suggestionId });
+  return row.entryId;
 }
 
 /* ------------------------------------------------------------------ *

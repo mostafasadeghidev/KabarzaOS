@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
-import { libraryProjects, libraryRevisions, projectClients, projectMembers, projects, userRoles, users } from '../schema';
 import {
-  clientGuidesFor, deleteEntry, forkForProject, getEntry, installOnProject, LibraryError, listEntries,
-  projectLibrary, removeInstall, restoreRevision, saveEntry, setEntryArchived,
+  libraryProjects, libraryRevisions, notifications, projectClients, projectMembers, projects, userRoles, users,
+} from '../schema';
+import {
+  clientGuidesFor, deleteEntry, forkForProject, getEntry, getEntryForSuggest, getSuggestionDiff, installOnProject,
+  LibraryError, listEntries, projectLibrary, removeInstall, restoreRevision, reviewSuggestion, saveEntry,
+  setEntryArchived, suggestEdit, withdrawSuggestion,
 } from '@/server/library/service';
 import type { EntryInput } from '@/domain/library/model';
 import type { Actor } from '@/domain/access/permissions';
@@ -33,7 +36,7 @@ const input = (patch: Partial<EntryInput> = {}): EntryInput => ({
 });
 
 beforeAll(async () => {
-  await sql`truncate table library_revisions, library_relations, library_projects, library_options, library_blocks,
+  await sql`truncate table library_suggestions, notifications, library_revisions, library_relations, library_projects, library_options, library_blocks,
     library_entries, project_clients, project_members, projects, audit_log, user_roles, users restart identity cascade`;
   await db.insert(users).values([
     { email: 'o@l', name: 'مالک' }, { email: 'd@l', name: 'سارا' }, { email: 'x@l', name: 'علی' },
@@ -169,5 +172,120 @@ describe('مرزِ کارفرما', () => {
   it('⚠️ کارفرما از راهِ نصب هم وارد نمی‌شود', async () => {
     const [any] = await listEntries(owner());
     await expect(installOnProject(client(), any!.id, P1)).rejects.toBeInstanceOf(LibraryError);
+  });
+});
+
+describe('پیشنهادِ ویرایش (۲.۴۶.۰)', () => {
+  const better = (title: string) => input({
+    title,
+    blocks: [{ label: 'init', language: 'js', placement: 'site_body_end', placementNote: '', code: 'Macy({ container: "#macy", columns: 3 })' }],
+  });
+
+  it('عضوِ دیگر پیشنهاد می‌دهد؛ نویسنده اعلان می‌گیرد؛ چیزی هنوز عوض نشده', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Grid' }));
+    const sid = await suggestEdit(other(), id, better('Grid'), 'ستون‌ها روی موبایل');
+    expect((await getEntry(dev(), id)).blocks[0]!.code).toBe('Macy({ container: "#macy" })');
+    const note = await db.select().from(notifications).where(eq(notifications.userId, DEV));
+    expect(note.some((n) => n.type === 'library.suggestion')).toBe(true);
+
+    const asAuthor = await getEntry(dev(), id);
+    expect(asAuthor.pendingSuggestions).toBe(1);
+    expect(asAuthor.suggestions[0]).toMatchObject({ id: sid, canReview: true, canWithdraw: false, parts: ['blocks'] });
+    const asOther = await getEntry(other(), id);
+    expect(asOther.canSuggest).toBe(true);
+    expect(asOther.suggestions[0]).toMatchObject({ canReview: false, canWithdraw: true });
+    // «منتظرِ من» برای نویسنده، نه برای پیشنهاددهنده.
+    expect((await listEntries(dev(), { review: true })).map((e) => e.id)).toContain(id);
+    expect((await listEntries(other(), { review: true })).map((e) => e.id)).not.toContain(id);
+  });
+
+  it('⚠️ نویسنده و مدیر پیشنهاد نمی‌دهند — خودشان ویرایش می‌کنند؛ کارفرما و مالی هیچ', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Own' }));
+    await expect(suggestEdit(dev(), id, better('Own'), 'x')).rejects.toMatchObject({ code: 'can_edit' });
+    await expect(suggestEdit(owner(), id, better('Own'), 'x')).rejects.toMatchObject({ code: 'can_edit' });
+    await expect(suggestEdit(client(), id, better('Own'), 'x')).rejects.toMatchObject({ code: 'forbidden' });
+    await expect(suggestEdit(fin(), id, better('Own'), 'x')).rejects.toMatchObject({ code: 'forbidden' });
+  });
+
+  it('⚠️ بی‌توضیح یا بی‌تغییر پذیرفته نمی‌شود', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Same' }));
+    await expect(suggestEdit(other(), id, better('Same'), '  ')).rejects.toMatchObject({ code: 'note_required' });
+    await expect(suggestEdit(other(), id, input({ title: 'Same' }), 'هیچ')).rejects.toMatchObject({ code: 'no_change' });
+  });
+
+  it('⚠️ پیشنهاد نوع، «کارفرما ببیند»، وضعیت و مبدأ را عوض نمی‌کند', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Locked', originProjectId: P1 }));
+    const sid = await suggestEdit(other(), id, {
+      ...better('Locked v2'), kind: 'guide', clientVisible: true, status: 'draft', originProjectId: P2,
+    }, 'عنوان');
+    await reviewSuggestion(dev(), sid, 'accept');
+    const after = await getEntry(dev(), id);
+    expect(after.title).toBe('Locked v2');
+    expect([after.kind, after.clientVisible, after.status, after.origin?.id]).toEqual(['code', false, 'ready', P1]);
+  });
+
+  it('پیشنهادِ دوباره همان پیشنهادِ باز را تازه می‌کند', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Once' }));
+    const a = await suggestEdit(other(), id, better('Once'), 'اول');
+    const b = await suggestEdit(other(), id, better('Once!'), 'دوم');
+    expect(b).toBe(a);
+    const { draft } = await getEntryForSuggest(other(), id);
+    expect([draft?.note, draft?.content.title]).toEqual(['دوم', 'Once!']);
+  });
+
+  it('پذیرفتن: اعمال، نسخهٔ قبلی در تاریخچه، «آخرین ویرایش» به نامِ پیشنهاددهنده، اعلانِ او', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Accept' }));
+    const sid = await suggestEdit(other(), id, better('Accept'), 'ستون');
+    await expect(reviewSuggestion(other(), sid, 'accept')).rejects.toMatchObject({ code: 'forbidden' });
+    await reviewSuggestion(dev(), sid, 'accept', 'ممنون');
+    const after = await getEntry(dev(), id);
+    expect(after.blocks[0]!.code).toContain('columns: 3');
+    expect(after.updatedByName).toBe('علی');
+    expect(after.revisions).toHaveLength(1);
+    expect(after.suggestions[0]).toMatchObject({ status: 'accepted', reviewedByName: 'سارا', reviewNote: 'ممنون' });
+    const notes = await db.select().from(notifications).where(eq(notifications.userId, OTHER));
+    expect(notes.some((n) => n.type === 'library.suggestion_accepted')).toBe(true);
+    // ⚠️ دو بار اعمال نمی‌شود.
+    await expect(reviewSuggestion(dev(), sid, 'accept')).rejects.toMatchObject({ code: 'decided' });
+    // بازگرداندن مثلِ هر ویرایشِ دیگر.
+    await restoreRevision(dev(), id, after.revisions[0]!.id);
+    expect((await getEntry(dev(), id)).blocks[0]!.code).toBe('Macy({ container: "#macy" })');
+  });
+
+  it('مدیرِ پروژه‌ها هم بررسی می‌کند؛ رد چیزی را عوض نمی‌کند', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Reject' }));
+    const sid = await suggestEdit(other(), id, better('Reject'), 'x');
+    await reviewSuggestion(owner(), sid, 'reject', 'Safari');
+    const after = await getEntry(dev(), id);
+    expect(after.title).toBe('Reject');
+    expect(after.revisions).toHaveLength(0);
+    expect(after.suggestions[0]).toMatchObject({ status: 'rejected', reviewedByName: 'مالک' });
+  });
+
+  it('⚠️ تفاوت با نسخهٔ فعلی است و پس از ویرایشِ نویسنده «کهنه» نشان داده می‌شود', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Stale' }));
+    const sid = await suggestEdit(other(), id, better('Stale'), 'x');
+    expect((await getSuggestionDiff(other(), sid)).suggestion.stale).toBe(false);
+    await new Promise((r) => setTimeout(r, 5));
+    await saveEntry(dev(), id, input({ title: 'Stale (author edit)' }));
+    const diff = await getSuggestionDiff(other(), sid);
+    expect(diff.suggestion.stale).toBe(true);
+    expect(diff.before.title).toBe('Stale (author edit)');
+    expect(diff.suggestion.parts).toEqual(['title', 'blocks']);
+  });
+
+  it('پس‌گرفتن فقط مالِ خودِ پیشنهاددهنده', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Withdraw' }));
+    const sid = await suggestEdit(other(), id, better('Withdraw'), 'x');
+    await expect(withdrawSuggestion(dev(), sid)).rejects.toMatchObject({ code: 'forbidden' });
+    await withdrawSuggestion(other(), sid);
+    await expect(reviewSuggestion(dev(), sid, 'accept')).rejects.toMatchObject({ code: 'decided' });
+    expect((await getEntry(dev(), id)).pendingSuggestions).toBe(0);
+  });
+
+  it('⚠️ روی موردِ بایگانی‌شده پیشنهاد نمی‌شود', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Arch' }));
+    await setEntryArchived(dev(), id, true);
+    await expect(suggestEdit(other(), id, better('Arch'), 'x')).rejects.toMatchObject({ code: 'archived' });
   });
 });

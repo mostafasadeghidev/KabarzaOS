@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Archive, FolderKanban, Library, X } from 'lucide-react';
+import { Archive, FolderKanban, GitPullRequestArrow, Library, X } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SearchInput } from '@/components/ui/search-input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
@@ -26,6 +26,7 @@ interface Filter {
   projectId: number | null;
   mine: boolean;
   archived: boolean;
+  review: boolean;
 }
 
 /**
@@ -37,12 +38,15 @@ export function LibraryView({
   topics,
   projects,
   counts,
+  toReview,
   filter,
 }: {
   entries: EntryCard[];
   topics: string[];
   projects: ProjectOption[];
   counts: { all: number; code: number; guide: number; note: number };
+  /** موردهایی که پیشنهادِ باز دارند و بیننده بررسی‌شان می‌کند (۲.۴۶.۰). */
+  toReview: number;
   filter: Filter;
 }) {
   const tr = useT();
@@ -51,12 +55,12 @@ export function LibraryView({
   const [pending, startTransition] = useTransition();
   const [q, setQ] = useState(filter.q);
 
-  const go = (patch: Partial<Record<'q' | 'kind' | 'platform' | 'topic' | 'project' | 'mine' | 'archived', string>>) => {
+  const go = (patch: Partial<Record<'q' | 'kind' | 'platform' | 'topic' | 'project' | 'mine' | 'archived' | 'review', string>>) => {
     const next = new URLSearchParams();
     const merged = {
       q: filter.q, kind: filter.kind, platform: filter.platform, topic: filter.topic,
       project: filter.projectId ? String(filter.projectId) : '',
-      mine: filter.mine ? '1' : '', archived: filter.archived ? '1' : '',
+      mine: filter.mine ? '1' : '', archived: filter.archived ? '1' : '', review: filter.review ? '1' : '',
       ...patch,
     };
     for (const [k, v] of Object.entries(merged)) if (v) next.set(k, v);
@@ -72,7 +76,9 @@ export function LibraryView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  const filtered = Boolean(filter.q || filter.platform || filter.topic || filter.projectId || filter.mine || filter.archived);
+  const filtered = Boolean(
+    filter.q || filter.platform || filter.topic || filter.projectId || filter.mine || filter.archived || filter.review,
+  );
   const kinds = [
     { key: '', label: 'همه', count: counts.all },
     { key: 'code', label: 'کد', count: counts.code },
@@ -136,6 +142,18 @@ export function LibraryView({
         >
           {tr('نوشته‌های من')}
         </Toggle>
+        {(toReview > 0 || filter.review) && (
+          <Toggle
+            size="sm"
+            variant="outline"
+            pressed={filter.review}
+            onPressedChange={(v) => go({ review: v ? '1' : '' })}
+          >
+            <GitPullRequestArrow />
+            {tr('پیشنهادهای منتظرِ من')}
+            <span className="rounded-full bg-primary px-1.5 text-[10px] leading-4 text-primary-foreground tabular-nums">{toReview}</span>
+          </Toggle>
+        )}
         <Toggle
           size="sm"
           variant="outline"
@@ -149,7 +167,7 @@ export function LibraryView({
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => { setQ(''); go({ q: '', platform: '', topic: '', project: '', mine: '', archived: '' }); }}
+            onClick={() => { setQ(''); go({ q: '', platform: '', topic: '', project: '', mine: '', archived: '', review: '' }); }}
           >
             <X />
             {tr('پاک کردنِ فیلترها')}
@@ -206,6 +224,12 @@ function EntryCardView({ entry }: { entry: EntryCard }) {
           </span>
         ))}
         {entry.clientVisible && <span className="text-[11px] text-emerald-700 dark:text-emerald-300">{tr('کارفرما می‌بیند')}</span>}
+        {entry.pendingSuggestions > 0 && (
+          <span className="flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-300">
+            <GitPullRequestArrow className="size-3" aria-hidden />
+            {tr('{n} پیشنهادِ ویرایش', { n: entry.pendingSuggestions })}
+          </span>
+        )}
       </div>
       <TopicChips topics={entry.topics} />
       <div className="mt-auto flex items-center justify-between gap-2 border-t pt-3 text-xs text-muted-foreground">
