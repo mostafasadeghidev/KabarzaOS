@@ -22,7 +22,7 @@ export default async function LibraryPage({
 }: {
   searchParams: Promise<{
     q?: string; kind?: string; platform?: string; topic?: string; project?: string; mine?: string; archived?: string;
-    review?: string;
+    review?: string; category?: string;
   }>;
 }) {
   await primeTranslations();
@@ -48,18 +48,25 @@ export default async function LibraryPage({
     mine: sp.mine === '1',
     archived: sp.archived === '1',
     review: sp.review === '1',
+    category: sp.category ?? '',
   };
   const [entries, topics, projects, all, toReview] = await Promise.all([
     listEntries(actor, filter),
     libraryTopics(actor),
     projectOptions(actor),
-    // شمارِ هر نوع برای قرص‌های فیلتر — بی‌فیلترِ نوع، با بقیهٔ فیلترها.
-    listEntries(actor, { ...filter, kind: '' }),
+    // شمارِ هر نوع برای قرص‌های فیلتر — بی‌فیلترِ نوع و دسته، با بقیهٔ فیلترها.
+    listEntries(actor, { ...filter, kind: '', category: '' }),
     // «پیشنهادهای منتظرِ من» — فقط شمار، بی‌فیلترِ دیگر.
     listEntries(actor, { review: true }),
   ]);
-  const counts = { all: all.length, code: 0, guide: 0, note: 0 };
-  for (const e of all) counts[e.kind] += 1;
+  // ⚠️ هر قرص با فیلترِ «دیگری» شمرده می‌شود: نوع درونِ دستهٔ انتخاب‌شده، دسته درونِ نوعِ انتخاب‌شده.
+  const counts = { all: 0, code: 0, guide: 0, note: 0 };
+  const categoryCounts: Record<string, number> = {};
+  for (const e of all) {
+    const cat = e.category || 'none';
+    if (!filter.category || filter.category === cat) { counts[e.kind] += 1; counts.all += 1; }
+    if (!filter.kind || e.kind === filter.kind) categoryCounts[cat] = (categoryCounts[cat] ?? 0) + 1;
+  }
 
   return (
     <PageShell>
@@ -77,6 +84,7 @@ export default async function LibraryPage({
         topics={topics}
         projects={projects}
         counts={counts}
+        categoryCounts={categoryCounts}
         toReview={toReview.length}
         filter={{ ...filter, projectId: filter.projectId ?? null }}
       />

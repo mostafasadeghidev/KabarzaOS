@@ -14,7 +14,8 @@ import { useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { cn } from '@/lib/utils';
 import {
-  LANGUAGE_LABELS, PLACEMENT_HINTS, PLACEMENT_LABELS, type LibraryLanguage, type LibraryPlacement,
+  LANGUAGE_LABELS, LIBRARY_PLACEMENTS, pasteReady, PLACEMENT_HINTS, PLACEMENT_LABELS, PLACEMENT_SHORT_LABELS, type CleanBlock,
+  type LibraryLanguage, type LibraryPlacement,
 } from '@/domain/library/model';
 
 hljs.registerLanguage('xml', xml);
@@ -30,6 +31,37 @@ const HLJS: Record<LibraryLanguage, string | null> = {
 
 /** کدِ بلندتر از این، اول جمع‌شده دیده می‌شود. */
 const COLLAPSE_AT = 24;
+
+/**
+ * چند تکه یکجا، هر کدام با یک خطِ توضیح که از کجا آمده — آمادهٔ چسباندن در
+ * یک کادرِ Custom code (`pasteReady`).
+ */
+export function joinBlocks(blocks: readonly Pick<CleanBlock, 'label' | 'language' | 'code'>[]): string {
+  return blocks.map((b) => (b.label ? `<!-- ${b.label.replace(/--/g, '—')} -->\n${pasteReady(b)}` : pasteReady(b))).join('\n\n');
+}
+
+/**
+ * «کپیِ همهٔ Head ِ سایت» و مانندش (۲.۴۷.۰) — وقتی چند تکه یک جا می‌روند،
+ * نصب‌کننده یک بار کپی و یک بار می‌چسباند.
+ */
+export function PlacementCopyBar({ blocks, className }: { blocks: readonly CleanBlock[]; className?: string }) {
+  const tr = useT();
+  const groups = LIBRARY_PLACEMENTS.map((p) => ({ p, list: blocks.filter((b) => b.placement === p) }))
+    .filter((g) => g.list.length > 0);
+  if (blocks.length < 2) return null;
+  return (
+    <div className={cn('flex flex-wrap items-center gap-2', className)}>
+      <CopyButton label={tr('کپیِ همهٔ کدها ({n})', { n: blocks.length })} text={joinBlocks(blocks)} />
+      {groups.length > 1 && groups.map((g) => (
+        <CopyButton
+          key={g.p}
+          label={tr('{p} ({n})', { p: tr(PLACEMENT_SHORT_LABELS[g.p]), n: g.list.length })}
+          text={joinBlocks(g.list)}
+        />
+      ))}
+    </div>
+  );
+}
 
 /**
  * کدِ رنگ‌بندی‌شده — HTML ِ خروجی را خودِ highlight.js از متنِ **فرارداده‌شده**
@@ -106,6 +138,7 @@ export function CodeView({
   placement,
   placementNote,
   index,
+  collapseAt = COLLAPSE_AT,
 }: {
   code: string;
   language: LibraryLanguage;
@@ -114,12 +147,14 @@ export function CodeView({
   placementNote?: string;
   /** شمارهٔ تکه در موردی که چند تکه دارد — «تکهٔ ۲». */
   index?: number;
+  /** کارتِ سریع کوتاه‌تر جمع می‌شود. */
+  collapseAt?: number;
 }) {
   const tr = useT();
   const rows = useMemo(() => highlighted(code, language), [code, language]);
-  const long = rows.length > COLLAPSE_AT;
+  const long = rows.length > collapseAt;
   const [expanded, setExpanded] = useState(!long);
-  const shown = expanded ? rows : rows.slice(0, COLLAPSE_AT);
+  const shown = expanded ? rows : rows.slice(0, collapseAt);
 
   return (
     <div className="grid gap-2 rounded-lg border bg-card p-3">

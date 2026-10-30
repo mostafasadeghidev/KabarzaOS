@@ -2,12 +2,13 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
-  libraryProjects, libraryRevisions, notifications, projectClients, projectMembers, projects, userRoles, users,
+  libraryProjects, libraryRevisions, librarySuggestions, notifications, projectClients, projectMembers,
+  projects, userRoles, users,
 } from '../schema';
 import {
-  clientGuidesFor, deleteEntry, forkForProject, getEntry, getEntryForSuggest, getSuggestionDiff, installOnProject,
-  LibraryError, listEntries, projectLibrary, removeInstall, restoreRevision, reviewSuggestion, saveEntry,
-  setEntryArchived, suggestEdit, withdrawSuggestion,
+  clientGuidesFor, deleteEntry, deleteLibraryMedia, forkForProject, getEntry, getEntryForSuggest, getRevision,
+  getSuggestionDiff, installOnProject, LibraryError, listEntries, projectCombinedCode, projectLibrary, removeInstall,
+  restoreRevision, reviewSuggestion, saveEntry, setEntryArchived, suggestEdit, withdrawSuggestion,
 } from '@/server/library/service';
 import type { EntryInput } from '@/domain/library/model';
 import type { Actor } from '@/domain/access/permissions';
@@ -29,15 +30,24 @@ let P1 = 0, P2 = 0;
 
 const input = (patch: Partial<EntryInput> = {}): EntryInput => ({
   kind: 'code', title: 'Masonry', summary: '', platform: 'webflow', status: 'ready', topics: ['CMS'],
-  body: '', steps: '', warnings: '', dependencies: '', demoUrl: '', clientVisible: false, originProjectId: null,
+  body: '', steps: [], warnings: '', dependencies: '', demoUrl: '', clientVisible: false, originProjectId: null,
   blocks: [{ label: 'init', language: 'js', placement: 'site_body_end', placementNote: '', code: 'Macy({ container: "#macy" })' }],
-  options: [], relatedIds: [],
+  options: [], related: [],
   ...patch,
 });
 
+const titled = (...titles: string[]) => titles.map((title) => ({ title, body: '', blockIndexes: [], optionNames: [], mediaIds: [] }));
+
+const PNG = new Uint8Array([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+  ...Array.from({ length: 40 }, (_, i) => i % 256),
+]);
+const shot = (name = 'shot.png') => ({ name, mime: 'image/png', bytes: PNG });
+
 beforeAll(async () => {
-  await sql`truncate table library_suggestions, notifications, library_revisions, library_relations, library_projects, library_options, library_blocks,
-    library_entries, project_clients, project_members, projects, audit_log, user_roles, users restart identity cascade`;
+  await sql`truncate table library_suggestions, notifications, library_revisions, library_relations, library_requires, library_steps,
+    library_projects, library_options, library_blocks, library_entries, project_clients, project_members, projects, audit_log,
+    user_roles, users restart identity cascade`;
   await db.insert(users).values([
     { email: 'o@l', name: 'مالک' }, { email: 'd@l', name: 'سارا' }, { email: 'x@l', name: 'علی' },
     { email: 'c@l', name: 'کارفرما' }, { email: 'f@l', name: 'مالی' },
@@ -151,7 +161,7 @@ describe('نصب روی پروژه', () => {
 describe('مرزِ کارفرما', () => {
   it('⚠️ فقط راهنمای «کارفرما ببیند» ِ پروژهٔ خودش — نه کد، نه پیش‌نویس', async () => {
     const guide = await saveEntry(dev(), null, input({
-      kind: 'guide', title: 'تغییرِ قیمت‌ها', blocks: [], clientVisible: true, originProjectId: P1, steps: 'Designer\nPublish',
+      kind: 'guide', title: 'تغییرِ قیمت‌ها', blocks: [], clientVisible: true, originProjectId: P1, steps: titled('Designer', 'Publish'),
       options: [{ name: 'data-flow-price', kind: 'attribute', description: 'قیمتِ پایه', defaultValue: '130' }],
     }));
     await saveEntry(dev(), null, input({ kind: 'guide', title: 'پیش‌نویس', blocks: [], clientVisible: true, status: 'draft', originProjectId: P1 }));
@@ -162,6 +172,7 @@ describe('مرزِ کارفرما', () => {
     const guides = await clientGuidesFor(client(), P1);
     expect(guides?.map((g) => g.id)).toEqual([guide]);
     expect(guides?.[0]?.options[0]?.name).toBe('data-flow-price');
+    expect(guides?.[0]?.steps.map((s) => s.title)).toEqual(['Designer', 'Publish']);
     // پروژهٔ دیگر هیچ.
     expect(await clientGuidesFor(client(), P2)).toBeNull();
     // ⚠️ تیم نمای کارفرما را نمی‌گیرد و کارفرما نمای تیم را.
@@ -287,5 +298,181 @@ describe('پیشنهادِ ویرایش (۲.۴۶.۰)', () => {
     const id = await saveEntry(dev(), null, input({ title: 'Arch' }));
     await setEntryArchived(dev(), id, true);
     await expect(suggestEdit(other(), id, better('Arch'), 'x')).rejects.toMatchObject({ code: 'archived' });
+  });
+});
+
+describe('ساختارِ تازه (۲.۴۷.۰)', () => {
+  it('گام با تصویرِ تازهٔ خودش، تکه‌کد و گزینه ذخیره و خوانده می‌شود؛ تصویرِ شاخص اختیاری', async () => {
+    const id = await saveEntry(dev(), null, input({
+      title: 'Range', category: 'form', versionLabel: 'v2.0', videoUrl: 'https://www.loom.com/share/0123456789abcdef0123456789abcdef',
+      options: [{ name: 'fs-rangeslider-element', kind: 'attribute', role: 'required', value: 'wrapper', description: '', defaultValue: '' }],
+      steps: [
+        { key: '11', title: 'اسکریپت', body: '', blockIndexes: [0], optionNames: [], mediaIds: [] },
+        { key: '12', title: 'المنت‌ها', body: 'به `wrapper` بدهید', blockIndexes: [], optionNames: ['fs-rangeslider-element=wrapper'], mediaIds: [] },
+      ],
+    }), [shot('general.png')], { 12: [shot('step.png')] });
+    const e = await getEntry(dev(), id);
+    expect([e.category, e.versionLabel, e.videoUrl]).toEqual(['form', 'v2.0', 'https://www.loom.com/share/0123456789abcdef0123456789abcdef']);
+    expect(e.media).toHaveLength(2);
+    const stepImage = e.media.find((m) => m.name === 'step.png')!;
+    expect(e.steps.map((s) => [s.title, s.blockIndexes, s.optionNames, s.mediaIds])).toEqual([
+      ['اسکریپت', [0], [], []],
+      ['المنت‌ها', [], ['fs-rangeslider-element=wrapper'], [stepImage.id]],
+    ]);
+    expect(e.options[0]).toMatchObject({ role: 'required', value: 'wrapper' });
+    // بی‌انتخاب، شاخص اولین تصویر است.
+    const [card] = (await listEntries(dev(), { q: 'Range' })).filter((c) => c.id === id);
+    expect(card?.coverFileId).toBe(e.media[0]!.fileId);
+
+    // انتخابِ شاخص + ⚠️ تصویرِ موردِ دیگر به گام یا شاخص وصل نمی‌شود.
+    const otherId = await saveEntry(dev(), null, input({ title: 'Other' }), [shot('x.png')]);
+    const foreign = (await getEntry(dev(), otherId)).media[0]!.id;
+    await saveEntry(dev(), id, input({
+      ...e, steps: e.steps.map((s, i) => ({ ...s, mediaIds: i === 0 ? [foreign, stepImage.id] : s.mediaIds })),
+      related: [], coverMediaId: stepImage.id,
+    }));
+    const after = await getEntry(dev(), id);
+    expect(after.steps[0]!.mediaIds).toEqual([stepImage.id]);
+    expect(after.coverAttachmentId).toBe(stepImage.id);
+    await saveEntry(dev(), id, input({ ...after, related: [], coverMediaId: foreign }));
+    expect((await getEntry(dev(), id)).coverAttachmentId).toBeNull();
+
+    // حذفِ تصویر ارجاعِ گام را بی‌اثر می‌کند.
+    await deleteLibraryMedia(dev(), stepImage.id);
+    expect((await getEntry(dev(), id)).steps.flatMap((s) => s.mediaIds)).toEqual([]);
+  });
+
+  it('«چه چیزی عوض شد» فقط هنگامِ ویرایش، و در عکسِ تاریخچه می‌ماند', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Notes', changeNote: 'نه' }));
+    expect((await getEntry(dev(), id)).changeNote).toBe('');
+    await saveEntry(dev(), id, input({ title: 'Notes', changeNote: 'باگِ موبایل رفع شد' }));
+    expect((await getEntry(dev(), id)).changeNote).toBe('باگِ موبایل رفع شد');
+    await saveEntry(dev(), id, input({ title: 'Notes 2', changeNote: '' }));
+    const [latest] = (await getEntry(dev(), id)).revisions;
+    expect((await getRevision(dev(), id, latest!.id)).entry.changeNote).toBe('باگِ موبایل رفع شد');
+  });
+
+  it('⚠️ نسخه‌ها: قدیمی منسوخ و در فهرست زیرِ تازه جمع؛ در جستجو پیدا؛ دور ممنوع؛ فقط ویرایشگرِ قدیمی', async () => {
+    const v1 = await saveEntry(dev(), null, input({ title: 'Swiper', versionLabel: 'v1' }));
+    const v2 = await saveEntry(dev(), null, input({ title: 'Swiper', versionLabel: 'v2', replacesId: v1 }));
+    const v3 = await saveEntry(dev(), null, input({ title: 'Swiper', versionLabel: 'v3', replacesId: v2 }));
+    const old = await getEntry(dev(), v1);
+    expect([old.status, old.supersededBy?.id]).toEqual(['deprecated', v2]);
+    const top = await getEntry(dev(), v3);
+    expect(top.olderVersionList.map((v) => v.id)).toEqual([v2, v1]);
+    expect(top.olderVersions).toBe(1);
+
+    const listed = (await listEntries(dev())).map((c) => c.id);
+    expect(listed).toContain(v3);
+    expect(listed).not.toContain(v1);
+    expect((await listEntries(dev(), { q: 'Swiper' })).map((c) => c.id)).toEqual(expect.arrayContaining([v1, v2, v3]));
+
+    // ⚠️ v1 نمی‌تواند نسخهٔ تازهٔ v3 باشد (دور).
+    await expect(saveEntry(dev(), v1, input({ title: 'Swiper', replacesId: v3 }))).rejects.toMatchObject({ code: 'bad_version' });
+    // ⚠️ کدِ همکار را منسوخ نمی‌کند.
+    const mine = await saveEntry(other(), null, input({ title: 'Mine' }));
+    await expect(saveEntry(dev(), null, input({ title: 'Hijack', replacesId: mine }))).rejects.toMatchObject({ code: 'forbidden' });
+    expect((await getEntry(other(), mine)).status).toBe('ready');
+
+    // برداشتنِ «نسخهٔ تازهٔ…» پیوند را برمی‌دارد.
+    await saveEntry(dev(), v3, input({ title: 'Swiper', versionLabel: 'v3', replacesId: null }));
+    expect((await getEntry(dev(), v2)).supersededBy).toBeNull();
+  });
+
+  it('پیش‌نیاز همراهِ مورد نصب می‌شود و کدِ یک‌جای پروژه اول آن را دارد، بی‌تکرار', async () => {
+    const [p3] = await db.insert(projects).values({ title: 'گاما' }).returning({ id: projects.id });
+    await db.insert(projectMembers).values({ projectId: p3!.id, userId: DEV });
+    const gsap = await saveEntry(dev(), null, input({
+      title: 'GSAP', blocks: [{ label: 'cdn', language: 'html', placement: 'site_head', placementNote: '', code: '<script src="gsap.js"></script>' }],
+    }));
+    const anim = await saveEntry(dev(), null, input({
+      title: 'Fade', requiresIds: [gsap],
+      blocks: [
+        { label: 'cdn', language: 'html', placement: 'site_head', placementNote: '', code: '<script src="gsap.js"></script>' },
+        { label: 'init', language: 'js', placement: 'site_body_end', placementNote: '', code: 'fade()' },
+      ],
+    }));
+    expect((await getEntry(dev(), anim)).requires.map((r) => r.id)).toEqual([gsap]);
+    expect((await getEntry(dev(), gsap)).requiredBy.map((r) => r.id)).toEqual([anim]);
+
+    expect(await installOnProject(dev(), anim, p3!.id)).toBe(1);
+    const installed = (await projectLibrary(dev(), p3!.id))!.map((i) => i.id).sort();
+    expect(installed).toEqual([gsap, anim].sort());
+    // دوباره: چیزی تازه نصب نمی‌شود.
+    expect(await installOnProject(dev(), anim, p3!.id)).toBe(0);
+
+    const groups = (await projectCombinedCode(dev(), p3!.id))!;
+    const head = groups.find((g) => g.placement === 'site_head')!;
+    expect(head.parts.map((x) => x.entryId)).toEqual([gsap]);
+    expect(groups.find((g) => g.placement === 'site_body_end')!.code).toContain('<script>\nfade()\n</script>');
+    // ⚠️ کارفرما این را نمی‌گیرد.
+    expect(await projectCombinedCode(client(), p3!.id)).toBeNull();
+  });
+
+  it('مرتبط با «چطور با هم» از هر دو طرف', async () => {
+    const a = await saveEntry(dev(), null, input({ title: 'Range slider' }));
+    const b = await saveEntry(dev(), null, input({ title: 'List filter', related: [{ id: a, note: 'مقدار فیلتر را می‌سازد' }] }));
+    expect((await getEntry(dev(), a)).related).toEqual([expect.objectContaining({ id: b, note: 'مقدار فیلتر را می‌سازد' })]);
+  });
+
+  it('⚠️ پیشنهاد: گام‌ها را عوض می‌کند، تصویرِ موردِ دیگر را نه؛ پذیرفتن «چه چیزی عوض شد» را از توضیحِ او می‌گیرد', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Guide', steps: titled('یک') }), [shot('own.png')]);
+    const own = (await getEntry(dev(), id)).media[0]!.id;
+    const strangerId = await saveEntry(other(), null, input({ title: 'Foreign' }), [shot('f.png')]);
+    const foreign = (await getEntry(other(), strangerId)).media[0]!.id;
+    const sid = await suggestEdit(other(), id, input({
+      title: 'Guide',
+      steps: [{ title: 'یک', body: 'دقیق‌تر', blockIndexes: [0], optionNames: [], mediaIds: [own, foreign] }],
+    }), 'گامِ اول دقیق‌تر شد');
+    const diff = await getSuggestionDiff(dev(), sid);
+    expect(diff.suggestion.parts).toEqual(['steps']);
+    expect(diff.after.steps[0]!.mediaIds).toEqual([own]);
+    await reviewSuggestion(dev(), sid, 'accept');
+    const e = await getEntry(dev(), id);
+    expect(e.steps[0]).toMatchObject({ body: 'دقیق‌تر', blockIndexes: [0], mediaIds: [own] });
+    expect(e.changeNote).toBe('گامِ اول دقیق‌تر شد');
+  });
+
+  it('⚠️ پیشنهاد و نسخهٔ ذخیره‌شده پیش از ۲.۴۷.۰ (گام‌ها متن) هنوز خوانده و بازگردانده می‌شوند', async () => {
+    const id = await saveEntry(dev(), null, input({ title: 'Legacy', category: 'cms', steps: titled('تازه') }));
+    const [rev] = await db.insert(libraryRevisions).values({
+      entryId: id, authorId: DEV,
+      snapshot: {
+        entry: { kind: 'code', title: 'Legacy old', summary: '', platform: 'webflow', status: 'ready', topics: [], body: '',
+          steps: 'قدیم ۱\nقدیم ۲', warnings: '', dependencies: '', demoUrl: '', clientVisible: false, originProjectId: null },
+        blocks: [{ label: '', language: 'js', placement: 'site_body_end', placementNote: '', code: 'old()' }],
+        options: [{ name: 'data-old', kind: 'attribute', description: '', defaultValue: '' }],
+      },
+    }).returning({ id: libraryRevisions.id });
+    const snap = await getRevision(dev(), id, rev!.id);
+    expect(snap.steps.map((s) => s.title)).toEqual(['قدیم ۱', 'قدیم ۲']);
+    await restoreRevision(dev(), id, rev!.id);
+    const e = await getEntry(dev(), id);
+    expect(e.steps.map((s) => s.title)).toEqual(['قدیم ۱', 'قدیم ۲']);
+    expect(e.options[0]).toMatchObject({ name: 'data-old', role: 'setting' });
+    // ⚠️ دسته‌ای که بعداً اضافه شد با بازگرداندنِ نسخهٔ قدیمی پاک نمی‌شود.
+    expect(e.category).toBe('cms');
+
+    await db.insert(librarySuggestions).values({
+      entryId: id, authorId: OTHER, note: 'old', baseUpdatedAt: new Date(),
+      proposed: { title: 'Legacy', summary: '', topics: [], body: '', steps: 'الف\nب', warnings: '', dependencies: '', demoUrl: '',
+        blocks: [{ label: '', language: 'js', placement: 'site_body_end', placementNote: '', code: 'old()' }], options: [] },
+    });
+    const legacy = (await getEntry(dev(), id)).suggestions.find((s) => s.note === 'old')!;
+    expect(legacy.parts).toContain('steps');
+    expect((await getSuggestionDiff(dev(), legacy.id)).after.steps.map((s) => s.title)).toEqual(['الف', 'ب']);
+  });
+
+  it('نسخهٔ جدا برای پروژه گام‌ها و پیش‌نیازها را می‌برد، بی‌ارجاع به تصویرها', async () => {
+    const base = await saveEntry(dev(), null, input({ title: 'Base dep' }));
+    const id = await saveEntry(dev(), null, input({
+      title: 'Forkable', requiresIds: [base], steps: [{ key: '1', title: 'با تصویر', body: '', blockIndexes: [0], optionNames: [], mediaIds: [] }],
+    }), [], { 1: [shot()] });
+    await installOnProject(dev(), id, P1);
+    const fork = await forkForProject(dev(), id, P1);
+    const f = await getEntry(dev(), fork);
+    expect(f.steps).toEqual([expect.objectContaining({ title: 'با تصویر', blockIndexes: [0], mediaIds: [] })]);
+    expect(f.requires.map((r) => r.id)).toEqual([base]);
+    expect(f.media).toEqual([]);
   });
 });

@@ -7,7 +7,7 @@ import { isClientOnly } from '@/server/projects/authority';
 import { notFound, redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { projectGroupSummary } from '@/server/messaging/service';
-import { clientGuidesFor, entryOptions, projectLibrary } from '@/server/library/service';
+import { clientGuidesFor, entryOptions, projectCombinedCode, projectLibrary } from '@/server/library/service';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { groupInviteFor } from '@/server/telegram/group-members';
 import { listUnitEntries, myRequests, myUnpaidUnits, unitStatusOptions } from '@/server/finance/member-service';
@@ -437,7 +437,13 @@ export default async function ProjectDetailPage({
           // گفتگو در خودِ تب (۲.۳۳.۰) — همان پولِ زندهٔ صفحهٔ «پیام‌ها».
           chat: chat ? { ...chat, poll: { enabled: chatSystem.chatPollEnabled, seconds: chatSystem.chatPollInterval }, telegramInvite } : null,
           library: library
-            ? { items: library, canAdd: detail.canInteract && !detail.isFrozen, entries: detail.canInteract && !detail.isFrozen ? await entryOptions(actor) : [] }
+            ? {
+              items: library,
+              canAdd: detail.canInteract && !detail.isFrozen,
+              entries: detail.canInteract && !detail.isFrozen ? await entryOptions(actor) : [],
+              // «کدِ یک‌جای پروژه» (۲.۴۷.۰) — فقط وقتی چیزی نصب است.
+              combined: library.length > 0 ? await projectCombinedCode(actor, project.id) ?? [] : [],
+            }
             : null,
           clientGuides,
           title: project.title,

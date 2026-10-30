@@ -1,11 +1,11 @@
-import { boolean, check, index, integer, jsonb, pgTable, primaryKey, text, uniqueIndex, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, uniqueIndex, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { pk, fk, ts, stamps } from './_shared';
 import { users } from './access';
-import { projects } from './projects';
+import { attachments, projects } from './projects';
 import type {
-  LibraryKind, LibraryLanguage, LibraryOptionKind, LibraryPlacement, LibraryPlatform, LibraryStatus,
-  LibrarySuggestionStatus,
+  LibraryCategory, LibraryKind, LibraryLanguage, LibraryOptionKind, LibraryOptionRole, LibraryPlacement,
+  LibraryPlatform, LibraryStatus, LibrarySuggestionStatus,
 } from '../../domain/library/kinds';
 
 export * from '../../domain/library/kinds';
@@ -33,8 +33,22 @@ export const libraryEntries = pgTable('library_entries', {
   topics: text('topics').array().notNull().default(sql`'{}'::text[]`),
   /** توضیح و یادداشتِ آزاد — پیوندِ Loom/YouTube زیرِ متن پخش می‌شود. */
   body: text('body').notNull().default(''),
-  /** مراحلِ نصب یا استفاده، هر خط یک گام. */
-  steps: text('steps').notNull().default(''),
+  /** دستهٔ ثابت (۲.۴۷.۰) — رشتهٔ خالی یعنی «بی‌دسته». */
+  category: text('category').notNull().default('').$type<LibraryCategory | ''>(),
+  /** «v3.0» — کنارِ عنوان، برای موردی که چند نسخه دارد. */
+  versionLabel: text('version_label').notNull().default(''),
+  /** ویدیوی آموزشی (Loom/YouTube/Vimeo) — بالای صفحه پخش می‌شود. */
+  videoUrl: text('video_url').notNull().default(''),
+  /** پیوندِ Cloneable یا Read-only ِ Webflow. */
+  cloneableUrl: text('cloneable_url').notNull().default(''),
+  /** «اگر دو بار در یک صفحه لازم شد» — هر خط یک نکته. */
+  instances: text('instances').notNull().default(''),
+  /** «چه چیزی عوض شد» ِ آخرین ویرایش — روی کارت، کنارِ نشانِ «به‌روز شد». */
+  changeNote: text('change_note').notNull().default(''),
+  /** تصویرِ شاخصِ کارت؛ خالی = اولین تصویرِ مورد. */
+  coverAttachmentId: fk('cover_attachment_id').references((): AnyPgColumn => attachments.id, { onDelete: 'set null' }),
+  /** نسخهٔ تازه‌تری که جای این را گرفته — این یکی در فهرست زیرِ آن جمع می‌شود. */
+  supersededById: fk('superseded_by_id').references((): AnyPgColumn => libraryEntries.id, { onDelete: 'set null' }),
   /** هشدارها («بعد از لیستِ CMS بگذار، نه در body»)، هر خط یکی. */
   warnings: text('warnings').notNull().default(''),
   /** پیش‌نیازها (کتابخانهٔ CDN، Finsweet…)، هر خط یکی. */
@@ -55,6 +69,8 @@ export const libraryEntries = pgTable('library_entries', {
   check('library_entries_kind_ck', sql`${t.kind} in ('code','guide','note')`),
   check('library_entries_platform_ck', sql`${t.platform} in ('webflow','wordpress','shopify','html','other')`),
   check('library_entries_status_ck', sql`${t.status} in ('draft','ready','deprecated')`),
+  check('library_entries_category_ck', sql`${t.category} in ('','slider','menu','animation','form','cms','layout','media','integration','seo','utility','checklist','other')`),
+  index('library_entries_superseded_ix').on(t.supersededById),
   index('library_entries_kind_ix').on(t.kind),
   index('library_entries_origin_ix').on(t.originProjectId),
   index('library_entries_author_ix').on(t.authorId),
@@ -78,9 +94,33 @@ export const libraryBlocks = pgTable('library_blocks', {
 ]);
 
 /**
+ * گام‌های «چطور استفاده کنم» (۲.۴۷.۰) — هر گام متن، تصویر، تکه‌کد و گزینه‌های
+ * خودش را دارد؛ نصب‌کننده هر چیز را همان‌جایی می‌بیند که لازمش دارد.
+ *
+ * ⚠️ تکه‌کد و گزینه با **جایگاه/نام** ارجاع می‌شوند، نه id: هر ذخیره تکه‌ها و
+ * گزینه‌ها را از نو می‌نویسد و idشان عوض می‌شود. تصویر با id ِ پیوست — پیوست‌ها
+ * پایدارند و با حذفشان ارجاع هنگامِ خواندن نادیده گرفته می‌شود.
+ */
+export const librarySteps = pgTable('library_steps', {
+  id: pk(),
+  entryId: fk('entry_id').notNull().references(() => libraryEntries.id, { onDelete: 'cascade' }),
+  title: text('title').notNull().default(''),
+  body: text('body').notNull().default(''),
+  /** جایگاهِ تکه‌کدها در فهرستِ تکه‌های همین مورد (از صفر). */
+  blockIndexes: integer('block_indexes').array().notNull().default(sql`'{}'::integer[]`),
+  /** شناسهٔ گزینه‌هایی که در این گام گذاشته می‌شوند — نام، یا «نام=مقدار» (`optionKey`). */
+  optionNames: text('option_names').array().notNull().default(sql`'{}'::text[]`),
+  /** id ِ پیوست‌های تصویری ِ همین مورد. */
+  mediaIds: bigint('media_ids', { mode: 'number' }).array().notNull().default(sql`'{}'::bigint[]`),
+  sortOrder: integer('sort_order').notNull().default(0),
+}, (t) => [index('library_steps_entry_ix').on(t.entryId)]);
+
+/**
  * گزینه‌های قابلِ تنظیم — مثلاً `data-flow-price` روی `.template-form-wrap`.
  * ⚠️ همین جدول است که «چطور استفاده کنم» را برای نفرِ بعدی روشن می‌کند:
  * نام، اینکه چه می‌کند، و مقدارِ پیش‌فرض.
+ * ⚠️ ۲.۴۷.۰: هر گزینه یک کارتِ کامل است — مقدارِ دقیق، روی چه المنتی، داخلِ
+ * کدام المنت، مقدارهای مجاز، نکتهٔ «مهم» و مثال؛ و جایگاهش (لازم/اختیاری).
  */
 export const libraryOptions = pgTable('library_options', {
   id: pk(),
@@ -89,9 +129,23 @@ export const libraryOptions = pgTable('library_options', {
   kind: text('kind').notNull().default('attribute').$type<LibraryOptionKind>(),
   description: text('description').notNull().default(''),
   defaultValue: text('default_value').notNull().default(''),
+  role: text('role').notNull().default('setting').$type<LibraryOptionRole>(),
+  /** مقدارِ دقیقی که گذاشته می‌شود — `wrapper` برای `fs-rangeslider-element`. */
+  value: text('value').notNull().default(''),
+  /** روی چه نوع المنتی: «Div Block، Image». */
+  element: text('element').notNull().default(''),
+  /** داخل یا روی کدام المنت: «المنتی که fs-rangeslider-element = wrapper دارد». */
+  target: text('target').notNull().default(''),
+  /** مقدارهای مجاز، هر کدام با توضیح: `[{ value, description }]`. */
+  allowedValues: jsonb('allowed_values').notNull().default(sql`'[]'::jsonb`).$type<Array<{ value: string; description: string }>>(),
+  /** نکتهٔ «مهم» ِ همین گزینه — «باید position: relative باشد». */
+  important: text('important').notNull().default(''),
+  /** مثالِ آماده: `fs-rangeslider-step = "5"`. */
+  example: text('example').notNull().default(''),
   sortOrder: integer('sort_order').notNull().default(0),
 }, (t) => [
   check('library_options_kind_ck', sql`${t.kind} in ('attribute','class','id','variable','setting')`),
+  check('library_options_role_ck', sql`${t.role} in ('required','element','setting')`),
   index('library_options_entry_ix').on(t.entryId),
 ]);
 
@@ -118,10 +172,27 @@ export const libraryProjects = pgTable('library_projects', {
 export const libraryRelations = pgTable('library_relations', {
   entryId: fk('entry_id').notNull().references(() => libraryEntries.id, { onDelete: 'cascade' }),
   relatedId: fk('related_id').notNull().references(() => libraryEntries.id, { onDelete: 'cascade' }),
+  /** «چطور با هم» (۲.۴۷.۰) — یک جمله، از هر دو طرف دیده می‌شود. */
+  note: text('note').notNull().default(''),
 }, (t) => [
   primaryKey({ columns: [t.entryId, t.relatedId] }),
   check('library_relations_order_ck', sql`${t.entryId} < ${t.relatedId}`),
   index('library_relations_related_ix').on(t.relatedId),
+]);
+
+/**
+ * پیش‌نیازِ کتابخانه‌ای (۲.۴۷.۰) — «این مورد اسکریپتِ GSAP ِ کتابخانه را لازم
+ * دارد». پیش‌نیازِ مشترک یک بار ثبت می‌شود، با نصبِ مورد روی پروژه همراهش نصب
+ * می‌شود و در «کدِ یک‌جای پروژه» فقط یک بار می‌آید.
+ * ⚠️ جهت دارد: `entry_id` به `requires_id` نیاز دارد.
+ */
+export const libraryRequires = pgTable('library_requires', {
+  entryId: fk('entry_id').notNull().references(() => libraryEntries.id, { onDelete: 'cascade' }),
+  requiresId: fk('requires_id').notNull().references(() => libraryEntries.id, { onDelete: 'cascade' }),
+}, (t) => [
+  primaryKey({ columns: [t.entryId, t.requiresId] }),
+  check('library_requires_self_ck', sql`${t.entryId} <> ${t.requiresId}`),
+  index('library_requires_requires_ix').on(t.requiresId),
 ]);
 
 /** تاریخچه — عکسِ مورد **پیش از** هر ویرایش، تا کدِ قبلی گم نشود. */

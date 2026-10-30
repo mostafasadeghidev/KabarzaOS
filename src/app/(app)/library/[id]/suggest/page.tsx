@@ -32,14 +32,6 @@ export default async function SuggestLibraryEditPage({ params }: { params: Promi
   }
   const { entry, draft } = data;
   const topics = await libraryTopics(actor);
-  const prefilled = draft
-    ? {
-      ...entry,
-      ...draft.content,
-      blocks: draft.content.blocks.map((b, i) => ({ ...b, id: i })),
-      options: draft.content.options.map((o, i) => ({ ...o, id: i })),
-    }
-    : entry;
 
   return (
     <PageShell width="reading">
@@ -48,7 +40,15 @@ export default async function SuggestLibraryEditPage({ params }: { params: Promi
         title={t('پیشنهادِ ویرایش')}
         description={entry.authorName ? t('برای «{entry}» · نویسنده: {name}', { entry: entry.title, name: entry.authorName }) : entry.title}
       />
-      <EntryForm entry={prefilled} projects={[]} entries={[]} topics={topics} mode="suggest" initialNote={draft?.note ?? ''} />
+      <EntryForm
+        entry={entry}
+        initialContent={draft?.content ?? null}
+        projects={[]}
+        entries={[]}
+        topics={topics}
+        mode="suggest"
+        initialNote={draft?.note ?? ''}
+      />
     </PageShell>
   );
 }
