@@ -1,5 +1,6 @@
 'use client';
 
+import { rememberAccount } from './account-picker';
 import { UserName } from '@/components/user-avatar';
 import Link from 'next/link';
 import { useActionState, useEffect, useState, useTransition } from 'react';
@@ -251,12 +252,29 @@ export function LedgerView({
     { label: 'مانده', value: formatIn(totals.balance, currencyCode), strong: true },
   ];
 
+  // آخرین حسابِ دیده‌شده — دفعهٔ بعد همین باز می‌شود، نه کارتِ انتخاب (۲.۴۵.۰).
+  useEffect(() => { rememberAccount(accountId); }, [accountId]);
+
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {/*
+          ⚠️ حسابِ فعلی بزرگ و جلوی چشم (۲.۴۵.۰) — پیش از این فقط متنِ داخلِ یک
+          فهرستِ کشویی بود و ردیف در حسابی ثبت می‌شد که کاربر حواسش به آن نبود.
+        */}
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="grid min-w-0">
+            <span className="text-xs text-muted-foreground">{tr('حسابِ فعلی')}</span>
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-lg font-semibold">{currentAccount?.name ?? '—'}</span>
+              {currencyCode && <Badge variant="outline" className="num">{currencyCode}</Badge>}
+            </span>
+          </div>
+          {accounts.length > 1 && (
         <SearchableSelect
           size="sm"
-          containerClassName="w-full sm:w-64"
+          containerClassName="w-full sm:w-56"
+          aria-label={tr('تغییرِ حساب')}
           value={accountId}
           onValueChange={(v) => onSelectAccount(Number(v))}
         >
@@ -264,6 +282,8 @@ export function LedgerView({
             <NativeSelectOption key={a.id} value={a.id}>{accountLabel(a)}</NativeSelectOption>
           ))}
         </SearchableSelect>
+          )}
+        </div>
 
         {canManage && (
           <div className="flex gap-2">
@@ -330,7 +350,8 @@ export function LedgerView({
           <StatCard
             key={c.label}
             label={t(c.label)}
-            value={<Amount>{c.value}</Amount>}
+            // «ارزِ حساب» مبلغ نیست — پوشاندنش فقط کارت را بی‌معنا می‌کرد.
+            value={c.label === 'ارز حساب' ? c.value : <Amount>{c.value}</Amount>}
             emphasis={c.strong ? 'strong' : 'quiet'}
           />
         ))}
@@ -490,14 +511,14 @@ export function LedgerView({
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex flex-wrap items-center gap-2">
-              {editing ? tr('ویرایش ردیف') : tr('ثبت ردیف جدید')}
+              {editing ? tr('ویرایش ردیف در حسابِ') : tr('ثبت ردیف جدید در حسابِ')}
               {/*
                 ⚠️ نامِ حساب داخلِ مودال: ردیف همیشه روی حسابی می‌نشیند که
                 صفحه نشان می‌دهد، ولی مودال که باز می‌شود جدول پشتش می‌رود و
                 کاربر دیگر نمی‌بیند برای کدام حساب دارد واریز می‌زند.
               */}
               {currentAccount && (
-                <Badge variant="secondary" className="font-normal">
+                <Badge className="text-sm">
                   {currentAccount.name}
                   {currentAccount.currencyCode ? ` · ${currentAccount.currencyCode}` : ''}
                 </Badge>

@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.45.0]
+
+### Added
+
+- **Finance asks which account to open.** The ledger no longer opens the first account silently, which made it easy to record an entry in the wrong account (for example euros instead of tomans). The first time, it shows a card for each account with its name, currency, office and balance; one click opens it. After that, the last account used opens directly, remembered per browser. With a single account it opens directly as before. Other Finance tabs are not affected.
+- **The current account is shown large at the top of the ledger**, with its currency, next to the "Change account" list. Before, it was only the text inside that list.
+- **The entry dialog names the account:** "New entry in account" with the account as a badge, and the save button says "Save to “account name”".
+
+### Fixed
+
+- The ledger's "Account currency" card was hidden as "•••••" by the hide-amounts switch, although it is not an amount.
+
 ## [2.44.2]
 
 ### Changed

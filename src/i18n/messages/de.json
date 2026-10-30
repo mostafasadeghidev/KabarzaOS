@@ -4453,5 +4453,12 @@
   "یک المنتِ Embed (</>) در همان جایی از صفحه که نوشته شده": "Ein Embed-Element (</>) an der beschriebenen Stelle der Seite",
   "وضعیتِ این تسک را فقط مسئولِ آن یا مدیرِ پروژه عوض می‌کند.": "Nur die zuständige Person oder die Projektleitung kann den Status dieser Aufgabe ändern.",
   "«مدیر پروژه» را فقط مدیرِ کل یا مدیرِ دفترِ همین پروژه تعیین می‌کند.": "Nur die Geschäftsleitung oder die Leitung des Büros dieses Projekts kann die Projektleitung festlegen.",
-  "— انتخابِ نقش —": "— Rolle wählen —"
+  "— انتخابِ نقش —": "— Rolle wählen —",
+  "تغییرِ حساب": "Konto wechseln",
+  "ثبت در «{account}»": "In „{account}“ speichern",
+  "ثبت ردیف جدید در حسابِ": "Neue Buchung im Konto",
+  "حسابِ فعلی": "Aktuelles Konto",
+  "ردیف‌های تازه در همین حساب ثبت می‌شوند. بعداً از بالای دفترکل عوضش کنید.": "Neue Buchungen werden in diesem Konto gespeichert. Sie können es später oben im Hauptbuch wechseln.",
+  "ویرایش ردیف در حسابِ": "Buchung bearbeiten im Konto",
+  "کدام حساب را می‌خواهید ببینید؟": "Welches Konto möchten Sie ansehen?"
 }

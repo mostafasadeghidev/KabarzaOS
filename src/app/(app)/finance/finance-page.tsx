@@ -1,5 +1,6 @@
 'use client';
 
+import { AccountPicker } from './account-picker';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { LedgerPaging } from './ledger-filter';
@@ -60,8 +61,11 @@ export function FinancePage({
   vendorRows,
   today,
   accountOptions,
+  needsPick = false,
   ...props
 }: {
+  /** هنوز حسابی انتخاب نشده — دفترکل جایش را به کارتِ حساب‌ها می‌دهد (۲.۴۵.۰). */
+  needsPick?: boolean;
   /** درخواست‌های بایگانی‌شده (تصمیم‌گرفته پیش از قفل) — تبِ جدا. */
   archivedRequests: RequestRow[];
   unpaidUnits: UnitRow[];
@@ -135,7 +139,10 @@ export function FinancePage({
         </div>
       </Tabs>
 
-      {tab === 'ledger' && (
+      {tab === 'ledger' && needsPick && (
+        <AccountPicker accounts={props.accounts} onPick={(id) => router.push(`/finance?account=${id}`)} />
+      )}
+      {tab === 'ledger' && !needsPick && (
         <LedgerView
           {...props}
           isOwner={isOwner}

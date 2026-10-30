@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { currentActor } from '@/server/auth';
 import {
   getAccountFormOptions, getEntryFormOptions, getLedger, listAccounts, listClosedPeriods,
@@ -9,6 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FinancePage } from './finance-page';
 import { primeTranslations, t } from '@/i18n/server';
 import { AccountsView } from './accounts-view';
+import { LAST_ACCOUNT_COOKIE } from './account-cookie';
 import { can } from '@/domain/access/permissions';
 import { listVendors } from '@/server/settings/service';
 import { PageHeader, PageShell } from '@/components/page-shell';
@@ -25,6 +27,7 @@ export default async function Finance({
     project?: string; party?: string; page?: string; per?: string;
     /** `all=1` — ردیف‌های دورهٔ بسته هم نشان داده شوند (پورتِ نمایشِ کاملِ دفتر). */
     all?: string;
+    tab?: string;
   }>;
 }) {
   /**
@@ -100,7 +103,15 @@ export default async function Finance({
 
   const query = await searchParams;
   const requested = Number(query.account);
-  const accountId = accounts.some((a) => a.id === requested) ? requested : accounts[0]!.id;
+  /**
+   * ⚠️ حساب دیگر بی‌صدا «اولین» نیست (۲.۴۵.۰): نشانی ← آخرین حسابِ همین مرورگر
+   * (کوکی) ← وگرنه کاربر اول حساب را انتخاب می‌کند. با تنها یک حساب انتخابی نیست.
+   */
+  const remembered = Number((await cookies()).get(LAST_ACCOUNT_COOKIE)?.value);
+  const known = (id: number) => accounts.some((a) => a.id === id);
+  const chosen = known(requested) ? requested : known(remembered) ? remembered : accounts.length === 1 ? accounts[0]!.id : null;
+  const needsPick = chosen === null;
+  const accountId = chosen ?? accounts[0]!.id;
 
   /**
    * ⚠️ فیلترها از **آدرس** می‌آیند، نه از state ِ کلاینت: با این کار دکمهٔ
@@ -143,9 +154,10 @@ export default async function Finance({
 
   return (
     <PageShell>
-      <PageHeader title={t("مالی")} description={data.account.name} />
+      <PageHeader title={t("مالی")} description={needsPick ? undefined : data.account.name} />
 
       <FinancePage
+        needsPick={needsPick}
         accountId={accountId}
         accounts={accounts}
         entries={data.entries}
