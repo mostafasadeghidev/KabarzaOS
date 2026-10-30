@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { BookOpenText, ChevronDown, Copy, Library, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
+import { BookOpenText, ChevronDown, Copy, FileCode2, Library, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
 import { SectionHeader } from '@/components/page-shell';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
@@ -23,11 +23,14 @@ import { useConfirm } from '@/components/ui/confirm';
 import { useToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDate } from '@/i18n/datetime';
-import { KIND_LABELS, LANGUAGE_LABELS, LIBRARY_KINDS } from '@/domain/library/model';
+import {
+  KIND_LABELS, LANGUAGE_LABELS, LIBRARY_KINDS, PLACEMENT_HINTS, PLACEMENT_LABELS, type CombinedGroup,
+} from '@/domain/library/model';
 import type { ClientGuide, EntryLink, ProjectLibraryItem } from '@/server/library/service';
 import { forkAction, installAction, removeInstallAction, updateInstallAction } from '../../library/_form/actions';
-import { KindIcon, StatusBadge } from '../../library/entry-bits';
+import { KindIcon, StatusBadge, VersionLabel } from '../../library/entry-bits';
 import { EntryContent } from '../../library/entry-content';
+import { CodeView, CopyButton } from '../../library/code-view';
 
 export interface ProjectLibraryData {
   items: ProjectLibraryItem[];
@@ -35,6 +38,8 @@ export interface ProjectLibraryData {
   canAdd: boolean;
   /** انتخابگرِ «افزودن از کتابخانه». */
   entries: EntryLink[];
+  /** «کدِ یک‌جای پروژه» — Head و Footer ِ همهٔ نصب‌ها، بی‌تکرار. */
+  combined: CombinedGroup[];
 }
 
 /**
@@ -113,6 +118,8 @@ function TeamView({ projectId, data }: { projectId: number; data: ProjectLibrary
         ))
       )}
 
+      {data.combined.length > 0 && <CombinedCode groups={data.combined} />}
+
       {adding && <AddDialog projectId={projectId} entries={available} onClose={() => setAdding(false)} />}
       {editing && <EditDialog projectId={projectId} item={editing} onClose={() => setEditing(null)} />}
     </div>
@@ -165,6 +172,7 @@ function InstallRow({
       <div className="grid min-w-0 flex-1 gap-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <Link href={`/library/${item.id}`} className="font-semibold hover:text-primary hover:underline" dir="auto">{item.title}</Link>
+          <VersionLabel label={item.versionLabel} />
           <StatusBadge status={item.status} />
           {item.languages.map((l) => (
             <span key={l} className="rounded-md border px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground" dir="ltr">{LANGUAGE_LABELS[l]}</span>
@@ -203,6 +211,45 @@ function InstallRow({
         </DropdownMenu>
       )}
     </li>
+  );
+}
+
+/**
+ * «کدِ یک‌جای پروژه» (۲.۴۷.۰) — آنچه باید در Head و Footer ِ این سایت باشد،
+ * از همهٔ موردهای نصب‌شده: پیش‌نیاز پیش از وابسته و هر تکهٔ تکراری یک بار.
+ * ⚠️ جمع‌شده شروع می‌شود؛ بیشترِ وقت‌ها کسی که تب را باز می‌کند دنبالِ یک
+ * موردِ خاص است، نه کلِ کد.
+ */
+function CombinedCode({ groups }: { groups: CombinedGroup[] }) {
+  const tr = useT();
+  return (
+    <Collapsible className="rounded-xl border bg-card">
+      <CollapsibleTrigger className="group flex w-full items-center gap-3 p-4 text-start">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted"><FileCode2 className="size-4.5" aria-hidden /></span>
+        <span className="grid min-w-0 flex-1 gap-0.5">
+          <span className="font-semibold">{tr('کدِ یک‌جای پروژه')}</span>
+          <span className="text-[13px] text-muted-foreground">
+            {tr('هر چیزی که باید در Head و Footer ِ این سایت باشد — پیش‌نیازها اول، بی‌تکرار.')}
+          </span>
+        </span>
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="grid gap-4 border-t p-4">
+        {groups.map((g) => (
+          <section key={g.placement} className="grid gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="grid gap-0.5">
+                <h4 className="text-sm font-semibold">{tr(PLACEMENT_LABELS[g.placement])}</h4>
+                <span className="text-[11px] text-muted-foreground" dir="auto">{tr(PLACEMENT_HINTS[g.placement])}</span>
+              </div>
+              <CopyButton text={g.code} label={tr('کپیِ همه ({n})', { n: g.parts.length })} />
+            </div>
+            <p className="text-xs text-muted-foreground" dir="auto">{g.parts.map((p) => p.label ? `${p.title} · ${p.label}` : p.title).join('، ')}</p>
+            <CodeView code={g.code} language="html" collapseAt={12} />
+          </section>
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -331,12 +378,7 @@ function ClientView({ guides }: { guides: ClientGuide[] }) {
           <CollapsibleContent className="border-t p-4">
             {g.note && <p className="mb-3 text-sm text-muted-foreground" dir="auto">{g.note}</p>}
             <EntryContent
-              steps={g.steps}
-              warnings={g.warnings}
-              dependencies=""
-              options={g.options}
-              body={g.body}
-              media={g.media}
+              content={{ steps: g.steps, warnings: g.warnings, dependencies: '', options: g.options, body: g.body, videoUrl: g.videoUrl, media: g.media }}
               valuesNote={g.valuesNote}
             />
           </CollapsibleContent>

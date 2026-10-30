@@ -30,3 +30,20 @@ export type LibraryOptionKind = (typeof LIBRARY_OPTION_KINDS)[number];
 /** پیشنهادِ ویرایش (۲.۴۶.۰): باز، پذیرفته، رد، پس‌گرفته. */
 export const LIBRARY_SUGGESTION_STATUSES = ['pending', 'accepted', 'rejected', 'withdrawn'] as const;
 export type LibrarySuggestionStatus = (typeof LIBRARY_SUGGESTION_STATUSES)[number];
+
+/**
+ * دسته‌های ثابت (۲.۴۷.۰) — فهرست بر اساسِ همین گروه می‌شود تا صد مورد در یک
+ * ستونِ بلند نریزد. برچسبِ آزاد (`topics`) کنارش می‌ماند؛ دسته فقط یکی است.
+ * ⚠️ رشتهٔ خالی = «بی‌دسته» (موردهای پیش از ۲.۴۷.۰).
+ */
+export const LIBRARY_CATEGORIES = [
+  'slider', 'menu', 'animation', 'form', 'cms', 'layout', 'media', 'integration', 'seo', 'utility', 'checklist', 'other',
+] as const;
+export type LibraryCategory = (typeof LIBRARY_CATEGORIES)[number];
+
+/**
+ * جایگاهِ یک گزینه (۲.۴۷.۰) — همان سه گروهی که نصب‌کننده دنبالش است:
+ * «بی‌این کار نمی‌کند»، «المنتِ اختیاری که اضافه می‌شود»، «تنظیمِ اختیاری».
+ */
+export const LIBRARY_OPTION_ROLES = ['required', 'element', 'setting'] as const;
+export type LibraryOptionRole = (typeof LIBRARY_OPTION_ROLES)[number];

@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  AlertTriangle, Archive, ArchiveRestore, Check, Copy, FolderKanban, GitFork, GitPullRequestArrow, History, Info,
-  Link2, MoreHorizontal, Pencil, Plus, RotateCcw, Trash2, Undo2, X,
+  AlertTriangle, Archive, ArchiveRestore, BookOpen, Check, Copy, FolderKanban, GitBranch, GitFork, GitPullRequestArrow,
+  History, Info, Link2, MoreHorizontal, Package, Pencil, Plus, RotateCcw, Trash2, Undo2, X, Zap,
 } from 'lucide-react';
 import { PageHeader, Panel } from '@/components/page-shell';
 import { dropPrevious } from '@/components/nav-history';
@@ -31,16 +31,38 @@ import { Badge } from '@/components/ui/badge';
 import { UserAvatar } from '@/components/user-avatar';
 import { KIND_LABELS, SUGGESTION_PART_LABELS, SUGGESTION_STATUS_LABELS } from '@/domain/library/model';
 import type {
-  EntryDetail, InstallView, ProjectOption, Snapshot, SuggestionDiff, SuggestionView,
+  EntryDetail, EntryLink, InstallView, ProjectOption, Snapshot, SuggestionDiff, SuggestionView,
 } from '@/server/library/service';
 import {
   deleteEntryAction, deleteMediaAction, forkAction, installAction, removeInstallAction, restoreRevisionAction,
   reviewSuggestionAction, revisionAction, setArchivedAction, suggestionDiffAction, updateInstallAction,
   withdrawSuggestionAction,
 } from '../_form/actions';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SuggestionDiffView } from '../suggestion-diff';
 import { EntryContent } from '../entry-content';
-import { KindBadge, KindIcon, PlatformBadge, StatusBadge, TopicChips } from '../entry-bits';
+import { QuickCard } from '../quick-card';
+import {
+  CategoryBadge, FreshBadge, KindBadge, KindIcon, PlatformBadge, StatusBadge, TopicChips, VersionLabel,
+} from '../entry-bits';
+
+/** نمای انتخاب‌شده (آموزشِ کامل / کارتِ سریع) در همین مرورگر می‌ماند. */
+const VIEW_KEY = 'kz.libraryView';
+
+function useEntryMode(): ['guide' | 'quick', (mode: 'guide' | 'quick') => void] {
+  const [mode, setMode] = useState<'guide' | 'quick'>('guide');
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(VIEW_KEY) === 'quick') setMode('quick');
+    } catch {
+      // مرورگرِ بی‌ذخیره — همان آموزشِ کامل.
+    }
+  }, []);
+  return [mode, (next) => {
+    setMode(next);
+    try { window.localStorage.setItem(VIEW_KEY, next); } catch { /* بی‌ذخیره */ }
+  }];
+}
 
 export function EntryView({
   entry,
@@ -88,6 +110,9 @@ export function EntryView({
 
   const pendingSuggestions = entry.suggestions.filter((s) => s.status === 'pending');
   const myPending = pendingSuggestions.some((s) => s.canWithdraw);
+  const [mode, setMode] = useEntryMode();
+  // کارتِ سریع فقط وقتی معنا دارد که چیزی برای کپی هست.
+  const hasQuick = entry.blocks.length > 0 || entry.options.length > 0;
 
   const archive = (archived: boolean) => startTransition(async () => {
     const r = await setArchivedAction(entry.id, archived);
@@ -112,7 +137,7 @@ export function EntryView({
     <div className="grid gap-6">
       <PageHeader
         back={{ href: '/library', label: tr('کتابخانهٔ کد') }}
-        title={entry.title}
+        title={entry.versionLabel ? <span className="inline-flex flex-wrap items-center gap-2">{entry.title}<VersionLabel label={entry.versionLabel} className="text-xs" /></span> : entry.title}
         media={<KindIcon kind={entry.kind} className="size-11" />}
         description={entry.summary || undefined}
         actions={entry.canSuggest ? (
@@ -156,8 +181,10 @@ export function EntryView({
         ) : undefined}
       >
         <KindBadge kind={entry.kind} />
+        <CategoryBadge category={entry.category} />
         <StatusBadge status={entry.status} />
         <PlatformBadge platform={entry.platform} />
+        <FreshBadge createdAt={entry.createdAt} updatedAt={entry.updatedAt} changeNote={entry.changeNote} />
         {entry.clientVisible && <span className="text-xs text-emerald-700 dark:text-emerald-300">{tr('کارفرمای پروژه‌ها می‌بیند')}</span>}
         <TopicChips topics={entry.topics} />
       </PageHeader>
@@ -178,25 +205,45 @@ export function EntryView({
           <AlertDescription>{tr('این مورد بایگانی شده است: در فهرست و انتخابگرها نمی‌آید و روی پروژهٔ تازه نصب نمی‌شود.')}</AlertDescription>
         </Alert>
       )}
-      {entry.status === 'deprecated' && (
+      {entry.supersededBy ? (
+        <Alert variant="warning">
+          <GitBranch />
+          <AlertDescription>
+            {tr('نسخهٔ تازه‌تری جای این را گرفته است:')}{' '}
+            <Link href={`/library/${entry.supersededBy.id}`} className="font-medium text-primary hover:underline" dir="auto">
+              {entry.supersededBy.title}{entry.supersededBy.versionLabel ? ` · ${entry.supersededBy.versionLabel}` : ''}
+            </Link>
+          </AlertDescription>
+        </Alert>
+      ) : entry.status === 'deprecated' && (
         <Alert variant="warning">
           <Info />
           <AlertDescription>{tr('منسوخ: برای پروژهٔ تازه از این استفاده نکنید.')}{entry.forks.length > 0 && ` ${tr('نسخه‌های تازه‌تر پایینِ صفحه‌اند.')}`}</AlertDescription>
         </Alert>
       )}
+      {entry.changeNote && entry.updatedAt.getTime() - entry.createdAt.getTime() > 3_600_000 && (
+        <p className="-mt-2 text-xs text-muted-foreground" dir="auto">
+          <span className="font-medium">{tr('آخرین تغییر:')}</span> {entry.changeNote}
+        </p>
+      )}
 
       <div className="grid items-start gap-6 @5xl/main:grid-cols-[minmax(0,1fr)_20rem]">
-        <EntryContent
-          steps={entry.steps}
-          warnings={entry.warnings}
-          dependencies={entry.dependencies}
-          blocks={entry.blocks}
-          options={entry.options}
-          body={entry.body}
-          demoUrl={entry.demoUrl}
-          media={entry.media}
-          onRemoveMedia={async (m) => deleteMediaAction(entry.id, m.id)}
-        />
+        <div className="grid min-w-0 gap-4">
+          {hasQuick && (
+            <Tabs value={mode} onValueChange={(v) => setMode(v as 'guide' | 'quick')}>
+              <TabsList>
+                <TabsTrigger value="guide" className="px-3"><BookOpen />{tr('آموزشِ کامل')}</TabsTrigger>
+                <TabsTrigger value="quick" className="px-3"><Zap />{tr('کارتِ سریع')}</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
+          {hasQuick && mode === 'quick' ? <QuickCard entry={entry} /> : (
+            <EntryContent
+              content={entry}
+              onRemoveMedia={async (m) => deleteMediaAction(entry.id, m.id)}
+            />
+          )}
+        </div>
 
         <aside className="grid gap-4">
           <InstallsPanel entry={entry} projects={projects} />
@@ -233,20 +280,46 @@ export function EntryView({
             )}
           </Panel>
 
+          {(entry.olderVersionList.length > 0 || entry.supersededBy) && (
+            <Panel title={tr('نسخه‌ها')} icon={<GitBranch />}>
+              <ul className="grid gap-1.5">
+                {entry.supersededBy && (
+                  <LinkRow link={entry.supersededBy} hint={tr('تازه‌تر')} />
+                )}
+                <li className="flex items-center gap-2 rounded-md bg-muted/60 p-1.5 text-sm font-medium">
+                  <KindIcon kind={entry.kind} className="size-7" />
+                  <span className="min-w-0 truncate" dir="auto">{entry.title}</span>
+                  <VersionLabel label={entry.versionLabel} />
+                  <span className="ms-auto text-[11px] text-muted-foreground">{tr('همین')}</span>
+                </li>
+                {entry.olderVersionList.map((v) => <LinkRow key={v.id} link={v} hint={tr('قدیمی‌تر')} />)}
+              </ul>
+            </Panel>
+          )}
+
           {entry.related.length > 0 && (
-            <Panel title={tr('مرتبط')} icon={<Link2 />}>
+            <Panel title={tr('با این کار می‌کند')} icon={<Link2 />}>
               <ul className="grid gap-2">
                 {entry.related.map((r) => (
-                  <li key={r.id}>
+                  <li key={r.id} className="grid gap-1">
                     <Link href={`/library/${r.id}`} className="flex items-center gap-2 rounded-md p-1 -m-1 hover:bg-muted">
                       <KindIcon kind={r.kind} className="size-7" />
                       <span className="grid min-w-0">
-                        <span className="truncate text-sm font-medium">{r.title}</span>
+                        <span className="truncate text-sm font-medium" dir="auto">{r.title}</span>
                         <span className="text-xs text-muted-foreground">{tr(KIND_LABELS[r.kind])}</span>
                       </span>
                     </Link>
+                    {r.note && <p className="ps-9 text-xs leading-5 text-muted-foreground" dir="auto">{r.note}</p>}
                   </li>
                 ))}
+              </ul>
+            </Panel>
+          )}
+
+          {entry.requiredBy.length > 0 && (
+            <Panel title={tr('این را لازم دارند')} icon={<Package />} description={tr('ویرایشِ این مورد به این‌ها هم می‌رسد.')}>
+              <ul className="grid gap-1.5">
+                {entry.requiredBy.map((r) => <LinkRow key={r.id} link={r} />)}
               </ul>
             </Panel>
           )}
@@ -256,6 +329,19 @@ export function EntryView({
         </aside>
       </div>
     </div>
+  );
+}
+
+function LinkRow({ link, hint }: { link: EntryLink; hint?: string }) {
+  return (
+    <li>
+      <Link href={`/library/${link.id}`} className="flex items-center gap-2 rounded-md p-1.5 text-sm hover:bg-muted">
+        <KindIcon kind={link.kind} className="size-7" />
+        <span className="min-w-0 truncate" dir="auto">{link.title}</span>
+        <VersionLabel label={link.versionLabel} />
+        {hint && <span className="ms-auto shrink-0 text-[11px] text-muted-foreground">{hint}</span>}
+      </Link>
+    </li>
   );
 }
 
@@ -487,19 +573,23 @@ function HistoryPanel({ entry }: { entry: EntryDetail }) {
           <DialogContent className="sm:max-w-3xl">
             <DialogHeader>
               <DialogTitle>{tr('نسخهٔ پیش از ویرایشِ {d}', { d: formatDateTime(viewing.when, tz) })}</DialogTitle>
-              <DialogDescription>{viewing.snapshot.entry.title}</DialogDescription>
+              <DialogDescription>
+                {viewing.snapshot.entry.title}
+                {viewing.snapshot.entry.changeNote && <span className="block text-xs">{viewing.snapshot.entry.changeNote}</span>}
+              </DialogDescription>
             </DialogHeader>
             <div className="grid max-h-[60vh] gap-3 overflow-y-auto">
               {viewing.snapshot.entry.summary && <p className="text-sm text-muted-foreground">{viewing.snapshot.entry.summary}</p>}
-              {/* همان چیدمانِ صفحه — نسخهٔ قدیمیِ راهنما هم گام‌ها و گزینه‌هایش را نشان می‌دهد، نه فقط کد. */}
+              {/* همان چیدمانِ صفحه — نسخهٔ قدیمیِ راهنما هم گام‌ها و گزینه‌هایش را نشان می‌دهد، نه فقط کد.
+                  ⚠️ تصویرها از نسخهٔ فعلی: تصویری که از آن روز هنوز هست، سرِ جایش دیده می‌شود. */}
               <EntryContent
-                steps={viewing.snapshot.entry.steps}
-                warnings={viewing.snapshot.entry.warnings}
-                dependencies={viewing.snapshot.entry.dependencies}
-                blocks={viewing.snapshot.blocks.map((b, i) => ({ ...b, id: i }))}
-                options={viewing.snapshot.options.map((o, i) => ({ ...o, id: i }))}
-                body={viewing.snapshot.entry.body}
-                media={[]}
+                content={{
+                  ...viewing.snapshot.entry,
+                  steps: viewing.snapshot.steps,
+                  blocks: viewing.snapshot.blocks,
+                  options: viewing.snapshot.options,
+                  media: entry.media,
+                }}
               />
             </div>
             {entry.canEdit && (

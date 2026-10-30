@@ -31,38 +31,72 @@ function refresh(entryId?: number, projectId?: number | null) {
   if (projectId) revalidatePath(`/projects/${projectId}`);
 }
 
-/** ورودیِ فرم از JSON ِ فیلدِ پنهان — فرم آرایهٔ تکه‌کد و گزینه دارد. */
+/** ورودیِ فرم از JSON ِ فیلدِ پنهان — فرم آرایهٔ تکه‌کد، گزینه و گام دارد. */
 function parsePayload(raw: FormDataEntryValue | null): EntryInput | null {
   try {
-    const data = JSON.parse(String(raw ?? '')) as Partial<EntryInput>;
+    const data = JSON.parse(String(raw ?? '')) as Record<string, unknown>;
     const str = (v: unknown) => (typeof v === 'string' ? v : '');
     const arr = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+    const ids = (v: unknown) => arr<unknown>(v).map(Number).filter((n) => Number.isInteger(n) && n >= 0);
+    const id = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : null);
     return {
       kind: str(data.kind),
       title: str(data.title),
       summary: str(data.summary),
       platform: str(data.platform),
       status: str(data.status),
+      category: str(data.category),
+      versionLabel: str(data.versionLabel),
       topics: arr<unknown>(data.topics).map(str),
       body: str(data.body),
-      steps: str(data.steps),
       warnings: str(data.warnings),
       dependencies: str(data.dependencies),
+      instances: str(data.instances),
       demoUrl: str(data.demoUrl),
+      videoUrl: str(data.videoUrl),
+      cloneableUrl: str(data.cloneableUrl),
+      changeNote: str(data.changeNote),
       clientVisible: data.clientVisible === true,
-      originProjectId: typeof data.originProjectId === 'number' ? data.originProjectId : null,
+      originProjectId: id(data.originProjectId),
       blocks: arr<Record<string, unknown>>(data.blocks).map((b) => ({
         label: str(b.label), language: str(b.language), placement: str(b.placement),
         placementNote: str(b.placementNote), code: str(b.code),
       })),
       options: arr<Record<string, unknown>>(data.options).map((o) => ({
-        name: str(o.name), kind: str(o.kind), description: str(o.description), defaultValue: str(o.defaultValue),
+        name: str(o.name), kind: str(o.kind), role: str(o.role), description: str(o.description), value: str(o.value),
+        defaultValue: str(o.defaultValue), element: str(o.element), target: str(o.target), important: str(o.important),
+        example: str(o.example),
+        allowedValues: arr<Record<string, unknown>>(o.allowedValues).map((a) => ({ value: str(a?.value), description: str(a?.description) })),
       })),
-      relatedIds: arr<unknown>(data.relatedIds).map(Number).filter((n) => Number.isInteger(n) && n > 0),
+      steps: arr<Record<string, unknown>>(data.steps).map((s) => ({
+        key: str(s.key).replace(/[^0-9a-z-]/gi, '').slice(0, 40),
+        title: str(s.title),
+        body: str(s.body),
+        blockIndexes: ids(s.blockIndexes),
+        optionNames: arr<unknown>(s.optionNames).map(str),
+        mediaIds: ids(s.mediaIds).filter((n) => n > 0),
+      })),
+      related: arr<Record<string, unknown>>(data.related)
+        .map((r) => ({ id: Number(r.id), note: str(r.note) }))
+        .filter((r) => Number.isInteger(r.id) && r.id > 0),
+      requiresIds: ids(data.requiresIds).filter((n) => n > 0),
+      replacesId: id(data.replacesId),
+      coverMediaId: id(data.coverMediaId),
     };
   } catch {
     return null;
   }
+}
+
+/** تصویرهای تازهٔ هر گام — فیلدِ `stepmedia-<key>` ِ همان گام (`StepsEditor`). */
+async function stepMediaFrom(formData: FormData, input: EntryInput) {
+  const out: Record<string, Awaited<ReturnType<typeof mediaFrom>>> = {};
+  for (const s of input.steps) {
+    if (!s.key) continue;
+    const files = await mediaFrom(formData, `stepmedia-${s.key}`);
+    if (files.length > 0) out[s.key] = files;
+  }
+  return out;
 }
 
 export async function saveEntryAction(_prev: LibraryState, formData: FormData): Promise<LibraryState> {
@@ -73,7 +107,7 @@ export async function saveEntryAction(_prev: LibraryState, formData: FormData): 
   let saved: number;
   try {
     const media = await mediaFrom(formData);
-    saved = await saveEntry(await requireActor(), id, input, media);
+    saved = await saveEntry(await requireActor(), id, input, media, await stepMediaFrom(formData, input));
   } catch (error) {
     return { error: explain(error, 'ذخیره نشد.') };
   }
@@ -115,13 +149,14 @@ export async function deleteMediaAction(entryId: number, attachmentId: number): 
 export async function installAction(
   entryId: number, projectId: number, note: string, valuesNote: string,
 ): Promise<LibraryState> {
+  let added: number;
   try {
-    await installOnProject(await requireActor(), entryId, projectId, note, valuesNote);
+    added = await installOnProject(await requireActor(), entryId, projectId, note, valuesNote);
   } catch (error) {
     return { error: explain(error, 'ثبت نشد.') };
   }
   refresh(entryId, projectId);
-  return { message: 'روی پروژه ثبت شد.' };
+  return { message: added > 0 ? 'روی پروژه ثبت شد؛ پیش‌نیازهایش هم نصب شدند.' : 'روی پروژه ثبت شد.' };
 }
 
 export async function updateInstallAction(

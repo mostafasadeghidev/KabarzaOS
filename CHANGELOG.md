@@ -2,6 +2,32 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.47.0]
+
+### Added
+
+- **Code library, second edition: steps that carry everything.** Each "How to use" step now has a title, an optional description, its own screenshots (drag, drop or paste into that step), and the code snippets and options it needs, ticked from the item's own list. The item page shows each of them right under its step instead of in separate piles further down; code and options that no step uses still appear below. Writing a class or attribute name between backticks in a step makes it a one-click copy chip.
+- **Every option is a full card.** Besides name, kind and description, an option now has its exact value (name and value copy separately, as Webflow wants them), the element type it goes on, the element it sits inside or on, allowed values each with a short explanation, the default, an "Important" note and a ready example. Options are grouped as Required, Optional element and Optional setting. The same attribute with different values (e.g. `fs-rangeslider-element` = wrapper / track) is now several options.
+- **Quick card.** Next to the full guide, a compact view with only the prerequisites, every snippet and every option name/value to copy. The choice is remembered in the browser.
+- **Copy by placement.** "Copy all code" and one button per place (site head, site footer, page head, page footer) when an item has several snippets. Raw CSS or JS is wrapped in `<style>` / `<script>` when copied together, so it can be pasted straight into a Custom code box.
+- **Tutorial video, live demo and Cloneable link.** A Loom, YouTube or Vimeo link plays at the top of the page on demand (collapsed by default so the steps stay in view); the demo and Cloneable / read-only links sit next to it.
+- **Categories.** Every item can have one fixed category (sliders, menus, animation, forms, CMS, layout, media, integrations, SEO, tools, checklists, other). The library groups cards by category with a chip row to filter; search and a category filter show a flat list.
+- **Cover image and "New" / "Updated" badges on cards.** A card shows the chosen cover image or the item's first image. An item is "New" for 14 days, and "Updated" for 14 days after a later edit; saving an edit asks "What changed?" and that sentence appears next to the badge and on the page. An accepted suggestion uses the suggester's note.
+- **Versions.** An item can be marked as the newer version of another (e.g. Swiper v3 of v2). The old one becomes Deprecated, links to the new one and folds under it in the list ("1 older version"); search still finds it. A version label (v3.0) shows next to the title, and a Versions panel lists the chain.
+- **Prerequisites from the library.** An item can require other library items (a shared GSAP or Swiper loader). Installing it on a project installs missing prerequisites too, and the page lists what it requires and what requires it.
+- **Project combined code.** The project's "Code and guides" tab has a collapsible "Project's combined code": everything the site needs in its head and footer from all installed items, prerequisites first and identical snippets only once, with one copy button per place.
+- **"Works with" notes.** A related item carries one sentence on how the two work together, shown from both sides.
+- **Using it more than once on a page.** A short list of tips for repeated use, shown in its own section.
+
+### Changed
+
+- Suggest an edit (2.46.0) covers the new content: steps (reorder, reword, link snippets and options, and use or drop the item's existing images; never upload new ones), full option cards, video, Cloneable link and repeated-use tips. The review diff shows step changes step by step and option changes field by field. Suggestions and history versions saved before this release are still read, compared and restored.
+- Client guides in the project tab show the new steps with their screenshots and the tutorial video.
+
+### Database
+
+- Migration `0063_library_v2` adds `library_steps` (existing one-line-per-step text is converted, then the old column is dropped), `library_requires`, option card columns, category, version label, video, Cloneable, repeated-use tips, change note, cover image and "replaced by" on items, and a note on related pairs.
+
 ## [2.46.0]
 
 ### Added
