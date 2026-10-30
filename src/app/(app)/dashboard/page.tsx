@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { RecentActivity } from './recent-activity';
 import { UserName } from '@/components/user-avatar';
 import { currentActor, currentSession } from '@/server/auth';
 import { getDashboard } from '@/server/dashboard';
@@ -314,25 +315,11 @@ export default async function DashboardPage({
             {today.activity.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("رویدادی ثبت نشده.")}</p>
             ) : (
-              <ul className="space-y-1.5 text-sm">
-                {today.activity.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between gap-3">
-                    <span className="truncate">
-                      {t(a.label)}
-                      {/* نامِ کننده به گزارشِ عضو می‌رود (core #388) — فقط برای کسی که گزارش‌ها را می‌بیند. */}
-                      {a.actorName ? (
-                        <span className="text-muted-foreground">
-                          {' · '}
-                          {a.actorId && canViewSection(actor, 'reports')
-                            ? <Link href={`/reports/member/${a.actorId}`} className="hover:text-foreground hover:underline"><UserName userId={a.actorId} name={a.actorName} /></Link>
-                            : <UserName userId={a.actorId} name={a.actorName} />}
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="num shrink-0 text-xs text-muted-foreground">{timeLabel(a.at)}</span>
-                  </li>
-                ))}
-              </ul>
+              <RecentActivity
+                events={today.activity.map((a) => ({ ...a, at: a.at.toISOString() }))}
+                // نامِ کننده به گزارشِ عضو می‌رود (core #388) — فقط برای کسی که گزارش‌ها را می‌بیند.
+                actorHref={canViewSection(actor, 'reports')}
+              />
             )}
           </DashPanel>
 

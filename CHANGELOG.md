@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.44.2]
+
+### Changed
+
+- **Dashboard "Recent activity" is easier to read.** Events are grouped under a day heading ("Today", "Yesterday", or the weekday and date) instead of repeating the weekday on every row. Each row shows the person's avatar, their name and what they did, with the item and its project underneath (for example the task or project the hours were logged on), and only the time at the end. Day and time now follow the viewer's time zone instead of the server's. The name still links to the member's report for people who can see reports.
+
 ## [2.44.1]
 
 ### Security
