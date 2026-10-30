@@ -66,7 +66,8 @@ export function RecentActivity({ events, actorHref }: {
     <div className="grid gap-3">
       {groups.map((g) => (
         <section key={g.key} className="grid gap-1">
-          <h4 className="text-xs font-medium text-muted-foreground">{g.title}</h4>
+          {/* ⚠️ «امروز/دیروز» و ساعت به منطقهٔ زمانیِ مرورگر بسته‌اند؛ اولین رندرِ سرور ممکن است فرق کند. */}
+          <h4 suppressHydrationWarning className="text-xs font-medium text-muted-foreground">{g.title}</h4>
           <ul className="grid">
             {g.items.map((e) => {
               const where = [e.subject, e.project && e.project !== e.subject ? e.project : null].filter(Boolean).join(' · ');
@@ -85,7 +86,7 @@ export function RecentActivity({ events, actorHref }: {
                     </span>
                     {where && <span className="truncate text-xs text-muted-foreground">{where}</span>}
                   </div>
-                  <time dateTime={e.at} className="num shrink-0 self-start pt-0.5 text-xs text-muted-foreground">
+                  <time suppressHydrationWarning dateTime={e.at} className="num shrink-0 self-start pt-0.5 text-xs text-muted-foreground">
                     {time.format(new Date(e.at))}
                   </time>
                 </li>
