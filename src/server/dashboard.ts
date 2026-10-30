@@ -432,7 +432,11 @@ export async function getDashboard(actor: Actor, opts: { officeId?: number | nul
       activeTeam, assignedMembers,
       timers: liveTimers,
       online: liveOnline,
-      activity: liveActivity.map((a) => ({ id: a.id, label: actionLabel(a.action), actorId: a.actorId, actorName: a.actorName, at: a.createdAt })),
+      activity: liveActivity.map((a) => ({
+        id: a.id, label: actionLabel(a.action), actorId: a.actorId, actorName: a.actorName, at: a.createdAt,
+        // مورد و پروژهٔ رویداد (۲.۴۴.۲) — «ثبتِ ساعت» به‌تنهایی نمی‌گفت روی کدام کار.
+        subject: a.subject.name, project: a.subject.projectTitle,
+      })),
     },
     risk: { overdue, soon, stalled, openTenders, reviewStuck, expenseDues },
     charts: { statusDistribution, memberHours, weeklyTrend, offices: officeRows, officeId },
