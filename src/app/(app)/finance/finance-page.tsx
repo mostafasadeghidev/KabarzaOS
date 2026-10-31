@@ -13,6 +13,8 @@ import { VendorsView, type VendorRow } from './vendors-view';
 import { ClosedPeriodsView, type ClosedPeriod } from './closed-periods-view';
 import { MemberAccountsView } from './member-accounts-view';
 import type { MemberAccountRow } from '@/server/finance/member-accounts';
+import { SalariesView } from './salaries-view';
+import type { SalaryPerson } from '@/server/finance/salaries';
 import { useT } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -29,6 +31,8 @@ const TABS = [
   { key: 'members', label: 'مالی اعضا', ownerOnly: false },
   /** قرض، هدیه و هزینه برای اعضا (۲.۴۹.۰) — جدا از دستمزدِ پروژه‌ها. */
   { key: 'balances', label: 'حسابِ اعضا', ownerOnly: false },
+  /** حقوقِ ماهانه (۲.۵۰.۰) — کارهای ثابتِ آژانس، جدا از دستمزدِ پروژه. */
+  { key: 'salaries', label: 'حقوق‌ها', ownerOnly: false },
   { key: 'expenses', label: 'هزینه‌ها', ownerOnly: false },
   /**
    * ⚠️ فقط برای مدیر: `accountOptions` برای بینندهٔ خواندنی `null` است و
@@ -66,11 +70,14 @@ export function FinancePage({
   today,
   accountOptions,
   memberAccounts,
+  salaries,
   needsPick = false,
   ...props
 }: {
   /** تبِ «حسابِ اعضا» — null یعنی بی‌مجوزِ دیدنِ مالی. */
   memberAccounts: MemberAccountRow[] | null;
+  /** تبِ «حقوق‌ها» — null یعنی بی‌مجوزِ دیدنِ مالی. */
+  salaries: SalaryPerson[] | null;
   /** هنوز حسابی انتخاب نشده — دفترکل جایش را به کارتِ حساب‌ها می‌دهد (۲.۴۵.۰). */
   needsPick?: boolean;
   /** درخواست‌های بایگانی‌شده (تصمیم‌گرفته پیش از قفل) — تبِ جدا. */
@@ -129,6 +136,8 @@ export function FinancePage({
     ? vendorRows !== null
     : t.key === 'balances'
       ? memberAccounts !== null
+    : t.key === 'salaries'
+      ? salaries !== null
     : t.key === 'closed'
       ? closedPeriods.length > 0
       : !t.ownerOnly || accountOptions !== null));
@@ -164,6 +173,16 @@ export function FinancePage({
       {tab === 'balances' && memberAccounts && (
         <MemberAccountsView
           people={memberAccounts}
+          accounts={props.accounts}
+          currencies={props.options.currencies}
+          canManage={props.canManage}
+          today={today}
+        />
+      )}
+
+      {tab === 'salaries' && salaries && (
+        <SalariesView
+          people={salaries}
           accounts={props.accounts}
           currencies={props.options.currencies}
           canManage={props.canManage}

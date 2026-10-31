@@ -100,6 +100,13 @@ export const ACTION_LABELS: Record<string, string> = {
   'member_account.offset': 'کسرِ بدهی از دستمزد',
   'member_account.forgive': 'بخشیدنِ بدهیِ عضو',
   'member_account.delete': 'حذفِ ردیفِ حسابِ عضو',
+  'salary.start': 'شروعِ حقوقِ ماهانه',
+  'salary.update': 'ویرایشِ حقوقِ ماهانه',
+  'salary.change': 'تغییرِ مبلغِ حقوق',
+  'salary.stop': 'توقفِ حقوقِ ماهانه',
+  'salary.delete': 'حذفِ دورهٔ حقوق',
+  'salary.pay': 'پرداختِ حقوقِ ماه',
+  'salary.unpay': 'برگرداندنِ پرداختِ حقوق',
 
   // کارکردِ تعدادی و درخواستِ عضو
   'unit.add': 'ثبتِ کارکرد',

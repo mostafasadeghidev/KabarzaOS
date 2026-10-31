@@ -1,4 +1,4 @@
-import { boolean, index, text, date, pgTable, check, integer, numeric } from 'drizzle-orm/pg-core';
+import { boolean, index, text, date, pgTable, check, integer, numeric, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { pk, fk, money, ts, stamps } from './_shared';
 import { currencies, tags, vendors } from './base';
@@ -163,6 +163,8 @@ export const memberAccountEntries = pgTable('member_account_entries', {
   paymentId: fk('payment_id').references(() => projectPayments.id, { onDelete: 'cascade' }),
   projectId: fk('project_id').references(() => projects.id, { onDelete: 'set null' }),
   recurringExpenseId: fk('recurring_expense_id').references(() => recurringExpenses.id, { onDelete: 'set null' }),
+  /** قسطِ قرض که از حقوقِ یک ماه کم شد (۲.۵۰.۰) — با حذفِ آن پرداخت برمی‌گردد. */
+  salaryPaymentId: fk('salary_payment_id').references(() => salaryPayments.id, { onDelete: 'cascade' }),
   createdBy: fk('created_by').references(() => users.id, { onDelete: 'set null' }),
   ...stamps,
 }, (t) => [
@@ -172,4 +174,52 @@ export const memberAccountEntries = pgTable('member_account_entries', {
   index('member_account_user_ix').on(t.userId, t.entryDate),
   index('member_account_ledger_ix').on(t.ledgerId),
   index('member_account_payment_ix').on(t.paymentId),
+]);
+
+/**
+ * حقوقِ ماهانه (۲.۵۰.۰) — هر ردیف یک **دوره**: مبلغِ ثابت از `startMonth` تا
+ * `endMonth` (خالی = ادامه دارد). توقف دوره را می‌بندد و ادامه دورهٔ تازه می‌سازد،
+ * پس تاریخچهٔ ماه‌های با حقوق و بی‌حقوق می‌ماند. ماه‌ها روزِ اولِ ماه‌اند.
+ */
+export const memberSalaries = pgTable('member_salaries', {
+  id: pk(),
+  userId: fk('user_id').notNull().references(() => users.id),
+  amount: money('amount').notNull(),
+  currencyId: fk('currency_id').notNull().references(() => currencies.id),
+  payDay: integer('pay_day').notNull().default(1),
+  accountId: fk('account_id').references(() => accounts.id, { onDelete: 'set null' }),
+  startMonth: date('start_month', { mode: 'string' }).notNull(),
+  endMonth: date('end_month', { mode: 'string' }),
+  note: text('note').notNull().default(''),
+  createdBy: fk('created_by').references(() => users.id, { onDelete: 'set null' }),
+  ...stamps,
+}, (t) => [
+  check('member_salary_amount_ck', sql`${t.amount} > 0`),
+  check('member_salary_day_ck', sql`${t.payDay} between 1 and 28`),
+  index('member_salary_user_ix').on(t.userId, t.startMonth),
+  uniqueIndex('member_salary_open_ux').on(t.userId).where(sql`end_month is null`),
+]);
+
+/** پرداختِ حقوقِ یک ماه — مبلغِ پایه عکسِ لحظهٔ پرداخت است. */
+export const salaryPayments = pgTable('salary_payments', {
+  id: pk(),
+  salaryId: fk('salary_id').notNull().references(() => memberSalaries.id),
+  userId: fk('user_id').notNull().references(() => users.id),
+  month: date('month', { mode: 'string' }).notNull(),
+  baseAmount: money('base_amount').notNull(),
+  bonus: money('bonus').notNull().default('0'),
+  deduction: money('deduction').notNull().default('0'),
+  installment: money('installment').notNull().default('0'),
+  netAmount: money('net_amount').notNull(),
+  currencyId: fk('currency_id').notNull().references(() => currencies.id),
+  paidAt: date('paid_at', { mode: 'string' }).notNull(),
+  ledgerId: fk('ledger_id').references(() => ledger.id, { onDelete: 'cascade' }),
+  note: text('note').notNull().default(''),
+  createdBy: fk('created_by').references(() => users.id, { onDelete: 'set null' }),
+  ...stamps,
+}, (t) => [
+  check('salary_payment_net_ck', sql`${t.netAmount} > 0`),
+  uniqueIndex('salary_payment_month_ux').on(t.userId, t.month),
+  index('salary_payment_ledger_ix').on(t.ledgerId),
+  index('salary_payment_salary_ix').on(t.salaryId),
 ]);
