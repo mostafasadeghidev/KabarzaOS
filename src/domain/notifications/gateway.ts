@@ -56,6 +56,10 @@ const CATEGORY_OF: Record<string, NotifyCategory> = {
   'payment.paid': 'money',
   // ⚠️ نوعِ قدیمیِ مشترک — ردیف‌های پیش از ۱.۹۰ هنوز آن را دارند و باید در همان دسته بمانند.
   'payment.decided': 'money',
+  // حسابِ اعضا (۲.۴۹.۰) — قرض/هزینه، هدیه، تسویه.
+  'member_account.debt': 'money',
+  'member_account.gift': 'money',
+  'member_account.settled': 'money',
 
   // جلسه و یادآور
   'meeting.invited': 'meetings',

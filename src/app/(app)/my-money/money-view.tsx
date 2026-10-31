@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { ArrowLeft, ChevronDown, ChevronLeft, Paperclip } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { MyClientProject, MyMemberProject, MyPaymentLine } from '@/server/finance/my-money';
+import type { MyAccount } from '@/server/finance/member-accounts';
+import { debtSign, MEMBER_ACCOUNT_LABELS } from '@/domain/team-money/member-account';
 import { format } from '@/domain/money/money';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -146,8 +148,10 @@ function Row({
 }
 
 export function MyMoneyView({
-  memberProjects, clientProjects, noProjectPayouts, noProjectIncoming, isMember, isClient, bankHref,
+  memberProjects, clientProjects, noProjectPayouts, noProjectIncoming, isMember, isClient, bankHref, account = null,
 }: {
+  /** حسابِ عضو با شرکت (۲.۴۹.۰) — قرض، هدیه، هزینه و تسویه‌ها؛ null یعنی ردیفی ندارد. */
+  account?: MyAccount | null;
   memberProjects: MyMemberProject[];
   clientProjects: MyClientProject[];
   noProjectPayouts: MyPaymentLine[];
@@ -306,6 +310,50 @@ export function MyMoneyView({
             </div>
           )}
         </Section>
+      )}
+
+      {isMember && account && (
+        <div id="account" className="scroll-mt-20">
+          <Section
+            title={t('حسابِ شما با شرکت')}
+            description={account.balances.length === 0 ? t('بدهیِ بازی ندارید.') : undefined}
+          >
+            <div className="mb-3 flex flex-wrap gap-2 text-sm">
+              {account.balances.map((b) => (
+                <Badge key={b.currencyId} variant="warning">{t('بدهی')}: {money(b.amount, b.currencyCode)}</Badge>
+              ))}
+              {account.gifts.map((g) => (
+                <Badge key={g.currencyId} variant="secondary">{t('هدیه و بخشیده')}: {money(g.amount, g.currencyCode)}</Badge>
+              ))}
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('تاریخ')}</TableHead>
+                  <TableHead>{t('نوع')}</TableHead>
+                  <TableHead numeric>{t('مبلغ')}</TableHead>
+                  <TableHead>{t('توضیحات')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {account.lines.map((l) => (
+                  <TableRow key={l.id}>
+                    <TableDateCell>{l.entryDate}</TableDateCell>
+                    <TableCell>{t(MEMBER_ACCOUNT_LABELS[l.kind])}</TableCell>
+                    <TableNumericCell>
+                      {debtSign(l.kind) === -1 ? '−' : debtSign(l.kind) === 1 ? '+' : ''}
+                      {money(l.amount, l.currencyCode)}
+                    </TableNumericCell>
+                    <TableCell>
+                      <span dir="auto">{[l.recurringTitle, l.projectTitle, l.note].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' — ') || '—'}</span>
+                      {l.dueDate && <span className="ms-2 text-xs text-muted-foreground">{t('موعد: {date}', { date: l.dueDate })}</span>}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Section>
+        </div>
       )}
 
       {isMember && noProjectPayouts.length > 0 && (

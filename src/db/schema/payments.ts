@@ -1,4 +1,4 @@
-import { boolean, index, text, date, pgTable, check, integer } from 'drizzle-orm/pg-core';
+import { boolean, index, text, date, pgTable, check, integer, numeric } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { pk, fk, money, ts, stamps } from './_shared';
 import { currencies, tags, vendors } from './base';
@@ -122,8 +122,54 @@ export const recurringExpenses = pgTable('recurring_expenses', {
   shouldCancel: boolean('should_cancel').notNull().default(false),
   canLiveWithout: boolean('can_live_without').notNull().default(false),
   providerUrl: text('provider_url'),
+  /**
+   * اشتراکی که برای یک عضو پرداخت می‌شود (۲.۴۹.۰) — هر نوبتِ «ثبتِ پرداخت»،
+   * سهمِ او (`chargePct` درصد) به بدهی‌اش در «حسابِ اعضا» اضافه می‌شود.
+   */
+  chargeUserId: fk('charge_user_id').references(() => users.id, { onDelete: 'set null' }),
+  chargePct: numeric('charge_pct', { precision: 5, scale: 2, mode: 'string' }).notNull().default('100'),
   ...stamps,
 }, (t) => [
   check('recurring_interval_unit_ck', sql`${t.intervalUnit} in ('day','week','month','year')`),
   index('recurring_due_ix').on(t.nextDueDate, t.isActive),
+]);
+
+export const MEMBER_ACCOUNT_KINDS = ['loan', 'gift', 'charge', 'repayment', 'offset', 'forgive'] as const;
+export type MemberAccountKind = (typeof MEMBER_ACCOUNT_KINDS)[number];
+
+/**
+ * حسابِ اعضا (۲.۴۹.۰) — قرض، هدیه، هزینه‌ای که شرکت برای عضو داد، و تسویه‌شان.
+ * بدهی = قرض + هزینه − بازپرداخت − کسر از دستمزد − بخشیده؛ هدیه بدهی نمی‌سازد.
+ *
+ * ⚠️ پولِ واقعی همیشه در `ledger` است (`ledgerId`)؛ این جدول فقط می‌گوید آن پول
+ * «طلب» است یا «هدیه». حذفِ ردیفِ دفتر این را هم می‌برد (cascade) تا بدهیِ بی‌پول نماند.
+ * ⚠️ کسر از دستمزد پولِ نقد ندارد: یک ردیفِ پرداختِ پروژه (`paymentId`) بی‌ردیفِ دفتر
+ * می‌سازد تا طلبِ عضو از پروژه هم به همان اندازه کم شود.
+ */
+export const memberAccountEntries = pgTable('member_account_entries', {
+  id: pk(),
+  userId: fk('user_id').notNull().references(() => users.id),
+  kind: text('kind').notNull().$type<MemberAccountKind>(),
+  amount: money('amount').notNull(),
+  currencyId: fk('currency_id').notNull().references(() => currencies.id),
+  amountEur: money('amount_eur').notNull().default('0'),
+  /** سهمِ عضو از ردیفِ دفتر — مبلغ = مبلغِ ردیف × درصد. */
+  sharePct: numeric('share_pct', { precision: 5, scale: 2, mode: 'string' }).notNull().default('100'),
+  entryDate: date('entry_date', { mode: 'string' }).notNull(),
+  /** موعدِ برگشتِ قرض — فقط یادآوری است. */
+  dueDate: date('due_date', { mode: 'string' }),
+  note: text('note').notNull().default(''),
+  ledgerId: fk('ledger_id').references(() => ledger.id, { onDelete: 'cascade' }),
+  paymentId: fk('payment_id').references(() => projectPayments.id, { onDelete: 'cascade' }),
+  projectId: fk('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  recurringExpenseId: fk('recurring_expense_id').references(() => recurringExpenses.id, { onDelete: 'set null' }),
+  createdBy: fk('created_by').references(() => users.id, { onDelete: 'set null' }),
+  ...stamps,
+}, (t) => [
+  check('member_account_kind_ck', sql`${t.kind} in ('loan','gift','charge','repayment','offset','forgive')`),
+  check('member_account_amount_ck', sql`${t.amount} > 0`),
+  check('member_account_share_ck', sql`${t.sharePct} > 0 and ${t.sharePct} <= 100`),
+  index('member_account_user_ix').on(t.userId, t.entryDate),
+  index('member_account_ledger_ix').on(t.ledgerId),
+  index('member_account_payment_ix').on(t.paymentId),
 ]);

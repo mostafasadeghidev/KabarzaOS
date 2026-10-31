@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
 import { getMyMoney, hasPersonalMoney } from '@/server/finance/my-money';
+import { myAccount } from '@/server/finance/member-accounts';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MyMoneyView } from './money-view';
 import { primeTranslations, t } from '@/i18n/server';
@@ -36,7 +37,7 @@ export default async function MyMoneyPage() {
     );
   }
 
-  const data = await getMyMoney(actor);
+  const [data, account] = await Promise.all([getMyMoney(actor), myAccount(actor)]);
 
   return (
     // ⚠️ عرضِ خواندنی — همان قاعدهٔ تبِ «پرداختِ من» ِ پروژه.
@@ -51,6 +52,7 @@ export default async function MyMoneyPage() {
         clientProjects={data.clientProjects}
         noProjectPayouts={data.noProjectPayouts}
         noProjectIncoming={data.noProjectIncoming}
+        account={account}
         isMember={data.isMember}
         isClient={data.isClient}
         bankHref="/profile"
