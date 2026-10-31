@@ -13,6 +13,7 @@ import { AccountsView } from './accounts-view';
 import { LAST_ACCOUNT_COOKIE } from './account-cookie';
 import { can } from '@/domain/access/permissions';
 import { listVendors } from '@/server/settings/service';
+import { listMemberAccounts } from '@/server/finance/member-accounts';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { pageTitle } from '@/i18n/page-title';
 
@@ -131,7 +132,7 @@ export default async function Finance({
     includeLocked: query.all === '1',
   };
 
-  const [data, requests, archivedRequests, recurring, directory, unpaidUnits, detachedPayments, closedPeriods] = await Promise.all([
+  const [data, requests, archivedRequests, recurring, directory, unpaidUnits, detachedPayments, closedPeriods, memberAccounts] = await Promise.all([
     getLedger(actor, filter),
     listRequests(actor),
     listRequests(actor, 'archived'),
@@ -140,6 +141,7 @@ export default async function Finance({
     listUnpaidUnits(actor),
     listDetachedPayments(actor),
     listClosedPeriods(actor),
+    listMemberAccounts(actor),
   ]);
   const options = data.canManage
     ? await getEntryFormOptions(actor)
@@ -189,6 +191,7 @@ export default async function Finance({
         detachedPayments={detachedPayments}
         closedPeriods={closedPeriods}
         isOwner={actor.roles.includes('owner')}
+        memberAccounts={memberAccounts}
         categories={options.categories}
         recurring={recurring}
         vendors={options.vendors}

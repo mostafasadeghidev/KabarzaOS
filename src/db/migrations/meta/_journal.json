@@ -449,6 +449,13 @@
       "when": 1789698000034,
       "tag": "0063_library_v2",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1789698000035,
+      "tag": "0064_member_accounts",
+      "breakpoints": true
     }
   ]
 }

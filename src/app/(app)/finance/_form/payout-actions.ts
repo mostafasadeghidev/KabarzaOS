@@ -14,6 +14,7 @@ import { RecurringPayError, type ExpenseKind } from '@/domain/finance/recurring'
 import { getT } from '@/i18n/server';
 import { INSTALLMENT_MESSAGES, UnitInstallmentError } from '@/domain/team-money/unit-installments';
 import { ltr } from '@/i18n/bidi';
+import { MemberAccountError, MEMBER_ACCOUNT_MESSAGES } from '@/domain/team-money/member-account';
 
 /** اقدام‌های پرداخت‌ها و هزینه‌های دوره‌ای. */
 
@@ -47,6 +48,7 @@ async function explain(error: unknown, fallback: string): Promise<string> {
   }
   if (error instanceof UnitInstallmentError) return INSTALLMENT_MESSAGES[error.code];
   if (error instanceof AccountError) return accountMessage(error.code);
+  if (error instanceof MemberAccountError) return MEMBER_ACCOUNT_MESSAGES[error.code];
   if (error instanceof LedgerValidationError) return 'اطلاعاتِ ردیفِ دفتر کامل نیست.';
   if (error instanceof ForbiddenError) return 'دسترسی کافی ندارید.';
   return fallback;
@@ -132,6 +134,8 @@ export async function saveRecurringAction(_prev: PayoutState, formData: FormData
     categoryTagId: num('categoryTagId'),
     note: String(formData.get('note') ?? ''),
     isActive: formData.get('isActive') !== null,
+    chargeUserId: num('chargeUserId'),
+    chargePct: String(formData.get('chargePct') ?? '').trim() || null,
     });
     if (payNow) await payRecurring(actor, id, null);
   }, 'هزینه ذخیره نشد.');

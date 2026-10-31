@@ -76,6 +76,7 @@ export type NotificationTone = 'good' | 'bad' | null;
 
 export function toneOf(type: string): NotificationTone {
   if (type === 'payment.approved' || type === 'payment.paid' || type === 'library.suggestion_accepted') return 'good';
+  if (type === 'member_account.gift' || type === 'member_account.settled') return 'good';
   if (type === 'payment.rejected' || type === 'library.suggestion_rejected') return 'bad';
   return null;
 }

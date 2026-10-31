@@ -11,6 +11,8 @@ import { PayoutsView, type RecurringRow, type RequestRow , type UnitRow, type De
 import { AccountsView, type AccountFormOptions } from './accounts-view';
 import { VendorsView, type VendorRow } from './vendors-view';
 import { ClosedPeriodsView, type ClosedPeriod } from './closed-periods-view';
+import { MemberAccountsView } from './member-accounts-view';
+import type { MemberAccountRow } from '@/server/finance/member-accounts';
 import { useT } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -25,6 +27,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const TABS = [
   { key: 'ledger', label: 'دفترکل', ownerOnly: false },
   { key: 'members', label: 'مالی اعضا', ownerOnly: false },
+  /** قرض، هدیه و هزینه برای اعضا (۲.۴۹.۰) — جدا از دستمزدِ پروژه‌ها. */
+  { key: 'balances', label: 'حسابِ اعضا', ownerOnly: false },
   { key: 'expenses', label: 'هزینه‌ها', ownerOnly: false },
   /**
    * ⚠️ فقط برای مدیر: `accountOptions` برای بینندهٔ خواندنی `null` است و
@@ -61,9 +65,12 @@ export function FinancePage({
   vendorRows,
   today,
   accountOptions,
+  memberAccounts,
   needsPick = false,
   ...props
 }: {
+  /** تبِ «حسابِ اعضا» — null یعنی بی‌مجوزِ دیدنِ مالی. */
+  memberAccounts: MemberAccountRow[] | null;
   /** هنوز حسابی انتخاب نشده — دفترکل جایش را به کارتِ حساب‌ها می‌دهد (۲.۴۵.۰). */
   needsPick?: boolean;
   /** درخواست‌های بایگانی‌شده (تصمیم‌گرفته پیش از قفل) — تبِ جدا. */
@@ -120,6 +127,8 @@ export function FinancePage({
   }, [asked]);
   const visible = TABS.filter((t) => (t.key === 'vendors'
     ? vendorRows !== null
+    : t.key === 'balances'
+      ? memberAccounts !== null
     : t.key === 'closed'
       ? closedPeriods.length > 0
       : !t.ownerOnly || accountOptions !== null));
@@ -152,6 +161,16 @@ export function FinancePage({
 
       {tab === 'vendors' && vendorRows && <VendorsView rows={vendorRows} />}
 
+      {tab === 'balances' && memberAccounts && (
+        <MemberAccountsView
+          people={memberAccounts}
+          accounts={props.accounts}
+          currencies={props.options.currencies}
+          canManage={props.canManage}
+          today={today}
+        />
+      )}
+
       {tab === 'closed' && <ClosedPeriodsView periods={closedPeriods} isOwner={isOwner} />}
 
       {tab === 'accounts' && accountOptions && (
@@ -174,6 +193,7 @@ export function FinancePage({
           lockDate={props.lockDate}
           categories={categories}
           recurring={recurring}
+          members={(memberAccounts ?? []).filter((p) => p.active).map((p) => ({ id: p.userId, name: p.name }))}
           accounts={props.accounts}
           currencies={props.options.currencies}
           vendors={vendors}

@@ -92,6 +92,15 @@ export const ACTION_LABELS: Record<string, string> = {
   'recurring.pay': 'پرداختِ هزینهٔ دوره‌ای',
   'recurring.delete': 'حذفِ هزینهٔ دوره‌ای',
 
+  // حسابِ اعضا (۲.۴۹.۰)
+  'member_account.loan': 'ثبتِ قرض به عضو',
+  'member_account.gift': 'ثبتِ هدیه به عضو',
+  'member_account.charge': 'ثبتِ هزینه برای عضو',
+  'member_account.repayment': 'ثبتِ بازپرداختِ عضو',
+  'member_account.offset': 'کسرِ بدهی از دستمزد',
+  'member_account.forgive': 'بخشیدنِ بدهیِ عضو',
+  'member_account.delete': 'حذفِ ردیفِ حسابِ عضو',
+
   // کارکردِ تعدادی و درخواستِ عضو
   'unit.add': 'ثبتِ کارکرد',
   'unit.amount': 'ویرایشِ مبلغِ کارکرد',

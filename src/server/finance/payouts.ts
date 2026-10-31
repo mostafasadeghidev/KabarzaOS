@@ -16,6 +16,8 @@ import {
 } from '@/domain/finance/recurring';
 import { accountScope, createEntry, currentLockDate, findOrCreateVendor, rateSource, type EntryInput } from './service';
 import { convert } from '@/domain/currency/rates';
+import { parseShare } from '@/domain/team-money/member-account';
+import { chargeFromRecurring } from './member-accounts';
 
 /**
  * پرداخت‌ها و هزینه‌های دوره‌ای.
@@ -609,9 +611,13 @@ export async function listRecurring(actor: Actor) {
       categoryTagId: recurringExpenses.categoryTagId,
       categoryName: tags.name,
       note: recurringExpenses.note,
+      chargeUserId: recurringExpenses.chargeUserId,
+      chargePct: recurringExpenses.chargePct,
+      chargeUserName: users.name,
     })
     .from(recurringExpenses)
     .leftJoin(currencies, eq(currencies.id, recurringExpenses.currencyId))
+    .leftJoin(users, eq(users.id, recurringExpenses.chargeUserId))
     .leftJoin(accounts, eq(accounts.id, recurringExpenses.accountId))
     .leftJoin(vendors, eq(vendors.id, recurringExpenses.vendorId))
     .leftJoin(tags, eq(tags.id, recurringExpenses.categoryTagId))
@@ -641,6 +647,10 @@ export interface RecurringInput {
   categoryTagId?: number | null;
   note?: string;
   isActive?: boolean;
+  /** به حسابِ این عضو (۲.۴۹.۰) — هر نوبتِ پرداخت سهمش را بدهکار می‌کند. */
+  chargeUserId?: number | null;
+  /** سهمِ عضو، درصد؛ پیش‌فرض ۱۰۰. */
+  chargePct?: string | null;
 }
 
 export async function saveRecurring(actor: Actor, input: RecurringInput) {
@@ -660,6 +670,8 @@ export async function saveRecurring(actor: Actor, input: RecurringInput) {
     nextDueDate: input.nextDueDate || input.startDate,
     accountId: input.accountId,
     vendorId: input.vendorName?.trim() ? await findOrCreateVendor(input.vendorName) : input.vendorId,
+    chargeUserId: input.chargeUserId ?? null,
+    chargePct: input.chargeUserId ? parseShare(input.chargePct) : '100',
   };
 
   if (input.id) {
@@ -738,6 +750,14 @@ export async function payRecurring(actor: Actor, id: number, expectedDue: string
       receiverUserId: null,
       receiverLabel: vendorName ?? '',
     });
+  }
+
+  // اشتراکِ یک عضو: سهمش از همین نوبت به بدهی‌اش در «حسابِ اعضا» اضافه می‌شود.
+  if (expense.chargeUserId) {
+    await chargeFromRecurring(actor, {
+      id: expense.id, title: expense.title, amount: expense.amount, currencyId: expense.currencyId,
+      chargeUserId: expense.chargeUserId, chargePct: expense.chargePct, nextDueDate: expense.nextDueDate,
+    }, ledgerId);
   }
 
   if (plan.after.type === 'deactivate') {

@@ -2,6 +2,24 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.49.0]
+
+### Added
+
+- **Member accounts: loans, gifts and expenses paid for a member.** A new "Member accounts" tab in Finance keeps one balance per member and currency. Debt = loans + expenses paid for them − repayments − deductions from pay − forgiven amounts. Gifts don't create debt.
+  - **Loan:** money leaves the chosen account (booked in the ledger under the "Loan" category) and the member owes the same amount. An optional due date marks it "Overdue" once passed.
+  - **Gift** (e.g. a wedding gift): money leaves the account as a company expense under a new "Gift" category. The member owes nothing, and the gift stays in their history.
+  - **Expense for a member** (e.g. a cloud subscription): the money goes to the vendor, and the member owes their share (default 100%).
+  - Loans, gifts and repayments are not counted as "paid to member", so they no longer inflate a member's received total the way a project-less payout did.
+- **Three ways to settle a debt.**
+  - **Repayment:** a deposit is booked in the chosen account.
+  - **Deduct from a project's pay:** the project counts that much as paid to the member and the debt goes down, with no cash moving and no ledger row. An optional equivalent fixes the amount in the project's contract currency.
+  - **Forgive:** clears the debt and counts it with gifts.
+  - Settlements can't exceed the open debt in that currency.
+- **Subscriptions charged to a member.** A recurring expense can be set "Charged to" a member with a share percentage. Every "Record payment" adds that share to their debt, even when the expense has no payment account.
+- **Members see their own account.** "My finances" gains a "Your account with the company" section with the balance and every loan, gift, expense, repayment and deduction. The member is notified each time something is added.
+- Editing a loan, gift or repayment row in the ledger updates the member's account. Deleting it removes the linked entry, and deleting an expense entry keeps the vendor payment.
+
 ## [2.47.2]
 
 ### Fixed

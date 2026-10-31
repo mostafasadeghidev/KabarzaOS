@@ -9,6 +9,7 @@ import { db } from '@/db/client';
 import {
   accounts, accountUsers, auditLog, currencies, exchangeRates, fiscalClosings, fiscalLocks,
   ledger, offices, projectMembers, projectPayments, projects, tagRelations, tags, users, vendors, userPermissions, userRoles, unitEntries, projectClients,
+  memberAccountEntries,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, ForbiddenError, visibleScopes } from '@/domain/access/guard';
@@ -448,6 +449,49 @@ export interface EntryInput {
   transferFeePct?: string | null;
   /** گروهِ «یک واریز برای چند پروژه» (۲.۲۷.۰) — فقط هنگامِ ساخت، از `createSplitEntries`. */
   splitGroup?: string | null;
+  /**
+   * پولِ «حسابِ اعضا» (۲.۴۹.۰) — قرض، هدیه یا بازپرداخت دستمزد نیست و نباید در
+   * «پرداخت به عضو» آینه شود. فقط هنگامِ ساخت از `member-accounts`؛ در ویرایش
+   * پیوندِ خودِ ردیف (`member_account_entries`) همین را می‌گوید.
+   */
+  skipMirror?: boolean;
+}
+
+/** ردیفی که پولِ نقدِ قرض/هدیه/بازپرداختِ یک عضو است؟ — آینهٔ پرداخت نمی‌گیرد. */
+async function isMemberAccountCash(ledgerId: number): Promise<boolean> {
+  const rows = await db.select({ id: memberAccountEntries.id }).from(memberAccountEntries)
+    .where(and(
+      eq(memberAccountEntries.ledgerId, ledgerId),
+      inArray(memberAccountEntries.kind, ['loan', 'gift', 'repayment']),
+    )).limit(1);
+  return rows.length > 0;
+}
+
+/**
+ * پس از ویرایشِ ردیفِ دفتر، ردیف‌های «حسابِ اعضا»ی وصل به آن هم‌گام می‌شوند:
+ * مبلغ (× سهمِ عضو)، ارز، تاریخ و یورو. ⚠️ بی این، ویرایشِ مبلغِ قرض در دفترکل
+ * بدهیِ قدیمی را نگه می‌داشت و دو دفتر از هم جدا می‌شدند.
+ */
+async function syncMemberAccount(ledgerId: number): Promise<void> {
+  const [row] = await db.select({
+    amount: ledger.amount, currencyId: ledger.currencyId, entryDate: ledger.entryDate, amountEur: ledger.amountEur,
+    receiverUserId: ledger.receiverUserId, payerUserId: ledger.payerUserId,
+  }).from(ledger).where(eq(ledger.id, ledgerId));
+  if (!row) return;
+  const linked = await db.select().from(memberAccountEntries).where(eq(memberAccountEntries.ledgerId, ledgerId));
+  for (const e of linked) {
+    const pct = Number(e.sharePct) / 100;
+    // قرض/هدیه به گیرنده و بازپرداخت به پرداخت‌کننده منسوب است؛ هزینه به فروشنده رفته و عضوش ثابت است.
+    const person = e.kind === 'repayment' ? row.payerUserId : e.kind === 'charge' ? null : row.receiverUserId;
+    await db.update(memberAccountEntries).set({
+      amount: (Number(row.amount) * pct).toFixed(4),
+      currencyId: row.currencyId,
+      amountEur: (Number(row.amountEur) * pct).toFixed(4),
+      entryDate: row.entryDate,
+      ...(person ? { userId: person } : {}),
+      updatedAt: new Date(),
+    }).where(eq(memberAccountEntries.id, e.id));
+  }
 }
 
 /**
@@ -464,6 +508,7 @@ async function mirrorPayment(
   input: EntryInput,
   amounts: { amountEur: string },
 ): Promise<void> {
+  if (input.skipMirror || await isMemberAccountCash(ledgerId)) return;
   const receiverIsMember = Boolean(
     input.projectId && input.receiverUserId
     && (await db.select({ id: projectMembers.id }).from(projectMembers).where(and(
@@ -872,6 +917,7 @@ export async function updateEntry(actor: Actor, entryId: number, rawInput: Entry
   await db.delete(projectPayments).where(eq(projectPayments.ledgerId, entryId));
   await mirrorPayment(entryId, input, amounts);
   await writeLedgerTags(entryId, input.tagIds);
+  await syncMemberAccount(entryId);
 
   await audit(actor, 'ledger.update', entryId, before, input);
 }

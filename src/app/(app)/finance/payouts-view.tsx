@@ -124,6 +124,10 @@ export interface RecurringRow {
   accountName: string | null;
   vendorName: string | null;
   isActive: boolean;
+  /** به حسابِ این عضو (۲.۴۹.۰). */
+  chargeUserId: number | null;
+  chargeUserName: string | null;
+  chargePct: string;
 }
 
 const STATUS: Record<string, { label: string; variant: 'secondary' | 'success' | 'outline' | 'warning' }> = {
@@ -177,6 +181,7 @@ export function PayoutsView({
   lockDate = null,
   categories = [],
   recurring,
+  members = [],
   accounts,
   currencies,
   vendors,
@@ -202,6 +207,8 @@ export function PayoutsView({
   section: 'members' | 'expenses';
   requests: RequestRow[];
   recurring: RecurringRow[];
+  /** اعضای فعال — برای «به حسابِ عضو» ِ اشتراک. */
+  members?: Array<{ id: number; name: string }>;
   accounts: Array<{ id: number; name: string; currencyCode: string | null }>;
   currencies: Array<{ id: number; code: string; isDefault: boolean }>;
   vendors: Array<{ id: number; name: string; isActive?: boolean }>;
@@ -703,6 +710,13 @@ export function PayoutsView({
                         {r.accountName && (
                           <span className="ms-2 text-xs text-muted-foreground">{r.accountName}</span>
                         )}
+                        {r.chargeUserId && (
+                          <Badge variant="warning" className="ms-1">
+                            {Number(r.chargePct) < 100
+                              ? tr('به حسابِ {name} ({pct}٪)', { name: r.chargeUserName ?? '', pct: String(Number(r.chargePct)) })
+                              : tr('به حسابِ {name}', { name: r.chargeUserName ?? '' })}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableNumericCell><Amount>{formatIn(r.amount, r.currencyCode)} {r.currencyCode ?? ''}</Amount></TableNumericCell>
                       <TableNumericCell className="text-muted-foreground">
@@ -1021,6 +1035,21 @@ export function PayoutsView({
               <Field className="sm:col-span-2">
                 <FieldLabel htmlFor="e-note">{t("یادداشت")}</FieldLabel>
                 <Input id="e-note" name="note" defaultValue={editing?.note ?? ''} />
+              </Field>
+            </div>
+            {/* اشتراکِ یک عضو (۲.۴۹.۰): هر نوبتِ پرداخت سهمش را در «حسابِ اعضا» بدهکار می‌کند. */}
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field className="sm:col-span-2">
+                <FieldLabel htmlFor="e-charge">{t("به حسابِ عضو")}</FieldLabel>
+                <SearchableSelect id="e-charge" name="chargeUserId" containerClassName="w-full" defaultValue={editing?.chargeUserId ? String(editing.chargeUserId) : ''}>
+                  <NativeSelectOption value="">{t("— هزینهٔ خودِ شرکت —")}</NativeSelectOption>
+                  {members.map((m) => <NativeSelectOption key={m.id} value={m.id}>{m.name}</NativeSelectOption>)}
+                </SearchableSelect>
+                <FieldDescription>{tr("هر بار «ثبت پرداخت» بزنید، سهمِ او به بدهی‌اش اضافه می‌شود.")}</FieldDescription>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="e-charge-pct">{t("سهمِ عضو (٪)")}</FieldLabel>
+                <Input id="e-charge-pct" name="chargePct" inputMode="decimal" className="num" defaultValue={editing ? String(Number(editing.chargePct)) : '100'} />
               </Field>
             </div>
             {/* ⚠️ پیش از این ویرایش، طرف‌حساب و ارز را بی‌صدا پاک می‌کرد و دسته/یادداشت/فعال ذخیره نمی‌شدند. */}
