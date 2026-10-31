@@ -34,7 +34,7 @@ async function audit(actor: Actor, action: string, objectId: number, after?: unk
 }
 
 /** عضوِ فعالِ تیم — قرض و هدیه فقط برای اعضاست، نه کارفرما. */
-async function assertMember(userId: number): Promise<string> {
+export async function assertMember(userId: number): Promise<string> {
   const rows = await db.select({ name: users.name }).from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
     .where(and(eq(users.id, userId), eq(userRoles.role, 'member'), isNull(users.deletedAt)))
@@ -43,22 +43,22 @@ async function assertMember(userId: number): Promise<string> {
   return rows[0].name;
 }
 
-async function tagBySlug(slug: string): Promise<number[]> {
+export async function tagBySlug(slug: string): Promise<number[]> {
   const rows = await db.select({ id: tags.id }).from(tags).where(eq(tags.slug, slug)).limit(1);
   return rows.map((r) => r.id);
 }
 
-async function currencyCode(id: number): Promise<string> {
+export async function currencyCode(id: number): Promise<string> {
   return (await db.select({ code: currencies.code }).from(currencies).where(eq(currencies.id, id)))[0]?.code ?? '';
 }
 
-async function eurOf(amount: string, currencyId: number): Promise<string> {
+export async function eurOf(amount: string, currencyId: number): Promise<string> {
   const { source, baseCurrencyId } = await rateSource();
   return convert(source, amount, currencyId, baseCurrencyId) ?? '0';
 }
 
 /** ماندهٔ بدهیِ یک عضو در یک ارز. */
-async function balanceOf(userId: number, currencyId: number): Promise<number> {
+export async function balanceOf(userId: number, currencyId: number): Promise<number> {
   const rows = await db.select({
     kind: memberAccountEntries.kind, amount: memberAccountEntries.amount, currencyId: memberAccountEntries.currencyId,
   }).from(memberAccountEntries).where(and(
@@ -320,6 +320,8 @@ export async function deleteMemberEntry(actor: Actor, id: number): Promise<void>
   assertCanManage(actor, 'finance');
   const [row] = await db.select().from(memberAccountEntries).where(eq(memberAccountEntries.id, id));
   if (!row) throw new MemberAccountError('not_found');
+  // قسطی که از حقوق کم شد، با پرداختِ همان ماه می‌رود — جدا حذفش خالصِ حقوق را به هم می‌زد.
+  if (row.salaryPaymentId) throw new MemberAccountError('linked_salary');
 
   if (row.kind === 'loan' || row.kind === 'charge') {
     const balance = await balanceOf(row.userId, row.currencyId);

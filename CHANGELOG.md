@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.50.0]
+
+### Added
+
+- **Monthly salaries.** Finance gains a "Salaries" tab for members paid a fixed monthly amount for the agency's ongoing work, separate from project pay.
+  - A salary is set per member with an amount, currency, pay day (1–28), default account and start month.
+  - Every month from the start month up to the current month falls due. Unpaid months are listed at the top and marked overdue once the pay day has passed.
+  - "Pay" records the month's payment as a ledger expense in the "Salary" category, with an optional bonus, deduction and loan installment. The installment is taken off the member's debt in "Member accounts".
+  - Each month can be paid only once. Reversing a payment removes its ledger entry and puts any installment back on the debt.
+- **Stopping and resuming a salary.** A salary can be stopped after any month and resumed later as a new period, so the months in between have no salary and never show as unpaid. The member's salary history keeps every period.
+- **Changing the amount.** A new amount can start from any month. Earlier months, and payments already made, keep the old amount.
+- **Members see their salary.** "My finances" gains a "Monthly salary" section with the current salary, the periods and each month's payment. The member is notified when a month is paid.
+- Salary payments don't appear as project pay or as "payments without a project", and editing the payment in the ledger keeps the salary record in step.
+
 ## [2.49.0]
 
 ### Added

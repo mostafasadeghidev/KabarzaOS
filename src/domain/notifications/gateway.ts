@@ -60,6 +60,7 @@ const CATEGORY_OF: Record<string, NotifyCategory> = {
   'member_account.debt': 'money',
   'member_account.gift': 'money',
   'member_account.settled': 'money',
+  'salary.paid': 'money',
 
   // جلسه و یادآور
   'meeting.invited': 'meetings',

@@ -71,7 +71,7 @@ export class MemberAccountError extends Error {
   constructor(
     readonly code:
       | 'not_found' | 'invalid_amount' | 'invalid_share' | 'over_balance'
-      | 'not_member' | 'not_project_member' | 'no_account',
+      | 'not_member' | 'not_project_member' | 'no_account' | 'linked_salary',
   ) {
     super(`member account refused: ${code}`);
     this.name = 'MemberAccountError';
@@ -86,6 +86,7 @@ export const MEMBER_ACCOUNT_MESSAGES: Record<MemberAccountError['code'], string>
   not_member: 'این شخص عضوِ تیم نیست.',
   not_project_member: 'این عضو در آن پروژه نیست.',
   no_account: 'حساب را انتخاب کنید.',
+  linked_salary: 'این کسر بخشی از پرداختِ حقوق است. پرداختِ همان ماه را از تبِ «حقوق‌ها» حذف کنید.',
 };
 
 /** مبلغِ ورودیِ فرم — مثبت، حداکثر چهار رقمِ اعشار. */

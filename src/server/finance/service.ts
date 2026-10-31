@@ -10,6 +10,7 @@ import {
   accounts, accountUsers, auditLog, currencies, exchangeRates, fiscalClosings, fiscalLocks,
   ledger, offices, projectMembers, projectPayments, projects, tagRelations, tags, users, vendors, userPermissions, userRoles, unitEntries, projectClients,
   memberAccountEntries,
+  salaryPayments,
 } from '@/db/schema';
 import { canManageSection, canViewSection, type Actor } from '@/domain/access/permissions';
 import { assertCanManage, assertCanView, ForbiddenError, visibleScopes } from '@/domain/access/guard';
@@ -457,14 +458,17 @@ export interface EntryInput {
   skipMirror?: boolean;
 }
 
-/** ردیفی که پولِ نقدِ قرض/هدیه/بازپرداختِ یک عضو است؟ — آینهٔ پرداخت نمی‌گیرد. */
+/** ردیفی که پولِ نقدِ قرض/هدیه/بازپرداخت یا حقوقِ یک عضو است؟ — آینهٔ پرداخت نمی‌گیرد. */
 async function isMemberAccountCash(ledgerId: number): Promise<boolean> {
   const rows = await db.select({ id: memberAccountEntries.id }).from(memberAccountEntries)
     .where(and(
       eq(memberAccountEntries.ledgerId, ledgerId),
       inArray(memberAccountEntries.kind, ['loan', 'gift', 'repayment']),
     )).limit(1);
-  return rows.length > 0;
+  if (rows.length > 0) return true;
+  // حقوقِ ماهانه (۲.۵۰.۰) هم دستمزدِ پروژه نیست.
+  const salary = await db.select({ id: salaryPayments.id }).from(salaryPayments).where(eq(salaryPayments.ledgerId, ledgerId)).limit(1);
+  return salary.length > 0;
 }
 
 /**
@@ -918,6 +922,8 @@ export async function updateEntry(actor: Actor, entryId: number, rawInput: Entry
   await mirrorPayment(entryId, input, amounts);
   await writeLedgerTags(entryId, input.tagIds);
   await syncMemberAccount(entryId);
+  // import ِ پویا: salaries خودش این ماژول را وارد می‌کند.
+  await (await import('./salaries')).syncSalaryPayment(entryId, { amount: input.amount, entryDate: input.entryDate });
 
   await audit(actor, 'ledger.update', entryId, before, input);
 }

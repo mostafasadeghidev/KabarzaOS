@@ -5,6 +5,8 @@ import { ArrowLeft, ChevronDown, ChevronLeft, Paperclip } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { MyClientProject, MyMemberProject, MyPaymentLine } from '@/server/finance/my-money';
 import type { MyAccount } from '@/server/finance/member-accounts';
+import type { MySalary } from '@/server/finance/salaries';
+import { Adjustments } from '@/app/(app)/finance/salaries-view';
 import { debtSign, MEMBER_ACCOUNT_LABELS } from '@/domain/team-money/member-account';
 import { format } from '@/domain/money/money';
 import { Badge } from '@/components/ui/badge';
@@ -148,8 +150,10 @@ function Row({
 }
 
 export function MyMoneyView({
-  memberProjects, clientProjects, noProjectPayouts, noProjectIncoming, isMember, isClient, bankHref, account = null,
+  memberProjects, clientProjects, noProjectPayouts, noProjectIncoming, isMember, isClient, bankHref, account = null, salary = null,
 }: {
+  /** حقوقِ ماهانه (۲.۵۰.۰) — دوره‌ها و پرداخت‌ها؛ null یعنی حقوقی ندارد. */
+  salary?: MySalary | null;
   /** حسابِ عضو با شرکت (۲.۴۹.۰) — قرض، هدیه، هزینه و تسویه‌ها؛ null یعنی ردیفی ندارد. */
   account?: MyAccount | null;
   memberProjects: MyMemberProject[];
@@ -310,6 +314,55 @@ export function MyMoneyView({
             </div>
           )}
         </Section>
+      )}
+
+      {isMember && salary && (
+        <div id="salary" className="scroll-mt-20">
+          <Section
+            title={t('حقوقِ ماهانه')}
+            description={t('حقوقِ کارهای ثابتِ آژانس — جدا از دستمزدِ پروژه‌ها.')}
+          >
+            <div className="mb-3 flex flex-wrap gap-2 text-sm">
+              {salary.current
+                ? <Badge variant="success">{t('حقوقِ فعلی')}: {money(salary.current.amount, salary.current.currencyCode)} · {t('روزِ {day}', { day: String(salary.current.payDay) })}</Badge>
+                : <Badge variant="outline">{t('این ماه حقوقی ندارید.')}</Badge>}
+              {salary.periods.map((p) => (
+                <Badge key={p.id} variant="secondary">
+                  <span className="num" dir="ltr">{p.startMonth.slice(0, 7)}</span>
+                  {' → '}
+                  {p.endMonth ? <span className="num" dir="ltr">{p.endMonth.slice(0, 7)}</span> : t('ادامه دارد')}
+                  {' · '}{money(p.amount, p.currencyCode)}
+                </Badge>
+              ))}
+            </div>
+            {salary.payments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t('هنوز پرداختی ثبت نشده.')}</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('ماه')}</TableHead>
+                    <TableHead numeric>{t('حقوق')}</TableHead>
+                    <TableHead>{t('پاداش / کسر')}</TableHead>
+                    <TableHead numeric>{t('خالص')}</TableHead>
+                    <TableHead>{t('تاریخِ پرداخت')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {salary.payments.map((x) => (
+                    <TableRow key={x.id}>
+                      <TableCell><span className="num" dir="ltr">{x.month.slice(0, 7)}</span></TableCell>
+                      <TableNumericCell>{money(x.baseAmount, x.currencyCode)}</TableNumericCell>
+                      <TableCell className="text-xs"><Adjustments row={x} /></TableCell>
+                      <TableNumericCell>{money(x.netAmount, x.currencyCode)}</TableNumericCell>
+                      <TableDateCell>{x.paidAt}</TableDateCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </Section>
+        </div>
       )}
 
       {isMember && account && (
