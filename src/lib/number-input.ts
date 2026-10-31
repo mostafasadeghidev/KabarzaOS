@@ -25,6 +25,16 @@ export function ungroupDigits(value: string): string {
   return out;
 }
 
+/**
+ * صفرهای بی‌اثرِ انتهای اعشار — `3700.0000` ← `3700`، `12.5000` ← `12.5`.
+ * ⚠️ ستون‌های مبلغ `numeric(20,4)` اند و Postgres همیشه چهار رقمِ اعشار
+ * برمی‌گرداند؛ خانهٔ مبلغ آن را خام نشان می‌داد.
+ */
+export function trimZeros(raw: string): string {
+  if (!raw.includes('.')) return raw;
+  return raw.replace(/0+$/, '').replace(/\.$/, '');
+}
+
 export function groupDigits(raw: string): string {
   if (raw === '' || raw === '-') return raw;
   const negative = raw.startsWith('-');

@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.50.1]
+
+### Fixed
+
+- **Amounts no longer show four zero decimals in forms.** Amounts are stored with four decimal places, so an amount field opened on a saved value showed it as is, e.g. "3,700.0000" for a member's agreed amount. Every amount field now drops the trailing zeros ("3,700", "12.5") when it shows a saved value. What you type is left exactly as typed, and the stored values are unchanged.
+
 ## [2.50.0]
 
 ### Added

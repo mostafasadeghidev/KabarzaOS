@@ -3,7 +3,7 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { groupDigits, ungroupDigits } from "@/lib/number-input"
+import { groupDigits, trimZeros, ungroupDigits } from "@/lib/number-input"
 
 const INPUT_CLASS = [
   "h-9 w-full min-w-0 rounded-md border border-input bg-card px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30",
@@ -41,26 +41,33 @@ function GroupedNumberInput({
   value, defaultValue, onChange, name, placeholder, ...props
 }: React.ComponentProps<"input">) {
   const controlled = value !== undefined
-  const [inner, setInner] = React.useState(() => ungroupDigits(String(defaultValue ?? "")))
+  /**
+   * مقدارِ بیرونی (از پایگاه‌داده) بی‌صفرِ انتهایی؛ ولی چیزی که کاربر همین حالا
+   * تایپ کرد دست نمی‌خورد — وگرنه «2.0» پیش از تایپِ «5» به «2» برمی‌گشت.
+   */
+  const typedValue = React.useRef<string | null>(null)
+  const initial = () => trimZeros(ungroupDigits(String(defaultValue ?? "")))
+  const [inner, setInner] = React.useState(initial)
   const ref = React.useRef<HTMLInputElement>(null)
   /** چند رقم پیش از مکان‌نما بود — پس از افزوده‌شدنِ ویرگول همان‌جا برمی‌گردد. */
   const caret = React.useRef<number | null>(null)
 
   // مقدارِ آغازینِ تازه (مقدارِ برگشتی پس از خطای فرم) جایگزین می‌شود.
   React.useEffect(() => {
-    if (!controlled) setInner(ungroupDigits(String(defaultValue ?? "")))
+    if (!controlled) setInner(trimZeros(ungroupDigits(String(defaultValue ?? ""))))
   }, [controlled, defaultValue])
 
   // ریستِ فرم (React 19 پس از اکشنِ موفق) — state هم باید برگردد.
   React.useEffect(() => {
     const form = ref.current?.form
     if (!form || controlled) return
-    const onReset = () => setInner(ungroupDigits(String(defaultValue ?? "")))
+    const onReset = () => setInner(trimZeros(ungroupDigits(String(defaultValue ?? ""))))
     form.addEventListener("reset", onReset)
     return () => form.removeEventListener("reset", onReset)
   }, [controlled, defaultValue])
 
-  const raw = controlled ? ungroupDigits(String(value ?? "")) : inner
+  const external = controlled ? ungroupDigits(String(value ?? "")) : null
+  const raw = external === null ? inner : external === typedValue.current ? external : trimZeros(external)
   const shown = groupDigits(raw)
 
   React.useLayoutEffect(() => {
@@ -91,6 +98,7 @@ function GroupedNumberInput({
           const before = typed.slice(0, e.target.selectionStart ?? typed.length)
           caret.current = ungroupDigits(before).length
           const next = ungroupDigits(typed)
+          typedValue.current = next
           if (!controlled) setInner(next)
           if (onChange) {
             // ⚠️ فراخوان‌ها فقط `e.target.value` را می‌خوانند — همان را خام می‌دهیم.
