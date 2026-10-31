@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.48.0]
+
+### Added
+
+- **Bold text and named links in rich text.** Text wrapped in `**double asterisks**` now shows in bold, and `[title](https://…)` shows as a link with that title, instead of the raw marks. This applies to code library bodies and steps (including bold text that contains a `code` chip) and to the other rich-text areas such as descriptions and comments. A lone `**` or one next to a space is left as it is, and unsafe links stay plain text.
+
 ## [2.47.2]
 
 ### Fixed

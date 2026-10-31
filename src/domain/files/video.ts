@@ -167,12 +167,31 @@ const URL_PATTERN = /https?:\/\/[^\s<>"'«»]+/gi;
 /** نشانه‌گذاریِ پایانِ جمله جزوِ آدرس نیست. */
 const TRAILING = /[.,;:!?،؛…)\]}]+$/;
 
+/** پیوندِ نام‌دار به شیوهٔ markdown: «[عنوان](https://…)». */
+const NAMED_LINK = /\[([^\]\n]+)\]\((https?:\/\/[^\s()<>"'«»]+)\)/gi;
+
 /**
  * متن را به تکه‌های «متن» و «پیوند» می‌شکند. فقط http/https.
+ * «[عنوان](نشانی)» (۲.۴۸.۰) یک پیوند با همان عنوان می‌شود، نه سه تکهٔ خام.
  * ⚠️ خروجی رشتهٔ خام است و نمایش‌دهنده آن را مثلِ متن رندر می‌کند — هیچ
  * HTML ای ساخته نمی‌شود.
  */
 export function linkify(text: string): TextPart[] {
+  const parts: TextPart[] = [];
+  let last = 0;
+  for (const match of text.matchAll(NAMED_LINK)) {
+    const index = match.index ?? 0;
+    const href = match[2]!;
+    if (!safeUrl(href)) continue;
+    if (index > last) parts.push(...bareLinks(text.slice(last, index)));
+    parts.push({ kind: 'link', href, text: match[1]! });
+    last = index + match[0].length;
+  }
+  if (last < text.length) parts.push(...bareLinks(text.slice(last)));
+  return parts;
+}
+
+function bareLinks(text: string): TextPart[] {
   const parts: TextPart[] = [];
   let last = 0;
   for (const match of text.matchAll(URL_PATTERN)) {
@@ -209,4 +228,25 @@ export function videosIn(text: string, limit = 3): Array<VideoLink & { href: str
     if (out.length >= limit) break;
   }
   return out;
+}
+
+/** «**پررنگ**» در یک خط؛ ستاره‌ای که کنارِ فاصله است (۲ ** ۳) دست نمی‌خورد. */
+const BOLD = /\*\*(?=\S)([^\n]*?\S)\*\*/g;
+
+/**
+ * متن را به تکه‌های عادی و پررنگ می‌شکند (۲.۴۸.۰) — راهنماهایی که از جای
+ * دیگر آمده‌اند «**…**» دارند و ستاره‌ها خام دیده می‌شدند.
+ * ⚠️ مثلِ `linkify` فقط رشته برمی‌گرداند؛ هیچ HTML ای ساخته نمی‌شود.
+ */
+export function boldParts(text: string): Array<{ bold: boolean; text: string }> {
+  const parts: Array<{ bold: boolean; text: string }> = [];
+  let last = 0;
+  for (const match of text.matchAll(BOLD)) {
+    const index = match.index ?? 0;
+    if (index > last) parts.push({ bold: false, text: text.slice(last, index) });
+    parts.push({ bold: true, text: match[1]! });
+    last = index + match[0].length;
+  }
+  if (last < text.length) parts.push({ bold: false, text: text.slice(last) });
+  return parts;
 }
