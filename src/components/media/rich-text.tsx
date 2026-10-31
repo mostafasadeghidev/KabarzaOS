@@ -1,5 +1,6 @@
+import { Fragment } from 'react';
 import { cn } from '@/lib/utils';
-import { linkify, videosIn, type VideoLink } from '@/domain/files/video';
+import { boldParts, linkify, videosIn, type VideoLink } from '@/domain/files/video';
 import { VideoFrame } from './video-frame';
 import { LinkCard } from './link-card';
 import { extractLinkCards, linkTitle, providerName } from '@/domain/files/link-preview';
@@ -48,15 +49,18 @@ export function RichText({
       <p dir="auto" className={cn('text-sm break-words whitespace-pre-wrap', className)}>
         {parts.map((part, i) => (part.kind === 'text' ? (
           <span key={i}>
-            {/* «#325» و «ALZ-325» ← پیوندِ همان تسک؛ ⚠️ دیدنش را صفحهٔ مقصد می‌سنجد. */}
-            {splitTaskRefs(part.text).map((piece, j) => {
-              if (piece.kind === 'text') return piece.text;
-              const href = piece.code
-                ? `/t/${piece.code}-${piece.number}`
-                : projectId ? `/projects/${projectId}?task=${piece.number}` : null;
-              return href
-                ? <a key={j} href={href} dir="ltr" className="num font-mono text-primary underline-offset-4 hover:underline">{piece.text}</a>
-                : piece.text;
+            {boldParts(part.text).map((b, k) => {
+              /* «#325» و «ALZ-325» ← پیوندِ همان تسک؛ ⚠️ دیدنش را صفحهٔ مقصد می‌سنجد. */
+              const refs = splitTaskRefs(b.text).map((piece, j) => {
+                if (piece.kind === 'text') return piece.text;
+                const href = piece.code
+                  ? `/t/${piece.code}-${piece.number}`
+                  : projectId ? `/projects/${projectId}?task=${piece.number}` : null;
+                return href
+                  ? <a key={j} href={href} dir="ltr" className="num font-mono text-primary underline-offset-4 hover:underline">{piece.text}</a>
+                  : piece.text;
+              });
+              return b.bold ? <strong key={k} className="font-semibold">{refs}</strong> : <Fragment key={k}>{refs}</Fragment>;
             })}
           </span>
         ) : (
@@ -68,7 +72,7 @@ export function RichText({
               dir="ltr"
               className="break-all text-primary underline-offset-4 hover:underline"
             >
-              {linkCards ? `${providerName(part.href)}: ${linkTitle(part.href)}` : part.text}
+              {linkCards && part.text === part.href ? `${providerName(part.href)}: ${linkTitle(part.href)}` : part.text}
             </a>
           </Hint>
         )))}

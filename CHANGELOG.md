@@ -20,6 +20,12 @@ Versioning follows [SemVer](https://semver.org/).
 - **Members see their own account.** "My finances" gains a "Your account with the company" section with the balance and every loan, gift, expense, repayment and deduction. The member is notified each time something is added.
 - Editing a loan, gift or repayment row in the ledger updates the member's account. Deleting it removes the linked entry, and deleting an expense entry keeps the vendor payment.
 
+## [2.48.0]
+
+### Added
+
+- **Bold text and named links in rich text.** Text wrapped in `**double asterisks**` now shows in bold, and `[title](https://…)` shows as a link with that title, instead of the raw marks. This applies to code library bodies and steps (including bold text that contains a `code` chip) and to the other rich-text areas such as descriptions and comments. A lone `**` or one next to a space is left as it is, and unsafe links stay plain text.
+
 ## [2.47.2]
 
 ### Fixed

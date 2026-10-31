@@ -13,7 +13,7 @@ import { MediaGallery, type MediaEntry } from '@/components/media/media-gallery'
 import { VideoFrame } from '@/components/media/video-frame';
 import { Lightbox } from '@/components/lightbox';
 import { useT } from '@/i18n/client';
-import { linkify, parseVideoUrl } from '@/domain/files/video';
+import { boldParts, linkify, parseVideoUrl } from '@/domain/files/video';
 import { lines, optionKey, type CleanBlock, type CleanOption, type CleanStep } from '@/domain/library/model';
 import type { EntryLink } from '@/server/library/service';
 import { CodeView, PlacementCopyBar } from './code-view';
@@ -266,8 +266,18 @@ export function EntryContent({
  * ⚠️ هیچ HTML ای از متن ساخته نمی‌شود؛ همه رشته‌اند و React فرارشان می‌دهد.
  */
 export function InlineText({ text, inline = false }: { text: string; inline?: boolean }) {
+  // پررنگ پیش از بک‌تیک: «**Inside `<head>`**» یک تکهٔ پررنگ با تکه‌کدی در دلش است.
+  const body = boldParts(text).map((b, k) => {
+    const inner = inlinePieces(b.text);
+    return b.bold ? <strong key={k} className="font-semibold">{inner}</strong> : <Fragment key={k}>{inner}</Fragment>;
+  });
+  if (inline) return <span dir={textDir(text)}>{body}</span>;
+  return <p className="text-sm leading-7 whitespace-pre-wrap" dir={textDir(text)}>{body}</p>;
+}
+
+function inlinePieces(text: string) {
   const pieces = text.split(/(`[^`\n]+`)/g);
-  const body = pieces.map((piece, i) => {
+  return pieces.map((piece, i) => {
     if (/^`[^`\n]+`$/.test(piece)) {
       return <CopyChip key={i} text={piece.slice(1, -1)} className="mx-0.5 px-1.5 py-0.5 align-middle" />;
     }
@@ -279,8 +289,6 @@ export function InlineText({ text, inline = false }: { text: string; inline?: bo
       </Fragment>
     );
   });
-  if (inline) return <span dir={textDir(text)}>{body}</span>;
-  return <p className="text-sm leading-7 whitespace-pre-wrap" dir={textDir(text)}>{body}</p>;
 }
 
 /**
