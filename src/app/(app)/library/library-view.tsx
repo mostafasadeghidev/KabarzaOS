@@ -19,7 +19,7 @@ import {
   CATEGORY_LABELS, LANGUAGE_LABELS, LIBRARY_CATEGORIES, LIBRARY_PLATFORMS, PLATFORM_LABELS,
 } from '@/domain/library/model';
 import type { EntryCard, ProjectOption } from '@/server/library/service';
-import { CoverThumb, FreshBadge, KindIcon, PlatformBadge, StatusBadge, TopicChips, VersionLabel } from './entry-bits';
+import { CoverThumb, FreshBadge, KindIcon, PlatformBadge, StatusBadge, textDir, TopicChips, VersionLabel } from './entry-bits';
 
 interface Filter {
   q: string;
@@ -295,7 +295,7 @@ function EntryCardView({ entry }: { entry: EntryCard }) {
             {entry.supersededById && <span className="text-xs text-muted-foreground">({tr('نسخهٔ قدیمی')})</span>}
             {entry.archived && <span className="text-xs text-muted-foreground">({tr('بایگانی')})</span>}
           </div>
-          {entry.summary && <p className="line-clamp-2 text-[13px] text-muted-foreground" dir="auto">{entry.summary}</p>}
+          {entry.summary && <p className="line-clamp-2 text-[13px] text-muted-foreground" dir={textDir(entry.summary)}>{entry.summary}</p>}
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-1.5">

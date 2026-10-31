@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.47.1]
+
+### Fixed
+
+- **English summaries in the code library read in the right direction.** An item's summary (page header, list card and history view) now takes its direction from its own text, like steps already do. An English summary no longer had its closing period and brackets jump to the start of the line in the Persian interface.
+
 ## [2.47.0]
 
 ### Added

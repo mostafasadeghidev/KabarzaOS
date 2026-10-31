@@ -43,7 +43,7 @@ import { SuggestionDiffView } from '../suggestion-diff';
 import { EntryContent } from '../entry-content';
 import { QuickCard } from '../quick-card';
 import {
-  CategoryBadge, FreshBadge, KindBadge, KindIcon, PlatformBadge, StatusBadge, TopicChips, VersionLabel,
+  CategoryBadge, FreshBadge, KindBadge, KindIcon, PlatformBadge, StatusBadge, textDir, TopicChips, VersionLabel,
 } from '../entry-bits';
 
 /** نمای انتخاب‌شده (آموزشِ کامل / کارتِ سریع) در همین مرورگر می‌ماند. */
@@ -139,7 +139,7 @@ export function EntryView({
         back={{ href: '/library', label: tr('کتابخانهٔ کد') }}
         title={entry.versionLabel ? <span className="inline-flex flex-wrap items-center gap-2">{entry.title}<VersionLabel label={entry.versionLabel} className="text-xs" /></span> : entry.title}
         media={<KindIcon kind={entry.kind} className="size-11" />}
-        description={entry.summary || undefined}
+        description={entry.summary ? <p dir={textDir(entry.summary)}>{entry.summary}</p> : undefined}
         actions={entry.canSuggest ? (
           entry.archived ? undefined : (
             <Button asChild variant={myPending ? 'outline' : 'default'}>
@@ -579,7 +579,7 @@ function HistoryPanel({ entry }: { entry: EntryDetail }) {
               </DialogDescription>
             </DialogHeader>
             <div className="grid max-h-[60vh] gap-3 overflow-y-auto">
-              {viewing.snapshot.entry.summary && <p className="text-sm text-muted-foreground">{viewing.snapshot.entry.summary}</p>}
+              {viewing.snapshot.entry.summary && <p className="text-sm text-muted-foreground" dir={textDir(viewing.snapshot.entry.summary)}>{viewing.snapshot.entry.summary}</p>}
               {/* همان چیدمانِ صفحه — نسخهٔ قدیمیِ راهنما هم گام‌ها و گزینه‌هایش را نشان می‌دهد، نه فقط کد.
                   ⚠️ تصویرها از نسخهٔ فعلی: تصویری که از آن روز هنوز هست، سرِ جایش دیده می‌شود. */}
               <EntryContent
