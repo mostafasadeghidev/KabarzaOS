@@ -238,15 +238,15 @@ export function LibraryView({
                   {g.list.length}
                 </span>
               </h2>
-              <div className="grid gap-3 @2xl/main:grid-cols-2 @6xl/main:grid-cols-3">
-                {g.list.map((e) => <EntryCardView key={e.id} entry={e} />)}
+              <div className="grid gap-3 @xl/main:grid-cols-2 @4xl/main:grid-cols-3 @6xl/main:grid-cols-4">
+                {g.list.map((e) => <EntryCardView key={e.id} entry={e} withCover={g.list.some((x) => x.coverFileId !== null)} />)}
               </div>
             </section>
           ))}
         </div>
       ) : (
-        <div className="grid gap-3 @2xl/main:grid-cols-2 @6xl/main:grid-cols-3">
-          {entries.map((e) => <EntryCardView key={e.id} entry={e} />)}
+        <div className="grid gap-3 @xl/main:grid-cols-2 @4xl/main:grid-cols-3 @6xl/main:grid-cols-4">
+          {entries.map((e) => <EntryCardView key={e.id} entry={e} withCover={entries.some((x) => x.coverFileId !== null)} />)}
         </div>
       )}
     </div>
@@ -272,20 +272,25 @@ function CategoryChip({ active, onClick, label, count }: { active: boolean; onCl
   );
 }
 
-function EntryCardView({ entry }: { entry: EntryCard }) {
+/**
+ * ردیف‌های کارت‌های کنارِ هم باید هم‌تراز بمانند: اگر در یک فهرست حتی یک
+ * کارت تصویر دارد، بقیه جای‌نگهدارِ هم‌اندازه می‌گیرند (withCover)، و پانویس
+ * با mt-auto همیشه تهِ کارت می‌نشیند.
+ */
+function EntryCardView({ entry, withCover }: { entry: EntryCard; withCover: boolean }) {
   const tr = useT();
   const tz = useTimeZone();
   return (
     <Link
       href={`/library/${entry.id}`}
-      className="group grid content-start overflow-hidden rounded-xl border bg-card transition-colors hover:border-primary/40"
+      className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-colors hover:border-primary/40"
     >
-      {entry.coverFileId !== null && (
+      {withCover && (
         <CoverThumb fileId={entry.coverFileId} kind={entry.kind} className="aspect-[16/9] w-full border-b bg-muted" />
       )}
-      <div className="grid content-start gap-3 p-4">
+      <div className="flex flex-1 flex-col gap-3 p-4">
       <div className="flex items-start gap-3">
-        {entry.coverFileId === null && <KindIcon kind={entry.kind} />}
+        {!withCover && <KindIcon kind={entry.kind} />}
         <div className="grid min-w-0 flex-1 gap-1">
           <div className="flex flex-wrap items-center gap-1.5">
             <h3 className="font-semibold group-hover:text-primary" dir="auto">{entry.title}</h3>
@@ -295,7 +300,7 @@ function EntryCardView({ entry }: { entry: EntryCard }) {
             {entry.supersededById && <span className="text-xs text-muted-foreground">({tr('نسخهٔ قدیمی')})</span>}
             {entry.archived && <span className="text-xs text-muted-foreground">({tr('بایگانی')})</span>}
           </div>
-          {entry.summary && <p className="line-clamp-2 text-[13px] text-muted-foreground" dir={textDir(entry.summary)}>{entry.summary}</p>}
+          {entry.summary && <p className="line-clamp-2 min-h-[2lh] text-[13px] text-muted-foreground" dir={textDir(entry.summary)}>{entry.summary}</p>}
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -320,7 +325,7 @@ function EntryCardView({ entry }: { entry: EntryCard }) {
         )}
       </div>
       <TopicChips topics={entry.topics} />
-      <div className="mt-auto flex items-center justify-between gap-2 border-t pt-3 text-xs text-muted-foreground">
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-t pt-3 text-xs text-muted-foreground">
         <span className="flex min-w-0 items-center gap-1.5">
           {entry.authorId && <UserAvatar userId={entry.authorId} name={entry.authorName ?? ''} size="xs" presence={false} />}
           <span className="truncate">{entry.authorName ?? tr('نامشخص')}</span>

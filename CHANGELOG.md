@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.47.2]
+
+### Fixed
+
+- **Code library cards line up and fit four to a row.** Cards side by side now keep their rows aligned: when any card in a list has a cover image, the others get a same-size placeholder, the summary always takes two lines, and the author/date footer sits at the bottom of every card. Wide screens show four cards per row instead of three.
+
 ## [2.47.1]
 
 ### Fixed
