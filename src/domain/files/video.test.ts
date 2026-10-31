@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  embedUrl, formatTimestamp, linkify, parseTimestamp, parseVideoUrl, videosIn,
+  boldParts, embedUrl, formatTimestamp, linkify, parseTimestamp, parseVideoUrl, videosIn,
 } from './video';
 
 const LOOM = '0281766fa2d04bb788eaf19e65135184';
@@ -84,6 +84,27 @@ describe('متنِ پیوند‌دار', () => {
       { kind: 'text', text: '. then' },
     ]);
     expect(linkify('ببین https://a.com،')[1]).toEqual({ kind: 'link', href: 'https://a.com', text: 'https://a.com' });
+  });
+
+  it('پیوندِ نام‌دار یک پیوند با همان عنوان است', () => {
+    expect(linkify('See [CMS Load](https://www.finsweet.com/attributes/cms-load).')).toEqual([
+      { kind: 'text', text: 'See ' },
+      { kind: 'link', href: 'https://www.finsweet.com/attributes/cms-load', text: 'CMS Load' },
+      { kind: 'text', text: '.' },
+    ]);
+    // نشانیِ ناامن پیوند نمی‌شود و پیوندِ خامِ کنارش هنوز کار می‌کند
+    expect(linkify('[x](javascript:alert(1)) https://a.com')).toEqual([
+      { kind: 'text', text: '[x](javascript:alert(1)) ' },
+      { kind: 'link', href: 'https://a.com', text: 'https://a.com' },
+    ]);
+  });
+
+  it('**پررنگ** جدا می‌شود؛ ستارهٔ تنها یا کنارِ فاصله نه', () => {
+    expect(boldParts('a **b c** d')).toEqual([
+      { bold: false, text: 'a ' }, { bold: true, text: 'b c' }, { bold: false, text: ' d' },
+    ]);
+    expect(boldParts('2 ** 3 and **x')).toEqual([{ bold: false, text: '2 ** 3 and **x' }]);
+    expect(boldParts('**a\nb**')).toEqual([{ bold: false, text: '**a\nb**' }]);
   });
 
   it('پرانتزِ جفت داخلِ آدرس می‌ماند', () => {
