@@ -280,6 +280,7 @@ export function SalariesView({
                     <TableHead>{tr('تا')}</TableHead>
                     <TableHead numeric>{tr('مبلغ')}</TableHead>
                     <TableHead>{tr('روزِ پرداخت')}</TableHead>
+                    <TableHead>{tr('حساب')}</TableHead>
                     {canManage && <TableActionsHead />}
                   </TableRow>
                 </TableHeader>
@@ -291,10 +292,8 @@ export function SalariesView({
                         <TableCell><Month value={period.startMonth} /></TableCell>
                         <TableCell>{period.endMonth ? <Month value={period.endMonth} /> : <Badge variant="success">{tr('ادامه دارد')}</Badge>}</TableCell>
                         <TableNumericCell><Money amount={period.amount} code={period.currencyCode} /></TableNumericCell>
-                        <TableCell className="text-sm">
-                          {String(period.payDay)}
-                          {period.accountName && <span className="ms-2 text-xs text-muted-foreground">{period.accountName}</span>}
-                        </TableCell>
+                        <TableCell className="text-sm tabular-nums">{String(period.payDay)}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{period.accountName ?? '—'}</TableCell>
                         {canManage && (
                           <TableActionsCell>
                             {period.endMonth === null && (

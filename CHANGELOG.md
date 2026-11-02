@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.50.2]
+
+### Fixed
+
+- **Salary periods show the account in its own column.** In a member's salary details, the pay day and the default account shared one cell, so in right-to-left languages they ran together (e.g. "5Blue"). The account now has its own "Account" column, with "—" when none is set.
+
 ## [2.50.1]
 
 ### Fixed
