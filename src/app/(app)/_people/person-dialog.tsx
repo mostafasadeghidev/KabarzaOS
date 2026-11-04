@@ -24,6 +24,7 @@ import { useT } from '@/i18n/client';
 import { OFFICE_MANAGER_CAP } from '@/domain/access/project-scope';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileInput } from '@/components/ui/file-input';
+import { PasswordInput } from '@/components/ui/password-input';
 
 export interface PersonFormOptions {
   /** `grantsCap` تعیین می‌کند کدام نقش «مدیرِ تیم» است. */
@@ -314,10 +315,9 @@ function PersonDialogBody({
           {!person && (
             <Field>
               <FieldLabel htmlFor="p-password">{tr("رمزِ ورود (اختیاری)")}</FieldLabel>
-              <Input
+              <PasswordInput
                 id="p-password"
                 name="password"
-                type="password"
                 autoComplete="new-password"
                 minLength={8}
                 placeholder={tr("دستِ‌کم ۸ نویسه")}

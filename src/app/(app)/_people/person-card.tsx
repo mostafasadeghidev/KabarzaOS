@@ -15,7 +15,6 @@ import { PresenceDot } from '@/components/presence';
 import type { PresenceState } from '@/domain/people/presence';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -26,6 +25,7 @@ import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { TagChip } from '@/components/ui/tag-chip';
 import { CopyText } from '@/components/copy-text';
+import { PasswordInput } from '@/components/ui/password-input';
 
 export interface PersonView {
   id: number;
@@ -304,9 +304,8 @@ export function PersonCard({
             {tr("رمزِ تازه برای")} {person.name}
           </Label>
           <div className="flex flex-wrap items-center gap-2">
-            <Input
+            <PasswordInput
               id={`pw-${person.id}`}
-              type="password"
               autoComplete="new-password"
               minLength={8}
               className="h-8 max-w-56"

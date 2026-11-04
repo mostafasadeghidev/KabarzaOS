@@ -4803,5 +4803,7 @@
   "فقط مالک می‌تواند برنامه را به‌جای کاربرِ دیگری ببیند.": "Seul le propriétaire peut voir l'application en tant qu'un autre utilisateur.",
   "دیدن به‌جای این کاربر": "Voir en tant que cet utilisateur",
   "شروعِ دیدن به‌جای کاربر": "Début de l'affichage en tant qu'utilisateur",
-  "برگشت از دیدن به‌جای کاربر": "Fin de l'affichage en tant qu'utilisateur"
+  "برگشت از دیدن به‌جای کاربر": "Fin de l'affichage en tant qu'utilisateur",
+  "نمایشِ رمز": "Afficher le mot de passe",
+  "پنهان کردنِ رمز": "Masquer le mot de passe"
 }

@@ -21,6 +21,7 @@ import { Panel } from '@/components/page-shell';
 import { IconButton } from '@/components/ui/icon-button';
 import { Switch } from '@/components/ui/switch';
 import { useT } from '@/i18n/client';
+import { PasswordInput } from '@/components/ui/password-input';
 
 export interface AiProviderOption {
   id: ProviderId;
@@ -277,8 +278,8 @@ export function AiBotPanel({ connections, providers, telegram, botUsername, sens
           </Field>
           <Field className="min-w-56 flex-1">
             <FieldLabel htmlFor="ai-key">{tr('کلیدِ API')}</FieldLabel>
-            <Input
-              id="ai-key" name="apiKey" type="password" dir="ltr" autoComplete="off" maxLength={500}
+            <PasswordInput
+              id="ai-key" name="apiKey" dir="ltr" autoComplete="off" maxLength={500}
               placeholder={sameProvider ? tr('خالی = همان کلیدِ قبلی') : ''}
             />
           </Field>

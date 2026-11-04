@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert, CircleCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { TurnstileWidget } from '@/components/turnstile-widget';
+import { PasswordInput } from '@/components/ui/password-input';
 
 /**
  * فرمِ ورود — بلوکِ login ِ shadcn: کارت، `FieldGroup`، پیوندِ «فراموشی» کنارِ
@@ -63,8 +64,8 @@ export function LoginForm({ notice, next, turnstileSiteKey = null }: { notice?: 
                   {t("رمزم را فراموش کرده‌ام")}
                 </Link>
               </div>
-              <Input
-                id="password" name="password" type="password" required autoComplete="current-password" dir="ltr"
+              <PasswordInput
+                id="password" name="password" required autoComplete="current-password" dir="ltr"
               />
             </Field>
 

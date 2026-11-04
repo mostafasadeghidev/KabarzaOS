@@ -10,6 +10,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui
 import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
+import { PasswordInput } from '@/components/ui/password-input';
 
 /**
  * ویزاردِ نصب — تنها صفحه‌ای که پیش از وجودِ هر کاربری دیده می‌شود.
@@ -71,15 +72,15 @@ export function SetupForm() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="s-pass">{t("رمز عبور")}</FieldLabel>
-                <Input
-                  id="s-pass" name="password" type="password" required minLength={8}
+                <PasswordInput
+                  id="s-pass" name="password" required minLength={8}
                   autoComplete="new-password" placeholder={t("دستِ‌کم ۸ نویسه")}
                 />
               </Field>
               <Field>
                 <FieldLabel htmlFor="s-pass2">{t("تکرارِ رمز عبور")}</FieldLabel>
-                <Input
-                  id="s-pass2" name="passwordRepeat" type="password" required minLength={8}
+                <PasswordInput
+                  id="s-pass2" name="passwordRepeat" required minLength={8}
                   autoComplete="new-password"
                 />
               </Field>

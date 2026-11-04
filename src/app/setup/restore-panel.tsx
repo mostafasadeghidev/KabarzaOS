@@ -14,6 +14,7 @@ import { humanSize } from '@/domain/files/upload';
 import { formatDateTime } from '@/i18n/datetime';
 import { useT, useTimeZone } from '@/i18n/client';
 import type { RestoreManifest, RestoreStatus } from '@/server/setup/restore';
+import { PasswordInput } from '@/components/ui/password-input';
 
 /**
  * بازگردانی از فایلِ پشتیبان روی سرورِ تازه — جایگزینِ ترمینال برای کسی که
@@ -218,8 +219,8 @@ export function RestorePanel({ onBack }: { onBack: () => void }) {
               </Field>
               <Field>
                 <FieldLabel htmlFor="r-pass">{t('رمزِ فایلِ پشتیبان')}</FieldLabel>
-                <Input
-                  id="r-pass" type="password" autoComplete="off" disabled={busy}
+                <PasswordInput
+                  id="r-pass" autoComplete="off" disabled={busy}
                   value={passphrase} onChange={(e) => setPassphrase(e.target.value)}
                 />
                 <FieldDescription>{t('همان رمزی که در تنظیماتِ پشتیبان‌گیریِ سرورِ قبلی تعیین شده بود.')}</FieldDescription>

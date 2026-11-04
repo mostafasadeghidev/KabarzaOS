@@ -4803,5 +4803,7 @@
   "فقط مالک می‌تواند برنامه را به‌جای کاربرِ دیگری ببیند.": "Only the owner can view the app as another user.",
   "دیدن به‌جای این کاربر": "View as this user",
   "شروعِ دیدن به‌جای کاربر": "Started viewing as a user",
-  "برگشت از دیدن به‌جای کاربر": "Stopped viewing as a user"
+  "برگشت از دیدن به‌جای کاربر": "Stopped viewing as a user",
+  "نمایشِ رمز": "Show password",
+  "پنهان کردنِ رمز": "Hide password"
 }

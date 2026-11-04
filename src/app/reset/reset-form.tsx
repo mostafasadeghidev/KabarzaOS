@@ -10,7 +10,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui
 import { useT } from '@/i18n/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CircleAlert } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 
 /** فرمِ تعیینِ رمزِ تازه از راهِ لینک — همان کارتِ صفحهٔ ورود؛ پوسته از `PublicShell`. */
 export function ResetForm({ token }: { token: string }) {
@@ -29,15 +29,15 @@ export function ResetForm({ token }: { token: string }) {
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="next">{t("رمزِ تازه")}</FieldLabel>
-              <Input
-                id="next" name="next" type="password" required minLength={8} autoComplete="new-password" dir="ltr"
+              <PasswordInput
+                id="next" name="next" required minLength={8} autoComplete="new-password" dir="ltr"
                 placeholder={t("دستِ‌کم ۸ نویسه")}
               />
             </Field>
             <Field>
               <FieldLabel htmlFor="repeat">{t("تکرارِ رمزِ تازه")}</FieldLabel>
-              <Input
-                id="repeat" name="repeat" type="password" required minLength={8} autoComplete="new-password" dir="ltr"
+              <PasswordInput
+                id="repeat" name="repeat" required minLength={8} autoComplete="new-password" dir="ltr"
               />
             </Field>
             {state.error && (
