@@ -96,6 +96,11 @@ export const projectMembers = pgTable('project_members', {
   roleTagId: fk('role_tag_id').references(() => tags.id),
   agreedAmount: money('agreed_amount').notNull().default('0'),
   unitRate: money('unit_rate').notNull().default('0'),
+  /**
+   * نوعِ دستمزدِ همین عضو (۲.۵۱.۰): `fixed` قراردادی، `unit` تعدادی.
+   * خالی = مثلِ پروژه (`isUnitBased`) — منطق در `domain/projects/pay-type`.
+   */
+  payType: text('pay_type').$type<'fixed' | 'unit'>(),
   currencyId: fk('currency_id').references(() => currencies.id),
   assignedAt: ts('assigned_at').notNull().defaultNow(),
   /**

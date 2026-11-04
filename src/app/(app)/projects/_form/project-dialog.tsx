@@ -441,29 +441,30 @@ function ProjectDialogBody({
             </label>
             <p className="mt-1 ms-6 text-xs text-muted-foreground">
               {tr("به‌جای مبلغِ توافقیِ ثابت، هر عضو «نرخِ هر واحد» دارد و دستمزدش = نرخ × تعدادِ ثبت‌شده.")}
+              {' '}
+              {tr("این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.")}
             </p>
             {/*
               مبلغِ دستیِ ردیف (۲.۲۰.۰) — مسئولِ پروژه هنگامِ ثبتِ ردیف می‌تواند مبلغ بزند؛
-              خالی بماند، از نرخِ توافقی پیروی می‌کند. فقط برای پروژهٔ تعدادی معنا دارد.
+              خالی بماند، از نرخِ توافقی پیروی می‌کند. از ۲.۵۱.۰ پروژهٔ قراردادی هم
+              ممکن است عضوِ تعدادی داشته باشد، پس گزینه همیشه دیده می‌شود.
             */}
-            {isUnitBased && (
-              <div className="mt-2 ms-6">
-                <label className="flex items-start gap-2 text-sm">
-                  <Checkbox
-                    key={`manual-${formKey}`}
-                    name="unitManualAmount"
-                    value="1"
-                    className="mt-0.5"
-                    checked={unitManual}
-                    onCheckedChange={(v) => setUnitManual(v === true)}
-                  />
-                  {tr("مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند")}
-                </label>
-                <p className="mt-1 ms-6 text-xs text-muted-foreground">
-                  {tr("اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.")}
-                </p>
-              </div>
-            )}
+            <div className="mt-2 ms-6">
+              <label className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  key={`manual-${formKey}`}
+                  name="unitManualAmount"
+                  value="1"
+                  className="mt-0.5"
+                  checked={unitManual}
+                  onCheckedChange={(v) => setUnitManual(v === true)}
+                />
+                {tr("مسئولِ پروژه بتواند مبلغِ هر ردیف را خودش بزند")}
+              </label>
+              <p className="mt-1 ms-6 text-xs text-muted-foreground">
+                {tr("برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.")}
+              </p>
+            </div>
           </div>
 
           {canEditMoney && (

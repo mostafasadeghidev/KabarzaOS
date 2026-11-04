@@ -2,6 +2,19 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.51.0]
+
+### Added
+
+- **Pay type per member.** Each member of a project is now either fixed-pay (an agreed amount) or per-unit (a rate × the quantity logged), so one project can have both. The project's own "per-unit" setting is now only the default for its members.
+  - "Project members" and the new-project form have a "Pay type" column. Members left on the default follow the project if its type changes later; changing one role of a member changes all their roles on that project.
+  - Switching a fixed-pay member to per-unit sets their agreed amount to zero on save, and the form shows the old amount before you save. Otherwise the hidden amount could still be requested on top of their work entries. Switching back in the same form restores it.
+  - Work entries can be logged only for per-unit members, at their own rate. The work entries section and its member picker show only per-unit members. Entries logged before a member was switched stay visible.
+  - The project's team summary, "My finances", the dashboard totals and the members card on the project page all use each member's own pay type. The members card shows a per-unit member's rate with a "Per-unit" label.
+  - "Let the project manager enter each row's amount" is now available on any project, since a fixed-pay project can have per-unit members too.
+  - The `add_project_member` MCP tool takes an optional `pay_type`.
+  - Existing projects are unchanged: every current member follows their project's type.
+
 ## [2.50.2]
 
 ### Fixed

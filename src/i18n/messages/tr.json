@@ -4785,5 +4785,14 @@
   "این ماه در هیچ دورهٔ حقوقی نیست.": "Bu ay hiçbir maaş döneminde değil.",
   "مبلغِ خالص باید بیشتر از صفر باشد.": "Net tutar sıfırdan büyük olmalı.",
   "این دوره پرداخت دارد و ارزش عوض نمی‌شود.": "Bu dönemin ödemeleri var, para birimi değiştirilemez.",
-  "حقوقِ {month} به مبلغِ {amount} پرداخت شد": "{month} maaşınız {amount} olarak ödendi"
+  "حقوقِ {month} به مبلغِ {amount} پرداخت شد": "{month} maaşınız {amount} olarak ödendi",
+  "قراردادی": "Sabit",
+  "نوعِ دستمزد": "Ücret türü",
+  "مبلغ یا نرخ": "Tutar veya birim ücret",
+  "دستمزدِ این عضو روی این پروژه تعدادی نیست؛ ردیفِ کارکرد فقط برای عضوِ تعدادی ثبت می‌شود.": "Bu üye bu projede birim başına ücret almıyor; iş kayıtları yalnızca birim başına ücretli üyeler içindir.",
+  "نقش، نوعِ دستمزد (قراردادی یا تعدادی) و مبلغ یا نرخِ هر عضو. مبلغ خالی یعنی صفر.": "Her üyenin rolü, ücret türü (sabit veya birim başına) ve tutarı ya da birim ücreti. Boş tutar sıfır demektir.",
+  "هر عضو قراردادی (مبلغِ توافقی) یا تعدادی (نرخِ هر واحد × تعدادِ ثبت‌شده) است؛ پیش‌فرض نوعِ خودِ پروژه است.": "Her üye sabit (anlaşılan tutar) veya birim başına (birim ücret × kaydedilen miktar) olur; varsayılan projenin kendi türüdür.",
+  "مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود": "Önceki anlaşılan tutar ({amount}) kaydedince sıfırlanır",
+  "این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.": "Bu yalnızca varsayılandır; “Proje üyeleri”nde her üye ayrı ayrı sabit veya birim başına yapılabilir.",
+  "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Birim başına ücretli üyelerin iş kayıtları için. Tutar girilmezse üyenin anlaşılan birim ücreti kullanılır."
 }

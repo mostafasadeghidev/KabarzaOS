@@ -20,6 +20,7 @@ const MANAGER_ROLE_LABEL = 'مدیریت';
 import { handoverPlan, tasksToAutoAssign } from '@/domain/projects/role-assignment';
 import { isDoneStatus, statusForDependency, tasksToRelease } from '@/domain/projects/dependency';
 import { diffMembers, planAddMember, type MemberInput } from '@/domain/projects/members';
+import { storedPayType, unifyPayTypes, type PayType } from '@/domain/projects/pay-type';
 import {
   assertCanLighten, canSetParent, impactState, planDelete,
   type LightenSummary, type ProjectImpact, isFrozenProject,
@@ -348,7 +349,7 @@ function syncTelegramGroup(projectId: number, change: { invite?: number[]; remov
 }
 
 export async function setMembers(actor: Actor, projectId: number, desired: MemberInput[]) {
-  await getProject(actor, projectId); // گاردِ scope
+  const project = await getProject(actor, projectId); // گاردِ scope
   await assertCanManageProject(actor, projectId);
   await assertMemberRoleTags(desired.map((d) => d.roleTagId));
 
@@ -373,10 +374,16 @@ export async function setMembers(actor: Actor, projectId: number, desired: Membe
       const row = existing.find((e) => e.userId === d.userId && e.roleTagId === d.roleTagId)
         ?? existing.find((e) => e.userId === d.userId);
       return row
-        ? { ...d, agreedAmount: row.agreedAmount, unitRate: row.unitRate, currencyId: row.currencyId }
-        : { ...d, agreedAmount: '0', unitRate: '0', currencyId: null };
+        ? { ...d, agreedAmount: row.agreedAmount, unitRate: row.unitRate, currencyId: row.currencyId, payType: row.payType }
+        : { ...d, agreedAmount: '0', unitRate: '0', currencyId: null, payType: null };
     });
   }
+  /**
+   * نوعِ دستمزد (۲.۵۱.۰): یکی برای هر نفر، و هم‌نوعِ پروژه خالی ذخیره می‌شود
+   * تا تغییرِ بعدیِ نوعِ پروژه این عضو را هم با خودش ببرد.
+   */
+  desired = unifyPayTypes(desired.map((d) => ({ ...d, payType: d.payType ?? null })))
+    .map((d) => ({ ...d, payType: storedPayType(d.payType, project.isUnitBased) }));
   // R-PROJ-10 — نقشِ اصلی فقط برای کسانی لازم است که نقش انتخاب نکرده‌اند.
   const needRole = desired.filter((d) => !d.roleTagId).map((d) => d.userId);
   const primaryRoleOf = await repo.primaryRoleOf([...new Set(needRole)]);
@@ -397,6 +404,7 @@ export async function setMembers(actor: Actor, projectId: number, desired: Membe
           agreedAmount: input.agreedAmount,
           unitRate: input.unitRate ?? '0',
           currencyId: input.currencyId ?? null,
+          payType: input.payType ?? null,
           updatedAt: new Date(),
         })
         .where(eq(projectMembers.id, id));
@@ -410,6 +418,7 @@ export async function setMembers(actor: Actor, projectId: number, desired: Membe
           agreedAmount: m.agreedAmount,
           unitRate: m.unitRate ?? '0',
           currencyId: m.currencyId ?? null,
+          payType: m.payType ?? null,
         })),
       );
     }
@@ -1035,7 +1044,8 @@ export async function createProject(actor: Actor, input: CreateProjectData): Pro
     officeId: input.officeId,
     parentId: input.parentId,
     isUnitBased: input.isUnitBased,
-    unitManualAmount: input.isUnitBased && (input.unitManualAmount ?? false),
+    // از ۲.۵۱.۰ پروژهٔ قراردادی هم ممکن است عضوِ تعدادی داشته باشد.
+    unitManualAmount: input.unitManualAmount ?? false,
     // ⚠️ پرچمِ نهایی را `saveTenderRoles` تعیین می‌کند (تیک بدونِ نقش، مناقصه نیست).
     isTender: false,
     scope: input.scope,
@@ -1164,6 +1174,8 @@ export async function getMembersForm(actor: Actor, projectId: number) {
       agreedAmount: money ? r.agreedAmount : '0',
       unitRate: money ? r.unitRate : '0',
       currencyId: money ? r.currencyId : null,
+      /** نوعِ دستمزد (۲.۵۱.۰) — خالی = مثلِ پروژه. */
+      payType: r.payType,
       /** عضوِ سابق — ردیفش می‌ماند ولی دوباره انتخاب‌شدنی نیست. */
       isFormer: inactiveOnList.some((i) => i.userId === r.userId),
       /** هنوز طلب دارد — حذفِ دسته‌جمعی رویش اثر ندارد (R-PROJ-23). */
@@ -1240,8 +1252,9 @@ export async function updateProject(actor: Actor, id: number, input: CreateProje
     officeId: input.officeId,
     parentId,
     isUnitBased: input.isUnitBased,
-    // ⚠️ بدونِ تعدادی‌بودن بی‌معناست؛ فراخوانِ بی‌فیلد مقدارِ قبلی را نگه می‌دارد.
-    unitManualAmount: input.isUnitBased && (input.unitManualAmount ?? before.unitManualAmount),
+    // فراخوانِ بی‌فیلد مقدارِ قبلی را نگه می‌دارد. از ۲.۵۱.۰ به تعدادی‌بودنِ پروژه
+    // بسته نیست: پروژهٔ قراردادی هم ممکن است عضوِ تعدادی داشته باشد.
+    unitManualAmount: input.unitManualAmount ?? before.unitManualAmount,
     scope: input.scope,
     // ⚠️ فیلدی که اصلاً نیامده (فراخوانِ قدیمی: API، ایمپورت) مقدارِ قبلی را نگه می‌دارد.
     liveUrl: input.liveUrl ?? before.liveUrl,
@@ -1289,7 +1302,11 @@ export async function setProjectStatus(actor: Actor, projectId: number, statusTa
 export async function addProjectMember(
   actor: Actor,
   projectId: number,
-  input: { userId: number; roleTagId: number | null; agreedAmount: string; unitRate?: string | null; currencyId?: number | null },
+  input: {
+    userId: number; roleTagId: number | null; agreedAmount: string; unitRate?: string | null; currencyId?: number | null;
+    /** نوعِ دستمزد (۲.۵۱.۰) — نیامده = مثلِ پروژه. */
+    payType?: PayType | null;
+  },
 ) {
   const project = await getProject(actor, projectId); // گاردِ scope
   await assertCanManageProject(actor, projectId);
@@ -1307,7 +1324,7 @@ export async function addProjectMember(
 
   // مدیرِ بی‌اختیارِ پول: عضوِ تازه با مبلغِ صفر؛ مبلغِ عضوِ موجود دست نمی‌خورد.
   const money = canEditTeamMoney(actor);
-  if (!money) input = { ...input, agreedAmount: '0', unitRate: '0', currencyId: null };
+  if (!money) input = { ...input, agreedAmount: '0', unitRate: '0', currencyId: null, payType: null };
 
   const plan = planAddMember(input, existing, { inactiveUserIds: inactive, primaryRoleOf });
   if (!plan) throw new ForbiddenError('member.inactive');
@@ -1322,6 +1339,11 @@ export async function addProjectMember(
       .set({ agreedAmount: input.agreedAmount, unitRate, currencyId, updatedAt: new Date() })
       .where(eq(projectMembers.id, plan.existingId!));
   } else {
+    /**
+     * نوع برای هر نفر یکی است (۲.۵۱.۰): نقشِ تازهٔ عضوِ موجود نوعِ ردیف‌های
+     * قبلی‌اش را می‌گیرد؛ عضوِ تازه نوعِ انتخابی را (هم‌نوعِ پروژه = خالی).
+     */
+    const sibling = existing.find((m) => m.userId === input.userId);
     await db.insert(projectMembers).values({
       projectId,
       userId: input.userId,
@@ -1329,6 +1351,7 @@ export async function addProjectMember(
       agreedAmount: input.agreedAmount,
       unitRate,
       currencyId,
+      payType: sibling ? sibling.payType : storedPayType(input.payType, project.isUnitBased),
     });
   }
 
@@ -1708,8 +1731,10 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
     ? teamSummary({
       members: detail.members.map((m) => ({
         userId: m.userId, name: mask(m.userId, m.userName) ?? `#${m.userId}`, agreed: m.agreedAmount, currencyId: m.currencyId,
+        payType: m.payType,
       })),
-      units: detail.project.isUnitBased ? await repo.unitAmounts(projectId) : [],
+      // همیشه خوانده می‌شود: عضوِ تعدادی روی پروژهٔ قراردادی هم ممکن است (۲.۵۱.۰).
+      units: await repo.unitAmounts(projectId),
       payouts: payments.filter((p) => p.direction === 'member_payout'),
       isUnitBased: detail.project.isUnitBased,
       projectCurrencyId: detail.project.currencyId,

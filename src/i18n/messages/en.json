@@ -4785,5 +4785,14 @@
   "این ماه در هیچ دورهٔ حقوقی نیست.": "This month isn't in any salary period.",
   "مبلغِ خالص باید بیشتر از صفر باشد.": "The net amount must be greater than zero.",
   "این دوره پرداخت دارد و ارزش عوض نمی‌شود.": "This period has payments, so its currency can't change.",
-  "حقوقِ {month} به مبلغِ {amount} پرداخت شد": "Your salary for {month} of {amount} was paid"
+  "حقوقِ {month} به مبلغِ {amount} پرداخت شد": "Your salary for {month} of {amount} was paid",
+  "قراردادی": "Fixed",
+  "نوعِ دستمزد": "Pay type",
+  "مبلغ یا نرخ": "Amount or rate",
+  "دستمزدِ این عضو روی این پروژه تعدادی نیست؛ ردیفِ کارکرد فقط برای عضوِ تعدادی ثبت می‌شود.": "This member isn't paid per unit on this project; work entries are only for per-unit members.",
+  "نقش، نوعِ دستمزد (قراردادی یا تعدادی) و مبلغ یا نرخِ هر عضو. مبلغ خالی یعنی صفر.": "Each member's role, pay type (fixed or per-unit) and amount or rate. An empty amount means zero.",
+  "هر عضو قراردادی (مبلغِ توافقی) یا تعدادی (نرخِ هر واحد × تعدادِ ثبت‌شده) است؛ پیش‌فرض نوعِ خودِ پروژه است.": "Each member is fixed (agreed amount) or per-unit (unit rate × logged quantity); the default is the project's own type.",
+  "مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود": "The previous agreed amount ({amount}) becomes zero on save",
+  "این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.": "This is only the default; in “Project members” each member can be set to fixed or per-unit separately.",
+  "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "For per-unit members' work entries. If no amount is entered, the member's agreed rate is used."
 }

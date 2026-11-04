@@ -25,6 +25,7 @@ import {
 import { contractBalance, paymentStatus } from '@/domain/team-money/payments';
 import { myPayoutsOn, statusTags } from '@/server/projects/repository';
 import { canManageProject } from '@/server/projects/authority';
+import { effectivePayType, isUnitMember } from '@/domain/projects/pay-type';
 
 /**
  * پولِ عضو از نگاهِ خودش — کارکردِ تعدادی و درخواستِ پرداخت.
@@ -196,8 +197,6 @@ export async function addUnitEntry(
 ) {
   const { canManage, isFrozen, project } = await projectContext(actor, input.projectId, { projectManager: true });
   if (isFrozen) throw new MemberMoneyError('frozen');
-  // پورتِ `handle_add_unit`: فقط پروژهٔ **تعدادی** ردیفِ کارکرد می‌پذیرد.
-  if (!project.isUnitBased) throw new MemberMoneyError('not_unit_based');
   if (!isValidQuantity(input.quantity)) throw new MemberMoneyError('quantity_invalid');
   const manual = parseManualAmount(input.amount);
   if (manual.kind === 'invalid') throw new MemberMoneyError('amount_invalid');
@@ -223,12 +222,19 @@ export async function addUnitEntry(
    */
   const targetId = canManage && input.userId > 0 ? input.userId : actor.id;
 
-  const membership = await db
-    .select({ unitRate: projectMembers.unitRate, currencyId: projectMembers.currencyId })
+  const memberships = await db
+    .select({ unitRate: projectMembers.unitRate, currencyId: projectMembers.currencyId, payType: projectMembers.payType })
     .from(projectMembers)
     .where(and(eq(projectMembers.projectId, input.projectId), eq(projectMembers.userId, targetId)))
-    .orderBy(projectMembers.id)
-    .limit(1);
+    .orderBy(projectMembers.id);
+  /**
+   * پورتِ `handle_add_unit`: فقط دستمزدِ **تعدادی** ردیفِ کارکرد می‌پذیرد —
+   * از ۲.۵۱.۰ نوعِ خودِ همین عضو، نه کلِ پروژه (غیرعضو نوعِ پروژه را می‌گیرد،
+   * پس پیامِ «تعدادی نیست» روی پروژهٔ قراردادی همان قبلی می‌ماند).
+   */
+  if (!isUnitMember(memberships, project.isUnitBased)) throw new MemberMoneyError('not_unit_based');
+  // نرخ و ارز از ردیفِ تعدادیِ همین عضو.
+  const membership = memberships.filter((m) => effectivePayType(m.payType, project.isUnitBased) === 'unit');
 
   /**
    * ⚠️ فقط برای **عضوِ پروژه** — پورتِ `handle_add_unit` (`class-frontend.php:1174-1185`).
@@ -357,10 +363,12 @@ export async function setUnitEntryAmount(actor: Actor, entryId: number, rawAmoun
   if (manual.kind === 'ok') {
     amount = manual.amount;
   } else {
-    const membership = await db.select({ unitRate: projectMembers.unitRate }).from(projectMembers)
+    const membership = await db.select({ unitRate: projectMembers.unitRate, payType: projectMembers.payType }).from(projectMembers)
       .where(and(eq(projectMembers.projectId, row.projectId), eq(projectMembers.userId, row.userId)))
-      .orderBy(projectMembers.id).limit(1);
-    amount = unitAmount(Number(row.quantity), membership[0]?.unitRate ?? null);
+      .orderBy(projectMembers.id);
+    // ردیفِ تعدادیِ عضو مقدم است (۲.۵۱.۰)؛ نبودش = همان اولین ردیف، مثلِ قبل.
+    const unitRow = membership.find((m) => effectivePayType(m.payType, project.isUnitBased) === 'unit') ?? membership[0];
+    amount = unitAmount(Number(row.quantity), unitRow?.unitRate ?? null);
   }
   // ⚠️ مبلغ کمتر از قسط‌های پرداخت‌شده نمی‌شود (۲.۲۵.۰) — وگرنه «اضافه‌پرداختِ» پنهان می‌ساخت.
   if (Number(amount) < Number(row.paidAmount)) throw new MemberMoneyError('below_paid');

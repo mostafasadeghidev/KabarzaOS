@@ -19,12 +19,19 @@ const id = z
     return Number.isInteger(n) && n > 0 ? n : null;
   });
 
+/** نوعِ دستمزد (۲.۵۱.۰) — مقدارِ ناشناخته یعنی «مثلِ پروژه». */
+const payType = z
+  .string()
+  .trim()
+  .transform((v): 'fixed' | 'unit' | null => (v === 'fixed' || v === 'unit' ? v : null));
+
 export const memberRowSchema = z.object({
   userId: id,
   roleTagId: id,
   agreedAmount: amount,
   unitRate: amount,
   currencyId: id,
+  payType,
 });
 
 export type MemberRowInput = z.infer<typeof memberRowSchema>;

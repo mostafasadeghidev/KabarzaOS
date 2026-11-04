@@ -182,15 +182,17 @@ export function registerSensitive(kit: Kit) {
 
   server.registerTool('add_project_member', {
     title: 'Add a member to a project',
-    description: 'Add a person to a project with a role and agreed amount (plain number).',
+    description: 'Add a person to a project with a role and agreed amount (plain number). pay_type: fixed (agreed amount) or unit (unit_rate × logged units); omit to follow the project.',
     inputSchema: {
       project_id: ID, user_id: ID, role_id: ID.nullable().default(null), agreed_amount: MONEY.default('0'),
       unit_rate: MONEY.nullable().default(null), currency_id: ID.nullable().default(null),
+      pay_type: z.enum(['fixed', 'unit']).nullable().default(null),
     },
     annotations: DANGER,
   }, async (a) => sensitive('add_project_member', a, async () => {
     await addProjectMember(actor, a.project_id, {
       userId: a.user_id, roleTagId: a.role_id, agreedAmount: a.agreed_amount, unitRate: a.unit_rate, currencyId: a.currency_id,
+      payType: a.pay_type,
     });
     return { added: true };
   }));
