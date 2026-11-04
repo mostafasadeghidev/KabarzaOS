@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Offline</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: system-ui, Tahoma, sans-serif; background: Canvas; color: CanvasText; }
+  main { max-width: 22rem; padding: 2rem 1.5rem; text-align: center; }
+  h1 { font-size: 1.15rem; margin: 0 0 .5rem; }
+  p { margin: 0 0 1.25rem; opacity: .75; line-height: 1.7; }
+  button { font: inherit; padding: .5rem 1.25rem; border-radius: .5rem; border: 0; background: #046dce; color: #fafafa; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="t">اتصال برقرار نیست</h1>
+  <p id="d">به اینترنت وصل نیستید. پس از برقراریِ اتصال دوباره امتحان کنید.</p>
+  <button id="b" type="button" onclick="location.reload()">دوباره</button>
+</main>
+<script>
+  // صفحهٔ ایستا است و به ترجمه‌های برنامه دسترسی ندارد؛ زبان از مرورگر.
+  var L = {
+    en: ['No connection', "You're offline. Try again once you're connected.", 'Try again', 'ltr'],
+    de: ['Keine Verbindung', 'Sie sind offline. Versuchen Sie es erneut, sobald Sie verbunden sind.', 'Erneut versuchen', 'ltr'],
+    fr: ['Pas de connexion', 'Vous êtes hors ligne. Réessayez une fois connecté.', 'Réessayer', 'ltr'],
+    es: ['Sin conexión', 'No tiene conexión. Vuelva a intentarlo cuando esté conectado.', 'Reintentar', 'ltr'],
+    pt: ['Sem ligação', 'Está offline. Tente novamente quando tiver ligação.', 'Tentar novamente', 'ltr'],
+    tr: ['Bağlantı yok', 'Çevrimdışısınız. Bağlandığınızda tekrar deneyin.', 'Tekrar dene', 'ltr'],
+    ar: ['لا يوجد اتصال', 'أنت غير متصل. حاول مجددًا بعد الاتصال.', 'إعادة المحاولة', 'rtl'],
+    ckb: ['پەیوەندی نییە', 'پەیوەست نیت. دوای پەیوەستبوون دووبارە هەوڵ بدەرەوە.', 'دووبارە', 'rtl']
+  };
+  var lang = (navigator.language || 'fa').toLowerCase().split('-')[0];
+  var s = L[lang];
+  if (s) {
+    document.documentElement.lang = lang; document.documentElement.dir = s[3];
+    document.getElementById('t').textContent = s[0];
+    document.getElementById('d').textContent = s[1];
+    document.getElementById('b').textContent = s[2];
+  }
+  // اتصال که برگشت، خودش تازه می‌شود.
+  window.addEventListener('online', function () { location.reload(); });
+</script>
+</body>
+</html>

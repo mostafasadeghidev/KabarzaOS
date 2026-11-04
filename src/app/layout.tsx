@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { currentSession } from '@/server/auth';
 import { direction } from '@/i18n/config';
 import { primeTranslations, getT } from '@/i18n/server';
@@ -9,6 +9,8 @@ import { themeScript } from '@/components/theme-script';
 import { ToastProvider } from '@/components/ui/toast';
 import { ConfirmProvider } from '@/components/ui/confirm';
 import { DirectionProvider } from '@/components/ui/direction';
+import { ServiceWorkerRegister } from '@/components/service-worker';
+import { ICON_BACKGROUND } from '@/domain/brand/icon';
 import './globals.css';
 
 /**
@@ -32,10 +34,15 @@ export async function generateMetadata(): Promise<Metadata> {
       apple: [{ url: icon(180), sizes: '180x180', type: 'image/png' }],
     },
     description: t('سیستمِ مدیریتِ آژانس'),
+    // PWA (۲.۵۴.۰) — آیفون مانیفست را برای نامِ آیکون و تمام‌صفحه بودن نمی‌خواند.
+    appleWebApp: { capable: true, title: brand.name, statusBarStyle: 'default' },
     // ⚠️ اپِ داخلی است — هیچ صفحه‌ای (فاکتور، ورود) نباید در موتورِ جستجو بنشیند.
     robots: { index: false, follow: false },
   };
 }
+
+/** رنگِ نوارِ بالای مرورگر/اپِ نصب‌شده — همان رنگِ اصلی (PWA، ۲.۵۴.۰). */
+export const viewport: Viewport = { themeColor: ICON_BACKGROUND };
 
 /**
  * R-I18N-06 — جهت و زبان از **انتخابِ کاربر** مشتق می‌شوند، نه هاردکد.
@@ -79,6 +86,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <ToastProvider>
                 {/* تأییدِ کارِ مخرب — یک دیالوگ برای همهٔ دکمه‌های حذف (پورتِ confirm()). */}
                 <ConfirmProvider>
+                  <ServiceWorkerRegister />
                   {children}
                 </ConfirmProvider>
               </ToastProvider>

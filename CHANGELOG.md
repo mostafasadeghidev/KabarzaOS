@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.54.0]
+
+### Added
+
+- **Install the app (PWA).** KabarzaOS can now be installed from the browser like an app. Chrome and Edge on Android or desktop offer "Install"; on iPhone it's Share → "Add to Home Screen". It then opens in its own window, without the address bar, starting at the dashboard, with the company's name and logo as its icon. If the connection drops, a simple "No connection" page appears in the user's language and reloads by itself once the connection is back.
+  - Nothing from the app is stored on the device for offline use. Pages hold private, live data (money, tasks, messages), so only the offline page is cached.
+  - The address bar and status bar take the app's main color.
+
 ## [2.53.0]
 
 ### Added
