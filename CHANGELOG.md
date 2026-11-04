@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.55.0]
+
+### Added
+
+- **See what you're typing in password fields.** Every password and secret field now has an eye button that shows or hides what you typed, so a new password can be checked before it's saved. This covers setting a member's password, a new person's first password, sign-in, password reset, "My profile", setup and restore, and the backup, mail, bot, security and AI-key settings. The field always starts hidden.
+
 ## [2.54.0]
 
 ### Added

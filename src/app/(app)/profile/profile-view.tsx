@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+
 import { TG_CATEGORIES, TG_CATEGORY_LABELS } from '@/domain/telegram/prefs';
 import { useFormStatus } from 'react-dom';
 import { Bell, Bot, Building2, CreditCard, Clock, KeyRound, Send, Lock, UserRound } from 'lucide-react';
@@ -34,6 +35,7 @@ import { formatDate } from '@/i18n/datetime';
 import { Switch } from '@/components/ui/switch';
 import { Panel } from '@/components/page-shell';
 import { FileInput } from '@/components/ui/file-input';
+import { PasswordInput } from '@/components/ui/password-input';
 
 export interface ProfileData {
   id: number;
@@ -335,7 +337,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
           <form action={changePw} className="grid gap-3">
             <Field>
               <FieldLabel htmlFor="pw-current">{tr("رمزِ فعلی")}</FieldLabel>
-              <Input id="pw-current" name="current" type="password" autoComplete="current-password" />
+              <PasswordInput id="pw-current" name="current" autoComplete="current-password" />
               {/*
                 ⚠️ رمزِ فعلی لازم است حتی وقتی وارد شده‌اید: نشستِ
                 دزدیده‌شده نباید بتواند رمز را عوض کند و شما را بیرون بگذارد.
@@ -347,8 +349,8 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
             <Field>
               <FieldLabel htmlFor="pw-next">{tr("رمزِ تازه")}</FieldLabel>
-              <Input
-                id="pw-next" name="next" type="password" minLength={8}
+              <PasswordInput
+                id="pw-next" name="next" minLength={8}
                 autoComplete="new-password" required
                 placeholder={tr("دستِ‌کم ۸ نویسه")}
               />
@@ -356,8 +358,8 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
             <Field>
               <FieldLabel htmlFor="pw-repeat">{tr("تکرارِ رمزِ تازه")}</FieldLabel>
-              <Input
-                id="pw-repeat" name="repeat" type="password" minLength={8}
+              <PasswordInput
+                id="pw-repeat" name="repeat" minLength={8}
                 autoComplete="new-password" required
               />
             </Field>

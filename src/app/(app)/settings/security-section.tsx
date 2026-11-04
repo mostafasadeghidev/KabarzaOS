@@ -15,6 +15,7 @@ import type { TurnstileSettingsView } from '@/server/settings/turnstile-service'
 import {
   saveTurnstileKeysAction, setTurnstileEnabledAction, testTurnstileAction, type SystemState,
 } from './_form/actions';
+import { PasswordInput } from '@/components/ui/password-input';
 
 /**
  * تبِ «امنیت» — کپچای کلودفلر روی ورود و فراموشیِ رمز (۲.۳۱.۰). فقط مالک.
@@ -69,8 +70,8 @@ export function SecuritySection({ turnstile }: { turnstile: TurnstileSettingsVie
               <Field>
                 <FieldLabel htmlFor="ts-secret">{t('کلیدِ محرمانه (Secret Key)')}</FieldLabel>
                 {/* ⚠️ کلیدِ محرمانه هرگز به کلاینت نمی‌آید؛ خانهٔ خالی یعنی «دست نزن». */}
-                <Input
-                  id="ts-secret" name="secretKey" type="password" dir="ltr" autoComplete="off"
+                <PasswordInput
+                  id="ts-secret" name="secretKey" dir="ltr" autoComplete="off"
                   placeholder={turnstile.hasSecret ? `•••••••• ${t('ثبت‌شده')}` : '0x4AAAAAAA…'}
                 />
               </Field>

@@ -35,6 +35,7 @@ import { useActionToast, useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
+import { PasswordInput } from '@/components/ui/password-input';
 
 interface DestinationView {
   id: string;
@@ -230,8 +231,8 @@ function SettingsPanel({ view }: { view: BackupView }) {
 
         <Field>
           <FieldLabel htmlFor="bk-pass">{tr('رمزِ فایلِ پشتیبان')}</FieldLabel>
-          <Input
-            id="bk-pass" name="passphrase" type="password" autoComplete="new-password" minLength={12}
+          <PasswordInput
+            id="bk-pass" name="passphrase" autoComplete="new-password" minLength={12}
             placeholder={view.hasPassphrase ? `••••••••  ${tr('تنظیم شده — برای تغییر، رمزِ تازه بنویسید')}` : tr('دست‌کم ۱۲ نویسه')}
           />
           <FieldDescription>
@@ -401,7 +402,7 @@ function DestinationDialog({ dest, onClose }: { dest: DestinationView | null; on
               </div>
               <Field>
                 <FieldLabel htmlFor="bd-sk">Secret Key</FieldLabel>
-                <Input id="bd-sk" name="secretAccessKey" type="password" dir="ltr" autoComplete="off" placeholder={secretHint} required={!dest?.hasSecret} />
+                <PasswordInput id="bd-sk" name="secretAccessKey" dir="ltr" autoComplete="off" placeholder={secretHint} required={!dest?.hasSecret} />
               </Field>
             </>
           )}
@@ -442,7 +443,7 @@ function DestinationDialog({ dest, onClose }: { dest: DestinationView | null; on
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="bd-pass">{tr('رمز')}</FieldLabel>
-                  <Input id="bd-pass" name="password" type="password" dir="ltr" autoComplete="new-password" placeholder={secretHint} required={!dest?.hasSecret} />
+                  <PasswordInput id="bd-pass" name="password" dir="ltr" autoComplete="new-password" placeholder={secretHint} required={!dest?.hasSecret} />
                 </Field>
               </div>
             </>
@@ -548,7 +549,7 @@ function DownloadDialog({ name, onClose }: { name: string; onClose: () => void }
           <p dir="ltr" className="font-mono text-xs text-muted-foreground">{name}</p>
           <Field>
             <FieldLabel htmlFor="bdl-pass">{tr('رمزِ ورود')}</FieldLabel>
-            <Input id="bdl-pass" name="password" type="password" autoComplete="current-password" required autoFocus />
+            <PasswordInput id="bdl-pass" name="password" autoComplete="current-password" required autoFocus />
           </Field>
           <DialogFooter><Submit>{tr('دانلود')}</Submit></DialogFooter>
         </form>

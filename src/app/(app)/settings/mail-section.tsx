@@ -10,6 +10,7 @@ import { Panel } from '@/components/page-shell';
 import { useT } from '@/i18n/client';
 import type { SmtpSettingsView } from '@/server/settings/smtp-service';
 import { saveSmtpAction, sendTestMailAction, type SystemState } from './_form/actions';
+import { PasswordInput } from '@/components/ui/password-input';
 
 /**
  * ایمیلِ خروجی (SMTP) — تبِ «اطلاع‌رسانی» (۲.۳۲.۰). فقط مالک.
@@ -56,8 +57,8 @@ export function MailSection({ smtp }: { smtp: SmtpSettingsView }) {
               </Field>
               <Field>
                 <FieldLabel htmlFor="smtp-pass">{t('رمز')}</FieldLabel>
-                <Input
-                  id="smtp-pass" name="smtpPassword" type="password" dir="ltr" autoComplete="new-password"
+                <PasswordInput
+                  id="smtp-pass" name="smtpPassword" dir="ltr" autoComplete="new-password"
                   placeholder={smtp.hasPassword ? `•••••••• ${t('ثبت‌شده')}` : ''}
                 />
               </Field>

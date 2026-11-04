@@ -28,6 +28,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Switch } from '@/components/ui/switch';
 import { Panel } from '@/components/page-shell';
+import { PasswordInput } from '@/components/ui/password-input';
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -400,8 +401,8 @@ export function TelegramSection({ telegram }: {
             <form action={saveTelegram} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
               <div className="grid gap-1">
                 <Label htmlFor="tg-token" className="text-xs">{t("توکنِ بات")}</Label>
-                <Input
-                  id="tg-token" name="botToken" type="password" autoComplete="off"
+                <PasswordInput
+                  id="tg-token" name="botToken" autoComplete="off"
                   placeholder={telegram.hasToken ? '••••••••  ' + tr('ثبت‌شده') : '123456:ABC…'}
                 />
               </div>
