@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { dropStill, frameGap, isLoomMediaUrl, MAX_FRAMES, MAX_VIDEO_SECONDS } from '@/domain/ai/media';
+import { dropStill, frameGap, isBinaryMedia, isLoomMediaUrl, MAX_FRAMES, MAX_VIDEO_SECONDS } from '@/domain/ai/media';
 
 /**
  * بیرون‌کشیدنِ صدا و عکس از ویدیو با ffmpeg (۲.۳۴.۰).
@@ -41,6 +41,8 @@ export function ffmpegAvailable(): Promise<boolean> {
 
 /** پروتکل‌های مجازِ ورودیِ ffmpeg برای نشانیِ Loom — نه file، نه http ِ بی‌رمز. */
 const URL_WHITELIST = ['-protocol_whitelist', 'https,tls,tcp,crypto,hls'];
+/** ورودیِ فایلِ موقت: فقط پروتکلِ file. */
+const LOCAL_WHITELIST = ['-protocol_whitelist', 'file'];
 
 export interface ExtractedVideo {
   duration: number;
@@ -66,7 +68,8 @@ export async function extractVideo(input: string, limits: VideoLimits = DEFAULT_
   const remote = /^https:\/\//.test(input);
   if (remote && !isLoomMediaUrl(input)) return null;
   if (!(await ffmpegAvailable())) return null;
-  const pre = remote ? URL_WHITELIST : [];
+  // ⚠️ فایلِ محلی فقط خودش را می‌خواند — نه شبکه، نه فایلِ دیگری از راهِ فهرستِ پخش (۲.۵۷.۰).
+  const pre = remote ? URL_WHITELIST : LOCAL_WHITELIST;
 
   const probe = await run('ffprobe', [
     '-v', 'error', ...pre, '-show_entries', 'format=duration:stream=codec_type', '-of', 'json', input,
@@ -116,6 +119,7 @@ export async function extractVideo(input: string, limits: VideoLimits = DEFAULT_
 
 /** همان کار برای بایت‌های فایلِ تلگرام — در فایلِ موقت نوشته و بعد پاک می‌شود. */
 export async function extractVideoBytes(bytes: Uint8Array, ext = 'mp4', limits: VideoLimits = DEFAULT_LIMITS): Promise<ExtractedVideo | null> {
+  if (!isBinaryMedia(bytes)) return null;
   if (!(await ffmpegAvailable())) return null;
   const dir = await mkdtemp(join(tmpdir(), 'kbz-upload-'));
   try {

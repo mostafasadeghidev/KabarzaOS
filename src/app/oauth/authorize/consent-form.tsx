@@ -14,9 +14,11 @@ import { cn } from '@/lib/utils';
  * کارتِ «اجازه» (۲.۸.۰) — کاربر می‌بیند **کدام اپ**، **با کدام حساب** و **با
  * چه دسترسی‌ای** وصل می‌شود، و خودش دامنه را کم می‌کند (فقط‌خواندنی).
  */
-export function ConsentForm({ hidden, clientName, userName, defaultScope }: {
+export function ConsentForm({ hidden, clientName, target, userName, defaultScope }: {
   hidden: Record<string, string>;
   clientName: string;
+  /** میزبانِ نشانیِ بازگشت — نام را خودِ اپ می‌نویسد، این را نه (۲.۵۷.۰). */
+  target: { host: string; known: boolean; local: boolean };
   userName: string;
   defaultScope: 'read' | 'write';
 }) {
@@ -41,9 +43,21 @@ export function ConsentForm({ hidden, clientName, userName, defaultScope }: {
         <div className="mb-1 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Bot className="size-5" /></div>
         <CardTitle dir="auto">{t('«{app}» می‌خواهد به حسابِ شما وصل شود', { app: clientName })}</CardTitle>
         <CardDescription>{t('وارد شده‌اید با: {name}', { name: userName })}</CardDescription>
+        <CardDescription>
+          {t('دسترسی به این نشانی داده می‌شود:')} <bdi className="font-mono font-medium text-foreground" dir="ltr">{target.host}</bdi>
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form action={action} className="grid gap-4">
+          {!target.known && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                {target.local
+                  ? t('این اپ روی همین دستگاه اجرا می‌شود. فقط اگر خودتان همین حالا آن را وصل می‌کنید اجازه بدهید.')
+                  : t('این نشانی جزوِ دستیارهای شناخته‌شده نیست. اگر این پیوند را کسِ دیگری برایتان فرستاده، اجازه ندهید — نامِ اپ را هر کسی می‌تواند بنویسد.')}
+              </AlertDescription>
+            </Alert>
+          )}
           {Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
           <input type="hidden" name="scope" value={scope} />
 

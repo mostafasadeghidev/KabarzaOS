@@ -1,3 +1,4 @@
+import { clientIpFrom } from '@/domain/auth/client-ip';
 import { rateWindow } from '@/domain/mcp/tokens';
 import { CORS_HEADERS, json } from '@/server/mcp/origin';
 import { OAuthError, registerClient } from '@/server/mcp/oauth';
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic';
 const windows = new Map<string, { start: number; count: number }>();
 
 export async function POST(req: Request) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
+  const ip = clientIpFrom(req.headers.get('x-forwarded-for')) || 'local';
   const rate = rateWindow(windows.get(ip), Date.now(), 30, 60 * 60_000);
   windows.set(ip, rate.state);
   if (!rate.allowed) return json({ error: 'slow_down' }, 429);

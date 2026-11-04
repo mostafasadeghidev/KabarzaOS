@@ -134,3 +134,24 @@ export function connectDeeplink(botUsername: string, token: string): string | nu
   if (!user || !token) return null;
   return `https://t.me/${encodeURIComponent(user)}?start=${encodeURIComponent(token)}`;
 }
+
+/**
+ * عمرِ پیوندِ «اتصال به تلگرام» (۲.۵۷.۰).
+ *
+ * ⚠️ پیش از این توکن تا مصرف شدن معتبر می‌ماند — حتی ماه‌ها. اتصالِ تلگرام
+ * یعنی ورود از ربات، پس پیوندی که دیرتر لو برود حساب را به دیگری می‌داد.
+ * حالا زمانِ ساخت در خودِ توکن است: «<ثانیه به مبنای ۳۶>-<۳۶ نویسهٔ هگز>»
+ * (تلگرام در payload ِ start فقط حرف، عدد، _ و - می‌پذیرد).
+ */
+export const TELEGRAM_LINK_TTL_SECONDS = 30 * 60;
+
+export function makeTelegramLinkToken(random: string, now: Date = new Date()): string {
+  return `${Math.floor(now.getTime() / 1000).toString(36)}-${random}`;
+}
+
+export function telegramLinkTokenFresh(token: string, now: Date = new Date()): boolean {
+  const match = /^([0-9a-z]{1,10})-[0-9a-f]{32,}$/.exec(token);
+  if (!match) return false;
+  const age = now.getTime() / 1000 - parseInt(match[1]!, 36);
+  return age >= -60 && age <= TELEGRAM_LINK_TTL_SECONDS;
+}

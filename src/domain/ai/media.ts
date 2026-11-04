@@ -158,3 +158,25 @@ export function imageMessage(instruction: string, dataUrl: string, mediaId: stri
     { type: 'image_url', image_url: { url: dataUrl } },
   ];
 }
+
+/**
+ * بایت‌ها واقعاً فایلِ صوتی/تصویریِ دودویی‌اند؟ (۲.۵۷.۰)
+ *
+ * ⚠️ ffmpeg نوع را از محتوا حدس می‌زند، نه از پسوند: فایلی که در تلگرام با
+ * نامِ ‎.mp4 فرستاده شده ولی درونش فهرستِ پخشِ HLS («#EXTM3U») یا «ffconcat»
+ * است، ffmpeg را وادار می‌کند فایل‌های دیگرِ سرور یا نشانی‌های شبکه را
+ * بخواند و در قاب‌ها بریزد. فقط قالب‌های دودوییِ شناخته‌شده پذیرفته می‌شوند.
+ */
+export function isBinaryMedia(bytes: Uint8Array): boolean {
+  if (bytes.length < 12) return false;
+  const ascii = (from: number, text: string) =>
+    [...text].every((ch, i) => bytes[from + i] === ch.charCodeAt(0));
+  return ascii(4, 'ftyp') // mp4 / mov / m4a / 3gp
+    || (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) // webm / mkv
+    || ascii(0, 'OggS') // ogg / opus (پیامِ صوتیِ تلگرام)
+    || ascii(0, 'RIFF') // wav / avi
+    || ascii(0, 'ID3') // mp3 با برچسب
+    || (bytes[0] === 0xff && (bytes[1]! & 0xe0) === 0xe0) // mp3 / aac ِ خام
+    || ascii(0, 'fLaC')
+    || (bytes[0] === 0x47 && bytes[188] === 0x47); // mpeg-ts
+}

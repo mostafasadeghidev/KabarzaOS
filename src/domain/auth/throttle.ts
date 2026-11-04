@@ -33,15 +33,35 @@ export function createFailureStore(windowMs = LOGIN_WINDOW_MS): FailureStore {
   };
 }
 
-/** کلیدها: شناسهٔ نرمال‌شده و نشانیِ IP — هر دو جدا شمرده می‌شوند. */
+/**
+ * سقفِ شکست برای خودِ **حساب** از همهٔ IP ها با هم (۲.۵۷.۰).
+ *
+ * ⚠️ پیش از این شناسه هم با همان ۱۰ قفل می‌شد: هر کسی با ده رمزِ غلط حسابِ
+ * مدیر را ۱۵ دقیقه قفل می‌کرد، و بارها. حالا سقفِ تنگ روی «همین IP» و «همین
+ * حساب از همین IP» است؛ خودِ حساب فقط با رگبارِ پخش‌شده (۵ برابر) قفل می‌شود.
+ */
+export const LOGIN_MAX_ACCOUNT_FAILURES = LOGIN_MAX_FAILURES * 5;
+
+/** کلیدها: شناسه، IP، و جفتِ «شناسه از این IP» — هر سه جدا شمرده می‌شوند. */
 export function throttleKeys(identifier: string, ip: string | null): string[] {
   const id = identifier.trim().toLowerCase();
+  const addr = ip?.trim() ?? '';
   const keys = id ? [`id:${id}`] : [];
-  if (ip) keys.push(`ip:${ip.trim()}`);
+  if (addr) keys.push(`ip:${addr}`);
+  if (id && addr) keys.push(`pair:${id}|${addr}`);
   return keys;
 }
 
-/** بیشترین شمارِ شکست میانِ کلیدها — سخت‌گیرانه‌ترین کلید تصمیم می‌گیرد. */
+/**
+ * سخت‌گیرانه‌ترین کلید، به مقیاسِ `LOGIN_MAX_FAILURES`: کلیدِ حساب با سقفِ
+ * بزرگ‌ترش کوچک می‌شود تا هر سه با یک عدد سنجیده شوند.
+ */
 export function worstFailures(store: FailureStore, keys: readonly string[], now?: number): number {
-  return keys.reduce((max, k) => Math.max(max, store.recentFailures(k, now)), 0);
+  return keys.reduce((max, k) => {
+    const raw = store.recentFailures(k, now);
+    const scaled = k.startsWith('id:')
+      ? Math.floor((raw * LOGIN_MAX_FAILURES) / LOGIN_MAX_ACCOUNT_FAILURES)
+      : raw;
+    return Math.max(max, scaled);
+  }, 0);
 }

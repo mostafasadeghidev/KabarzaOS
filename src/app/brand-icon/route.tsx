@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
@@ -6,6 +7,7 @@ import {
   APPLE_ICON_SIZE, ICON_BACKGROUND, ICON_FOREGROUND, iconLetter, normalizeIconSize, type IconSize,
 } from '@/domain/brand/icon';
 import { companyLogoImage } from '@/server/files/service';
+import { MAX_INPUT_PIXELS } from '@/server/files/preview';
 import { brandIdentity } from '@/server/setup/public-brand';
 
 /**
@@ -51,14 +53,14 @@ async function fromLogo(logo: Buffer, size: IconSize): Promise<Buffer> {
     // iOS پس‌زمینهٔ شفاف را سیاه می‌کند و گوشه‌ها را خودش گرد؛ لوگو روی سفید با حاشیه.
     const inner = Math.round(size * 0.8);
     const pad = Math.floor((size - inner) / 2);
-    return sharp(logo)
+    return sharp(logo, { limitInputPixels: MAX_INPUT_PIXELS })
       .resize(inner, inner, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
       .flatten({ background: '#ffffff' })
       .extend({ top: pad, bottom: size - inner - pad, left: pad, right: size - inner - pad, background: '#ffffff' })
       .png()
       .toBuffer();
   }
-  return sharp(logo)
+  return sharp(logo, { limitInputPixels: MAX_INPUT_PIXELS })
     .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toBuffer();
@@ -91,6 +93,24 @@ async function fromLetter(name: string, size: IconSize): Promise<Response> {
   );
 }
 
+/**
+ * ⚠️ مسیر بی‌ورود است: پیش از این هر درخواست لوگو را از نو با sharp می‌ساخت و
+ * رگبارِ درخواست پردازنده را می‌گرفت (۲.۵۷.۰). حالا هر اندازه یک بار برای
+ * همان لوگو ساخته می‌شود؛ عوض شدنِ لوگو کلیدِ تازه می‌سازد.
+ */
+const iconCache = new Map<string, Promise<Buffer>>();
+function cachedLogoIcon(logo: Buffer, size: IconSize): Promise<Buffer> {
+  const key = `${size}:${createHash('sha256').update(logo).digest('hex')}`;
+  let hit = iconCache.get(key);
+  if (!hit) {
+    if (iconCache.size > 16) iconCache.clear();
+    hit = fromLogo(logo, size);
+    hit.catch(() => iconCache.delete(key));
+    iconCache.set(key, hit);
+  }
+  return hit;
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const size = normalizeIconSize(url.searchParams.get('size'));
@@ -102,7 +122,7 @@ export async function GET(request: Request) {
   const logo = await companyLogoImage().catch(() => null);
   if (logo) {
     try {
-      const png = await fromLogo(logo, size);
+      const png = await cachedLogoIcon(logo, size);
       return new Response(new Uint8Array(png), { headers: { 'Content-Type': 'image/png', 'Cache-Control': cache } });
     } catch {
       // قالبی که sharp نمی‌خواند (مثلاً HEIC) — به حرفِ اول برمی‌گردیم، نه خطا.

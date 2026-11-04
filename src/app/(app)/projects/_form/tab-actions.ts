@@ -1,5 +1,6 @@
 'use server';
 
+import { isTooLong, TEXT_TOO_LONG, textLimitMessage } from '@/domain/access/text-limit';
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import { redirect } from 'next/navigation';
@@ -73,6 +74,7 @@ export async function addCommentAction(_prev: TabActionState, formData: FormData
   const media = await mediaFrom(formData);
   // کامنتِ فقط‌عکس هم کامنت است — «این قسمت را ببینید» با یک اسکرین‌شات.
   if (body.trim() === '' && media.length === 0) return { error: 'متنِ کامنت خالی است.' };
+  if (isTooLong(body)) return { error: TEXT_TOO_LONG };
 
   try {
     const actor = await requireActor();
@@ -82,6 +84,8 @@ export async function addCommentAction(_prev: TabActionState, formData: FormData
     if (rejected) return { error: rejected };
     // ⚠️ پروژهٔ منجمد پیامِ خودش را دارد، نه «انجام نشد» (F#9).
     if (error instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
+    const limited = textLimitMessage(error);
+    if (limited) return { error: limited };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ثبتِ کامنت ندارید.' };
     return { error: 'کامنت ثبت نشد.' };
   }

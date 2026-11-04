@@ -14,6 +14,8 @@ const DEFAULT_TTL_SECONDS = 60 * 60 * 24 * 7; // یک هفته
 
 export interface SessionPayload {
   userId: number;
+  /** زمانِ امضا (ثانیه) — برای باطل کردنِ نشست‌های پیش از تغییرِ رمز (۲.۵۷.۰). */
+  issuedAt?: number;
 }
 
 function secretKey(secret: string): Uint8Array {
@@ -41,7 +43,8 @@ export async function readSessionToken(
   try {
     const { payload } = await jwtVerify(token, secretKey(secret), { algorithms: [ALG] });
     const uid = payload['uid'];
-    return typeof uid === 'number' && uid > 0 ? { userId: uid } : null;
+    if (typeof uid !== 'number' || uid <= 0) return null;
+    return { userId: uid, issuedAt: typeof payload.iat === 'number' ? payload.iat : 0 };
   } catch {
     return null;
   }
@@ -58,4 +61,19 @@ export function sessionCookieOptions(maxAgeSeconds: number = DEFAULT_TTL_SECONDS
     path: '/',
     maxAge: maxAgeSeconds,
   };
+}
+
+/**
+ * نشست هنوز معتبر است؟ (۲.۵۷.۰) — امضاشده پیش از «باطل از» = بیرون.
+ * ⚠️ مقایسه به ثانیه و اکید: کوکیِ تازه‌ای که در همان ثانیهٔ تغییرِ رمز برای
+ * همین دستگاه صادر می‌شود باید بماند.
+ */
+export function sessionStillValid(issuedAt: number | undefined, validAfter: Date | null): boolean {
+  if (!validAfter) return true;
+  return (issuedAt ?? 0) >= Math.floor(validAfter.getTime() / 1000);
+}
+
+/** «اکنون» گرد به ثانیه — مقدارِ `sessions_valid_after`. */
+export function wholeSecondNow(now: Date = new Date()): Date {
+  return new Date(Math.floor(now.getTime() / 1000) * 1000);
 }

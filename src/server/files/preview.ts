@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import sharp, { type Sharp } from 'sharp';
 
 /**
  * پیش‌نمایشِ کوچکِ تصویر — پورتِ `THUMB_W = 400` ِ نسخهٔ قبلی.
@@ -10,6 +10,14 @@ import sharp from 'sharp';
 
 /** عرضِ پیش‌نمایش — همان ۴۰۰ ِ نسخهٔ قبلی. */
 export const PREVIEW_WIDTH = 400;
+
+/**
+ * سقفِ پیکسلِ ورودیِ sharp (۲.۵۷.۰) — حدودِ ۸۰۰۰×۵۰۰۰.
+ * ⚠️ پیش‌فرضِ sharp ۲۶۸ میلیون پیکسل است: «بمبِ تصویر» ِ چندکیلوبایتی با
+ * ابعادِ غول‌آسا چند گیگ حافظه و چند ثانیه پردازنده می‌گرفت. بزرگ‌تر از این
+ * پیش‌نمایش نمی‌گیرد و خودِ فایل دست‌نخورده می‌ماند.
+ */
+export const MAX_INPUT_PIXELS = 40_000_000;
 
 /** خروجی همیشه WebP است؛ کوچک‌تر از JPEG و همه‌جا پشتیبانی می‌شود. */
 export const PREVIEW_MIME = 'image/webp';
@@ -41,7 +49,7 @@ export async function makePreview(
   if (!canPreview(mime)) return null;
 
   try {
-    const out = await sharp(bytes)
+    const out = await sharp(bytes, { limitInputPixels: MAX_INPUT_PIXELS })
       // ⚠️ `withoutEnlargement` — عکسِ ۱۰۰ پیکسلی نباید کش بیاید و تار شود.
       .resize({ width: PREVIEW_WIDTH, withoutEnlargement: true })
       // ⚠️ چرخشِ EXIF اعمال می‌شود، وگرنه عکسِ موبایل خوابیده می‌ماند.
@@ -52,5 +60,34 @@ export async function makePreview(
   } catch (error) {
     console.error('[preview]', error);
     return null;
+  }
+}
+
+/** قالب‌هایی که فرادادهٔ EXIF شان پیش از ذخیره پاک می‌شود. */
+const STRIPPABLE: Record<string, (img: Sharp) => Sharp> = {
+  'image/jpeg': (img) => img.jpeg({ quality: 92, mozjpeg: true }),
+  'image/png': (img) => img.png(),
+  'image/webp': (img) => img.webp({ quality: 92 }),
+};
+
+/**
+ * پاک کردنِ EXIF (موقعیتِ GPS، مدلِ گوشی، زمانِ عکس) از عکسِ اصلی (۲.۵۷.۰).
+ *
+ * ⚠️ عکسِ گوشی مختصاتِ جایی را که گرفته شده با خودش دارد — عکسِ پروفایل یا
+ * اسکرین‌شاتی که در کامنت می‌رود نباید نشانیِ خانهٔ کسی را لو بدهد.
+ * فقط وقتی EXIF دارد دوباره ساخته می‌شود (بقیه دست‌نخورده)؛ چرخش اعمال و
+ * پروفایلِ رنگ نگه داشته می‌شود. شکست = همان بایت‌های اصلی، نه خطا.
+ */
+export async function stripMetadata(bytes: Uint8Array, mime: string): Promise<Uint8Array> {
+  const encode = STRIPPABLE[mime];
+  if (!encode) return bytes;
+  try {
+    const input = sharp(bytes, { limitInputPixels: MAX_INPUT_PIXELS });
+    const meta = await input.metadata();
+    if (!meta.exif || (meta.pages ?? 1) > 1) return bytes;
+    const out = await encode(input.rotate().keepIccProfile()).toBuffer();
+    return new Uint8Array(out);
+  } catch {
+    return bytes;
   }
 }

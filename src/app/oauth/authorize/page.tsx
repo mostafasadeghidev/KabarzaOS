@@ -4,7 +4,7 @@ import { publicBrand } from '@/server/setup/public-brand';
 import { PublicShell } from '@/components/public-shell';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { OAuthError, validateAuthorizeRequest } from '@/server/mcp/oauth';
-import { parseScopes } from '@/domain/mcp/oauth';
+import { parseScopes, redirectTarget } from '@/domain/mcp/oauth';
 import { primeTranslations, t } from '@/i18n/server';
 import { pageTitle } from '@/i18n/page-title';
 import { ConsentForm } from './consent-form';
@@ -57,6 +57,7 @@ export default async function AuthorizePage({ searchParams }: { searchParams: Pr
     <PublicShell brand={brand}>
       <ConsentForm
         clientName={client.name}
+        target={redirectTarget(p.redirectUri)}
         userName={session.name}
         defaultScope={asked.includes('write') ? 'write' : 'read'}
         hidden={{

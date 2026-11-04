@@ -4826,5 +4826,12 @@
   "اعلان‌ها روی این دستگاه می‌رسند.": "Bildirimler bu cihaza ulaşıyor.",
   "اعلانِ فوری در تنظیمات خاموش است.": "Anlık bildirimler ayarlarda kapalı.",
   "این دستگاه را نشد ثبت کرد.": "Bu cihaz kaydedilemedi.",
-  "اعلانِ فوری": "Anlık bildirimler"
+  "اعلانِ فوری": "Anlık bildirimler",
+  "رمزِ ورود عوض شد؛ دستگاه‌های دیگر از حساب بیرون رفتند.": "Şifre değiştirildi; diğer cihazlarınızda oturum kapatıldı.",
+  "دسترسی به این نشانی داده می‌شود:": "Erişim bu adrese verilecek:",
+  "این اپ روی همین دستگاه اجرا می‌شود. فقط اگر خودتان همین حالا آن را وصل می‌کنید اجازه بدهید.": "Bu uygulama bu cihazda çalışıyor. Yalnızca şu anda kendiniz bağlıyorsanız izin verin.",
+  "این نشانی جزوِ دستیارهای شناخته‌شده نیست. اگر این پیوند را کسِ دیگری برایتان فرستاده، اجازه ندهید — نامِ اپ را هر کسی می‌تواند بنویسد.": "Bu adres bilinen bir yapay zekâ asistanı değil. Bu bağlantıyı başka biri gönderdiyse izin vermeyin — uygulama adını herkes yazabilir.",
+  "متن خیلی طولانی است؛ حداکثر ۲۰٬۰۰۰ نویسه.": "Metin çok uzun; en fazla 20.000 karakter.",
+  "پشتِ‌سرِ‌هم زیاد نوشتید؛ یک دقیقه صبر کنید.": "Art arda çok fazla yazdınız; bir dakika bekleyin.",
+  "فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.": "Yedek dosyası izin verilen sınırı (20 GB) aşıyor."
 }

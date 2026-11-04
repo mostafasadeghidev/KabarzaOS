@@ -133,6 +133,7 @@ Everything required is generated. This table is for manual setups.
 | `DEFAULT_LOCALE` | — | Default `fa` |
 | `SMTP_HOST/PORT/USER/PASSWORD/FROM` | — | Without these, email notifications stay silently off |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BOT_USERNAME` | — | Without these, the Telegram channel is hidden |
+| `TRUSTED_PROXY_HOPS` | — | Number of your own proxies in front of the app, default `1` (Caddy or nginx alone). Use `2` with Cloudflare in front of the proxy. The visitor's address for sign-in limits is read this many entries from the end of `X-Forwarded-For` |
 
 ---
 

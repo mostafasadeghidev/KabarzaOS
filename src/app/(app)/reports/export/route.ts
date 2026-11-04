@@ -1,4 +1,4 @@
-import { currentActor } from '@/server/auth';
+import { routeActor } from '@/server/auth';
 import { getT } from '@/i18n/server';
 import {
   getAccountsReport, getAttendanceReport, getClientsReport, getExpensesReport,
@@ -22,7 +22,7 @@ import {
  * پنهان‌کردنِ تب در UI بدونِ گاردِ سرور، حریمی نمی‌سازد (R-RBAC-13).
  */
 export async function GET(request: Request) {
-  const actor = await currentActor();
+  const actor = await routeActor();
   if (!actor) return new Response(null, { status: 403 });
 
   const params = new URL(request.url).searchParams;

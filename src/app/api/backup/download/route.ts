@@ -1,7 +1,7 @@
 import { createReadStream, promises as fs } from 'node:fs';
 import { Readable } from 'node:stream';
 import { and, eq, isNull, ne } from 'drizzle-orm';
-import { currentActor } from '@/server/auth';
+import { routeActor } from '@/server/auth';
 import { db } from '@/db/client';
 import { userRoles, users } from '@/db/schema';
 import { localBackupPath } from '@/server/backup/run';
@@ -17,7 +17,7 @@ import { notify } from '@/server/notifications/service';
  * همهٔ داده.
  */
 export async function GET(request: Request) {
-  const actor = await currentActor();
+  const actor = await routeActor();
   if (!actor || !actor.roles.includes('owner')) return new Response(null, { status: 403 });
 
   const token = new URL(request.url).searchParams.get('token') ?? '';

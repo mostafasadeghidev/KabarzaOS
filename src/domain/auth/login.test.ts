@@ -98,7 +98,7 @@ describe('ورود', () => {
 describe('نشست', () => {
   it('توکن ساخته و خوانده می‌شود', async () => {
     const token = await createSessionToken({ userId: 42 }, SECRET);
-    expect(await readSessionToken(token, SECRET)).toEqual({ userId: 42 });
+    expect(await readSessionToken(token, SECRET)).toMatchObject({ userId: 42 });
   });
 
   it('کلیدِ اشتباه رد می‌شود', async () => {

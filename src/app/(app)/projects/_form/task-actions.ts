@@ -1,5 +1,6 @@
 'use server';
 
+import { isTooLong, TEXT_TOO_LONG, textLimitMessage } from '@/domain/access/text-limit';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
@@ -213,6 +214,7 @@ export async function addTaskNoteAction(_prev: TaskFormState, formData: FormData
   const media = await mediaFrom(formData);
   // یادداشتِ فقط‌عکس هم یادداشت است.
   if (body.trim() === '' && media.length === 0) return { error: 'متنِ یادداشت خالی است.' };
+  if (isTooLong(body)) return { error: TEXT_TOO_LONG };
 
   try {
     const actor = await requireActor();
@@ -221,6 +223,8 @@ export async function addTaskNoteAction(_prev: TaskFormState, formData: FormData
   } catch (error) {
     const rejected = mediaError(error);
     if (rejected) return { error: rejected };
+    const limited = textLimitMessage(error);
+    if (limited) return { error: limited };
     if (error instanceof ForbiddenError) return { error: 'اجازهٔ ثبتِ یادداشت ندارید.' };
     return { error: 'یادداشت ثبت نشد.' };
   }

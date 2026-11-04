@@ -1,3 +1,4 @@
+import { assertNotBurst, assertTextLength, BURST_WINDOW_SECONDS } from '@/domain/access/text-limit';
 import { and, asc, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { getT } from '@/i18n/server';
@@ -633,6 +634,7 @@ export async function compose(
 
   const body = noMentions(input.body).trim();
   if (body === '') throw new ForbiddenError('message.empty');
+  assertTextLength(body);
 
   await assertNotRateLimited(actor);
 
@@ -759,6 +761,10 @@ export async function reply(actor: Actor, threadId: number, body: string): Promi
     : { body: noMentions(body), ids: [], all: false };
   const text = clean.body.trim();
   if (text === '') throw new ForbiddenError('message.empty');
+  assertTextLength(text);
+  const [burst] = await db.select({ recent: sql<number>`count(*)::int` }).from(messages)
+    .where(and(eq(messages.fromUserId, actor.id), sql`${messages.createdAt} > now() - make_interval(secs => ${BURST_WINDOW_SECONDS})`));
+  assertNotBurst(burst?.recent ?? 0);
 
   const rows = await db.insert(messages)
     .values({ threadId, fromUserId: actor.id, body: text })

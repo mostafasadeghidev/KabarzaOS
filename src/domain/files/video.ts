@@ -165,10 +165,24 @@ export type TextPart = { kind: 'text'; text: string } | { kind: 'link'; href: st
 /** آدرس تا اولین فاصله یا گیومه/پرانتزِ زاویه‌ای. */
 const URL_PATTERN = /https?:\/\/[^\s<>"'«»]+/gi;
 /** نشانه‌گذاریِ پایانِ جمله جزوِ آدرس نیست. */
-const TRAILING = /[.,;:!?،؛…)\]}]+$/;
+const TRAILING_CHARS = new Set('.,;:!?،؛…)]}');
 
-/** پیوندِ نام‌دار به شیوهٔ markdown: «[عنوان](https://…)». */
-const NAMED_LINK = /\[([^\]\n]+)\]\((https?:\/\/[^\s()<>"'«»]+)\)/gi;
+/**
+ * دنبالهٔ نشانه‌گذاریِ تهِ آدرس، با یک پیمایشِ خطی از آخر.
+ * ⚠️ پیش از این `/[…]+$/` بود که روی «https://a.....x» درجهٔ دوم کار می‌کرد:
+ * یک کامنتِ نیم‌مگابایتی سرور را برای همه چند ثانیه قفل می‌کرد (۲.۵۷.۰).
+ */
+function trailingPunct(href: string): string {
+  let i = href.length;
+  while (i > 0 && TRAILING_CHARS.has(href[i - 1]!)) i--;
+  return href.slice(i);
+}
+
+/**
+ * پیوندِ نام‌دار به شیوهٔ markdown: «[عنوان](https://…)».
+ * ⚠️ طولِ عنوان و نشانی سقف دارد تا «[[[[…» بدونِ «]» درجهٔ دوم نشود.
+ */
+const NAMED_LINK = /\[([^\]\n]{1,300})\]\((https?:\/\/[^\s()<>"'«»]{1,2048})\)/gi;
 
 /**
  * متن را به تکه‌های «متن» و «پیوند» می‌شکند. فقط http/https.
@@ -198,7 +212,7 @@ function bareLinks(text: string): TextPart[] {
     let href = match[0];
     const index = match.index ?? 0;
     // پرانتزِ بسته فقط وقتی جزوِ آدرس است که بازش هم در آدرس باشد (ویکی‌پدیا).
-    const trail = TRAILING.exec(href)?.[0] ?? '';
+    const trail = trailingPunct(href);
     if (trail) {
       let keep = '';
       if (trail.startsWith(')') && href.includes('(')) keep = ')';

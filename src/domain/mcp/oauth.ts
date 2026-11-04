@@ -75,3 +75,24 @@ export function parseScopes(raw: string | null | undefined): TokenScope[] {
   const asked = (raw ?? '').split(/\s+/).filter((s): s is TokenScope => (SCOPES as readonly string[]).includes(s));
   return asked.length ? [...new Set(asked)] : ['read', 'write'];
 }
+
+/** میزبان‌های شناخته‌شدهٔ دستیارهای هوشِ مصنوعی — نامِ اپ از خودِ اپ می‌آید و سند نیست. */
+const KNOWN_REDIRECT_HOSTS = ['claude.ai', 'claude.com', 'anthropic.com', 'chatgpt.com', 'openai.com'];
+
+/**
+ * اجازه به **کجا** می‌رود؟ (۲.۵۷.۰) — برای صفحهٔ «اجازه».
+ *
+ * ⚠️ ثبتِ اپ برای همه باز است و نام را خودِ اپ می‌نویسد: هر کسی می‌توانست اپی
+ * به نامِ «Claude» با نشانیِ بازگشتِ سایتِ خودش بسازد و پیوندش را برای مدیر
+ * بفرستد. صفحه فقط نام را نشان می‌داد. حالا میزبانِ واقعی و ناشناخته بودنش
+ * هم دیده می‌شود.
+ */
+export function redirectTarget(raw: string): { host: string; known: boolean; local: boolean } {
+  let url: URL;
+  try { url = new URL(raw); } catch { return { host: raw.slice(0, 80), known: false, local: false }; }
+  if (url.protocol === 'http:' && LOOPBACK.has(url.hostname)) return { host: url.host, known: false, local: true };
+  if (url.protocol !== 'https:') return { host: url.protocol.replace(/:$/, ''), known: false, local: true };
+  const host = url.hostname.toLowerCase();
+  const known = KNOWN_REDIRECT_HOSTS.some((k) => host === k || host.endsWith(`.${k}`));
+  return { host, known, local: false };
+}

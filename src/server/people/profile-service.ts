@@ -1,4 +1,6 @@
-import { randomBytes } from 'node:crypto';
+import { wholeSecondNow } from '@/domain/auth/session';
+import { randomBytes } from 'node:crypto';
+
 import { normalizePrefs } from '@/domain/telegram/prefs';
 import { eq, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
@@ -7,7 +9,7 @@ import { can, type Actor } from '@/domain/access/permissions';
 import { checkPasswordPolicy, hashPassword, verifyPassword } from '@/domain/auth/password';
 import { ForbiddenError } from '@/domain/access/guard';
 import {
-  connectDeeplink, hasBankInfo, normalizeBankInfo, normalizeTimezone,
+  connectDeeplink, hasBankInfo, makeTelegramLinkToken, normalizeBankInfo, normalizeTimezone, telegramLinkTokenFresh,
   telegramState, type BankInfo,
 } from '@/domain/people/profile';
 import { normalizeMuted } from '@/domain/notifications/gateway';
@@ -160,7 +162,8 @@ export async function saveTimezone(actor: Actor, value: string) {
 export async function startTelegramLink(actor: Actor): Promise<string | null> {
   if (!(await botToken())) return null;
 
-  const token = randomBytes(24).toString('base64url');
+  // ⚠️ نیم ساعت عمر دارد — `telegramLinkTokenFresh` (۲.۵۷.۰).
+  const token = makeTelegramLinkToken(randomBytes(18).toString('hex'));
   await db.update(users).set({ telegramLinkToken: token, updatedAt: new Date() })
     .where(eq(users.id, actor.id));
 
@@ -180,7 +183,7 @@ export async function disconnectTelegram(actor: Actor) {
  * ببیند بعداً هم می‌تواند استفاده کند.
  */
 export async function completeTelegramLink(token: string, chatId: string): Promise<boolean> {
-  if (!token || !chatId) return false;
+  if (!token || !chatId || !telegramLinkTokenFresh(token)) return false;
 
   const rows = await db.select({ id: users.id }).from(users)
     .where(eq(users.telegramLinkToken, token));
@@ -350,7 +353,7 @@ export async function tryConnectTelegram(actor: Actor): Promise<TelegramConnectR
  * اطلاعات، نه یک ناهماهنگیِ ساده. نسخهٔ قبلی هم صریحاً همین را نوشته.
  */
 export async function linkTelegramChat(token: string, chatId: string): Promise<'ok' | 'not_found' | 'taken'> {
-  if (!token || !chatId) return 'not_found';
+  if (!token || !chatId || !telegramLinkTokenFresh(token)) return 'not_found';
   const [owner] = await db.select({ id: users.id }).from(users).where(eq(users.telegramLinkToken, token));
   if (!owner) return 'not_found';
   const others = await db.select({ id: users.id })
@@ -391,7 +394,8 @@ export async function changeMyPassword(
   }
 
   await db.update(users)
-    .set({ passwordHash: await hashPassword(input.next), updatedAt: new Date() })
+    // ⚠️ نشست‌های دیگر (مثلاً کوکیِ دزدیده‌شده) همین‌جا باطل می‌شوند (۲.۵۷.۰).
+    .set({ passwordHash: await hashPassword(input.next), sessionsValidAfter: wholeSecondNow(), updatedAt: new Date() })
     .where(eq(users.id, actor.id));
 
   await db.insert(auditLog).values({
