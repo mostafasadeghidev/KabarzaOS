@@ -177,6 +177,13 @@ export function BootstrapSections({
 
         {members.map((row, i) => (
           <div key={i} className="grid gap-2 rounded-lg border border-dashed p-3 sm:grid-cols-[1fr_auto]">
+            {/*
+              ⚠️ دو سطرِ ثابت (۲.۵۷.۲): «عضو · نقش» و «نوعِ دستمزد · مبلغ · ارز».
+              پیش از این پنج فیلد در یک شبکهٔ دوستونه می‌ریختند و انتخابگرها
+              `w-fit` بودند (پیش‌فرضِ NativeSelect)؛ هر خانه پهنای دیگری داشت و
+              ارز تنها در سطرِ آخر می‌ماند.
+            */}
+            <div className="grid min-w-0 gap-2">
             <div className="grid gap-2 sm:grid-cols-2">
               <Combobox
                 options={options.people}
@@ -194,6 +201,7 @@ export function BootstrapSections({
 
               <NativeSelect
                 name="memberRole"
+                containerClassName="w-full"
                 value={row.roleTagId}
                 onChange={(e) => setMembers((rows) => rows.map((r, j) =>
                   (j === i ? { ...r, roleTagId: e.target.value } : r)))}
@@ -212,13 +220,16 @@ export function BootstrapSections({
                   <NativeSelectOption key={t.id} value={t.id}>{t.label}</NativeSelectOption>
                 ))}
               </NativeSelect>
+            </div>
 
+            <div className="grid gap-2 sm:grid-cols-3">
               {/*
                 نوعِ دستمزدِ همین عضو (۲.۵۱.۰) — پیش‌فرض نوعِ پروژه. خالی فرستاده
                 می‌شود تا وقتی کاربر دست نزده، عضو از نوعِ پروژه پیروی کند.
               */}
               <NativeSelect
                 aria-label={tr("نوعِ دستمزد")}
+                containerClassName="w-full"
                 value={row.payType || projectPayType(isUnitBased)}
                 onChange={(e) => setMembers((rows) => rows.map((r, j) =>
                   (j === i ? { ...r, payType: e.target.value === 'unit' ? 'unit' : 'fixed' } : r)))}
@@ -264,6 +275,7 @@ export function BootstrapSections({
 
               <NativeSelect
                 name="memberCurrency"
+                containerClassName="w-full"
                 value={row.currencyId}
                 onChange={(e) => setMembers((rows) => rows.map((r, j) =>
                   (j === i ? { ...r, currencyId: e.target.value } : r)))}
@@ -273,6 +285,7 @@ export function BootstrapSections({
                   <NativeSelectOption key={c.id} value={c.id}>{c.label}</NativeSelectOption>
                 ))}
               </NativeSelect>
+            </div>
             </div>
 
             <div className="flex items-start">
@@ -358,6 +371,7 @@ export function BootstrapSections({
               />
               <NativeSelect
                 name="taskPriority"
+                containerClassName="w-full"
                 value={row.priorityTagId}
                 onChange={(e) => setTasks((rows) => rows.map((r, j) =>
                   (j === i ? { ...r, priorityTagId: e.target.value } : r)))}
