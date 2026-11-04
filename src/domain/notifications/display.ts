@@ -52,6 +52,23 @@ export interface BodyRow {
  * @returns سطرها، یا `null` وقتی بدنه ساخت‌یافته نیست و باید دست‌نخورده بماند.
  */
 export function structuredBody(type: string, body: string): BodyRow[] | null {
+  /**
+   * اعلانِ تسک (۲.۵۷.۱): سطرِ اول عنوانِ تسک است — متنِ آدم‌ها، پس دست‌نخورده
+   * — و سطرهای بعد «پروژه: …» و «مسئول: …» که سرور می‌سازد. جداکننده خطِ تازه
+   * است، نه ` · `، چون عنوانِ تسک خودش ممکن است «·» یا «:» داشته باشد.
+   * اعلانِ قدیمی (فقط عنوان، بی‌خطِ تازه) همان متنِ ساده می‌ماند.
+   */
+  if (type.startsWith('task') && body.includes('\n')) {
+    const [first, ...rest] = body.split('\n');
+    const rows: BodyRow[] = [{ label: 'تسک', value: first!.trim() }];
+    for (const line of rest) {
+      const match = /^([^:]{1,20}):\s*(.+)$/.exec(line.trim());
+      if (!match) return null;
+      rows.push({ label: match[1]!.trim(), value: match[2]!.trim() });
+    }
+    return rows;
+  }
+
   if (!type.startsWith('meeting')) return null;
 
   const rows: BodyRow[] = [];

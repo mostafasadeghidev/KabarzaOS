@@ -1468,6 +1468,7 @@ export async function lightenTotals(projectId: number) {
  */
 export async function openTasksForUser(userId: number, scopes: Array<'company' | 'private'>) {
   const priority = alias(tags, 'my_priority_tag');
+  const assignee = alias(users, 'my_task_assignee');
 
   return db
     .select({
@@ -1485,6 +1486,8 @@ export async function openTasksForUser(userId: number, scopes: Array<'company' |
       statusGroup: tags.statusGroup,
       isPrivate: tasks.isPrivate,
       assignedTo: tasks.assignedTo,
+      // ستونِ «مسئول» ِ صندوق (۲.۵۷.۱) — صندوقِ کارفرما null می‌کند.
+      assigneeName: assignee.name,
       createdBy: tasks.createdBy,
       priorityName: tagName(await currentLocale(), priority),
       priorityColor: priority.color,
@@ -1497,6 +1500,7 @@ export async function openTasksForUser(userId: number, scopes: Array<'company' |
     .innerJoin(projects, eq(projects.id, tasks.projectId))
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))
     .leftJoin(priority, eq(priority.id, tasks.priorityTagId))
+    .leftJoin(assignee, eq(assignee.id, tasks.assignedTo))
     .where(and(
       // پورتِ `visible_to_user_sql`: مالِ من، خصوصیِ خودم، یا تسکِ نقشیِ بی‌مسئول با نقشِ من (ادعانشده/ادعای خودم).
       visibleToUserSql(userId),
@@ -1563,6 +1567,7 @@ export async function reviewTasksForProjects(
 ) {
   if (projectIds.length === 0) return [];
   const priority = alias(tags, 'review_priority_tag');
+  const assignee = alias(users, 'review_task_assignee');
   return db
     .select({
       id: tasks.id,
@@ -1578,6 +1583,7 @@ export async function reviewTasksForProjects(
       statusGroup: tags.statusGroup,
       isPrivate: tasks.isPrivate,
       assignedTo: tasks.assignedTo,
+      assigneeName: assignee.name,
       createdBy: tasks.createdBy,
       priorityName: tagName(await currentLocale(), priority),
       priorityColor: priority.color,
@@ -1589,6 +1595,7 @@ export async function reviewTasksForProjects(
     .innerJoin(projects, eq(projects.id, tasks.projectId))
     .leftJoin(tags, eq(tags.id, tasks.statusTagId))
     .leftJoin(priority, eq(priority.id, tasks.priorityTagId))
+    .leftJoin(assignee, eq(assignee.id, tasks.assignedTo))
     .where(and(
       inArray(tasks.projectId, projectIds),
       isNull(tasks.deletedAt),

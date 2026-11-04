@@ -4833,5 +4833,8 @@
   "این نشانی جزوِ دستیارهای شناخته‌شده نیست. اگر این پیوند را کسِ دیگری برایتان فرستاده، اجازه ندهید — نامِ اپ را هر کسی می‌تواند بنویسد.": "This address is not a known AI assistant. If someone else sent you this link, do not allow it — anyone can choose the app name.",
   "متن خیلی طولانی است؛ حداکثر ۲۰٬۰۰۰ نویسه.": "The text is too long; 20,000 characters at most.",
   "پشتِ‌سرِ‌هم زیاد نوشتید؛ یک دقیقه صبر کنید.": "You posted too much in a row; wait a minute.",
-  "فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.": "The backup file is larger than the allowed limit (20 GB)."
+  "فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.": "The backup file is larger than the allowed limit (20 GB).",
+  "{task}\nپروژه: {project}": "{task}\nProject: {project}",
+  "{task}\nپروژه: {project}\nمسئول: {assignee}": "{task}\nProject: {project}\nAssignee: {assignee}",
+  "شما": "You"
 }
