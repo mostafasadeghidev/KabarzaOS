@@ -4794,5 +4794,6 @@
   "هر عضو قراردادی (مبلغِ توافقی) یا تعدادی (نرخِ هر واحد × تعدادِ ثبت‌شده) است؛ پیش‌فرض نوعِ خودِ پروژه است.": "Jedes Mitglied ist pauschal (vereinbarter Betrag) oder pro Einheit (Satz × erfasste Menge); Standard ist die Art des Projekts.",
   "مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود": "Der bisherige vereinbarte Betrag ({amount}) wird beim Speichern null",
   "این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.": "Das ist nur der Standard; unter „Projektmitglieder“ lässt sich jedes Mitglied einzeln pauschal oder pro Einheit einstellen.",
-  "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Für Arbeitseinträge von Mitgliedern mit Einheitsvergütung. Ohne Betrag gilt der vereinbarte Satz des Mitglieds."
+  "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Für Arbeitseinträge von Mitgliedern mit Einheitsvergütung. Ohne Betrag gilt der vereinbarte Satz des Mitglieds.",
+  "کپی نشد؛ دستی انتخاب و کپی کنید.": "Kopieren fehlgeschlagen. Bitte manuell markieren und kopieren."
 }

@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.52.0]
+
+### Added
+
+- **Click to copy contact details.** On the people cards (Members, Clients), clicking an email address or phone number copies it to the clipboard and shows "Copied". A tooltip says "Click to copy", and the keyboard works too. If the browser blocks the clipboard, an older copy method is tried, and if that fails too you're told to copy by hand.
+
 ## [2.51.0]
 
 ### Added
