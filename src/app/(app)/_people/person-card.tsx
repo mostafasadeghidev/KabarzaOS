@@ -24,6 +24,7 @@ import {
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { TagChip } from '@/components/ui/tag-chip';
+import { CopyText } from '@/components/copy-text';
 
 export interface PersonView {
   id: number;
@@ -258,11 +259,12 @@ export function PersonCard({
         <dl className="grid gap-1 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Mail className="size-3" />
-            <dd className="num truncate">{person.email}</dd>
+            {/* کلیک = کپی (۲.۵۲.۰) */}
+            <dd className="num min-w-0 truncate"><CopyText value={person.email} className="max-w-full truncate" /></dd>
           </div>
           <div className="flex items-center gap-1.5">
             <Phone className="size-3" />
-            <dd className="num">{person.phone || '—'}</dd>
+            <dd className="num">{person.phone ? <CopyText value={person.phone} /> : '—'}</dd>
           </div>
           {section.supportsOffices && person.offices.length > 0 && (
             <div className="flex items-center gap-1.5">

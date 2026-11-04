@@ -4794,5 +4794,6 @@
   "هر عضو قراردادی (مبلغِ توافقی) یا تعدادی (نرخِ هر واحد × تعدادِ ثبت‌شده) است؛ پیش‌فرض نوعِ خودِ پروژه است.": "Cada miembro es fijo (importe acordado) o por unidad (tarifa × cantidad registrada); por defecto, el tipo del proyecto.",
   "مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود": "El importe acordado anterior ({amount}) pasa a cero al guardar",
   "این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.": "Es solo el valor por defecto; en «Miembros del proyecto» cada miembro puede ser fijo o por unidad por separado.",
-  "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Para los registros de trabajo de los miembros por unidad. Sin importe, se usa la tarifa acordada del miembro."
+  "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Para los registros de trabajo de los miembros por unidad. Sin importe, se usa la tarifa acordada del miembro.",
+  "کپی نشد؛ دستی انتخاب و کپی کنید.": "No se pudo copiar. Selecciónelo y cópielo a mano."
 }

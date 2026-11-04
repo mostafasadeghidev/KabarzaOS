@@ -4794,5 +4794,6 @@
   "هر عضو قراردادی (مبلغِ توافقی) یا تعدادی (نرخِ هر واحد × تعدادِ ثبت‌شده) است؛ پیش‌فرض نوعِ خودِ پروژه است.": "Each member is fixed (agreed amount) or per-unit (unit rate × logged quantity); the default is the project's own type.",
   "مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود": "The previous agreed amount ({amount}) becomes zero on save",
   "این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.": "This is only the default; in “Project members” each member can be set to fixed or per-unit separately.",
-  "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "For per-unit members' work entries. If no amount is entered, the member's agreed rate is used."
+  "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "For per-unit members' work entries. If no amount is entered, the member's agreed rate is used.",
+  "کپی نشد؛ دستی انتخاب و کپی کنید.": "Couldn't copy. Select and copy it by hand."
 }

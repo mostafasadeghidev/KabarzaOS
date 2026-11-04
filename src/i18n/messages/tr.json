@@ -4794,5 +4794,6 @@
   "هر عضو قراردادی (مبلغِ توافقی) یا تعدادی (نرخِ هر واحد × تعدادِ ثبت‌شده) است؛ پیش‌فرض نوعِ خودِ پروژه است.": "Her üye sabit (anlaşılan tutar) veya birim başına (birim ücret × kaydedilen miktar) olur; varsayılan projenin kendi türüdür.",
   "مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود": "Önceki anlaşılan tutar ({amount}) kaydedince sıfırlanır",
   "این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.": "Bu yalnızca varsayılandır; “Proje üyeleri”nde her üye ayrı ayrı sabit veya birim başına yapılabilir.",
-  "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Birim başına ücretli üyelerin iş kayıtları için. Tutar girilmezse üyenin anlaşılan birim ücreti kullanılır."
+  "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Birim başına ücretli üyelerin iş kayıtları için. Tutar girilmezse üyenin anlaşılan birim ücreti kullanılır.",
+  "کپی نشد؛ دستی انتخاب و کپی کنید.": "Kopyalanamadı. Elle seçip kopyalayın."
 }
