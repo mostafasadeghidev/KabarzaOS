@@ -317,6 +317,16 @@ export function SystemSection({ config, health, bucket, isOwner }: {
               choices={CHATPOLL_CHOICES}
             />
           </div>
+          {/* اعلانِ فوری (۲.۵۶.۰) — خاموش = هیچ دستگاهی پیام نمی‌گیرد، اشتراک‌ها می‌مانند. */}
+          <div className="grid gap-1.5 sm:col-span-2">
+            <label className="flex items-center gap-1.5 text-sm">
+              <Switch name="pushEnabled" defaultChecked={config.pushEnabled} />
+              {tr("اعلانِ فوری روی گوشی و کامپیوتر")}
+            </label>
+            <p className="text-xs text-muted-foreground">
+              {tr("هر کس در «پروفایلِ من» روی دستگاهِ خودش روشنش می‌کند؛ اعلان‌های برنامه حتی وقتی برنامه بسته است می‌رسند.")}
+            </p>
+          </div>
         </div>
       </Panel>
 

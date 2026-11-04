@@ -362,6 +362,7 @@ export async function saveSystemAction(
       presenceOffline: formData.get('presenceOffline'),
       msgPurgeDays: formData.get('msgPurgeDays'),
       pulseEnabled: formData.get('pulseEnabled') !== null,
+      pushEnabled: formData.get('pushEnabled') !== null,
       pulseInterval: formData.get('pulseInterval'),
       chatPollEnabled: formData.get('chatPollEnabled') !== null,
       chatPollInterval: formData.get('chatPollInterval'),

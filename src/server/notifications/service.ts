@@ -14,6 +14,7 @@ import { telegramCredentials } from '@/server/settings/telegram-service';
 import { taskCard, type TaskCardFile } from '@/server/telegram/task-card';
 import { getObject } from '@/server/files/storage';
 import { esc, HTML, isParseError, stripHtml, truncateHtml } from '@/server/telegram/format';
+import { sendPush } from './push';
 
 /**
  * دروازهٔ اعلان — **تنها** نقطهٔ ارسال (R-NOTIF-01).
@@ -170,6 +171,13 @@ export async function notify(userIds: number[], input: NotifyInput): Promise<num
       values.push({ userId: p.userId, type: input.type, title: text.title, body: text.body, url: input.url ?? '' });
     }
     await db.insert(notifications).values(values);
+    /**
+     * اعلانِ فوری روی دستگاه‌ها (۲.۵۶.۰) — همان متنِ ترجمه‌شدهٔ برنامه. ⚠️ منتظرش
+     * نمی‌مانیم: رفت‌وبرگشت به سرویسِ اعلانِ مرورگر نباید اقدامِ کاربر را کند کند،
+     * و شکستش (مثلِ تلگرام) بی‌صداست.
+     */
+    void sendPush(values.map((v) => ({ userId: v.userId, title: v.title, body: v.body, url: v.url, tag: v.url || undefined })))
+      .catch(() => {});
   }
 
   // ⚠️ کانال‌های بیرونی اینجا وصل می‌شوند — و شکستشان بی‌صدا است.

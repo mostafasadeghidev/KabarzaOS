@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.56.0]
+
+### Added
+
+- **Push notifications on phones and computers.** Every app notification (new task, comment, payment request and so on) can now also appear on the device itself, even when the app is closed, the same way a messaging app's notifications do. Tapping it opens the right page in the app.
+  - Each person turns it on per device under "My profile" → "Notifications and Telegram" → "Notifications on this device". The browser asks for permission once. The same panel has "Send a test notification" and "Turn off".
+  - On iPhone it works only after the app has been added to the home screen (iOS 16.4 or later); the panel says so.
+  - System settings → "Live updates" has a switch that turns push notifications off for everyone.
+  - No outside account or payment is needed. The security keys are created once by the app itself, or taken from the `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` environment variables if they are set. Devices that no longer exist are removed automatically.
+  - A failed delivery never blocks the action that caused it, the same as Telegram and email.
+- Database: new table `push_subscriptions` (migration 0067).
+
 ## [2.55.0]
 
 ### Added
