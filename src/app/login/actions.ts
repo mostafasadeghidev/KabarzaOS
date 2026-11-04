@@ -9,6 +9,7 @@ import { attemptLogin, type AuthUser } from '@/domain/auth/login';
 import { createFailureStore, LOGIN_MAX_FAILURES, throttleKeys, worstFailures } from '@/domain/auth/throttle';
 import { canSignIn, type MemberState } from '@/domain/people/offboarding';
 import { createSessionToken, SESSION_COOKIE, sessionCookieOptions } from '@/domain/auth/session';
+import { VIEW_AS_COOKIE } from '@/domain/auth/view-as';
 import { sessionSecret, currentActor } from '@/server/auth';
 import { loginSchema, type LoginState } from './schema';
 import { markOffline } from '@/server/people/presence-service';
@@ -95,6 +96,8 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   const token = await createSessionToken({ userId: result.userId }, sessionSecret());
   (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions());
+  // ورودِ تازه «دیدن به‌جای»ِ جامانده از نشستِ قبلی را با خودش نمی‌آورد.
+  (await cookies()).delete(VIEW_AS_COOKIE);
   // «پس از ورود برگرد به …» — فقط مسیرِ داخلی (صفحهٔ «اجازه» ِ OAuth، ۲.۸.۰).
   redirect(safeNextPath(formData.get('next')));
 }
@@ -103,7 +106,9 @@ export async function logout(): Promise<void> {
   // پورتِ `on_logout()`: خروج یعنی همین حالا آفلاین — نه تا انقضای مهرِ حضور.
   // (بیکنِ `pagehide` بعد از حذفِ کوکی بی‌نشست می‌رسد و هیچ کاری نمی‌کند.)
   const actor = await currentActor();
-  if (actor) await markOffline(actor).catch(() => {});
+  // در حالتِ «دیدن به‌جای کاربر» (۲.۵۳.۰) آن کاربر آفلاین نمی‌شود؛ هر دو کوکی می‌روند.
+  if (actor && !actor.viewOnly) await markOffline(actor).catch(() => {});
   (await cookies()).delete(SESSION_COOKIE);
+  (await cookies()).delete(VIEW_AS_COOKIE);
   redirect('/login');
 }

@@ -11,6 +11,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'profile.bank': 'ویرایشِ اطلاعاتِ بانکی',
   'profile.account': 'ویرایشِ مشخصاتِ خود',
   'person.invite': 'ارسالِ دعوت‌نامه',
+  'view_as.start': 'شروعِ دیدن به‌جای کاربر',
+  'view_as.stop': 'برگشت از دیدن به‌جای کاربر',
   'auth.reset_requested': 'درخواستِ بازنشانیِ رمز',
   'auth.password_reset': 'تعیینِ رمز از راهِ لینک',
   'profile.password': 'تغییرِ رمزِ خود',

@@ -12,7 +12,8 @@ import { livePresence } from '@/server/availability/service';
  */
 export async function POST(request: Request) {
   const actor = await currentActor();
-  if (!actor) return new Response(null, { status: 204 });
+  // مالکی که به‌جای عضو می‌بیند (۲.۵۳.۰) او را «آنلاین» نشان نمی‌دهد.
+  if (!actor || actor.viewOnly) return new Response(null, { status: 204 });
 
   // ⚠️ گاردِ سمتِ سرور (R-ARCH-01): سوارنشدنِ کامپوننت کافی نیست — هر کسی
   // می‌تواند مستقیم این مسیر را صدا بزند.

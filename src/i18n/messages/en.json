@@ -4795,5 +4795,13 @@
   "مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود": "The previous agreed amount ({amount}) becomes zero on save",
   "این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.": "This is only the default; in “Project members” each member can be set to fixed or per-unit separately.",
   "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "For per-unit members' work entries. If no amount is entered, the member's agreed rate is used.",
-  "کپی نشد؛ دستی انتخاب و کپی کنید.": "Couldn't copy. Select and copy it by hand."
+  "کپی نشد؛ دستی انتخاب و کپی کنید.": "Couldn't copy. Select and copy it by hand.",
+  "به‌جای {name} می‌بینید": "Viewing as {name}",
+  "فقط دیدن؛ هیچ تغییری ذخیره نمی‌شود.": "View only — no changes are saved.",
+  "برگشت به حسابِ خودم": "Back to my account",
+  "این کاربر پیدا نشد یا اجازهٔ ورود ندارد.": "This user wasn't found or can't sign in.",
+  "فقط مالک می‌تواند برنامه را به‌جای کاربرِ دیگری ببیند.": "Only the owner can view the app as another user.",
+  "دیدن به‌جای این کاربر": "View as this user",
+  "شروعِ دیدن به‌جای کاربر": "Started viewing as a user",
+  "برگشت از دیدن به‌جای کاربر": "Stopped viewing as a user"
 }

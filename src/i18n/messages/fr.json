@@ -4795,5 +4795,13 @@
   "مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود": "Le montant convenu précédent ({amount}) passe à zéro à l'enregistrement",
   "این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.": "Ce n'est qu'une valeur par défaut ; dans « Membres du projet », chaque membre peut être mis au forfait ou à l'unité séparément.",
   "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Pour les entrées de travail des membres à l'unité. Sans montant, le taux convenu du membre s'applique.",
-  "کپی نشد؛ دستی انتخاب و کپی کنید.": "Copie impossible. Sélectionnez et copiez à la main."
+  "کپی نشد؛ دستی انتخاب و کپی کنید.": "Copie impossible. Sélectionnez et copiez à la main.",
+  "به‌جای {name} می‌بینید": "Vous voyez en tant que {name}",
+  "فقط دیدن؛ هیچ تغییری ذخیره نمی‌شود.": "Lecture seule — aucune modification n'est enregistrée.",
+  "برگشت به حسابِ خودم": "Revenir à mon compte",
+  "این کاربر پیدا نشد یا اجازهٔ ورود ندارد.": "Utilisateur introuvable ou non autorisé à se connecter.",
+  "فقط مالک می‌تواند برنامه را به‌جای کاربرِ دیگری ببیند.": "Seul le propriétaire peut voir l'application en tant qu'un autre utilisateur.",
+  "دیدن به‌جای این کاربر": "Voir en tant que cet utilisateur",
+  "شروعِ دیدن به‌جای کاربر": "Début de l'affichage en tant qu'utilisateur",
+  "برگشت از دیدن به‌جای کاربر": "Fin de l'affichage en tant qu'utilisateur"
 }

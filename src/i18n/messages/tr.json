@@ -4795,5 +4795,13 @@
   "مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود": "Önceki anlaşılan tutar ({amount}) kaydedince sıfırlanır",
   "این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.": "Bu yalnızca varsayılandır; “Proje üyeleri”nde her üye ayrı ayrı sabit veya birim başına yapılabilir.",
   "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Birim başına ücretli üyelerin iş kayıtları için. Tutar girilmezse üyenin anlaşılan birim ücreti kullanılır.",
-  "کپی نشد؛ دستی انتخاب و کپی کنید.": "Kopyalanamadı. Elle seçip kopyalayın."
+  "کپی نشد؛ دستی انتخاب و کپی کنید.": "Kopyalanamadı. Elle seçip kopyalayın.",
+  "به‌جای {name} می‌بینید": "{name} olarak görüntülüyorsunuz",
+  "فقط دیدن؛ هیچ تغییری ذخیره نمی‌شود.": "Yalnızca görüntüleme — hiçbir değişiklik kaydedilmez.",
+  "برگشت به حسابِ خودم": "Hesabıma dön",
+  "این کاربر پیدا نشد یا اجازهٔ ورود ندارد.": "Bu kullanıcı bulunamadı veya giriş yapamaz.",
+  "فقط مالک می‌تواند برنامه را به‌جای کاربرِ دیگری ببیند.": "Uygulamayı başka bir kullanıcı olarak yalnızca sahip görebilir.",
+  "دیدن به‌جای این کاربر": "Bu kullanıcı olarak görüntüle",
+  "شروعِ دیدن به‌جای کاربر": "Kullanıcı olarak görüntüleme başladı",
+  "برگشت از دیدن به‌جای کاربر": "Kullanıcı olarak görüntüleme bitti"
 }

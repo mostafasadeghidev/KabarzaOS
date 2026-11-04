@@ -3,12 +3,13 @@
 import { useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import {
-  Building2, KeyRound, Lock, Mail, MoreVertical, Phone, RotateCcw, Sprout, Trash2, Wallet, XCircle,
+  Building2, Eye, KeyRound, Lock, Mail, MoreVertical, Phone, RotateCcw, Sprout, Trash2, Wallet, XCircle,
 } from 'lucide-react';
 import {
   removePersonAction, setPersonPasswordAction, setStateAction, type PasswordState,
 } from './_form/actions';
-import { stateLabel, type MemberState } from '@/domain/people/offboarding';
+import { canSignIn, stateLabel, type MemberState } from '@/domain/people/offboarding';
+import { startViewAsAction } from '../_actions/view-as';
 import { Thumb } from '@/components/thumb';
 import { PresenceDot } from '@/components/presence';
 import type { PresenceState } from '@/domain/people/presence';
@@ -197,6 +198,16 @@ export function PersonCard({
                       <Sprout className="size-3.5" />
                       {tr("آنبوردینگ")}
                     </Link>
+                  </DropdownMenuItem>
+                )}
+                {/*
+                  «دیدن به‌جای این کاربر» (۲.۵۳.۰) — فقط مالک، فقط کسی که واردشدنی است.
+                  گاردِ اصلی در سرور است (`canViewAs`)؛ این فقط دکمهٔ بی‌حاصل را پنهان می‌کند.
+                */}
+                {isOwner && canSignIn(person.memberState, false) && (
+                  <DropdownMenuItem onSelect={() => run(() => startViewAsAction(person.id))}>
+                    <Eye className="size-3.5" />
+                    {tr("دیدن به‌جای این کاربر")}
                   </DropdownMenuItem>
                 )}
                 {isOwner && person.isStaff && (
