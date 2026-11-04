@@ -29,3 +29,38 @@ self.addEventListener('fetch', (event) => {
     fetch(event.request).catch(() => caches.open(CACHE).then((cache) => cache.match(OFFLINE_URL))),
   );
 });
+
+/*
+ * اعلانِ فوری (۲.۵۶.۰) — سرور پیامِ رمزگذاری‌شده را از راهِ سرویسِ اعلانِ مرورگر
+ * می‌فرستد؛ اینجا نشان داده می‌شود، حتی وقتی برنامه بسته است.
+ */
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = { title: event.data ? event.data.text() : '' }; }
+  const title = data.title || 'Kabarza';
+  event.waitUntil(self.registration.showNotification(title, {
+    body: data.body || '',
+    icon: '/brand-icon?size=192',
+    badge: '/brand-icon?size=192',
+    tag: data.tag || undefined,
+    data: { url: data.url || '/notifications' },
+  }));
+});
+
+// کلیک روی اعلان: پنجرهٔ بازِ برنامه را به همان صفحه می‌برد، وگرنه پنجرهٔ تازه.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
+  if (target.origin !== self.location.origin) return;
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if (new URL(client.url).origin === target.origin && 'focus' in client) {
+        await client.focus();
+        if ('navigate' in client) await client.navigate(target.href).catch(() => {});
+        return;
+      }
+    }
+    await self.clients.openWindow(target.href);
+  })());
+});

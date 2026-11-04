@@ -153,6 +153,7 @@ export const FIELD_LABELS: Record<string, string> = {
   presenceOffline: 'آفلاین پس از (دقیقه)',
   presencePing: 'فاصلهٔ اعلامِ حضور (ثانیه)',
   pulseEnabled: 'نبضِ صفحه',
+  pushEnabled: 'اعلانِ فوری',
   pulseInterval: 'فاصلهٔ نبض (ثانیه)',
   weekStart: 'آغازِ هفته',
 

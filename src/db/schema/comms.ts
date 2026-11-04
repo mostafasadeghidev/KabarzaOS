@@ -135,6 +135,25 @@ export const notifications = pgTable('notifications', {
   index('notifications_created_ix').on(t.createdAt),
 ]);
 
+/**
+ * اعلانِ فوری (Web Push، ۲.۵۶.۰) — هر دستگاهِ هر کاربر یک ردیف.
+ * ⚠️ `endpoint` یکتاست: اگر دستگاه به حسابِ دیگری برود، ردیف به صاحبِ تازه منتقل می‌شود،
+ * نه اینکه اعلانِ دو نفر روی یک گوشی بیاید.
+ */
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: pk(),
+  userId: fk('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  userAgent: text('user_agent').notNull().default(''),
+  createdAt: ts('created_at').notNull().defaultNow(),
+  lastUsedAt: ts('last_used_at'),
+}, (t) => [
+  uniqueIndex('push_subscription_endpoint_ux').on(t.endpoint),
+  index('push_subscription_user_ix').on(t.userId),
+]);
+
 export const absences = pgTable('absences', {
   id: pk(),
   userId: fk('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),

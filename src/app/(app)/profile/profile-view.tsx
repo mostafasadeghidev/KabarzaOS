@@ -6,6 +6,7 @@ import { TG_CATEGORIES, TG_CATEGORY_LABELS } from '@/domain/telegram/prefs';
 import { useFormStatus } from 'react-dom';
 import { Bell, Bot, Building2, CreditCard, Clock, KeyRound, Send, Lock, UserRound } from 'lucide-react';
 import { McpPanel, type McpGrantView, type McpTokenView } from './mcp-panel';
+import { PushPanel } from './push-panel';
 import { AiBotPanel, type AiConnectionInfo, type AiProviderOption } from './ai-bot-panel';
 import { Thumb } from '@/components/thumb';
 import {
@@ -378,6 +379,9 @@ export function ProfileView({ data }: { data: ProfileData }) {
           <p className="text-sm text-muted-foreground">
             {tr("زنگِ داخلِ اپ همیشه روشن است. این تنظیمات فقط کانال‌های بیرونی را تعیین می‌کنند.")}
           </p>
+
+          {/* اعلانِ فوری روی همین دستگاه (۲.۵۶.۰) — دکمه‌هایش type="button" اند و این فرم را نمی‌فرستند. */}
+          <PushPanel />
 
           <Panel title={tr("ایمیل")}>
 

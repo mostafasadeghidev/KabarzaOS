@@ -62,6 +62,8 @@ export interface SystemConfig {
   msgPurgeDays: number;
   pulseEnabled: boolean;
   pulseInterval: number;
+  /** اعلانِ فوری روی گوشی و کامپیوتر (Web Push، ۲.۵۶.۰). */
+  pushEnabled: boolean;
   chatPollEnabled: boolean;
   chatPollInterval: number;
   /**
@@ -99,6 +101,7 @@ export const DEFAULT_SYSTEM: SystemConfig = {
   msgPurgeDays: 0,
   pulseEnabled: true,
   pulseInterval: 45,
+  pushEnabled: true,
   chatPollEnabled: true,
   chatPollInterval: 7,
   ownerTeamView: false,
@@ -158,6 +161,7 @@ export function normalizeSystem(input: Partial<Record<keyof SystemConfig, unknow
     // ⚠️ مهار در **هر دو** سو: عددِ منفی یعنی «همه را پاک کن».
     msgPurgeDays: Math.max(0, Math.min(MAX_PURGE_DAYS, Math.trunc(Number(input.msgPurgeDays) || 0))),
     pulseEnabled: bool(input.pulseEnabled, DEFAULT_SYSTEM.pulseEnabled),
+    pushEnabled: bool(input.pushEnabled, DEFAULT_SYSTEM.pushEnabled),
     pulseInterval: fromChoices(input.pulseInterval, PULSE_CHOICES, DEFAULT_SYSTEM.pulseInterval),
     chatPollEnabled: bool(input.chatPollEnabled, DEFAULT_SYSTEM.chatPollEnabled),
     chatPollInterval: fromChoices(
