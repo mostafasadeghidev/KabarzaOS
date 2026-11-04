@@ -5,12 +5,16 @@
  * نسخهٔ قبلی این را با آزمون‌وخطا به اینجا رساند؛ اینجا از اول درست نوشته می‌شود.
  */
 
+import type { PayType } from './pay-type';
+
 export interface MemberInput {
   userId: number;
   roleTagId: number | null;
   agreedAmount: string;
   unitRate?: string;
   currencyId?: number | null;
+  /** نوعِ دستمزد (۲.۵۱.۰) — خالی = مثلِ پروژه. */
+  payType?: PayType | null;
 }
 
 export interface ExistingMember {
@@ -20,6 +24,7 @@ export interface ExistingMember {
   agreedAmount: string;
   unitRate?: string;
   currencyId?: number | null;
+  payType?: PayType | null;
 }
 
 export interface DiffOptions {
@@ -80,7 +85,8 @@ function sameFinancials(existing: ExistingMember, input: MemberInput): boolean {
   return (
     sameAmount(existing.agreedAmount, input.agreedAmount) &&
     sameAmount(existing.unitRate ?? '0', input.unitRate ?? '0') &&
-    (existing.currencyId ?? null) === (input.currencyId ?? null)
+    (existing.currencyId ?? null) === (input.currencyId ?? null) &&
+    (existing.payType ?? null) === (input.payType ?? null)
   );
 }
 

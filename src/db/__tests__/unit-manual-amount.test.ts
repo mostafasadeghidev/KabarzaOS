@@ -93,14 +93,17 @@ describe('ویرایشِ مبلغ', () => {
 });
 
 describe('تنظیمِ پروژه', () => {
-  it('تیک ذخیره می‌شود، با برداشتنِ تعدادی‌بودن خاموش می‌شود و فراخوانِ قدیمی آن را نگه می‌دارد', async () => {
+  it('تیک ذخیره می‌شود، فراخوانِ قدیمی آن را نگه می‌دارد و به تعدادی‌بودنِ پروژه بسته نیست (۲.۵۱.۰)', async () => {
     const flag = async () => (await db.select({ f: projects.unitManualAmount }).from(projects).where(eq(projects.id, PLAIN)))[0]!.f;
     expect(await flag()).toBe(false);
     await updateProject(owner(), PLAIN, { ...base, title: 'Plain', isUnitBased: true, unitManualAmount: true });
     expect(await flag()).toBe(true);
     await updateProject(owner(), PLAIN, { ...base, title: 'Plain', isUnitBased: true });
     expect(await flag()).toBe(true);
+    // پروژهٔ قراردادی هم ممکن است عضوِ تعدادی داشته باشد، پس تیک می‌ماند.
     await updateProject(owner(), PLAIN, { ...base, title: 'Plain', isUnitBased: false, unitManualAmount: true });
+    expect(await flag()).toBe(true);
+    await updateProject(owner(), PLAIN, { ...base, title: 'Plain', isUnitBased: false, unitManualAmount: false });
     expect(await flag()).toBe(false);
   });
 });

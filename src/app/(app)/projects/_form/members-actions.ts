@@ -5,6 +5,7 @@ import { requireActor } from '@/server/auth';
 import { setMembers, setProjectAccess } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { memberRowSchema, type MembersFormState } from './members-schema';
+import type { MemberInput } from '@/domain/projects/members';
 
 /**
  * ذخیرهٔ اعضا — آرایه‌های موازی، مثلِ نسخهٔ قبلی.
@@ -26,9 +27,10 @@ export async function setMembersAction(
   const amounts = formData.getAll('memberAmount');
   const rates = formData.getAll('memberUnitRate');
   const currencies = formData.getAll('memberCurrency');
+  const payTypes = formData.getAll('memberPayType');
 
   const rowErrors: Record<number, string> = {};
-  const rows = [];
+  const rows: MemberInput[] = [];
 
   for (let i = 0; i < users.length; i++) {
     const parsed = memberRowSchema.safeParse({
@@ -37,6 +39,7 @@ export async function setMembersAction(
       agreedAmount: String(amounts[i] ?? ''),
       unitRate: String(rates[i] ?? ''),
       currencyId: String(currencies[i] ?? ''),
+      payType: String(payTypes[i] ?? ''),
     });
 
     if (!parsed.success) {
@@ -52,6 +55,7 @@ export async function setMembersAction(
       agreedAmount: parsed.data.agreedAmount,
       unitRate: parsed.data.unitRate,
       currencyId: parsed.data.currencyId,
+      payType: parsed.data.payType,
     });
   }
 

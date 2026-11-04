@@ -7,6 +7,7 @@
  */
 
 import { convert, type RateSource } from '../currency/rates';
+import { isUnitMember } from '../projects/pay-type';
 
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'paid';
@@ -141,8 +142,9 @@ export function contractBalance(input: {
  * پولِ تیمِ یک پروژه — بخشِ «تیم» ِ تبِ مالی (۲.۳۰.۰).
  *
  * هر عضو با `contractBalance` در ارزِ قراردادِ خودش حساب می‌شود؛ جمعِ کل به
- * ارزِ پروژه تبدیل می‌شود (نبودِ نرخ = عددِ اسمی، همان قاعدهٔ بالا). در پروژهٔ
- * تعدادی «توافق» جمعِ ردیف‌های کارکردِ همان عضو است، نه مبلغِ توافقیِ عضویت.
+ * ارزِ پروژه تبدیل می‌شود (نبودِ نرخ = عددِ اسمی، همان قاعدهٔ بالا). برای عضوِ
+ * **تعدادی** «توافق» جمعِ ردیف‌های کارکردِ همان عضو است، نه مبلغِ توافقیِ عضویت.
+ * از ۲.۵۱.۰ تعدادی بودن مالِ هر عضو است (`payType`)؛ نوعِ پروژه پیش‌فرض است.
  */
 export interface TeamMemberMoney {
   userId: number;
@@ -154,7 +156,7 @@ export interface TeamMemberMoney {
 }
 
 export function teamSummary(input: {
-  members: ReadonlyArray<{ userId: number; name: string; agreed: string; currencyId: number | null }>;
+  members: ReadonlyArray<{ userId: number; name: string; agreed: string; currencyId: number | null; payType?: string | null }>;
   units: ReadonlyArray<{ userId: number; amount: string; currencyId: number }>;
   payouts: ReadonlyArray<{
     userId: number | null;
@@ -172,7 +174,7 @@ export function teamSummary(input: {
   for (const m of members) if (!names.has(m.userId)) names.set(m.userId, m.name);
 
   const rows = [...names.entries()].map(([userId, name]) => {
-    const memberRows = isUnitBased
+    const memberRows = isUnitMember(members.filter((m) => m.userId === userId), isUnitBased)
       ? units.filter((u) => u.userId === userId).map((u) => ({ agreed: u.amount, currencyId: u.currencyId }))
       : members.filter((m) => m.userId === userId).map((m) => ({ agreed: m.agreed, currencyId: m.currencyId }));
     const balance = contractBalance({

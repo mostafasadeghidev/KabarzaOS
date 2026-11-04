@@ -10,6 +10,7 @@ import { ForbiddenError } from '@/domain/access/guard';
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { removeProjectThumbnail, setProjectThumbnail } from '@/server/files/service';
 import { createProjectSchema, type FormState } from './schema';
+import type { PayType } from '@/domain/projects/pay-type';
 
 /** فیلدهای متنی‌ای که در صورتِ خطا باید به فرم برگردند. */
 const RAW_FIELDS = [
@@ -229,6 +230,7 @@ async function readBootstrap(formData: FormData) {
   const agreed = formData.getAll('memberAgreed');
   const rates = formData.getAll('memberUnitRate');
   const currencies = formData.getAll('memberCurrency');
+  const payTypes = formData.getAll('memberPayType');
 
   const members = users
     .map((u, i) => ({
@@ -237,6 +239,8 @@ async function readBootstrap(formData: FormData) {
       agreedAmount: money(agreed[i]),
       unitRate: money(rates[i]),
       currencyId: id(currencies[i]),
+      // نوعِ دستمزد (۲.۵۱.۰) — خالی یا ناشناخته = مثلِ پروژه.
+      payType: payTypes[i] === 'fixed' || payTypes[i] === 'unit' ? payTypes[i] as PayType : null,
     }))
     .filter((m): m is typeof m & { userId: number } => m.userId !== null);
 

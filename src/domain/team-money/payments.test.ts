@@ -226,4 +226,36 @@ describe('teamSummary — بخشِ «تیم» ِ تبِ مالیِ پروژه (�
     });
     expect(t).toMatchObject({ agreed: 100, paid: 30, remaining: 70 });
   });
+
+  it('۲.۵۱.۰ — پروژهٔ قراردادی با یک عضوِ تعدادی: هر کس با نوعِ خودش', () => {
+    const t = teamSummary({
+      members: [
+        { userId: 1, name: 'A', agreed: '500', currencyId: EUR },
+        { userId: 2, name: 'B', agreed: '0', currencyId: EUR, payType: 'unit' },
+      ],
+      // ردیفِ کارکردِ عضوِ قراردادی (مانده از پیش) در توافقِ او حساب نمی‌شود.
+      units: [{ userId: 2, amount: '30', currencyId: EUR }, { userId: 1, amount: '999', currencyId: EUR }],
+      payouts: [],
+      isUnitBased: false,
+      projectCurrencyId: EUR,
+      source: rates,
+    });
+    expect(t.members.map((m) => [m.userId, m.agreed])).toEqual([[1, 500], [2, 30]]);
+    expect(t.agreed).toBe(530);
+  });
+
+  it('۲.۵۱.۰ — پروژهٔ تعدادی با یک عضوِ قراردادی', () => {
+    const t = teamSummary({
+      members: [
+        { userId: 1, name: 'A', agreed: '700', currencyId: EUR, payType: 'fixed' },
+        { userId: 2, name: 'B', agreed: '0', currencyId: EUR },
+      ],
+      units: [{ userId: 2, amount: '45', currencyId: EUR }],
+      payouts: [],
+      isUnitBased: true,
+      projectCurrencyId: EUR,
+      source: rates,
+    });
+    expect(t.members.map((m) => [m.userId, m.agreed])).toEqual([[1, 700], [2, 45]]);
+  });
 });

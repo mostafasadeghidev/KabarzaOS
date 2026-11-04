@@ -10,6 +10,7 @@ import {
   paymentStatus, rowValueIn, summarizeProject, type PaymentStatus,
 } from '@/domain/team-money/payments';
 import type { Actor } from '@/domain/access/permissions';
+import { isUnitMember } from '@/domain/projects/pay-type';
 
 /**
  * «مالیِ من» — نمای **بین‌پروژه‌ایِ** شخصی؛ پورتِ `view_finance()` ِ داشبوردِ
@@ -44,6 +45,7 @@ export interface MyMemberProject {
   paid: string;
   remaining: string;
   status: PaymentStatus;
+  /** دستمزدِ این عضو تعدادی است (۲.۵۱.۰ — نوعِ خودش، نه فقط نوعِ پروژه). */
   isUnitBased: boolean;
   /** پروژهٔ تعدادی: جمعِ پرداخت‌شده و پرداخت‌نشدهٔ ردیف‌های کارکرد. */
   unitPaid: string;
@@ -148,6 +150,7 @@ export async function getMyMoney(actor: Actor) {
         agreedAmount: projectMembers.agreedAmount,
         currencyId: projectMembers.currencyId,
         currencyCode: currencies.code,
+        payType: projectMembers.payType,
       })
       .from(projectMembers)
       .leftJoin(currencies, eq(currencies.id, projectMembers.currencyId))
@@ -284,7 +287,8 @@ export async function getMyMoney(actor: Actor) {
       paid: paid.toFixed(2),
       remaining: Math.max(0, agreed - paid).toFixed(2),
       status: paymentStatus(String(paid), String(agreed)),
-      isUnitBased: project?.isUnitBased ?? false,
+      // تعدادی بودنِ **خودِ این عضو** (۲.۵۱.۰) — نوعِ پروژه فقط پیش‌فرض است.
+      isUnitBased: isUnitMember(rows, project?.isUnitBased ?? false),
       unitPaid: unitPaid.toFixed(2),
       unitUnpaid: unitUnpaid.toFixed(2),
       units: myUnits.map((u) => ({

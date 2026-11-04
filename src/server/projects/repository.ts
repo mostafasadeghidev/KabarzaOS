@@ -337,6 +337,8 @@ export async function listMembers(projectId: number) {
       agreedAmount: projectMembers.agreedAmount,
       unitRate: projectMembers.unitRate,
       currencyId: projectMembers.currencyId,
+      /** نوعِ دستمزد (۲.۵۱.۰) — خالی = مثلِ پروژه. */
+      payType: projectMembers.payType,
       userName: users.name,
       roleName: tagName(await currentLocale()),
       /** رنگِ تگِ نقش — چیپِ نقش (پورتِ `role_color`). */

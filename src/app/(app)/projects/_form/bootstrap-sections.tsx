@@ -15,6 +15,7 @@ import { TagChip } from '@/components/ui/tag-chip';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { roleChoices } from '@/domain/projects/project-roles';
+import { effectivePayType, projectPayType, type PayType } from '@/domain/projects/pay-type';
 
 export interface BootstrapOptions {
   /** اعضای قابلِ افزودن — نامِ فرد به‌علاوهٔ ایمیل برای تفکیکِ هم‌نام‌ها. */
@@ -45,6 +46,8 @@ interface MemberRow {
   agreed: string;
   unitRate: string;
   currencyId: string;
+  /** نوعِ دستمزد (۲.۵۱.۰) — خالی = مثلِ پروژه. */
+  payType: '' | PayType;
 }
 
 interface TaskRow {
@@ -170,7 +173,7 @@ export function BootstrapSections({
       <div className={only === "team" ? "grid gap-5" : "hidden"}>
       {/* ------------------------------------------------ اعضا */}
       <section className="grid gap-2">
-        <SectionTitle hint={tr("نقش و مبلغِ توافقیِ هر عضو. مبلغ خالی یعنی صفر.")}>{tr("اعضا")}</SectionTitle>
+        <SectionTitle hint={tr("نقش، نوعِ دستمزد (قراردادی یا تعدادی) و مبلغ یا نرخِ هر عضو. مبلغ خالی یعنی صفر.")}>{tr("اعضا")}</SectionTitle>
 
         {members.map((row, i) => (
           <div key={i} className="grid gap-2 rounded-lg border border-dashed p-3 sm:grid-cols-[1fr_auto]">
@@ -211,12 +214,27 @@ export function BootstrapSections({
               </NativeSelect>
 
               {/*
+                نوعِ دستمزدِ همین عضو (۲.۵۱.۰) — پیش‌فرض نوعِ پروژه. خالی فرستاده
+                می‌شود تا وقتی کاربر دست نزده، عضو از نوعِ پروژه پیروی کند.
+              */}
+              <NativeSelect
+                aria-label={tr("نوعِ دستمزد")}
+                value={row.payType || projectPayType(isUnitBased)}
+                onChange={(e) => setMembers((rows) => rows.map((r, j) =>
+                  (j === i ? { ...r, payType: e.target.value === 'unit' ? 'unit' : 'fixed' } : r)))}
+              >
+                <NativeSelectOption value="fixed">{tr("قراردادی")}</NativeSelectOption>
+                <NativeSelectOption value="unit">{tr("تعدادی")}</NativeSelectOption>
+              </NativeSelect>
+              <input type="hidden" name="memberPayType" value={row.payType} />
+
+              {/*
                 ⚠️ «مبلغِ توافقی» و «نرخِ هر واحد» جای هم را می‌گیرند، نه اینکه
-                کنارِ هم بنشینند: در پروژهٔ تعدادی دستمزد = نرخ × تعداد و مبلغِ
+                کنارِ هم بنشینند: برای عضوِ تعدادی دستمزد = نرخ × تعداد و مبلغِ
                 ثابت بی‌معناست. هر دو نام همیشه فرستاده می‌شوند تا ردیف‌ها
                 هم‌طول بمانند.
               */}
-              {isUnitBased ? (
+              {effectivePayType(row.payType, isUnitBased) === 'unit' ? (
                 <>
                   <Input
                     name="memberUnitRate"
@@ -268,7 +286,7 @@ export function BootstrapSections({
             type="button" size="sm" variant="outline"
             onClick={() => setMembers((rows) => [...rows, {
               userId: null, label: '', roleTagId: '', agreed: '',
-              unitRate: '', currencyId: defaultCurrency,
+              unitRate: '', currencyId: defaultCurrency, payType: '',
             }])}
           >
             {tr("افزودنِ عضو")}

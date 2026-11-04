@@ -4785,5 +4785,14 @@
   "این ماه در هیچ دورهٔ حقوقی نیست.": "Este mes no está en ningún periodo de salario.",
   "مبلغِ خالص باید بیشتر از صفر باشد.": "El importe neto debe ser mayor que cero.",
   "این دوره پرداخت دارد و ارزش عوض نمی‌شود.": "Este periodo tiene pagos, así que su moneda no puede cambiar.",
-  "حقوقِ {month} به مبلغِ {amount} پرداخت شد": "Se pagó su salario de {month} por {amount}"
+  "حقوقِ {month} به مبلغِ {amount} پرداخت شد": "Se pagó su salario de {month} por {amount}",
+  "قراردادی": "Fijo",
+  "نوعِ دستمزد": "Tipo de pago",
+  "مبلغ یا نرخ": "Importe o tarifa",
+  "دستمزدِ این عضو روی این پروژه تعدادی نیست؛ ردیفِ کارکرد فقط برای عضوِ تعدادی ثبت می‌شود.": "Este miembro no cobra por unidad en este proyecto; los registros de trabajo son solo para miembros por unidad.",
+  "نقش، نوعِ دستمزد (قراردادی یا تعدادی) و مبلغ یا نرخِ هر عضو. مبلغ خالی یعنی صفر.": "Rol, tipo de pago (fijo o por unidad) e importe o tarifa de cada miembro. Un importe vacío es cero.",
+  "هر عضو قراردادی (مبلغِ توافقی) یا تعدادی (نرخِ هر واحد × تعدادِ ثبت‌شده) است؛ پیش‌فرض نوعِ خودِ پروژه است.": "Cada miembro es fijo (importe acordado) o por unidad (tarifa × cantidad registrada); por defecto, el tipo del proyecto.",
+  "مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود": "El importe acordado anterior ({amount}) pasa a cero al guardar",
+  "این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.": "Es solo el valor por defecto; en «Miembros del proyecto» cada miembro puede ser fijo o por unidad por separado.",
+  "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Para los registros de trabajo de los miembros por unidad. Sin importe, se usa la tarifa acordada del miembro."
 }

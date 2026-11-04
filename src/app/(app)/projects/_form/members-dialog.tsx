@@ -24,6 +24,8 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { needsExplicitRole, roleChoices } from '@/domain/projects/project-roles';
 import { useFreshKey } from '@/hooks/use-fresh-key';
+import { effectivePayType, type PayType } from '@/domain/projects/pay-type';
+import { trimZeros } from '@/lib/number-input';
 
 export interface MemberRow {
   userId: number | null;
@@ -32,6 +34,10 @@ export interface MemberRow {
   agreedAmount: string;
   unitRate: string;
   currencyId: number | null;
+  /** نوعِ دستمزد (۲.۵۱.۰) — خالی = مثلِ پروژه. */
+  payType?: PayType | null;
+  /** مبلغِ توافقیِ پیش از تعدادی شدن — فقط در همین فرم، برای برگشت. */
+  prevAgreed?: string;
   isFormer?: boolean;
   isOwed?: boolean;
 }
@@ -72,8 +78,9 @@ function SaveButton() {
  * مدیریتِ اعضا — جدولِ تکرارشوندهٔ نسخهٔ قبلی (`member_row`) با همان ستون‌ها:
  * عضو · نقش · مبلغ توافقی · نرخِ هر واحد · ارز.
  *
- * ⚠️ ستونِ «مبلغ توافقی» و «نرخِ هر واحد» مثلِ نسخهٔ قبلی با نوعِ پروژه جابه‌جا
- * می‌شوند: پروژهٔ تعدادی نرخ می‌گیرد، بقیه مبلغِ توافقی.
+ * ⚠️ ستونِ «مبلغ توافقی» و «نرخِ هر واحد» با نوعِ دستمزدِ **هر عضو** جابه‌جا
+ * می‌شوند (۲.۵۱.۰): عضوِ تعدادی نرخ می‌گیرد، قراردادی مبلغِ توافقی. نوعِ
+ * پروژه فقط پیش‌فرضِ اعضاست.
  */
 export function MembersDialog({ data }: { data: MembersFormData }) {
   const [open, setOpen] = useState(false);
@@ -153,6 +160,30 @@ function MembersDialogBody({ data, open, setOpen }: { data: MembersFormData; ope
   const patch = (i: number, next: Partial<MemberRow>) =>
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...next } : r)));
 
+  const typeOf = (row: MemberRow) => effectivePayType(row.payType, data.isUnitBased);
+  /**
+   * ⚠️ نوع برای هر **نفر** یکی است (کارکرد به نفر ثبت می‌شود، نه به نقش):
+   * عوض‌کردنِ نوعِ یک ردیف، ردیف‌های دیگرِ همان نفر را هم عوض می‌کند.
+   */
+  /**
+   * ⚠️ عضوی که تعدادی می‌شود مبلغِ توافقی‌اش صفر می‌شود: پنهان ماندنِ آن مبلغ
+   * یعنی عضو هنوز می‌توانست آن را درخواست کند و **علاوه بر** کارکرد پول بگیرد.
+   * مبلغِ قبلی در همین فرم نگه داشته و دیده می‌شود؛ برگشت به قراردادی پسش می‌دهد.
+   */
+  const setPayType = (i: number, payType: PayType) =>
+    setRows((rs) => {
+      const userId = rs[i]?.userId ?? null;
+      return rs.map((r, idx) => {
+        if (!(idx === i || (userId !== null && r.userId === userId))) return r;
+        if (typeOf(r) === payType) return { ...r, payType };
+        return payType === 'unit'
+          ? { ...r, payType, prevAgreed: r.agreedAmount, agreedAmount: '0' }
+          : { ...r, payType, agreedAmount: r.prevAgreed ?? r.agreedAmount, prevAgreed: undefined };
+      });
+    });
+  const types = new Set(rows.map(typeOf));
+  const amountHead = types.size > 1 ? tr('مبلغ یا نرخ') : types.has('unit') ? tr('نرخِ هر واحد') : tr('مبلغ توافقی');
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -163,9 +194,11 @@ function MembersDialogBody({ data, open, setOpen }: { data: MembersFormData; ope
         <DialogHeader>
           <DialogTitle>{t("اعضای پروژه")}</DialogTitle>
           <DialogDescription>
-            {data.isUnitBased
-              ? tr('پروژهٔ تعدادی است: دستمزدِ هر عضو = نرخِ هر واحد × تعدادِ ثبت‌شده.')
-              : tr('مبلغِ توافقیِ هر عضو برای این پروژه.')}
+            {money
+              ? tr('هر عضو قراردادی (مبلغِ توافقی) یا تعدادی (نرخِ هر واحد × تعدادِ ثبت‌شده) است؛ پیش‌فرض نوعِ خودِ پروژه است.')
+              : data.isUnitBased
+                ? tr('پروژهٔ تعدادی است: دستمزدِ هر عضو = نرخِ هر واحد × تعدادِ ثبت‌شده.')
+                : tr('مبلغِ توافقیِ هر عضو برای این پروژه.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -183,9 +216,8 @@ function MembersDialogBody({ data, open, setOpen }: { data: MembersFormData; ope
                   <TableHead>{t("نقش")}</TableHead>
                   {money && (
                     <>
-                      <TableHead>
-                        {data.isUnitBased ? tr('نرخِ هر واحد') : tr('مبلغ توافقی')}
-                      </TableHead>
+                      <TableHead>{tr('نوعِ دستمزد')}</TableHead>
+                      <TableHead>{amountHead}</TableHead>
                       <TableHead>{t("ارز")}</TableHead>
                     </>
                   )}
@@ -264,23 +296,44 @@ function MembersDialogBody({ data, open, setOpen }: { data: MembersFormData; ope
                     {money && (
                     <>
                     <TableCell>
+                      <NativeSelect
+                        name="memberPayType"
+                        size="sm" containerClassName="w-full"
+                        value={typeOf(row)}
+                        onChange={(e) => setPayType(i, e.target.value === 'unit' ? 'unit' : 'fixed')}
+                      >
+                        <NativeSelectOption value="fixed">{tr('قراردادی')}</NativeSelectOption>
+                        <NativeSelectOption value="unit">{tr('تعدادی')}</NativeSelectOption>
+                      </NativeSelect>
+                      {typeOf(row) === 'unit' && Number(row.prevAgreed ?? 0) > 0 && (
+                        <span className="mt-0.5 block text-[11px] text-amber-700 dark:text-amber-500">
+                          {tr('مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود', { amount: trimZeros(row.prevAgreed ?? '') })}
+                        </span>
+                      )}
+                    </TableCell>
+
+                    <TableCell>
                       {/* هر دو فیلد همیشه فرستاده می‌شوند تا آرایه‌ها هم‌طول بمانند. */}
-                      <Input
-                        className="num h-8"
-                        inputMode="decimal"
-                        name={data.isUnitBased ? 'memberUnitRate' : 'memberAmount'}
-                        value={data.isUnitBased ? row.unitRate : row.agreedAmount}
-                        onChange={(e) =>
-                          patch(i, data.isUnitBased
-                            ? { unitRate: e.target.value }
-                            : { agreedAmount: e.target.value })
-                        }
-                      />
-                      <input
-                        type="hidden"
-                        name={data.isUnitBased ? 'memberAmount' : 'memberUnitRate'}
-                        value={data.isUnitBased ? row.agreedAmount : row.unitRate}
-                      />
+                      {(() => {
+                        const unit = typeOf(row) === 'unit';
+                        return (
+                          <>
+                            <Input
+                              className="num h-8"
+                              inputMode="decimal"
+                              aria-label={unit ? tr('نرخِ هر واحد') : tr('مبلغ توافقی')}
+                              name={unit ? 'memberUnitRate' : 'memberAmount'}
+                              value={unit ? row.unitRate : row.agreedAmount}
+                              onChange={(e) => patch(i, unit ? { unitRate: e.target.value } : { agreedAmount: e.target.value })}
+                            />
+                            <input
+                              type="hidden"
+                              name={unit ? 'memberAmount' : 'memberUnitRate'}
+                              value={unit ? row.agreedAmount : row.unitRate}
+                            />
+                          </>
+                        );
+                      })()}
                     </TableCell>
 
                     <TableCell>
@@ -305,6 +358,7 @@ function MembersDialogBody({ data, open, setOpen }: { data: MembersFormData; ope
                           <input type="hidden" name="memberAmount" value="0" />
                           <input type="hidden" name="memberUnitRate" value="0" />
                           <input type="hidden" name="memberCurrency" value="" />
+                          <input type="hidden" name="memberPayType" value="" />
                         </>
                       )}
                       <IconButton

@@ -48,6 +48,7 @@ import { canSeeSiteLinks } from '@/domain/projects/site-links';
 import { pageTitle } from '@/i18n/page-title';
 import { Hint } from '@/components/ui/tooltip';
 import { Amount } from '@/components/amount-privacy';
+import { isUnitMember } from '@/domain/projects/pay-type';
 
 export const generateMetadata = pageTitle('پروژه‌ها');
 
@@ -117,6 +118,15 @@ export default async function ProjectDetailPage({
   const seesAll = canManageSection(actor, 'projects');
   const isProjectMember = members.some((m) => m.userId === actor.id);
   const asMember = isProjectMember && !seesAll;
+  /**
+   * نوعِ دستمزدِ هر نفر (۲.۵۱.۰): تعدادی بودن مالِ خودِ عضو است و نوعِ پروژه
+   * فقط پیش‌فرض. بخشِ کارکرد برای هر کسی باز است که روی پروژه عضوِ تعدادی دارد.
+   */
+  const unitUserIds = new Set(
+    [...new Set(members.map((m) => m.userId))]
+      .filter((uid) => isUnitMember(members.filter((m) => m.userId === uid), project.isUnitBased)),
+  );
+  const iAmUnit = isUnitMember(members.filter((m) => m.userId === actor.id), project.isUnitBased);
 
   let myMoney = null;
   try {
@@ -130,7 +140,8 @@ export default async function ProjectDetailPage({
       seesAll,
       asMember,
       isFrozen: detail.isFrozen,
-      isUnitBased: project.isUnitBased,
+      // تعدادی بودنِ **خودِ بیننده** — پیامِ درخواستِ پرداخت با آن عوض می‌شود.
+      isUnitBased: iAmUnit,
       unitManualAmount: project.unitManualAmount,
       units,
       myUnpaidUnits: unpaid,
@@ -145,8 +156,10 @@ export default async function ProjectDetailPage({
       outstanding: requests.outstanding,
       // ⚠️ عضوِ دو-نقشه دو ردیفِ عضویت دارد؛ در انتخابگر باید یک‌بار بیاید
       // (نسخهٔ قبلی هم با $seen همین کار را می‌کند).
+      // فقط اعضای تعدادی در انتخابگرِ کارکرد — قراردادی ردیفِ کارکرد نمی‌گیرد.
       members: [...new Map(
-        members.map((m) => [m.userId, { id: m.userId, name: m.userName ?? `#${m.userId}` }]),
+        members.filter((m) => unitUserIds.has(m.userId))
+          .map((m) => [m.userId, { id: m.userId, name: m.userName ?? `#${m.userId}` }]),
       ).values()],
       today: new Date().toISOString().slice(0, 10),
     };
@@ -161,7 +174,14 @@ export default async function ProjectDetailPage({
    * کارکردهای پروژهٔ تعدادی (۲.۲۱.۰) در تبِ «اطلاعات» نشان داده می‌شوند، نه «مالی»؛
    * پس داده‌شان **پیش از** تصمیمِ «تبِ مالی خالی است» جدا می‌شود.
    */
-  const unitData: UnitSectionData | null = myMoney?.isUnitBased
+  /**
+   * ⚠️ کارکردِ ثبت‌شده هم بخش را باز نگه می‌دارد: عضوی که بعداً قراردادی شد
+   * ردیف‌های قبلی‌اش (و قسط‌هایشان) را هنوز باید ببیند.
+   */
+  const showUnits = myMoney !== null && (
+    myMoney.units.length > 0 || (asMember ? iAmUnit : unitUserIds.size > 0)
+  );
+  const unitData: UnitSectionData | null = myMoney && showUnits
     ? {
       projectId: myMoney.projectId,
       seesAll: myMoney.seesAll,
@@ -543,7 +563,7 @@ export default async function ProjectDetailPage({
                         پیش از این ستون برای همه رندر می‌شد.
                       */}
                       {canSeeAgreedAmounts && (
-                        <TableHead numeric>{t("مبلغ توافقی")}</TableHead>
+                        <TableHead numeric>{unitUserIds.size > 0 ? t("مبلغ یا نرخ") : t("مبلغ توافقی")}</TableHead>
                       )}
                       {canManage && <TableActionsHead />}
                     </TableRow>
@@ -564,7 +584,17 @@ export default async function ProjectDetailPage({
                           {m.roleName ? <TagChip color={m.roleColor}>{m.roleName}</TagChip> : '—'}
                         </TableCell>
                         {canSeeAgreedAmounts && (
-                          <TableNumericCell><Amount>{format(m.agreedAmount)}</Amount></TableNumericCell>
+                          // عضوِ تعدادی (۲.۵۱.۰) نرخِ هر واحد دارد، نه مبلغِ توافقی.
+                          <TableNumericCell>
+                            {unitUserIds.has(m.userId) ? (
+                              <>
+                                <Badge variant="outline" className="me-1.5 text-[10px]">{t("تعدادی")}</Badge>
+                                <Amount>{format(m.unitRate)}</Amount>
+                              </>
+                            ) : (
+                              <Amount>{format(m.agreedAmount)}</Amount>
+                            )}
+                          </TableNumericCell>
                         )}
                         {canManage && (
                           <TableActionsCell>
