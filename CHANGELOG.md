@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.56.1]
+
+### Fixed
+
+- **The profile picture in the member form now updates live.** Choosing an image shows it straight away, before it's saved, and the same goes for a new member's form. After "Save image" or "Delete image" the form shows the result immediately. Until now it kept the old picture until the form was closed and reopened, which made saving look like it hadn't worked.
+
 ## [2.56.0]
 
 ### Added
