@@ -4795,5 +4795,13 @@
   "مبلغِ توافقیِ قبلی ({amount}) با ذخیره صفر می‌شود": "Der bisherige vereinbarte Betrag ({amount}) wird beim Speichern null",
   "این فقط پیش‌فرض است؛ در «اعضای پروژه» هر عضو را می‌شود جدا قراردادی یا تعدادی کرد.": "Das ist nur der Standard; unter „Projektmitglieder“ lässt sich jedes Mitglied einzeln pauschal oder pro Einheit einstellen.",
   "برای کارکردِ اعضای تعدادی. اگر مبلغی نزند، همان نرخِ توافقیِ عضو حساب می‌شود.": "Für Arbeitseinträge von Mitgliedern mit Einheitsvergütung. Ohne Betrag gilt der vereinbarte Satz des Mitglieds.",
-  "کپی نشد؛ دستی انتخاب و کپی کنید.": "Kopieren fehlgeschlagen. Bitte manuell markieren und kopieren."
+  "کپی نشد؛ دستی انتخاب و کپی کنید.": "Kopieren fehlgeschlagen. Bitte manuell markieren und kopieren.",
+  "به‌جای {name} می‌بینید": "Ansicht als {name}",
+  "فقط دیدن؛ هیچ تغییری ذخیره نمی‌شود.": "Nur ansehen — es werden keine Änderungen gespeichert.",
+  "برگشت به حسابِ خودم": "Zurück zu meinem Konto",
+  "این کاربر پیدا نشد یا اجازهٔ ورود ندارد.": "Dieser Benutzer wurde nicht gefunden oder darf sich nicht anmelden.",
+  "فقط مالک می‌تواند برنامه را به‌جای کاربرِ دیگری ببیند.": "Nur der Inhaber kann die App als anderer Benutzer ansehen.",
+  "دیدن به‌جای این کاربر": "Als dieser Benutzer ansehen",
+  "شروعِ دیدن به‌جای کاربر": "Ansicht als Benutzer gestartet",
+  "برگشت از دیدن به‌جای کاربر": "Ansicht als Benutzer beendet"
 }

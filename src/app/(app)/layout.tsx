@@ -10,6 +10,7 @@ import { HeaderBreadcrumb } from '@/components/header-breadcrumb';
 import { NavHistory } from '@/components/nav-history';
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette';
 import { OffboardedShell } from './offboarded-shell';
+import { ViewAsBanner } from './view-as-banner';
 import { PresenceProvider } from '@/components/presence';
 import { logout } from '@/app/login/actions';
 import { setLocale } from './_actions/locale';
@@ -122,8 +123,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    * جای کلِ چیدمان را می‌گیرد، پس هر آدرسی هم که بزند همین را می‌بیند.
    * اگر به‌جایش یک صفحهٔ جدا می‌ساختیم، /projects همچنان باز بود.
    */
+  // «دیدن به‌جای کاربر» (۲.۵۳.۰) — نوار روی هر دو پوسته، تا برگشت همیشه دمِ دست باشد.
+  const viewAsBanner = session.viewAs ? <ViewAsBanner name={session.name} /> : null;
+
   if (session.memberState === 'finance') {
-    return <OffboardedShell actor={actor} />;
+    return <>{viewAsBanner}<OffboardedShell actor={actor} /></>;
   }
 
   /**
@@ -282,6 +286,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         brand={{ name: brand.name?.trim() || system.brandName || 'KabarzaOS', logoFileId: brand.logoFileId }}
       />
       <SidebarInset>
+        {/* داخلِ ستونِ محتوا، نه بالای کلِ صفحه — وگرنه روی سرِ سایدبارِ ثابت می‌افتاد. */}
+        {viewAsBanner}
         <header data-app-chrome className="flex h-12 items-center gap-2 border-b px-4">
           {/* دکمهٔ جمع/باز کردن حالا داخلِ سایدبار است (۲.۳۸.۰)؛ این فقط کشوی موبایل را باز می‌کند. */}
           <MobileSidebarTrigger rtl={isRtl(session.locale ?? system.defaultLocale)} />

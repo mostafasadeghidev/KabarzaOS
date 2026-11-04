@@ -263,12 +263,13 @@ export async function openThread(actor: Actor, threadId: number) {
 
   // رسیدِ خواندن تا آخرین پیام جلو می‌رود.
   const lastId = rows.at(-1)?.id;
-  if (lastId) {
+  // ⚠️ مالکی که به‌جای عضو می‌بیند (۲.۵۳.۰) رسیدِ خواندن و اعلان‌های او را دست نمی‌زند.
+  if (lastId && !actor.viewOnly) {
     await db.update(threadUsers)
       .set({ lastReadMessageId: lastId, updatedAt: new Date() })
       .where(and(eq(threadUsers.threadId, threadId), eq(threadUsers.userId, actor.id)));
   }
-  await markReadForTarget(actor, '/messages', threadId);
+  if (!actor.viewOnly) await markReadForTarget(actor, '/messages', threadId);
 
   const t = await getT();
   const members = access.members ?? [];
@@ -955,12 +956,13 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
     .orderBy(asc(messages.id));
 
   const lastId = rows.at(-1)?.id;
-  if (lastId) {
+  // ⚠️ مالکی که به‌جای عضو می‌بیند (۲.۵۳.۰) رسیدِ خواندن و اعلان‌های او را دست نمی‌زند.
+  if (lastId && !actor.viewOnly) {
     await db.update(threadUsers)
       .set({ lastReadMessageId: lastId, updatedAt: new Date() })
       .where(and(eq(threadUsers.threadId, threadId), eq(threadUsers.userId, actor.id)));
   }
-  await markReadForTarget(actor, '/messages', threadId);
+  if (!actor.viewOnly) await markReadForTarget(actor, '/messages', threadId);
 
   const t = await getT();
   const mentioned = mentionedIdsIn(rows.map((r) => r.body));

@@ -20,7 +20,8 @@ import { isPalette, isTheme } from '@/domain/people/appearance';
  */
 export async function saveAppearanceAction(input: { theme?: string; palette?: string }): Promise<void> {
   const session = await currentSession();
-  if (!session) return;
+  // مالکی که به‌جای کاربر می‌بیند (۲.۵۳.۰) تمِ او را عوض نمی‌کند.
+  if (!session || session.actor.viewOnly) return;
 
   const set: { theme?: 'light' | 'dark' | 'system'; palette?: string } = {};
   if (isTheme(input.theme)) set.theme = input.theme;

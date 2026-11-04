@@ -5,6 +5,7 @@ import { canSignIn, type MemberState } from '@/domain/people/offboarding';
 import type { Locale } from '@/i18n/config';
 import { users, userRoles, userPermissions } from '@/db/schema';
 import { readSessionToken, SESSION_COOKIE } from '@/domain/auth/session';
+import { canViewAs, readViewAsToken, VIEW_AS_COOKIE } from '@/domain/auth/view-as';
 import type { Actor, Permission, Role } from '@/domain/access/permissions';
 import { tagPermissionsFor } from '@/server/people/tag-caps';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -40,15 +41,33 @@ export async function currentSession(): Promise<
     actor: Actor; name: string; locale: Locale | null; timezone: string; memberState: MemberState;
     /** ظاهرِ ذخیره‌شده روی کاربر؛ خالی = «انتخابی نکرده» (مهاجرتِ 0033). */
     appearance: ReturnType<typeof storedAppearance>;
+    /** «دیدن به‌جای کاربر» (۲.۵۳.۰) — نامِ مالکی که واقعاً پشتِ صفحه است. */
+    viewAs: { ownerId: number; ownerName: string } | null;
   } | null
 > {
   const store = await cookies();
   const session = await readSessionToken(store.get(SESSION_COOKIE)?.value, sessionSecret());
   if (!session) return null;
 
-  const loaded = await loadActor(session.userId);
-  if (!loaded) return null;
-  const { actor, user } = loaded;
+  const real = await loadActor(session.userId);
+  if (!real) return null;
+  let { actor, user } = real;
+  let viewAs: { ownerId: number; ownerName: string } | null = null;
+
+  /**
+   * ⚠️ کوکیِ «دیدن به‌جای» فقط وقتی پذیرفته می‌شود که مالکِ داخلِ توکن همین
+   * نشستِ واقعی باشد و هنوز هم مالک باشد؛ وگرنه بی‌صدا نادیده گرفته می‌شود و
+   * کاربر خودش می‌ماند. هدف هم باید هنوز واردشدنی باشد.
+   */
+  const va = await readViewAsToken(store.get(VIEW_AS_COOKIE)?.value, sessionSecret());
+  if (va && va.ownerId === real.actor.id && va.targetId !== real.actor.id) {
+    const target = await loadActor(va.targetId);
+    if (target && canViewAs(real.actor, target.actor)) {
+      viewAs = { ownerId: real.actor.id, ownerName: real.user.name };
+      actor = { ...target.actor, viewOnly: true };
+      user = target.user;
+    }
+  }
 
   return {
     actor,
@@ -61,6 +80,7 @@ export async function currentSession(): Promise<
     /** برای تشخیصِ عضوِ سابقِ «فقط مالی» در چیدمان (R-PEOPLE-01). */
     memberState: user.memberState as MemberState,
     appearance: storedAppearance(user),
+    viewAs,
   };
 }
 
@@ -108,6 +128,8 @@ export async function currentActor(): Promise<Actor | null> {
 export async function requireActor(options: { allowOffboarded?: boolean } = {}): Promise<Actor> {
   const session = await currentSession();
   if (!session) throw new Error('unauthenticated');
+  // ⚠️ «دیدن به‌جای کاربر» فقط دیدن است: هیچ اقدامی به اسمِ کسی که انجامش نداده ثبت نمی‌شود.
+  if (session.actor.viewOnly) throw new ForbiddenError('view_only');
   if (session.memberState !== 'active' && !options.allowOffboarded) {
     throw new ForbiddenError('offboarded');
   }

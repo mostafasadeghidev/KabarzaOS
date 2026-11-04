@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.53.0]
+
+### Added
+
+- **View as a user.** The owner can now see the app exactly as a member or client sees it, without that person's password. It starts from "View as this user" in the person's card menu, under Members or Clients.
+  - A yellow bar at the top says whose view you're in, with a "Back to my account" button.
+  - The view ends by itself after an hour.
+  - It is view only. Every change is refused by the server, so nothing is ever saved in someone else's name. Opening their messages or notifications doesn't mark them read, they don't show as online, and their theme isn't changed.
+  - Only the owner can use it, and never as themself or another owner. The session is tied to the owner's own login, so the view cookie is useless in another browser.
+  - Starting and leaving are both logged in "Activity": who, as whom and when.
+  - Signing out or signing in again also ends the view.
+
 ## [2.52.0]
 
 ### Added
