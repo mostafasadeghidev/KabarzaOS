@@ -4833,5 +4833,8 @@
   "این نشانی جزوِ دستیارهای شناخته‌شده نیست. اگر این پیوند را کسِ دیگری برایتان فرستاده، اجازه ندهید — نامِ اپ را هر کسی می‌تواند بنویسد.": "Bu adres bilinen bir yapay zekâ asistanı değil. Bu bağlantıyı başka biri gönderdiyse izin vermeyin — uygulama adını herkes yazabilir.",
   "متن خیلی طولانی است؛ حداکثر ۲۰٬۰۰۰ نویسه.": "Metin çok uzun; en fazla 20.000 karakter.",
   "پشتِ‌سرِ‌هم زیاد نوشتید؛ یک دقیقه صبر کنید.": "Art arda çok fazla yazdınız; bir dakika bekleyin.",
-  "فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.": "Yedek dosyası izin verilen sınırı (20 GB) aşıyor."
+  "فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.": "Yedek dosyası izin verilen sınırı (20 GB) aşıyor.",
+  "{task}\nپروژه: {project}": "{task}\nProje: {project}",
+  "{task}\nپروژه: {project}\nمسئول: {assignee}": "{task}\nProje: {project}\nSorumlu: {assignee}",
+  "شما": "Siz"
 }

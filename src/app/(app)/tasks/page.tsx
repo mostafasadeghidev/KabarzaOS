@@ -61,10 +61,10 @@ export default async function MyTasksPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {inbox.active.length > 0 && (
-              <Panel title={t("سپرده‌شده به شما")}><TaskTable rows={inbox.active} empty="" /></Panel>
+              <Panel title={t("سپرده‌شده به شما")}><TaskTable rows={inbox.active} empty="" showAssignee={false} /></Panel>
             )}
             {inbox.review.length > 0 && (
-              <Panel title={t("در انتظارِ بررسی")}><TaskTable rows={inbox.review} empty="" /></Panel>
+              <Panel title={t("در انتظارِ بررسی")}><TaskTable rows={inbox.review} empty="" showAssignee={false} /></Panel>
             )}
           </div>
         )}

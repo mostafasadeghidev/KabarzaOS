@@ -1962,6 +1962,40 @@ function normalizedTiming(start: number | null, end: number | null) {
 }
 
 /**
+ * بدنهٔ اعلانِ تسک (۲.۵۷.۱) — عنوان، و زیرش «پروژه» و (اگر خواسته شود)
+ * «مسئول»، هر کدام یک سطر.
+ *
+ * ⚠️ پیش از این بدنه فقط عنوانِ تسک بود: مودالِ اعلان نمی‌گفت تسکِ کدام پروژه
+ * است و کارِ چه کسی. شکلِ «برچسب: مقدار» در سطرهای بعد از اولی را مودال
+ * سطر به سطر نشان می‌دهد (`structuredBody`)؛ ایمیل و تلگرام همان متنِ چندخطی‌اند.
+ *
+ * ⚠️ عنوان از دیتابیس خوانده می‌شود، پس پس از ویرایش عنوانِ **تازه** می‌رود.
+ * سطرِ مسئول را فقط برای غیرِکارفرما بخواهید — نامِ اعضا برای کارفرما ماسک است.
+ */
+async function taskNotice(
+  taskId: number,
+  withDoers = false,
+): Promise<{ body: string; params: Record<string, string> }> {
+  const [row] = await db
+    .select({ title: tasks.title, project: projects.title })
+    .from(tasks)
+    .innerJoin(projects, eq(projects.id, tasks.projectId))
+    .where(eq(tasks.id, taskId));
+  if (!row) return { body: '', params: {} };
+
+  const doerIds = withDoers ? await taskDoerIds(taskId) : [];
+  const names = doerIds.length === 0 ? [] : await db
+    .select({ name: users.name })
+    .from(users)
+    .where(inArray(users.id, doerIds));
+  const assignee = names.map((n) => n.name).filter(Boolean).join('، ');
+
+  return assignee
+    ? { body: '{task}\nپروژه: {project}\nمسئول: {assignee}', params: { task: row.title, project: row.project, assignee } }
+    : { body: '{task}\nپروژه: {project}', params: { task: row.title, project: row.project } };
+}
+
+/**
  * مخاطبِ «تسک به ریویو رفت» — منهای کارفرمایی که این تسک را نمی‌بیند.
  *
  * ⚠️ `reviewRecipients` همهٔ کارفرمایانِ پروژه را می‌دهد و عنوانِ تسک در
@@ -2007,17 +2041,29 @@ async function applyStatusEffects(
   if (nextDone) await releaseDependents(actor, task.id, task.projectId);
 
   if (!wasReview && isReview) {
-    await notify(await visibleReviewRecipients(task.id, task.projectId, actor.id), {
-      type: 'task.review',
-      title: 'تسکی نیاز به بررسی دارد',
-      body: task.title,
-      /**
-       * ⚠️ مقصد **صندوقِ تسک‌ها**ست، نه صفحهٔ پروژه: مدیر معمولاً چند پروژه
-       * دارد و کارِ «بررسی» را یک‌جا انجام می‌دهد. کارتِ «در انتظارِ بررسی»
-       * همان فهرست است؛ فرستادنش به یک پروژهٔ خاص کار را تکه‌تکه می‌کرد.
-       */
-      url: '/tasks',
-    });
+    const recipients = await visibleReviewRecipients(task.id, task.projectId, actor.id);
+    // ⚠️ کارفرمای غیرِعضو سطرِ «مسئول» نمی‌گیرد — نامِ اعضا برای او ماسک است.
+    const [members, clients] = await Promise.all([repo.listMembers(task.projectId), repo.listClientIds(task.projectId)]);
+    const memberIds = new Set(members.map((m) => m.userId));
+    const clientOnly = new Set([...clients].filter((id) => !memberIds.has(id)));
+    const [team, forClient] = await Promise.all([taskNotice(task.id, true), taskNotice(task.id)]);
+    for (const [ids, notice] of [
+      [recipients.filter((id) => !clientOnly.has(id)), team],
+      [recipients.filter((id) => clientOnly.has(id)), forClient],
+    ] as const) {
+      if (ids.length === 0) continue;
+      await notify(ids, {
+        type: 'task.review',
+        title: 'تسکی نیاز به بررسی دارد',
+        ...notice,
+        /**
+         * ⚠️ مقصد **صندوقِ تسک‌ها**ست، نه صفحهٔ پروژه: مدیر معمولاً چند پروژه
+         * دارد و کارِ «بررسی» را یک‌جا انجام می‌دهد. کارتِ «در انتظارِ بررسی»
+         * همان فهرست است؛ فرستادنش به یک پروژهٔ خاص کار را تکه‌تکه می‌کرد.
+         */
+        url: '/tasks',
+      });
+    }
   } else if ((wasReview && !isReview && !nextDone) || nextTag?.slug === 'need-more-work') {
     // ⚠️ «نیاز به کار بیشتر» از هر وضعیتی (نه فقط از ریویو) هم خبر می‌دهد (۲.۱۷.۱).
     // ⚠️ فقط وقتی کار **برمی‌گردد**؛ تأیید (ریویو → انجام‌شده) اعلانِ «برگشت» ندارد (پورتِ افزونه).
@@ -2026,7 +2072,7 @@ async function applyStatusEffects(
     await notify(doers, {
       type: 'task.back',
       title: 'تسکِ شما برای ادامهٔ کار برگشت',
-      body: task.title,
+      ...await taskNotice(task.id),
       url: `/projects/${task.projectId}?tab=tasks`,
     });
   }
@@ -2060,7 +2106,7 @@ async function releaseDependents(actor: Actor, taskId: number, projectId: number
     await notify(doers, {
       type: 'task.assigned',
       title: 'نوبتِ این تسک رسید',
-      body: released.title,
+      ...await taskNotice(released.id),
       taskId: released.id,
       url: `/projects/${projectId}?tab=tasks`,
     });
@@ -2571,7 +2617,7 @@ export async function createTask(
       await notify(recipients, {
         type: 'task.assigned',
         title: 'تسکِ تازه به شما تخصیص یافت',
-        body: input.title,
+        ...await taskNotice(id),
         taskId: id,
         url: `/projects/${projectId}?tab=tasks`,
       });
@@ -2648,7 +2694,7 @@ export async function referTask(
     await notify([toUserId], {
       type: 'task.assigned',
       title: 'تسکی به شما ارجاع شد',
-      body: task.title,
+      ...await taskNotice(taskId),
       taskId,
       url: `/projects/${task.projectId}?tab=tasks`,
     });
@@ -2825,7 +2871,7 @@ export async function updateTask(
     await notify(fresh, {
       type: 'task.assigned',
       title: 'تسک به شما محول شد',
-      body: input.title,
+      ...await taskNotice(before.id),
       taskId: before.id,
       url: `/projects/${before.projectId}?tab=tasks`,
     });
@@ -3943,14 +3989,19 @@ export async function myTasks(actor: Actor) {
       repo.openTasksForUser(actor.id, scopes),
     ]);
     const reviewIds = new Set(review.map((t) => t.id));
+    /**
+     * ⚠️ کارفرما شمارهٔ تسک نمی‌بیند (۲.۱۶.۰) — null، نه پنهان در UI.
+     * نامِ مسئول هم همین‌طور: نامِ اعضا برای کارفرما ماسک می‌شود (`nameForViewer`).
+     */
+    const forClient = (t: typeof own[number]) => ({
+      ...t, number: null as number | null, projectCode: '', assigneeName: null as string | null,
+      roles: [] as InboxRole[], claimable: false, mine: t.assignedTo === actor.id,
+    });
     return {
       kind: 'client' as const,
-      // ⚠️ کارفرما شمارهٔ تسک نمی‌بیند (۲.۱۶.۰) — null، نه پنهان در UI.
-      active: own
-        .filter((t) => !reviewIds.has(t.id))
-        .map((t) => ({ ...t, number: null as number | null, projectCode: '', roles: [] as InboxRole[], claimable: false, mine: t.assignedTo === actor.id })),
+      active: own.filter((t) => !reviewIds.has(t.id)).map(forClient),
       waiting: [] as InboxTask[],
-      review: review.map((t) => ({ ...t, number: null as number | null, projectCode: '', roles: [] as InboxRole[], claimable: false, mine: t.assignedTo === actor.id })),
+      review: review.map(forClient),
     };
   }
 
@@ -4010,14 +4061,29 @@ export async function myTasks(actor: Actor) {
     : await repo.reviewTasksForProjects(await repo.nonFrozenProjectIds(reviewIds), scopes);
   // آنچه خودش مسئولش است در «در انتظارِ بررسی»ِ خودش می‌ماند، نه اینجا.
   const ownIds = new Set(decorated.map((t) => t.id));
+  const othersReview = managerReview.filter((t) => !ownIds.has(t.id));
+
+  /**
+   * ⚠️ نقش‌ها برای این دسته هم خوانده می‌شوند (۲.۵۷.۱): مدیر باید بداند **چه
+   * کسی** کار را فرستاده. پیش از این خالی بود و تسکِ نقشی (بی‌مسئولِ مستقیم)
+   * در ستونِ «مسئول» هیچ نامی نداشت.
+   */
+  const reviewRoles = await repo.taskRolesFor(othersReview.map((t) => t.id));
 
   return {
     kind: 'member' as const,
     active: decorated.filter((t) => !t.isReview),
     waiting: decorated.filter((t) => t.isReview),
-    review: managerReview
-      .filter((t) => !ownIds.has(t.id))
-      .map((t) => ({ ...t, roles: [] as InboxRole[], claimable: false, mine: t.assignedTo === actor.id })),
+    review: othersReview.map((t) => ({
+      ...t,
+      roles: reviewRoles.filter((r) => r.taskId === t.id).map((r) => ({
+        roleName: r.roleName,
+        claimedBy: r.claimedBy,
+        claimedByName: r.claimedBy === actor.id ? null : r.claimedByName,
+      })),
+      claimable: false,
+      mine: t.assignedTo === actor.id,
+    })),
   };
 }
 

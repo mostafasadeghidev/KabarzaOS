@@ -103,7 +103,9 @@ export function usedKeys(root = 'src') {
     }
     while ((m = label.exec(src))) {
       if (!LABEL_KEYS.has(m[1]) || !PERSIAN.test(m[3])) continue;
-      keys.add(m[3]);
+      // ⚠️ `\n` ِ لفظی همان خطِ تازه است که در زمانِ اجرا به مترجم می‌رسد (۲.۵۷.۱،
+      // بدنهٔ چندخطیِ اعلانِ تسک) — مثلِ JSON.parse ِ شاخهٔ `t()`.
+      keys.add(m[3].replace(/\\n/g, '\n'));
     }
     while ((m = attr.exec(src))) {
       if (!LABEL_KEYS.has(m[1]) || !PERSIAN.test(m[2])) continue;

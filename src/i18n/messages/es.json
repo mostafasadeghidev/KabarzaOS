@@ -4833,5 +4833,8 @@
   "این نشانی جزوِ دستیارهای شناخته‌شده نیست. اگر این پیوند را کسِ دیگری برایتان فرستاده، اجازه ندهید — نامِ اپ را هر کسی می‌تواند بنویسد.": "Esta dirección no es de un asistente de IA conocido. Si otra persona te envió este enlace, no lo permitas: cualquiera puede elegir el nombre de la app.",
   "متن خیلی طولانی است؛ حداکثر ۲۰٬۰۰۰ نویسه.": "El texto es demasiado largo; 20.000 caracteres como máximo.",
   "پشتِ‌سرِ‌هم زیاد نوشتید؛ یک دقیقه صبر کنید.": "Has publicado demasiado seguido; espera un minuto.",
-  "فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.": "El archivo de copia de seguridad supera el límite permitido (20 GB)."
+  "فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.": "El archivo de copia de seguridad supera el límite permitido (20 GB).",
+  "{task}\nپروژه: {project}": "{task}\nProyecto: {project}",
+  "{task}\nپروژه: {project}\nمسئول: {assignee}": "{task}\nProyecto: {project}\nResponsable: {assignee}",
+  "شما": "Tú"
 }

@@ -64,6 +64,20 @@ describe('structuredBody', () => {
     expect(structuredBody('task.assigned', 'باگ: صفحهٔ ورود')).toBeNull();
   });
 
+  it('اعلانِ تسک: عنوان سطرِ اول، پروژه و مسئول سطرهای بعد (۲.۵۷.۱)', () => {
+    expect(structuredBody('task.review', 'باگ: صفحهٔ ورود · نسخهٔ ۲\nپروژه: آلفا\nمسئول: سارا')).toEqual([
+      { label: 'تسک', value: 'باگ: صفحهٔ ورود · نسخهٔ ۲' },
+      { label: 'پروژه', value: 'آلفا' },
+      { label: 'مسئول', value: 'سارا' },
+    ]);
+    expect(structuredBody('task.back', 'Fix login\nProject: Alpha')).toEqual([
+      { label: 'تسک', value: 'Fix login' },
+      { label: 'Project', value: 'Alpha' },
+    ]);
+    // سطرِ بی‌برچسب ⇒ کلِ بدنه متنِ ساده می‌ماند.
+    expect(structuredBody('task.review', 'عنوان\nیک خطِ آزاد')).toBeNull();
+  });
+
   it('⚠️ بدنهٔ جلسه‌ای که شکلش نمی‌خورد دست‌نخورده می‌ماند', () => {
     expect(structuredBody('meeting.invited', 'یک توضیحِ آزاد بدونِ برچسب')).toBeNull();
     // یک تکهٔ ناجور کلِ بدنه را از تجزیه بیرون می‌برد.

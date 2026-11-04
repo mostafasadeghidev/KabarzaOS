@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.57.1]
+
+### Fixed
+
+- **Task notifications now say which project the task is in and who is doing it.** The "A task needs review" window showed only the task title. Task notifications (needs review, sent back, assigned, referred, your turn) now carry the project on a second line, and "needs review" also names the assignee. The window shows them as separate rows; email and Telegram get the same lines. Clients get the project but not the assignee's name, since member names are hidden from them.
+- **"Sent for your review" on the tasks page has an "Assignee" column.** A manager could not tell from the list whose work was waiting. The column shows the assignee, or the task's roles with who took them; your own tasks say "You". It appears in every member list on that page, not in the client's.
+
 ## [2.57.0]
 
 ### Security

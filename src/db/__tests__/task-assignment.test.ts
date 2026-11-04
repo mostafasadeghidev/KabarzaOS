@@ -236,10 +236,31 @@ describe('صندوقِ تسک‌ها', () => {
 
     const asOwner = await myTasks(owner());
     expect(asOwner.review.map((t) => t.title)).toContain('کارِ آمادهٔ بررسی');
+    // ستونِ «مسئول» (۲.۵۷.۱): مدیر می‌بیند کارِ چه کسی است.
+    expect(asOwner.review.find((t) => t.title === 'کارِ آمادهٔ بررسی')?.assigneeName).toBe('دولوپر دو');
 
     // عضوِ ساده این دسته را ندارد (کارِ خودش در «در انتظارِ بررسی»ِ خودش است).
     const asDev1 = await myTasks(member(DEV1));
     expect(asDev1.review).toEqual([]);
+  });
+
+  it('اعلانِ «نیاز به بررسی» پروژه و مسئول را دارد؛ کارفرما نامِ مسئول را نمی‌گیرد (۲.۵۷.۱)', async () => {
+    const { setTaskStatus } = await import('@/server/projects/service');
+    const { notifications } = await import('../schema');
+    const [reviewTag] = await db.select({ id: tags.id }).from(tags)
+      .where(and(eq(tags.type, 'task_status'), eq(tags.isReview, true)));
+    const [task] = await db.insert(tasks).values({
+      projectId: project, title: 'صفحهٔ ورود', assignedTo: DEV2, statusTagId: todo, createdBy: OWNER,
+    }).returning({ id: tasks.id });
+
+    await setTaskStatus(member(DEV2), task!.id, reviewTag!.id);
+
+    const rows = await db.select({ userId: notifications.userId, body: notifications.body })
+      .from(notifications).where(eq(notifications.type, 'task.review'));
+    const [clientRow] = await db.select({ userId: projectClients.userId }).from(projectClients)
+      .where(eq(projectClients.projectId, project));
+    expect(rows.find((r) => r.userId === OWNER)?.body).toBe('صفحهٔ ورود\nپروژه: پروژه\nمسئول: دولوپر دو');
+    expect(rows.find((r) => r.userId === clientRow!.userId)?.body).toBe('صفحهٔ ورود\nپروژه: پروژه');
   });
 });
 

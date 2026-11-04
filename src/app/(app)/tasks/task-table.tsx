@@ -21,8 +21,8 @@ import { latinDigits, parseTaskRef, projectCodeOf } from '@/domain/projects/task
  *
  * ⚠️ چرا جدول: پیش از این هر تسک یک `flex-wrap` بود و چیپ‌ها هرجا که جا
  * داشتند می‌نشستند؛ در فهرستِ ده‌تایی هیچ ستونی زیرِ هم نبود و چشم باید هر
- * سطر را از نو می‌خواند. ستون‌ها ثابت‌اند: تسک · اولویت · وضعیت · پروژه ·
- * ددلاین · کنش.
+ * سطر را از نو می‌خواند. ستون‌ها ثابت‌اند: تسک · اولویت · وضعیت · مسئول ·
+ * پروژه · ددلاین · کنش.
  *
  * ⚠️ کلیک روی عنوان **مودال** باز می‌کند، نه پیمایش به پروژه: کاربر اغلب
  * می‌خواهد یک نگاهِ سریع بیندازد و برگردد؛ رفتن به صفحهٔ پروژه او را از
@@ -33,11 +33,14 @@ export function TaskTable({
   rows,
   empty,
   filterable = false,
+  showAssignee = true,
 }: {
   rows: InboxTask[];
   empty: string;
   /** فیلترِ جستجو و پروژه — برای فهرستِ بلندِ «تسک‌های جاری». */
   filterable?: boolean;
+  /** ستونِ «مسئول» — صندوقِ کارفرما ندارد. */
+  showAssignee?: boolean;
 }) {
   const t = useT();
   const tr = useT();
@@ -65,8 +68,8 @@ export function TaskTable({
       }
       // جستجو روی همان چیزهایی که در سطر دیده می‌شوند.
       return [
-        r.title, r.projectTitle ?? '', r.statusName ?? '', r.priorityName ?? '',
-        ...r.roles.map((role) => role.roleName ?? ''),
+        r.title, r.projectTitle ?? '', r.statusName ?? '', r.priorityName ?? '', r.assigneeName ?? '',
+        ...r.roles.flatMap((role) => [role.roleName ?? '', role.claimedByName ?? '']),
       ].join(' ').toLowerCase().includes(needle);
     });
   }, [rows, query, projectId]);
@@ -114,6 +117,7 @@ export function TaskTable({
               <TableHead>{t("تسک")}</TableHead>
               <TableHead>{t("اولویت")}</TableHead>
               <TableHead>{t("وضعیت")}</TableHead>
+              {showAssignee && <TableHead>{t("مسئول")}</TableHead>}
               <TableHead>{t("پروژه")}</TableHead>
               <TableHead>{t("ددلاین")}</TableHead>
               <TableActionsHead />
@@ -141,21 +145,6 @@ export function TaskTable({
                     <TaskNumber number={task.number} code={projectCodeOf({ id: task.projectId, code: task.projectCode })} />
                     <span className="font-medium">{task.title}</span>
                   </span>
-                  {/* پورتِ آیتمِ 👤 ِ ردیفِ صندوق: تسکی که مستقیم به خودِ شماست. */}
-                  {task.mine && (
-                    <span className="mt-0.5 block text-xs text-muted-foreground">{t('👤 به نامِ شما')}</span>
-                  )}
-                  {/* نقش‌ها زیرِ عنوان می‌نشینند تا ستون‌ها به‌هم نریزند. */}
-                  {task.roles.length > 0 && (
-                    <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                      {task.roles.map((r, i) => (
-                        <span key={i} className="inline-flex items-center gap-1">
-                          {r.roleName ?? ''}
-                          {r.claimedByName && <UserName userId={r.claimedBy} name={r.claimedByName} />}
-                        </span>
-                      ))}
-                    </span>
-                  )}
                   {/* پورتِ `task_notes_summary`: شمار و آخرین یادداشت — بی‌بازکردنِ تسک معلوم شود گفتگو کجاست. */}
                   {task.notesCount > 0 && (
                     <span className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
@@ -179,6 +168,18 @@ export function TaskTable({
                     )
                     : <span className="text-muted-foreground">—</span>}
                 </TableCell>
+
+                {/*
+                  ⚠️ ستونِ «مسئول» (۲.۵۷.۱): پیش از این فقط «👤 به نامِ شما» و
+                  نقش‌ها زیرِ عنوان می‌آمد، پس در «فرستاده‌شده برای بررسیِ شما»
+                  — جایی که تسک مالِ دیگری است — معلوم نبود کارِ چه کسی است.
+                  کارفرما این ستون را نمی‌بیند؛ نامِ اعضا برای او ماسک است.
+                */}
+                {showAssignee && (
+                  <TableCell>
+                    <Assignee task={task} />
+                  </TableCell>
+                )}
 
                 {/* ⚠️ لینک و دکمه کارِ خودشان را می‌کنند، نه بازکردنِ مودال. */}
                 <TableCell onClick={(e) => e.stopPropagation()}>
@@ -207,5 +208,28 @@ export function TaskTable({
         onOpenChange={(o) => !o && setOpenTask(null)}
       />
     </>
+  );
+}
+
+/**
+ * خانهٔ «مسئول»: مسئولِ مستقیم، وگرنه نقش‌های تسک با نامِ برداشته‌اش.
+ * «شما» به‌جای نامِ خودِ بیننده — پورتِ آیتمِ 👤 ِ ردیفِ صندوق.
+ */
+function Assignee({ task }: { task: InboxTask }) {
+  const t = useT();
+  if (task.mine) return <span>{t('شما')}</span>;
+  if (task.assigneeName) return <UserName userId={task.assignedTo} name={task.assigneeName} />;
+  if (task.roles.length === 0) return <span className="text-muted-foreground">—</span>;
+  return (
+    <span className="flex flex-col gap-0.5">
+      {task.roles.map((r, i) => (
+        <span key={i} className="inline-flex items-center gap-1">
+          {r.claimedByName
+            ? <UserName userId={r.claimedBy} name={r.claimedByName} />
+            : r.claimedBy !== null ? t('شما') : null}
+          <span className="text-xs text-muted-foreground">{r.roleName ?? ''}</span>
+        </span>
+      ))}
+    </span>
   );
 }
