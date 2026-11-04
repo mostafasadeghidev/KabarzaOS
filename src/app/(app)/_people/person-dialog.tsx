@@ -52,12 +52,40 @@ function SubmitButton({ label }: { label: string }) {
  *
  * بخش‌های تگ و دفتر با پرچم‌های `section` روشن/خاموش می‌شوند.
  */
-/** انتخاب و بارگذاریِ تصویرِ پروفایل. */
+/**
+ * پیش‌نمایشِ زندهٔ تصویرِ انتخاب‌شده — نشانیِ موقتِ مرورگر (`blob:`) که با
+ * انتخابِ بعدی یا بسته‌شدنِ فرم آزاد می‌شود.
+ */
+function useImagePreview() {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
+  const pick = (file: File | null | undefined) =>
+    setUrl(file && file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+  return { url, pick };
+}
+
+/** تصویرِ گردِ پیش‌نمایش، هم‌اندازهٔ `Thumb`. */
+function PreviewCircle({ src, size }: { src: string; size: number }) {
+  // eslint-disable-next-line @next/next/no-img-element -- نشانیِ blob: ِ محلی است، نه تصویرِ سرور.
+  return <img src={src} alt="" style={{ width: size, height: size }} className="shrink-0 rounded-full object-cover" />;
+}
+
+/**
+ * انتخاب و بارگذاریِ تصویرِ پروفایل.
+ *
+ * ⚠️ وضعیتِ تصویر **همین‌جا** نگه داشته می‌شود: `person` عکسِ لحظهٔ بازشدنِ فرم
+ * است و پس از ذخیره/حذف تازه نمی‌شود — پیش از این تصویرِ فرم تا بستن و بازکردنِ
+ * دوباره همان قبلی می‌ماند و به نظر می‌رسید ذخیره کار نکرده.
+ */
 function AvatarPicker({ person }: { person: PersonView }) {
   const tr = useT();
   const { show } = useToast();
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+  const preview = useImagePreview();
+  // null = همان تصویرِ person؛ 'none' = حذف شد؛ 'saved' = تصویرِ تازه ذخیره شد (پیش‌نمایش می‌ماند).
+  const [local, setLocal] = useState<null | 'none' | 'saved'>(null);
+  const hasImage = local === 'saved' || (local === null && person.avatarFileId !== null) || preview.url !== null;
 
   const upload = () => {
     const file = inputRef.current?.files?.[0];
@@ -68,22 +96,32 @@ function AvatarPicker({ person }: { person: PersonView }) {
     startTransition(async () => {
       const result = await setAvatarAction(person.id, data);
       show(tr(result.error ?? result.message!), result.error ? 'error' : 'success');
-      if (!result.error && inputRef.current) inputRef.current.value = '';
+      if (!result.error) {
+        setLocal('saved');
+        if (inputRef.current) inputRef.current.value = '';
+      }
     });
   };
 
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-lg bg-muted/60 p-3">
-      <Thumb
-        id={person.id}
-        title={person.name}
-        fileId={person.avatarFileId} person
-        size={56}
-        className="rounded-full"
-      />
+      {preview.url ? (
+        <PreviewCircle src={preview.url} size={56} />
+      ) : (
+        <Thumb
+          id={person.id}
+          title={person.name}
+          fileId={local === 'none' ? null : person.avatarFileId} person
+          size={56}
+          className="rounded-full"
+        />
+      )}
       <Field className="flex-1">
         <FieldLabel htmlFor="p-avatar">{tr("تصویر پروفایل")}</FieldLabel>
-        <FileInput id="p-avatar" ref={inputRef} accept="image/*" />
+        <FileInput
+          id="p-avatar" ref={inputRef} accept="image/*"
+          onChange={(e) => { preview.pick(e.target.files?.[0]); if (local === 'saved') setLocal(null); }}
+        />
         <FieldDescription>
           {tr('JPEG، PNG، GIF یا WebP — تا {size}.', { size: humanSize(MAX_SIZE.avatar, tr) })}
         </FieldDescription>
@@ -91,18 +129,41 @@ function AvatarPicker({ person }: { person: PersonView }) {
       <Button type="button" size="sm" variant="outline" disabled={pending} onClick={upload}>
         {pending ? <><Spinner />{tr('در حالِ ارسال…')}</> : tr('ذخیره تصویر')}
       </Button>
-      {person.avatarFileId && (
+      {hasImage && local !== 'none' && (
         <Button
           type="button" size="sm" variant="ghost" disabled={pending}
           onClick={() => startTransition(async () => {
             const result = await removeAvatarAction(person.id);
             show(tr(result.error ?? result.message!), result.error ? 'error' : 'success');
+            if (!result.error) {
+              setLocal('none');
+              preview.pick(null);
+              if (inputRef.current) inputRef.current.value = '';
+            }
           })}
         >
           {tr('حذفِ تصویر')}
         </Button>
       )}
     </div>
+  );
+}
+
+/** تصویرِ فردِ تازه با پیش‌نمایش — همراهِ فرمِ ساخت فرستاده می‌شود. */
+function NewAvatarField() {
+  const tr = useT();
+  const preview = useImagePreview();
+  return (
+    <Field>
+      <FieldLabel htmlFor="p-new-avatar">{tr("تصویر پروفایل")}</FieldLabel>
+      <div className="flex items-center gap-3">
+        {preview.url && <PreviewCircle src={preview.url} size={40} />}
+        <FileInput
+          id="p-new-avatar" name="avatar" accept="image/*" className="flex-1"
+          onChange={(e) => preview.pick(e.target.files?.[0])}
+        />
+      </div>
+    </Field>
   );
 }
 
@@ -194,12 +255,7 @@ function PersonDialogBody({
             را می‌ساخت، دوباره بازش می‌کرد و آن‌وقت عکس می‌گذاشت. اکشن پس از
             ساخت آپلودش می‌کند (شناسه لازم است).
           */}
-          {!isEdit && (
-            <Field>
-              <FieldLabel htmlFor="p-new-avatar">{tr("تصویر پروفایل")}</FieldLabel>
-              <FileInput id="p-new-avatar" name="avatar" accept="image/*" />
-            </Field>
-          )}
+          {!isEdit && <NewAvatarField />}
 
           {/*
             انتخابگرِ کاربرِ موجود.
