@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { redactMoney } from '@/domain/ai/group-redact';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { Actor } from '@/domain/access/permissions';
@@ -189,11 +190,21 @@ async function connectTools(ctx: AgentContext) {
 }
 
 /** خروجیِ ابزار + موفق بود؟ (`isError` ِ خودِ سرورِ MCP، ۲.۳۷.۱) */
-async function callTool(client: Client, name: string, args: Record<string, unknown>): Promise<{ text: string; ok: boolean }> {
+async function callTool(
+  client: Client, name: string, args: Record<string, unknown>, scope?: GroupScope,
+): Promise<{ text: string; ok: boolean }> {
+  /**
+   * ⚠️ در گروه (۲.۵۷.۰) دو گاردِ کد، نه فقط دستورِ مدل: پروژهٔ دیگری خوانده
+   * نمی‌شود و هر کلیدِ مالی پیش از رسیدن به مدل از خروجی پاک می‌شود.
+   */
+  if (scope && typeof args.project_id === 'number' && args.project_id !== scope.projectId) {
+    return { text: `Not allowed in this group: only project_id ${scope.projectId} can be used here.`, ok: false };
+  }
   try {
     const result = await client.callTool({ name, arguments: args });
     const parts = (result.content as Array<{ type: string; text?: string }> | undefined) ?? [];
-    return { text: clip(parts.map((p) => p.text ?? '').join('\n'), 12_000), ok: result.isError !== true };
+    const text = parts.map((p) => p.text ?? '').join('\n');
+    return { text: clip(scope ? redactMoney(text) : text, 12_000), ok: result.isError !== true };
   } catch {
     return { text: 'The tool failed.', ok: false };
   }
@@ -586,7 +597,7 @@ async function loop(ctx: AgentContext, messages: ChatMessage[]): Promise<AgentRe
       }
       const writes = calls.filter((c) => writable.has(c.function.name));
       for (const call of calls.filter((c) => !writable.has(c.function.name) && c.function.name !== PICK_PROJECT && c.function.name !== LOAD_TOOLS)) {
-        messages.push({ role: 'tool', tool_call_id: call.id, content: (await callTool(conn.client, call.function.name, parseArgs(call.function.arguments))).text });
+        messages.push({ role: 'tool', tool_call_id: call.id, content: (await callTool(conn.client, call.function.name, parseArgs(call.function.arguments), ctx.scope)).text });
       }
       // شناسهٔ حدسی یا پروژهٔ بی‌دسترسی ← به مدل برمی‌گردد، نه به دکمهٔ «بله».
       const valid: ToolCall[] = [];
@@ -694,7 +705,7 @@ export async function resolvePending(userId: number, id: string, approve: boolea
   let failed = 0;
   try {
     for (const c of calls) {
-      const out = await callTool(conn.client, c.function.name, parseArgs(c.function.arguments));
+      const out = await callTool(conn.client, c.function.name, parseArgs(c.function.arguments), ctx.scope);
       if (!out.ok) failed++;
       messages.push({ role: 'tool', tool_call_id: c.id, content: out.text });
     }

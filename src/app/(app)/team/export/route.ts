@@ -1,4 +1,4 @@
-import { currentActor } from '@/server/auth';
+import { routeActor } from '@/server/auth';
 import { getT } from '@/i18n/server';
 import { teamMembers } from '@/server/team/service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -10,7 +10,7 @@ import { hoursLabel } from '@/domain/timelogs/timer';
  * ⚠️ همان گاردِ صفحه — دامنه در سرویس اعمال می‌شود، نه اینجا.
  */
 export async function GET(request: Request) {
-  const actor = await currentActor();
+  const actor = await routeActor();
   const t = await getT();
   if (!actor) return new Response(null, { status: 403 });
 

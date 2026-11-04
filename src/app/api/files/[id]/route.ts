@@ -1,4 +1,4 @@
-import { currentActor } from '@/server/auth';
+import { currentSession } from '@/server/auth';
 import { FileNotFoundError, serveFile } from '@/server/files/service';
 import { openObject, RangeNotSatisfiable } from '@/server/files/storage';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -19,9 +19,10 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const actor = await currentActor();
+  const session = await currentSession();
   // ۴۰۳ برای هر دو حالتِ «وارد نشده» و «حق ندارد» — تفاوتشان خودش اطلاعات است.
-  if (!actor) return new Response(null, { status: 403 });
+  if (!session) return new Response(null, { status: 403 });
+  const { actor } = session;
 
   const id = Number((await params).id);
   if (!Number.isInteger(id) || id <= 0) return new Response(null, { status: 400 });
@@ -32,7 +33,7 @@ export async function GET(
   const wantsThumb = query.has('thumb');
 
   try {
-    const file = await serveFile(actor, id, wantsDownload, wantsThumb);
+    const file = await serveFile(actor, id, wantsDownload, wantsThumb, session.memberState !== 'active');
     const range = normalizeRange(request.headers.get('range'));
     const object = await openObject(file.key, range);
 

@@ -3,7 +3,7 @@
 import { TG_CATEGORIES } from '@/domain/telegram/prefs';
 import { FileRejected, rejectMessage } from '@/domain/files/upload';
 import { revalidatePath } from 'next/cache';
-import { requireActor } from '@/server/auth';
+import { reissueSession, requireActor } from '@/server/auth';
 import { disconnectTelegram, saveBankInfo, saveCompany, saveNotifyPrefs, saveTimezone, startTelegramLink,
   tryConnectTelegram, changeMyPassword, PasswordError, updateMyProfile, ProfileValidationError, saveTelegramPrefs,
 } from '@/server/people/profile-service';
@@ -226,10 +226,13 @@ export async function changePasswordAction(
   if (next !== repeat) return { error: 'دو رمزِ تازه یکی نیستند.' };
 
   try {
-    await changeMyPassword(await requireActor(), {
+    const actor = await requireActor();
+    await changeMyPassword(actor, {
       current: String(formData.get('current') ?? ''),
       next,
     });
+    // بقیهٔ دستگاه‌ها بیرون رفتند؛ این یکی کوکیِ تازه می‌گیرد (۲.۵۷.۰).
+    await reissueSession(actor.id);
   } catch (error) {
     if (error instanceof PasswordError) {
       return { error: PASSWORD_MESSAGE[error.reason] ?? 'رمز عوض نشد.' };
@@ -238,7 +241,7 @@ export async function changePasswordAction(
   }
 
   revalidatePath('/profile');
-  return { message: 'رمزِ ورود عوض شد.' };
+  return { message: 'رمزِ ورود عوض شد؛ دستگاه‌های دیگر از حساب بیرون رفتند.' };
 }
 
 /** نام، ایمیل و تلفنِ خودم. */

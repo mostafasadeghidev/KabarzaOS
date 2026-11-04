@@ -4826,5 +4826,12 @@
   "اعلان‌ها روی این دستگاه می‌رسند.": "Notifications reach this device.",
   "اعلانِ فوری در تنظیمات خاموش است.": "Push notifications are turned off in settings.",
   "این دستگاه را نشد ثبت کرد.": "This device couldn't be registered.",
-  "اعلانِ فوری": "Push notifications"
+  "اعلانِ فوری": "Push notifications",
+  "رمزِ ورود عوض شد؛ دستگاه‌های دیگر از حساب بیرون رفتند.": "Password changed; your other devices were signed out.",
+  "دسترسی به این نشانی داده می‌شود:": "Access will be granted to this address:",
+  "این اپ روی همین دستگاه اجرا می‌شود. فقط اگر خودتان همین حالا آن را وصل می‌کنید اجازه بدهید.": "This app runs on this device. Only allow it if you are connecting it yourself right now.",
+  "این نشانی جزوِ دستیارهای شناخته‌شده نیست. اگر این پیوند را کسِ دیگری برایتان فرستاده، اجازه ندهید — نامِ اپ را هر کسی می‌تواند بنویسد.": "This address is not a known AI assistant. If someone else sent you this link, do not allow it — anyone can choose the app name.",
+  "متن خیلی طولانی است؛ حداکثر ۲۰٬۰۰۰ نویسه.": "The text is too long; 20,000 characters at most.",
+  "پشتِ‌سرِ‌هم زیاد نوشتید؛ یک دقیقه صبر کنید.": "You posted too much in a row; wait a minute.",
+  "فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.": "The backup file is larger than the allowed limit (20 GB)."
 }

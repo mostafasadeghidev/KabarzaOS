@@ -1,5 +1,6 @@
 'use server';
 
+import { isTooLong, TEXT_TOO_LONG } from '@/domain/access/text-limit';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { currentSession, requireActor } from '@/server/auth';
@@ -138,6 +139,7 @@ export async function saveReminderAction(
   const leads = formData.getAll('leads').map((v) => Number(v)).filter(Number.isFinite);
 
   if (body.trim() === '') return { error: 'متنِ یادآور الزامی است.' };
+  if (isTooLong(body)) return { error: TEXT_TOO_LONG };
   if (Number.isNaN(Date.parse(remindAt))) return { error: 'زمانِ یادآور معتبر نیست.' };
 
   try {

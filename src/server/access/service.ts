@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, getTableColumns, inArray, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
+import { safeUrl } from '@/domain/library/model';
 import {
   auditLog, currencies, onboardingItems, onboardingTasks, recurringExpenses, serviceGrants, services, tags,
   userRoles, users,
@@ -294,6 +295,13 @@ async function findOrCreateServiceCategory(actor: Actor, raw: string): Promise<n
   });
 }
 
+/** «panel.example.com» ← https؛ هر طرحِ دیگری جز http(s) خالی می‌شود. */
+function panelUrl(raw: string): string {
+  const url = raw.trim();
+  if (url === '') return '';
+  return safeUrl(/^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`);
+}
+
 /**
  * سرویس به نام — برای «+ ساختِ سرویسِ تازه» در کتابخانهٔ آنبوردینگ.
  *
@@ -379,7 +387,8 @@ export async function saveService(actor: Actor, input: ServiceInput) {
     name,
     categoryTagId: category?.id ?? null,
     ownerUserId: input.ownerUserId,
-    adminUrl: input.adminUrl.trim(),
+    // ⚠️ فقط http(s) (۲.۵۷.۰) — این نشانی پیوندِ «پنل» است و `javascript:` نباید به آن برسد.
+    adminUrl: panelUrl(input.adminUrl),
     note: input.note.trim(),
     isActive: input.isActive,
     recurringExpenseId: keepCost

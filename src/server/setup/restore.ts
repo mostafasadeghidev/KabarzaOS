@@ -44,7 +44,7 @@ interface Slot {
 }
 
 export type RestoreFailure =
-  | 'installed' | 'busy' | 'token' | 'offset' | 'phase' | 'empty'
+  | 'installed' | 'busy' | 'token' | 'offset' | 'phase' | 'empty' | 'size'
   | 'bad_passphrase' | 'not_backup' | 'too_new' | 'tool_failed';
 
 export class RestoreError extends Error {
@@ -93,6 +93,20 @@ function claim(token: string): Slot {
   return slot;
 }
 
+/**
+ * گاردِ ژتون **پیش از خواندنِ بدنه** (۲.۵۷.۰): پیش از این مسیرِ chunk اول تا
+ * ۶۰ مگ را در حافظه می‌خواند و بعد ژتون را می‌سنجید — هر ناشناسی می‌توانست
+ * با درخواست‌های بی‌ژتون حافظهٔ سرور را پر کند.
+ */
+export function assertRestoreToken(token: string): void {
+  claim(token);
+}
+
+/** سقفِ یک تکه — کلاینت ۸ مگ می‌فرستد. */
+export const MAX_RESTORE_CHUNK = 9 * 1024 * 1024;
+/** سقفِ کلِ فایلِ پشتیبان. */
+export const MAX_RESTORE_BYTES = 20 * 1024 * 1024 * 1024;
+
 /** شروعِ یک بارگذاریِ تازه. ژتون فقط همین‌جا برگردانده می‌شود. */
 export async function beginRestore(): Promise<string> {
   if (await isInstalled()) throw new RestoreError('installed');
@@ -116,6 +130,7 @@ export async function appendChunk(token: string, offset: number, bytes: Uint8Arr
   const slot = claim(token);
   if (slot.phase !== 'upload' && slot.phase !== 'inspected') throw new RestoreError('phase');
   if (offset !== slot.size) throw new RestoreError('offset', slot.size);
+  if (bytes.byteLength > MAX_RESTORE_CHUNK || slot.size + bytes.byteLength > MAX_RESTORE_BYTES) throw new RestoreError('size');
   await fs.appendFile(/*turbopackIgnore: true*/ FILE(), bytes);
   slot.size += bytes.byteLength;
   // فایل عوض شد → خلاصهٔ قبلی دیگر معتبر نیست.

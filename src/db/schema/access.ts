@@ -26,6 +26,11 @@ export const users = pgTable('users', {
    */
   memberState: text('member_state').notNull().default('active').$type<'active' | 'finance' | 'locked'>(),
   /**
+   * نشستِ امضاشده پیش از این زمان باطل است (۲.۵۷.۰) — با تغییر یا بازنشانیِ رمز
+   * پر می‌شود تا کوکیِ دزدیده‌شده تا هفت روز معتبر نماند.
+   */
+  sessionsValidAfter: ts('sessions_valid_after'),
+  /**
    * زبانِ کاربر — R-I18N-03: زبانِ اپ per-user است.
    *
    * ⚠️ `null` یعنی «خودش انتخابی نکرده»، نه «فارسی». آن‌وقت زبانِ پیش‌فرضِ

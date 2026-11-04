@@ -4826,5 +4826,12 @@
   "اعلان‌ها روی این دستگاه می‌رسند.": "As notificações chegam a este dispositivo.",
   "اعلانِ فوری در تنظیمات خاموش است.": "As notificações push estão desativadas nas definições.",
   "این دستگاه را نشد ثبت کرد.": "Não foi possível registar este dispositivo.",
-  "اعلانِ فوری": "Notificações push"
+  "اعلانِ فوری": "Notificações push",
+  "رمزِ ورود عوض شد؛ دستگاه‌های دیگر از حساب بیرون رفتند.": "Senha alterada; seus outros dispositivos foram desconectados.",
+  "دسترسی به این نشانی داده می‌شود:": "O acesso será concedido a este endereço:",
+  "این اپ روی همین دستگاه اجرا می‌شود. فقط اگر خودتان همین حالا آن را وصل می‌کنید اجازه بدهید.": "Este app roda neste dispositivo. Só permita se você mesmo estiver conectando agora.",
+  "این نشانی جزوِ دستیارهای شناخته‌شده نیست. اگر این پیوند را کسِ دیگری برایتان فرستاده، اجازه ندهید — نامِ اپ را هر کسی می‌تواند بنویسد.": "Este endereço não é de um assistente de IA conhecido. Se outra pessoa enviou este link, não permita — qualquer um pode escolher o nome do app.",
+  "متن خیلی طولانی است؛ حداکثر ۲۰٬۰۰۰ نویسه.": "O texto é longo demais; no máximo 20.000 caracteres.",
+  "پشتِ‌سرِ‌هم زیاد نوشتید؛ یک دقیقه صبر کنید.": "Você publicou demais em sequência; aguarde um minuto.",
+  "فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.": "O arquivo de backup excede o limite permitido (20 GB)."
 }

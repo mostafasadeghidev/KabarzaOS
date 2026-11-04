@@ -1,4 +1,4 @@
-import { currentActor } from '@/server/auth';
+import { routeActor } from '@/server/auth';
 import { getMeetingForCalendar } from '@/server/meetings/service';
 import { buildIcs, icsFilename } from '@/domain/meetings/ics';
 import { getT } from '@/i18n/server';
@@ -16,7 +16,7 @@ export async function GET(
 ) {
   // پاسخِ خطا به زبانِ کاربر (B7) — پیش از این همیشه فارسی بود.
   const t = await getT();
-  const actor = await currentActor();
+  const actor = await routeActor();
   if (!actor) return new Response(t('ورود لازم است'), { status: 401 });
 
   const id = Number((await params).id);

@@ -1,4 +1,4 @@
-import { currentActor } from '@/server/auth';
+import { routeActor } from '@/server/auth';
 import { getT } from '@/i18n/server';
 import { accessBoard } from '@/server/access/service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -14,7 +14,7 @@ import { stateLabel } from '@/domain/people/offboarding';
  * نیست که بخواهیم آن‌طور پخش شود. درونِ اپ دیده می‌شود، که گاردِ خودش را دارد.
  */
 export async function GET(request: Request) {
-  const actor = await currentActor();
+  const actor = await routeActor();
   const t = await getT();
   if (!actor) return new Response(null, { status: 403 });
 

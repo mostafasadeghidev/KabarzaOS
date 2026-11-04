@@ -1,4 +1,4 @@
-import { currentActor } from '@/server/auth';
+import { routeActor } from '@/server/auth';
 import { pollThread } from '@/server/messaging/service';
 import { ThreadNotFoundError } from '@/server/messaging/service';
 
@@ -12,7 +12,7 @@ import { ThreadNotFoundError } from '@/server/messaging/service';
  * گفت‌وگویی که کاربر عضوش نیست «یافت نشد» است، نه «ممنوع».
  */
 export async function GET(request: Request) {
-  const actor = await currentActor();
+  const actor = await routeActor();
   if (!actor) return Response.json({ changed: false }, { status: 401 });
 
   const params = new URL(request.url).searchParams;

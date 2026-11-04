@@ -69,7 +69,9 @@ export default async function SettingsPage({
       closingPreview(actor).catch(() => null),
     ]);
     data = {
-      ...settings, staff, staffCandidates, reportConfig, systemConfig, lockDate, telegram, closing,
+      ...settings, staff, staffCandidates, systemConfig, lockDate, telegram, closing,
+      // ⚠️ نشانیِ وب‌هوکِ دیسکورد خودش کلید است (هر کس داشته باشد در کانال می‌نویسد) — فقط مالک (۲.۵۷.۰).
+      reportConfig: actor.roles.includes('owner') ? reportConfig : { ...reportConfig, webhook: '' },
       company: company ?? {
         name: '', address: '', taxId: '', email: '',
         phone: '', website: '', bank: '', invoiceFooter: '', logoFileId: null,

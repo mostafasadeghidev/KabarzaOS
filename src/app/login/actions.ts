@@ -1,5 +1,6 @@
 'use server';
 
+import { clientIpFrom } from '@/domain/auth/client-ip';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { or, sql } from 'drizzle-orm';
@@ -25,7 +26,7 @@ const failures = createFailureStore();
 async function clientIp(): Promise<string | null> {
   try {
     const h = await headers();
-    return h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
+    return clientIpFrom(h.get('x-forwarded-for'));
   } catch {
     return null;
   }

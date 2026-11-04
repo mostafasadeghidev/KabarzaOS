@@ -1,3 +1,4 @@
+import { assertTextLength } from '@/domain/access/text-limit';
 import { tagName } from '@/db/tag-name';
 import { currentLocale, getT } from '@/i18n/server';
 import { formatDateTime } from '@/i18n/datetime';
@@ -590,6 +591,7 @@ export async function createReminder(
 ): Promise<number> {
   const body = input.body.trim();
   if (body === '') throw new ForbiddenError('reminder.empty');
+  assertTextLength(body);
 
   const rows = await db.insert(reminders).values({
     userId: actor.id,

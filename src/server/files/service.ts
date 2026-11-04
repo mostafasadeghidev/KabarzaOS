@@ -13,7 +13,7 @@ import {
   safeDownloadName, storageKey, type Purpose,
 } from '@/domain/files/upload';
 import { deleteObject, ensureBucket, getObject, putObject } from './storage';
-import { canPreview, makePreview, PREVIEW_MIME } from './preview';
+import { canPreview, makePreview, PREVIEW_MIME, stripMetadata } from './preview';
 import * as projectRepo from '@/server/projects/repository';
 
 /**
@@ -49,9 +49,12 @@ async function storeFile(
     purpose,
   );
 
+  // ⚠️ بعد از سنجشِ نوع، پیش از ذخیره: GPS و بقیهٔ EXIF هرگز به مخزن نمی‌رسد (۲.۵۷.۰).
+  const bytes = await stripMetadata(blob.bytes, mime);
+
   await ensureBucket();
   const key = storageKey(purpose, mime, randomUUID().replace(/-/g, ''));
-  await putObject(key, blob.bytes, mime);
+  await putObject(key, bytes, mime);
 
   /**
    * نسخهٔ کوچکِ ۴۰۰ پیکسلی برای فهرست‌ها و آواتارها (R-FILE-16).
@@ -60,7 +63,7 @@ async function storeFile(
    */
   let previewKey: string | null = null;
   if (canPreview(mime)) {
-    const preview = await makePreview(blob.bytes, mime);
+    const preview = await makePreview(bytes, mime);
     if (preview) {
       previewKey = `${key}.thumb.webp`;
       try {
@@ -76,7 +79,7 @@ async function storeFile(
       storageKey: key,
       previewKey,
       mime,
-      size: blob.bytes.byteLength,
+      size: bytes.byteLength,
       originalName: blob.name.slice(0, 200),
       purpose,
       uploadedBy: actor.id,
@@ -338,10 +341,17 @@ export async function serveFile(
    * برگردانده می‌شود — نه خطا؛ نبودنِ پیش‌نمایش نقص نیست.
    */
   wantPreview = false,
+  /**
+   * عضوِ سابقِ «فقط مالی» (۲.۵۷.۰): فقط رسید و آواتار — نه پیوست‌های پروژه.
+   * ⚠️ پیش از این این مسیر وضعیتِ عضو را نمی‌دید و عضوِ اخراجی هنوز فایل‌های
+   * پروژه‌هایش را دانلود می‌کرد.
+   */
+  offboarded = false,
 ): Promise<ServedFile> {
   const rows = await db.select().from(files).where(eq(files.id, fileId));
   const file = rows[0];
   if (!file) throw new FileNotFoundError();
+  if (offboarded && file.purpose === 'attachment') throw new ForbiddenError('offboarded');
 
   if (!await canViewFile(actor, fileId)) throw new ForbiddenError('file.forbidden');
 

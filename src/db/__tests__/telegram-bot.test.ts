@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
+import { makeTelegramLinkToken } from '@/domain/people/profile';
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import { aiConnections, auditLog, projectMembers, projects, tags, timelogs, userRoles, users, workTimers } from '../schema';
@@ -35,10 +36,14 @@ const message = (text: string, chatId = CHAT, type = 'private'): TgUpdate =>
 const press = (data: string, chatId = CHAT): TgUpdate =>
   ({ update_id: nextUpdate++, callback_query: { id: `cb${nextUpdate}`, data, from: { id: chatId }, message: { message_id: 9, chat: { id: chatId, type: 'private' } } } });
 
+/** پیوندِ اتصال زمانِ ساختش را در خود دارد و نیم ساعت عمر دارد (۲.۵۷.۰). */
+const LINK = makeTelegramLinkToken('a'.repeat(36));
+const TOK2 = makeTelegramLinkToken('b'.repeat(36));
+
 beforeAll(async () => {
   await sql`truncate table ai_connections, timelogs, work_timers, tasks, project_members, projects, user_roles, tags, audit_log, users restart identity cascade`;
   const u = await db.insert(users).values([
-    { email: 'bot@t', name: 'سارا', telegramLinkToken: 'link-token-abc' },
+    { email: 'bot@t', name: 'سارا', telegramLinkToken: LINK },
     { email: 'other@t', name: 'دیگری', telegramChatId: '777' },
   ]).returning({ id: users.id });
   [MEMBER, OTHER] = u.map((r) => r.id) as [number, number];
@@ -68,20 +73,30 @@ describe('ربات — اتصال و دستورها', () => {
   });
 
   it('«/start <token>» چت را وصل می‌کند و توکن یک‌بارمصرف است', async () => {
-    await handleUpdate(message('/start link-token-abc'));
+    await handleUpdate(message(`/start ${LINK}`));
     const [row] = await db.select().from(users).where(eq(users.id, MEMBER));
     expect(row!.telegramChatId).toBe(String(CHAT));
     expect(row!.telegramLinkToken).toBeNull();
     expect(texts().join('\n')).toContain('وصل شد');
 
     sent = [];
-    await handleUpdate(message('/start link-token-abc', 9999));
+    await handleUpdate(message(`/start ${LINK}`, 9999));
     expect(texts()[0]).toContain('معتبر نیست');
   });
 
+  it('پیوندِ کهنه‌تر از نیم ساعت وصل نمی‌کند (۲.۵۷.۰)', async () => {
+    const old = makeTelegramLinkToken('c'.repeat(36), new Date(Date.now() - 31 * 60_000));
+    await db.update(users).set({ telegramLinkToken: old, telegramChatId: '' }).where(eq(users.id, OTHER));
+    await handleUpdate(message(`/start ${old}`, 4242));
+    expect(texts()[0]).toContain('معتبر نیست');
+    const [row] = await db.select().from(users).where(eq(users.id, OTHER));
+    expect(row!.telegramChatId).toBe('');
+    await db.update(users).set({ telegramLinkToken: null, telegramChatId: '777' }).where(eq(users.id, OTHER));
+  });
+
   it('چتی که مالِ کاربرِ دیگری است با لینکِ تازه گرفته نمی‌شود', async () => {
-    await db.update(users).set({ telegramLinkToken: 'tok-2' }).where(eq(users.id, MEMBER));
-    await handleUpdate(message('/start tok-2', 777));
+    await db.update(users).set({ telegramLinkToken: TOK2 }).where(eq(users.id, MEMBER));
+    await handleUpdate(message(`/start ${TOK2}`, 777));
     expect(texts()[0]).toContain('کاربرِ دیگری');
     await db.update(users).set({ telegramLinkToken: null }).where(eq(users.id, MEMBER));
   });

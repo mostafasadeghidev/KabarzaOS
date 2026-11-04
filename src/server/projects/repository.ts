@@ -299,11 +299,12 @@ export async function listProjects(
 
   const today = new Date().toISOString().slice(0, 10);
 
-  return rows.map((r) => ({
+  // ⚠️ خودِ خلاصه (قیمت و پرداختی‌ها) از فهرست بیرون می‌ماند؛ فقط «سبک شده؟» (۲.۵۷.۰).
+  return rows.map(({ lightenSummary, ...r }) => ({
     ...r,
     scope: r.scope as 'company' | 'private',
     // خلاصهٔ منجمد یعنی پروژه سبک شده.
-    isLightened: r.lightenSummary !== null,
+    isLightened: lightenSummary !== null,
     memberCount: members.get(r.id) ?? 0,
     openTaskCount: openTasks.get(r.id) ?? 0,
     reviewCount: reviews.get(r.id) ?? 0,

@@ -1,3 +1,4 @@
+import { wholeSecondNow } from '@/domain/auth/session';
 import { and, eq, inArray, isNull, or, sql as raw } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, tagRelations, userOffices, userPermissions, userRoles, users } from '@/db/schema';
@@ -729,7 +730,8 @@ export async function setPersonPassword(
   await assertEditableTarget(actor, userId);
 
   await db.update(users)
-    .set({ passwordHash: await hashPassword(password), updatedAt: new Date() })
+    // ⚠️ رمزی که مدیر عوض می‌کند همهٔ نشست‌های آن عضو را می‌بندد (۲.۵۷.۰).
+    .set({ passwordHash: await hashPassword(password), sessionsValidAfter: wholeSecondNow(), updatedAt: new Date() })
     .where(eq(users.id, userId));
 
   await audit(actor, 'person.password', userId, null, { changed: true });

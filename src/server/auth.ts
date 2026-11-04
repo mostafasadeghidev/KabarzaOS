@@ -4,7 +4,9 @@ import { db } from '@/db/client';
 import { canSignIn, type MemberState } from '@/domain/people/offboarding';
 import type { Locale } from '@/i18n/config';
 import { users, userRoles, userPermissions } from '@/db/schema';
-import { readSessionToken, SESSION_COOKIE } from '@/domain/auth/session';
+import {
+  createSessionToken, readSessionToken, SESSION_COOKIE, sessionCookieOptions, sessionStillValid,
+} from '@/domain/auth/session';
 import { canViewAs, readViewAsToken, VIEW_AS_COOKIE } from '@/domain/auth/view-as';
 import type { Actor, Permission, Role } from '@/domain/access/permissions';
 import { tagPermissionsFor } from '@/server/people/tag-caps';
@@ -51,6 +53,8 @@ export async function currentSession(): Promise<
 
   const real = await loadActor(session.userId);
   if (!real) return null;
+  // ⚠️ کوکیِ امضاشده پیش از تغییرِ رمز دیگر در را باز نمی‌کند (۲.۵۷.۰).
+  if (!sessionStillValid(session.issuedAt, real.user.sessionsValidAfter)) return null;
   let { actor, user } = real;
   let viewAs: { ownerId: number; ownerName: string } | null = null;
 
@@ -109,6 +113,28 @@ export async function loadActor(userId: number) {
     privateAccess: user.privateAccess,
   };
   return { actor, user };
+}
+
+/**
+ * کوکیِ نشستِ تازه برای همین مرورگر (۲.۵۷.۰) — بعد از تغییرِ رمز، که بقیهٔ
+ * نشست‌ها را با `sessions_valid_after` می‌بندد، خودِ کاربر بیرون نیفتد.
+ */
+export async function reissueSession(userId: number): Promise<void> {
+  const token = await createSessionToken({ userId }, sessionSecret());
+  (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions());
+}
+
+/**
+ * بازیگرِ مسیرهای API (۲.۵۷.۰) — مثلِ `currentActor` ولی عضوِ سابقِ «فقط مالی»
+ * را null می‌دهد، مگر مسیر صریحاً بپذیردش.
+ * ⚠️ `requireActor` فقط server action ها را می‌بست؛ مسیرهای فایل، پیام،
+ * تقویم و خروجی‌ها با `currentActor` هنوز به عضوِ اخراجی جواب می‌دادند.
+ */
+export async function routeActor(options: { allowOffboarded?: boolean } = {}): Promise<Actor | null> {
+  const session = await currentSession();
+  if (!session) return null;
+  if (session.memberState !== 'active' && !options.allowOffboarded) return null;
+  return session.actor;
 }
 
 /** بازیگرِ فعلی، یا null اگر وارد نشده باشد. */

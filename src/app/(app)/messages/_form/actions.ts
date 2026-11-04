@@ -1,5 +1,6 @@
 'use server';
 
+import { isTooLong, TEXT_TOO_LONG, textLimitMessage } from '@/domain/access/text-limit';
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
@@ -34,6 +35,8 @@ async function explain(error: unknown, fallback: string): Promise<string> {
     if (error.required === 'messages.project_group') return 'گروهِ پروژه را مدیر یا مدیرِ همان پروژه می‌سازد.';
     if (error.required === 'message.delete') return 'فقط نویسندهٔ پیام یا مدیر می‌تواند آن را حذف کند.';
     if (error.required === 'message.empty') return 'متنِ پیام خالی است.';
+    const limited = textLimitMessage(error);
+    if (limited) return limited;
     if (error.required === 'message.no_recipients') return 'مخاطبی برای ارسال نیست.';
     if (error.required === 'thread.no_reply') return 'این یک اعلانِ یک‌طرفه است و امکان پاسخ ندارد.';
     if (error.required === 'messages.broadcast') return 'ارسالِ همگانی فقط از مدیر ممکن است.';
@@ -45,6 +48,7 @@ async function explain(error: unknown, fallback: string): Promise<string> {
 
 export async function composeAction(_prev: MessageState, formData: FormData): Promise<MessageState> {
   const body = String(formData.get('body') ?? '');
+  if (isTooLong(body)) return { error: TEXT_TOO_LONG };
   const allowReply = formData.get('allowReply') !== null;
   const rawAudience = String(formData.get('audience') ?? '');
   const audience = Object.hasOwn(AUDIENCE_LABELS, rawAudience) ? rawAudience as Audience : null;
@@ -99,6 +103,7 @@ export async function replyAction(_prev: MessageState, formData: FormData): Prom
   const threadId = Number(formData.get('threadId'));
   const body = String(formData.get('body') ?? '');
   if (!Number.isInteger(threadId) || threadId <= 0) return { error: 'گفتگو معتبر نیست.' };
+  if (isTooLong(body)) return { error: TEXT_TOO_LONG };
 
   try {
     const actor = await requireActor();

@@ -1,5 +1,5 @@
 import {
-  appendChunk, applyRestore, beginRestore, cancelRestore, inspectRestore, RestoreError, restoreStatus,
+  appendChunk, applyRestore, assertRestoreToken, beginRestore, cancelRestore, inspectRestore, MAX_RESTORE_CHUNK, RestoreError, restoreStatus,
 } from '@/server/setup/restore';
 
 /**
@@ -44,6 +44,11 @@ export async function POST(request: Request) {
       case 'chunk': {
         const offset = Number(request.headers.get('x-offset'));
         if (!Number.isSafeInteger(offset) || offset < 0) throw new RestoreError('offset');
+        // ⚠️ ژتون و اندازه پیش از خواندنِ بدنه.
+        assertRestoreToken(token);
+        if (Number(request.headers.get('content-length') ?? 0) > MAX_RESTORE_CHUNK) {
+          return Response.json({ error: 'size' }, { status: 413, headers: NO_STORE });
+        }
         const bytes = new Uint8Array(await request.arrayBuffer());
         return Response.json({ size: await appendChunk(token, offset, bytes) }, { headers: NO_STORE });
       }

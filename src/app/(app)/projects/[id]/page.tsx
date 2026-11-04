@@ -517,10 +517,11 @@ export default async function ProjectDetailPage({
            */
           canDelete: actor.roles.includes('owner'),
           canLighten: canManageSection(actor, 'projects'),
-          lightenSummary: (project.lightenSummary as {
+          // ⚠️ خلاصهٔ سبک‌سازی قیمت و پرداختیِ اعضا را دارد — فقط برای همان که جعبه‌اش را می‌بیند (۲.۵۷.۰).
+          lightenSummary: canManageSection(actor, 'projects') ? (project.lightenSummary as {
             minutes: number; price: string; clientPaidEur: string;
             memberPaidEur: string; wasTender: boolean;
-          } | null) ?? null,
+          } | null) ?? null : null,
           finance: detail.finance,
           team: detail.team,
           payments: detail.payments,

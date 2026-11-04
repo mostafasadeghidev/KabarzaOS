@@ -28,6 +28,23 @@ const nextConfig: NextConfig = {
    * مرورگرها (و نمایشگرِ PDF) بی‌توجه به پیوندِ صفحه `/favicon.ico` را هم
    * می‌خواهند؛ همان آیکونِ برند جواب می‌دهد، نه ۴۰۴.
    */
+  /**
+   * هدرهای امنیتیِ همهٔ صفحه‌ها (۲.۵۷.۰).
+   * ⚠️ `frame-ancestors`: هیچ سایتی جز خودمان و تلگرامِ وب (مینی‌اپ در iframe
+   * باز می‌شود) نمی‌تواند برنامه را در قاب بگذارد — پیش از این صفحهٔ «اجازه» ِ
+   * OAuth یا دکمه‌های پرداخت را می‌شد زیرِ لایه‌ای فریبنده کلیک کرد.
+   * `X-Frame-Options` عمداً نیست: فهرستِ مجاز نمی‌پذیرد و تلگرام را می‌بست.
+   */
+  async headers() {
+    return [{
+      source: '/:path*',
+      headers: [
+        { key: 'Content-Security-Policy', value: "frame-ancestors 'self' https://web.telegram.org https://*.web.telegram.org" },
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      ],
+    }];
+  },
   async rewrites() {
     return [{ source: '/favicon.ico', destination: '/brand-icon?size=32' }];
   },

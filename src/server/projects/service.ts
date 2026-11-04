@@ -1,3 +1,4 @@
+import { assertNotBurst, assertTextLength, BURST_WINDOW_SECONDS } from '@/domain/access/text-limit';
 import { tagName } from '@/db/tag-name';
 import { alias } from 'drizzle-orm/pg-core';
 import { deleteProjectGroupsTx } from '@/server/messaging/groups';
@@ -1714,10 +1715,16 @@ export async function getProjectTabs(actor: Actor, projectId: number) {
       : null;
     return Number(value ?? p.amountSettled ?? p.amount);
   };
+  /**
+   * ⚠️ جمع‌ها فقط از ردیف‌هایی که همین بیننده می‌بیند و فقط برای کسی که قیمت
+   * را می‌بیند (۲.۵۷.۰): پیش از این از همهٔ ردیف‌ها جمع زده و برای کارفرما و
+   * عضوِ خالص هم فرستاده می‌شد — «پرداختی به اعضا» در payload ِ صفحه بود.
+   */
+  const ownPayments = visiblePayments(audience, actor.id, payments);
   const sumOf = (direction: string) => String(
-    payments.filter((p) => p.direction === direction).reduce((sum, p) => sum + counted(p), 0),
+    ownPayments.filter((p) => p.direction === direction).reduce((sum, p) => sum + counted(p), 0),
   );
-  const financeInProjectCurrency = finance
+  const financeInProjectCurrency = finance && canSeePrice
     ? { incoming: sumOf('incoming'), memberPayout: sumOf('member_payout'), projectExpense: sumOf('project_expense') }
     : null;
 
@@ -2168,6 +2175,13 @@ export async function toggleCommentStatus(actor: Actor, commentId: number) {
   return row.projectId;
 }
 
+/** کامنت و یادداشتِ تسک هر دو در `comments` اند؛ سقفِ رگبار روی جمعِ هر دو (۲.۵۷.۰). */
+async function assertNoCommentBurst(userId: number) {
+  const [row] = await db.select({ recent: sql<number>`count(*)::int` }).from(comments)
+    .where(and(eq(comments.userId, userId), sql`${comments.createdAt} > now() - make_interval(secs => ${BURST_WINDOW_SECONDS})`));
+  assertNotBurst(row?.recent ?? 0);
+}
+
 /**
  * افزودنِ کامنت به پروژه.
  * ⚠️ نوعِ دومِ «بازبینی» برداشته شد (مهاجرتِ 0026) — یک رشتهٔ گفت‌وگو، و تسک برای کار.
@@ -2187,6 +2201,8 @@ export async function addComment(
 
   const text = body.trim();
   if (text === '' && media.length === 0) throw new ForbiddenError('comment.empty');
+  assertTextLength(text);
+  await assertNoCommentBurst(actor.id);
 
   // پاسخ (پورتِ `parent_id`): والد باید از همین پروژه و از رشتهٔ کامنت باشد.
   if (parentId !== null) {
@@ -2925,6 +2941,8 @@ export async function addTaskNote(
   // ⚠️ یادداشتِ فقط‌عکس مجاز است — «این را ببین» با یک اسکرین‌شات.
   const text = body.trim();
   if (text === '' && media.length === 0) throw new ForbiddenError('note.empty');
+  assertTextLength(text);
+  await assertNoCommentBurst(actor.id);
 
   const uploads = await storeUploads(actor, media);
   await db.transaction(async (tx) => {

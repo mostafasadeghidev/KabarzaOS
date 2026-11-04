@@ -1,4 +1,5 @@
-import { eq, or, sql } from 'drizzle-orm';
+import { wholeSecondNow } from '@/domain/auth/session';
+import { and, eq, gt, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, users } from '@/db/schema';
 import { canSignIn, type MemberState } from '@/domain/people/offboarding';
@@ -33,6 +34,9 @@ async function siteName(): Promise<string> {
   return (c?.name ?? '').trim() || 'KabarzaOS';
 }
 
+/** فاصلهٔ کمینهٔ دو ایمیلِ بازنشانی برای یک حساب. */
+const RESET_COOLDOWN_MS = 2 * 60_000;
+
 /** توکنِ تازه — قبلی (اگر بود) باطل می‌شود. فقط هش ذخیره می‌شود. */
 export async function issueResetToken(userId: number, invite: boolean, now = new Date()): Promise<string> {
   const token = newResetToken();
@@ -61,6 +65,16 @@ export async function requestPasswordReset(identifier: string, now = new Date())
   const user = rows[0];
   if (!user || !canSignIn(user.memberState as MemberState, user.deletedAt !== null)) return;
   if (!(await mailEnabled())) return;
+  /**
+   * ⚠️ یک ایمیل در هر دو دقیقه برای هر حساب (۲.۵۷.۰): پیش از این هر کس می‌توانست
+   * صندوقِ دیگری را با ایمیلِ بازنشانی پر کند (و هر بار پیوندِ قبلی باطل می‌شد).
+   */
+  const [recent] = await db.select({ id: auditLog.id }).from(auditLog).where(and(
+    eq(auditLog.action, 'auth.reset_requested'),
+    eq(auditLog.objectId, user.id),
+    gt(auditLog.createdAt, new Date(now.getTime() - RESET_COOLDOWN_MS)),
+  )).limit(1);
+  if (recent) return;
 
   const token = await issueResetToken(user.id, false, now);
   const t = await getT();
@@ -88,6 +102,8 @@ export async function completePasswordReset(token: string, password: string, now
     resetTokenHash: null,
     resetExpiresAt: null,
     invitePending: false,
+    // ⚠️ بازنشانی یعنی «حسابم دستِ کسِ دیگری است» — همهٔ نشست‌ها بسته می‌شوند (۲.۵۷.۰).
+    sessionsValidAfter: wholeSecondNow(now),
     updatedAt: now,
   }).where(eq(users.id, user.id));
   await db.insert(auditLog).values({

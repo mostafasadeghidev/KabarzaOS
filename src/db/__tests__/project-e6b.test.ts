@@ -133,4 +133,24 @@ describe('رشتهٔ کامنت و پولِ عضو', () => {
     const asOwner = await getProjectTabs(owner(), project);
     expect(asOwner.payments[0]!.countedValue).toBe('200.0000');
   });
+
+  it('جمعِ «پرداختی به اعضا» نه به کارفرما می‌رسد نه به عضو (۲.۵۷.۰)', async () => {
+    const asOwner = await getProjectTabs(owner(), project);
+    expect(Number(asOwner.finance!.memberPayout)).toBe(200);
+    const client = await getProjectTabs(actor(CLIENT, ['client']), project);
+    expect(Number(client.finance!.memberPayout)).toBe(0);
+    // عضوِ خالص قیمت را نمی‌بیند، پس هیچ جمعی هم نمی‌گیرد.
+    const dev = await getProjectTabs(actor(DEV, ['member']), project);
+    expect(dev.finance).toBeNull();
+  });
+
+  it('کامنتِ بیش از ۲۰ هزار نویسه رد می‌شود (۲.۵۷.۰)', async () => {
+    await expect(addComment(actor(DEV, ['member']), project, 'x'.repeat(20_001))).rejects.toThrow(/text\.too_long/);
+  });
+
+  it('رگبارِ کامنت از یک نفر پس از ۲۰ در دقیقه بسته می‌شود (۲.۵۷.۰)', async () => {
+    const already = await db.select({ id: comments.id }).from(comments).where(eq(comments.userId, CLIENT));
+    for (let i = already.length; i < 20; i++) await addComment(actor(CLIENT, ['client']), project, `پیام ${i}`);
+    await expect(addComment(actor(CLIENT, ['client']), project, 'یکی دیگر')).rejects.toThrow(/text\.burst/);
+  });
 });

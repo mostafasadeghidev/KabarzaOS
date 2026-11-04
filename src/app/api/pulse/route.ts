@@ -1,7 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { notifications } from '@/db/schema';
-import { currentActor } from '@/server/auth';
+import { routeActor } from '@/server/auth';
 import { getSystemConfig } from '@/server/settings/system-service';
 
 /**
@@ -14,7 +14,8 @@ import { getSystemConfig } from '@/server/settings/system-service';
  * کامپوننت سوار نمی‌شود.
  */
 export async function GET() {
-  const actor = await currentActor();
+  // عضوِ سابقِ «فقط مالی» هم اعلانِ پرداختش را می‌گیرد.
+  const actor = await routeActor({ allowOffboarded: true });
   if (!actor) return Response.json({ notif: 0, msg: 0 });
 
   const system = await getSystemConfig();

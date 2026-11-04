@@ -527,6 +527,17 @@ export async function createRequest(
 
   let hasOpenForUnit = false;
   if (input.unitEntryId) {
+    /**
+     * ⚠️ ردیفِ کارکرد باید مالِ خودِ همین عضو و همین پروژه باشد (۲.۵۷.۰): پیش از
+     * این شناسه از فرم پذیرفته می‌شد و عضو می‌توانست ردیفِ کسِ دیگری را
+     * «درخواست‌شده» کند — آن ردیف دیگر برای صاحبش درخواست‌شدنی نبود.
+     */
+    const [own] = await db.select({ id: unitEntries.id }).from(unitEntries).where(and(
+      eq(unitEntries.id, input.unitEntryId),
+      eq(unitEntries.userId, actor.id),
+      eq(unitEntries.projectId, input.projectId),
+    ));
+    if (!own) throw new MemberMoneyError('not_yours');
     const open = await db.select({ id: paymentRequests.id }).from(paymentRequests)
       .where(and(
         eq(paymentRequests.unitEntryId, input.unitEntryId),

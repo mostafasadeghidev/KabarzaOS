@@ -138,7 +138,8 @@ export function resolveRange(
  */
 export function csvCell(value: unknown): string {
   const text = value === null || value === undefined ? '' : String(value);
-  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  // ⚠️ تب، CR و فاصلهٔ جلوی فرمول هم (۲.۵۷.۰) — اکسل «  =1+1» را باز هم فرمول می‌خواند.
+  const safe = /^\s*[=+\-@\t\r]/.test(text) ? `'${text}` : text;
   return `"${safe.replace(/"/g, '""')}"`;
 }
 

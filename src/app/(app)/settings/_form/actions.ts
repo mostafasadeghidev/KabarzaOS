@@ -1,5 +1,6 @@
 'use server';
 
+import { clientIpFrom } from '@/domain/auth/client-ip';
 import { AccessError, accessMessage } from '@/domain/access/service-grants';
 import { db } from '@/db/client';
 import { users } from '@/db/schema';
@@ -577,7 +578,7 @@ export async function saveTurnstileKeysAction(_prev: SystemState, formData: Form
 export async function testTurnstileAction(token: string): Promise<SystemState> {
   const actor = await requireActor();
   if (!actor.roles.includes('owner')) return { error: 'فقط مدیرِ کل.' };
-  const ip = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
+  const ip = clientIpFrom((await headers()).get('x-forwarded-for'));
   const result = await testTurnstile(actor, token, ip);
   if (result === 'no_keys') return { error: 'ابتدا هر دو کلید را ذخیره کنید.' };
   if (result === 'failed') return { error: 'کلودفلر این آزمون را نپذیرفت؛ کلیدِ محرمانه یا دامنهٔ ویجت را بررسی کنید.' };

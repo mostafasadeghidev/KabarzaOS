@@ -2,6 +2,35 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.57.0]
+
+### Security
+
+A full security review of the app. Nothing allowed signing in without a password or taking over the server. The fixes below close the real gaps it found, most important first.
+
+- **Clients and plain members no longer receive the team totals of a project.** The project page computed "paid to members" and "internal costs" from every payment row and sent them in the page data to anyone with access to the finance tab, including clients. They weren't shown, but they could be read with "View source". The totals now come only from the rows that viewer may see, and only people who can see the price receive them.
+- **The summary of a lightened project is sent only to people who can lighten projects.** It contains the price and what the client and members were paid. Until now every viewer of the project page received it, and the project list carried it for every project.
+- **One long comment could freeze the whole site.** The link detector in comments, task notes and messages took quadratic time on text like a link followed by many dots. Half a megabyte of such text kept the server busy for minutes on every page load, for everyone. It now runs in linear time. Comments, task notes, messages and reminders are also capped at 20,000 characters.
+- **No more posting floods.** More than 20 comments or task notes, or 20 group messages, per minute from one person are refused with "wait a minute".
+- **Images can no longer exhaust the server.** A tiny file that claims huge dimensions (an "image bomb") is no longer decoded; anything above 40 megapixels keeps its original file but gets no preview. The app icon is built once per logo instead of on every request.
+- **Location and camera data are removed from photos.** Photos from phones carry the GPS position where they were taken. JPEG, PNG and WebP uploads (profile pictures, comment and task images) now have that data removed before they're stored. The picture's rotation and colours are kept.
+- **Telegram video files are checked before processing.** A file sent as a video that is really a playlist could make the video tool read other files on the server or reach the network. Only real audio and video formats are processed now, and only from the local file.
+- **The backup restore page reads nothing before checking its token.** Until now anyone could make it load large uploads into memory before being refused. Each piece is also capped in size, and the whole backup at 20 GB.
+- **Changing or resetting a password signs out every other device.** A stolen session cookie used to stay valid for seven days even after a password change. The device you change it from stays signed in. When an admin sets a member's password, all of that member's sessions end.
+- **"Connect Telegram" links expire after 30 minutes.** A connected Telegram account can sign in, so a link that leaked weeks later still gave access. Older links stop working; press "Connect" again.
+- **Sign-in limits can't be bypassed, and nobody can lock someone else's account.** The client address is now read from the end of `X-Forwarded-For`, which the proxy writes, instead of the start, which the visitor writes. `TRUSTED_PROXY_HOPS` (default 1) sets how many proxies sit in front. The tight limit of 10 failures now applies per address and per account-from-that-address. The account alone locks only after 50 failures from many addresses.
+- **"Forgot password" no longer reveals whether an account exists, and can't flood an inbox.** The answer returns before the email is sent, so its timing reveals nothing. Each account gets at most one reset email every two minutes.
+- **The AI connection consent page shows where access goes.** Anyone can register an app and give it any name, including "Claude". The page now shows the real address that will receive access. It warns in red when that address isn't a known AI assistant, or when it's an app on your own device.
+- **Pages can no longer be framed by other sites.** This blocks "clickjacking", where a hidden page tricks you into clicking. Telegram's web version can still open the mini app. `nosniff` and a strict referrer policy are now set on every page.
+- **The AI bot in project Telegram groups can't leak money.** "Don't share money in the group" used to be only an instruction to the AI. The bot works with a manager's access and the client may be in the group, so a crafted task or comment could talk it into posting prices. Now every money field (prices, amounts, payments, rates, hours, bids) is removed from the data before the AI sees it. In a group the bot also can't read any project other than the group's own.
+- **Former members ("finance only") lose the side doors.** They could still download project attachments and read messages, the meeting calendar and exports through direct addresses. Now they get only their receipts and avatars, plus their notification count.
+- **Smaller fixes.**
+  - A member's payment request could mark another member's unit entry as "requested". It now has to be their own entry in the same project.
+  - The Discord webhook address, which works like a password for the channel, is shown only to the owner.
+  - Panel links in the access register accept only `http`/`https`. A bare domain becomes `https://`.
+  - The CSV export also neutralises formulas hidden behind spaces or tabs.
+- Database: new column `users.sessions_valid_after` (migration 0068).
+
 ## [2.56.1]
 
 ### Fixed
