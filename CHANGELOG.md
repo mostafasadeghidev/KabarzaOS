@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.57.2]
+
+### Fixed
+
+- **The member rows in the new-project form are laid out properly again.** Each row's five fields spilled into a two-column grid and the dropdowns kept their own narrow width, so role, pay type and currency sat at different sizes and the currency ended up alone on a third line. A row now has two lines, member and role, then pay type, amount and currency, with every field filling its column. The priority picker in the form's task rows also fills its column now.
+
 ## [2.57.1]
 
 ### Fixed
