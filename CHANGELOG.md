@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.58.0]
+
+### Added
+
+- **Hand out company accounts from the panel: username, password and download link.** In Access, a service now has a download or sign-in link and a setup guide, and each person's access can hold their password. People see their username, password and the link under Profile, "My access".
+- **Passwords are stored encrypted and shown only on request.** Only the person it belongs to and member managers can reveal one, with the eye button. Every reveal is recorded in the activity log. Passwords never appear in the page data, the CSV export or the activity log, and revoking access erases the password. Viewing the app as another user cannot reveal passwords.
+
 ## [2.57.2]
 
 ### Fixed

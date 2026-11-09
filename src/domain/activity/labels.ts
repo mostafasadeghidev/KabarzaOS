@@ -176,6 +176,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'service_grant.create': 'اعطای دسترسیِ بیرونی',
   'service_grant.update': 'ویرایشِ دسترسیِ بیرونی',
   'service_grant.revoke': 'قطعِ دسترسیِ بیرونی',
+  'service_grant.secret_view': 'دیدنِ رمزِ دسترسی',
 
   // آنبوردینگ
   'onboarding_item.create': 'آیتمِ جدیدِ آنبوردینگ',

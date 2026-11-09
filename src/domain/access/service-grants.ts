@@ -27,6 +27,7 @@ export class AccessError extends Error {
   constructor(
     readonly code:
       | 'name_required'
+      | 'secret_too_long'
       | 'service_required'
       | 'user_required'
       | 'service_inactive'
@@ -46,6 +47,7 @@ export class AccessError extends Error {
 export function accessMessage(code: AccessError['code']): string {
   switch (code) {
     case 'name_required': return 'نامِ سرویس را بنویسید.';
+    case 'secret_too_long': return 'رمز خیلی طولانی است.';
     case 'service_required': return 'سرویس را انتخاب کنید.';
     case 'user_required': return 'شخص را انتخاب کنید.';
     case 'service_inactive': return 'این سرویس غیرفعال است؛ اول فعالش کنید.';

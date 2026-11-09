@@ -23,6 +23,9 @@ import { IconButton } from '@/components/ui/icon-button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { PasswordInput } from '@/components/ui/password-input';
+import { SecretReveal } from './secret-reveal';
 import { Label } from '@/components/ui/label';
 import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import {
@@ -58,6 +61,8 @@ export interface ServiceRow {
   ownerUserId: number | null;
   adminUrl: string;
   note: string;
+  downloadUrl: string;
+  guide: string;
   isActive: boolean;
   /** شمارِ دسترسیِ بازِ همین سرویس. */
   openCount: number;
@@ -86,6 +91,7 @@ export interface GrantRow {
   accountRef: string;
   level: GrantLevel;
   vaultRef: string;
+  hasSecret: boolean;
   note: string;
   grantedAt: Date | string;
   revokedAt: Date | string | null;
@@ -300,6 +306,7 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                   <TableHead>{tr("سرویس")}</TableHead>
                   <TableHead>{tr("سطح")}</TableHead>
                   <TableHead>{tr("شناسهٔ حساب")}</TableHead>
+                  {data.canManage && <TableHead>{tr("رمز")}</TableHead>}
                   <TableHead>{tr("از تاریخ")}</TableHead>
                   <TableHead>{tr("وضعیت")}</TableHead>
                   <TableActionsHead />
@@ -323,6 +330,11 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
                         </Badge>
                       </TableCell>
                       <TableCell className="num text-xs" dir="ltr">{row.accountRef || '—'}</TableCell>
+                      {data.canManage && (
+                        <TableCell>
+                          {row.hasSecret ? <SecretReveal grantId={row.id} /> : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                      )}
                       <TableCell className="num text-xs">
                         {formatDate(row.grantedAt, tz)}
                       </TableCell>
@@ -639,7 +651,7 @@ function GrantDialog({
           <DialogTitle>{editing ? tr('ویرایشِ دسترسی') : tr('ثبتِ دسترسی')}</DialogTitle>
           <DialogDescription className="flex items-start gap-1.5">
             <ShieldAlert className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-500" aria-hidden />
-            <span>{tr("رمز، توکن و کلید اینجا ثبت نمی‌شوند. فقط ثبت می‌کنیم چه کسی به چه چیزی دسترسی دارد.")}</span>
+            <span>{tr("رمز رمزگذاری‌شده ذخیره می‌شود و فقط خودِ این شخص و مدیرِ اعضا می‌توانند ببینندش. هر بار دیدن ثبت می‌شود.")}</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -693,6 +705,24 @@ function GrantDialog({
               defaultValue={editing?.accountRef ?? ''}
               placeholder={tr("ایمیل، نامِ کاربری یا شمارهٔ داخلی")}
             />
+          </Field>
+
+          <Field className="sm:col-span-2">
+            <FieldLabel htmlFor="g-secret">{tr("رمزِ حساب")}</FieldLabel>
+            <PasswordInput
+              id="g-secret"
+              name="secret"
+              dir="ltr"
+              maxLength={500}
+              autoComplete="new-password"
+              placeholder={editing?.hasSecret ? tr('رمز ثبت شده؛ برای تغییر، رمزِ تازه را بنویسید') : ''}
+            />
+            {editing?.hasSecret && (
+              <label className="flex items-center gap-2 text-xs">
+                <Checkbox name="clearSecret" />
+                {tr("پاک کردنِ رمزِ ثبت‌شده")}
+              </label>
+            )}
           </Field>
 
           <Field className="sm:col-span-2">
@@ -860,6 +890,15 @@ function ServiceFields({ edit, data }: { edit: ServiceRow | null; data: AccessDa
           </Field>
         </div>
       )}
+      <Field className="sm:col-span-2">
+        <FieldLabel htmlFor="s-download">{tr("لینکِ دانلود یا ورود")}</FieldLabel>
+        <Input id="s-download" name="downloadUrl" dir="ltr" defaultValue={edit?.downloadUrl ?? ''} placeholder="https://" />
+        <FieldDescription>{tr("دارندگانِ این سرویس در پروفایلشان می‌بینند.")}</FieldDescription>
+      </Field>
+      <Field className="sm:col-span-2">
+        <FieldLabel htmlFor="s-guide">{tr("راهنمای نصب و ورود")}</FieldLabel>
+        <Textarea id="s-guide" name="guide" maxLength={5000} rows={3} defaultValue={edit?.guide ?? ''} />
+      </Field>
       <Field className="sm:col-span-2">
         <FieldLabel htmlFor="s-note">{tr("یادداشت")}</FieldLabel>
         <Input id="s-note" name="note" defaultValue={edit?.note ?? ''} />

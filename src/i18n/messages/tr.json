@@ -4836,5 +4836,16 @@
   "فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.": "Yedek dosyası izin verilen sınırı (20 GB) aşıyor.",
   "{task}\nپروژه: {project}": "{task}\nProje: {project}",
   "{task}\nپروژه: {project}\nمسئول: {assignee}": "{task}\nProje: {project}\nSorumlu: {assignee}",
-  "شما": "Siz"
+  "شما": "Siz",
+  "رمزِ حساب": "Hesap şifresi",
+  "رمز خیلی طولانی است.": "Şifre çok uzun.",
+  "رمز خوانده نشد؛ دوباره ثبتش کنید.": "Şifre okunamadı; yeniden girin.",
+  "رمز ثبت شده؛ برای تغییر، رمزِ تازه را بنویسید": "Şifre kayıtlı; değiştirmek için yenisini yazın",
+  "پاک کردنِ رمزِ ثبت‌شده": "Kayıtlı şifreyi sil",
+  "رمز رمزگذاری‌شده ذخیره می‌شود و فقط خودِ این شخص و مدیرِ اعضا می‌توانند ببینندش. هر بار دیدن ثبت می‌شود.": "Şifre şifrelenmiş olarak saklanır. Yalnızca bu kişi ve üye yöneticileri görebilir; her görüntüleme kaydedilir.",
+  "لینکِ دانلود یا ورود": "İndirme veya giriş bağlantısı",
+  "دارندگانِ این سرویس در پروفایلشان می‌بینند.": "Bu hizmete sahip kişiler profillerinde görür.",
+  "راهنمای نصب و ورود": "Kurulum ve giriş kılavuzu",
+  "لینکِ دانلود": "İndirme bağlantısı",
+  "دیدنِ رمزِ دسترسی": "Erişim şifresi görüntülendi"
 }

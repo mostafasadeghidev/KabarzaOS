@@ -28,6 +28,8 @@ import { useSearchParams } from 'next/navigation';
 import { useT, useTimeZone } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { CopyText } from '@/components/copy-text';
+import { SecretReveal } from '../access/secret-reveal';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -67,6 +69,7 @@ export interface ProfileData {
   myAccess: Array<{
     id: number; serviceName: string; level: GrantLevel;
     accountRef: string; grantedAt: Date | string;
+    downloadUrl: string; guide: string; hasSecret: boolean;
   }>;
   isOwner: boolean;
   /** توکن‌های MCP ِ خودِ کاربر و نشانیِ اتصال (۲.۷.۰). */
@@ -265,7 +268,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
       {/*
         دسترسی‌های بیرونیِ خودِ کاربر — فقط‌خواندنی.
-        ⚠️ هیچ رمزی اینجا نیست؛ فقط فهرستِ «به چه چیزهایی دسترسی دارم».
+        ⚠️ رمز در دادهٔ صفحه نیست؛ فقط با دکمهٔ چشم از سرور خوانده و ثبت می‌شود (۲.۵۸.۰).
       */}
       {tab === 'access' && (
         <div className="grid grid-cols-1 gap-3">
@@ -278,15 +281,32 @@ export function ProfileView({ data }: { data: ProfileData }) {
                 <TableHead>{tr("سرویس")}</TableHead>
                 <TableHead>{tr("سطح")}</TableHead>
                 <TableHead>{tr("شناسهٔ حساب")}</TableHead>
+                <TableHead>{tr("رمز")}</TableHead>
+                <TableHead>{tr("دانلود")}</TableHead>
                 <TableHead>{tr("از تاریخ")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.myAccess.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell>{row.serviceName}</TableCell>
+                  <TableCell className="max-w-72 whitespace-normal">
+                    {row.serviceName}
+                    {row.guide && <p className="mt-0.5 whitespace-pre-wrap text-xs text-muted-foreground">{row.guide}</p>}
+                  </TableCell>
                   <TableCell>{tr(LEVEL_LABELS[row.level])}</TableCell>
-                  <TableCell className="num text-xs" dir="ltr">{row.accountRef || '—'}</TableCell>
+                  <TableCell className="num text-xs" dir="ltr">
+                    {row.accountRef ? <CopyText value={row.accountRef} /> : '—'}
+                  </TableCell>
+                  <TableCell>
+                    {row.hasSecret ? <SecretReveal grantId={row.id} /> : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell>
+                    {row.downloadUrl ? (
+                      <a href={row.downloadUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        {tr("دانلود")}
+                      </a>
+                    ) : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
                   <TableCell className="num text-xs">
                     {formatDate(row.grantedAt, tz)}
                   </TableCell>
