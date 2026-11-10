@@ -222,6 +222,46 @@ Until you upgrade, do not run `docker image prune -a` or
 `docker system prune -a` on such a server: the old image is no longer
 downloadable, and without it the file store cannot start.
 
+## Company email
+
+KabarzaOS can create, link and close staff mailboxes on your own
+[Stalwart](https://stalwart.email) mail server. It talks to Stalwart's
+JMAP API with a **restricted API key**, never the admin password.
+
+1. In Stalwart's panel, on the admin account, create an API key:
+   - Permissions, mode *Replace*: `authenticate`, `sysAccountGet`,
+     `sysAccountQuery`, `sysAccountCreate`, `sysAccountUpdate`,
+     `sysAccountPasswordUpdate`, `sysDomainGet`, `sysDomainQuery`.
+     Leave out `sysAccountDestroy`: deleting a mailbox stays a manual job.
+   - Allowed IPs: the address KabarzaOS connects from (below).
+2. Set the variables and redeploy:
+
+   | Setup | `STALWART_URL` | Allowed IPs on the key |
+   |---|---|---|
+   | Same server, app joined to Stalwart's Docker network | `http://stalwart:8080` | that network's subnet |
+   | Separate servers, or not on the network | Stalwart's panel address (`https://…`) | the app server's public IP |
+
+   `STALWART_API_KEY` holds the key. Enter both under **Environment** in
+   Coolify; never commit them.
+3. Settings → Company email: set the domain, then **Test connection**.
+
+To join Stalwart's network on the same server, add it to the `app`
+service as an external network (the name is the Stalwart resource's
+network in Coolify):
+
+```yaml
+services:
+  app:
+    networks: [default, stalwart]
+networks:
+  stalwart:
+    external: true
+    name: <stalwart-network>
+```
+
+Every URL is built from `STALWART_URL`, so switching between the two
+setups only changes that variable.
+
 ## Backups
 
 Settings → Backups (owner only). A backup is **one encrypted file**

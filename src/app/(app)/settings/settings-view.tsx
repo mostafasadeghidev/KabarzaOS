@@ -21,6 +21,8 @@ import { ReportSection } from './report-section';
 import { SystemSection, TelegramSection } from './system-section';
 import { SecuritySection } from './security-section';
 import { MailSection } from './mail-section';
+import { CorpMailSection } from './corp-mail-section';
+import type { CorpMailSettingsView } from '@/server/corp-mail/settings';
 import { OnboardingLibrary, type OnboardingLibraryData } from './onboarding-library';
 import { BackupSection, type BackupView } from './backup-section';
 import type { TelegramSettingsView } from '@/server/settings/telegram-service';
@@ -95,6 +97,7 @@ export interface SettingsData {
   backup: BackupView | null;
   /** کپچای کلودفلر — فقط مالک؛ کلیدِ محرمانه در آن نیست. */
   turnstile: TurnstileSettingsView | null;
+  corpMail: CorpMailSettingsView | null;
   /** ایمیلِ خروجی — فقط مالک؛ رمز در آن نیست. */
   smtp: SmtpSettingsView | null;
   qaItems: Array<{
@@ -139,6 +142,8 @@ const TABS = [
   { key: 'backup', label: 'پشتیبان‌گیری', ownerOnly: true },
   // کپچای کلودفلر (۲.۳۱.۰) — کلیدِ محرمانه، پس فقط مالک.
   { key: 'security', label: 'امنیت', ownerOnly: true },
+  // ایمیلِ شرکتی (۲.۵۹.۰) — اتصال به Stalwart.
+  { key: 'corpmail', label: 'ایمیلِ شرکتی', ownerOnly: true },
   { key: 'fiscal', label: 'دورهٔ مالی', ownerOnly: true },
 ] as const;
 
@@ -717,6 +722,7 @@ export function SettingsView({
       {tab === 'backup' && data.isOwner && data.backup && <BackupSection view={data.backup} />}
 
       {tab === 'security' && data.isOwner && data.turnstile && <SecuritySection turnstile={data.turnstile} />}
+      {tab === 'corpmail' && data.isOwner && data.corpMail && <CorpMailSection view={data.corpMail} />}
 
       {tab === 'notify' && data.isOwner && (
         <div className="grid gap-6">
