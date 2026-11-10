@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.59.1]
+
+### Fixed
+
+- **Company email: connect over the mail server's own Docker network on Coolify.** Reaching Stalwart through its public address on the same server made it see the Docker gateway instead of the app, so an API key limited to the internal subnet was refused (403). `docker-compose.coolify.yml` now joins the network named in `STALWART_NETWORK`; with it set, use `STALWART_URL=http://stalwart:8080`. Left empty, it joins the standard `coolify` network and nothing else changes.
+
 ## [2.59.0]
 
 ### Added

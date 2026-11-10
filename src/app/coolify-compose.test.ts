@@ -25,8 +25,16 @@ describe('docker-compose.coolify.yml', () => {
       /^ {4}build: \.\n/m,
       '',
     );
-    const actual = services(coolify).replace(/^ {4}# .*\n {4}pull_policy: always\n/m, '');
+    const actual = services(coolify)
+      .replace(/^ {4}# .*\n {4}pull_policy: always\n/m, '')
+      // شبکهٔ ایمیلِ شرکتی (۲.۵۹.۱) — فقط در Coolify.
+      .replace(/(?:^ {6}# .*\n)+ {6}mail: \{\}\n/m, '')
+      .replace(/\nnetworks:\n(?: {2}.*\n)+(?=\nvolumes:)/, '');
     expect(actual).toBe(expected);
+  });
+
+  it('شبکهٔ ایمیل بیرونی است و بی تنظیم به شبکهٔ همیشه‌موجودِ coolify می‌رود', () => {
+    expect(coolify).toMatch(/^ {2}mail:\n {4}external: true\n {4}name: \$\{STALWART_NETWORK:-coolify\}$/m);
   });
 
   it('هیچ رازی در خودِ فایل نیست', () => {
