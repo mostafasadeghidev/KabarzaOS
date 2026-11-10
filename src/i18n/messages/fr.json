@@ -4847,5 +4847,7 @@
   "دارندگانِ این سرویس در پروفایلشان می‌بینند.": "Les personnes ayant ce service le voient dans leur profil.",
   "راهنمای نصب و ورود": "Guide d'installation et de connexion",
   "لینکِ دانلود": "Lien de téléchargement",
-  "دیدنِ رمزِ دسترسی": "Consultation d'un mot de passe d'accès"
+  "دیدنِ رمزِ دسترسی": "Consultation d'un mot de passe d'accès",
+  "اتصال قطع شد؛ دوباره تلاش می‌کنیم… {n}٪": "Connexion perdue ; nouvelle tentative… {n} %",
+  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "Le téléversement n’avance plus depuis un moment. Vérifiez la connexion et cliquez à nouveau sur « Téléverser et vérifier » ; il reprend là où il s’est arrêté."
 }

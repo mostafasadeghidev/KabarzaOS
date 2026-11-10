@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.58.2]
+
+### Fixed
+
+- **Restoring a backup on a slow or unstable connection now continues where it stopped.** Before, a dropped connection or a proxy timeout (Cloudflare allows each request 100 seconds) stopped the upload, and trying again showed "someone else is restoring" for ten minutes, blocked by the user's own half-finished upload. Now the upload waits and retries until the connection is back, sends smaller pieces when a piece times out, and picks up from the last piece the server received, even after the page is reloaded. Cancel works during the upload too.
+
 ## [2.58.1]
 
 ### Added

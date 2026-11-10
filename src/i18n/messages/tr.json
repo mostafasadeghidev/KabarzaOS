@@ -4847,5 +4847,7 @@
   "دارندگانِ این سرویس در پروفایلشان می‌بینند.": "Bu hizmete sahip kişiler profillerinde görür.",
   "راهنمای نصب و ورود": "Kurulum ve giriş kılavuzu",
   "لینکِ دانلود": "İndirme bağlantısı",
-  "دیدنِ رمزِ دسترسی": "Erişim şifresi görüntülendi"
+  "دیدنِ رمزِ دسترسی": "Erişim şifresi görüntülendi",
+  "اتصال قطع شد؛ دوباره تلاش می‌کنیم… {n}٪": "Bağlantı kesildi; yeniden deneniyor… %{n}",
+  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "Yükleme bir süredir ilerlemiyor. Bağlantınızı kontrol edip “Yükle ve kontrol et” düğmesine yeniden basın; kaldığı yerden devam eder."
 }
