@@ -4836,5 +4836,16 @@
   "فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.": "Le fichier de sauvegarde dépasse la limite autorisée (20 Go).",
   "{task}\nپروژه: {project}": "{task}\nProjet: {project}",
   "{task}\nپروژه: {project}\nمسئول: {assignee}": "{task}\nProjet: {project}\nResponsable: {assignee}",
-  "شما": "Vous"
+  "شما": "Vous",
+  "رمزِ حساب": "Mot de passe du compte",
+  "رمز خیلی طولانی است.": "Le mot de passe est trop long.",
+  "رمز خوانده نشد؛ دوباره ثبتش کنید.": "Impossible de lire le mot de passe ; saisissez-le à nouveau.",
+  "رمز ثبت شده؛ برای تغییر، رمزِ تازه را بنویسید": "Mot de passe enregistré ; saisissez-en un nouveau pour le changer",
+  "پاک کردنِ رمزِ ثبت‌شده": "Supprimer le mot de passe enregistré",
+  "رمز رمزگذاری‌شده ذخیره می‌شود و فقط خودِ این شخص و مدیرِ اعضا می‌توانند ببینندش. هر بار دیدن ثبت می‌شود.": "Le mot de passe est chiffré. Seuls cette personne et les gestionnaires des membres peuvent le voir, et chaque consultation est enregistrée.",
+  "لینکِ دانلود یا ورود": "Lien de téléchargement ou de connexion",
+  "دارندگانِ این سرویس در پروفایلشان می‌بینند.": "Les personnes ayant ce service le voient dans leur profil.",
+  "راهنمای نصب و ورود": "Guide d'installation et de connexion",
+  "لینکِ دانلود": "Lien de téléchargement",
+  "دیدنِ رمزِ دسترسی": "Consultation d'un mot de passe d'accès"
 }

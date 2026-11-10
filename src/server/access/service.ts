@@ -8,7 +8,8 @@ import {
 import { tagName } from '@/db/tag-name';
 import { currentLocale } from '@/i18n/server';
 import { can, canManageSection, type Actor } from '@/domain/access/permissions';
-import { assertCan, assertCanManage, assertCanView } from '@/domain/access/guard';
+import { assertCan, assertCanManage, assertCanView, ForbiddenError } from '@/domain/access/guard';
+import { open as openSecret, seal } from '@/server/ai/secret-box';
 import {
   AccessError, assertRevocable, assertServiceName, countByService, historyByService, normalizeLevel,
   normalizeNewSubscription, openRisks, planGrant, planServiceRemoval,
@@ -76,6 +77,8 @@ export async function accessBoard(actor: Actor) {
       accountRef: serviceGrants.accountRef,
       level: serviceGrants.level,
       vaultRef: serviceGrants.vaultRef,
+      // ⚠️ فقط «هست یا نیست»؛ خودِ رمز با `revealGrantSecret` و با ثبت خوانده می‌شود.
+      hasSecret: sql<boolean>`${serviceGrants.secretEnc} <> ''`,
       note: serviceGrants.note,
       grantedAt: serviceGrants.grantedAt,
       revokedAt: serviceGrants.revokedAt,
@@ -219,11 +222,38 @@ export async function myGrants(actor: Actor) {
     level: serviceGrants.level,
     accountRef: serviceGrants.accountRef,
     grantedAt: serviceGrants.grantedAt,
+    downloadUrl: services.downloadUrl,
+    guide: services.guide,
+    hasSecret: sql<boolean>`${serviceGrants.secretEnc} <> ''`,
   })
     .from(serviceGrants)
     .innerJoin(services, eq(services.id, serviceGrants.serviceId))
     .where(and(eq(serviceGrants.userId, actor.id), isNull(serviceGrants.revokedAt)))
     .orderBy(asc(services.name));
+}
+
+/**
+ * خواندنِ رمزِ یک دسترسی (۲.۵۸.۰) — **تنها** راهِ رسیدن به رمز.
+ *
+ * ⚠️ فقط صاحبِ همان دسترسی، یا مدیرِ اعضا. `members.view` کافی نیست: دیدنِ
+ * دفتر یک چیز است و داشتنِ رمزِ دیگران چیزِ دیگر. هر بار دیدن در `audit_log`
+ * ثبت می‌شود (خودِ رمز نه) تا بشود پرسید چه کسی رمزِ چه کسی را دیده.
+ *
+ * @returns رمز، یا `null` وقتی رمزی نیست یا با کلیدِ فعلی باز نمی‌شود.
+ */
+export async function revealGrantSecret(actor: Actor, grantId: number): Promise<string | null> {
+  const [grant] = await db.select({
+    userId: serviceGrants.userId,
+    secretEnc: serviceGrants.secretEnc,
+    revokedAt: serviceGrants.revokedAt,
+  }).from(serviceGrants).where(eq(serviceGrants.id, grantId));
+
+  if (!grant) throw new AccessError('not_found');
+  if (grant.userId !== actor.id && !canManageSection(actor, 'members')) throw new ForbiddenError('service_grant.secret');
+  if (grant.revokedAt !== null || grant.secretEnc === '') return null;
+
+  await audit(actor, 'service_grant.secret_view', 'service_grant', grantId);
+  return openSecret(grant.secretEnc);
 }
 
 /**
@@ -261,6 +291,10 @@ export interface ServiceInput {
   adminUrl: string;
   note: string;
   isActive: boolean;
+  /** لینکِ دانلود یا ورود برای دارندگانِ سرویس. */
+  downloadUrl?: string;
+  /** راهنمای نصب و ورود برای دارندگانِ سرویس. */
+  guide?: string;
   /** اشتراکِ متناظر در ماژولِ مالی؛ فقط با `finance.view` قابلِ تغییر. */
   recurringExpenseId?: number | null;
   /** «+ دستهٔ تازه» — دسته با همین نام پیدا یا ساخته می‌شود (`settings.manage`). */
@@ -390,6 +424,8 @@ export async function saveService(actor: Actor, input: ServiceInput) {
     // ⚠️ فقط http(s) (۲.۵۷.۰) — این نشانی پیوندِ «پنل» است و `javascript:` نباید به آن برسد.
     adminUrl: panelUrl(input.adminUrl),
     note: input.note.trim(),
+    downloadUrl: panelUrl(input.downloadUrl ?? ''),
+    guide: (input.guide ?? '').trim().slice(0, 5000),
     isActive: input.isActive,
     recurringExpenseId: keepCost
       ? (existing?.recurringExpenseId ?? null)
@@ -459,10 +495,22 @@ export interface GrantInput {
   level: string;
   vaultRef: string;
   note: string;
+  /** رمزِ تازه؛ خالی یعنی رمزِ قبلی بماند. */
+  secret?: string;
+  /** پاک‌کردنِ رمزِ ثبت‌شده. */
+  clearSecret?: boolean;
 }
+
+/** سقفِ رمز — برای ورودیِ بی‌حد، نه برای رمزهای واقعی. */
+const MAX_SECRET_LENGTH = 500;
 
 export async function grantAccess(actor: Actor, input: GrantInput) {
   assertCanManage(actor, 'members');
+
+  // ⚠️ رمز trim نمی‌شود: فاصله می‌تواند جزوِ رمز باشد.
+  const secret = input.secret ?? '';
+  if (secret.length > MAX_SECRET_LENGTH) throw new AccessError('secret_too_long');
+  const secretChange = secret !== '' ? 'set' : input.clearSecret ? 'clear' : null;
 
   const [service] = input.serviceId
     ? await db.select({ isActive: services.isActive }).from(services)
@@ -497,10 +545,17 @@ export async function grantAccess(actor: Actor, input: GrantInput) {
     note: input.note.trim(),
   };
 
+  /**
+   * ⚠️ رمز جدا از `values` است چون `values` عیناً در `audit_log` می‌نشیند و
+   * گزارشِ رویدادها آن را نشان می‌دهد. آنجا فقط «رمز عوض شد» ثبت می‌شود.
+   */
+  const secretColumn = secretChange === null ? {} : { secretEnc: secretChange === 'set' ? seal(secret) : '' };
+  const auditValues = secretChange === null ? values : { ...values, secretChange };
+
   if (plan.action === 'update') {
-    await db.update(serviceGrants).set({ ...values, updatedAt: new Date() })
+    await db.update(serviceGrants).set({ ...values, ...secretColumn, updatedAt: new Date() })
       .where(eq(serviceGrants.id, plan.grantId!));
-    await audit(actor, 'service_grant.update', 'service_grant', plan.grantId!, null, values);
+    await audit(actor, 'service_grant.update', 'service_grant', plan.grantId!, null, auditValues);
     return plan.grantId!;
   }
 
@@ -509,9 +564,10 @@ export async function grantAccess(actor: Actor, input: GrantInput) {
     userId: input.userId!,
     grantedBy: actor.id,
     ...values,
+    ...secretColumn,
   }).returning({ id: serviceGrants.id });
   await audit(actor, 'service_grant.create', 'service_grant', rows[0]!.id, null, {
-    ...values, serviceId: input.serviceId, userId: input.userId,
+    ...auditValues, serviceId: input.serviceId, userId: input.userId,
   });
   return rows[0]!.id;
 }
@@ -534,8 +590,9 @@ export async function revokeMany(actor: Actor, grantIds: number[]): Promise<numb
   if (open.length === 0) return 0;
 
   const now = new Date();
+  // ⚠️ با قطعِ دسترسی رمز هم پاک می‌شود — ردیف برای تاریخچه می‌ماند، رمز نه.
   await db.update(serviceGrants)
-    .set({ revokedAt: now, revokedBy: actor.id, updatedAt: now })
+    .set({ revokedAt: now, revokedBy: actor.id, updatedAt: now, secretEnc: '' })
     .where(inArray(serviceGrants.id, open.map((r) => r.id)));
 
   for (const row of open) {
@@ -600,7 +657,7 @@ export async function revokeAccess(actor: Actor, grantId: number) {
   assertRevocable(grant);
 
   await db.update(serviceGrants)
-    .set({ revokedAt: new Date(), revokedBy: actor.id, updatedAt: new Date() })
+    .set({ revokedAt: new Date(), revokedBy: actor.id, updatedAt: new Date(), secretEnc: '' })
     .where(eq(serviceGrants.id, grantId));
   await audit(actor, 'service_grant.revoke', 'service_grant', grantId, grant, null);
 }

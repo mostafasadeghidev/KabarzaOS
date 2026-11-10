@@ -51,6 +51,8 @@ export async function saveServiceAction(_prev: AccessState, formData: FormData) 
     ownerUserId: num(formData.get('ownerUserId')),
     adminUrl: String(formData.get('adminUrl') ?? ''),
     note: String(formData.get('note') ?? ''),
+    downloadUrl: String(formData.get('downloadUrl') ?? ''),
+    guide: String(formData.get('guide') ?? ''),
     /**
      * ⚠️ چک‌باکسِ تیک‌نخورده اصلاً در FormData نیست. در افزودنِ تازه هم
      * همین است، پس پیش‌فرضِ فرم تیک‌خورده می‌آید تا سرویسِ نو فعال باشد.
@@ -96,7 +98,23 @@ export async function grantAccessAction(_prev: AccessState, formData: FormData) 
     level: String(formData.get('level') ?? 'member'),
     vaultRef: String(formData.get('vaultRef') ?? ''),
     note: String(formData.get('note') ?? ''),
+    secret: String(formData.get('secret') ?? ''),
+    clearSecret: formData.get('clearSecret') !== null,
   }), 'دسترسی ثبت نشد.');
+}
+
+/**
+ * نمایشِ رمزِ یک دسترسی. ⚠️ `requireActor` «دیدن به‌جای کاربر» را رد می‌کند،
+ * پس مالک از آن حالت رمزی نمی‌بیند که به اسمِ آن کاربر ثبت شود.
+ */
+export async function revealSecretAction(grantId: number): Promise<{ secret?: string; error?: string }> {
+  try {
+    const secret = await access.revealGrantSecret(await requireActor(), grantId);
+    if (secret === null) return { error: 'رمز خوانده نشد؛ دوباره ثبتش کنید.' };
+    return { secret };
+  } catch (error) {
+    return { error: explain(error, 'رمز خوانده نشد؛ دوباره ثبتش کنید.') };
+  }
 }
 
 export async function revokeAccessAction(grantId: number) {

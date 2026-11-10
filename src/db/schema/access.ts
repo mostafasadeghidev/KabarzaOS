@@ -251,6 +251,10 @@ export const services = pgTable('services', {
   ownerUserId: fk('owner_user_id').references(() => users.id, { onDelete: 'set null' }),
   adminUrl: text('admin_url').notNull().default(''),
   note: text('note').notNull().default(''),
+  /** لینکِ دانلود یا ورود (۲.۵۸.۰) — برخلافِ `adminUrl`، دارندگانِ سرویس در پروفایل می‌بینند. */
+  downloadUrl: text('download_url').notNull().default(''),
+  /** راهنمای نصب و ورود (۲.۵۸.۰) — برای دارندگانِ سرویس. */
+  guide: text('guide').notNull().default(''),
   /**
    * هزینهٔ سرویس از ماژولِ مالی می‌آید: اشتراکِ متناظر در `recurring_expenses`.
    *
@@ -286,7 +290,7 @@ export const serviceGrants = pgTable('service_grants', {
   id: pk(),
   serviceId: fk('service_id').notNull().references(() => services.id, { onDelete: 'cascade' }),
   userId: fk('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  /** شناسهٔ حساب در آن سرویس — ایمیل، نامِ کاربری یا شمارهٔ داخلی. هرگز رمز. */
+  /** شناسهٔ حساب در آن سرویس — ایمیل، نامِ کاربری یا شمارهٔ داخلی. رمز در `secret_enc` است. */
   accountRef: text('account_ref').notNull().default(''),
   level: text('level').notNull().default('member').$type<GrantLevel>(),
   /**
@@ -294,6 +298,12 @@ export const serviceGrants = pgTable('service_grants', {
    * راز در جای خودش می‌ماند؛ این ستون صرفاً می‌گوید کجا دنبالش بگردیم.
    */
   vaultRef: text('vault_ref').notNull().default(''),
+  /**
+   * رمزِ حساب در آن سرویس (۲.۵۸.۰) — رمزگذاری‌شده با `server/ai/secret-box`.
+   * ⚠️ این ستون هرگز در `select` ِ فهرست‌ها نمی‌آید؛ تنها راهِ خواندنش
+   * `revealGrantSecret` است که گارد دارد و هر بار دیدن را ثبت می‌کند.
+   */
+  secretEnc: text('secret_enc').notNull().default(''),
   note: text('note').notNull().default(''),
   grantedAt: ts('granted_at').notNull().defaultNow(),
   grantedBy: fk('granted_by').references(() => users.id, { onDelete: 'set null' }),

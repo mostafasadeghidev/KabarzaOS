@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
-  currencies, notifications, onboardingItems, recurringExpenses, serviceGrants, services, tags, userRoles, users,
+  auditLog, currencies, notifications, onboardingItems, recurringExpenses, serviceGrants, services, tags, userRoles, users,
 } from '../schema';
 import * as access from '@/server/access/service';
 import * as settings from '@/server/settings/service';
@@ -518,5 +518,69 @@ describe('ساختنِ همان‌جا — سرویس، دسته و اشتراک
     expect(board.canCreateSubscription).toBe(true);
     expect(board.currencies.map((c) => c.code)).toContain('EUR');
     expect(board.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe('رمزِ حساب و لینکِ دانلود (۲.۵۸.۰)', () => {
+  const owner = (id: number) => actor({ id, roles: ['member'] });
+
+  it('رمز رمزگذاری‌شده می‌ماند، در دفتر و audit نمی‌آید، و فقط صاحب و مدیرِ اعضا بازش می‌کنند', async () => {
+    const id = await access.grantAccess(manager(), {
+      serviceId: voip, userId: buyer, accountRef: 'u1', level: 'member', vaultRef: '', note: '', secret: 'P@ss w0rd-راز',
+    });
+    const [row] = await db.select({ enc: serviceGrants.secretEnc }).from(serviceGrants).where(eq(serviceGrants.id, id));
+    expect(row!.enc).toMatch(/^v1\./);
+    expect(row!.enc).not.toContain('P@ss');
+
+    const board = await access.accessBoard(manager());
+    const listed = board.grants.find((g) => g.id === id)!;
+    expect(listed.hasSecret).toBe(true);
+    expect(JSON.stringify(listed)).not.toContain(row!.enc);
+
+    const logs = await db.select().from(auditLog).where(eq(auditLog.objectId, id));
+    expect(JSON.stringify(logs)).not.toContain('P@ss');
+    expect(JSON.stringify(logs)).not.toContain(row!.enc);
+
+    expect(await access.revealGrantSecret(owner(buyer), id)).toBe('P@ss w0rd-راز');
+    expect(await access.revealGrantSecret(manager(), id)).toBe('P@ss w0rd-راز');
+    await expect(access.revealGrantSecret(owner(dev), id)).rejects.toThrow(ForbiddenError);
+    await expect(access.revealGrantSecret(viewer(), id)).rejects.toThrow(ForbiddenError);
+
+    const views = await db.select().from(auditLog).where(eq(auditLog.action, 'service_grant.secret_view'));
+    expect(views.length).toBe(2);
+  });
+
+  it('ویرایش بی‌رمزِ تازه رمز را نگه می‌دارد؛ پاک‌کردن و قطعِ دسترسی پاکش می‌کنند', async () => {
+    const base = { serviceId: voip, userId: buyer, accountRef: 'u2', level: 'member', vaultRef: '', note: '' };
+    const id = await access.grantAccess(manager(), base);
+    expect(await access.revealGrantSecret(manager(), id)).toBe('P@ss w0rd-راز');
+
+    await access.grantAccess(manager(), { ...base, clearSecret: true });
+    expect(await access.revealGrantSecret(manager(), id)).toBeNull();
+
+    await access.grantAccess(manager(), { ...base, secret: 'تازه' });
+    await access.revokeAccess(manager(), id);
+    const [row] = await db.select({ enc: serviceGrants.secretEnc }).from(serviceGrants).where(eq(serviceGrants.id, id));
+    expect(row!.enc).toBe('');
+  });
+
+  it('لینکِ دانلود به پروفایل می‌رسد و javascript: پذیرفته نمی‌شود', async () => {
+    const id = await access.saveService(manager(), {
+      id: null, name: 'VPN', categoryTagId: null, ownerUserId: null, adminUrl: '', note: '', isActive: true,
+      downloadUrl: 'vpn.example.com/app', guide: 'نصب کنید',
+    });
+    await access.grantAccess(manager(), { serviceId: id, userId: dev, accountRef: 'd', level: 'member', vaultRef: '', note: '', secret: 'x' });
+    const mine = await access.myGrants(owner(dev));
+    expect(mine.find((g) => g.serviceName === 'VPN')).toMatchObject({
+      downloadUrl: 'https://vpn.example.com/app', guide: 'نصب کنید', hasSecret: true,
+    });
+    expect(JSON.stringify(mine)).not.toContain('v1.');
+
+    await access.saveService(manager(), {
+      id, name: 'VPN', categoryTagId: null, ownerUserId: null, adminUrl: '', note: '', isActive: true,
+      downloadUrl: 'javascript:alert(1)', guide: '',
+    });
+    const [svc] = await db.select({ url: services.downloadUrl }).from(services).where(eq(services.id, id));
+    expect(svc!.url).toBe('');
   });
 });
