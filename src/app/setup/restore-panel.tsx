@@ -15,6 +15,7 @@ import { formatDateTime } from '@/i18n/datetime';
 import { useT, useTimeZone } from '@/i18n/client';
 import type { RestoreManifest, RestoreStatus } from '@/server/setup/restore';
 import { PasswordInput } from '@/components/ui/password-input';
+import { clearToken, saveToken, savedToken, UploadError, uploadFile, type UploadDeps } from './restore-upload';
 
 /**
  * بازگردانی از فایلِ پشتیبان روی سرورِ تازه — جایگزینِ ترمینال برای کسی که
@@ -24,13 +25,11 @@ import { PasswordInput } from '@/components/ui/password-input';
  * راه‌اندازیِ دوبارهٔ خودکار → صفحهٔ ورود (با همان حساب‌های قبلی).
  *
  * ⚠️ تکه‌تکه، نه یک درخواست: پراکسی‌ها اغلب سقفِ حجم دارند (nginx پیش‌فرض ۱ مگابایت).
- * اگر پاسخِ 413 آمد، اندازهٔ تکه کوچک می‌شود و همان‌جا ادامه می‌یابد.
+ * قطعی، سقفِ زمانیِ پراکسی و تازه‌کردنِ صفحه همه از همان‌جا ادامه می‌یابند —
+ * ← restore-upload.ts (۲.۵۸.۲).
  */
 
 type Step = 'pick' | 'uploading' | 'checking' | 'review' | 'running' | 'restarting' | 'manual';
-
-const BIG_CHUNK = 8 * 1024 * 1024;
-const SMALL_CHUNK = 512 * 1024;
 
 const ERRORS: Record<string, string> = {
   installed: 'این سامانه دیگر خالی نیست؛ بازگردانی از اینجا ممکن نیست.',
@@ -41,6 +40,7 @@ const ERRORS: Record<string, string> = {
   size: 'فایلِ پشتیبان از سقفِ مجاز (۲۰ گیگ) بزرگ‌تر است.',
   too_new: 'این پشتیبان از نسخه‌ای تازه‌تر از این سرور است؛ اول برنامه را به‌روز کنید.',
   tool_failed: 'بازگردانی کامل نشد؛ جزئیات در گزارشِ زیر است. دیتابیس فقط وقتی جایگزین می‌شود که کامل برگردد.',
+  stalled: 'بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.',
 };
 const GENERIC = 'بارگذاری کامل نشد؛ اتصال را بررسی و دوباره امتحان کنید.';
 
@@ -73,55 +73,55 @@ export function RestorePanel({ onBack }: { onBack: () => void }) {
   const [confirmed, setConfirmed] = useState(false);
   const [log, setLog] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [waiting, setWaiting] = useState(false);
   const token = useRef('');
+  const aborted = useRef(false);
   const logEnd = useRef<HTMLDivElement>(null);
 
-  const showError = (e: unknown) => setError(e instanceof StepError ? (ERRORS[e.message] ?? GENERIC) : GENERIC);
+  const showError = (e: unknown) =>
+    setError(e instanceof StepError || e instanceof UploadError ? (ERRORS[e.message] ?? GENERIC) : GENERIC);
+
+  async function begin(f: File): Promise<string> {
+    const fresh = (await call<{ token: string }>('begin', '')).token;
+    saveToken(f, fresh);
+    return fresh;
+  }
 
   async function upload() {
     if (!file || !passphrase) return;
     setError(null);
     setStep('uploading');
     setProgress(0);
+    setWaiting(false);
+    aborted.current = false;
+    const deps: UploadDeps = {
+      fetch: (input, init) => fetch(input, init),
+      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+      now: () => Date.now(),
+      waitOnline: () => navigator.onLine
+        ? Promise.resolve()
+        : new Promise((resolve) => window.addEventListener('online', () => resolve(), { once: true })),
+      aborted: () => aborted.current,
+    };
+    const hooks = {
+      onProgress: (sent: number) => setProgress(Math.round((sent / file.size) * 100)),
+      onWaiting: setWaiting,
+    };
     try {
-      token.current = (await call<{ token: string }>('begin', '')).token;
-      let chunk = BIG_CHUNK;
-      let offset = 0;
-      let retries = 0;
-      while (offset < file.size) {
-        let res: Response;
-        try {
-          res = await fetch('/api/setup/restore?op=chunk', {
-            method: 'POST',
-            headers: {
-              'x-restore-token': token.current,
-              'x-offset': String(offset),
-              'content-type': 'application/octet-stream',
-            },
-            body: file.slice(offset, offset + chunk),
-          });
-        } catch (networkError) {
-          // قطعیِ کوتاه — همان تکه دوباره؛ سرور جای درست را نگه داشته است.
-          if (++retries > 5) throw networkError;
-          await new Promise((r) => setTimeout(r, 1500 * retries));
-          continue;
-        }
-        if (res.status === 413 && chunk > SMALL_CHUNK) {
-          chunk = SMALL_CHUNK;
-          continue;
-        }
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          if (body.error === 'offset' && typeof body.expected === 'number') {
-            offset = body.expected;
-            continue;
-          }
-          throw new StepError(String(body.error ?? 'upload'));
-        }
-        retries = 0;
-        offset = body.size;
-        setProgress(Math.round((offset / file.size) * 100));
+      // ⚠️ ژتونِ قبلیِ همین فایل اول: بارگذاریِ نیمه‌کاره (قطعی، تازه‌کردنِ صفحه)
+      // از همان‌جا ادامه می‌یابد، نه اینکه ۱۰ دقیقه پشتِ قفلِ خودش بماند.
+      token.current = savedToken(file) ?? await begin(file);
+      try {
+        await uploadFile(file, token.current, deps, hooks);
+      } catch (e) {
+        if (!(e instanceof UploadError && e.message === 'token')) throw e;
+        // سرور ژتون را نمی‌شناسد (کهنه، یا بیش از ۱۰ دقیقه قطعی) — یک بار از نو.
+        clearToken();
+        setProgress(0);
+        token.current = await begin(file);
+        await uploadFile(file, token.current, deps, hooks);
       }
+      setWaiting(false);
 
       setStep('checking');
       const result = await call<{ manifest: RestoreManifest }>('inspect', token.current, json({ passphrase }));
@@ -129,6 +129,8 @@ export function RestorePanel({ onBack }: { onBack: () => void }) {
       setConfirmed(false);
       setStep('review');
     } catch (e) {
+      if (aborted.current) return;
+      setWaiting(false);
       showError(e);
       setStep('pick');
     }
@@ -146,6 +148,8 @@ export function RestorePanel({ onBack }: { onBack: () => void }) {
   }
 
   async function cancel() {
+    aborted.current = true;
+    clearToken();
     if (token.current) await call('cancel', token.current).catch(() => undefined);
     token.current = '';
     onBack();
@@ -162,6 +166,7 @@ export function RestorePanel({ onBack }: { onBack: () => void }) {
       const status = (await res.json()) as RestoreStatus;
       setLog(status.log);
       if (status.phase === 'done') {
+        clearToken();
         setPassphrase('');
         setStep(status.restarts ? 'restarting' : 'manual');
       } else if (status.phase === 'failed') {
@@ -229,7 +234,11 @@ export function RestorePanel({ onBack }: { onBack: () => void }) {
               {step === 'uploading' && (
                 <Field>
                   <Progress value={progress} />
-                  <FieldDescription>{t('در حالِ بارگذاری… {n}٪', { n: progress })}</FieldDescription>
+                  <FieldDescription>
+                    {waiting
+                      ? t('اتصال قطع شد؛ دوباره تلاش می‌کنیم… {n}٪', { n: progress })
+                      : t('در حالِ بارگذاری… {n}٪', { n: progress })}
+                  </FieldDescription>
                 </Field>
               )}
             </>
@@ -312,7 +321,7 @@ export function RestorePanel({ onBack }: { onBack: () => void }) {
               <Button onClick={() => window.location.assign('/login')}>{t('رفتن به صفحهٔ ورود')}</Button>
             )}
             {step !== 'running' && step !== 'restarting' && step !== 'manual' && (
-              <Button variant="ghost" onClick={cancel} disabled={step === 'uploading' || step === 'checking'}>
+              <Button variant="ghost" onClick={cancel} disabled={step === 'checking'}>
                 {t('بازگشت به نصبِ تازه')}
               </Button>
             )}

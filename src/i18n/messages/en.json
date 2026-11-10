@@ -4847,5 +4847,7 @@
   "دارندگانِ این سرویس در پروفایلشان می‌بینند.": "People with this service see it in their profile.",
   "راهنمای نصب و ورود": "Setup and sign-in guide",
   "لینکِ دانلود": "Download link",
-  "دیدنِ رمزِ دسترسی": "Viewed an access password"
+  "دیدنِ رمزِ دسترسی": "Viewed an access password",
+  "اتصال قطع شد؛ دوباره تلاش می‌کنیم… {n}٪": "Connection lost; retrying… {n}%",
+  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "The upload has not moved for a while. Check your connection and press “Upload and check” again; it continues from where it stopped."
 }

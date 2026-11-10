@@ -4847,5 +4847,7 @@
   "دارندگانِ این سرویس در پروفایلشان می‌بینند.": "Personen mit diesem Dienst sehen es in ihrem Profil.",
   "راهنمای نصب و ورود": "Installations- und Anmeldeanleitung",
   "لینکِ دانلود": "Download-Link",
-  "دیدنِ رمزِ دسترسی": "Zugangspasswort angesehen"
+  "دیدنِ رمزِ دسترسی": "Zugangspasswort angesehen",
+  "اتصال قطع شد؛ دوباره تلاش می‌کنیم… {n}٪": "Verbindung unterbrochen; neuer Versuch… {n}%",
+  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "Der Upload kommt seit einer Weile nicht voran. Prüfen Sie die Verbindung und klicken Sie erneut auf „Hochladen und prüfen“; er wird an derselben Stelle fortgesetzt."
 }
