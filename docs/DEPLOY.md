@@ -76,7 +76,13 @@ the port closed to everything but that proxy.
 ## Option 2 — Coolify
 
 1. **+ New → Application → Docker Compose**, point it at this repository.
-   `docker-compose.yml` is picked up by default.
+   Set **Docker Compose Location** to `/docker-compose.coolify.yml`.
+   That file is `docker-compose.yml` without `build`, so the server always
+   pulls the ready image from ghcr.io and never builds. Building Next.js
+   needs several GB of memory and can take down other services on a small
+   server. **Redeploy** pulls the newest image; set
+   `KABARZA_IMAGE=ghcr.io/mostafasadeghidev/kabarzaos:<version>` to pin a
+   version or roll back.
 2. Under **Environment**, set `APP_URL=https://your-domain` — that is all.
 3. Assign the domain; TLS is automatic.
 4. Open it → setup wizard.
