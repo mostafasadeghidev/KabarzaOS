@@ -4849,5 +4849,6 @@
   "لینکِ دانلود": "Download-Link",
   "دیدنِ رمزِ دسترسی": "Zugangspasswort angesehen",
   "اتصال قطع شد؛ دوباره تلاش می‌کنیم… {n}٪": "Verbindung unterbrochen; neuer Versuch… {n}%",
-  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "Der Upload kommt seit einer Weile nicht voran. Prüfen Sie die Verbindung und klicken Sie erneut auf „Hochladen und prüfen“; er wird an derselben Stelle fortgesetzt."
+  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "Der Upload kommt seit einer Weile nicht voran. Prüfen Sie die Verbindung und klicken Sie erneut auf „Hochladen und prüfen“; er wird an derselben Stelle fortgesetzt.",
+  "این شخص همین حالا به این سرویس دسترسیِ باز دارد؛ همان ردیف را ویرایش کنید.": "Diese Person hat bereits einen offenen Zugang zu diesem Dienst; bearbeiten Sie stattdessen diese Zeile."
 }

@@ -489,11 +489,21 @@ export async function deleteService(actor: Actor, id: number): Promise<ServiceRe
  * ------------------------------------------------------------------ */
 
 export interface GrantInput {
+  /**
+   * ویرایشِ همین ردیف (۲.۵۸.۳). ⚠️ بی‌آن، ویرایشی که سرویس یا شخص را عوض
+   * می‌کرد ردیفِ تازه می‌ساخت و ردیفِ اشتباه باز می‌ماند — چون ردیف فقط با
+   * جفتِ (سرویس، شخص) پیدا می‌شد.
+   */
+  grantId?: number | null;
   serviceId: number | null;
   userId: number | null;
   accountRef: string;
   level: string;
-  vaultRef: string;
+  /**
+   * نشانیِ رمز در password manager. ⚠️ از ۲.۵۸.۳ در فرم نیست (خودِ رمز ذخیره
+   * می‌شود)؛ `undefined` یعنی «دست نزن» تا مقدارِ قدیمیِ ردیف‌ها پاک نشود.
+   */
+  vaultRef?: string;
   note: string;
   /** رمزِ تازه؛ خالی یعنی رمزِ قبلی بماند. */
   secret?: string;
@@ -529,19 +539,32 @@ export async function grantAccess(actor: Actor, input: GrantInput) {
       ))
     : [];
 
+  /**
+   * ⚠️ ویرایشِ یک ردیفِ مشخص: همان ردیف عوض می‌شود، حتی اگر سرویس یا شخص
+   * عوض شده باشد. اگر جفتِ تازه از پیش ردیفِ بازِ دیگری دارد، خطا — دو ردیفِ
+   * باز برای یک جفت را شاخصِ یکتا هم رد می‌کرد، با پیامی مبهم.
+   */
+  if (input.grantId) {
+    const [own] = await db.select({ revokedAt: serviceGrants.revokedAt }).from(serviceGrants)
+      .where(eq(serviceGrants.id, input.grantId));
+    if (!own) throw new AccessError('not_found');
+    if (own.revokedAt) throw new AccessError('already_revoked');
+    if (existing && existing.id !== input.grantId) throw new AccessError('duplicate_grant');
+  }
+
   const plan = planGrant({
     serviceId: input.serviceId,
     userId: input.userId,
     serviceActive: Boolean(service?.isActive),
     // کاربرِ ناموجود مثلِ عضوِ سابق رد می‌شود، نه با خطای مبهم.
     memberState: (person?.memberState ?? 'locked') as MemberState,
-    openGrantId: existing?.id ?? null,
+    openGrantId: input.grantId ?? existing?.id ?? null,
   });
 
   const values = {
     accountRef: input.accountRef.trim(),
     level: normalizeLevel(input.level) as GrantLevel,
-    vaultRef: input.vaultRef.trim(),
+    ...(input.vaultRef === undefined ? {} : { vaultRef: input.vaultRef.trim() }),
     note: input.note.trim(),
   };
 
@@ -553,9 +576,11 @@ export async function grantAccess(actor: Actor, input: GrantInput) {
   const auditValues = secretChange === null ? values : { ...values, secretChange };
 
   if (plan.action === 'update') {
-    await db.update(serviceGrants).set({ ...values, ...secretColumn, updatedAt: new Date() })
+    // سرویس و شخص هم نوشته می‌شوند: در ویرایشِ ردیف ممکن است عوض شده باشند.
+    const pair = { serviceId: input.serviceId!, userId: input.userId! };
+    await db.update(serviceGrants).set({ ...values, ...pair, ...secretColumn, updatedAt: new Date() })
       .where(eq(serviceGrants.id, plan.grantId!));
-    await audit(actor, 'service_grant.update', 'service_grant', plan.grantId!, null, auditValues);
+    await audit(actor, 'service_grant.update', 'service_grant', plan.grantId!, null, { ...auditValues, ...pair });
     return plan.grantId!;
   }
 

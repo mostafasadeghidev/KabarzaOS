@@ -4849,5 +4849,6 @@
   "لینکِ دانلود": "Link de download",
   "دیدنِ رمزِ دسترسی": "Visualização de senha de acesso",
   "اتصال قطع شد؛ دوباره تلاش می‌کنیم… {n}٪": "Conexão perdida; tentando novamente… {n}%",
-  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "O envio não avança há algum tempo. Verifique a conexão e clique novamente em “Enviar e verificar”; ele continua de onde parou."
+  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "O envio não avança há algum tempo. Verifique a conexão e clique novamente em “Enviar e verificar”; ele continua de onde parou.",
+  "این شخص همین حالا به این سرویس دسترسیِ باز دارد؛ همان ردیف را ویرایش کنید.": "Esta pessoa já tem acesso aberto a este serviço; edite essa linha."
 }

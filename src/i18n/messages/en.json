@@ -4849,5 +4849,6 @@
   "لینکِ دانلود": "Download link",
   "دیدنِ رمزِ دسترسی": "Viewed an access password",
   "اتصال قطع شد؛ دوباره تلاش می‌کنیم… {n}٪": "Connection lost; retrying… {n}%",
-  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "The upload has not moved for a while. Check your connection and press “Upload and check” again; it continues from where it stopped."
+  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "The upload has not moved for a while. Check your connection and press “Upload and check” again; it continues from where it stopped.",
+  "این شخص همین حالا به این سرویس دسترسیِ باز دارد؛ همان ردیف را ویرایش کنید.": "This person already has open access to this service; edit that row instead."
 }

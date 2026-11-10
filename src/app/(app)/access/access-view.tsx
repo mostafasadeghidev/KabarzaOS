@@ -487,6 +487,8 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
         editing={editing}
         services={data.services}
         people={data.people}
+        defaultPerson={person}
+        defaultService={service}
       />
 
       <ChecklistDialog
@@ -626,13 +628,20 @@ function ChecklistDialogBody({
  * هیچ‌وقت خطای «تکراری» نمی‌بیند.
  */
 function GrantDialog({
-  open, onOpenChange, editing, services, people,
+  open, onOpenChange, editing, services, people, defaultPerson, defaultService,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editing: GrantRow | null;
   services: ServiceRow[];
   people: Array<{ id: number; name: string; memberState: MemberState }>;
+  /**
+   * فیلترِ فعلیِ صفحه (۲.۵۸.۳). ⚠️ صفحه‌ای که از منوی یک عضو باز شده فقط او را
+   * نشان می‌دهد؛ پیش از این فرمِ «ثبتِ دسترسی» بی‌صدا **اولین نفرِ فهرست** را
+   * برمی‌داشت، دسترسی به نامِ کسِ دیگری ذخیره می‌شد و در فهرست دیده نمی‌شد.
+   */
+  defaultPerson: string;
+  defaultService: string;
 }) {
   const tr = useT();
   const [state, formAction] = useActionState<AccessState, FormData>(grantAccessAction, {});
@@ -655,16 +664,24 @@ function GrantDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form key={editing?.id ?? 'new'} action={formAction} className="grid gap-3 sm:grid-cols-2">
+        {/* ⚠️ کلید با فیلترها هم عوض می‌شود تا پیش‌فرضِ تازه واقعاً به فرم برسد. */}
+        <form
+          key={editing?.id ?? `new-${defaultPerson}-${defaultService}`}
+          action={formAction}
+          className="grid gap-3 sm:grid-cols-2"
+        >
+          {editing && <input type="hidden" name="grantId" value={editing.id} />}
           <Field>
             <FieldLabel htmlFor="g-service">{tr("سرویس")}</FieldLabel>
             <SearchableSelect
               id="g-service"
               name="serviceId"
-              defaultValue={editing ? String(editing.serviceId) : ''}
+              defaultValue={editing ? String(editing.serviceId) : defaultService}
               containerClassName="w-full"
               required
             >
+              {/* ⚠️ گزینهٔ خالی: بی‌آن انتخابگر اولین سرویس را بی‌صدا برمی‌داشت. */}
+              <NativeSelectOption value="">{tr("— انتخاب —")}</NativeSelectOption>
               {activeServices.map((s) => (
                 <NativeSelectOption key={s.id} value={String(s.id)}>{s.name}</NativeSelectOption>
               ))}
@@ -676,11 +693,12 @@ function GrantDialog({
             <SearchableSelect
               id="g-user"
               name="userId"
-              defaultValue={editing ? String(editing.userId) : ''}
+              defaultValue={editing ? String(editing.userId) : defaultPerson}
               containerClassName="w-full"
               required
               renderMedia={avatarFor(activePeople)}
             >
+              <NativeSelectOption value="">{tr("— انتخاب —")}</NativeSelectOption>
               {activePeople.map((p) => (
                 <NativeSelectOption key={p.id} value={String(p.id)}>{p.name}</NativeSelectOption>
               ))}
@@ -723,16 +741,6 @@ function GrantDialog({
                 {tr("پاک کردنِ رمزِ ثبت‌شده")}
               </label>
             )}
-          </Field>
-
-          <Field className="sm:col-span-2">
-            <FieldLabel htmlFor="g-vault">{tr("ارجاعِ محفظهٔ رمز")}</FieldLabel>
-            <Input
-              id="g-vault"
-              name="vaultRef"
-              defaultValue={editing?.vaultRef ?? ''}
-              placeholder={tr("نامِ آیتم در password manager — نه خودِ رمز")}
-            />
           </Field>
 
           <Field className="sm:col-span-2">

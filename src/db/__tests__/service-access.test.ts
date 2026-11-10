@@ -584,3 +584,51 @@ describe('رمزِ حساب و لینکِ دانلود (۲.۵۸.۰)', () => {
     expect(svc!.url).toBe('');
   });
 });
+
+describe('ویرایشِ یک ردیفِ مشخص (۲.۵۸.۳)', () => {
+  const svc = (name: string) => access.saveService(manager(), {
+    id: null, name, categoryTagId: null, ownerUserId: null, adminUrl: '', note: '', isActive: true,
+  });
+
+  it('⚠️ عوض‌کردنِ سرویس همان ردیف را عوض می‌کند، نه ردیفِ تازه', async () => {
+    const [newbie] = await db.insert(users).values({ email: 'edit@t', name: 'ویرایش' }).returning({ id: users.id });
+    const mail = await svc('ایمیل-ویرایش');
+    const vpn = await svc('VPN-ویرایش');
+    const id = await access.grantAccess(manager(), {
+      serviceId: mail, userId: newbie!.id, accountRef: 'a', level: 'member', vaultRef: 'قدیمی', note: '', secret: 'رمز',
+    });
+
+    const same = await access.grantAccess(manager(), {
+      grantId: id, serviceId: vpn, userId: newbie!.id, accountRef: 'b', level: 'member', note: '',
+    });
+    expect(same).toBe(id);
+
+    const rows = await db.select().from(serviceGrants).where(eq(serviceGrants.userId, newbie!.id));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ serviceId: vpn, accountRef: 'b', vaultRef: 'قدیمی' });
+    // رمز با ویرایش نمی‌رود.
+    expect(await access.revealGrantSecret(manager(), id)).toBe('رمز');
+  });
+
+  it('⚠️ اگر جفتِ تازه از پیش ردیفِ باز دارد، ویرایش رد می‌شود', async () => {
+    const [p] = await db.insert(users).values({ email: 'dup@t', name: 'تکراری' }).returning({ id: users.id });
+    const a = await svc('سرویس-الف');
+    const b = await svc('سرویس-ب');
+    const first = await access.grantAccess(manager(), { serviceId: a, userId: p!.id, accountRef: '', level: 'member', note: '' });
+    await access.grantAccess(manager(), { serviceId: b, userId: p!.id, accountRef: '', level: 'member', note: '' });
+
+    await expect(access.grantAccess(manager(), {
+      grantId: first, serviceId: b, userId: p!.id, accountRef: '', level: 'member', note: '',
+    })).rejects.toMatchObject({ code: 'duplicate_grant' });
+  });
+
+  it('ردیفِ قطع‌شده ویرایش نمی‌شود', async () => {
+    const [p] = await db.insert(users).values({ email: 'closed@t', name: 'بسته' }).returning({ id: users.id });
+    const a = await svc('سرویس-بسته');
+    const id = await access.grantAccess(manager(), { serviceId: a, userId: p!.id, accountRef: '', level: 'member', note: '' });
+    await access.revokeAccess(manager(), id);
+    await expect(access.grantAccess(manager(), {
+      grantId: id, serviceId: a, userId: p!.id, accountRef: 'x', level: 'member', note: '',
+    })).rejects.toMatchObject({ code: 'already_revoked' });
+  });
+});
