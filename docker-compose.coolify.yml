@@ -1,0 +1,169 @@
+# استقرار روی Coolify (یا هر پنلِ دیگری) — فقط ایمیجِ آماده، هرگز ساختن روی سرور.
+#
+# ⚠️ این فایل همان docker-compose.yml است بی‌خطِ `build: .` و با `pull_policy: always`.
+# روی سرورِ کم‌حافظه (۴ گیگ، کنارِ سرویس‌های دیگر) ساختنِ Next.js حافظه را تمام
+# می‌کند و سرویس‌های همسایه را از کار می‌اندازد. پنل‌ها وقتی `build` ببینند ممکن
+# است بسازند؛ اینجا راهی جز کشیدنِ ایمیج از ghcr.io ندارند.
+#
+# در Coolify: Docker Compose Location = /docker-compose.coolify.yml
+# به‌روزرسانی = Redeploy (ایمیجِ تازه را می‌کشد). برای نسخهٔ ثابت یا برگشت:
+#   KABARZA_IMAGE=ghcr.io/mostafasadeghidev/kabarzaos:2.58.0
+#
+# ⚠️ هر تغییری در docker-compose.yml باید اینجا هم بیاید؛ تستِ
+# src/app/coolify-compose.test.ts نابرابریِ دو فایل را می‌گیرد.
+#
+# ⚠️ راز ننویس: رازها را کانتینر خودش در والیومِ app_data می‌سازد، و هر مقدارِ
+# دستی فقط در بخشِ Environment ِ پنل وارد می‌شود، نه در این فایل یا گیت.
+
+services:
+  app:
+    # ⚠️ `image` و `build` هر دو: `pull` ایمیجِ آماده را می‌گیرد و `--build` همان را
+    # محلی می‌سازد و با همین نام برچسب می‌زند. برای یک نسخهٔ مشخص (برگشت):
+    # KABARZA_IMAGE=ghcr.io/mostafasadeghidev/kabarzaos:2.40.0
+    image: ${KABARZA_IMAGE:-ghcr.io/mostafasadeghidev/kabarzaos:latest}
+    # ⚠️ همیشه کشیدن: با تگِ latest، Redeploy بی این ایمیجِ کهنه را نگه می‌داشت.
+    pull_policy: always
+    restart: unless-stopped
+    # ⚠️ نامِ یکتا روی شبکه. نامِ سرویس (`app`, `db`) روی **هر** شبکه‌ای که
+    # کانتینر به آن وصل است DNS می‌شود. ابزارهای استقرار اپ را به شبکهٔ
+    # مشترکِ پراکسی هم وصل می‌کنند، و آنجا `db` ِ پروژهٔ دیگری زودتر پاسخ
+    # می‌دهد — اپ بی‌صدا به دیتابیسِ اشتباه وصل می‌شود.
+    networks:
+      default:
+        aliases: [kabarzaos-app]
+    env_file:
+      # ⚠️ هر دو فایل: `.env.example` می‌گوید «در .env کپی کن» و install.sh
+      # `.env.prod` می‌سازد (و .env را به آن پیوند می‌دهد). پیش از این اپ فقط
+      # `.env.prod` را می‌خواند؛ نصبِ دستی با `.env` یعنی APP_URL، منطقهٔ
+      # زمانی و CRON_SECRET هیچ‌کدام به اپ نمی‌رسیدند (ولی CRON_SECRET از راهِ
+      # جای‌گذاری به کانتینرِ cron می‌رسید → هر تیک 403). دومی بر اولی مقدم است.
+      # required:false تا نبودنِ هر کدام — یا هر دو — خطا ندهد.
+      - path: .env
+        required: false
+      - path: .env.prod
+        required: false
+    environment:
+      # ⚠️ نامِ میزبان‌ها داخلِ شبکهٔ compose اند، نه localhost. اینها عمداً
+      # اینجا ست می‌شوند تا .env.prod ِ کاربر نتواند اشتباهشان کند.
+      DATABASE_URL: postgres://kabarza:${DB_PASSWORD:-kabarza-internal}@kabarzaos-db:5432/kabarza
+      # انبارِ فایل: خالی = MinIO ِ داخلی. برای انبارِ بیرونی (S3، R2، آروان…)
+      # نشانی و کلیدهایش را در .env بنویس — ← «تعویضِ انبار» در docs/DEPLOY.md.
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://kabarzaos-storage:9000}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-kabarza}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-kabarza-internal-storage}
+      # ⚠️ از **همان** منبعِ کانتینرِ cron (جای‌گذاریِ compose)، تا دو طرف هرگز
+      # دو رازِ متفاوت نداشته باشند. خالی = اپ خودش می‌سازد و cron از فایل می‌خواند.
+      CRON_SECRET: ${CRON_SECRET:-}
+    ports:
+      # ⚠️ پیش‌فرض روی همهٔ رابط‌ها منتشر می‌شود، نه فقط 127.0.0.1: ابزارهای
+      # استقرار پراکسی‌شان را در کانتینرِ دیگری اجرا می‌کنند و لوکال‌هاستِ
+      # میزبان را نمی‌بینند — آن‌وقت اپ سالم است ولی «مرده» به‌نظر می‌رسد.
+      # برای بستنش پشتِ پراکسیِ خودت: BIND=127.0.0.1
+      #
+      # پورتِ میزبان با APP_PORT عوض می‌شود (اگر ۳۰۰۰ اشغال باشد).
+      - '${BIND:-0.0.0.0}:${APP_PORT:-3000}:3000'
+    volumes:
+      # رازهای ساخته‌شده — بدونِ این، هر بازسازیِ کانتینر همه را بیرون می‌اندازد.
+      - app_data:/app/data
+      # فایل‌های پشتیبانِ روی خودِ سرور — جدا از رازها، تا پشتیبان‌ها داخلِ پشتیبانِ بعدی نروند.
+      - backups:/app/backups
+    depends_on:
+      db: { condition: service_healthy }
+      storage: { condition: service_started }
+    healthcheck:
+      # ⚠️ با node، نه curl: ایمیجِ node:22-slim کرل ندارد.
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    networks:
+      default:
+        aliases: [kabarzaos-db]
+    environment:
+      POSTGRES_USER: kabarza
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-kabarza-internal}
+      POSTGRES_DB: kabarza
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    # ⚠️ هیچ ports ای: دیتابیس فقط از شبکهٔ داخلیِ compose دیده می‌شود، و
+    # به همین دلیل پیش‌فرضِ ثابتِ رمز اینجا بی‌خطر است. اگر روزی پورت را
+    # بیرون دادی، حتماً DB_PASSWORD را ست کن.
+    # ⚠️ عوض‌کردنِ DB_PASSWORD بعد از اولین بوت کار نمی‌کند: Postgres رمز را
+    # موقعِ initdb می‌گیرد و بعد نگه می‌دارد.
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U kabarza']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  storage:
+    # ⚠️ Silo (انشعابِ نگه‌داری‌شدهٔ MinIO از PGSTY)، نه `minio/minio`: MinIO
+    # نسخهٔ رایگان را رها کرد و در ۱۱ سپتامبر ۲۰۲۶ ایمیجش را از Docker Hub پاک
+    # کرد — نصبِ تازه با آن در مرحلهٔ pull می‌ایستاد. Silo همان API، همان
+    # متغیرهای MINIO_* و **همان قالبِ داده روی دیسک** را دارد؛ دادهٔ MinIO ِ
+    # قبلی بی‌جابه‌جایی خوانده می‌شود. دستورِ `server …` را اسکریپتِ شروعش
+    # خودش به `silo server …` برمی‌گرداند.
+    # ⚠️ نسخه قفل است، نه `latest`: ارتقای انبارِ فایل باید آگاهانه باشد.
+    image: pgsty/silo:RELEASE.2026-09-16T00-00-00Z
+    restart: unless-stopped
+    networks:
+      default:
+        aliases: [kabarzaos-storage]
+    command: server /data --console-address ':9001'
+    environment:
+      # ⚠️ رازِ خودِ MinIO جدا از کلیدهای اپ قابلِ تنظیم است: وقتی اپ را به انبارِ
+      # دیگری می‌بری، S3_* عوض می‌شوند و بدونِ این، MinIO ِ قدیمی هم با کلیدِ تازه
+      # بالا می‌آمد — درست وقتی که باید فایل‌ها را از آن کپی کرد. خالی = همان S3_*،
+      # پس نصب‌های فعلی هیچ رازی عوض نمی‌کنند.
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-${S3_ACCESS_KEY:-kabarza}}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-${S3_SECRET_KEY:-kabarza-internal-storage}}
+    volumes:
+      - storage_data:/data
+    # ⚠️ عمداً هیچ ports ای: باکت را ensureBucket() خودش می‌سازد، پس کنسولِ
+    # مدیریت هرگز لازم نمی‌شود. نبودنش هم سطحِ حمله را کم می‌کند و هم جلوی
+    # تصادمِ پورتِ ۹۰۰۱ با سرویس‌های دیگرِ سرور را می‌گیرد. اگر روزی
+    # خواستیش، موقت بالا بیاورش:
+    #   docker compose run --rm -p 127.0.0.1:9001:9001 storage
+
+  cron:
+    # زمان‌بند: بدونِ این، یادآور، اعلانِ جلسه، هشدارِ تایمرِ رها، گزارشِ
+    # روزانه و پاک‌سازیِ خودکار هیچ‌کدام اجرا نمی‌شوند.
+    image: curlimages/curl:latest
+    restart: unless-stopped
+    environment:
+      # خالی هم اشکالی ندارد: آن‌وقت راز از فایلِ ساختهٔ اپ خوانده می‌شود.
+      # ⚠️ کوتاه‌تر از ۳۲ نویسه هم مثلِ خالی: docker-entrypoint.sh ِ اپ رازِ کوتاه را
+      # نادیده می‌گیرد و از فایل می‌خواند، پس cron هم باید همین کار را بکند.
+      CRON_SECRET: ${CRON_SECRET:-}
+    volumes:
+      # ⚠️ همان والیومِ اپ، فقط‌خواندنی: باید **همان** رازی را بفرستد که اپ
+      # انتظار دارد، و اپ آن را خودش ساخته.
+      - app_data:/secrets:ro
+    # ⚠️ همان uid ِ اپ (کاربرِ node = 1000): فایلِ راز مجوزِ 600 دارد، پس
+    # خواننده باید مالکش باشد. این‌طور هیچ کانتینری root نیست و مجوزِ فایل
+    # هم شل نمی‌شود.
+    user: "1000:1000"
+    # ⚠️ $$ یعنی «دلارِ واقعی برای شل»، نه جای‌گذاریِ compose.
+    command: >
+      sh -c 'while true; do
+        S="$$CRON_SECRET";
+        [ "$${#S}" -ge 32 ] || S=$$(cat /secrets/cron_secret 2>/dev/null || true);
+        [ -n "$$S" ] && curl -fsS -m 30 -H "x-cron-secret: $$S" http://kabarzaos-app:3000/api/cron/tick >/dev/null || true;
+        sleep 300;
+      done'
+    # ⚠️ service_healthy نه service_started: با started، اولین تیک به اپِ
+    # هنوز بالا نیامده می‌خورد، شکست می‌خورد و ۵ دقیقه می‌خوابد — یعنی
+    # پنجرهٔ مردهٔ بی‌دلیل در هر راه‌اندازی.
+    depends_on:
+      app: { condition: service_healthy }
+
+volumes:
+  db_data:
+  storage_data:
+  app_data:
+  backups:

@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.58.1]
+
+### Added
+
+- **A Coolify deploy file that never builds on the server.** `docker-compose.coolify.yml` is the regular compose file without the build step, so Coolify always pulls the ready image. Building on a small server could run it out of memory and stop the other services on it. A test keeps the two files in step.
+
 ## [2.58.0]
 
 ### Added
