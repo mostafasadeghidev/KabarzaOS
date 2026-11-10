@@ -10,7 +10,7 @@
 #   KABARZA_IMAGE=ghcr.io/mostafasadeghidev/kabarzaos:2.58.0
 #
 # ⚠️ هر تغییری در docker-compose.yml باید اینجا هم بیاید؛ تستِ
-# src/app/coolify-compose.test.ts نابرابریِ دو فایل را می‌گیرد.
+# src/app/coolify-compose.test.ts نابرابریِ دو فایل را می‌گیرد (جز شبکهٔ ایمیل).
 #
 # ⚠️ راز ننویس: رازها را کانتینر خودش در والیومِ app_data می‌سازد، و هر مقدارِ
 # دستی فقط در بخشِ Environment ِ پنل وارد می‌شود، نه در این فایل یا گیت.
@@ -31,6 +31,10 @@ services:
     networks:
       default:
         aliases: [kabarzaos-app]
+      # ⚠️ ایمیلِ شرکتی (۲.۵۹.۱): شبکهٔ Docker ِ سرورِ Stalwart روی همین ماشین، تا
+      # برنامه با `STALWART_URL=http://stalwart:8080` مستقیم وصل شود. از راهِ نشانیِ
+      # عمومی، Stalwart نشانیِ دروازهٔ Docker را می‌دید و کلیدِ محدود به IP رد می‌شد.
+      mail: {}
     env_file:
       # ⚠️ هر دو فایل: `.env.example` می‌گوید «در .env کپی کن» و install.sh
       # `.env.prod` می‌سازد (و .env را به آن پیوند می‌دهد). پیش از این اپ فقط
@@ -161,6 +165,14 @@ services:
     # پنجرهٔ مردهٔ بی‌دلیل در هر راه‌اندازی.
     depends_on:
       app: { condition: service_healthy }
+
+networks:
+  # نامِ شبکهٔ Stalwart در Coolify با STALWART_NETWORK. خالی = شبکهٔ `coolify` که
+  # روی هر سرورِ Coolify هست و پراکسی هم رویش است؛ پس بی‌ایمیل هیچ چیزی عوض نمی‌شود
+  # جز اینکه برنامه روی همان شبکهٔ پراکسی هم هست (نام‌های داخلی یکتا هستند).
+  mail:
+    external: true
+    name: ${STALWART_NETWORK:-coolify}
 
 volumes:
   db_data:

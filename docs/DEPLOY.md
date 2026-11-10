@@ -245,19 +245,13 @@ JMAP API with a **restricted API key**, never the admin password.
    Coolify; never commit them.
 3. Settings → Company email: set the domain, then **Test connection**.
 
-To join Stalwart's network on the same server, add it to the `app`
-service as an external network (the name is the Stalwart resource's
-network in Coolify):
-
-```yaml
-services:
-  app:
-    networks: [default, stalwart]
-networks:
-  stalwart:
-    external: true
-    name: <stalwart-network>
-```
+To join Stalwart's network on the same server with Coolify, set
+`STALWART_NETWORK` to the name of Stalwart's Docker network (in Coolify,
+the Stalwart resource's ID) and redeploy. `docker-compose.coolify.yml`
+attaches the app to that network; left empty, it attaches to the
+`coolify` network that every Coolify server has, so nothing changes.
+Over the public address, Stalwart sees the Docker gateway instead of the
+app, so a key limited to the network's subnet is refused.
 
 Every URL is built from `STALWART_URL`, so switching between the two
 setups only changes that variable.
