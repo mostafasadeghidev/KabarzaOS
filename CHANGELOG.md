@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.58.3]
+
+### Fixed
+
+- **Adding access from a member's page saves it for that member.** Opening Access from a member's menu shows only that person, but the add form silently picked the first person in the list, so the new access was saved for someone else and never appeared. The form now starts with the person (and service) of the current filter, and with no filter it asks you to choose instead of picking one.
+- **Editing an access changes that row instead of adding a new one.** Changing the service or person while editing used to create a second row and leave the old one open. The same row is now updated and keeps its password. If the person already has open access to the new service, you are told to edit that row instead.
+
+### Removed
+
+- **The "password vault reference" field in the access form.** The password itself is stored now, so the field is no longer needed. Values saved earlier are kept.
+
 ## [2.58.2]
 
 ### Fixed

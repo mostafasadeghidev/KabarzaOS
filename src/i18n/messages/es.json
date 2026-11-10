@@ -4849,5 +4849,6 @@
   "لینکِ دانلود": "Enlace de descarga",
   "دیدنِ رمزِ دسترسی": "Consulta de contraseña de acceso",
   "اتصال قطع شد؛ دوباره تلاش می‌کنیم… {n}٪": "Conexión perdida; reintentando… {n}%",
-  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "La subida lleva un rato sin avanzar. Revise la conexión y pulse de nuevo «Subir y comprobar»; continuará desde donde se detuvo."
+  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "La subida lleva un rato sin avanzar. Revise la conexión y pulse de nuevo «Subir y comprobar»; continuará desde donde se detuvo.",
+  "این شخص همین حالا به این سرویس دسترسیِ باز دارد؛ همان ردیف را ویرایش کنید.": "Esta persona ya tiene acceso abierto a este servicio; edite esa fila."
 }

@@ -37,7 +37,8 @@ export class AccessError extends Error {
       | 'amount_invalid'
       | 'currency_required'
       | 'date_invalid'
-      | 'has_history',
+      | 'has_history'
+      | 'duplicate_grant',
   ) {
     super(`access rule violated: ${code}`);
     this.name = 'AccessError';
@@ -58,6 +59,7 @@ export function accessMessage(code: AccessError['code']): string {
     case 'currency_required': return 'ارزِ اشتراک را انتخاب کنید.';
     case 'date_invalid': return 'تاریخِ تمدیدِ بعدی معتبر نیست.';
     case 'has_history': return 'این سرویس تاریخچهٔ دسترسی دارد و پاک نمی‌شود؛ پیش‌تر غیرفعال شده است.';
+    case 'duplicate_grant': return 'این شخص همین حالا به این سرویس دسترسیِ باز دارد؛ همان ردیف را ویرایش کنید.';
   }
 }
 

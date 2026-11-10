@@ -4849,5 +4849,6 @@
   "لینکِ دانلود": "İndirme bağlantısı",
   "دیدنِ رمزِ دسترسی": "Erişim şifresi görüntülendi",
   "اتصال قطع شد؛ دوباره تلاش می‌کنیم… {n}٪": "Bağlantı kesildi; yeniden deneniyor… %{n}",
-  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "Yükleme bir süredir ilerlemiyor. Bağlantınızı kontrol edip “Yükle ve kontrol et” düğmesine yeniden basın; kaldığı yerden devam eder."
+  "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "Yükleme bir süredir ilerlemiyor. Bağlantınızı kontrol edip “Yükle ve kontrol et” düğmesine yeniden basın; kaldığı yerden devam eder.",
+  "این شخص همین حالا به این سرویس دسترسیِ باز دارد؛ همان ردیف را ویرایش کنید.": "Bu kişinin bu hizmete zaten açık erişimi var; bunun yerine o satırı düzenleyin."
 }

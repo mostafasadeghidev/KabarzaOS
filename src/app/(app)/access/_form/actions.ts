@@ -92,11 +92,11 @@ export async function deleteServiceAction(id: number): Promise<AccessState> {
 
 export async function grantAccessAction(_prev: AccessState, formData: FormData) {
   return run((actor) => access.grantAccess(actor, {
+    grantId: num(formData.get('grantId')),
     serviceId: num(formData.get('serviceId')),
     userId: num(formData.get('userId')),
     accountRef: String(formData.get('accountRef') ?? ''),
     level: String(formData.get('level') ?? 'member'),
-    vaultRef: String(formData.get('vaultRef') ?? ''),
     note: String(formData.get('note') ?? ''),
     secret: String(formData.get('secret') ?? ''),
     clearSecret: formData.get('clearSecret') !== null,
