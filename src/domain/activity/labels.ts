@@ -167,6 +167,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'settings.turnstile.off': 'خاموش‌کردنِ کپچا',
   'settings.smtp.save': 'تنظیمِ ایمیلِ خروجی',
   'settings.smtp.clear': 'حذفِ تنظیمِ ایمیلِ خروجی',
+  'corp_mail.settings': 'تنظیمِ ایمیلِ شرکتی',
 
   // دفترِ دسترسی‌های بیرونی
   'service.create': 'سرویسِ جدید',

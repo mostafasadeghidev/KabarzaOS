@@ -19,6 +19,8 @@ import { closePeriod, reopenPeriod } from '@/server/finance/service';
 import { saveTelegramSettings, telegramCredentials, telegramEnabled } from '@/server/settings/telegram-service';
 import { saveTurnstileKeys, setTurnstileEnabled, testTurnstile } from '@/server/settings/turnstile-service';
 import { saveSmtpSettings } from '@/server/settings/smtp-service';
+import { saveCorpMailSettings, testCorpMail } from '@/server/corp-mail/settings';
+import { parseReserved } from '@/domain/corp-mail/config';
 import { headers } from 'next/headers';
 import { getT } from '@/i18n/server';
 import {
@@ -594,6 +596,34 @@ export async function setTurnstileEnabledAction(on: boolean): Promise<SystemStat
   if (result === 'not_verified') return { error: 'پیش از روشن‌کردن، آزمونِ کلیدها باید موفق باشد.' };
   revalidatePath('/settings');
   return { message: result === 'on' ? 'کپچا روشن شد.' : 'کپچا خاموش شد.' };
+}
+
+/* ---- ایمیلِ شرکتی (۲.۵۹.۰) — فقط مالک ---- */
+
+export async function saveCorpMailAction(_prev: SystemState, formData: FormData): Promise<SystemState> {
+  const actor = await requireActor();
+  if (!actor.roles.includes('owner')) return { error: 'فقط مدیرِ کل.' };
+  const config = await saveCorpMailSettings(actor, {
+    domain: String(formData.get('domain') ?? ''),
+    quotaGb: String(formData.get('quotaGb') ?? ''),
+    reserved: parseReserved(String(formData.get('reserved') ?? '')),
+    webmailUrl: String(formData.get('webmailUrl') ?? ''),
+    imapHost: String(formData.get('imapHost') ?? ''),
+    imapPort: String(formData.get('imapPort') ?? ''),
+    smtpHost: String(formData.get('smtpHost') ?? ''),
+    smtpPort: String(formData.get('smtpPort') ?? ''),
+  });
+  revalidatePath('/settings');
+  if (String(formData.get('domain') ?? '').trim() && !config.domain) return { error: 'دامنه معتبر نیست.' };
+  return { message: 'ذخیره شد.' };
+}
+
+export async function testCorpMailAction(): Promise<SystemState> {
+  const actor = await requireActor();
+  if (!actor.roles.includes('owner')) return { error: 'فقط مدیرِ کل.' };
+  const status = await testCorpMail(actor);
+  revalidatePath('/settings');
+  return status.ok ? { message: 'اتصال برقرار است.' } : { error: 'اتصال برقرار نشد.' };
 }
 
 /* ---- ایمیلِ خروجی (SMTP) از پنل (۲.۳۲.۰) — فقط مالک ---- */

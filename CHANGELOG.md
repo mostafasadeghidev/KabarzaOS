@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.59.0]
+
+### Added
+
+- **Company email, step 1: connect to your own mail server.** Settings has a new "Company email" tab (owner only). It connects to a Stalwart mail server with a restricted API key set in the server's environment (`STALWART_URL`, `STALWART_API_KEY`), and a "Test connection" button checks the key and finds your domain on the server. The tab also holds the address domain, the mailbox quota, the reserved names that must never be created (such as addresses that live in Google), and the webmail, IMAP and SMTP details staff will see. Creating and linking mailboxes comes in the next steps.
+
 ## [2.58.3]
 
 ### Fixed
