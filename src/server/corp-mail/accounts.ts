@@ -1,10 +1,12 @@
 import 'server-only';
+import { randomInt } from 'node:crypto';
 import { and, asc, eq, isNull, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, serviceGrants, services, userRoles, users } from '@/db/schema';
 import type { Actor } from '@/domain/access/permissions';
 import { assertCanManage } from '@/domain/access/guard';
-import { localPartProblem, normalizeLocalPart, type CorpMailConfig } from '@/domain/corp-mail/config';
+import { localPartProblem, normalizeLocalPart, quotaBytes, type CorpMailConfig } from '@/domain/corp-mail/config';
+import { seal } from '@/server/ai/secret-box';
 import {
   aliasList, buildAliasMap, suggestMember, takenNames, toMailAccount, type MailAccount,
 } from '@/domain/corp-mail/accounts';
@@ -24,7 +26,8 @@ import { corpMailConfig } from './settings';
 
 export type CorpMailErrorCode =
   | 'not_configured' | 'no_domain' | 'not_found' | 'member_inactive' | 'member_has_mail'
-  | 'invalid_name' | 'reserved_name' | 'name_taken' | 'protected' | 'stalwart';
+  | 'invalid_name' | 'reserved_name' | 'name_taken' | 'protected' | 'stalwart'
+  | 'not_linked' | 'created_unlinked';
 
 export class CorpMailError extends Error {
   constructor(readonly code: CorpMailErrorCode, readonly detail = '') {
@@ -46,9 +49,24 @@ async function audit(actor: Actor, action: string, objectId: number, before: unk
 
 function wrap(error: unknown): never {
   if (error instanceof JmapError) {
+    console.warn('[corp-mail] jmap error', error.code, error.detail);
     throw new CorpMailError(error.code === 'not_configured' ? 'not_configured' : 'stalwart', error.code);
   }
   throw error;
+}
+
+/**
+ * ردِ یک ورودی در پاسخِ `x:Account/set` (`notCreated` / `notUpdated`).
+ *
+ * ⚠️ نوع و توضیحِ Stalwart هم در لاگِ سرور می‌نشیند و هم به مدیر می‌رسد: بی‌آن
+ * «کلید پذیرفته نشد» تنها نشانه بود و علت (مثلاً مجوزِ کم برای یک فیلد) فقط
+ * در پاسخ بود. هیچ‌کدام راز ندارند؛ بدنهٔ درخواست (رمز) هرگز لاگ نمی‌شود.
+ */
+function refused(op: string, entry: { type?: string; description?: string } | undefined): never {
+  const type = entry?.type ?? 'unknown';
+  const description = String(entry?.description ?? '').slice(0, 200);
+  console.warn('[corp-mail] stalwart refused', op, type, description);
+  throw new CorpMailError('stalwart', description ? `${type}: ${description}` : type);
 }
 
 /** سرویسِ «ایمیلِ شرکتی» در دفتر — اگر نیست ساخته می‌شود. */
@@ -251,8 +269,8 @@ export async function setMailAliases(actor: Actor, accountId: string, wanted: st
 
     const aliases = buildAliasMap(aliasList(raw.aliases), names, domainId);
     const responses = await jmapCall([['x:Account/set', { accountId: adminId, update: { [account.id]: { aliases } } }, 's']]);
-    const set = result<{ notUpdated?: Record<string, { type?: string }> }>(responses, 's');
-    if (set.notUpdated?.[account.id]) throw new CorpMailError('stalwart', set.notUpdated[account.id]!.type ?? 'notUpdated');
+    const set = result<{ notUpdated?: Record<string, { type?: string; description?: string }> }>(responses, 's');
+    if (set.notUpdated?.[account.id]) refused('aliases', set.notUpdated[account.id]);
 
     const serviceId = await corpMailServiceId(config);
     const [link] = await db.select({ id: serviceGrants.id }).from(serviceGrants)
@@ -275,8 +293,214 @@ export function corpMailMessage(code: CorpMailErrorCode, detail = ''): string {
     case 'invalid_name': return 'نامِ «{name}» معتبر نیست: فقط حروفِ کوچکِ لاتین، رقم، نقطه، خط تیره و زیرخط.';
     case 'reserved_name': return 'نامِ «{name}» رزرو است و ساخته نمی‌شود.';
     case 'name_taken': return 'نشانیِ «{name}» از پیش مالِ حسابِ دیگری است.';
-    case 'stalwart': return detail === 'unauthorized' || detail === 'forbidden'
-      ? 'سرورِ ایمیل کلید را نپذیرفت؛ کلید و مجوزهایش را بررسی کنید.'
-      : 'سرورِ ایمیل درخواست را انجام نداد؛ کمی بعد دوباره امتحان کنید.';
+    case 'not_linked': return 'این صندوق به هیچ عضوی وصل نیست؛ رمزِ تازه جایی برای ماندن ندارد. اول آن را به عضو وصل کنید.';
+    case 'created_unlinked': return 'صندوقِ «{name}» ساخته شد ولی در دفتر ثبت نشد. از همین صفحه آن را به عضو وصل کنید و رمزِ تازه بگیرید.';
+    case 'stalwart':
+      if (detail === 'unauthorized' || detail === 'forbidden') return 'سرورِ ایمیل کلید را نپذیرفت؛ کلید و مجوزهایش را بررسی کنید.';
+      // ⚠️ ردِ یک ورودی (نوع: توضیح) — علت عیناً از Stalwart، تا مدیر بداند چه مجوز یا فیلدی کم است.
+      if (detail.includes(':') || /^[a-z][A-Za-z]+$/.test(detail) && !['network', 'http', 'method', 'bad_response', 'not_configured'].includes(detail)) {
+        return 'سرورِ ایمیل این تغییر را نپذیرفت: {name}';
+      }
+      return 'سرورِ ایمیل درخواست را انجام نداد؛ کمی بعد دوباره امتحان کنید.';
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * ساختن، رمزِ تازه، بستن (۲.۶۱.۰)
+ * ------------------------------------------------------------------ */
+
+/** بی‌نویسه‌های گیج‌کننده (0/O، 1/l/I) — کارمند گاهی رمز را از روی صفحه تایپ می‌کند. */
+const PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+
+/** رمزِ تصادفیِ امن (~۱۱۶ بیت برای ۲۰ نویسه) با `crypto.randomInt`، نه Math.random. */
+export function generateMailPassword(length = 20): string {
+  let out = '';
+  for (let i = 0; i < length; i++) out += PASSWORD_ALPHABET[randomInt(PASSWORD_ALPHABET.length)];
+  return out;
+}
+
+type SetResult = {
+  created?: Record<string, { id?: string }>;
+  notCreated?: Record<string, { type?: string; description?: string }>;
+  notUpdated?: Record<string, { type?: string; description?: string }>;
+};
+
+/** ردیفِ بازِ دفتر برای این صندوق، اگر هست. */
+async function linkedGrant(serviceId: number, accountId: string) {
+  const [row] = await db.select({ id: serviceGrants.id, userId: serviceGrants.userId }).from(serviceGrants)
+    .where(and(eq(serviceGrants.serviceId, serviceId), eq(serviceGrants.externalId, accountId), isNull(serviceGrants.revokedAt)));
+  return row ?? null;
+}
+
+export interface CreateMailInput {
+  userId: number;
+  local: string;
+  aliases: string[];
+}
+
+/**
+ * صندوقِ تازه برای یک عضو: حساب در Stalwart با رمزِ تصادفی، و یک ردیفِ دفتر
+ * با همان رمز (رمزگذاری‌شده) تا کارمند در «دسترسی‌های من» ببیندش.
+ *
+ * ⚠️ همهٔ سنجش‌ها پیش از ساختن: عضوِ فعال بی‌صندوق، نامِ معتبر و آزاد، aliasهای
+ * آزاد. رمز هرگز در گزارش، لاگ یا پاسخ نمی‌آید.
+ */
+export async function createMailAccount(actor: Actor, input: CreateMailInput): Promise<{ grantId: number; address: string }> {
+  assertCanManage(actor, 'members');
+  const [member] = await db.select({ name: users.name, state: users.memberState }).from(users)
+    .where(and(eq(users.id, input.userId), isNull(users.deletedAt)));
+  if (!member || member.state !== 'active') throw new CorpMailError('member_inactive');
+  const [client] = await db.select({ id: userRoles.userId }).from(userRoles)
+    .where(and(eq(userRoles.userId, input.userId), eq(userRoles.role, 'client')));
+  if (client) throw new CorpMailError('member_inactive');
+
+  const serviceId = await corpMailServiceId();
+  const [existing] = await db.select({ id: serviceGrants.id, externalId: serviceGrants.externalId }).from(serviceGrants)
+    .where(and(eq(serviceGrants.serviceId, serviceId), eq(serviceGrants.userId, input.userId), isNull(serviceGrants.revokedAt)));
+  if (existing?.externalId) throw new CorpMailError('member_has_mail');
+
+  let created!: { id: string; address: string };
+  const password = generateMailPassword();
+  try {
+    const adminId = await sessionAccountId();
+    const config = await corpMailConfig();
+    const { id: domainId } = await domainIdOf(config, adminId);
+    const local = normalizeLocalPart(input.local);
+    const aliases = [...new Set(input.aliases.map(normalizeLocalPart).filter(Boolean))].filter((a) => a !== local);
+    for (const name of [local, ...aliases]) {
+      const problem = localPartProblem(name, config);
+      if (problem === 'reserved') throw new CorpMailError('reserved_name', name);
+      if (problem) throw new CorpMailError('invalid_name', name);
+    }
+    const taken = takenNames((await fetchAccounts(adminId, domainId, new Map())).accounts, domainId);
+    const clash = [local, ...aliases].find((n) => taken.has(n));
+    if (clash) throw new CorpMailError('name_taken', clash);
+
+    const responses = await jmapCall([['x:Account/set', {
+      accountId: adminId,
+      create: {
+        n: {
+          '@type': 'User',
+          name: local,
+          domainId,
+          description: member.name,
+          roles: { '@type': 'User' },
+          permissions: { '@type': 'Inherit' },
+          quotas: { maxDiskQuota: quotaBytes(config) },
+          aliases: buildAliasMap([], aliases, domainId),
+          credentials: { 0: { '@type': 'Password', secret: password } },
+        },
+      },
+    }, 's']]);
+    const set = result<SetResult>(responses, 's');
+    const id = set.created?.n?.id;
+    if (!id) refused('create', set.notCreated?.n);
+    created = { id, address: `${local}@${config.domain}` };
+  } catch (error) { wrap(error); }
+
+  // ⚠️ حساب ساخته شد؛ اگر ثبت در دفتر شکست بخورد، صندوق بی‌صاحب می‌ماند و مدیر باید بداند.
+  try {
+    const grantId = await db.transaction(async (tx) => {
+      const values = { accountRef: created.address, externalId: created.id, secretEnc: seal(password), updatedAt: new Date() };
+      if (existing) {
+        await tx.update(serviceGrants).set(values).where(eq(serviceGrants.id, existing.id));
+        return existing.id;
+      }
+      const [row] = await tx.insert(serviceGrants).values({
+        serviceId, userId: input.userId, grantedBy: actor.id, level: 'member', ...values,
+      }).returning({ id: serviceGrants.id });
+      return row!.id;
+    });
+    await audit(actor, 'corp_mail.create', grantId, null, { account: created.address, userId: input.userId, aliases: input.aliases });
+    return { grantId, address: created.address };
+  } catch (error) {
+    console.error('[corp-mail] created but not linked', created.address, error instanceof Error ? error.name : 'error');
+    throw new CorpMailError('created_unlinked', created.address);
+  }
+}
+
+/**
+ * رمزِ تازه برای صندوقی که به عضوی وصل است. رمز در همان ردیفِ دفتر می‌نشیند.
+ *
+ * ⚠️ `credentials` در Stalwart یک‌جا جایگزین می‌شود: app passwordهای قبلی (گوشی،
+ * Outlook، اتصالِ همین برنامه) هم باطل می‌شوند. صفحه پیش از این کار هشدار می‌دهد.
+ */
+export async function resetMailPassword(actor: Actor, accountId: string): Promise<{ grantId: number }> {
+  assertCanManage(actor, 'members');
+  const serviceId = await corpMailServiceId();
+  const link = await linkedGrant(serviceId, accountId);
+  if (!link) throw new CorpMailError('not_linked');
+  const password = generateMailPassword();
+  let address = '';
+  try {
+    const adminId = await sessionAccountId();
+    const { account } = await oneAccount(adminId, accountId);
+    address = account.emailAddress;
+    const responses = await jmapCall([['x:Account/set', {
+      accountId: adminId,
+      update: { [account.id]: { credentials: { 0: { '@type': 'Password', secret: password } } } },
+    }, 's']]);
+    const set = result<SetResult>(responses, 's');
+    if (set.notUpdated?.[account.id]) refused('update', set.notUpdated[account.id]);
+  } catch (error) { wrap(error); }
+  await db.update(serviceGrants).set({ secretEnc: seal(password), updatedAt: new Date() }).where(eq(serviceGrants.id, link.id));
+  await audit(actor, 'corp_mail.password', link.id, null, { account: address });
+  return { grantId: link.id };
+}
+
+/**
+ * بستنِ صندوق — برای عضوی که رفته (راهنمای سرورِ ایمیل، بخشِ ۴-۵).
+ *
+ * ⚠️ حساب پاک **نمی‌شود** (ایمیل‌هایش می‌ماند): رمز به مقدارِ تصادفی‌ای عوض
+ * می‌شود که هیچ‌جا نوشته نمی‌شود (پس همهٔ ورودها و app passwordها هم باطل
+ * می‌شوند) و همهٔ aliasها خاموش می‌شوند. ردیفِ دفتر قطع می‌شود.
+ *
+ * ⚠️ اگر سرورِ ایمیل پاسخ ندهد، ردیف هم باز می‌ماند — دفتر نباید بگوید
+ * «بسته شد» وقتی صندوق باز است.
+ */
+export async function closeMailAccount(actor: Actor, accountId: string): Promise<void> {
+  assertCanManage(actor, 'members');
+  let address = '';
+  try {
+    const adminId = await sessionAccountId();
+    const { account, raw } = await oneAccount(adminId, accountId);
+    address = account.emailAddress;
+    const aliases = Object.fromEntries(aliasList(raw.aliases).map((a, i) => [String(i), { ...a, enable: false }]));
+    const responses = await jmapCall([['x:Account/set', {
+      accountId: adminId,
+      update: { [account.id]: { aliases, credentials: { 0: { '@type': 'Password', secret: generateMailPassword(32) } } } },
+    }, 's']]);
+    const set = result<SetResult>(responses, 's');
+    if (set.notUpdated?.[account.id]) refused('update', set.notUpdated[account.id]);
+  } catch (error) { wrap(error); }
+
+  const serviceId = await corpMailServiceId();
+  const link = await linkedGrant(serviceId, accountId);
+  const now = new Date();
+  if (link) {
+    await db.update(serviceGrants)
+      .set({ revokedAt: now, revokedBy: actor.id, updatedAt: now, secretEnc: '' })
+      .where(and(eq(serviceGrants.id, link.id), isNull(serviceGrants.revokedAt)));
+  }
+  await audit(actor, 'corp_mail.close', link?.id ?? 0, link ? { account: address, userId: link.userId } : { account: address }, null);
+}
+
+/**
+ * برای «قطعِ دسترسی» در دفتر (۲.۶۱.۰): ردیف‌هایی که صندوقِ ایمیلِ شرکتیِ وصل‌اند،
+ * با شناسهٔ حسابشان — تا قطع واقعی باشد، نه فقط در دفتر.
+ */
+export async function managedMailboxes(grantIds: number[]): Promise<Map<number, string>> {
+  if (grantIds.length === 0) return new Map();
+  const rows = await db.select({ id: serviceGrants.id, externalId: serviceGrants.externalId })
+    .from(serviceGrants)
+    .innerJoin(services, eq(services.id, serviceGrants.serviceId))
+    .where(and(eq(services.provider, PROVIDER), ne(serviceGrants.externalId, ''), isNull(serviceGrants.revokedAt)));
+  const wanted = new Set(grantIds);
+  return new Map(rows.filter((r) => wanted.has(r.id)).map((r) => [r.id, r.externalId]));
+}
+
+/** سرویسی که برنامه خودش اداره‌اش می‌کند (ایمیلِ شرکتی)؟ */
+export async function isManagedService(serviceId: number): Promise<boolean> {
+  const [row] = await db.select({ provider: services.provider }).from(services).where(eq(services.id, serviceId));
+  return row?.provider === PROVIDER;
 }

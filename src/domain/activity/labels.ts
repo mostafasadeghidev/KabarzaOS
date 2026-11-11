@@ -171,6 +171,9 @@ export const ACTION_LABELS: Record<string, string> = {
   'corp_mail.link': 'وصل کردنِ صندوقِ ایمیل به عضو',
   'corp_mail.unlink': 'جدا کردنِ صندوقِ ایمیل از عضو',
   'corp_mail.aliases': 'تغییرِ نشانی‌های دیگرِ صندوقِ ایمیل',
+  'corp_mail.create': 'ساختنِ صندوقِ ایمیل',
+  'corp_mail.password': 'رمزِ تازهٔ صندوقِ ایمیل',
+  'corp_mail.close': 'بستنِ صندوقِ ایمیل',
 
   // دفترِ دسترسی‌های بیرونی
   'service.create': 'سرویسِ جدید',

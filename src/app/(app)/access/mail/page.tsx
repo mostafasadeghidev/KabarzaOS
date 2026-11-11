@@ -16,7 +16,12 @@ export const generateMetadata = pageTitle('حساب‌های ایمیل');
  * ⚠️ صفحهٔ جدا، نه تبِ «دسترسی‌ها»: هر بار باز شدن از Stalwart می‌خواند و
  * نباید هر بازدیدِ دفترِ دسترسی‌ها را کند کند.
  */
-export default async function MailAccountsPage() {
+export default async function MailAccountsPage({
+  searchParams,
+}: {
+  /** `?create=USER` از منوی کارتِ عضو. */
+  searchParams: Promise<{ create?: string }>;
+}) {
   await primeTranslations();
   const actor = await currentActor();
   if (!actor) redirect('/login');
@@ -43,7 +48,7 @@ export default async function MailAccountsPage() {
         title={t('حساب‌های ایمیل')}
         description={data.domain ? <span dir="ltr">@{data.domain}</span> : undefined}
       />
-      <MailAccountsView data={data} />
+      <MailAccountsView data={data} createFor={Number((await searchParams).create ?? 0) || null} />
     </PageShell>
   );
 }

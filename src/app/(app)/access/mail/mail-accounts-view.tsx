@@ -2,7 +2,13 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { AtSign, Mail, Pencil, Sparkles } from 'lucide-react';
+import { AtSign, KeyRound, Lock, Mail, MailPlus, MoreHorizontal, Pencil, Sparkles } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { useConfirm } from '@/components/ui/confirm';
+import { SecretReveal } from '../secret-reveal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
@@ -20,7 +26,9 @@ import { useToast } from '@/components/ui/toast';
 import { humanSize } from '@/domain/files/upload';
 import { useT } from '@/i18n/client';
 import type { MailAccountRow, MailAccountsView as Data } from '@/server/corp-mail/accounts';
-import { linkMailAccountAction, setMailAliasesAction } from '../_form/actions';
+import {
+  closeMailAccountAction, createMailAccountAction, linkMailAccountAction, resetMailPasswordAction, setMailAliasesAction,
+} from '../_form/actions';
 
 /**
  * فهرستِ صندوق‌های سرورِ ایمیل و جفت‌کردنشان با اعضا (۲.۶۰.۰).
@@ -34,11 +42,19 @@ const ERRORS: Record<string, string> = {
   stalwart: 'سرورِ ایمیل پاسخ نداد؛ کمی بعد دوباره امتحان کنید.',
 };
 
-export function MailAccountsView({ data }: { data: Data }) {
+export function MailAccountsView({ data, createFor = null }: {
+  data: Data;
+  /** `?create=` — از منوی کارتِ عضو، دیالوگِ ساختن روی همان عضو باز می‌شود. */
+  createFor?: number | null;
+}) {
   const tr = useT();
   const { show } = useToast();
+  const confirm = useConfirm();
   const [pending, start] = useTransition();
   const [editing, setEditing] = useState<MailAccountRow | null>(null);
+  const [creating, setCreating] = useState(createFor !== null);
+  /** رمزِ تازه یا صندوقِ تازه — مدیر یک بار ببیند و تحویل دهد. */
+  const [handover, setHandover] = useState<{ grantId: number; address: string } | null>(null);
 
   if (!data.configured || data.error) {
     return (
@@ -61,13 +77,49 @@ export function MailAccountsView({ data }: { data: Data }) {
     });
   };
 
+  const resetPassword = async (account: MailAccountRow) => {
+    if (!await confirm({
+      title: tr('رمزِ تازه برای {address}؟', { address: account.emailAddress }),
+      description: tr('رمزِ فعلی و همهٔ ورودهای گوشی و Outlook و اتصالِ صندوق در همین برنامه باطل می‌شوند. رمزِ تازه در «دسترسی‌های من» ِ کارمند دیده می‌شود.'),
+      confirmLabel: tr('رمزِ تازه'),
+      destructive: true,
+    })) return;
+    start(async () => {
+      const result = await resetMailPasswordAction(account.id);
+      if (result.error) { show(tr(result.error, result.params), 'error'); return; }
+      show(tr('رمزِ تازه ساخته شد.'), 'success');
+      if (result.grantId) setHandover({ grantId: result.grantId, address: account.emailAddress });
+    });
+  };
+
+  const close = async (account: MailAccountRow) => {
+    if (!await confirm({
+      title: tr('صندوقِ {address} بسته شود؟', { address: account.emailAddress }),
+      description: tr('رمز به مقداری نامعلوم عوض می‌شود و نشانی‌های دیگرش خاموش می‌شوند؛ دیگر کسی نمی‌تواند واردش شود. ایمیل‌های قبلی پاک نمی‌شوند و پاک‌کردنِ نهایی کارِ دستیِ مدیرِ سرورِ ایمیل است.'),
+      confirmLabel: tr('بستنِ صندوق'),
+      destructive: true,
+    })) return;
+    start(async () => {
+      const result = await closeMailAccountAction(account.id);
+      if (result.error) show(tr(result.error, result.params), 'error');
+      else show(tr('صندوق بسته شد.'), 'success');
+    });
+  };
+
   const linked = data.accounts.filter((a) => a.link).length;
+  const linkedUsers = new Set(data.accounts.flatMap((a) => (a.link ? [a.link.userId] : [])));
 
   return (
     <div className="grid gap-3">
-      <p className="text-sm text-muted-foreground">
-        {tr('{n} صندوق روی سرور · {m} وصل به عضو', { n: data.accounts.length, m: linked })}
-      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="flex-1 text-sm text-muted-foreground">
+          {tr('{n} صندوق روی سرور · {m} وصل به عضو', { n: data.accounts.length, m: linked })}
+        </p>
+        <Button size="sm" onClick={() => setCreating(true)}>
+          <MailPlus className="size-4" />
+          {tr('صندوقِ تازه')}
+        </Button>
+      </div>
 
       <Table>
         <TableHeader>
@@ -130,9 +182,28 @@ export function MailAccountsView({ data }: { data: Data }) {
                   </div>
                 </TableCell>
                 <TableActionsCell>
-                  <IconButton variant="ghost" size="icon-sm" label={tr('ویرایشِ نشانی‌های دیگر')} onClick={() => setEditing(account)}>
-                    <Pencil className="size-3.5" />
-                  </IconButton>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <IconButton variant="ghost" size="icon-sm" label={tr('کارهای این صندوق')} disabled={pending}>
+                        <MoreHorizontal className="size-4" />
+                      </IconButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => setEditing(account)}>
+                        <Pencil className="size-3.5" />{tr('ویرایشِ نشانی‌های دیگر')}
+                      </DropdownMenuItem>
+                      {/* ⚠️ رمزِ تازه فقط برای صندوقِ وصل: رمز در ردیفِ دفترِ همان عضو می‌نشیند. */}
+                      {account.link && (
+                        <DropdownMenuItem onSelect={() => { void resetPassword(account); }}>
+                          <KeyRound className="size-3.5" />{tr('رمزِ تازه')}
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem variant="destructive" onSelect={() => { void close(account); }}>
+                        <Lock className="size-3.5" />{tr('بستنِ صندوق')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableActionsCell>
               </TableRow>
             );
@@ -141,7 +212,116 @@ export function MailAccountsView({ data }: { data: Data }) {
       </Table>
 
       <AliasDialog account={editing} domain={data.domain} onClose={() => setEditing(null)} />
+      <CreateDialog
+        open={creating}
+        onOpenChange={setCreating}
+        domain={data.domain}
+        people={data.people.filter((p) => !linkedUsers.has(p.id))}
+        initialUser={createFor}
+        onCreated={(created) => { setCreating(false); setHandover(created); }}
+      />
+      <HandoverDialog value={handover} onClose={() => setHandover(null)} />
     </div>
+  );
+}
+
+/** صندوقِ تازه: عضو، نامِ پیش از @ و aliasهای اختیاری. */
+function CreateDialog({ open, onOpenChange, domain, people, initialUser, onCreated }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  domain: string;
+  people: Array<{ id: number; name: string }>;
+  initialUser: number | null;
+  onCreated: (created: { grantId: number; address: string }) => void;
+}) {
+  const tr = useT();
+  const { show } = useToast();
+  const [pending, start] = useTransition();
+
+  /**
+   * ⚠️ onSubmit، نه `action`: React 19 فرمِ کنترل‌نشده را پس از هر اکشن خالی
+   * می‌کند و مدیر پس از خطای «نام گرفته است» باید همه‌چیز را دوباره می‌نوشت.
+   */
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    start(async () => {
+      const state = await createMailAccountAction({}, form);
+      if (state.error) { show(tr(state.error, state.params), 'error'); return; }
+      if (state.grantId && state.address) {
+        show(tr('صندوقِ {address} ساخته شد.', { address: state.address }), 'success');
+        onCreated({ grantId: state.grantId, address: state.address });
+      }
+    });
+  };
+
+  const fallbackUser = initialUser !== null && people.some((p) => p.id === initialUser) ? String(initialUser) : '';
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><MailPlus className="size-4" />{tr('صندوقِ تازه')}</DialogTitle>
+          <DialogDescription>
+            {tr('حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود.')}
+          </DialogDescription>
+        </DialogHeader>
+        <form key={`${open}-${fallbackUser}`} onSubmit={submit} className="grid gap-3">
+          <Field>
+            <FieldLabel htmlFor="cm-user">{tr('عضو')}</FieldLabel>
+            <SearchableSelect id="cm-user" name="userId" defaultValue={fallbackUser} containerClassName="w-full" required renderMedia={avatarFor(people)}>
+              <NativeSelectOption value="">{tr('— انتخاب —')}</NativeSelectOption>
+              {people.map((p) => <NativeSelectOption key={p.id} value={String(p.id)}>{p.name}</NativeSelectOption>)}
+            </SearchableSelect>
+            <FieldDescription>{tr('فقط اعضای فعالی که صندوق ندارند.')}</FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="cm-local">{tr('نشانی')}</FieldLabel>
+            <div className="flex items-center gap-1.5" dir="ltr">
+              <Input id="cm-local" name="local" required autoComplete="off" placeholder="sara" className="flex-1" />
+              <span className="text-sm text-muted-foreground">@{domain}</span>
+            </div>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="cm-aliases">{tr('aliasها')}</FieldLabel>
+            <Input id="cm-aliases" name="aliases" dir="ltr" autoComplete="off" placeholder="sara.ahmadi, sales" />
+            <FieldDescription>{tr('اختیاری؛ فقط بخشِ پیش از @، جداشده با ویرگول.')}</FieldDescription>
+          </Field>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>{tr('انصراف')}</Button>
+            <Button type="submit" disabled={pending}>{tr('ساختن')}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** پس از ساختن یا رمزِ تازه: نشانی و رمز (پشتِ چشم، با ثبتِ دیدن) برای تحویل. */
+function HandoverDialog({ value, onClose }: { value: { grantId: number; address: string } | null; onClose: () => void }) {
+  const tr = useT();
+  return (
+    <Dialog open={value !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{tr('صندوق آماده است')}</DialogTitle>
+          <DialogDescription>
+            {tr('کارمند همین نشانی و رمز را در «پروفایل ← دسترسی‌های من» می‌بیند. رمز را از راهِ پیامِ بیرونی نفرستید.')}
+          </DialogDescription>
+        </DialogHeader>
+        {value && (
+          <dl className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 text-sm">
+            <dt className="text-muted-foreground">{tr('نشانی')}</dt>
+            <dd dir="ltr" className="text-start font-medium">{value.address}</dd>
+            <dt className="text-muted-foreground">{tr('رمز')}</dt>
+            <dd><SecretReveal grantId={value.grantId} /></dd>
+          </dl>
+        )}
+        <DialogFooter>
+          <Button onClick={onClose}>{tr('بستن')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

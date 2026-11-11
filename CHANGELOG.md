@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.61.0]
+
+### Added
+
+- **Company email, step 3: create, reset and close mailboxes.** On the Email accounts page, "New mailbox" creates a mailbox for an active member with a random 20-character password and optional aliases; names that are reserved, invalid or already used are refused before anything reaches the mail server. The member card has a "Company email" shortcut that opens it for that member. The password is stored encrypted in the member's access row: they see it, with the webmail link and phone/Outlook settings, under Profile → My access, and the manager sees it once in a handover dialog.
+- **New password and Close mailbox** in each mailbox's menu, with a warning first. A new password also signs out phones and Outlook. Closing changes the password to an unknown value and switches off every alias; the mailbox and its email are kept, and final deletion stays a manual job on the mail server.
+- **Revoking company email in the access register now really closes the mailbox**, from the single revoke button and from the leaver checklist. If the mail server does not confirm, the row stays open, so the register never says closed while the mailbox is still open.
+
+### Changed
+
+- Company email rows are created, linked and moved only from the Email accounts page; the regular access form can still edit their level, note and password.
+
 ## [2.60.1]
 
 ### Fixed
