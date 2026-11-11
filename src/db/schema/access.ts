@@ -265,9 +265,15 @@ export const services = pgTable('services', {
   recurringExpenseId: fk('recurring_expense_id'),
   /** مثلِ دفتر، حذف نمی‌شود بلکه غیرفعال می‌شود تا گرنت‌های تاریخی نشکنند. */
   isActive: boolean('is_active').notNull().default(true),
+  /**
+   * سرویسی که برنامه خودش اداره‌اش می‌کند (۲.۶۰.۰): `stalwart` = ایمیلِ شرکتی.
+   * خالی = سرویسِ عادی که فقط در دفتر ثبت می‌شود. هر provider فقط یک سرویس.
+   */
+  provider: text('provider').notNull().default(''),
   ...stamps,
 }, (t) => [
   index('services_name_lower_ix').on(sql`lower(${t.name})`),
+  uniqueIndex('services_provider_uq').on(t.provider).where(sql`${t.provider} <> ''`),
   index('services_category_ix').on(t.categoryTagId),
 ]);
 
@@ -304,6 +310,8 @@ export const serviceGrants = pgTable('service_grants', {
    * `revealGrantSecret` است که گارد دارد و هر بار دیدن را ثبت می‌کند.
    */
   secretEnc: text('secret_enc').notNull().default(''),
+  /** شناسهٔ حساب روی سرورِ سرویس (۲.۶۰.۰) — برای ایمیلِ شرکتی، id ِ حساب در Stalwart. */
+  externalId: text('external_id').notNull().default(''),
   note: text('note').notNull().default(''),
   grantedAt: ts('granted_at').notNull().defaultNow(),
   grantedBy: fk('granted_by').references(() => users.id, { onDelete: 'set null' }),
@@ -313,6 +321,8 @@ export const serviceGrants = pgTable('service_grants', {
 }, (t) => [
   check('service_grants_level_ck', sql`${t.level} in ('admin','member','viewer')`),
   uniqueIndex('service_grants_open_uq').on(t.serviceId, t.userId).where(sql`${t.revokedAt} is null`),
+  uniqueIndex('service_grants_external_open_uq').on(t.serviceId, t.externalId)
+    .where(sql`${t.revokedAt} is null and ${t.externalId} <> ''`),
   index('service_grants_user_ix').on(t.userId),
   index('service_grants_service_ix').on(t.serviceId),
 ]);

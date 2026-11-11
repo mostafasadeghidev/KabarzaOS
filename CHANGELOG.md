@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.60.0]
+
+### Added
+
+- **Company email, step 2: email accounts and their owners.** Access has a new "Email accounts" page (for member managers, when the mail server is connected). It lists every mailbox on the mail server with its other addresses and used space. Pick a member next to a mailbox to link them; the app suggests a match from the member's email or first name. A link is an ordinary access row, so it shows in the register, in the CSV export and in the member's "My access". Unlinking closes that row and keeps it as history; the mailbox itself is never deleted. Each member can have one mailbox.
+- **Edit a mailbox's other addresses (aliases).** Names that are reserved, invalid or already used by another mailbox are refused before anything reaches the mail server. Aliases on other domains are left as they are.
+- File sizes of a gigabyte or more now show in GB (a 5 GB quota showed as "5120.0 MB").
+
 ## [2.59.2]
 
 ### Fixed

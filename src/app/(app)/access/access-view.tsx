@@ -5,7 +5,7 @@ import { UserName, avatarFor } from '@/components/user-avatar';
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { Download, KeyRound, ListChecks, Pencil, Plus, ShieldAlert, XCircle } from 'lucide-react';
+import { Download, KeyRound, ListChecks, Mail, Pencil, Plus, ShieldAlert, XCircle } from 'lucide-react';
 import { CatalogSection } from '../settings/catalog-section';
 import {
   deleteServiceAction, grantAccessAction, revokeAccessAction, revokeManyAction,
@@ -123,7 +123,11 @@ export interface AccessData {
 
 type StatusFilter = 'open' | 'revoked' | 'all';
 
-export function AccessView({ data, focusUser }: { data: AccessData; focusUser: number | null }) {
+export function AccessView({ data, focusUser, mailAccounts = false }: {
+  data: AccessData; focusUser: number | null;
+  /** پیوند به «حساب‌های ایمیل» (۲.۶۰.۰). */
+  mailAccounts?: boolean;
+}) {
   const tr = useT();
   const tz = useTimeZone();
   const { show } = useToast();
@@ -204,11 +208,17 @@ export function AccessView({ data, focusUser }: { data: AccessData; focusUser: n
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
         {/* همان نوارِ تبِ صفحه‌های دیگر: پیمایشِ افقی، دکمه‌های بی‌کش. */}
-        <div className="overflow-x-auto pb-1.5">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1.5">
           <TabsList variant="line" className="w-max">
             <TabsTrigger value="grants" className="flex-none">{tr("دسترسی‌ها")}</TabsTrigger>
             <TabsTrigger value="services" className="flex-none">{tr("سرویس‌ها")}</TabsTrigger>
           </TabsList>
+          {/* صفحهٔ جدا — هر بار از سرورِ ایمیل می‌خواند. */}
+          {mailAccounts && (
+            <Button size="sm" variant="ghost" asChild className="ms-auto flex-none">
+              <Link href="/access/mail"><Mail className="size-4" />{tr("حساب‌های ایمیل")}</Link>
+            </Button>
+          )}
         </div>
       </Tabs>
 
