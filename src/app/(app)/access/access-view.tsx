@@ -64,6 +64,8 @@ export interface ServiceRow {
   downloadUrl: string;
   guide: string;
   isActive: boolean;
+  /** `stalwart` = ایمیلِ شرکتی که برنامه خودش اداره می‌کند (۲.۶۱.۰). */
+  provider: string;
   /** شمارِ دسترسیِ بازِ همین سرویس. */
   openCount: number;
   /** همهٔ دسترسی‌های ثبت‌شده، بسته‌شده هم — «تاریخچه». */
@@ -377,7 +379,14 @@ export function AccessView({ data, focusUser, mailAccounts = false }: {
                               label={tr("قطعِ دسترسی")}
                               disabled={pending}
                               onClick={async () => {
-                                if (await confirm({
+                                // ⚠️ صندوقِ ایمیلِ شرکتی واقعاً بسته می‌شود (۲.۶۱.۰)، پس هشدارِ جدا.
+                                const managed = data.services.find((s) => s.id === row.serviceId)?.provider === 'stalwart';
+                                if (await confirm(managed ? {
+                                  title: tr('صندوقِ ایمیلِ {address} بسته شود؟', { address: row.accountRef }),
+                                  description: tr('رمز به مقداری نامعلوم عوض می‌شود و نشانی‌های دیگرش خاموش می‌شوند؛ دیگر کسی نمی‌تواند واردش شود. ایمیل‌های قبلی پاک نمی‌شوند و پاک‌کردنِ نهایی کارِ دستیِ مدیرِ سرورِ ایمیل است.'),
+                                  confirmLabel: tr('بستنِ صندوق'),
+                                  destructive: true,
+                                } : {
                                   title: tr('این دسترسی قطع شود؟'),
                                   description: tr('ردیف پاک نمی‌شود؛ تاریخِ قطع رویش ثبت می‌شود. قطعِ واقعی را در خودِ سرویس انجام دهید.'),
                                 })) revoke(row);

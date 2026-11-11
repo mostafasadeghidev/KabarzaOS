@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
+import { isCorpMailConfigured } from '@/server/corp-mail/jmap';
 import { listPeople } from '@/server/people/service';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { canSeeScope, ForbiddenError } from '@/domain/access/guard';
@@ -74,6 +75,7 @@ export async function PeopleSectionPage({ section }: { section: SectionConfig })
         section={{
           ...section,
           onboarding: section.role === 'member' && (await getSystemConfig()).onboardingEnabled,
+          corpMail: section.role === 'member' && data.canManage && isCorpMailConfigured(),
         }}
         canManage={data.canManage}
         officeScoped={data.officeScoped}

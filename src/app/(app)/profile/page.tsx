@@ -3,6 +3,7 @@ import { can } from '@/domain/access/permissions';
 import { currentActor } from '@/server/auth';
 import { getAccountInfo, getCompany, getMyProfile } from '@/server/people/profile-service';
 import { myGrants } from '@/server/access/service';
+import { corpMailConfig } from '@/server/corp-mail/settings';
 import { ProfileView } from './profile-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
@@ -82,6 +83,12 @@ export default async function ProfilePage() {
           telegram: me.telegram,
           notify: me.notify,
           myAccess,
+          // فقط وقتی خودش صندوقِ شرکتی دارد — نشانیِ وب‌میل و سرورها، بی هیچ راز (۲.۶۱.۰).
+          mailSetup: myAccess.some((g) => g.provider === 'stalwart')
+            ? await corpMailConfig().then(({ webmailUrl, imapHost, imapPort, smtpHost, smtpPort }) => ({
+              webmailUrl, imapHost, imapPort, smtpHost, smtpPort,
+            }))
+            : null,
           isOwner,
           mcp: { tokens: mcpTokens, grants: mcpGrants, endpoint: `${origin}/api/mcp` },
           ai: {

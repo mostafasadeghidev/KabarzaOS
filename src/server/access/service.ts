@@ -24,6 +24,7 @@ import {
 } from '@/domain/access/service-cost';
 import { notify } from '@/server/notifications/service';
 import type { MemberState } from '@/domain/people/offboarding';
+import { closeMailAccount, isManagedService, managedMailboxes } from '@/server/corp-mail/accounts';
 
 /**
  * دفترِ دسترسی‌های بیرونی.
@@ -225,6 +226,8 @@ export async function myGrants(actor: Actor) {
     downloadUrl: services.downloadUrl,
     guide: services.guide,
     hasSecret: sql<boolean>`${serviceGrants.secretEnc} <> ''`,
+    // ایمیلِ شرکتی (۲.۶۱.۰): پروفایل راهنمای وب‌میل و IMAP/SMTP را کنارش نشان می‌دهد.
+    provider: services.provider,
   })
     .from(serviceGrants)
     .innerJoin(services, eq(services.id, serviceGrants.serviceId))
@@ -545,11 +548,24 @@ export async function grantAccess(actor: Actor, input: GrantInput) {
    * باز برای یک جفت را شاخصِ یکتا هم رد می‌کرد، با پیامی مبهم.
    */
   if (input.grantId) {
-    const [own] = await db.select({ revokedAt: serviceGrants.revokedAt }).from(serviceGrants)
+    const [own] = await db.select({
+      revokedAt: serviceGrants.revokedAt, serviceId: serviceGrants.serviceId, userId: serviceGrants.userId,
+    }).from(serviceGrants)
       .where(eq(serviceGrants.id, input.grantId));
     if (!own) throw new AccessError('not_found');
     if (own.revokedAt) throw new AccessError('already_revoked');
     if (existing && existing.id !== input.grantId) throw new AccessError('duplicate_grant');
+    /**
+     * ⚠️ ردیفِ ایمیلِ شرکتی (۲.۶۱.۰) به صندوقِ واقعی وصل است: جابه‌جاکردنِ سرویس یا
+     * شخصش از این فرم، دفتر را از صندوق جدا می‌کرد. فقط سطح، یادداشت و رمز.
+     */
+    const moved = own.serviceId !== input.serviceId || own.userId !== input.userId;
+    if (moved && (await isManagedService(own.serviceId) || (input.serviceId && await isManagedService(input.serviceId)))) {
+      throw new AccessError('managed_service');
+    }
+  } else if (input.serviceId && !existing && await isManagedService(input.serviceId)) {
+    // ردیفِ تازهٔ ایمیلِ شرکتی فقط از «حساب‌های ایمیل» ساخته یا وصل می‌شود.
+    throw new AccessError('managed_service');
   }
 
   const plan = planGrant({
@@ -609,10 +625,28 @@ export async function revokeMany(actor: Actor, grantIds: number[]): Promise<numb
   const ids = [...new Set(grantIds.filter((id) => Number.isInteger(id) && id > 0))];
   if (ids.length === 0) return 0;
 
-  const open = await db.select({ id: serviceGrants.id })
+  let open = await db.select({ id: serviceGrants.id })
     .from(serviceGrants)
     .where(and(inArray(serviceGrants.id, ids), isNull(serviceGrants.revokedAt)));
   if (open.length === 0) return 0;
+
+  /**
+   * ⚠️ صندوقِ ایمیلِ شرکتی (۲.۶۱.۰) واقعاً بسته می‌شود — و همان تابع ردیف را
+   * هم قطع می‌کند. صندوقی که بسته نشد (سرور در دسترس نبود) باز می‌ماند تا
+   * دفتر دروغ نگوید؛ بقیه بسته می‌شوند.
+   */
+  const mailboxes = await managedMailboxes(open.map((r) => r.id));
+  let closed = 0;
+  for (const [, accountId] of mailboxes) {
+    try {
+      await closeMailAccount(actor, accountId);
+      closed++;
+    } catch {
+      // در شمار نمی‌آید؛ ردیف باز می‌ماند و چک‌لیست دوباره نشانش می‌دهد.
+    }
+  }
+  open = open.filter((r) => !mailboxes.has(r.id));
+  if (open.length === 0) return closed;
 
   const now = new Date();
   // ⚠️ با قطعِ دسترسی رمز هم پاک می‌شود — ردیف برای تاریخچه می‌ماند، رمز نه.
@@ -623,7 +657,7 @@ export async function revokeMany(actor: Actor, grantIds: number[]): Promise<numb
   for (const row of open) {
     await audit(actor, 'service_grant.revoke', 'service_grant', row.id);
   }
-  return open.length;
+  return open.length + closed;
 }
 
 /**
@@ -680,6 +714,13 @@ export async function revokeAccess(actor: Actor, grantId: number) {
   }).from(serviceGrants).where(eq(serviceGrants.id, grantId));
 
   assertRevocable(grant);
+
+  // ⚠️ صندوقِ ایمیلِ شرکتی واقعاً بسته می‌شود؛ خطای سرورِ ایمیل یعنی ردیف هم باز بماند (۲.۶۱.۰).
+  const mailbox = (await managedMailboxes([grantId])).get(grantId);
+  if (mailbox) {
+    await closeMailAccount(actor, mailbox);
+    return;
+  }
 
   await db.update(serviceGrants)
     .set({ revokedAt: new Date(), revokedBy: actor.id, updatedAt: new Date(), secretEnc: '' })

@@ -5,6 +5,7 @@ import { requireActor } from '@/server/auth';
 import * as access from '@/server/access/service';
 import { AccessError, accessMessage } from '@/domain/access/service-grants';
 import { ForbiddenError } from '@/domain/access/guard';
+import { CorpMailError, corpMailMessage } from '@/server/corp-mail/accounts';
 
 /** اقدام‌های دفترِ دسترسی‌ها. گاردها در سرویس‌اند (R-ARCH-01). */
 
@@ -19,6 +20,8 @@ export interface AccessState {
 
 function explain(error: unknown, fallback: string): string {
   if (error instanceof AccessError) return accessMessage(error.code);
+  // قطعِ ردیفِ ایمیلِ شرکتی صندوق را واقعاً می‌بندد؛ خطای سرورِ ایمیل پیامِ خودش را دارد.
+  if (error instanceof CorpMailError) return corpMailMessage(error.code, error.detail);
   if (error instanceof ForbiddenError) return 'دسترسی کافی ندارید.';
   return fallback;
 }
@@ -157,4 +160,35 @@ export async function setMailAliasesAction(accountId: string, raw: string): Prom
   const { setMailAliases } = await import('@/server/corp-mail/accounts');
   const names = raw.split(/[\s,،]+/).map((s) => s.replace(/@.*$/, '')).filter(Boolean);
   return runMail((actor) => setMailAliases(actor, accountId, names), 'aliasها ذخیره نشدند.');
+}
+
+/** صندوقِ تازه برای عضو (۲.۶۱.۰). شناسهٔ ردیف برمی‌گردد تا مدیر رمز را ببیند و تحویل دهد. */
+export async function createMailAccountAction(
+  _prev: AccessState & { grantId?: number; address?: string },
+  formData: FormData,
+): Promise<AccessState & { grantId?: number; address?: string }> {
+  const { createMailAccount } = await import('@/server/corp-mail/accounts');
+  let created: { grantId: number; address: string } | null = null;
+  const state = await runMail(async (actor) => {
+    created = await createMailAccount(actor, {
+      userId: Number(formData.get('userId')) || 0,
+      local: String(formData.get('local') ?? ''),
+      aliases: String(formData.get('aliases') ?? '').split(/[\s,،]+/).map((s) => s.replace(/@.*$/, '')).filter(Boolean),
+    });
+  }, 'صندوق ساخته نشد.');
+  return created ? { ...state, ...(created as { grantId: number; address: string }) } : state;
+}
+
+/** رمزِ تازه — app passwordهای قبلی هم باطل می‌شوند (هشدار در صفحه). */
+export async function resetMailPasswordAction(accountId: string): Promise<AccessState & { grantId?: number }> {
+  const { resetMailPassword } = await import('@/server/corp-mail/accounts');
+  let grantId: number | undefined;
+  const state = await runMail(async (actor) => { grantId = (await resetMailPassword(actor, accountId)).grantId; }, 'رمز عوض نشد.');
+  return { ...state, grantId };
+}
+
+/** بستنِ صندوق: رمزِ نامعلوم + aliasهای خاموش؛ ایمیل‌ها می‌مانند. */
+export async function closeMailAccountAction(accountId: string): Promise<AccessState> {
+  const { closeMailAccount } = await import('@/server/corp-mail/accounts');
+  return runMail((actor) => closeMailAccount(actor, accountId), 'صندوق بسته نشد.');
 }

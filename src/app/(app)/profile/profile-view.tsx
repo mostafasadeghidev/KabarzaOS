@@ -70,7 +70,11 @@ export interface ProfileData {
     id: number; serviceName: string; level: GrantLevel;
     accountRef: string; grantedAt: Date | string;
     downloadUrl: string; guide: string; hasSecret: boolean;
+    /** `stalwart` = صندوقِ ایمیلِ شرکتی (۲.۶۱.۰). */
+    provider: string;
   }>;
+  /** راهنمای تنظیمِ ایمیلِ شرکتی — فقط وقتی صندوق دارد. */
+  mailSetup: { webmailUrl: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number } | null;
   isOwner: boolean;
   /** توکن‌های MCP ِ خودِ کاربر و نشانیِ اتصال (۲.۷.۰). */
   mcp: { tokens: McpTokenView[]; grants: McpGrantView[]; endpoint: string };
@@ -292,6 +296,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
                   <TableCell className="max-w-72 whitespace-normal">
                     {row.serviceName}
                     {row.guide && <p className="mt-0.5 whitespace-pre-wrap text-xs text-muted-foreground">{row.guide}</p>}
+                    {row.provider === 'stalwart' && data.mailSetup && <MailSetup setup={data.mailSetup} address={row.accountRef} />}
                   </TableCell>
                   <TableCell>{tr(LEVEL_LABELS[row.level])}</TableCell>
                   <TableCell className="num text-xs" dir="ltr">
@@ -624,6 +629,37 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
 
       </div>
+    </div>
+  );
+}
+
+/**
+ * راهنمای تنظیمِ صندوقِ شرکتی در گوشی یا Outlook (۲.۶۱.۰). نامِ کاربری همان
+ * نشانیِ کامل است؛ رمز همان رمزِ همین ردیف (پشتِ چشم).
+ */
+function MailSetup({ setup, address }: {
+  setup: { webmailUrl: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number };
+  address: string;
+}) {
+  const tr = useT();
+  return (
+    <div className="mt-1.5 grid gap-0.5 text-xs text-muted-foreground">
+      {setup.webmailUrl && (
+        <a href={setup.webmailUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+          {tr('ورود به وب‌میل')}
+        </a>
+      )}
+      {(setup.imapHost || setup.smtpHost) && (
+        <span>
+          {tr('گوشی یا Outlook:')}{' '}
+          <span dir="ltr" className="font-mono">
+            {setup.imapHost && `IMAP ${setup.imapHost}:${setup.imapPort} SSL`}
+            {setup.imapHost && setup.smtpHost && ' · '}
+            {setup.smtpHost && `SMTP ${setup.smtpHost}:${setup.smtpPort} SSL`}
+          </span>
+          {' · '}{tr('نامِ کاربری: {user}', { user: address })}
+        </span>
+      )}
     </div>
   );
 }

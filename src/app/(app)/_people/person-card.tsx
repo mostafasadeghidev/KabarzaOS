@@ -67,6 +67,8 @@ export interface SectionConfig {
   supportsOffboarding: boolean;
   /** پیوندِ «آنبوردینگ» در منوی کارت — فقط اعضا و فقط وقتی روشن است. */
   onboarding?: boolean;
+  /** پیوندِ «ایمیلِ شرکتی» (۲.۶۱.۰) — فقط وقتی سرورِ ایمیل وصل است و بیننده اعضا را اداره می‌کند. */
+  corpMail?: boolean;
 }
 
 /**
@@ -189,6 +191,14 @@ export function PersonCard({
                     <Link href={`/access?user=${person.id}`} prefetch={false}>
                       <KeyRound className="size-3.5" />
                       {tr("دسترسی‌های بیرونی")}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {section.role === 'member' && section.corpMail && canManage && (
+                  <DropdownMenuItem asChild>
+                    <Link href={`/access/mail?create=${person.id}`} prefetch={false}>
+                      <Mail className="size-3.5" />
+                      {tr("ایمیلِ شرکتی")}
                     </Link>
                   </DropdownMenuItem>
                 )}
