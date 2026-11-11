@@ -4975,5 +4975,12 @@
   "هرزنامه": "Lixo eletrônico",
   "سطلِ زباله": "Lixeira",
   "رمزِ مخصوصی که برنامه برای خواندنِ صندوقِ هر کارمند می‌گیرد فقط از این IPها پذیرفته می‌شود: همان شبکه‌ای که برنامه از آن به سرورِ ایمیل وصل است. تا خالی است، اتصالِ صندوق خاموش می‌ماند.": "A senha dedicada que o aplicativo obtém para ler cada caixa só é aceita destes IPs: a rede pela qual ele alcança o servidor. Enquanto vazio, conectar caixas fica desativado.",
-  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "A conexão de caixas ainda não está ativa: o proprietário precisa definir “IPs permitidos para ler as caixas” nas configurações do e-mail corporativo."
+  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "A conexão de caixas ainda não está ativa: o proprietário precisa definir “IPs permitidos para ler as caixas” nas configurações do e-mail corporativo.",
+  "{n} پیوست": "{n} anexos",
+  "ارسال (SMTP)": "Envio (SMTP)",
+  "از {date}": "Desde {date}",
+  "تنظیم در گوشی یا Outlook": "Configurar no celular ou no Outlook",
+  "دانلود یا ورود": "Baixar ou entrar",
+  "دریافت (IMAP)": "Recebimento (IMAP)",
+  "رمز همان رمزِ بالاست. بعد از اولین ورود، بهتر است از وب‌میل عوضش کنی.": "A senha é a de cima. Depois do primeiro acesso, troque-a no webmail."
 }

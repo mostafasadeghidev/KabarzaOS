@@ -4975,5 +4975,12 @@
   "هرزنامه": "Indésirables",
   "سطلِ زباله": "Corbeille",
   "رمزِ مخصوصی که برنامه برای خواندنِ صندوقِ هر کارمند می‌گیرد فقط از این IPها پذیرفته می‌شود: همان شبکه‌ای که برنامه از آن به سرورِ ایمیل وصل است. تا خالی است، اتصالِ صندوق خاموش می‌ماند.": "Le mot de passe dédié que l’application obtient pour lire chaque boîte n’est accepté que depuis ces IP : le réseau par lequel elle joint le serveur. Tant que c’est vide, la connexion des boîtes reste désactivée.",
-  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "La connexion des boîtes n’est pas encore active : le propriétaire doit d’abord renseigner « IP autorisées pour lire les boîtes » dans les paramètres."
+  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "La connexion des boîtes n’est pas encore active : le propriétaire doit d’abord renseigner « IP autorisées pour lire les boîtes » dans les paramètres.",
+  "{n} پیوست": "{n} pièces jointes",
+  "ارسال (SMTP)": "Envoi (SMTP)",
+  "از {date}": "Depuis le {date}",
+  "تنظیم در گوشی یا Outlook": "Configurer sur téléphone ou dans Outlook",
+  "دانلود یا ورود": "Télécharger ou se connecter",
+  "دریافت (IMAP)": "Réception (IMAP)",
+  "رمز همان رمزِ بالاست. بعد از اولین ورود، بهتر است از وب‌میل عوضش کنی.": "Le mot de passe est celui ci-dessus. Après la première connexion, changez-le dans le webmail."
 }
