@@ -23,6 +23,12 @@ export interface CorpMailConfig {
   imapPort: number;
   smtpHost: string;
   smtpPort: number;
+  /**
+   * IP یا شبکه‌هایی که app password ِ برنامه فقط از آن‌ها پذیرفته می‌شود (۲.۶۲.۰)،
+   * مثلِ `10.0.4.0/24`. خالی = بی‌محدودیت. ⚠️ اگر برنامه از جای دیگری وصل شود،
+   * خواندنِ صندوق رد می‌شود.
+   */
+  appIps: string[];
 }
 
 /** این‌ها همیشه رزروند، حتی اگر مالک از فهرست برشان دارد. */
@@ -37,6 +43,7 @@ export const DEFAULT_CORP_MAIL: CorpMailConfig = {
   imapPort: 993,
   smtpHost: '',
   smtpPort: 465,
+  appIps: [],
 };
 
 const DOMAIN_RE = /^(?=.{3,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
@@ -98,6 +105,16 @@ export function cleanHttpsUrl(raw: unknown): string {
   }
 }
 
+const IPV4 = String.raw`(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}`;
+// ⚠️ String.raw: در template ِ عادی `\d` به `d` تبدیل می‌شد و هر CIDR رد می‌شد.
+const CIDR_RE = new RegExp(String.raw`^${IPV4}(?:/(?:3[0-2]|[12]?\d))?$`);
+
+/** IPv4 یا CIDR ِ معتبر از متنِ آزاد. */
+export function parseIpList(raw: string | string[]): string[] {
+  const parts = Array.isArray(raw) ? raw : raw.split(/[\s,،]+/);
+  return [...new Set(parts.map((p) => p.trim()).filter((p) => CIDR_RE.test(p)))].slice(0, 20);
+}
+
 /** ردیفِ ذخیره‌شده (یا ورودیِ فرم) ← تنظیماتِ سالم. هر فیلدِ خراب پیش‌فرض می‌گیرد. */
 export function normalizeCorpMail(raw: Record<string, unknown> | null | undefined): CorpMailConfig {
   const r = raw ?? {};
@@ -114,6 +131,7 @@ export function normalizeCorpMail(raw: Record<string, unknown> | null | undefine
     imapPort: cleanPort(r.imapPort, DEFAULT_CORP_MAIL.imapPort),
     smtpHost: cleanHost(r.smtpHost),
     smtpPort: cleanPort(r.smtpPort, DEFAULT_CORP_MAIL.smtpPort),
+    appIps: Array.isArray(r.appIps) ? parseIpList(r.appIps.filter((x): x is string => typeof x === 'string')) : [],
   };
 }
 

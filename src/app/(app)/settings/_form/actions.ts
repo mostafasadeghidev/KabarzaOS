@@ -20,7 +20,7 @@ import { saveTelegramSettings, telegramCredentials, telegramEnabled } from '@/se
 import { saveTurnstileKeys, setTurnstileEnabled, testTurnstile } from '@/server/settings/turnstile-service';
 import { saveSmtpSettings } from '@/server/settings/smtp-service';
 import { saveCorpMailSettings, testCorpMail } from '@/server/corp-mail/settings';
-import { parseReserved } from '@/domain/corp-mail/config';
+import { parseIpList, parseReserved } from '@/domain/corp-mail/config';
 import { headers } from 'next/headers';
 import { getT } from '@/i18n/server';
 import {
@@ -612,6 +612,7 @@ export async function saveCorpMailAction(_prev: SystemState, formData: FormData)
     imapPort: String(formData.get('imapPort') ?? ''),
     smtpHost: String(formData.get('smtpHost') ?? ''),
     smtpPort: String(formData.get('smtpPort') ?? ''),
+    appIps: parseIpList(String(formData.get('appIps') ?? '')),
   });
   revalidatePath('/settings');
   if (String(formData.get('domain') ?? '').trim() && !config.domain) return { error: 'دامنه معتبر نیست.' };

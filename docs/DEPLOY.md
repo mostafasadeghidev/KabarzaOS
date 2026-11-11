@@ -256,6 +256,20 @@ app, so a key limited to the network's subnet is refused.
 Every URL is built from `STALWART_URL`, so switching between the two
 setups only changes that variable.
 
+The key needs every permission an ordinary user account has, on top of
+the eight above: Stalwart refuses to let a key change an account that
+holds permissions the key itself lacks.
+
+**Inbox in the app.** Each employee connects their mailbox once with
+their email password; the app uses it only to get a separate read-only
+app password (read mail, attachments, mark as read) and discards it.
+New mailboxes created from the app are connected automatically. Set
+"Allowed IPs for reading mailboxes" in Settings → Company email to the
+network the app reaches Stalwart from (for example `10.0.4.0/24`), so
+those app passwords work from nowhere else. Until it is set, connecting
+mailboxes stays off: an app password with no IP limit would also work
+over IMAP from the internet.
+
 ## Backups
 
 Settings → Backups (owner only). A backup is **one encrypted file**

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import { TG_CATEGORIES, TG_CATEGORY_LABELS } from '@/domain/telegram/prefs';
@@ -644,11 +645,15 @@ function MailSetup({ setup, address }: {
   const tr = useT();
   return (
     <div className="mt-1.5 grid gap-0.5 text-xs text-muted-foreground">
-      {setup.webmailUrl && (
-        <a href={setup.webmailUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-          {tr('ورود به وب‌میل')}
-        </a>
-      )}
+      <span className="flex flex-wrap gap-x-3">
+        {/* صندوقِ ورودیِ داخلِ برنامه (۲.۶۲.۰) — اولین بار همان‌جا وصل می‌شود. */}
+        <Link href="/mail" className="text-primary hover:underline">{tr('دیدنِ ایمیل‌ها در برنامه')}</Link>
+        {setup.webmailUrl && (
+          <a href={setup.webmailUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            {tr('ورود به وب‌میل')}
+          </a>
+        )}
+      </span>
       {(setup.imapHost || setup.smtpHost) && (
         <span>
           {tr('گوشی یا Outlook:')}{' '}

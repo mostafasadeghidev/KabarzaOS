@@ -45,3 +45,11 @@ describe('ایمیلِ شرکتی — قواعد', () => {
     expect(addressOf(' Sara ', config)).toBe('sara@example.com');
   });
 });
+
+describe('IPهای مجاز', () => {
+  it('IPv4 و CIDR ِ معتبر، بقیه دور ریخته می‌شوند', async () => {
+    const { parseIpList } = await import('./config');
+    expect(parseIpList('10.0.4.0/24, 203.0.113.7 300.1.1.1 10.0.4.0/33 a.b 10.0.4.0/24'))
+      .toEqual(['10.0.4.0/24', '203.0.113.7']);
+  });
+});
