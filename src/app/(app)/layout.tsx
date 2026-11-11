@@ -1,5 +1,6 @@
 import { unreadMessageCount } from '@/server/messaging/service';
 import { getCompany } from '@/server/people/profile-service';
+import { mailboxState } from '@/server/corp-mail/mailbox';
 import { redirect } from 'next/navigation';
 import { currentSession } from '@/server/auth';
 import { can, canViewSection, type Permission, type Role, type Section } from '@/domain/access/permissions';
@@ -192,6 +193,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    * «کتابخانهٔ کد» (۲.۳۷.۰) — مالِ تیم (مالک، همکارِ ادمین، عضو)، نه مالی و نه
    * کارفرما؛ کارفرما راهنمای پروژه‌اش را در تبِ همان پروژه می‌بیند.
    */
+  /**
+   * «ایمیل» (۲.۶۲.۰) — فقط برای کسی که صندوقِ شرکتیِ وصل‌شده به نامش دارد.
+   * ⚠️ بی درخواستِ بیرونی: فقط ردیفِ دفتر خوانده می‌شود، پس هر صفحه کند نمی‌شود.
+   */
+  if ((await mailboxState(actor.id)) !== 'none') {
+    items.push({ href: '/mail', label: t("ایمیل"), icon: 'mail', group: 'operations' });
+  }
+
   if (canUseLibrary(actor)) {
     items.push({ href: '/library', label: t("کتابخانهٔ کد"), icon: 'library', group: 'operations' });
   }

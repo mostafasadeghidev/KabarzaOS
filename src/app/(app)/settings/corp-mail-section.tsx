@@ -138,6 +138,13 @@ export function CorpMailSection({ view }: { view: CorpMailSettingsView }) {
           <p className="text-xs text-muted-foreground">
             {t('لینکِ وب‌میل و سرورهای IMAP و SMTP به کارمند نشان داده می‌شوند تا ایمیلش را در گوشی یا Outlook تنظیم کند.')}
           </p>
+          <Field>
+            <FieldLabel htmlFor="cm-app-ips">{t('IP های مجاز برای خواندنِ صندوق')}</FieldLabel>
+            <Input id="cm-app-ips" name="appIps" dir="ltr" defaultValue={config.appIps.join(', ')} placeholder="10.0.4.0/24" />
+            <FieldDescription>
+              {t('رمزِ مخصوصی که برنامه برای خواندنِ صندوقِ هر کارمند می‌گیرد فقط از این IPها پذیرفته می‌شود. همان شبکه‌ای که برنامه از آن به سرورِ ایمیل وصل است. خالی = بی‌محدودیت.')}
+            </FieldDescription>
+          </Field>
           <div>
             <Button type="submit" size="sm">{t('ذخیره')}</Button>
           </div>

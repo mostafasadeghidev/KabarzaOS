@@ -12,6 +12,7 @@ import {
 } from '@/domain/corp-mail/accounts';
 import { isCorpMailConfigured, JmapError, jmapCall, result, sessionAccountId } from './jmap';
 import { corpMailConfig } from './settings';
+import { issueAppPassword } from './mailbox';
 
 /**
  * حساب‌های ایمیلِ شرکتی (۲.۶۰.۰): فهرست از Stalwart، جفت‌کردن با اعضا، alias.
@@ -212,7 +213,7 @@ export async function linkMailAccount(actor: Actor, accountId: string, userId: n
     const now = new Date();
     if (current) {
       await tx.update(serviceGrants)
-        .set({ revokedAt: now, revokedBy: actor.id, updatedAt: now, secretEnc: '' })
+        .set({ revokedAt: now, revokedBy: actor.id, updatedAt: now, secretEnc: '', appSecretEnc: '' })
         .where(eq(serviceGrants.id, current.id));
       await tx.insert(auditLog).values({
         actorType: 'user', actorId: actor.id, action: 'corp_mail.unlink', objectType: 'service_grant', objectId: current.id,
@@ -412,6 +413,7 @@ export async function createMailAccount(actor: Actor, input: CreateMailInput): P
       return row!.id;
     });
     await audit(actor, 'corp_mail.create', grantId, null, { account: created.address, userId: input.userId, aliases: input.aliases });
+    await connectQuietly(grantId, created.address, password);
     return { grantId, address: created.address };
   } catch (error) {
     console.error('[corp-mail] created but not linked', created.address, error instanceof Error ? error.name : 'error');
@@ -443,8 +445,10 @@ export async function resetMailPassword(actor: Actor, accountId: string): Promis
     const set = result<SetResult>(responses, 's');
     if (set.notUpdated?.[account.id]) refused('update', set.notUpdated[account.id]);
   } catch (error) { wrap(error); }
-  await db.update(serviceGrants).set({ secretEnc: seal(password), updatedAt: new Date() }).where(eq(serviceGrants.id, link.id));
+  // ⚠️ credentials ِ تازه app password ِ قبلی را هم باطل کرد؛ کلیدِ برنامه پاک و دوباره گرفته می‌شود.
+  await db.update(serviceGrants).set({ secretEnc: seal(password), appSecretEnc: '', updatedAt: new Date() }).where(eq(serviceGrants.id, link.id));
   await audit(actor, 'corp_mail.password', link.id, null, { account: address });
+  await connectQuietly(link.id, address, password);
   return { grantId: link.id };
 }
 
@@ -479,10 +483,22 @@ export async function closeMailAccount(actor: Actor, accountId: string): Promise
   const now = new Date();
   if (link) {
     await db.update(serviceGrants)
-      .set({ revokedAt: now, revokedBy: actor.id, updatedAt: now, secretEnc: '' })
+      .set({ revokedAt: now, revokedBy: actor.id, updatedAt: now, secretEnc: '', appSecretEnc: '' })
       .where(and(eq(serviceGrants.id, link.id), isNull(serviceGrants.revokedAt)));
   }
   await audit(actor, 'corp_mail.close', link?.id ?? 0, link ? { account: address, userId: link.userId } : { account: address }, null);
+}
+
+/**
+ * اتصالِ صندوق به برنامه با رمزی که همین حالا ساخته شد (۲.۶۲.۰).
+ * ⚠️ شکستش ساختن یا رمزِ تازه را خراب نمی‌کند؛ کارمند بعداً خودش «اتصال» می‌زند.
+ */
+async function connectQuietly(grantId: number, address: string, password: string) {
+  try {
+    await issueAppPassword(grantId, address, password);
+  } catch (error) {
+    console.warn('[corp-mail] auto-connect failed', address, error instanceof Error ? error.message : 'error');
+  }
 }
 
 /**

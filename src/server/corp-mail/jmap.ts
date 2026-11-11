@@ -103,7 +103,9 @@ export interface JmapSession {
 export async function sessionAccountId(auth: JmapAuth = { kind: 'admin' }, capability = 'urn:stalwart:jmap'): Promise<string> {
   const session = (await request('/jmap/session', auth, { method: 'GET' })) as Partial<JmapSession> | null;
   const primary = session?.primaryAccounts ?? {};
-  const id = primary[capability] ?? primary['urn:ietf:params:jmap:core'] ?? Object.keys(session?.accounts ?? {})[0];
+  // هر حسابِ اصلیِ دیگری هم پذیرفته است: نشستِ کاربرِ عادی گاهی همهٔ قابلیت‌ها را فهرست نمی‌کند.
+  const id = primary[capability] ?? primary['urn:ietf:params:jmap:core'] ?? Object.values(primary)[0]
+    ?? Object.keys(session?.accounts ?? {})[0];
   if (!id) throw new JmapError('bad_response', 'no account');
   return id;
 }

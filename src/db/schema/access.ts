@@ -312,6 +312,11 @@ export const serviceGrants = pgTable('service_grants', {
   secretEnc: text('secret_enc').notNull().default(''),
   /** شناسهٔ حساب روی سرورِ سرویس (۲.۶۰.۰) — برای ایمیلِ شرکتی، id ِ حساب در Stalwart. */
   externalId: text('external_id').notNull().default(''),
+  /**
+   * app password ِ ایمیلِ شرکتی (۲.۶۲.۰) — برای خواندنِ صندوق از سمتِ سرور.
+   * ⚠️ مثلِ `secret_enc` هرگز در select ِ فهرست‌ها نمی‌آید و به مرورگر نمی‌رسد.
+   */
+  appSecretEnc: text('app_secret_enc').notNull().default(''),
   note: text('note').notNull().default(''),
   grantedAt: ts('granted_at').notNull().defaultNow(),
   grantedBy: fk('granted_by').references(() => users.id, { onDelete: 'set null' }),

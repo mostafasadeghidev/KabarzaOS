@@ -651,7 +651,7 @@ export async function revokeMany(actor: Actor, grantIds: number[]): Promise<numb
   const now = new Date();
   // ⚠️ با قطعِ دسترسی رمز هم پاک می‌شود — ردیف برای تاریخچه می‌ماند، رمز نه.
   await db.update(serviceGrants)
-    .set({ revokedAt: now, revokedBy: actor.id, updatedAt: now, secretEnc: '' })
+    .set({ revokedAt: now, revokedBy: actor.id, updatedAt: now, secretEnc: '', appSecretEnc: '' })
     .where(inArray(serviceGrants.id, open.map((r) => r.id)));
 
   for (const row of open) {
@@ -723,7 +723,7 @@ export async function revokeAccess(actor: Actor, grantId: number) {
   }
 
   await db.update(serviceGrants)
-    .set({ revokedAt: new Date(), revokedBy: actor.id, updatedAt: new Date(), secretEnc: '' })
+    .set({ revokedAt: new Date(), revokedBy: actor.id, updatedAt: new Date(), secretEnc: '', appSecretEnc: '' })
     .where(eq(serviceGrants.id, grantId));
   await audit(actor, 'service_grant.revoke', 'service_grant', grantId, grant, null);
 }

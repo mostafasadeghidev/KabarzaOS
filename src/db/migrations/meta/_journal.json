@@ -498,6 +498,13 @@
       "when": 1789698000041,
       "tag": "0070_corp_mail",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1789698000042,
+      "tag": "0071_corp_mail_app_secret",
+      "breakpoints": true
     }
   ]
 }
