@@ -119,6 +119,14 @@ services:
       default:
         aliases: [kabarzaos-storage]
     command: server /data --console-address ':9001'
+    # ⚠️ سلامت‌سنجی (۲.۵۹.۲): بی‌آن Coolify وضعیتِ برنامه را «بی سلامت‌سنجی» نشان می‌داد.
+    # ایمیجِ Silo خودش curl دارد؛ این مسیر بی‌کلید و فقط از داخلِ کانتینر است.
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', '-o', '/dev/null', 'http://127.0.0.1:9000/minio/health/live']
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     environment:
       # ⚠️ رازِ خودِ MinIO جدا از کلیدهای اپ قابلِ تنظیم است: وقتی اپ را به انبارِ
       # دیگری می‌بری، S3_* عوض می‌شوند و بدونِ این، MinIO ِ قدیمی هم با کلیدِ تازه
@@ -157,7 +165,7 @@ services:
       sh -c 'while true; do
         S="$$CRON_SECRET";
         [ "$${#S}" -ge 32 ] || S=$$(cat /secrets/cron_secret 2>/dev/null || true);
-        [ -n "$$S" ] && curl -fsS -m 30 -H "x-cron-secret: $$S" http://kabarzaos-app:3000/api/cron/tick >/dev/null || true;
+        [ -n "$$S" ] && curl -fsS -m 30 -H "x-cron-secret: $$S" http://kabarzaos-app:3000/api/cron/tick >/dev/null && touch /tmp/tick-ok || true;
         sleep 300;
       done'
     # ⚠️ service_healthy نه service_started: با started، اولین تیک به اپِ
@@ -165,6 +173,14 @@ services:
     # پنجرهٔ مردهٔ بی‌دلیل در هر راه‌اندازی.
     depends_on:
       app: { condition: service_healthy }
+    # ⚠️ سالم = آخرین تیکِ **موفق** کمتر از ۱۵ دقیقه پیش (هر ۵ دقیقه یک تیک). پس رازِ
+    # ناجور یا اپِ ازکارافتاده هم به‌جای «در حالِ اجرا» ِ گمراه‌کننده، ناسالم دیده می‌شود.
+    healthcheck:
+      test: ['CMD-SHELL', 'find /tmp/tick-ok -mmin -15 2>/dev/null | grep -q .']
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
 
 networks:
   # نامِ شبکهٔ Stalwart در Coolify با STALWART_NETWORK. خالی = شبکهٔ `coolify` که
