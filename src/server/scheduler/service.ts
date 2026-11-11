@@ -50,6 +50,8 @@ export interface TickReport {
   timers: number;
   nudges: number;
   cleaned: boolean;
+  /** خبرهای ایمیلِ تازه (۲.۶۳.۰). */
+  newMail: number;
   dailyReport: boolean;
   /** یادآوریِ کارهای آنبوردینگِ عقب‌افتاده — هر کار یک بار. */
   onboarding: number;
@@ -446,7 +448,7 @@ async function runQuietDigests(now: Date): Promise<number> {
 export async function runTick(now = new Date()): Promise<TickReport> {
   const report: TickReport = {
     reminders: 0, meetings: 0, timers: 0, nudges: 0, cleaned: false, dailyReport: false, onboarding: 0, backup: false, briefs: 0,
-    evenings: 0, quietDigests: 0,
+    evenings: 0, quietDigests: 0, newMail: 0,
   };
 
   const jobs: Array<[keyof TickReport, () => Promise<number | boolean>]> = [
@@ -460,6 +462,7 @@ export async function runTick(now = new Date()): Promise<TickReport> {
     ['briefs', () => runMorningBriefs(now)],
     ['evenings', () => runEveningReports(now)],
     ['quietDigests', () => runQuietDigests(now)],
+    ['newMail', () => runNewMail(now)],
     ['cleaned', () => runCleanup(now)],
   ];
 
@@ -475,6 +478,32 @@ export async function runTick(now = new Date()): Promise<TickReport> {
 
   await writeStamp('last_tick', now.toISOString());
   return report;
+}
+
+/**
+ * خبرِ ایمیلِ تازهٔ صندوقِ شرکتی (۲.۶۳.۰) — هر تیک (۵ دقیقه).
+ * ⚠️ کانالِ ایمیل بسته است؛ برنامه، Push و تلگرام (با خاموش‌کردنِ دستهٔ «ایمیلِ تازه»).
+ */
+async function runNewMail(now: Date): Promise<number> {
+  const { notifyNewMail } = await import('@/server/corp-mail/mailbox');
+  return notifyNewMail(now, async (userId, mail, inboxId) => {
+    const folder = inboxId ? `?folder=${encodeURIComponent(inboxId)}` : '';
+    if ('count' in mail) {
+      await notify([userId], {
+        type: 'mail.new', title: '{n} ایمیلِ تازه', params: { n: mail.count },
+        url: `/mail${folder}`, channels: { email: false },
+      });
+      return;
+    }
+    await notify([userId], {
+      type: 'mail.new',
+      title: 'ایمیلِ تازه از {from}',
+      body: '{subject}',
+      params: { from: mail.from || '—', subject: mail.subject || '—' },
+      url: `/mail/${encodeURIComponent(mail.id)}${folder}`,
+      channels: { email: false },
+    });
+  });
 }
 
 /** آخرین تیکِ موفق — نشانگرِ سلامتِ زمان‌بند. */

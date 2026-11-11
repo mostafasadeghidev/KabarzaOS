@@ -130,3 +130,46 @@ describe('بسته‌پیش‌فرضِ IP', () => {
     await expect(connectMailbox(actorOf(me), REAL_PASSWORD)).rejects.toMatchObject({ code: 'no_app_ips' });
   });
 });
+
+describe('خبرِ ایمیلِ تازه (۲.۶۳.۰)', () => {
+  it('⚠️ بارِ اول فقط نقطهٔ شروع؛ بعد فقط ایمیل‌های تازهٔ نخوانده؛ بیش از ۳ = یک خبر', async () => {
+    const { notifyNewMail } = await import('@/server/corp-mail/mailbox');
+    await db.update(serviceGrants).set({ appSecretEnc: seal('app-secret'), mailNotifiedAt: null }).where(eq(serviceGrants.userId, me));
+    await db.update(serviceGrants).set({ appSecretEnc: '' }).where(eq(serviceGrants.userId, other));
+
+    let inbox: Array<{ id: string; receivedAt: string; subject: string }> = [];
+    const queries: Array<Record<string, unknown>> = [];
+    const original = globalThis.fetch;
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
+      if (url.endsWith('/jmap/session')) return Response.json({ primaryAccounts: { 'urn:ietf:params:jmap:mail': 'm' }, accounts: {} });
+      const { methodCalls } = JSON.parse(String(init.body)) as { methodCalls: Array<[string, Record<string, unknown>, string]> };
+      return Response.json({
+        methodResponses: methodCalls.map(([name, args, tag]) => {
+          if (name === 'Mailbox/query') return [name, { ids: ['inbox1'] }, tag];
+          if (name === 'Email/query') { queries.push(args.filter as Record<string, unknown>); return [name, { ids: inbox.map((m) => m.id) }, tag]; }
+          if (name === 'Email/get') return [name, { list: inbox.map((m) => ({ ...m, from: [{ name: 'Ali', email: 'a@x' }] })) }, tag];
+          return ['error', { ['type']: 'unknownMethod' }, tag];
+        }),
+      });
+    }));
+
+    const sent: Array<{ userId: number; mail: unknown }> = [];
+    const send = async (userId: number, mail: unknown) => { sent.push({ userId, mail }); };
+
+    // بارِ اول: هیچ خبری، فقط زمانِ شروع.
+    await notifyNewMail(new Date('2026-11-11T10:00:00Z'), send);
+    expect(sent).toHaveLength(0);
+
+    inbox = [{ id: 'n1', receivedAt: '2026-11-11T10:02:00Z', subject: 'سلام' }];
+    expect(await notifyNewMail(new Date('2026-11-11T10:05:00Z'), send)).toBe(1);
+    expect(sent[0]).toMatchObject({ userId: me, mail: { id: 'n1', from: 'Ali', subject: 'سلام' } });
+    expect(queries.at(-1)).toMatchObject({ inMailbox: 'inbox1', after: '2026-11-11T10:00:00.000Z', notKeyword: '$seen' });
+
+    // تیکِ بعد از همان ایمیل جلوتر می‌پرسد، نه دوباره.
+    inbox = Array.from({ length: 5 }, (_, i) => ({ id: `b${i}`, receivedAt: `2026-11-11T10:0${6 + i}:00Z`, subject: `s${i}` }));
+    await notifyNewMail(new Date('2026-11-11T10:15:00Z'), send);
+    expect(queries.at(-1)).toMatchObject({ after: '2026-11-11T10:02:00.000Z' });
+    expect(sent.at(-1)).toMatchObject({ mail: { count: 5 } });
+    vi.stubGlobal('fetch', original);
+  });
+});

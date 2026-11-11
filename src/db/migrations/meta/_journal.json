@@ -505,6 +505,13 @@
       "when": 1789698000042,
       "tag": "0071_corp_mail_app_secret",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1789698000043,
+      "tag": "0072_corp_mail_notified",
+      "breakpoints": true
     }
   ]
 }

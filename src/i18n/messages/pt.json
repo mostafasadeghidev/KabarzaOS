@@ -4982,5 +4982,8 @@
   "تنظیم در گوشی یا Outlook": "Configurar no celular ou no Outlook",
   "دانلود یا ورود": "Baixar ou entrar",
   "دریافت (IMAP)": "Recebimento (IMAP)",
-  "رمز همان رمزِ بالاست. بعد از اولین ورود، بهتر است از وب‌میل عوضش کنی.": "A senha é a de cima. Depois do primeiro acesso, troque-a no webmail."
+  "رمز همان رمزِ بالاست. بعد از اولین ورود، بهتر است از وب‌میل عوضش کنی.": "A senha é a de cima. Depois do primeiro acesso, troque-a no webmail.",
+  "{n} ایمیلِ تازه": "{n} novos e-mails",
+  "ایمیلِ تازه": "Novo e-mail",
+  "ایمیلِ تازه از {from}": "Novo e-mail de {from}"
 }
