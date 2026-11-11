@@ -21,7 +21,10 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
+import { formatDateTime } from '@/i18n/datetime';
+import { agoLabel } from '@/domain/people/last-online';
+import { Hint } from '@/components/ui/tooltip';
 import { useConfirm } from '@/components/ui/confirm';
 import { TagChip } from '@/components/ui/tag-chip';
 import { CopyText } from '@/components/copy-text';
@@ -37,6 +40,8 @@ export interface PersonView {
   avatarFileId: number | null;
   /** حضورِ زنده. */
   presence: PresenceState | null;
+  /** «آخرین حضور» (۲.۶۴.۰) — فقط وقتی حضور روشن است. */
+  lastOnlineAt?: Date | string | null;
   /** «همکارِ ادمین» است؟ فقط این افراد دسترسیِ پیکربندی‌شدنی دارند. */
   isStaff: boolean;
   /** رمز دارد؟ اگر نه، هنوز نمی‌تواند وارد شود. */
@@ -108,6 +113,7 @@ export function PersonCard({
   onNotice: (message: string, isError: boolean) => void;
 }) {
   const tr = useT();
+  const tz = useTimeZone();
   const confirm = useConfirm();
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [passwordState, setPasswordState] = useState<PasswordState>({});
@@ -152,6 +158,20 @@ export function PersonCard({
                 person.name
               )}
             </p>
+            {/*
+              «آخرین حضور» (۲.۶۴.۰) — فقط برای آفلاین‌ها؛ آنلاین را نقطهٔ سبز می‌گوید.
+              ⚠️ suppressHydrationWarning: «چند دقیقه پیش» در سرور و مرورگر چند ثانیه فاصله دارد.
+            */}
+            {person.presence === 'offline' && (person.lastOnlineAt ? (
+              // زمانِ دقیق در راهنمای برنامه (Hint)، نه title ِ خامِ مرورگر.
+              <Hint label={formatDateTime(person.lastOnlineAt, tz)}>
+                <p className="w-fit text-xs text-muted-foreground" suppressHydrationWarning>
+                  {tr('آخرین حضور: {when}', { when: agoLabel(person.lastOnlineAt, tr) })}
+                </p>
+              </Hint>
+            ) : (
+              <p className="text-xs text-muted-foreground">{tr('هنوز حضوری ثبت نشده')}</p>
+            ))}
             {/* پورتِ کارتِ افزونه: نامِ کاربری (login) کنارِ نام. */}
             {person.username && (
               <p className="num text-xs text-muted-foreground" dir="ltr">@{person.username}</p>

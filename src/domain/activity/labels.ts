@@ -242,6 +242,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'backup.destination.update': 'ویرایشِ مقصدِ پشتیبان',
   'backup.destination.delete': 'حذفِ مقصدِ پشتیبان',
   'backup.download': 'دانلودِ فایلِ پشتیبان',
+  'backup.local.delete': 'حذفِ نسخهٔ پشتیبانِ روی سرور',
   'fiscal.close': 'بستنِ دورهٔ مالی',
   'fiscal.recompute': 'بازمحاسبهٔ معادلِ یورو',
   'fiscal.reopen': 'بازگشاییِ دورهٔ مالی',

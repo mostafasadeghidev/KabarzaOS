@@ -4986,5 +4986,15 @@
   "{n} ایمیلِ تازه": "{n} neue E-Mails",
   "ایمیلِ تازه": "Neue E-Mail",
   "ایمیلِ تازه از {from}": "Neue E-Mail von {from}",
-  "این پشتیبان‌گیری نیمه‌کاره ماند (برنامه دوباره راه افتاد یا سرور جابه‌جا شد). دوباره بگیرید.": "Diese Sicherung wurde nicht beendet (App neu gestartet oder Server umgezogen). Bitte erneut ausführen."
+  "این پشتیبان‌گیری نیمه‌کاره ماند (برنامه دوباره راه افتاد یا سرور جابه‌جا شد). دوباره بگیرید.": "Diese Sicherung wurde nicht beendet (App neu gestartet oder Server umgezogen). Bitte erneut ausführen.",
+  "{n} ماه پیش": "vor {n} Monaten",
+  "آخرین حضور: {when}": "Zuletzt gesehen: {when}",
+  "این نسخه از سرور حذف شود؟": "Diese Kopie vom Server löschen?",
+  "حذفِ نسخهٔ پشتیبانِ روی سرور": "Sicherungskopie auf dem Server gelöscht",
+  "فقط نسخهٔ روی همین سرور پاک می‌شود و برنمی‌گردد. نسخه‌هایی که به مقصدها (مثلاً Nextcloud) فرستاده شده‌اند دست نمی‌خورند.": "Nur die Kopie auf diesem Server wird gelöscht; das lässt sich nicht rückgängig machen. Kopien an Zielen (z. B. Nextcloud) bleiben unberührt.",
+  "نسخه حذف شد.": "Kopie gelöscht.",
+  "هنوز حضوری ثبت نشده": "Noch nicht gesehen",
+  "نشانی‌های دیگرِ همین صندوق": "Weitere Adressen dieses Postfachs",
+  "ایمیلِ همهٔ این نشانی‌ها به همین صندوق می‌آید. برای ورود در گوشی و Outlook همیشه نشانیِ اصلیِ بالا را بزن.": "E-Mails an alle diese Adressen landen in diesem Postfach. Zur Anmeldung auf Telefon oder in Outlook immer die Hauptadresse oben verwenden.",
+  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "Der Benutzername ist immer die Hauptadresse, auch wenn das Postfach weitere Adressen hat."
 }

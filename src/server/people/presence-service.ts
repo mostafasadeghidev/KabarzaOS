@@ -62,11 +62,13 @@ export async function touch(actor: Actor, focused: boolean, config?: PresenceCon
   const current = rows[0];
   if (!current) return;
 
-  const patch: { lastSeenAt?: Date; lastActiveAt?: Date } = {};
+  const patch: { lastSeenAt?: Date; lastActiveAt?: Date; lastOnlineAt?: Date } = {};
 
   // گلوگاه: ضربانِ زودهنگام نوشته نمی‌شود.
   if (shouldWrite({ lastWrite: current.lastSeenAt, now, config })) {
     patch.lastSeenAt = now;
+    // «آخرین حضور» همراهِ همین نوشتن — بی هیچ نوشتنِ اضافه (۲.۶۴.۰).
+    patch.lastOnlineAt = now;
   }
   if (focused && shouldWrite({ lastWrite: current.lastActiveAt, now, config })) {
     patch.lastActiveAt = now;
@@ -82,8 +84,9 @@ export async function touch(actor: Actor, focused: boolean, config?: PresenceCon
  * ⚠️ بدونِ این، کاربری که تبش را می‌بندد تا پنج دقیقه «آنلاین» می‌ماند.
  */
 export async function markOffline(actor: Actor): Promise<void> {
+  // ⚠️ «آخرین حضور» همین لحظه است و برخلافِ حضورِ زنده پاک نمی‌شود (۲.۶۴.۰).
   await db.update(users)
-    .set({ lastSeenAt: null, lastActiveAt: null })
+    .set({ lastSeenAt: null, lastActiveAt: null, lastOnlineAt: new Date() })
     .where(eq(users.id, actor.id));
 }
 

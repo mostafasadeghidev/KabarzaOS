@@ -4,6 +4,7 @@ import { currentActor } from '@/server/auth';
 import { getAccountInfo, getCompany, getMyProfile } from '@/server/people/profile-service';
 import { myGrants } from '@/server/access/service';
 import { corpMailConfig } from '@/server/corp-mail/settings';
+import { ownMailAliases } from '@/server/corp-mail/accounts';
 import { ProfileView } from './profile-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
@@ -85,8 +86,8 @@ export default async function ProfilePage() {
           myAccess,
           // فقط وقتی خودش صندوقِ شرکتی دارد — نشانیِ وب‌میل و سرورها، بی هیچ راز (۲.۶۱.۰).
           mailSetup: myAccess.some((g) => g.provider === 'stalwart')
-            ? await corpMailConfig().then(({ webmailUrl, imapHost, imapPort, smtpHost, smtpPort }) => ({
-              webmailUrl, imapHost, imapPort, smtpHost, smtpPort,
+            ? await Promise.all([corpMailConfig(), ownMailAliases(actor.id)]).then(([{ webmailUrl, imapHost, imapPort, smtpHost, smtpPort }, aliases]) => ({
+              webmailUrl, imapHost, imapPort, smtpHost, smtpPort, aliases,
             }))
             : null,
           isOwner,

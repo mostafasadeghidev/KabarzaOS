@@ -512,6 +512,13 @@
       "when": 1789698000043,
       "tag": "0072_corp_mail_notified",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1789698000044,
+      "tag": "0073_users_last_online",
+      "breakpoints": true
     }
   ]
 }

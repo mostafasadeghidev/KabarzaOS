@@ -520,3 +520,36 @@ export async function isManagedService(serviceId: number): Promise<boolean> {
   const [row] = await db.select({ provider: services.provider }).from(services).where(eq(services.id, serviceId));
   return row?.provider === PROVIDER;
 }
+
+/**
+ * نشانی‌های دیگرِ (alias) صندوقِ خودِ کاربر — برای «دسترسی‌های من» (۲.۶۴.۰).
+ *
+ * ⚠️ aliasها فقط روی سرورِ ایمیل‌اند (از پنلِ Stalwart هم عوض می‌شوند)، پس هر بار
+ * زنده خوانده می‌شوند. فقط روشن‌ها، با دامنهٔ هر کدام. شکستِ سرورِ ایمیل = فهرستِ
+ * خالی، نه شکستنِ پروفایل. فقط صندوقِ وصل به `userId` خوانده می‌شود.
+ */
+export async function ownMailAliases(userId: number): Promise<string[]> {
+  if (!isCorpMailConfigured()) return [];
+  const [row] = await db.select({ externalId: serviceGrants.externalId })
+    .from(serviceGrants)
+    .innerJoin(services, eq(services.id, serviceGrants.serviceId))
+    .where(and(
+      eq(serviceGrants.userId, userId), isNull(serviceGrants.revokedAt),
+      eq(services.provider, PROVIDER), ne(serviceGrants.externalId, ''),
+    ));
+  if (!row) return [];
+  try {
+    const adminId = await sessionAccountId();
+    const responses = await jmapCall([
+      ['x:Domain/get', { accountId: adminId, ids: null, properties: ['name'] }, 'd'],
+      ['x:Account/get', { accountId: adminId, ids: [row.externalId], properties: ['aliases'] }, 'a'],
+    ]);
+    const names = new Map((result<{ list?: Array<{ id: string; name: string }> }>(responses, 'd').list ?? []).map((d) => [d.id, d.name]));
+    const account = (result<{ list?: Array<{ aliases?: unknown }> }>(responses, 'a').list ?? [])[0];
+    return aliasList(account?.aliases)
+      .filter((a) => a.enable && names.has(a.domainId))
+      .map((a) => `${a.name}@${names.get(a.domainId)}`);
+  } catch {
+    return [];
+  }
+}

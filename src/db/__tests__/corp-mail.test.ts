@@ -214,3 +214,12 @@ describe('پیامِ ردِ Stalwart', () => {
     expect(corpMailMessage('stalwart', 'network')).toContain('کمی بعد');
   });
 });
+
+describe('نشانی‌های دیگر در «دسترسی‌های من» (۲.۶۴.۰)', () => {
+  it('aliasهای روشنِ صندوقِ خودِ کاربر با دامنه؛ بی‌صندوق = خالی', async () => {
+    const { ownMailAliases } = await import('@/server/corp-mail/accounts');
+    await linkMailAccount(manager, 'e', sara);
+    expect(await ownMailAliases(sara)).toEqual(['hi@example.com']);
+    expect(await ownMailAliases(gone)).toEqual([]);
+  });
+});

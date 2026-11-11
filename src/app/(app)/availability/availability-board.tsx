@@ -9,6 +9,7 @@ import type { CellState } from '@/domain/availability/team';
 import type { PresenceState } from '@/domain/people/presence';
 import { PRESENCE_LABELS } from '@/domain/people/presence';
 import { PresenceDot } from '@/components/presence';
+import { agoLabel } from '@/domain/people/last-online';
 import { Thumb } from '@/components/thumb';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useT } from '@/i18n/client';
@@ -32,6 +33,8 @@ export interface BoardRow {
   id: number;
   name: string;
   presence: PresenceState | null;
+  /** «آخرین حضور» (۲.۶۴.۰). */
+  lastOnlineAt: string | null;
   avatarFileId: number | null;
   hasSchedule: boolean;
   availableNow: boolean;
@@ -73,6 +76,15 @@ function ago(
   return t('{n} روز پیش', { n: Math.floor(hours / 24) });
 }
 
+function LastOnline({ at }: { at: string }) {
+  const t = useT();
+  return (
+    <span className="text-xs text-muted-foreground" suppressHydrationWarning>
+      · {t('آخرین حضور: {when}', { when: agoLabel(at, t) })}
+    </span>
+  );
+}
+
 function PersonName({ row }: { row: BoardRow }) {
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
@@ -81,6 +93,8 @@ function PersonName({ row }: { row: BoardRow }) {
       <Thumb id={row.id} title={row.name} fileId={row.avatarFileId} person size={22} className="rounded-full" />
       {/* ⚠️ /members/{id} وجود ندارد؛ پروفایلِ عضو در گزارش‌هاست — همان لینکِ کارتِ افراد. */}
       <Link href={`/reports/member/${row.id}`} className="hover:underline">{row.name}</Link>
+      {/* «آخرین حضور» (۲.۶۴.۰) — فقط برای آفلاین‌ها. */}
+      {row.presence === 'offline' && row.lastOnlineAt && <LastOnline at={row.lastOnlineAt} />}
     </span>
   );
 }
