@@ -244,7 +244,7 @@ export async function myGrants(actor: Actor) {
  *
  * @returns رمز، یا `null` وقتی رمزی نیست یا با کلیدِ فعلی باز نمی‌شود.
  */
-export async function revealGrantSecret(actor: Actor, grantId: number): Promise<string | null> {
+export async function revealGrantSecret(actor: Actor, grantId: number, opts: { viewingAs?: number | null } = {}): Promise<string | null> {
   const [grant] = await db.select({
     userId: serviceGrants.userId,
     secretEnc: serviceGrants.secretEnc,
@@ -255,7 +255,8 @@ export async function revealGrantSecret(actor: Actor, grantId: number): Promise<
   if (grant.userId !== actor.id && !canManageSection(actor, 'members')) throw new ForbiddenError('service_grant.secret');
   if (grant.revokedAt !== null || grant.secretEnc === '') return null;
 
-  await audit(actor, 'service_grant.secret_view', 'service_grant', grantId);
+  // در «دیدن به‌جای کاربر» به اسمِ خودِ مالک ثبت می‌شود و اینکه به‌جای چه کسی بود (۲.۶۳.۱).
+  await audit(actor, 'service_grant.secret_view', 'service_grant', grantId, null, opts.viewingAs ? { viewingAs: opts.viewingAs } : null);
   return openSecret(grant.secretEnc);
 }
 
