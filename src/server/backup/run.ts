@@ -40,7 +40,6 @@ import pkg from '../../../package.json';
 const BACKUP_DIR = () => process.env.BACKUP_DIR || '/app/backups';
 const SECRET_DIR = () => process.env.SECRET_DIR || '/app/data';
 /** پشتیبانی که بیش از این «در حالِ اجرا» مانده، یعنی پردازه وسطِ کار مُرده. */
-const STALE_MS = 3 * 60 * 60 * 1000;
 /**
  * رازهایی که بازگردانی لازم دارد — فقط همین نام‌ها، نه هر چه در پوشه است.
  * ⚠️ مقدارِ مؤثر از متغیرِ محیط خوانده می‌شود، نه فقط از فایل: اگر مدیر رازی را
@@ -184,22 +183,43 @@ async function ownerIds(): Promise<number[]> {
   return rows.map((r) => r.id);
 }
 
-let running = false;
+/**
+ * ⚠️ قفلِ درونِ پردازه روی globalThis (۲.۶۳.۲): مسیرهای جدای Next (اکشن، تیکِ
+ * زمان‌بند) ممکن است نسخهٔ جدای این ماژول را بارگذاری کنند.
+ */
+const lock = globalThis as typeof globalThis & { __kbzBackupRunning?: boolean };
+const setRunning = (v: boolean) => { lock.__kbzBackupRunning = v; };
+
+/** همین حالا در همین پردازه پشتیبانی ساخته می‌شود؟ */
+export function backupInProcess(): boolean {
+  return lock.__kbzBackupRunning === true;
+}
+
+/**
+ * وضعیتِ «در جریان» که هیچ پردازه‌ای پشتش نیست = نیمه‌کاره (۲.۶۳.۲).
+ *
+ * ⚠️ دو راه به اینجا می‌رسد: برنامه وسطِ کار ریستارت شد، یا — آنچه واقعاً پیش آمد —
+ * پشتیبانی که روی سرورِ قدیم در جریان بود با `pg_dump` در فایلِ پشتیبان رفت و
+ * پس از بازگردانی روی سرورِ تازه برای همیشه «در جریان» ماند و دکمه را هم بست.
+ * برنامه یک نمونه است و پشتیبان در همین پردازه ساخته می‌شود، پس قفلِ پردازه منبعِ حقیقت است.
+ */
+export function liveStatus(status: BackupRun | null): BackupRun | null {
+  if (status?.running && !backupInProcess()) return { ...status, running: false, ok: false, error: 'interrupted' };
+  return status;
+}
 
 /**
  * ساختنِ یک پشتیبان، از اول تا آخر. ⚠️ در هر لحظه فقط یکی: قفلِ درونِ پردازه
  * + مهرِ «در حالِ اجرا» در دیتابیس (برای چند نمونه یا ریستارتِ وسطِ کار).
  */
 export async function createBackup(trigger: BackupRun['trigger'], actorId: number | null = null): Promise<BackupRun> {
-  if (running) throw new BackupError('busy');
-  const previous = await readStatus();
-  if (previous?.running && Date.now() - Date.parse(previous.startedAt) < STALE_MS) throw new BackupError('busy');
+  if (backupInProcess()) throw new BackupError('busy');
 
   const config = await readConfig();
   const passphrase = unseal(config.passphrase);
   if (!passphrase) throw new BackupError('no_passphrase');
 
-  running = true;
+  setRunning(true);
   const started = new Date();
   const run: BackupRun = { trigger, startedAt: started.toISOString(), finishedAt: null, running: true, ok: null, destinations: [] };
   await writeStatus(run);
@@ -262,7 +282,7 @@ export async function createBackup(trigger: BackupRun['trigger'], actorId: numbe
     await fs.rm(tgz, { force: true }).catch(() => undefined);
     run.running = false;
     run.finishedAt = new Date().toISOString();
-    running = false;
+    setRunning(false);
     await writeStatus(run).catch(() => undefined);
     await pushHistory(run).catch(() => undefined);
     await db.insert(auditLog).values({

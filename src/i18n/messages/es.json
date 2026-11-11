@@ -4985,5 +4985,6 @@
   "رمز همان رمزِ بالاست. بعد از اولین ورود، بهتر است از وب‌میل عوضش کنی.": "La contraseña es la de arriba. Tras el primer inicio de sesión, cámbiela en el webmail.",
   "{n} ایمیلِ تازه": "{n} correos nuevos",
   "ایمیلِ تازه": "Correo nuevo",
-  "ایمیلِ تازه از {from}": "Correo nuevo de {from}"
+  "ایمیلِ تازه از {from}": "Correo nuevo de {from}",
+  "این پشتیبان‌گیری نیمه‌کاره ماند (برنامه دوباره راه افتاد یا سرور جابه‌جا شد). دوباره بگیرید.": "Esta copia no terminó (la aplicación se reinició o el servidor se trasladó). Vuelva a ejecutarla."
 }

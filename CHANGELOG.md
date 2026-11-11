@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.63.2]
+
+### Fixed
+
+- **Backup stuck at "running" after moving servers.** A backup that was running on the old server was copied into the server-move backup, so on the new server it stayed "running" forever and the "Back up now" button stayed disabled. A "running" backup with no process behind it (after a restart or a server move) now shows as unfinished and can be run again.
+- **Nextcloud backup destination works with the site address.** Nextcloud and ownCloud only accept WebDAV at `/remote.php/dav/files/<user>/`. When the plain site address is entered, the full path is now built automatically, including for destinations already saved.
+
 ## [2.63.1]
 
 ### Changed
