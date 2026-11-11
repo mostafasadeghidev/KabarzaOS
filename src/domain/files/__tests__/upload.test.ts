@@ -202,6 +202,8 @@ describe('کمکی‌ها', () => {
     expect(humanSize(512)).toBe('512 بایت');
     expect(humanSize(2048)).toBe('2 کیلوبایت');
     expect(humanSize(3 * 1024 * 1024)).toBe('3.0 مگابایت');
+    expect(humanSize(5 * 1024 ** 3)).toBe('5 گیگابایت');
+    expect(humanSize(1.5 * 1024 ** 3)).toBe('1.5 گیگابایت');
   });
 
   it('هر دلیلِ رد پیامِ فارسی دارد', () => {

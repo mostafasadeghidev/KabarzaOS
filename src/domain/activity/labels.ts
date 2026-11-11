@@ -168,6 +168,9 @@ export const ACTION_LABELS: Record<string, string> = {
   'settings.smtp.save': 'تنظیمِ ایمیلِ خروجی',
   'settings.smtp.clear': 'حذفِ تنظیمِ ایمیلِ خروجی',
   'corp_mail.settings': 'تنظیمِ ایمیلِ شرکتی',
+  'corp_mail.link': 'وصل کردنِ صندوقِ ایمیل به عضو',
+  'corp_mail.unlink': 'جدا کردنِ صندوقِ ایمیل از عضو',
+  'corp_mail.aliases': 'تغییرِ نشانی‌های دیگرِ صندوقِ ایمیل',
 
   // دفترِ دسترسی‌های بیرونی
   'service.create': 'سرویسِ جدید',

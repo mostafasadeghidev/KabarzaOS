@@ -7,6 +7,7 @@ import { AccessView } from './access-view';
 import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { pageTitle } from '@/i18n/page-title';
+import { isCorpMailConfigured } from '@/server/corp-mail/jmap';
 
 export const generateMetadata = pageTitle('دسترسی‌ها');
 
@@ -69,7 +70,8 @@ export default async function AccessPage({
         )}
       />
 
-      <AccessView data={data} focusUser={focusUser} />
+      {/* پیوندِ «حساب‌های ایمیل» فقط وقتی سرورِ ایمیل وصل است و بیننده اعضا را اداره می‌کند (۲.۶۰.۰). */}
+      <AccessView data={data} focusUser={focusUser} mailAccounts={data.canManage && isCorpMailConfigured()} />
     </PageShell>
   );
 }

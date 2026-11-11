@@ -285,6 +285,8 @@ export function normalizeExternalUrl(raw: string): string | null {
 export function humanSize(bytes: number, t: Translator = SOURCE): string {
   if (bytes < 1024) return t('{n} بایت', { n: bytes });
   if (bytes < MB) return t('{n} کیلوبایت', { n: (bytes / 1024).toFixed(0) });
+  // گیگ از ۲.۶۰.۰ — سهمیهٔ صندوقِ ایمیل «۵۱۲۰.۰ مگابایت» دیده می‌شد. ⚠️ رقمِ صفرِ پایانی می‌افتد (۵ گیگابایت).
+  if (bytes >= 1024 * MB) return t('{n} گیگابایت', { n: String(Number((bytes / (1024 * MB)).toFixed(1))) });
   return t('{n} مگابایت', { n: (bytes / MB).toFixed(1) });
 }
 

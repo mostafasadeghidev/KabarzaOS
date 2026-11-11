@@ -13,6 +13,8 @@ export interface AccessState {
   ok?: boolean;
   /** پیامِ موفقیتِ ویژه — مثلاً «غیرفعال شد» به‌جای «حذف شد». */
   message?: string;
+  /** جای‌نگهدارهای پیام (۲.۶۰.۰) — مثلاً نامِ aliasِ ردشده. */
+  params?: Record<string, string>;
 }
 
 function explain(error: unknown, fallback: string): string {
@@ -124,4 +126,35 @@ export async function revokeAccessAction(grantId: number) {
 /** قطعِ گروهی — چک‌لیستِ خروجِ عضو. */
 export async function revokeManyAction(grantIds: number[]) {
   return run((actor) => access.revokeMany(actor, grantIds), 'دسترسی‌ها قطع نشدند.');
+}
+
+/* ---- ایمیلِ شرکتی (۲.۶۰.۰) ---- */
+
+async function runMail(fn: (actor: Awaited<ReturnType<typeof requireActor>>) => Promise<unknown>, fallback: string): Promise<AccessState> {
+  const { CorpMailError, corpMailMessage } = await import('@/server/corp-mail/accounts');
+  try {
+    await fn(await requireActor());
+  } catch (error) {
+    if (error instanceof CorpMailError) {
+      return { error: corpMailMessage(error.code, error.detail), params: { name: error.detail } };
+    }
+    return { error: explain(error, fallback) };
+  }
+  revalidatePath('/access');
+  revalidatePath('/access/mail');
+  revalidatePath('/profile');
+  return { ok: true };
+}
+
+/** جفت یا جداکردنِ صندوقِ ایمیل و عضو. `userId = null` یعنی جدا. */
+export async function linkMailAccountAction(accountId: string, userId: number | null): Promise<AccessState> {
+  const { linkMailAccount } = await import('@/server/corp-mail/accounts');
+  return runMail((actor) => linkMailAccount(actor, accountId, userId), 'صندوقِ ایمیل وصل نشد.');
+}
+
+/** aliasهای یک صندوق — متنِ آزاد، جداشده با ویرگول یا فاصله. */
+export async function setMailAliasesAction(accountId: string, raw: string): Promise<AccessState> {
+  const { setMailAliases } = await import('@/server/corp-mail/accounts');
+  const names = raw.split(/[\s,،]+/).map((s) => s.replace(/@.*$/, '')).filter(Boolean);
+  return runMail((actor) => setMailAliases(actor, accountId, names), 'aliasها ذخیره نشدند.');
 }
