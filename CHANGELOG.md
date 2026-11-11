@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.59.2]
+
+### Fixed
+
+- **Coolify shows a real health status.** The file store and the scheduler had no health check, so Coolify showed "Running (no healthcheck)". The file store now reports its own health, and the scheduler counts as healthy only if its last successful run was under 15 minutes ago, so a scheduler that cannot reach the app shows as unhealthy instead of just "running".
+
 ## [2.59.1]
 
 ### Fixed
