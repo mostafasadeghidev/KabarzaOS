@@ -11,7 +11,7 @@
  */
 
 /** دسته‌هایی که در تلگرام خاموش‌شدنی‌اند — همان دسته‌های ایمیل؛ «سایر» نه. */
-export const TG_CATEGORIES = ['tasks', 'projects', 'money', 'meetings', 'messages'] as const;
+export const TG_CATEGORIES = ['tasks', 'projects', 'money', 'meetings', 'messages', 'mail'] as const;
 export type TgCategory = (typeof TG_CATEGORIES)[number];
 
 export const TG_CATEGORY_LABELS: Record<TgCategory, string> = {
@@ -20,6 +20,8 @@ export const TG_CATEGORY_LABELS: Record<TgCategory, string> = {
   money: 'مالی',
   meetings: 'جلسات و یادآورها',
   messages: 'پیام‌ها',
+  // ایمیلِ تازهٔ صندوقِ شرکتی (۲.۶۳.۰).
+  mail: 'ایمیلِ تازه',
 };
 
 export interface QuietHours { from: string; to: string }

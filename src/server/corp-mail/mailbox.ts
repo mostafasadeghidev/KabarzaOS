@@ -1,7 +1,7 @@
 import 'server-only';
 import { and, eq, isNull, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { auditLog, serviceGrants, services } from '@/db/schema';
+import { auditLog, serviceGrants, services, users } from '@/db/schema';
 import type { Actor } from '@/domain/access/permissions';
 import { open as openSecret, seal } from '@/server/ai/secret-box';
 import { isCorpMailConfigured, JmapError, jmapCall, result, sessionAccountId, type JmapAuth } from './jmap';
@@ -335,3 +335,94 @@ export function mailboxMessage(code: MailboxErrorCode): string {
   }
 }
 
+
+/* ------------------------------------------------------------------ *
+ * خبرِ ایمیلِ تازه (۲.۶۳.۰)
+ * ------------------------------------------------------------------ */
+
+/** بیش از این در یک تیک = یک خبرِ جمع‌شده، نه بارانِ پیام. */
+const MAX_SINGLE = 3;
+
+export interface NewMail { id: string; from: string; subject: string; receivedAt: string }
+
+/**
+ * ایمیل‌های **نخوانده‌ای** که پس از `since` در صندوقِ ورودی رسیده‌اند — با کلیدِ برنامه.
+ * ⚠️ بی‌گارد؛ فقط زمان‌بند صدایش می‌زند و هر صندوق با کلیدِ خودِ همان کارمند خوانده می‌شود.
+ */
+async function newInboxMail(auth: JmapAuth, since: Date): Promise<{ inboxId: string; items: NewMail[] }> {
+  const accountId = await sessionAccountId(auth, 'urn:ietf:params:jmap:mail');
+  const r1 = await jmapCall([['Mailbox/query', { accountId, filter: { role: 'inbox' } }, 'm']], { auth, using: USING_MAIL });
+  const inboxId = (result<{ ids?: string[] }>(r1, 'm').ids ?? [])[0];
+  if (!inboxId) return { inboxId: '', items: [] };
+  const r2 = await jmapCall([
+    ['Email/query', {
+      accountId, filter: { inMailbox: inboxId, after: since.toISOString(), notKeyword: '$seen' },
+      sort: [{ property: 'receivedAt', isAscending: false }], limit: 20,
+    }, 'q'],
+    ['Email/get', {
+      accountId, '#ids': { resultOf: 'q', name: 'Email/query', path: '/ids' }, properties: ['from', 'subject', 'receivedAt'],
+    }, 'g'],
+  ], { auth, using: USING_MAIL });
+  const items = (result<{ list?: Array<Record<string, unknown>> }>(r2, 'g').list ?? []).map((e) => {
+    const from = addresses(e.from)[0];
+    return {
+      id: String(e.id),
+      from: (from?.name || from?.email || '').slice(0, 120),
+      subject: String(e.subject ?? '').slice(0, 200),
+      receivedAt: String(e.receivedAt ?? ''),
+    };
+  }).filter((m) => m.receivedAt);
+  return { inboxId, items };
+}
+
+/**
+ * یک تیکِ زمان‌بند: برای هر صندوقِ وصل‌شده، ایمیل‌های تازهٔ نخوانده را خبر می‌دهد
+ * (برنامه، Push، تلگرام — ایمیل نه: خبرِ ایمیل با ایمیل بی‌معناست).
+ *
+ * ⚠️ بارِ اول هر صندوق فقط نقطهٔ شروع ثبت می‌شود، تا ایمیل‌های قدیمی خبر نشوند.
+ * ⚠️ شکستِ یک صندوق بقیه را نمی‌ایستاند؛ کلیدِ باطل اتصال را پاک می‌کند.
+ */
+export async function notifyNewMail(now: Date, send: (userId: number, mail: NewMail | { count: number }, inboxId: string) => Promise<void>): Promise<number> {
+  if (!isCorpMailConfigured()) return 0;
+  const rows = await db.select({
+    id: serviceGrants.id, userId: serviceGrants.userId, address: serviceGrants.accountRef,
+    appSecretEnc: serviceGrants.appSecretEnc, notifiedAt: serviceGrants.mailNotifiedAt,
+  })
+    .from(serviceGrants)
+    .innerJoin(services, eq(services.id, serviceGrants.serviceId))
+    .innerJoin(users, eq(users.id, serviceGrants.userId))
+    .where(and(
+      isNull(serviceGrants.revokedAt), eq(services.provider, 'stalwart'), ne(serviceGrants.appSecretEnc, ''),
+      eq(users.memberState, 'active'), isNull(users.deletedAt),
+    ));
+
+  let sent = 0;
+  for (const row of rows.slice(0, 200)) {
+    if (!row.notifiedAt) {
+      await db.update(serviceGrants).set({ mailNotifiedAt: now }).where(eq(serviceGrants.id, row.id));
+      continue;
+    }
+    const secret = openSecret(row.appSecretEnc);
+    if (!secret) continue;
+    try {
+      const { inboxId, items } = await newInboxMail({ kind: 'basic', user: row.address, password: secret }, row.notifiedAt);
+      if (items.length === 0) continue;
+      const newest = items.reduce((max, m) => (m.receivedAt > max ? m.receivedAt : max), items[0]!.receivedAt);
+      // ⚠️ پیش از فرستادن ثبت می‌شود: اگر فرستادن شکست، تیکِ بعدی همان را دوباره نمی‌فرستد.
+      await db.update(serviceGrants).set({ mailNotifiedAt: new Date(newest) }).where(eq(serviceGrants.id, row.id));
+      if (items.length > MAX_SINGLE) {
+        await send(row.userId, { count: items.length }, inboxId);
+        sent += 1;
+      } else {
+        for (const mail of items) { await send(row.userId, mail, inboxId); sent += 1; }
+      }
+    } catch (error) {
+      if (error instanceof JmapError && error.code === 'unauthorized') {
+        await db.update(serviceGrants).set({ appSecretEnc: '', updatedAt: new Date() }).where(eq(serviceGrants.id, row.id));
+      } else {
+        console.warn('[corp-mail] new-mail check failed', row.userId, error instanceof Error ? error.message : 'error');
+      }
+    }
+  }
+  return sent;
+}

@@ -6,7 +6,7 @@
  */
 
 /** دستهٔ اعلان — فقط برای خاموش‌کردنِ **ایمیل** به‌کار می‌رود (R-NOTIF-04). */
-export type NotifyCategory = 'tasks' | 'projects' | 'money' | 'meetings' | 'messages' | 'other';
+export type NotifyCategory = 'tasks' | 'projects' | 'money' | 'meetings' | 'messages' | 'mail' | 'other';
 
 /**
  * نگاشتِ نوعِ رویداد به دسته.
@@ -69,6 +69,8 @@ const CATEGORY_OF: Record<string, NotifyCategory> = {
 
   // پیام
   'message.received': 'messages',
+  // ایمیلِ تازه در صندوقِ شرکتی (۲.۶۳.۰) — دستهٔ خودش تا در تلگرام جدا خاموش شود.
+  'mail.new': 'mail',
   // کانال و گروهِ پروژه — منشن، پیامِ تازهٔ گروه، و «به کانال اضافه شدید».
   'message.mention': 'messages',
   'message.group': 'messages',

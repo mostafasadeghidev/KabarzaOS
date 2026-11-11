@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.63.0]
+
+### Added
+
+- **New company email is announced.** Every five minutes the scheduler checks each connected mailbox and announces new unread email in the inbox, in the app, as a phone notification and on Telegram (not by email). The notification shows the sender and subject and opens the message in the app; more than three at once become one "N new emails" notice. Old email is never announced: the first check only marks the starting point. "New email" is its own category, so it can be switched off on Telegram on its own.
+
 ## [2.62.1]
 
 ### Changed
