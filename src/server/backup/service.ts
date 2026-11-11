@@ -11,7 +11,7 @@ import {
 import {
   BackupKeyError, destinationSecrets, readConfig, readHistory, readStatus, seal, unseal, writeConfig,
 } from './config';
-import { BackupError, listLocalBackups, localBackupPath, startBackup, testRemote } from './run';
+import { BackupError, listLocalBackups, liveStatus, localBackupPath, startBackup, testRemote } from './run';
 
 /**
  * پشتیبان‌گیری — رابطِ پنل.
@@ -52,7 +52,8 @@ export async function getBackupView(actor: Actor) {
         hasSecret: Object.values(s).some(Boolean),
       };
     }),
-    status,
+    // ⚠️ «در جریانِ» بی‌پردازه نیمه‌کاره نشان داده می‌شود، نه برای همیشه چرخان (۲.۶۳.۲).
+    status: liveStatus(status),
     history: history.slice(0, 10),
     local: local.map((b) => ({ name: b.name, size: b.size, at: b.at.toISOString() })),
   };
@@ -145,8 +146,7 @@ export async function startBackupNow(actor: Actor): Promise<void> {
   if (!keyReady()) throw new BackupKeyError();
   const config = await readConfig();
   if (!unseal(config.passphrase)) throw new BackupError('no_passphrase');
-  const status = await readStatus();
-  if (status?.running && Date.now() - Date.parse(status.startedAt) < 3 * 60 * 60 * 1000) throw new BackupError('busy');
+  if (liveStatus(await readStatus())?.running) throw new BackupError('busy');
   startBackup('manual', actor.id);
 }
 

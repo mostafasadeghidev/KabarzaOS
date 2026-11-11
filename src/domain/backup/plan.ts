@@ -247,7 +247,7 @@ export function validateDestination(input: DestinationInput, previous: DestSecre
     }
     case 'webdav': {
       const vendor = ['nextcloud', 'owncloud', 'other'].includes(str(p.vendor)) ? str(p.vendor) : 'other';
-      params = { url: str(p.url), vendor, user: str(p.user) };
+      params = { url: davUrl(str(p.url), vendor, str(p.user)), vendor, user: str(p.user) };
       secrets = { password: fresh('password') };
       if (!/^https?:\/\//i.test(params.url ?? '')) throw new DestinationError('url_required');
       if (!params.user || !secrets.password) throw new DestinationError('user_required');
@@ -310,7 +310,8 @@ export function rcloneEnv(
       break;
     case 'webdav':
       set('type', 'webdav');
-      set('url', p.url);
+      // مقصدهای ذخیره‌شده پیش از ۲.۶۳.۲ هم نشانیِ درست می‌گیرند، بی ذخیرهٔ دوباره.
+      set('url', p.url ? davUrl(p.url, p.vendor ?? 'other', p.user ?? '') : p.url);
       set('vendor', p.vendor);
       set('user', p.user);
       set('pass', obscured ?? undefined);
@@ -354,4 +355,21 @@ export function tidyToolError(stderr: string, max = 300): string {
       .trim())
     .filter(Boolean);
   return (lines.at(-1) ?? '').slice(0, max);
+}
+
+/**
+ * نشانیِ WebDAV ِ Nextcloud/ownCloud (۲.۶۳.۲).
+ *
+ * ⚠️ این دو فقط روی `/remote.php/dav/files/<user>/` WebDAV می‌دهند؛ نشانیِ ریشهٔ سایت
+ * (همانی که کاربر در مرورگر می‌بیند) شکست می‌خورد. اگر مسیرِ `remote.php` نیامده
+ * باشد، خودمان می‌سازیمش. نشانیِ کامل و «دیگر» دست نمی‌خورند.
+ */
+export function davUrl(url: string, vendor: string, user: string): string {
+  if ((vendor !== 'nextcloud' && vendor !== 'owncloud') || !user || /\/remote\.php\//i.test(url)) return url;
+  try {
+    const u = new URL(url);
+    return `${u.origin}${u.pathname.replace(/\/+$/, '')}/remote.php/dav/files/${encodeURIComponent(user)}/`;
+  } catch {
+    return url;
+  }
 }

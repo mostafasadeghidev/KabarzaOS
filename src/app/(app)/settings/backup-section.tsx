@@ -159,7 +159,12 @@ function StatusPanel({ view }: { view: BackupView }) {
             </span>
             {s.size ? <span className="text-muted-foreground">· {humanSize(s.size, tr)}</span> : null}
           </div>
-          {s.error && s.error !== 'destination_failed' && (
+          {s.error === 'interrupted' && (
+            <p className="text-xs text-destructive">
+              {tr('این پشتیبان‌گیری نیمه‌کاره ماند (برنامه دوباره راه افتاد یا سرور جابه‌جا شد). دوباره بگیرید.')}
+            </p>
+          )}
+          {s.error && s.error !== 'destination_failed' && s.error !== 'interrupted' && (
             <p dir="auto" className="text-xs break-words text-destructive">{s.error}</p>
           )}
           {s.destinations.length > 0 && (

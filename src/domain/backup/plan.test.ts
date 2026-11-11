@@ -126,3 +126,16 @@ describe('خلاصهٔ خطای ابزار', () => {
     expect(tidyToolError('x'.repeat(500)).length).toBe(300);
   });
 });
+
+describe('نشانیِ WebDAV ِ Nextcloud (۲.۶۳.۲)', () => {
+  it('⚠️ ریشهٔ سایت به مسیرِ DAV ِ همان کاربر می‌رسد؛ نشانیِ کامل و «دیگر» دست نمی‌خورند', async () => {
+    const { davUrl } = await import('./plan');
+    expect(davUrl('https://nx1.your-storageshare.de/', 'nextcloud', 'CRM-Backup'))
+      .toBe('https://nx1.your-storageshare.de/remote.php/dav/files/CRM-Backup/');
+    expect(davUrl('https://cloud.example.com/nc', 'owncloud', 'a b'))
+      .toBe('https://cloud.example.com/nc/remote.php/dav/files/a%20b/');
+    const full = 'https://nx1.your-storageshare.de/remote.php/dav/files/x/';
+    expect(davUrl(full, 'nextcloud', 'x')).toBe(full);
+    expect(davUrl('https://dav.example.com/', 'other', 'x')).toBe('https://dav.example.com/');
+  });
+});
