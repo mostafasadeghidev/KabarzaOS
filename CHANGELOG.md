@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.63.1]
+
+### Changed
+
+- **Passwords can be revealed while viewing as another user.** A manager who views the app as a member can now press the eye button on that member's access passwords. The reveal is recorded under the manager's own name, noting whose view it was, and only people who manage members can do it. Everything else in view-as mode stays read-only, and the member's email is still never shown.
+
 ## [2.63.0]
 
 ### Added

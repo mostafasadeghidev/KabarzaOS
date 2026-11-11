@@ -8,7 +8,7 @@ import {
   createSessionToken, readSessionToken, SESSION_COOKIE, sessionCookieOptions, sessionStillValid,
 } from '@/domain/auth/session';
 import { canViewAs, readViewAsToken, VIEW_AS_COOKIE } from '@/domain/auth/view-as';
-import type { Actor, Permission, Role } from '@/domain/access/permissions';
+import { canManageSection, type Actor, type Permission, type Role } from '@/domain/access/permissions';
 import { tagPermissionsFor } from '@/server/people/tag-caps';
 import { ForbiddenError } from '@/domain/access/guard';
 import { storedAppearance } from '@/domain/people/appearance';
@@ -160,6 +160,23 @@ export async function requireActor(options: { allowOffboarded?: boolean } = {}):
     throw new ForbiddenError('offboarded');
   }
   return session.actor;
+}
+
+/**
+ * بازیگرِ **واقعی** برای دیدنِ رمزِ یک دسترسی (۲.۶۳.۱).
+ *
+ * در «دیدن به‌جای کاربر» هر اقدامی بسته است، ولی مالکی که اعضا را اداره می‌کند
+ * باید بتواند رمزی را که خودش برای آن کاربر گذاشته ببیند. ⚠️ پس اینجا بازیگرِ
+ * خودِ مالک برمی‌گردد (نه کاربرِ دیده‌شده) تا دیدن **به اسمِ مالک** ثبت شود،
+ * همراهِ `viewingAs` برای گزارش. بی مجوزِ مدیریتِ اعضا رد می‌شود.
+ */
+export async function revealActor(): Promise<{ actor: Actor; viewingAs: number | null }> {
+  const session = await currentSession();
+  if (!session) throw new Error('unauthenticated');
+  if (!session.viewAs) return { actor: await requireActor(), viewingAs: null };
+  const real = await loadActor(session.viewAs.ownerId);
+  if (!real || !canManageSection(real.actor, 'members')) throw new ForbiddenError('view_only');
+  return { actor: real.actor, viewingAs: session.actor.id };
 }
 
 export { sessionSecret };

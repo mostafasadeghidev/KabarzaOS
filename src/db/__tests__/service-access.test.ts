@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { db, sql } from '../client';
 import {
   auditLog, currencies, notifications, onboardingItems, recurringExpenses, serviceGrants, services, tags, userRoles, users,
@@ -630,5 +630,19 @@ describe('ویرایشِ یک ردیفِ مشخص (۲.۵۸.۳)', () => {
     await expect(access.grantAccess(manager(), {
       grantId: id, serviceId: a, userId: p!.id, accountRef: 'x', level: 'member', note: '',
     })).rejects.toMatchObject({ code: 'already_revoked' });
+  });
+});
+
+describe('دیدنِ رمز هنگامِ «دیدن به‌جای کاربر» (۲.۶۳.۱)', () => {
+  it('⚠️ به اسمِ مدیر ثبت می‌شود، با اینکه به‌جای چه کسی بود', async () => {
+    const [p] = await db.insert(users).values({ email: 'va@t', name: 'دیده‌شده' }).returning({ id: users.id });
+    const svc = await access.saveService(manager(), {
+      id: null, name: 'سرویس-دیدن', categoryTagId: null, ownerUserId: null, adminUrl: '', note: '', isActive: true,
+    });
+    const id = await access.grantAccess(manager(), { serviceId: svc, userId: p!.id, accountRef: 'x', level: 'member', note: '', secret: 'راز' });
+    expect(await access.revealGrantSecret(manager(), id, { viewingAs: p!.id })).toBe('راز');
+    const [log] = await db.select().from(auditLog).where(eq(auditLog.action, 'service_grant.secret_view')).orderBy(desc(auditLog.id)).limit(1);
+    expect(log!.actorId).toBe(manager().id);
+    expect(log!.after).toEqual({ viewingAs: p!.id });
   });
 });

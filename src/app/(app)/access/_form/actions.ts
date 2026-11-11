@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requireActor } from '@/server/auth';
+import { requireActor, revealActor } from '@/server/auth';
 import * as access from '@/server/access/service';
 import { AccessError, accessMessage } from '@/domain/access/service-grants';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -114,7 +114,9 @@ export async function grantAccessAction(_prev: AccessState, formData: FormData) 
  */
 export async function revealSecretAction(grantId: number): Promise<{ secret?: string; error?: string }> {
   try {
-    const secret = await access.revealGrantSecret(await requireActor(), grantId);
+    // ⚠️ در «دیدن به‌جای کاربر» بازیگرِ واقعیِ مالک، نه کاربرِ دیده‌شده (۲.۶۳.۱).
+    const { actor, viewingAs } = await revealActor();
+    const secret = await access.revealGrantSecret(actor, grantId, { viewingAs });
     if (secret === null) return { error: 'رمز خوانده نشد؛ دوباره ثبتش کنید.' };
     return { secret };
   } catch (error) {
