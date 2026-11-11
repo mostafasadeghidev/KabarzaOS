@@ -4973,5 +4973,7 @@
   "فرستاده‌ها": "Sent",
   "پیش‌نویس‌ها": "Drafts",
   "هرزنامه": "Junk",
-  "سطلِ زباله": "Trash"
+  "سطلِ زباله": "Trash",
+  "رمزِ مخصوصی که برنامه برای خواندنِ صندوقِ هر کارمند می‌گیرد فقط از این IPها پذیرفته می‌شود: همان شبکه‌ای که برنامه از آن به سرورِ ایمیل وصل است. تا خالی است، اتصالِ صندوق خاموش می‌ماند.": "The dedicated password the app gets to read each employee’s mailbox is accepted only from these IPs: the network the app uses to reach the mail server. While empty, connecting mailboxes stays off.",
+  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "Mailbox connection is not on yet: the owner must first set “Allowed IPs for reading mailboxes” in the company email settings."
 }

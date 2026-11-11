@@ -4973,5 +4973,7 @@
   "فرستاده‌ها": "Gesendet",
   "پیش‌نویس‌ها": "Entwürfe",
   "هرزنامه": "Spam",
-  "سطلِ زباله": "Papierkorb"
+  "سطلِ زباله": "Papierkorb",
+  "رمزِ مخصوصی که برنامه برای خواندنِ صندوقِ هر کارمند می‌گیرد فقط از این IPها پذیرفته می‌شود: همان شبکه‌ای که برنامه از آن به سرورِ ایمیل وصل است. تا خالی است، اتصالِ صندوق خاموش می‌ماند.": "Das eigene Passwort, das die App zum Lesen jedes Postfachs erhält, gilt nur von diesen IPs – dem Netz, über das die App den Mailserver erreicht. Solange leer, bleibt das Verbinden von Postfächern aus.",
+  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "Die Postfachverbindung ist noch nicht aktiv: Der Inhaber muss zuerst „Erlaubte IPs zum Lesen der Postfächer“ in den Firmen-E-Mail-Einstellungen setzen."
 }

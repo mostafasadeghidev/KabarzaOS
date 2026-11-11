@@ -123,3 +123,10 @@ describe('صندوقِ خودِ کارمند', () => {
     expect(await mailboxState(me)).toBe('linked');
   });
 });
+
+describe('بسته‌پیش‌فرضِ IP', () => {
+  it('⚠️ بی IP ِ مجاز هیچ app passwordی ساخته نمی‌شود', async () => {
+    await db.update(schedulerStamps).set({ value: JSON.stringify({ domain: 'example.com' }) }).where(eq(schedulerStamps.key, 'corp-mail:config'));
+    await expect(connectMailbox(actorOf(me), REAL_PASSWORD)).rejects.toMatchObject({ code: 'no_app_ips' });
+  });
+});

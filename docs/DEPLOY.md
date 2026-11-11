@@ -266,7 +266,9 @@ app password (read mail, attachments, mark as read) and discards it.
 New mailboxes created from the app are connected automatically. Set
 "Allowed IPs for reading mailboxes" in Settings → Company email to the
 network the app reaches Stalwart from (for example `10.0.4.0/24`), so
-those app passwords work from nowhere else.
+those app passwords work from nowhere else. Until it is set, connecting
+mailboxes stays off: an app password with no IP limit would also work
+over IMAP from the internet.
 
 ## Backups
 

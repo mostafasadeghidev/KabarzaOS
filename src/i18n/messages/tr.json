@@ -4973,5 +4973,7 @@
   "فرستاده‌ها": "Gönderilenler",
   "پیش‌نویس‌ها": "Taslaklar",
   "هرزنامه": "İstenmeyen",
-  "سطلِ زباله": "Çöp kutusu"
+  "سطلِ زباله": "Çöp kutusu",
+  "رمزِ مخصوصی که برنامه برای خواندنِ صندوقِ هر کارمند می‌گیرد فقط از این IPها پذیرفته می‌شود: همان شبکه‌ای که برنامه از آن به سرورِ ایمیل وصل است. تا خالی است، اتصالِ صندوق خاموش می‌ماند.": "Uygulamanın her posta kutusunu okumak için aldığı özel şifre yalnızca bu IP’lerden kabul edilir: uygulamanın sunucuya eriştiği ağ. Boş kaldıkça posta kutusu bağlama kapalı kalır.",
+  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "Posta kutusu bağlantısı henüz açık değil: sahip önce şirket e-postası ayarlarında “Posta kutusu okuma için izinli IP’ler”i belirlemeli."
 }

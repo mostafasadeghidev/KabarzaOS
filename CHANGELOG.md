@@ -7,7 +7,7 @@ Versioning follows [SemVer](https://semver.org/).
 ### Added
 
 - **Company email, steps 4 and 5: read your email inside the app.** People with a company mailbox get an "Email" item in the menu with their folders, unread counts and messages, 30 at a time. Opening a message marks it as read and shows its attachments for download; replying is done in webmail.
-- **Connect once.** The first time, the employee enters their email password. The app uses it only to get a separate read-only key (read, attachments, mark as read) and does not keep the password, so later password changes do not break the connection. Mailboxes created from the app are connected automatically. Five wrong passwords lock the form for 15 minutes. The owner can limit these keys to the app's network in Settings → Company email.
+- **Connect once.** The first time, the employee enters their email password. The app uses it only to get a separate read-only key (read, attachments, mark as read) and does not keep the password, so later password changes do not break the connection. Mailboxes created from the app are connected automatically. Five wrong passwords lock the form for 15 minutes. These keys only work from the app's own network, set in Settings → Company email; until it is set, connecting stays off.
 - **Email is shown safely.** HTML email is shown in an isolated frame where no script runs and the email cannot reach the app. Remote images (tracking pixels) are blocked until you press "Show images", and redirects inside the email are removed. Attachments always download, never open inside the app.
 - Viewing the app as another user never shows their email. A new password or a closed mailbox ends the app's connection too.
 

@@ -21,7 +21,7 @@ import { corpMailConfig } from './settings';
 
 export type MailboxErrorCode =
   | 'not_configured' | 'no_mailbox' | 'not_connected' | 'bad_password' | 'too_many'
-  | 'view_only' | 'not_found' | 'stalwart';
+  | 'view_only' | 'not_found' | 'stalwart' | 'no_app_ips';
 
 export class MailboxError extends Error {
   constructor(readonly code: MailboxErrorCode, readonly detail = '') {
@@ -93,6 +93,11 @@ function tooMany(userId: number, now = Date.now()): boolean {
  */
 export async function issueAppPassword(grantId: number, address: string, password: string): Promise<void> {
   const config = await corpMailConfig();
+  /**
+   * ⚠️ بسته‌پیش‌فرض (نشستِ Mail، ۲۰۲۶-۱۱-۱۱): app password ِ بی‌محدودیتِ IP از اینترنت
+   * هم با IMAP و JMAP کار می‌کند. تا مالک شبکهٔ برنامه را تعیین نکرده، کلیدی ساخته نمی‌شود.
+   */
+  if (config.appIps.length === 0) throw new MailboxError('no_app_ips');
   const auth: JmapAuth = { kind: 'basic', user: address, password };
   const accountId = await sessionAccountId(auth, 'urn:stalwart:jmap');
   const responses = await jmapCall([['x:AppPassword/set', {
@@ -101,7 +106,7 @@ export async function issueAppPassword(grantId: number, address: string, passwor
       k: {
         description: 'KabarzaOS',
         permissions: { '@type': 'Replace', permissions: Object.fromEntries(APP_PERMISSIONS.map((p) => [p, true])) },
-        ...(config.appIps.length ? { allowedIps: Object.fromEntries(config.appIps.map((ip) => [ip, true])) } : {}),
+        allowedIps: Object.fromEntries(config.appIps.map((ip) => [ip, true])),
       },
     },
   }, 's']], { auth });
@@ -326,6 +331,7 @@ export function mailboxMessage(code: MailboxErrorCode): string {
     case 'view_only': return 'در حالتِ «دیدن به‌جای کاربر» ایمیل‌های او نشان داده نمی‌شود.';
     case 'not_found': return 'این ایمیل پیدا نشد.';
     case 'stalwart': return 'سرورِ ایمیل پاسخ نداد؛ کمی بعد دوباره امتحان کنید.';
+    case 'no_app_ips': return 'اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.';
   }
 }
 

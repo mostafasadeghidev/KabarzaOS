@@ -4973,5 +4973,7 @@
   "فرستاده‌ها": "Enviados",
   "پیش‌نویس‌ها": "Borradores",
   "هرزنامه": "Correo no deseado",
-  "سطلِ زباله": "Papelera"
+  "سطلِ زباله": "Papelera",
+  "رمزِ مخصوصی که برنامه برای خواندنِ صندوقِ هر کارمند می‌گیرد فقط از این IPها پذیرفته می‌شود: همان شبکه‌ای که برنامه از آن به سرورِ ایمیل وصل است. تا خالی است، اتصالِ صندوق خاموش می‌ماند.": "La contraseña dedicada que obtiene la aplicación para leer cada buzón solo se acepta desde estas IP: la red por la que llega al servidor. Mientras esté vacío, conectar buzones sigue desactivado.",
+  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "La conexión de buzones aún no está activa: el propietario debe definir primero «IP permitidas para leer buzones» en los ajustes del correo corporativo."
 }
