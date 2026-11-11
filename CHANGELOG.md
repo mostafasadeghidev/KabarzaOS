@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.60.1]
+
+### Fixed
+
+- **The scheduler did not run on Coolify.** Coolify moves a service with no `networks:` entry onto its own project network, where the app's internal name does not resolve, so the scheduler had not run since the move: no reminders, meeting notifications, daily report, automatic cleanup or scheduled backups. The scheduler now joins the default network explicitly. The new health check is what showed it.
+
 ## [2.60.0]
 
 ### Added
