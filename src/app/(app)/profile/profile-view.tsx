@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import { TG_CATEGORIES, TG_CATEGORY_LABELS } from '@/domain/telegram/prefs';
@@ -8,6 +7,7 @@ import { useFormStatus } from 'react-dom';
 import { Bell, Bot, Building2, CreditCard, Clock, KeyRound, Send, Lock, UserRound } from 'lucide-react';
 import { McpPanel, type McpGrantView, type McpTokenView } from './mcp-panel';
 import { PushPanel } from './push-panel';
+import { MyAccess } from './access-details';
 import { AiBotPanel, type AiConnectionInfo, type AiProviderOption } from './ai-bot-panel';
 import { Thumb } from '@/components/thumb';
 import {
@@ -29,13 +29,7 @@ import { useSearchParams } from 'next/navigation';
 import { useT, useTimeZone } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CopyText } from '@/components/copy-text';
-import { SecretReveal } from '../access/secret-reveal';
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table';
-import { LEVEL_LABELS, type GrantLevel } from '@/domain/access/service-grants';
-import { formatDate } from '@/i18n/datetime';
+import type { GrantLevel } from '@/domain/access/service-grants';
 import { Switch } from '@/components/ui/switch';
 import { Panel } from '@/components/page-shell';
 import { FileInput } from '@/components/ui/file-input';
@@ -280,46 +274,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
           <p className="text-sm text-muted-foreground">
             {tr("سامانه‌هایی که به تو دسترسی داده شده. اگر چیزی اینجا درست نیست، به مدیر بگو.")}
           </p>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tr("سرویس")}</TableHead>
-                <TableHead>{tr("سطح")}</TableHead>
-                <TableHead>{tr("شناسهٔ حساب")}</TableHead>
-                <TableHead>{tr("رمز")}</TableHead>
-                <TableHead>{tr("دانلود")}</TableHead>
-                <TableHead>{tr("از تاریخ")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.myAccess.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell className="max-w-72 whitespace-normal">
-                    {row.serviceName}
-                    {row.guide && <p className="mt-0.5 whitespace-pre-wrap text-xs text-muted-foreground">{row.guide}</p>}
-                    {row.provider === 'stalwart' && data.mailSetup && <MailSetup setup={data.mailSetup} address={row.accountRef} />}
-                  </TableCell>
-                  <TableCell>{tr(LEVEL_LABELS[row.level])}</TableCell>
-                  <TableCell className="num text-xs" dir="ltr">
-                    {row.accountRef ? <CopyText value={row.accountRef} /> : '—'}
-                  </TableCell>
-                  <TableCell>
-                    {row.hasSecret ? <SecretReveal grantId={row.id} /> : <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-                  <TableCell>
-                    {row.downloadUrl ? (
-                      <a href={row.downloadUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                        {tr("دانلود")}
-                      </a>
-                    ) : <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-                  <TableCell className="num text-xs">
-                    {formatDate(row.grantedAt, tz)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <MyAccess rows={data.myAccess} mailSetup={data.mailSetup} />
         </div>
       )}
 
@@ -630,41 +585,6 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
 
       </div>
-    </div>
-  );
-}
-
-/**
- * راهنمای تنظیمِ صندوقِ شرکتی در گوشی یا Outlook (۲.۶۱.۰). نامِ کاربری همان
- * نشانیِ کامل است؛ رمز همان رمزِ همین ردیف (پشتِ چشم).
- */
-function MailSetup({ setup, address }: {
-  setup: { webmailUrl: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number };
-  address: string;
-}) {
-  const tr = useT();
-  return (
-    <div className="mt-1.5 grid gap-0.5 text-xs text-muted-foreground">
-      <span className="flex flex-wrap gap-x-3">
-        {/* صندوقِ ورودیِ داخلِ برنامه (۲.۶۲.۰) — اولین بار همان‌جا وصل می‌شود. */}
-        <Link href="/mail" className="text-primary hover:underline">{tr('دیدنِ ایمیل‌ها در برنامه')}</Link>
-        {setup.webmailUrl && (
-          <a href={setup.webmailUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-            {tr('ورود به وب‌میل')}
-          </a>
-        )}
-      </span>
-      {(setup.imapHost || setup.smtpHost) && (
-        <span>
-          {tr('گوشی یا Outlook:')}{' '}
-          <span dir="ltr" className="font-mono">
-            {setup.imapHost && `IMAP ${setup.imapHost}:${setup.imapPort} SSL`}
-            {setup.imapHost && setup.smtpHost && ' · '}
-            {setup.smtpHost && `SMTP ${setup.smtpHost}:${setup.smtpPort} SSL`}
-          </span>
-          {' · '}{tr('نامِ کاربری: {user}', { user: address })}
-        </span>
-      )}
     </div>
   );
 }

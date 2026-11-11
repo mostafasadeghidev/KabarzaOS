@@ -4975,5 +4975,12 @@
   "هرزنامه": "Correo no deseado",
   "سطلِ زباله": "Papelera",
   "رمزِ مخصوصی که برنامه برای خواندنِ صندوقِ هر کارمند می‌گیرد فقط از این IPها پذیرفته می‌شود: همان شبکه‌ای که برنامه از آن به سرورِ ایمیل وصل است. تا خالی است، اتصالِ صندوق خاموش می‌ماند.": "La contraseña dedicada que obtiene la aplicación para leer cada buzón solo se acepta desde estas IP: la red por la que llega al servidor. Mientras esté vacío, conectar buzones sigue desactivado.",
-  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "La conexión de buzones aún no está activa: el propietario debe definir primero «IP permitidas para leer buzones» en los ajustes del correo corporativo."
+  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "La conexión de buzones aún no está activa: el propietario debe definir primero «IP permitidas para leer buzones» en los ajustes del correo corporativo.",
+  "{n} پیوست": "{n} adjuntos",
+  "ارسال (SMTP)": "Envío (SMTP)",
+  "از {date}": "Desde {date}",
+  "تنظیم در گوشی یا Outlook": "Configurar en el móvil o en Outlook",
+  "دانلود یا ورود": "Descargar o iniciar sesión",
+  "دریافت (IMAP)": "Recepción (IMAP)",
+  "رمز همان رمزِ بالاست. بعد از اولین ورود، بهتر است از وب‌میل عوضش کنی.": "La contraseña es la de arriba. Tras el primer inicio de sesión, cámbiela en el webmail."
 }

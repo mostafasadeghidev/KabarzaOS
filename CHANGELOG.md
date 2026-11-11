@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.62.1]
+
+### Changed
+
+- **Reading an email looks like the rest of the app.** A visible back button returns to the folder you came from. The message sits in a card with the sender's initial, name, address and date, and attachments show as file cards. Plain emails take the app's colours and font in light and dark mode, and the frame grows to the email's height instead of scrolling inside a fixed box; designed emails with their own background stay on a white sheet so their text stays readable.
+- **"My access" is easier to use.** The table shows only service, account and date; a Details button opens a window with the username and password, clear buttons, and for company email the phone and Outlook settings with copy buttons. The company-email link is labelled "Open webmail" instead of "Download".
+
 ## [2.62.0]
 
 ### Added

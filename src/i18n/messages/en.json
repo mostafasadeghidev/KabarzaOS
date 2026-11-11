@@ -4975,5 +4975,12 @@
   "هرزنامه": "Junk",
   "سطلِ زباله": "Trash",
   "رمزِ مخصوصی که برنامه برای خواندنِ صندوقِ هر کارمند می‌گیرد فقط از این IPها پذیرفته می‌شود: همان شبکه‌ای که برنامه از آن به سرورِ ایمیل وصل است. تا خالی است، اتصالِ صندوق خاموش می‌ماند.": "The dedicated password the app gets to read each employee’s mailbox is accepted only from these IPs: the network the app uses to reach the mail server. While empty, connecting mailboxes stays off.",
-  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "Mailbox connection is not on yet: the owner must first set “Allowed IPs for reading mailboxes” in the company email settings."
+  "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "Mailbox connection is not on yet: the owner must first set “Allowed IPs for reading mailboxes” in the company email settings.",
+  "{n} پیوست": "{n} attachments",
+  "ارسال (SMTP)": "Sending (SMTP)",
+  "از {date}": "Since {date}",
+  "تنظیم در گوشی یا Outlook": "Set up on a phone or in Outlook",
+  "دانلود یا ورود": "Download or sign in",
+  "دریافت (IMAP)": "Receiving (IMAP)",
+  "رمز همان رمزِ بالاست. بعد از اولین ورود، بهتر است از وب‌میل عوضش کنی.": "The password is the one above. After your first sign-in, change it in webmail."
 }
