@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.66.0]
+
+### Added
+
+- **Private messages between members.** Members can message each other from "Message a member" on the Messages page. Only those two people see the conversation: managers are not added, and "View as user" does not show it. Clients are left out in both directions: they cannot message a member and members cannot message them. Messaging the same person again continues the existing conversation. A new "Members" tab in the inbox lists these conversations. The conversation header says it is private, read ticks show on both sides, and neither person can delete it for the other (each can only remove it from their own inbox). It can be turned off under Settings → Messages; turning it off keeps earlier conversations but closes them for new messages, and a conversation also closes if the other person is no longer an active member.
+
+### Fixed
+
+- **Project status tabs no longer slide under the search box.** At medium window widths the last tabs were hidden behind the search field. Now the search field moves to its own row when there is not enough room, and the tabs only scroll sideways when they are wider than the whole page.
+
 ## [2.65.0]
 
 ### Added

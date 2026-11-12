@@ -5014,5 +5014,17 @@
   "پاسخ به این پیام": "Responder a esta mensagem",
   "پیام فقط تا ۲۴ ساعت پس از ارسال ویرایش می‌شود.": "Uma mensagem só pode ser editada até 24 horas após o envio.",
   "پیام معتبر نیست.": "Mensagem inválida.",
-  "پیامِ اصلی حذف شده است.": "A mensagem original foi excluída."
+  "پیامِ اصلی حذف شده است.": "A mensagem original foi excluída.",
+  "اعضا می‌توانند به یکدیگر پیامِ خصوصی بدهند؛ فقط همان دو نفر آن را می‌بینند. کارفرما نه به عضوی پیام می‌دهد و نه از عضوی پیام می‌گیرد. خاموش‌کردن گفتگوهای قبلی را پاک نمی‌کند؛ فقط ادامه دادنشان بسته می‌شود.": "Os membros podem enviar mensagens privadas uns aos outros; só essas duas pessoas as veem. Um cliente não pode escrever a um membro nem receber mensagens de um. Desativar não apaga conversas anteriores; apenas impede que continuem.",
+  "انتخابِ عضو…": "Escolha um membro…",
+  "این گفتگو بسته است: پیامِ بینِ اعضا خاموش شده یا طرفِ مقابل دیگر عضوِ فعال نیست.": "Esta conversa está fechada: as mensagens entre membros estão desativadas ou a outra pessoa já não é um membro ativo.",
+  "این گفتگو خصوصی است؛ فقط شما و همان عضو آن را می‌بینید. اگر قبلاً با او گفتگو کرده‌اید، پیام به همان گفتگو اضافه می‌شود.": "Esta conversa é privada; só você e esse membro a veem. Se já conversaram, a mensagem é adicionada à mesma conversa.",
+  "به این شخص نمی‌توانید پیام بدهید.": "Você não pode enviar mensagens a esta pessoa.",
+  "خصوصی — فقط شما دو نفر می‌بینید": "Privado — só vocês dois veem",
+  "هنوز با عضوی گفتگو نکرده‌اید.": "Você ainda não conversou com nenhum membro.",
+  "پیام به یک عضو": "Mensagem a um membro",
+  "پیامِ اعضا خصوصی است؛ فقط همان دو نفر آن را می‌بینند.": "As mensagens entre membros são privadas; só essas duas pessoas as veem.",
+  "پیامِ بینِ اعضا": "Mensagens entre membros",
+  "پیامِ بینِ اعضا خاموش است.": "As mensagens entre membros estão desativadas.",
+  "پیامِ مستقیم بینِ اعضا": "Mensagens diretas entre membros"
 }

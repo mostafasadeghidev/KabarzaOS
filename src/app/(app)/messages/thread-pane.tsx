@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { ArrowDown, ArrowRight, Archive, Bell, BellOff, Check, CheckCheck, CornerUpLeft, FolderKanban, Hash, Megaphone, Pencil, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowRight, Archive, Bell, BellOff, Check, CheckCheck, CornerUpLeft, FolderKanban, Hash, Lock, Megaphone, Pencil, Trash2 } from 'lucide-react';
 import {
   deleteGroupMessageAction, deleteThreadAction, editMessageAction, leaveThreadAction,
   openThreadAction, replyAction, setMutedAction, type MessageState,
@@ -376,6 +376,12 @@ export function ThreadPane({
                 <> · <Link href={`/projects/${thread.group.projectId}`} className="underline-offset-4 hover:underline">{tr('صفحهٔ پروژه')}</Link></>
               )}
             </p>
+          ) : thread.thread.peer ? (
+            /* ۲.۶۵.۰ — روشن بگوید چه کسی این گفتگو را می‌بیند. */
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Lock className="size-3" />
+              {tr('خصوصی — فقط شما دو نفر می‌بینید')}
+            </p>
           ) : !thread.thread.allowReply && (
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
               <Megaphone className="size-3" />
@@ -604,8 +610,10 @@ export function ThreadPane({
         </form>
       ) : (
         <p className="flex items-center gap-2 border-t bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
-          <Megaphone className="size-3.5 shrink-0" />
-          {tr('این یک اعلانِ یک‌طرفه است و امکان پاسخ ندارد.')}
+          {thread.thread.peer ? <Lock className="size-3.5 shrink-0" /> : <Megaphone className="size-3.5 shrink-0" />}
+          {thread.thread.peer
+            ? tr('این گفتگو بسته است: پیامِ بینِ اعضا خاموش شده یا طرفِ مقابل دیگر عضوِ فعال نیست.')
+            : tr('این یک اعلانِ یک‌طرفه است و امکان پاسخ ندارد.')}
         </p>
       )}
     </>

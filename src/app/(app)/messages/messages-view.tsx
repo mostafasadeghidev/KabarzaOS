@@ -2,8 +2,8 @@
 
 import { useActionState, useEffect, useMemo, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { BellOff, ChevronDown, Hash, Inbox, Megaphone, MessagesSquare, Plus, ShieldQuestion } from 'lucide-react';
-import { composeAction, contactManagementAction, type MessageState } from './_form/actions';
+import { BellOff, ChevronDown, Hash, Inbox, Megaphone, MessagesSquare, Plus, ShieldQuestion, Users } from 'lucide-react';
+import { composeAction, contactManagementAction, peerMessageAction, type MessageState } from './_form/actions';
 import { CreateChannelDialog, type ChannelOptions } from './group-parts';
 import { ComposeDialog } from './compose-dialog';
 import { ChatAvatar, GroupIcon, ThreadPane } from './thread-pane';
@@ -29,11 +29,16 @@ import { cn } from '@/lib/utils';
 import { SearchInput } from '@/components/ui/search-input';
 import { Hint } from '@/components/ui/tooltip';
 import { Item, ItemContent, ItemMedia } from '@/components/ui/item';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { NativeSelectOption } from '@/components/ui/native-select';
+import { avatarFor } from '@/components/user-avatar';
 
 export interface InboxRow {
   id: number;
   /** `direct` گفتگوی دونفره؛ `channel` کانالِ تیم؛ `project` گروهِ پروژه. */
   kind: 'direct' | 'channel' | 'project';
+  /** گفتگوی خصوصیِ عضو با عضو (۲.۶۵.۰) — زبانهٔ «اعضا». */
+  peer?: boolean;
   /** گروهِ بی‌صدا — شمارنده خاکستری و بیرون از جمعِ خوانده‌نشده. */
   muted: boolean;
   allowReply: boolean;
@@ -198,6 +203,7 @@ export function MessagesView({
   recipients,
   filters,
   canSend,
+  peers = [],
   canBroadcast,
   channelOptions = null,
   poll,
@@ -214,6 +220,11 @@ export function MessagesView({
   recipients: RecipientOption[];
   filters: FilterData;
   canSend: boolean;
+  /**
+   * همکارانی که بیننده می‌تواند به‌شان پیامِ خصوصی بدهد (۲.۶۵.۰). خالی یعنی قابلیت
+   * خاموش است یا بیننده عضو نیست (کارفرما، مدیر) — دکمه نشان داده نمی‌شود.
+   */
+  peers?: Array<{ id: number; name: string }>;
   /** پولِ گفت‌وگوی زنده — از تنظیماتِ سامانه. */
   poll: { enabled: boolean; seconds: number };
   /** پخشِ همگانی («همهٔ اعضا») فقط از مدیر. */
@@ -238,6 +249,8 @@ export function MessagesView({
   const [channelOpen, setChannelOpen] = useState(false);
   const [composeState, composeFormAction] = useActionState<MessageState, FormData>(composeAction, {});
   const [mgmtOpen, setMgmtOpen] = useState(false);
+  const [peerOpen, setPeerOpen] = useState(false);
+  const [peerState, peerFormAction] = useActionState<MessageState, FormData>(peerMessageAction, {});
   const [mgmtState, mgmtFormAction] = useActionState<MessageState, FormData>(
     contactManagementAction, {},
   );
@@ -245,7 +258,9 @@ export function MessagesView({
 
   /** جستجو و زبانهٔ «خوانده‌نشده» — فقط نمایشِ صندوق را باریک می‌کنند. */
   const [query, setQuery] = useState('');
-  const [box, setBox] = useState<'all' | 'unread'>('all');
+  const [box, setBox] = useState<'all' | 'peer' | 'unread'>('all');
+  // زبانهٔ «اعضا» برای کسی که می‌تواند بنویسد یا گفتگوی عضو با عضو دارد (حتی اگر قابلیت بعداً خاموش شد).
+  const showPeerTab = peers.length > 0 || inbox.some((r) => r.peer);
 
 
 
@@ -268,6 +283,14 @@ export function MessagesView({
   }, [composeState]);
 
   useEffect(() => {
+    if (peerState.ok) {
+      setPeerOpen(false);
+      if (peerState.threadId) setOpenId(peerState.threadId);
+      show(tr('پیام ارسال شد.'), 'success');
+    }
+  }, [peerState]);
+
+  useEffect(() => {
     if (mgmtState.ok) {
       setMgmtOpen(false);
       show(tr('پیامِ شما به مدیریت فرستاده شد.'), 'success');
@@ -280,7 +303,7 @@ export function MessagesView({
   const unreadTotal = inbox.reduce((sum, row) => sum + (row.muted ? 0 : row.unread), 0);
   const needle = query.trim().toLowerCase();
   const shown = useMemo(() => inbox.filter((row) =>
-    (box === 'all' || (row.unread > 0 && !row.muted))
+    (box === 'all' || (box === 'peer' ? row.peer === true : row.unread > 0 && !row.muted))
     && (!needle || row.label.toLowerCase().includes(needle) || row.lastBody.toLowerCase().includes(needle)),
   ), [inbox, box, needle]);
   /*
@@ -298,8 +321,15 @@ export function MessagesView({
       <PageHeader
         title={header.title}
         description={header.description}
-        actions={(canSend || !canBroadcast) ? (
+        actions={(canSend || !canBroadcast || peers.length > 0) ? (
           <>
+            {/* ۲.۶۵.۰ — پیامِ خصوصی به یک همکار؛ مدیر و کارفرما این را ندارند. */}
+            {peers.length > 0 && (
+              <Button variant="outline" onClick={() => setPeerOpen(true)}>
+                <Users />
+                {tr('پیام به یک عضو')}
+              </Button>
+            )}
             {/*
               ⚠️ «پیام به مدیریت» به `canSend` بسته **نیست**: کسی که حق ندارد
               گیرنده انتخاب کند هم باید بتواند به مدیریت پیام بدهد.
@@ -346,8 +376,9 @@ export function MessagesView({
               containerClassName="sm:w-full"
             />
             <Tabs value={box} onValueChange={(v) => setBox(v as typeof box)}>
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className={cn('grid w-full', showPeerTab ? 'grid-cols-3' : 'grid-cols-2')}>
                 <TabsTrigger value="all">{tr('همه')}</TabsTrigger>
+                {showPeerTab && <TabsTrigger value="peer">{tr('اعضا')}</TabsTrigger>}
                 <TabsTrigger value="unread">
                   {tr('خوانده‌نشده')}
                   {unreadTotal > 0 && (
@@ -361,6 +392,17 @@ export function MessagesView({
           <div className="min-h-0 flex-1 overflow-y-auto">
             {inbox.length === 0 ? (
               <EmptyState className="m-3 border-0" icon={<Inbox />} title={tr('هنوز پیامی ندارید.')} />
+            ) : shown.length === 0 && box === 'peer' && !needle ? (
+              <EmptyState
+                className="m-3 border-0"
+                icon={<Users />}
+                title={tr('هنوز با عضوی گفتگو نکرده‌اید.')}
+                description={tr('پیامِ اعضا خصوصی است؛ فقط همان دو نفر آن را می‌بینند.')}
+              >
+                {peers.length > 0 && (
+                  <Button size="sm" onClick={() => setPeerOpen(true)}><Users />{tr('پیام به یک عضو')}</Button>
+                )}
+              </EmptyState>
             ) : shown.length === 0 ? (
               <EmptyState className="m-3 border-0" title={needle ? tr('نتیجه‌ای نیست') : tr('موردی نیست.')} />
             ) : (
@@ -472,6 +514,50 @@ export function MessagesView({
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ---- پیام به یک عضو (۲.۶۵.۰) ---- */}
+      {peers.length > 0 && (
+        <Dialog open={peerOpen} onOpenChange={setPeerOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{tr('پیام به یک عضو')}</DialogTitle>
+              <DialogDescription>
+                {tr('این گفتگو خصوصی است؛ فقط شما و همان عضو آن را می‌بینید. اگر قبلاً با او گفتگو کرده‌اید، پیام به همان گفتگو اضافه می‌شود.')}
+              </DialogDescription>
+            </DialogHeader>
+            <form action={peerFormAction} className="grid gap-3">
+              <Field>
+                <FieldLabel htmlFor="peer-to">{tr('گیرنده')}</FieldLabel>
+                <SearchableSelect
+                  id="peer-to"
+                  name="recipientId"
+                  required
+                  defaultValue=""
+                  renderMedia={avatarFor(peers)}
+                  aria-label={tr('گیرنده')}
+                >
+                  <NativeSelectOption value="" disabled>{tr('انتخابِ عضو…')}</NativeSelectOption>
+                  {peers.map((p) => (
+                    <NativeSelectOption key={p.id} value={String(p.id)}>{p.name}</NativeSelectOption>
+                  ))}
+                </SearchableSelect>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="peer-body">{tr('متنِ پیام')}</FieldLabel>
+                <Textarea
+                  id="peer-body" name="body" rows={5} required
+                  placeholder={tr('{keys} برای ارسال', { keys: sendKeys })} onKeyDown={submitOnModEnter}
+                />
+              </Field>
+              {peerState.error && <p className="text-xs text-destructive">{tr(peerState.error)}</p>}
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setPeerOpen(false)}>{tr('انصراف')}</Button>
+                <SubmitButton label={tr('ارسال')} />
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <ComposeDialog
         open={composeOpen}

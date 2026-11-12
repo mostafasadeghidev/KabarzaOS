@@ -6,6 +6,7 @@ import { requireActor } from '@/server/auth';
 import {
   compose, contactManagement, createChannel, createProjectGroup, deleteGroupMessage, deleteThread,
   leaveThread, openThread, RateLimitedError, editMessage, reply, resolveAudience, setThreadMuted, ThreadNotFoundError,
+  messagePeer,
 } from '@/server/messaging/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { AUDIENCE_LABELS, type Audience } from '@/domain/messaging/threads';
@@ -19,6 +20,8 @@ export interface MessageState {
   ok?: boolean;
   /** تعدادِ گفتگوهای ساخته‌شده — با پخشِ همگانی بیش از یکی. */
   created?: number;
+  /** گفتگویی که باید باز شود — پیام به یک عضو (۲.۶۵.۰). */
+  threadId?: number;
 }
 
 /** خطاهای سرویس را به پیامِ فارسیِ روشن تبدیل می‌کند. */
@@ -37,6 +40,8 @@ async function explain(error: unknown, fallback: string): Promise<string> {
     if (error.required === 'message.empty') return 'متنِ پیام خالی است.';
     if (error.required === 'message.edit') return 'فقط پیامِ خودتان را می‌توانید ویرایش کنید.';
     if (error.required === 'message.edit_window') return 'پیام فقط تا ۲۴ ساعت پس از ارسال ویرایش می‌شود.';
+    if (error.required === 'messages.peer') return 'به این شخص نمی‌توانید پیام بدهید.';
+    if (error.required === 'messages.peer_off') return 'پیامِ بینِ اعضا خاموش است.';
     const limited = textLimitMessage(error);
     if (limited) return limited;
     if (error.required === 'message.no_recipients') return 'مخاطبی برای ارسال نیست.';
@@ -78,6 +83,25 @@ export async function composeAction(_prev: MessageState, formData: FormData): Pr
     const created = await compose(actor, { recipientIds: finalRecipients, body, allowReply });
     revalidatePath('/messages');
     return { ok: true, created: created.length };
+  } catch (error) {
+    return { error: await explain(error, 'پیام ارسال نشد.') };
+  }
+}
+
+/**
+ * پیام به یک عضو (۲.۶۵.۰). گاردها — نقش، روشن بودنِ قابلیت، کارفرما نبودنِ دو طرف —
+ * همه در `messagePeer` ِ سرویس‌اند؛ اینجا فقط ورودی خوانده می‌شود.
+ */
+export async function peerMessageAction(_prev: MessageState, formData: FormData): Promise<MessageState> {
+  const body = String(formData.get('body') ?? '');
+  if (isTooLong(body)) return { error: TEXT_TOO_LONG };
+  const recipientId = Number(formData.get('recipientId'));
+  if (!Number.isInteger(recipientId) || recipientId <= 0) return { error: 'هنوز گیرنده‌ای انتخاب نشده است.' };
+  try {
+    const actor = await requireActor();
+    const threadId = await messagePeer(actor, recipientId, body);
+    revalidatePath('/messages');
+    return { ok: true, created: 1, threadId };
   } catch (error) {
     return { error: await explain(error, 'پیام ارسال نشد.') };
   }

@@ -146,6 +146,7 @@ export const FIELD_LABELS: Record<string, string> = {
   telegramAppName: 'نامِ کوتاهِ مینی‌اپِ تلگرام',
   defaultLocale: 'زبانِ پیش‌فرض',
   msgPurgeDays: 'پاک‌سازیِ پیام‌ها (روز)',
+  memberDmEnabled: 'پیامِ بینِ اعضا',
   onboardingEnabled: 'آنبوردینگ',
   ownerTeamView: 'نمای تیمیِ مالک',
   presenceEnabled: 'نمایشِ حضور',

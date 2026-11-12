@@ -10,7 +10,7 @@ import {
 import { can, type Actor, type Role } from '@/domain/access/permissions';
 import { ForbiddenError } from '@/domain/access/guard';
 import {
-  canRead, canReply, cooldownRemaining, isRateLimited, planCompose,
+  canRead, canReply, cooldownRemaining, isPeerRole, isRateLimited, planCompose,
   streamFingerprint, type Audience,
 } from '@/domain/messaging/threads';
 import {
@@ -142,6 +142,7 @@ export async function listInbox(actor: Actor) {
       allowReply: threads.allowReply,
       broadcastId: threads.broadcastId,
       kind: threads.kind,
+      peer: threads.peer,
       muted: threadUsers.muted,
       lastReadMessageId: threadUsers.lastReadMessageId,
     })
@@ -152,6 +153,8 @@ export async function listInbox(actor: Actor) {
       visible.length > 0
         ? sql`(${threads.kind} = 'direct' or ${threads.id} in ${sql.raw(`(${visible.map((g) => g.id).join(',')})`)})`
         : eq(threads.kind, 'direct'),
+      // ⚠️ «دیدن به‌جای کاربر» گفتگوهای خصوصیِ عضو با عضو را نمی‌بیند (۲.۶۵.۰).
+      actor.viewOnly ? eq(threads.peer, false) : undefined,
     ))
     .orderBy(desc(threads.updatedAt), desc(threads.id));
 
@@ -201,22 +204,25 @@ export async function listInbox(actor: Actor) {
 
   const t = await getT();
   const lastBodies = [...last.values()].map((r) => r.body);
-  const ctx = await labelContext(actor, [
+  const masked = await labelContext(actor, [
     ...participants.filter((p) => !groupById.has(p.threadId)).map((p) => p.userId),
     ...[...last.values()].map((r) => Number(r.from_user_id)),
     ...mentionedIdsIn(lastBodies),
   ]);
-  const plain = (body: string) => mentionsToPlain(body, (id) => personLabel(id, ctx, t), t('همه'));
+  const plain = (body: string, ctx: LabelContext) => mentionsToPlain(body, (id) => personLabel(id, ctx, t), t('همه'));
 
   return {
     threads: myThreads.map((row) => {
       const group = groupById.get(row.threadId) ?? null;
+      const ctx = unmaskForPeer(row.peer, masked);
       // ⚠️ برای گروه، شرکت‌کنندگان از عضویتِ زنده‌اند؛ ردیف‌های رسیدِ اعضای سابق برچسب نمی‌سازند.
       const ids = group ? [] : (byThread.get(row.threadId) ?? []);
       const lastRow = last.get(row.threadId);
       return {
         id: row.threadId,
         kind: (group?.kind ?? 'direct') as 'direct' | 'channel' | 'project',
+        /** گفتگوی خصوصیِ عضو با عضو — زبانهٔ «اعضا». */
+        peer: !group && row.peer,
         allowReply: row.allowReply,
         broadcastId: group ? null : row.broadcastId,
         isMine: row.creatorId === actor.id,
@@ -226,7 +232,7 @@ export async function listInbox(actor: Actor) {
           .map((userId) => ({ userId, name: personLabel(userId, ctx, t) })),
         label: group ? groupLabel(group) : counterpartLabel(ids, ctx, t),
         avatarUserId: group ? null : counterpartAvatarId(ids, ctx),
-        lastBody: lastRow ? plain(lastRow.body) : '',
+        lastBody: lastRow ? plain(lastRow.body, ctx) : '',
         lastAt: lastRow?.created_at ?? null,
         lastFromName: lastRow ? personLabel(Number(lastRow.from_user_id), ctx, t) : null,
         unread: unread.get(row.threadId) ?? 0,
@@ -323,15 +329,17 @@ export async function openThread(actor: Actor, threadId: number) {
 
   const t = await getT();
   const members = access.members ?? [];
-  const ctx = await labelContext(actor, [
+  const ctx = unmaskForPeer(thread.peer, await labelContext(actor, [
     ...(group ? members : thread.participantIds),
     ...rows.map((r) => r.fromUserId),
     ...mentionedIdsIn(rows.map((r) => r.body)),
-  ]);
+  ]));
 
   return {
     thread: {
       id: thread.id,
+      /** گفتگوی خصوصیِ عضو با عضو (۲.۶۵.۰). */
+      peer: thread.peer,
       allowReply: thread.allowReply,
       creatorId: thread.creatorId,
       label: group ? groupLabel(group) : counterpartLabel(thread.participantIds, ctx, t),
@@ -342,9 +350,13 @@ export async function openThread(actor: Actor, threadId: number) {
        */
       canDelete: group
         ? isManager(actor) || await managesGroupProject(actor, group)
-        : thread.creatorId === actor.id || isManager(actor),
-      /** تیکِ ✓✓ فقط برای مدیران و فقط در گفتگوی دونفره — در گروه «همه خواندند» معنا ندارد. */
-      showReceipts: !group && isManagement(actor),
+        // ⚠️ گفتگوی عضو با عضو را هیچ‌کدام برای دیگری پاک نمی‌کند؛ هر کس فقط از صندوقِ خودش.
+        : !thread.peer && (thread.creatorId === actor.id || isManager(actor)),
+      /**
+       * تیکِ ✓✓ فقط در گفتگوی دونفره — برای مدیران، و در گفتگوی عضو با عضو برای هر
+       * دو طرف. در گروه «همه خواندند» معنا ندارد.
+       */
+      showReceipts: !group && (thread.peer || isManagement(actor)),
     },
     group: group ? await groupView(actor, group, members, ctx, t) : null,
     messages: shapeMessages(rows, ctx, t, actor.id),
@@ -410,6 +422,7 @@ async function loadThread(threadId: number) {
     creatorId: thread.creatorId,
     allowReply: thread.allowReply,
     kind: thread.kind,
+    peer: thread.peer,
     participantIds: parts.map((p) => p.userId),
   };
 }
@@ -422,6 +435,20 @@ async function loadThread(threadId: number) {
  */
 async function accessThread(actor: Actor, threadId: number) {
   const thread = await loadThread(threadId);
+  if (thread.kind === 'direct' && thread.peer) {
+    /*
+     * ⚠️ گفتگوی عضو با عضو (۲.۶۵.۰): «دیدن به‌جای کاربر» آن را نمی‌بیند — قرار است
+     * فقط همان دو نفر ببینند. نوشتن فقط وقتی قابلیت روشن است و هر دو نفر هنوز
+     * عضوِ فعال‌اند (نه کارفرما، نه عضوِ سابق).
+     */
+    const readable = canRead(thread, actor.id) && !actor.viewOnly;
+    let writable = false;
+    if (readable && canReply(thread, actor.id) && (await getSystemConfig()).memberDmEnabled) {
+      const ok = await peerEligible(thread.participantIds);
+      writable = thread.participantIds.length === 2 && thread.participantIds.every((id) => ok.has(id));
+    }
+    return { thread, group: null, members: null, readable, writable };
+  }
   if (thread.kind === 'direct') {
     return {
       thread, group: null, members: null,
@@ -733,6 +760,113 @@ export async function compose(
 }
 
 /**
+ * چه کسانی از این شناسه‌ها در «پیامِ اعضا» هستند (۲.۶۵.۰): عضوِ فعال، حذف‌نشده،
+ * بی نقشِ کارفرما/مالک/ادمین. قاعدهٔ نقش در `isPeerRole`.
+ */
+async function peerEligible(ids: readonly number[]): Promise<Set<number>> {
+  const unique = [...new Set(ids)].filter((id) => id > 0);
+  if (unique.length === 0) return new Set();
+  const rows = await db.select({ id: users.id, role: userRoles.role })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .where(and(inArray(users.id, unique), isNull(users.deletedAt), eq(users.memberState, 'active')));
+  const roles = new Map<number, string[]>();
+  for (const r of rows) roles.set(r.id, [...(roles.get(r.id) ?? []), r.role]);
+  return new Set([...roles].filter(([, list]) => isPeerRole(list)).map(([id]) => id));
+}
+
+/** در گفتگوی عضو با عضو هیچ نامی «مدیریت» نمی‌شود — هر دو همکارند. */
+function unmaskForPeer(peer: boolean, ctx: LabelContext): LabelContext {
+  return peer ? { ...ctx, viewerIsManager: true } : ctx;
+}
+
+/**
+ * اعلانِ پیامِ عضو به عضو — همیشه با نامِ فرستنده. ⚠️ از `notifyFrom` نمی‌گذرد:
+ * عضوی که مجوزِ «ارسال» دارد آنجا «مدیریت» شمرده و نامش ماسک می‌شد.
+ */
+async function notifyPeer(actor: Actor, ids: readonly number[], kind: 'new' | 'reply', body: string, url: string) {
+  const to = ids.filter((id) => id !== actor.id);
+  if (to.length === 0) return;
+  const [me] = await db.select({ name: users.name }).from(users).where(eq(users.id, actor.id));
+  await notify(to, {
+    type: 'message.received',
+    title: kind === 'new' ? 'پیام جدید از {name}' : 'پاسخِ تازه از {name}',
+    params: { name: me?.name ?? '' },
+    body: body.slice(0, 1000),
+    url,
+  });
+}
+
+/**
+ * گیرنده‌های «پیام به یک عضو» (۲.۶۵.۰) — خالی اگر قابلیت خاموش است یا بیننده خودش
+ * عضوِ فعال نیست (کارفرما، مدیر، عضوِ سابق). همین شرط «دکمه را نشان بده» هم هست.
+ */
+export async function getPeerRecipients(actor: Actor): Promise<Array<{ id: number; name: string }>> {
+  if (actor.viewOnly || !isPeerRole(actor.roles)) return [];
+  if (!(await getSystemConfig()).memberDmEnabled) return [];
+  if (!(await peerEligible([actor.id])).has(actor.id)) return [];
+  const rows = await db.selectDistinct({ id: users.id, name: users.name })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .where(and(
+      eq(userRoles.role, 'member'),
+      isNull(users.deletedAt),
+      eq(users.memberState, 'active'),
+      sql`${users.id} <> ${actor.id}`,
+    ));
+  const ok = await peerEligible(rows.map((r) => r.id));
+  return rows.filter((r) => ok.has(r.id)).sort((a, b) => a.name.localeCompare(b.name, 'fa'));
+}
+
+/**
+ * پیامِ عضو به عضو (۲.۶۵.۰).
+ *
+ * ⚠️ قاعده‌ها، همه سمتِ سرور:
+ *  · فقط وقتی «پیامِ مستقیم بینِ اعضا» در تنظیمات روشن است.
+ *  · فرستنده و گیرنده هر دو عضوِ فعال (`peerEligible`) — کارفرما در هیچ جهت.
+ *  · رشته فقط همان دو نفر؛ مدیر و مالک اضافه نمی‌شوند (برخلافِ R-MSG-N3).
+ *  · اگر گفتگوی این دو نفر هست، پیام به همان اضافه می‌شود، نه رشتهٔ تازه.
+ */
+export async function messagePeer(actor: Actor, recipientId: number, body: string): Promise<number> {
+  if (actor.viewOnly) throw new ForbiddenError('messages.peer');
+  if (!(await getSystemConfig()).memberDmEnabled) throw new ForbiddenError('messages.peer_off');
+  if (!Number.isInteger(recipientId) || recipientId === actor.id) throw new ForbiddenError('messages.peer');
+  const ok = await peerEligible([actor.id, recipientId]);
+  if (!ok.has(actor.id) || !ok.has(recipientId)) throw new ForbiddenError('messages.peer');
+
+  const text = noMentions(body).trim();
+  if (text === '') throw new ForbiddenError('message.empty');
+  assertTextLength(text);
+  await assertNotRateLimited(actor);
+
+  const threadId = await db.transaction(async (tx) => {
+    // گفتگوی موجودِ همین دو نفر (هر دو هنوز در آن) — نه رشتهٔ تکراری.
+    const existing = await tx.execute(sql`
+      select t.id from threads t
+      where t.peer and t.kind = 'direct'
+        and exists (select 1 from thread_users a where a.thread_id = t.id and a.user_id = ${actor.id})
+        and exists (select 1 from thread_users b where b.thread_id = t.id and b.user_id = ${recipientId})
+        and (select count(*) from thread_users c where c.thread_id = t.id) = 2
+      order by t.id desc limit 1
+    `) as unknown as Array<{ id: number }>;
+    let id = existing[0] ? Number(existing[0].id) : null;
+    if (id === null) {
+      const rows = await tx.insert(threads).values({ creatorId: actor.id, allowReply: true, peer: true })
+        .returning({ id: threads.id });
+      id = rows[0]!.id;
+      await tx.insert(threadUsers).values([{ threadId: id, userId: actor.id }, { threadId: id, userId: recipientId }]);
+    }
+    await tx.insert(messages).values({ threadId: id, fromUserId: actor.id, body: text });
+    await tx.update(threads).set({ updatedAt: sql`now()` }).where(eq(threads.id, id));
+    return id;
+  });
+
+  await touchSent(actor);
+  await notifyPeer(actor, [recipientId], 'new', text, `/messages/${threadId}`);
+  return threadId;
+}
+
+/**
  * «پیام به مدیریت».
  *
  * ⚠️ برخلافِ ارسالِ عادی، **یک** رشتهٔ مشترک ساخته می‌شود که همهٔ مدیران در
@@ -835,6 +969,8 @@ export async function reply(actor: Actor, threadId: number, body: string, replyT
 
   if (group) {
     await notifyGroup(actor, group, access.members ?? [], text, clean);
+  } else if (thread.peer) {
+    await notifyPeer(actor, thread.participantIds, 'reply', text, `/messages/${threadId}`);
   } else {
     // همهٔ شرکت‌کنندگان جز خودِ نویسنده.
     await notifyMessage(actor, thread.participantIds, {
@@ -911,7 +1047,7 @@ export async function deleteThread(actor: Actor, threadId: number) {
   // کانالِ تیم: فقط مدیر. گروهِ پروژه: مدیر یا مدیرِ همان پروژه. دونفره: سازنده یا مدیر.
   const allowed = group
     ? isManager(actor) || await managesGroupProject(actor, group)
-    : thread.creatorId === actor.id || isManager(actor);
+    : !thread.peer && (thread.creatorId === actor.id || isManager(actor));
   if (!allowed) throw new ForbiddenError('thread.delete');
 
   await db.transaction(async (tx) => {
@@ -1065,7 +1201,7 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
 
   const t = await getT();
   const mentioned = mentionedIdsIn(rows.map((r) => r.body));
-  const ctx = await labelContext(actor, [...rows.map((r) => r.fromUserId), ...mentioned]);
+  const ctx = unmaskForPeer(access.thread.peer, await labelContext(actor, [...rows.map((r) => r.fromUserId), ...mentioned]));
 
   return {
     off: false as const,

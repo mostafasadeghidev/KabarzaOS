@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/server/auth';
-import { channelFormOptions, getRecipientFilterData, getRecipients, listInbox } from '@/server/messaging/service';
+import { channelFormOptions, getPeerRecipients, getRecipientFilterData, getRecipients, listInbox } from '@/server/messaging/service';
 import { can } from '@/domain/access/permissions';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { MessagesView } from './messages-view';
@@ -32,7 +32,8 @@ export async function MessagesScreen({ threadId = null }: { threadId?: number | 
   const actor = await currentActor();
   if (!actor) redirect('/login');
 
-  const [inbox, system] = await Promise.all([listInbox(actor), getSystemConfig()]);
+  // ۲.۶۵.۰ — همکارانی که می‌شود به‌شان پیامِ خصوصی داد (خالی = دکمه و زبانه نیست).
+  const [inbox, system, peers] = await Promise.all([listInbox(actor), getSystemConfig(), getPeerRecipients(actor)]);
   // ⚠️ فقط وقتی خوانده می‌شوند که کاربر واقعاً بتواند پیام بفرستد.
   const [recipients, filters] = inbox.canSend
     ? await Promise.all([getRecipients(actor), getRecipientFilterData(actor)])
@@ -81,6 +82,7 @@ export async function MessagesScreen({ threadId = null }: { threadId?: number | 
         recipients={recipients}
         filters={filters}
         canSend={inbox.canSend}
+        peers={peers}
         poll={{ enabled: system.chatPollEnabled, seconds: system.chatPollInterval }}
         canBroadcast={canBroadcast}
         channelOptions={channelOptions}

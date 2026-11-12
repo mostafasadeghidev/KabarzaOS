@@ -110,6 +110,17 @@ export function cooldownRemaining(lastSentAt: Date | null, now: Date): number {
   return Math.max(0, Math.ceil(SEND_COOLDOWN_SECONDS - passed));
 }
 
+/**
+ * چه کسی در «پیامِ اعضا» (عضو با عضو، ۲.۶۵.۰) هست: فقط نقشِ عضو.
+ *
+ * ⚠️ کارفرما در هیچ جهت نیست — نه می‌فرستد، نه می‌گیرد. مالک و ادمین هم نیستند:
+ * آن‌ها «پیام جدید» ِ خودشان را دارند و این گفتگوها عمداً از مدیریت جداست.
+ * کسی که کنارِ «عضو» نقشِ کارفرما هم دارد، کنار می‌رود (سخت‌گیرانه‌ترین حالت).
+ */
+export function isPeerRole(roles: readonly string[]): boolean {
+  return roles.includes('member') && !roles.some((r) => r === 'client' || r === 'owner' || r === 'admin');
+}
+
 export type Audience = 'members' | 'clients' | 'all';
 
 /** برچسبِ مخاطب‌های آماده — همان سه گزینهٔ نسخهٔ قبلی. */

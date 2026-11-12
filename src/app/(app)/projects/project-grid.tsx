@@ -139,11 +139,16 @@ export function ProjectGrid({
         بالای تب‌ها می‌نشست و یک ردیفِ کامل را برای یک کادر می‌گرفت. تب‌ها
         `min-w-0` و پیمایشِ افقی دارند تا جستجو هرگز به ردیفِ بعد هل داده نشود؛
         هنگامِ جستجو تب‌ها کنار می‌روند و کادر سرِ جایش می‌ماند.
+
+        ⚠️ ۲.۶۵.۰: ردیفِ «بی‌شکست» از عرضِ @3xl به بعد، در عرضِ متوسط آخرین تب‌ها را
+        زیرِ کادرِ جستجو می‌برید (تب‌ها پیمایش داشتند ولی دیده نمی‌شد). حالا تب‌ها به
+        اندازهٔ خودشان‌اند و اگر کنارشان جا نباشد، **جستجو** به ردیفِ بعد می‌رود؛
+        فقط وقتی تب‌ها از کلِ عرض بیشترند، پیمایشِ افقی دارند.
       */}
-      <div className="flex flex-wrap items-center gap-2 @3xl/main:flex-nowrap">
+      <div className="flex flex-wrap items-center gap-2">
         {!searching && (
           // shadcn Tabs — روی صفحهٔ باریک پیمایشِ افقی، به‌جای شکستنِ خط.
-          <div className="scrollbar-none min-w-0 basis-full overflow-x-auto overflow-y-hidden @3xl/main:flex-1 @3xl/main:basis-auto">
+          <div className="scrollbar-none min-w-0 max-w-full overflow-x-auto overflow-y-hidden">
             <Tabs value={tab} onValueChange={(v) => selectTab(v as typeof tab)}>
               <TabsList className="w-max">
                 {shownTabs.filter((t) => !t.hidden || t.key === tab).map((t) => (

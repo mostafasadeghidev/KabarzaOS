@@ -5014,5 +5014,17 @@
   "پاسخ به این پیام": "Reply to this message",
   "پیام فقط تا ۲۴ ساعت پس از ارسال ویرایش می‌شود.": "A message can only be edited within 24 hours of sending.",
   "پیام معتبر نیست.": "Invalid message.",
-  "پیامِ اصلی حذف شده است.": "The original message was deleted."
+  "پیامِ اصلی حذف شده است.": "The original message was deleted.",
+  "اعضا می‌توانند به یکدیگر پیامِ خصوصی بدهند؛ فقط همان دو نفر آن را می‌بینند. کارفرما نه به عضوی پیام می‌دهد و نه از عضوی پیام می‌گیرد. خاموش‌کردن گفتگوهای قبلی را پاک نمی‌کند؛ فقط ادامه دادنشان بسته می‌شود.": "Members can send each other private messages; only those two people see them. Clients can't message a member and can't receive messages from one. Turning this off doesn't delete earlier conversations; it only stops them from continuing.",
+  "انتخابِ عضو…": "Choose a member…",
+  "این گفتگو بسته است: پیامِ بینِ اعضا خاموش شده یا طرفِ مقابل دیگر عضوِ فعال نیست.": "This conversation is closed: messages between members are turned off, or the other person is no longer an active member.",
+  "این گفتگو خصوصی است؛ فقط شما و همان عضو آن را می‌بینید. اگر قبلاً با او گفتگو کرده‌اید، پیام به همان گفتگو اضافه می‌شود.": "This conversation is private; only you and that member see it. If you've talked before, the message is added to the same conversation.",
+  "به این شخص نمی‌توانید پیام بدهید.": "You can't message this person.",
+  "خصوصی — فقط شما دو نفر می‌بینید": "Private — only you two can see this",
+  "هنوز با عضوی گفتگو نکرده‌اید.": "You haven't talked with any member yet.",
+  "پیام به یک عضو": "Message a member",
+  "پیامِ اعضا خصوصی است؛ فقط همان دو نفر آن را می‌بینند.": "Member messages are private; only those two people see them.",
+  "پیامِ بینِ اعضا": "Messages between members",
+  "پیامِ بینِ اعضا خاموش است.": "Messages between members are turned off.",
+  "پیامِ مستقیم بینِ اعضا": "Direct messages between members"
 }

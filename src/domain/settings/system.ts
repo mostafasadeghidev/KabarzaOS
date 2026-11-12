@@ -60,6 +60,8 @@ export interface SystemConfig {
   presenceOffline: number;
   /** پاک‌سازیِ خودکارِ پیام‌های قدیمی؛ ۰ = هرگز. */
   msgPurgeDays: number;
+  /** پیامِ مستقیم بینِ اعضا (۲.۶۵.۰) — کارفرما هرگز در آن نیست. */
+  memberDmEnabled: boolean;
   pulseEnabled: boolean;
   pulseInterval: number;
   /** اعلانِ فوری روی گوشی و کامپیوتر (Web Push، ۲.۵۶.۰). */
@@ -99,6 +101,7 @@ export const DEFAULT_SYSTEM: SystemConfig = {
   presenceIdle: PRESENCE_DEFAULTS.idleAfter,
   presenceOffline: PRESENCE_DEFAULTS.offlineAfter,
   msgPurgeDays: 0,
+  memberDmEnabled: true,
   pulseEnabled: true,
   pulseInterval: 45,
   pushEnabled: true,
@@ -160,6 +163,7 @@ export function normalizeSystem(input: Partial<Record<keyof SystemConfig, unknow
     ),
     // ⚠️ مهار در **هر دو** سو: عددِ منفی یعنی «همه را پاک کن».
     msgPurgeDays: Math.max(0, Math.min(MAX_PURGE_DAYS, Math.trunc(Number(input.msgPurgeDays) || 0))),
+    memberDmEnabled: bool(input.memberDmEnabled, DEFAULT_SYSTEM.memberDmEnabled),
     pulseEnabled: bool(input.pulseEnabled, DEFAULT_SYSTEM.pulseEnabled),
     pushEnabled: bool(input.pushEnabled, DEFAULT_SYSTEM.pushEnabled),
     pulseInterval: fromChoices(input.pulseInterval, PULSE_CHOICES, DEFAULT_SYSTEM.pulseInterval),
