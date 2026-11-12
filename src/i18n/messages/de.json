@@ -5014,5 +5014,17 @@
   "پاسخ به این پیام": "Auf diese Nachricht antworten",
   "پیام فقط تا ۲۴ ساعت پس از ارسال ویرایش می‌شود.": "Eine Nachricht kann nur innerhalb von 24 Stunden nach dem Senden bearbeitet werden.",
   "پیام معتبر نیست.": "Ungültige Nachricht.",
-  "پیامِ اصلی حذف شده است.": "Die ursprüngliche Nachricht wurde gelöscht."
+  "پیامِ اصلی حذف شده است.": "Die ursprüngliche Nachricht wurde gelöscht.",
+  "اعضا می‌توانند به یکدیگر پیامِ خصوصی بدهند؛ فقط همان دو نفر آن را می‌بینند. کارفرما نه به عضوی پیام می‌دهد و نه از عضوی پیام می‌گیرد. خاموش‌کردن گفتگوهای قبلی را پاک نمی‌کند؛ فقط ادامه دادنشان بسته می‌شود.": "Mitglieder können sich gegenseitig private Nachrichten schicken; nur diese zwei Personen sehen sie. Kunden können keinem Mitglied schreiben und keine Nachricht von einem Mitglied erhalten. Ausschalten löscht frühere Unterhaltungen nicht, sie können nur nicht fortgesetzt werden.",
+  "انتخابِ عضو…": "Mitglied auswählen…",
+  "این گفتگو بسته است: پیامِ بینِ اعضا خاموش شده یا طرفِ مقابل دیگر عضوِ فعال نیست.": "Diese Unterhaltung ist geschlossen: Nachrichten zwischen Mitgliedern sind ausgeschaltet oder die andere Person ist kein aktives Mitglied mehr.",
+  "این گفتگو خصوصی است؛ فقط شما و همان عضو آن را می‌بینید. اگر قبلاً با او گفتگو کرده‌اید، پیام به همان گفتگو اضافه می‌شود.": "Diese Unterhaltung ist privat; nur du und dieses Mitglied sehen sie. Wenn ihr schon geschrieben habt, wird die Nachricht zur selben Unterhaltung hinzugefügt.",
+  "به این شخص نمی‌توانید پیام بدهید.": "Du kannst dieser Person keine Nachricht schicken.",
+  "خصوصی — فقط شما دو نفر می‌بینید": "Privat — nur ihr beide seht das",
+  "هنوز با عضوی گفتگو نکرده‌اید.": "Du hast noch mit keinem Mitglied geschrieben.",
+  "پیام به یک عضو": "Nachricht an ein Mitglied",
+  "پیامِ اعضا خصوصی است؛ فقط همان دو نفر آن را می‌بینند.": "Nachrichten zwischen Mitgliedern sind privat; nur diese zwei Personen sehen sie.",
+  "پیامِ بینِ اعضا": "Nachrichten zwischen Mitgliedern",
+  "پیامِ بینِ اعضا خاموش است.": "Nachrichten zwischen Mitgliedern sind ausgeschaltet.",
+  "پیامِ مستقیم بینِ اعضا": "Direktnachrichten zwischen Mitgliedern"
 }

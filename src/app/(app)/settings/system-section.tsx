@@ -371,6 +371,16 @@ export function SystemSection({ config, health, bucket, isOwner }: {
             {tr("۰ یعنی پیام‌ها برای همیشه می‌مانند.")}
           </FieldDescription>
         </Field>
+        {/* ۲.۶۵.۰ — گفتگوی خصوصیِ عضو با عضو؛ کارفرما در هیچ جهت نیست. */}
+        <div className="grid gap-1">
+          <label className="flex items-center gap-1.5 text-sm">
+            <Switch name="memberDmEnabled" defaultChecked={config.memberDmEnabled} />
+            {tr("پیامِ مستقیم بینِ اعضا")}
+          </label>
+          <p className="text-xs text-muted-foreground">
+            {tr("اعضا می‌توانند به یکدیگر پیامِ خصوصی بدهند؛ فقط همان دو نفر آن را می‌بینند. کارفرما نه به عضوی پیام می‌دهد و نه از عضوی پیام می‌گیرد. خاموش‌کردن گفتگوهای قبلی را پاک نمی‌کند؛ فقط ادامه دادنشان بسته می‌شود.")}
+          </p>
+        </div>
       </Panel>
 
       <div className="flex items-center gap-3">

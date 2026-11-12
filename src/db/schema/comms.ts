@@ -30,6 +30,11 @@ export const threads = pgTable('threads', {
   audience: jsonb('audience').$type<{ type: 'all' } | { type: 'role'; tagId: number } | { type: 'office'; officeId: number }>(),
   /** گروهِ پروژه — یکی به‌ازای هر پروژه. */
   projectId: fk('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  /**
+   * گفتگوی خصوصیِ عضو با عضو (۲.۶۵.۰) — فقط همان دو نفر؛ مدیران اضافه نمی‌شوند،
+   * نام‌ها ماسک نمی‌شوند و «دیدن به‌جای کاربر» آن را نشان نمی‌دهد.
+   */
+  peer: boolean('peer').notNull().default(false),
   ...stamps,
 }, (t) => [
   index('threads_broadcast_ix').on(t.broadcastId),
