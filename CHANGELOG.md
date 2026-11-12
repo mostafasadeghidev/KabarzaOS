@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.64.1]
+
+### Fixed
+
+- **Correct note about a mailbox's other addresses.** 2.64.0 said phones and Outlook must always sign in with the main address. In fact the mail server accepts any of the mailbox's addresses with the same password, and webmail sends from the address you signed in with. The details window now says so: mail to any address arrives in the same mailbox, you can sign in with any of them, and the one you sign in with is the sender.
+
 ## [2.64.0]
 
 ### Added

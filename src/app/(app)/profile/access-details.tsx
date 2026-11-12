@@ -130,9 +130,16 @@ function Details({ row, mailSetup }: { row: MyAccessRow; mailSetup: MailSetupVie
               <li key={a} dir="ltr" className="rounded-md border bg-muted/40 px-2 py-0.5 text-xs"><CopyText value={a} /></li>
             ))}
           </ul>
-          <p className="text-xs text-muted-foreground">
-            {tr('ایمیلِ همهٔ این نشانی‌ها به همین صندوق می‌آید. برای ورود در گوشی و Outlook همیشه نشانیِ اصلیِ بالا را بزن.')}
-          </p>
+          {/*
+            ⚠️ رفتارِ واقعیِ Stalwart (آزموده‌شده روی سرور، ۲۰۲۶-۱۱-۱۲): با **هر** نشانیِ این
+            صندوق و همان رمز می‌شود وارد شد، و وب‌میل از همان نشانی‌ای می‌فرستد که با آن وارد
+            شده‌ای. صندوق یکی است. متنِ ۲.۶۴.۰ به‌اشتباه می‌گفت فقط نشانیِ اصلی.
+          */}
+          <ul className="grid list-disc gap-1 ps-4 text-xs text-muted-foreground">
+            <li>{tr('ایمیلی که به هر کدام از این نشانی‌ها فرستاده شود، به همین صندوق می‌رسد.')}</li>
+            <li>{tr('با هر کدام از این نشانی‌ها و همان رمز می‌شود وارد شد (وب‌میل، گوشی، Outlook). ایمیل از همان نشانی‌ای فرستاده می‌شود که با آن وارد شده‌ای.')}</li>
+            <li>{tr('هر نشانی که وارد شوی، همین یک صندوق را می‌بینی؛ فقط فرستنده فرق می‌کند.')}</li>
+          </ul>
         </section>
       )}
 
@@ -174,7 +181,7 @@ function Details({ row, mailSetup }: { row: MyAccessRow; mailSetup: MailSetupVie
             </Row>
           </div>
           <p className="text-xs text-muted-foreground">
-            {tr('نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.')}
+            {tr('اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.')}
             {' '}{tr('رمز همان رمزِ بالاست. بعد از اولین ورود، بهتر است از وب‌میل عوضش کنی.')}
           </p>
         </section>

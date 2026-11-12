@@ -4996,5 +4996,11 @@
   "هنوز حضوری ثبت نشده": "Noch nicht gesehen",
   "نشانی‌های دیگرِ همین صندوق": "Weitere Adressen dieses Postfachs",
   "ایمیلِ همهٔ این نشانی‌ها به همین صندوق می‌آید. برای ورود در گوشی و Outlook همیشه نشانیِ اصلیِ بالا را بزن.": "E-Mails an alle diese Adressen landen in diesem Postfach. Zur Anmeldung auf Telefon oder in Outlook immer die Hauptadresse oben verwenden.",
-  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "Der Benutzername ist immer die Hauptadresse, auch wenn das Postfach weitere Adressen hat."
+  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "Der Benutzername ist immer die Hauptadresse, auch wenn das Postfach weitere Adressen hat.",
+  "ایمیلی که به هر کدام از این نشانی‌ها فرستاده شود، به همین صندوق می‌رسد.": "E-Mails an eine dieser Adressen landen in diesem Postfach.",
+  "برای ورود (وب‌میل، گوشی، Outlook) همیشه نشانیِ اصلیِ بالا را بزن؛ با این نشانی‌ها نمی‌شود جدا وارد شد.": "Zum Anmelden (Webmail, Telefon, Outlook) immer die Hauptadresse oben verwenden; mit diesen Adressen ist keine eigene Anmeldung möglich.",
+  "برای فرستادن از یکی از این نشانی‌ها لازم نیست جدا وارد شوی: در وب‌میل از «تنظیمات ← هویت‌ها» آن را اضافه کن و هنگامِ نوشتن، در «از» انتخابش کن. در گوشی و Outlook هم همین را از تنظیماتِ همان حساب با «نشانیِ دیگر / Alias» اضافه کن.": "Zum Senden von einer dieser Adressen ist keine eigene Anmeldung nötig: im Webmail unter Einstellungen → Identitäten hinzufügen und beim Schreiben unter „Von“ wählen. Auf dem Telefon oder in Outlook in den Kontoeinstellungen als weitere Adresse / Alias hinzufügen.",
+  "با هر کدام از این نشانی‌ها و همان رمز می‌شود وارد شد (وب‌میل، گوشی، Outlook). ایمیل از همان نشانی‌ای فرستاده می‌شود که با آن وارد شده‌ای.": "Mit jeder dieser Adressen und demselben Passwort kann man sich anmelden (Webmail, Telefon, Outlook). E-Mails werden von der Adresse gesendet, mit der Sie angemeldet sind.",
+  "هر نشانی که وارد شوی، همین یک صندوق را می‌بینی؛ فقط فرستنده فرق می‌کند.": "Mit welcher Adresse Sie sich auch anmelden, Sie sehen dasselbe Postfach; nur der Absender ändert sich.",
+  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "Um von einer anderen Adresse zu senden, verwenden Sie diese Adresse als Benutzernamen."
 }

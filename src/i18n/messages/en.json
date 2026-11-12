@@ -4996,5 +4996,11 @@
   "هنوز حضوری ثبت نشده": "Not seen yet",
   "نشانی‌های دیگرِ همین صندوق": "Other addresses of this mailbox",
   "ایمیلِ همهٔ این نشانی‌ها به همین صندوق می‌آید. برای ورود در گوشی و Outlook همیشه نشانیِ اصلیِ بالا را بزن.": "Email to all these addresses arrives in this mailbox. To sign in on a phone or in Outlook, always use the main address above.",
-  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "The username is always the main address, even if the mailbox has other addresses."
+  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "The username is always the main address, even if the mailbox has other addresses.",
+  "ایمیلی که به هر کدام از این نشانی‌ها فرستاده شود، به همین صندوق می‌رسد.": "Email sent to any of these addresses arrives in this mailbox.",
+  "برای ورود (وب‌میل، گوشی، Outlook) همیشه نشانیِ اصلیِ بالا را بزن؛ با این نشانی‌ها نمی‌شود جدا وارد شد.": "To sign in (webmail, phone, Outlook) always use the main address above; these addresses cannot sign in on their own.",
+  "برای فرستادن از یکی از این نشانی‌ها لازم نیست جدا وارد شوی: در وب‌میل از «تنظیمات ← هویت‌ها» آن را اضافه کن و هنگامِ نوشتن، در «از» انتخابش کن. در گوشی و Outlook هم همین را از تنظیماتِ همان حساب با «نشانیِ دیگر / Alias» اضافه کن.": "To send from one of these addresses you do not need a separate sign-in: in webmail add it under Settings → Identities, then pick it in “From” when writing. On a phone or in Outlook, add it in that account’s settings as another address / alias.",
+  "با هر کدام از این نشانی‌ها و همان رمز می‌شود وارد شد (وب‌میل، گوشی، Outlook). ایمیل از همان نشانی‌ای فرستاده می‌شود که با آن وارد شده‌ای.": "You can sign in with any of these addresses and the same password (webmail, phone, Outlook). Email is sent from the address you signed in with.",
+  "هر نشانی که وارد شوی، همین یک صندوق را می‌بینی؛ فقط فرستنده فرق می‌کند.": "Whichever address you sign in with, you see this same mailbox; only the sender changes.",
+  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "To send from another address, use that address as the username."
 }
