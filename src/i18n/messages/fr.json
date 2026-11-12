@@ -4996,5 +4996,8 @@
   "هنوز حضوری ثبت نشده": "Pas encore vu",
   "نشانی‌های دیگرِ همین صندوق": "Autres adresses de cette boîte",
   "ایمیلِ همهٔ این نشانی‌ها به همین صندوق می‌آید. برای ورود در گوشی و Outlook همیشه نشانیِ اصلیِ بالا را بزن.": "Le courrier de toutes ces adresses arrive dans cette boîte. Pour vous connecter sur téléphone ou dans Outlook, utilisez toujours l’adresse principale ci-dessus.",
-  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "Le nom d’utilisateur est toujours l’adresse principale, même si la boîte a d’autres adresses."
+  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "Le nom d’utilisateur est toujours l’adresse principale, même si la boîte a d’autres adresses.",
+  "ایمیلی که به هر کدام از این نشانی‌ها فرستاده شود، به همین صندوق می‌رسد.": "Le courrier envoyé à l’une de ces adresses arrive dans cette boîte.",
+  "برای ورود (وب‌میل، گوشی، Outlook) همیشه نشانیِ اصلیِ بالا را بزن؛ با این نشانی‌ها نمی‌شود جدا وارد شد.": "Pour vous connecter (webmail, téléphone, Outlook), utilisez toujours l’adresse principale ci-dessus ; ces adresses ne permettent pas de connexion séparée.",
+  "برای فرستادن از یکی از این نشانی‌ها لازم نیست جدا وارد شوی: در وب‌میل از «تنظیمات ← هویت‌ها» آن را اضافه کن و هنگامِ نوشتن، در «از» انتخابش کن. در گوشی و Outlook هم همین را از تنظیماتِ همان حساب با «نشانیِ دیگر / Alias» اضافه کن.": "Pour envoyer depuis l’une de ces adresses, pas besoin de connexion séparée : dans le webmail, ajoutez-la dans Paramètres → Identités, puis choisissez-la dans « De » en écrivant. Sur téléphone ou dans Outlook, ajoutez-la dans les paramètres du compte comme autre adresse / alias."
 }

@@ -4996,5 +4996,8 @@
   "هنوز حضوری ثبت نشده": "Aún sin registro",
   "نشانی‌های دیگرِ همین صندوق": "Otras direcciones de este buzón",
   "ایمیلِ همهٔ این نشانی‌ها به همین صندوق می‌آید. برای ورود در گوشی و Outlook همیشه نشانیِ اصلیِ بالا را بزن.": "El correo de todas estas direcciones llega a este buzón. Para iniciar sesión en el móvil u Outlook, use siempre la dirección principal de arriba.",
-  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "El usuario es siempre la dirección principal, aunque el buzón tenga otras direcciones."
+  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "El usuario es siempre la dirección principal, aunque el buzón tenga otras direcciones.",
+  "ایمیلی که به هر کدام از این نشانی‌ها فرستاده شود، به همین صندوق می‌رسد.": "El correo enviado a cualquiera de estas direcciones llega a este buzón.",
+  "برای ورود (وب‌میل، گوشی، Outlook) همیشه نشانیِ اصلیِ بالا را بزن؛ با این نشانی‌ها نمی‌شود جدا وارد شد.": "Para iniciar sesión (webmail, móvil, Outlook) use siempre la dirección principal de arriba; estas direcciones no permiten iniciar sesión por separado.",
+  "برای فرستادن از یکی از این نشانی‌ها لازم نیست جدا وارد شوی: در وب‌میل از «تنظیمات ← هویت‌ها» آن را اضافه کن و هنگامِ نوشتن، در «از» انتخابش کن. در گوشی و Outlook هم همین را از تنظیماتِ همان حساب با «نشانیِ دیگر / Alias» اضافه کن.": "Para enviar desde una de estas direcciones no necesita otro inicio de sesión: en el webmail añádala en Ajustes → Identidades y elíjala en «De» al escribir. En el móvil u Outlook, añádala en los ajustes de la cuenta como otra dirección / alias."
 }

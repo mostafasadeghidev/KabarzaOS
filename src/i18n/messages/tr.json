@@ -4996,5 +4996,8 @@
   "هنوز حضوری ثبت نشده": "Henüz görülmedi",
   "نشانی‌های دیگرِ همین صندوق": "Bu posta kutusunun diğer adresleri",
   "ایمیلِ همهٔ این نشانی‌ها به همین صندوق می‌آید. برای ورود در گوشی و Outlook همیشه نشانیِ اصلیِ بالا را بزن.": "Bu adreslerin hepsine gelen e-postalar bu kutuya düşer. Telefonda veya Outlook’ta girişte her zaman yukarıdaki ana adresi kullanın.",
-  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "Kullanıcı adı, posta kutusunun başka adresleri olsa da her zaman ana adrestir."
+  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "Kullanıcı adı, posta kutusunun başka adresleri olsa da her zaman ana adrestir.",
+  "ایمیلی که به هر کدام از این نشانی‌ها فرستاده شود، به همین صندوق می‌رسد.": "Bu adreslerden herhangi birine gönderilen e-posta bu kutuya gelir.",
+  "برای ورود (وب‌میل، گوشی، Outlook) همیشه نشانیِ اصلیِ بالا را بزن؛ با این نشانی‌ها نمی‌شود جدا وارد شد.": "Giriş için (web posta, telefon, Outlook) her zaman yukarıdaki ana adresi kullanın; bu adreslerle ayrı giriş yapılamaz.",
+  "برای فرستادن از یکی از این نشانی‌ها لازم نیست جدا وارد شوی: در وب‌میل از «تنظیمات ← هویت‌ها» آن را اضافه کن و هنگامِ نوشتن، در «از» انتخابش کن. در گوشی و Outlook هم همین را از تنظیماتِ همان حساب با «نشانیِ دیگر / Alias» اضافه کن.": "Bu adreslerden biriyle göndermek için ayrı giriş gerekmez: web postada Ayarlar → Kimlikler’e ekleyin ve yazarken “Kimden”de seçin. Telefonda veya Outlook’ta, o hesabın ayarlarında başka adres / takma ad olarak ekleyin."
 }

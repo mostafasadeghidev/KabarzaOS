@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.64.1]
+
+### Fixed
+
+- **Clearer note about a mailbox's other addresses.** The company-email details now explain the three things separately: email to any alias arrives in the same mailbox; signing in (webmail, phone, Outlook) always uses the main address; and sending from an alias does not need its own sign-in, only adding it as an identity in webmail (or as an extra address on the phone or in Outlook) and choosing it in "From".
+
 ## [2.64.0]
 
 ### Added
