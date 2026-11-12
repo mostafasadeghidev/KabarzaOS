@@ -6,7 +6,7 @@ Versioning follows [SemVer](https://semver.org/).
 
 ### Fixed
 
-- **Clearer note about a mailbox's other addresses.** The company-email details now explain the three things separately: email to any alias arrives in the same mailbox; signing in (webmail, phone, Outlook) always uses the main address; and sending from an alias does not need its own sign-in, only adding it as an identity in webmail (or as an extra address on the phone or in Outlook) and choosing it in "From".
+- **Correct note about a mailbox's other addresses.** 2.64.0 said phones and Outlook must always sign in with the main address. In fact the mail server accepts any of the mailbox's addresses with the same password, and webmail sends from the address you signed in with. The details window now says so: mail to any address arrives in the same mailbox, you can sign in with any of them, and the one you sign in with is the sender.
 
 ## [2.64.0]
 
