@@ -5002,5 +5002,17 @@
   "برای فرستادن از یکی از این نشانی‌ها لازم نیست جدا وارد شوی: در وب‌میل از «تنظیمات ← هویت‌ها» آن را اضافه کن و هنگامِ نوشتن، در «از» انتخابش کن. در گوشی و Outlook هم همین را از تنظیماتِ همان حساب با «نشانیِ دیگر / Alias» اضافه کن.": "Bu adreslerden biriyle göndermek için ayrı giriş gerekmez: web postada Ayarlar → Kimlikler’e ekleyin ve yazarken “Kimden”de seçin. Telefonda veya Outlook’ta, o hesabın ayarlarında başka adres / takma ad olarak ekleyin.",
   "با هر کدام از این نشانی‌ها و همان رمز می‌شود وارد شد (وب‌میل، گوشی، Outlook). ایمیل از همان نشانی‌ای فرستاده می‌شود که با آن وارد شده‌ای.": "Bu adreslerden herhangi biri ve aynı şifreyle giriş yapabilirsiniz (web posta, telefon, Outlook). E-posta, giriş yaptığınız adresten gönderilir.",
   "هر نشانی که وارد شوی، همین یک صندوق را می‌بینی؛ فقط فرستنده فرق می‌کند.": "Hangi adresle girerseniz girin aynı posta kutusunu görürsünüz; yalnızca gönderen değişir.",
-  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "Başka bir adresten göndermek için o adresi kullanıcı adı olarak kullanın."
+  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "Başka bir adresten göndermek için o adresi kullanıcı adı olarak kullanın.",
+  "خودتان": "Siz",
+  "در پاسخ به {name}": "{name} kişisine yanıt",
+  "فقط پیامِ خودتان را می‌توانید ویرایش کنید.": "Yalnızca kendi mesajlarınızı düzenleyebilirsiniz.",
+  "لغوِ پاسخ": "Yanıtı iptal et",
+  "ویرایش: {at}": "Düzenlendi: {at}",
+  "ویرایشِ این پیام": "Bu mesajı düzenle",
+  "ویرایشِ پیام": "Mesajı düzenle",
+  "ویرایش‌شده": "düzenlendi",
+  "پاسخ به این پیام": "Bu mesaja yanıt ver",
+  "پیام فقط تا ۲۴ ساعت پس از ارسال ویرایش می‌شود.": "Bir mesaj yalnızca gönderildikten sonraki 24 saat içinde düzenlenebilir.",
+  "پیام معتبر نیست.": "Geçersiz mesaj.",
+  "پیامِ اصلی حذف شده است.": "Asıl mesaj silindi."
 }

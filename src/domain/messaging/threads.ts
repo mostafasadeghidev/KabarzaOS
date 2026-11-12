@@ -134,9 +134,15 @@ export function streamFingerprint(input: {
   maxMessageId: number;
   readStates: ReadonlyArray<{ userId: number; lastReadMessageId: number | null }>;
   viewerId: number;
+  /**
+   * شمارِ پیام‌ها و آخرین ویرایش (۲.۶۵.۰) — بی‌این، ویرایش یا حذفِ یک پیام برای
+   * طرفِ دیگر تا پیامِ تازهٔ بعدی دیده نمی‌شد. اختیاری تا اثرانگشتِ قدیمی بماند.
+   */
+  version?: string;
 }): string {
   const others = input.readStates
     .filter((r) => r.userId !== input.viewerId)
     .map((r) => r.lastReadMessageId ?? 0);
-  return `${input.maxMessageId}:${others.length > 0 ? Math.min(...others) : 0}`;
+  const base = `${input.maxMessageId}:${others.length > 0 ? Math.min(...others) : 0}`;
+  return input.version ? `${base}:${input.version}` : base;
 }

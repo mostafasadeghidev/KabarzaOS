@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
 import {
   compose, contactManagement, createChannel, createProjectGroup, deleteGroupMessage, deleteThread,
-  leaveThread, openThread, RateLimitedError, reply, resolveAudience, setThreadMuted, ThreadNotFoundError,
+  leaveThread, openThread, RateLimitedError, editMessage, reply, resolveAudience, setThreadMuted, ThreadNotFoundError,
 } from '@/server/messaging/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { AUDIENCE_LABELS, type Audience } from '@/domain/messaging/threads';
@@ -35,6 +35,8 @@ async function explain(error: unknown, fallback: string): Promise<string> {
     if (error.required === 'messages.project_group') return 'گروهِ پروژه را مدیر یا مدیرِ همان پروژه می‌سازد.';
     if (error.required === 'message.delete') return 'فقط نویسندهٔ پیام یا مدیر می‌تواند آن را حذف کند.';
     if (error.required === 'message.empty') return 'متنِ پیام خالی است.';
+    if (error.required === 'message.edit') return 'فقط پیامِ خودتان را می‌توانید ویرایش کنید.';
+    if (error.required === 'message.edit_window') return 'پیام فقط تا ۲۴ ساعت پس از ارسال ویرایش می‌شود.';
     const limited = textLimitMessage(error);
     if (limited) return limited;
     if (error.required === 'message.no_recipients') return 'مخاطبی برای ارسال نیست.';
@@ -102,16 +104,31 @@ export async function contactManagementAction(
 export async function replyAction(_prev: MessageState, formData: FormData): Promise<MessageState> {
   const threadId = Number(formData.get('threadId'));
   const body = String(formData.get('body') ?? '');
+  // پاسخ به یک پیامِ مشخص (۲.۶۵.۰) — سرور می‌سنجد که از همین گفتگو باشد.
+  const replyToId = Number(formData.get('replyToId')) || null;
   if (!Number.isInteger(threadId) || threadId <= 0) return { error: 'گفتگو معتبر نیست.' };
   if (isTooLong(body)) return { error: TEXT_TOO_LONG };
 
   try {
     const actor = await requireActor();
-    await reply(actor, threadId, body);
+    await reply(actor, threadId, body, replyToId);
     revalidatePath('/messages');
     return { ok: true };
   } catch (error) {
     return { error: await explain(error, 'پاسخ ارسال نشد.') };
+  }
+}
+
+/** ویرایشِ پیامِ خودم (۲.۶۵.۰). */
+export async function editMessageAction(messageId: number, body: string): Promise<MessageState & { body?: string; editedAt?: string }> {
+  if (!Number.isInteger(messageId) || messageId <= 0) return { error: 'پیام معتبر نیست.' };
+  if (isTooLong(body)) return { error: TEXT_TOO_LONG };
+  try {
+    const result = await editMessage(await requireActor(), messageId, body);
+    revalidatePath('/messages');
+    return { ok: true, body: result.body, editedAt: result.editedAt.toISOString() };
+  } catch (error) {
+    return { error: await explain(error, 'پیام ویرایش نشد.') };
   }
 }
 

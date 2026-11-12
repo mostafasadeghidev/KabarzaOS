@@ -2,12 +2,12 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { ArrowDown, ArrowRight, Archive, Bell, BellOff, Check, CheckCheck, FolderKanban, Hash, Megaphone, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowRight, Archive, Bell, BellOff, Check, CheckCheck, CornerUpLeft, FolderKanban, Hash, Megaphone, Pencil, Trash2 } from 'lucide-react';
 import {
-  deleteGroupMessageAction, deleteThreadAction, leaveThreadAction,
+  deleteGroupMessageAction, deleteThreadAction, editMessageAction, leaveThreadAction,
   openThreadAction, replyAction, setMutedAction, type MessageState,
 } from './_form/actions';
-import { GroupComposer, MessageBody, SendButton } from './group-parts';
+import { GroupComposer, MessageBody, ReplyBar, ReplyQuote, SendButton, type ReplyTarget } from './group-parts';
 import { monogram } from '@/domain/files/monogram';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PresenceBadge } from '@/components/presence';
@@ -155,6 +155,13 @@ export function ThreadPane({
   const [thread, setThread] = useState<Thread | null>(null);
   const [pending, startTransition] = useTransition();
   const [replyState, replyFormAction] = useActionState<MessageState, FormData>(replyAction, {});
+  /** پاسخ به یک پیامِ مشخص و ویرایشِ پیامِ خودم (۲.۶۵.۰). */
+  const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
+  const [editing, setEditing] = useState<{ id: number; text: string } | null>(null);
+
+  // پس از ارسالِ موفق، نوارِ «در پاسخ به» بسته می‌شود؛ با عوض شدنِ گفتگو هر دو.
+  useEffect(() => { if (replyState.ok) setReplyTo(null); }, [replyState]);
+  useEffect(() => { setReplyTo(null); setEditing(null); }, [threadId]);
 
   useEffect(() => {
     let alive = true;
@@ -228,17 +235,19 @@ export function ThreadPane({
   const scrolledFor = useRef<number | null>(null);
   const [atEnd, setAtEnd] = useState(true);
   const lastMessageId = thread ? thread.messages[thread.messages.length - 1]?.id ?? null : null;
+  const lastIsMine = thread ? thread.messages[thread.messages.length - 1]?.fromUserId === viewerId : false;
 
   /**
    * ⚠️ با بازشدنِ گفتگو همیشه ته، ولی با پیامِ تازه فقط اگر کاربر همان
    * پایین است — کسی که بالا رفته تا پیامِ قدیمی را بخواند نباید پرت شود.
+   * پیامِ تازهٔ خودم (مثلاً پاسخ به پیامی در بالا) همیشه به ته می‌برد (۲.۶۵.۰).
    */
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || !thread) return;
     const switched = scrolledFor.current !== thread.thread.id;
     const nearEnd = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
-    if (switched || nearEnd) el.scrollTop = el.scrollHeight;
+    if (switched || nearEnd || lastIsMine) el.scrollTop = el.scrollHeight;
     scrolledFor.current = thread.thread.id;
     setAtEnd(true);
   }, [thread?.thread.id, lastMessageId]);
@@ -292,6 +301,29 @@ export function ThreadPane({
       if (result.error) { show(tr(result.error), 'error'); return; }
       setThread((cur) => (cur?.group ? { ...cur, group: { ...cur.group, muted: next } } : cur));
       show(next ? tr('گروه بی‌صدا شد؛ منشن‌ها همچنان می‌رسند.') : tr('اعلان‌های گروه دوباره روشن شد.'), 'success');
+    });
+  };
+
+  /** رفتن به پیامی که نقل شده — و برجسته کردنِ کوتاهش. */
+  const jumpTo = (id: number) => {
+    const el = document.getElementById(`msg-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('ring-2', 'ring-primary/40', 'rounded-lg');
+    setTimeout(() => el.classList.remove('ring-2', 'ring-primary/40', 'rounded-lg'), 1500);
+  };
+
+  /** ذخیرهٔ ویرایش — فقط پیامِ خودم و تا ۲۴ ساعت (سرور می‌سنجد). */
+  const saveEdit = () => {
+    if (!editing) return;
+    const { id, text } = editing;
+    startTransition(async () => {
+      const result = await editMessageAction(id, restoreMentions(text, thread?.mentionNames ?? {}));
+      if (result.error) { show(tr(result.error), 'error'); return; }
+      setThread((cur) => (cur
+        ? { ...cur, messages: cur.messages.map((m) => (m.id === id ? { ...m, body: result.body ?? text, editedAt: new Date(result.editedAt ?? Date.now()) } : m)) }
+        : cur));
+      setEditing(null);
     });
   };
 
@@ -408,8 +440,9 @@ export function ThreadPane({
                   {block.items.map((m, i) => {
                     const lastInGroup = i === block.items.length - 1;
                     const read = m.id <= thread.readUpTo;
+                    const isEditing = editing?.id === m.id;
                     return (
-                      <Message key={m.id} align={mine ? 'end' : 'start'}>
+                      <Message key={m.id} id={`msg-${m.id}`} align={mine ? 'end' : 'start'} className="transition-shadow">
                         {!mine && (
                           <MessageAvatar className={cn(!lastInGroup && 'invisible')}>
                             <ChatAvatar label={block.fromName} userId={block.fromAvatarId} />
@@ -417,15 +450,69 @@ export function ThreadPane({
                         )}
                         <MessageContent className="gap-1">
                           {!mine && i === 0 && <MessageHeader>{block.fromName}</MessageHeader>}
-                          <Bubble variant={mine ? 'default' : 'muted'} align={mine ? 'end' : 'start'}>
-                            <BubbleContent className="whitespace-pre-wrap">
-                              <MessageBody body={m.body} names={thread.mentionNames} viewerId={viewerId} onPrimary={mine} />
-                            </BubbleContent>
-                          </Bubble>
+                          {isEditing ? (
+                            /* ویرایشِ درجا (۲.۶۵.۰) — Ctrl/⌘+Enter ذخیره، Esc لغو. */
+                            <div className="grid w-full min-w-64 gap-1.5">
+                              <Textarea
+                                autoFocus
+                                value={editing.text}
+                                onChange={(e) => setEditing({ id: m.id, text: e.target.value })}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') { e.preventDefault(); setEditing(null); }
+                                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveEdit(); }
+                                }}
+                                rows={2}
+                                className="max-h-40 min-h-10 resize-none"
+                                aria-label={tr('ویرایشِ پیام')}
+                              />
+                              <div className="flex justify-end gap-1.5">
+                                <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(null)}>{tr('انصراف')}</Button>
+                                <Button type="button" size="sm" disabled={pending || editing.text.trim() === ''} onClick={saveEdit}>{tr('ذخیره')}</Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <Bubble variant={mine ? 'default' : 'muted'} align={mine ? 'end' : 'start'}>
+                              <BubbleContent className="whitespace-pre-wrap">
+                                {m.replyTo && <ReplyQuote reply={m.replyTo} onPrimary={mine} onJump={jumpTo} />}
+                                <MessageBody body={m.body} names={thread.mentionNames} viewerId={viewerId} onPrimary={mine} />
+                              </BubbleContent>
+                            </Bubble>
+                          )}
                           <MessageFooter className="gap-1 font-normal">
                             <Hint label={formatDateTime(m.createdAt, tz)}>
                               <span className="num">{formatDateTime(m.createdAt, tz).slice(11)}</span>
                             </Hint>
+                            {m.editedAt && (
+                              <Hint label={tr('ویرایش: {at}', { at: formatDateTime(m.editedAt, tz) })}>
+                                <span className="text-muted-foreground/80">{tr('ویرایش‌شده')}</span>
+                              </Hint>
+                            )}
+                            {/* پاسخ به همین پیام (۲.۶۵.۰) — هر جا که می‌شود نوشت. */}
+                            {thread.canReply && !isEditing && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setReplyTo({ id: m.id, fromName: mine ? tr('خودتان') : (m.fromName ?? '—'), snippet: snippetFor(m.body) });
+                                  // کادرِ نوشتن آمادهٔ تایپ شود (ساده یا گروهی).
+                                  requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('textarea[data-composer]')?.focus());
+                                }}
+                                className="text-muted-foreground/70 hover:text-foreground"
+                                aria-label={tr('پاسخ به این پیام')}
+                              >
+                                <CornerUpLeft className="size-3" />
+                              </button>
+                            )}
+                            {/* ویرایش: فقط پیامِ خودم، تا ۲۴ ساعت. */}
+                            {mine && m.canEdit && thread.canReply && !isEditing && (
+                              <button
+                                type="button"
+                                onClick={() => setEditing({ id: m.id, text: plainForEdit(m.body, thread.mentionNames) })}
+                                className="text-muted-foreground/70 hover:text-foreground"
+                                aria-label={tr('ویرایشِ این پیام')}
+                              >
+                                <Pencil className="size-3" />
+                              </button>
+                            )}
                             {/* حذفِ تک‌پیام فقط در گروه: پیامِ خودم، یا هر پیام برای مدیر. */}
                             {thread.group && (mine || thread.thread.canDelete) && (
                               <button
@@ -483,6 +570,8 @@ export function ThreadPane({
           mentionables={thread.group.mentionables}
           canMentionAll={thread.group.canMentionAll}
           placeholder={tr('پیام… (@ برای منشن، {keys} برای ارسال)', { keys: sendKeys })}
+          replyTo={replyTo}
+          onCancelReply={() => setReplyTo(null)}
         />
       ) : thread.group?.readOnly === 'archived' ? (
         <p className="flex items-center gap-2 border-t bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
@@ -497,9 +586,11 @@ export function ThreadPane({
       ) : thread.canReply ? (
         <form action={replyFormAction} className="border-t p-3">
           <input type="hidden" name="threadId" value={thread.thread.id} />
+          {replyTo && <ReplyBar target={replyTo} onCancel={() => setReplyTo(null)} />}
           <div className="flex items-end gap-2">
             <Textarea
               name="body"
+              data-composer
               rows={1}
               placeholder={tr('پاسخ شما… ({keys} برای ارسال)', { keys: sendKeys })}
               aria-label={tr('پاسخ شما…')}
@@ -519,4 +610,27 @@ export function ThreadPane({
       )}
     </>
   );
+}
+
+/** پیش‌نمایشِ یک‌خطیِ پیام برای نوارِ «در پاسخ به» — منشن به @ ِ ساده. */
+function snippetFor(body: string): string {
+  const plain = body.replace(/<@(\d+|all)>/g, '@').replace(/\s+/g, ' ').trim();
+  return plain.length > 140 ? `${plain.slice(0, 140)}…` : plain;
+}
+
+/**
+ * متنِ قابلِ ویرایش: توکنِ منشن (`<@12>`) به `@نام` برمی‌گردد تا کاربر عددِ خام نبیند.
+ * هنگامِ ذخیره `restoreMentions` همان نام‌ها را به توکن برمی‌گرداند؛ سرور دوباره
+ * با اعضای گفتگو می‌سنجد و اعلانِ تازه نمی‌فرستد.
+ */
+function plainForEdit(body: string, names: Record<number, string>): string {
+  return body.replace(/<@(\d+)>/g, (_, id: string) => `@${names[Number(id)] ?? ''}`).replace(/<@all>/g, '@همه');
+}
+
+/** `@نام` ِ شناخته‌شده ← `<@id>` (بلندترین نام اول، تا «علی» داخلِ «علی‌رضا» را نگیرد). */
+function restoreMentions(text: string, names: Record<number, string>): string {
+  let out = text.replace(/@همه/g, '<@all>');
+  const pairs = Object.entries(names).filter(([, n]) => n).sort((a, b) => b[1].length - a[1].length);
+  for (const [id, n] of pairs) out = out.split(`@${n}`).join(`<@${id}>`);
+  return out;
 }

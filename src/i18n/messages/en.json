@@ -5002,5 +5002,17 @@
   "برای فرستادن از یکی از این نشانی‌ها لازم نیست جدا وارد شوی: در وب‌میل از «تنظیمات ← هویت‌ها» آن را اضافه کن و هنگامِ نوشتن، در «از» انتخابش کن. در گوشی و Outlook هم همین را از تنظیماتِ همان حساب با «نشانیِ دیگر / Alias» اضافه کن.": "To send from one of these addresses you do not need a separate sign-in: in webmail add it under Settings → Identities, then pick it in “From” when writing. On a phone or in Outlook, add it in that account’s settings as another address / alias.",
   "با هر کدام از این نشانی‌ها و همان رمز می‌شود وارد شد (وب‌میل، گوشی، Outlook). ایمیل از همان نشانی‌ای فرستاده می‌شود که با آن وارد شده‌ای.": "You can sign in with any of these addresses and the same password (webmail, phone, Outlook). Email is sent from the address you signed in with.",
   "هر نشانی که وارد شوی، همین یک صندوق را می‌بینی؛ فقط فرستنده فرق می‌کند.": "Whichever address you sign in with, you see this same mailbox; only the sender changes.",
-  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "To send from another address, use that address as the username."
+  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "To send from another address, use that address as the username.",
+  "خودتان": "You",
+  "در پاسخ به {name}": "Replying to {name}",
+  "فقط پیامِ خودتان را می‌توانید ویرایش کنید.": "You can only edit your own messages.",
+  "لغوِ پاسخ": "Cancel reply",
+  "ویرایش: {at}": "Edited: {at}",
+  "ویرایشِ این پیام": "Edit this message",
+  "ویرایشِ پیام": "Edit message",
+  "ویرایش‌شده": "edited",
+  "پاسخ به این پیام": "Reply to this message",
+  "پیام فقط تا ۲۴ ساعت پس از ارسال ویرایش می‌شود.": "A message can only be edited within 24 hours of sending.",
+  "پیام معتبر نیست.": "Invalid message.",
+  "پیامِ اصلی حذف شده است.": "The original message was deleted."
 }

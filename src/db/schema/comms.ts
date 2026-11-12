@@ -1,4 +1,4 @@
-import { uniqueIndex, boolean, index, integer, text, date, pgTable, check, jsonb } from 'drizzle-orm/pg-core';
+import { uniqueIndex, boolean, index, integer, text, date, pgTable, check, jsonb, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { pk, fk, ts, stamps, scope } from './_shared';
 import { offices } from './base';
@@ -66,6 +66,13 @@ export const messages = pgTable('messages', {
   fromUserId: fk('from_user_id').notNull().references(() => users.id),
   body: text('body').notNull(),
   createdAt: ts('created_at').notNull().defaultNow(),
+  /**
+   * پاسخ به یک پیامِ دیگرِ **همین** گفتگو (۲.۶۵.۰). با حذف یا پاک‌سازیِ آن پیام خالی
+   * می‌شود (on delete set null) و نما «پیامِ حذف‌شده» نشان می‌دهد.
+   */
+  replyToId: fk('reply_to_id').references((): AnyPgColumn => messages.id, { onDelete: 'set null' }),
+  /** آخرین ویرایشِ متن (۲.۶۵.۰) — خالی یعنی ویرایش نشده. */
+  editedAt: ts('edited_at'),
 }, (t) => [index('messages_thread_ix').on(t.threadId, t.id)]);
 
 export const MEETING_SCOPES = ['project', 'general'] as const;

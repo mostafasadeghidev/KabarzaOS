@@ -5002,5 +5002,17 @@
   "برای فرستادن از یکی از این نشانی‌ها لازم نیست جدا وارد شوی: در وب‌میل از «تنظیمات ← هویت‌ها» آن را اضافه کن و هنگامِ نوشتن، در «از» انتخابش کن. در گوشی و Outlook هم همین را از تنظیماتِ همان حساب با «نشانیِ دیگر / Alias» اضافه کن.": "Para enviar de um desses endereços não é preciso outro login: no webmail adicione-o em Configurações → Identidades e escolha-o em “De” ao escrever. No celular ou no Outlook, adicione-o nas configurações da conta como outro endereço / alias.",
   "با هر کدام از این نشانی‌ها و همان رمز می‌شود وارد شد (وب‌میل، گوشی، Outlook). ایمیل از همان نشانی‌ای فرستاده می‌شود که با آن وارد شده‌ای.": "Você pode entrar com qualquer um desses endereços e a mesma senha (webmail, celular, Outlook). O e-mail sai do endereço com que você entrou.",
   "هر نشانی که وارد شوی، همین یک صندوق را می‌بینی؛ فقط فرستنده فرق می‌کند.": "Com qualquer endereço que você entre, verá esta mesma caixa; só o remetente muda.",
-  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "Para enviar de outro endereço, use esse endereço como usuário."
+  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "Para enviar de outro endereço, use esse endereço como usuário.",
+  "خودتان": "Você",
+  "در پاسخ به {name}": "Respondendo a {name}",
+  "فقط پیامِ خودتان را می‌توانید ویرایش کنید.": "Você só pode editar suas próprias mensagens.",
+  "لغوِ پاسخ": "Cancelar resposta",
+  "ویرایش: {at}": "Editado: {at}",
+  "ویرایشِ این پیام": "Editar esta mensagem",
+  "ویرایشِ پیام": "Editar mensagem",
+  "ویرایش‌شده": "editado",
+  "پاسخ به این پیام": "Responder a esta mensagem",
+  "پیام فقط تا ۲۴ ساعت پس از ارسال ویرایش می‌شود.": "Uma mensagem só pode ser editada até 24 horas após o envio.",
+  "پیام معتبر نیست.": "Mensagem inválida.",
+  "پیامِ اصلی حذف شده است.": "A mensagem original foi excluída."
 }

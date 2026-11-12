@@ -4,7 +4,7 @@ import { useFreshKey } from '@/hooks/use-fresh-key';
 import { UserAvatar } from '@/components/user-avatar';
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { AtSign, CircleAlert, SendHorizontal } from 'lucide-react';
+import { AtSign, CircleAlert, SendHorizontal, X } from 'lucide-react';
 import { createChannelAction, type ChannelState, type MessageState } from './_form/actions';
 import { splitMentions } from '@/domain/messaging/channels';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -100,7 +100,7 @@ function toTokens(text: string, picked: Mentionable[]): string {
  * ⚠️ این فقط راحتی است، نه گارد: سرور هر منشن را با عضویتِ زنده می‌سنجد.
  */
 export function GroupComposer({
-  threadId, formAction, state, mentionables, canMentionAll, placeholder,
+  threadId, formAction, state, mentionables, canMentionAll, placeholder, replyTo = null, onCancelReply,
 }: {
   threadId: number;
   formAction: (payload: FormData) => void;
@@ -108,6 +108,9 @@ export function GroupComposer({
   mentionables: Array<{ id: number; name: string }>;
   canMentionAll: boolean;
   placeholder: string;
+  /** پاسخ به یک پیامِ مشخص (۲.۶۵.۰). */
+  replyTo?: ReplyTarget | null;
+  onCancelReply?: () => void;
 }) {
   const t = useT();
   const [text, setText] = useState('');
@@ -163,6 +166,7 @@ export function GroupComposer({
     <form action={formAction} className="border-t p-3">
       <input type="hidden" name="threadId" value={threadId} />
       <input type="hidden" name="body" value={toTokens(text, picked)} />
+      {replyTo && <ReplyBar target={replyTo} onCancel={onCancelReply} />}
       <div className="relative flex items-end gap-2">
         {menu && options.length > 0 && (
           <ul
@@ -195,6 +199,7 @@ export function GroupComposer({
         )}
         <Textarea
           ref={ref}
+          data-composer
           rows={1}
           value={text}
           onChange={(e) => { setText(e.target.value); detect(e.target.value, e.target.selectionStart); }}
@@ -313,4 +318,60 @@ function CreateButton({ label }: { label: string }) {
 export function CreateChannelDialog(props: Parameters<typeof CreateChannelDialogBody>[0]) {
   const key = useFreshKey(props.open);
   return <CreateChannelDialogBody key={key} {...props} />;
+}
+
+/** پیامی که به آن پاسخ داده می‌شود (۲.۶۵.۰). */
+export interface ReplyTarget { id: number; fromName: string; snippet: string }
+
+/**
+ * نوارِ «در پاسخ به …» بالای کادرِ نوشتن (۲.۶۵.۰) — با شناسهٔ پنهان در همان فرم.
+ * ⚠️ سرور می‌سنجد که پیام از همین گفتگو باشد؛ این فقط نشانگر است.
+ */
+export function ReplyBar({ target, onCancel }: { target: ReplyTarget; onCancel?: () => void }) {
+  const t = useT();
+  return (
+    <div className="mb-2 flex items-start gap-2 rounded-md border-s-2 border-primary bg-muted/60 px-2.5 py-1.5 text-xs">
+      <input type="hidden" name="replyToId" value={target.id} />
+      <div className="grid min-w-0 flex-1 gap-0.5">
+        <span className="font-medium text-primary">{t('در پاسخ به {name}', { name: target.fromName })}</span>
+        <span dir="auto" className="truncate text-muted-foreground">{target.snippet}</span>
+      </div>
+      {onCancel && (
+        <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-foreground" aria-label={t('لغوِ پاسخ')}>
+          <X className="size-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** نقلِ قولِ پیامِ پاسخ‌داده‌شده داخلِ حباب (۲.۶۵.۰). کلیک ← رفتن به همان پیام. */
+export function ReplyQuote({ reply, onPrimary, onJump }: {
+  reply: { id: number | null; fromName: string; snippet: string };
+  onPrimary: boolean;
+  onJump?: (id: number) => void;
+}) {
+  const t = useT();
+  const deleted = reply.id === null;
+  return (
+    <button
+      type="button"
+      disabled={deleted}
+      onClick={() => { if (reply.id !== null) onJump?.(reply.id); }}
+      className={cn(
+        'mb-1 grid w-full min-w-0 gap-0.5 rounded-md border-s-2 px-2 py-1 text-start text-xs',
+        onPrimary ? 'border-primary-foreground/60 bg-primary-foreground/15' : 'border-primary bg-background/60',
+        !deleted && 'cursor-pointer hover:opacity-90',
+      )}
+    >
+      {deleted
+        ? <span className="italic opacity-80">{t('پیامِ اصلی حذف شده است.')}</span>
+        : (
+          <>
+            <span className="font-medium">{reply.fromName}</span>
+            <span dir="auto" className="truncate opacity-80">{reply.snippet}</span>
+          </>
+        )}
+    </button>
+  );
 }

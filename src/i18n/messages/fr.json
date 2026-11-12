@@ -5002,5 +5002,17 @@
   "برای فرستادن از یکی از این نشانی‌ها لازم نیست جدا وارد شوی: در وب‌میل از «تنظیمات ← هویت‌ها» آن را اضافه کن و هنگامِ نوشتن، در «از» انتخابش کن. در گوشی و Outlook هم همین را از تنظیماتِ همان حساب با «نشانیِ دیگر / Alias» اضافه کن.": "Pour envoyer depuis l’une de ces adresses, pas besoin de connexion séparée : dans le webmail, ajoutez-la dans Paramètres → Identités, puis choisissez-la dans « De » en écrivant. Sur téléphone ou dans Outlook, ajoutez-la dans les paramètres du compte comme autre adresse / alias.",
   "با هر کدام از این نشانی‌ها و همان رمز می‌شود وارد شد (وب‌میل، گوشی، Outlook). ایمیل از همان نشانی‌ای فرستاده می‌شود که با آن وارد شده‌ای.": "Vous pouvez vous connecter avec n’importe laquelle de ces adresses et le même mot de passe (webmail, téléphone, Outlook). Le courrier part de l’adresse utilisée pour la connexion.",
   "هر نشانی که وارد شوی، همین یک صندوق را می‌بینی؛ فقط فرستنده فرق می‌کند.": "Quelle que soit l’adresse utilisée, vous voyez la même boîte ; seul l’expéditeur change.",
-  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "Pour envoyer depuis une autre adresse, utilisez-la comme nom d’utilisateur."
+  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "Pour envoyer depuis une autre adresse, utilisez-la comme nom d’utilisateur.",
+  "خودتان": "Vous",
+  "در پاسخ به {name}": "En réponse à {name}",
+  "فقط پیامِ خودتان را می‌توانید ویرایش کنید.": "Vous ne pouvez modifier que vos propres messages.",
+  "لغوِ پاسخ": "Annuler la réponse",
+  "ویرایش: {at}": "Modifié : {at}",
+  "ویرایشِ این پیام": "Modifier ce message",
+  "ویرایشِ پیام": "Modifier le message",
+  "ویرایش‌شده": "modifié",
+  "پاسخ به این پیام": "Répondre à ce message",
+  "پیام فقط تا ۲۴ ساعت پس از ارسال ویرایش می‌شود.": "Un message ne peut être modifié que dans les 24 heures suivant son envoi.",
+  "پیام معتبر نیست.": "Message invalide.",
+  "پیامِ اصلی حذف شده است.": "Le message d’origine a été supprimé."
 }
