@@ -121,6 +121,10 @@ function TaskDialogBody({
    * مسئول از آن می‌آید) در همان لحظه هنوز نیامده است.
    */
   const [assignee, setAssignee] = useState<{ id: number | null; label: string }>({ id: null, label: '' });
+  /** یادداشت متن یا فایل دارد؟ — «ارسال» فقط آن‌وقت (۲.۶۴.۰). */
+  const [noteHasText, setNoteHasText] = useState(false);
+  const [noteFiles, setNoteFiles] = useState(0);
+  const noteReady = noteHasText || noteFiles > 0;
   const [roleTagIds, setRoleTagIds] = useState<number[]>([]);
   const [referring, setReferring] = useState(false);
   const [referTo, setReferTo] = useState<{ id: number | null; label: string }>({ id: null, label: '' });
@@ -155,7 +159,14 @@ function TaskDialogBody({
             {task?.number ? <span className="me-6 shrink-0"><CopyTaskLink projectId={task.projectId} number={task.number} /></span> : null}
           </DialogTitle>
           <DialogDescription>
-            {task ? tr('جزئیات، ویرایش و گفتگوی این تسک.') : tr('در حالِ بارگذاری…')}
+            {/* نامِ پروژه به‌جای جملهٔ کلی (۲.۶۴.۰) — همان پیوندِ «رفتن به پروژه». */}
+            {task && data?.projectName
+              ? (
+                <Link href={`/projects/${task.projectId}?tab=tasks`} className="font-medium text-foreground hover:underline">
+                  {data.projectName}
+                </Link>
+              )
+              : task ? tr('جزئیات، ویرایش و گفتگوی این تسک.') : tr('در حالِ بارگذاری…')}
           </DialogDescription>
         </DialogHeader>
 
@@ -163,7 +174,8 @@ function TaskDialogBody({
 
         {task && (
           <div className="grid gap-4">
-            <div className="flex flex-wrap items-center gap-2">
+            {/* ⚠️ فاصلهٔ افقیِ بیشتر (۲.۶۴.۰): اولویت، وضعیت و ددلاین به هم چسبیده بودند. */}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               {task.priorityName && (
                 <TagChip color={task.priorityColor}>{task.priorityName}</TagChip>
               )}
@@ -558,17 +570,29 @@ function TaskDialogBody({
               )}
 
               {/* ⚠️ همکارِ فقط‌خواندنی یادداشت نمی‌نویسد (سرور هم رد می‌کند) — فرم را نبیند. */}
+              {/*
+                ⚠️ «ارسال» فقط وقتی متن یا فایلی هست (۲.۶۴.۰) — دکمهٔ همیشه‌پیدا کنارِ کادرِ
+                خالی گیج می‌کرد. فرم کنترل‌نشده است، پس محتوا از خودِ فرم خوانده می‌شود.
+              */}
               {(data?.detail.canInteract ?? true) && (
-              <form action={noteAction} className="grid gap-2">
+              <form
+                action={noteAction}
+                className="grid gap-2"
+                onInput={(e) => setNoteHasText(noteText(e.currentTarget) !== '')}
+                onReset={() => setNoteHasText(false)}
+              >
                 <input type="hidden" name="taskId" value={task.id} />
                 {/* ⚠️ متن اجباری نیست: یادداشتِ فقط‌اسکرین‌شات هم یادداشت است (سرور هر دو خالی را رد می‌کند). */}
-                <FormFileDrop name="media" compact videoLinks>
+                {/* شمارِ فایل‌ها از خودِ جعبه — فایل با DataTransfer نشانده می‌شود و رویدادِ فرم نمی‌دهد. */}
+                <FormFileDrop name="media" compact videoLinks onCountChange={setNoteFiles}>
                   <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} />
                 </FormFileDrop>
                 {noteState.error && <p className="text-xs text-destructive">{tr(noteState.error)}</p>}
-                <div className="flex justify-end">
-                  <SubmitButton label={t("ارسال")} busy={t('در حال ارسال…')} />
-                </div>
+                {noteReady && (
+                  <div className="flex justify-end">
+                    <SubmitButton label={t("ارسال")} busy={t('در حال ارسال…')} />
+                  </div>
+                )}
               </form>
               )}
             </section>
@@ -592,4 +616,10 @@ function TaskDialogBody({
 export function TaskDialog(props: Parameters<typeof TaskDialogBody>[0]) {
   const key = useFreshKey(props.open);
   return <TaskDialogBody key={key} {...props} />;
+}
+
+/** متنِ کادرِ یادداشت (بی فاصلهٔ دو سر). */
+function noteText(form: HTMLFormElement): string {
+  const body = form.elements.namedItem('body');
+  return body instanceof HTMLTextAreaElement ? body.value.trim() : '';
 }

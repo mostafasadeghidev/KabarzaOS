@@ -4,6 +4,9 @@ import { isTooLong, TEXT_TOO_LONG, textLimitMessage } from '@/domain/access/text
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { requireActor } from '@/server/auth';
+import { eq } from 'drizzle-orm';
+import { db } from '@/db/client';
+import { projects } from '@/db/schema';
 import {
   addTaskNote, createTask, deleteTask, getTaskDetail, getTaskFormOptions, referTask,
   taskStatusOptionsFor, updateTask,
@@ -244,16 +247,22 @@ export async function loadTaskAction(taskId: number) {
    * تسکش را به «آماده برای بررسی» می‌فرستد. بدونِ این، مودالِ صندوقِ تسک‌ها
    * فقط یک چیپِ خواندنی داشت و کاربر باید به صفحهٔ پروژه می‌رفت.
    */
-  const [options, statuses] = await Promise.all([
+  const [options, statuses, project] = await Promise.all([
     detail.canEdit
       ? getTaskFormOptions(actor, detail.task.projectId, detail.task.assignedTo)
       : Promise.resolve(null),
     detail.canInteract
       ? taskStatusOptionsFor(actor, detail.task.projectId)
       : Promise.resolve([]),
+    /**
+     * نامِ پروژه (۲.۶۴.۰) — مودال از صندوقِ تسک‌ها هم باز می‌شود و بی‌این معلوم نبود
+     * تسک مالِ کدام پروژه است. ⚠️ پس از `getTaskDetail` که گاردِ دیدنِ تسک را دارد.
+     */
+    db.select({ title: projects.title }).from(projects).where(eq(projects.id, detail.task.projectId)).then((r) => r[0] ?? null),
   ]);
   return {
     detail,
+    projectName: project?.title ?? '',
     options,
     statuses: statuses.map((s) => ({ id: s.id, name: s.name, group: s.group, color: s.color })),
   };

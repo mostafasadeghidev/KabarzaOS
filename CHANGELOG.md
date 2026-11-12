@@ -10,6 +10,10 @@ Versioning follows [SemVer](https://semver.org/).
 - **Delete backup copies on the server.** Each copy under Settings → Backups → "Copies on this server" has a delete button, with a confirmation. Only the copy on the server is deleted; copies already sent to destinations such as Nextcloud are untouched. Owner only.
 - **Other addresses in "My access".** The company-email details window lists the mailbox's other addresses (aliases), with copy buttons, and explains that email to all of them arrives in the same mailbox and that phones and Outlook always sign in with the main address.
 
+### Changed
+
+- **Task window is clearer.** The project name now shows under the task title and links to the project. The Send button for a note appears only once there is text or an attached file. Priority, status, assignee and deadline have more room between them. In dark mode, chips such as the task status now have a visible outline instead of reading as plain text.
+
 ## [2.63.2]
 
 ### Fixed
