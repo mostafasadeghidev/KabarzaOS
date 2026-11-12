@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.64.0]
+
+### Added
+
+- **Last seen for members.** The app now keeps when each person was last online; before, that time was cleared as soon as they went offline. Member cards and "Team availability" show "Last seen: 3 hours ago" for people who are offline (hover for the exact time), and "Not seen yet" until someone first signs in after this update. Only people who can see members see it, and only while presence is turned on in Settings.
+- **Delete backup copies on the server.** Each copy under Settings → Backups → "Copies on this server" has a delete button, with a confirmation. Only the copy on the server is deleted; copies already sent to destinations such as Nextcloud are untouched. Owner only.
+- **Other addresses in "My access".** The company-email details window lists the mailbox's other addresses (aliases), with copy buttons, and explains that email to all of them arrives in the same mailbox and that phones and Outlook always sign in with the main address.
+
+### Changed
+
+- **Task window is clearer.** The project name now shows under the task title and links to the project. The Send button for a note appears only once there is text or an attached file. Priority, status, assignee and deadline have more room between them. In dark mode, chips such as the task status now have a visible outline instead of reading as plain text.
+
 ## [2.63.2]
 
 ### Fixed

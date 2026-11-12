@@ -1,4 +1,5 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import fs from 'node:fs/promises';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, users } from '@/db/schema';
@@ -121,6 +122,24 @@ export async function saveDestination(actor: Actor, id: string | null, input: De
   // ⚠️ فقط نام و نوع در گزارشِ فعالیت — نه نشانی، نه کلید.
   await audit(actor, existing ? 'backup.destination.update' : 'backup.destination.create', { name: stored.name, type: stored.type });
   return stored.id;
+}
+
+/**
+ * حذفِ یک نسخهٔ محلیِ پشتیبان (۲.۶۴.۰) — فقط مالک.
+ *
+ * ⚠️ فقط نامی که در فهرستِ همان پوشه هست و الگوی نامِ پشتیبان را دارد؛ هیچ مسیرِ
+ * دلخواهی (`../`) پاک نمی‌شود. نسخه‌های مقصدها (Nextcloud و…) دست نمی‌خورند.
+ * ⚠️ پشتیبانِ در حالِ ساخت پاک نمی‌شود.
+ */
+export async function deleteLocalBackup(actor: Actor, name: string): Promise<void> {
+  assertOwner(actor);
+  const exists = (await listLocalBackups()).some((b) => b.name === name);
+  const file = exists ? localBackupPath(name) : null;
+  if (!file) throw new BackupSettingsError('not_found');
+  const status = liveStatus(await readStatus());
+  if (status?.running) throw new BackupError('busy');
+  await fs.rm(/*turbopackIgnore: true*/ file, { force: true });
+  await audit(actor, 'backup.local.delete', { file: name });
 }
 
 export async function deleteDestination(actor: Actor, id: string): Promise<void> {

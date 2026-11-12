@@ -21,7 +21,8 @@ export function TagChip({
     <span
       data-slot="tag-chip"
       className={cn(
-        'inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-xs font-medium whitespace-nowrap text-foreground',
+        // ⚠️ در حالتِ تیره bg-muted تقریباً همرنگِ زمینه است و چیپ مثلِ متنِ خالی دیده می‌شد (۲.۶۴.۰): قابِ نازک فقط در تیره.
+        'inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-xs font-medium whitespace-nowrap text-foreground dark:ring-1 dark:ring-inset dark:ring-foreground/20',
         className,
       )}
     >

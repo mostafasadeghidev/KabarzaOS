@@ -7,7 +7,7 @@ import { DestinationError } from '@/domain/backup/plan';
 import { BackupKeyError } from '@/server/backup/config';
 import { BackupError } from '@/server/backup/run';
 import {
-  BackupSettingsError, deleteDestination, DownloadError, issueDownloadToken, saveBackupSettings, saveDestination,
+  BackupSettingsError, deleteDestination, deleteLocalBackup, DownloadError, issueDownloadToken, saveBackupSettings, saveDestination,
   startBackupNow, testDestination,
 } from '@/server/backup/service';
 
@@ -106,6 +106,17 @@ export async function deleteDestinationAction(id: string): Promise<BackupState> 
   }
   refresh();
   return { message: 'مقصد حذف شد.' };
+}
+
+/** حذفِ یک نسخهٔ محلی (۲.۶۴.۰) — فقط مالک؛ گارد در سرویس. */
+export async function deleteLocalBackupAction(name: string): Promise<BackupState> {
+  try {
+    await deleteLocalBackup(await requireActor(), name);
+  } catch (error) {
+    return { error: explain(error, 'حذف نشد.') };
+  }
+  refresh();
+  return { message: 'نسخه حذف شد.' };
 }
 
 export async function testDestinationAction(id: string): Promise<BackupState> {

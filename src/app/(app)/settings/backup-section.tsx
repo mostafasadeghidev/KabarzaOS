@@ -7,7 +7,7 @@ import {
   CircleAlert, CircleCheck, Download, HardDriveUpload, Loader2, Pencil, Plus, PlugZap, Trash2,
 } from 'lucide-react';
 import {
-  deleteDestinationAction, downloadBackupAction, saveBackupSettingsAction, saveDestinationAction,
+  deleteDestinationAction, deleteLocalBackupAction, downloadBackupAction, saveBackupSettingsAction, saveDestinationAction,
   startBackupAction, testDestinationAction, type BackupState,
 } from './_form/backup-actions';
 import {
@@ -491,7 +491,26 @@ function DestinationDialog({ dest, onClose }: { dest: DestinationView | null; on
 function LocalPanel({ view }: { view: BackupView }) {
   const tr = useT();
   const tz = useTimeZone();
+  const confirm = useConfirm();
+  const { show } = useToast();
+  const router = useRouter();
+  const [pending, start] = useTransition();
   const [target, setTarget] = useState<string | null>(null);
+
+  /** حذفِ یک نسخهٔ محلی (۲.۶۴.۰) — با تأیید؛ نسخهٔ مقصدها دست نمی‌خورد. */
+  const remove = async (name: string) => {
+    if (!await confirm({
+      title: tr('این نسخه از سرور حذف شود؟'),
+      description: tr('فقط نسخهٔ روی همین سرور پاک می‌شود و برنمی‌گردد. نسخه‌هایی که به مقصدها (مثلاً Nextcloud) فرستاده شده‌اند دست نمی‌خورند.'),
+      confirmLabel: tr('حذف'),
+      destructive: true,
+    })) return;
+    start(async () => {
+      const result = await deleteLocalBackupAction(name);
+      if (result.error) show(tr(result.error), 'error');
+      else { show(tr(result.message ?? 'نسخه حذف شد.'), 'success'); router.refresh(); }
+    });
+  };
 
   return (
     <Panel title={tr('نسخه‌های روی همین سرور')}>
@@ -516,6 +535,9 @@ function LocalPanel({ view }: { view: BackupView }) {
                 <TableActionsCell>
                   <IconButton variant="ghost" className="size-8" label={tr('دانلود')} onClick={() => setTarget(b.name)}>
                     <Download className="size-3.5" />
+                  </IconButton>
+                  <IconButton variant="ghost" className="size-8 text-destructive" label={tr('حذف')} disabled={pending} onClick={() => { void remove(b.name); }}>
+                    <Trash2 className="size-3.5" />
                   </IconButton>
                 </TableActionsCell>
               </TableRow>

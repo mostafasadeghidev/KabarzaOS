@@ -41,6 +41,11 @@ export interface PersonRow {
   /** حضورِ زنده. */
   /** ⚠️ null یعنی حضور خاموش است — اصلاً نقطه‌ای نشان داده نمی‌شود. */
   presence: PresenceState | null;
+  /**
+   * «آخرین حضور» (۲.۶۴.۰) — null وقتی ثبت نشده یا حضور در تنظیمات خاموش است.
+   * ⚠️ این فهرست فقط به کسی می‌رسد که اعضا را می‌بیند (صفحهٔ اعضا، تیمِ من).
+   */
+  lastOnlineAt: Date | null;
   offices: Array<{ id: number; name: string; manages: boolean }>;
   tags: Array<{ id: number; name: string; color: string | null }>;
 }
@@ -57,6 +62,7 @@ export async function listByRole(role: Role): Promise<PersonRow[]> {
       privateAccess: users.privateAccess,
       lastSeenAt: users.lastSeenAt,
       lastActiveAt: users.lastActiveAt,
+      lastOnlineAt: users.lastOnlineAt,
       passwordHash: users.passwordHash,
       username: users.username,
     })
@@ -156,6 +162,7 @@ export async function listByRole(role: Role): Promise<PersonRow[]> {
         config: presenceConfig,
       })
       : null,
+    lastOnlineAt: system.presenceEnabled ? r.lastOnlineAt : null,
     offices: officesByUser.get(r.id) ?? [],
     tags: tagsByUser.get(r.id) ?? [],
   }));

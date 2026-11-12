@@ -4986,5 +4986,15 @@
   "{n} ایمیلِ تازه": "{n} new emails",
   "ایمیلِ تازه": "New email",
   "ایمیلِ تازه از {from}": "New email from {from}",
-  "این پشتیبان‌گیری نیمه‌کاره ماند (برنامه دوباره راه افتاد یا سرور جابه‌جا شد). دوباره بگیرید.": "This backup did not finish (the app restarted or the server moved). Run it again."
+  "این پشتیبان‌گیری نیمه‌کاره ماند (برنامه دوباره راه افتاد یا سرور جابه‌جا شد). دوباره بگیرید.": "This backup did not finish (the app restarted or the server moved). Run it again.",
+  "{n} ماه پیش": "{n} months ago",
+  "آخرین حضور: {when}": "Last seen: {when}",
+  "این نسخه از سرور حذف شود؟": "Delete this copy from the server?",
+  "حذفِ نسخهٔ پشتیبانِ روی سرور": "Server backup copy deleted",
+  "فقط نسخهٔ روی همین سرور پاک می‌شود و برنمی‌گردد. نسخه‌هایی که به مقصدها (مثلاً Nextcloud) فرستاده شده‌اند دست نمی‌خورند.": "Only the copy on this server is deleted, and it cannot be undone. Copies sent to destinations (for example Nextcloud) are untouched.",
+  "نسخه حذف شد.": "Copy deleted.",
+  "هنوز حضوری ثبت نشده": "Not seen yet",
+  "نشانی‌های دیگرِ همین صندوق": "Other addresses of this mailbox",
+  "ایمیلِ همهٔ این نشانی‌ها به همین صندوق می‌آید. برای ورود در گوشی و Outlook همیشه نشانیِ اصلیِ بالا را بزن.": "Email to all these addresses arrives in this mailbox. To sign in on a phone or in Outlook, always use the main address above.",
+  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "The username is always the main address, even if the mailbox has other addresses."
 }

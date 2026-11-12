@@ -125,6 +125,8 @@ export interface MatrixRow {
   id: number;
   name: string;
   presence: PresenceState | null;
+  /** «آخرین حضور» (۲.۶۴.۰) — ISO، یا null (ثبت‌نشده یا حضورِ خاموش). */
+  lastOnlineAt: string | null;
   avatarFileId: number | null;
   hasSchedule: boolean;
   availableNow: boolean;
@@ -230,6 +232,11 @@ export async function matrixForIds(
   }
 
   const todayIdx = weekdayIndex(at);
+  // «آخرین حضور» — یک کوئری برای همه (R-PERF-01)، فقط وقتی حضور روشن است.
+  const lastOnline = system.presenceEnabled
+    ? new Map((await db.select({ id: users.id, at: users.lastOnlineAt }).from(users).where(inArray(users.id, ids)))
+      .map((r) => [r.id, r.at?.toISOString() ?? null]))
+    : new Map<number, string | null>();
 
   return people.map((p) => {
     const days = slotsByWeekday(byUser.get(p.id) ?? []);
@@ -239,6 +246,7 @@ export async function matrixForIds(
       id: p.id,
       name: p.name,
       presence: system.presenceEnabled ? presence.get(p.id) ?? null : null,
+      lastOnlineAt: lastOnline.get(p.id) ?? null,
       avatarFileId: avatars.get(p.id) ?? null,
       // ⚠️ نقشهٔ خالی یعنی «برنامه‌ای نداده»، نه «تمام هفته آزاد».
       hasSchedule: byUser.has(p.id),

@@ -23,7 +23,11 @@ export interface MyAccessRow {
   provider: string;
 }
 
-export interface MailSetupView { webmailUrl: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number }
+export interface MailSetupView {
+  webmailUrl: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number;
+  /** نشانی‌های دیگرِ همین صندوق (۲.۶۴.۰). */
+  aliases: string[];
+}
 
 /**
  * «دسترسی‌های من» (۲.۶۲.۱): جدولِ کوتاه + پنجرهٔ «جزئیات» برای هر سرویس.
@@ -114,6 +118,24 @@ function Details({ row, mailSetup }: { row: MyAccessRow; mailSetup: MailSetupVie
         </Row>
       </section>
 
+      {/*
+        نشانی‌های دیگر (۲.۶۴.۰). ⚠️ همه به همین یک صندوق می‌رسند و ورود (گوشی، Outlook،
+        وب‌میل) همیشه با نشانیِ اصلی است — نه با این‌ها.
+      */}
+      {isMail && mailSetup && mailSetup.aliases.length > 0 && (
+        <section className="grid gap-2">
+          <h3 className="text-sm font-medium">{tr('نشانی‌های دیگرِ همین صندوق')}</h3>
+          <ul className="flex flex-wrap gap-1.5">
+            {mailSetup.aliases.map((a) => (
+              <li key={a} dir="ltr" className="rounded-md border bg-muted/40 px-2 py-0.5 text-xs"><CopyText value={a} /></li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">
+            {tr('ایمیلِ همهٔ این نشانی‌ها به همین صندوق می‌آید. برای ورود در گوشی و Outlook همیشه نشانیِ اصلیِ بالا را بزن.')}
+          </p>
+        </section>
+      )}
+
       {/* کارهای اصلی — دکمه، نه پیوندِ بی‌شکل. */}
       <div className="flex flex-wrap gap-2">
         {isMail && (
@@ -151,7 +173,10 @@ function Details({ row, mailSetup }: { row: MyAccessRow; mailSetup: MailSetupVie
               <span dir="ltr" className="text-xs"><CopyText value={row.accountRef} /></span>
             </Row>
           </div>
-          <p className="text-xs text-muted-foreground">{tr('رمز همان رمزِ بالاست. بعد از اولین ورود، بهتر است از وب‌میل عوضش کنی.')}</p>
+          <p className="text-xs text-muted-foreground">
+            {tr('نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.')}
+            {' '}{tr('رمز همان رمزِ بالاست. بعد از اولین ورود، بهتر است از وب‌میل عوضش کنی.')}
+          </p>
         </section>
       )}
 

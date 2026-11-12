@@ -4986,5 +4986,15 @@
   "{n} ایمیلِ تازه": "{n} yeni e-posta",
   "ایمیلِ تازه": "Yeni e-posta",
   "ایمیلِ تازه از {from}": "{from} kişisinden yeni e-posta",
-  "این پشتیبان‌گیری نیمه‌کاره ماند (برنامه دوباره راه افتاد یا سرور جابه‌جا شد). دوباره بگیرید.": "Bu yedekleme tamamlanmadı (uygulama yeniden başladı veya sunucu taşındı). Yeniden çalıştırın."
+  "این پشتیبان‌گیری نیمه‌کاره ماند (برنامه دوباره راه افتاد یا سرور جابه‌جا شد). دوباره بگیرید.": "Bu yedekleme tamamlanmadı (uygulama yeniden başladı veya sunucu taşındı). Yeniden çalıştırın.",
+  "{n} ماه پیش": "{n} ay önce",
+  "آخرین حضور: {when}": "Son görülme: {when}",
+  "این نسخه از سرور حذف شود؟": "Bu kopya sunucudan silinsin mi?",
+  "حذفِ نسخهٔ پشتیبانِ روی سرور": "Sunucudaki yedek kopya silindi",
+  "فقط نسخهٔ روی همین سرور پاک می‌شود و برنمی‌گردد. نسخه‌هایی که به مقصدها (مثلاً Nextcloud) فرستاده شده‌اند دست نمی‌خورند.": "Yalnızca bu sunucudaki kopya silinir ve geri alınamaz. Hedeflere (örneğin Nextcloud) gönderilen kopyalara dokunulmaz.",
+  "نسخه حذف شد.": "Kopya silindi.",
+  "هنوز حضوری ثبت نشده": "Henüz görülmedi",
+  "نشانی‌های دیگرِ همین صندوق": "Bu posta kutusunun diğer adresleri",
+  "ایمیلِ همهٔ این نشانی‌ها به همین صندوق می‌آید. برای ورود در گوشی و Outlook همیشه نشانیِ اصلیِ بالا را بزن.": "Bu adreslerin hepsine gelen e-postalar bu kutuya düşer. Telefonda veya Outlook’ta girişte her zaman yukarıdaki ana adresi kullanın.",
+  "نامِ کاربری همیشه نشانیِ اصلی است، حتی اگر صندوق نشانی‌های دیگری هم دارد.": "Kullanıcı adı, posta kutusunun başka adresleri olsa da her zaman ana adrestir."
 }

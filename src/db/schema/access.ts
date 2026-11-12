@@ -96,6 +96,11 @@ export const users = pgTable('users', {
    */
   lastSeenAt: ts('last_seen_at'),
   lastActiveAt: ts('last_active_at'),
+  /**
+   * «آخرین حضور» (۲.۶۴.۰) — با هر ضربان و هنگامِ آفلاین شدن نوشته می‌شود و
+   * **هرگز پاک نمی‌شود**؛ برخلافِ `lastSeenAt` که با بستنِ تب خالی می‌شود.
+   */
+  lastOnlineAt: ts('last_online_at'),
   ...stamps,
   ...softDelete,
 }, (t) => [

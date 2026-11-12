@@ -69,7 +69,7 @@ export interface ProfileData {
     provider: string;
   }>;
   /** راهنمای تنظیمِ ایمیلِ شرکتی — فقط وقتی صندوق دارد. */
-  mailSetup: { webmailUrl: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number } | null;
+  mailSetup: { webmailUrl: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number; aliases: string[] } | null;
   isOwner: boolean;
   /** توکن‌های MCP ِ خودِ کاربر و نشانیِ اتصال (۲.۷.۰). */
   mcp: { tokens: McpTokenView[]; grants: McpGrantView[]; endpoint: string };
