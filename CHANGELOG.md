@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.65.0]
+
+### Added
+
+- **Reply to a specific message.** Every message in Messages (direct conversations, channels and project groups) has a reply button. The input box shows "Replying to …" with the quoted text and a cancel button, and the sent message shows the quote above it; clicking the quote jumps to the original. You can only reply to a message from the same conversation. If the original is deleted, the quote says so.
+- **Edit your sent messages.** Your own messages have an edit button for 24 hours after sending, as long as you can still write in that conversation. The message is edited in place (Ctrl/⌘+Enter saves, Esc cancels) and is marked "edited", with the edit time on hover. Mentions are kept. Editing does not send new notifications, and other people's open conversations pick up the change automatically.
+
+### Fixed
+
+- **Your own new message always scrolls into view.** If you had scrolled up (for example to reply to an older message), your sent message no longer stays out of sight.
+
 ## [2.64.1]
 
 ### Fixed

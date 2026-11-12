@@ -242,6 +242,60 @@ export async function listInbox(actor: Actor) {
  * ⚠️ خواندنِ گفتگو اعلانِ زنگولهٔ همان گفتگو را هم خوانده می‌کند (R-NOTIF-08)؛
  * پیش از این «پیامِ تازه» بعد از خواندنِ گفتگو هم روشن می‌ماند.
  */
+/** ستون‌هایی که نمای گفتگو از هر پیام می‌خواند (۲.۶۵.۰). */
+const MESSAGE_FIELDS = {
+  id: messages.id,
+  body: messages.body,
+  createdAt: messages.createdAt,
+  fromUserId: messages.fromUserId,
+  replyToId: messages.replyToId,
+  editedAt: messages.editedAt,
+};
+
+/** پنجرهٔ ویرایشِ پیام — پس از این، پیام سند است و دست نمی‌خورد (۲.۶۵.۰). */
+export const EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+const SNIPPET = 140;
+
+/**
+ * پیام‌ها برای نما: نامِ فرستنده (ماسک‌شده)، پیش‌نمایشِ پیامی که به آن پاسخ داده
+ * شده، و اینکه بیننده می‌تواند ویرایشش کند.
+ * ⚠️ پیش‌نمایش فقط از پیام‌های **همین** گفتگو ساخته می‌شود (همان `rows`).
+ */
+function shapeMessages(
+  rows: Array<{ id: number; body: string; createdAt: Date; fromUserId: number; replyToId: number | null; editedAt: Date | null }>,
+  ctx: LabelContext,
+  t: Awaited<ReturnType<typeof getT>>,
+  viewerId: number,
+) {
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const now = Date.now();
+  return rows.map((m) => {
+    const target = m.replyToId ? byId.get(m.replyToId) : undefined;
+    return {
+      ...m,
+      fromName: personLabel(m.fromUserId, ctx, t),
+      fromAvatarId: personAvatarId(m.fromUserId, ctx),
+      replyTo: m.replyToId
+        ? target
+          ? { id: target.id, fromName: personLabel(target.fromUserId, ctx, t), snippet: snippetOf(target.body) }
+          : { id: null, fromName: '', snippet: '' }
+        : null,
+      canEdit: m.fromUserId === viewerId && now - m.createdAt.getTime() < EDIT_WINDOW_MS,
+    };
+  });
+}
+
+/** متنِ کوتاهِ یک پیام برای نقلِ قول — توکنِ منشن به نامِ ساده، یک خط. */
+function snippetOf(body: string): string {
+  const plain = splitMentions(body)
+    .map((part) => (part.kind === 'mention' ? '@' : part.text))
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return plain.length > SNIPPET ? `${plain.slice(0, SNIPPET)}…` : plain;
+}
+
 export async function openThread(actor: Actor, threadId: number) {
   const access = await accessThread(actor, threadId);
   if (!access.readable) throw new ThreadNotFoundError();
@@ -249,12 +303,7 @@ export async function openThread(actor: Actor, threadId: number) {
   if (group) await ensureReadRows(actor.id, [threadId]);
 
   const [rows, states] = await Promise.all([
-    db.select({
-      id: messages.id,
-      body: messages.body,
-      createdAt: messages.createdAt,
-      fromUserId: messages.fromUserId,
-    })
+    db.select(MESSAGE_FIELDS)
       .from(messages)
       .where(eq(messages.threadId, threadId))
       .orderBy(asc(messages.id)),
@@ -298,7 +347,7 @@ export async function openThread(actor: Actor, threadId: number) {
       showReceipts: !group && isManagement(actor),
     },
     group: group ? await groupView(actor, group, members, ctx, t) : null,
-    messages: rows.map((m) => ({ ...m, fromName: personLabel(m.fromUserId, ctx, t), fromAvatarId: personAvatarId(m.fromUserId, ctx) })),
+    messages: shapeMessages(rows, ctx, t, actor.id),
     canReply: access.writable,
     /** تا این شناسه، همهٔ طرف‌های دیگر خوانده‌اند (R-MSG-07). */
     readUpTo: readUpTo(states, actor.id),
@@ -737,7 +786,7 @@ export async function contactManagement(actor: Actor, body: string): Promise<num
  * کاربری که همین حالا چیزی فرستاده بود تا ۳۰ ثانیه نمی‌توانست جواب بدهد و
  * گفتگوی روان می‌شکست.
  */
-export async function reply(actor: Actor, threadId: number, body: string): Promise<number> {
+export async function reply(actor: Actor, threadId: number, body: string, replyToId: number | null = null): Promise<number> {
   const access = await accessThread(actor, threadId);
   if (!access.readable) throw new ThreadNotFoundError();
   const { thread, group } = access;
@@ -766,8 +815,18 @@ export async function reply(actor: Actor, threadId: number, body: string): Promi
     .where(and(eq(messages.fromUserId, actor.id), sql`${messages.createdAt} > now() - make_interval(secs => ${BURST_WINDOW_SECONDS})`));
   assertNotBurst(burst?.recent ?? 0);
 
+  /**
+   * ⚠️ پاسخ فقط به پیامی از **همین** گفتگو (۲.۶۵.۰) — شناسهٔ دلخواه از گفتگوی دیگری
+   * می‌توانست متنِ پیامِ ناخوانا را در این گفتگو نشان دهد.
+   */
+  let replyTo: number | null = null;
+  if (replyToId) {
+    const [target] = await db.select({ threadId: messages.threadId }).from(messages).where(eq(messages.id, replyToId));
+    if (target?.threadId === threadId) replyTo = replyToId;
+  }
+
   const rows = await db.insert(messages)
-    .values({ threadId, fromUserId: actor.id, body: text })
+    .values({ threadId, fromUserId: actor.id, body: text, replyToId: replyTo })
     .returning({ id: messages.id });
 
   // گفتگو با هر پیام بالا می‌آید (ترتیبِ صندوق). ⚠️ ساعتِ **دیتابیس**، نه Node:
@@ -783,6 +842,39 @@ export async function reply(actor: Actor, threadId: number, body: string): Promi
     });
   }
   return rows[0]!.id;
+}
+
+/**
+ * ویرایشِ متنِ پیامِ خودم (۲.۶۵.۰).
+ *
+ * ⚠️ فقط نویسنده، فقط تا ۲۴ ساعت، و فقط وقتی هنوز می‌تواند در این گفتگو بنویسد
+ * (گروهِ بایگانی‌شده یا کانالِ اعلان دیگر ویرایش نمی‌پذیرد). منشن‌ها همان
+ * پاک‌سازیِ پاسخ را می‌گیرند. ویرایش دوباره اعلان نمی‌فرستد.
+ */
+export async function editMessage(actor: Actor, messageId: number, body: string): Promise<{ threadId: number; body: string; editedAt: Date }> {
+  const [row] = await db.select({ threadId: messages.threadId, fromUserId: messages.fromUserId, createdAt: messages.createdAt })
+    .from(messages).where(eq(messages.id, messageId));
+  if (!row) throw new ThreadNotFoundError();
+  if (row.fromUserId !== actor.id) throw new ForbiddenError('message.edit');
+  if (Date.now() - row.createdAt.getTime() >= EDIT_WINDOW_MS) throw new ForbiddenError('message.edit_window');
+  const access = await accessThread(actor, row.threadId);
+  if (!access.readable) throw new ThreadNotFoundError();
+  if (!access.writable) throw new ForbiddenError('thread.no_reply');
+  const { group } = access;
+
+  const clean = group
+    ? sanitizeMentions(body, {
+      memberIds: new Set(access.members),
+      allowAll: canMentionAll({ kind: group.kind, isManager: isManager(actor), managesProject: await managesGroupProject(actor, group) }),
+    })
+    : { body: noMentions(body) };
+  const text = clean.body.trim();
+  if (text === '') throw new ForbiddenError('message.empty');
+  assertTextLength(text);
+
+  const editedAt = new Date();
+  await db.update(messages).set({ body: text, editedAt }).where(eq(messages.id, messageId));
+  return { threadId: row.threadId, body: text, editedAt };
 }
 
 /** توکنِ منشن در جایی که منشن ندارد (گفتگوی دونفره) متنِ ساده می‌شود. */
@@ -936,7 +1028,12 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
   if (!access.readable) throw new ThreadNotFoundError();
 
   const [maxRow, states] = await Promise.all([
-    db.select({ maxId: sql<number>`coalesce(max(${messages.id}), 0)::int` })
+    db.select({
+      maxId: sql<number>`coalesce(max(${messages.id}), 0)::int`,
+      // ⚠️ شمار و آخرین ویرایش هم (۲.۶۵.۰) — ویرایش و حذف باید به طرفِ دیگر برسند.
+      count: sql<number>`count(*)::int`,
+      edited: sql<string>`coalesce(extract(epoch from max(${messages.editedAt}))::text, '0')`,
+    })
       .from(messages).where(eq(messages.threadId, threadId)),
     db.select({ userId: threadUsers.userId, lastReadMessageId: threadUsers.lastReadMessageId })
       .from(threadUsers).where(eq(threadUsers.threadId, threadId)),
@@ -946,17 +1043,13 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
     maxMessageId: maxRow[0]?.maxId ?? 0,
     readStates: states,
     viewerId: actor.id,
+    version: `${maxRow[0]?.count ?? 0}:${maxRow[0]?.edited ?? '0'}`,
   });
 
   if (fp === fingerprint) return { off: false as const, changed: false as const, fingerprint: fp };
 
   const rows = await db
-    .select({
-      id: messages.id,
-      body: messages.body,
-      createdAt: messages.createdAt,
-      fromUserId: messages.fromUserId,
-    })
+    .select(MESSAGE_FIELDS)
     .from(messages)
     .where(eq(messages.threadId, threadId))
     .orderBy(asc(messages.id));
@@ -978,7 +1071,7 @@ export async function pollThread(actor: Actor, threadId: number, fingerprint: st
     off: false as const,
     changed: true as const,
     fingerprint: fp,
-    messages: rows.map((m) => ({ ...m, fromName: personLabel(m.fromUserId, ctx, t), fromAvatarId: personAvatarId(m.fromUserId, ctx) })),
+    messages: shapeMessages(rows, ctx, t, actor.id),
     readUpTo: readUpTo(states, actor.id),
     mentionNames: Object.fromEntries(mentioned.map((id) => [id, personLabel(id, ctx, t)])) as Record<number, string>,
   };

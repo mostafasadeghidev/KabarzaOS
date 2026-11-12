@@ -300,3 +300,68 @@ describe('پیام به مدیریت', () => {
     await expect(service.contactManagement(dev(), 'دومی')).rejects.toThrow();
   });
 });
+
+/** پاسخ به پیامِ مشخص و ویرایشِ پیامِ خودم (۲.۶۵.۰). */
+describe('پاسخ و ویرایشِ پیام', () => {
+  let threadId: number, otherThreadId: number, firstId: number, foreignId: number;
+
+  beforeAll(async () => {
+    await clearCooldown();
+    [threadId] = await service.compose(owner(), { recipientIds: [devId], body: 'پیامِ اصلی', allowReply: true }) as [number];
+    await clearCooldown();
+    [otherThreadId] = await service.compose(owner(), { recipientIds: [adminId], body: 'گفتگوی دیگر', allowReply: true }) as [number];
+    [{ id: firstId }] = await db.select({ id: messages.id }).from(messages).where(eq(messages.threadId, threadId)) as [{ id: number }];
+    [{ id: foreignId }] = await db.select({ id: messages.id }).from(messages).where(eq(messages.threadId, otherThreadId)) as [{ id: number }];
+  });
+
+  it('پاسخ به پیامی از همین گفتگو نقلِ قول می‌گیرد', async () => {
+    await clearCooldown();
+    const id = await service.reply(dev(), threadId, 'جواب', firstId);
+    const view = await service.openThread(dev(), threadId);
+    const m = view.messages.find((x) => x.id === id)!;
+    expect(m.replyTo).toMatchObject({ id: firstId, snippet: 'پیامِ اصلی' });
+  });
+
+  it('⚠️ پاسخ به پیامی از گفتگوی دیگر پذیرفته نمی‌شود (متنش لو نمی‌رود)', async () => {
+    await clearCooldown();
+    const id = await service.reply(dev(), threadId, 'تلاش', foreignId);
+    const [row] = await db.select({ r: messages.replyToId }).from(messages).where(eq(messages.id, id));
+    expect(row!.r).toBeNull();
+    const view = await service.openThread(dev(), threadId);
+    expect(JSON.stringify(view.messages)).not.toContain('گفتگوی دیگر');
+  });
+
+  it('نویسنده پیامش را ویرایش می‌کند و اثرانگشت عوض می‌شود', async () => {
+    const before = await service.pollThread(dev(), threadId, '');
+    const r = await service.editMessage(owner(), firstId, 'پیامِ اصلیِ اصلاح‌شده');
+    expect(r.body).toBe('پیامِ اصلیِ اصلاح‌شده');
+    const after = await service.pollThread(dev(), threadId, before.fingerprint!);
+    expect(after.changed).toBe(true);
+    const view = await service.openThread(dev(), threadId);
+    const m = view.messages.find((x) => x.id === firstId)!;
+    expect(m.editedAt).not.toBeNull();
+    expect(m.canEdit).toBe(false); // پیامِ دیگری برای خواننده
+  });
+
+  it('⚠️ پیامِ دیگری ویرایش نمی‌شود', async () => {
+    await expect(service.editMessage(dev(), firstId, 'دست‌کاری')).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it('⚠️ غیرعضو حتی وجودِ پیام را نمی‌فهمد', async () => {
+    const stranger = actor({ id: clientId, roles: ['client'], permissions: ['messages.send', 'messages.read'] as Permission[] });
+    await expect(service.editMessage(stranger, foreignId, 'x')).rejects.toThrow();
+    const [row] = await db.select({ b: messages.body }).from(messages).where(eq(messages.id, foreignId));
+    expect(row!.b).toBe('گفتگوی دیگر');
+  });
+
+  it('⚠️ پس از ۲۴ ساعت ویرایش رد می‌شود', async () => {
+    await db.update(messages).set({ createdAt: new Date(Date.now() - 25 * 3600_000) }).where(eq(messages.id, firstId));
+    await expect(service.editMessage(owner(), firstId, 'دیر')).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it('متنِ خالی رد می‌شود', async () => {
+    await clearCooldown();
+    const id = await service.reply(owner(), threadId, 'تازه');
+    await expect(service.editMessage(owner(), id, '   ')).rejects.toBeInstanceOf(ForbiddenError);
+  });
+});

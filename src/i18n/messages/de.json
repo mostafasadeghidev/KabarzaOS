@@ -5002,5 +5002,17 @@
   "برای فرستادن از یکی از این نشانی‌ها لازم نیست جدا وارد شوی: در وب‌میل از «تنظیمات ← هویت‌ها» آن را اضافه کن و هنگامِ نوشتن، در «از» انتخابش کن. در گوشی و Outlook هم همین را از تنظیماتِ همان حساب با «نشانیِ دیگر / Alias» اضافه کن.": "Zum Senden von einer dieser Adressen ist keine eigene Anmeldung nötig: im Webmail unter Einstellungen → Identitäten hinzufügen und beim Schreiben unter „Von“ wählen. Auf dem Telefon oder in Outlook in den Kontoeinstellungen als weitere Adresse / Alias hinzufügen.",
   "با هر کدام از این نشانی‌ها و همان رمز می‌شود وارد شد (وب‌میل، گوشی، Outlook). ایمیل از همان نشانی‌ای فرستاده می‌شود که با آن وارد شده‌ای.": "Mit jeder dieser Adressen und demselben Passwort kann man sich anmelden (Webmail, Telefon, Outlook). E-Mails werden von der Adresse gesendet, mit der Sie angemeldet sind.",
   "هر نشانی که وارد شوی، همین یک صندوق را می‌بینی؛ فقط فرستنده فرق می‌کند.": "Mit welcher Adresse Sie sich auch anmelden, Sie sehen dasselbe Postfach; nur der Absender ändert sich.",
-  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "Um von einer anderen Adresse zu senden, verwenden Sie diese Adresse als Benutzernamen."
+  "اگر می‌خواهی ایمیل‌ها از نشانیِ دیگری فرستاده شود، همان نشانی را نامِ کاربری بگذار.": "Um von einer anderen Adresse zu senden, verwenden Sie diese Adresse als Benutzernamen.",
+  "خودتان": "Du",
+  "در پاسخ به {name}": "Antwort an {name}",
+  "فقط پیامِ خودتان را می‌توانید ویرایش کنید.": "Du kannst nur deine eigenen Nachrichten bearbeiten.",
+  "لغوِ پاسخ": "Antwort abbrechen",
+  "ویرایش: {at}": "Bearbeitet: {at}",
+  "ویرایشِ این پیام": "Diese Nachricht bearbeiten",
+  "ویرایشِ پیام": "Nachricht bearbeiten",
+  "ویرایش‌شده": "bearbeitet",
+  "پاسخ به این پیام": "Auf diese Nachricht antworten",
+  "پیام فقط تا ۲۴ ساعت پس از ارسال ویرایش می‌شود.": "Eine Nachricht kann nur innerhalb von 24 Stunden nach dem Senden bearbeitet werden.",
+  "پیام معتبر نیست.": "Ungültige Nachricht.",
+  "پیامِ اصلی حذف شده است.": "Die ursprüngliche Nachricht wurde gelöscht."
 }
