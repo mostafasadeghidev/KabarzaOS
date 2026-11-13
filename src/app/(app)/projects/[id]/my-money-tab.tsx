@@ -15,6 +15,7 @@ import { useT, useTimeZone } from '@/i18n/client';
 import { formatDate } from '@/i18n/datetime';
 import { Section } from '@/components/page-shell';
 import { Amount } from '@/components/amount-privacy';
+import { PaidAmount } from '@/components/paid-amount';
 
 export interface UnitRow {
   id: number;
@@ -60,9 +61,11 @@ export interface RequestRow {
 export interface PayoutRow {
   id: number;
   paidAt: string | null;
+  /** مبلغِ نمایشی با ارزِ خودش (`paidDisplay`). */
   amount: string;
-  amountSettled: string | null;
   currencyCode: string | null;
+  /** مبلغِ اسمیِ پرداخت، وقتی به ارزِ دیگری بوده — در راهنمای شناور. */
+  original: { amount: string; currencyCode: string | null } | null;
   note: string;
   receiptIds: number[] | null;
 }
@@ -230,7 +233,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
                 {data.payouts.map((p) => (
                   <li key={p.id} className="flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
                     <span className="num text-xs text-muted-foreground">{p.paidAt ?? '—'}</span>
-                    <b className="num"><Amount>{format(p.amountSettled ?? p.amount)} {p.currencyCode ?? ''}</Amount></b>
+                    <b className="num"><PaidAmount amount={p.amount} currencyCode={p.currencyCode} original={p.original} /></b>
                     {p.note && <span className="text-xs text-muted-foreground">{p.note}</span>}
                     {(p.receiptIds?.length ?? 0) > 0 && (
                       <a href={`/api/files/${p.receiptIds![0]}`} target="_blank" rel="noopener" className="text-xs text-primary hover:underline">

@@ -59,6 +59,13 @@ function isExempt(pathname: string | null): boolean {
   return pathname === '/reports' || (pathname?.startsWith('/reports/') ?? false);
 }
 
+/** مبلغ‌ها در همین صفحه اکنون پوشانده‌اند؟ (کلیدِ سراسری، جز صفحه‌های گزارش.) */
+export function useAmountsMasked(): boolean {
+  const hide = useHideAmounts();
+  const pathname = usePathname();
+  return hide && !isExempt(pathname);
+}
+
 /**
  * یک مبلغِ نمایشی. فرزند همان متنِ قالب‌بندی‌شده است (`format(...)`)؛ ورودیِ
  * فرم‌ها هرگز با این پوشانده نمی‌شود.

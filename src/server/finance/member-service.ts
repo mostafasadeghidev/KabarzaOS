@@ -22,7 +22,7 @@ import {
   availableToRequest, canCancelRequest, canDeleteUnit, isValidQuantity,
   OPEN_STATUSES, parseManualAmount, unitAmount, validateRequest, type RequestRejection,
 } from '@/domain/finance/member-money';
-import { contractBalance, paymentStatus } from '@/domain/team-money/payments';
+import { contractBalance, paidDisplay, paymentStatus } from '@/domain/team-money/payments';
 import { myPayoutsOn, statusTags } from '@/server/projects/repository';
 import { canManageProject } from '@/server/projects/authority';
 import { effectivePayType, isUnitMember } from '@/domain/projects/pay-type';
@@ -501,7 +501,11 @@ export async function myRequests(actor: Actor, projectId: number) {
     /** ارزِ قرارداد — ارقامِ بالا در این ارزند. */
     currencyCode: contractCurrency?.code ?? null,
     status: paymentStatus(summary.paid, summary.agreed),
-    payouts: payouts.map((p) => ({ ...p, paidAt: p.paidAt ?? null })),
+    // مبلغ با ارزِ خودش؛ مبلغِ اسمی در راهنمای شناور (۲.۶۶.۱).
+    payouts: payouts.map((p) => ({
+      id: p.id, note: p.note, receiptIds: p.receiptIds, paidAt: p.paidAt ?? null,
+      ...paidDisplay(p),
+    })),
     available: availableToRequest(remaining, outstanding),
     outstanding,
   };

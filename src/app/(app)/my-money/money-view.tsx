@@ -19,6 +19,7 @@ import { formatDate } from '@/i18n/datetime';
 import { Section } from '@/components/page-shell';
 import { Button } from '@/components/ui/button';
 import { Amount } from '@/components/amount-privacy';
+import { PaidAmount } from '@/components/paid-amount';
 
 /** برچسبِ وضعیتِ پرداخت — همان سه حالتِ `Payments::status_label`. */
 const STATUS_LABEL: Record<string, string> = {
@@ -74,7 +75,7 @@ function PaymentLines({
         {lines.map((l) => (
           <TableRow key={l.id}>
             <TableDateCell>{l.paidAt}</TableDateCell>
-            <TableNumericCell>{money(l.amount, l.currencyCode)}</TableNumericCell>
+            <TableNumericCell><PaidAmount amount={l.amount} currencyCode={l.currencyCode} original={l.original} /></TableNumericCell>
             {showCounted && (
               <TableNumericCell className="text-muted-foreground">
                 {l.counted ? money(l.counted, currencyCode) : '—'}

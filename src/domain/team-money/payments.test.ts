@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  paidDisplay,
   paymentStatus, remaining, summarizeProject, rowValueIn, contractBalance, teamSummary,
   outstandingTotal, requestableAmount, assertRequestAllowed,
   markPaid, unpaidWorkExcludingRequested, RequestValidationError,
@@ -257,5 +258,27 @@ describe('teamSummary — بخشِ «تیم» ِ تبِ مالیِ پروژه (�
       source: rates,
     });
     expect(t.members.map((m) => [m.userId, m.agreed])).toEqual([[1, 700], [2, 45]]);
+  });
+});
+
+describe('۲.۶۶.۱ — مبلغِ نمایشی با ارزِ خودش', () => {
+  const irt = 1, eur = 2;
+  it('⚠️ تسویه‌شده با کدِ ارزِ تسویه، و مبلغِ اسمی جدا', () => {
+    expect(paidDisplay({
+      amount: '29673426', currencyId: irt, currencyCode: 'IRT',
+      amountSettled: '227.40', settledCurrencyId: eur, settledCurrencyCode: 'EUR',
+    })).toEqual({ amount: '227.40', currencyCode: 'EUR', original: { amount: '29673426', currencyCode: 'IRT' } });
+  });
+  it('بی تسویه، همان مبلغِ اسمی و بی راهنمای شناور', () => {
+    expect(paidDisplay({ amount: '100', currencyId: eur, currencyCode: 'EUR', amountSettled: null, settledCurrencyId: null }))
+      .toEqual({ amount: '100', currencyCode: 'EUR', original: null });
+  });
+  it('تسویه در همان ارز، مبلغِ دوم ندارد', () => {
+    expect(paidDisplay({ amount: '100', currencyId: eur, currencyCode: 'EUR', amountSettled: '99', settledCurrencyId: eur, settledCurrencyCode: 'EUR' }))
+      .toEqual({ amount: '99', currencyCode: 'EUR', original: null });
+  });
+  it('⚠️ عددِ تسویه بی ارزِ تسویه حساب نمی‌شود (همان قاعدهٔ rowValueIn)', () => {
+    expect(paidDisplay({ amount: '100', currencyId: irt, currencyCode: 'IRT', amountSettled: '5', settledCurrencyId: null }))
+      .toEqual({ amount: '100', currencyCode: 'IRT', original: null });
   });
 });

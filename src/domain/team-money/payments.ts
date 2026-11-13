@@ -77,6 +77,29 @@ export interface PaymentRow {
 }
 
 /**
+ * مبلغی که از یک پرداخت **نشان داده می‌شود** (۲.۶۶.۱) — همان قاعدهٔ `rowValueIn`:
+ * تسویه‌شده (اگر ارزش ثبت شده) بر اسمی مقدم است، و هر عدد با ارزِ **خودش**.
+ *
+ * ⚠️ باگِ قبلی: عددِ تسویه‌شده (مثلاً 227.40 یورو) کنارِ کدِ ارزِ اسمی (IRT)
+ * نوشته می‌شد. `original` مبلغِ اسمی است، فقط وقتی ارزش با ارزِ نمایش فرق دارد.
+ */
+export function paidDisplay(
+  row: PaymentRow & { currencyCode: string | null; settledCurrencyCode?: string | null },
+): { amount: string; currencyCode: string | null; original: { amount: string; currencyCode: string | null } | null } {
+  const settled = row.amountSettled;
+  if (settled !== null && settled !== undefined && settled !== '' && row.settledCurrencyId) {
+    return {
+      amount: settled,
+      currencyCode: row.settledCurrencyCode ?? null,
+      original: row.settledCurrencyId !== row.currencyId
+        ? { amount: row.amount, currencyCode: row.currencyCode }
+        : null,
+    };
+  }
+  return { amount: row.amount, currencyCode: row.currencyCode, original: null };
+}
+
+/**
  * ارزشِ یک ردیفِ پرداخت در ارزِ دلخواه.
  * ترتیب: تسویه‌شده در همان ارز ← تسویه‌شده با تبدیل ← مبلغِ اسمی با تبدیل.
  * نبودِ نرخ `null` می‌دهد (R-MONEY-06)، نه رقمِ گمراه‌کننده.
