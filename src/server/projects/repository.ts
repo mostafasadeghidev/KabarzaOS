@@ -1835,18 +1835,24 @@ export async function taskProgressFor(projectId: number): Promise<{ done: number
 
 /** ردیف‌های پرداخت به یک عضو روی پروژه — پورتِ فهرستِ `member_payout` ِ تبِ مالیِ عضو. */
 export async function myPayoutsOn(userId: number, projectId: number) {
+  // ⚠️ ارزِ تسویه جدا خوانده می‌شود (۲.۶۶.۱) — عددِ تسویه‌شده با کدِ ارزِ اسمی نوشته می‌شد.
+  const settledCurrency = alias(currencies, 'settled_currency');
   return db
     .select({
       id: projectPayments.id,
       paidAt: projectPayments.paidAt,
       amount: projectPayments.amount,
+      currencyId: projectPayments.currencyId,
       amountSettled: projectPayments.amountSettled,
+      settledCurrencyId: projectPayments.settledCurrencyId,
       currencyCode: currencies.code,
+      settledCurrencyCode: settledCurrency.code,
       note: projectPayments.note,
       receiptIds: ledger.receiptIds,
     })
     .from(projectPayments)
     .leftJoin(currencies, eq(currencies.id, projectPayments.currencyId))
+    .leftJoin(settledCurrency, eq(settledCurrency.id, projectPayments.settledCurrencyId))
     .leftJoin(ledger, eq(ledger.id, projectPayments.ledgerId))
     .where(and(
       eq(projectPayments.projectId, projectId),

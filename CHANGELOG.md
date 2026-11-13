@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [2.66.1]
+
+### Fixed
+
+- **Payouts show the right currency.** When a payout was made in one currency and settled in another (for example paid in IRT, counted as EUR against a EUR contract), the project's Financial tab and "My money" showed the settled amount with the original currency, such as "227.40 IRT" instead of "227.40 EUR". The amount now shows with its own currency, and hovering it shows the amount actually paid (for example "29,673,426 IRT") to match the receipt. While amounts are hidden, the tooltip only offers to reveal it; the paid amount appears once revealed.
+
 ## [2.66.0]
 
 ### Added

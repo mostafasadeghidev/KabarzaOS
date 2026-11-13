@@ -7,7 +7,7 @@ import { membershipProjectIds } from '@/server/projects/authority';
 import { rateSource } from '@/server/finance/service';
 import { unitPaidOf, unitRemaining } from '@/domain/team-money/unit-installments';
 import {
-  paymentStatus, rowValueIn, summarizeProject, type PaymentStatus,
+  paidDisplay, paymentStatus, rowValueIn, summarizeProject, type PaymentStatus,
 } from '@/domain/team-money/payments';
 import type { Actor } from '@/domain/access/permissions';
 import { isUnitMember } from '@/domain/projects/pay-type';
@@ -31,6 +31,8 @@ export interface MyPaymentLine {
   paidAt: string;
   amount: string;
   currencyCode: string | null;
+  /** مبلغِ اسمیِ پرداخت وقتی به ارزِ دیگری بوده (۲.۶۶.۱) — در راهنمای شناور. */
+  original: { amount: string; currencyCode: string | null } | null;
   /** ارزشِ ردیف در ارزِ پروژه (پورتِ ستونِ «معادل (محاسبه)»)؛ null یعنی نرخ نداریم. */
   counted: string | null;
   note: string;
@@ -80,13 +82,16 @@ function lineOf(
   },
   source: Parameters<typeof rowValueIn>[0],
   projectCurrencyId: number | null,
+  codes: ReadonlyMap<number, string>,
 ): MyPaymentLine {
   return {
     id: row.id,
     paidAt: row.paidAt,
-    // ⚠️ آنچه واقعاً تسویه شد بر مبلغِ اسمی مقدم است (R-TEAM-01).
-    amount: row.amountSettled ?? row.amount,
-    currencyCode: row.currencyCode,
+    /*
+     * ⚠️ آنچه واقعاً تسویه شد بر مبلغِ اسمی مقدم است (R-TEAM-01) — و با کدِ ارزِ
+     * **تسویه** (۲.۶۶.۱). پیش از این 227.40 یورو «227.40 IRT» نوشته می‌شد.
+     */
+    ...paidDisplay({ ...row, settledCurrencyCode: row.settledCurrencyId ? codes.get(row.settledCurrencyId) ?? null : null }),
     counted: projectCurrencyId ? rowValueIn(source, row, projectCurrencyId) : null,
     note: row.note,
     receiptId: row.receiptIds?.[0] ?? null,
@@ -110,7 +115,11 @@ export async function getMyMoney(actor: Actor) {
   ]);
 
   const allIds = [...new Set([...memberIds, ...clientIds])];
-  const { source } = await rateSource();
+  const [{ source }, currencyRows] = await Promise.all([
+    rateSource(),
+    db.select({ id: currencies.id, code: currencies.code }).from(currencies),
+  ]);
+  const codes = new Map(currencyRows.map((c) => [c.id, c.code]));
 
   const projectRows = allIds.length === 0 ? [] : await db
     .select({
@@ -271,7 +280,7 @@ export async function getMyMoney(actor: Actor) {
      */
     const payoutLines = memberPayments
       .filter((p) => p.projectId === projectId)
-      .map((p) => lineOf(p, source, contractCurrencyId));
+      .map((p) => lineOf(p, source, contractCurrencyId, codes));
     const paid = payoutLines.reduce((sum, l) => sum + zero(l.counted ?? l.amount), 0);
 
     const myUnits = units.filter((u) => u.projectId === projectId);
@@ -317,8 +326,8 @@ export async function getMyMoney(actor: Actor) {
     const project = projectById.get(projectId);
     const rows = clientPayments.filter((p) => p.projectId === projectId);
     const currencyId = project?.currencyId ?? null;
-    const payments = rows.filter((p) => p.direction === 'incoming').map((p) => lineOf(p, source, currencyId));
-    const expenses = rows.filter((p) => p.direction === 'project_expense').map((p) => lineOf(p, source, currencyId));
+    const payments = rows.filter((p) => p.direction === 'incoming').map((p) => lineOf(p, source, currencyId, codes));
+    const expenses = rows.filter((p) => p.direction === 'project_expense').map((p) => lineOf(p, source, currencyId, codes));
 
     // ⚠️ همان قاعده: ارزشِ هر ردیف در ارزِ **پروژه** جمع می‌شود (پورتِ `total_incoming`).
     const paid = payments.reduce((sum, l) => sum + zero(l.counted ?? l.amount), 0);
@@ -346,8 +355,8 @@ export async function getMyMoney(actor: Actor) {
     isClient,
     memberProjects,
     clientProjects,
-    noProjectPayouts: noProjectPayouts.map((p) => lineOf(p, source, null)),
-    noProjectIncoming: noProjectIncoming.map((p) => lineOf(p, source, null)),
+    noProjectPayouts: noProjectPayouts.map((p) => lineOf(p, source, null, codes)),
+    noProjectIncoming: noProjectIncoming.map((p) => lineOf(p, source, null, codes)),
   };
 }
 
