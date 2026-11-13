@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.0.0]
+
+### Added
+
+- **Mailboxes without an owner.** Under Access → Email, "New mailbox" can now create a shared mailbox with no owner, for example `noreply@` for invitations, password resets and notifications. Nobody sees it in the app, and its password is not stored anywhere in the app: it is shown once, with a copy button, right after it is created (for example to paste into the SMTP settings). "New password" now also works for mailboxes with no owner and again shows the new password only once. Such a mailbox can still be linked to a member later; a new password then goes to that member's "My access" as usual.
+
 ## [2.66.1]
 
 ### Fixed

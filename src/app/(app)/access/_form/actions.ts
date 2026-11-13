@@ -165,28 +165,36 @@ export async function setMailAliasesAction(accountId: string, raw: string): Prom
 }
 
 /** صندوقِ تازه برای عضو (۲.۶۱.۰). شناسهٔ ردیف برمی‌گردد تا مدیر رمز را ببیند و تحویل دهد. */
+type Created = { grantId: number | null; address: string; password?: string };
+
+/**
+ * ⚠️ `userId=shared` = صندوقِ مشترکِ بی‌صاحب (۲.۶۷.۰): رمز فقط در همین پاسخ می‌آید
+ * و هیچ‌جا ذخیره نمی‌شود. خالی یا نامعتبر = ۰ که سرویس رد می‌کند.
+ */
 export async function createMailAccountAction(
-  _prev: AccessState & { grantId?: number; address?: string },
+  _prev: AccessState & Partial<Created>,
   formData: FormData,
-): Promise<AccessState & { grantId?: number; address?: string }> {
+): Promise<AccessState & Partial<Created>> {
   const { createMailAccount } = await import('@/server/corp-mail/accounts');
-  let created: { grantId: number; address: string } | null = null;
+  const rawUser = String(formData.get('userId') ?? '');
+  let created: Created | null = null;
   const state = await runMail(async (actor) => {
     created = await createMailAccount(actor, {
-      userId: Number(formData.get('userId')) || 0,
+      userId: rawUser === 'shared' ? null : Number(rawUser) || 0,
       local: String(formData.get('local') ?? ''),
       aliases: String(formData.get('aliases') ?? '').split(/[\s,،]+/).map((s) => s.replace(/@.*$/, '')).filter(Boolean),
     });
   }, 'صندوق ساخته نشد.');
-  return created ? { ...state, ...(created as { grantId: number; address: string }) } : state;
+  return created ? { ...state, ...(created as Created) } : state;
 }
 
 /** رمزِ تازه — app passwordهای قبلی هم باطل می‌شوند (هشدار در صفحه). */
-export async function resetMailPasswordAction(accountId: string): Promise<AccessState & { grantId?: number }> {
+export async function resetMailPasswordAction(accountId: string): Promise<AccessState & { grantId?: number | null; password?: string }> {
   const { resetMailPassword } = await import('@/server/corp-mail/accounts');
-  let grantId: number | undefined;
-  const state = await runMail(async (actor) => { grantId = (await resetMailPassword(actor, accountId)).grantId; }, 'رمز عوض نشد.');
-  return { ...state, grantId };
+  let out: { grantId: number | null; password?: string } = { grantId: null };
+  const state = await runMail(async (actor) => { out = await resetMailPassword(actor, accountId); }, 'رمز عوض نشد.');
+  // رمز فقط برای صندوقِ بی‌صاحب برمی‌گردد (یک بار)؛ برای صندوقِ عضو در دفترِ او می‌نشیند.
+  return state.error ? state : { ...state, ...out };
 }
 
 /** بستنِ صندوق: رمزِ نامعلوم + aliasهای خاموش؛ ایمیل‌ها می‌مانند. */

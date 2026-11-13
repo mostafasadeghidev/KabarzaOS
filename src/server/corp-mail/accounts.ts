@@ -334,7 +334,8 @@ async function linkedGrant(serviceId: number, accountId: string) {
 }
 
 export interface CreateMailInput {
-  userId: number;
+  /** `null` = صندوقِ مشترکِ بی‌صاحب (۲.۶۷.۰) — مثلاً noreply برای ایمیل‌های سامانه. */
+  userId: number | null;
   local: string;
   aliases: string[];
 }
@@ -346,19 +347,32 @@ export interface CreateMailInput {
  * ⚠️ همهٔ سنجش‌ها پیش از ساختن: عضوِ فعال بی‌صندوق، نامِ معتبر و آزاد، aliasهای
  * آزاد. رمز هرگز در گزارش، لاگ یا پاسخ نمی‌آید.
  */
-export async function createMailAccount(actor: Actor, input: CreateMailInput): Promise<{ grantId: number; address: string }> {
+export async function createMailAccount(
+  actor: Actor,
+  input: CreateMailInput,
+): Promise<{ grantId: number | null; address: string; password?: string }> {
   assertCanManage(actor, 'members');
-  const [member] = await db.select({ name: users.name, state: users.memberState }).from(users)
-    .where(and(eq(users.id, input.userId), isNull(users.deletedAt)));
-  if (!member || member.state !== 'active') throw new CorpMailError('member_inactive');
-  const [client] = await db.select({ id: userRoles.userId }).from(userRoles)
-    .where(and(eq(userRoles.userId, input.userId), eq(userRoles.role, 'client')));
-  if (client) throw new CorpMailError('member_inactive');
-
+  /*
+   * ⚠️ صندوقِ مشترک (۲.۶۷.۰): بی ردیفِ دفتر — پس رمز **هیچ‌جا** ذخیره نمی‌شود و فقط
+   * یک بار به سازنده برمی‌گردد (مثلاً برای تنظیمِ SMTP). بعداً می‌شود آن را به عضوی
+   * وصل کرد و «رمزِ تازه» گرفت تا رمز به دفترِ همان عضو برود.
+   */
+  const shared = input.userId === null;
+  let member: { name: string; state: string } | undefined;
+  let existing: { id: number; externalId: string | null } | undefined;
   const serviceId = await corpMailServiceId();
-  const [existing] = await db.select({ id: serviceGrants.id, externalId: serviceGrants.externalId }).from(serviceGrants)
-    .where(and(eq(serviceGrants.serviceId, serviceId), eq(serviceGrants.userId, input.userId), isNull(serviceGrants.revokedAt)));
-  if (existing?.externalId) throw new CorpMailError('member_has_mail');
+  if (input.userId !== null) {
+    [member] = await db.select({ name: users.name, state: users.memberState }).from(users)
+      .where(and(eq(users.id, input.userId), isNull(users.deletedAt)));
+    if (!member || member.state !== 'active') throw new CorpMailError('member_inactive');
+    const [client] = await db.select({ id: userRoles.userId }).from(userRoles)
+      .where(and(eq(userRoles.userId, input.userId), eq(userRoles.role, 'client')));
+    if (client) throw new CorpMailError('member_inactive');
+
+    [existing] = await db.select({ id: serviceGrants.id, externalId: serviceGrants.externalId }).from(serviceGrants)
+      .where(and(eq(serviceGrants.serviceId, serviceId), eq(serviceGrants.userId, input.userId), isNull(serviceGrants.revokedAt)));
+    if (existing?.externalId) throw new CorpMailError('member_has_mail');
+  }
 
   let created!: { id: string; address: string };
   const password = generateMailPassword();
@@ -384,7 +398,7 @@ export async function createMailAccount(actor: Actor, input: CreateMailInput): P
           '@type': 'User',
           name: local,
           domainId,
-          description: member.name,
+          description: member?.name ?? 'Shared mailbox',
           roles: { '@type': 'User' },
           permissions: { '@type': 'Inherit' },
           quotas: { maxDiskQuota: quotaBytes(config) },
@@ -399,6 +413,11 @@ export async function createMailAccount(actor: Actor, input: CreateMailInput): P
     created = { id, address: `${local}@${config.domain}` };
   } catch (error) { wrap(error); }
 
+  if (shared) {
+    await audit(actor, 'corp_mail.create', 0, null, { account: created.address, shared: true, aliases: input.aliases });
+    return { grantId: null, address: created.address, password };
+  }
+
   // ⚠️ حساب ساخته شد؛ اگر ثبت در دفتر شکست بخورد، صندوق بی‌صاحب می‌ماند و مدیر باید بداند.
   try {
     const grantId = await db.transaction(async (tx) => {
@@ -408,7 +427,7 @@ export async function createMailAccount(actor: Actor, input: CreateMailInput): P
         return existing.id;
       }
       const [row] = await tx.insert(serviceGrants).values({
-        serviceId, userId: input.userId, grantedBy: actor.id, level: 'member', ...values,
+        serviceId, userId: input.userId!, grantedBy: actor.id, level: 'member', ...values,
       }).returning({ id: serviceGrants.id });
       return row!.id;
     });
@@ -427,11 +446,13 @@ export async function createMailAccount(actor: Actor, input: CreateMailInput): P
  * ⚠️ `credentials` در Stalwart یک‌جا جایگزین می‌شود: app passwordهای قبلی (گوشی،
  * Outlook، اتصالِ همین برنامه) هم باطل می‌شوند. صفحه پیش از این کار هشدار می‌دهد.
  */
-export async function resetMailPassword(actor: Actor, accountId: string): Promise<{ grantId: number }> {
+export async function resetMailPassword(
+  actor: Actor,
+  accountId: string,
+): Promise<{ grantId: number | null; password?: string }> {
   assertCanManage(actor, 'members');
   const serviceId = await corpMailServiceId();
   const link = await linkedGrant(serviceId, accountId);
-  if (!link) throw new CorpMailError('not_linked');
   const password = generateMailPassword();
   let address = '';
   try {
@@ -445,6 +466,14 @@ export async function resetMailPassword(actor: Actor, accountId: string): Promis
     const set = result<SetResult>(responses, 's');
     if (set.notUpdated?.[account.id]) refused('update', set.notUpdated[account.id]);
   } catch (error) { wrap(error); }
+  /*
+   * ⚠️ صندوقِ بی‌صاحب (۲.۶۷.۰): رمز جایی برای ماندن ندارد، پس فقط همین یک بار به
+   * مدیر برمی‌گردد و هیچ‌جا ذخیره یا لاگ نمی‌شود.
+   */
+  if (!link) {
+    await audit(actor, 'corp_mail.password', 0, null, { account: address, shared: true });
+    return { grantId: null, password };
+  }
   // ⚠️ credentials ِ تازه app password ِ قبلی را هم باطل کرد؛ کلیدِ برنامه پاک و دوباره گرفته می‌شود.
   await db.update(serviceGrants).set({ secretEnc: seal(password), appSecretEnc: '', updatedAt: new Date() }).where(eq(serviceGrants.id, link.id));
   await audit(actor, 'corp_mail.password', link.id, null, { account: address });
