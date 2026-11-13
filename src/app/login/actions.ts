@@ -3,9 +3,6 @@
 import { clientIpFrom } from '@/domain/auth/client-ip';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { or, sql } from 'drizzle-orm';
-import { db } from '@/db/client';
-import { users } from '@/db/schema';
 import { attemptLogin, type AuthUser } from '@/domain/auth/login';
 import { createFailureStore, LOGIN_MAX_FAILURES, throttleKeys, worstFailures } from '@/domain/auth/throttle';
 import { canSignIn, type MemberState } from '@/domain/people/offboarding';
@@ -16,6 +13,7 @@ import { loginSchema, type LoginState } from './schema';
 import { markOffline } from '@/server/people/presence-service';
 import { safeNextPath } from '@/domain/auth/next-path';
 import { verifyTurnstile } from '@/server/settings/turnstile-service';
+import { findUserByIdentifier } from '@/server/auth/identify';
 import { TURNSTILE_FIELD } from '@/domain/settings/turnstile';
 
 
@@ -56,11 +54,11 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
      * `lower(...)` ِ مهاجرتِ 0017 این جست‌وجو را ارزان نگه می‌دارد.
      */
     async findByIdentifier(identifier: string): Promise<AuthUser | null> {
-      const rows = await db.select().from(users).where(or(
-        sql`lower(${users.email}) = ${identifier}`,
-        sql`lower(${users.username}) = ${identifier}`,
-      ));
-      const u = rows[0];
+      /*
+       * ⚠️ ایمیلِ شخصی، نامِ کاربری یا (۳.۱.۰) نشانیِ صندوقِ شرکتیِ باز — قاعده یک‌جا در
+       * `findUserByIdentifier`. سنجشِ رمز، قفل و کپچا برای همه همان است.
+       */
+      const u = (await findUserByIdentifier(identifier))?.user;
       return u
         ? {
             id: u.id,

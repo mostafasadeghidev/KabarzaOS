@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { PasswordInput } from '@/components/ui/password-input';
 import { SecretReveal } from './secret-reveal';
+import { GrantDetailsDialog } from './grant-details';
 import { Label } from '@/components/ui/label';
 import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import {
@@ -142,7 +143,10 @@ export function AccessView({ data, focusUser, mailAccounts = false }: {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [editing, setEditing] = useState<GrantRow | null>(null);
+  /** ردیفی که جزئیاتش باز است (۳.۱.۰) — با کلیک روی ردیف. */
+  const [detail, setDetail] = useState<GrantRow | null>(null);
   const [pending, startTransition] = useTransition();
+  const isMailService = (serviceId: number) => data.services.find((s) => s.id === serviceId)?.provider === 'stalwart';
 
   const serviceName = (id: number) =>
     data.services.find((s) => s.id === id)?.name ?? `#${id}`;
@@ -172,8 +176,23 @@ export function AccessView({ data, focusUser, mailAccounts = false }: {
     startTransition(async () => {
       const result = await revokeAccessAction(row.id);
       if (result.error) show(tr(result.error), 'error');
-      else show(tr('دسترسی قطع شد.'), 'success');
+      else { show(tr('دسترسی قطع شد.'), 'success'); setDetail(null); }
     });
+  };
+
+  /** قطع با پرسش — از ردیف و از مودالِ جزئیات. */
+  const confirmRevoke = async (row: GrantRow) => {
+    // ⚠️ صندوقِ ایمیلِ شرکتی واقعاً بسته می‌شود (۲.۶۱.۰)، پس هشدارِ جدا.
+    const managed = isMailService(row.serviceId);
+    if (await confirm(managed ? {
+      title: tr('صندوقِ ایمیلِ {address} بسته شود؟', { address: row.accountRef }),
+      description: tr('رمز به مقداری نامعلوم عوض می‌شود و نشانی‌های دیگرش خاموش می‌شوند؛ دیگر کسی نمی‌تواند واردش شود. ایمیل‌های قبلی پاک نمی‌شوند و پاک‌کردنِ نهایی کارِ دستیِ مدیرِ سرورِ ایمیل است.'),
+      confirmLabel: tr('بستنِ صندوق'),
+      destructive: true,
+    } : {
+      title: tr('این دسترسی قطع شود؟'),
+      description: tr('ردیف پاک نمی‌شود؛ تاریخِ قطع رویش ثبت می‌شود. قطعِ واقعی را در خودِ سرویس انجام دهید.'),
+    })) revoke(row);
   };
 
   return (
@@ -328,7 +347,14 @@ export function AccessView({ data, focusUser, mailAccounts = false }: {
                 {rows.map((row) => {
                   const former = stateLabel(row.memberState);
                   return (
-                    <TableRow key={row.id}>
+                    // ۳.۱.۰ — کلیک روی ردیف = مودالِ جزئیات؛ دکمه‌ها و رمز کلیکِ خودشان را دارند.
+                    <TableRow
+                      key={row.id}
+                      className="cursor-pointer"
+                      tabIndex={0}
+                      onClick={() => setDetail(row)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) setDetail(row); }}
+                    >
                       <TableCell>
                         <span className="flex flex-wrap items-center gap-1">
                           <UserName userId={row.userId} name={row.userName} size="sm" />
@@ -343,7 +369,7 @@ export function AccessView({ data, focusUser, mailAccounts = false }: {
                       </TableCell>
                       <TableCell className="num text-xs" dir="ltr">{row.accountRef || '—'}</TableCell>
                       {data.canManage && (
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           {row.hasSecret ? <SecretReveal grantId={row.id} /> : <span className="text-muted-foreground">—</span>}
                         </TableCell>
                       )}
@@ -362,7 +388,7 @@ export function AccessView({ data, focusUser, mailAccounts = false }: {
                           </span>
                         )}
                       </TableCell>
-                      <TableActionsCell>
+                      <TableActionsCell onClick={(e) => e.stopPropagation()}>
                         {data.canManage && row.revokedAt === null && (
                           <>
                             <IconButton
@@ -378,19 +404,7 @@ export function AccessView({ data, focusUser, mailAccounts = false }: {
                               className="size-8 text-muted-foreground hover:text-destructive"
                               label={tr("قطعِ دسترسی")}
                               disabled={pending}
-                              onClick={async () => {
-                                // ⚠️ صندوقِ ایمیلِ شرکتی واقعاً بسته می‌شود (۲.۶۱.۰)، پس هشدارِ جدا.
-                                const managed = data.services.find((s) => s.id === row.serviceId)?.provider === 'stalwart';
-                                if (await confirm(managed ? {
-                                  title: tr('صندوقِ ایمیلِ {address} بسته شود؟', { address: row.accountRef }),
-                                  description: tr('رمز به مقداری نامعلوم عوض می‌شود و نشانی‌های دیگرش خاموش می‌شوند؛ دیگر کسی نمی‌تواند واردش شود. ایمیل‌های قبلی پاک نمی‌شوند و پاک‌کردنِ نهایی کارِ دستیِ مدیرِ سرورِ ایمیل است.'),
-                                  confirmLabel: tr('بستنِ صندوق'),
-                                  destructive: true,
-                                } : {
-                                  title: tr('این دسترسی قطع شود؟'),
-                                  description: tr('ردیف پاک نمی‌شود؛ تاریخِ قطع رویش ثبت می‌شود. قطعِ واقعی را در خودِ سرویس انجام دهید.'),
-                                })) revoke(row);
-                              }}
+                              onClick={() => { void confirmRevoke(row); }}
                             >
                               <XCircle className="size-3.5" />
                             </IconButton>
@@ -499,6 +513,17 @@ export function AccessView({ data, focusUser, mailAccounts = false }: {
           renderForm={(edit) => <ServiceFields edit={edit} data={data} />}
         />
       )}
+
+      <GrantDetailsDialog
+        row={detail}
+        serviceName={detail ? serviceName(detail.serviceId) : ''}
+        isMail={detail ? isMailService(detail.serviceId) : false}
+        canManage={data.canManage}
+        history={detail ? data.grants.filter((g) => g.userId === detail.userId && g.serviceId === detail.serviceId && g.id !== detail.id) : []}
+        onClose={() => setDetail(null)}
+        onEdit={(row) => { setDetail(null); openGrant(row); }}
+        onRevoke={(row) => { void confirmRevoke(row); }}
+      />
 
       <GrantDialog
         open={dialogOpen}

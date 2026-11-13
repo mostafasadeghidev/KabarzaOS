@@ -1,5 +1,5 @@
 import { wholeSecondNow } from '@/domain/auth/session';
-import { and, eq, gt, or, sql } from 'drizzle-orm';
+import { and, eq, gt } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, users } from '@/db/schema';
 import { canSignIn, type MemberState } from '@/domain/people/offboarding';
@@ -9,6 +9,7 @@ import {
 } from '@/domain/auth/reset';
 import { checkPasswordPolicy, hashPassword } from '@/domain/auth/password';
 import { mailEnabled, sendMail } from '@/server/mail/transport';
+import { findUserByIdentifier } from '@/server/auth/identify';
 import { getCompany } from '@/server/people/profile-service';
 import { getT } from '@/i18n/server';
 import type { Actor, Role } from '@/domain/access/permissions';
@@ -58,11 +59,14 @@ export async function issueResetToken(userId: number, invite: boolean, now = new
 export async function requestPasswordReset(identifier: string, now = new Date()): Promise<void> {
   const id = identifier.trim().toLowerCase();
   if (id === '') return;
-  const rows = await db.select().from(users).where(or(
-    sql`lower(${users.email}) = ${id}`,
-    sql`lower(${users.username}) = ${id}`,
-  ));
-  const user = rows[0];
+  /*
+   * ایمیلِ شخصی، نامِ کاربری یا نشانیِ صندوقِ شرکتی (۳.۱.۰). ⚠️ اگر با نشانیِ شرکتی
+   * پیدا شد، لینک به **همان صندوقِ شرکتی** می‌رود که کاربر نوشته — صندوقی که خودش
+   * دارد؛ نه به ایمیلِ شخصی که شاید در دسترسش نباشد.
+   */
+  const found = await findUserByIdentifier(id);
+  const user = found?.user;
+  const sendTo = found?.viaCompanyEmail ? id : null;
   if (!user || !canSignIn(user.memberState as MemberState, user.deletedAt !== null)) return;
   if (!(await mailEnabled())) return;
   /**
@@ -79,7 +83,7 @@ export async function requestPasswordReset(identifier: string, now = new Date())
   const token = await issueResetToken(user.id, false, now);
   const t = await getT();
   const mail = resetMailLines({ site: await siteName(), link: resetLink(token) }, t);
-  await sendMail(user.email, mail.subject, mail.body);
+  await sendMail(sendTo ?? user.email, mail.subject, mail.body);
   await db.insert(auditLog).values({
     actorType: 'user', actorId: user.id, action: 'auth.reset_requested', objectType: 'user', objectId: user.id,
   });

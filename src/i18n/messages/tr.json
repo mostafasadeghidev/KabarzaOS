@@ -5032,5 +5032,17 @@
   "بی‌صاحب (صندوقِ مشترک، مثلاً noreply)": "Sahipsiz (ortak posta kutusu, ör. noreply)",
   "حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند و رمزش فقط یک بار به شما نشان داده می‌شود.": "Hesap posta sunucusunda rastgele bir parolayla oluşturulur ve çalışan parolayı \"Erişimlerim\" bölümünde görür. Sahipsiz bir posta kutusunu (ör. noreply) uygulamada kimse görmez ve parolası size yalnızca bir kez gösterilir.",
   "رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه فقط همین یک بار نشان داده می‌شود و در برنامه ذخیره نمی‌شود.": "Mevcut parola geçersiz olur; kullanıldığı her yerde (örneğin SMTP ayarları) yenisini girmeniz gerekir. Yeni parola yalnızca bu kez gösterilir ve uygulamada saklanmaz.",
-  "فقط اعضای فعالی که صندوق ندارند. صندوقِ بی‌صاحب را بعداً هم می‌شود به عضوی وصل کرد.": "Yalnızca posta kutusu olmayan aktif üyeler. Sahipsiz bir posta kutusu daha sonra bir üyeye atanabilir."
+  "فقط اعضای فعالی که صندوق ندارند. صندوقِ بی‌صاحب را بعداً هم می‌شود به عضوی وصل کرد.": "Yalnızca posta kutusu olmayan aktif üyeler. Sahipsiz bir posta kutusu daha sonra bir üyeye atanabilir.",
+  "اولی نشانیِ اصلی است؛ ایمیلِ همهٔ این نشانی‌ها به همین یک صندوق می‌رسد.": "İlki ana adrestir; bunların hepsine gelen e-postalar aynı posta kutusuna düşer.",
+  "ایمیلِ شخصی": "Kişisel e-posta",
+  "ایمیل‌های این شخص": "Bu kişinin e-postaları",
+  "به ایمیلِ شخصی": "Kişisel e-postayı kullan",
+  "به ایمیلِ شرکتی": "Şirket e-postasını kullan",
+  "جای رمز در گاوصندوق": "Parolanın kasadaki yeri",
+  "خالی یعنی همان ایمیلِ شخصی.": "Boş, kişisel e-postanız demektir.",
+  "در حالِ خواندن از سرورِ ایمیل…": "Posta sunucusundan okunuyor…",
+  "ردیف‌های دیگرِ همین سرویس": "Bu hizmetin diğer satırları",
+  "رمزِ تازه ساخته شد؛ با دکمهٔ چشمِ «رمز» ببینید.": "Yeni parola oluşturuldu; \"Parola\" yanındaki göz düğmesiyle görün.",
+  "صندوق‌های قبلیِ این شخص": "Bu kişinin önceki posta kutuları",
+  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Yalnızca @ öncesi kısım, virgülle ayrılmış. Boş = takma ad yok."
 }

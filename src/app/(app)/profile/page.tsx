@@ -75,6 +75,7 @@ export default async function ProfilePage() {
           id: actor.id,
           name: me.name,
           email: me.email,
+          companyEmail: me.companyEmail,
           phone: account.phone,
           username: account.username,
           avatarFileId: account.avatarFileId,

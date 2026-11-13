@@ -1,4 +1,5 @@
 import { wholeSecondNow } from '@/domain/auth/session';
+import { companyEmailsOf } from '@/server/corp-mail/directory';
 import { and, eq, inArray, isNull, or, sql as raw } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, tagRelations, userOffices, userPermissions, userRoles, users } from '@/db/schema';
@@ -122,8 +123,14 @@ export async function listPeople(actor: Actor, role: Role) {
    * دسترسی‌های بیرونیِ بازِ هر نفر — بجِ کارت. بدونِ این، مدیری که همین حالا
    * کسی را off-board کرده هیچ نشانه‌ای نمی‌دید که کاری مانده.
    */
-  const openGrants = await openGrantCounts(actor, peopleRows.map((p) => p.id));
-  const people = peopleRows.map((p) => ({ ...p, openGrants: openGrants.get(p.id) ?? 0 }));
+  const [openGrants, companyEmails] = await Promise.all([
+    openGrantCounts(actor, peopleRows.map((p) => p.id)),
+    // ۳.۱.۰ — نشانیِ صندوقِ شرکتی خودکار از دفترِ دسترسی؛ دستی ثبت نمی‌شود.
+    companyEmailsOf(peopleRows.map((p) => p.id)),
+  ]);
+  const people = peopleRows.map((p) => ({
+    ...p, openGrants: openGrants.get(p.id) ?? 0, companyEmail: companyEmails.get(p.id) ?? null,
+  }));
 
   return {
     people,

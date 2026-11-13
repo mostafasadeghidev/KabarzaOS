@@ -304,7 +304,7 @@ function PersonDialogBody({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor="p-email">{tr("ایمیل")}</FieldLabel>
+              <FieldLabel htmlFor="p-email">{tr("ایمیلِ شخصی")}</FieldLabel>
               <Input
                 id="p-email"
                 name="email"

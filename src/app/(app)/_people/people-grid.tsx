@@ -69,7 +69,7 @@ export function PeopleGrid({
         ? true
         : tab === 'active' ? p.memberState === 'active' : p.memberState !== 'active'))
       // جستجو روی نام، ایمیل **و نامِ کاربری** — همان `name_attr` ِ نسخهٔ قبلی.
-      .filter((p) => (q ? `${p.name} ${p.email} ${p.username ?? ''}`.toLowerCase().includes(q) : true))
+      .filter((p) => (q ? `${p.name} ${p.email} ${p.companyEmail ?? ''} ${p.username ?? ''}`.toLowerCase().includes(q) : true))
       .filter((p) => (officeIds.length === 0 ? true : p.offices.some((o) => officeIds.includes(o.id))));
   }, [people, tab, query, officeIds, section.supportsOffboarding]);
 
