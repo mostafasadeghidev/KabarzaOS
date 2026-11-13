@@ -324,6 +324,8 @@ export const serviceGrants = pgTable('service_grants', {
   appSecretEnc: text('app_secret_enc').notNull().default(''),
   /** تازه‌ترین `receivedAt` که برایش خبرِ ایمیلِ تازه رفت (۲.۶۳.۰). خالی = هنوز هیچ. */
   mailNotifiedAt: ts('mail_notified_at'),
+  /** شمارِ نخوانده‌های صندوقِ ورودی (۳.۲.۰) — بجِ منوی «ایمیل»؛ زمان‌بند و صفحهٔ ایمیل تازه‌اش می‌کنند. */
+  mailUnread: integer('mail_unread').notNull().default(0),
   note: text('note').notNull().default(''),
   grantedAt: ts('granted_at').notNull().defaultNow(),
   grantedBy: fk('granted_by').references(() => users.id, { onDelete: 'set null' }),

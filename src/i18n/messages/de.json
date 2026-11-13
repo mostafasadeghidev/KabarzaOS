@@ -5044,5 +5044,18 @@
   "ردیف‌های دیگرِ همین سرویس": "Weitere Einträge für diesen Dienst",
   "رمزِ تازه ساخته شد؛ با دکمهٔ چشمِ «رمز» ببینید.": "Neues Passwort erstellt; mit dem Augen-Symbol bei „Passwort“ ansehen.",
   "صندوق‌های قبلیِ این شخص": "Frühere Postfächer dieser Person",
-  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Nur der Teil vor dem @, durch Kommas getrennt. Leer = keine Aliase."
+  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Nur der Teil vor dem @, durch Kommas getrennt. Leer = keine Aliase.",
+  "برای ارسالِ ایمیل‌های این برنامه (دعوت، فراموشیِ رمز، اعلان‌ها) همین «ارسال (SMTP)» را با این نامِ کاربری و رمز در «تنظیمات ← اعلان‌ها» بگذارید.": "Um die E-Mails dieser App (Einladungen, Passwort-Zurücksetzen, Benachrichtigungen) zu senden, trage diesen „Ausgang (SMTP)“-Server mit diesem Benutzernamen und Passwort unter Einstellungen → Benachrichtigungen ein.",
+  "بی‌صاحب — کسی در برنامه این صندوق را نمی‌بیند.": "Ohne Besitzer — niemand sieht dieses Postfach in der App.",
+  "تب‌های بیشتر": "Weitere Tabs",
+  "تغییرِ حجم": "Größe ändern",
+  "تنظیم در گوشی، Outlook یا برنامه‌های دیگر": "Einrichtung auf dem Handy, in Outlook oder anderen Apps",
+  "حجم (گیگابایت)": "Größe (GB)",
+  "حجم باید بینِ ۰٫۱ تا ۱۰۰۰ گیگابایت باشد.": "Die Größe muss zwischen 0,1 und 1000 GB liegen.",
+  "حجم ذخیره شد.": "Größe gespeichert.",
+  "در برنامه ذخیره نمی‌شود": "Wird nicht in der App gespeichert",
+  "رمز همان رمزِ صندوق است. اگر ندارید، «رمزِ تازه» بگیرید؛ هر جا با رمزِ قبلی وصل است باید عوض شود.": "Das Passwort ist das Postfach-Passwort. Falls du es nicht hast, erstelle ein neues; alles, was mit dem alten verbunden ist, muss angepasst werden.",
+  "صاحب: {name}": "Besitzer: {name}",
+  "ندارد.": "Keine.",
+  "تغییرِ حجمِ صندوقِ ایمیل": "Postfachgröße geändert"
 }

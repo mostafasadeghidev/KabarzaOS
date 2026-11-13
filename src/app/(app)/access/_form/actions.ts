@@ -197,6 +197,12 @@ export async function resetMailPasswordAction(accountId: string): Promise<Access
   return state.error ? state : { ...state, ...out };
 }
 
+/** حجمِ یک صندوق به گیگابایت (۳.۲.۰). */
+export async function setMailQuotaAction(accountId: string, gb: number): Promise<AccessState> {
+  const { setMailQuota } = await import('@/server/corp-mail/accounts');
+  return runMail((actor) => setMailQuota(actor, accountId, Number(gb)), 'حجم ذخیره نشد.');
+}
+
 /** جزئیاتِ صندوقِ یک ردیفِ دفتر برای مودالِ «دسترسی‌ها» (۳.۱.۰). */
 export async function mailboxOfGrantAction(grantId: number) {
   const { mailboxOfGrant, CorpMailError, corpMailMessage } = await import('@/server/corp-mail/accounts');

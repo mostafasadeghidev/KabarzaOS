@@ -5044,5 +5044,18 @@
   "ردیف‌های دیگرِ همین سرویس": "Bu hizmetin diğer satırları",
   "رمزِ تازه ساخته شد؛ با دکمهٔ چشمِ «رمز» ببینید.": "Yeni parola oluşturuldu; \"Parola\" yanındaki göz düğmesiyle görün.",
   "صندوق‌های قبلیِ این شخص": "Bu kişinin önceki posta kutuları",
-  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Yalnızca @ öncesi kısım, virgülle ayrılmış. Boş = takma ad yok."
+  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Yalnızca @ öncesi kısım, virgülle ayrılmış. Boş = takma ad yok.",
+  "برای ارسالِ ایمیل‌های این برنامه (دعوت، فراموشیِ رمز، اعلان‌ها) همین «ارسال (SMTP)» را با این نامِ کاربری و رمز در «تنظیمات ← اعلان‌ها» بگذارید.": "Bu uygulamanın e-postalarını (davetler, parola sıfırlama, bildirimler) göndermek için bu \"Giden (SMTP)\" sunucusunu bu kullanıcı adı ve parolayla Ayarlar → Bildirimler'e girin.",
+  "بی‌صاحب — کسی در برنامه این صندوق را نمی‌بیند.": "Sahipsiz — bu posta kutusunu uygulamada kimse görmez.",
+  "تب‌های بیشتر": "Diğer sekmeler",
+  "تغییرِ حجم": "Boyutu değiştir",
+  "تنظیم در گوشی، Outlook یا برنامه‌های دیگر": "Telefonda, Outlook'ta veya diğer uygulamalarda kurulum",
+  "حجم (گیگابایت)": "Boyut (GB)",
+  "حجم باید بینِ ۰٫۱ تا ۱۰۰۰ گیگابایت باشد.": "Boyut 0,1 ile 1000 GB arasında olmalı.",
+  "حجم ذخیره شد.": "Boyut kaydedildi.",
+  "در برنامه ذخیره نمی‌شود": "Uygulamada saklanmaz",
+  "رمز همان رمزِ صندوق است. اگر ندارید، «رمزِ تازه» بگیرید؛ هر جا با رمزِ قبلی وصل است باید عوض شود.": "Parola, posta kutusunun parolasıdır. Yoksa yeni parola alın; eskisiyle bağlı her şeyin güncellenmesi gerekir.",
+  "صاحب: {name}": "Sahibi: {name}",
+  "ندارد.": "Yok.",
+  "تغییرِ حجمِ صندوقِ ایمیل": "Posta kutusu boyutu değişti"
 }

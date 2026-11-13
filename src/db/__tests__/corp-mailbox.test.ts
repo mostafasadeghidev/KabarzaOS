@@ -132,12 +132,13 @@ describe('بسته‌پیش‌فرضِ IP', () => {
 });
 
 describe('خبرِ ایمیلِ تازه (۲.۶۳.۰)', () => {
-  it('⚠️ بارِ اول فقط نقطهٔ شروع؛ بعد فقط ایمیل‌های تازهٔ نخوانده؛ بیش از ۳ = یک خبر', async () => {
+  it('⚠️ بارِ اول فقط نقطهٔ شروع؛ بعد هر ایمیلِ تازه (خوانده یا نه)؛ بیش از ۳ = یک خبر؛ شمارِ نخوانده برای بج', async () => {
     const { notifyNewMail } = await import('@/server/corp-mail/mailbox');
     await db.update(serviceGrants).set({ appSecretEnc: seal('app-secret'), mailNotifiedAt: null }).where(eq(serviceGrants.userId, me));
     await db.update(serviceGrants).set({ appSecretEnc: '' }).where(eq(serviceGrants.userId, other));
 
     let inbox: Array<{ id: string; receivedAt: string; subject: string }> = [];
+    let unread = 0;
     const queries: Array<Record<string, unknown>> = [];
     const original = globalThis.fetch;
     vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
@@ -148,6 +149,7 @@ describe('خبرِ ایمیلِ تازه (۲.۶۳.۰)', () => {
           if (name === 'Mailbox/query') return [name, { ids: ['inbox1'] }, tag];
           if (name === 'Email/query') { queries.push(args.filter as Record<string, unknown>); return [name, { ids: inbox.map((m) => m.id) }, tag]; }
           if (name === 'Email/get') return [name, { list: inbox.map((m) => ({ ...m, from: [{ name: 'Ali', email: 'a@x' }] })) }, tag];
+          if (name === 'Mailbox/get') return [name, { list: [{ id: 'inbox1', unreadEmails: unread }] }, tag];
           return ['error', { ['type']: 'unknownMethod' }, tag];
         }),
       });
@@ -161,14 +163,23 @@ describe('خبرِ ایمیلِ تازه (۲.۶۳.۰)', () => {
     expect(sent).toHaveLength(0);
 
     inbox = [{ id: 'n1', receivedAt: '2026-11-11T10:02:00Z', subject: 'سلام' }];
+    unread = 4;
     expect(await notifyNewMail(new Date('2026-11-11T10:05:00Z'), send)).toBe(1);
     expect(sent[0]).toMatchObject({ userId: me, mail: { id: 'n1', from: 'Ali', subject: 'سلام' } });
-    expect(queries.at(-1)).toMatchObject({ inMailbox: 'inbox1', after: '2026-11-11T10:00:00.000Z', notKeyword: '$seen' });
+    // ⚠️ ۳.۲.۰: بی فیلترِ «نخوانده» (ایمیلی که زود باز شده هم خبر می‌شود) و تاریخ بی کسرِ ثانیه.
+    expect(queries.at(-1)).toEqual({ inMailbox: 'inbox1', after: '2026-11-11T10:00:00Z' });
+    const { mailUnreadCount } = await import('@/server/corp-mail/mailbox');
+    expect(await mailUnreadCount(me)).toBe(4);
+
+    // همان ایمیل اگر دوباره در پاسخ بیاید (مرزِ ثانیه)، دوباره خبر نمی‌شود.
+    const before = sent.length;
+    expect(await notifyNewMail(new Date('2026-11-11T10:06:00Z'), send)).toBe(0);
+    expect(sent).toHaveLength(before);
 
     // تیکِ بعد از همان ایمیل جلوتر می‌پرسد، نه دوباره.
-    inbox = Array.from({ length: 5 }, (_, i) => ({ id: `b${i}`, receivedAt: `2026-11-11T10:0${6 + i}:00Z`, subject: `s${i}` }));
+    inbox = Array.from({ length: 5 }, (_, i) => ({ id: `b${i}`, receivedAt: `2026-11-11T10:${String(6 + i).padStart(2, '0')}:00Z`, subject: `s${i}` }));
     await notifyNewMail(new Date('2026-11-11T10:15:00Z'), send);
-    expect(queries.at(-1)).toMatchObject({ after: '2026-11-11T10:02:00.000Z' });
+    expect(queries.at(-1)).toMatchObject({ after: '2026-11-11T10:02:00Z' });
     expect(sent.at(-1)).toMatchObject({ mail: { count: 5 } });
     vi.stubGlobal('fetch', original);
   });

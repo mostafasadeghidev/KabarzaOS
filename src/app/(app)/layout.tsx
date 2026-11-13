@@ -1,6 +1,6 @@
 import { unreadMessageCount } from '@/server/messaging/service';
 import { getCompany } from '@/server/people/profile-service';
-import { mailboxState } from '@/server/corp-mail/mailbox';
+import { mailboxState, mailUnreadCount } from '@/server/corp-mail/mailbox';
 import { redirect } from 'next/navigation';
 import { currentSession } from '@/server/auth';
 import { can, canViewSection, type Permission, type Role, type Section } from '@/domain/access/permissions';
@@ -243,7 +243,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const primaryRole = actor.roles[0];
-  const [bell, system, unreadMessages, showTgNudge, timer, brand, roleTags, avatars, decimals] = await Promise.all([
+  const [bell, system, unreadMessages, showTgNudge, timer, brand, roleTags, avatars, decimals, unreadMail] = await Promise.all([
     listNotifications(actor),
     getSystemConfig(),
     unreadMessageCount(actor),
@@ -261,6 +261,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     avatarsFor([actor.id]),
     // اعشارِ ارزها — «تعداد اعشار» ِ تنظیمات در نمایشِ مبلغ‌ها (۲.۳۰.۲).
     currencyDecimalsList(),
+    // بجِ «ایمیل» (۳.۲.۰) — از پایگاه‌داده، بی درخواست به سرورِ ایمیل.
+    mailUnreadCount(actor.id),
   ]);
   registerCurrencyDecimals(decimals);
 
@@ -288,6 +290,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         locale={session.locale ?? system.defaultLocale}
         pulse={{ enabled: system.pulseEnabled, interval: system.pulseInterval }}
         unreadMessages={unreadMessages}
+        unreadMail={unreadMail}
         onLogout={logout}
         canManageSettings={can(actor, 'settings.manage')}
         onLocaleChange={setLocale}

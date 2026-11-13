@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
  * برگشتن به تب بی‌درنگ یک نبض می‌زند تا عددِ کهنه نماند.
  */
 export function usePulse(intervalSeconds: number, enabled: boolean) {
-  const [counts, setCounts] = useState<{ notif: number; msg: number } | null>(null);
+  const [counts, setCounts] = useState<{ notif: number; msg: number; mail: number } | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -23,8 +23,8 @@ export function usePulse(intervalSeconds: number, enabled: boolean) {
       if (document.visibilityState !== 'visible') return;
       void fetch('/api/pulse')
         .then((r) => (r.ok ? r.json() : null))
-        .then((data: { notif: number; msg: number } | null) => {
-          if (alive && data) setCounts({ notif: data.notif, msg: data.msg });
+        .then((data: { notif: number; msg: number; mail?: number } | null) => {
+          if (alive && data) setCounts({ notif: data.notif, msg: data.msg, mail: data.mail ?? 0 });
         })
         .catch(() => {
           // شکستِ نبض بی‌اهمیت است؛ عددِ فعلی سرِ جایش می‌ماند.

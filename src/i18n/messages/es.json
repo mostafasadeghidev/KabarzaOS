@@ -5044,5 +5044,18 @@
   "ردیف‌های دیگرِ همین سرویس": "Otras filas de este servicio",
   "رمزِ تازه ساخته شد؛ با دکمهٔ چشمِ «رمز» ببینید.": "Contraseña nueva creada; mírala con el ojo junto a «Contraseña».",
   "صندوق‌های قبلیِ این شخص": "Buzones anteriores de esta persona",
-  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Solo la parte antes de @, separada por comas. Vacío = sin alias."
+  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Solo la parte antes de @, separada por comas. Vacío = sin alias.",
+  "برای ارسالِ ایمیل‌های این برنامه (دعوت، فراموشیِ رمز، اعلان‌ها) همین «ارسال (SMTP)» را با این نامِ کاربری و رمز در «تنظیمات ← اعلان‌ها» بگذارید.": "Para enviar los correos de esta aplicación (invitaciones, restablecer contraseña, notificaciones), pon este servidor «Salida (SMTP)» con este usuario y contraseña en Ajustes → Notificaciones.",
+  "بی‌صاحب — کسی در برنامه این صندوق را نمی‌بیند.": "Sin dueño — nadie ve este buzón en la aplicación.",
+  "تب‌های بیشتر": "Más pestañas",
+  "تغییرِ حجم": "Cambiar tamaño",
+  "تنظیم در گوشی، Outlook یا برنامه‌های دیگر": "Configurar en el móvil, Outlook u otras aplicaciones",
+  "حجم (گیگابایت)": "Tamaño (GB)",
+  "حجم باید بینِ ۰٫۱ تا ۱۰۰۰ گیگابایت باشد.": "El tamaño debe estar entre 0,1 y 1000 GB.",
+  "حجم ذخیره شد.": "Tamaño guardado.",
+  "در برنامه ذخیره نمی‌شود": "No se guarda en la aplicación",
+  "رمز همان رمزِ صندوق است. اگر ندارید، «رمزِ تازه» بگیرید؛ هر جا با رمزِ قبلی وصل است باید عوض شود.": "La contraseña es la del buzón. Si no la tienes, genera una nueva; todo lo conectado con la anterior debe actualizarse.",
+  "صاحب: {name}": "Dueño: {name}",
+  "ندارد.": "Ninguna.",
+  "تغییرِ حجمِ صندوقِ ایمیل": "Tamaño del buzón cambiado"
 }

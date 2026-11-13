@@ -4,6 +4,7 @@ import { db, sql } from '../client';
 import { schedulerStamps, serviceGrants, services, userRoles, users } from '../schema';
 import {
   closeMailAccount, createMailAccount, generateMailPassword, linkMailAccount, listMailAccounts, resetMailPassword, setMailAliases,
+  setMailQuota,
 } from '@/server/corp-mail/accounts';
 import { grantAccess, revealGrantSecret, revokeAccess, revokeMany } from '@/server/access/service';
 import type { Actor, Permission } from '@/domain/access/permissions';
@@ -243,5 +244,23 @@ describe('نشانی‌های دیگر در «دسترسی‌های من» (۲.�
     await linkMailAccount(manager, 'e', sara);
     expect(await ownMailAliases(sara)).toEqual(['hi@example.com']);
     expect(await ownMailAliases(gone)).toEqual([]);
+  });
+});
+
+describe('حجمِ صندوق (۳.۲.۰)', () => {
+  it('⚠️ فقط maxDiskQuota عوض می‌شود و سهمیه‌های دیگر دست نمی‌خورند', async () => {
+    const box = accounts.find((a) => a.id === 'e') as unknown as { quotas?: Record<string, number> };
+    box.quotas = { maxDiskQuota: 1, maxEmails: 7 };
+    sent.length = 0;
+    expect(await setMailQuota(manager, 'e', 2.5)).toBe(Math.round(2.5 * 1024 ** 3));
+    const call = sent.find(([n]) => n === 'x:Account/set')![1] as { update: Record<string, { quotas: Record<string, number> }> };
+    expect(call.update.e!.quotas).toEqual({ maxDiskQuota: Math.round(2.5 * 1024 ** 3), maxEmails: 7 });
+  });
+
+  it('⚠️ بیرون از بازه، حسابِ محافظت‌شده و بیننده رد می‌شوند', async () => {
+    await expect(setMailQuota(manager, 'e', 0)).rejects.toMatchObject({ code: 'invalid_quota' });
+    await expect(setMailQuota(manager, 'e', 5000)).rejects.toMatchObject({ code: 'invalid_quota' });
+    await expect(setMailQuota(manager, 'b', 2)).rejects.toMatchObject({ code: 'protected' });
+    await expect(setMailQuota(viewer, 'e', 2)).rejects.toThrow();
   });
 });

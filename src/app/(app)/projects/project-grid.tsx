@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { CardPager, useCardPage } from '@/components/ui/card-pager';
 import { useT } from '@/i18n/client';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OverflowTabs } from '@/components/ui/overflow-tabs';
 import { PageHeader } from '@/components/page-shell';
 import { SearchInput } from '@/components/ui/search-input';
 
@@ -140,26 +141,19 @@ export function ProjectGrid({
         `min-w-0` و پیمایشِ افقی دارند تا جستجو هرگز به ردیفِ بعد هل داده نشود؛
         هنگامِ جستجو تب‌ها کنار می‌روند و کادر سرِ جایش می‌ماند.
 
-        ⚠️ ۲.۶۵.۰: ردیفِ «بی‌شکست» از عرضِ @3xl به بعد، در عرضِ متوسط آخرین تب‌ها را
-        زیرِ کادرِ جستجو می‌برید (تب‌ها پیمایش داشتند ولی دیده نمی‌شد). حالا تب‌ها به
-        اندازهٔ خودشان‌اند و اگر کنارشان جا نباشد، **جستجو** به ردیفِ بعد می‌رود؛
-        فقط وقتی تب‌ها از کلِ عرض بیشترند، پیمایشِ افقی دارند.
+        ⚠️ ۳.۲.۰: تب‌هایی که جا نمی‌شوند زیرِ «بیشتر ▾» می‌روند (`OverflowTabs`) و تبِ
+        فعال همیشه پیداست — نه پیمایشِ افقی، نه رفتن زیرِ جستجو. جستجو فقط وقتی کنارِ
+        نوارِ تب کمتر از ~۲۲rem جا باشد به ردیفِ بعد می‌رود.
       */}
       <div className="flex flex-wrap items-center gap-2">
         {!searching && (
-          // shadcn Tabs — روی صفحهٔ باریک پیمایشِ افقی، به‌جای شکستنِ خط.
-          <div className="scrollbar-none min-w-0 max-w-full overflow-x-auto overflow-y-hidden">
-            <Tabs value={tab} onValueChange={(v) => selectTab(v as typeof tab)}>
-              <TabsList className="w-max">
-                {shownTabs.filter((t) => !t.hidden || t.key === tab).map((t) => (
-                  <TabsTrigger key={t.key} value={t.key} className="flex-none px-3">
-                    {tr(t.label)}
-                    <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{t.count}</Badge>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </div>
+          <OverflowTabs
+            className="min-w-0 flex-1 basis-[22rem]"
+            value={tab}
+            onValueChange={(v) => selectTab(v as typeof tab)}
+            items={shownTabs.filter((t) => !t.hidden || t.key === tab).map((t) => ({ value: t.key, label: tr(t.label), count: t.count }))}
+            renderCount={(n) => <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{n}</Badge>}
+          />
         )}
         <SearchInput
           value={query}

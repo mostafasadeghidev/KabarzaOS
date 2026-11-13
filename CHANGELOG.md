@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.2.0]
+
+### Added
+
+- **Tabs that don't fit go under "More".** On the Projects page and on each project's page, tabs that don't fit the width are collected under a "More ▾" menu, with each tab's count. The selected tab is always shown: picking a hidden tab from the menu brings it into the row and moves another one into the menu. No more sideways scrolling, and tabs no longer slide under the search box.
+- **Unread badge on Email.** The Email menu item shows how many unread emails are in your company inbox. The count is refreshed every few minutes and whenever you open the inbox, and goes down as soon as you read an email.
+- **Mailbox details on the Email accounts page.** Clicking a mailbox opens its details: owner (or no owner), password behind the eye button when it has an owner, other addresses, storage, and the setup guide for phones, Outlook and other apps (IMAP and SMTP server, port, username), including how to use it as the SMTP sender for this app. New password, editing other addresses and opening webmail are available there.
+- **Change a mailbox's storage size.** The size of each mailbox can now be changed (0.1 to 1000 GB) from its details window.
+
+### Fixed
+
+- **New-email notifications never arrived.** Only emails still unread at the five-minute check were announced, so anything already opened in webmail or on a phone was skipped, and in practice no notification was ever sent. Every new email is now announced (in the app, by push and on Telegram), and the same email is never announced twice.
+- **Project page wider than the screen on phones.** The project website addresses pushed the page past the screen width on mobile.
+
 ## [3.1.0]
 
 ### Added
