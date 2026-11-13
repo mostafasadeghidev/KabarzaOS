@@ -155,7 +155,7 @@ describe('ساختن، رمزِ تازه، بستن (۲.۶۱.۰)', () => {
     expect(address).toBe('ali@example.com');
     const secret = credentialOf(sent.find(([n]) => n === 'x:Account/set'), 'n');
     expect(secret).toHaveLength(20);
-    expect(await revealGrantSecret({ ...manager, id: ali }, grantId)).toBe(secret);
+    expect(await revealGrantSecret({ ...manager, id: ali }, grantId!)).toBe(secret);
 
     const logs = await sql`select coalesce(before::text,'') || coalesce(after::text,'') as t from audit_log`;
     expect(logs.some((r) => String(r.t).includes(secret!))).toBe(false);
@@ -173,9 +173,31 @@ describe('ساختن، رمزِ تازه، بستن (۲.۶۱.۰)', () => {
     await grantAccess(manager, { grantId: row!.id, serviceId: svc!.id, userId: ali, accountRef: row!.accountRef, level: 'admin', note: 'ok' });
   });
 
-  it('رمزِ تازه فقط برای صندوقِ وصل، و در همان ردیف', async () => {
+  it('⚠️ صندوقِ بی‌صاحب (۲.۶۷.۰): رمز فقط یک بار برمی‌گردد و هیچ‌جا ذخیره نمی‌شود', async () => {
+    const before = (await openGrants()).length;
+    sent.length = 0;
+    const made = await createMailAccount(manager, { userId: null, local: 'noreply', aliases: [] });
+    expect(made.grantId).toBeNull();
+    expect(made.address).toBe('noreply@example.com');
+    const secret = credentialOf(sent.find(([n]) => n === 'x:Account/set'), 'n');
+    expect(made.password).toBe(secret);
+    expect((await openGrants()).length).toBe(before);
+    const logs = await sql`select coalesce(before::text,'') || coalesce(after::text,'') as t from audit_log`;
+    expect(logs.some((r) => String(r.t).includes(secret!))).toBe(false);
+    // نامِ گرفته و رزرو برای صندوقِ بی‌صاحب هم رد می‌شود.
+    await expect(createMailAccount(manager, { userId: null, local: 'noreply', aliases: [] })).rejects.toMatchObject({ code: 'name_taken' });
+    await expect(createMailAccount(manager, { userId: null, local: 'contact', aliases: [] })).rejects.toMatchObject({ code: 'reserved_name' });
+    // فقط کسی که اعضا را مدیریت می‌کند.
+    await expect(createMailAccount(viewer, { userId: null, local: 'x2', aliases: [] })).rejects.toThrow();
+  });
+
+  it('رمزِ تازه: صندوقِ وصل در همان ردیف؛ صندوقِ بی‌صاحب فقط یک بار برمی‌گردد', async () => {
     const [row] = (await openGrants()).filter((g) => g.userId === ali);
-    await expect(resetMailPassword(manager, 'c')).rejects.toMatchObject({ code: 'not_linked' });
+    sent.length = 0;
+    const loose = await resetMailPassword(manager, 'c');
+    expect(loose.grantId).toBeNull();
+    expect(loose.password).toBe(credentialOf(sent.find(([n]) => n === 'x:Account/set'), 'c'));
+    await expect(resetMailPassword(manager, 'b')).rejects.toMatchObject({ code: 'protected' });
     sent.length = 0;
     await resetMailPassword(manager, row!.externalId);
     const secret = credentialOf(sent.find(([n]) => n === 'x:Account/set'), row!.externalId);

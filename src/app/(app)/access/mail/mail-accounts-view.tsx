@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { avatarFor } from '@/components/user-avatar';
+import { CopyText } from '@/components/copy-text';
 import { useToast } from '@/components/ui/toast';
 import { humanSize } from '@/domain/files/upload';
 import { useT } from '@/i18n/client';
@@ -54,7 +55,7 @@ export function MailAccountsView({ data, createFor = null }: {
   const [editing, setEditing] = useState<MailAccountRow | null>(null);
   const [creating, setCreating] = useState(createFor !== null);
   /** رمزِ تازه یا صندوقِ تازه — مدیر یک بار ببیند و تحویل دهد. */
-  const [handover, setHandover] = useState<{ grantId: number; address: string } | null>(null);
+  const [handover, setHandover] = useState<Handover | null>(null);
 
   if (!data.configured || data.error) {
     return (
@@ -80,7 +81,10 @@ export function MailAccountsView({ data, createFor = null }: {
   const resetPassword = async (account: MailAccountRow) => {
     if (!await confirm({
       title: tr('رمزِ تازه برای {address}؟', { address: account.emailAddress }),
-      description: tr('رمزِ فعلی و همهٔ ورودهای گوشی و Outlook و اتصالِ صندوق در همین برنامه باطل می‌شوند. رمزِ تازه در «دسترسی‌های من» ِ کارمند دیده می‌شود.'),
+      description: account.link
+        ? tr('رمزِ فعلی و همهٔ ورودهای گوشی و Outlook و اتصالِ صندوق در همین برنامه باطل می‌شوند. رمزِ تازه در «دسترسی‌های من» ِ کارمند دیده می‌شود.')
+        // ⚠️ صندوقِ بی‌صاحب: رمز فقط یک بار نشان داده می‌شود — هر جا با رمزِ قبلی وصل است (مثلاً SMTP) باید عوض شود.
+        : tr('رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه فقط همین یک بار نشان داده می‌شود و در برنامه ذخیره نمی‌شود.'),
       confirmLabel: tr('رمزِ تازه'),
       destructive: true,
     })) return;
@@ -88,7 +92,9 @@ export function MailAccountsView({ data, createFor = null }: {
       const result = await resetMailPasswordAction(account.id);
       if (result.error) { show(tr(result.error, result.params), 'error'); return; }
       show(tr('رمزِ تازه ساخته شد.'), 'success');
-      if (result.grantId) setHandover({ grantId: result.grantId, address: account.emailAddress });
+      if (result.grantId || result.password) {
+        setHandover({ grantId: result.grantId ?? null, address: account.emailAddress, password: result.password });
+      }
     });
   };
 
@@ -192,12 +198,13 @@ export function MailAccountsView({ data, createFor = null }: {
                       <DropdownMenuItem onSelect={() => setEditing(account)}>
                         <Pencil className="size-3.5" />{tr('ویرایشِ نشانی‌های دیگر')}
                       </DropdownMenuItem>
-                      {/* ⚠️ رمزِ تازه فقط برای صندوقِ وصل: رمز در ردیفِ دفترِ همان عضو می‌نشیند. */}
-                      {account.link && (
-                        <DropdownMenuItem onSelect={() => { void resetPassword(account); }}>
-                          <KeyRound className="size-3.5" />{tr('رمزِ تازه')}
-                        </DropdownMenuItem>
-                      )}
+                      {/*
+                        رمزِ تازه: صندوقِ وصل ← در دفترِ همان عضو؛ صندوقِ بی‌صاحب ← فقط یک بار
+                        به مدیر نشان داده می‌شود (۲.۶۷.۰). حسابِ محافظت‌شده را سرور رد می‌کند.
+                      */}
+                      <DropdownMenuItem onSelect={() => { void resetPassword(account); }}>
+                        <KeyRound className="size-3.5" />{tr('رمزِ تازه')}
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem variant="destructive" onSelect={() => { void close(account); }}>
                         <Lock className="size-3.5" />{tr('بستنِ صندوق')}
@@ -225,14 +232,23 @@ export function MailAccountsView({ data, createFor = null }: {
   );
 }
 
-/** صندوقِ تازه: عضو، نامِ پیش از @ و aliasهای اختیاری. */
+/** آنچه پس از ساختن یا رمزِ تازه به مدیر نشان داده می‌شود. */
+type Handover = {
+  /** ردیفِ دفترِ عضو — رمز پشتِ چشم؛ `null` برای صندوقِ بی‌صاحب. */
+  grantId: number | null;
+  address: string;
+  /** فقط صندوقِ بی‌صاحب: رمزی که هیچ‌جا ذخیره نشده و همین یک بار دیده می‌شود. */
+  password?: string;
+};
+
+/** صندوقِ تازه: عضو (یا بی‌صاحب)، نامِ پیش از @ و aliasهای اختیاری. */
 function CreateDialog({ open, onOpenChange, domain, people, initialUser, onCreated }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   domain: string;
   people: Array<{ id: number; name: string }>;
   initialUser: number | null;
-  onCreated: (created: { grantId: number; address: string }) => void;
+  onCreated: (created: Handover) => void;
 }) {
   const tr = useT();
   const { show } = useToast();
@@ -248,9 +264,9 @@ function CreateDialog({ open, onOpenChange, domain, people, initialUser, onCreat
     start(async () => {
       const state = await createMailAccountAction({}, form);
       if (state.error) { show(tr(state.error, state.params), 'error'); return; }
-      if (state.grantId && state.address) {
+      if (state.address && (state.grantId || state.password)) {
         show(tr('صندوقِ {address} ساخته شد.', { address: state.address }), 'success');
-        onCreated({ grantId: state.grantId, address: state.address });
+        onCreated({ grantId: state.grantId ?? null, address: state.address, password: state.password });
       }
     });
   };
@@ -263,7 +279,7 @@ function CreateDialog({ open, onOpenChange, domain, people, initialUser, onCreat
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><MailPlus className="size-4" />{tr('صندوقِ تازه')}</DialogTitle>
           <DialogDescription>
-            {tr('حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود.')}
+            {tr('حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند و رمزش فقط یک بار به شما نشان داده می‌شود.')}
           </DialogDescription>
         </DialogHeader>
         <form key={`${open}-${fallbackUser}`} onSubmit={submit} className="grid gap-3">
@@ -271,9 +287,10 @@ function CreateDialog({ open, onOpenChange, domain, people, initialUser, onCreat
             <FieldLabel htmlFor="cm-user">{tr('عضو')}</FieldLabel>
             <SearchableSelect id="cm-user" name="userId" defaultValue={fallbackUser} containerClassName="w-full" required renderMedia={avatarFor(people)}>
               <NativeSelectOption value="">{tr('— انتخاب —')}</NativeSelectOption>
+              <NativeSelectOption value="shared">{tr('بی‌صاحب (صندوقِ مشترک، مثلاً noreply)')}</NativeSelectOption>
               {people.map((p) => <NativeSelectOption key={p.id} value={String(p.id)}>{p.name}</NativeSelectOption>)}
             </SearchableSelect>
-            <FieldDescription>{tr('فقط اعضای فعالی که صندوق ندارند.')}</FieldDescription>
+            <FieldDescription>{tr('فقط اعضای فعالی که صندوق ندارند. صندوقِ بی‌صاحب را بعداً هم می‌شود به عضوی وصل کرد.')}</FieldDescription>
           </Field>
           <Field>
             <FieldLabel htmlFor="cm-local">{tr('نشانی')}</FieldLabel>
@@ -297,16 +314,23 @@ function CreateDialog({ open, onOpenChange, domain, people, initialUser, onCreat
   );
 }
 
-/** پس از ساختن یا رمزِ تازه: نشانی و رمز (پشتِ چشم، با ثبتِ دیدن) برای تحویل. */
-function HandoverDialog({ value, onClose }: { value: { grantId: number; address: string } | null; onClose: () => void }) {
+/**
+ * پس از ساختن یا رمزِ تازه: نشانی و رمز برای تحویل.
+ *  · صندوقِ عضو: رمز پشتِ چشم (با ثبتِ دیدن) از ردیفِ دفتر.
+ *  · صندوقِ بی‌صاحب (۲.۶۷.۰): رمز همین‌جا و فقط همین یک بار — هیچ‌جا ذخیره نشده.
+ */
+function HandoverDialog({ value, onClose }: { value: Handover | null; onClose: () => void }) {
   const tr = useT();
+  const shared = value !== null && value.grantId === null;
   return (
     <Dialog open={value !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{tr('صندوق آماده است')}</DialogTitle>
           <DialogDescription>
-            {tr('کارمند همین نشانی و رمز را در «پروفایل ← دسترسی‌های من» می‌بیند. رمز را از راهِ پیامِ بیرونی نفرستید.')}
+            {shared
+              ? tr('این صندوق صاحبی ندارد و رمزش در برنامه ذخیره نشده. همین حالا کپی‌اش کنید (مثلاً برای تنظیمِ SMTP)؛ بعد از بستنِ این پنجره دوباره دیده نمی‌شود. اگر گم شد، «رمزِ تازه» بگیرید.')
+              : tr('کارمند همین نشانی و رمز را در «پروفایل ← دسترسی‌های من» می‌بیند. رمز را از راهِ پیامِ بیرونی نفرستید.')}
           </DialogDescription>
         </DialogHeader>
         {value && (
@@ -314,7 +338,13 @@ function HandoverDialog({ value, onClose }: { value: { grantId: number; address:
             <dt className="text-muted-foreground">{tr('نشانی')}</dt>
             <dd dir="ltr" className="text-start font-medium">{value.address}</dd>
             <dt className="text-muted-foreground">{tr('رمز')}</dt>
-            <dd><SecretReveal grantId={value.grantId} /></dd>
+            <dd>
+              {value.grantId !== null
+                ? <SecretReveal grantId={value.grantId} />
+                : value.password
+                  ? <span dir="ltr" className="font-mono"><CopyText value={value.password} /></span>
+                  : '—'}
+            </dd>
           </dl>
         )}
         <DialogFooter>

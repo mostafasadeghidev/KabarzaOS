@@ -5027,5 +5027,10 @@
   "پیامِ بینِ اعضا": "Nachrichten zwischen Mitgliedern",
   "پیامِ بینِ اعضا خاموش است.": "Nachrichten zwischen Mitgliedern sind ausgeschaltet.",
   "پیامِ مستقیم بینِ اعضا": "Direktnachrichten zwischen Mitgliedern",
-  "مبلغِ پرداخت‌شده": "Gezahlter Betrag"
+  "مبلغِ پرداخت‌شده": "Gezahlter Betrag",
+  "این صندوق صاحبی ندارد و رمزش در برنامه ذخیره نشده. همین حالا کپی‌اش کنید (مثلاً برای تنظیمِ SMTP)؛ بعد از بستنِ این پنجره دوباره دیده نمی‌شود. اگر گم شد، «رمزِ تازه» بگیرید.": "Dieses Postfach hat keinen Besitzer und sein Passwort wird nicht in der App gespeichert. Kopiere es jetzt (z. B. für die SMTP-Einstellungen); nach dem Schließen dieses Fensters wird es nicht mehr angezeigt. Falls es verloren geht, erstelle ein neues Passwort.",
+  "بی‌صاحب (صندوقِ مشترک، مثلاً noreply)": "Ohne Besitzer (gemeinsames Postfach, z. B. noreply)",
+  "حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند و رمزش فقط یک بار به شما نشان داده می‌شود.": "Das Konto wird auf dem Mailserver mit einem zufälligen Passwort angelegt; der Mitarbeiter sieht das Passwort unter „Meine Zugänge“. Ein Postfach ohne Besitzer (z. B. noreply) sieht niemand in der App, und sein Passwort wird dir nur einmal angezeigt.",
+  "رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه فقط همین یک بار نشان داده می‌شود و در برنامه ذخیره نمی‌شود.": "Das aktuelle Passwort wird ungültig; überall, wo es verwendet wird (z. B. in den SMTP-Einstellungen), musst du das neue eintragen. Das neue Passwort wird nur dieses eine Mal angezeigt und nicht in der App gespeichert.",
+  "فقط اعضای فعالی که صندوق ندارند. صندوقِ بی‌صاحب را بعداً هم می‌شود به عضوی وصل کرد.": "Nur aktive Mitglieder ohne Postfach. Ein Postfach ohne Besitzer kann später einem Mitglied zugewiesen werden."
 }
