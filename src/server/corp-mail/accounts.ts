@@ -185,6 +185,32 @@ async function oneAccount(adminId: string, accountId: string) {
 }
 
 /**
+ * جزئیاتِ صندوقِ یک ردیفِ دفتر (۳.۱.۰) — برای مودالِ «دسترسی‌ها»: نشانیِ اصلی،
+ * نشانی‌های دیگر و حجم، زنده از سرورِ ایمیل. رمز اینجا نیست (همان دکمهٔ چشم).
+ */
+export async function mailboxOfGrant(actor: Actor, grantId: number): Promise<{
+  accountId: string; address: string; aliases: string[]; otherAliases: string[];
+  usedBytes: number; quotaBytes: number | null;
+}> {
+  assertCanManage(actor, 'members');
+  const serviceId = await corpMailServiceId();
+  const [grant] = await db.select({ externalId: serviceGrants.externalId }).from(serviceGrants)
+    .where(and(eq(serviceGrants.id, grantId), eq(serviceGrants.serviceId, serviceId), isNull(serviceGrants.revokedAt)));
+  if (!grant?.externalId) throw new CorpMailError('not_linked');
+  try {
+    const { account, config } = await oneAccount(await sessionAccountId(), grant.externalId);
+    return {
+      accountId: account.id,
+      address: account.emailAddress,
+      aliases: account.aliases.map((a) => `${a}@${config.domain}`),
+      otherAliases: account.otherAliases,
+      usedBytes: account.usedBytes,
+      quotaBytes: account.quotaBytes,
+    };
+  } catch (error) { wrap(error); }
+}
+
+/**
  * جفت‌کردنِ یک حساب با عضو (یا جداکردن با `userId = null`).
  *
  * ⚠️ جداکردن ردیف را **قطع** می‌کند، پاک نمی‌کند — تاریخچهٔ «چه کسی این

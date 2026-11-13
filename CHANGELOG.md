@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.1.0]
+
+### Added
+
+- **Access details window.** Every row under Access can be clicked (or opened with Enter) to see the details: person, service, level, account, password behind the eye button, vault location, note, dates, and the person's other or earlier rows for the same service. Edit and revoke are available there too.
+- **This person's emails.** For a company mailbox, the details window reads the mailbox from the mail server: the main address and all other addresses (aliases), with copy buttons, and the storage used. New password and editing the other addresses can be done right there.
+- **Company email on member cards.** Member cards show the company mailbox address next to the personal email, automatically from the access ledger, so there is nothing to enter by hand. It changes by itself when a mailbox is given or closed. Searching members also matches it. The member form now calls the existing email "Personal email".
+- **Sign in with the company email.** People can sign in with their personal email, their username, or the main address of their company mailbox, with the same password. "Forgot password" also accepts the company address and then sends the link to that mailbox. A closed mailbox is no longer a way in. Other addresses (aliases) of the mailbox are not accepted for signing in.
+- **Notifications to the company email.** Under Profile → Notifications, people with a company mailbox have buttons to send email notifications to the company address or back to the personal one.
+
 ## [3.0.0]
 
 ### Added

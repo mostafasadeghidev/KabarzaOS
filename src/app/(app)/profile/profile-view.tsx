@@ -39,6 +39,8 @@ export interface ProfileData {
   id: number;
   name: string;
   email: string;
+  /** نشانیِ صندوقِ شرکتی (۳.۱.۰) — برای دکمهٔ «اعلان‌ها به ایمیلِ شرکتی». */
+  companyEmail?: string | null;
   phone: string;
   /** راهِ دومِ ورود — فقط نمایش (پورتِ پنلِ حساب). */
   username: string | null;
@@ -104,6 +106,8 @@ export function ProfileView({ data }: { data: ProfileData }) {
   const tz = useTimeZone();
   // ⚠️ یک بار محاسبه می‌شود؛ چهارصد رشته است و هر رندر ساختنش بیهوده است.
   const timezones = useMemo(() => allTimezones(), []);
+  /** فیلدِ ایمیلِ اعلان — دکمه‌های «به ایمیلِ شرکتی/شخصی» مقدارش را می‌گذارند. */
+  const notifyEmailRef = useRef<HTMLInputElement>(null);
   /**
    * ⚠️ تبِ «دسترسی‌های من» فقط وقتی هست که چیزی برای نشان‌دادن باشد؛
    * تبِ همیشه‌خالی فقط سؤال می‌سازد.
@@ -382,12 +386,24 @@ export function ProfileView({ data }: { data: ProfileData }) {
             <Field>
               <FieldLabel htmlFor="n-email">{tr("ایمیلِ اختصاصیِ اعلان")}</FieldLabel>
               <Input
+                ref={notifyEmailRef}
                 id="n-email" name="notifyEmail" type="email" className="num"
                 defaultValue={data.notify.email} placeholder={data.email}
               />
               <FieldDescription>
-                {tr("خالی یعنی همان ایمیلِ ورود.")}
+                {tr("خالی یعنی همان ایمیلِ شخصی.")}
               </FieldDescription>
+              {/* ۳.۱.۰ — یک کلیک برای فرستادنِ اعلان‌ها به صندوقِ شرکتی (یا برگشت به شخصی). */}
+              {data.companyEmail && (
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => { if (notifyEmailRef.current) notifyEmailRef.current.value = data.companyEmail!; }}>
+                    {tr('به ایمیلِ شرکتی')}
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => { if (notifyEmailRef.current) notifyEmailRef.current.value = ''; }}>
+                    {tr('به ایمیلِ شخصی')}
+                  </Button>
+                </div>
+              )}
             </Field>
 
             <fieldset className="grid gap-2">

@@ -5032,5 +5032,17 @@
   "بی‌صاحب (صندوقِ مشترک، مثلاً noreply)": "Sans propriétaire (boîte partagée, ex. noreply)",
   "حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند و رمزش فقط یک بار به شما نشان داده می‌شود.": "Le compte est créé sur le serveur de messagerie avec un mot de passe aléatoire, que l’employé voit dans « Mes accès ». Une boîte sans propriétaire (ex. noreply) n’est visible par personne dans l’application et son mot de passe ne vous est montré qu’une fois.",
   "رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه فقط همین یک بار نشان داده می‌شود و در برنامه ذخیره نمی‌شود.": "Le mot de passe actuel cesse de fonctionner ; partout où il est utilisé (par exemple les réglages SMTP), saisissez le nouveau. Le nouveau mot de passe n’est affiché qu’une seule fois et n’est pas enregistré dans l’application.",
-  "فقط اعضای فعالی که صندوق ندارند. صندوقِ بی‌صاحب را بعداً هم می‌شود به عضوی وصل کرد.": "Seulement les membres actifs sans boîte. Une boîte sans propriétaire peut être attribuée à un membre plus tard."
+  "فقط اعضای فعالی که صندوق ندارند. صندوقِ بی‌صاحب را بعداً هم می‌شود به عضوی وصل کرد.": "Seulement les membres actifs sans boîte. Une boîte sans propriétaire peut être attribuée à un membre plus tard.",
+  "اولی نشانیِ اصلی است؛ ایمیلِ همهٔ این نشانی‌ها به همین یک صندوق می‌رسد.": "La première est l’adresse principale ; les e-mails vers toutes ces adresses arrivent dans la même boîte.",
+  "ایمیلِ شخصی": "E-mail personnel",
+  "ایمیل‌های این شخص": "E-mails de cette personne",
+  "به ایمیلِ شخصی": "Utiliser l’e-mail personnel",
+  "به ایمیلِ شرکتی": "Utiliser l’e-mail professionnel",
+  "جای رمز در گاوصندوق": "Emplacement du mot de passe dans le coffre",
+  "خالی یعنی همان ایمیلِ شخصی.": "Vide signifie votre e-mail personnel.",
+  "در حالِ خواندن از سرورِ ایمیل…": "Lecture depuis le serveur de messagerie…",
+  "ردیف‌های دیگرِ همین سرویس": "Autres lignes pour ce service",
+  "رمزِ تازه ساخته شد؛ با دکمهٔ چشمِ «رمز» ببینید.": "Nouveau mot de passe créé ; affichez-le avec l’œil à côté de « Mot de passe ».",
+  "صندوق‌های قبلیِ این شخص": "Boîtes précédentes de cette personne",
+  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Uniquement la partie avant @, séparée par des virgules. Vide = aucun alias."
 }

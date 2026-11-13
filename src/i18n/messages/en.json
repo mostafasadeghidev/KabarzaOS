@@ -5032,5 +5032,17 @@
   "بی‌صاحب (صندوقِ مشترک، مثلاً noreply)": "No owner (shared mailbox, e.g. noreply)",
   "حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند و رمزش فقط یک بار به شما نشان داده می‌شود.": "The account is created on the mail server with a random password, and the employee sees the password in \"My access\". A mailbox with no owner (e.g. noreply) isn't shown to anyone in the app, and its password is shown to you only once.",
   "رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه فقط همین یک بار نشان داده می‌شود و در برنامه ذخیره نمی‌شود.": "The current password stops working; wherever it's used (for example the SMTP settings) you need to enter the new one. The new password is shown only this once and isn't stored in the app.",
-  "فقط اعضای فعالی که صندوق ندارند. صندوقِ بی‌صاحب را بعداً هم می‌شود به عضوی وصل کرد.": "Only active members without a mailbox. A mailbox with no owner can be assigned to a member later."
+  "فقط اعضای فعالی که صندوق ندارند. صندوقِ بی‌صاحب را بعداً هم می‌شود به عضوی وصل کرد.": "Only active members without a mailbox. A mailbox with no owner can be assigned to a member later.",
+  "اولی نشانیِ اصلی است؛ ایمیلِ همهٔ این نشانی‌ها به همین یک صندوق می‌رسد.": "The first is the main address; mail to all of these arrives in the same mailbox.",
+  "ایمیلِ شخصی": "Personal email",
+  "ایمیل‌های این شخص": "This person's emails",
+  "به ایمیلِ شخصی": "Use personal email",
+  "به ایمیلِ شرکتی": "Use company email",
+  "جای رمز در گاوصندوق": "Where the password is kept in the vault",
+  "خالی یعنی همان ایمیلِ شخصی.": "Empty means your personal email.",
+  "در حالِ خواندن از سرورِ ایمیل…": "Reading from the mail server…",
+  "ردیف‌های دیگرِ همین سرویس": "Other rows for this service",
+  "رمزِ تازه ساخته شد؛ با دکمهٔ چشمِ «رمز» ببینید.": "New password created; view it with the eye button next to \"Password\".",
+  "صندوق‌های قبلیِ این شخص": "This person's earlier mailboxes",
+  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Only the part before @, separated by commas. Empty = no aliases."
 }

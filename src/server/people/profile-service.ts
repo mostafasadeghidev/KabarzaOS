@@ -1,4 +1,5 @@
 import { wholeSecondNow } from '@/domain/auth/session';
+import { companyEmailsOf } from '@/server/corp-mail/directory';
 import { randomBytes } from 'node:crypto';
 
 import { normalizePrefs } from '@/domain/telegram/prefs';
@@ -70,6 +71,8 @@ export async function getMyProfile(actor: Actor) {
 
   return {
     ...me,
+    /** نشانیِ صندوقِ شرکتی (۳.۱.۰) — برای دکمهٔ «اعلان‌ها به ایمیلِ شرکتی». */
+    companyEmail: (await companyEmailsOf([actor.id])).get(actor.id) ?? null,
     bank,
     hasBank: hasBankInfo(bank),
     telegram: telegramState({ botConfigured: Boolean(await botToken()), chatId: me.telegramChatId }),

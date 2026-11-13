@@ -197,6 +197,17 @@ export async function resetMailPasswordAction(accountId: string): Promise<Access
   return state.error ? state : { ...state, ...out };
 }
 
+/** جزئیاتِ صندوقِ یک ردیفِ دفتر برای مودالِ «دسترسی‌ها» (۳.۱.۰). */
+export async function mailboxOfGrantAction(grantId: number) {
+  const { mailboxOfGrant, CorpMailError, corpMailMessage } = await import('@/server/corp-mail/accounts');
+  try {
+    return { ok: true as const, mailbox: await mailboxOfGrant(await requireActor(), grantId) };
+  } catch (error) {
+    if (error instanceof CorpMailError) return { ok: false as const, error: corpMailMessage(error.code, error.detail), params: { name: error.detail } };
+    return { ok: false as const, error: explain(error, 'صندوق خوانده نشد.'), params: {} as Record<string, string> };
+  }
+}
+
 /** بستنِ صندوق: رمزِ نامعلوم + aliasهای خاموش؛ ایمیل‌ها می‌مانند. */
 export async function closeMailAccountAction(accountId: string): Promise<AccessState> {
   const { closeMailAccount } = await import('@/server/corp-mail/accounts');

@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import {
-  Building2, Eye, KeyRound, Lock, Mail, MoreVertical, Phone, RotateCcw, Sprout, Trash2, Wallet, XCircle,
+  Briefcase, Building2, Eye, KeyRound, Lock, Mail, MoreVertical, Phone, RotateCcw, Sprout, Trash2, Wallet, XCircle,
 } from 'lucide-react';
 import {
   removePersonAction, setPersonPasswordAction, setStateAction, type PasswordState,
@@ -52,6 +52,8 @@ export interface PersonView {
   privateAccess: boolean;
   /** دسترسی‌های بیرونیِ بازِ این شخص — دفترِ `/access`. */
   openGrants: number;
+  /** نشانیِ صندوقِ شرکتی (۳.۱.۰) — خودکار از دفترِ دسترسی؛ null یعنی ندارد. */
+  companyEmail?: string | null;
   offices: Array<{ id: number; name: string; manages: boolean }>;
   tags: Array<{ id: number; name: string; color: string | null }>;
 }
@@ -298,11 +300,21 @@ export function PersonCard({
         </div>
 
         <dl className="grid gap-1 text-xs text-muted-foreground">
+          {/*
+            ۳.۱.۰ — دو ایمیل: شخصی (همان ایمیلِ ورود و اعلان) و شرکتی (خودکار از دفترِ
+            دسترسی؛ با دادن یا بستنِ صندوق خودش عوض می‌شود). با هر دو می‌شود وارد شد.
+          */}
           <div className="flex items-center gap-1.5">
-            <Mail className="size-3" />
+            <Hint label={tr('ایمیلِ شخصی')}><Mail className="size-3 shrink-0" /></Hint>
             {/* کلیک = کپی (۲.۵۲.۰) */}
             <dd className="num min-w-0 truncate"><CopyText value={person.email} className="max-w-full truncate" /></dd>
           </div>
+          {person.companyEmail && (
+            <div className="flex items-center gap-1.5">
+              <Hint label={tr('ایمیلِ شرکتی')}><Briefcase className="size-3 shrink-0" /></Hint>
+              <dd className="num min-w-0 truncate"><CopyText value={person.companyEmail} className="max-w-full truncate" /></dd>
+            </div>
+          )}
           <div className="flex items-center gap-1.5">
             <Phone className="size-3" />
             <dd className="num">{person.phone ? <CopyText value={person.phone} /> : '—'}</dd>

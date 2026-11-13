@@ -5032,5 +5032,17 @@
   "بی‌صاحب (صندوقِ مشترک، مثلاً noreply)": "Sem dono (caixa compartilhada, ex. noreply)",
   "حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند و رمزش فقط یک بار به شما نشان داده می‌شود.": "A conta é criada no servidor de e-mail com uma senha aleatória, que o funcionário vê em \"Meus acessos\". Uma caixa sem dono (ex. noreply) não é vista por ninguém no aplicativo, e a senha é mostrada a você só uma vez.",
   "رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه فقط همین یک بار نشان داده می‌شود و در برنامه ذخیره نمی‌شود.": "A senha atual deixa de funcionar; onde ela for usada (por exemplo nas configurações SMTP) é preciso colocar a nova. A nova senha é mostrada só desta vez e não é guardada no aplicativo.",
-  "فقط اعضای فعالی که صندوق ندارند. صندوقِ بی‌صاحب را بعداً هم می‌شود به عضوی وصل کرد.": "Só membros ativos sem caixa. Uma caixa sem dono pode ser atribuída a um membro depois."
+  "فقط اعضای فعالی که صندوق ندارند. صندوقِ بی‌صاحب را بعداً هم می‌شود به عضوی وصل کرد.": "Só membros ativos sem caixa. Uma caixa sem dono pode ser atribuída a um membro depois.",
+  "اولی نشانیِ اصلی است؛ ایمیلِ همهٔ این نشانی‌ها به همین یک صندوق می‌رسد.": "A primeira é o endereço principal; o e-mail para todos estes chega à mesma caixa.",
+  "ایمیلِ شخصی": "E-mail pessoal",
+  "ایمیل‌های این شخص": "E-mails desta pessoa",
+  "به ایمیلِ شخصی": "Usar e-mail pessoal",
+  "به ایمیلِ شرکتی": "Usar e-mail da empresa",
+  "جای رمز در گاوصندوق": "Onde a senha está no cofre",
+  "خالی یعنی همان ایمیلِ شخصی.": "Vazio significa seu e-mail pessoal.",
+  "در حالِ خواندن از سرورِ ایمیل…": "Lendo do servidor de e-mail…",
+  "ردیف‌های دیگرِ همین سرویس": "Outras linhas deste serviço",
+  "رمزِ تازه ساخته شد؛ با دکمهٔ چشمِ «رمز» ببینید.": "Nova senha criada; veja com o olho ao lado de \"Senha\".",
+  "صندوق‌های قبلیِ این شخص": "Caixas anteriores desta pessoa",
+  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Só a parte antes do @, separada por vírgulas. Vazio = sem aliases."
 }
