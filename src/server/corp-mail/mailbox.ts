@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, eq, isNull, ne } from 'drizzle-orm';
+import { and, eq, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, serviceGrants, services, users } from '@/db/schema';
 import type { Actor } from '@/domain/access/permissions';
@@ -223,6 +223,9 @@ export async function listMail(actor: Actor, opts: { folderId?: string; position
       const rb = b.role ? ROLE_ORDER.indexOf(b.role) : -1;
       return (ra === -1 ? 99 : ra) - (rb === -1 ? 99 : rb) || a.name.localeCompare(b.name);
     });
+  // بجِ منو همان عددی را بگیرد که صفحه نشان می‌دهد (۳.۲.۰).
+  const inbox = folders.find((f) => f.role === 'inbox');
+  if (inbox) await setUnread(c.grantId, inbox.unread);
   const folder = folders.find((f) => f.id === opts.folderId) ?? folders.find((f) => f.role === 'inbox') ?? folders[0];
   if (!folder) return { folders, folder: null, items: [] as MailListItem[], total: 0, position: 0 };
 
@@ -282,6 +285,9 @@ export async function readMail(actor: Actor, emailId: string): Promise<MailMessa
   if (!keywords.$seen) {
     // علامتِ خوانده‌شده — شکستش نباید خواندن را بشکند.
     await call(c, [['Email/set', { accountId: c.accountId, update: { [emailId]: { 'keywords/$seen': true } } }, 's']]).catch(() => undefined);
+    // بج بی‌درنگ یکی کم شود؛ عددِ دقیق را زمان‌بند و فهرستِ صندوق دوباره می‌گذارند.
+    await db.update(serviceGrants).set({ mailUnread: sql`greatest(${serviceGrants.mailUnread} - 1, 0)` })
+      .where(eq(serviceGrants.id, c.grantId));
   }
 
   return {
@@ -346,23 +352,31 @@ const MAX_SINGLE = 3;
 export interface NewMail { id: string; from: string; subject: string; receivedAt: string }
 
 /**
- * ایمیل‌های **نخوانده‌ای** که پس از `since` در صندوقِ ورودی رسیده‌اند — با کلیدِ برنامه.
+ * ایمیل‌هایی که پس از `since` در صندوقِ ورودی رسیده‌اند، و شمارِ نخوانده‌های صندوق — با کلیدِ برنامه.
  * ⚠️ بی‌گارد؛ فقط زمان‌بند صدایش می‌زند و هر صندوق با کلیدِ خودِ همان کارمند خوانده می‌شود.
+ *
+ * ⚠️ ۳.۲.۰: پیش از این فقط ایمیلِ «نخوانده» خبر می‌شد. ایمیلی که کاربر پیش از بررسیِ
+ * ۵ دقیقه‌ای در وب‌میل یا گوشی باز کرده بود هرگز خبری نداشت — و در عمل هیچ خبری نرسید.
+ * حالا هر ایمیلِ تازه خبر می‌شود. تاریخ بی کسرِ ثانیه فرستاده می‌شود (قالبِ ساده‌ترِ
+ * UTCDate) و «بعد از» در کد هم سخت سنجیده می‌شود تا یک ایمیل دو بار خبر نشود.
  */
-async function newInboxMail(auth: JmapAuth, since: Date): Promise<{ inboxId: string; items: NewMail[] }> {
+async function newInboxMail(auth: JmapAuth, since: Date): Promise<{ inboxId: string; items: NewMail[]; unread: number }> {
   const accountId = await sessionAccountId(auth, 'urn:ietf:params:jmap:mail');
   const r1 = await jmapCall([['Mailbox/query', { accountId, filter: { role: 'inbox' } }, 'm']], { auth, using: USING_MAIL });
   const inboxId = (result<{ ids?: string[] }>(r1, 'm').ids ?? [])[0];
-  if (!inboxId) return { inboxId: '', items: [] };
+  if (!inboxId) return { inboxId: '', items: [], unread: 0 };
+  const after = new Date(Math.floor(since.getTime() / 1000) * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
   const r2 = await jmapCall([
     ['Email/query', {
-      accountId, filter: { inMailbox: inboxId, after: since.toISOString(), notKeyword: '$seen' },
+      accountId, filter: { inMailbox: inboxId, after },
       sort: [{ property: 'receivedAt', isAscending: false }], limit: 20,
     }, 'q'],
     ['Email/get', {
       accountId, '#ids': { resultOf: 'q', name: 'Email/query', path: '/ids' }, properties: ['from', 'subject', 'receivedAt'],
     }, 'g'],
+    ['Mailbox/get', { accountId, ids: [inboxId], properties: ['unreadEmails'] }, 'b'],
   ], { auth, using: USING_MAIL });
+  const unread = Number((result<{ list?: Array<{ unreadEmails?: number }> }>(r2, 'b').list ?? [])[0]?.unreadEmails) || 0;
   const items = (result<{ list?: Array<Record<string, unknown>> }>(r2, 'g').list ?? []).map((e) => {
     const from = addresses(e.from)[0];
     return {
@@ -371,8 +385,28 @@ async function newInboxMail(auth: JmapAuth, since: Date): Promise<{ inboxId: str
       subject: String(e.subject ?? '').slice(0, 200),
       receivedAt: String(e.receivedAt ?? ''),
     };
-  }).filter((m) => m.receivedAt);
-  return { inboxId, items };
+  }).filter((m) => m.receivedAt && new Date(m.receivedAt).getTime() > since.getTime());
+  return { inboxId, items, unread };
+}
+
+/** شمارِ نخوانده‌ها برای بج — فقط وقتی عوض شده بنویسد. */
+async function setUnread(grantId: number, n: number) {
+  await db.update(serviceGrants).set({ mailUnread: Math.max(0, Math.trunc(n)) })
+    .where(and(eq(serviceGrants.id, grantId), ne(serviceGrants.mailUnread, Math.max(0, Math.trunc(n)))));
+}
+
+/**
+ * بجِ منوی «ایمیل» (۳.۲.۰) — از پایگاه‌داده، بی درخواست به سرورِ ایمیل (هر صفحه و هر نبض).
+ */
+export async function mailUnreadCount(userId: number): Promise<number> {
+  const [row] = await db.select({ n: sql<number>`coalesce(sum(${serviceGrants.mailUnread}), 0)::int` })
+    .from(serviceGrants)
+    .innerJoin(services, eq(services.id, serviceGrants.serviceId))
+    .where(and(
+      eq(serviceGrants.userId, userId), isNull(serviceGrants.revokedAt), eq(services.provider, 'stalwart'),
+      ne(serviceGrants.appSecretEnc, ''),
+    ));
+  return Number(row?.n ?? 0);
 }
 
 /**
@@ -405,7 +439,8 @@ export async function notifyNewMail(now: Date, send: (userId: number, mail: NewM
     const secret = openSecret(row.appSecretEnc);
     if (!secret) continue;
     try {
-      const { inboxId, items } = await newInboxMail({ kind: 'basic', user: row.address, password: secret }, row.notifiedAt);
+      const { inboxId, items, unread } = await newInboxMail({ kind: 'basic', user: row.address, password: secret }, row.notifiedAt);
+      await setUnread(row.id, unread);
       if (items.length === 0) continue;
       const newest = items.reduce((max, m) => (m.receivedAt > max ? m.receivedAt : max), items[0]!.receivedAt);
       // ⚠️ پیش از فرستادن ثبت می‌شود: اگر فرستادن شکست، تیکِ بعدی همان را دوباره نمی‌فرستد.

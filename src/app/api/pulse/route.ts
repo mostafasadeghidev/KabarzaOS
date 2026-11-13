@@ -3,6 +3,7 @@ import { db } from '@/db/client';
 import { notifications } from '@/db/schema';
 import { routeActor } from '@/server/auth';
 import { getSystemConfig } from '@/server/settings/system-service';
+import { mailUnreadCount } from '@/server/corp-mail/mailbox';
 
 /**
  * نبضِ زنده — پورتِ `ajax_pulse()`.
@@ -16,12 +17,12 @@ import { getSystemConfig } from '@/server/settings/system-service';
 export async function GET() {
   // عضوِ سابقِ «فقط مالی» هم اعلانِ پرداختش را می‌گیرد.
   const actor = await routeActor({ allowOffboarded: true });
-  if (!actor) return Response.json({ notif: 0, msg: 0 });
+  if (!actor) return Response.json({ notif: 0, msg: 0, mail: 0 });
 
   const system = await getSystemConfig();
-  if (!system.pulseEnabled) return Response.json({ notif: 0, msg: 0, off: true });
+  if (!system.pulseEnabled) return Response.json({ notif: 0, msg: 0, mail: 0, off: true });
 
-  const [notif, msg] = await Promise.all([
+  const [notif, msg, mail] = await Promise.all([
     db.select({ n: sql<number>`count(*)::int` })
       .from(notifications)
       .where(and(eq(notifications.userId, actor.id), eq(notifications.isRead, false))),
@@ -37,10 +38,13 @@ export async function GET() {
         and m.from_user_id <> ${actor.id}
       where tu.user_id = ${actor.id}
     `),
+    // ۳.۲.۰ — نخوانده‌های صندوقِ شرکتی، از پایگاه‌داده (زمان‌بند تازه‌اش می‌کند).
+    mailUnreadCount(actor.id),
   ]);
 
   return Response.json({
     notif: notif[0]?.n ?? 0,
     msg: Number((msg as unknown as Array<{ n: number }>)[0]?.n ?? 0),
+    mail,
   });
 }

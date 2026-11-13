@@ -22,7 +22,7 @@ import type { ReviewFormOptions } from './review-item-composer';
 import { MyMoneyTab, type MyMoneyData } from './my-money-tab';
 import { MyBidTab, type MyBidData } from './my-bid-tab';
 import { useT } from '@/i18n/client';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OverflowTabs } from '@/components/ui/overflow-tabs';
 import { SectionHeader, TabPanel } from '@/components/page-shell';
 import { Separator } from '@/components/ui/separator';
 
@@ -232,28 +232,21 @@ export function ProjectTabs({
 
   return (
     <div className="grid grid-cols-1 gap-4">
-      <Tabs value={tab} onValueChange={(v) => selectTab(v as typeof tab)}>
-        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
-        <div className="overflow-x-auto pb-1.5">
-          <TabsList variant="line" className="w-max">
-            {tabs.map((t) => (
-              <TabsTrigger key={t.key} value={t.key} className="flex-none">
-                {tr(t.label)}
-                {/*
-                  ⚠️ فاصله با `gap` روی خودِ دکمه، نه با حاشیهٔ منطقیِ نشان:
-                  حاشیه در راست‌به‌چپ به همان سمتی می‌افتاد که متن است و عدد
-                  عملاً به حرفِ آخر می‌چسبید («تسک‌ها۴»). `gap` جهت‌مستقل است.
-                */}
-                {t.badge !== undefined && t.badge > 0 && (
-                  <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">
-                    {t.badge}
-                  </span>
-                )}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
+      {/*
+        ۳.۲.۰ — تب‌هایی که جا نمی‌شوند زیرِ «بیشتر ▾» می‌روند و تبِ فعال همیشه پیداست
+        (به‌جای پیمایشِ افقی). `pb-1.5` جای خطِ زیرِ تبِ فعال (variant=line) است.
+        ⚠️ عدد با `gap` ِ خودِ دکمه فاصله می‌گیرد، نه حاشیهٔ منطقی («تسک‌ها۴» نشود).
+      */}
+      <OverflowTabs
+        className="pb-1.5"
+        variant="line"
+        value={tab}
+        onValueChange={(v) => selectTab(v as typeof tab)}
+        items={tabs.map((t) => ({ value: t.key, label: tr(t.label), count: t.badge !== undefined && t.badge > 0 ? t.badge : undefined }))}
+        renderCount={(n) => (
+          <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">{n}</span>
+        )}
+      />
 
       {/*
         ⚠️ قاعدهٔ عرض یک‌جا و کنارِ خودِ تب نوشته می‌شود: جدول و داده

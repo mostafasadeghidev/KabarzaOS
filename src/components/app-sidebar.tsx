@@ -102,11 +102,14 @@ function NavGroup({
   items,
   pathname,
   unread,
+  unreadMail = 0,
 }: {
   label: string;
   items: NavItem[];
   pathname: string;
   unread: number;
+  /** نخوانده‌های صندوقِ ایمیلِ شرکتی (۳.۲.۰). */
+  unreadMail?: number;
 }) {
   const t = useT();
   const { state, isMobile } = useSidebar();
@@ -168,6 +171,11 @@ function NavGroup({
                             <LiveCount initial={unread} live={null} />
                           </Badge>
                         )}
+                        {item.icon === 'mail' && unreadMail > 0 && (
+                          <Badge className="ms-auto h-4 min-w-4 justify-center px-1 py-0 text-[10px]">
+                            <LiveCount initial={unreadMail} live={null} />
+                          </Badge>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -191,6 +199,7 @@ export function AppSidebar({
   locale,
   pulse,
   unreadMessages,
+  unreadMail = 0,
   onLogout,
   canManageSettings,
   onLocaleChange,
@@ -215,6 +224,8 @@ export function AppSidebar({
   pulse: { enabled: boolean; interval: number };
   /** شمارِ اولیهٔ پیامِ خوانده‌نشده از سرور؛ نبض تازه‌اش می‌کند. */
   unreadMessages: number;
+  /** نخوانده‌های صندوقِ ایمیلِ شرکتی (۳.۲.۰) — مقدارِ اولیه؛ نبض تازه‌اش می‌کند. */
+  unreadMail?: number;
   onLogout: () => void;
   canManageSettings?: boolean;
   onLocaleChange: (locale: Locale) => void | Promise<void>;
@@ -250,6 +261,8 @@ export function AppSidebar({
    */
   const live = usePulse(pulse.interval, pulse.enabled);
   const unread = pathname.startsWith('/messages') ? 0 : (live?.msg ?? unreadMessages);
+  // ⚠️ برخلافِ پیام‌ها روی صفحهٔ ایمیل هم دیده می‌شود: آنجا عددِ خودِ صندوق است و با خواندن کم می‌شود.
+  const unreadMailCount = live?.mail ?? unreadMail;
   const groups = (['operations', 'data'] as const)
     .map((key) => ({ key, items: items.filter((i) => i.group === key) }))
     .filter((g) => g.items.length > 0);
@@ -305,6 +318,7 @@ export function AppSidebar({
             items={group.items}
             pathname={pathname}
             unread={unread}
+            unreadMail={unreadMailCount}
           />
         ))}
       </SidebarContent>

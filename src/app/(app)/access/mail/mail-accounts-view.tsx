@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { AtSign, KeyRound, Lock, Mail, MailPlus, MoreHorizontal, Pencil, Sparkles } from 'lucide-react';
+import { AtSign, ExternalLink, KeyRound, Lock, Mail, MailPlus, MoreHorizontal, Pencil, Smartphone, Sparkles } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -29,6 +29,7 @@ import { useT } from '@/i18n/client';
 import type { MailAccountRow, MailAccountsView as Data } from '@/server/corp-mail/accounts';
 import {
   closeMailAccountAction, createMailAccountAction, linkMailAccountAction, resetMailPasswordAction, setMailAliasesAction,
+  setMailQuotaAction,
 } from '../_form/actions';
 
 /**
@@ -53,6 +54,8 @@ export function MailAccountsView({ data, createFor = null }: {
   const confirm = useConfirm();
   const [pending, start] = useTransition();
   const [editing, setEditing] = useState<MailAccountRow | null>(null);
+  /** صندوقی که پنجرهٔ جزئیاتش باز است (۳.۲.۰) — با کلیک روی ردیف. */
+  const [detail, setDetail] = useState<MailAccountRow | null>(null);
   const [creating, setCreating] = useState(createFor !== null);
   /** رمزِ تازه یا صندوقِ تازه — مدیر یک بار ببیند و تحویل دهد. */
   const [handover, setHandover] = useState<Handover | null>(null);
@@ -142,7 +145,14 @@ export function MailAccountsView({ data, createFor = null }: {
             const suggested = account.suggestedUserId !== null
               ? data.people.find((p) => p.id === account.suggestedUserId) : null;
             return (
-              <TableRow key={account.id}>
+              // ۳.۲.۰ — کلیک روی ردیف = جزئیات و راهنمای اتصال؛ انتخابگر و منو کلیکِ خودشان را دارند.
+              <TableRow
+                key={account.id}
+                className="cursor-pointer"
+                tabIndex={0}
+                onClick={() => setDetail(account)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) setDetail(account); }}
+              >
                 <TableCell>
                   <div className="font-medium" dir="ltr">{account.emailAddress}</div>
                   {account.description && <div className="text-xs text-muted-foreground">{account.description}</div>}
@@ -158,7 +168,7 @@ export function MailAccountsView({ data, createFor = null }: {
                   {humanSize(account.usedBytes, tr)}
                   {account.quotaBytes ? <span className="text-muted-foreground"> / {humanSize(account.quotaBytes, tr)}</span> : null}
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <div className="grid gap-1">
                     <SearchableSelect
                       value={account.link ? String(account.link.userId) : ''}
@@ -187,7 +197,7 @@ export function MailAccountsView({ data, createFor = null }: {
                     )}
                   </div>
                 </TableCell>
-                <TableActionsCell>
+                <TableActionsCell onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <IconButton variant="ghost" size="icon-sm" label={tr('کارهای این صندوق')} disabled={pending}>
@@ -219,6 +229,14 @@ export function MailAccountsView({ data, createFor = null }: {
       </Table>
 
       <AliasDialog account={editing} domain={data.domain} onClose={() => setEditing(null)} />
+      <MailboxDetailsDialog
+        account={detail}
+        domain={data.domain}
+        setup={data.setup}
+        onClose={() => setDetail(null)}
+        onEditAliases={(a) => { setDetail(null); setEditing(a); }}
+        onNewPassword={(a) => { setDetail(null); void resetPassword(a); }}
+      />
       <CreateDialog
         open={creating}
         onOpenChange={setCreating}
@@ -352,6 +370,140 @@ function HandoverDialog({ value, onClose }: { value: Handover | null; onClose: (
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * جزئیاتِ یک صندوق (۳.۲.۰): نشانی‌ها، صاحب، حجم و راهنمای اتصال در گوشی، Outlook یا
+ * SMTP ِ برنامه‌های دیگر — همان راهنمای «دسترسی‌های من» ِ کارمند.
+ *
+ * ⚠️ رمز: صندوقِ وصل‌شده رمزش را در دفترِ صاحبش دارد (دکمهٔ چشم). صندوقِ بی‌صاحب رمزی
+ * در برنامه ندارد؛ اگر گم شده، «رمزِ تازه» یک بار نشانش می‌دهد.
+ */
+function MailboxDetailsDialog({ account, domain, setup, onClose, onEditAliases, onNewPassword }: {
+  account: MailAccountRow | null;
+  domain: string;
+  setup: Data['setup'];
+  onClose: () => void;
+  onEditAliases: (account: MailAccountRow) => void;
+  onNewPassword: (account: MailAccountRow) => void;
+}) {
+  const tr = useT();
+  const row = (label: string, value: React.ReactNode) => (
+    <div className="flex items-start justify-between gap-3 py-2 text-sm">
+      <span className="shrink-0 text-muted-foreground">{label}</span>
+      <span className="min-w-0 text-end">{value}</span>
+    </div>
+  );
+  return (
+    <Dialog open={account !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg" onOpenAutoFocus={(e) => e.preventDefault()}>
+        {account && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2"><Mail className="size-4" /><span dir="ltr">{account.emailAddress}</span></DialogTitle>
+              <DialogDescription>
+                {account.link ? tr('صاحب: {name}', { name: account.link.userName }) : tr('بی‌صاحب — کسی در برنامه این صندوق را نمی‌بیند.')}
+              </DialogDescription>
+            </DialogHeader>
+
+            <section className="divide-y rounded-lg border px-3">
+              {row(tr('نشانی'), <span dir="ltr"><CopyText value={account.emailAddress} /></span>)}
+              {row(tr('رمز'), account.link
+                ? <SecretReveal grantId={account.link.grantId} />
+                : <span className="text-xs text-muted-foreground">{tr('در برنامه ذخیره نمی‌شود')}</span>)}
+              {row(tr('حجم'), <QuotaEditor account={account} />)}
+            </section>
+
+            <section className="grid gap-2">
+              <h3 className="flex items-center gap-1.5 text-sm font-medium"><AtSign className="size-4" />{tr('نشانی‌های دیگرِ همین صندوق')}</h3>
+              {account.aliases.length + account.otherAliases.length === 0 ? (
+                <p className="text-xs text-muted-foreground">{tr('ندارد.')}</p>
+              ) : (
+                <ul className="flex flex-wrap gap-1.5" dir="ltr">
+                  {account.aliases.map((a) => <li key={a} className="rounded-md border bg-muted/40 px-2 py-0.5 text-xs"><CopyText value={`${a}@${domain}`} /></li>)}
+                  {account.otherAliases.map((a) => <li key={a} className="rounded-md border bg-muted/40 px-2 py-0.5 text-xs"><CopyText value={a} /></li>)}
+                </ul>
+              )}
+            </section>
+
+            {(setup.imapHost || setup.smtpHost) && (
+              <section className="grid gap-2">
+                <h3 className="flex items-center gap-1.5 text-sm font-medium"><Smartphone className="size-4" />{tr('تنظیم در گوشی، Outlook یا برنامه‌های دیگر')}</h3>
+                <div className="divide-y rounded-lg border px-3">
+                  {setup.imapHost && row(tr('دریافت (IMAP)'), <span dir="ltr" className="font-mono text-xs"><CopyText value={setup.imapHost} /> · {setup.imapPort} · SSL</span>)}
+                  {setup.smtpHost && row(tr('ارسال (SMTP)'), <span dir="ltr" className="font-mono text-xs"><CopyText value={setup.smtpHost} /> · {setup.smtpPort} · SSL</span>)}
+                  {row(tr('نامِ کاربری'), <span dir="ltr" className="text-xs"><CopyText value={account.emailAddress} /></span>)}
+                </div>
+                <ul className="grid list-disc gap-1 ps-4 text-xs text-muted-foreground">
+                  <li>{tr('رمز همان رمزِ صندوق است. اگر ندارید، «رمزِ تازه» بگیرید؛ هر جا با رمزِ قبلی وصل است باید عوض شود.')}</li>
+                  <li>{tr('برای ارسالِ ایمیل‌های این برنامه (دعوت، فراموشیِ رمز، اعلان‌ها) همین «ارسال (SMTP)» را با این نامِ کاربری و رمز در «تنظیمات ← اعلان‌ها» بگذارید.')}</li>
+                </ul>
+              </section>
+            )}
+
+            <DialogFooter className="gap-2 sm:justify-between">
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => onNewPassword(account)}><KeyRound className="size-3.5" />{tr('رمزِ تازه')}</Button>
+                <Button size="sm" variant="outline" onClick={() => onEditAliases(account)}><Pencil className="size-3.5" />{tr('ویرایشِ نشانی‌های دیگر')}</Button>
+                {setup.webmailUrl && (
+                  <Button size="sm" variant="outline" asChild>
+                    <a href={setup.webmailUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-3.5" />{tr('ورود به وب‌میل')}</a>
+                  </Button>
+                )}
+              </div>
+              <Button size="sm" onClick={onClose}>{tr('بستن')}</Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** استفاده‌شده / سقف، با تغییرِ سقف به گیگابایت (۳.۲.۰). */
+function QuotaEditor({ account }: { account: MailAccountRow }) {
+  const tr = useT();
+  const { show } = useToast();
+  const [pending, start] = useTransition();
+  const [editing, setEditing] = useState(false);
+  const initial = account.quotaBytes ? Math.round(account.quotaBytes / 1024 ** 3 * 10) / 10 : 5;
+  const [gb, setGb] = useState(String(initial));
+  const [saved, setSaved] = useState<number | null>(account.quotaBytes);
+
+  const save = () => {
+    const n = Number(gb);
+    if (!Number.isFinite(n) || n < 0.1 || n > 1000) { show(tr('حجم باید بینِ ۰٫۱ تا ۱۰۰۰ گیگابایت باشد.'), 'error'); return; }
+    start(async () => {
+      const result = await setMailQuotaAction(account.id, n);
+      if (result.error) { show(tr(result.error, result.params), 'error'); return; }
+      setSaved(Math.round(n * 10) / 10 * 1024 ** 3);
+      setEditing(false);
+      show(tr('حجم ذخیره شد.'), 'success');
+    });
+  };
+
+  if (editing) {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <Input
+          type="number" min={0.1} max={1000} step={0.5} value={gb} onChange={(e) => setGb(e.target.value)}
+          className="num h-8 w-24" aria-label={tr('حجم (گیگابایت)')} dir="ltr"
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } if (e.key === 'Escape') setEditing(false); }}
+        />
+        <span className="text-xs text-muted-foreground">GB</span>
+        <Button size="sm" disabled={pending} onClick={save}>{tr('ذخیره')}</Button>
+        <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>{tr('انصراف')}</Button>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="num text-xs">
+        {humanSize(account.usedBytes, tr)}{saved ? ` / ${humanSize(saved, tr)}` : ''}
+      </span>
+      <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="size-3.5" />{tr('تغییرِ حجم')}</Button>
+    </span>
   );
 }
 

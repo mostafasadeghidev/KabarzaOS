@@ -173,6 +173,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'corp_mail.aliases': 'تغییرِ نشانی‌های دیگرِ صندوقِ ایمیل',
   'corp_mail.create': 'ساختنِ صندوقِ ایمیل',
   'corp_mail.password': 'رمزِ تازهٔ صندوقِ ایمیل',
+  'corp_mail.quota': 'تغییرِ حجمِ صندوقِ ایمیل',
   'corp_mail.close': 'بستنِ صندوقِ ایمیل',
   'corp_mail.connect': 'اتصالِ صندوقِ ایمیل به برنامه',
 

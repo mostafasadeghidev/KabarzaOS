@@ -78,7 +78,7 @@ function LinkRow({ icon, label, url }: { icon: React.ReactNode; label: string; u
 export function SiteLinksBody({ liveUrl, testUrl }: { liveUrl: string; testUrl: string }) {
   const t = useT();
   return (
-    <div className="grid">
+    <div className="grid grid-cols-1">
       {liveUrl && <LinkRow icon={<Globe className="size-4" aria-hidden />} label={t('دامنهٔ اصلی')} url={liveUrl} />}
       {testUrl && <LinkRow icon={<FlaskConical className="size-4" aria-hidden />} label={t('دامنهٔ آزمایشی')} url={testUrl} />}
     </div>

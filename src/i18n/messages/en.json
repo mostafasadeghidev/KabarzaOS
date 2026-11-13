@@ -5044,5 +5044,18 @@
   "ردیف‌های دیگرِ همین سرویس": "Other rows for this service",
   "رمزِ تازه ساخته شد؛ با دکمهٔ چشمِ «رمز» ببینید.": "New password created; view it with the eye button next to \"Password\".",
   "صندوق‌های قبلیِ این شخص": "This person's earlier mailboxes",
-  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Only the part before @, separated by commas. Empty = no aliases."
+  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Only the part before @, separated by commas. Empty = no aliases.",
+  "برای ارسالِ ایمیل‌های این برنامه (دعوت، فراموشیِ رمز، اعلان‌ها) همین «ارسال (SMTP)» را با این نامِ کاربری و رمز در «تنظیمات ← اعلان‌ها» بگذارید.": "To send this app's emails (invitations, password resets, notifications), enter this \"Outgoing (SMTP)\" server with this username and password under Settings → Notifications.",
+  "بی‌صاحب — کسی در برنامه این صندوق را نمی‌بیند.": "No owner — nobody sees this mailbox in the app.",
+  "تب‌های بیشتر": "More tabs",
+  "تغییرِ حجم": "Change size",
+  "تنظیم در گوشی، Outlook یا برنامه‌های دیگر": "Set up on a phone, Outlook or other apps",
+  "حجم (گیگابایت)": "Size (GB)",
+  "حجم باید بینِ ۰٫۱ تا ۱۰۰۰ گیگابایت باشد.": "Size must be between 0.1 and 1000 GB.",
+  "حجم ذخیره شد.": "Size saved.",
+  "در برنامه ذخیره نمی‌شود": "Not stored in the app",
+  "رمز همان رمزِ صندوق است. اگر ندارید، «رمزِ تازه» بگیرید؛ هر جا با رمزِ قبلی وصل است باید عوض شود.": "The password is the mailbox password. If you don't have it, get a new password; anything connected with the old one needs updating.",
+  "صاحب: {name}": "Owner: {name}",
+  "ندارد.": "None.",
+  "تغییرِ حجمِ صندوقِ ایمیل": "Mailbox size changed"
 }

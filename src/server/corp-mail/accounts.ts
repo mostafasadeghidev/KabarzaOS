@@ -27,7 +27,7 @@ import { issueAppPassword } from './mailbox';
 
 export type CorpMailErrorCode =
   | 'not_configured' | 'no_domain' | 'not_found' | 'member_inactive' | 'member_has_mail'
-  | 'invalid_name' | 'reserved_name' | 'name_taken' | 'protected' | 'stalwart'
+  | 'invalid_name' | 'reserved_name' | 'name_taken' | 'protected' | 'stalwart' | 'invalid_quota'
   | 'not_linked' | 'created_unlinked';
 
 export class CorpMailError extends Error {
@@ -119,6 +119,8 @@ export interface MailAccountsView {
   errorDetail: string;
   accounts: MailAccountRow[];
   people: Array<{ id: number; name: string }>;
+  /** نشانی‌های اتصال برای راهنمای «تنظیم در گوشی، Outlook یا SMTP» (۳.۲.۰). */
+  setup: { webmailUrl: string; imapHost: string; imapPort: number; smtpHost: string; smtpPort: number };
 }
 
 async function activeMembers() {
@@ -133,7 +135,11 @@ export async function listMailAccounts(actor: Actor): Promise<MailAccountsView> 
   assertCanManage(actor, 'members');
   const config = await corpMailConfig();
   const people = await activeMembers();
-  const empty = { domain: config.domain, accounts: [], people: people.map(({ id, name }) => ({ id, name })) };
+  const setup = {
+    webmailUrl: config.webmailUrl, imapHost: config.imapHost, imapPort: config.imapPort,
+    smtpHost: config.smtpHost, smtpPort: config.smtpPort,
+  };
+  const empty = { domain: config.domain, accounts: [], people: people.map(({ id, name }) => ({ id, name })), setup };
   if (!isCorpMailConfigured()) return { configured: false, error: null, errorDetail: '', ...empty };
 
   try {
@@ -182,6 +188,36 @@ async function oneAccount(adminId: string, accountId: string) {
   if (!account) throw new CorpMailError('not_found');
   if (PROTECTED.has(account.name)) throw new CorpMailError('protected');
   return { account, raw: raw[0]!, config, domainId };
+}
+
+/**
+ * حجمِ یک صندوق (۳.۲.۰) — گیگابایت، همان بازهٔ تنظیمِ پیش‌فرض (۰٫۱ تا ۱۰۰۰).
+ *
+ * ⚠️ `update` روی فیلدِ map کلِ آن را جایگزین می‌کند (راهنمای سرورِ ایمیل)؛ پس
+ * سهمیه‌های دیگرِ صندوق از همان پاسخِ `get` خوانده و دست‌نخورده پس فرستاده می‌شوند.
+ */
+export async function setMailQuota(actor: Actor, accountId: string, gb: number): Promise<number> {
+  assertCanManage(actor, 'members');
+  if (!Number.isFinite(gb) || gb < 0.1 || gb > 1000) throw new CorpMailError('invalid_quota');
+  const bytes = Math.round(Math.round(gb * 10) / 10 * 1024 ** 3);
+  let before: number | null = null;
+  let address = '';
+  try {
+    const adminId = await sessionAccountId();
+    const { account, raw } = await oneAccount(adminId, accountId);
+    address = account.emailAddress;
+    before = account.quotaBytes;
+    const current = (raw.quotas && typeof raw.quotas === 'object' ? raw.quotas : {}) as Record<string, unknown>;
+    const responses = await jmapCall([['x:Account/set', {
+      accountId: adminId,
+      update: { [account.id]: { quotas: { ...current, maxDiskQuota: bytes } } },
+    }, 's']]);
+    const set = result<SetResult>(responses, 's');
+    if (set.notUpdated?.[account.id]) refused('update', set.notUpdated[account.id]);
+  } catch (error) { wrap(error); }
+  const link = await linkedGrant(await corpMailServiceId(), accountId);
+  await audit(actor, 'corp_mail.quota', link?.id ?? 0, { account: address, bytes: before }, { account: address, bytes });
+  return bytes;
 }
 
 /**
@@ -314,6 +350,7 @@ export function corpMailMessage(code: CorpMailErrorCode, detail = ''): string {
     case 'no_domain': return 'دامنهٔ ایمیل تنظیم نشده یا روی سرورِ ایمیل پیدا نشد.';
     case 'not_found': return 'این حساب روی سرورِ ایمیل پیدا نشد.';
     case 'protected': return 'این حساب از برنامه قابلِ تغییر نیست.';
+    case 'invalid_quota': return 'حجم باید بینِ ۰٫۱ تا ۱۰۰۰ گیگابایت باشد.';
     case 'member_inactive': return 'فقط به عضوِ فعال می‌شود صندوقِ ایمیل داد.';
     case 'member_has_mail': return 'این عضو از پیش صندوقِ ایمیلِ دیگری دارد؛ اول آن را جدا کنید.';
     // ⚠️ نامِ مشکل‌دار جای‌نگهدارِ {name} است، نه چسبیده به متن — تا ترجمه بشکند نه.

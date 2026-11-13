@@ -5044,5 +5044,18 @@
   "ردیف‌های دیگرِ همین سرویس": "Autres lignes pour ce service",
   "رمزِ تازه ساخته شد؛ با دکمهٔ چشمِ «رمز» ببینید.": "Nouveau mot de passe créé ; affichez-le avec l’œil à côté de « Mot de passe ».",
   "صندوق‌های قبلیِ این شخص": "Boîtes précédentes de cette personne",
-  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Uniquement la partie avant @, séparée par des virgules. Vide = aucun alias."
+  "فقط بخشِ پیش از @، جداشده با ویرگول. خالی = هیچ alias.": "Uniquement la partie avant @, séparée par des virgules. Vide = aucun alias.",
+  "برای ارسالِ ایمیل‌های این برنامه (دعوت، فراموشیِ رمز، اعلان‌ها) همین «ارسال (SMTP)» را با این نامِ کاربری و رمز در «تنظیمات ← اعلان‌ها» بگذارید.": "Pour envoyer les e-mails de cette application (invitations, réinitialisations, notifications), saisissez ce serveur « Envoi (SMTP) » avec cet identifiant et ce mot de passe dans Réglages → Notifications.",
+  "بی‌صاحب — کسی در برنامه این صندوق را نمی‌بیند.": "Sans propriétaire — personne ne voit cette boîte dans l’application.",
+  "تب‌های بیشتر": "Plus d’onglets",
+  "تغییرِ حجم": "Changer la taille",
+  "تنظیم در گوشی، Outlook یا برنامه‌های دیگر": "Configuration sur téléphone, Outlook ou autres applications",
+  "حجم (گیگابایت)": "Taille (Go)",
+  "حجم باید بینِ ۰٫۱ تا ۱۰۰۰ گیگابایت باشد.": "La taille doit être comprise entre 0,1 et 1000 Go.",
+  "حجم ذخیره شد.": "Taille enregistrée.",
+  "در برنامه ذخیره نمی‌شود": "Non enregistré dans l’application",
+  "رمز همان رمزِ صندوق است. اگر ندارید، «رمزِ تازه» بگیرید؛ هر جا با رمزِ قبلی وصل است باید عوض شود.": "Le mot de passe est celui de la boîte. Si vous ne l’avez pas, générez-en un nouveau ; tout ce qui utilise l’ancien doit être mis à jour.",
+  "صاحب: {name}": "Propriétaire : {name}",
+  "ندارد.": "Aucune.",
+  "تغییرِ حجمِ صندوقِ ایمیل": "Taille de la boîte modifiée"
 }
