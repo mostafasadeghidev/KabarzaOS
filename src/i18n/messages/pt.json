@@ -5057,5 +5057,21 @@
   "رمز همان رمزِ صندوق است. اگر ندارید، «رمزِ تازه» بگیرید؛ هر جا با رمزِ قبلی وصل است باید عوض شود.": "A senha é a da caixa. Se não a tiver, gere uma nova; tudo o que usa a antiga precisa ser atualizado.",
   "صاحب: {name}": "Dono: {name}",
   "ندارد.": "Nenhuma.",
-  "تغییرِ حجمِ صندوقِ ایمیل": "Tamanho da caixa alterado"
+  "تغییرِ حجمِ صندوقِ ایمیل": "Tamanho da caixa alterado",
+  "این صندوق صاحبی ندارد. رمز رمزگذاری‌شده در برنامه می‌ماند و هر وقت لازم شد از پنجرهٔ همین صندوق (دکمهٔ چشم) دیده می‌شود.": "Esta caixa não tem dono. A senha fica guardada criptografada no aplicativo e pode ser vista a qualquer momento na janela desta caixa (botão do olho).",
+  "این صندوق:": "Esta caixa:",
+  "حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند؛ رمزش در همین صفحه پشتِ دکمهٔ چشم می‌ماند.": "A conta é criada no servidor de e-mail com uma senha aleatória, que o funcionário vê em \"Meus acessos\". Uma caixa sem dono (ex. noreply) não é vista por ninguém no aplicativo; a senha fica nesta página atrás do botão do olho.",
+  "خودکار — یک رمزِ تصادفیِ قوی ساخته شود": "Automática — criar uma senha aleatória forte",
+  "دستی — رمز را خودم می‌نویسم": "Manual — eu digito a senha",
+  "دست‌کم ۱۲ نویسه، بی فاصله، با حرفِ لاتین و رقم.": "Pelo menos 12 caracteres, sem espaços, com letras latinas e números.",
+  "رمز باید بینِ ۱۲ تا ۱۲۸ نویسه باشد.": "A senha deve ter de 12 a 128 caracteres.",
+  "رمز باید دست‌کم ۱۲ نویسه باشد، بی فاصله، و حرف و رقم هر دو را داشته باشد.": "A senha deve ter pelo menos 12 caracteres, sem espaços, com letras e números.",
+  "رمز فاصله نداشته باشد.": "A senha não pode ter espaços.",
+  "رمز هم حرفِ لاتین داشته باشد هم رقم.": "A senha precisa de uma letra latina e de um número.",
+  "رمزِ این صندوق در برنامه نیست؛ «رمزِ تازه» بگیرید.": "A senha desta caixa não está no aplicativo; gere uma nova.",
+  "رمزِ تازه بگذار": "Definir nova senha",
+  "رمزِ تازه گذاشته شد.": "Nova senha definida.",
+  "رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه در همین صفحه پشتِ دکمهٔ چشم می‌ماند.": "A senha atual deixa de funcionar; onde ela for usada (por exemplo nas configurações SMTP) é preciso colocar a nova. A nova senha fica nesta página atrás do botão do olho.",
+  "نشانی‌های دیگر:": "Outros endereços:",
+  "دیدنِ رمزِ صندوقِ بی‌صاحب": "Senha de caixa sem dono visualizada"
 }

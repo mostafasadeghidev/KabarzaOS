@@ -189,12 +189,33 @@ export async function createMailAccountAction(
 }
 
 /** رمزِ تازه — app passwordهای قبلی هم باطل می‌شوند (هشدار در صفحه). */
-export async function resetMailPasswordAction(accountId: string): Promise<AccessState & { grantId?: number | null; password?: string }> {
+export async function resetMailPasswordAction(
+  accountId: string,
+  /** رمزِ دلخواه (۳.۳.۰)؛ null = تصادفی. قاعده سمتِ سرور سنجیده می‌شود. */
+  custom: string | null = null,
+): Promise<AccessState & { grantId?: number | null; password?: string }> {
   const { resetMailPassword } = await import('@/server/corp-mail/accounts');
   let out: { grantId: number | null; password?: string } = { grantId: null };
-  const state = await runMail(async (actor) => { out = await resetMailPassword(actor, accountId); }, 'رمز عوض نشد.');
+  const value = typeof custom === 'string' ? custom : null;
+  const state = await runMail(async (actor) => { out = await resetMailPassword(actor, accountId, value); }, 'رمز عوض نشد.');
   // رمز فقط برای صندوقِ بی‌صاحب برمی‌گردد (یک بار)؛ برای صندوقِ عضو در دفترِ او می‌نشیند.
   return state.error ? state : { ...state, ...out };
+}
+
+/**
+ * رمزِ صندوقِ بی‌صاحب پشتِ چشم (۳.۳.۰) — گارد و ثبتِ دیدن در سرویس.
+ * ⚠️ `requireActor` «دیدن به‌جای کاربر» را رد می‌کند.
+ */
+export async function revealSharedMailSecretAction(accountId: string): Promise<{ secret?: string; error?: string }> {
+  const { revealSharedMailSecret, CorpMailError, corpMailMessage } = await import('@/server/corp-mail/accounts');
+  try {
+    const secret = await revealSharedMailSecret(await requireActor(), String(accountId));
+    if (secret === null) return { error: 'رمزِ این صندوق در برنامه نیست؛ «رمزِ تازه» بگیرید.' };
+    return { secret };
+  } catch (error) {
+    if (error instanceof CorpMailError) return { error: corpMailMessage(error.code, error.detail) };
+    return { error: explain(error, 'رمز خوانده نشد.') };
+  }
 }
 
 /** حجمِ یک صندوق به گیگابایت (۳.۲.۰). */

@@ -4,7 +4,7 @@ import { db, sql } from '../client';
 import { schedulerStamps, serviceGrants, services, userRoles, users } from '../schema';
 import {
   closeMailAccount, createMailAccount, generateMailPassword, linkMailAccount, listMailAccounts, resetMailPassword, setMailAliases,
-  setMailQuota,
+  setMailQuota, revealSharedMailSecret, mailPasswordProblem,
 } from '@/server/corp-mail/accounts';
 import { grantAccess, revealGrantSecret, revokeAccess, revokeMany } from '@/server/access/service';
 import type { Actor, Permission } from '@/domain/access/permissions';
@@ -28,7 +28,7 @@ let sara: number, gone: number;
 let failSets = false;
 
 beforeAll(async () => {
-  await sql`truncate table audit_log, service_grants, services, user_roles, users restart identity cascade`;
+  await sql`truncate table audit_log, service_grants, services, user_roles, users, corp_mail_secrets restart identity cascade`;
   await db.delete(schedulerStamps).where(eq(schedulerStamps.key, 'corp-mail:config'));
   await db.insert(schedulerStamps).values({ key: 'corp-mail:config', value: JSON.stringify({ domain: 'example.com', reserved: ['contact'] }) });
   const rows = await db.insert(users).values([
@@ -174,7 +174,7 @@ describe('ساختن، رمزِ تازه، بستن (۲.۶۱.۰)', () => {
     await grantAccess(manager, { grantId: row!.id, serviceId: svc!.id, userId: ali, accountRef: row!.accountRef, level: 'admin', note: 'ok' });
   });
 
-  it('⚠️ صندوقِ بی‌صاحب (۲.۶۷.۰): رمز فقط یک بار برمی‌گردد و هیچ‌جا ذخیره نمی‌شود', async () => {
+  it('⚠️ صندوقِ بی‌صاحب: بی ردیفِ دفتر؛ رمز (۳.۳.۰) رمزگذاری‌شده نگه داشته می‌شود و در گزارش نیست', async () => {
     const before = (await openGrants()).length;
     sent.length = 0;
     const made = await createMailAccount(manager, { userId: null, local: 'noreply', aliases: [] });
@@ -185,6 +185,12 @@ describe('ساختن، رمزِ تازه، بستن (۲.۶۱.۰)', () => {
     expect((await openGrants()).length).toBe(before);
     const logs = await sql`select coalesce(before::text,'') || coalesce(after::text,'') as t from audit_log`;
     expect(logs.some((r) => String(r.t).includes(secret!))).toBe(false);
+    // ۳.۳.۰ — رمز در انبار، ولی رمزگذاری‌شده (نه متنِ خام).
+    const kept = await sql`select account_id, secret_enc from corp_mail_secrets`;
+    expect(kept).toHaveLength(1);
+    expect(String(kept[0]!.secret_enc)).not.toContain(secret!);
+    expect(await revealSharedMailSecret(manager, String(kept[0]!.account_id))).toBe(secret);
+    await expect(revealSharedMailSecret(viewer, String(kept[0]!.account_id))).rejects.toThrow();
     // نامِ گرفته و رزرو برای صندوقِ بی‌صاحب هم رد می‌شود.
     await expect(createMailAccount(manager, { userId: null, local: 'noreply', aliases: [] })).rejects.toMatchObject({ code: 'name_taken' });
     await expect(createMailAccount(manager, { userId: null, local: 'contact', aliases: [] })).rejects.toMatchObject({ code: 'reserved_name' });
@@ -192,12 +198,23 @@ describe('ساختن، رمزِ تازه، بستن (۲.۶۱.۰)', () => {
     await expect(createMailAccount(viewer, { userId: null, local: 'x2', aliases: [] })).rejects.toThrow();
   });
 
-  it('رمزِ تازه: صندوقِ وصل در همان ردیف؛ صندوقِ بی‌صاحب فقط یک بار برمی‌گردد', async () => {
+  it('رمزِ تازه: صندوقِ وصل در همان ردیف؛ صندوقِ بی‌صاحب در انبار؛ خودکار یا دستی', async () => {
     const [row] = (await openGrants()).filter((g) => g.userId === ali);
     sent.length = 0;
     const loose = await resetMailPassword(manager, 'c');
     expect(loose.grantId).toBeNull();
     expect(loose.password).toBe(credentialOf(sent.find(([n]) => n === 'x:Account/set'), 'c'));
+    expect(await revealSharedMailSecret(manager, 'c')).toBe(loose.password);
+    // دستی (۳.۳.۰): همان رمز به سرور می‌رود؛ رمزِ ضعیف پیش از فرستادن رد می‌شود.
+    sent.length = 0;
+    await resetMailPassword(manager, 'c', 'Noreply-2026-secure');
+    expect(credentialOf(sent.find(([n]) => n === 'x:Account/set'), 'c')).toBe('Noreply-2026-secure');
+    expect(await revealSharedMailSecret(manager, 'c')).toBe('Noreply-2026-secure');
+    sent.length = 0;
+    await expect(resetMailPassword(manager, 'c', 'short1')).rejects.toMatchObject({ code: 'weak_password' });
+    await expect(resetMailPassword(manager, 'c', 'has spaces 12345')).rejects.toMatchObject({ code: 'weak_password' });
+    await expect(resetMailPassword(manager, 'c', 'onlyletterslong')).rejects.toMatchObject({ code: 'weak_password' });
+    expect(sent.some(([n]) => n === 'x:Account/set')).toBe(false);
     await expect(resetMailPassword(manager, 'b')).rejects.toMatchObject({ code: 'protected' });
     sent.length = 0;
     await resetMailPassword(manager, row!.externalId);
@@ -262,5 +279,44 @@ describe('حجمِ صندوق (۳.۲.۰)', () => {
     await expect(setMailQuota(manager, 'e', 5000)).rejects.toMatchObject({ code: 'invalid_quota' });
     await expect(setMailQuota(manager, 'b', 2)).rejects.toMatchObject({ code: 'protected' });
     await expect(setMailQuota(viewer, 'e', 2)).rejects.toThrow();
+  });
+});
+
+describe('رمزِ صندوقِ بی‌صاحب هنگامِ جفت و جدا (۳.۳.۰)', () => {
+  it('⚠️ با جفت‌شدن رمز به ردیفِ عضو می‌رود؛ با جداشدن به انبار برمی‌گردد؛ با بستن پاک می‌شود', async () => {
+    const [fresh] = await db.insert(users).values({ email: 'reza@example.com', name: 'Reza' }).returning({ id: users.id });
+    await db.insert(userRoles).values({ userId: fresh!.id, role: 'member' });
+    await resetMailPassword(manager, 'c', 'Carry-me-123456');
+    await linkMailAccount(manager, 'c', fresh!.id);
+    const [g] = (await openGrants()).filter((r) => r.externalId === 'c');
+    expect(await revealGrantSecret(manager, g!.id)).toBe('Carry-me-123456');
+    expect((await sql`select 1 from corp_mail_secrets where account_id = 'c'`).length).toBe(0);
+
+    await linkMailAccount(manager, 'c', null);
+    expect(await revealSharedMailSecret(manager, 'c')).toBe('Carry-me-123456');
+
+    await closeMailAccount(manager, 'c');
+    expect((await sql`select 1 from corp_mail_secrets where account_id = 'c'`).length).toBe(0);
+  });
+
+  it('⚠️ رمزی که فقط در SMTP ِ برنامه مانده پیدا و نگه داشته می‌شود — فقط برای همان نشانی', async () => {
+    process.env.SMTP_HOST = 'mail.example.com';
+    process.env.SMTP_USER = 'Test-SMTP@example.com';
+    process.env.SMTP_PASSWORD = 'From-smtp-123456';
+    try {
+      expect(await revealSharedMailSecret(manager, 'c')).toBe('From-smtp-123456');
+      expect((await sql`select 1 from corp_mail_secrets where account_id = 'c'`).length).toBe(1);
+      // نشانیِ دیگر رمزِ SMTP را نمی‌گیرد.
+      expect(await revealSharedMailSecret(manager, 'e')).toBeNull();
+    } finally {
+      delete process.env.SMTP_HOST; delete process.env.SMTP_USER; delete process.env.SMTP_PASSWORD;
+    }
+  });
+
+  it('قاعدهٔ رمزِ دستی', () => {
+    expect(mailPasswordProblem('Abcdefgh1234')).toBeNull();
+    expect(mailPasswordProblem('Abc123')).toBe('length');
+    expect(mailPasswordProblem('Abcdefgh 1234')).toBe('space');
+    expect(mailPasswordProblem('abcdefghijklm')).toBe('mix');
   });
 });

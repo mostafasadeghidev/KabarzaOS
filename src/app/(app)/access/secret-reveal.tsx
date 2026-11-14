@@ -14,7 +14,11 @@ import { revealSecretAction } from './_form/actions';
  * ⚠️ رمز همراهِ صفحه نمی‌آید: فقط با کلیک از سرور خوانده می‌شود، تا در دادهٔ
  * صفحه نباشد و هر دیدن ثبت شود. با بستنِ چشم از حافظهٔ کامپوننت هم می‌رود.
  */
-export function SecretReveal({ grantId }: { grantId: number }) {
+export function SecretReveal({ grantId, load }: {
+  grantId?: number;
+  /** خواندنِ رمز از راهِ دیگر — مثلاً صندوقِ بی‌صاحب (۳.۳.۰)؛ بی‌این، ردیفِ دفترِ `grantId`. */
+  load?: () => Promise<{ secret?: string; error?: string }>;
+}) {
   const tr = useT();
   const { show } = useToast();
   const [secret, setSecret] = useState<string | null>(null);
@@ -23,7 +27,7 @@ export function SecretReveal({ grantId }: { grantId: number }) {
   const toggle = () => {
     if (secret !== null) { setSecret(null); return; }
     startTransition(async () => {
-      const result = await revealSecretAction(grantId);
+      const result = load ? await load() : await revealSecretAction(grantId ?? 0);
       if (result.secret !== undefined) setSecret(result.secret);
       else show(tr(result.error ?? 'رمز خوانده نشد؛ دوباره ثبتش کنید.'), 'error');
     });

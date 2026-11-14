@@ -5057,5 +5057,21 @@
   "رمز همان رمزِ صندوق است. اگر ندارید، «رمزِ تازه» بگیرید؛ هر جا با رمزِ قبلی وصل است باید عوض شود.": "La contraseña es la del buzón. Si no la tienes, genera una nueva; todo lo conectado con la anterior debe actualizarse.",
   "صاحب: {name}": "Dueño: {name}",
   "ندارد.": "Ninguna.",
-  "تغییرِ حجمِ صندوقِ ایمیل": "Tamaño del buzón cambiado"
+  "تغییرِ حجمِ صندوقِ ایمیل": "Tamaño del buzón cambiado",
+  "این صندوق صاحبی ندارد. رمز رمزگذاری‌شده در برنامه می‌ماند و هر وقت لازم شد از پنجرهٔ همین صندوق (دکمهٔ چشم) دیده می‌شود.": "Este buzón no tiene dueño. Su contraseña se guarda cifrada en la aplicación y se puede ver cuando quieras desde la ventana de este buzón (botón del ojo).",
+  "این صندوق:": "Este buzón:",
+  "حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند؛ رمزش در همین صفحه پشتِ دکمهٔ چشم می‌ماند.": "La cuenta se crea en el servidor de correo con una contraseña aleatoria, que el empleado ve en «Mis accesos». Un buzón sin dueño (p. ej. noreply) no lo ve nadie en la aplicación; su contraseña queda en esta página tras el botón del ojo.",
+  "خودکار — یک رمزِ تصادفیِ قوی ساخته شود": "Automática — crear una contraseña aleatoria fuerte",
+  "دستی — رمز را خودم می‌نویسم": "Manual — escribo yo la contraseña",
+  "دست‌کم ۱۲ نویسه، بی فاصله، با حرفِ لاتین و رقم.": "Al menos 12 caracteres, sin espacios, con letras latinas y números.",
+  "رمز باید بینِ ۱۲ تا ۱۲۸ نویسه باشد.": "La contraseña debe tener entre 12 y 128 caracteres.",
+  "رمز باید دست‌کم ۱۲ نویسه باشد، بی فاصله، و حرف و رقم هر دو را داشته باشد.": "La contraseña debe tener al menos 12 caracteres, sin espacios, con letras y números.",
+  "رمز فاصله نداشته باشد.": "La contraseña no debe tener espacios.",
+  "رمز هم حرفِ لاتین داشته باشد هم رقم.": "La contraseña necesita una letra latina y un número.",
+  "رمزِ این صندوق در برنامه نیست؛ «رمزِ تازه» بگیرید.": "La contraseña de este buzón no está en la aplicación; genera una nueva.",
+  "رمزِ تازه بگذار": "Poner contraseña nueva",
+  "رمزِ تازه گذاشته شد.": "Contraseña nueva puesta.",
+  "رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه در همین صفحه پشتِ دکمهٔ چشم می‌ماند.": "La contraseña actual deja de funcionar; donde se use (por ejemplo la configuración SMTP) hay que poner la nueva. La nueva contraseña queda en esta página tras el botón del ojo.",
+  "نشانی‌های دیگر:": "Otras direcciones:",
+  "دیدنِ رمزِ صندوقِ بی‌صاحب": "Contraseña de un buzón sin dueño vista"
 }

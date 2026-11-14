@@ -342,6 +342,20 @@ export const serviceGrants = pgTable('service_grants', {
 ]);
 
 /**
+ * رمزِ صندوق‌های ایمیلِ **بی‌صاحب** (۳.۳.۰) — مثلاً noreply که در SMTP ِ چند جا به کار
+ * می‌رود. صندوقِ صاحب‌دار رمزش را در `service_grants.secret_enc` ِ همان عضو دارد.
+ * ⚠️ رمزگذاری‌شده با `server/ai/secret-box`؛ فقط `revealSharedMailSecret` (با گارد و
+ * ثبتِ دیدن) می‌خواندش. با جفت‌شدنِ صندوق به عضو، رمز به ردیفِ او منتقل و اینجا پاک می‌شود.
+ */
+export const corpMailSecrets = pgTable('corp_mail_secrets', {
+  /** id ِ حساب در Stalwart. */
+  accountId: text('account_id').primaryKey(),
+  address: text('address').notNull().default(''),
+  secretEnc: text('secret_enc').notNull(),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+});
+
+/**
  * «مغزِ» ربات تلگرام (۲.۹.۰) — ارائه‌دهندهٔ هوشِ مصنوعیِ هر کاربر.
  * ⚠️ `apiKeyEnc` رمزگذاری‌شده است (`server/ai/secret-box`)؛ `keyHint` فقط چهار
  * نویسهٔ آخرِ کلید برای تشخیص.

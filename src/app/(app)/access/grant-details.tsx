@@ -11,7 +11,6 @@ import { CopyText } from '@/components/copy-text';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { useConfirm } from '@/components/ui/confirm';
 import { useToast } from '@/components/ui/toast';
 import { LEVEL_LABELS } from '@/domain/access/service-grants';
 import { stateLabel } from '@/domain/people/offboarding';
@@ -19,7 +18,8 @@ import { humanSize } from '@/domain/files/upload';
 import { formatDate } from '@/i18n/datetime';
 import { useT, useTimeZone } from '@/i18n/client';
 import { SecretReveal } from './secret-reveal';
-import { mailboxOfGrantAction, resetMailPasswordAction, setMailAliasesAction } from './_form/actions';
+import { mailboxOfGrantAction, setMailAliasesAction } from './_form/actions';
+import { NewPasswordDialog } from './mail/new-password-dialog';
 import type { GrantRow } from './access-view';
 
 type Mailbox = {
@@ -142,8 +142,8 @@ export function GrantDetailsDialog({
 function MailboxSection({ grantId }: { grantId: number }) {
   const tr = useT();
   const { show } = useToast();
-  const confirm = useConfirm();
   const [pending, start] = useTransition();
+  const [pwOpen, setPwOpen] = useState(false);
   const [box, setBox] = useState<Mailbox | null>(null);
   const [error, setError] = useState<{ text: string; params: Record<string, string> } | null>(null);
   const [editing, setEditing] = useState(false);
@@ -161,20 +161,8 @@ function MailboxSection({ grantId }: { grantId: number }) {
     return () => { alive = false; };
   }, [grantId, reload]);
 
-  const newPassword = async () => {
-    if (!box) return;
-    if (!await confirm({
-      title: tr('رمزِ تازه برای {address}؟', { address: box.address }),
-      description: tr('رمزِ فعلی و همهٔ ورودهای گوشی و Outlook و اتصالِ صندوق در همین برنامه باطل می‌شوند. رمزِ تازه در «دسترسی‌های من» ِ کارمند دیده می‌شود.'),
-      confirmLabel: tr('رمزِ تازه'),
-      destructive: true,
-    })) return;
-    start(async () => {
-      const result = await resetMailPasswordAction(box.accountId);
-      if (result.error) show(tr(result.error, result.params), 'error');
-      else show(tr('رمزِ تازه ساخته شد؛ با دکمهٔ چشمِ «رمز» ببینید.'), 'success');
-    });
-  };
+  /** خودکار یا دستی (۳.۳.۰) — رمزِ تازه در ردیفِ همین عضو می‌نشیند (دکمهٔ چشمِ «رمز»). */
+  const newPassword = () => { if (box) setPwOpen(true); };
 
   const saveAliases = () => {
     if (!box) return;
@@ -189,6 +177,11 @@ function MailboxSection({ grantId }: { grantId: number }) {
 
   return (
     <section className="grid gap-2">
+      <NewPasswordDialog
+        target={pwOpen && box ? { accountId: box.accountId, address: box.address, linked: true } : null}
+        onClose={() => setPwOpen(false)}
+        onDone={() => show(tr('رمزِ تازه ساخته شد؛ با دکمهٔ چشمِ «رمز» ببینید.'), 'success')}
+      />
       <h3 className="flex items-center gap-1.5 text-sm font-medium"><AtSign className="size-4" />{tr('ایمیل‌های این شخص')}</h3>
       {error ? (
         <p className="text-xs text-destructive">{tr(error.text, error.params)}</p>
@@ -221,7 +214,7 @@ function MailboxSection({ grantId }: { grantId: number }) {
               <Button size="sm" variant="outline" disabled={pending} onClick={() => setEditing(true)}>
                 <Pencil className="size-3.5" />{tr('ویرایشِ نشانی‌های دیگر')}
               </Button>
-              <Button size="sm" variant="outline" disabled={pending} onClick={() => { void newPassword(); }}>
+              <Button size="sm" variant="outline" disabled={pending} onClick={newPassword}>
                 <KeyRound className="size-3.5" />{tr('رمزِ تازه')}
               </Button>
             </div>
