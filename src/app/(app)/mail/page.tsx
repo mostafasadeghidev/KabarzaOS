@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ChevronLeft, ChevronRight, ExternalLink, Inbox, Paperclip } from 'lucide-react';
+import { AtSign, ChevronLeft, ChevronRight, ExternalLink, Inbox, Paperclip } from 'lucide-react';
 import { currentActor } from '@/server/auth';
 import { listMail, mailboxMessage, mailboxState, MailboxError } from '@/server/corp-mail/mailbox';
 import { corpMailConfig } from '@/server/corp-mail/settings';
+import { ownMailAliases } from '@/server/corp-mail/accounts';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,6 +72,8 @@ export default async function MailPage({
   if (state === 'linked') return connect;
 
   let data;
+  // ۳.۳.۰ — نشانی‌های دیگرِ همین صندوق برای سطرِ «این صندوق»؛ شکستش صفحه را نمی‌شکند.
+  const aliasesP = ownMailAliases(actor.id).catch(() => [] as string[]);
   try {
     data = await listMail(actor, { folderId, position: Number(p) || 0 });
   } catch (error) {
@@ -81,7 +84,7 @@ export default async function MailPage({
     throw error;
   }
 
-  const { timezone } = await getSystemConfig();
+  const [{ timezone }, aliases] = await Promise.all([getSystemConfig(), aliasesP]);
   const folderName = (f: { name: string; role: string | null }) => {
     const roles: Record<string, string> = { inbox: 'صندوقِ ورودی', sent: 'فرستاده‌ها', drafts: 'پیش‌نویس‌ها', archive: 'بایگانی', junk: 'هرزنامه', trash: 'سطلِ زباله' };
     return f.role && roles[f.role] ? t(roles[f.role]!) : f.name;
@@ -92,6 +95,23 @@ export default async function MailPage({
   return (
     <PageShell>
       {header}
+      {/*
+        ۳.۳.۰ — کدام صندوق اینجا وصل است: نشانیِ اصلی و نشانی‌های دیگری (alias) که ایمیلشان
+        هم به همین صندوق می‌رسد.
+      */}
+      {grant?.address && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border bg-card px-3 py-2 text-sm">
+          <AtSign className="size-4 shrink-0 text-muted-foreground" />
+          <span className="text-muted-foreground">{t('این صندوق:')}</span>
+          <span dir="ltr" className="font-medium">{grant.address}</span>
+          {aliases.length > 0 && (
+            <>
+              <span className="text-muted-foreground">· {t('نشانی‌های دیگر:')}</span>
+              {aliases.map((a) => <span key={a} dir="ltr" className="rounded-md bg-muted px-1.5 py-0.5 text-xs">{a}</span>)}
+            </>
+          )}
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-[13rem_1fr]">
         <nav className="flex gap-1 overflow-x-auto md:flex-col" aria-label={t('پوشه‌ها')}>
           {data.folders.map((f) => (

@@ -5057,5 +5057,21 @@
   "رمز همان رمزِ صندوق است. اگر ندارید، «رمزِ تازه» بگیرید؛ هر جا با رمزِ قبلی وصل است باید عوض شود.": "Parola, posta kutusunun parolasıdır. Yoksa yeni parola alın; eskisiyle bağlı her şeyin güncellenmesi gerekir.",
   "صاحب: {name}": "Sahibi: {name}",
   "ندارد.": "Yok.",
-  "تغییرِ حجمِ صندوقِ ایمیل": "Posta kutusu boyutu değişti"
+  "تغییرِ حجمِ صندوقِ ایمیل": "Posta kutusu boyutu değişti",
+  "این صندوق صاحبی ندارد. رمز رمزگذاری‌شده در برنامه می‌ماند و هر وقت لازم شد از پنجرهٔ همین صندوق (دکمهٔ چشم) دیده می‌شود.": "Bu posta kutusunun sahibi yok. Parolası uygulamada şifreli tutulur ve bu posta kutusunun penceresinden (göz düğmesi) istediğiniz zaman görülebilir.",
+  "این صندوق:": "Bu posta kutusu:",
+  "حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند؛ رمزش در همین صفحه پشتِ دکمهٔ چشم می‌ماند.": "Hesap posta sunucusunda rastgele bir parolayla oluşturulur ve çalışan bunu \"Erişimlerim\"de görür. Sahipsiz bir posta kutusunu (ör. noreply) uygulamada kimse görmez; parolası bu sayfada göz düğmesinin arkasında kalır.",
+  "خودکار — یک رمزِ تصادفیِ قوی ساخته شود": "Otomatik — güçlü rastgele bir parola oluştur",
+  "دستی — رمز را خودم می‌نویسم": "Elle — parolayı kendim yazarım",
+  "دست‌کم ۱۲ نویسه، بی فاصله، با حرفِ لاتین و رقم.": "En az 12 karakter, boşluksuz, Latin harfleri ve rakamlarla.",
+  "رمز باید بینِ ۱۲ تا ۱۲۸ نویسه باشد.": "Parola 12 ile 128 karakter arasında olmalı.",
+  "رمز باید دست‌کم ۱۲ نویسه باشد، بی فاصله، و حرف و رقم هر دو را داشته باشد.": "Parola en az 12 karakter, boşluksuz, harf ve rakam içermeli.",
+  "رمز فاصله نداشته باشد.": "Parolada boşluk olmamalı.",
+  "رمز هم حرفِ لاتین داشته باشد هم رقم.": "Parolada hem Latin harfi hem rakam olmalı.",
+  "رمزِ این صندوق در برنامه نیست؛ «رمزِ تازه» بگیرید.": "Bu posta kutusunun parolası uygulamada yok; yeni parola alın.",
+  "رمزِ تازه بگذار": "Yeni parolayı ayarla",
+  "رمزِ تازه گذاشته شد.": "Yeni parola ayarlandı.",
+  "رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه در همین صفحه پشتِ دکمهٔ چشم می‌ماند.": "Mevcut parola geçersiz olur; kullanıldığı her yerde (örneğin SMTP ayarları) yenisini girmeniz gerekir. Yeni parola bu sayfada göz düğmesinin arkasında kalır.",
+  "نشانی‌های دیگر:": "Diğer adresler:",
+  "دیدنِ رمزِ صندوقِ بی‌صاحب": "Sahipsiz posta kutusunun parolası görüntülendi"
 }

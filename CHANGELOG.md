@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.3.0]
+
+### Added
+
+- **Passwords of mailboxes with no owner are kept.** A shared mailbox such as `noreply@` now keeps its password encrypted in the app, behind the eye button in the mailbox's details window (Access → Email). Only people who manage members can see it, and every view is recorded in the activity log. For a mailbox created earlier whose password was only entered in this app's SMTP settings, the password is picked up from there the first time you press the eye, so it doesn't have to be changed. When the mailbox is later given to a member, the password moves to that member's "My access"; when it is taken back, it moves back; closing the mailbox removes it.
+- **Choose the new password yourself.** "New password" now asks whether to create a strong random password or to use one you type (at least 12 characters, no spaces, with letters and digits). This works for every mailbox, from the Email accounts page and from the Access details window.
+- **Which mailbox is this?** The Email page now shows the address of the connected mailbox and its other addresses (aliases) at the top.
+
 ## [3.2.0]
 
 ### Added

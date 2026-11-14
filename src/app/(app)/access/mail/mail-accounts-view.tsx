@@ -23,13 +23,14 @@ import {
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { avatarFor } from '@/components/user-avatar';
 import { CopyText } from '@/components/copy-text';
+import { NewPasswordDialog } from './new-password-dialog';
 import { useToast } from '@/components/ui/toast';
 import { humanSize } from '@/domain/files/upload';
 import { useT } from '@/i18n/client';
 import type { MailAccountRow, MailAccountsView as Data } from '@/server/corp-mail/accounts';
 import {
   closeMailAccountAction, createMailAccountAction, linkMailAccountAction, resetMailPasswordAction, setMailAliasesAction,
-  setMailQuotaAction,
+  setMailQuotaAction, revealSharedMailSecretAction,
 } from '../_form/actions';
 
 /**
@@ -54,6 +55,8 @@ export function MailAccountsView({ data, createFor = null }: {
   const confirm = useConfirm();
   const [pending, start] = useTransition();
   const [editing, setEditing] = useState<MailAccountRow | null>(null);
+  /** «رمزِ تازه» (۳.۳.۰) — پنجرهٔ خودکار/دستی. */
+  const [pwTarget, setPwTarget] = useState<MailAccountRow | null>(null);
   /** صندوقی که پنجرهٔ جزئیاتش باز است (۳.۲.۰) — با کلیک روی ردیف. */
   const [detail, setDetail] = useState<MailAccountRow | null>(null);
   const [creating, setCreating] = useState(createFor !== null);
@@ -81,25 +84,8 @@ export function MailAccountsView({ data, createFor = null }: {
     });
   };
 
-  const resetPassword = async (account: MailAccountRow) => {
-    if (!await confirm({
-      title: tr('رمزِ تازه برای {address}؟', { address: account.emailAddress }),
-      description: account.link
-        ? tr('رمزِ فعلی و همهٔ ورودهای گوشی و Outlook و اتصالِ صندوق در همین برنامه باطل می‌شوند. رمزِ تازه در «دسترسی‌های من» ِ کارمند دیده می‌شود.')
-        // ⚠️ صندوقِ بی‌صاحب: رمز فقط یک بار نشان داده می‌شود — هر جا با رمزِ قبلی وصل است (مثلاً SMTP) باید عوض شود.
-        : tr('رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه فقط همین یک بار نشان داده می‌شود و در برنامه ذخیره نمی‌شود.'),
-      confirmLabel: tr('رمزِ تازه'),
-      destructive: true,
-    })) return;
-    start(async () => {
-      const result = await resetMailPasswordAction(account.id);
-      if (result.error) { show(tr(result.error, result.params), 'error'); return; }
-      show(tr('رمزِ تازه ساخته شد.'), 'success');
-      if (result.grantId || result.password) {
-        setHandover({ grantId: result.grantId ?? null, address: account.emailAddress, password: result.password });
-      }
-    });
-  };
+  /** «رمزِ تازه» — پنجرهٔ خودکار/دستی (۳.۳.۰)؛ نتیجه در پنجرهٔ تحویل. */
+  const resetPassword = async (account: MailAccountRow) => { setPwTarget(account); };
 
   const close = async (account: MailAccountRow) => {
     if (!await confirm({
@@ -246,6 +232,14 @@ export function MailAccountsView({ data, createFor = null }: {
         onCreated={(created) => { setCreating(false); setHandover(created); }}
       />
       <HandoverDialog value={handover} onClose={() => setHandover(null)} />
+      <NewPasswordDialog
+        target={pwTarget ? { accountId: pwTarget.id, address: pwTarget.emailAddress, linked: pwTarget.link !== null } : null}
+        onClose={() => setPwTarget(null)}
+        onDone={(r) => {
+          const address = pwTarget?.emailAddress ?? '';
+          if (r.grantId || r.password) setHandover({ grantId: r.grantId, address, password: r.password });
+        }}
+      />
     </div>
   );
 }
@@ -297,7 +291,7 @@ function CreateDialog({ open, onOpenChange, domain, people, initialUser, onCreat
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><MailPlus className="size-4" />{tr('صندوقِ تازه')}</DialogTitle>
           <DialogDescription>
-            {tr('حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند و رمزش فقط یک بار به شما نشان داده می‌شود.')}
+            {tr('حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند؛ رمزش در همین صفحه پشتِ دکمهٔ چشم می‌ماند.')}
           </DialogDescription>
         </DialogHeader>
         <form key={`${open}-${fallbackUser}`} onSubmit={submit} className="grid gap-3">
@@ -347,7 +341,7 @@ function HandoverDialog({ value, onClose }: { value: Handover | null; onClose: (
           <DialogTitle>{tr('صندوق آماده است')}</DialogTitle>
           <DialogDescription>
             {shared
-              ? tr('این صندوق صاحبی ندارد و رمزش در برنامه ذخیره نشده. همین حالا کپی‌اش کنید (مثلاً برای تنظیمِ SMTP)؛ بعد از بستنِ این پنجره دوباره دیده نمی‌شود. اگر گم شد، «رمزِ تازه» بگیرید.')
+              ? tr('این صندوق صاحبی ندارد. رمز رمزگذاری‌شده در برنامه می‌ماند و هر وقت لازم شد از پنجرهٔ همین صندوق (دکمهٔ چشم) دیده می‌شود.')
               : tr('کارمند همین نشانی و رمز را در «پروفایل ← دسترسی‌های من» می‌بیند. رمز را از راهِ پیامِ بیرونی نفرستید.')}
           </DialogDescription>
         </DialogHeader>
@@ -411,7 +405,8 @@ function MailboxDetailsDialog({ account, domain, setup, onClose, onEditAliases, 
               {row(tr('نشانی'), <span dir="ltr"><CopyText value={account.emailAddress} /></span>)}
               {row(tr('رمز'), account.link
                 ? <SecretReveal grantId={account.link.grantId} />
-                : <span className="text-xs text-muted-foreground">{tr('در برنامه ذخیره نمی‌شود')}</span>)}
+                // ۳.۳.۰ — صندوقِ بی‌صاحب هم رمزش را (رمزگذاری‌شده) دارد؛ با هر دیدن ثبت می‌شود.
+                : <SecretReveal load={() => revealSharedMailSecretAction(account.id)} />)}
               {row(tr('حجم'), <QuotaEditor account={account} />)}
             </section>
 

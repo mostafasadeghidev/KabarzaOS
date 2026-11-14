@@ -5057,5 +5057,21 @@
   "رمز همان رمزِ صندوق است. اگر ندارید، «رمزِ تازه» بگیرید؛ هر جا با رمزِ قبلی وصل است باید عوض شود.": "Das Passwort ist das Postfach-Passwort. Falls du es nicht hast, erstelle ein neues; alles, was mit dem alten verbunden ist, muss angepasst werden.",
   "صاحب: {name}": "Besitzer: {name}",
   "ندارد.": "Keine.",
-  "تغییرِ حجمِ صندوقِ ایمیل": "Postfachgröße geändert"
+  "تغییرِ حجمِ صندوقِ ایمیل": "Postfachgröße geändert",
+  "این صندوق صاحبی ندارد. رمز رمزگذاری‌شده در برنامه می‌ماند و هر وقت لازم شد از پنجرهٔ همین صندوق (دکمهٔ چشم) دیده می‌شود.": "Dieses Postfach hat keinen Besitzer. Sein Passwort wird verschlüsselt in der App aufbewahrt und kann jederzeit im Fenster dieses Postfachs (Augen-Symbol) angesehen werden.",
+  "این صندوق:": "Dieses Postfach:",
+  "حساب روی سرورِ ایمیل با رمزِ تصادفی ساخته می‌شود و رمز در «دسترسی‌های من» ِ کارمند دیده می‌شود. صندوقِ بی‌صاحب (مثلاً noreply) را کسی در برنامه نمی‌بیند؛ رمزش در همین صفحه پشتِ دکمهٔ چشم می‌ماند.": "Das Konto wird auf dem Mailserver mit einem zufälligen Passwort angelegt; der Mitarbeiter sieht es unter „Meine Zugänge“. Ein Postfach ohne Besitzer (z. B. noreply) sieht niemand in der App; sein Passwort bleibt auf dieser Seite hinter dem Augen-Symbol.",
+  "خودکار — یک رمزِ تصادفیِ قوی ساخته شود": "Automatisch — ein starkes Zufallspasswort erzeugen",
+  "دستی — رمز را خودم می‌نویسم": "Manuell — ich gebe das Passwort selbst ein",
+  "دست‌کم ۱۲ نویسه، بی فاصله، با حرفِ لاتین و رقم.": "Mindestens 12 Zeichen, ohne Leerzeichen, mit lateinischen Buchstaben und Ziffern.",
+  "رمز باید بینِ ۱۲ تا ۱۲۸ نویسه باشد.": "Das Passwort muss 12 bis 128 Zeichen lang sein.",
+  "رمز باید دست‌کم ۱۲ نویسه باشد، بی فاصله، و حرف و رقم هر دو را داشته باشد.": "Das Passwort muss mindestens 12 Zeichen haben, ohne Leerzeichen, mit Buchstaben und Ziffern.",
+  "رمز فاصله نداشته باشد.": "Das Passwort darf keine Leerzeichen enthalten.",
+  "رمز هم حرفِ لاتین داشته باشد هم رقم.": "Das Passwort braucht einen lateinischen Buchstaben und eine Ziffer.",
+  "رمزِ این صندوق در برنامه نیست؛ «رمزِ تازه» بگیرید.": "Das Passwort dieses Postfachs ist nicht in der App; erstelle ein neues.",
+  "رمزِ تازه بگذار": "Neues Passwort setzen",
+  "رمزِ تازه گذاشته شد.": "Neues Passwort gesetzt.",
+  "رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه در همین صفحه پشتِ دکمهٔ چشم می‌ماند.": "Das aktuelle Passwort wird ungültig; überall, wo es verwendet wird (z. B. SMTP-Einstellungen), musst du das neue eintragen. Das neue Passwort bleibt auf dieser Seite hinter dem Augen-Symbol.",
+  "نشانی‌های دیگر:": "Weitere Adressen:",
+  "دیدنِ رمزِ صندوقِ بی‌صاحب": "Passwort eines Postfachs ohne Besitzer angesehen"
 }

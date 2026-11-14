@@ -2,11 +2,12 @@ import 'server-only';
 import { randomInt } from 'node:crypto';
 import { and, asc, eq, isNull, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { auditLog, serviceGrants, services, userRoles, users } from '@/db/schema';
+import { auditLog, corpMailSecrets, serviceGrants, services, userRoles, users } from '@/db/schema';
 import type { Actor } from '@/domain/access/permissions';
 import { assertCanManage } from '@/domain/access/guard';
 import { localPartProblem, normalizeLocalPart, quotaBytes, type CorpMailConfig } from '@/domain/corp-mail/config';
-import { seal } from '@/server/ai/secret-box';
+import { open as openSecret, seal } from '@/server/ai/secret-box';
+import { smtpConfig } from '@/server/settings/smtp-service';
 import {
   aliasList, buildAliasMap, suggestMember, takenNames, toMailAccount, type MailAccount,
 } from '@/domain/corp-mail/accounts';
@@ -27,7 +28,7 @@ import { issueAppPassword } from './mailbox';
 
 export type CorpMailErrorCode =
   | 'not_configured' | 'no_domain' | 'not_found' | 'member_inactive' | 'member_has_mail'
-  | 'invalid_name' | 'reserved_name' | 'name_taken' | 'protected' | 'stalwart' | 'invalid_quota'
+  | 'invalid_name' | 'reserved_name' | 'name_taken' | 'protected' | 'stalwart' | 'invalid_quota' | 'weak_password'
   | 'not_linked' | 'created_unlinked';
 
 export class CorpMailError extends Error {
@@ -108,6 +109,8 @@ async function fetchAccounts(adminId: string, domainId: string, names: Map<strin
 
 export interface MailAccountRow extends MailAccount {
   link: { grantId: number; userId: number; userName: string } | null;
+  /** رمزِ صندوقِ بی‌صاحب نگه داشته شده (۳.۳.۰)؟ */
+  hasSharedSecret: boolean;
   suggestedUserId: number | null;
   protected: boolean;
 }
@@ -154,6 +157,7 @@ export async function listMailAccounts(actor: Actor): Promise<MailAccountsView> 
       .innerJoin(users, eq(users.id, serviceGrants.userId))
       .where(and(eq(serviceGrants.serviceId, serviceId), isNull(serviceGrants.revokedAt), ne(serviceGrants.externalId, '')));
     const byAccount = new Map(links.map((l) => [l.externalId, l]));
+    const kept = new Set((await db.select({ id: corpMailSecrets.accountId }).from(corpMailSecrets)).map((r) => r.id));
     const linkedUsers = new Set(links.map((l) => l.userId));
     const free = people.filter((p) => !linkedUsers.has(p.id));
 
@@ -168,6 +172,7 @@ export async function listMailAccounts(actor: Actor): Promise<MailAccountsView> 
             ...a,
             protected: false,
             link: link ? { grantId: link.grantId, userId: link.userId, userName: link.userName } : null,
+            hasSharedSecret: !link && kept.has(a.id),
             suggestedUserId: link ? null : suggestMember(a, config.domain, free),
           };
         }),
@@ -188,6 +193,52 @@ async function oneAccount(adminId: string, accountId: string) {
   if (!account) throw new CorpMailError('not_found');
   if (PROTECTED.has(account.name)) throw new CorpMailError('protected');
   return { account, raw: raw[0]!, config, domainId };
+}
+
+/** رمزِ صندوقِ بی‌صاحب را (رمزگذاری‌شده) نگه می‌دارد؛ بارِ تازه جایگزینِ قبلی. */
+async function storeSharedSecret(accountId: string, address: string, password: string) {
+  const now = new Date();
+  await db.insert(corpMailSecrets).values({ accountId, address, secretEnc: seal(password), updatedAt: now })
+    .onConflictDoUpdate({ target: corpMailSecrets.accountId, set: { address, secretEnc: seal(password), updatedAt: now } });
+}
+
+/**
+ * قاعدهٔ رمزِ دستیِ صندوق (۳.۳.۰): ۱۲ تا ۱۲۸ نویسه، بی فاصله و نویسهٔ کنترلی، با حرف و رقم.
+ * `null` یعنی پذیرفته؛ وگرنه علت.
+ */
+export function mailPasswordProblem(value: string): 'length' | 'space' | 'mix' | null {
+  if (value.length < 12 || value.length > 128) return 'length';
+  if (/[\s\u0000-\u001f\u007f]/.test(value)) return 'space';
+  if (!/[A-Za-z]/.test(value) || !/[0-9]/.test(value)) return 'mix';
+  return null;
+}
+
+/**
+ * دیدنِ رمزِ صندوقِ بی‌صاحب (۳.۳.۰) — گاردِ «مدیریتِ اعضا» و ثبتِ هر دیدن، مثلِ رمزهای دفتر.
+ *
+ * ⚠️ اگر رمز هنوز در برنامه نیست ولی همین صندوق فرستندهٔ SMTP ِ خودِ برنامه است، رمز از
+ * همان تنظیم برداشته و نگه داشته می‌شود — برای صندوقی که پیش از ۳.۳.۰ ساخته شده و رمزش
+ * فقط در SMTP مانده بود. رمزِ SMTP هم مالِ همان صندوق است، پس چیزی بیرون نمی‌زند.
+ */
+export async function revealSharedMailSecret(actor: Actor, accountId: string): Promise<string | null> {
+  assertCanManage(actor, 'members');
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(accountId)) throw new CorpMailError('not_found');
+  const [row] = await db.select({ address: corpMailSecrets.address, secretEnc: corpMailSecrets.secretEnc })
+    .from(corpMailSecrets).where(eq(corpMailSecrets.accountId, accountId));
+  if (row) {
+    await audit(actor, 'corp_mail.secret_view', 0, null, { account: row.address });
+    return openSecret(row.secretEnc);
+  }
+  // هنوز در انبار نیست — اگر فرستندهٔ SMTP ِ همین برنامه است، از آنجا.
+  let address = '';
+  try {
+    ({ account: { emailAddress: address } } = await oneAccount(await sessionAccountId(), accountId));
+  } catch (error) { wrap(error); }
+  const smtp = await smtpConfig();
+  if (!smtp || !smtp.pass || smtp.user.trim().toLowerCase() !== address.toLowerCase()) return null;
+  await storeSharedSecret(accountId, address, smtp.pass);
+  await audit(actor, 'corp_mail.secret_view', 0, null, { account: address, from: 'smtp' });
+  return smtp.pass;
 }
 
 /**
@@ -274,6 +325,15 @@ export async function linkMailAccount(actor: Actor, accountId: string, userId: n
 
     const now = new Date();
     if (current) {
+      /*
+       * ⚠️ ۳.۳.۰: رمزِ صندوق با جدا شدن از عضو گم نمی‌شود — اگر بی‌صاحب می‌ماند به
+       * انبارِ صندوق‌های بی‌صاحب می‌رود (و اگر به عضوِ دیگری می‌رود، پایین‌تر به ردیفِ او).
+       */
+      const [old] = await tx.select({ secretEnc: serviceGrants.secretEnc }).from(serviceGrants).where(eq(serviceGrants.id, current.id));
+      if (old?.secretEnc) {
+        await tx.insert(corpMailSecrets).values({ accountId: account.id, address: account.emailAddress, secretEnc: old.secretEnc, updatedAt: now })
+          .onConflictDoUpdate({ target: corpMailSecrets.accountId, set: { secretEnc: old.secretEnc, address: account.emailAddress, updatedAt: now } });
+      }
       await tx.update(serviceGrants)
         .set({ revokedAt: now, revokedBy: actor.id, updatedAt: now, secretEnc: '', appSecretEnc: '' })
         .where(eq(serviceGrants.id, current.id));
@@ -290,18 +350,23 @@ export async function linkMailAccount(actor: Actor, accountId: string, userId: n
       .for('update');
     if (mine && mine.externalId && mine.externalId !== account.id) throw new CorpMailError('member_has_mail');
 
+    // ۳.۳.۰ — رمزِ نگه‌داشته‌شدهٔ صندوقِ بی‌صاحب به ردیفِ عضوِ تازه می‌رود (کارمند در «دسترسی‌های من» می‌بیند).
+    const [kept] = await tx.select({ secretEnc: corpMailSecrets.secretEnc }).from(corpMailSecrets).where(eq(corpMailSecrets.accountId, account.id));
+    const carried = kept?.secretEnc ? { secretEnc: kept.secretEnc } : {};
+
     let grantId: number;
     if (mine) {
       await tx.update(serviceGrants)
-        .set({ externalId: account.id, accountRef: account.emailAddress, updatedAt: now })
+        .set({ externalId: account.id, accountRef: account.emailAddress, updatedAt: now, ...carried })
         .where(eq(serviceGrants.id, mine.id));
       grantId = mine.id;
     } else {
       const [row] = await tx.insert(serviceGrants).values({
-        serviceId, userId, grantedBy: actor.id, accountRef: account.emailAddress, externalId: account.id, level: 'member',
+        serviceId, userId, grantedBy: actor.id, accountRef: account.emailAddress, externalId: account.id, level: 'member', ...carried,
       }).returning({ id: serviceGrants.id });
       grantId = row!.id;
     }
+    if (kept) await tx.delete(corpMailSecrets).where(eq(corpMailSecrets.accountId, account.id));
     await tx.insert(auditLog).values({
       actorType: 'user', actorId: actor.id, action: 'corp_mail.link', objectType: 'service_grant', objectId: grantId,
       before: null, after: { account: account.emailAddress, userId },
@@ -351,6 +416,7 @@ export function corpMailMessage(code: CorpMailErrorCode, detail = ''): string {
     case 'not_found': return 'این حساب روی سرورِ ایمیل پیدا نشد.';
     case 'protected': return 'این حساب از برنامه قابلِ تغییر نیست.';
     case 'invalid_quota': return 'حجم باید بینِ ۰٫۱ تا ۱۰۰۰ گیگابایت باشد.';
+    case 'weak_password': return 'رمز باید دست‌کم ۱۲ نویسه باشد، بی فاصله، و حرف و رقم هر دو را داشته باشد.';
     case 'member_inactive': return 'فقط به عضوِ فعال می‌شود صندوقِ ایمیل داد.';
     case 'member_has_mail': return 'این عضو از پیش صندوقِ ایمیلِ دیگری دارد؛ اول آن را جدا کنید.';
     // ⚠️ نامِ مشکل‌دار جای‌نگهدارِ {name} است، نه چسبیده به متن — تا ترجمه بشکند نه.
@@ -477,6 +543,8 @@ export async function createMailAccount(
   } catch (error) { wrap(error); }
 
   if (shared) {
+    // ۳.۳.۰ — رمزِ صندوقِ بی‌صاحب هم رمزگذاری‌شده می‌ماند (پشتِ چشم، با ثبتِ دیدن).
+    await storeSharedSecret(created.id, created.address, password);
     await audit(actor, 'corp_mail.create', 0, null, { account: created.address, shared: true, aliases: input.aliases });
     return { grantId: null, address: created.address, password };
   }
@@ -512,11 +580,14 @@ export async function createMailAccount(
 export async function resetMailPassword(
   actor: Actor,
   accountId: string,
+  /** رمزِ دلخواهِ مدیر (۳.۳.۰)؛ خالی = تصادفی. */
+  custom: string | null = null,
 ): Promise<{ grantId: number | null; password?: string }> {
   assertCanManage(actor, 'members');
+  if (custom !== null && mailPasswordProblem(custom)) throw new CorpMailError('weak_password');
   const serviceId = await corpMailServiceId();
   const link = await linkedGrant(serviceId, accountId);
-  const password = generateMailPassword();
+  const password = custom ?? generateMailPassword();
   let address = '';
   try {
     const adminId = await sessionAccountId();
@@ -534,12 +605,13 @@ export async function resetMailPassword(
    * مدیر برمی‌گردد و هیچ‌جا ذخیره یا لاگ نمی‌شود.
    */
   if (!link) {
-    await audit(actor, 'corp_mail.password', 0, null, { account: address, shared: true });
+    await storeSharedSecret(accountId, address, password);
+    await audit(actor, 'corp_mail.password', 0, null, { account: address, shared: true, custom: custom !== null });
     return { grantId: null, password };
   }
   // ⚠️ credentials ِ تازه app password ِ قبلی را هم باطل کرد؛ کلیدِ برنامه پاک و دوباره گرفته می‌شود.
   await db.update(serviceGrants).set({ secretEnc: seal(password), appSecretEnc: '', updatedAt: new Date() }).where(eq(serviceGrants.id, link.id));
-  await audit(actor, 'corp_mail.password', link.id, null, { account: address });
+  await audit(actor, 'corp_mail.password', link.id, null, { account: address, custom: custom !== null });
   await connectQuietly(link.id, address, password);
   return { grantId: link.id };
 }
@@ -573,6 +645,8 @@ export async function closeMailAccount(actor: Actor, accountId: string): Promise
   const serviceId = await corpMailServiceId();
   const link = await linkedGrant(serviceId, accountId);
   const now = new Date();
+  // رمزِ تصادفیِ بستن هیچ‌جا نوشته نمی‌شود؛ رمزِ قبلیِ صندوقِ بی‌صاحب هم دیگر معنا ندارد.
+  await db.delete(corpMailSecrets).where(eq(corpMailSecrets.accountId, accountId));
   if (link) {
     await db.update(serviceGrants)
       .set({ revokedAt: now, revokedBy: actor.id, updatedAt: now, secretEnc: '', appSecretEnc: '' })
