@@ -39,7 +39,8 @@ export class AccessError extends Error {
       | 'date_invalid'
       | 'has_history'
       | 'duplicate_grant'
-      | 'managed_service',
+      | 'managed_service'
+      | 'cloud_service',
   ) {
     super(`access rule violated: ${code}`);
     this.name = 'AccessError';
@@ -61,7 +62,8 @@ export function accessMessage(code: AccessError['code']): string {
     case 'date_invalid': return 'تاریخِ تمدیدِ بعدی معتبر نیست.';
     case 'has_history': return 'این سرویس تاریخچهٔ دسترسی دارد و پاک نمی‌شود؛ پیش‌تر غیرفعال شده است.';
     case 'duplicate_grant': return 'این شخص همین حالا به این سرویس دسترسیِ باز دارد؛ همان ردیف را ویرایش کنید.';
-    case 'managed_service': return 'ایمیلِ شرکتی را از صفحهٔ «حساب‌های ایمیل» بدهید یا جابه‌جا کنید؛ اینجا فقط سطح، یادداشت و رمز ویرایش می‌شود.';
+    case 'managed_service': return 'ایمیلِ شرکتی و فضای ابری را از صفحهٔ خودشان («حساب‌های ایمیل» و «فضای ابری») بدهید یا جابه‌جا کنید؛ اینجا فقط سطح، یادداشت و رمز ویرایش می‌شود.';
+    case 'cloud_service': return 'این سرویس مالِ یک اتصالِ فضای ابری است؛ از «تنظیمات ← فضای ابری» خاموش یا حذفش کنید.';
   }
 }
 

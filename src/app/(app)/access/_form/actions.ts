@@ -6,6 +6,7 @@ import * as access from '@/server/access/service';
 import { AccessError, accessMessage } from '@/domain/access/service-grants';
 import { ForbiddenError } from '@/domain/access/guard';
 import { CorpMailError, corpMailMessage } from '@/server/corp-mail/accounts';
+import { CloudError, cloudMessage } from '@/domain/cloud/errors';
 
 /** اقدام‌های دفترِ دسترسی‌ها. گاردها در سرویس‌اند (R-ARCH-01). */
 
@@ -33,6 +34,8 @@ async function run(
   try {
     await fn(await requireActor());
   } catch (error) {
+    // قطعِ ردیفِ فضای ابری حساب را روی Nextcloud غیرفعال می‌کند (۳.۴.۰)؛ خطایش پیامِ خودش را دارد.
+    if (error instanceof CloudError) return { error: cloudMessage(error.code), params: { name: error.detail } };
     return { error: explain(error, fallback) };
   }
   revalidatePath('/access');
@@ -239,4 +242,63 @@ export async function mailboxOfGrantAction(grantId: number) {
 export async function closeMailAccountAction(accountId: string): Promise<AccessState> {
   const { closeMailAccount } = await import('@/server/corp-mail/accounts');
   return runMail((actor) => closeMailAccount(actor, accountId), 'صندوق بسته نشد.');
+}
+
+/* ---- فضای ابری (۳.۴.۰) ---- */
+
+async function runCloud(fn: (actor: Awaited<ReturnType<typeof requireActor>>) => Promise<unknown>, fallback: string): Promise<AccessState> {
+  try {
+    await fn(await requireActor());
+  } catch (error) {
+    if (error instanceof CloudError) return { error: cloudMessage(error.code), params: { name: error.detail } };
+    return { error: explain(error, fallback) };
+  }
+  revalidatePath('/access');
+  revalidatePath('/access/cloud');
+  revalidatePath('/profile');
+  return { ok: true };
+}
+
+const cloudId = (v: unknown) => String(v ?? '').slice(0, 64);
+
+/** جفت یا جداکردنِ حسابِ فضای ابری و عضو. `memberId = null` یعنی جدا. */
+export async function linkCloudAccountAction(connectionId: number, userId: string, memberId: number | null): Promise<AccessState> {
+  const { linkCloudAccount } = await import('@/server/cloud/accounts');
+  return runCloud((actor) => linkCloudAccount(actor, Number(connectionId), cloudId(userId), memberId === null ? null : Number(memberId)), 'حساب وصل نشد.');
+}
+
+/** حسابِ تازه برای یک عضو؛ شناسهٔ ردیف برمی‌گردد تا مدیر رمز را ببیند و تحویل دهد. */
+export async function createCloudAccountAction(
+  connectionId: number, input: { memberId: number; userId: string; quotaGb: number },
+): Promise<AccessState & { grantId?: number; userId?: string }> {
+  const { createCloudAccount } = await import('@/server/cloud/accounts');
+  let created: { grantId: number; userId: string } | null = null;
+  const state = await runCloud(async (actor) => {
+    created = await createCloudAccount(actor, Number(connectionId), {
+      memberId: Number(input.memberId) || 0, userId: cloudId(input.userId), quotaGb: Number(input.quotaGb),
+    });
+  }, 'حساب ساخته نشد.');
+  return created ? { ...state, ...(created as { grantId: number; userId: string }) } : state;
+}
+
+export async function setCloudQuotaAction(connectionId: number, userId: string, gb: number): Promise<AccessState> {
+  const { setCloudQuota } = await import('@/server/cloud/accounts');
+  return runCloud((actor) => setCloudQuota(actor, Number(connectionId), cloudId(userId), Number(gb)), 'حجم ذخیره نشد.');
+}
+
+/** رمزِ تازه — خودکار یا دستی؛ رمز فقط برای حسابِ بی‌صاحب (یک بار) برمی‌گردد. */
+export async function resetCloudPasswordAction(
+  connectionId: number, userId: string, custom: string | null = null,
+): Promise<AccessState & { grantId?: number | null; password?: string }> {
+  const { resetCloudPassword } = await import('@/server/cloud/accounts');
+  let out: { grantId: number | null; password?: string } = { grantId: null };
+  const value = typeof custom === 'string' ? custom : null;
+  const state = await runCloud(async (actor) => { out = await resetCloudPassword(actor, Number(connectionId), cloudId(userId), value); }, 'رمز عوض نشد.');
+  return state.error ? state : { ...state, ...out };
+}
+
+/** قطع (غیرفعال + قطعِ ردیف) یا وصلِ دوبارهٔ حساب. */
+export async function setCloudEnabledAction(connectionId: number, userId: string, enabled: boolean): Promise<AccessState> {
+  const { setCloudEnabled } = await import('@/server/cloud/accounts');
+  return runCloud((actor) => setCloudEnabled(actor, Number(connectionId), cloudId(userId), enabled === true), enabled ? 'حساب وصل نشد.' : 'حساب قطع نشد.');
 }

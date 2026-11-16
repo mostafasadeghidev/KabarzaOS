@@ -177,6 +177,15 @@ export const ACTION_LABELS: Record<string, string> = {
   'corp_mail.secret_view': 'دیدنِ رمزِ صندوقِ بی‌صاحب',
   'corp_mail.close': 'بستنِ صندوقِ ایمیل',
   'corp_mail.connect': 'اتصالِ صندوقِ ایمیل به برنامه',
+  'cloud.settings': 'تنظیمِ اتصالِ فضای ابری',
+  'cloud.delete': 'حذفِ اتصالِ فضای ابری',
+  'cloud.link': 'وصل کردنِ حسابِ فضای ابری به عضو',
+  'cloud.unlink': 'جدا کردنِ حسابِ فضای ابری از عضو',
+  'cloud.create': 'ساختنِ حسابِ فضای ابری',
+  'cloud.quota': 'تغییرِ حجمِ حسابِ فضای ابری',
+  'cloud.password': 'رمزِ تازهٔ حسابِ فضای ابری',
+  'cloud.disable': 'قطعِ حسابِ فضای ابری',
+  'cloud.enable': 'وصلِ دوبارهٔ حسابِ فضای ابری',
 
   // دفترِ دسترسی‌های بیرونی
   'service.create': 'سرویسِ جدید',

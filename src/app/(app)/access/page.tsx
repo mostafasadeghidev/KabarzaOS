@@ -8,6 +8,7 @@ import { primeTranslations, t } from '@/i18n/server';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { pageTitle } from '@/i18n/page-title';
 import { isCorpMailConfigured } from '@/server/corp-mail/jmap';
+import { activeCloudConnections } from '@/server/cloud/connections';
 
 export const generateMetadata = pageTitle('دسترسی‌ها');
 
@@ -71,7 +72,9 @@ export default async function AccessPage({
       />
 
       {/* پیوندِ «حساب‌های ایمیل» فقط وقتی سرورِ ایمیل وصل است و بیننده اعضا را اداره می‌کند (۲.۶۰.۰). */}
-      <AccessView data={data} focusUser={focusUser} mailAccounts={data.canManage && isCorpMailConfigured()} />
+      <AccessView data={data} focusUser={focusUser} mailAccounts={data.canManage && isCorpMailConfigured()}
+        cloudAccounts={data.canManage && (await activeCloudConnections()).length > 0}
+      />
     </PageShell>
   );
 }

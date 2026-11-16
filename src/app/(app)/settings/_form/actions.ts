@@ -666,3 +666,62 @@ export async function sendTestMailAction(): Promise<SystemState> {
   // ⚠️ متنِ خطای سرورِ ایمیل (انگلیسی) همان‌طور نشان داده می‌شود — بی‌آن، علتِ شکست حدس زدنی بود.
   return { error: `${t('سرورِ ایمیل نپذیرفت:')} ${result.detail ?? ''}`.trim() };
 }
+
+/* ---- فضای ابری (۳.۴.۰) — اتصال‌های Nextcloud، فقط مالک ---- */
+
+export interface CloudSettingsState {
+  error?: string;
+  params?: Record<string, string>;
+  message?: string;
+}
+
+const PROBLEM_LABELS: Record<string, string> = {
+  name: 'نام', url: 'نشانی (فقط https)', username: 'نامِ کاربری', group: 'گروه', quota: 'سهمیه (۱ تا ۱۰۰۰۰ گیگ)', secret: 'رمزِ برنامه',
+};
+
+async function runCloudSettings(fn: (actor: Awaited<ReturnType<typeof requireActor>>) => Promise<unknown>, ok: string): Promise<CloudSettingsState> {
+  const { CloudError, cloudMessage } = await import('@/domain/cloud/errors');
+  try {
+    const actor = await requireActor();
+    if (!actor.roles.includes('owner')) return { error: 'فقط مدیرِ کل.' };
+    await fn(actor);
+  } catch (error) {
+    if (error instanceof CloudError) {
+      const name = error.code === 'invalid'
+        ? error.detail.split(', ').map((p) => PROBLEM_LABELS[p] ?? p).join('، ')
+        : error.detail;
+      return { error: cloudMessage(error.code), params: { name } };
+    }
+    if (error instanceof ForbiddenError) return { error: 'فقط مدیرِ کل.' };
+    throw error;
+  }
+  revalidatePath('/settings');
+  revalidatePath('/access');
+  revalidatePath('/access/cloud');
+  return { message: ok };
+}
+
+/** ساختن (`id = null`) یا ویرایشِ اتصال. رمزِ خالی = رمزِ قبلی بماند. */
+export async function saveCloudConnectionAction(id: number | null, formData: FormData): Promise<CloudSettingsState> {
+  const { saveCloudConnection } = await import('@/server/cloud/connections');
+  return runCloudSettings((actor) => saveCloudConnection(actor, id === null ? null : Number(id), {
+    name: String(formData.get('name') ?? ''),
+    baseUrl: String(formData.get('baseUrl') ?? ''),
+    username: String(formData.get('username') ?? ''),
+    groupId: String(formData.get('groupId') ?? ''),
+    defaultQuotaGb: String(formData.get('defaultQuotaGb') ?? ''),
+    isActive: formData.get('isActive') === 'on',
+  }, String(formData.get('secret') ?? '')), 'ذخیره شد.');
+}
+
+export async function deleteCloudConnectionAction(id: number): Promise<CloudSettingsState> {
+  const { deleteCloudConnection } = await import('@/server/cloud/connections');
+  return runCloudSettings((actor) => deleteCloudConnection(actor, Number(id)), 'اتصال حذف شد.');
+}
+
+export async function testCloudConnectionAction(id: number): Promise<CloudSettingsState> {
+  const { testCloudConnection } = await import('@/server/cloud/connections');
+  let ok = false;
+  const state = await runCloudSettings(async (actor) => { ok = (await testCloudConnection(actor, Number(id))).ok; }, 'اتصال برقرار است.');
+  return state.error || ok ? state : { error: 'اتصال برقرار نشد.' };
+}

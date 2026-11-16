@@ -9,6 +9,7 @@ import { getTelegramSettings } from '@/server/settings/telegram-service';
 import { getTurnstileSettings } from '@/server/settings/turnstile-service';
 import { getSmtpSettings } from '@/server/settings/smtp-service';
 import { getCorpMailSettings } from '@/server/corp-mail/settings';
+import { listCloudConnections } from '@/server/cloud/connections';
 import { lastTickAt } from '@/server/scheduler/service';
 import { bucketCheck } from '@/server/files/bucket-probe';
 import { schedulerHealth } from '@/domain/scheduler/health';
@@ -94,6 +95,8 @@ export default async function SettingsPage({
       smtp: actor.roles.includes('owner') ? await getSmtpSettings(actor).catch(() => null) : null,
       // ایمیلِ شرکتی (۲.۵۹.۰) — فقط مالک؛ کلیدِ API در این شیء نیست.
       corpMail: actor.roles.includes('owner') ? await getCorpMailSettings(actor).catch(() => null) : null,
+      // فضای ابری (۳.۴.۰) — فقط مالک؛ رمزِ برنامه در این شیء نیست.
+      cloud: actor.roles.includes('owner') ? await listCloudConnections(actor).catch(() => null) : null,
       onboarding: systemConfig.onboardingEnabled
         ? await Promise.all([listLibrary(actor), assignOptions()])
           // «+ ساختِ سرویسِ تازه» فقط برای کسی که دفترِ دسترسی‌ها را اداره می‌کند.

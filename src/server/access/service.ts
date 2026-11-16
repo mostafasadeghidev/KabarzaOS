@@ -24,7 +24,29 @@ import {
 } from '@/domain/access/service-cost';
 import { notify } from '@/server/notifications/service';
 import type { MemberState } from '@/domain/people/offboarding';
-import { closeMailAccount, isManagedService, managedMailboxes } from '@/server/corp-mail/accounts';
+import { closeMailAccount, isManagedService as isMailService, managedMailboxes } from '@/server/corp-mail/accounts';
+import { disableCloudForGrant, isCloudService, managedCloudAccounts } from '@/server/cloud/accounts';
+import { isCloudProvider } from '@/server/cloud/connections';
+import { CloudError } from '@/domain/cloud/errors';
+
+/** سرویسی که برنامه خودش اداره‌اش می‌کند: ایمیلِ شرکتی یا فضای ابری (۳.۴.۰). */
+async function isManagedService(serviceId: number): Promise<boolean> {
+  return await isMailService(serviceId) || await isCloudService(serviceId);
+}
+
+/**
+ * قطعِ واقعیِ حسابِ فضای ابری از دفتر. حسابی که دیگر روی Nextcloud نیست ← فقط ردیف
+ * (`false`، تا مسیرِ عادی قطعش کند)؛ خطای دیگر بالا می‌رود و ردیف باز می‌ماند.
+ */
+async function disableCloud(actor: Actor, target: { connectionId: number; userId: string }): Promise<boolean> {
+  try {
+    await disableCloudForGrant(actor, target);
+    return true;
+  } catch (error) {
+    if (error instanceof CloudError && error.code === 'not_found') return false;
+    throw error;
+  }
+}
 
 /**
  * دفترِ دسترسی‌های بیرونی.
@@ -471,9 +493,11 @@ async function onboardingUseByService(serviceId?: number): Promise<Map<number, n
 export async function deleteService(actor: Actor, id: number): Promise<ServiceRemoval> {
   assertCanManage(actor, 'members');
   const outcome = await db.transaction(async (tx) => {
-    const [svc] = await tx.select({ isActive: services.isActive }).from(services)
+    const [svc] = await tx.select({ isActive: services.isActive, provider: services.provider }).from(services)
       .where(eq(services.id, id)).for('update');
     if (!svc) throw new AccessError('not_found');
+    // ⚠️ سرویسِ فضای ابری (۳.۴.۰) مالِ یک اتصال است؛ خاموش یا حذفش فقط از «تنظیمات ← فضای ابری».
+    if (isCloudProvider(svc.provider)) throw new AccessError('cloud_service');
     const [{ n: grantCount } = { n: 0 }] = await tx.select({ n: sql<number>`count(*)::int` })
       .from(serviceGrants).where(eq(serviceGrants.serviceId, id));
     const onboardingCount = (await onboardingUseByService(id)).get(id) ?? 0;
@@ -647,6 +671,19 @@ export async function revokeMany(actor: Actor, grantIds: number[]): Promise<numb
     }
   }
   open = open.filter((r) => !mailboxes.has(r.id));
+
+  // ⚠️ حسابِ فضای ابری (۳.۴.۰) واقعاً غیرفعال می‌شود؛ همان قاعدهٔ صندوق: شکست = ردیف باز بماند.
+  const clouds = await managedCloudAccounts(open.map((r) => r.id));
+  const cloudLeft = new Set<number>();
+  for (const [grantId, target] of clouds) {
+    try {
+      if (await disableCloud(actor, target)) closed++;
+      else cloudLeft.add(grantId); // حساب دیگر نیست — ردیف از مسیرِ عادی قطع می‌شود.
+    } catch {
+      // ردیف باز می‌ماند.
+    }
+  }
+  open = open.filter((r) => !clouds.has(r.id) || cloudLeft.has(r.id));
   if (open.length === 0) return closed;
 
   const now = new Date();
@@ -722,6 +759,9 @@ export async function revokeAccess(actor: Actor, grantId: number) {
     await closeMailAccount(actor, mailbox);
     return;
   }
+  // ⚠️ حسابِ فضای ابری (۳.۴.۰) روی Nextcloud غیرفعال می‌شود و همان تابع ردیف را قطع می‌کند.
+  const cloud = (await managedCloudAccounts([grantId])).get(grantId);
+  if (cloud && await disableCloud(actor, cloud)) return;
 
   await db.update(serviceGrants)
     .set({ revokedAt: new Date(), revokedBy: actor.id, updatedAt: new Date(), secretEnc: '', appSecretEnc: '' })
