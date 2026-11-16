@@ -22,6 +22,8 @@ import { SystemSection, TelegramSection } from './system-section';
 import { SecuritySection } from './security-section';
 import { MailSection } from './mail-section';
 import { CorpMailSection } from './corp-mail-section';
+import { CloudSection } from './cloud-section';
+import type { CloudConnectionView } from '@/server/cloud/connections';
 import type { CorpMailSettingsView } from '@/server/corp-mail/settings';
 import { OnboardingLibrary, type OnboardingLibraryData } from './onboarding-library';
 import { BackupSection, type BackupView } from './backup-section';
@@ -98,6 +100,8 @@ export interface SettingsData {
   /** کپچای کلودفلر — فقط مالک؛ کلیدِ محرمانه در آن نیست. */
   turnstile: TurnstileSettingsView | null;
   corpMail: CorpMailSettingsView | null;
+  /** فضای ابری (۳.۴.۰) — فقط مالک؛ رمزِ برنامه در آن نیست. */
+  cloud: CloudConnectionView[] | null;
   /** ایمیلِ خروجی — فقط مالک؛ رمز در آن نیست. */
   smtp: SmtpSettingsView | null;
   qaItems: Array<{
@@ -144,6 +148,8 @@ const TABS = [
   { key: 'security', label: 'امنیت', ownerOnly: true },
   // ایمیلِ شرکتی (۲.۵۹.۰) — اتصال به Stalwart.
   { key: 'corpmail', label: 'ایمیلِ شرکتی', ownerOnly: true },
+  // فضای ابری (۳.۴.۰) — اتصال‌های Nextcloud.
+  { key: 'cloud', label: 'فضای ابری', ownerOnly: true },
   { key: 'fiscal', label: 'دورهٔ مالی', ownerOnly: true },
 ] as const;
 
@@ -723,6 +729,7 @@ export function SettingsView({
 
       {tab === 'security' && data.isOwner && data.turnstile && <SecuritySection turnstile={data.turnstile} />}
       {tab === 'corpmail' && data.isOwner && data.corpMail && <CorpMailSection view={data.corpMail} />}
+      {tab === 'cloud' && data.isOwner && data.cloud && <CloudSection connections={data.cloud} />}
 
       {tab === 'notify' && data.isOwner && (
         <div className="grid gap-6">

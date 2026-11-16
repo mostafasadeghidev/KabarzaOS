@@ -547,6 +547,13 @@
       "when": 1789698000048,
       "tag": "0077_corp_mail_secrets",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1789698000049,
+      "tag": "0078_cloud_connections",
+      "breakpoints": true
     }
   ]
 }

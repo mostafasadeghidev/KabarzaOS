@@ -27,10 +27,14 @@ function problem(value: string): string | null {
  * ⚠️ هر دو حالت رمزِ قبلی و همهٔ اتصال‌های قبلی (گوشی، Outlook، SMTP) را باطل می‌کنند.
  * رمز در دفتر می‌ماند: صندوقِ عضو در «دسترسی‌های من» ِ او، صندوقِ بی‌صاحب پشتِ چشمِ همین صفحه.
  */
-export function NewPasswordDialog({ target, onClose, onDone }: {
+export function NewPasswordDialog({ target, onClose, onDone, submit: send = resetMailPasswordAction, notes }: {
   target: { accountId: string; address: string; linked: boolean } | null;
   onClose: () => void;
   onDone: (result: { grantId: number | null; password?: string }) => void;
+  /** اکشنِ رمزِ تازه — پیش‌فرض صندوقِ ایمیل؛ فضای ابری (۳.۴.۰) اکشنِ خودش را می‌دهد. */
+  submit?: (accountId: string, custom: string | null) => Promise<{ error?: string; params?: Record<string, string>; grantId?: number | null; password?: string }>;
+  /** هشدارِ زیرِ فرم برای حسابِ وصل و بی‌صاحب — پیش‌فرض متنِ صندوقِ ایمیل. */
+  notes?: { linked: string; shared: string };
 }) {
   const tr = useT();
   const { show } = useToast();
@@ -48,7 +52,7 @@ export function NewPasswordDialog({ target, onClose, onDone }: {
       if (p) { setError(p); return; }
     }
     start(async () => {
-      const result = await resetMailPasswordAction(target.accountId, mode === 'custom' ? value : null);
+      const result = await send(target.accountId, mode === 'custom' ? value : null);
       if (result.error) { show(tr(result.error, result.params), 'error'); return; }
       show(tr('رمزِ تازه گذاشته شد.'), 'success');
       setValue('');
@@ -86,7 +90,9 @@ export function NewPasswordDialog({ target, onClose, onDone }: {
             </Field>
           )}
           <p className="rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-            {target?.linked
+            {notes
+              ? tr(target?.linked ? notes.linked : notes.shared)
+              : target?.linked
               ? tr('رمزِ فعلی و همهٔ ورودهای گوشی و Outlook و اتصالِ صندوق در همین برنامه باطل می‌شوند. رمزِ تازه در «دسترسی‌های من» ِ کارمند دیده می‌شود.')
               : tr('رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه در همین صفحه پشتِ دکمهٔ چشم می‌ماند.')}
           </p>

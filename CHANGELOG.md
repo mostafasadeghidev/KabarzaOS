@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.4.0]
+
+### Added
+
+- **Cloud storage (Nextcloud) accounts, managed from the app.** Connect one or more Nextcloud servers in Settings → Cloud storage (owner only): address, a connection user, its app password (stored encrypted, never shown again), the group the app may manage, and the default size for new accounts. Each connection can be tested, edited, turned off, or deleted when it has no access history. The connection user should be a group admin of that one group, not a full admin; the test warns if it is a full admin.
+- **Cloud storage page.** Access → Cloud storage lists every account in the connection's group, with used space and quota, last login, and the member it belongs to (with a suggestion when the name or email matches). From there you can link an account to a member, create an account for a member (random password, shown in the member's "My access"), change the quota, set a new password (automatic or typed), and disable or re-enable an account. With several connections, each has its own tab.
+- **Revoking access disables the cloud account.** Revoking a cloud storage row in Access, or from a leaving member's checklist, disables the account on Nextcloud (files are kept) and clears its stored password. If Nextcloud can't be reached, the row stays open so the register never says an account is closed while it is still open.
+
 ## [3.3.0]
 
 ### Added

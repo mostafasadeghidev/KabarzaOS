@@ -5,7 +5,7 @@ import { UserName, avatarFor } from '@/components/user-avatar';
 import { useActionState, useEffect, useMemo, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { Download, KeyRound, ListChecks, Mail, Pencil, Plus, ShieldAlert, XCircle } from 'lucide-react';
+import { Cloud, Download, KeyRound, ListChecks, Mail, Pencil, Plus, ShieldAlert, XCircle } from 'lucide-react';
 import { CatalogSection } from '../settings/catalog-section';
 import {
   deleteServiceAction, grantAccessAction, revokeAccessAction, revokeManyAction,
@@ -126,10 +126,12 @@ export interface AccessData {
 
 type StatusFilter = 'open' | 'revoked' | 'all';
 
-export function AccessView({ data, focusUser, mailAccounts = false }: {
+export function AccessView({ data, focusUser, mailAccounts = false, cloudAccounts = false }: {
   data: AccessData; focusUser: number | null;
   /** پیوند به «حساب‌های ایمیل» (۲.۶۰.۰). */
   mailAccounts?: boolean;
+  /** پیوندِ «فضای ابری» (۳.۴.۰) — مدیرِ اعضا و دست‌کم یک اتصالِ روشن. */
+  cloudAccounts?: boolean;
 }) {
   const tr = useT();
   const tz = useTimeZone();
@@ -147,6 +149,7 @@ export function AccessView({ data, focusUser, mailAccounts = false }: {
   const [detail, setDetail] = useState<GrantRow | null>(null);
   const [pending, startTransition] = useTransition();
   const isMailService = (serviceId: number) => data.services.find((s) => s.id === serviceId)?.provider === 'stalwart';
+  const isCloudService = (serviceId: number) => data.services.find((s) => s.id === serviceId)?.provider.startsWith('nextcloud:') ?? false;
 
   const serviceName = (id: number) =>
     data.services.find((s) => s.id === id)?.name ?? `#${id}`;
@@ -184,7 +187,14 @@ export function AccessView({ data, focusUser, mailAccounts = false }: {
   const confirmRevoke = async (row: GrantRow) => {
     // ⚠️ صندوقِ ایمیلِ شرکتی واقعاً بسته می‌شود (۲.۶۱.۰)، پس هشدارِ جدا.
     const managed = isMailService(row.serviceId);
-    if (await confirm(managed ? {
+    // ⚠️ حسابِ فضای ابری (۳.۴.۰) روی Nextcloud غیرفعال می‌شود.
+    const cloud = isCloudService(row.serviceId);
+    if (await confirm(cloud ? {
+      title: tr('حسابِ فضای ابریِ {id} قطع شود؟', { id: row.accountRef }),
+      description: tr('حساب روی فضای ابری غیرفعال می‌شود: دیگر نمی‌تواند وارد شود و همگام‌سازی متوقف می‌شود. فایل‌ها پاک نمی‌شوند و از صفحهٔ «فضای ابری» دوباره وصل می‌شود.'),
+      confirmLabel: tr('قطعِ حساب'),
+      destructive: true,
+    } : managed ? {
       title: tr('صندوقِ ایمیلِ {address} بسته شود؟', { address: row.accountRef }),
       description: tr('رمز به مقداری نامعلوم عوض می‌شود و نشانی‌های دیگرش خاموش می‌شوند؛ دیگر کسی نمی‌تواند واردش شود. ایمیل‌های قبلی پاک نمی‌شوند و پاک‌کردنِ نهایی کارِ دستیِ مدیرِ سرورِ ایمیل است.'),
       confirmLabel: tr('بستنِ صندوق'),
@@ -235,10 +245,19 @@ export function AccessView({ data, focusUser, mailAccounts = false }: {
             <TabsTrigger value="services" className="flex-none">{tr("سرویس‌ها")}</TabsTrigger>
           </TabsList>
           {/* صفحهٔ جدا — هر بار از سرورِ ایمیل می‌خواند. */}
-          {mailAccounts && (
-            <Button size="sm" variant="ghost" asChild className="ms-auto flex-none">
-              <Link href="/access/mail"><Mail className="size-4" />{tr("حساب‌های ایمیل")}</Link>
-            </Button>
+          {(mailAccounts || cloudAccounts) && (
+            <div className="ms-auto flex flex-none gap-1">
+              {mailAccounts && (
+                <Button size="sm" variant="ghost" asChild className="flex-none">
+                  <Link href="/access/mail"><Mail className="size-4" />{tr("حساب‌های ایمیل")}</Link>
+                </Button>
+              )}
+              {cloudAccounts && (
+                <Button size="sm" variant="ghost" asChild className="flex-none">
+                  <Link href="/access/cloud"><Cloud className="size-4" />{tr("فضای ابری")}</Link>
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </Tabs>

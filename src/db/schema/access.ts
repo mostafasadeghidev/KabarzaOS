@@ -356,6 +356,33 @@ export const corpMailSecrets = pgTable('corp_mail_secrets', {
 });
 
 /**
+ * فضای ابری (۳.۴.۰) — یک سرورِ Nextcloud. هر اتصال یک سرویس در دفترِ دسترسی‌هاست
+ * (`provider = 'nextcloud:<id>'`) و حساب‌های کارمندان ردیف‌های همان سرویس‌اند
+ * (`external_id` = شناسهٔ کاربر در Nextcloud).
+ *
+ * ⚠️ کاربرِ اتصال فقط «مدیرِ گروهِ» `groupId` است، نه ادمینِ کل؛ برنامه فقط حساب‌های همان
+ * گروه را می‌بیند و عوض می‌کند. `secretEnc` رمزِ برنامهٔ اوست، رمزگذاری‌شده، و هرگز
+ * در select ِ فهرست‌ها نمی‌آید.
+ */
+export const cloudConnections = pgTable('cloud_connections', {
+  id: pk(),
+  name: text('name').notNull(),
+  baseUrl: text('base_url').notNull(),
+  username: text('username').notNull(),
+  secretEnc: text('secret_enc').notNull().default(''),
+  groupId: text('group_id').notNull(),
+  defaultQuotaGb: integer('default_quota_gb').notNull().default(10),
+  /** خاموش = نه در صفحهٔ فضای ابری، نه قطعِ خودکار؛ حذف فقط وقتی هیچ ردیفی به آن نخورده. */
+  isActive: boolean('is_active').notNull().default(true),
+  serviceId: fk('service_id').notNull().references(() => services.id),
+  /** نتیجهٔ آخرین «آزمونِ اتصال» — بی راز. */
+  status: jsonb('status').$type<Record<string, unknown> | null>(),
+  ...stamps,
+}, (t) => [
+  uniqueIndex('cloud_connections_service_uq').on(t.serviceId),
+]);
+
+/**
  * «مغزِ» ربات تلگرام (۲.۹.۰) — ارائه‌دهندهٔ هوشِ مصنوعیِ هر کاربر.
  * ⚠️ `apiKeyEnc` رمزگذاری‌شده است (`server/ai/secret-box`)؛ `keyHint` فقط چهار
  * نویسهٔ آخرِ کلید برای تشخیص.
