@@ -7,6 +7,7 @@ Versioning follows [SemVer](https://semver.org/).
 ### Fixed
 
 - **Buttons look the same everywhere.** Buttons that open a window, menu or tip (for example Edit, Manage members, Edit clients) kept the old square, flat look while the rest had the new rounded, shadowed style. They now match. In a project's QA tab, "Clear all" has the same style as "Select all" next to it (also in the new-project form).
+- **Buttons react to the mouse and to clicks again.** Outlined buttons (Manage members, Edit, Invoice, Select all…) showed no change on hover or click since 3.7.0. They now take a soft tint of the palette colour and lift slightly on hover, stay tinted while their window or menu is open, and every button presses in a little when clicked.
 
 ### Changed
 

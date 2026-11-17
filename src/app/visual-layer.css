@@ -200,7 +200,28 @@ a:focus-visible > [data-slot='card'] {
   background: var(--color-card);
   box-shadow: var(--wp-shadow-1);
   border-color: transparent;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease, color 0.12s ease;
 }
+/*
+ * ⚠️ بازخوردِ هاور/کلیک (۳.۸.۱): پس‌زمینهٔ بالا (بی‌لایه) هاورِ Tailwind ِ `hover:bg-accent` را
+ * می‌پوشاند و دکمه‌های قاب‌دار (مدیریتِ اعضا، ویرایش، فاکتور…) با ماوس و کلیک هیچ تغییری نداشتند.
+ * هاور: رنگِ ملایمِ پالت + سایهٔ بیشتر + یک پیکسل بالا. کلیک: فرو رفتن. دکمهٔ غیرفعال دست نمی‌خورد.
+ */
+[data-button][data-variant='outline']:not(:disabled):hover {
+  background: color-mix(in oklch, var(--color-primary) 8%, var(--color-card));
+  color: color-mix(in oklch, var(--color-primary) 55%, var(--color-foreground));
+  box-shadow: var(--wp-shadow-2);
+  transform: translateY(-1px);
+}
+[data-button][data-variant='outline']:not(:disabled):active,
+[data-button][data-variant='outline'][data-state='open'] {
+  background: color-mix(in oklch, var(--color-primary) 14%, var(--color-card));
+  box-shadow: var(--wp-shadow-1);
+  transform: translateY(0);
+}
+/* کلیک روی هر دکمه‌ای کمی فرو می‌رود — حسِ «زده شد». */
+[data-button]:not(:disabled):active { scale: 0.97; }
+[data-button] { transition-property: transform, scale, box-shadow, background-color, color, filter; transition-duration: 0.12s; }
 
 /* ---------- ورودی‌ها: کمی گردتر، فوکوسِ هاله‌ای ---------- */
 [data-slot='input'], [data-slot='textarea'], [data-slot='searchable-select'] button, [data-slot='input-group'] {
