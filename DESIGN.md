@@ -266,8 +266,15 @@ only as the owner.
 tokens and `data-slot` attributes, so no component is rewritten; removing the
 import returns the plain look above.
 
-- **Canvas.** Warm paper with two very faint colour glows behind it, so the
-  glass has something to show. The dark theme has no glow (it read as a stain).
+- **Canvas.** Paper with three very faint colour glows behind it (top
+  corner, bottom corner, centre), so the glass has something to show. Their
+  hues come from the palette (`--wp-g1..3`, strength `--wp-gc`; Slate is
+  nearly colourless).
+- **Palette colour.** Gradients, glows on focus and active highlights are
+  built from `--color-primary` with `oklch(from …)`, never a fixed hue, so they
+  follow the palette. Under white text the lightness is capped at 0.54. Each
+  gradient has a plain `background: var(--color-primary)` line before it as
+  the fallback.
 - **Surfaces.** Cards lose the hairline and get a soft layered shadow and a
   slightly larger radius. Metric cards get a gentle tint gradient; numbers on
   them stay full contrast.
