@@ -5,6 +5,7 @@ import { Ban, Undo2 } from 'lucide-react';
 import { setProjectAccessAction } from './members-actions';
 import { IconButton } from '@/components/ui/icon-button';
 import { useT } from '@/i18n/client';
+import { useResultToast } from '@/components/ui/toast';
 
 /**
  * قطع/وصلِ دسترسیِ یک نفر به این پروژه.
@@ -23,6 +24,7 @@ export function MemberAccessToggle({
   blocked: boolean;
 }) {
   const t = useT();
+  const toastResult = useResultToast();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +41,8 @@ export function MemberAccessToggle({
           startTransition(async () => {
             const result = await setProjectAccessAction(projectId, userId, !blocked);
             setError(result.error ?? null);
+            // قطع/بازگرداندنِ دسترسی کارِ حساسی است؛ کاربر باید ببیند انجام شد.
+            if (!result.error) toastResult(result, blocked ? 'دسترسی بازگردانده شد.' : 'دسترسی قطع شد.');
           })
         }
       >

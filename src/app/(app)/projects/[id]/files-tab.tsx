@@ -4,7 +4,7 @@ import { UserName } from '@/components/user-avatar';
 import { useActionState, useRef, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import {
-  Download, FileText, Film, ImageIcon, Link2, Paperclip, Pin, PinOff, Play, Square, Trash2, Upload,
+  Download, FileArchive, FileText, Film, ImageIcon, Link2, Paperclip, Pin, PinOff, Play, Square, Trash2, Upload,
 } from 'lucide-react';
 import { LinkIcon } from '@/components/media/link-card';
 import { linkTitle, providerName } from '@/domain/files/link-preview';
@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useResultToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { Section } from '@/components/page-shell';
@@ -91,6 +91,8 @@ export function FilesTab({
   useActionToast(linkState);
   const [removing, startRemove] = useTransition();
   const confirm = useConfirm();
+  // حذف و سنجاق مستقیم صدا زده می‌شوند (نه فرم) — پیامِ موفقیتشان پیش از ۳.۹.۰ دور ریخته می‌شد.
+  const toastResult = useResultToast();
   const [removeError, setRemoveError] = useState<string | null>(null);
   /** ویدئویی که همین‌جا پخش می‌شود — یکی در هر لحظه، تا چند پخش‌کننده هم‌زمان بار نشوند. */
   const [playing, setPlaying] = useState<number | null>(null);
@@ -104,6 +106,7 @@ export function FilesTab({
     startRemove(async () => {
       const result = await pinAttachmentAction(f.id, projectId, !f.pinned);
       if (result?.error) setRemoveError(result.error);
+      else toastResult(result);
     });
   };
   const PinAction = ({ f, title }: { f: FileRow; title: string }) => (
@@ -123,6 +126,7 @@ export function FilesTab({
     startRemove(async () => {
       const result = await deleteAttachmentAction(id, projectId);
       if (result?.error) setRemoveError(result.error);
+      else toastResult(result, 'حذف شد.');
     });
   };
 
@@ -203,7 +207,19 @@ export function FilesTab({
         )}
       </Section>
 
-      <Section icon={<Paperclip />} title={tr("پیوست‌ها")}>
+      <Section
+        icon={<Paperclip />}
+        title={tr("پیوست‌ها")}
+        // ۳.۹.۰ — همهٔ فایل‌هایی که همین کاربر می‌بیند در یک zip (`/api/projects/<id>/files-zip`)؛ لینک‌ها در «لینک‌ها.txt».
+        actions={files.length > 0 && (
+          <Button asChild size="sm" variant="outline">
+            <a href={`/api/projects/${projectId}/files-zip`} download>
+              <FileArchive />
+              {tr('دانلودِ همه (zip)')}
+            </a>
+          </Button>
+        )}
+      >
 
         {canUpload && (
           <form

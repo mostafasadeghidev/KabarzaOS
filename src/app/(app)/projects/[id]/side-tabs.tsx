@@ -16,7 +16,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow } from '@/components/ui/table';
-import { useActionToast, useToast } from '@/components/ui/toast';
+import { useActionToast, useResultToast, useToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { removeQaRoleAction } from '../_form/tab-actions';
 import { useConfirm } from '@/components/ui/confirm';
@@ -474,6 +474,7 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
 function QaDelete({ itemId }: { itemId: number }) {
   const t = useT();
   const confirm = useConfirm();
+  const toastResult = useResultToast();
   const [pending, startTransition] = useTransition();
   return (
     <Button
@@ -482,7 +483,7 @@ function QaDelete({ itemId }: { itemId: number }) {
       disabled={pending}
       onClick={async () => {
         if (await confirm({ title: t('این آیتم حذف شود؟') })) {
-          startTransition(async () => { await deleteQaItemAction(itemId); });
+          startTransition(async () => { toastResult(await deleteQaItemAction(itemId)); });
         }
       }}
       variant="ghost"
@@ -513,6 +514,7 @@ function QaRoleRemove({
 }) {
   const tr = useT();
   const confirm = useConfirm();
+  const toastResult = useResultToast();
   const [pending, startTransition] = useTransition();
 
   return (
@@ -525,7 +527,7 @@ function QaRoleRemove({
       onClick={async () => {
         if (!(await confirm({ title: tr('همهٔ آیتم‌های این نقش برداشته شود؟') }))) return;
         startTransition(async () => {
-          await removeQaRoleAction(projectId, roleTagId);
+          toastResult(await removeQaRoleAction(projectId, roleTagId));
         });
       }}
     >

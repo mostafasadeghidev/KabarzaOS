@@ -398,6 +398,49 @@ export async function listAttachments(actor: Actor, projectId: number) {
   return projectRepo.listAttachments(projectId);
 }
 
+/**
+ * «دانلودِ همه» ِ تبِ فایل‌های پروژه (۳.۹.۰) — همان فایل‌هایی که تبِ فایل‌ها نشان می‌دهد (فقط
+ * پیوستِ خودِ پروژه، نه رسانهٔ تسک/کامنت)، و از آن‌ها **فقط** آنچه همین کاربر حقِ دیدنش را دارد
+ * (`canViewFile` برای تک‌تک؛ همان گاردِ مسیرِ تک‌فایل). لینک‌های بیرونی در «لینک‌ها.txt».
+ * ⚠️ عضوِ سابق (offboarded) پیوستِ پروژه نمی‌گیرد — مثلِ مسیرِ تک‌فایل.
+ */
+export async function projectFilesZip(actor: Actor, projectId: number, offboarded = false) {
+  if (offboarded) throw new ForbiddenError('offboarded');
+  await assertProjectAccess(actor, projectId);
+  const [project] = await db.select({ title: projects.title }).from(projects).where(eq(projects.id, projectId));
+  if (!project) throw new FileNotFoundError();
+  const rows = await db
+    .select({
+      kind: attachments.kind, label: attachments.label, externalUrl: attachments.externalUrl,
+      fileId: files.id, storageKey: files.storageKey, originalName: files.originalName, mime: files.mime,
+      size: files.size, createdAt: attachments.createdAt,
+    })
+    .from(attachments)
+    .leftJoin(files, eq(files.id, attachments.fileId))
+    .where(and(
+      eq(attachments.projectId, projectId),
+      isNull(attachments.taskId), isNull(attachments.commentId), isNull(attachments.reviewId),
+    ))
+    .orderBy(attachments.id);
+
+  const fileRows = [];
+  for (const r of rows) {
+    if (r.kind === 'link' || r.fileId === null || r.storageKey === null) continue;
+    if (await canViewFile(actor, r.fileId)) fileRows.push(r);
+  }
+  const links = rows.filter((r) => r.kind === 'link' && r.externalUrl);
+  return {
+    title: project.title,
+    files: fileRows.map((r) => ({
+      name: safeDownloadName(r.originalName ?? '', r.mime ?? ''),
+      key: r.storageKey!,
+      size: r.size ?? 0,
+      date: r.createdAt,
+    })),
+    links: links.map((r) => ({ label: r.label ?? '', url: r.externalUrl! })),
+  };
+}
+
 export async function addAttachment(
   actor: Actor,
   projectId: number,

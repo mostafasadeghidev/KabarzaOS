@@ -13,7 +13,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow } from '@/components/ui/table';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useResultToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { useConfirm } from '@/components/ui/confirm';
 import { NativeSelectOption } from '@/components/ui/native-select';
@@ -60,6 +60,7 @@ function Submit() {
 export function AbsencePanel({ data }: { data: AbsencePanelData }) {
   const tr = useT();
   const confirm = useConfirm();
+  const toastResult = useResultToast();
   const [state, formAction] = useActionState(saveAbsenceAction, {} as AbsenceState);
   useActionToast(state);
   const [pending, startTransition] = useTransition();
@@ -149,7 +150,7 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
                         disabled={pending}
                         onClick={async () => {
                           if (await confirm({ title: tr('این مرخصی حذف شود؟') })) {
-                            startTransition(async () => { await deleteAbsenceAction(a.id); });
+                            startTransition(async () => { toastResult(await deleteAbsenceAction(a.id)); });
                           }
                         }}
                       >

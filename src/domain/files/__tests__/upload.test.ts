@@ -201,6 +201,11 @@ describe('نامِ دانلود', () => {
 
   it('نامِ خالی جایگزینِ امن می‌گیرد', () => {
     expect(safeDownloadName('  ', 'image/png')).toBe('file.png');
+    // ۳.۹.۰ — تصویرِ اصلاح‌شده (JPEG با نامِ ‎.webp) با پسوندِ درست دانلود می‌شود.
+    expect(safeDownloadName('cover.webp', 'image/jpeg')).toBe('cover.jpg');
+    expect(safeDownloadName('photo.JPEG', 'image/jpeg')).toBe('photo.JPEG');
+    expect(safeDownloadName('report.pdf', 'application/pdf')).toBe('report.pdf');
+    expect(safeDownloadName('notes.txt', 'image/png')).toBe('notes.txt');
   });
 });
 

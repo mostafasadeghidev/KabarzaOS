@@ -13,6 +13,7 @@ import {
 } from '@/domain/timelogs/timer';
 import { isFrozenProject } from '@/domain/projects/lifecycle';
 import { monthRange, weekRange } from '@/domain/reports/filters';
+import { buildWeek, weekDates } from '@/domain/timelogs/week';
 import { clampPage, HOURS_PER_PAGE } from '@/domain/timelogs/hours-filter';
 
 /**
@@ -498,6 +499,21 @@ export async function myTotals(actor: Actor, now = new Date(), weekStart = 0) {
     .where(eq(timelogs.userId, actor.id));
 
   return { week: rows[0]?.week ?? 0, month: rows[0]?.month ?? 0, total: rows[0]?.total ?? 0 };
+}
+
+/**
+ * «هفتهٔ من» (۳.۹.۰) — دقیقه‌های هر روزِ هفتهٔ جاریِ **خودِ** کاربر، برای کادرِ کنارِ «ثبتِ ساعت»
+ * در داشبورد. فقط ردیف‌های خودش (userId)؛ یک پرس‌وجوی گروه‌بندی‌شده.
+ */
+export async function myWeek(actor: Actor, now = new Date(), weekStart = 0) {
+  const today = toDateString(now);
+  const dates = weekDates(today, weekStart);
+  const rows = await db
+    .select({ date: timelogs.logDate, minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int` })
+    .from(timelogs)
+    .where(and(eq(timelogs.userId, actor.id), gte(timelogs.logDate, dates[0]!), lte(timelogs.logDate, dates[6]!)))
+    .groupBy(timelogs.logDate);
+  return buildWeek(today, weekStart, new Map(rows.map((r) => [r.date, r.minutes])));
 }
 
 /** ویرایشِ یک ثبت — فقط صاحبش و فقط داخلِ پنجرهٔ ویرایش. */

@@ -287,6 +287,28 @@ function useActionToast(
   }, [state, show, t, options.success]);
 }
 
+/**
+ * توستِ نتیجهٔ اکشنی که **مستقیم** صدا زده می‌شود (دکمهٔ حذف/سنجاق/قطعِ دسترسی، نه فرم) — ۳.۹.۰.
+ *
+ * ⚠️ چرا: `useActionToast` فقط برای `useActionState` است. دکمه‌هایی که اکشن را در
+ * `startTransition` صدا می‌زدند پیامِ موفقیتِ اکشن («حذف شد.») را دور می‌ریختند و چند تا
+ * حتی خطا را هم بی‌صدا می‌خوردند (حذفِ کامنت، آیتمِ QA). خطا همیشه نشان داده می‌شود؛
+ * موفقیت با پیامِ خودِ اکشن، وگرنه `success` ِ داده‌شده.
+ */
+function useResultToast(): (
+  result: { ok?: boolean; error?: string; message?: string } | null | undefined | void,
+  success?: string,
+) => void {
+  const { show } = useToast();
+  const t = useT();
+  return React.useCallback((result, success) => {
+    if (!result) return;
+    if (result.error) { show(t(result.error), 'error'); return; }
+    const text = result.message ?? success;
+    if (text) show(t(text), 'success');
+  }, [show, t]);
+}
+
 export {
   Toaster,
   Toast,
@@ -301,6 +323,7 @@ export {
   createToastManager,
   toast,
   useActionToast,
+  useResultToast,
   useToast,
   useToastManager,
 };

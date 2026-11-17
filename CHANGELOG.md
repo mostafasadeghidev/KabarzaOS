@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.9.0]
+
+### Added
+
+- **"My week" on team members' dashboards.** The "Log hours" box is no longer full width; next to it, "My week" shows the hours logged today and this week, with a small bar for each day of the week (today highlighted, coming days dotted). The week starts on the day set in Settings, the same as the weekly totals in reports. While a timer is running, "My week" is shown on its own.
+- **Download all project files as one zip.** The Attachments section of a project's Files tab has a "Download all (zip)" button. The zip holds every file of that project the person is allowed to see, under its original name (duplicates are numbered), plus a "links" text file listing the project's external links. Files are streamed straight from the app server or the cloud storage, so a large project doesn't load the server's memory.
+
+### Fixed
+
+- **Deleting and changing things now confirms with a message.** Deleting a project file or link, pinning or unpinning a file, deleting media in a gallery, deleting a comment, deleting a QA item or a role's QA items, deleting a leave, cutting or restoring a member's access to a project, and setting the default currency now show a short message such as "Deleted.". Some of these (deleting a comment or a QA item) also stayed silent when they failed; they now show the error.
+- **Images with a corrected type download with the right extension.** A picture that was uploaded with the wrong extension (for example a JPEG named `.webp`) is stored under its real type since 3.8.0; its download name now uses the matching extension too.
+
 ## [3.8.3]
 
 ### Changed

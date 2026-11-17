@@ -264,8 +264,24 @@ export function storageKey(purpose: Purpose, mime: string, token: string): strin
 /** نامِ فایل برای هدرِ دانلود — بدونِ نویسه‌هایی که هدر را می‌شکنند. */
 export function safeDownloadName(originalName: string, mime: string): string {
   const cleaned = originalName.replace(/[\r\n"\\]/g, '').replace(/[/\\]/g, '_').trim();
-  if (cleaned) return cleaned.slice(0, 120);
-  return `file.${EXTENSION[mime.toLowerCase()] ?? 'bin'}`;
+  if (!cleaned) return `file.${EXTENSION[mime.toLowerCase()] ?? 'bin'}`;
+  return fixImageExtension(cleaned, mime).slice(0, 120);
+}
+
+/**
+ * ۳.۹.۰ — تصویری که با پسوندِ نادرست آمده و با نوعِ واقعی‌اش ذخیره شده (`trustedMime`: JPEG با نامِ
+ * «‎.webp») با پسوندِ درست دانلود شود؛ وگرنه برنامه‌ای که با پسوند تصمیم می‌گیرد بازش نمی‌کرد.
+ * فقط پسوندِ **تصویری** ِ نادرست عوض می‌شود — نامِ بی‌پسوند یا پسوندِ غیرِ تصویری دست نمی‌خورد.
+ */
+const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp']);
+function fixImageExtension(name: string, mime: string): string {
+  const want = EXTENSION[mime.toLowerCase()];
+  if (!want || !mime.toLowerCase().startsWith('image/')) return name;
+  const dot = name.lastIndexOf('.');
+  if (dot <= 0) return name;
+  const ext = name.slice(dot + 1).toLowerCase();
+  if (!IMAGE_EXTS.has(ext) || ext === want || (ext === 'jpeg' && want === 'jpg')) return name;
+  return `${name.slice(0, dot)}.${want}`;
 }
 
 /**
