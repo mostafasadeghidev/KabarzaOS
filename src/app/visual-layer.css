@@ -11,8 +11,8 @@
 
 :root {
   --wp-radius-card: 1.1rem;
-  --wp-shadow-1: 0 1px 2px oklch(0.4 0.03 60 / 0.06), 0 6px 18px -6px oklch(0.4 0.05 60 / 0.12), 0 18px 40px -20px oklch(0.45 0.08 255 / 0.14);
-  --wp-shadow-2: 0 2px 4px oklch(0.4 0.03 60 / 0.07), 0 14px 32px -10px oklch(0.4 0.06 60 / 0.18), 0 28px 60px -24px oklch(0.45 0.1 255 / 0.22);
+  --wp-shadow-1: 0 1px 2px oklch(0.4 0.03 60 / 0.06), 0 6px 18px -6px oklch(0.4 0.05 60 / 0.12), 0 18px 40px -20px oklch(0.45 calc(0.08 * var(--wp-gc)) var(--wp-g1) / 0.14);
+  --wp-shadow-2: 0 2px 4px oklch(0.4 0.03 60 / 0.07), 0 14px 32px -10px oklch(0.4 0.06 60 / 0.18), 0 28px 60px -24px oklch(0.45 calc(0.1 * var(--wp-gc)) var(--wp-g1) / 0.22);
   --wp-glass: oklch(1 0 0 / 0.62);
   --wp-glass-border: oklch(1 0 0 / 0.7);
   /* چهار رنگِ کاشی‌ها — پاستلیِ ملایم، متنِ رویشان همیشه تیره. */
@@ -141,7 +141,12 @@ a:focus-visible > [data-slot='card'] {
   -webkit-backdrop-filter: blur(18px) saturate(1.3);
   box-shadow: var(--wp-shadow-2);
 }
-[data-slot='sidebar-menu-button'] {
+/*
+ * ⚠️ `data-sidebar='menu-button'` هم: دکمهٔ منوی کاربر (پایینِ سایدبار) trigger ِ منوی کشویی است
+ * و Radix `data-slot` اش را «dropdown-menu-trigger» می‌کند — گوشه، فوکوس و وسط‌چینیِ حالتِ جمع‌شده را
+ * از دست می‌داد. رنگِ کاشی (svg:first-child) فقط برای آیتم‌های منوست و همان data-slot می‌ماند.
+ */
+:is([data-slot='sidebar-menu-button'], [data-sidebar='menu-button']) {
   border-radius: 0.75rem;
   transition: background 0.15s ease, transform 0.15s ease;
 }
@@ -252,7 +257,7 @@ a:focus-visible > [data-slot='card'] {
 [data-slot='dialog-overlay'], [data-slot='sheet-overlay'], [data-slot='alert-dialog-overlay'] {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  background: oklch(0.25 0.03 260 / 0.25);
+  background: oklch(0.25 calc(0.03 * var(--wp-gc)) var(--wp-g1) / 0.25);
 }
 [data-slot='dialog-content'], [data-slot='alert-dialog-content'] {
   border-radius: 1.4rem;
@@ -284,7 +289,7 @@ a:focus-visible > [data-slot='card'] {
 
 /* ---------- کاهشِ حرکت برای کسی که خواسته ---------- */
 @media (prefers-reduced-motion: reduce) {
-  [data-slot='card'], [data-button], [data-slot='sidebar-menu-button'] { transition: none; }
+  [data-slot='card'], [data-button], :is([data-slot='sidebar-menu-button'], [data-sidebar='menu-button']) { transition: none; }
   a:hover > [data-slot='card'] { transform: none; }
 }
 
@@ -321,11 +326,14 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
 
 /* تب‌ها و دکمه‌ها: تغییرِ حالتِ نرم */
 [data-slot='tabs-trigger'] { transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease; }
-[data-slot='sidebar-menu-button']:not([data-active='true']):hover { transform: translateX(0) scale(1.01); }
+/* دکمهٔ «بیشتر» ِ OverflowTabs تب نیست (trigger ِ منوست) — همان گوشه و حرکتِ تب‌ها را بگیرد. */
+[data-slot='tabs-list']:not([data-variant='line']) [data-slot='dropdown-menu-trigger'] { border-radius: 0.65rem; }
+[data-slot='tabs-list'] [data-slot='dropdown-menu-trigger'] { transition: color 0.2s ease, background 0.2s ease; }
+:is([data-slot='sidebar-menu-button'], [data-sidebar='menu-button']):not([data-active='true']):hover { transform: translateX(0) scale(1.01); }
 
 /* ردیفِ جدول زیرِ ماوس */
-[data-slot='table-container'] tbody tr:hover { background: oklch(0.6 0.1 254 / 0.05); }
-.dark [data-slot='table-container'] tbody tr:hover { background: oklch(0.7 0.1 254 / 0.07); }
+[data-slot='table-container'] tbody tr:hover { background: color-mix(in oklch, var(--color-primary) 5%, transparent); }
+.dark [data-slot='table-container'] tbody tr:hover { background: color-mix(in oklch, var(--color-primary) 7%, transparent); }
 
 /* ---------- انتقالِ صفحه‌ها (View Transitions): محوشدن + کمی لغزش ---------- */
 ::view-transition-old(root) { animation: 0.18s ease-in both wp-vt-out; }
@@ -349,7 +357,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
 * { scrollbar-width: thin; scrollbar-color: oklch(0.6 0.02 70 / 0.35) transparent; }
 
 /* ---------- فوکوس: هالهٔ نرم به‌جای خطِ تیز ---------- */
-[data-button]:focus-visible, [data-slot='sidebar-menu-button']:focus-visible {
+[data-button]:focus-visible, :is([data-slot='sidebar-menu-button'], [data-sidebar='menu-button']):focus-visible {
   outline: none;
   box-shadow: 0 0 0 4px oklch(from var(--color-primary) l c h / 0.25);
 }
@@ -420,7 +428,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
 @media (prefers-reduced-motion: reduce) {
   [data-slot='sidebar-menu-button'], [data-slot='sidebar-menu-button'] > svg:first-child { transition: none; }
 }
-[data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button'] {
+[data-slot='sidebar'][data-collapsible='icon'] :is([data-slot='sidebar-menu-button'], [data-sidebar='menu-button']) {
   justify-content: center;
   margin-inline: auto;
   /* متنِ پنهان پهنای صفر دارد ولی فاصلهٔ ۸px ِ کنارش آیکون را ۴px کنار می‌برد. */
@@ -816,4 +824,10 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   [data-slot='card'][class*='@container/card']::before,
   [data-slot='card'][class*='@container/card']::after { display: none !important; }
   * { animation: none !important; transition: none !important; backdrop-filter: none !important; }
+  /* رنگِ کمِ پالت روی سطح‌ها (۳.۸.۱) روی کاغذ نیاید. */
+  :root { --color-card: #fff !important; }
+  /* فهرستِ جمع‌شونده (کارت‌های ریسک) روی کاغذ کامل چاپ شود، بی محوشدگی و دکمه. */
+  [data-expandable] { max-height: none !important; mask-image: none !important; }
+  [data-expandable] > * { filter: none !important; }
+  [data-expandable] + button { display: none !important; }
 }

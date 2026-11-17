@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.8.2]
+
+### Fixed
+
+- **Odds and ends from the design review.** The account button at the bottom of the sidebar gets the same rounded corners and keyboard focus ring as the menu, and stays centred when the sidebar is collapsed. The "More" button in tab bars has the same rounded corners as the tabs. Card shadows, the dimmed background behind dialogs and the table-row hover now follow the palette instead of a fixed blue. Printing a page with the risk cards prints every row, and the faint palette tint on boxes doesn't reach paper.
+
 ## [3.8.1]
 
 ### Fixed
