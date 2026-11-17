@@ -241,6 +241,11 @@ async function runTimerWatch(now: Date): Promise<number> {
  * ------------------------------------------------------------------ */
 
 async function runTimelogNudges(now: Date): Promise<number> {
+  /*
+   * ⚠️ عضوِ بی منطقهٔ زمانیِ شخصی ← منطقهٔ زمانیِ برنامه (۳.۱۱.۱)، مثلِ گزارشِ صبح/عصر. پیش از این
+   * به UTC می‌افتاد: با برنامهٔ «برلین»، یادآورِ «ساعتِ امروز» ساعتِ ۲۳ می‌رسید، نه ۲۲.
+   */
+  const systemTz = (await getSystemConfig()).timezone;
   // ⚠️ فقط اعضای **فعال** — عضوِ سابق هرگز تلنگرِ ثبتِ ساعت نمی‌گیرد.
   const members = await db
     .selectDistinct({
@@ -264,7 +269,7 @@ async function runTimelogNudges(now: Date): Promise<number> {
     // بدونِ برنامهٔ هفتگی معیاری برای «در دسترس بودن» نیست.
     if (slots.length === 0) continue;
 
-    const local = localParts(now, member.timezone);
+    const local = localParts(now, member.timezone || systemTz);
     const yesterday = previousDay(local.date);
 
     const [stampToday, stampYesterday, absent, logged] = await Promise.all([

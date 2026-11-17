@@ -105,3 +105,26 @@ describe('۳.۱۱.۰ — قفلِ تیک: دو تیکِ هم‌زمان با ه�
     expect([a.skipped, b.skipped].filter(Boolean)).toHaveLength(1);
   });
 });
+
+describe('۳.۱۱.۱ — یادآورِ «ساعتِ امروز» با منطقهٔ زمانیِ برنامه برای عضوِ بی منطقهٔ شخصی', () => {
+  it('برنامه روی برلین: ساعتِ ۲۲:۳۰ ِ برلین (۲۱:۳۰ ِ UTC) یادآور می‌رسد، نه ساعتِ ۲۳', async () => {
+    const { availabilitySlots, notifications, schedulerStamps, userRoles } = await import('../schema');
+    const { and, eq } = await import('drizzle-orm');
+    await sql`truncate table notifications, availability_slots, timelogs restart identity cascade`;
+    await db.insert(schedulerStamps).values({ key: 'system:config', value: JSON.stringify({ timezone: 'Europe/Berlin' }) })
+      .onConflictDoUpdate({ target: schedulerStamps.key, set: { value: JSON.stringify({ timezone: 'Europe/Berlin' }) } });
+    const [u] = await db.insert(users).values({ email: 'tz@t', name: 'بی‌منطقه', timezone: '' }).returning({ id: users.id });
+    await db.insert(userRoles).values({ userId: u!.id, role: 'member' });
+    // ۲۰۳۰-۰۱-۰۷ دوشنبه است ← روزِ ۲ در هفتهٔ ایرانی (شنبه = ۰).
+    await db.insert(availabilitySlots).values({ userId: u!.id, weekday: 2, fromTime: '09:00', toTime: '17:00' });
+    const nudges = () => db.select().from(notifications)
+      .where(and(eq(notifications.userId, u!.id), eq(notifications.type, 'no_timelog')));
+
+    await runTick(new Date('2030-01-07T20:30:00Z')); // ۲۱:۳۰ ِ برلین — هنوز زود
+    expect(await nudges()).toHaveLength(0);
+    await runTick(new Date('2030-01-07T21:30:00Z')); // ۲۲:۳۰ ِ برلین — پیش از این (UTC) نمی‌رسید
+    expect(await nudges()).toHaveLength(1);
+    await runTick(new Date('2030-01-07T21:35:00Z')); // تیکِ بعدی — تکرار نمی‌شود
+    expect(await nudges()).toHaveLength(1);
+  });
+});

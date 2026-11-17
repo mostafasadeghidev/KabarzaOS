@@ -7,6 +7,7 @@ Versioning follows [SemVer](https://semver.org/).
 ### Fixed
 
 - **No more duplicate reminder emails during an update.** When a new version was being deployed, the old and the new copy of the app could each run the scheduler at the same moment. Both saw that today's "You have not logged today's hours" reminder had not been sent yet, so one member got it twice. Only one scheduler run can now work at a time (a second one steps aside), and the reminder is marked as sent before the email goes out, so a slow email can no longer let it go out a second time.
+- **The "log your hours" reminder follows the app's time zone.** For members without a personal time zone (most of the team), the 22:00 reminder was timed in UTC instead of the app's time zone, so with the app set to Berlin it arrived at 23:00. It now uses the app's time zone, like the morning and evening reports. Members with their own time zone are unchanged.
 
 ## [3.11.0]
 
