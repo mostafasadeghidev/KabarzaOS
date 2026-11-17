@@ -338,6 +338,35 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   background: oklch(0.32 0.06 var(--wp-ih, 254));
   color: oklch(0.85 0.1 var(--wp-ih, 254));
 }
+/*
+ * آیکون‌های منو در حالتِ عادی کم‌رنگ‌اند، با ماوس (یا فوکوسِ صفحه‌کلید) به رنگِ کاملِ بالا
+ * می‌رسند و گزینهٔ انتخاب‌شده همان قرصِ آبی می‌ماند. کم‌رنگ = رنگِ ملایم‌تر و روشن‌تر، نه
+ * شفافیت (شفافیت زمینه را از زیرش نشان می‌داد و کدر می‌شد). متنِ منو دست نمی‌خورد.
+ * در حالتِ جمع‌شده کمتر کم‌رنگ است، چون آن‌جا آیکون تنها نشانه است.
+ */
+[data-slot='sidebar-menu-button'] > svg:first-child {
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+[data-slot='sidebar-menu-button'] { transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease; }
+[data-slot='sidebar']:not([data-collapsible='icon']) [data-slot='sidebar-menu-button']:not([data-active='true']):not(:hover):not(:focus-visible) > svg:first-child {
+  background: oklch(0.955 0.022 var(--wp-ih, 254));
+  color: oklch(0.62 0.065 var(--wp-ih, 254));
+}
+.dark [data-slot='sidebar']:not([data-collapsible='icon']) [data-slot='sidebar-menu-button']:not([data-active='true']):not(:hover):not(:focus-visible) > svg:first-child {
+  background: oklch(0.28 0.025 var(--wp-ih, 254));
+  color: oklch(0.7 0.045 var(--wp-ih, 254));
+}
+[data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button']:not([data-active='true']):not(:hover):not(:focus-visible) {
+  background: oklch(0.945 0.032 var(--wp-ih, 254));
+  color: oklch(0.55 0.095 var(--wp-ih, 254));
+}
+.dark [data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button']:not([data-active='true']):not(:hover):not(:focus-visible) {
+  background: oklch(0.3 0.04 var(--wp-ih, 254));
+  color: oklch(0.78 0.07 var(--wp-ih, 254));
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='sidebar-menu-button'], [data-slot='sidebar-menu-button'] > svg:first-child { transition: none; }
+}
 [data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button'] {
   justify-content: center;
   margin-inline: auto;

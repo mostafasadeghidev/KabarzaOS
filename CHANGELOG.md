@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.8.0]
+
+### Changed
+
+- **Quieter sidebar icons.** Menu icons and their colour tiles are softer by default, turn to full colour when you point at them (or reach them with the keyboard), and the selected item keeps its blue highlight. Menu text is unchanged. In the collapsed sidebar the icons are dimmed less, since they are the only cue there. On phones, where there is no hover, only the selected item is in full colour.
+
 ## [3.7.0]
 
 ### Changed

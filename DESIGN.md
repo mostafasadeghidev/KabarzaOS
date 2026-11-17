@@ -276,7 +276,9 @@ import returns the plain look above.
   behind them never mixes with theirs. Below 768 px there is no blur (it is
   slow on weak phones).
 - **Colour tiles.** Sidebar icons sit on small pastel tiles; the text on them
-  is always dark.
+  is always dark. At rest the icon and tile are softer (lower chroma, lighter,
+  never opacity), full colour on hover or keyboard focus, and the active item
+  keeps the blue pill. The collapsed sidebar dims less.
 - **Buttons.** The primary button is a gradient that starts at L 0.54, so
   white text on it stays above 4.5:1.
 - **Tabs.** `TabsList` draws a sliding indicator (`data-slot="tabs-indicator"`)
