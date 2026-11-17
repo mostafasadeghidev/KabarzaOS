@@ -16,7 +16,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
-import { useActionToast } from '@/components/ui/toast';
+import { useActionToast, useResultToast } from '@/components/ui/toast';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import { useConfirm } from '@/components/ui/confirm';
@@ -86,6 +86,8 @@ function SendButton({ label }: { label: string }) {
 function CommentDelete({ commentId, hasReplies }: { commentId: number; hasReplies: boolean }) {
   const t = useT();
   const confirm = useConfirm();
+  // ⚠️ پیش از ۳.۹.۰ نتیجه دور ریخته می‌شد: نه «حذف شد»، نه حتی خطا.
+  const toastResult = useResultToast();
   const [pending, startTransition] = useTransition();
   return (
     <Button
@@ -98,7 +100,7 @@ function CommentDelete({ commentId, hasReplies }: { commentId: number; hasReplie
           title: t('این کامنت حذف شود؟'),
           description: hasReplies ? t('پاسخ‌های زیرِ آن هم حذف می‌شوند.') : undefined,
         })) {
-          startTransition(async () => { await deleteCommentAction(commentId); });
+          startTransition(async () => { toastResult(await deleteCommentAction(commentId)); });
         }
       }}
       variant="ghost"

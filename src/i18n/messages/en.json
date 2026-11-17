@@ -5195,5 +5195,11 @@
   "نسخهٔ برنامه": "App version",
   "ساخته‌شده (آخرین دیپلوی)": "Built (last deploy)",
   "روشن از": "Running since",
-  "مشاهدهٔ بیشتر ({n})": "Show more ({n})"
+  "مشاهدهٔ بیشتر ({n})": "Show more ({n})",
+  "ساعتِ هر روزِ این هفته": "Hours for each day this week",
+  "ساعت‌ها": "Hours",
+  "هفتهٔ من": "My week",
+  "دانلودِ همه (zip)": "Download all (zip)",
+  "ارزِ پیش‌فرض تنظیم شد.": "Default currency set.",
+  "دسترسی بازگردانده شد.": "Access restored."
 }

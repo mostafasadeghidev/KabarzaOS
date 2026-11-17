@@ -5195,5 +5195,11 @@
   "نسخهٔ برنامه": "App-Version",
   "ساخته‌شده (آخرین دیپلوی)": "Erstellt (letztes Deployment)",
   "روشن از": "Läuft seit",
-  "مشاهدهٔ بیشتر ({n})": "Mehr anzeigen ({n})"
+  "مشاهدهٔ بیشتر ({n})": "Mehr anzeigen ({n})",
+  "ساعتِ هر روزِ این هفته": "Stunden pro Tag in dieser Woche",
+  "ساعت‌ها": "Stunden",
+  "هفتهٔ من": "Meine Woche",
+  "دانلودِ همه (zip)": "Alle herunterladen (zip)",
+  "ارزِ پیش‌فرض تنظیم شد.": "Standardwährung festgelegt.",
+  "دسترسی بازگردانده شد.": "Zugriff wiederhergestellt."
 }

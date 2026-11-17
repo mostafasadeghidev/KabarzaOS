@@ -76,8 +76,8 @@ function MoneyStat({
 }
 
 function MemberBlock({
-  data, unread, money, afterStats,
-}: { data: MemberSection; unread: number; money: MoneyLines; afterStats?: React.ReactNode }) {
+  data, unread, afterStats,
+}: { data: MemberSection; unread: number; afterStats?: React.ReactNode }) {
   return (
     <>
       <div className="grid gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
@@ -85,7 +85,11 @@ function MemberBlock({
         <StatCard value={data.stats.openTasks} label={t('تسک‌های باز')} href="/tasks" />
         <StatCard value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/comments" />
         <StatCard value={unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" />
-        <MoneyStat lines={money} label={t('ماندهٔ دریافتیِ شما')} />
+        {/*
+          ⚠️ «ماندهٔ دریافتیِ شما» عمداً اینجا نیست (۳.۸.۳، خواستِ مالک): داشبورد صفحهٔ هرروزهٔ کار است
+          و عددِ طلبِ شخصی آنجا حسِ بدی می‌داد و جلوی چشمِ دیگران بود. جایش صفحهٔ «پول من» است.
+          کارتِ کارفرما («ماندهٔ پرداختیِ شما») سرِ جایش می‌ماند.
+        */}
       </div>
 
       {/* مدیرِ دفتر: کارتِ تیم درست زیرِ کارت‌های خودش (همان جای `team_overview_cards`). */}
@@ -216,7 +220,7 @@ export function MemberDashboardView({
   return (
     <div className="grid gap-4 md:gap-6">
       {data.member && (
-        <MemberBlock data={data.member} unread={data.unread} money={data.money?.member ?? []} afterStats={teamCards} />
+        <MemberBlock data={data.member} unread={data.unread} afterStats={teamCards} />
       )}
       {/* کارفرمای بی‌نقشِ عضو که دفتری را اداره می‌کند — کارت همچنان دیده شود. */}
       {!data.member && teamCards}

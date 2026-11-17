@@ -52,6 +52,7 @@ import { DEFAULT_LOCALE, isRtl, LOCALE_NAMES, LOCALES } from '@/i18n/config';
 import { displayRate, trimRate } from '@/domain/currency/rates';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useResultToast } from '@/components/ui/toast';
 import { OverflowTabs } from '@/components/ui/overflow-tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -184,6 +185,7 @@ export function SettingsView({
   const locale = useLocale();
   const [tagType, setTagType] = useState<TagType>(() => startTagType(open.type));
   const [pending, startTransition] = useTransition();
+  const toastResult = useResultToast();
 
   const currencyName = (id: number | null) =>
     data.currencies.find((c) => c.id === id)?.code ?? '—';
@@ -236,7 +238,7 @@ export function SettingsView({
                   disabled={pending}
                   onClick={() => startTransition(async () => {
                     const { setDefaultCurrencyAction } = await import('./_form/actions');
-                    await setDefaultCurrencyAction(c.id);
+                    toastResult(await setDefaultCurrencyAction(c.id), 'ارزِ پیش‌فرض تنظیم شد.');
                   })}
                 >
                   <Star className="size-3.5" />

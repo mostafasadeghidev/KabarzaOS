@@ -8,6 +8,7 @@ import {
   AttachmentMedia, AttachmentTitle,
 } from '@/components/ui/attachment';
 import { useConfirm } from '@/components/ui/confirm';
+import { useResultToast } from '@/components/ui/toast';
 import { useT } from '@/i18n/client';
 import { humanSize } from '@/domain/files/upload';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,7 @@ export function MediaGallery({
 }) {
   const t = useT();
   const confirm = useConfirm();
+  const toastResult = useResultToast();
   const [zoom, setZoom] = useState<number | null>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export function MediaGallery({
     startTransition(async () => {
       const result = onRemove ? await onRemove(item) : await deleteAttachmentAction(item.id, projectId);
       if (result.error) setError(result.error);
-      else { setError(null); setZoom(null); onChanged?.(); }
+      else { setError(null); setZoom(null); onChanged?.(); toastResult(result, 'حذف شد.'); }
     });
   };
 
