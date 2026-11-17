@@ -304,7 +304,7 @@ export function AccessView({ data, focusUser, mailAccounts = false, cloudAccount
               <FieldLabel htmlFor="f-status" className="text-xs text-muted-foreground">{tr("وضعیت")}</FieldLabel>
               <NativeSelect
                 id="f-status"
-                className="h-8 w-32 text-xs"
+                className="h-8 w-44 text-xs"
                 value={status}
                 onChange={(e) => setStatus(e.target.value as StatusFilter)}
               >

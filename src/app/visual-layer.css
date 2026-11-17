@@ -229,9 +229,32 @@ a:focus-visible > [data-slot='card'] {
 [data-button] { transition-property: transform, scale, box-shadow, background-color, color, filter; transition-duration: 0.12s; }
 
 /* ---------- ورودی‌ها: کمی گردتر، فوکوسِ هاله‌ای ---------- */
-[data-slot='input'], [data-slot='textarea'], [data-slot='searchable-select'] button, [data-slot='input-group'] {
+[data-slot='input'], [data-slot='textarea'], [data-slot='searchable-select'] button, [data-slot='input-group'],
+[data-slot='native-select'] {
   border-radius: 0.7rem;
 }
+/*
+ * ⚠️ فیلدهایی که در واقع دکمه‌اند (انتخابگرِ جستجودار role=combobox، تاریخ با `border-input`) شکلِ
+ * فیلد دارند، نه دکمه (DESIGN.md §۷): مرزِ فیلد، بی سایه، بی بالا آمدن. پیش از این قاعدهٔ دکمهٔ
+ * outline (بی مرز + سایه) رویشان می‌نشست و کنارِ select ِ ساده و ورودی ناهمسان بودند (فیلترِ
+ * «وضعیت» در دسترسی‌ها). select ِ ساده هم همان گوشه را می‌گیرد.
+ */
+[data-button][data-variant='outline']:is([role='combobox'], [class~='border-input']) {
+  border-color: var(--color-input);
+  box-shadow: none;
+}
+[data-button][data-variant='outline']:is([role='combobox'], [class~='border-input']):not(:disabled):hover {
+  background: color-mix(in oklch, var(--color-muted) 70%, var(--color-card));
+  color: inherit;
+  box-shadow: none;
+  transform: none;
+}
+[data-button][data-variant='outline']:is([role='combobox'], [class~='border-input'])[data-state='open'] {
+  background: var(--color-card);
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 4px oklch(from var(--color-primary) l c h / 0.15);
+}
+[data-button]:is([role='combobox'], [class~='border-input']):not(:disabled):active { scale: 1; }
 [data-slot='input']:focus-visible, [data-slot='textarea']:focus-visible {
   box-shadow: 0 0 0 4px oklch(from var(--color-primary) l c h / 0.15);
 }

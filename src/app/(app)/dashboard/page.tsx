@@ -311,24 +311,30 @@ export default async function DashboardPage({
             )}
           </DashPanel>
 
-          <DashPanel title={t("آخرین رویدادها")} action={{ href: '/activity', label: t("رویدادها") }}>
-            {today.activity.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("رویدادی ثبت نشده.")}</p>
-            ) : (
-              <RecentActivity
-                events={today.activity.map((a) => ({ ...a, at: a.at.toISOString() }))}
-                // نامِ کننده به گزارشِ عضو می‌رود (core #388) — فقط برای کسی که گزارش‌ها را می‌بیند.
-                actorHref={canViewSection(actor, 'reports')}
-              />
-            )}
-          </DashPanel>
-
           <DashPanel title={t("تیم")}>
             <div className="flex gap-2">
               <CompactCard value={today.activeTeam} label={t("عضوِ فعال")} />
               <CompactCard value={today.assignedMembers} label={t("درگیرِ پروژه")} />
             </div>
           </DashPanel>
+
+          {/*
+            ⚠️ هفت پنل در شبکهٔ چهارستونه یک خانهٔ خالی جا می‌گذاشت (ردیفِ دوم سه‌تایی). «آخرین رویدادها»
+            دو ستون می‌گیرد و آخر می‌آید: ردیف‌ها پر می‌شوند (۴ + ۴، و در دوستونه ۲+۲+۲+۲) و متنِ رویداد جا دارد.
+          */}
+          <div className="grid @3xl/main:col-span-2">
+            <DashPanel title={t("آخرین رویدادها")} action={{ href: '/activity', label: t("رویدادها") }}>
+              {today.activity.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("رویدادی ثبت نشده.")}</p>
+              ) : (
+                <RecentActivity
+                  events={today.activity.map((a) => ({ ...a, at: a.at.toISOString() }))}
+                  // نامِ کننده به گزارشِ عضو می‌رود (core #388) — فقط برای کسی که گزارش‌ها را می‌بیند.
+                  actorHref={canViewSection(actor, 'reports')}
+                />
+              )}
+            </DashPanel>
+          </div>
         </div>
       </section>
 

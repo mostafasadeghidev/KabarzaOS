@@ -281,7 +281,7 @@ export function MemberAccountsView({
                         {Number(l.sharePct) < 100 && (
                           <span className="ms-2 text-xs text-muted-foreground">{tr('سهمِ عضو {pct}٪', { pct: String(Number(l.sharePct)) })}</span>
                         )}
-                        {l.dueDate && <span className="ms-2 text-xs text-muted-foreground">{tr('موعد: {date}', { date: l.dueDate })}</span>}
+                        {l.dueDate && <>{' '}<span className="ms-1 text-xs text-muted-foreground">{tr('موعد: {date}', { date: l.dueDate })}</span></>}
                       </TableCell>
                       {canManage && (
                         <TableActionsCell>

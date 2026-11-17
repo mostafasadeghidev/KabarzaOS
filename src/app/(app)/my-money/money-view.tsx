@@ -400,7 +400,7 @@ export function MyMoneyView({
                     </TableNumericCell>
                     <TableCell>
                       <span dir="auto">{[l.recurringTitle, l.projectTitle, l.note].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' — ') || '—'}</span>
-                      {l.dueDate && <span className="ms-2 text-xs text-muted-foreground">{t('موعد: {date}', { date: l.dueDate })}</span>}
+                      {l.dueDate && <>{' '}<span className="ms-1 text-xs text-muted-foreground">{t('موعد: {date}', { date: l.dueDate })}</span></>}
                     </TableCell>
                   </TableRow>
                 ))}
