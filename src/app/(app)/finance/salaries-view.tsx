@@ -218,8 +218,8 @@ export function SalariesView({
                     ? (
                       <span className="text-sm">
                         <Money amount={p.current.amount} code={p.current.currencyCode} />
-                        <span className="ms-2 text-xs text-muted-foreground">{tr('روزِ {day}', { day: String(p.current.payDay) })}</span>
-                        {p.current.endMonth && <span className="ms-2 text-xs text-muted-foreground">{tr('تا')} <Month value={p.current.endMonth} /></span>}
+                        {' '}<span className="ms-1 text-xs text-muted-foreground">{tr('روزِ {day}', { day: String(p.current.payDay) })}</span>
+                        {p.current.endMonth && <>{' '}<span className="ms-1 text-xs text-muted-foreground">{tr('تا')} <Month value={p.current.endMonth} /></span></>}
                       </span>
                     )
                     : p.periods.length > 0

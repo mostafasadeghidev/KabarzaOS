@@ -2,6 +2,15 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.8.2]
+
+### Fixed
+
+- **Odds and ends from the design review.** The account button at the bottom of the sidebar gets the same rounded corners and keyboard focus ring as the menu, and stays centred when the sidebar is collapsed. The "More" button in tab bars has the same rounded corners as the tabs. Card shadows, the dimmed background behind dialogs and the table-row hover now follow the palette instead of a fixed blue. Printing a page with the risk cards prints every row, and the faint palette tint on boxes doesn't reach paper.
+- **Filters and form fields look alike.** Search selects and date fields had turned into shadowed, borderless buttons in 3.7.0 while plain selects kept a thin border and small corners, so they looked mismatched side by side (for example the "Status" filter on the Access page, which was also narrower). All of them now share the field look: field border, the same corners, no shadow, a soft focus glow while open. The Status filter has the same width as the others.
+- **Dashboard "Today" has no empty slot.** Seven boxes in a four-column grid left a hole in the second row. "Recent events" now spans two columns at the end, so every row is full and event text has more room.
+- **Words no longer run into the label next to them.** In the event details history, "this event" was glued to the event name (for example «ابریهمین رویداد»). The same was fixed for the "due:" note in member accounts and My money, and for the pay-day and "until" notes in Salaries. A scan of 18 pages found no other cases.
+
 ## [3.8.1]
 
 ### Fixed

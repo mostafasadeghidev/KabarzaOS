@@ -292,6 +292,13 @@ import returns the plain look above.
   white text on it stays above 4.5:1.
   The layer selects buttons by `data-button`, not `data-slot`: a button used
   as a dialog, menu or tooltip trigger has its `data-slot` replaced by Radix.
+  The same applies to any component used as a trigger: the sidebar's account
+  button is matched by `data-sidebar='menu-button'` and the tab bar's "More"
+  button by `dropdown-menu-trigger` inside `tabs-list`. A new rule for a
+  component that can be a trigger needs a stable attribute.
+- **Field-like buttons** (search select with `role=combobox`, date picker
+  with `border-input`) keep the field look, not the outline-button look:
+  field border, no shadow, no lift. Plain selects share the 0.7rem radius.
 - **Tabs.** `TabsList` draws a sliding indicator (`data-slot="tabs-indicator"`)
   under or behind the active tab. When the active tab changes, the content
   after the tab bar fades and rises in (`animatePanel` in

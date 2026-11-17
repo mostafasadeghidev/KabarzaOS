@@ -221,7 +221,8 @@ function History({
               <span className="num text-muted-foreground">{formatDateTime(h.createdAt, tz)}</span>
               <span className={h.current ? 'font-medium' : undefined}>
                 {tr(h.label)}
-                {h.current && <span className="ms-2 text-xs text-primary">{tr('همین رویداد')}</span>}
+                {/* ⚠️ فاصلهٔ واقعی، نه فقط margin: بی آن «ی» ِ آخر به «ه» ِ برچسب می‌چسبید («ابریهمین»). */}
+                {h.current && <>{' '}<span className="ms-1 text-xs text-primary">{tr('همین رویداد')}</span></>}
               </span>
               <span className="text-xs text-muted-foreground">
                 {h.actorName ? <UserName userId={h.actorId} name={h.actorName} /> : tr('سامانه')}
