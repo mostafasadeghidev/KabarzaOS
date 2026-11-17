@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.6.0]
+
+### Added
+
+- **App version in Settings → System.** A card at the top shows the version running on the server (for example "KabarzaOS 3.6.0"), when it was built (the last deploy) and since when it has been running. If the number doesn't change after a redeploy, the deploy hasn't happened yet or failed.
+
 ## [3.5.0]
 
 ### Added

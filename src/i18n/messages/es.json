@@ -5191,5 +5191,8 @@
   "منتقل شد: {moved} · مانده: {remaining}": "Movidos: {moved} · Faltan: {remaining}",
   "ناموفق: {n}": "Fallidos: {n}",
   "هر فایل اول روی فضای ابری نوشته و سنجیده می‌شود، بعد از سرور پاک می‌شود. اگر صفحه را ببندید، کار همان‌جا می‌ایستد و بعداً ادامه پیدا می‌کند.": "Cada archivo se escribe primero en la nube y se comprueba, y luego se borra del servidor. Si cierras la página, el trabajo se detiene ahí y sigue la próxima vez.",
-  "پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.": "Adjuntos de proyectos, tareas, comentarios y mensajes, además de recibos y avatares. Para los usuarios no cambia nada: los archivos se abren y descargan en la aplicación como antes. En la nube quedan en la carpeta privada de la cuenta de conexión (KabarzaOS-files) y no se comparten con nadie."
+  "پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.": "Adjuntos de proyectos, tareas, comentarios y mensajes, además de recibos y avatares. Para los usuarios no cambia nada: los archivos se abren y descargan en la aplicación como antes. En la nube quedan en la carpeta privada de la cuenta de conexión (KabarzaOS-files) y no se comparten con nadie.",
+  "نسخهٔ برنامه": "Versión de la aplicación",
+  "ساخته‌شده (آخرین دیپلوی)": "Compilada (último despliegue)",
+  "روشن از": "En marcha desde"
 }

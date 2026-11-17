@@ -14,6 +14,7 @@ import { getFileStoreView } from '@/server/files/cloud-store';
 import { lastTickAt } from '@/server/scheduler/service';
 import { bucketCheck } from '@/server/files/bucket-probe';
 import { schedulerHealth } from '@/domain/scheduler/health';
+import { appVersionInfo } from '@/server/system/version';
 import { currentLockDate } from '@/server/finance/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { canManageSection } from '@/domain/access/permissions';
@@ -81,6 +82,8 @@ export default async function SettingsPage({
       },
       isOwner: actor.roles.includes('owner'),
       health: schedulerHealth(tick, new Date()),
+      // نسخهٔ در حالِ اجرا و زمانِ ساخت (۳.۶.۰).
+      version: appVersionInfo(),
       // خودآزماییِ باکت — فقط مالک؛ اگر نتیجه کهنه بود همین حالا آزمون می‌شود.
       bucket: actor.roles.includes('owner') ? await bucketCheck().catch(() => null) : null,
       today: new Date().toISOString().slice(0, 10),
