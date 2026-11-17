@@ -5194,5 +5194,6 @@
   "پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.": "Pièces jointes des projets, tâches, commentaires et messages, ainsi que reçus et avatars. Rien ne change pour les utilisateurs : les fichiers s’ouvrent et se téléchargent dans l’application comme avant. Sur le stockage cloud, ils restent dans le dossier privé du compte de connexion (KabarzaOS-files) et ne sont partagés avec personne.",
   "نسخهٔ برنامه": "Version de l’application",
   "ساخته‌شده (آخرین دیپلوی)": "Compilée (dernier déploiement)",
-  "روشن از": "En marche depuis"
+  "روشن از": "En marche depuis",
+  "مشاهدهٔ بیشتر ({n})": "Afficher plus ({n})"
 }

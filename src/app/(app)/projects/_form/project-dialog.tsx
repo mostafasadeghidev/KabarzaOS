@@ -6,7 +6,8 @@ import { useFormStatus } from 'react-dom';
 import { Plus, X } from 'lucide-react';
 import { createProjectAction, updateProjectAction } from './actions';
 import type { FormState } from './schema';
-import { BootstrapSections, FilePicker, type BootstrapOptions } from './bootstrap-sections';
+import { BootstrapSections, type BootstrapOptions } from './bootstrap-sections';
+import { ThumbnailPicker } from './thumbnail-picker';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
@@ -23,7 +24,6 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Thumb } from '@/components/thumb';
 import { humanSize, MAX_SIZE } from '@/domain/files/upload';
 
 export interface Option {
@@ -290,26 +290,16 @@ function ProjectDialogBody({
                   ? tr('تصویرِ قبلی پس از ذخیره حذف می‌شود.')
                   : tr("بدونِ تصویر، تک‌نگارِ رنگی نشان داده می‌شود.")}
               </p>
-              <div className="flex items-start gap-3">
-                {isEdit && (
-                  <Thumb id={project.id} title={project.title} fileId={project.thumbnailFileId} size={56} />
+              {/* عکسِ انتخاب‌شده همان‌جای تصویرِ فعلی/تک‌نگار دیده می‌شود (۳.۸.۰). */}
+              <ThumbnailPicker name="thumbnailFile" project={isEdit ? project : undefined}>
+                {/* برداشتنِ تصویرِ فعلی — پیش از این فقط جایگزین‌کردن ممکن بود. */}
+                {project?.thumbnailFileId && (
+                  <label className="flex items-center gap-2 text-xs">
+                    <Checkbox name="removeThumbnail" value="1" />
+                    {tr("حذفِ تصویرِ فعلی")}
+                  </label>
                 )}
-                <div className="grid min-w-0 flex-1 gap-2">
-                  <FilePicker
-                    name="thumbnailFile"
-                    accept="image/*"
-                    multiple={false}
-                    compact
-                  />
-                  {/* برداشتنِ تصویرِ فعلی — پیش از این فقط جایگزین‌کردن ممکن بود. */}
-                  {project?.thumbnailFileId && (
-                    <label className="flex items-center gap-2 text-xs">
-                      <Checkbox name="removeThumbnail" value="1" />
-                      {tr("حذفِ تصویرِ فعلی")}
-                    </label>
-                  )}
-                </div>
-              </div>
+              </ThumbnailPicker>
             </div>
           )}
 

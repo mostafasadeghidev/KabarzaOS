@@ -144,6 +144,8 @@ export function sniffType(bytes: Uint8Array): string | null {
   if (has(0, 0x50, 0x4b, 0x03, 0x04)) return 'application/zip'; // zip (نیز docx/xlsx)
   // OLE Compound File — قالبِ قدیمیِ doc/xls.
   if (has(0, 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1)) return OLE;
+  // ....ftypavif — AVIF هم ftyp دارد؛ پیش از MP4، وگرنه «ویدیو» خوانده می‌شد و خطا گمراه‌کننده بود.
+  if (has(4, 0x66, 0x74, 0x79, 0x70) && (has(8, 0x61, 0x76, 0x69, 0x66) || has(8, 0x61, 0x76, 0x69, 0x73))) return 'image/avif';
   // ....ftyp — خانوادهٔ MP4/QuickTime
   if (has(4, 0x66, 0x74, 0x79, 0x70)) return 'video/mp4';
   if (has(0, 0x1a, 0x45, 0xdf, 0xa3)) return 'video/webm';
@@ -197,18 +199,39 @@ export interface UploadCandidate {
 }
 
 /**
- * تصمیمِ پذیرش. ترتیب مهم است: ارزان‌ترین بررسی اول، تا فایلِ بزرگِ نامعتبر
- * هرگز خوانده نشود.
+ * نوعِ قابلِ اعتمادِ یک تصویر (۳.۸.۰).
+ *
+ * ⚠️ عکسی که از وب ذخیره می‌شود اغلب پسوندِ دروغ دارد: JPEG با نامِ «‎.webp» (سایت
+ * بسته به مرورگر قالب را عوض می‌کند). مرورگر نوع را از پسوند می‌گوید، پس پیش از این
+ * «محتوا با نوع نمی‌خواند» رد می‌شد. اگر ادعا تصویر است و **بایت‌های واقعی** هم
+ * تصویری از نوع‌های مجازِ همین کاربرد، نوعِ واقعی به کار می‌رود — امن است، چون
+ * تصمیم با امضاست نه با ادعا. هر چیزِ دیگر (اسکریپت با نامِ تصویر، PDF با نامِ PNG)
+ * مثلِ قبل رد می‌شود.
  */
-export function assertAcceptable(file: UploadCandidate, purpose: Purpose): void {
+export function trustedMime(declared: string, head: Uint8Array, purpose: Purpose): string {
+  const mime = declared.toLowerCase().split(';')[0]!.trim();
+  if (!mime.startsWith('image/')) return mime;
+  const actual = sniffType(head);
+  if (actual && actual !== mime && actual.startsWith('image/') && ALLOWED_TYPES[purpose].includes(actual)) return actual;
+  // تصویرِ واقعی ولی از نوعی که مجاز نیست (مثلاً AVIF) ← «نوع مجاز نیست»، نه «نمی‌خواند».
+  if (actual && actual.startsWith('image/') && !ALLOWED_TYPES[purpose].includes(actual)) return actual;
+  return mime;
+}
+
+/**
+ * تصمیمِ پذیرش. ترتیب مهم است: ارزان‌ترین بررسی اول، تا فایلِ بزرگِ نامعتبر
+ * هرگز خوانده نشود. نوعِ تأییدشده را برمی‌گرداند (← `trustedMime`)؛ ذخیره با همین است.
+ */
+export function assertAcceptable(file: UploadCandidate, purpose: Purpose): string {
   if (!file.name.trim()) throw new FileRejected('file.name_missing');
   if (file.size <= 0) throw new FileRejected('file.empty');
   if (file.size > MAX_SIZE[purpose]) throw new FileRejected('file.too_large');
 
-  const mime = file.mime.toLowerCase().split(';')[0]!.trim();
+  const mime = trustedMime(file.mime, file.head, purpose);
   if (!ALLOWED_TYPES[purpose].includes(mime)) throw new FileRejected('file.type_not_allowed');
 
   if (!signatureMatches(mime, file.head)) throw new FileRejected('file.signature_mismatch');
+  return mime;
 }
 
 /* ------------------------------------------------------------------ *

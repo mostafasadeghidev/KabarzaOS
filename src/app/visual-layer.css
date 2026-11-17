@@ -25,19 +25,36 @@
   --wp-glass-border: oklch(1 0 0 / 0.08);
 }
 
-/* ---------- پس‌زمینه: کاغذِ گرم با دو هالهٔ رنگیِ محو (پشتوانهٔ شیشه) ---------- */
+/* ---------- پس‌زمینه: کاغذ با سه هالهٔ رنگیِ محو (پشتوانهٔ شیشه) ---------- */
+/*
+ * رنگِ هاله‌ها با پالتِ منوی کاربر عوض می‌شود (۳.۸.۰): --wp-g1 گوشهٔ بالا، --wp-g2 گوشهٔ
+ * پایین، --wp-g3 وسط (فقط روشن) — هر سه زاویهٔ رنگ (hue)‌اند. --wp-gc شدتِ رنگ است؛ «خاکستری»
+ * تقریباً بی‌رنگ می‌ماند. پیش‌فرض (بی data-palette) = سنگ.
+ */
+:root, [data-palette='stone'] { --wp-g1: 60; --wp-g2: 260; --wp-g3: 320; --wp-gc: 1; }
+/* دریا: فیروزه‌ای، آبیِ عمیق، نعنایی */
+[data-palette='ocean'] { --wp-g1: 205; --wp-g2: 255; --wp-g3: 175; --wp-gc: 1; }
+/* جنگل: سبزِ مریم‌گلی، سبزآبی، شنیِ گرم */
+[data-palette='forest'] { --wp-g1: 135; --wp-g2: 185; --wp-g3: 85; --wp-gc: 1; }
+/* غروب: مرجانی، طلایی، یاسیِ کم‌رنگ */
+[data-palette='sunset'] { --wp-g1: 30; --wp-g2: 75; --wp-g3: 340; --wp-gc: 1; }
+/* ارغوان: یاسی، صورتی، نیلی */
+[data-palette='violet'] { --wp-g1: 305; --wp-g2: 350; --wp-g3: 270; --wp-gc: 1; }
+/* خاکستری: فقط ردِ سرد/گرمِ بسیار کم — پالتِ «بی‌رنگ» رنگی نشود. */
+[data-palette='slate'] { --wp-g1: 250; --wp-g2: 80; --wp-g3: 250; --wp-gc: 0.25; }
+
 body {
   background:
-    radial-gradient(60rem 40rem at 100% -10%, oklch(0.93 0.05 60 / 0.75), transparent 60%),
-    radial-gradient(50rem 40rem at -10% 110%, oklch(0.92 0.05 260 / 0.6), transparent 60%),
-    radial-gradient(40rem 30rem at 50% 50%, oklch(0.96 0.02 320 / 0.5), transparent 70%),
+    radial-gradient(60rem 40rem at 100% -10%, oklch(0.93 calc(0.05 * var(--wp-gc)) var(--wp-g1) / 0.75), transparent 60%),
+    radial-gradient(50rem 40rem at -10% 110%, oklch(0.92 calc(0.05 * var(--wp-gc)) var(--wp-g2) / 0.6), transparent 60%),
+    radial-gradient(40rem 30rem at 50% 50%, oklch(0.96 calc(0.02 * var(--wp-gc)) var(--wp-g3) / 0.5), transparent 70%),
     var(--color-background);
   background-attachment: fixed;
 }
 .dark body {
   background:
-    radial-gradient(60rem 40rem at 100% -10%, oklch(0.32 0.06 50 / 0.45), transparent 60%),
-    radial-gradient(50rem 40rem at -10% 110%, oklch(0.3 0.07 265 / 0.5), transparent 60%),
+    radial-gradient(60rem 40rem at 100% -10%, oklch(0.32 calc(0.06 * var(--wp-gc)) var(--wp-g1) / 0.45), transparent 60%),
+    radial-gradient(50rem 40rem at -10% 110%, oklch(0.3 calc(0.07 * var(--wp-gc)) var(--wp-g2) / 0.5), transparent 60%),
     var(--color-background);
   background-attachment: fixed;
 }
@@ -138,9 +155,10 @@ a:focus-visible > [data-slot='card'] {
 [data-slot='sidebar-menu-item']:nth-child(6n + 5) { --wp-ih: var(--wp-h5); }
 [data-slot='sidebar-menu-item']:nth-child(6n + 6) { --wp-ih: var(--wp-h6); }
 [data-slot='sidebar-menu-button'][data-active='true'] {
-  background: linear-gradient(135deg, oklch(0.54 0.17 254), oklch(0.49 0.19 275));
+  background: var(--color-primary);
+  background: linear-gradient(135deg, oklch(from var(--color-primary) min(l, 0.54) c h), oklch(from var(--color-primary) calc(min(l, 0.54) - 0.05) calc(c + 0.02) calc(h + 18)));
   color: oklch(0.99 0 0);
-  box-shadow: 0 6px 16px -6px oklch(0.55 0.18 260 / 0.55);
+  box-shadow: 0 6px 16px -6px oklch(from var(--color-primary) 0.55 c h / 0.55);
 }
 [data-slot='sidebar-menu-button'][data-active='true'] > svg:first-child {
   background: oklch(1 0 0 / 0.22);
@@ -152,15 +170,21 @@ a:focus-visible > [data-slot='card'] {
 }
 
 /* ---------- دکمه‌ها ---------- */
-/* ⚠️ هر گرادیانی که متنِ سفید رویش است از روشنایی ۰٫۵۴ شروع می‌شود: ۰٫۶ فقط ~۳٫۹ کنتراست می‌داد (زیرِ ۴٫۵). */
+/*
+ * ⚠️ هر گرادیانی که متنِ سفید رویش است از روشنایی حداکثر ۰٫۵۴ شروع می‌شود: ۰٫۶ فقط ~۳٫۹ کنتراست می‌داد (زیرِ ۴٫۵).
+ * ⚠️ رنگ از `--color-primary` ِ پالت ساخته می‌شود (oklch(from …))، نه آبیِ ثابت — با پالتِ منوی کاربر عوض شود
+ * (۳.۸.۰). خطِ `background: var(--color-primary)` پیش از هر گرادیان پشتوانهٔ مرورگرِ قدیمی است.
+ */
 [data-slot='button'] { border-radius: 0.7rem; }
 [data-slot='button'][data-variant='default'] {
-  background: linear-gradient(135deg, oklch(0.54 0.17 254), oklch(0.49 0.19 272));
-  box-shadow: 0 6px 16px -8px oklch(0.55 0.18 260 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.25);
+  background: var(--color-primary);
+  background: linear-gradient(135deg, oklch(from var(--color-primary) min(l, 0.54) c h), oklch(from var(--color-primary) calc(min(l, 0.54) - 0.05) calc(c + 0.02) calc(h + 18)));
+  box-shadow: 0 6px 16px -8px oklch(from var(--color-primary) 0.55 c h / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.25);
   transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
 }
 .dark [data-slot='button'][data-variant='default'] {
-  background: linear-gradient(135deg, oklch(0.72 0.13 254), oklch(0.66 0.15 272));
+  background: var(--color-primary);
+  background: linear-gradient(135deg, oklch(from var(--color-primary) l c h), oklch(from var(--color-primary) calc(l - 0.06) calc(c + 0.02) calc(h + 18)));
 }
 [data-slot='button'][data-variant='default']:hover { filter: brightness(1.05); transform: translateY(-1px); }
 [data-slot='button'][data-variant='default']:active { transform: translateY(0); }
@@ -175,7 +199,7 @@ a:focus-visible > [data-slot='card'] {
   border-radius: 0.7rem;
 }
 [data-slot='input']:focus-visible, [data-slot='textarea']:focus-visible {
-  box-shadow: 0 0 0 4px oklch(0.6 0.17 254 / 0.15);
+  box-shadow: 0 0 0 4px oklch(from var(--color-primary) l c h / 0.15);
 }
 
 /* ---------- تب‌ها: قرصِ فعال ---------- */
@@ -298,7 +322,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
 /* ---------- فوکوس: هالهٔ نرم به‌جای خطِ تیز ---------- */
 [data-slot='button']:focus-visible, [data-slot='sidebar-menu-button']:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px oklch(0.6 0.17 254 / 0.25);
+  box-shadow: 0 0 0 4px oklch(from var(--color-primary) l c h / 0.25);
 }
 
 /* ---------- گوشی: بی blur (سریع‌تر روی گوشیِ ضعیف) ---------- */
@@ -337,6 +361,35 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
 .dark [data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button']:not([data-active='true']) {
   background: oklch(0.32 0.06 var(--wp-ih, 254));
   color: oklch(0.85 0.1 var(--wp-ih, 254));
+}
+/*
+ * آیکون‌های منو در حالتِ عادی کم‌رنگ‌اند، با ماوس (یا فوکوسِ صفحه‌کلید) به رنگِ کاملِ بالا
+ * می‌رسند و گزینهٔ انتخاب‌شده همان قرصِ آبی می‌ماند. کم‌رنگ = رنگِ ملایم‌تر و روشن‌تر، نه
+ * شفافیت (شفافیت زمینه را از زیرش نشان می‌داد و کدر می‌شد). متنِ منو دست نمی‌خورد.
+ * در حالتِ جمع‌شده هم همین قاعده و همین رنگ‌ها (خواستِ کاربر)؛ آن‌جا کاشی روی خودِ دکمه است.
+ */
+[data-slot='sidebar-menu-button'] > svg:first-child {
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+[data-slot='sidebar-menu-button'] { transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease; }
+[data-slot='sidebar']:not([data-collapsible='icon']) [data-slot='sidebar-menu-button']:not([data-active='true']):not(:hover):not(:focus-visible) > svg:first-child {
+  background: oklch(0.965 0.013 var(--wp-ih, 254));
+  color: oklch(0.69 0.04 var(--wp-ih, 254));
+}
+.dark [data-slot='sidebar']:not([data-collapsible='icon']) [data-slot='sidebar-menu-button']:not([data-active='true']):not(:hover):not(:focus-visible) > svg:first-child {
+  background: oklch(0.26 0.014 var(--wp-ih, 254));
+  color: oklch(0.62 0.03 var(--wp-ih, 254));
+}
+[data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button']:not([data-active='true']):not(:hover):not(:focus-visible) {
+  background: oklch(0.965 0.013 var(--wp-ih, 254));
+  color: oklch(0.69 0.04 var(--wp-ih, 254));
+}
+.dark [data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button']:not([data-active='true']):not(:hover):not(:focus-visible) {
+  background: oklch(0.26 0.014 var(--wp-ih, 254));
+  color: oklch(0.62 0.03 var(--wp-ih, 254));
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='sidebar-menu-button'], [data-slot='sidebar-menu-button'] > svg:first-child { transition: none; }
 }
 [data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button'] {
   justify-content: center;
@@ -430,10 +483,12 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   bottom: -5px;
   height: 2.5px;
   border-radius: 99px;
-  background: linear-gradient(90deg, oklch(0.6 0.17 254), oklch(0.56 0.19 280));
+  background: var(--color-primary);
+  background: linear-gradient(90deg, oklch(from var(--color-primary) l c h), oklch(from var(--color-primary) calc(l - 0.04) calc(c + 0.02) calc(h + 26)));
 }
 .dark [data-slot='tabs-list'][data-variant='line'] > [data-slot='tabs-indicator']::after {
-  background: linear-gradient(90deg, oklch(0.72 0.13 254), oklch(0.68 0.15 280));
+  background: var(--color-primary);
+  background: linear-gradient(90deg, oklch(from var(--color-primary) l c h), oklch(from var(--color-primary) calc(l - 0.04) calc(c + 0.02) calc(h + 26)));
 }
 [data-slot='tabs-list'][data-variant='line'][data-indicator] > [data-slot='tabs-trigger']::after { opacity: 0 !important; }
 
@@ -479,14 +534,16 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   bottom: 0.7rem;
   width: 3.5px;
   border-radius: 99px;
-  background: linear-gradient(180deg, oklch(0.62 0.17 254), oklch(0.56 0.19 280));
+  background: var(--color-primary);
+  background: linear-gradient(180deg, oklch(from var(--color-primary) l c h), oklch(from var(--color-primary) calc(l - 0.04) calc(c + 0.02) calc(h + 26)));
 }
 /* عددِ نخوانده: قرصِ گرادیانی */
 [data-messages-shell] [data-slot='item'] [data-slot='badge'] {
-  background: linear-gradient(135deg, oklch(0.54 0.17 254), oklch(0.49 0.19 280));
+  background: var(--color-primary);
+  background: linear-gradient(135deg, oklch(from var(--color-primary) min(l, 0.54) c h), oklch(from var(--color-primary) calc(min(l, 0.54) - 0.05) calc(c + 0.02) calc(h + 18)));
   color: oklch(0.99 0 0);
   border-color: transparent;
-  box-shadow: 0 3px 8px -3px oklch(0.55 0.18 260 / 0.6);
+  box-shadow: 0 3px 8px -3px oklch(from var(--color-primary) 0.55 c h / 0.6);
 }
 
 /* ---------- حباب‌ها ---------- */
@@ -498,13 +555,14 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
 }
 /* مالِ خودم: گرادیانِ برند، گوشهٔ سمتِ من تیزتر (منطقی ← در راست‌به‌چپ هم درست) */
 [data-messages-shell] [data-slot='bubble'][data-variant='default'] > [data-slot='bubble-content'] {
-  background: linear-gradient(135deg, oklch(0.54 0.17 254), oklch(0.49 0.19 272));
+  background: var(--color-primary);
+  background: linear-gradient(135deg, oklch(from var(--color-primary) min(l, 0.54) c h), oklch(from var(--color-primary) calc(min(l, 0.54) - 0.05) calc(c + 0.02) calc(h + 18)));
   color: oklch(0.99 0 0);
   border-end-end-radius: 0.35rem;
-  box-shadow: 0 6px 16px -10px oklch(0.55 0.18 260 / 0.8);
+  box-shadow: 0 6px 16px -10px oklch(from var(--color-primary) 0.55 c h / 0.8);
 }
 .dark [data-messages-shell] [data-slot='bubble'][data-variant='default'] > [data-slot='bubble-content'] {
-  background: linear-gradient(135deg, oklch(0.52 0.15 254), oklch(0.47 0.16 272));
+  background: linear-gradient(135deg, oklch(from var(--color-primary) min(l, 0.52) c h), oklch(from var(--color-primary) calc(min(l, 0.52) - 0.05) calc(c + 0.01) calc(h + 18)));
 }
 /* مالِ دیگران: سطحِ روشن با سایهٔ نرم، گوشهٔ سمتِ فرستنده تیزتر */
 [data-messages-shell] [data-slot='bubble'][data-variant='muted'] > [data-slot='bubble-content'] {
@@ -578,7 +636,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
 }
 [data-composer-bar] > .flex:focus-within {
   border-color: color-mix(in oklch, var(--color-primary) 45%, var(--color-border));
-  box-shadow: var(--wp-shadow-2), 0 0 0 4px oklch(0.6 0.17 254 / 0.12);
+  box-shadow: var(--wp-shadow-2), 0 0 0 4px oklch(from var(--color-primary) l c h / 0.12);
 }
 [data-composer-bar] textarea {
   border: 0 !important;
@@ -586,9 +644,10 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   box-shadow: none !important;
 }
 [data-composer-bar] button[type='submit'] {
-  background: linear-gradient(135deg, oklch(0.54 0.17 254), oklch(0.49 0.19 272));
+  background: var(--color-primary);
+  background: linear-gradient(135deg, oklch(from var(--color-primary) min(l, 0.54) c h), oklch(from var(--color-primary) calc(min(l, 0.54) - 0.05) calc(c + 0.02) calc(h + 18)));
   color: oklch(0.99 0 0);
-  box-shadow: 0 6px 14px -6px oklch(0.55 0.18 260 / 0.7);
+  box-shadow: 0 6px 14px -6px oklch(from var(--color-primary) 0.55 c h / 0.7);
   transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.5, 1), filter 0.15s ease;
 }
 /* وقتی چیزی نوشته شده، دکمهٔ ارسال کمی بزرگ‌تر */
@@ -603,8 +662,9 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   height: 5rem;
   border-radius: 1.6rem;
   color: oklch(0.99 0 0);
-  background: linear-gradient(135deg, oklch(0.66 0.15 254), oklch(0.6 0.17 290));
-  box-shadow: 0 18px 36px -14px oklch(0.55 0.18 270 / 0.6);
+  background: var(--color-primary);
+  background: linear-gradient(135deg, oklch(from var(--color-primary) 0.66 c h), oklch(from var(--color-primary) 0.6 calc(c + 0.02) calc(h + 36)));
+  box-shadow: 0 18px 36px -14px oklch(from var(--color-primary) 0.55 c h / 0.6);
   animation: wp-float 4s ease-in-out infinite;
 }
 [data-messages-empty] [data-slot='empty-icon'] svg { width: 2.25rem; height: 2.25rem; }

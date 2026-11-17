@@ -9,6 +9,7 @@ import { HeaderActionsSlot } from '@/components/header-actions';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { HeaderBreadcrumb } from '@/components/header-breadcrumb';
 import { NavHistory } from '@/components/nav-history';
+import { FinanceAccountReset } from './finance/account-reset';
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette';
 import { OffboardedShell } from './offboarded-shell';
 import { ViewAsBanner } from './view-as-banner';
@@ -310,6 +311,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           */}
           {/* تاریخچهٔ ناوبری برای پیوندِ «برگشت» ِ سرصفحه‌ها. */}
           <NavHistory />
+          {/* بیرون از «مالی» ← حسابِ انتخاب‌شده فراموش می‌شود تا دفعهٔ بعد دوباره بپرسد. */}
+          <FinanceAccountReset />
           <HeaderBreadcrumb
             pages={[
               ...items.map(({ href, label }) => ({ href, label })),

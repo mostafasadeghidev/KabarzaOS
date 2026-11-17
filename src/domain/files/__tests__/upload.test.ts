@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assertAcceptable, disposition, FileRejected, humanSize, kindOf, MAX_SIZE,
   normalizeExternalUrl, rejectMessage, safeDownloadName, signatureMatches,
-  sniffType, storageKey, contentDisposition, planReceipts, type UploadCandidate,
+  sniffType, storageKey, contentDisposition, planReceipts, trustedMime, type UploadCandidate,
 } from '../upload';
 
 /** بایت‌های اولِ یک فایلِ واقعی. */
@@ -17,6 +17,7 @@ const SIG = {
   php: [0x3c, 0x3f, 0x70, 0x68, 0x70], // <?php
   svg: [0x3c, 0x73, 0x76, 0x67], // <svg
   ole: [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1], // doc/xls ِ قدیمی
+  avif: [0, 0, 0, 0x1c, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66], // ....ftypavif
 };
 
 const bytes = (sig: number[]) => new Uint8Array(sig);
@@ -69,6 +70,28 @@ describe('R-FILE-05 — پسوند و Content-Type دروغ می‌گویند', 
     // JPEG واقعی که خودش را PNG معرفی کرده — هنوز دروغ است.
     expect(signatureMatches('image/png', bytes(SIG.jpeg))).toBe(false);
     expect(signatureMatches('image/jpeg', bytes(SIG.jpeg))).toBe(true);
+  });
+
+  it('۳.۸.۰ — تصویر با پسوندِ نادرست (JPEG با نامِ ‎.webp) با نوعِ واقعی‌اش پذیرفته می‌شود', () => {
+    const misnamed = candidate({ name: 'cover.webp', mime: 'image/webp', head: bytes(SIG.jpeg) });
+    expect(assertAcceptable(misnamed, 'avatar')).toBe('image/jpeg');
+    expect(trustedMime('image/webp', bytes(SIG.jpeg), 'avatar')).toBe('image/jpeg');
+    expect(trustedMime('image/png', bytes(SIG.png), 'avatar')).toBe('image/png');
+  });
+
+  it('⚠️ اصلاحِ نوع فقط تصویر به تصویر است — اسکریپت و PDF با نامِ تصویر هنوز رد می‌شوند', () => {
+    expect(() => assertAcceptable(candidate({ mime: 'image/png', head: bytes(SIG.php) }), 'avatar'))
+      .toThrow(new FileRejected('file.signature_mismatch'));
+    expect(() => assertAcceptable(candidate({ mime: 'image/png', head: bytes(SIG.pdf) }), 'receipt'))
+      .toThrow(new FileRejected('file.signature_mismatch'));
+    // ادعای غیرِ تصویر دست نمی‌خورد.
+    expect(trustedMime('application/pdf', bytes(SIG.jpeg), 'receipt')).toBe('application/pdf');
+  });
+
+  it('AVIF با نامِ ‎.webp «نوع مجاز نیست» می‌گیرد، نه «نمی‌خواند» (و ویدیو خوانده نمی‌شود)', () => {
+    expect(sniffType(bytes(SIG.avif))).toBe('image/avif');
+    expect(() => assertAcceptable(candidate({ name: 'a.webp', mime: 'image/webp', head: bytes(SIG.avif) }), 'avatar'))
+      .toThrow(new FileRejected('file.type_not_allowed'));
   });
 
   it('⚠️ docx باید واقعاً zip باشد — اسکریپت با نامِ docx رد می‌شود', () => {

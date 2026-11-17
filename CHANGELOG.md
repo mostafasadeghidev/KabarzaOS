@@ -2,6 +2,22 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.8.0]
+
+### Changed
+
+- **Quieter sidebar icons.** Menu icons and their colour tiles are softer by default, turn to full colour when you point at them (or reach them with the keyboard), and the selected item keeps its blue highlight. Menu text is unchanged. The collapsed sidebar follows the same rule. On phones, where there is no hover, only the selected item is in full colour.
+- **The background follows your colour palette.** The soft colour glows behind the page (top corner, bottom corner and centre) now change with the palette chosen in the user menu, each with matching companion colours: peach and blue for Stone, aqua and mint for Ocean, sage and sand for Forest, coral and gold for Sunset, lilac and pink for Violet, and almost colourless for Slate.
+- **Buttons and highlights follow the palette again.** Primary buttons, the selected sidebar item, the tab underline, sent messages and the send button had a fixed blue since 3.7.0; they are now built from the palette's own main colour, with white text kept at 5:1 contrast or better in every palette.
+- **Settings tabs fit small screens.** Like the project page, the settings tab bar shows as many tabs as fit and puts the rest under "More", instead of scrolling sideways with half the tabs out of sight. The open tab is always visible.
+- **Shorter dashboard risk cards.** Each "Risk & needs attention" card shows its first five items; the next one fades and blurs under the edge, and "Show more (n)" opens the card to the full list ("Show less" closes it). The hidden rows can't be reached with Tab until the card is opened.
+- **Finance asks for the account again after you leave.** The account you pick when opening Finance is kept while you move around inside Finance (tabs, filters, entries). As soon as you go to any other page, it is forgotten, and the next visit to Finance asks again. Before, the choice was remembered for a year, so an entry could land in an account you had forgotten was open.
+
+### Fixed
+
+- **Images saved from the web upload correctly.** A picture whose file name doesn't match its real format (for example a JPEG saved as `.webp`, which many sites do) was rejected with "file content doesn't match its declared type". If the content is a real JPEG, PNG, GIF or WebP, it is now accepted and stored under its true type. Anything that isn't really an image is still rejected, and an AVIF image now gets the clearer "file type not allowed".
+- **The chosen featured image shows in place of the current one.** In the project form, the picked image now appears where the current picture or the letter tile is, with × to undo the choice, instead of in a separate box under the drop area.
+
 ## [3.7.0]
 
 ### Changed
