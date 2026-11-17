@@ -46,19 +46,128 @@ const tabsListVariants = cva(
   }
 )
 
+/**
+ * نشانگرِ لغزانِ تبِ فعال — یک خط (line) یا یک قرص (default) که با
+ * انتخابِ تبِ تازه نرم از جای قبلی به جای تازه می‌رود، به‌جای پریدن.
+ *
+ * ⚠️ جای تبِ فعال با offsetLeft/offsetWidth سنجیده می‌شود (در راست‌به‌چپ هم درست، چون هر دو
+ * فیزیکی‌اند). با تغییرِ data-state ِ تب‌ها (MutationObserver) و تغییرِ اندازه (ResizeObserver)
+ * دوباره سنجیده می‌شود. بارِ اول بی‌حرکت می‌نشیند تا از گوشهٔ صفحه نلغزد.
+ */
+/**
+ * با عوض شدنِ تب، محتوای زیرِ نوارِ تب نرم ظاهر می‌شود — همه‌جا یکسان.
+ *
+ * ⚠️ هیچ صفحه‌ای از TabsContent استفاده نمی‌کند؛ هر صفحه محتوای تبش را خودش زیرِ نوار می‌گذارد.
+ * پس «محتوا» = خواهرهای بعدیِ نزدیک‌ترین نیایی از ریشهٔ Tabs که خواهرِ بعدی دارد (حداکثر ۶ پله، تا مرزِ main یا پنجره).
+ * نسخهٔ سنجشِ OverflowTabs (`data-measure`) کنار گذاشته می‌شود.
+ */
+function animatePanel(list: HTMLElement) {
+  if (list.querySelector("[data-measure]")) return
+  if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return
+  /*
+   * ⚠️ خواهرِ «واقعی»: نسخهٔ پنهانِ سنجشِ OverflowTabs (aria-hidden، `data-measure`) درست کنارِ
+   * نوارِ تب است؛ پیش از این همان انیمیت می‌شد و محتوای تب‌های صفحهٔ پروژه بی‌حرکت می‌ماند.
+   */
+  const skip = (x: Element) =>
+    // اسکریپت/استایل چیزی برای نشان دادن ندارند.
+    x.matches("script, style, template, link, noscript") ||
+    x.getAttribute("aria-hidden") === "true" || !!x.querySelector("[data-measure]") || getComputedStyle(x).display === "none" ||
+    // پایینِ پنجره (بستن/ذخیره) با عوض شدنِ تب نباید تکان بخورد.
+    x.matches("[data-slot='dialog-footer'], [data-slot='sheet-footer'], [data-slot='alert-dialog-footer']") ||
+    // ابزارِ کنارِ نوار (جعبهٔ جستجو، فیلتر): فقط کنترل، بی متن — محتوا نیست (صفحهٔ پروژه‌ها).
+    (!!x.matches("input, select, textarea, [data-slot='input-group'], [role='search']") || !!x.querySelector("input, select, textarea")) && !(x.textContent ?? "").trim()
+  const real = (el: Element | null) => {
+    let x = el
+    while (x && skip(x)) x = x.nextElementSibling
+    return x as HTMLElement | null
+  }
+  let node: HTMLElement | null = list.closest<HTMLElement>('[data-slot="tabs"]') ?? list
+  /*
+   * ⚠️ مرز: بالا رفتن در «main»، پنجره یا کشو می‌ایستد. وقتی تبِ تازه خالی است، پیش از این
+   * از صفحه بیرون می‌زد و چیزی بیرون از محتوا (اسکریپتِ سایدبار، اعلان‌ها) را انیمیت می‌کرد.
+   */
+  const boundary = "main, [data-slot='dialog-content'], [data-slot='sheet-content'], [data-slot='alert-dialog-content'], [data-slot='popover-content']"
+  for (let i = 0; node && i < 6 && !real(node.nextElementSibling); i++) {
+    if (node.matches(boundary)) return
+    node = node.parentElement
+  }
+  if (!node || node.matches(boundary)) return
+  let sib = real(node.nextElementSibling)
+  for (let n = 0; sib && n < 6; n++, sib = real(sib.nextElementSibling)) {
+    /*
+     * ⚠️ یکدستی: محتوایی که کارت‌های تازه‌سوارش خودشان همین حالا انیمیشنِ ورود (wp-rise) دارند
+     * دوباره انیمیت نمی‌شود — وگرنه «مشخصاتِ شرکت» دو انیمیشنِ روی هم داشت و بقیه یکی.
+     * هر دو دقیقاً یک شکل‌اند (همان مدت، فاصله و منحنی) تا فرقی دیده نشود.
+     */
+    const cardsRising = [sib, ...sib.querySelectorAll<HTMLElement>('[data-slot="card"]')].some((el) =>
+      el.getAnimations?.().some((a) => (a as CSSAnimation).animationName === "wp-rise" && a.playState !== "finished"))
+    if (cardsRising) continue
+    sib.animate?.(
+      [{ opacity: 0, transform: "translateY(8px) scale(0.99)" }, { opacity: 1, transform: "none" }],
+      { duration: 450, delay: n * 40, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "backwards" },
+    )
+  }
+}
+
+function useActiveIndicator(list: React.RefObject<HTMLDivElement | null>) {
+  const [box, setBox] = React.useState<{ x: number; y: number; w: number; h: number } | null>(null)
+  const [ready, setReady] = React.useState(false)
+  React.useLayoutEffect(() => {
+    const el = list.current
+    if (!el) return
+    const measure = () => {
+      const active = el.querySelector<HTMLElement>(':scope > [data-slot="tabs-trigger"][data-state="active"]')
+      if (!active || active.offsetWidth === 0) { setBox(null); return }
+      setBox({ x: active.offsetLeft, y: active.offsetTop, w: active.offsetWidth, h: active.offsetHeight })
+    }
+    measure()
+    const raf = requestAnimationFrame(() => setReady(true))
+    let lastActive = el.querySelector<HTMLElement>(':scope > [data-slot="tabs-trigger"][data-state="active"]')
+    const onMutate = () => {
+      measure()
+      const now = el.querySelector<HTMLElement>(':scope > [data-slot="tabs-trigger"][data-state="active"]')
+      // فقط وقتی تبِ فعال واقعاً عوض شد — نه با هر تغییرِ دیگرِ DOM.
+      if (now && lastActive && (now.id || now) !== (lastActive.id || lastActive)) animatePanel(el)
+      if (now) lastActive = now
+    }
+    const mo = new MutationObserver(onMutate)
+    mo.observe(el, { subtree: true, attributes: true, attributeFilter: ["data-state"], childList: true })
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null
+    ro?.observe(el)
+    void document.fonts?.ready.then(measure)
+    return () => { cancelAnimationFrame(raf); mo.disconnect(); ro?.disconnect() }
+  }, [list])
+  return { box, ready }
+}
+
 function TabsList({
   className,
   variant = "default",
+  children,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.List> &
   VariantProps<typeof tabsListVariants>) {
+  const ref = React.useRef<HTMLDivElement>(null)
+  const { box, ready } = useActiveIndicator(ref)
   return (
     <TabsPrimitive.List
+      ref={ref}
       data-slot="tabs-list"
       data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
+      data-indicator={box ? "" : undefined}
+      className={cn(tabsListVariants({ variant }), "relative", className)}
       {...props}
-    />
+    >
+      {box && (
+        <span
+          aria-hidden
+          data-slot="tabs-indicator"
+          data-ready={ready ? "" : undefined}
+          style={{ transform: `translate(${box.x}px, ${box.y}px)`, width: box.w, height: box.h }}
+        />
+      )}
+      {children}
+    </TabsPrimitive.List>
   )
 }
 

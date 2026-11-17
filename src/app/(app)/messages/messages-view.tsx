@@ -361,7 +361,7 @@ export function MessagesView({
         کفِ صفحه می‌آیند و هر کدام خودش اسکرول می‌خورد. روی صفحهٔ باریک فقط
         یکی دیده می‌شود: صندوق، و با بازشدنِ گفتگو خودِ گفتگو با دکمهٔ برگشت.
       */}
-      <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs @3xl/main:grid-cols-[20rem_minmax(0,1fr)] @5xl/main:grid-cols-[24rem_minmax(0,1fr)]">
+      <div data-messages-shell className="grid min-h-0 flex-1 overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs @3xl/main:grid-cols-[20rem_minmax(0,1fr)] @5xl/main:grid-cols-[24rem_minmax(0,1fr)]">
         {/* ---- صندوق ---- */}
         <section
           aria-label={tr('صندوق پیام')}
@@ -451,7 +451,7 @@ export function MessagesView({
           className={cn('flex min-h-0 flex-col', openId === null && 'hidden @3xl/main:flex')}
         >
           {openId === null ? (
-            <div className="flex flex-1 items-center justify-center p-6">
+            <div data-messages-empty className="flex flex-1 items-center justify-center p-6">
               <EmptyState
                 className="max-w-sm border-0"
                 icon={<MessagesSquare />}

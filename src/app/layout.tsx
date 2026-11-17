@@ -11,7 +11,15 @@ import { ConfirmProvider } from '@/components/ui/confirm';
 import { DirectionProvider } from '@/components/ui/direction';
 import { ServiceWorkerRegister } from '@/components/service-worker';
 import { ICON_BACKGROUND } from '@/domain/brand/icon';
+/*
+ * ⚠️ قلمِ برنامه همراهِ خودِ برنامه (۳.۷.۰): وزیرمتنِ متغیر از npm، کنارِ فایل‌های برنامه سِرو
+ * می‌شود — نه به قلمِ نصب‌شده روی سیستمِ کاربر وابسته است، نه به Google Fonts. پیش از این
+ * روی ویندوزِ بی‌وزیرمتن Segoe UI جایش می‌نشست و «ه» در وزنِ پررنگ شکسته (شبیهِ «ە») می‌شد.
+ */
+import '@fontsource-variable/vazirmatn';
 import './globals.css';
+// لایهٔ ظاهری (عمق، شیشه، حرکت) روی توکن‌ها و data-slotها — DESIGN.md، بخشِ «لایهٔ ظاهری».
+import './visual-layer.css';
 
 /**
  * ⚠️ `generateMetadata` به‌ازای هر درخواست اجرا می‌شود، پس مترجمِ درخواست در

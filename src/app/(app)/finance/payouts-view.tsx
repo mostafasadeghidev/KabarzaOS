@@ -45,7 +45,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { SearchInput } from '@/components/ui/search-input';
 import { useSearchParams } from 'next/navigation';
 import { Hint } from '@/components/ui/tooltip';
-import { Amount } from '@/components/amount-privacy';
+import { Amount, useAmountsMasked } from '@/components/amount-privacy';
 
 export interface RequestRow {
   id: number;
@@ -285,6 +285,8 @@ export function PayoutsView({
    * دو طرف‌حسابِ هم‌نام دیگر با هم قاطی نمی‌شوند. `?vendor=` نام است و یک‌بار
    * به شناسه برگردانده می‌شود.
    */
+  // چیپِ طرف‌حساب خودش دکمه است؛ مبلغِ داخلش نباید دکمهٔ «نمایش» ِ دوم باشد (دکمه در دکمه).
+  const amountsMasked = useAmountsMasked();
   const [expenseVendors, setExpenseVendors] = useState<number[]>(() => {
     const name = searchParams.get('vendor');
     const hit = name ? vendors.find((v) => v.name === name) : undefined;
@@ -659,7 +661,7 @@ export function PayoutsView({
                 aria-pressed={v.vendorId !== null && expenseVendors.includes(v.vendorId)}
                 className="rounded-full font-normal"
               >
-                {v.vendor}: <Amount className="num">{formatIn(v.total, v.code)} {v.code}</Amount>
+                {v.vendor}: <span className="num">{amountsMasked ? '•••••' : `${formatIn(v.total, v.code)} ${v.code}`}</span>
               </Button>
               </Hint>
             ))}

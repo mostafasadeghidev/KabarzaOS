@@ -268,7 +268,7 @@ export function AppSidebar({
     .filter((g) => g.items.length > 0);
 
   return (
-    <Sidebar side={isRtl(locale) ? 'right' : 'left'} collapsible="icon" variant="sidebar">
+    <Sidebar side={isRtl(locale) ? 'right' : 'left'} collapsible="icon" variant="floating">
       <SidebarHeader>
         {/*
           ⚠️ دکمهٔ جمع/باز کردن **داخلِ** سایدبار، کنارِ لوگو (۲.۳۸.۰) — نه در نوارِ

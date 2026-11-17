@@ -8,7 +8,8 @@
  * (CLIِ shadcn توکن‌های سایدبار را با hsl اضافه کرده بود؛ یکپارچه شدند).
  */
 @theme {
-  --font-sans: Vazirmatn, 'Segoe UI', Tahoma, ui-sans-serif, system-ui, sans-serif;
+  /* 'Vazirmatn Variable' همراهِ برنامه بار می‌شود (layout.tsx)؛ بقیه فقط پشتیبانِ لحظهٔ بارگذاری‌اند. */
+  --font-sans: 'Vazirmatn Variable', Vazirmatn, 'Segoe UI', Tahoma, ui-sans-serif, system-ui, sans-serif;
 
   /*
    * ⚠️ زبانِ طراحی در DESIGN.md است؛ این‌جا فقط مقدارها.
