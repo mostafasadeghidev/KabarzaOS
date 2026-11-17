@@ -2,6 +2,19 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.5.0]
+
+### Added
+
+- **App files can live on the cloud storage.** In Settings → Cloud storage, under "Where app files are stored", choose the app server or one of your Nextcloud connections. With a cloud connection selected, every new attachment (projects, tasks, comments, reviews, messages), receipt and avatar is saved there instead of on the app server. Nothing changes for users: files still open, play and download inside the app through the same protected link, with the same access rules, and nobody has to sign in to Nextcloud. On Nextcloud, files sit in the connection account's private folder (`KabarzaOS-files`) and are not shared with anyone, so nobody can move or delete them from there. Choosing a connection first writes and removes a small test file, so a connection that can't store files is caught right away.
+- **Move earlier files off the server.** "Move earlier files to the cloud storage" copies files that are already on the app server, checks each copy, and only then removes it from the server, with a live count. It can be stopped and resumed at any time.
+
+### Notes
+
+- If the cloud storage can't be reached or is full, uploads still succeed: the file is kept on the app server, a warning appears in the settings, and the move button picks it up later.
+- A connection that still holds app files can't be deleted.
+- Files on the cloud storage aren't part of the app's own backup file. Protect them on the Nextcloud side (for example, the storage provider's snapshots).
+
 ## [3.4.0]
 
 ### Added

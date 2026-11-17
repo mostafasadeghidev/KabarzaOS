@@ -38,6 +38,14 @@ export function s3(): S3Client {
 
 export const bucket = () => env('S3_BUCKET', 'kabarza');
 
+/**
+ * ⚠️ ۳.۵.۰ — کلیدِ `nc:<id>/…` یعنی فایل روی فضای ابری (Nextcloud) است، نه در باکت.
+ * همین چهار تابع خودشان تشخیص می‌دهند؛ صدازننده‌ها (مسیرِ فایل، آواتار، تلگرام) فرقی نمی‌بینند.
+ * import ِ پویا: اسکریپت‌هایی مثلِ seed که فقط باکت دارند، ماژولِ فضای ابری را بار نمی‌کنند.
+ */
+const cloudPart = (key: string) => /^nc:(\d{1,12})\/(.+)$/.exec(key);
+const cloud = () => import('./cloud-store');
+
 /** ساختِ باکت اگر نبود — idempotent، برای توسعه و اولین اجرا. */
 export async function ensureBucket(): Promise<void> {
   const Bucket = bucket();
@@ -49,6 +57,8 @@ export async function ensureBucket(): Promise<void> {
 }
 
 export async function putObject(key: string, body: Uint8Array, mime: string): Promise<void> {
+  const c = cloudPart(key);
+  if (c) return (await cloud()).cloudPut(Number(c[1]), c[2]!, body, mime);
   await s3().send(new PutObjectCommand({
     Bucket: bucket(),
     Key: key,
@@ -59,6 +69,8 @@ export async function putObject(key: string, body: Uint8Array, mime: string): Pr
 
 /** بایت‌های یک شیء. */
 export async function getObject(key: string): Promise<Uint8Array> {
+  const c = cloudPart(key);
+  if (c) return (await cloud()).cloudGet(Number(c[1]), c[2]!);
   const out = await s3().send(new GetObjectCommand({ Bucket: bucket(), Key: key }));
   return out.Body!.transformToByteArray();
 }
@@ -88,6 +100,8 @@ export interface ObjectStream {
  * لوله می‌شود، و `range` (خروجیِ `normalizeRange`) به خودِ S3 می‌رود.
  */
 export async function openObject(key: string, range: string | null = null): Promise<ObjectStream> {
+  const c = cloudPart(key);
+  if (c) return (await cloud()).cloudOpen(Number(c[1]), c[2]!, range);
   try {
     const out = await s3().send(new GetObjectCommand({ Bucket: bucket(), Key: key, Range: range ?? undefined }));
     return {
@@ -110,5 +124,7 @@ export async function openObject(key: string, range: string | null = null): Prom
  * یعنی فایلِ بی‌صاحبِ ماندگار. فراخوان تصمیم می‌گیرد چه کند.
  */
 export async function deleteObject(key: string): Promise<void> {
+  const c = cloudPart(key);
+  if (c) return (await cloud()).cloudDelete(Number(c[1]), c[2]!);
   await s3().send(new DeleteObjectCommand({ Bucket: bucket(), Key: key }));
 }

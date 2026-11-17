@@ -5174,5 +5174,22 @@
   "حجم ذخیره نشد.": "Alan kaydedilmedi.",
   "اتصال حذف شد.": "Bağlantı silindi.",
   "رمزِ فعلی و همهٔ ورودهای اپِ دسکتاپ و موبایل باطل می‌شوند و باید دوباره وارد شوند. رمزِ تازه در «دسترسی‌های من» ِ کارمند دیده می‌شود.": "Mevcut parola ve tüm masaüstü ile mobil uygulama oturumları geçersiz olur ve yeniden giriş yapılması gerekir. Yeni parola çalışanın \"Erişimlerim\" bölümünde görünür.",
-  "رمزِ فعلی باطل می‌شود. این حساب صاحبی در برنامه ندارد، پس رمزِ تازه فقط همین یک بار نشان داده می‌شود.": "Mevcut parola geçersiz olur. Bu hesabın uygulamada sahibi yok, bu yüzden yeni parola yalnızca bu kez gösterilir."
+  "رمزِ فعلی باطل می‌شود. این حساب صاحبی در برنامه ندارد، پس رمزِ تازه فقط همین یک بار نشان داده می‌شود.": "Mevcut parola geçersiz olur. Bu hesabın uygulamada sahibi yok, bu yüzden yeni parola yalnızca bu kez gösterilir.",
+  "آخرین بار فایلی روی فضای ابری نوشته نشد و روی سرور ماند ({status}). سهمیهٔ حسابِ اتصال و دسترسیِ سرور را بررسی کنید.": "Son seferde bir dosya bulut depolamaya yazılamadı ve sunucuda kaldı ({status}). Bağlantı hesabının kotasını ve sunucu erişimini kontrol edin.",
+  "اتصالِ انتخاب‌شده خاموش است یا رمز ندارد؛ فایل‌های تازه فعلاً روی سرورِ برنامه می‌روند.": "Seçilen bağlantı kapalı ya da parolası yok; yeni dosyalar şimdilik uygulama sunucusuna gider.",
+  "انتقالِ فایل‌های قبلی به فضای ابری": "Önceki dosyaları bulut depolamaya taşı",
+  "این اتصال تاریخچهٔ دسترسی یا فایل‌های برنامه را دارد و پاک نمی‌شود؛ خاموشش کنید.": "Bu bağlantının erişim geçmişi ya da uygulama dosyaları var ve silinemez; bunun yerine kapatın.",
+  "تغییرِ محلِ فایل‌های برنامه": "Uygulama dosyalarının konumunu değiştirme",
+  "حسابِ اتصال اجازهٔ نوشتن در پوشهٔ خودش را ندارد.": "Bağlantı hesabının kendi klasörüne yazma izni yok.",
+  "در حالِ انتقال…": "Taşınıyor…",
+  "روی سرورِ برنامه": "Uygulama sunucusunda",
+  "سرورِ برنامه": "Uygulama sunucusu",
+  "فضای ابری در دسترس نیست؛ کمی بعد دوباره امتحان کنید.": "Bulut depolamaya ulaşılamıyor; biraz sonra yeniden deneyin.",
+  "فضای ابری: {name}": "Bulut depolama: {name}",
+  "فضای حسابِ اتصال پر است؛ در Nextcloud سهمیهٔ آن را بیشتر کنید.": "Bağlantı hesabının alanı doldu; Nextcloud'da kotasını artırın.",
+  "محلِ فایل‌های برنامه": "Uygulama dosyalarının konumu",
+  "منتقل شد: {moved} · مانده: {remaining}": "Taşınan: {moved} · Kalan: {remaining}",
+  "ناموفق: {n}": "Başarısız: {n}",
+  "هر فایل اول روی فضای ابری نوشته و سنجیده می‌شود، بعد از سرور پاک می‌شود. اگر صفحه را ببندید، کار همان‌جا می‌ایستد و بعداً ادامه پیدا می‌کند.": "Her dosya önce bulut depolamaya yazılıp doğrulanır, sonra sunucudan silinir. Sayfayı kapatırsanız iş orada durur ve bir dahaki sefere devam eder.",
+  "پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.": "Proje, görev, yorum ve mesaj ekleri ile makbuzlar ve avatarlar. Kullanıcılar için hiçbir şey değişmez: dosyalar uygulamanın içinde eskisi gibi açılır ve indirilir. Bulut depolamada dosyalar bağlantı hesabının özel klasöründe (KabarzaOS-files) kalır ve kimseyle paylaşılmaz."
 }
