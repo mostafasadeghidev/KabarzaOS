@@ -5201,5 +5201,13 @@
   "هفتهٔ من": "Mi semana",
   "دانلودِ همه (zip)": "Descargar todo (zip)",
   "ارزِ پیش‌فرض تنظیم شد.": "Moneda predeterminada establecida.",
-  "دسترسی بازگردانده شد.": "Acceso restablecido."
+  "دسترسی بازگردانده شد.": "Acceso restablecido.",
+  "{name} این گروه را قفل کرده است؛ فقط تاریخچه دیده می‌شود.": "{name} bloqueó este grupo; solo se ve el historial.",
+  "این پروژه تکمیل، لغو یا متوقف شده است؛ گروهش فقط‌خواندنی است.": "Este proyecto está completado, cancelado o en pausa; su grupo es de solo lectura.",
+  "این گروه قفل شده است؛ فقط تاریخچه دیده می‌شود.": "Este grupo está bloqueado; solo se ve el historial.",
+  "باز کردنِ قفلِ گروه": "Desbloquear grupo",
+  "قفل کردنِ گروه": "Bloquear grupo",
+  "قفلِ گروه باز شد.": "Grupo desbloqueado.",
+  "قفلِ گروه فقط از مدیر یا مدیرِ همان پروژه برمی‌آید.": "Solo un responsable o el gestor del proyecto puede bloquear el grupo.",
+  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Grupo bloqueado; solo se ve el historial."
 }

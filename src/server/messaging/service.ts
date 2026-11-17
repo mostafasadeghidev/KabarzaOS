@@ -17,7 +17,7 @@ import {
   counterpartAvatarId, counterpartLabel, personAvatarId, personLabel, readUpTo, type LabelContext,
 } from '@/domain/messaging/labels';
 import {
-  canMentionAll, canPostInGroup, ChannelError, groupRecipients, mentionsToPlain, normalizeAudience,
+  canMentionAll, canPostInGroup, ChannelError, projectGroupLock, type GroupLock, groupRecipients, mentionsToPlain, normalizeAudience,
   normalizeChannelTitle, PROJECT_GROUP_RETENTION_DAYS, sanitizeMentions, splitMentions,
 } from '@/domain/messaging/channels';
 import { markReadForTarget, notify, type NotifyInput } from '@/server/notifications/service';
@@ -395,10 +395,15 @@ async function groupView(
     retentionDays: group.kind === 'project'
       ? PROJECT_GROUP_RETENTION_DAYS
       : (await getSystemConfig()).msgPurgeDays,
-    /** چرا نمی‌شود نوشت — برای جملهٔ جای کادرِ نوشتن. */
-    readOnly: group.kind === 'project' && group.projectArchived
-      ? 'archived' as const
-      : !group.allowReply && !isManager(actor) ? 'announce' as const : null,
+    /** چرا نمی‌شود نوشت — برای جملهٔ جای کادرِ نوشتن (بایگانی، بسته، قفلِ دستی، اعلان). */
+    readOnly: (groupLock(group) ?? (!group.allowReply && !isManager(actor) ? 'announce' : null)) as GroupLock | 'announce' | null,
+    /**
+     * قفل/بازکردنِ دستی (۳.۱۰.۰) — مدیر یا مدیرِ همان پروژه؛ فقط وقتی قفلِ دیگری (بایگانی/بسته)
+     * در کار نیست، وگرنه دکمه بی‌اثر بود. «دیدن به‌جای کاربر» دکمه را نمی‌بیند.
+     */
+    canLock: group.kind === 'project' && !actor.viewOnly && (isManager(actor) || managesProject)
+      && (groupLock(group) === null || groupLock(group) === 'locked'),
+    lockedByName: group.lockedBy ? personLabel(group.lockedBy, ctx, t) : null,
     canMentionAll: canMentionAll({ kind: group.kind, isManager: isManager(actor), managesProject }),
     mentionables: members
       .filter((id) => id !== actor.id && (ctx.viewerIsManager || !ctx.managerIds.has(id)))
@@ -464,9 +469,32 @@ async function accessThread(actor: Actor, threadId: number) {
     readable: isMember,
     writable: canPostInGroup({
       kind: group.kind, isMember, allowReply: group.allowReply,
-      isManager: isManager(actor), projectArchived: group.projectArchived,
+      isManager: isManager(actor), lock: groupLock(group),
     }),
   };
+}
+
+/** قفلِ زندهٔ گروه (بایگانی، بسته، دستی) — ۳.۱۰.۰. */
+function groupLock(group: GroupThread): GroupLock | null {
+  return projectGroupLock({
+    kind: group.kind, projectArchived: group.projectArchived,
+    projectStatusGroup: group.projectStatusGroup, lockedAt: group.lockedAt,
+  });
+}
+
+/**
+ * قفل یا بازکردنِ دستیِ گروهِ پروژه (۳.۱۰.۰) — مدیر یا مدیرِ همان پروژه، حتی وقتی پروژه در
+ * حالِ اجراست. ⚠️ قفلِ خودکار (بایگانی/تکمیل/لغو/توقف) با این باز نمی‌شود؛ آن از وضعیتِ پروژه است.
+ */
+export async function setGroupLocked(actor: Actor, threadId: number, locked: boolean): Promise<void> {
+  const [group] = await loadGroups([threadId]);
+  if (!group || group.kind !== 'project' || group.projectId === null) throw new ThreadNotFoundError();
+  if (!(isManager(actor) || await canManageProject(actor, group.projectId))) {
+    throw new ForbiddenError('messages.group_lock');
+  }
+  await db.update(threads)
+    .set(locked ? { lockedAt: new Date(), lockedBy: actor.id } : { lockedAt: null, lockedBy: null })
+    .where(eq(threads.id, threadId));
 }
 
 /** نامِ نمایشیِ گروه — کانال نامِ خودش، گروهِ پروژه نامِ **زندهٔ** پروژه. */
@@ -926,7 +954,8 @@ export async function reply(actor: Actor, threadId: number, body: string, replyT
   const { thread, group } = access;
   if (!access.writable) {
     // ⚠️ گروهِ پروژهٔ بایگانی‌شده فقط‌خواندنی است — پیامِ روشن، نه «اعلانِ یک‌طرفه».
-    if (group?.kind === 'project' && group.projectArchived) throw new ChannelError('archived');
+    const lock = group ? groupLock(group) : null;
+    if (lock) throw new ChannelError(lock);
     // ⚠️ اعلانِ یک‌طرفه پاسخ نمی‌پذیرد — گاردِ سرور، نه فقط پنهان‌کردنِ فرم.
     throw new ForbiddenError('thread.no_reply');
   }
@@ -1291,7 +1320,8 @@ export async function createChannel(
 
   const group: GroupThread = {
     id: threadId, kind: 'channel', title, audience, projectId: null, projectTitle: null,
-    projectArchived: false, projectOfficeId: null, creatorId: actor.id, allowReply: input.allowReply,
+    projectArchived: false, projectStatusGroup: null, projectOfficeId: null, creatorId: actor.id, allowReply: input.allowReply,
+    lockedAt: null, lockedBy: null,
   };
   const members = await groupMemberIds(group);
   // رسیدِ خواندن برای عضوهای امروز — پیامِ اول برایشان «خوانده‌نشده» است.
@@ -1343,8 +1373,8 @@ export async function createProjectGroup(actor: Actor, projectId: number): Promi
 
   const group: GroupThread = {
     id: threadId, kind: 'project', title: '', audience: null, projectId,
-    projectTitle: project.title, projectArchived: false, projectOfficeId: project.officeId,
-    creatorId: actor.id, allowReply: true,
+    projectTitle: project.title, projectArchived: false, projectStatusGroup: null, projectOfficeId: project.officeId,
+    creatorId: actor.id, allowReply: true, lockedAt: null, lockedBy: null,
   };
   const members = await groupMemberIds(group);
   if (members.length > 0) {

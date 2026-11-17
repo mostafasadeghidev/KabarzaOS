@@ -5201,5 +5201,13 @@
   "هفتهٔ من": "Haftam",
   "دانلودِ همه (zip)": "Tümünü indir (zip)",
   "ارزِ پیش‌فرض تنظیم شد.": "Varsayılan para birimi ayarlandı.",
-  "دسترسی بازگردانده شد.": "Erişim geri verildi."
+  "دسترسی بازگردانده شد.": "Erişim geri verildi.",
+  "{name} این گروه را قفل کرده است؛ فقط تاریخچه دیده می‌شود.": "{name} bu grubu kilitledi; yalnızca geçmiş görülebilir.",
+  "این پروژه تکمیل، لغو یا متوقف شده است؛ گروهش فقط‌خواندنی است.": "Bu proje tamamlandı, iptal edildi veya beklemede; grubu salt okunur.",
+  "این گروه قفل شده است؛ فقط تاریخچه دیده می‌شود.": "Bu grup kilitli; yalnızca geçmiş görülebilir.",
+  "باز کردنِ قفلِ گروه": "Grubun kilidini aç",
+  "قفل کردنِ گروه": "Grubu kilitle",
+  "قفلِ گروه باز شد.": "Grubun kilidi açıldı.",
+  "قفلِ گروه فقط از مدیر یا مدیرِ همان پروژه برمی‌آید.": "Grubu yalnızca bir yönetici veya proje yöneticisi kilitleyebilir.",
+  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Grup kilitlendi; yalnızca geçmiş görülebilir."
 }
