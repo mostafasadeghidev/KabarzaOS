@@ -51,6 +51,11 @@ export async function GET(
         'Content-Disposition': contentDisposition(file.disposition, file.downloadName),
         // فایلِ خصوصی نباید در کشِ مشترک بنشیند.
         'Cache-Control': 'private, max-age=0, no-store',
+        /*
+         * ⚠️ SVG (۳.۱۰.۰): لایهٔ دومِ دفاع کنارِ دانلودِ اجباری — اگر کسی همین آدرس را مستقیم
+         * باز کند، سندِ SVG در جعبهٔ شنی است و هیچ اسکریپتی اجرا نمی‌شود.
+         */
+        ...(file.mime === 'image/svg+xml' ? { 'Content-Security-Policy': "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:" } : {}),
       },
     });
   } catch (error) {

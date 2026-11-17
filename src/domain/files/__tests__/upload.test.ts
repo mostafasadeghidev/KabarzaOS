@@ -17,6 +17,9 @@ const SIG = {
   php: [0x3c, 0x3f, 0x70, 0x68, 0x70], // <?php
   svg: [0x3c, 0x73, 0x76, 0x67], // <svg
   ole: [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1], // doc/xls ِ قدیمی
+  rar: [0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x01, 0x00],
+  sevenz: [0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c],
+  psd: [0x38, 0x42, 0x50, 0x53, 0, 1],
   avif: [0, 0, 0, 0x1c, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66], // ....ftypavif
 };
 
@@ -109,6 +112,44 @@ describe('R-FILE-05 — پسوند و Content-Type دروغ می‌گویند', 
   it('متنِ ساده امضا ندارد ولی نباید امضای چیزِ دیگری داشته باشد', () => {
     expect(signatureMatches('text/plain', bytes([0x68, 0x69]))).toBe(true);
     expect(signatureMatches('text/plain', bytes(SIG.pdf))).toBe(false);
+  });
+});
+
+describe('۳.۱۰.۰ — فایل‌های کاریِ رایج', () => {
+  const svgText = (t: string) => Array.from(new TextEncoder().encode(t));
+  it('zip با نامِ ویندوزی (x-zip-compressed) پذیرفته و zip ذخیره می‌شود', () => {
+    expect(assertAcceptable(candidate({ name: 'site.webflow.zip', mime: 'application/x-zip-compressed', head: bytes(SIG.zip) }), 'attachment'))
+      .toBe('application/zip');
+  });
+  it('نوعِ نامعلوم (octet-stream یا خالی) از امضا یا پسوندِ متنی شناخته می‌شود', () => {
+    expect(assertAcceptable(candidate({ name: 'a.zip', mime: '', head: bytes(SIG.zip) }), 'attachment')).toBe('application/zip');
+    expect(assertAcceptable(candidate({ name: 'a.rar', mime: 'application/octet-stream', head: bytes(SIG.rar) }), 'attachment')).toBe('application/vnd.rar');
+    expect(assertAcceptable(candidate({ name: 'notes.md', mime: '', head: bytes(svgText('# hi')) }), 'attachment')).toBe('text/markdown');
+  });
+  it('rar، 7z، psd و pptx با امضای خودشان', () => {
+    expect(assertAcceptable(candidate({ name: 'a.7z', mime: 'application/x-7z-compressed', head: bytes(SIG.sevenz) }), 'attachment')).toBe('application/x-7z-compressed');
+    expect(assertAcceptable(candidate({ name: 'a.psd', mime: 'image/vnd.adobe.photoshop', head: bytes(SIG.psd) }), 'attachment')).toBe('image/vnd.adobe.photoshop');
+    expect(assertAcceptable(candidate({ name: 'a.pptx', mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', head: bytes(SIG.zip) }), 'attachment'))
+      .toBe('application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    // PSD در <img> کشیده نمی‌شود ← «فایل»، نه «تصویر».
+    expect(kindOf('image/vnd.adobe.photoshop')).toBe('file');
+  });
+  it('SVG فقط پیوست است و باید واقعاً markup باشد', () => {
+    const svg = candidate({ name: 'logo.svg', mime: 'image/svg+xml', head: bytes(svgText('<svg xmlns="http://www.w3.org/2000/svg">')) });
+    expect(assertAcceptable(svg, 'attachment')).toBe('image/svg+xml');
+    expect(() => assertAcceptable(svg, 'avatar')).toThrow(new FileRejected('file.type_not_allowed'));
+    expect(() => assertAcceptable(candidate({ name: 'x.svg', mime: 'image/svg+xml', head: bytes(SIG.png) }), 'attachment'))
+      .toThrow(new FileRejected('file.signature_mismatch'));
+    // ⚠️ هرگز inline باز نمی‌شود.
+    expect(disposition('image/svg+xml')).toBe('attachment');
+  });
+  it('⚠️ اجرایی یا HTML هنوز رد می‌شود، با هر نامی', () => {
+    expect(() => assertAcceptable(candidate({ name: 'a.zip', mime: 'application/x-zip-compressed', head: bytes(SIG.php) }), 'attachment'))
+      .toThrow(new FileRejected('file.signature_mismatch'));
+    expect(() => assertAcceptable(candidate({ name: 'a.html', mime: 'text/html', head: bytes(svgText('<html>')) }), 'attachment'))
+      .toThrow(new FileRejected('file.type_not_allowed'));
+    expect(() => assertAcceptable(candidate({ name: 'a.exe', mime: '', head: bytes([0x4d, 0x5a, 0x90, 0]) }), 'attachment'))
+      .toThrow(new FileRejected('file.type_not_allowed'));
   });
 });
 

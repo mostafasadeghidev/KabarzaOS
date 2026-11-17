@@ -5201,5 +5201,13 @@
   "هفتهٔ من": "My week",
   "دانلودِ همه (zip)": "Download all (zip)",
   "ارزِ پیش‌فرض تنظیم شد.": "Default currency set.",
-  "دسترسی بازگردانده شد.": "Access restored."
+  "دسترسی بازگردانده شد.": "Access restored.",
+  "{name} این گروه را قفل کرده است؛ فقط تاریخچه دیده می‌شود.": "{name} locked this group; only the history can be read.",
+  "این پروژه تکمیل، لغو یا متوقف شده است؛ گروهش فقط‌خواندنی است.": "This project is completed, cancelled or on hold; its group is read-only.",
+  "این گروه قفل شده است؛ فقط تاریخچه دیده می‌شود.": "This group is locked; only the history can be read.",
+  "باز کردنِ قفلِ گروه": "Unlock group",
+  "قفل کردنِ گروه": "Lock group",
+  "قفلِ گروه باز شد.": "Group unlocked.",
+  "قفلِ گروه فقط از مدیر یا مدیرِ همان پروژه برمی‌آید.": "Only a manager or the project's manager can lock the group.",
+  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Group locked; only the history can be read."
 }

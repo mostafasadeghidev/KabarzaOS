@@ -88,11 +88,27 @@ const DOCUMENT_TYPES = [
 
 const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'] as const;
 
+/**
+ * ۳.۱۰.۰ — فایل‌های کاریِ رایج که پیش از این رد می‌شدند (فقط پیوستِ پروژه/تسک/کامنت، نه آواتار
+ * و رسید). هر کدام باز هم با **محتوای واقعی** سنجیده می‌شود (`signatureMatches`).
+ * ⚠️ SVG فقط دانلودی است (در INLINE_SAFE نیست) و پاسخش `CSP: sandbox` دارد: اسکریپتِ داخلش
+ * روی دامنهٔ ما اجرا نمی‌شود؛ در `<img>` هم اسکریپت اجرا نمی‌شود.
+ */
+export const SVG = 'image/svg+xml';
+export const PSD = 'image/vnd.adobe.photoshop';
+const WORK_TYPES = [
+  SVG, PSD,
+  'application/vnd.rar', 'application/x-7z-compressed',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/json', 'text/markdown',
+] as const;
+
 /** نوع‌های مجاز برای هر کاربرد. */
 export const ALLOWED_TYPES: Record<Purpose, readonly string[]> = {
   avatar: IMAGE_TYPES,
   receipt: [...IMAGE_TYPES, 'application/pdf'],
-  attachment: [...IMAGE_TYPES, ...DOCUMENT_TYPES, ...VIDEO_TYPES],
+  attachment: [...IMAGE_TYPES, ...DOCUMENT_TYPES, ...VIDEO_TYPES, ...WORK_TYPES],
 };
 
 /**
@@ -112,7 +128,8 @@ export function disposition(mime: string, forceDownload = false): 'inline' | 'at
 
 /** دستهٔ نمایشیِ فایل — همان `kind_for()` نسخهٔ قبلی. */
 export function kindOf(mime: string): 'image' | 'video' | 'file' {
-  if (mime.startsWith('image/')) return 'image';
+  // ⚠️ فقط تصویری که مرورگر می‌کشد «تصویر» است — PSD در `<img>` شکسته دیده می‌شد.
+  if (mime.startsWith('image/') && mime !== PSD) return 'image';
   if (mime.startsWith('video/')) return 'video';
   return 'file';
 }
@@ -149,6 +166,9 @@ export function sniffType(bytes: Uint8Array): string | null {
   // ....ftyp — خانوادهٔ MP4/QuickTime
   if (has(4, 0x66, 0x74, 0x79, 0x70)) return 'video/mp4';
   if (has(0, 0x1a, 0x45, 0xdf, 0xa3)) return 'video/webm';
+  if (has(0, 0x52, 0x61, 0x72, 0x21, 0x1a, 0x07)) return 'application/vnd.rar'; // Rar!
+  if (has(0, 0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c)) return 'application/x-7z-compressed';
+  if (has(0, 0x38, 0x42, 0x50, 0x53)) return PSD; // 8BPS
   return null;
 }
 
@@ -165,7 +185,10 @@ export function signatureMatches(declared: string, bytes: Uint8Array): boolean {
   const mime = declared.toLowerCase();
 
   // ادعای تصویر یا PDF ← باید دقیقاً همان باشد.
+  // SVG متن است (امضای دودویی ندارد): نباید امضای چیزِ دیگری داشته باشد و باید با «<» شروع شود.
+  if (mime === SVG) return actual === null && startsLikeMarkup(bytes);
   if (mime.startsWith('image/') || mime === 'application/pdf') return actual === mime;
+  if (mime === 'application/vnd.rar' || mime === 'application/x-7z-compressed') return actual === mime;
 
   // ادعای ویدیو ← باید یکی از امضاهای ویدیویی باشد.
   if (mime.startsWith('video/')) return actual === 'video/mp4' || actual === 'video/webm';
@@ -176,15 +199,44 @@ export function signatureMatches(declared: string, bytes: Uint8Array): boolean {
   }
 
   // doc/xls ِ قدیمی قالبِ OLE دارند، نه zip.
-  if (mime === 'application/msword' || mime === 'application/vnd.ms-excel') {
+  if (mime === 'application/msword' || mime === 'application/vnd.ms-excel' || mime === 'application/vnd.ms-powerpoint') {
     return actual === OLE;
   }
 
   // متنِ ساده/CSV امضا ندارد؛ ولی نباید امضای چیزِ دیگری داشته باشد.
-  if (mime.startsWith('text/')) return actual === null;
+  if (mime.startsWith('text/') || mime === 'application/json') return actual === null;
 
   return false;
 }
+
+/** پس از BOM و فاصله، با «<» شروع می‌شود؟ (`<svg` یا `<?xml`) */
+function startsLikeMarkup(bytes: Uint8Array): boolean {
+  let i = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf ? 3 : 0;
+  while (i < bytes.length && (bytes[i] === 0x20 || bytes[i] === 0x09 || bytes[i] === 0x0a || bytes[i] === 0x0d)) i++;
+  return bytes[i] === 0x3c;
+}
+
+/**
+ * نام‌های گوناگونی که مرورگرها/سیستم‌عامل‌ها برای یک نوع می‌گذارند ← نامِ واحدِ فهرستِ سفید.
+ * ⚠️ کروم روی ویندوز zip را `application/x-zip-compressed` معرفی می‌کند؛ پیش از ۳.۱۰.۰ همین
+ * باعث می‌شد zip ِ کاملاً سالم «نوعِ مجاز نیست» بگیرد.
+ */
+const MIME_ALIASES: Record<string, string> = {
+  'application/x-zip-compressed': 'application/zip', 'application/x-zip': 'application/zip',
+  'multipart/x-zip': 'application/zip',
+  'application/x-rar-compressed': 'application/vnd.rar', 'application/x-rar': 'application/vnd.rar',
+  'image/svg': SVG,
+  'image/photoshop': PSD, 'image/x-photoshop': PSD, 'application/photoshop': PSD,
+  'application/x-photoshop': PSD, 'application/psd': PSD,
+  'text/x-markdown': 'text/markdown',
+  'text/json': 'application/json',
+};
+
+/** وقتی مرورگر نوعی نگفته (`""` یا octet-stream): از پسوند — فقط برای قالب‌های متنی که امضا ندارند. */
+const TEXT_BY_EXTENSION: Record<string, string> = {
+  svg: SVG, md: 'text/markdown', markdown: 'text/markdown', json: 'application/json',
+  txt: 'text/plain', csv: 'text/csv',
+};
 
 /* ------------------------------------------------------------------ *
  * اعتبارسنجیِ کامل
@@ -208,10 +260,16 @@ export interface UploadCandidate {
  * تصمیم با امضاست نه با ادعا. هر چیزِ دیگر (اسکریپت با نامِ تصویر، PDF با نامِ PNG)
  * مثلِ قبل رد می‌شود.
  */
-export function trustedMime(declared: string, head: Uint8Array, purpose: Purpose): string {
-  const mime = declared.toLowerCase().split(';')[0]!.trim();
-  if (!mime.startsWith('image/')) return mime;
+export function trustedMime(declared: string, head: Uint8Array, purpose: Purpose, name = ''): string {
+  const raw = declared.toLowerCase().split(';')[0]!.trim();
+  let mime = MIME_ALIASES[raw] ?? raw;
   const actual = sniffType(head);
+  // نوعِ نامعلوم: قالبِ دودویی از امضا، قالبِ متنی از پسوند (بعد همان سنجشِ امضا روی آن).
+  if (mime === '' || mime === 'application/octet-stream') {
+    const ext = name.toLowerCase().split('.').pop() ?? '';
+    mime = actual && actual !== OLE ? actual : TEXT_BY_EXTENSION[ext] ?? mime;
+  }
+  if (!mime.startsWith('image/') || mime === SVG) return mime;
   if (actual && actual !== mime && actual.startsWith('image/') && ALLOWED_TYPES[purpose].includes(actual)) return actual;
   // تصویرِ واقعی ولی از نوعی که مجاز نیست (مثلاً AVIF) ← «نوع مجاز نیست»، نه «نمی‌خواند».
   if (actual && actual.startsWith('image/') && !ALLOWED_TYPES[purpose].includes(actual)) return actual;
@@ -227,7 +285,7 @@ export function assertAcceptable(file: UploadCandidate, purpose: Purpose): strin
   if (file.size <= 0) throw new FileRejected('file.empty');
   if (file.size > MAX_SIZE[purpose]) throw new FileRejected('file.too_large');
 
-  const mime = trustedMime(file.mime, file.head, purpose);
+  const mime = trustedMime(file.mime, file.head, purpose, file.name);
   if (!ALLOWED_TYPES[purpose].includes(mime)) throw new FileRejected('file.type_not_allowed');
 
   if (!signatureMatches(mime, file.head)) throw new FileRejected('file.signature_mismatch');
@@ -246,6 +304,10 @@ const EXTENSION: Record<string, string> = {
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
   'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov',
+  [SVG]: 'svg', [PSD]: 'psd', 'application/vnd.rar': 'rar', 'application/x-7z-compressed': '7z',
+  'application/vnd.ms-powerpoint': 'ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'application/json': 'json', 'text/markdown': 'md',
 };
 
 /**

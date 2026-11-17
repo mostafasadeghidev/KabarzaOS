@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.10.0]
+
+### Added
+
+- **Project chat groups lock when the project ends.** A project's group becomes read-only not only when the project is archived but also when its status is completed, cancelled or on hold. Everyone still reads the history; nobody can post. It follows the project's live status, so reopening the project (for example back to "in progress") opens the group again.
+- **Lock a project group by hand.** A manager or the project's manager can lock a project group from its header at any time, even while the project is in progress, and unlock it later. The group shows who locked it. Telegram replies and the AI connection respect the lock as well.
+- **More file types for project files.** Project, task and comment attachments now also accept RAR and 7z archives, SVG, PowerPoint (ppt, pptx), Photoshop (psd), JSON and Markdown. Every file is still checked by its real content, not its name. SVG files are always downloaded, never opened inside the app, and are served in a sandbox so any script in them cannot run. Programs, HTML pages and scripts are still refused.
+
+### Fixed
+
+- **Zip files from Windows are accepted.** Chrome on Windows labels zip files `application/x-zip-compressed`, which the app did not recognise, so perfectly valid zip files were refused as "file type not allowed". Other browser labels for the same formats (and files with no label at all) are now recognised by their content.
+
 ## [3.9.0]
 
 ### Added

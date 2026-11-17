@@ -6,7 +6,7 @@ import { requireActor } from '@/server/auth';
 import {
   compose, contactManagement, createChannel, createProjectGroup, deleteGroupMessage, deleteThread,
   leaveThread, openThread, RateLimitedError, editMessage, reply, resolveAudience, setThreadMuted, ThreadNotFoundError,
-  messagePeer,
+  messagePeer, setGroupLocked,
 } from '@/server/messaging/service';
 import { ForbiddenError } from '@/domain/access/guard';
 import { AUDIENCE_LABELS, type Audience } from '@/domain/messaging/threads';
@@ -36,6 +36,7 @@ async function explain(error: unknown, fallback: string): Promise<string> {
     if (error.required === 'thread.group_leave') return 'از گروه نمی‌شود بیرون رفت؛ می‌توانید بی‌صدایش کنید.';
     if (error.required === 'messages.channel') return 'ساختِ کانال فقط از مدیر ممکن است.';
     if (error.required === 'messages.project_group') return 'گروهِ پروژه را مدیر یا مدیرِ همان پروژه می‌سازد.';
+    if (error.required === 'messages.group_lock') return 'قفلِ گروه فقط از مدیر یا مدیرِ همان پروژه برمی‌آید.';
     if (error.required === 'message.delete') return 'فقط نویسندهٔ پیام یا مدیر می‌تواند آن را حذف کند.';
     if (error.required === 'message.empty') return 'متنِ پیام خالی است.';
     if (error.required === 'message.edit') return 'فقط پیامِ خودتان را می‌توانید ویرایش کنید.';
@@ -230,6 +231,18 @@ export async function setMutedAction(threadId: number, muted: boolean): Promise<
   try {
     const actor = await requireActor();
     await setThreadMuted(actor, threadId, muted);
+    revalidatePath('/messages');
+    return { ok: true };
+  } catch (error) {
+    return { error: await explain(error, 'تغییر ذخیره نشد.') };
+  }
+}
+
+/** قفل یا بازکردنِ دستیِ گروهِ پروژه (۳.۱۰.۰). */
+export async function setGroupLockAction(threadId: number, locked: boolean): Promise<MessageState> {
+  try {
+    const actor = await requireActor();
+    await setGroupLocked(actor, threadId, locked);
     revalidatePath('/messages');
     return { ok: true };
   } catch (error) {

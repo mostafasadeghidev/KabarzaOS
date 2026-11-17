@@ -50,7 +50,7 @@ export const GROUP_NOTIFY_QUIET_MINUTES = 120;
 export const CHANNEL_TITLE_MAX = 80;
 
 export class ChannelError extends Error {
-  constructor(readonly code: 'title_required' | 'audience_invalid' | 'archived' | 'not_member' | 'exists') {
+  constructor(readonly code: 'title_required' | 'audience_invalid' | 'archived' | 'closed' | 'locked' | 'not_member' | 'exists') {
     super(`channel: ${code}`);
     this.name = 'ChannelError';
   }
@@ -60,6 +60,8 @@ export const CHANNEL_MESSAGES: Record<ChannelError['code'], string> = {
   title_required: 'نامِ کانال را بنویسید.',
   audience_invalid: 'مخاطبِ کانال معتبر نیست.',
   archived: 'این پروژه بایگانی شده است؛ گروهش فقط‌خواندنی است.',
+  closed: 'این پروژه تکمیل، لغو یا متوقف شده است؛ گروهش فقط‌خواندنی است.',
+  locked: 'این گروه قفل شده است؛ فقط تاریخچه دیده می‌شود.',
   not_member: 'شما عضوِ این گروه نیستید.',
   exists: 'این پروژه از قبل گروهِ گفتگو دارد.',
 };
@@ -131,6 +133,30 @@ export function projectGroupMemberIds(input: {
  * ------------------------------------------------------------------ */
 
 /**
+ * چرا گروهِ پروژه فقط‌خواندنی است (۳.۱۰.۰) — `null` یعنی باز.
+ *  · `archived` پروژه بایگانی شده؛
+ *  · `closed` وضعیتِ پروژه تکمیل‌شده، لغوشده یا متوقف است — **زنده** حساب می‌شود: پروژه که
+ *    دوباره «در حالِ اجرا» شود، گروه خودش باز می‌شود؛
+ *  · `locked` مدیر دستی قفلش کرده (حتی وقتی پروژه در حالِ اجراست) — تا وقتی کسی بازش کند.
+ * تاریخچه در هر سه حالت دیده می‌شود؛ فقط پیامِ تازه بسته است، برای همه (حتی مدیر).
+ */
+export const CLOSED_PROJECT_GROUPS = ['completed', 'cancelled', 'on_hold'] as const;
+export type GroupLock = 'archived' | 'closed' | 'locked';
+
+export function projectGroupLock(input: {
+  kind: 'channel' | 'project';
+  projectArchived: boolean;
+  projectStatusGroup: string | null;
+  lockedAt: Date | null;
+}): GroupLock | null {
+  if (input.kind !== 'project') return null;
+  if (input.projectArchived) return 'archived';
+  if ((CLOSED_PROJECT_GROUPS as readonly string[]).includes(input.projectStatusGroup ?? '')) return 'closed';
+  if (input.lockedAt) return 'locked';
+  return null;
+}
+
+/**
  * چه کسی می‌تواند در گروه بنویسد.
  * ⚠️ کانالِ «فقط اعلان» (`allowReply = false`) فقط از دستِ مدیران؛ گروهِ پروژهٔ
  * بایگانی‌شده برای هیچ‌کس — تاریخچه دیده می‌شود، پیامِ تازه نه.
@@ -140,10 +166,11 @@ export function canPostInGroup(input: {
   isMember: boolean;
   allowReply: boolean;
   isManager: boolean;
-  projectArchived: boolean;
+  /** `projectGroupLock(...)` — هر قفلی (بایگانی، بسته، دستی). */
+  lock: GroupLock | null;
 }): boolean {
   if (!input.isMember) return false;
-  if (input.kind === 'project' && input.projectArchived) return false;
+  if (input.lock) return false;
   if (!input.allowReply) return input.isManager;
   return true;
 }

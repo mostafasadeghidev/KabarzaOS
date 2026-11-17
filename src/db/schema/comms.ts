@@ -35,6 +35,12 @@ export const threads = pgTable('threads', {
    * نام‌ها ماسک نمی‌شوند و «دیدن به‌جای کاربر» آن را نشان نمی‌دهد.
    */
   peer: boolean('peer').notNull().default(false),
+  /**
+   * قفلِ دستیِ گروهِ پروژه (۳.۱۰.۰) — فقط‌خواندنی تا وقتی کسی بازش کند. قفلِ خودکار
+   * (بایگانی/تکمیل/لغو/توقفِ پروژه) اینجا نیست؛ زنده حساب می‌شود (`projectGroupLock`).
+   */
+  lockedAt: ts('locked_at'),
+  lockedBy: fk('locked_by').references(() => users.id, { onDelete: 'set null' }),
   ...stamps,
 }, (t) => [
   index('threads_broadcast_ix').on(t.broadcastId),

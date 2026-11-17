@@ -212,6 +212,43 @@ describe('گروهِ پروژه', () => {
     }
   });
 
+  it('۳.۱۰.۰ — پروژهٔ تکمیل‌شده: گروه بسته؛ با برگشتِ وضعیت خودش باز می‌شود', async () => {
+    const [before] = await db.select({ status: projects.statusTagId }).from(projects).where(eq(projects.id, PROJECT));
+    const [done] = await db.insert(tags).values({ name: 'تکمیل شده', type: 'project_status', statusGroup: 'completed' })
+      .returning({ id: tags.id });
+    await db.update(projects).set({ statusTagId: done!.id }).where(eq(projects.id, PROJECT));
+    try {
+      const err = await service.reply(owner(), group, 'سلام').catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(ChannelError);
+      expect((err as ChannelError).code).toBe('closed');
+      const view = await service.openThread(member(DEV), group);
+      expect(view.group?.readOnly).toBe('closed');
+      // قفلِ خودکار با دکمهٔ دستی باز نمی‌شود — دکمه هم نشان داده نمی‌شود.
+      expect((await service.openThread(owner(), group)).group?.canLock).toBe(false);
+    } finally {
+      await db.update(projects).set({ statusTagId: before!.status }).where(eq(projects.id, PROJECT));
+    }
+    await expect(service.reply(owner(), group, 'دوباره باز')).resolves.toBeGreaterThan(0);
+  });
+
+  it('۳.۱۰.۰ — قفلِ دستی وقتی پروژه در حالِ اجراست: فقط مدیر/مدیرِ پروژه؛ تا باز شدن', async () => {
+    await expect(service.setGroupLocked(member(DEV), group, true)).rejects.toBeInstanceOf(ForbiddenError);
+    await service.setGroupLocked(owner(), group, true);
+    try {
+      const err = await service.reply(owner(), group, 'سلام').catch((e: unknown) => e);
+      expect((err as ChannelError).code).toBe('locked');
+      const view = await service.openThread(member(DEV), group);
+      expect(view.group?.readOnly).toBe('locked');
+      expect(view.group?.lockedByName).toBeTruthy();
+      // عضوِ عادی دکمهٔ قفل را نمی‌بیند؛ مالک می‌بیند (برای بازکردن).
+      expect(view.group?.canLock).toBe(false);
+      expect((await service.openThread(owner(), group)).group?.canLock).toBe(true);
+    } finally {
+      await service.setGroupLocked(owner(), group, false);
+    }
+    await expect(service.reply(member(DEV), group, 'باز شد')).resolves.toBeGreaterThan(0);
+  });
+
   it('حذفِ تک‌پیام: نویسنده و مدیر بله، بقیه نه', async () => {
     const mine = await service.reply(member(DEV), group, 'اشتباه نوشتم');
     const ownerMsg = await service.reply(owner(), group, 'پیامِ مدیر');

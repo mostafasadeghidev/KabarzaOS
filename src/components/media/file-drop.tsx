@@ -12,7 +12,8 @@ import { Hint } from '@/components/ui/tooltip';
 
 const NO_FILES: File[] = [];
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp';
-const ALL_ACCEPT = `${IMAGE_ACCEPT},video/mp4,video/webm,video/quicktime,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip`;
+// ۳.۱۰.۰ — با پسوند هم (نه فقط نوع): ویندوز برای zip/rar/psd نوعِ دیگری می‌گوید و پنجرهٔ انتخاب پنهانشان می‌کرد.
+const ALL_ACCEPT = `${IMAGE_ACCEPT},video/mp4,video/webm,video/quicktime,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.json,.zip,.rar,.7z,.svg,.psd`;
 
 /** فایل‌های کلیپ‌بورد — اسکرین‌شات نامِ ثابتِ «image.png» دارد؛ نامِ یکتا می‌گیرد. */
 export function clipboardFiles(data: DataTransfer | null): File[] {

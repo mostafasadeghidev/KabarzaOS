@@ -28,9 +28,14 @@ export interface GroupThread {
   projectId: number | null;
   projectTitle: string | null;
   projectArchived: boolean;
+  /** گروهِ وضعیتِ زندهٔ پروژه (completed/cancelled/on_hold ← گروه بسته؛ ۳.۱۰.۰). */
+  projectStatusGroup: string | null;
   projectOfficeId: number | null;
   creatorId: number;
   allowReply: boolean;
+  /** قفلِ دستی (۳.۱۰.۰). */
+  lockedAt: Date | null;
+  lockedBy: number | null;
 }
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -49,11 +54,15 @@ export async function loadGroups(ids?: number[]): Promise<GroupThread[]> {
       allowReply: threads.allowReply,
       projectTitle: projects.title,
       projectArchived: projects.isArchived,
+      projectStatusGroup: tags.statusGroup,
       projectOfficeId: projects.officeId,
       projectDeletedAt: projects.deletedAt,
+      lockedAt: threads.lockedAt,
+      lockedBy: threads.lockedBy,
     })
     .from(threads)
     .leftJoin(projects, eq(projects.id, threads.projectId))
+    .leftJoin(tags, eq(tags.id, projects.statusTagId))
     .where(and(ne(threads.kind, 'direct'), ids ? inArray(threads.id, ids) : undefined));
 
   return rows
@@ -66,9 +75,12 @@ export async function loadGroups(ids?: number[]): Promise<GroupThread[]> {
       projectId: r.projectId,
       projectTitle: r.projectTitle,
       projectArchived: r.projectArchived ?? false,
+      projectStatusGroup: r.projectStatusGroup ?? null,
       projectOfficeId: r.projectOfficeId,
       creatorId: r.creatorId,
       allowReply: r.allowReply,
+      lockedAt: r.lockedAt,
+      lockedBy: r.lockedBy,
     }));
 }
 

@@ -2,10 +2,10 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { ArrowDown, ArrowRight, Archive, Bell, BellOff, Check, CheckCheck, CornerUpLeft, FolderKanban, Hash, Lock, Megaphone, Pencil, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowRight, Archive, Bell, BellOff, Check, CheckCheck, CornerUpLeft, FolderKanban, Hash, Lock, LockOpen, Megaphone, Pencil, Trash2 } from 'lucide-react';
 import {
   deleteGroupMessageAction, deleteThreadAction, editMessageAction, leaveThreadAction,
-  openThreadAction, replyAction, setMutedAction, type MessageState,
+  openThreadAction, replyAction, setGroupLockAction, setMutedAction, type MessageState,
 } from './_form/actions';
 import { GroupComposer, MessageBody, ReplyBar, ReplyQuote, SendButton, type ReplyTarget } from './group-parts';
 import { monogram } from '@/domain/files/monogram';
@@ -304,6 +304,21 @@ export function ThreadPane({
     });
   };
 
+  /**
+   * قفل/بازکردنِ دستیِ گروهِ پروژه (۳.۱۰.۰) — پس از آن گفتگو از نو خوانده می‌شود تا کادرِ نوشتن
+   * و جملهٔ «فقط‌خواندنی» از سرور بیایند، نه حدسِ کلاینت.
+   */
+  const toggleLock = () => {
+    if (!thread?.group) return;
+    const next = thread.group.readOnly !== 'locked';
+    startTransition(async () => {
+      const result = await setGroupLockAction(thread.thread.id, next);
+      if (result.error) { show(tr(result.error), 'error'); return; }
+      setThread(await openThreadAction(thread.thread.id));
+      show(next ? tr('گروه قفل شد؛ فقط تاریخچه دیده می‌شود.') : tr('قفلِ گروه باز شد.'), 'success');
+    });
+  };
+
   /** رفتن به پیامی که نقل شده — و برجسته کردنِ کوتاهش. */
   const jumpTo = (id: number) => {
     const el = document.getElementById(`msg-${id}`);
@@ -399,6 +414,19 @@ export function ThreadPane({
             onClick={toggleMute}
           >
             {thread.group.muted ? <BellOff /> : <Bell />}
+          </IconButton>
+        )}
+        {/* قفلِ دستی — مدیر یا مدیرِ پروژه، حتی وقتی پروژه در حالِ اجراست (۳.۱۰.۰). */}
+        {thread.group?.canLock && (
+          <IconButton
+            variant="ghost"
+            label={thread.group.readOnly === 'locked' ? tr('باز کردنِ قفلِ گروه') : tr('قفل کردنِ گروه')}
+            className={thread.group.readOnly === 'locked' ? 'text-amber-700 dark:text-amber-500' : 'text-muted-foreground'}
+            aria-pressed={thread.group.readOnly === 'locked'}
+            disabled={pending}
+            onClick={toggleLock}
+          >
+            {thread.group.readOnly === 'locked' ? <Lock /> : <LockOpen />}
           </IconButton>
         )}
         {/* ⚠️ از گروه نمی‌شود «بیرون رفت»؛ حذف فقط برای کسی که حقِ حذفِ کلِ گروه را دارد. */}
@@ -583,6 +611,18 @@ export function ThreadPane({
         <p className="flex items-center gap-2 border-t bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
           <Archive className="size-3.5 shrink-0" />
           {tr('این پروژه بایگانی شده است؛ گروهش فقط‌خواندنی است.')}
+        </p>
+      ) : thread.group?.readOnly === 'closed' ? (
+        <p className="flex items-center gap-2 border-t bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+          <Archive className="size-3.5 shrink-0" />
+          {tr('این پروژه تکمیل، لغو یا متوقف شده است؛ گروهش فقط‌خواندنی است.')}
+        </p>
+      ) : thread.group?.readOnly === 'locked' ? (
+        <p className="flex items-center gap-2 border-t bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+          <Lock className="size-3.5 shrink-0" />
+          {thread.group.lockedByName
+            ? tr('{name} این گروه را قفل کرده است؛ فقط تاریخچه دیده می‌شود.', { name: thread.group.lockedByName })
+            : tr('این گروه قفل شده است؛ فقط تاریخچه دیده می‌شود.')}
         </p>
       ) : thread.group?.readOnly === 'announce' ? (
         <p className="flex items-center gap-2 border-t bg-muted/40 px-4 py-3 text-xs text-muted-foreground">

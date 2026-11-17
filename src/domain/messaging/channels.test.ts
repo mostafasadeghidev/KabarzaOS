@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  canMentionAll, canPostInGroup, channelMemberIds, ChannelError, groupRecipients, mentionsToPlain,
+  canMentionAll, canPostInGroup, projectGroupLock, channelMemberIds, ChannelError, groupRecipients, mentionsToPlain,
   normalizeAudience, normalizeChannelTitle, projectGroupMemberIds, sanitizeMentions, splitMentions,
   type TeamPerson,
 } from './channels';
@@ -45,11 +45,12 @@ describe('عضویتِ گروهِ پروژه', () => {
 });
 
 describe('نوشتن و «همه»', () => {
-  const base = { kind: 'project' as const, isMember: true, allowReply: true, isManager: false, projectArchived: false };
+  const base = { kind: 'project' as const, isMember: true, allowReply: true, isManager: false, lock: null };
   it('عضو می‌نویسد؛ غیرعضو نه؛ بایگانی‌شده برای هیچ‌کس', () => {
     expect(canPostInGroup(base)).toBe(true);
     expect(canPostInGroup({ ...base, isMember: false })).toBe(false);
-    expect(canPostInGroup({ ...base, projectArchived: true, isManager: true })).toBe(false);
+    expect(canPostInGroup({ ...base, lock: 'archived', isManager: true })).toBe(false);
+    expect(canPostInGroup({ ...base, lock: 'locked', isManager: true })).toBe(false);
   });
   it('کانالِ «فقط اعلان» فقط از مدیر', () => {
     const ann = { ...base, kind: 'channel' as const, allowReply: false };
@@ -108,5 +109,22 @@ describe('ورودی', () => {
     expect(normalizeAudience({ type: 'x' })).toBeNull();
     expect(normalizeChannelTitle('  طراحی   تیم ')).toBe('طراحی تیم');
     expect(() => normalizeChannelTitle('   ')).toThrow(ChannelError);
+  });
+});
+
+describe('۳.۱۰.۰ — قفلِ گروهِ پروژه', () => {
+  const p = { kind: 'project' as const, projectArchived: false, projectStatusGroup: 'in_progress', lockedAt: null };
+  it('در حالِ اجرا و بی قفلِ دستی باز است', () => {
+    expect(projectGroupLock(p)).toBeNull();
+  });
+  it('تکمیل، لغو و توقف ← بسته (زنده؛ با برگشتِ وضعیت باز می‌شود)', () => {
+    for (const g of ['completed', 'cancelled', 'on_hold']) expect(projectGroupLock({ ...p, projectStatusGroup: g })).toBe('closed');
+  });
+  it('بایگانی بر همه مقدم است؛ قفلِ دستی وقتی پروژه باز است', () => {
+    expect(projectGroupLock({ ...p, projectArchived: true, lockedAt: new Date() })).toBe('archived');
+    expect(projectGroupLock({ ...p, lockedAt: new Date() })).toBe('locked');
+  });
+  it('کانالِ تیم هیچ‌وقت این قفل را نمی‌گیرد', () => {
+    expect(projectGroupLock({ ...p, kind: 'channel', projectArchived: true })).toBeNull();
   });
 });
