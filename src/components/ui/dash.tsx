@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Panel } from '@/components/page-shell';
+import { ExpandableList } from '@/components/ui/expandable-list';
 import { t } from '@/i18n/server';
 
 /**
@@ -156,8 +157,9 @@ export function RiskList({
   tone?: 'muted' | 'danger' | 'warning';
 }) {
   if (items.length === 0) return <p className="text-sm text-muted-foreground">{empty}</p>;
+  /* ۵ موردِ اول + «مشاهدهٔ بیشتر» (۳.۸.۰) — وگرنه کارتِ «ددلاینِ گذشته» تا ده‌ها ردیف قد می‌کشید. */
   return (
-    <ul className="space-y-1.5">
+    <ExpandableList className="space-y-1.5">
       {items.map((item) => (
         <li key={item.id} className="flex items-center justify-between gap-3 text-sm">
           <Link href={item.href ?? `/projects/${item.id}`} className="truncate font-medium hover:underline">
@@ -176,6 +178,6 @@ export function RiskList({
           </span>
         </li>
       ))}
-    </ul>
+    </ExpandableList>
   );
 }

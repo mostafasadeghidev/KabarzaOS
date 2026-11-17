@@ -8,6 +8,7 @@ Versioning follows [SemVer](https://semver.org/).
 
 - **Quieter sidebar icons.** Menu icons and their colour tiles are softer by default, turn to full colour when you point at them (or reach them with the keyboard), and the selected item keeps its blue highlight. Menu text is unchanged. The collapsed sidebar follows the same rule. On phones, where there is no hover, only the selected item is in full colour.
 - **Settings tabs fit small screens.** Like the project page, the settings tab bar shows as many tabs as fit and puts the rest under "More", instead of scrolling sideways with half the tabs out of sight. The open tab is always visible.
+- **Shorter dashboard risk cards.** Each "Risk & needs attention" card shows its first five items; the next one fades and blurs under the edge, and "Show more (n)" opens the card to the full list ("Show less" closes it). The hidden rows can't be reached with Tab until the card is opened.
 - **Finance asks for the account again after you leave.** The account you pick when opening Finance is kept while you move around inside Finance (tabs, filters, entries). As soon as you go to any other page, it is forgotten, and the next visit to Finance asks again. Before, the choice was remembered for a year, so an entry could land in an account you had forgotten was open.
 
 ## [3.7.0]
