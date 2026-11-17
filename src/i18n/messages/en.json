@@ -5191,5 +5191,8 @@
   "منتقل شد: {moved} · مانده: {remaining}": "Moved: {moved} · Remaining: {remaining}",
   "ناموفق: {n}": "Failed: {n}",
   "هر فایل اول روی فضای ابری نوشته و سنجیده می‌شود، بعد از سرور پاک می‌شود. اگر صفحه را ببندید، کار همان‌جا می‌ایستد و بعداً ادامه پیدا می‌کند.": "Each file is first written to the cloud storage and checked, then removed from the server. If you close the page, the work stops there and continues next time.",
-  "پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.": "Attachments of projects, tasks, comments and messages, plus receipts and avatars. Nothing changes for users: files open and download inside the app as before. On the cloud storage, files stay in the connection account's private folder (KabarzaOS-files) and aren't shared with anyone."
+  "پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.": "Attachments of projects, tasks, comments and messages, plus receipts and avatars. Nothing changes for users: files open and download inside the app as before. On the cloud storage, files stay in the connection account's private folder (KabarzaOS-files) and aren't shared with anyone.",
+  "نسخهٔ برنامه": "App version",
+  "ساخته‌شده (آخرین دیپلوی)": "Built (last deploy)",
+  "روشن از": "Running since"
 }

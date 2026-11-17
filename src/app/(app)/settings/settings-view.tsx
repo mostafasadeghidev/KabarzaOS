@@ -46,6 +46,7 @@ import { useLocale, useT } from '@/i18n/client';
 import { tagLabel } from '@/domain/settings/tag-label';
 import { GRANTABLE_CAPS } from '@/domain/access/project-scope';
 import type { SchedulerHealth } from '@/domain/scheduler/health';
+import type { AppVersionInfo } from '@/server/system/version';
 import type { BucketCheck } from '@/server/files/bucket-probe';
 import { DEFAULT_LOCALE, isRtl, LOCALE_NAMES, LOCALES } from '@/i18n/config';
 import { displayRate, trimRate } from '@/domain/currency/rates';
@@ -69,6 +70,7 @@ export interface SettingsData {
   reportConfig: ReportConfig;
   systemConfig: SystemConfig;
   health: SchedulerHealth;
+  version: AppVersionInfo;
   /** خودآزماییِ باکت — فقط برای مالک (null برای بقیه). */
   bucket: BucketCheck | null;
   lockDate: string | null;
@@ -724,7 +726,7 @@ export function SettingsView({
         می‌زد و چیزی ذخیره نمی‌شد. حالا هر تب یک فرم و یک دکمه.
       */}
       {tab === 'system' && (
-        <SystemSection config={data.systemConfig} health={data.health} bucket={data.bucket} isOwner={data.isOwner} />
+        <SystemSection config={data.systemConfig} health={data.health} bucket={data.bucket} isOwner={data.isOwner} version={data.version} />
       )}
 
       {tab === 'backup' && data.isOwner && data.backup && <BackupSection view={data.backup} />}

@@ -18,11 +18,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
 import { useActionToast } from '@/components/ui/toast';
-import { useT } from '@/i18n/client';
+import { useT, useTimeZone } from '@/i18n/client';
 import { LOCALES, LOCALE_NAMES } from '@/i18n/config';
 import { agoParts, type SchedulerHealth } from '@/domain/scheduler/health';
+import type { AppVersionInfo } from '@/server/system/version';
+import { formatDateTime } from '@/i18n/datetime';
 import type { TelegramSettingsView } from '@/server/settings/telegram-service';
-import { Activity, HardDrive, RefreshCw } from 'lucide-react';
+import { Activity, HardDrive, Info, RefreshCw } from 'lucide-react';
 import type { BucketCheck } from '@/server/files/bucket-probe';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
@@ -174,8 +176,37 @@ function BucketCard({ bucket }: { bucket: BucketCheck }) {
   );
 }
 
-export function SystemSection({ config, health, bucket, isOwner }: {
+/**
+ * نسخهٔ برنامهٔ در حالِ اجرا (۳.۶.۰) — تا معلوم باشد آخرین تغییرات روی سرور رفته یا نه.
+ * «ساخته‌شده» با هر دیپلوی عوض می‌شود؛ «روشن از» با هر راه‌اندازیِ دوباره.
+ */
+function VersionCard({ version }: { version: AppVersionInfo }) {
+  const tr = useT();
+  const tz = useTimeZone();
+  return (
+    <div className="grid gap-1.5 rounded-xl border bg-card p-3">
+      <p className="flex items-center gap-1.5 text-sm font-medium">
+        <Info className="size-4" />
+        {tr('نسخهٔ برنامه')}
+        <span className="num ms-auto font-mono" dir="ltr">KabarzaOS {version.version}</span>
+      </p>
+      <dl className="grid grid-cols-1 gap-x-4 gap-y-0.5 text-xs text-muted-foreground sm:grid-cols-[auto_1fr]">
+        {version.builtAt && (
+          <>
+            <dt>{tr('ساخته‌شده (آخرین دیپلوی)')}</dt>
+            <dd><span className="num">{formatDateTime(version.builtAt, tz)}</span></dd>
+          </>
+        )}
+        <dt>{tr('روشن از')}</dt>
+        <dd><span className="num">{formatDateTime(version.startedAt, tz)}</span></dd>
+      </dl>
+    </div>
+  );
+}
+
+export function SystemSection({ config, health, bucket, isOwner, version }: {
   config: SystemConfig;
+  version: AppVersionInfo;
   health: SchedulerHealth;
   bucket: BucketCheck | null;
   /** کارت‌های سلامتِ زمان‌بند و باکت فقط برای مالک. */
@@ -195,6 +226,7 @@ export function SystemSection({ config, health, bucket, isOwner }: {
      */
     <form key={JSON.stringify(config)} action={save} className="grid max-w-4xl gap-4">
       {/* ⚠️ بالای صفحه، پیش از تنظیمات: خرابیِ زمان‌بند باید اول دیده شود. فقط مالک (پورتِ تبِ Health). */}
+      <VersionCard version={version} />
       {isOwner && <HealthCard health={health} />}
       {isOwner && bucket && <BucketCard bucket={bucket} />}
 

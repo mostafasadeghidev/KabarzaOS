@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
   // ایمیجِ کوچکِ داکر (D-009)
   output: 'standalone',
   /**
+   * زمانِ ساخت (۳.۶.۰) — در کد جاسازی می‌شود تا «تنظیمات ← سامانه» نشان دهد نسخهٔ در حالِ اجرا
+   * کِی ساخته شده؛ با هر دیپلوی (Coolify از نو می‌سازد) عوض می‌شود.
+   */
+  env: { KABARZA_BUILD_TIME: new Date().toISOString() },
+  /**
    * ⚠️ argon2 نسخهٔ قبلیِ nativeِ Node است. بدونِ این، Turbopack هنگامِ ساختِ
    * `instrumentation` شاخهٔ wasm/مرورگرش را هم resolve می‌کند و build
    * می‌شکند (@node-rs/argon2-wasm32-wasi). external یعنی در زمانِ اجرا از
