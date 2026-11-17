@@ -52,6 +52,7 @@ import { DEFAULT_LOCALE, isRtl, LOCALE_NAMES, LOCALES } from '@/i18n/config';
 import { displayRate, trimRate } from '@/domain/currency/rates';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OverflowTabs } from '@/components/ui/overflow-tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Hint } from '@/components/ui/tooltip';
@@ -189,18 +190,19 @@ export function SettingsView({
 
   return (
     <div className="grid gap-4">
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
-        <div className="overflow-x-auto pb-1.5">
-          <TabsList variant="line" className="w-max">
-            {TABS.filter((t) => (!t.ownerOnly || data.isOwner) && (t.key !== 'onboarding' || data.onboarding)).map((t) => (
-              <TabsTrigger key={t.key} value={t.key} className="flex-none">
-                {tr(t.label)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
+      {/*
+        ⚠️ مثلِ تب‌های صفحهٔ پروژه (OverflowTabs): هر چند تب که جا شود دیده می‌شود و بقیه زیرِ
+        «بیشتر» می‌روند؛ تبِ فعال همیشه پیداست. پیش از این روی صفحهٔ کوچک پیمایشِ افقی داشت و
+        نیمی از تب‌ها پنهان بود بی‌آنکه معلوم باشد.
+      */}
+      <OverflowTabs
+        className="pb-1.5"
+        variant="line"
+        value={tab}
+        onValueChange={(v) => setTab(v as typeof tab)}
+        items={TABS.filter((t) => (!t.ownerOnly || data.isOwner) && (t.key !== 'onboarding' || data.onboarding))
+          .map((t) => ({ value: t.key, label: tr(t.label) }))}
+      />
 
       {tab === 'currencies' && (
         <div className="grid gap-6">
