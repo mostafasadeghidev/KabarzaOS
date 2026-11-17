@@ -58,6 +58,7 @@ export function FileDrop({
   footer,
   className,
   hideList = false,
+  unlimited = false,
 }: {
   /** فهرستِ در انتظار (پیش‌نمایش با حذف). بی‌آن، کادر فقط تحویل می‌دهد (بارگذاریِ فوری). */
   files?: File[];
@@ -77,6 +78,8 @@ export function FileDrop({
   className?: string;
   /** پیش‌نمایشِ فهرست را خودِ والد جای دیگری نشان می‌دهد (تصویرِ شاخص، ۳.۸.۰). */
   hideList?: boolean;
+  /** بی سقفِ تعداد و جمعِ حجمِ یک ارسال (آپلودِ تکه‌ای، ۳.۱۰.۰). */
+  unlimited?: boolean;
 }) {
   const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -93,8 +96,8 @@ export function FileDrop({
     if (fresh.length === 0) return;
     const next = [...pending, ...fresh];
     // سقفِ سرور برای هر ارسال — فقط وقتی فهرستِ در انتظار با یک ارسال می‌رود.
-    if (files && next.length > MAX_MEDIA) { setError(t('در هر بار حداکثر ۱۰ فایل.')); return; }
-    if (next.reduce((sum, f) => sum + f.size, 0) > MAX_MEDIA_TOTAL) {
+    if (!unlimited && files && next.length > MAX_MEDIA) { setError(t('در هر بار حداکثر ۱۰ فایل.')); return; }
+    if (!unlimited && next.reduce((sum, f) => sum + f.size, 0) > MAX_MEDIA_TOTAL) {
       setError(t('جمعِ حجمِ فایل‌ها بیش از {size} است.', { size: humanSize(MAX_MEDIA_TOTAL, t) }));
       return;
     }

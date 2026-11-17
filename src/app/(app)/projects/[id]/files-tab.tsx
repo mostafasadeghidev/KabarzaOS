@@ -16,7 +16,8 @@ import {
 import {
   addLinkAction, deleteAttachmentAction, pinAttachmentAction, uploadAttachmentAction, type FileFormState,
 } from './_form/file-actions';
-import { humanSize, MAX_SIZE } from '@/domain/files/upload';
+import { CHUNKED_MAX, humanSize, MAX_SIZE } from '@/domain/files/upload';
+import { useUploads } from '@/components/uploads/upload-manager';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
@@ -85,6 +86,7 @@ export function FilesTab({
   // R-FILE-09: دکمهٔ حذف فقط برای بارگذارنده یا مدیر — قبلاً به همه نشان داده می‌شد و بعد خطا می‌گرفتند.
   const canDelete = (f: FileRow) => canUpload && (canManage || (currentUserId !== null && f.uploaderId === currentUserId));
 
+  const uploads = useUploads();
   const [uploadState, upload] = useActionState(uploadAttachmentAction, {});
   useActionToast(uploadState);
   const [linkState, addLink] = useActionState(addLinkAction, {});
@@ -224,12 +226,25 @@ export function FilesTab({
         {canUpload && (
           <form
             ref={uploadForm}
-            action={(data) => { upload(data); uploadForm.current?.reset(); }}
+            /*
+             * ۳.۱۰.۰ — فایل‌ها به مدیرِ آپلود سپرده می‌شوند (تکه‌تکه، با نوارِ پیشرفت، ادامه پس از قطعی،
+             * بی‌وابستگی به ماندن در همین صفحه). بیرون از provider همان اکشنِ قبلی.
+             */
+            action={(data) => {
+              const picked = data.getAll('file').filter((f): f is File => f instanceof File && f.size > 0);
+              if (uploads && picked.length > 0) {
+                uploads.add(picked, { projectId, label: String(data.get('label') ?? '') });
+              } else {
+                upload(data);
+              }
+              uploadForm.current?.reset();
+            }}
             className="grid gap-2 rounded-xl border bg-card p-3"
           >
             <input type="hidden" name="projectId" value={projectId} />
             {/* چند فایل هم‌زمان؛ رها کردن، چسباندنِ اسکرین‌شات یا کلیک — مثلِ بازبینی. */}
-            <FormFileDrop name="file" onCountChange={setPickedCount} />
+            {/* با مدیرِ آپلود: سقفِ «هر ارسال ۱۰ فایل / ۵۵ مگ» نیست — هر فایل جدا و تکه‌تکه می‌رود. */}
+            <FormFileDrop name="file" onCountChange={setPickedCount} unlimited={Boolean(uploads)} />
             {/* برچسبِ اختیاری برای فایل‌های همین بارگذاری (با چند فایل شماره می‌گیرد). */}
             <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
               <Field>
@@ -242,7 +257,7 @@ export function FilesTab({
               </SubmitButton>
             </div>
             <p className="text-xs text-muted-foreground">
-              {tr('تصویر، ویدیو، PDF و سند — تا {size} برای هر فایل.', { size: humanSize(MAX_SIZE.attachment, tr) })}
+              {tr('تصویر، ویدیو، سند، ارائه، zip/rar/7z، SVG و psd — تا {size} برای هر فایل. می‌توانید در برنامه جابه‌جا شوید؛ آپلود ادامه دارد.', { size: humanSize(uploads ? CHUNKED_MAX : MAX_SIZE.attachment, tr) })}
             </p>
           </form>
         )}

@@ -392,6 +392,12 @@ async function assertProjectAccess(actor: Actor, projectId: number) {
   if (!await canAccessProject(actor, projectId)) throw new ForbiddenError('project.forbidden');
 }
 
+/** گاردِ افزودنِ فایل به پروژه — همان `addAttachment` (دسترسی + پروژهٔ منجمد) برای آپلودِ تکه‌ای. */
+export async function assertCanAttach(actor: Actor, projectId: number): Promise<void> {
+  await assertProjectAccess(actor, projectId);
+  await assertNotFrozen(projectId, actor);
+}
+
 export async function listAttachments(actor: Actor, projectId: number) {
   await assertProjectAccess(actor, projectId);
   // ⚠️ همان شکل‌دهندهٔ صفحهٔ پروژه — دو مسیرِ موازی نمی‌سازیم.

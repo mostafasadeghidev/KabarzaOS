@@ -60,6 +60,13 @@ export type Purpose = keyof typeof MAX_SIZE;
  */
 export const MAX_MEDIA = 10;
 
+/**
+ * آپلودِ تکه‌ای (۳.۱۰.۰) — هر تکه ۸ مگ (کمینهٔ multipart ِ S3 پنج مگ است) و سقفِ هر فایل ۲ گیگ
+ * (ستونِ `files.size` عددِ ۳۲بیتی است). تکه‌ها مستقیم به مقصد می‌روند، نه روی دیسکِ سرور.
+ */
+export const CHUNK_SIZE = 8 * MB;
+export const CHUNKED_MAX = 2000 * MB;
+
 /** سقفِ جمعِ حجمِ یک ارسال — کمی زیرِ `bodySizeLimit` ِ next.config. */
 export const MAX_MEDIA_TOTAL = 55 * MB;
 
@@ -280,10 +287,15 @@ export function trustedMime(declared: string, head: Uint8Array, purpose: Purpose
  * تصمیمِ پذیرش. ترتیب مهم است: ارزان‌ترین بررسی اول، تا فایلِ بزرگِ نامعتبر
  * هرگز خوانده نشود. نوعِ تأییدشده را برمی‌گرداند (← `trustedMime`)؛ ذخیره با همین است.
  */
-export function assertAcceptable(file: UploadCandidate, purpose: Purpose): string {
+export function assertAcceptable(
+  file: UploadCandidate,
+  purpose: Purpose,
+  /** سقفِ حجم — آپلودِ تکه‌ای (۳.۱۰.۰) سقفِ بزرگ‌ترِ خودش را دارد (`CHUNKED_MAX`). */
+  maxSize: number = MAX_SIZE[purpose],
+): string {
   if (!file.name.trim()) throw new FileRejected('file.name_missing');
   if (file.size <= 0) throw new FileRejected('file.empty');
-  if (file.size > MAX_SIZE[purpose]) throw new FileRejected('file.too_large');
+  if (file.size > maxSize) throw new FileRejected('file.too_large');
 
   const mime = trustedMime(file.mime, file.head, purpose, file.name);
   if (!ALLOWED_TYPES[purpose].includes(mime)) throw new FileRejected('file.type_not_allowed');

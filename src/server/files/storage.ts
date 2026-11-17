@@ -1,6 +1,7 @@
 import {
-  CreateBucketCommand, DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, HeadObjectCommand,
-  PutObjectCommand, S3Client,
+  AbortMultipartUploadCommand, CompleteMultipartUploadCommand, CreateBucketCommand, CreateMultipartUploadCommand,
+  DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, HeadObjectCommand, PutObjectCommand, S3Client,
+  UploadPartCommand,
 } from '@aws-sdk/client-s3';
 
 /**
@@ -127,4 +128,49 @@ export async function deleteObject(key: string): Promise<void> {
   const c = cloudPart(key);
   if (c) return (await cloud()).cloudDelete(Number(c[1]), c[2]!);
   await s3().send(new DeleteObjectCommand({ Bucket: bucket(), Key: key }));
+}
+
+/* ------------------------------------------------------------------ *
+ * آپلودِ تکه‌ای (۳.۱۰.۰) — یک رابط برای هر دو مقصد
+ * ------------------------------------------------------------------ */
+
+/**
+ * ⚠️ تکه‌ها مستقیم به مقصدِ نهایی می‌روند و هیچ‌وقت روی دیسکِ سرور جمع نمی‌شوند:
+ *  · کلیدِ `nc:<id>/…` ← آپلودِ تکه‌ایِ Nextcloud (`backendId` نامِ پوشهٔ موقت است)؛
+ *  · کلیدِ باکت ← multipart ِ S3 (`backendId` همان UploadId). کمینهٔ هر بخش ۵ مگ (جز آخری) —
+ *    `CHUNK_SIZE` ِ ۸ مگ این را تضمین می‌کند.
+ * خروجیِ `chunkPut` برچسبی است که `chunkFinish` لازم دارد (ETag ِ S3؛ برای Nextcloud «1»).
+ */
+export async function chunkStart(key: string, mime: string, dir: string): Promise<string> {
+  const c = cloudPart(key);
+  if (c) { await (await cloud()).cloudChunkStart(Number(c[1]), dir); return dir; }
+  await ensureBucket();
+  const out = await s3().send(new CreateMultipartUploadCommand({ Bucket: bucket(), Key: key, ContentType: mime }));
+  if (!out.UploadId) throw new Error('multipart_start');
+  return out.UploadId;
+}
+
+export async function chunkPut(key: string, backendId: string, index: number, body: Uint8Array): Promise<string> {
+  const c = cloudPart(key);
+  if (c) { await (await cloud()).cloudChunkPut(Number(c[1]), backendId, index, body); return '1'; }
+  const out = await s3().send(new UploadPartCommand({
+    Bucket: bucket(), Key: key, UploadId: backendId, PartNumber: index + 1, Body: body, ContentLength: body.byteLength,
+  }));
+  if (!out.ETag) throw new Error('multipart_part');
+  return out.ETag;
+}
+
+export async function chunkFinish(key: string, backendId: string, parts: Record<string, string>, total: number, size: number): Promise<void> {
+  const c = cloudPart(key);
+  if (c) return (await cloud()).cloudChunkFinish(Number(c[1]), backendId, c[2]!, size);
+  await s3().send(new CompleteMultipartUploadCommand({
+    Bucket: bucket(), Key: key, UploadId: backendId,
+    MultipartUpload: { Parts: Array.from({ length: total }, (_, i) => ({ PartNumber: i + 1, ETag: parts[String(i)]! })) },
+  }));
+}
+
+export async function chunkAbort(key: string, backendId: string): Promise<void> {
+  const c = cloudPart(key);
+  if (c) return (await cloud()).cloudChunkAbort(Number(c[1]), backendId);
+  await s3().send(new AbortMultipartUploadCommand({ Bucket: bucket(), Key: key, UploadId: backendId })).catch(() => undefined);
 }

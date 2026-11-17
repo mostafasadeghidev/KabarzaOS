@@ -5209,5 +5209,18 @@
   "قفل کردنِ گروه": "Bloquear grupo",
   "قفلِ گروه باز شد.": "Grupo desbloqueado.",
   "قفلِ گروه فقط از مدیر یا مدیرِ همان پروژه برمی‌آید.": "Solo un responsable o el gestor del proyecto puede bloquear el grupo.",
-  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Grupo bloqueado; solo se ve el historial."
+  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Grupo bloqueado; solo se ve el historial.",
+  "«{name}» بارگذاری شد.": "“{name}” subido.",
+  "آپلود انجام نشد.": "La subida falló.",
+  "آپلودها تمام شد": "Subidas terminadas",
+  "بارگذاری شد": "Subido",
+  "تصویر، ویدیو، سند، ارائه، zip/rar/7z، SVG و psd — تا {size} برای هر فایل. می‌توانید در برنامه جابه‌جا شوید؛ آپلود ادامه دارد.": "Imágenes, vídeos, documentos, presentaciones, zip/rar/7z, SVG y psd, hasta {size} por archivo. Puede moverse por la app mientras se sube.",
+  "در حالِ آپلود ({n})": "Subiendo ({n})",
+  "در صف": "En cola",
+  "لغوِ آپلود": "Cancelar subida",
+  "منتظرِ اینترنت…": "Esperando conexión…",
+  "این آپلود دیگر وجود ندارد؛ دوباره انتخابش کنید.": "Esta subida ya no existe; vuelva a elegir el archivo.",
+  "آپلودهای نیمه‌کارهٔ شما زیاد است؛ چندتا را تمام یا لغو کنید.": "Tiene demasiadas subidas sin terminar; termine o cancele algunas.",
+  "ترتیبِ تکه‌ها به‌هم ریخت؛ آپلود از سر گرفته می‌شود.": "Las partes llegaron desordenadas; la subida se reanudará.",
+  "ارتباط با محلِ ذخیره قطع شد؛ دوباره تلاش می‌شود.": "Se perdió la conexión con el almacenamiento; reintentando."
 }
