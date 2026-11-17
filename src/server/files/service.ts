@@ -42,10 +42,10 @@ async function storeFile(
   blob: { name: string; mime: string; bytes: Uint8Array },
   purpose: Purpose,
 ): Promise<number> {
-  // نوعِ اعلام‌شده و بایت‌های واقعی هر دو بررسی می‌شوند (R-FILE-05).
-  const mime = blob.mime.toLowerCase().split(';')[0]!.trim();
-  assertAcceptable(
-    { name: blob.name, mime, size: blob.bytes.byteLength, head: blob.bytes.subarray(0, 32) },
+  // نوعِ اعلام‌شده و بایت‌های واقعی هر دو بررسی می‌شوند (R-FILE-05). نوعِ برگشتی ممکن است
+  // نوعِ واقعیِ تصویر باشد، نه ادعا (JPEG با نامِ ‎.webp) ← ذخیره، پسوند و پیش‌نمایش با همین.
+  const mime = assertAcceptable(
+    { name: blob.name, mime: blob.mime, size: blob.bytes.byteLength, head: blob.bytes.subarray(0, 32) },
     purpose,
   );
 
@@ -443,9 +443,8 @@ export async function storeUploads(actor: Actor, blobs: readonly UploadBlob[]): 
   const total = blobs.reduce((sum, b) => sum + b.bytes.byteLength, 0);
   if (total > MAX_MEDIA_TOTAL) throw new FileRejected('file.too_large');
   for (const blob of blobs) {
-    const mime = blob.mime.toLowerCase().split(';')[0]!.trim();
     assertAcceptable(
-      { name: blob.name, mime, size: blob.bytes.byteLength, head: blob.bytes.subarray(0, 32) },
+      { name: blob.name, mime: blob.mime, size: blob.bytes.byteLength, head: blob.bytes.subarray(0, 32) },
       'attachment',
     );
   }

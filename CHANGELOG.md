@@ -11,6 +11,11 @@ Versioning follows [SemVer](https://semver.org/).
 - **Shorter dashboard risk cards.** Each "Risk & needs attention" card shows its first five items; the next one fades and blurs under the edge, and "Show more (n)" opens the card to the full list ("Show less" closes it). The hidden rows can't be reached with Tab until the card is opened.
 - **Finance asks for the account again after you leave.** The account you pick when opening Finance is kept while you move around inside Finance (tabs, filters, entries). As soon as you go to any other page, it is forgotten, and the next visit to Finance asks again. Before, the choice was remembered for a year, so an entry could land in an account you had forgotten was open.
 
+### Fixed
+
+- **Images saved from the web upload correctly.** A picture whose file name doesn't match its real format (for example a JPEG saved as `.webp`, which many sites do) was rejected with "file content doesn't match its declared type". If the content is a real JPEG, PNG, GIF or WebP, it is now accepted and stored under its true type. Anything that isn't really an image is still rejected, and an AVIF image now gets the clearer "file type not allowed".
+- **The chosen featured image shows in place of the current one.** In the project form, the picked image now appears where the current picture or the letter tile is, with × to undo the choice, instead of in a separate box under the drop area.
+
 ## [3.7.0]
 
 ### Changed

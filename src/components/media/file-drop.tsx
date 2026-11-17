@@ -56,6 +56,7 @@ export function FileDrop({
   hint,
   footer,
   className,
+  hideList = false,
 }: {
   /** فهرستِ در انتظار (پیش‌نمایش با حذف). بی‌آن، کادر فقط تحویل می‌دهد (بارگذاریِ فوری). */
   files?: File[];
@@ -73,6 +74,8 @@ export function FileDrop({
   /** پایین‌ترین ردیف — دکمه‌های فرم زیرِ پیش‌نمایش‌ها می‌نشینند، نه بالایشان. */
   footer?: ReactNode;
   className?: string;
+  /** پیش‌نمایشِ فهرست را خودِ والد جای دیگری نشان می‌دهد (تصویرِ شاخص، ۳.۸.۰). */
+  hideList?: boolean;
 }) {
   const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -116,7 +119,7 @@ export function FileDrop({
   const images = pending.map((f, i) => ({ f, i })).filter(({ i }) => previews[i]);
   const thumb = variant === 'zone' ? 'size-28' : 'size-16';
 
-  const list = pending.length > 0 && (
+  const list = !hideList && pending.length > 0 && (
     <ul className="flex flex-wrap gap-2">
       {pending.map((f, i) => (
         <li key={`${f.name}-${f.size}-${i}`} className="relative">
