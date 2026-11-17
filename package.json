@@ -1,6 +1,6 @@
 {
   "name": "kabarza-os",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,6 +23,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1119.0",
     "@base-ui/react": "1.8.0",
+    "@fontsource-variable/vazirmatn": "5.3.0",
     "@modelcontextprotocol/sdk": "1.32.2",
     "@node-rs/argon2": "^2.1.0",
     "class-variance-authority": "^0.7.1",

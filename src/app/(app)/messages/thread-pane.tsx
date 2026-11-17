@@ -590,7 +590,7 @@ export function ThreadPane({
           {tr('در این کانال فقط مدیران می‌نویسند.')}
         </p>
       ) : thread.canReply ? (
-        <form action={replyFormAction} className="border-t p-3">
+        <form data-composer-bar action={replyFormAction} className="border-t p-3">
           <input type="hidden" name="threadId" value={thread.thread.id} />
           {replyTo && <ReplyBar target={replyTo} onCancel={() => setReplyTo(null)} />}
           <div className="flex items-end gap-2">

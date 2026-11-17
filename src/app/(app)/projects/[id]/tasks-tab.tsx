@@ -562,6 +562,8 @@ export function TasksTab({
         </Tabs>
       </div>
 
+      {/* key: با عوض شدنِ «فهرست/برد» محتوا از نو سوار می‌شود و همان انیمیشنِ ورودِ تب‌ها را می‌گیرد. */}
+      <div key={view} data-view-swap className="min-w-0">
       {view === 'board' ? (
         <KanbanBoard
           tasks={found ?? tasks}
@@ -632,6 +634,7 @@ export function TasksTab({
       </ul>
       )
       )}
+      </div>
 
       <TaskDialog
         taskId={openTask}

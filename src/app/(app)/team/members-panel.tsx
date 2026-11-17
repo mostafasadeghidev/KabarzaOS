@@ -173,7 +173,7 @@ function HoursBars({ rows }: { rows: MembersData['hours'] }) {
   const max = Math.max(0, ...rows.map((r) => r.minutes));
   if (max <= 0) return null;
   return (
-    <ul className="grid gap-2" aria-label={tr('نمودارِ ساعت کاری')}>
+    <ul data-hours-bars className="grid gap-2" aria-label={tr('نمودارِ ساعت کاری')}>
       {rows.map((r) => (
         <li key={r.id} className="grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-3 text-sm">
           <UserName userId={r.id} name={r.name} />

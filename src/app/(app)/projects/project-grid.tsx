@@ -196,7 +196,8 @@ export function ProjectGrid({
             (← project-card). `-mb-3` فاصلهٔ اضافهٔ زیرِ آخرین ردیفِ کارت‌ها را
             جبران می‌کند.
           */}
-          <div className="-mb-3 grid gap-x-3 @2xl/main:grid-cols-2 @5xl/main:grid-cols-3">
+          {/* `key` ِ تب ← با هر تغییرِ تب همهٔ کارت‌ها از نو با انیمیشن می‌آیند، نه فقط تازه‌ها. */}
+          <div key={tab} className="-mb-3 grid gap-x-3 @2xl/main:grid-cols-2 @5xl/main:grid-cols-3">
             {pager.slice.map((p) => (
               <ProjectCard
                 key={p.id}

@@ -2,6 +2,21 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.7.0]
+
+### Changed
+
+- **A warmer, more modern look.** Cards have soft layered shadows instead of hairlines, the sidebar and the top bar float as frosted panels, menus and dialogs are glass, sidebar icons sit on small colour tiles, primary buttons and metric cards have gentle gradients, and titles are bolder. Tables, forms and money figures stay plain and high-contrast. Structure and behaviour are unchanged.
+- **Vazirmatn is bundled.** The app now ships its own Persian font instead of relying on the font installed on each computer, so text looks the same everywhere.
+- **Motion.** The active tab is marked by a sliding indicator, and the content under any tab bar (pages, sub-tabs and dialogs) fades in when the tab changes. Project cards animate in again on every tab of the Projects page, and switching between list and board in a project's tasks uses the same motion. Motion is off when the system asks for reduced motion, and printing drops shadows, glass and motion.
+- **Messages.** Sent messages are coloured bubbles, the day separator stays at the top while scrolling, and the message box floats at the bottom.
+- **Working hours and availability.** Hour bars fill in from the correct side in right-to-left languages, and today's column is highlighted.
+
+### Fixed
+
+- "Today" no longer runs into the weekday name in the team and availability tables (for example «سه‌شنبه امروز»).
+- In Finance → Expenses, the vendor filter chips no longer contain a second button for showing a hidden amount (a button inside a button). With amounts hidden, the chip shows dots and still works as a filter.
+
 ## [3.6.0]
 
 ### Added

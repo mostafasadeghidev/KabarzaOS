@@ -1,0 +1,730 @@
+/*
+ * لایهٔ ظاهری — عمق، شیشه، کاشیِ رنگی و حرکت (۳.۷.۰؛ DESIGN.md، «لایهٔ ظاهری»).
+ *
+ * یک فایلِ جدا که روی توکن‌ها و data-slotها می‌نشیند؛ هیچ جزئی بازنویسی نشده و با برداشتنِ
+ * import ِ آن از layout.tsx ظاهر به حالتِ سادهٔ قبل برمی‌گردد.
+ *
+ * ایده (پیشنهادِ گفتگو): عمقِ نرمِ neumorphism بدونِ کم کردنِ کنتراست، شیشه فقط روی
+ * سایدبار/نوارِ بالا/پنجره‌ها، کاشی‌های رنگیِ آیکون از claymorphism، گرادیانِ ملایم روی
+ * کارت‌های عددی. جدول و فرم و عددِ مالی ساده و پرکنتراست می‌مانند.
+ */
+
+:root {
+  --wp-radius-card: 1.1rem;
+  --wp-shadow-1: 0 1px 2px oklch(0.4 0.03 60 / 0.06), 0 6px 18px -6px oklch(0.4 0.05 60 / 0.12), 0 18px 40px -20px oklch(0.45 0.08 255 / 0.14);
+  --wp-shadow-2: 0 2px 4px oklch(0.4 0.03 60 / 0.07), 0 14px 32px -10px oklch(0.4 0.06 60 / 0.18), 0 28px 60px -24px oklch(0.45 0.1 255 / 0.22);
+  --wp-glass: oklch(1 0 0 / 0.62);
+  --wp-glass-border: oklch(1 0 0 / 0.7);
+  /* چهار رنگِ کاشی‌ها — پاستلیِ ملایم، متنِ رویشان همیشه تیره. */
+  --wp-h1: 254; --wp-h2: 160; --wp-h3: 45; --wp-h4: 320; --wp-h5: 200; --wp-h6: 20;
+}
+.dark {
+  --wp-shadow-1: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 22px -8px oklch(0 0 0 / 0.5), 0 0 0 1px oklch(1 0 0 / 0.04);
+  --wp-shadow-2: 0 2px 6px oklch(0 0 0 / 0.35), 0 18px 40px -12px oklch(0 0 0 / 0.6), 0 0 0 1px oklch(1 0 0 / 0.06);
+  --wp-glass: oklch(0.25 0.006 70 / 0.6);
+  --wp-glass-border: oklch(1 0 0 / 0.08);
+}
+
+/* ---------- پس‌زمینه: کاغذِ گرم با دو هالهٔ رنگیِ محو (پشتوانهٔ شیشه) ---------- */
+body {
+  background:
+    radial-gradient(60rem 40rem at 100% -10%, oklch(0.93 0.05 60 / 0.75), transparent 60%),
+    radial-gradient(50rem 40rem at -10% 110%, oklch(0.92 0.05 260 / 0.6), transparent 60%),
+    radial-gradient(40rem 30rem at 50% 50%, oklch(0.96 0.02 320 / 0.5), transparent 70%),
+    var(--color-background);
+  background-attachment: fixed;
+}
+.dark body {
+  background:
+    radial-gradient(60rem 40rem at 100% -10%, oklch(0.32 0.06 50 / 0.45), transparent 60%),
+    radial-gradient(50rem 40rem at -10% 110%, oklch(0.3 0.07 265 / 0.5), transparent 60%),
+    var(--color-background);
+  background-attachment: fixed;
+}
+
+/* ---------- کارت‌ها: بی خط، سایهٔ نرمِ چندلایه، گوشهٔ گردتر ---------- */
+[data-slot='card'],
+[data-slot='table-container'] {
+  border-radius: var(--wp-radius-card);
+  box-shadow: var(--wp-shadow-1);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+[data-slot='card']:not([class*='border-destructive']):not([class*='border-amber']),
+[data-slot='table-container'] {
+  border-color: transparent;
+}
+a:hover > [data-slot='card'],
+a:focus-visible > [data-slot='card'] {
+  transform: translateY(-2px);
+  box-shadow: var(--wp-shadow-2);
+}
+
+/* کارت‌های عددیِ داشبورد (container ِ card): نوارِ رنگی و هالهٔ ملایمِ گوشه، رنگ به‌ترتیب. */
+[data-slot='card'][class*='@container/card'] {
+  position: relative;
+  overflow: hidden;
+  --wp-h: var(--wp-h1);
+}
+:nth-child(4n + 2) > [data-slot='card'][class*='@container/card'] { --wp-h: var(--wp-h2); }
+:nth-child(4n + 3) > [data-slot='card'][class*='@container/card'] { --wp-h: var(--wp-h3); }
+:nth-child(4n + 4) > [data-slot='card'][class*='@container/card'] { --wp-h: var(--wp-h4); }
+/* محتوا بالای هاله و نوار — وگرنه شبه‌عنصرِ absolute روی بج و عدد می‌نشست. */
+[data-slot='card'][class*='@container/card'] > * { position: relative; z-index: 1; }
+[data-slot='card'][class*='@container/card']::before {
+  content: '';
+  position: absolute;
+  inset-inline-end: -2.5rem;
+  top: -2.5rem;
+  width: 7.5rem;
+  height: 7.5rem;
+  border-radius: 999px;
+  /* کم‌رنگ‌تر به خواستِ کاربر (۰٫۳۵ ← ۰٫۲). */
+  background: radial-gradient(circle, oklch(0.82 0.1 var(--wp-h) / 0.2), transparent 70%);
+  pointer-events: none;
+}
+/*
+ * ⚠️ حالتِ تیره: هالهٔ رنگی روی کارتِ تیره «لک» دیده می‌شد (نظرِ کاربر) — حذف؛ به‌جایش فقط
+ * یک درخششِ خیلی نازک در لبهٔ بالا به رنگِ همان کارت. نوارِ کنار می‌ماند.
+ */
+.dark [data-slot='card'][class*='@container/card']::before {
+  inset: 0 0 auto 0;
+  top: 0;
+  width: auto;
+  height: 1px;
+  border-radius: 0;
+  background: linear-gradient(90deg, transparent, oklch(0.75 0.12 var(--wp-h) / 0.5), transparent);
+}
+[data-slot='card'][class*='@container/card']::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 1rem;
+  bottom: 1rem;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, oklch(0.7 0.15 var(--wp-h)), oklch(0.62 0.16 calc(var(--wp-h) + 30)));
+}
+[dir='rtl'] [data-slot='card'][class*='@container/card']::after { border-radius: 4px 0 0 4px; }
+
+/* ---------- سایدبار: پنلِ شناورِ شیشه‌ای (variant=floating) + کاشیِ رنگیِ آیکون ---------- */
+[data-slot='sidebar-container'] { background: transparent; }
+[data-slot='sidebar'][data-variant='floating'] [data-slot='sidebar-inner'] {
+  border-radius: 1.25rem;
+  border-color: var(--wp-glass-border);
+  background: var(--wp-glass);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: var(--wp-shadow-2);
+}
+[data-slot='sidebar-menu-button'] {
+  border-radius: 0.75rem;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+[data-slot='sidebar-menu-button'] > svg:first-child {
+  box-sizing: content-box;
+  padding: 0.3rem;
+  border-radius: 0.55rem;
+  background: oklch(0.93 0.05 var(--wp-ih, 254));
+  color: oklch(0.45 0.14 var(--wp-ih, 254));
+}
+.dark [data-slot='sidebar-menu-button'] > svg:first-child {
+  background: oklch(0.32 0.06 var(--wp-ih, 254));
+  color: oklch(0.85 0.1 var(--wp-ih, 254));
+}
+[data-slot='sidebar-menu-item']:nth-child(6n + 1) { --wp-ih: var(--wp-h1); }
+[data-slot='sidebar-menu-item']:nth-child(6n + 2) { --wp-ih: var(--wp-h2); }
+[data-slot='sidebar-menu-item']:nth-child(6n + 3) { --wp-ih: var(--wp-h3); }
+[data-slot='sidebar-menu-item']:nth-child(6n + 4) { --wp-ih: var(--wp-h4); }
+[data-slot='sidebar-menu-item']:nth-child(6n + 5) { --wp-ih: var(--wp-h5); }
+[data-slot='sidebar-menu-item']:nth-child(6n + 6) { --wp-ih: var(--wp-h6); }
+[data-slot='sidebar-menu-button'][data-active='true'] {
+  background: linear-gradient(135deg, oklch(0.54 0.17 254), oklch(0.49 0.19 275));
+  color: oklch(0.99 0 0);
+  box-shadow: 0 6px 16px -6px oklch(0.55 0.18 260 / 0.55);
+}
+[data-slot='sidebar-menu-button'][data-active='true'] > svg:first-child {
+  background: oklch(1 0 0 / 0.22);
+  color: oklch(0.99 0 0);
+}
+[data-slot='sidebar-menu-button'][data-active='true'] [data-slot='sidebar-menu-badge'],
+[data-slot='sidebar-menu-item']:has([data-active='true']) > [data-slot='sidebar-menu-badge'] {
+  color: oklch(0.99 0 0);
+}
+
+/* ---------- دکمه‌ها ---------- */
+/* ⚠️ هر گرادیانی که متنِ سفید رویش است از روشنایی ۰٫۵۴ شروع می‌شود: ۰٫۶ فقط ~۳٫۹ کنتراست می‌داد (زیرِ ۴٫۵). */
+[data-slot='button'] { border-radius: 0.7rem; }
+[data-slot='button'][data-variant='default'] {
+  background: linear-gradient(135deg, oklch(0.54 0.17 254), oklch(0.49 0.19 272));
+  box-shadow: 0 6px 16px -8px oklch(0.55 0.18 260 / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.25);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.dark [data-slot='button'][data-variant='default'] {
+  background: linear-gradient(135deg, oklch(0.72 0.13 254), oklch(0.66 0.15 272));
+}
+[data-slot='button'][data-variant='default']:hover { filter: brightness(1.05); transform: translateY(-1px); }
+[data-slot='button'][data-variant='default']:active { transform: translateY(0); }
+[data-slot='button'][data-variant='outline'] {
+  background: var(--color-card);
+  box-shadow: var(--wp-shadow-1);
+  border-color: transparent;
+}
+
+/* ---------- ورودی‌ها: کمی گردتر، فوکوسِ هاله‌ای ---------- */
+[data-slot='input'], [data-slot='textarea'], [data-slot='searchable-select'] button, [data-slot='input-group'] {
+  border-radius: 0.7rem;
+}
+[data-slot='input']:focus-visible, [data-slot='textarea']:focus-visible {
+  box-shadow: 0 0 0 4px oklch(0.6 0.17 254 / 0.15);
+}
+
+/* ---------- تب‌ها: قرصِ فعال ---------- */
+[data-slot='tabs-list']:not([data-variant='line']) {
+  border-radius: 0.9rem;
+  padding: 0.25rem;
+  background: oklch(0.5 0.02 70 / 0.08);
+}
+[data-slot='tabs-list']:not([data-variant='line']) [data-slot='tabs-trigger'] { border-radius: 0.65rem; }
+[data-slot='tabs-list']:not([data-variant='line']) [data-slot='tabs-trigger'][data-state='active'] {
+  box-shadow: var(--wp-shadow-1);
+}
+[data-slot='tabs-list'][data-variant='line'] [data-slot='tabs-trigger'][data-state='active'] {
+  color: var(--color-primary);
+}
+
+/* ---------- نشان‌ها ---------- */
+[data-slot='badge'] { border-radius: 999px; }
+
+/* ---------- پنجره‌ها و منوها: شیشه ---------- */
+[data-slot='dialog-overlay'], [data-slot='sheet-overlay'], [data-slot='alert-dialog-overlay'] {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  background: oklch(0.25 0.03 260 / 0.25);
+}
+[data-slot='dialog-content'], [data-slot='alert-dialog-content'] {
+  border-radius: 1.4rem;
+  border-color: var(--wp-glass-border);
+  background: color-mix(in oklch, var(--color-card) 88%, transparent);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  box-shadow: var(--wp-shadow-2);
+}
+[data-slot='dropdown-menu-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='command'] {
+  border-radius: 0.9rem;
+  border-color: var(--wp-glass-border);
+  background: color-mix(in oklch, var(--color-popover) 85%, transparent);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  box-shadow: var(--wp-shadow-2);
+}
+
+/* ---------- نوارِ بالای محتوا (هدرِ چسبان) ---------- */
+[data-slot='sidebar-inset'] > header {
+  background: color-mix(in oklch, var(--color-background) 70%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* ---------- جدول: سرستونِ نرم، ردیفِ زیرِ ماوس ---------- */
+[data-slot='table-container'] thead tr { background: oklch(0.5 0.02 70 / 0.05); }
+[data-slot='table-container'] tbody tr { transition: background 0.12s ease; }
+
+/* ---------- کاهشِ حرکت برای کسی که خواسته ---------- */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='card'], [data-slot='button'], [data-slot='sidebar-menu-button'] { transition: none; }
+  a:hover > [data-slot='card'] { transform: none; }
+}
+
+
+/* ================================================================== *
+ * دورِ دوم: مدرن‌تر — فقط ظاهر (۲۰۲۶-۱۱-۱۷)
+ * ================================================================== */
+
+/* ---------- تایپوگرافی: عنوان‌ها درشت‌تر و پررنگ‌تر (Vazirmatn وزنِ ۸۰۰ دارد) ---------- */
+main h1:not(.sr-only) { font-size: 1.75rem; font-weight: 800; line-height: 1.35; }
+main h2 { font-weight: 800; letter-spacing: 0; }
+[data-slot='card-title'] { font-weight: 700; }
+[data-slot='card'][class*='@container/card'] [data-slot='card-title'] { font-weight: 800; }
+[data-slot='card-description'] { font-weight: 500; }
+
+/* ---------- حرکت: ورودِ نرمِ کارت‌ها با تأخیرِ پله‌ای ---------- */
+@keyframes wp-rise {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+main [data-slot='card'] { animation: wp-rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+/* جابه‌جاییِ «فهرست/برد» در تسک‌ها: همان حرکتِ عوض شدنِ تب. */
+[data-view-swap] { animation: wp-rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+main :nth-child(2) > [data-slot='card'], main [data-slot='card']:nth-child(2) { animation-delay: 0.04s; }
+main :nth-child(3) > [data-slot='card'], main [data-slot='card']:nth-child(3) { animation-delay: 0.08s; }
+main :nth-child(4) > [data-slot='card'], main [data-slot='card']:nth-child(4) { animation-delay: 0.12s; }
+main :nth-child(5) > [data-slot='card'], main [data-slot='card']:nth-child(5) { animation-delay: 0.16s; }
+main :nth-child(6) > [data-slot='card'], main [data-slot='card']:nth-child(6) { animation-delay: 0.2s; }
+main :nth-child(7) > [data-slot='card'], main [data-slot='card']:nth-child(7) { animation-delay: 0.24s; }
+main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n + 8) { animation-delay: 0.28s; }
+
+/* پنجره‌ها: باز شدنِ فنری‌تر */
+[data-slot='dialog-content'][data-state='open'] { animation-duration: 0.28s; animation-timing-function: cubic-bezier(0.2, 0.9, 0.25, 1.15); }
+
+/* تب‌ها و دکمه‌ها: تغییرِ حالتِ نرم */
+[data-slot='tabs-trigger'] { transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease; }
+[data-slot='sidebar-menu-button']:not([data-active='true']):hover { transform: translateX(0) scale(1.01); }
+
+/* ردیفِ جدول زیرِ ماوس */
+[data-slot='table-container'] tbody tr:hover { background: oklch(0.6 0.1 254 / 0.05); }
+.dark [data-slot='table-container'] tbody tr:hover { background: oklch(0.7 0.1 254 / 0.07); }
+
+/* ---------- انتقالِ صفحه‌ها (View Transitions): محوشدن + کمی لغزش ---------- */
+::view-transition-old(root) { animation: 0.18s ease-in both wp-vt-out; }
+::view-transition-new(root) { animation: 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both wp-vt-in; }
+@keyframes wp-vt-out { to { opacity: 0; } }
+@keyframes wp-vt-in { from { opacity: 0; transform: translateY(6px); } }
+
+/* ---------- اسکلتِ بارگذاری: موجِ نور ---------- */
+[data-slot='skeleton'] {
+  background: linear-gradient(90deg, var(--color-muted) 0%, color-mix(in oklch, var(--color-muted) 55%, white) 50%, var(--color-muted) 100%);
+  background-size: 200% 100%;
+  animation: wp-shimmer 1.4s ease-in-out infinite;
+}
+.dark [data-slot='skeleton'] {
+  background: linear-gradient(90deg, var(--color-muted) 0%, color-mix(in oklch, var(--color-muted) 80%, white) 50%, var(--color-muted) 100%);
+  background-size: 200% 100%;
+}
+@keyframes wp-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ---------- نوارِ اسکرولِ باریک ---------- */
+* { scrollbar-width: thin; scrollbar-color: oklch(0.6 0.02 70 / 0.35) transparent; }
+
+/* ---------- فوکوس: هالهٔ نرم به‌جای خطِ تیز ---------- */
+[data-slot='button']:focus-visible, [data-slot='sidebar-menu-button']:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px oklch(0.6 0.17 254 / 0.25);
+}
+
+/* ---------- گوشی: بی blur (سریع‌تر روی گوشیِ ضعیف) ---------- */
+@media (max-width: 767px) {
+  [data-slot='sidebar-inner'], [data-slot='dialog-content'], [data-slot='dropdown-menu-content'],
+  [data-slot='popover-content'], [data-slot='sidebar-inset'] > header, [data-slot='dialog-overlay'], [data-slot='sheet-overlay'] {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  [data-slot='dialog-content'], [data-slot='dropdown-menu-content'], [data-slot='popover-content'] { background: var(--color-card); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main [data-slot='card'], [data-view-swap] { animation: none; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+  [data-slot='skeleton'] { animation: none; }
+}
+
+/* ================================================================== *
+ * اصلاح‌های دورِ دوم (نظرِ کاربر، ۲۰۲۶-۱۱-۱۷)
+ * ================================================================== */
+
+/*
+ * ۱) سایدبارِ جمع‌شده: آیکون وسط نبود. دکمه در این حالت ۳۲px با `p-2!` است (مهمِ لایه‌دار، از
+ * این فایل قوی‌تر) و کاشیِ ۲۵.۶px ِ آیکون از آن بیرون می‌زد. پس در این حالت کاشی روی **خودِ دکمه**
+ * می‌نشیند و آیکون بی padding وسطش.
+ */
+[data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button'] > svg:first-child {
+  padding: 0;
+  background: transparent;
+}
+[data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button']:not([data-active='true']) {
+  background: oklch(0.93 0.05 var(--wp-ih, 254));
+  color: oklch(0.45 0.14 var(--wp-ih, 254));
+}
+.dark [data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button']:not([data-active='true']) {
+  background: oklch(0.32 0.06 var(--wp-ih, 254));
+  color: oklch(0.85 0.1 var(--wp-ih, 254));
+}
+[data-slot='sidebar'][data-collapsible='icon'] [data-slot='sidebar-menu-button'] {
+  justify-content: center;
+  margin-inline: auto;
+  /* متنِ پنهان پهنای صفر دارد ولی فاصلهٔ ۸px ِ کنارش آیکون را ۴px کنار می‌برد. */
+  gap: 0;
+}
+
+/*
+ * ۲) منوی پروفایل و بقیهٔ منوهای کشویی: شیشهٔ شفاف با متنِ پشتش قاطی می‌شد ← تقریباً مات
+ * (۹۷٪) با blur ِ ملایم؛ هنوز کمی عمق دارد ولی متنِ پشت دیده نمی‌شود.
+ */
+[data-slot='dropdown-menu-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='command'] {
+  background: color-mix(in oklch, var(--color-popover) 97%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/*
+ * ۳) پس‌زمینهٔ سایدبار با رنگِ صفحه یکی نبود (شیشهٔ سفید/خاکستری روی کاغذِ گرم) ← همان رنگِ
+ * صفحه، و جدایی فقط با سایه و یک خطِ نازک؛ پنل شناور می‌ماند ولی «تکه‌ای جدا» دیده نمی‌شود.
+ */
+[data-slot='sidebar'][data-variant='floating'] [data-slot='sidebar-inner'] {
+  background: color-mix(in oklch, var(--color-background) 94%, transparent);
+  border-color: var(--color-border);
+  box-shadow: var(--wp-shadow-1);
+}
+
+/*
+ * ۴) هماهنگیِ صفحه و سایدبار (نظرِ کاربر):
+ *  · محتوا پس‌زمینهٔ تو‌پرِ خودش را داشت و هالهٔ رنگیِ body فقط در نوارِ پشتِ سایدبار پیدا بود ←
+ *    محتوا شفاف، تا کلِ صفحه یک زمینه باشد.
+ *  · نوارِ بالا تخت و تمام‌عرض بود با خطی که لبِ سایدبار قطع می‌شد ← پنلِ شناور مثلِ خودِ
+ *    سایدبار: همان بالا (۸px)، همان فاصله تا سایدبار (۸px)، همان گوشه، رنگ و سایه.
+ */
+[data-slot='sidebar-inset'] { background: transparent; }
+[data-slot='sidebar-inset'] > header[data-app-chrome] {
+  margin: 8px 8px 0 8px;
+  /* سمتِ سایدبار (آغازِ خط) فقط ۲px، چون خودِ سایدبار ۶px فاصلهٔ داخلی دارد ← جمعاً ۸px. */
+  margin-inline-start: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: color-mix(in oklch, var(--color-background) 94%, transparent);
+  box-shadow: var(--wp-shadow-1);
+}
+/* چپ‌به‌راست: فاصلهٔ سنجیده‌شده با ۲px ۱۰px می‌شد (راست‌به‌چپ ۸px) ← صفر تا هر دو جهت ۸px باشند. */
+[dir='ltr'] [data-slot='sidebar-inset'] > header[data-app-chrome] { margin-inline-start: 0; }
+@media (max-width: 767px) {
+  /* گوشی: سایدبار کشویی است، پس نوارِ بالا از هر دو طرف ۸px. */
+  [data-slot='sidebar-inset'] > header[data-app-chrome] { margin-inline-start: 8px; }
+}
+
+/* ---------- ۵) نشانگرِ لغزانِ تب‌ها (tabs.tsx ← data-slot=tabs-indicator) ---------- */
+[data-slot='tabs-indicator'] {
+  position: absolute;
+  inset-inline-start: auto;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+[data-slot='tabs-indicator'][data-ready] {
+  transition: transform 0.32s cubic-bezier(0.3, 0.9, 0.3, 1.05), width 0.32s cubic-bezier(0.3, 0.9, 0.3, 1.05);
+}
+/* متنِ تب‌ها بالای نشانگر */
+[data-slot='tabs-list'][data-indicator] > [data-slot='tabs-trigger'] { position: relative; z-index: 1; }
+
+/* قرصی (default): قرص خودِ نشانگر است؛ پس‌زمینه و سایهٔ ثابتِ تبِ فعال برداشته می‌شود. */
+[data-slot='tabs-list'][data-variant='default'] > [data-slot='tabs-indicator'] {
+  border-radius: 0.65rem;
+  background: var(--color-card);
+  box-shadow: var(--wp-shadow-1);
+}
+.dark [data-slot='tabs-list'][data-variant='default'] > [data-slot='tabs-indicator'] {
+  background: color-mix(in oklch, var(--color-input) 55%, var(--color-card));
+}
+[data-slot='tabs-list'][data-variant='default'][data-indicator] > [data-slot='tabs-trigger'][data-state='active'] {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+
+/* خطی (line): خطِ زیرِ تب نشانگر است؛ خطِ ثابتِ ::after ِ هر تب خاموش. */
+[data-slot='tabs-list'][data-variant='line'] > [data-slot='tabs-indicator'] {
+  background: transparent;
+}
+[data-slot='tabs-list'][data-variant='line'] > [data-slot='tabs-indicator']::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0.35rem;
+  bottom: -5px;
+  height: 2.5px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, oklch(0.6 0.17 254), oklch(0.56 0.19 280));
+}
+.dark [data-slot='tabs-list'][data-variant='line'] > [data-slot='tabs-indicator']::after {
+  background: linear-gradient(90deg, oklch(0.72 0.13 254), oklch(0.68 0.15 280));
+}
+[data-slot='tabs-list'][data-variant='line'][data-indicator] > [data-slot='tabs-trigger']::after { opacity: 0 !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='tabs-indicator'][data-ready] { transition: none; }
+}
+
+/* ================================================================== *
+ * ۶) پیام‌ها — فقط ظاهر (data-messages-shell / data-composer-bar / data-messages-empty)
+ * ================================================================== */
+
+/* قابِ کلی: مثلِ کارت‌های تازه — گردتر، بی خط، سایهٔ نرم */
+[data-messages-shell] {
+  border-radius: 1.4rem;
+  border-color: transparent;
+  box-shadow: var(--wp-shadow-1);
+}
+/* ستونِ فهرست کمی رنگی‌تر از ستونِ گفتگو */
+[data-messages-shell] > :first-child {
+  background: color-mix(in oklch, var(--color-muted) 45%, transparent);
+}
+
+/* ---------- فهرستِ گفتگوها ---------- */
+[data-messages-shell] [data-slot='item'] {
+  border-radius: 0.9rem;
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+[data-messages-shell] [data-slot='item']:not([aria-current='true']):hover {
+  background: color-mix(in oklch, var(--color-card) 80%, transparent);
+  transform: translateX(0) scale(1.01);
+}
+/* گفتگوی باز: کارتِ روشن با نوارِ رنگیِ کنار — خوانا، نه گرادیانِ پر */
+[data-messages-shell] [data-slot='item'][aria-current='true'] {
+  position: relative;
+  background: var(--color-card);
+  box-shadow: var(--wp-shadow-1);
+}
+[data-messages-shell] [data-slot='item'][aria-current='true']::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.7rem;
+  bottom: 0.7rem;
+  width: 3.5px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, oklch(0.62 0.17 254), oklch(0.56 0.19 280));
+}
+/* عددِ نخوانده: قرصِ گرادیانی */
+[data-messages-shell] [data-slot='item'] [data-slot='badge'] {
+  background: linear-gradient(135deg, oklch(0.54 0.17 254), oklch(0.49 0.19 280));
+  color: oklch(0.99 0 0);
+  border-color: transparent;
+  box-shadow: 0 3px 8px -3px oklch(0.55 0.18 260 / 0.6);
+}
+
+/* ---------- حباب‌ها ---------- */
+[data-messages-shell] [data-slot='message-group'] { gap: 0.2rem; }
+[data-messages-shell] [data-slot='bubble-content'] {
+  border-radius: 1.15rem;
+  padding: 0.55rem 0.85rem;
+  line-height: 1.75;
+}
+/* مالِ خودم: گرادیانِ برند، گوشهٔ سمتِ من تیزتر (منطقی ← در راست‌به‌چپ هم درست) */
+[data-messages-shell] [data-slot='bubble'][data-variant='default'] > [data-slot='bubble-content'] {
+  background: linear-gradient(135deg, oklch(0.54 0.17 254), oklch(0.49 0.19 272));
+  color: oklch(0.99 0 0);
+  border-end-end-radius: 0.35rem;
+  box-shadow: 0 6px 16px -10px oklch(0.55 0.18 260 / 0.8);
+}
+.dark [data-messages-shell] [data-slot='bubble'][data-variant='default'] > [data-slot='bubble-content'] {
+  background: linear-gradient(135deg, oklch(0.52 0.15 254), oklch(0.47 0.16 272));
+}
+/* مالِ دیگران: سطحِ روشن با سایهٔ نرم، گوشهٔ سمتِ فرستنده تیزتر */
+[data-messages-shell] [data-slot='bubble'][data-variant='muted'] > [data-slot='bubble-content'] {
+  background: var(--color-card);
+  border-color: var(--color-border);
+  border-end-start-radius: 0.35rem;
+  box-shadow: 0 4px 12px -8px oklch(0.4 0.03 60 / 0.35);
+}
+.dark [data-messages-shell] [data-slot='bubble'][data-variant='muted'] > [data-slot='bubble-content'] {
+  background: oklch(0.29 0.006 70);
+  border-color: oklch(1 0 0 / 0.06);
+}
+/* نامِ فرستنده سرِ دسته: کمی رنگی */
+[data-messages-shell] [data-slot='message-header'] { color: var(--color-primary); font-weight: 600; }
+/* زمان و دکمه‌های زیرِ پیام: فقط زیرِ ماوس کامل پیدا */
+[data-messages-shell] [data-slot='message-footer'] { opacity: 0.75; transition: opacity 0.15s ease; }
+[data-messages-shell] [data-slot='message']:hover [data-slot='message-footer'] { opacity: 1; }
+
+/* نقلِ قولِ پاسخ داخلِ حباب */
+[data-messages-shell] [data-slot='bubble-content'] button[class*='border-s-2'] {
+  border-radius: 0.7rem;
+  border-inline-start-width: 3px;
+  padding: 0.35rem 0.6rem;
+}
+
+/* پیامِ تازه (آخرین پیامِ گفتگو): نرم از پایین بالا می‌آید */
+@keyframes wp-msg-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+[data-messages-shell] [data-slot='message-group']:last-child > [data-slot='message']:last-child {
+  animation: wp-msg-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+/* ---------- جداکنندهٔ روز: قرصِ چسبان وسطِ صفحه ---------- */
+[data-messages-shell] [data-slot='marker'] {
+  position: sticky;
+  top: 0.4rem;
+  z-index: 2;
+  justify-content: center;
+}
+[data-messages-shell] [data-slot='marker']::before,
+[data-messages-shell] [data-slot='marker']::after { display: none; }
+[data-messages-shell] [data-slot='marker-content'] {
+  padding: 0.2rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  /* ⚠️ هم‌رنگِ کارت روی زمینهٔ کارت گم می‌شد (حالتِ تیره) ← رنگِ muted. */
+  background: color-mix(in oklch, var(--color-muted) 92%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--wp-shadow-1);
+  font-weight: 500;
+}
+
+/* ---------- کادرِ نوشتن: قرصِ شناور ---------- */
+[data-composer-bar] {
+  border-top-color: transparent !important;
+  padding: 0.75rem !important;
+}
+[data-composer-bar] > div:last-of-type,
+[data-composer-bar] > .flex {
+  align-items: flex-end;
+  padding: 0.35rem;
+  padding-inline-start: 0.6rem;
+  border-radius: 1.4rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--wp-shadow-2);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+[data-composer-bar] > .flex:focus-within {
+  border-color: color-mix(in oklch, var(--color-primary) 45%, var(--color-border));
+  box-shadow: var(--wp-shadow-2), 0 0 0 4px oklch(0.6 0.17 254 / 0.12);
+}
+[data-composer-bar] textarea {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+[data-composer-bar] button[type='submit'] {
+  background: linear-gradient(135deg, oklch(0.54 0.17 254), oklch(0.49 0.19 272));
+  color: oklch(0.99 0 0);
+  box-shadow: 0 6px 14px -6px oklch(0.55 0.18 260 / 0.7);
+  transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.5, 1), filter 0.15s ease;
+}
+/* وقتی چیزی نوشته شده، دکمهٔ ارسال کمی بزرگ‌تر */
+[data-composer-bar]:has(textarea:not(:placeholder-shown)) button[type='submit'] { transform: scale(1.08); }
+[data-composer-bar] button[type='submit']:hover { filter: brightness(1.06); }
+
+/* ---------- گفتگویی انتخاب نشده: نقشِ رنگیِ شناور پشتِ آیکون ---------- */
+@keyframes wp-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+/* ⚠️ قابِ آیکون (empty-icon) بزرگ و گرادیانی می‌شود، نه خودِ svg — قاب اندازهٔ ثابت دارد. */
+[data-messages-empty] [data-slot='empty-icon'] {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 1.6rem;
+  color: oklch(0.99 0 0);
+  background: linear-gradient(135deg, oklch(0.66 0.15 254), oklch(0.6 0.17 290));
+  box-shadow: 0 18px 36px -14px oklch(0.55 0.18 270 / 0.6);
+  animation: wp-float 4s ease-in-out infinite;
+}
+[data-messages-empty] [data-slot='empty-icon'] svg { width: 2.25rem; height: 2.25rem; }
+[data-messages-empty] [data-slot='empty'] { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-messages-shell] [data-slot='message-group']:last-child > [data-slot='message']:last-child,
+  [data-messages-empty] [data-slot='empty-icon'] { animation: none; }
+}
+
+/* ================================================================== *
+ * ۷) نوارهای ساعتِ کاری (تیمِ من) و ستونِ «امروز» (حضور و مرخصی) — نظرِ کاربر
+ * ================================================================== */
+
+/*
+ * نوارهای ساعت: پیش از این میله‌های کلفت و تمام‌عرض با زمینهٔ سبزِ پررنگ بودند و عدد دورِ از
+ * نوار، کم‌رنگ. حالا: ردیفِ نرم با هالهٔ زیرِ ماوس، نوارِ باریکِ گرد با گرادیان، زمینهٔ خنثی،
+ * عددِ پررنگ در قرص، و پر شدنِ نوار با انیمیشن از سمتِ آغاز.
+ */
+[data-hours-bars] { gap: 0.25rem; }
+[data-hours-bars] > li {
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.8rem;
+  transition: background 0.15s ease;
+}
+[data-hours-bars] > li:hover { background: color-mix(in oklch, var(--color-muted) 70%, transparent); }
+[data-hours-bars] [data-slot='progress'] {
+  height: 0.55rem;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-foreground) 7%, transparent);
+  animation: wp-bar-from-left 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+[data-hours-bars] > li:nth-child(2) [data-slot='progress'] { animation-delay: 0.06s; }
+[data-hours-bars] > li:nth-child(3) [data-slot='progress'] { animation-delay: 0.12s; }
+[data-hours-bars] > li:nth-child(4) [data-slot='progress'] { animation-delay: 0.18s; }
+[data-hours-bars] > li:nth-child(n + 5) [data-slot='progress'] { animation-delay: 0.24s; }
+/* رنگِ نوار = رنگِ اصلیِ کاربر (پالتِ انتخابیِ خودش)، از کم‌رنگ به پررنگ در جهتِ پر شدن */
+[data-hours-bars] [data-slot='progress-indicator'] {
+  border-radius: 999px;
+  /*
+   * لبهٔ جلوییِ نوار پررنگ‌تر. ⚠️ فقط چپ‌به‌راست نوشته می‌شود: خودِ Progress در راست‌به‌چپ
+   * آینه می‌شود (`rtl:-scale-x-100`)، پس گرادیان و انیمیشن خودبه‌خود از راست می‌آیند.
+   * قاعدهٔ جدای rtl آن را دو بار برمی‌گرداند و نوار از چپ پر می‌شد (نظرِ کاربر).
+   */
+  background: linear-gradient(to right, color-mix(in oklch, var(--color-primary) 55%, white), var(--color-primary));
+}
+[data-hours-bars] > li > span:last-child {
+  min-width: 3.4rem;
+  text-align: center;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-foreground) 6%, transparent);
+  color: var(--color-foreground);
+  font-weight: 600;
+}
+/* پر شدن از سمتِ آغاز — در فضای چپ‌به‌راستِ خودِ نوار؛ آینه‌شدنِ Progress آن را در فارسی از راست می‌آورد. */
+@keyframes wp-bar-from-left { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+
+/*
+ * ستونِ امروز: سرستونِ سبزِ تخت با تراشهٔ کوچک بی‌جان بود. حالا: نوارِ رنگیِ نازک بالای
+ * سرستون، نامِ روز پررنگ به رنگِ اصلی، «امروز» در قرصِ گرادیانی، و ستون با رنگِ خیلی ملایم.
+ */
+[data-slot='table-container'] th[data-today] {
+  position: relative;
+  background: color-mix(in oklch, var(--color-primary) 9%, transparent) !important;
+  color: var(--color-primary) !important;
+  /*
+   * ⚠️ وزنِ قلم دست نمی‌خورد: برنامه وزیرمتن را بار نمی‌کند و روی ویندوزِ بی‌وزیرمتن Segoe UI
+   * جایش می‌نشیند؛ در وزنِ ۷۰۰ «ه» ِ «سه‌شنبه» شکلِ شکسته (شبیهِ «ە») می‌گرفت (نظرِ کاربر).
+   */
+}
+[data-slot='table-container'] th[data-today]::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0.4rem;
+  top: 0;
+  height: 3px;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(90deg, var(--color-primary), color-mix(in oklch, var(--color-primary) 60%, white));
+}
+[data-slot='table-container'] th[data-today] > span {
+  margin-inline-start: 0.4rem;
+  padding: 0.08rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-primary) !important;
+  color: var(--color-primary-foreground);
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: 0 3px 8px -4px color-mix(in oklch, var(--color-primary) 80%, transparent);
+}
+[data-slot='table-container'] td[data-today] {
+  background: color-mix(in oklch, var(--color-primary) 4%, transparent) !important;
+}
+/* نمای ستونی (بُرد) */
+[data-today-col] {
+  border-color: color-mix(in oklch, var(--color-primary) 35%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 10%, transparent), var(--wp-shadow-1);
+}
+[data-today-col] h3 > span:first-child > span {
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground) !important;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hours-bars] [data-slot='progress'] { animation: none; }
+}
+
+/* ---------- ۸) چاپ (فاکتور، گزارش): کاغذِ ساده — بی هاله، سایه، شیشه و انیمیشن ---------- */
+@media print {
+  body { background: #fff !important; }
+  [data-slot='card'], [data-slot='table-container'] {
+    box-shadow: none !important;
+    border-color: #ddd !important;
+    animation: none !important;
+    transform: none !important;
+  }
+  [data-slot='card'][class*='@container/card']::before,
+  [data-slot='card'][class*='@container/card']::after { display: none !important; }
+  * { animation: none !important; transition: none !important; backdrop-filter: none !important; }
+}

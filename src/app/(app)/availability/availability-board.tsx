@@ -197,11 +197,13 @@ export function AvailabilityBoard(props: BoardProps) {
                   {props.order.map((d) => (
                     <TableHead
                       key={d}
+                      data-today={d === props.todayIdx || undefined}
                       className={d === props.todayIdx ? 'bg-primary/10 text-foreground' : undefined}
                     >
                       {tr(WEEKDAYS[d] ?? '')}
+                      {/* ⚠️ فاصلهٔ واقعی: بی آن «ه» ِ آخرِ روز به «ا» ِ «امروز» می‌چسبید. */}
                       {d === props.todayIdx && (
-                        <span className="ms-1 rounded bg-primary/20 px-1 text-[10px]">{tr("امروز")}</span>
+                        <>{' '}<span className="ms-1 rounded bg-primary/20 px-1 text-[10px]">{tr("امروز")}</span></>
                       )}
                     </TableHead>
                   ))}
@@ -229,6 +231,7 @@ export function AvailabilityBoard(props: BoardProps) {
                     {row.cells.map((cell, i) => (
                       <Hint key={i} label={cell.tip || undefined}>
                       <TableCell
+                        data-today={cell.isToday || undefined}
                         className={`text-xs whitespace-nowrap ${cell.isToday ? 'bg-primary/5' : ''}`}
                       >
                         {cell.state === 'leave' ? (
@@ -372,6 +375,7 @@ function BoardColumns({ order, todayIdx, rows }: BoardProps) {
         return (
           <div
             key={d}
+            data-today-col={isToday || undefined}
             className={`grid content-start gap-1.5 rounded-lg border p-2 ${
               isToday ? 'border-primary/40 bg-[color-mix(in_oklab,var(--color-primary)_6%,var(--color-card))]' : 'bg-card'
             }`}
@@ -379,7 +383,7 @@ function BoardColumns({ order, todayIdx, rows }: BoardProps) {
             <h3 className="flex items-center justify-between text-xs font-medium">
               <span>
                 {tr(WEEKDAYS[d] ?? '')}
-                {isToday && <span className="ms-1 text-[10px] text-primary">{tr("امروز")}</span>}
+                {isToday && <>{' '}<span className="ms-1 text-[10px] text-primary">{tr("امروز")}</span></>}
               </span>
               <span className="num text-muted-foreground">{people.length}</span>
             </h3>

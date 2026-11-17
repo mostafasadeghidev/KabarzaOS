@@ -88,8 +88,8 @@ export function TeamMatrix({
         <TableRow>
           <TableHead>{t("عضو")}</TableHead>
           {dayLabels.map((d, i) => (
-            <TableHead key={d} className={rows[0]?.cells[i]?.isToday ? 'text-primary' : ''}>
-              {t(d)}{rows[0]?.cells[i]?.isToday ? <span className="ms-1 text-[10px]">{t("امروز")}</span> : null}
+            <TableHead key={d} data-today={rows[0]?.cells[i]?.isToday || undefined} className={rows[0]?.cells[i]?.isToday ? 'text-primary' : ''}>
+              {t(d)}{/* ⚠️ فاصلهٔ واقعی لازم است: بی آن مرورگر «ه» ِ آخرِ روز را به «ا» ِ «امروز» می‌چسباند (شکلِ «ھ»). */}{rows[0]?.cells[i]?.isToday ? <>{' '}<span className="ms-1 text-[10px]">{t("امروز")}</span></> : null}
             </TableHead>
           ))}
         </TableRow>
@@ -103,7 +103,7 @@ export function TeamMatrix({
             </TableCell>
             {r.cells.map((c, i) => (
               <Hint key={i} label={c.tip || undefined}>
-                <TableCell className={`text-xs tabular-nums ${c.isToday ? 'bg-primary/5' : ''}`}>
+                <TableCell data-today={c.isToday || undefined} className={`text-xs tabular-nums ${c.isToday ? 'bg-primary/5' : ''}`}>
                   {c.state === 'leave' ? (
                     <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-500">
                       <TreePalm className="size-3.5 shrink-0" aria-hidden />

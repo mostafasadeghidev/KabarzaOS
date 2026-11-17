@@ -20,8 +20,9 @@ The calm comes from three things, in this order:
    canvas. The change of colour separates things, not lines.
 2. **Hierarchy.** Titles are heavy and body text is calm. On every page it is
    obvious what matters most.
-3. **Restraint.** There is one accent colour and one hairline, and almost no
-   shadow.
+3. **Restraint.** There is one accent colour and one hairline. Depth, glass
+   and motion come from one visual layer (section 10) and never lower the
+   contrast of text or numbers.
 
 ## 2. Colour
 
@@ -99,15 +100,16 @@ translated sentence ends up inside `num`.
 
 | Level | Treatment | Used for |
 |---|---|---|
-| 0 | White surface, 1 px hairline, no shadow | Cards, panels, framed tables, filter forms |
-| 1 | The component's own shadcn shadow | Only what floats: menus, popovers, dialogs, toasts |
+| 0 | White surface with a soft layered shadow (`--wp-shadow-1`), no hairline | Cards, panels, framed tables, filter forms |
+| 1 | A stronger shadow (`--wp-shadow-2`) and frosted glass | What floats: the sidebar, the top bar, menus, popovers, dialogs, toasts |
 
 - Depth runs sidebar < canvas < surface < floating, in both themes. The
   sidebar is its own column: one step darker than the canvas, with a hairline
   on its inner edge, and its colour reaches the window edge on wide screens.
   It is never the same colour as the canvas, because then the navigation and
   the content read as one piece.
-- No gradients. No shadow on a flat card. No coloured borders except a
+- Gradients only where section 10 allows them (primary buttons, metric
+  cards, sent message bubbles, progress bars). No coloured borders except a
   panel's `tone="danger"` or `tone="warning"`.
 - A panel's title needs no divider line; padding separates it from the
   content.
@@ -239,7 +241,8 @@ translated sentence ends up inside `num`.
 - Don't add a border, divider or card where space already separates things,
   and don't put a bordered box inside a bordered surface; use a soft `muted`
   fill instead.
-- Don't use a gradient, a heavy shadow or a second accent colour.
+- Don't add a gradient, shadow or glass in a component; they live in the
+  visual layer (section 10). Don't add a second accent colour.
 - Don't fill a badge with a tag colour and white text.
 - Don't dim content with opacity to make it look secondary; use
   `muted-foreground`, or a dashed border for something inactive.
@@ -255,3 +258,43 @@ no bordered surface inside another, and no horizontal overflow at 375 px.
 The scripts scan the whole document, so every dialog is checked **open**, and
 the pages are checked signed in as each role (owner, member, client), not
 only as the owner.
+
+## 10. Visual layer
+
+`src/app/visual-layer.css` (imported in `src/app/layout.tsx`, after
+`globals.css`) gives the app its depth, glass and motion. It only styles
+tokens and `data-slot` attributes, so no component is rewritten; removing the
+import returns the plain look above.
+
+- **Canvas.** Warm paper with two very faint colour glows behind it, so the
+  glass has something to show. The dark theme has no glow (it read as a stain).
+- **Surfaces.** Cards lose the hairline and get a soft layered shadow and a
+  slightly larger radius. Metric cards get a gentle tint gradient; numbers on
+  them stay full contrast.
+- **Glass.** Only the floating sidebar (`variant="floating"`), the sticky top
+  bar, dialogs, sheets, menus and popovers. Menus are 97% opaque so text
+  behind them never mixes with theirs. Below 768 px there is no blur (it is
+  slow on weak phones).
+- **Colour tiles.** Sidebar icons sit on small pastel tiles; the text on them
+  is always dark.
+- **Buttons.** The primary button is a gradient that starts at L 0.54, so
+  white text on it stays above 4.5:1.
+- **Tabs.** `TabsList` draws a sliding indicator (`data-slot="tabs-indicator"`)
+  under or behind the active tab. When the active tab changes, the content
+  after the tab bar fades and rises in (`animatePanel` in
+  `src/components/ui/tabs.tsx`). It skips the hidden measuring copy of
+  `OverflowTabs`, bare search boxes next to the tabs, dialog footers and
+  scripts, and it never climbs out of `main`, a dialog or a sheet.
+- **Entrance.** Cards rise in with a short stagger (`wp-rise`). A list whose
+  view changes without tabs (for example list and board in a project's tasks)
+  is keyed by the view and marked `data-view-swap` to get the same motion.
+- **Messages.** Sent bubbles are gradients, the day separator is a sticky
+  pill and the composer is a floating pill (`data-messages-shell`,
+  `data-composer-bar`, `data-messages-empty`).
+- **Right to left.** `Progress` already mirrors itself in RTL, so fill motion
+  and gradients on it are written for LTR only. A Persian word followed by an
+  inline element needs a real space (`{' '}`), or the browser joins its last
+  letter to the next element's first letter.
+- **Reduced motion and print.** With `prefers-reduced-motion` every entrance,
+  slide and shimmer is off. Printing (invoices, reports) drops glows,
+  shadows, glass and motion.
