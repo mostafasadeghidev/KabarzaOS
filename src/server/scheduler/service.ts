@@ -44,7 +44,30 @@ async function writeStamp(key: string, value: string): Promise<void> {
     });
 }
 
+/**
+ * قفلِ تیک (۳.۱۱.۰) — دو تیکِ هم‌زمان نباید با هم کار کنند.
+ *
+ * ⚠️ چرا: هنگامِ استقرار، تیکِ برنامهٔ قدیمی هنوز در حالِ فرستادن بود که cron ِ کانتینرِ تازه
+ * بلافاصله تیکِ دیگری زد؛ هر دو «مهرِ یادآوری» را خالی دیدند و آرورا دو ایمیلِ «ساعتِ امروز را
+ * ثبت نکرده‌اید» گرفت (۲۰۲۶-۱۱-۱۷). گرفتنِ قفل یک دستورِ اتمی است: فقط وقتی ردیف نیست یا از
+ * ۴ دقیقه کهنه‌تر است (تیکِ قبلی وسطِ کار مُرده) گرفته می‌شود — کمتر از فاصلهٔ ۵ دقیقه‌ایِ cron.
+ */
+const TICK_LEASE = 'tick:lease';
+async function claimTick(now: Date): Promise<boolean> {
+  const rows = await db.execute(sql`
+    insert into scheduler_stamps (key, value, updated_at) values (${TICK_LEASE}, ${now.toISOString()}, now())
+    on conflict (key) do update set value = excluded.value, updated_at = now()
+      where scheduler_stamps.updated_at < now() - interval '4 minutes'
+    returning key`);
+  return (rows as unknown as unknown[]).length > 0;
+}
+async function releaseTick(): Promise<void> {
+  await db.delete(schedulerStamps).where(eq(schedulerStamps.key, TICK_LEASE)).catch(() => undefined);
+}
+
 export interface TickReport {
+  /** تیکِ دیگری در جریان بود — این یکی کاری نکرد. */
+  skipped?: boolean;
   reminders: number;
   meetings: number;
   timers: number;
@@ -274,6 +297,12 @@ async function runTimelogNudges(now: Date): Promise<number> {
 
     for (const kind of due) {
       const date = kind === 'today' ? local.date : yesterday;
+      /*
+       * ⚠️ مهر **پیش از** فرستادن (۳.۱۱.۰): فرستادنِ ایمیل چند ثانیه طول می‌کشد و تا وقتی مهر
+       * ثبت نشده بود، هر اجرای دیگری همان یادآوری را دوباره می‌فرستاد. اگر ارسال نصفه بماند،
+       * بدترین حالت یک یادآورِ کمتر است، نه دوتا.
+       */
+      await writeStamp(`nudge:${kind}:${member.id}`, date);
       await notify([member.id], {
         type: 'no_timelog',
         title: kind === 'today' ? 'ساعتِ امروز را ثبت نکرده‌اید' : 'ساعتِ دیروز ثبت نشد',
@@ -281,7 +310,6 @@ async function runTimelogNudges(now: Date): Promise<number> {
         params: { date },
         url: '/hours',
       });
-      await writeStamp(`nudge:${kind}:${member.id}`, date);
       sent += 1;
     }
   }
@@ -456,34 +484,40 @@ export async function runTick(now = new Date()): Promise<TickReport> {
     reminders: 0, meetings: 0, timers: 0, nudges: 0, cleaned: false, dailyReport: false, onboarding: 0, backup: false, briefs: 0,
     evenings: 0, quietDigests: 0, newMail: 0,
   };
+  // تیکِ دیگری در جریان است (مثلاً لحظهٔ استقرار) ← هیچ کاری نکن؛ تیکِ بعدی ۵ دقیقهٔ دیگر.
+  if (!await claimTick(now)) return { ...report, skipped: true };
+  try {
 
-  const jobs: Array<[keyof TickReport, () => Promise<number | boolean>]> = [
-    ['reminders', () => runReminders(now)],
-    ['meetings', () => runMeetingSoon(now)],
-    ['timers', () => runTimerWatch(now)],
-    ['nudges', () => runTimelogNudges(now)],
-    ['dailyReport', () => runDailyReport(now)],
-    ['onboarding', () => notifyOverdueOnboarding(now)],
-    ['backup', () => runBackupIfDue(now)],
-    ['briefs', () => runMorningBriefs(now)],
-    ['evenings', () => runEveningReports(now)],
-    ['quietDigests', () => runQuietDigests(now)],
-    ['newMail', () => runNewMail(now)],
-    ['cleaned', () => runCleanup(now)],
-  ];
+    const jobs: Array<[keyof TickReport, () => Promise<number | boolean>]> = [
+      ['reminders', () => runReminders(now)],
+      ['meetings', () => runMeetingSoon(now)],
+      ['timers', () => runTimerWatch(now)],
+      ['nudges', () => runTimelogNudges(now)],
+      ['dailyReport', () => runDailyReport(now)],
+      ['onboarding', () => notifyOverdueOnboarding(now)],
+      ['backup', () => runBackupIfDue(now)],
+      ['briefs', () => runMorningBriefs(now)],
+      ['evenings', () => runEveningReports(now)],
+      ['quietDigests', () => runQuietDigests(now)],
+      ['newMail', () => runNewMail(now)],
+      ['cleaned', () => runCleanup(now)],
+    ];
 
-  for (const [key, job] of jobs) {
-    try {
-      // @ts-expect-error — هر کار نوعِ خودش را برمی‌گرداند (شمارش یا پرچم).
-      report[key] = await job();
-    } catch (error) {
-      // ⚠️ شکستِ یک کار نباید بقیه را از تیک بیندازد.
-      console.error(`[cron] ${key}`, error);
+    for (const [key, job] of jobs) {
+      try {
+        // @ts-expect-error — هر کار نوعِ خودش را برمی‌گرداند (شمارش یا پرچم).
+        report[key] = await job();
+      } catch (error) {
+        // ⚠️ شکستِ یک کار نباید بقیه را از تیک بیندازد.
+        console.error(`[cron] ${key}`, error);
+      }
     }
-  }
 
-  await writeStamp('last_tick', now.toISOString());
-  return report;
+    await writeStamp('last_tick', now.toISOString());
+    return report;
+  } finally {
+    await releaseTick();
+  }
 }
 
 /**

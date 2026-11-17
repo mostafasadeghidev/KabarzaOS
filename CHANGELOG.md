@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.11.1]
+
+### Fixed
+
+- **No more duplicate reminder emails during an update.** When a new version was being deployed, the old and the new copy of the app could each run the scheduler at the same moment. Both saw that today's "You have not logged today's hours" reminder had not been sent yet, so one member got it twice. Only one scheduler run can now work at a time (a second one steps aside), and the reminder is marked as sent before the email goes out, so a slow email can no longer let it go out a second time.
+
 ## [3.11.0]
 
 ### Added

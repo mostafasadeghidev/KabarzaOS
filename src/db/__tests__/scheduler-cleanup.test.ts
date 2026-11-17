@@ -85,3 +85,23 @@ describe('پاک‌سازیِ یادآورها — Reminders::purge_old', () => 
     expect((await db.select().from(reminders)).map((r) => r.body)).toEqual(['تازه']);
   });
 });
+
+describe('۳.۱۱.۰ — قفلِ تیک: دو تیکِ هم‌زمان با هم کار نمی‌کنند', () => {
+  it('وقتی تیکی در جریان است، تیکِ دوم کنار می‌رود؛ قفلِ کهنه (تیکِ مُرده) گرفته می‌شود', async () => {
+    const { schedulerStamps } = await import('../schema');
+    const { eq } = await import('drizzle-orm');
+    // تیکِ دیگری همین حالا شروع شده:
+    await db.insert(schedulerStamps).values({ key: 'tick:lease', value: 'x', updatedAt: new Date() });
+    expect((await runTick(new Date())).skipped).toBe(true);
+    // تیکِ قبلی ۵ دقیقه پیش مُرد و قفل را پس نداد:
+    await db.update(schedulerStamps).set({ updatedAt: new Date(Date.now() - 5 * 60_000) }).where(eq(schedulerStamps.key, 'tick:lease'));
+    expect((await runTick(new Date())).skipped).toBeUndefined();
+    // پایانِ تیک قفل را آزاد می‌کند.
+    expect(await db.select().from(schedulerStamps).where(eq(schedulerStamps.key, 'tick:lease'))).toEqual([]);
+  });
+
+  it('⚠️ دو تیکِ واقعاً هم‌زمان: فقط یکی کار می‌کند', async () => {
+    const [a, b] = await Promise.all([runTick(new Date()), runTick(new Date())]);
+    expect([a.skipped, b.skipped].filter(Boolean)).toHaveLength(1);
+  });
+});
