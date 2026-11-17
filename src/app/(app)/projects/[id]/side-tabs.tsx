@@ -461,7 +461,7 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
           <Button type="button" size="sm" variant="outline" onClick={() => setAll(true)}>
             {t('انتخابِ همه')}
           </Button>
-          <Button type="button" size="sm" variant="ghost" onClick={() => setAll(false)}>
+          <Button type="button" size="sm" variant="outline" onClick={() => setAll(false)}>
             {t('پاک‌کردنِ همه')}
           </Button>
         </div>

@@ -450,7 +450,7 @@ export function BootstrapSections({
               {tr("انتخابِ همه")}
             </Button>
             <Button
-              type="button" size="sm" variant="ghost"
+              type="button" size="sm" variant="outline"
               disabled={qaRoles.length === 0 && !qaClient}
               onClick={() => { setQaRoles([]); setQaClient(false); }}
             >

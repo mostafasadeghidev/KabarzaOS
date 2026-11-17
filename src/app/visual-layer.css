@@ -31,7 +31,8 @@
  * پایین، --wp-g3 وسط (فقط روشن) — هر سه زاویهٔ رنگ (hue)‌اند. --wp-gc شدتِ رنگ است؛ «خاکستری»
  * تقریباً بی‌رنگ می‌ماند. پیش‌فرض (بی data-palette) = سنگ.
  */
-:root, [data-palette='stone'] { --wp-g1: 60; --wp-g2: 260; --wp-g3: 320; --wp-gc: 1; }
+/* سنگ: گوشهٔ بالا همان آبیِ پالت، پایین هلوییِ گرم، وسط صورتیِ کم‌رنگ */
+:root, [data-palette='stone'] { --wp-g1: 254; --wp-g2: 60; --wp-g3: 320; --wp-gc: 1; }
 /* دریا: فیروزه‌ای، آبیِ عمیق، نعنایی */
 [data-palette='ocean'] { --wp-g1: 205; --wp-g2: 255; --wp-g3: 175; --wp-gc: 1; }
 /* جنگل: سبزِ مریم‌گلی، سبزآبی، شنیِ گرم */
@@ -42,6 +43,13 @@
 [data-palette='violet'] { --wp-g1: 305; --wp-g2: 350; --wp-g3: 270; --wp-gc: 1; }
 /* خاکستری: فقط ردِ سرد/گرمِ بسیار کم — پالتِ «بی‌رنگ» رنگی نشود. */
 [data-palette='slate'] { --wp-g1: 250; --wp-g2: 80; --wp-g3: 250; --wp-gc: 0.25; }
+
+/*
+ * سطح‌های سفید (کارت، پنل، جدول) کمی از رنگِ پالت می‌گیرند (۳.۸.۱): سفیدِ خالص روی هالهٔ
+ * گرم (به‌ویژه «غروب») زیادی تند بود. فقط ردِ رنگ — روشنایی ۰٫۹۹۲، اشباع ۰٫۰۰۹ — که
+ * کنتراستِ متن عملاً همان می‌ماند. منو و پنجره (popover) سفید می‌مانند. حالتِ تیره دست نمی‌خورد.
+ */
+:root:not(.dark) { --color-card: oklch(0.992 calc(0.009 * var(--wp-gc)) var(--wp-g1)); }
 
 body {
   background:
@@ -175,20 +183,20 @@ a:focus-visible > [data-slot='card'] {
  * ⚠️ رنگ از `--color-primary` ِ پالت ساخته می‌شود (oklch(from …))، نه آبیِ ثابت — با پالتِ منوی کاربر عوض شود
  * (۳.۸.۰). خطِ `background: var(--color-primary)` پیش از هر گرادیان پشتوانهٔ مرورگرِ قدیمی است.
  */
-[data-slot='button'] { border-radius: 0.7rem; }
-[data-slot='button'][data-variant='default'] {
+[data-button] { border-radius: 0.7rem; }
+[data-button][data-variant='default'] {
   background: var(--color-primary);
   background: linear-gradient(135deg, oklch(from var(--color-primary) min(l, 0.54) c h), oklch(from var(--color-primary) calc(min(l, 0.54) - 0.05) calc(c + 0.02) calc(h + 18)));
   box-shadow: 0 6px 16px -8px oklch(from var(--color-primary) 0.55 c h / 0.7), inset 0 1px 0 oklch(1 0 0 / 0.25);
   transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
 }
-.dark [data-slot='button'][data-variant='default'] {
+.dark [data-button][data-variant='default'] {
   background: var(--color-primary);
   background: linear-gradient(135deg, oklch(from var(--color-primary) l c h), oklch(from var(--color-primary) calc(l - 0.06) calc(c + 0.02) calc(h + 18)));
 }
-[data-slot='button'][data-variant='default']:hover { filter: brightness(1.05); transform: translateY(-1px); }
-[data-slot='button'][data-variant='default']:active { transform: translateY(0); }
-[data-slot='button'][data-variant='outline'] {
+[data-button][data-variant='default']:hover { filter: brightness(1.05); transform: translateY(-1px); }
+[data-button][data-variant='default']:active { transform: translateY(0); }
+[data-button][data-variant='outline'] {
   background: var(--color-card);
   box-shadow: var(--wp-shadow-1);
   border-color: transparent;
@@ -255,7 +263,7 @@ a:focus-visible > [data-slot='card'] {
 
 /* ---------- کاهشِ حرکت برای کسی که خواسته ---------- */
 @media (prefers-reduced-motion: reduce) {
-  [data-slot='card'], [data-slot='button'], [data-slot='sidebar-menu-button'] { transition: none; }
+  [data-slot='card'], [data-button], [data-slot='sidebar-menu-button'] { transition: none; }
   a:hover > [data-slot='card'] { transform: none; }
 }
 
@@ -320,7 +328,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
 * { scrollbar-width: thin; scrollbar-color: oklch(0.6 0.02 70 / 0.35) transparent; }
 
 /* ---------- فوکوس: هالهٔ نرم به‌جای خطِ تیز ---------- */
-[data-slot='button']:focus-visible, [data-slot='sidebar-menu-button']:focus-visible {
+[data-button]:focus-visible, [data-slot='sidebar-menu-button']:focus-visible {
   outline: none;
   box-shadow: 0 0 0 4px oklch(from var(--color-primary) l c h / 0.25);
 }

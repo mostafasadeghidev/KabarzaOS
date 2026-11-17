@@ -270,6 +270,8 @@ import returns the plain look above.
   corner, bottom corner, centre), so the glass has something to show. Their
   hues come from the palette (`--wp-g1..3`, strength `--wp-gc`; Slate is
   nearly colourless).
+- **Surfaces in light mode** carry a faint tint of the top glow
+  (`--color-card` at L 0.992, chroma 0.009); popovers stay white.
 - **Palette colour.** Gradients, glows on focus and active highlights are
   built from `--color-primary` with `oklch(from …)`, never a fixed hue, so they
   follow the palette. Under white text the lightness is capped at 0.54. Each
@@ -288,6 +290,8 @@ import returns the plain look above.
   keeps the blue pill. The collapsed sidebar follows the same rule.
 - **Buttons.** The primary button is a gradient that starts at L 0.54, so
   white text on it stays above 4.5:1.
+  The layer selects buttons by `data-button`, not `data-slot`: a button used
+  as a dialog, menu or tooltip trigger has its `data-slot` replaced by Radix.
 - **Tabs.** `TabsList` draws a sliding indicator (`data-slot="tabs-indicator"`)
   under or behind the active tab. When the active tab changes, the content
   after the tab bar fades and rises in (`animatePanel` in
