@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.8.3]
+
+### Changed
+
+- **No balance card on team members' dashboards.** "Your outstanding balance" no longer appears among the dashboard cards: the dashboard is the everyday work page, and a personal money figure there felt negative and was visible to anyone nearby. The balance and every payment are still on the My money page. A client's "Your amount due" card is unchanged.
+
 ## [3.8.2]
 
 ### Fixed
