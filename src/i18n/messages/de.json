@@ -5174,5 +5174,22 @@
   "حجم ذخیره نشد.": "Speicher wurde nicht gespeichert.",
   "اتصال حذف شد.": "Verbindung gelöscht.",
   "رمزِ فعلی و همهٔ ورودهای اپِ دسکتاپ و موبایل باطل می‌شوند و باید دوباره وارد شوند. رمزِ تازه در «دسترسی‌های من» ِ کارمند دیده می‌شود.": "Das aktuelle Passwort und alle Anmeldungen der Desktop- und Mobil-Apps werden ungültig und müssen sich neu anmelden. Das neue Passwort erscheint unter „Meine Zugänge“ des Mitarbeiters.",
-  "رمزِ فعلی باطل می‌شود. این حساب صاحبی در برنامه ندارد، پس رمزِ تازه فقط همین یک بار نشان داده می‌شود.": "Das aktuelle Passwort wird ungültig. Dieses Konto hat in der App keinen Besitzer, daher wird das neue Passwort nur dieses eine Mal angezeigt."
+  "رمزِ فعلی باطل می‌شود. این حساب صاحبی در برنامه ندارد، پس رمزِ تازه فقط همین یک بار نشان داده می‌شود.": "Das aktuelle Passwort wird ungültig. Dieses Konto hat in der App keinen Besitzer, daher wird das neue Passwort nur dieses eine Mal angezeigt.",
+  "آخرین بار فایلی روی فضای ابری نوشته نشد و روی سرور ماند ({status}). سهمیهٔ حسابِ اتصال و دسترسیِ سرور را بررسی کنید.": "Zuletzt konnte eine Datei nicht in den Cloud-Speicher geschrieben werden und blieb auf dem Server ({status}). Prüfe das Kontingent des Verbindungskontos und den Serverzugriff.",
+  "اتصالِ انتخاب‌شده خاموش است یا رمز ندارد؛ فایل‌های تازه فعلاً روی سرورِ برنامه می‌روند.": "Die gewählte Verbindung ist aus oder hat kein Passwort; neue Dateien gehen vorerst auf den App-Server.",
+  "انتقالِ فایل‌های قبلی به فضای ابری": "Bisherige Dateien in den Cloud-Speicher verschieben",
+  "این اتصال تاریخچهٔ دسترسی یا فایل‌های برنامه را دارد و پاک نمی‌شود؛ خاموشش کنید.": "Diese Verbindung hat einen Zugriffsverlauf oder App-Dateien und kann nicht gelöscht werden; schalte sie stattdessen aus.",
+  "تغییرِ محلِ فایل‌های برنامه": "Speicherort der App-Dateien geändert",
+  "حسابِ اتصال اجازهٔ نوشتن در پوشهٔ خودش را ندارد.": "Das Verbindungskonto darf nicht in seinen eigenen Ordner schreiben.",
+  "در حالِ انتقال…": "Wird verschoben…",
+  "روی سرورِ برنامه": "Auf dem App-Server",
+  "سرورِ برنامه": "App-Server",
+  "فضای ابری در دسترس نیست؛ کمی بعد دوباره امتحان کنید.": "Der Cloud-Speicher ist nicht erreichbar; versuche es gleich noch einmal.",
+  "فضای ابری: {name}": "Cloud-Speicher: {name}",
+  "فضای حسابِ اتصال پر است؛ در Nextcloud سهمیهٔ آن را بیشتر کنید.": "Das Verbindungskonto ist voll; erhöhe sein Kontingent in Nextcloud.",
+  "محلِ فایل‌های برنامه": "Speicherort der App-Dateien",
+  "منتقل شد: {moved} · مانده: {remaining}": "Verschoben: {moved} · Übrig: {remaining}",
+  "ناموفق: {n}": "Fehlgeschlagen: {n}",
+  "هر فایل اول روی فضای ابری نوشته و سنجیده می‌شود، بعد از سرور پاک می‌شود. اگر صفحه را ببندید، کار همان‌جا می‌ایستد و بعداً ادامه پیدا می‌کند.": "Jede Datei wird zuerst in den Cloud-Speicher geschrieben und geprüft, dann vom Server gelöscht. Schließt du die Seite, stoppt die Arbeit dort und geht beim nächsten Mal weiter.",
+  "پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.": "Anhänge von Projekten, Aufgaben, Kommentaren und Nachrichten sowie Belege und Avatare. Für Nutzer ändert sich nichts: Dateien öffnen und laden wie bisher in der App. Im Cloud-Speicher liegen sie im privaten Ordner des Verbindungskontos (KabarzaOS-files) und werden mit niemandem geteilt."
 }

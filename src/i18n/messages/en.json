@@ -5174,5 +5174,22 @@
   "حجم ذخیره نشد.": "Storage wasn't saved.",
   "اتصال حذف شد.": "Connection deleted.",
   "رمزِ فعلی و همهٔ ورودهای اپِ دسکتاپ و موبایل باطل می‌شوند و باید دوباره وارد شوند. رمزِ تازه در «دسترسی‌های من» ِ کارمند دیده می‌شود.": "The current password and all desktop and mobile app sign-ins stop working and must sign in again. The new password is shown in the employee's \"My access\".",
-  "رمزِ فعلی باطل می‌شود. این حساب صاحبی در برنامه ندارد، پس رمزِ تازه فقط همین یک بار نشان داده می‌شود.": "The current password stops working. This account has no owner in the app, so the new password is shown only this once."
+  "رمزِ فعلی باطل می‌شود. این حساب صاحبی در برنامه ندارد، پس رمزِ تازه فقط همین یک بار نشان داده می‌شود.": "The current password stops working. This account has no owner in the app, so the new password is shown only this once.",
+  "آخرین بار فایلی روی فضای ابری نوشته نشد و روی سرور ماند ({status}). سهمیهٔ حسابِ اتصال و دسترسیِ سرور را بررسی کنید.": "Last time a file couldn't be written to the cloud storage and was kept on the server ({status}). Check the connection account's quota and the server's access.",
+  "اتصالِ انتخاب‌شده خاموش است یا رمز ندارد؛ فایل‌های تازه فعلاً روی سرورِ برنامه می‌روند.": "The selected connection is off or has no password; new files go to the app server for now.",
+  "انتقالِ فایل‌های قبلی به فضای ابری": "Move earlier files to the cloud storage",
+  "این اتصال تاریخچهٔ دسترسی یا فایل‌های برنامه را دارد و پاک نمی‌شود؛ خاموشش کنید.": "This connection has access history or app files and can't be deleted; turn it off instead.",
+  "تغییرِ محلِ فایل‌های برنامه": "Change where app files are stored",
+  "حسابِ اتصال اجازهٔ نوشتن در پوشهٔ خودش را ندارد.": "The connection account isn't allowed to write to its own folder.",
+  "در حالِ انتقال…": "Moving…",
+  "روی سرورِ برنامه": "On the app server",
+  "سرورِ برنامه": "App server",
+  "فضای ابری در دسترس نیست؛ کمی بعد دوباره امتحان کنید.": "The cloud storage can't be reached; try again in a little while.",
+  "فضای ابری: {name}": "Cloud storage: {name}",
+  "فضای حسابِ اتصال پر است؛ در Nextcloud سهمیهٔ آن را بیشتر کنید.": "The connection account is out of space; raise its quota in Nextcloud.",
+  "محلِ فایل‌های برنامه": "Where app files are stored",
+  "منتقل شد: {moved} · مانده: {remaining}": "Moved: {moved} · Remaining: {remaining}",
+  "ناموفق: {n}": "Failed: {n}",
+  "هر فایل اول روی فضای ابری نوشته و سنجیده می‌شود، بعد از سرور پاک می‌شود. اگر صفحه را ببندید، کار همان‌جا می‌ایستد و بعداً ادامه پیدا می‌کند.": "Each file is first written to the cloud storage and checked, then removed from the server. If you close the page, the work stops there and continues next time.",
+  "پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.": "Attachments of projects, tasks, comments and messages, plus receipts and avatars. Nothing changes for users: files open and download inside the app as before. On the cloud storage, files stay in the connection account's private folder (KabarzaOS-files) and aren't shared with anyone."
 }

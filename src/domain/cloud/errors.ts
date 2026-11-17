@@ -20,7 +20,7 @@ export function cloudMessage(code: CloudErrorCode): string {
     case 'not_configured': return 'رمزِ برنامهٔ این اتصال ذخیره نشده یا دیگر باز نمی‌شود؛ در «تنظیمات ← فضای ابری» دوباره بگذاریدش.';
     case 'invalid': return 'این موردها درست نیستند: {name}';
     case 'no_secret': return 'برای اتصالِ تازه رمزِ برنامه (App password) لازم است.';
-    case 'in_use': return 'این اتصال تاریخچهٔ دسترسی دارد و پاک نمی‌شود؛ خاموشش کنید.';
+    case 'in_use': return 'این اتصال تاریخچهٔ دسترسی یا فایل‌های برنامه را دارد و پاک نمی‌شود؛ خاموشش کنید.';
     case 'not_found': return 'این حساب روی فضای ابری پیدا نشد.';
     case 'protected': return 'این حساب در گروهِ این اتصال نیست یا خودِ حسابِ اتصال است؛ برنامه به آن دست نمی‌زند.';
     case 'member_inactive': return 'فقط به عضوِ فعال می‌شود حسابِ فضای ابری داد.';

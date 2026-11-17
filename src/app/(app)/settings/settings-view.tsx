@@ -24,6 +24,7 @@ import { MailSection } from './mail-section';
 import { CorpMailSection } from './corp-mail-section';
 import { CloudSection } from './cloud-section';
 import type { CloudConnectionView } from '@/server/cloud/connections';
+import type { FileStoreView } from '@/server/files/cloud-store';
 import type { CorpMailSettingsView } from '@/server/corp-mail/settings';
 import { OnboardingLibrary, type OnboardingLibraryData } from './onboarding-library';
 import { BackupSection, type BackupView } from './backup-section';
@@ -102,6 +103,7 @@ export interface SettingsData {
   corpMail: CorpMailSettingsView | null;
   /** فضای ابری (۳.۴.۰) — فقط مالک؛ رمزِ برنامه در آن نیست. */
   cloud: CloudConnectionView[] | null;
+  fileStore: FileStoreView | null;
   /** ایمیلِ خروجی — فقط مالک؛ رمز در آن نیست. */
   smtp: SmtpSettingsView | null;
   qaItems: Array<{
@@ -729,7 +731,7 @@ export function SettingsView({
 
       {tab === 'security' && data.isOwner && data.turnstile && <SecuritySection turnstile={data.turnstile} />}
       {tab === 'corpmail' && data.isOwner && data.corpMail && <CorpMailSection view={data.corpMail} />}
-      {tab === 'cloud' && data.isOwner && data.cloud && <CloudSection connections={data.cloud} />}
+      {tab === 'cloud' && data.isOwner && data.cloud && <CloudSection connections={data.cloud} fileStore={data.fileStore} />}
 
       {tab === 'notify' && data.isOwner && (
         <div className="grid gap-6">

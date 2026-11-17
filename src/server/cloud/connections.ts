@@ -1,7 +1,7 @@
 import 'server-only';
-import { asc, eq, sql } from 'drizzle-orm';
+import { asc, eq, like, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { auditLog, cloudConnections, serviceGrants, services } from '@/db/schema';
+import { auditLog, cloudConnections, files, serviceGrants, services } from '@/db/schema';
 import type { Actor } from '@/domain/access/permissions';
 import { ForbiddenError } from '@/domain/access/guard';
 import { normalizeConnectionInput, parseCloudUsers } from '@/domain/cloud/nextcloud';
@@ -169,6 +169,10 @@ export async function deleteCloudConnection(actor: Actor, id: number): Promise<v
     const [{ n } = { n: 0 }] = await tx.select({ n: sql<number>`count(*)::int` }).from(serviceGrants)
       .where(eq(serviceGrants.serviceId, row.serviceId));
     if (n > 0) throw new CloudError('in_use');
+    // ۳.۵.۰ — فایل‌های برنامه روی همین فضا؟ بی اتصال دیگر باز نمی‌شدند.
+    const [{ f } = { f: 0 }] = await tx.select({ f: sql<number>`count(*)::int` }).from(files)
+      .where(like(files.storageKey, `nc:${id}/%`));
+    if (f > 0) throw new CloudError('in_use');
     await tx.delete(cloudConnections).where(eq(cloudConnections.id, id));
     await tx.delete(services).where(eq(services.id, row.serviceId));
     await tx.insert(auditLog).values({

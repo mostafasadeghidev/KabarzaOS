@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useId, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { Cloud, ExternalLink, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Cloud, ExternalLink, HardDrive, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,8 +19,12 @@ import { Panel } from '@/components/page-shell';
 import { useT, useTimeZone } from '@/i18n/client';
 import { formatDateTime } from '@/i18n/datetime';
 import type { CloudConnectionView } from '@/server/cloud/connections';
+import type { FileStoreView } from '@/server/files/cloud-store';
+import { humanSize } from '@/domain/files/upload';
+import { useRouter } from 'next/navigation';
 import {
-  deleteCloudConnectionAction, saveCloudConnectionAction, testCloudConnectionAction, type CloudSettingsState,
+  deleteCloudConnectionAction, migrateFilesStepAction, saveCloudConnectionAction, setFileStoreAction, testCloudConnectionAction,
+  type CloudSettingsState,
 } from './_form/actions';
 
 /**
@@ -41,7 +45,7 @@ const STATUS_ERRORS: Record<string, string> = {
   no_connection: 'اتصال پیدا نشد.',
 };
 
-export function CloudSection({ connections }: { connections: CloudConnectionView[] }) {
+export function CloudSection({ connections, fileStore }: { connections: CloudConnectionView[]; fileStore: FileStoreView | null }) {
   const t = useT();
   const tz = useTimeZone();
   const { show } = useToast();
@@ -134,6 +138,7 @@ export function CloudSection({ connections }: { connections: CloudConnectionView
         ))}
       </div>
       <ConnectionDialog value={editing} onClose={() => setEditing(null)} onSaved={report} />
+      {fileStore && <FileStorePanel view={fileStore} connections={connections} />}
     </Panel>
   );
 }
@@ -212,5 +217,113 @@ function ConnectionDialog({ value, onClose, onSaved }: {
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * محلِ فایل‌های برنامه (۳.۵.۰): همهٔ پیوست‌ها، رسیدها و آواتارها روی سرورِ برنامه یا روی یکی از
+ * فضاهای ابری. برای کاربر فرقی ندارد؛ فقط جای ذخیره عوض می‌شود. «انتقال» فایل‌های قبلی را می‌برد.
+ */
+function FileStorePanel({ view, connections }: { view: FileStoreView; connections: CloudConnectionView[] }) {
+  const t = useT();
+  const tz = useTimeZone();
+  const router = useRouter();
+  const { show } = useToast();
+  const [pending, start] = useTransition();
+  const [progress, setProgress] = useState<{ moved: number; failed: number; remaining: number } | null>(null);
+  const [running, setRunning] = useState(false);
+  const usable = connections.filter((c) => c.isActive && c.hasSecret);
+  // ⚠️ نامِ یکتا: نامِ ثابت با نسخهٔ پنهانِ استریمِ React برخورد می‌کرد («Mixing React and non-React radio inputs»).
+  const group = useId();
+  const nameOf = (id: number) => connections.find((c) => c.id === id)?.name ?? `#${id}`;
+
+  const choose = (value: string) => {
+    const id = value === 'server' ? null : Number(value);
+    start(async () => {
+      const state = await setFileStoreAction(id);
+      if (state.error) show(t(state.error, state.params), 'error');
+      else { show(t('ذخیره شد.'), 'success'); router.refresh(); }
+    });
+  };
+
+  /** گام به گام تا تمام شدن؛ هر گام حدودِ ۲۰ ثانیه. بستنِ صفحه فقط کار را نگه می‌دارد. */
+  const migrate = async () => {
+    setRunning(true);
+    let moved = 0;
+    let failed = 0;
+    try {
+      for (let i = 0; i < 500; i++) {
+        const state = await migrateFilesStepAction();
+        if (state.error) { show(t(state.error, state.params), 'error'); break; }
+        moved += state.moved ?? 0;
+        failed += state.failed ?? 0;
+        setProgress({ moved, failed, remaining: state.remaining ?? 0 });
+        // گامی که هیچ پیش نرفت (همه خطا دادند) یعنی تکرار فایده ندارد.
+        if ((state.remaining ?? 0) === 0 || (state.moved ?? 0) === 0) break;
+      }
+    } finally {
+      setRunning(false);
+      router.refresh();
+    }
+  };
+
+  return (
+    <section className="mt-6 grid gap-3 rounded-lg border p-3 text-sm">
+      <h3 className="flex items-center gap-2 font-medium"><HardDrive className="size-4" />{t('محلِ فایل‌های برنامه')}</h3>
+      <p className="text-xs text-muted-foreground">
+        {t('پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.')}
+      </p>
+      <div className="grid gap-1.5">
+        <label className="flex items-center gap-2">
+          <input type="radio" name={group} value="server" checked={view.connectionId === null} disabled={pending || running} onChange={() => choose('server')} />
+          {t('سرورِ برنامه')}
+        </label>
+        {usable.map((c) => (
+          <label key={c.id} className="flex items-center gap-2">
+            <input type="radio" name={group} value={c.id} checked={view.connectionId === c.id} disabled={pending || running} onChange={() => choose(String(c.id))} />
+            {t('فضای ابری: {name}', { name: c.name })}
+          </label>
+        ))}
+      </div>
+      {view.inactive && (
+        <p className="text-xs text-destructive">
+          {t('اتصالِ انتخاب‌شده خاموش است یا رمز ندارد؛ فایل‌های تازه فعلاً روی سرورِ برنامه می‌روند.')}
+        </p>
+      )}
+      {view.lastError && (
+        <p className="text-xs text-destructive">
+          {t('آخرین بار فایلی روی فضای ابری نوشته نشد و روی سرور ماند ({status}). سهمیهٔ حسابِ اتصال و دسترسیِ سرور را بررسی کنید.', { status: view.lastError.status || '—' })}
+          {' · '}<span className="num">{formatDateTime(view.lastError.at, tz)}</span>
+        </p>
+      )}
+      <dl className="grid grid-cols-1 gap-x-4 gap-y-1 text-xs sm:grid-cols-[auto_1fr]">
+        <dt className="text-muted-foreground">{t('روی سرورِ برنامه')}</dt>
+        <dd>{t('{n} فایل', { n: view.server.count })} · <span className="num">{humanSize(view.server.bytes, t)}</span></dd>
+        {view.cloud.map((c) => (
+          <div key={c.connectionId} className="contents">
+            <dt className="text-muted-foreground">{t('فضای ابری: {name}', { name: nameOf(c.connectionId) })}</dt>
+            <dd>{t('{n} فایل', { n: c.count })} · <span className="num">{humanSize(c.bytes, t)}</span></dd>
+          </div>
+        ))}
+      </dl>
+      {view.connectionId !== null && !view.inactive && view.server.count > 0 && (
+        <div className="grid gap-1.5">
+          <div>
+            <Button size="sm" variant="outline" disabled={running || pending} onClick={() => { void migrate(); }}>
+              {running ? t('در حالِ انتقال…') : t('انتقالِ فایل‌های قبلی به فضای ابری')}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t('هر فایل اول روی فضای ابری نوشته و سنجیده می‌شود، بعد از سرور پاک می‌شود. اگر صفحه را ببندید، کار همان‌جا می‌ایستد و بعداً ادامه پیدا می‌کند.')}
+          </p>
+        </div>
+      )}
+      {progress && (
+        <p className="text-xs">
+          {t('منتقل شد: {moved} · مانده: {remaining}', { moved: progress.moved, remaining: progress.remaining })}
+          {progress.failed > 0 && <span className="text-destructive"> · {t('ناموفق: {n}', { n: progress.failed })}</span>}
+        </p>
+      )}
+    </section>
   );
 }

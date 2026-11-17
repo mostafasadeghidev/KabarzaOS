@@ -5174,5 +5174,22 @@
   "حجم ذخیره نشد.": "O espaço não foi salvo.",
   "اتصال حذف شد.": "Conexão excluída.",
   "رمزِ فعلی و همهٔ ورودهای اپِ دسکتاپ و موبایل باطل می‌شوند و باید دوباره وارد شوند. رمزِ تازه در «دسترسی‌های من» ِ کارمند دیده می‌شود.": "A senha atual e todos os acessos dos apps de desktop e celular deixam de funcionar e precisam entrar de novo. A nova senha aparece em \"Meus acessos\" do funcionário.",
-  "رمزِ فعلی باطل می‌شود. این حساب صاحبی در برنامه ندارد، پس رمزِ تازه فقط همین یک بار نشان داده می‌شود.": "A senha atual deixa de funcionar. Esta conta não tem dono no aplicativo, então a nova senha só é mostrada desta vez."
+  "رمزِ فعلی باطل می‌شود. این حساب صاحبی در برنامه ندارد، پس رمزِ تازه فقط همین یک بار نشان داده می‌شود.": "A senha atual deixa de funcionar. Esta conta não tem dono no aplicativo, então a nova senha só é mostrada desta vez.",
+  "آخرین بار فایلی روی فضای ابری نوشته نشد و روی سرور ماند ({status}). سهمیهٔ حسابِ اتصال و دسترسیِ سرور را بررسی کنید.": "Da última vez um arquivo não pôde ser gravado na nuvem e ficou no servidor ({status}). Verifique a cota da conta de conexão e o acesso ao servidor.",
+  "اتصالِ انتخاب‌شده خاموش است یا رمز ندارد؛ فایل‌های تازه فعلاً روی سرورِ برنامه می‌روند.": "A conexão escolhida está desligada ou sem senha; os arquivos novos vão por enquanto para o servidor do aplicativo.",
+  "انتقالِ فایل‌های قبلی به فضای ابری": "Mover os arquivos anteriores para a nuvem",
+  "این اتصال تاریخچهٔ دسترسی یا فایل‌های برنامه را دارد و پاک نمی‌شود؛ خاموشش کنید.": "Esta conexão tem histórico de acesso ou arquivos do aplicativo e não pode ser excluída; desligue-a.",
+  "تغییرِ محلِ فایل‌های برنامه": "Alteração do local dos arquivos do aplicativo",
+  "حسابِ اتصال اجازهٔ نوشتن در پوشهٔ خودش را ندارد.": "A conta de conexão não pode gravar na própria pasta.",
+  "در حالِ انتقال…": "Movendo…",
+  "روی سرورِ برنامه": "No servidor do aplicativo",
+  "سرورِ برنامه": "Servidor do aplicativo",
+  "فضای ابری در دسترس نیست؛ کمی بعد دوباره امتحان کنید.": "A nuvem não está acessível; tente de novo daqui a pouco.",
+  "فضای ابری: {name}": "Nuvem: {name}",
+  "فضای حسابِ اتصال پر است؛ در Nextcloud سهمیهٔ آن را بیشتر کنید.": "A conta de conexão está cheia; aumente a cota dela no Nextcloud.",
+  "محلِ فایل‌های برنامه": "Onde ficam os arquivos do aplicativo",
+  "منتقل شد: {moved} · مانده: {remaining}": "Movidos: {moved} · Restantes: {remaining}",
+  "ناموفق: {n}": "Falharam: {n}",
+  "هر فایل اول روی فضای ابری نوشته و سنجیده می‌شود، بعد از سرور پاک می‌شود. اگر صفحه را ببندید، کار همان‌جا می‌ایستد و بعداً ادامه پیدا می‌کند.": "Cada arquivo é primeiro gravado na nuvem e conferido, depois apagado do servidor. Se você fechar a página, o trabalho para ali e continua na próxima vez.",
+  "پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.": "Anexos de projetos, tarefas, comentários e mensagens, além de recibos e avatares. Nada muda para os usuários: os arquivos abrem e baixam no aplicativo como antes. Na nuvem, ficam na pasta privada da conta de conexão (KabarzaOS-files) e não são compartilhados com ninguém."
 }

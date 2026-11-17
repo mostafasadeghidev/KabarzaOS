@@ -5174,5 +5174,22 @@
   "حجم ذخیره نشد.": "L’espace n’a pas été enregistré.",
   "اتصال حذف شد.": "Connexion supprimée.",
   "رمزِ فعلی و همهٔ ورودهای اپِ دسکتاپ و موبایل باطل می‌شوند و باید دوباره وارد شوند. رمزِ تازه در «دسترسی‌های من» ِ کارمند دیده می‌شود.": "Le mot de passe actuel et toutes les connexions des applications de bureau et mobiles cessent de fonctionner et doivent se reconnecter. Le nouveau mot de passe apparaît dans « Mes accès » de l’employé.",
-  "رمزِ فعلی باطل می‌شود. این حساب صاحبی در برنامه ندارد، پس رمزِ تازه فقط همین یک بار نشان داده می‌شود.": "Le mot de passe actuel cesse de fonctionner. Ce compte n’a pas de propriétaire dans l’application, le nouveau mot de passe n’est donc affiché que cette fois."
+  "رمزِ فعلی باطل می‌شود. این حساب صاحبی در برنامه ندارد، پس رمزِ تازه فقط همین یک بار نشان داده می‌شود.": "Le mot de passe actuel cesse de fonctionner. Ce compte n’a pas de propriétaire dans l’application, le nouveau mot de passe n’est donc affiché que cette fois.",
+  "آخرین بار فایلی روی فضای ابری نوشته نشد و روی سرور ماند ({status}). سهمیهٔ حسابِ اتصال و دسترسیِ سرور را بررسی کنید.": "La dernière fois, un fichier n’a pas pu être écrit sur le stockage cloud et est resté sur le serveur ({status}). Vérifiez le quota du compte de connexion et l’accès au serveur.",
+  "اتصالِ انتخاب‌شده خاموش است یا رمز ندارد؛ فایل‌های تازه فعلاً روی سرورِ برنامه می‌روند.": "La connexion choisie est désactivée ou sans mot de passe ; les nouveaux fichiers vont pour l’instant sur le serveur de l’application.",
+  "انتقالِ فایل‌های قبلی به فضای ابری": "Déplacer les fichiers existants vers le stockage cloud",
+  "این اتصال تاریخچهٔ دسترسی یا فایل‌های برنامه را دارد و پاک نمی‌شود؛ خاموشش کنید.": "Cette connexion a un historique d’accès ou des fichiers de l’application et ne peut pas être supprimée ; désactivez-la.",
+  "تغییرِ محلِ فایل‌های برنامه": "Changement de l’emplacement des fichiers de l’application",
+  "حسابِ اتصال اجازهٔ نوشتن در پوشهٔ خودش را ندارد.": "Le compte de connexion n’a pas le droit d’écrire dans son propre dossier.",
+  "در حالِ انتقال…": "Déplacement…",
+  "روی سرورِ برنامه": "Sur le serveur de l’application",
+  "سرورِ برنامه": "Serveur de l’application",
+  "فضای ابری در دسترس نیست؛ کمی بعد دوباره امتحان کنید.": "Le stockage cloud est injoignable ; réessayez dans un moment.",
+  "فضای ابری: {name}": "Stockage cloud : {name}",
+  "فضای حسابِ اتصال پر است؛ در Nextcloud سهمیهٔ آن را بیشتر کنید.": "Le compte de connexion est plein ; augmentez son quota dans Nextcloud.",
+  "محلِ فایل‌های برنامه": "Emplacement des fichiers de l’application",
+  "منتقل شد: {moved} · مانده: {remaining}": "Déplacés : {moved} · Restants : {remaining}",
+  "ناموفق: {n}": "Échecs : {n}",
+  "هر فایل اول روی فضای ابری نوشته و سنجیده می‌شود، بعد از سرور پاک می‌شود. اگر صفحه را ببندید، کار همان‌جا می‌ایستد و بعداً ادامه پیدا می‌کند.": "Chaque fichier est d’abord écrit sur le stockage cloud et vérifié, puis supprimé du serveur. Si vous fermez la page, le travail s’arrête là et reprend la prochaine fois.",
+  "پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.": "Pièces jointes des projets, tâches, commentaires et messages, ainsi que reçus et avatars. Rien ne change pour les utilisateurs : les fichiers s’ouvrent et se téléchargent dans l’application comme avant. Sur le stockage cloud, ils restent dans le dossier privé du compte de connexion (KabarzaOS-files) et ne sont partagés avec personne."
 }

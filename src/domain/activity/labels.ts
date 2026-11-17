@@ -186,6 +186,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'cloud.password': 'رمزِ تازهٔ حسابِ فضای ابری',
   'cloud.disable': 'قطعِ حسابِ فضای ابری',
   'cloud.enable': 'وصلِ دوبارهٔ حسابِ فضای ابری',
+  'files.store': 'تغییرِ محلِ فایل‌های برنامه',
+  'files.migrate': 'انتقالِ فایل‌های قبلی به فضای ابری',
 
   // دفترِ دسترسی‌های بیرونی
   'service.create': 'سرویسِ جدید',

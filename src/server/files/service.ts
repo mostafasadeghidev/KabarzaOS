@@ -52,9 +52,23 @@ async function storeFile(
   // ⚠️ بعد از سنجشِ نوع، پیش از ذخیره: GPS و بقیهٔ EXIF هرگز به مخزن نمی‌رسد (۲.۵۷.۰).
   const bytes = await stripMetadata(blob.bytes, mime);
 
-  await ensureBucket();
-  const key = storageKey(purpose, mime, randomUUID().replace(/-/g, ''));
-  await putObject(key, bytes, mime);
+  /**
+   * ۳.۵.۰ — اگر مالک فضای ابری را انتخاب کرده، فایل آنجا می‌رود (`nc:<id>/…`)؛ نوشتنِ ناموفق
+   * (قطعی، سهمیهٔ پر) بارگذاری را نمی‌شکند و فایل روی سرور می‌ماند تا «انتقال» بعداً ببردش.
+   */
+  const plainKey = storageKey(purpose, mime, randomUUID().replace(/-/g, ''));
+  const { writePrefix, noteWriteFailure } = await import('./cloud-store');
+  let key = `${await writePrefix()}${plainKey}`;
+  try {
+    if (key === plainKey) await ensureBucket();
+    await putObject(key, bytes, mime);
+  } catch (error) {
+    if (key === plainKey) throw error;
+    await noteWriteFailure(error);
+    key = plainKey;
+    await ensureBucket();
+    await putObject(key, bytes, mime);
+  }
 
   /**
    * نسخهٔ کوچکِ ۴۰۰ پیکسلی برای فهرست‌ها و آواتارها (R-FILE-16).

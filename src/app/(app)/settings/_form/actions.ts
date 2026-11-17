@@ -725,3 +725,41 @@ export async function testCloudConnectionAction(id: number): Promise<CloudSettin
   const state = await runCloudSettings(async (actor) => { ok = (await testCloudConnection(actor, Number(id))).ok; }, 'اتصال برقرار است.');
   return state.error || ok ? state : { error: 'اتصال برقرار نشد.' };
 }
+
+/* ---- فایل‌های برنامه روی فضای ابری (۳.۵.۰) — فقط مالک ---- */
+
+function fileStoreMessage(error: unknown): string | null {
+  const status = (error as { name?: string; status?: number }).name === 'CloudStoreError' ? (error as { status: number }).status : null;
+  if (status === null) return null;
+  if (status === 401) return 'فضای ابری نام‌کاربری یا رمزِ برنامه را نپذیرفت.';
+  if (status === 403) return 'حسابِ اتصال اجازهٔ نوشتن در پوشهٔ خودش را ندارد.';
+  if (status === 507) return 'فضای حسابِ اتصال پر است؛ در Nextcloud سهمیهٔ آن را بیشتر کنید.';
+  if (status === 0) return 'فضای ابری در دسترس نیست؛ کمی بعد دوباره امتحان کنید.';
+  return 'فضای ابری درخواست را انجام نداد: {name}';
+}
+
+/** محلِ فایل‌های تازه: `null` = سرورِ برنامه. پیش از ذخیره یک نوشتنِ آزمون انجام می‌شود. */
+export async function setFileStoreAction(connectionId: number | null): Promise<CloudSettingsState> {
+  const { setFileStore } = await import('@/server/files/cloud-store');
+  try {
+    return await runCloudSettings((actor) => setFileStore(actor, connectionId === null ? null : Number(connectionId)), 'ذخیره شد.');
+  } catch (error) {
+    const message = fileStoreMessage(error);
+    if (message) return { error: message, params: { name: String((error as { status?: number }).status ?? '') } };
+    throw error;
+  }
+}
+
+/** یک گامِ انتقالِ فایل‌های قبلی (حدودِ ۲۰ ثانیه)؛ صفحه تا تمام شدن تکرارش می‌کند. */
+export async function migrateFilesStepAction(): Promise<CloudSettingsState & { moved?: number; failed?: number; remaining?: number }> {
+  const { migrateFilesStep } = await import('@/server/files/cloud-store');
+  let out: { moved: number; failed: number; remaining: number } | null = null;
+  try {
+    const state = await runCloudSettings(async (actor) => { out = await migrateFilesStep(actor); }, '');
+    return out ? { ...state, ...(out as { moved: number; failed: number; remaining: number }) } : state;
+  } catch (error) {
+    const message = fileStoreMessage(error);
+    if (message) return { error: message, params: { name: String((error as { status?: number }).status ?? '') } };
+    throw error;
+  }
+}
