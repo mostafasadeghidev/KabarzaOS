@@ -333,6 +333,12 @@ async function runCleanup(now: Date): Promise<boolean> {
   const { msgPurgeDays } = await getSystemConfig();
   await purgeMessages(msgPurgeDays);
 
+  // آپلودهای تکه‌ایِ رهاشده (۳.۱۰.۰، بیش از ۴۸ ساعت بی‌حرکت) — تکه‌های موقت در Nextcloud/S3 هم.
+  // ⚠️ import ِ پویا: chunked → سرویسِ فایل → … → زمان‌بند حلقه می‌ساخت و در Turbopack تابع‌ها undefined می‌شدند.
+  await import('@/server/files/chunked')
+    .then(({ purgeStaleUploads }) => purgeStaleUploads(now))
+    .catch((error) => console.error('[scheduler] uploads purge', error));
+
   return true;
 }
 

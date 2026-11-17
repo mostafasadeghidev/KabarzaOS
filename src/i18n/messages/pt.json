@@ -5209,5 +5209,18 @@
   "قفل کردنِ گروه": "Bloquear grupo",
   "قفلِ گروه باز شد.": "Grupo desbloqueado.",
   "قفلِ گروه فقط از مدیر یا مدیرِ همان پروژه برمی‌آید.": "Só um gestor ou o gestor do projeto pode bloquear o grupo.",
-  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Grupo bloqueado; só o histórico fica visível."
+  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Grupo bloqueado; só o histórico fica visível.",
+  "«{name}» بارگذاری شد.": "“{name}” enviado.",
+  "آپلود انجام نشد.": "Falha no envio.",
+  "آپلودها تمام شد": "Envios concluídos",
+  "بارگذاری شد": "Enviado",
+  "تصویر، ویدیو، سند، ارائه، zip/rar/7z، SVG و psd — تا {size} برای هر فایل. می‌توانید در برنامه جابه‌جا شوید؛ آپلود ادامه دارد.": "Imagens, vídeos, documentos, apresentações, zip/rar/7z, SVG e psd, até {size} por arquivo. Você pode navegar pelo app enquanto envia.",
+  "در حالِ آپلود ({n})": "Enviando ({n})",
+  "در صف": "Na fila",
+  "لغوِ آپلود": "Cancelar envio",
+  "منتظرِ اینترنت…": "Aguardando conexão…",
+  "این آپلود دیگر وجود ندارد؛ دوباره انتخابش کنید.": "Este envio não existe mais; escolha o arquivo novamente.",
+  "آپلودهای نیمه‌کارهٔ شما زیاد است؛ چندتا را تمام یا لغو کنید.": "Você tem muitos envios inacabados; conclua ou cancele alguns.",
+  "ترتیبِ تکه‌ها به‌هم ریخت؛ آپلود از سر گرفته می‌شود.": "As partes chegaram fora de ordem; o envio será retomado.",
+  "ارتباط با محلِ ذخیره قطع شد؛ دوباره تلاش می‌شود.": "Conexão com o armazenamento perdida; tentando novamente."
 }

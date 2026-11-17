@@ -9,6 +9,7 @@ import { HeaderActionsSlot } from '@/components/header-actions';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { HeaderBreadcrumb } from '@/components/header-breadcrumb';
 import { NavHistory } from '@/components/nav-history';
+import { UploadProvider } from '@/components/uploads/upload-manager';
 import { FinanceAccountReset } from './finance/account-reset';
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette';
 import { OffboardedShell } from './offboarded-shell';
@@ -348,7 +349,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           ⚠️ وقتی حضور خاموش است هیچ درخواستی نمی‌فرستد؛ فقط فرزندان را رندر می‌کند.
         */}
         <PresenceProvider enabled={system.presenceEnabled} ping={system.presencePing} watchOthers={seesTeamPresence(actor)}>
-          <CurrencyDecimals list={decimals}>{children}</CurrencyDecimals>
+          {/* مدیرِ آپلود (۳.۱۰.۰) — اینجا تا با رفتن به صفحهٔ دیگر آپلود قطع نشود. */}
+          <UploadProvider userId={actor.id}>
+            <CurrencyDecimals list={decimals}>{children}</CurrencyDecimals>
+          </UploadProvider>
         </PresenceProvider>
         {/* صفحه‌ها همان فهرستِ منو است — یعنی همان فیلترِ مجوزِ سمتِ سرور. */}
         <CommandPalette pages={items.map(({ href, label }) => ({ href, label }))} />

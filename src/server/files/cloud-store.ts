@@ -116,6 +116,52 @@ export async function cloudPut(connectionId: number, rest: string, body: Uint8Ar
   if (res.status !== 201 && res.status !== 204) throw new CloudStoreError(res.status, 'put');
 }
 
+/* ------------------------------------------------------------------ *
+ * آپلودِ تکه‌ای (۳.۱۰.۰) — «chunked upload» ِ خودِ Nextcloud
+ * ------------------------------------------------------------------ */
+
+/**
+ * ⚠️ تکه‌ها در پوشهٔ موقتِ `uploads/<user>/<dir>` ِ خودِ Nextcloud جمع می‌شوند و MOVE ِ `.file`
+ * آن‌ها را به‌ترتیبِ نام کنارِ هم می‌گذارد — پس فایل هرگز روی سرورِ برنامه جمع نمی‌شود.
+ * نامِ تکه‌ها ششرقمی است تا ترتیبِ الفبایی همان ترتیبِ عددی باشد.
+ */
+const UPLOAD_DIR = /^[a-f0-9]{16,64}$/;
+function chunkDir(target: CloudTarget, dir: string): string {
+  if (!UPLOAD_DIR.test(dir)) throw new CloudStoreError(400, 'bad_upload_dir');
+  return `${target.baseUrl}/remote.php/dav/uploads/${encodeURIComponent(target.username)}/${dir}`;
+}
+
+export async function cloudChunkStart(connectionId: number, dir: string): Promise<void> {
+  const target = await targetOf(connectionId);
+  const res = await dav(target, 'MKCOL', chunkDir(target, dir));
+  if (res.status !== 201 && res.status !== 405) throw new CloudStoreError(res.status, 'chunk_mkcol');
+}
+
+export async function cloudChunkPut(connectionId: number, dir: string, index: number, body: Uint8Array): Promise<void> {
+  const target = await targetOf(connectionId);
+  const res = await dav(target, 'PUT', `${chunkDir(target, dir)}/${String(index).padStart(6, '0')}`, {
+    body, headers: { 'Content-Length': String(body.byteLength) }, timeoutMs: 120_000,
+  });
+  if (res.status !== 201 && res.status !== 204) throw new CloudStoreError(res.status, 'chunk_put');
+}
+
+/** تکه‌ها را در مقصدِ نهایی سرِ هم می‌کند (MOVE ِ `.file`). برای فایلِ بزرگ ممکن است طول بکشد. */
+export async function cloudChunkFinish(connectionId: number, dir: string, rest: string, size: number): Promise<void> {
+  const parts = segments(rest);
+  const target = await targetOf(connectionId);
+  await ensureDirs(connectionId, target, parts);
+  const res = await dav(target, 'MOVE', `${chunkDir(target, dir)}/.file`, {
+    headers: { Destination: fileUrl(target, parts), Overwrite: 'T', 'OC-Total-Length': String(size) },
+    timeoutMs: 600_000,
+  });
+  if (res.status !== 201 && res.status !== 204) throw new CloudStoreError(res.status, 'chunk_move');
+}
+
+export async function cloudChunkAbort(connectionId: number, dir: string): Promise<void> {
+  const target = await targetOf(connectionId);
+  await dav(target, 'DELETE', chunkDir(target, dir)).catch(() => undefined);
+}
+
 export async function cloudGet(connectionId: number, rest: string): Promise<Uint8Array> {
   const target = await targetOf(connectionId);
   const res = await dav(target, 'GET', fileUrl(target, segments(rest)));

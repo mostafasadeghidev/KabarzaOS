@@ -29,6 +29,7 @@ export function FormFileDrop({
   footer,
   className,
   onCountChange,
+  unlimited = false,
 }: {
   name: string;
   multiple?: boolean;
@@ -47,6 +48,8 @@ export function FormFileDrop({
   className?: string;
   /** شمارِ فایل‌های در انتظار — مثلاً برای غیرفعال‌کردنِ دکمهٔ ارسال. */
   onCountChange?: (count: number) => void;
+  /** بی سقفِ «۱۰ فایل / ۵۵ مگ در هر ارسال» — وقتی فایل‌ها به مدیرِ آپلودِ تکه‌ای می‌روند (۳.۱۰.۰). */
+  unlimited?: boolean;
 }) {
   const t = useT();
   const holderRef = useRef<HTMLInputElement>(null);
@@ -83,6 +86,7 @@ export function FormFileDrop({
           ? t('Ctrl+V برای اسکرین‌شات، کلیک برای انتخابِ فایل، یا لینکِ ویدئو (Loom، YouTube، Vimeo) را در متن بگذارید')
           : undefined)}
         footer={footer}
+        unlimited={unlimited}
         files={files}
         onAdd={(added) => sync(multiple ? [...files, ...added] : added.slice(0, 1))}
         onRemove={(i) => sync(files.filter((_, j) => j !== i))}

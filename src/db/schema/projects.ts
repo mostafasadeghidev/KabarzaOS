@@ -379,3 +379,25 @@ export const tenderBids = pgTable('tender_bids', {
   check('tender_bids_status_ck', sql`${t.status} in ('pending','approved','archived','withdrawn')`),
   uniqueIndex('tender_bids_uq').on(t.projectId, t.userId, t.roleTagId),
 ]);
+
+/**
+ * جلسهٔ آپلودِ تکه‌ای (۳.۱۰.۰) — فقط وضعیت، نه بایت. تکه‌ها مستقیم به مقصدِ نهایی می‌روند
+ * (Nextcloud: پوشهٔ uploads؛ S3: multipart). `parts` = { شمارهٔ تکه: ETag یا "1" }.
+ * `mime`/`storageKey`/`backendId` با تکهٔ اول پر می‌شوند — نوع با بایت‌های واقعی سنجیده می‌شود.
+ */
+export const uploadSessions = pgTable('upload_sessions', {
+  id: text('id').primaryKey(),
+  userId: bigint('user_id', { mode: 'number' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  projectId: bigint('project_id', { mode: 'number' }).notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  label: text('label').notNull().default(''),
+  name: text('name').notNull(),
+  declaredMime: text('declared_mime').notNull().default(''),
+  mime: text('mime'),
+  size: bigint('size', { mode: 'number' }).notNull(),
+  chunkSize: integer('chunk_size').notNull(),
+  totalChunks: integer('total_chunks').notNull(),
+  storageKey: text('storage_key'),
+  backendId: text('backend_id'),
+  parts: jsonb('parts').notNull().$type<Record<string, string>>().default({}),
+  ...stamps,
+}, (t) => [index('upload_sessions_user_ix').on(t.userId), index('upload_sessions_updated_ix').on(t.updatedAt)]);

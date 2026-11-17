@@ -5209,5 +5209,18 @@
   "قفل کردنِ گروه": "Lock group",
   "قفلِ گروه باز شد.": "Group unlocked.",
   "قفلِ گروه فقط از مدیر یا مدیرِ همان پروژه برمی‌آید.": "Only a manager or the project's manager can lock the group.",
-  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Group locked; only the history can be read."
+  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Group locked; only the history can be read.",
+  "«{name}» بارگذاری شد.": "“{name}” uploaded.",
+  "آپلود انجام نشد.": "Upload failed.",
+  "آپلودها تمام شد": "Uploads finished",
+  "بارگذاری شد": "Uploaded",
+  "تصویر، ویدیو، سند، ارائه، zip/rar/7z، SVG و psd — تا {size} برای هر فایل. می‌توانید در برنامه جابه‌جا شوید؛ آپلود ادامه دارد.": "Images, videos, documents, presentations, zip/rar/7z, SVG and psd, up to {size} per file. You can move around the app while it uploads.",
+  "در حالِ آپلود ({n})": "Uploading ({n})",
+  "در صف": "Queued",
+  "لغوِ آپلود": "Cancel upload",
+  "منتظرِ اینترنت…": "Waiting for connection…",
+  "این آپلود دیگر وجود ندارد؛ دوباره انتخابش کنید.": "This upload no longer exists; choose the file again.",
+  "آپلودهای نیمه‌کارهٔ شما زیاد است؛ چندتا را تمام یا لغو کنید.": "You have too many unfinished uploads; finish or cancel some.",
+  "ترتیبِ تکه‌ها به‌هم ریخت؛ آپلود از سر گرفته می‌شود.": "The pieces arrived out of order; the upload will resume.",
+  "ارتباط با محلِ ذخیره قطع شد؛ دوباره تلاش می‌شود.": "Lost contact with the storage; trying again."
 }

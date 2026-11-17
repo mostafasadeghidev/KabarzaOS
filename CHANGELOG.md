@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.11.0]
+
+### Added
+
+- **Uploads with a progress bar that survive a lost connection.** Files added in a project's Files tab now upload in 8 MB pieces with a progress panel in the corner (percentage, size, cancel and retry). The upload keeps going while you move to other pages of the app. If the internet drops, it shows "Waiting for connection…" and continues from the last piece once you are back online; if the page is closed or reloaded, it resumes from where it stopped the next time you open the app (same browser and account). Files can now be up to 2 GB.
+- **Pieces go straight to the file storage.** When app files are stored on the cloud storage, each piece is sent directly to Nextcloud's own chunked-upload area and Nextcloud joins them at the end; on the app server it uses the storage's multipart upload. Pieces never pile up on the app server's disk. If the cloud storage can't be reached, the file is kept on the app server, as before, and moved later. Abandoned uploads are cleaned up automatically after 48 hours.
+
 ## [3.10.0]
 
 ### Added

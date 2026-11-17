@@ -5209,5 +5209,18 @@
   "قفل کردنِ گروه": "Grubu kilitle",
   "قفلِ گروه باز شد.": "Grubun kilidi açıldı.",
   "قفلِ گروه فقط از مدیر یا مدیرِ همان پروژه برمی‌آید.": "Grubu yalnızca bir yönetici veya proje yöneticisi kilitleyebilir.",
-  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Grup kilitlendi; yalnızca geçmiş görülebilir."
+  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Grup kilitlendi; yalnızca geçmiş görülebilir.",
+  "«{name}» بارگذاری شد.": "“{name}” yüklendi.",
+  "آپلود انجام نشد.": "Yükleme başarısız.",
+  "آپلودها تمام شد": "Yüklemeler tamamlandı",
+  "بارگذاری شد": "Yüklendi",
+  "تصویر، ویدیو، سند، ارائه، zip/rar/7z، SVG و psd — تا {size} برای هر فایل. می‌توانید در برنامه جابه‌جا شوید؛ آپلود ادامه دارد.": "Görsel, video, belge, sunum, zip/rar/7z, SVG ve psd; dosya başına en fazla {size}. Yükleme sürerken uygulamada gezinebilirsiniz.",
+  "در حالِ آپلود ({n})": "Yükleniyor ({n})",
+  "در صف": "Sırada",
+  "لغوِ آپلود": "Yüklemeyi iptal et",
+  "منتظرِ اینترنت…": "Bağlantı bekleniyor…",
+  "این آپلود دیگر وجود ندارد؛ دوباره انتخابش کنید.": "Bu yükleme artık yok; dosyayı yeniden seçin.",
+  "آپلودهای نیمه‌کارهٔ شما زیاد است؛ چندتا را تمام یا لغو کنید.": "Çok fazla yarım kalmış yüklemeniz var; bazılarını tamamlayın veya iptal edin.",
+  "ترتیبِ تکه‌ها به‌هم ریخت؛ آپلود از سر گرفته می‌شود.": "Parçalar karışık geldi; yükleme sürdürülecek.",
+  "ارتباط با محلِ ذخیره قطع شد؛ دوباره تلاش می‌شود.": "Depolamayla bağlantı koptu; yeniden deneniyor."
 }

@@ -5209,5 +5209,18 @@
   "قفل کردنِ گروه": "Verrouiller le groupe",
   "قفلِ گروه باز شد.": "Groupe déverrouillé.",
   "قفلِ گروه فقط از مدیر یا مدیرِ همان پروژه برمی‌آید.": "Seul un responsable ou le chef du projet peut verrouiller le groupe.",
-  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Groupe verrouillé ; seul l'historique est visible."
+  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Groupe verrouillé ; seul l'historique est visible.",
+  "«{name}» بارگذاری شد.": "« {name} » téléversé.",
+  "آپلود انجام نشد.": "Échec du téléversement.",
+  "آپلودها تمام شد": "Téléversements terminés",
+  "بارگذاری شد": "Téléversé",
+  "تصویر، ویدیو، سند، ارائه، zip/rar/7z، SVG و psd — تا {size} برای هر فایل. می‌توانید در برنامه جابه‌جا شوید؛ آپلود ادامه دارد.": "Images, vidéos, documents, présentations, zip/rar/7z, SVG et psd, jusqu’à {size} par fichier. Vous pouvez naviguer dans l’app pendant le téléversement.",
+  "در حالِ آپلود ({n})": "Téléversement ({n})",
+  "در صف": "En attente",
+  "لغوِ آپلود": "Annuler le téléversement",
+  "منتظرِ اینترنت…": "En attente de connexion…",
+  "این آپلود دیگر وجود ندارد؛ دوباره انتخابش کنید.": "Ce téléversement n’existe plus ; choisissez à nouveau le fichier.",
+  "آپلودهای نیمه‌کارهٔ شما زیاد است؛ چندتا را تمام یا لغو کنید.": "Trop de téléversements inachevés ; terminez-en ou annulez-en.",
+  "ترتیبِ تکه‌ها به‌هم ریخت؛ آپلود از سر گرفته می‌شود.": "Les morceaux sont arrivés dans le désordre ; le téléversement reprendra.",
+  "ارتباط با محلِ ذخیره قطع شد؛ دوباره تلاش می‌شود.": "Connexion au stockage perdue ; nouvelle tentative."
 }

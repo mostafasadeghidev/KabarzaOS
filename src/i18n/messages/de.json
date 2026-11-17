@@ -5209,5 +5209,18 @@
   "قفل کردنِ گروه": "Gruppe sperren",
   "قفلِ گروه باز شد.": "Gruppe entsperrt.",
   "قفلِ گروه فقط از مدیر یا مدیرِ همان پروژه برمی‌آید.": "Nur ein Manager oder der Projektmanager kann die Gruppe sperren.",
-  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Gruppe gesperrt; nur der Verlauf ist sichtbar."
+  "گروه قفل شد؛ فقط تاریخچه دیده می‌شود.": "Gruppe gesperrt; nur der Verlauf ist sichtbar.",
+  "«{name}» بارگذاری شد.": "„{name}“ hochgeladen.",
+  "آپلود انجام نشد.": "Hochladen fehlgeschlagen.",
+  "آپلودها تمام شد": "Uploads abgeschlossen",
+  "بارگذاری شد": "Hochgeladen",
+  "تصویر، ویدیو، سند، ارائه، zip/rar/7z، SVG و psd — تا {size} برای هر فایل. می‌توانید در برنامه جابه‌جا شوید؛ آپلود ادامه دارد.": "Bilder, Videos, Dokumente, Präsentationen, zip/rar/7z, SVG und psd, bis {size} pro Datei. Während des Hochladens können Sie in der App weiterarbeiten.",
+  "در حالِ آپلود ({n})": "Wird hochgeladen ({n})",
+  "در صف": "In der Warteschlange",
+  "لغوِ آپلود": "Hochladen abbrechen",
+  "منتظرِ اینترنت…": "Warte auf Verbindung…",
+  "این آپلود دیگر وجود ندارد؛ دوباره انتخابش کنید.": "Dieser Upload existiert nicht mehr; wählen Sie die Datei erneut.",
+  "آپلودهای نیمه‌کارهٔ شما زیاد است؛ چندتا را تمام یا لغو کنید.": "Zu viele unvollständige Uploads; schließen Sie einige ab oder brechen Sie sie ab.",
+  "ترتیبِ تکه‌ها به‌هم ریخت؛ آپلود از سر گرفته می‌شود.": "Die Teile kamen ungeordnet an; der Upload wird fortgesetzt.",
+  "ارتباط با محلِ ذخیره قطع شد؛ دوباره تلاش می‌شود.": "Verbindung zum Speicher verloren; neuer Versuch."
 }
