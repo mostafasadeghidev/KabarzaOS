@@ -53,6 +53,12 @@ function Button({
   return (
     <Comp
       data-slot="button"
+      /*
+       * ⚠️ نشانِ پایدار: وقتی دکمه trigger ِ پنجره/منو/راهنما است (asChild)، Radix
+       * `data-slot` را با «dialog-trigger» و… جایگزین می‌کند و لایهٔ ظاهری آن دکمه را نمی‌دید
+       * (گوشه، گرادیان و سایه‌اش با بقیه فرق داشت). `data-button` دست نمی‌خورد.
+       */
+      data-button=""
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}

@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.8.1]
+
+### Fixed
+
+- **Buttons look the same everywhere.** Buttons that open a window, menu or tip (for example Edit, Manage members, Edit clients) kept the old square, flat look while the rest had the new rounded, shadowed style. They now match. In a project's QA tab, "Clear all" has the same style as "Select all" next to it (also in the new-project form).
+- **Buttons react to the mouse and to clicks again.** Outlined buttons (Manage members, Edit, Invoice, Select all…) showed no change on hover or click since 3.7.0. They now take a soft tint of the palette colour and lift slightly on hover, stay tinted while their window or menu is open, and every button presses in a little when clicked.
+
+### Changed
+
+- **Stone palette:** the glow in the top corner is now the palette's own blue, with warm peach in the bottom corner.
+- **White boxes take a hint of the palette.** Cards, panels and tables are no longer pure white in light mode; they carry a very faint tint of the palette's colour, so they sit more calmly on the coloured background (most visible with Sunset). Menus and dialogs stay white; dark mode is unchanged.
+
 ## [3.8.0]
 
 ### Changed
