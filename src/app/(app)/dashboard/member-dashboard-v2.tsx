@@ -109,8 +109,10 @@ function MiniStat({ value, label, href, tone }: { value: number; label: string; 
 }
 
 export function MemberDashboardV2({
-  data, tasks, comments, userId, timeLog, myWeek, teamCards,
+  data, tasks, comments, userId, timeLog, myWeek, teamCards, extra = [],
 }: {
+  /** کارت‌های تازهٔ عضو (extra-widgets.tsx) — ادامهٔ کار، منشن، مرخصی، هدفِ ساعت، پولِ من. */
+  extra?: WidgetDef[];
   data: MemberDashboard;
   tasks: MemberTasks | null;
   comments: CommentRow[];
@@ -357,5 +359,5 @@ export function MemberDashboardV2({
     node: <QuickNote userId={userId} />,
   });
 
-  return <DashboardGrid widgets={widgets} userId={userId} scope="member" />;
+  return <DashboardGrid widgets={[...widgets, ...extra]} userId={userId} scope="member" />;
 }

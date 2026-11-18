@@ -29,6 +29,9 @@ import { getDashboardInbox } from '@/server/dashboard-inbox';
 import { taskStatusTags } from '@/server/projects/repository';
 import { myOpenCommentThreads, myTasks } from '@/server/projects/service';
 import { MemberDashboardV2 } from './member-dashboard-v2';
+import { ClientDashboardV2, adminExtraWidgets, memberExtraWidgets } from './extra-widgets';
+import { LiveRefresh } from './extras-client';
+import { getAdminExtras, getClientExtras, getMemberExtras } from '@/server/dashboard-extras';
 
 export const generateMetadata = pageTitle('نمای کلی');
 
@@ -118,7 +121,7 @@ export default async function DashboardPage({
          * کارفرمای خالص فعلاً همان نمای قبلی را می‌بیند.
          */
         if (isMember && classic !== '1') {
-          const [mine, threads] = await Promise.all([myTasks(actor), myOpenCommentThreads(actor)]);
+          const [mine, threads, mx] = await Promise.all([myTasks(actor), myOpenCommentThreads(actor), getMemberExtras(actor)]);
           const tasks = mine.kind === 'member' ? { active: mine.active, waiting: mine.waiting, review: mine.review } : null;
           return (
             <PageShell>
@@ -135,7 +138,27 @@ export default async function DashboardPage({
                 teamCards={teamCards}
                 timeLog={<DashboardTimeLog actor={actor} part="log" />}
                 myWeek={<DashboardTimeLog actor={actor} part="week" />}
+                extra={memberExtraWidgets(mx, actor.id)}
               />
+              <LiveRefresh />
+            </PageShell>
+          );
+        }
+        /*
+         * نمونهٔ محلیِ داشبوردِ تازهٔ **کارفرما** — همان شبکهٔ قابلِ ویرایش، با کارت‌های کارفرما.
+         */
+        if (isClient && !isMember && classic !== '1') {
+          const [mine, cx] = await Promise.all([myTasks(actor), getClientExtras(actor)]);
+          const review = mine.kind === 'client' ? mine.review : [];
+          return (
+            <PageShell>
+              <PageHeader
+                title={t('سلام، {name}', { name: session?.name ?? '' })}
+                description={todayLabel()}
+                actions={<Link href="/dashboard?classic=1" className="text-xs text-muted-foreground hover:underline">{t('نمای قبلی')}</Link>}
+              />
+              <ClientDashboardV2 data={own} extras={cx} review={review} userId={actor.id} />
+              <LiveRefresh />
             </PageShell>
           );
         }
@@ -165,7 +188,7 @@ export default async function DashboardPage({
    * نمونهٔ محلیِ داشبوردِ تازه («اول کار، بعد عدد») — `?classic=1` نمای قبلی را نشان می‌دهد تا مقایسه شود.
    */
   if (classic !== '1') {
-    const [inbox, statuses, session] = await Promise.all([getDashboardInbox(actor), taskStatusTags(), currentSession()]);
+    const [inbox, statuses, session, ax] = await Promise.all([getDashboardInbox(actor), taskStatusTags(), currentSession(), getAdminExtras(actor)]);
     const review = statuses.find((s) => s.isReview);
     const approve = statuses.find((s) => s.group === 'complete' && !s.isClosed) ?? statuses.find((s) => s.group === 'complete');
     const back = statuses.find((s) => s.group === 'in_progress' && !s.isReview && review && statuses.indexOf(s) > statuses.indexOf(review))
@@ -184,7 +207,9 @@ export default async function DashboardPage({
           returnStatusId={back?.id ?? null}
           canReports={canViewSection(actor, 'reports')}
           userId={actor.id}
+          extra={adminExtraWidgets(ax)}
         />
+        <LiveRefresh />
       </PageShell>
     );
   }

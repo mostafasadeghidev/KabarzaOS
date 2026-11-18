@@ -52,9 +52,11 @@ function trendLine(delta: number, unit: string): string {
 }
 
 export function DashboardV2({
-  data, inbox, approveStatusId, returnStatusId, canReports, userId,
+  data, inbox, approveStatusId, returnStatusId, canReports, userId, extra = [],
 }: {
   userId: number;
+  /** کارت‌های تازهٔ مدیر (extra-widgets.tsx) — پول، حقوق، تمدید، QA، دسترسی، پشتیبان. */
+  extra?: WidgetDef[];
   data: Dash;
   inbox: Inbox;
   approveStatusId: number | null;
@@ -313,5 +315,5 @@ export function DashboardV2({
     },
   ];
 
-  return <DashboardGrid widgets={widgets} userId={userId} />;
+  return <DashboardGrid widgets={[...widgets, ...extra]} userId={userId} />;
 }

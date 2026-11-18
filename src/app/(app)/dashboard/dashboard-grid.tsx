@@ -324,7 +324,8 @@ export function DashboardGrid({ widgets, userId, scope }: {
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {!editing && <span className="me-auto hidden text-[11px] text-muted-foreground md:inline">{t('میان‌بُر: j / k ردیفِ بعد و قبل، a یا Enter کنشِ اولِ ردیف.')}</span>}
+        {/* میان‌بُرها فقط در صفِ مدیر کار می‌کنند — داشبوردِ عضو و کارفرما (scope) راهنمایش را نمی‌بینند. */}
+        {!editing && !scope && <span className="me-auto hidden text-[11px] text-muted-foreground md:inline">{t('میان‌بُر: j / k ردیفِ بعد و قبل، a یا Enter کنشِ اولِ ردیف.')}</span>}
         {editing ? (
           <>
             <span className="me-auto text-xs text-muted-foreground">{t('کارت‌ها را از دستگیره بکشید و جای دیگری رها کنید؛ اندازه و پنهان‌کردن روی خودِ کارت است.')}</span>
@@ -363,6 +364,7 @@ export function DashboardGrid({ widgets, userId, scope }: {
       {/* grid-flow-row-dense: کارت‌های کوچک جاهای خالیِ کنارِ کارت‌های بزرگ را پر می‌کنند (بنتو). */}
       <div
         ref={gridRef}
+        data-dash-editing={editing ? '1' : undefined}
         className={cn(
           'grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4',
           !layout && 'grid-flow-row-dense',
