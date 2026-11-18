@@ -184,6 +184,17 @@ describe('حساب‌ها', () => {
     expect(JSON.stringify(await db.select().from(auditLog))).not.toContain(ncUsers.get('rz')!.password!);
   });
 
+  it('⚠️ شمارِ دسترسی‌های اتصال فقط ردیف‌های سرویسِ خودش است (۳.۱۵.۰)', async () => {
+    // پیش از این زیرپرسش «"service_id" = "service_id"» می‌شد — همهٔ دسترسی‌های همهٔ سرویس‌ها شمرده می‌شد.
+    const [conn] = await db.select().from(cloudConnections).where(eq(cloudConnections.id, main));
+    const own = (await db.select().from(serviceGrants).where(eq(serviceGrants.serviceId, conn!.serviceId))).length;
+    const [other] = await db.insert(services).values({ name: 'سرویسِ دیگر' }).returning({ id: services.id });
+    await db.insert(serviceGrants).values([{ serviceId: other!.id, userId: reza }, { serviceId: other!.id, userId: sara }]);
+    const listed = (await listCloudConnections(owner)).find((c) => c.id === main)!;
+    expect(listed.grants).toBe(own);
+    await db.delete(services).where(eq(services.id, other!.id));
+  });
+
   it('حجم و رمزِ تازه (دستی و خودکار)', async () => {
     await setCloudQuota(manager, main, 'rz', 25.5);
     expect(calls.find((c) => c.method === 'PUT')!.body.get('value')).toBe('25.5 GB');

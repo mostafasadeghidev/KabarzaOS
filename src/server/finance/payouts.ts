@@ -18,6 +18,7 @@ import { accountScope, createEntry, currentLockDate, findOrCreateVendor, rateSou
 import { convert } from '@/domain/currency/rates';
 import { parseShare } from '@/domain/team-money/member-account';
 import { chargeFromRecurring } from './member-accounts';
+import { fileSummaries } from '@/server/files/service';
 
 /**
  * پرداخت‌ها و هزینه‌های دوره‌ای.
@@ -385,17 +386,25 @@ export async function listDetachedPayments(actor: Actor) {
     userName: users.name,
     ledgerId: projectPayments.ledgerId,
     receiptIds: ledger.receiptIds,
+    // برای دیالوگِ جزئیات (۳.۱۵.۰): حساب و شرحِ ردیفِ دفتر.
+    accountName: accounts.name,
+    ledgerDescription: ledger.description,
   })
     .from(projectPayments)
     .leftJoin(users, eq(users.id, projectPayments.userId))
     .leftJoin(currencies, eq(currencies.id, projectPayments.currencyId))
     .leftJoin(ledger, eq(ledger.id, projectPayments.ledgerId))
+    .leftJoin(accounts, eq(accounts.id, ledger.accountId))
     .where(isNull(projectPayments.projectId))
     .orderBy(desc(projectPayments.id));
+  // همهٔ رسیدها با یک کوئری (R-PERF-01).
+  const summaries = await fileSummaries([...new Set(rows.flatMap((r) => r.receiptIds ?? []))]);
+  const byId = new Map(summaries.map((f) => [f.id, f]));
   return rows.map(({ receiptIds, paidAt, ...r }) => ({
     ...r,
     paidAt: paidAt ?? null,
     receiptId: receiptIds?.[0] ?? null,
+    receipts: (receiptIds ?? []).map((id) => byId.get(id)).filter((f): f is NonNullable<typeof f> => Boolean(f)),
   }));
 }
 

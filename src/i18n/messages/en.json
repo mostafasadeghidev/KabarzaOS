@@ -5237,5 +5237,11 @@
   "به‌روزرسانیِ لحظه‌ای": "Instant updates",
   "زنده": "Live",
   "نقطهٔ سبز و «آنلاین اکنون». اگر تیم نمی‌خواهد حضورش دیده شود، خاموشش کنید.": "The green dot and “Online now”. Turn it off if the team does not want its presence shown.",
-  "پیام‌ها، اعلان‌ها و شمارِ نخوانده‌ها بی‌درنگ و بدونِ تازه کردنِ صفحه می‌رسند.": "Messages, notifications and unread counts arrive instantly, without reloading the page."
+  "پیام‌ها، اعلان‌ها و شمارِ نخوانده‌ها بی‌درنگ و بدونِ تازه کردنِ صفحه می‌رسند.": "Messages, notifications and unread counts arrive instantly, without reloading the page.",
+  "{n} طرف‌حساب": "{n} vendors",
+  "تکرار": "Repeat",
+  "جزئیاتِ پرداخت": "Payment details",
+  "جستجو یا نامِ طرف‌حسابِ تازه…": "Search or type a new vendor…",
+  "رسیدی پیوست نشده.": "No receipt attached.",
+  "شرحِ ردیفِ دفتر": "Ledger entry description"
 }

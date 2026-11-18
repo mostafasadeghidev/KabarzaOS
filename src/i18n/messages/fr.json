@@ -5237,5 +5237,11 @@
   "به‌روزرسانیِ لحظه‌ای": "Mises à jour instantanées",
   "زنده": "En direct",
   "نقطهٔ سبز و «آنلاین اکنون». اگر تیم نمی‌خواهد حضورش دیده شود، خاموشش کنید.": "Le point vert et « En ligne ». Désactivez-le si l’équipe ne veut pas montrer sa présence.",
-  "پیام‌ها، اعلان‌ها و شمارِ نخوانده‌ها بی‌درنگ و بدونِ تازه کردنِ صفحه می‌رسند.": "Messages, notifications et compteurs de non-lus arrivent instantanément, sans recharger la page."
+  "پیام‌ها، اعلان‌ها و شمارِ نخوانده‌ها بی‌درنگ و بدونِ تازه کردنِ صفحه می‌رسند.": "Messages, notifications et compteurs de non-lus arrivent instantanément, sans recharger la page.",
+  "{n} طرف‌حساب": "{n} fournisseurs",
+  "تکرار": "Répétition",
+  "جزئیاتِ پرداخت": "Détails du paiement",
+  "جستجو یا نامِ طرف‌حسابِ تازه…": "Rechercher ou saisir un nouveau fournisseur…",
+  "رسیدی پیوست نشده.": "Aucun reçu joint.",
+  "شرحِ ردیفِ دفتر": "Libellé de l'écriture"
 }

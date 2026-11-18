@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.15.0]
+
+### Changed
+
+- **Clearer expense form.** "Period" and "every how many periods" are now one "Repeat" field that reads "every [1] [month]" (3 means every three months); it is hidden for one-time expenses. The vendor is chosen with a single picker: type a new name and pick "create" instead of filling a second "or new vendor" box. The "charge to member" and "member share" boxes now line up.
+- **Vendor filter stays one line.** Choosing several vendors in the expenses filter shows "4 vendors" instead of a growing row of chips, and the per-vendor totals moved into the dropdown next to each name, replacing the row of vendor chips under the filters.
+- **Payments without a project open their details.** Clicking a row in "Payments without a project" opens its date, person, amount, account, notes, ledger entry and all receipts with previews.
+
+### Fixed
+
+- **Vendor expense counts were wrong.** The "Expenses" column on the Vendors tab counted expenses whose own id matched the vendor id, so every vendor could show the same number (for example 2) even with no expenses. It now counts each vendor's own expenses. The same mistake in Cloud storage made each connection count every access record of every service; it now counts only its own.
+
 ## [3.14.1]
 
 ### Fixed
