@@ -139,19 +139,19 @@ export function DashboardV2({
       id: 'money', hint: t('خلاصهٔ پول در یک نگاه: طلب از کارفرماها، بدهی به اعضا و سودِ تخمینیِ پروژه‌های باز. مبلغ‌ها پوشیده‌اند و با کلیک دیده می‌شوند.'), title: t('پول در یک نگاه'), group: G_GLANCE, size: 's' as const, defaultOn: true,
       node: (
         <Panel title={t('پول در یک نگاه')} action={canReports ? { href: '/reports', label: t('گزارش‌ها') } : undefined}>
-          <dl className="grid grid-cols-2 gap-2">
+          <div className="kz-fit"><dl className="grid grid-cols-2 gap-2">
             {[
               { label: 'طلب از کارفرماها', value: inbox.money.clientDue, cls: '' },
               { label: 'بدهی به اعضا', value: inbox.money.memberDebt, cls: '' },
               { label: 'سودِ تخمینی', value: inbox.money.profit, cls: Number(inbox.money.profit) < 0 ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-400' },
               { label: 'پروژه‌ها', value: String(inbox.money.projectCount), cls: '', plain: true },
             ].map((m) => (
-              <div key={m.label} className="rounded-xl bg-muted/40 px-3 py-2">
-                <dt className="text-[11px] text-muted-foreground">{t(m.label)}</dt>
-                <dd className={cn('num text-base font-bold', m.cls)}>{'plain' in m && m.plain ? m.value : <Amount>{`${format(m.value)} €`}</Amount>}</dd>
+              <div key={m.label} className="grid content-center rounded-xl bg-muted/40 px-3 py-2">
+                <dt className="kz-fit-label truncate text-[11px] text-muted-foreground">{t(m.label)}</dt>
+                <dd className={cn('kz-fit-value num text-base font-bold', m.cls)}>{'plain' in m && m.plain ? m.value : <Amount>{`${format(m.value)} €`}</Amount>}</dd>
               </div>
             ))}
-          </dl>
+          </dl></div>
         </Panel>
       ),
     }] : []),

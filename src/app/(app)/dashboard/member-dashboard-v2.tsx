@@ -126,9 +126,9 @@ function TaskList({ items, todayIso, empty }: { items: InboxTask[]; todayIso: st
 
 function MiniStat({ value, label, href, tone }: { value: number; label: string; href: string; tone?: 'warn' }) {
   return (
-    <Link href={href} className="grid gap-0.5 rounded-xl bg-muted/50 px-3 py-2.5 transition-colors hover:bg-muted">
-      <span className={cn('num text-xl font-bold', tone === 'warn' && value > 0 && 'text-amber-700 dark:text-amber-400')}>{value}</span>
-      <span className="truncate text-xs text-muted-foreground">{label}</span>
+    <Link href={href} className="grid content-center gap-0.5 rounded-xl bg-muted/50 px-3 py-2.5 transition-colors hover:bg-muted">
+      <span className={cn('kz-fit-value num text-xl font-bold', tone === 'warn' && value > 0 && 'text-amber-700 dark:text-amber-400')}>{value}</span>
+      <span className="kz-fit-label truncate text-xs text-muted-foreground">{label}</span>
     </Link>
   );
 }
@@ -262,12 +262,12 @@ export function MemberDashboardV2({
       id: 'm-stats', hint: t('شمارِ پروژه‌ها، تسک‌های باز، کامنت‌های نیازمندِ بررسی و پیام‌های خوانده‌نشدهٔ شما. هر کدام به صفحهٔ خودش می‌رود.'), title: t('عددهای من'), group: G_MORE, size: 'm', defaultOn: true,
       node: (
         <Panel title={t('عددهای من')} icon={<Hash />}>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="kz-fit"><div className="grid grid-cols-2 gap-2">
             <MiniStat value={stats.projects} label={t('پروژه‌ها')} href="/projects" />
             <MiniStat value={stats.openTasks} label={t('تسک‌های باز')} href="/tasks" />
             <MiniStat value={stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/comments" tone="warn" />
             <MiniStat value={data.unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" tone="warn" />
-          </div>
+          </div></div>
         </Panel>
       ),
     });

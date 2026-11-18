@@ -110,10 +110,10 @@ export function MetricCard({
     </Card>
   );
 
-  if (!href) return <div className="h-full">{card}</div>;
+  if (!href) return <div className="kz-metric h-full">{card}</div>;
   // نشانِ «کلیک‌خور» مرزِ پررنگ‌تر است، نه کم‌رنگ‌شدنِ کلِ کارت.
   return (
-    <Link href={href} className="block h-full rounded-xl [&>[data-slot=card]]:transition-colors [&>[data-slot=card]]:hover:border-input">
+    <Link href={href} className="kz-metric block h-full rounded-xl [&>[data-slot=card]]:transition-colors [&>[data-slot=card]]:hover:border-input">
       {card}
     </Link>
   );

@@ -570,7 +570,10 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
               قدِ دلخواه (min-height) فقط روی شبکهٔ چندستونه؛ روی گوشی کارت‌ها زیرِ هم و به قدِ محتوا.
             */}
             <div
-              className={cn('grid min-w-0', pos && heightOf[w.id] && 'grid-rows-[minmax(0,1fr)] overflow-hidden', editing && 'pointer-events-none select-none')}
+              // data-fixed: محتوای کارت خودش را با قدِ کاربر جور می‌کند (.kz-fit در globals.css)؛ آنچه باز هم
+              // جا نشد اسکرولِ باریک می‌گیرد، نه بریده شدن.
+              data-fixed={pos && heightOf[w.id] ? '' : undefined}
+              className={cn('grid min-w-0', pos && heightOf[w.id] && 'grid-rows-[minmax(0,1fr)] overflow-x-hidden overflow-y-auto [scrollbar-width:thin]', editing && 'pointer-events-none select-none')}
               style={pos && heightOf[w.id] ? { height: heightOf[w.id] } : undefined}
             >
               {/* قدِ ثابت: فهرست‌های داخلِ کارت جای باقی‌مانده را پر می‌کنند و بقیه پشتِ «مشاهدهٔ بیشتر». */}

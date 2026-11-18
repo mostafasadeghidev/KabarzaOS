@@ -573,3 +573,54 @@
   }
   [dir='rtl'] table[data-sticky-first] tr > :first-child { box-shadow: inset 1px 0 0 var(--color-border); }
 }
+
+
+/*
+ * کارتِ داشبورد با قدِ دلخواهِ کاربر (data-fixed روی بدنهٔ کارت، dashboard-grid.tsx):
+ * محتوای غیرِفهرستی خودش را با آن قد جور می‌کند. ⚠️ بیرون از کلاسِ لایه‌دار عمداً — باید بر
+ * grid-cols-2 ِ Tailwind (لایهٔ utilities) غلبه کند. بی data-fixed هیچ اثری ندارد.
+ *
+ * .kz-fit > شبکهٔ کاشی‌ها: شبکه جای باقی‌ماندهٔ کارت را می‌گیرد، کاشی‌ها هم‌قد می‌شوند، عدد با قدِ
+ * کاشی کوچک/بزرگ می‌شود، برچسب در کاشیِ خیلی کوتاه پنهان می‌شود، و در کارتِ پهن‌وکوتاه همهٔ کاشی‌ها
+ * در یک ردیف می‌نشینند.
+ */
+[data-fixed] .kz-fit {
+  flex: 1 1 0;
+  min-height: 3rem;
+  container: kzfit / size;
+}
+[data-fixed] .kz-fit > * {
+  height: 100%;
+  grid-auto-rows: minmax(0, 1fr);
+}
+[data-fixed] .kz-fit > * > * {
+  min-height: 0;
+  overflow: hidden;
+  container: kztile / size;
+  padding-block: min(0.625rem, 5cqh);
+}
+[data-fixed] .kz-fit-value {
+  font-size: clamp(0.85rem, 42cqh, 1.75rem);
+  line-height: 1.15;
+}
+@container kzfit (min-aspect-ratio: 3 / 1) {
+  .kz-fit > * {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+@container kztile (max-height: 3rem) {
+  .kz-fit-label { display: none; }
+  .kz-fit-value { font-size: clamp(0.85rem, 60cqh, 1.5rem); }
+}
+
+/* کارتِ عدد و روند: در قدِ کم اول نمودارِ کوچک، بعد پانویس کنار می‌روند. */
+[data-fixed] .kz-metric { container: kzmetric / size; }
+@container kzmetric (max-height: 11rem) {
+  [data-sparkline] { display: none; }
+}
+@container kzmetric (max-height: 8rem) {
+  [data-slot='card-footer'] { display: none; }
+}
