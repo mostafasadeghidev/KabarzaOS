@@ -2,6 +2,17 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.13.0]
+
+### Added
+
+- **Find a task by its number alone.** In the search window (Ctrl+K), typing `#` and a number (for example `#12`) lists task number 12 from every project you can see, with the project name next to it: tasks assigned to you first, then projects you are a member of, then the rest, at most eight. It works even though it is shorter than three letters, and Persian digits work too. The full form (`ALZ-12`) still finds the task of one specific project.
+- **A guide inside the search window.** When the search box is empty, it explains what can be searched (task number, project code with number, projects, members, clients and accounts, page names) with clickable examples, and the keyboard shortcuts (arrows, Enter, Esc, Ctrl+K).
+
+### Fixed
+
+- Task codes in search results (`ALZ-12`) no longer appear reversed next to Persian text.
+
 ## [3.12.0]
 
 ### Added

@@ -108,6 +108,20 @@ describe('پیدا کردن با شماره', () => {
     expect(hits).toContainEqual(expect.objectContaining({ kind: 'task', href: '/t/ALZ-1' }));
     expect((await search(client(), 'ALZ-1')).some((h) => h.kind === 'task')).toBe(false);
   });
+
+  it('۳.۱۳.۰ — «#1» بی کدِ پروژه: همهٔ پروژه‌های بیننده، اول تسکِ خودش؛ غریبه و کارفرما هیچ', async () => {
+    // «#1» دو حرف است — بی حدِاقلِ سه حرف کار می‌کند؛ ارقامِ فارسی هم.
+    const hits = (await search(member(), '#1')).filter((h) => h.kind === 'task');
+    expect(hits.map((h) => h.href).sort()).toEqual(['/t/ALZ-1', `/t/P${Q}-1`].sort());
+    expect((await search(member(), '#۱')).filter((h) => h.kind === 'task')).toHaveLength(2);
+    // تسکی که مسئولش خودِ اوست اول می‌آید.
+    await db.update(tasks).set({ assignedTo: MEMBER }).where(eq(tasks.projectId, Q));
+    expect((await search(member(), '#1'))[0]?.href).toBe(`/t/P${Q}-1`);
+    expect((await search(as(OUTSIDER, ['member']), '#1')).some((h) => h.kind === 'task')).toBe(false);
+    expect((await search(client(), '#1')).some((h) => h.kind === 'task')).toBe(false);
+    // عددِ تنها بی «#» جستجوی تسک نیست (ممکن است بخشی از نام باشد).
+    expect((await search(member(), '1')).some((h) => h.kind === 'task')).toBe(false);
+  });
 });
 
 describe('ربات با شماره', () => {
