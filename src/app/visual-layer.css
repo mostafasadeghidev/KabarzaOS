@@ -911,23 +911,12 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
 }
 /*
- * ⚠️ پردهٔ پشتِ نوار: فاصلهٔ ۸ پیکسلیِ بالا و کناره‌های نوار را با رنگِ زمینهٔ صفحه می‌پوشاند و پایینش
- * نرم محو می‌شود؛ وگرنه متنِ صفحه هنگامِ پیمایش از **بالای** نوار رد می‌شد و دیده می‌شد.
- * داخلِ لایه‌بندیِ خودِ نوار (z-index: -1) — پشتِ زمینهٔ نوار، ولی روی محتوای صفحه.
+ * ⚠️ پوششِ فاصلهٔ بالای نوار: سایهٔ توپرِ هم‌رنگِ زمینه، نه شبه‌عنصر. شبه‌عنصرِ `::before` با z-index ِ
+ * منفی **روی** زمینه و حاشیهٔ خودِ نوار کشیده می‌شد (ترتیبِ رسمِ لایه‌بندی) و حاشیه و گوشه‌ها را می‌پوشاند.
+ * سایه همیشه بیرون و زیرِ نوار است: ۸px کنارها و ~۱۸px بالا را می‌پوشاند و پایین را نه.
  */
-[data-slot='sidebar-inset'] > header[data-app-chrome]::before {
-  content: '';
-  position: absolute;
-  inset-inline: -8px;
-  top: -9px;
-  height: calc(100% + 22px);
-  z-index: -1;
-  pointer-events: none;
-  /* فاصلهٔ بالا (۹px) کاملاً مات، پشتِ خودِ نوار تا ۴۰px محو — نوار کمی شیشه‌ای می‌ماند. */
-  background: linear-gradient(to bottom,
-    var(--color-background) 0,
-    var(--color-background) 9px,
-    color-mix(in oklch, var(--color-background) 0%, transparent) 40px);
+[data-slot='sidebar-inset'] > header[data-app-chrome] {
+  box-shadow: var(--wp-shadow-1), 0 -10px 0 8px var(--color-background);
 }
 /* «دیدن به‌جای کاربر» (نوارِ زردِ چسبانِ بالا) — نوارِ اصلی زیرِ آن می‌نشیند. */
 [data-slot='sidebar-inset']:has(> [data-view-as]) > header[data-app-chrome] { top: 48px; }
