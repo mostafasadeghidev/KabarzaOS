@@ -19,10 +19,16 @@ import { cn } from '@/lib/utils';
 export function ExpandableList({
   children,
   limit = 5,
+  scrollAt,
   className,
 }: {
   children: React.ReactNode;
   limit?: number;
+  /**
+   * سقفِ قابِ باز (rem) — اگر داده‌ی زیاد بود، پس از «مشاهدهٔ بیشتر» کارت تا این قد باز می‌شود و
+   * بقیه داخلِ خودش اسکرول می‌خورد (کارت‌های شبکهٔ داشبورد). نبودن = باز شدنِ کامل، مثلِ قبل.
+   */
+  scrollAt?: number;
   className?: string;
 }) {
   const t = useT();
@@ -58,14 +64,17 @@ export function ExpandableList({
         ref={ref}
         data-expandable={collapsed ? 'closed' : 'open'}
         className={cn(
-          'overflow-hidden transition-[max-height] duration-300 ease-out motion-reduce:transition-none',
+          collapsed || !scrollAt ? 'overflow-hidden' : 'overflow-x-hidden overflow-y-auto',
+          // ردیفِ grid به‌طورِ پیش‌فرض از محتوایش کوچک‌تر نمی‌شود و قابِ overflow-hidden لبه‌اش را می‌بُرد.
+          '[&>li]:min-w-0',
+          'transition-[max-height] duration-300 ease-out motion-reduce:transition-none',
           // انتهای قابِ بسته محو می‌شود تا معلوم باشد فهرست ادامه دارد.
           collapsed && '[mask-image:linear-gradient(to_bottom,#000_calc(100%-2.75rem),transparent)]',
           className,
         )}
         style={{
           // پیش از سنجش (رندرِ سرور): تخمینِ ردیفِ ۲۶px ِ RiskList، تا صفحه پس از بارگذاری نپرد.
-          maxHeight: height ? (collapsed ? height.closed : height.full) : collapsed ? `${(limit + 0.6) * 1.625}rem` : undefined,
+          maxHeight: height ? (collapsed ? height.closed : scrollAt ? `min(${height.full}px, ${scrollAt}rem)` : height.full) : collapsed ? `${(limit + 0.6) * 1.625}rem` : undefined,
         }}
       >
         {items.map((item, i) =>

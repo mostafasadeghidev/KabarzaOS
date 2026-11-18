@@ -6,6 +6,7 @@ import {
 import { t } from '@/i18n/server';
 import { formatDateTime } from '@/i18n/datetime';
 import { cn } from '@/lib/utils';
+import { ExpandableList } from '@/components/ui/expandable-list';
 import { CardHelp } from '@/components/ui/card-help';
 import { Thumb } from '@/components/thumb';
 import { DashboardGrid, type DefaultLayout, type WidgetDef, type WidgetSize } from './dashboard-grid';
@@ -117,9 +118,9 @@ function TaskRow({ tk, todayIso }: { tk: InboxTask; todayIso: string }) {
 function TaskList({ items, todayIso, empty }: { items: InboxTask[]; todayIso: string; empty: string }) {
   if (items.length === 0) return <Empty>{empty}</Empty>;
   return (
-    <ul className="grid max-h-[28rem] divide-y overflow-y-auto">
+    <ExpandableList scrollAt={20} className="grid divide-y">
       {items.map((tk) => <TaskRow key={tk.id} tk={tk} todayIso={todayIso} />)}
-    </ul>
+    </ExpandableList>
   );
 }
 
@@ -218,7 +219,7 @@ export function MemberDashboardV2({
     node: (
       <Panel title={t('کامنت‌های باز')} icon={<MessageSquareReply />} action={{ href: '/comments', label: t('همه') }}>
         {comments.length === 0 ? <Empty>{t('کامنتِ بازی روی پروژه‌های شما نیست.')}</Empty> : (
-          <ul className="grid max-h-[22rem] divide-y overflow-y-auto">
+          <ExpandableList scrollAt={20} className="grid divide-y">
             {comments.slice(0, 12).map((c) => (
               <li key={c.rootId}>
                 <Link href={`/projects/${c.projectId}?tab=comments#c-${c.rootId}`} className="grid gap-0.5 py-2 hover:bg-muted/40">
@@ -227,7 +228,7 @@ export function MemberDashboardV2({
                 </Link>
               </li>
             ))}
-          </ul>
+          </ExpandableList>
         )}
       </Panel>
     ),
