@@ -506,3 +506,61 @@
 .dark .code-view .hljs-variable,
 .dark .code-view .hljs-template-variable,
 .dark .code-view .hljs-property { color: oklch(0.8 0.11 40); }
+
+/*
+ * ۳.۱۵.۱ — جدول‌های واکنش‌گرا (پراپ‌های `stack` و `stickyFirst` ِ <Table>).
+ *
+ * `stack`: روی گوشی هر ردیف کارت می‌شود؛ هر خانه سطری با برچسبِ ستونش (`data-label`). خانهٔ بی‌برچسب
+ * (معمولاً اولی، نام/عنوان) سرِ کارت می‌نشیند. قابِ جدول روی گوشی برداشته می‌شود — کارت‌ها خودشان قاب‌اند.
+ * `stickyFirst`: ستونِ اول هنگامِ پیمایشِ افقی ثابت؛ زمینه‌اش مات تا خانه‌های رونده زیرش دیده نشوند.
+ */
+@media (max-width: 767px) {
+  [data-slot='table-container']:has(> table[data-stack]) {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+  table[data-stack], table[data-stack] > tbody { display: block; }
+  table[data-stack] > thead { display: none; }
+  table[data-stack] > tbody > tr {
+    display: grid;
+    gap: 0.375rem;
+    margin-bottom: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-card);
+  }
+  table[data-stack] > tbody > tr:last-child { margin-bottom: 0; border-bottom-width: 1px; }
+  table[data-stack] > tbody > tr > td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: auto;
+    padding: 0;
+    min-width: 0;
+    text-align: start;
+    white-space: normal;
+  }
+  table[data-stack] > tbody > tr > td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: var(--color-muted-foreground);
+  }
+  table[data-stack] > tbody > tr > td:empty { display: none; }
+  /* ستونِ کنش‌ها: دکمه‌ها در یک ردیف، چسبیده به لبهٔ انتهایی */
+  table[data-stack] > tbody > tr > td > div:only-child:empty { display: none; }
+  table[data-stack] > tbody > tr > td:last-child:not([data-label]) { justify-content: flex-end; }
+  table[data-stack] > tbody > tr > td:first-child:not([data-label]) { font-weight: 500; }
+
+  table[data-sticky-first] tr > :first-child {
+    position: sticky;
+    inset-inline-start: 0;
+    z-index: 1;
+    background: var(--color-card);
+    box-shadow: inset -1px 0 0 var(--color-border);
+  }
+  [dir='rtl'] table[data-sticky-first] tr > :first-child { box-shadow: inset 1px 0 0 var(--color-border); }
+}

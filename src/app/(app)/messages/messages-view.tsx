@@ -499,7 +499,7 @@ export function MessagesView({
               <FieldLabel htmlFor="mgmt-body">{tr("متنِ پیام")}</FieldLabel>
               <Textarea
                 id="mgmt-body" name="body" rows={5} required
-                placeholder={tr('{keys} برای ارسال', { keys: sendKeys })} onKeyDown={submitOnModEnter}
+                placeholder={sendKeys ? tr('{keys} برای ارسال', { keys: sendKeys }) : tr('پیام…')} onKeyDown={submitOnModEnter}
               />
             </Field>
             {mgmtState.error && (
@@ -546,7 +546,7 @@ export function MessagesView({
                 <FieldLabel htmlFor="peer-body">{tr('متنِ پیام')}</FieldLabel>
                 <Textarea
                   id="peer-body" name="body" rows={5} required
-                  placeholder={tr('{keys} برای ارسال', { keys: sendKeys })} onKeyDown={submitOnModEnter}
+                  placeholder={sendKeys ? tr('{keys} برای ارسال', { keys: sendKeys }) : tr('پیام…')} onKeyDown={submitOnModEnter}
                 />
               </Field>
               {peerState.error && <p className="text-xs text-destructive">{tr(peerState.error)}</p>}

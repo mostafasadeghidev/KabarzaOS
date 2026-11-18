@@ -7,7 +7,7 @@ import {
 import * as service from '@/server/people/service';
 import * as repo from '@/server/people/repository';
 import {
-  getAccountInfo, ProfileValidationError, updateMyProfile,
+  adoptDeviceTimezone, getAccountInfo, ProfileValidationError, saveTimezone, updateMyProfile,
 } from '@/server/people/profile-service';
 import { removeAvatar } from '@/server/files/service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -87,6 +87,22 @@ describe('حسابِ خودم — پورتِ پنلِ «حساب»', () => {
       .rejects.toBeInstanceOf(ProfileValidationError);
     await expect(updateMyProfile(me, { name: '  ', email: 'me2@test.local', phone: '' }))
       .rejects.toMatchObject({ code: 'name' });
+  });
+
+  it('⚠️ منطقهٔ زمانیِ دستگاه فقط وقتی هرگز انتخاب نشده (۳.۱۵.۱)', async () => {
+    const tz = async (id: number) => (await db.select().from(users).where(eq(users.id, id)))[0]!;
+    // هرگز انتخاب نکرده ← منطقهٔ دستگاه ذخیره می‌شود؛ بارِ دوم دیگر نه.
+    expect(await adoptDeviceTimezone(actor({ id: NOBODY }), 'Asia/Tehran')).toBe(true);
+    expect((await tz(NOBODY)).timezone).toBe('Asia/Tehran');
+    expect(await adoptDeviceTimezone(actor({ id: NOBODY }), 'Europe/Berlin')).toBe(false);
+    expect((await tz(NOBODY)).timezone).toBe('Asia/Tehran');
+    // مقدارِ نامعتبر هیچ.
+    expect(await adoptDeviceTimezone(actor({ id: OTHER }), 'Mars/Base')).toBe(false);
+    // ⚠️ «پیش‌فرضِ سامانه» ِ دستی (خالی) انتخاب است — تشخیصِ خودکار بازنویسی‌اش نمی‌کند.
+    await saveTimezone(actor({ id: OTHER }), '');
+    expect((await tz(OTHER)).timezoneChosenAt).not.toBeNull();
+    expect(await adoptDeviceTimezone(actor({ id: OTHER }), 'Asia/Tehran')).toBe(false);
+    expect((await tz(OTHER)).timezone).toBe('');
   });
 
   it('حذفِ تصویر: خودِ فرد یا مدیرِ اعضا؛ دیگری نه', async () => {

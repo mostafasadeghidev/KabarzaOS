@@ -551,7 +551,8 @@ export default async function ProjectDetailPage({
               {members.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("عضوی ثبت نشده")}</p>
               ) : (
-                <Table frame={false}>
+                // ۳.۱۵.۱ — `stack`: روی گوشی هر عضو یک کارت.
+                <Table frame={false} stack>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t("عضو")}</TableHead>
@@ -580,13 +581,13 @@ export default async function ProjectDetailPage({
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-label={t("نقش")}>
                           {/* پورتِ `role_color`: رنگِ تگِ نقش، به شکلِ نقطه (DESIGN.md §۲). */}
                           {m.roleName ? <TagChip color={m.roleColor}>{m.roleName}</TagChip> : '—'}
                         </TableCell>
                         {canSeeAgreedAmounts && (
                           // عضوِ تعدادی (۲.۵۱.۰) نرخِ هر واحد دارد، نه مبلغِ توافقی.
-                          <TableNumericCell>
+                          <TableNumericCell data-label={unitUserIds.has(m.userId) ? t("مبلغ یا نرخ") : t("مبلغ توافقی")}>
                             {unitUserIds.has(m.userId) ? (
                               <>
                                 <Badge variant="outline" className="me-1.5 text-[10px]">{t("تعدادی")}</Badge>

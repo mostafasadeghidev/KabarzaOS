@@ -65,6 +65,11 @@ export const users = pgTable('users', {
 
   /** خالی یعنی «منطقهٔ زمانیِ سامانه». */
   timezone: text('timezone').notNull().default(''),
+  /**
+   * زمانِ انتخابِ دستیِ منطقه (۳.۱۵.۱) — null یعنی کاربر هرگز انتخاب نکرده و برنامه منطقه را از
+   * دستگاهش تشخیص می‌دهد؛ پس از انتخاب (حتی «پیش‌فرضِ سامانه») تشخیصِ خودکار دست نمی‌زند.
+   */
+  timezoneChosenAt: ts('timezone_chosen_at'),
   telegramChatId: text('telegram_chat_id').notNull().default(''),
   /** توکنِ یک‌بارمصرفِ اتصالِ تلگرام. */
   telegramLinkToken: text('telegram_link_token'),

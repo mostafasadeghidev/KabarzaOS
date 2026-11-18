@@ -575,6 +575,13 @@
       "when": 1789698000052,
       "tag": "0081_live_events",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1789698000053,
+      "tag": "0082_timezone_chosen",
+      "breakpoints": true
     }
   ]
 }

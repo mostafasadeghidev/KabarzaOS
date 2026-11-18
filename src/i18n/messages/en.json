@@ -5243,5 +5243,7 @@
   "جزئیاتِ پرداخت": "Payment details",
   "جستجو یا نامِ طرف‌حسابِ تازه…": "Search or type a new vendor…",
   "رسیدی پیوست نشده.": "No receipt attached.",
-  "شرحِ ردیفِ دفتر": "Ledger entry description"
+  "شرحِ ردیفِ دفتر": "Ledger entry description",
+  "پیام…": "Message…",
+  "پیام… (@ برای منشن)": "Message… (@ to mention)"
 }

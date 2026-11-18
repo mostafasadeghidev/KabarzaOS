@@ -29,7 +29,12 @@ export function submitOnModEnter(event: KeyboardEvent<HTMLTextAreaElement>) {
 export function useModEnterLabel(): string {
   const [label, setLabel] = useState('Ctrl+Enter');
   useEffect(() => {
-    if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) setLabel('⌘+Enter');
+    /*
+     * ⚠️ ۳.۱۵.۱ — دستگاهِ لمسی بی کیبوردِ سخت‌افزاری (گوشی/تبلت): رشتهٔ خالی، تا راهنمای «Ctrl+Enter
+     * برای ارسال» که روی گوشی معنا ندارد نشان داده نشود؛ آن‌جا دکمهٔ ارسال کار می‌کند.
+     */
+    if (window.matchMedia?.('(hover: none) and (pointer: coarse)').matches) setLabel('');
+    else if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) setLabel('⌘+Enter');
   }, []);
   return label;
 }

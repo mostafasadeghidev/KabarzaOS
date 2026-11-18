@@ -190,7 +190,8 @@ export function AvailabilityBoard(props: BoardProps) {
           ) : (
             // ⚠️ همان جدولِ مشترک (قاب، سرستون، فاصله) — پیش از این جدولِ خامِ
             // خودش را با خانه‌های p-2 و سرستونِ کم‌رنگ‌تر داشت.
-            <Table>
+            // ۳.۱۵.۱ — جدولِ شبکه‌ای: روزها می‌لغزند، نامِ عضو ثابت می‌ماند.
+            <Table stickyFirst>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("عضو")}</TableHead>

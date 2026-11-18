@@ -83,7 +83,8 @@ export function TeamMatrix({
   const t = useT();
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">{t("عضوی برای نمایش نیست.")}</p>;
   return (
-    <Table frame={frame}>
+    // ۳.۱۵.۱ — جدولِ شبکه‌ای: روزها می‌لغزند، نامِ عضو ثابت می‌ماند.
+    <Table frame={frame} stickyFirst>
       <TableHeader>
         <TableRow>
           <TableHead>{t("عضو")}</TableHead>

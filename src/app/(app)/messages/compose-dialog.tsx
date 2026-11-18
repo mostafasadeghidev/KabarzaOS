@@ -328,7 +328,7 @@ function ComposeDialogBody({
             <FieldLabel htmlFor="msg-body">{tr('متن پیام')}</FieldLabel>
             <Textarea
               id="msg-body" name="body" rows={4} required
-              placeholder={tr('{keys} برای ارسال', { keys: sendKeys })} onKeyDown={submitOnModEnter}
+              placeholder={sendKeys ? tr('{keys} برای ارسال', { keys: sendKeys }) : tr('پیام…')} onKeyDown={submitOnModEnter}
             />
           </Field>
 
