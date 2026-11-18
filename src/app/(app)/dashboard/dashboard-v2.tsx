@@ -35,8 +35,10 @@ function Panel({ title, icon, action, children, className }: {
   return (
     <section className={cn('grid h-full content-start gap-3 rounded-2xl border bg-card p-4', className)}>
       <header className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-bold">{icon}{title}<CardHelp /></h2>
-        {action && <Link href={action.href} className="text-xs text-muted-foreground hover:text-foreground hover:underline">{action.label}</Link>}
+        <h2 className="flex items-center gap-2 text-sm font-bold">{icon}{title}</h2>
+        {action
+          ? <span className="flex items-center gap-2"><Link href={action.href} className="text-xs text-muted-foreground hover:text-foreground hover:underline">{action.label}</Link><CardHelp /></span>
+          : <CardHelp />}
       </header>
       {children}
     </section>

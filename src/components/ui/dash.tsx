@@ -80,7 +80,7 @@ export function MetricCard({
   const card = (
     <Card className="@container/card h-full">
       <CardHeader>
-        <CardDescription className="flex items-center gap-1.5 text-[13px]">{label}<CardHelp /></CardDescription>
+        <CardDescription className="flex items-center justify-between gap-1.5 text-[13px]">{label}<CardHelp /></CardDescription>
         <CardTitle className={cn('num font-bold', featured ? 'text-4xl @[250px]/card:text-5xl' : 'text-2xl @[250px]/card:text-3xl')}>{value}</CardTitle>
         {dir && (
           <CardAction>

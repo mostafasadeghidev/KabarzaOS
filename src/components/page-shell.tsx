@@ -268,11 +268,11 @@ export function Panel({
           >
             {icon}
             {title}
-            <CardHelp />
           </h3>
           {description && <div className="text-[13px] text-muted-foreground">{description}</div>}
         </div>
-        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+        {/* راهنمای کارت (فقط داخلِ داشبورد) در گوشهٔ انتهاییِ سرتیتر، بعد از کنش‌ها. */}
+        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}<CardHelp /></div> : <CardHelp />}
       </header>
       {/*
         ⚠️ جدولِ بی‌حاشیه: سلولِ اول و آخر همان تورفتگیِ عنوان را می‌گیرند تا
