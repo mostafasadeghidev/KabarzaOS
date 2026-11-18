@@ -69,7 +69,8 @@ export function RecentActivity({ events, actorHref, expandable = false }: {
     const where = [e.subject, e.project && e.project !== e.subject ? e.project : null].filter(Boolean).join(' · ');
     const name = e.actorName ?? t('سامانه');
     return (
-      <li key={e.id} className="flex items-center gap-2.5 rounded-md py-1.5">
+      // data-open-event: داخلِ داشبورد با کلیک «جزئیاتِ رویداد» درجا باز می‌شود (dashboard-grid).
+      <li key={e.id} data-open-event={e.id} tabIndex={0} role="button" className="flex cursor-pointer items-center gap-2.5 rounded-md py-1.5 outline-none hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring/40">
         <UserAvatar userId={e.actorId} name={name} size="md" presence={false} />
         <div className="grid min-w-0 flex-1 leading-tight">
           <span className="truncate text-sm">

@@ -170,7 +170,7 @@ export function DashboardV2({
                 ...items.map((w) => (
                       <li key={`${w.kind}${w.id}`} className="flex min-w-0 items-center gap-2 text-sm">
                         <span className={cn('shrink-0 rounded px-1.5 py-px text-[10px]', w.kind === 'project' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>{w.kind === 'project' ? t('پروژه') : t('تسک')}</span>
-                        <Link href={w.kind === 'project' ? `/projects/${w.projectId}` : `/projects/${w.projectId}?tab=tasks`} className="min-w-0 truncate hover:underline">{w.title}</Link>
+                        <Link href={w.kind === 'project' ? `/projects/${w.projectId}` : `/projects/${w.projectId}?tab=tasks`} data-open-task={w.kind === 'task' ? w.id : undefined} className="min-w-0 truncate hover:underline">{w.title}</Link>
                         {w.projectTitle && <span className="shrink-0 truncate text-xs text-muted-foreground">· {w.projectTitle}</span>}
                       </li>
                 )),

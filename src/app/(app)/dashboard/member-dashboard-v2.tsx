@@ -89,7 +89,7 @@ function TaskRow({ tk, todayIso }: { tk: InboxTask; todayIso: string }) {
   const soon = !!due && !late && due <= new Date(Date.parse(`${todayIso}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
   return (
     <li>
-      <Link href={taskHref(tk)} className="flex items-center gap-3 py-2 hover:bg-muted/40">
+      <Link href={taskHref(tk)} data-open-task={tk.id} className="flex items-center gap-3 py-2 hover:bg-muted/40">
         {tk.priorityColor
           ? <span className="size-2 shrink-0 rounded-full" style={{ background: tk.priorityColor }} role="img" aria-label={tk.priorityName ?? ''} />
           : <span aria-hidden className="size-2 shrink-0 rounded-full bg-muted" />}
@@ -159,10 +159,10 @@ export function MemberDashboardV2({
   const overdue = active.filter((tk) => tk.dueDate && tk.dueDate < todayIso).length;
 
   // این هفتهٔ من: سررسیدِ تسک‌های خودم و ددلاینِ پروژه‌های بازِ خودم تا ۷ روزِ آینده (و عقب‌افتاده‌ها).
-  type WeekItem = { date: string; title: string; sub?: string; href: string; kind: 'task' | 'project' };
+  type WeekItem = { date: string; title: string; sub?: string; href: string; kind: 'task' | 'project'; taskId?: number };
   const week: WeekItem[] = [
     ...active.filter((tk) => tk.dueDate && tk.dueDate <= in7)
-      .map((tk) => ({ date: tk.dueDate!, title: tk.title, sub: tk.projectTitle ?? undefined, href: taskHref(tk), kind: 'task' as const })),
+      .map((tk) => ({ date: tk.dueDate!, title: tk.title, sub: tk.projectTitle ?? undefined, href: taskHref(tk), kind: 'task' as const, taskId: tk.id })),
     ...(data.member?.rows ?? []).filter((p) => p.deadline && p.deadline <= in7)
       .map((p) => ({ date: p.deadline!, title: p.title, href: `/projects/${p.id}`, kind: 'project' as const })),
   ].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 12);
@@ -242,7 +242,7 @@ export function MemberDashboardV2({
           <ExpandableList inPlace className="grid gap-1.5">
             {week.map((w, i) => (
               <li key={`${w.kind}-${w.href}-${i}`}>
-                <Link href={w.href} className="flex items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-muted/40">
+                <Link href={w.href} data-open-task={w.taskId} className="flex items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-muted/40">
                   {w.date === todayIso
                     ? <span className="w-20 shrink-0 text-xs font-bold">{t('امروز')}</span>
                     : <span className={cn('num w-20 shrink-0 text-xs', w.date < todayIso ? 'text-destructive' : 'text-muted-foreground')}>{w.date}</span>}

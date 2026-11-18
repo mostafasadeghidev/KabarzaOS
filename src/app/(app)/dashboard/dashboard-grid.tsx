@@ -14,6 +14,8 @@ import { Hint } from '@/components/ui/tooltip';
 import { HeaderAction } from '@/components/header-actions';
 import { ExpandFillProvider } from '@/components/ui/expandable-list';
 import { cn } from '@/lib/utils';
+import { TaskDialog } from '../projects/[id]/task-dialog';
+import { EventDialog } from '../activity/event-dialog';
 
 /**
  * شبکهٔ بنتوی سفارشی (نمونهٔ محلی) — هر کارتِ داشبورد یک «ویجت» است؛ کاربر انتخاب می‌کند کدام‌ها دیده
@@ -239,6 +241,27 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
   const [adjust, setAdjust] = useState<{ id: string; h?: number; off?: number; guide: number | null } | null>(null);
   /** شمارِ ستون‌های فعلیِ شبکه (۱ گوشی، ۲ متوسط، ۴ پهن) — از خودِ CSS خوانده می‌شود. */
   const [cols, setCols] = useState(1);
+  /**
+   * مودال‌های درجا: پیوندی با data-open-task / data-open-event داخلِ هر کارت (هر سه داشبورد) به‌جای
+   * رفتن از داشبورد، همان مودالِ برنامه را باز می‌کند؛ رفتن به خودِ صفحه از داخلِ مودال است.
+   * کلیکِ وسط/Ctrl همچنان پیوند را در زبانهٔ تازه باز می‌کند.
+   */
+  const [openTask, setOpenTask] = useState<number | null>(null);
+  const [openEvent, setOpenEvent] = useState<number | null>(null);
+  const openInPlace = (e: React.MouseEvent | React.KeyboardEvent) => {
+    if (editing) return false;
+    if ('button' in e && (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) return false;
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-open-task],[data-open-event],a[href],button');
+    if (!el || !e.currentTarget.contains(el)) return false;
+    const task = Number(el.dataset.openTask);
+    const ev = Number(el.dataset.openEvent);
+    if (task > 0) setOpenTask(task);
+    else if (ev > 0) setOpenEvent(ev);
+    else return false;
+    e.preventDefault();
+    e.stopPropagation();
+    return true;
+  };
   useEffect(() => {
     const el = gridRef.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
@@ -587,6 +610,8 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
         )}
         onDragOver={onGridDragOver}
         onDrop={onGridDrop}
+        onClickCapture={openInPlace}
+        onKeyDownCapture={(e) => { if (e.key === 'Enter' || e.key === ' ') { if ((e.target as HTMLElement).dataset.openEvent) openInPlace(e); } }}
         onClick={(e) => { if (e.target === e.currentTarget) setSelected(null); }}
       >
         {/* خطِ راهنمای هم‌راستایی هنگامِ کشیدنِ لبهٔ کارت. */}
@@ -711,6 +736,8 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
           );
         })}
       </div>
+      <TaskDialog taskId={openTask} open={openTask !== null} onOpenChange={(o) => { if (!o) setOpenTask(null); }} />
+      <EventDialog eventId={openEvent} onClose={() => setOpenEvent(null)} onNavigate={setOpenEvent} />
       {visible.length === 0 && (
         <p className="py-10 text-center text-sm text-muted-foreground">{t('همهٔ کارت‌ها پنهان‌اند. از «سفارشی‌سازی» چند کارت روشن کنید.')}</p>
       )}

@@ -153,11 +153,12 @@ export async function currentActor(): Promise<Actor | null> {
  * ولی فراخوانیِ مستقیمِ اقدام‌ها (تایمر، برنامهٔ هفتگی، پیام) می‌گذشت.
  * اقدام‌های مجاز با `allowOffboarded` صریحاً اعلام می‌کنند.
  */
-export async function requireActor(options: { allowOffboarded?: boolean } = {}): Promise<Actor> {
+export async function requireActor(options: { allowOffboarded?: boolean; allowViewOnly?: boolean } = {}): Promise<Actor> {
   const session = await currentSession();
   if (!session) throw new Error('unauthenticated');
   // ⚠️ «دیدن به‌جای کاربر» فقط دیدن است: هیچ اقدامی به اسمِ کسی که انجامش نداده ثبت نمی‌شود.
-  if (session.actor.viewOnly) throw new ForbiddenError('view_only');
+  // allowViewOnly فقط برای اقدام‌های **صرفاً خواندنی** (بارگذاریِ مودالِ تسک/رویداد) — هیچ نوشتنی.
+  if (session.actor.viewOnly && !options.allowViewOnly) throw new ForbiddenError('view_only');
   if (session.memberState !== 'active' && !options.allowOffboarded) {
     throw new ForbiddenError('offboarded');
   }

@@ -297,8 +297,9 @@ function TaskDialogBody({
             */}
             <div>
               <Button asChild size="sm" variant="ghost" className="px-0 text-primary hover:bg-transparent">
-                <Link href={`/projects/${task.projectId}?tab=tasks`}>
-                  {tr('رفتن به پروژه')}
+                {/* با شماره: مستقیم به خودِ تسک در صفحهٔ پروژه (?task=)، نه فقط فهرستِ تسک‌ها — مودالِ داشبورد هم از همین می‌رود. */}
+                <Link href={task.number ? `/projects/${task.projectId}?task=${task.number}` : `/projects/${task.projectId}?tab=tasks`}>
+                  {task.number ? tr('رفتن به تسک در پروژه') : tr('رفتن به پروژه')}
                   <ArrowLeft className="ltr:rotate-180" aria-hidden />
                 </Link>
               </Button>

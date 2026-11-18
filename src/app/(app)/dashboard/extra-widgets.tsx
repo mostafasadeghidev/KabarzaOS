@@ -388,7 +388,7 @@ export function ClientDashboardV2({
           <ExpandableList inPlace className="grid divide-y">
             {review.map((tk) => (
               <li key={tk.id}>
-                <Link href={`/projects/${tk.projectId}?tab=tasks`} className="flex items-center justify-between gap-3 py-2 hover:bg-muted/40">
+                <Link href={`/projects/${tk.projectId}?tab=tasks`} data-open-task={tk.id} className="flex items-center justify-between gap-3 py-2 hover:bg-muted/40">
                   <span className="grid min-w-0 gap-0.5">
                     <span className="truncate text-sm font-medium">{tk.title}</span>
                     <span className="truncate text-xs text-muted-foreground">{tk.projectTitle}</span>
@@ -496,7 +496,7 @@ export function ClientDashboardV2({
             <ExpandableList inPlace className="grid divide-y">
               {extras.updates.map((u) => (
                 <li key={`${u.kind}-${u.id}`}>
-                  <Link href={`/projects/${u.projectId}?tab=${u.kind === 'file' ? 'files' : 'tasks'}`} className="flex items-center gap-2 py-2 hover:bg-muted/40">
+                  <Link href={`/projects/${u.projectId}?tab=${u.kind === 'file' ? 'files' : 'tasks'}`} data-open-task={u.kind === 'task' ? u.id : undefined} className="flex items-center gap-2 py-2 hover:bg-muted/40">
                     {u.kind === 'file'
                       ? <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                       : <ClipboardCheck className="size-4 shrink-0 text-emerald-600" aria-hidden />}
