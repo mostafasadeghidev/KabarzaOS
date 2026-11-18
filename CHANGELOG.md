@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.17.1]
+
+### Fixed
+
+- **Odd corner around the sticky top bar.** The solid page-coloured shadow that filled the gap above the bar did not match the page's gradient background (most visible in dark mode), so a block of colour showed around the bar's corners: on the sidebar side in Persian, on the other side in English. Once the page is scrolled the bar now docks flush to the top edge, with no top border and square top corners, so no gap is left above it and no extra colour is needed. At the top of the page it is still the floating rounded card.
+
 ## [3.17.0]
 
 ### Added
