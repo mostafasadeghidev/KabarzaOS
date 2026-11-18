@@ -5245,5 +5245,7 @@
   "رسیدی پیوست نشده.": "No receipt attached.",
   "شرحِ ردیفِ دفتر": "Ledger entry description",
   "پیام…": "Message…",
-  "پیام… (@ برای منشن)": "Message… (@ to mention)"
+  "پیام… (@ برای منشن)": "Message… (@ to mention)",
+  "{n} نقش انتخاب شده": "{n} roles selected",
+  "نقشی انتخاب نشده": "No role selected"
 }

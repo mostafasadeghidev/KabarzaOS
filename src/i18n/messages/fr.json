@@ -5245,5 +5245,7 @@
   "رسیدی پیوست نشده.": "Aucun reçu joint.",
   "شرحِ ردیفِ دفتر": "Libellé de l'écriture",
   "پیام…": "Message…",
-  "پیام… (@ برای منشن)": "Message… (@ pour mentionner)"
+  "پیام… (@ برای منشن)": "Message… (@ pour mentionner)",
+  "{n} نقش انتخاب شده": "{n} rôles sélectionnés",
+  "نقشی انتخاب نشده": "Aucun rôle sélectionné"
 }

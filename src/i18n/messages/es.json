@@ -5245,5 +5245,7 @@
   "رسیدی پیوست نشده.": "No hay recibo adjunto.",
   "شرحِ ردیفِ دفتر": "Descripción del asiento",
   "پیام…": "Mensaje…",
-  "پیام… (@ برای منشن)": "Mensaje… (@ para mencionar)"
+  "پیام… (@ برای منشن)": "Mensaje… (@ para mencionar)",
+  "{n} نقش انتخاب شده": "{n} roles seleccionados",
+  "نقشی انتخاب نشده": "Ningún rol seleccionado"
 }
