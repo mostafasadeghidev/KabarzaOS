@@ -174,7 +174,8 @@ export function ProjectTabs({
      */
     ...(data.canManage || data.qa.length > 0 || data.qaTasks.length > 0
       ? [{ key: 'qa', label: 'QA', badge: data.qa.length }] : []),
-    ...(data.canManage ? [{ key: 'manage', label: 'مدیریت' }] : []),
+    // ۳.۱۶.۰ — «مدیریت» دو تب شد: «تیم و ساعت» (گزارش) و «تنظیمات» (پیکربندی + منطقهٔ خطر).
+    ...(data.canManage ? [{ key: 'team', label: 'تیم و ساعت' }, { key: 'manage', label: 'تنظیمات' }] : []),
     /**
      * ⚠️ تب تا وقتی پیشنهادی ثبت شده می‌ماند، حتی اگر پرچمِ مناقصه خاموش شود —
      * نسخهٔ قبلی هم تبِ فقط‌خواندنی را نگه می‌داشت؛ پیش از این تاریخچهٔ
@@ -352,6 +353,25 @@ export function ProjectTabs({
         /></TabPanel>
       )}
 
+      {tab === 'team' && (
+        <TabPanel><ManageTab
+          section="team"
+          projectId={data.projectId}
+          title={data.title}
+          isArchived={data.isArchived}
+          hours={data.hours}
+          logs={data.logs}
+          matrix={data.matrix}
+          dayLabels={data.dayLabels}
+          weekStart={data.weekStart}
+          canManage={data.canManage}
+          deleteState={data.deleteState}
+          impactCounts={data.impactCounts}
+          canDelete={data.canDelete}
+          canLighten={data.canLighten}
+          lightenSummary={data.lightenSummary}
+        /></TabPanel>
+      )}
       {tab === 'manage' && (
         <TabPanel><ManageTab
           projectId={data.projectId}

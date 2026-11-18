@@ -594,7 +594,13 @@ export function ManageTab({
   matrix = [],
   dayLabels = [],
   weekStart = 0,
+  section = 'settings',
 }: {
+  /**
+   * ۳.۱۶.۰ — یک تبِ شلوغ دو تب شد: `team` (در دسترس بودن، ساعت، ثبت‌ها) و `settings` (کد، تلگرام،
+   * و «منطقهٔ خطر»: وضعیتِ داده، بایگانی، سبک‌سازی، حذف). پیش از این همه زیرِ «مدیریت» بود.
+   */
+  section?: 'team' | 'settings';
   projectId: number;
   title: string;
   isArchived: boolean;
@@ -629,16 +635,13 @@ export function ManageTab({
     // ⚠️ همهٔ پنل‌ها هم‌عرض‌اند: پیش از این ماتریس ۵xl بود و بقیه ۲xl، و تب دو لبهٔ
     // ناهمسان داشت. عرض را خودِ تب (`TabPanel`) تعیین می‌کند، مثلِ بقیهٔ تب‌ها.
     <div className="grid grid-cols-1 gap-4">
-      {/* ترتیبِ کارت‌ها: وضعیت ← در دسترس بودن ← ساعت ← ثبت‌ها ← بایگانی ← سبک‌سازی ← حذف. */}
-      {canManage && impactCounts && (
-        <ImpactPanel counts={impactCounts} state={deleteState} totalMinutes={totalMinutes} />
-      )}
+      {section === 'team' ? (
+        <>
       {canManage && (
         <Panel title={t("در دسترس بودنِ اعضای پروژه")}>
           <TeamMatrix rows={matrix} dayLabels={dayLabels} frame={false} />
         </Panel>
       )}
-
       <Panel title={t("ساعت کاری اعضا")}>
         {hours.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("ساعتِ کاری‌ای ثبت نشده.")}</p>
@@ -673,15 +676,23 @@ export function ManageTab({
           </Table>
         )}
       </Panel>
-
       {canManage && <LogDetail logs={logs} weekStart={weekStart} />}
-
+        </>
+      ) : (
+        <>
       {canManage && <ProjectCodePanel projectId={projectId} />}
-
       {canManage && <TelegramGroupPanel projectId={projectId} />}
 
+      {/*
+        «منطقهٔ خطر» (۳.۱۶.۰) — کارهای برگشت‌ناپذیر یا سنگین یک‌جا و جدا با مرزِ قرمز، مثلِ تنظیماتِ
+        GitHub/Linear. «وضعیتِ پروژه» همین‌جاست چون دقیقاً می‌گوید حذف چه پیامدی دارد.
+      */}
       {canManage && (
-        <>
+        <section className="grid gap-4 rounded-2xl border border-destructive/30 p-3 sm:p-4" aria-labelledby="danger-zone">
+          <h3 id="danger-zone" className="text-sm font-bold text-destructive">{t('منطقهٔ خطر')}</h3>
+          {canManage && impactCounts && (
+        <ImpactPanel counts={impactCounts} state={deleteState} totalMinutes={totalMinutes} />
+      )}
           <Panel title={t("بایگانی")}>
             <p className="text-xs text-muted-foreground">
               {tr("بایگانی برگشت‌پذیر است؛ پروژهٔ بایگانی‌شده فقط در تبِ بایگانی دیده می‌شود.")}
@@ -711,9 +722,10 @@ export function ManageTab({
         </Alert>
       )}
           </Panel>
-
           {canLighten && <LightenBox projectId={projectId} isArchived={isArchived} summary={lightenSummary} />}
           {canDelete && <DeleteBox projectId={projectId} title={title} state={deleteState} />}
+        </section>
+      )}
         </>
       )}
     </div>
