@@ -281,11 +281,12 @@ function Row({ icon, tone, title, meta, actions }: {
   return (
     <li data-inbox-row tabIndex={-1} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-2 py-2.5 outline-none focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/40">
       <span className={cn('grid size-8 shrink-0 place-items-center rounded-lg', TONES[tone])}>{icon}</span>
-      <span className="grid min-w-0 flex-1 gap-0.5">
-        <span className="min-w-0 text-sm font-medium">{title}</span>
+      {/* basis: در کارتِ باریک متن حداقلِ جایی دارد و دکمه‌ها به خطِ بعد می‌روند، نه روی نام. */}
+      <span className="grid min-w-0 flex-1 basis-36 gap-0.5">
+        <span className="min-w-0 truncate text-sm font-medium">{title}</span>
         <span className="truncate text-xs text-muted-foreground">{meta}</span>
       </span>
-      <span data-row-actions className="flex shrink-0 items-center gap-1.5 max-sm:w-full max-sm:justify-end">{actions}</span>
+      <span data-row-actions className="ms-auto flex shrink-0 items-center gap-1.5 max-sm:w-full max-sm:justify-end">{actions}</span>
     </li>
   );
 }

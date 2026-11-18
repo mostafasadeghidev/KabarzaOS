@@ -16,25 +16,23 @@ import { QuickNote } from './quick-note';
 import { DashboardGrid, type DefaultLayout, type WidgetDef } from './dashboard-grid';
 
 /**
- * چیدمانِ پیش‌فرضِ مدیر — از گوشهٔ بالا-راست، به ترتیبِ فوریت: کارِ امروز ← پول ← تیم و برنامه ← مرجع.
- * ستون‌ها روی شبکهٔ چهارستونه‌اند (۰ = اولین ستون از سمتِ شروع). کارت‌های کوتاه دوتا دوتا زیرِ هم
- * چیده شده‌اند تا قدِ ستون‌ها نزدیکِ هم بماند (با اندازه‌گیریِ قدِ واقعیِ کارت‌ها در عرضِ ۱۴۰۰).
- * کارتی که اینجا نیست (مثلاً کارت‌های پیش‌فرض‌خاموش) پس از این‌ها و در جای خودکار می‌آید.
+ * چیدمانِ پیش‌فرضِ مدیر — همان چیدمانی که مالک در ویرایشِ زنده ساخت (۲۰۲۶-۱۱-۱۸)، عیناً: ترتیب، ستون،
+ * اندازه، کارت‌های پنهان/نمایش‌داده و قد و شروعِ دستی (heights به پیکسل، offsets به ردیف).
+ * کارتی که اینجا نیست (کارتِ تازه) پس از این‌ها و در جای خودکار می‌آید.
  */
-const ADMIN_LAYOUT: DefaultLayout = (() => {
-  const plan: Array<[string, number]> = [
-    // کارِ امروز + ستونِ باریکِ وضعیت
-    ['inbox-projects', 0], ['team-today', 3], ['a-backup', 3], ['a-access', 3],
-    // پول
-    ['inbox-finance', 0], ['a-payroll', 2], ['a-renewals', 2], ['a-receivables', 0], ['money', 2],
-    ['client-waiting', 3], ['meetings', 3],
-    // تیم و برنامه
-    ['week', 0], ['capacity', 2], ['inbox-team', 2], ['risk', 0], ['a-qa', 2],
-    // مرجع
-    ['activity', 0], ['note', 2],
-  ];
-  return { order: plan.map(([id]) => id), cols: Object.fromEntries(plan) };
-})();
+const ADMIN_LAYOUT: DefaultLayout = {
+  order: ['inbox-projects', 'team-today', 'available', 'online', 'inbox-finance', 'client-waiting', 'meetings', 'a-renewals', 'week', 'risk', 'capacity', 'inbox-team', 'a-qa', 'activity', 'note', 'chart-trend', 'chart-members', 'a-payroll', 'a-receivables', 'money', 'a-access', 'a-backup', 'metric-0', 'metric-1', 'metric-2', 'metric-projects', 'chart-status'],
+  hidden: ['a-backup', 'a-access', 'a-receivables', 'money', 'a-payroll'],
+  shown: ['chart-trend', 'online', 'available', 'chart-members'],
+  sizes: { 'inbox-finance': 'm', 'a-receivables': 's', 'a-qa': 's', 'inbox-team': 's', week: 's', risk: 's', note: 'm' },
+  cols: {
+    'inbox-projects': 0, 'team-today': 3, 'a-backup': 2, 'a-access': 3, 'inbox-finance': 0, 'a-payroll': 2, 'a-renewals': 2,
+    'a-receivables': 0, money: 1, 'client-waiting': 2, meetings: 3, week: 0, capacity: 2, 'inbox-team': 2, risk: 1, 'a-qa': 3,
+    activity: 0, note: 2, 'chart-trend': 0, online: 3, available: 3, 'chart-members': 2,
+  },
+  heights: { meetings: 86, risk: 296, week: 296, 'inbox-team': 261, 'a-qa': 261 },
+  offsets: { meetings: 1, 'chart-members': 8, 'chart-trend': 6 },
+};
 import { MemberHoursChart, StatusChart, WeeklyTrendChart } from './charts';
 import type { getDashboard, RiskItem } from '@/server/dashboard';
 import type { getDashboardInbox } from '@/server/dashboard-inbox';
@@ -191,12 +189,12 @@ export function DashboardV2({
           {atRisk.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('همهٔ پروژه‌ها روی روال‌اند.')}</p>
           ) : (
-            <ul className="grid max-h-80 divide-y overflow-y-auto">
+            <ul className="grid max-h-80 divide-y overflow-x-hidden overflow-y-auto">
               {atRisk.map((p) => (
-                <li key={p.id} className="flex items-center gap-3 py-2">
+                <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                   <span className={cn('grid size-7 shrink-0 place-items-center rounded-lg', tone[p.tone])}>{p.icon}</span>
-                  <Link href={p.href ?? `/projects/${p.id}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:underline">{p.title}</Link>
-                  <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[11px]', tone[p.tone])}>{p.badge}</span>
+                  <Link href={p.href ?? `/projects/${p.id}`} className="min-w-0 flex-1 basis-28 truncate text-sm font-medium hover:underline">{p.title}</Link>
+                  <span className={cn('ms-auto shrink-0 rounded-full px-2 py-0.5 text-[11px]', tone[p.tone])}>{p.badge}</span>
                 </li>
               ))}
             </ul>
@@ -213,8 +211,8 @@ export function DashboardV2({
       node: (
         <Panel title={t('جلساتِ این هفته')} icon={<CalendarDays className="size-4 text-muted-foreground" />} action={{ href: '/meetings', label: t('جلسات') }}>
           {today.meetings.length === 0 ? <p className="text-sm text-muted-foreground">{t('جلسه‌ای ثبت نشده.')}</p> : (
-            <ul className="grid gap-1.5 text-sm">
-              {today.meetings.slice(0, 6).map((m) => (
+            <ul className="grid gap-1.5 text-sm max-h-80 overflow-x-hidden overflow-y-auto">
+              {today.meetings.map((m) => (
                 <li key={m.id} className="flex items-center justify-between gap-3">
                   <span className="truncate">{m.title}</span>
                   <span className="num shrink-0 text-xs text-muted-foreground">{m.meetAt.toISOString().slice(5, 16).replace('T', ' ')}</span>
@@ -245,7 +243,7 @@ export function DashboardV2({
             <div className="rounded-xl bg-amber-500/10 py-2"><div className="num text-lg font-bold">{today.away.length}</div><div className="text-[11px] text-muted-foreground">{t('مرخصی')}</div></div>
           </div>
           {today.timers.length > 0 && (
-            <ul className="grid gap-1.5 text-sm">
+            <ul className="grid gap-1.5 text-sm max-h-80 overflow-x-hidden overflow-y-auto">
               {today.timers.map((w) => (
                 <li key={w.userId} className="flex items-center justify-between gap-2">
                   <span className="flex min-w-0 items-center gap-1"><UserName userId={w.userId} name={w.name} size="sm" />{w.project && <span className="truncate text-xs text-muted-foreground">· {w.project}</span>}</span>
@@ -262,13 +260,13 @@ export function DashboardV2({
       node: (
         <Panel title={t('ظرفیتِ تیم')} icon={<Gauge className="size-4 text-muted-foreground" />} action={{ href: '/team', label: t('تیمِ من') }}>
           <p className="-mt-1 text-[11px] text-muted-foreground">{t('تسکِ باز و ساعتِ ۷ روزِ اخیرِ هر عضو — پربارترها بالا.')}</p>
-          <ul className="grid max-h-80 gap-2 overflow-y-auto">
+          <ul className="grid max-h-80 gap-2 overflow-x-hidden overflow-y-auto">
             {inbox.capacity.map((c) => (
-              <li key={c.userId} className="grid grid-cols-[minmax(0,9rem)_1fr] items-center gap-3 text-sm">
+              <li key={c.userId} className="grid grid-cols-[minmax(0,8rem)_minmax(0,1fr)] items-center gap-3 text-sm">
                 <span className="min-w-0 truncate"><UserName userId={c.userId} name={c.name} size="sm" /></span>
                 <span className="grid gap-1">
-                  <span className="flex items-center gap-2"><span className="h-1.5 rounded-full bg-amber-500/70" style={{ width: `${Math.max(4, (c.openTasks / maxOpen) * 100)}%` }} /><span className="shrink-0 text-[11px] text-muted-foreground">{t('{n} تسک', { n: c.openTasks })}</span></span>
-                  <span className="flex items-center gap-2"><span className="h-1.5 rounded-full bg-sky-500/70" style={{ width: `${Math.max(4, (c.minutes / maxMin) * 100)}%` }} /><span className="num shrink-0 text-[11px] text-muted-foreground">{Math.floor(c.minutes / 60)}:{String(c.minutes % 60).padStart(2, '0')}</span></span>
+                  <span className="flex items-center gap-2"><span className="h-1.5 min-w-0 flex-1"><span className="block h-full rounded-full bg-amber-500/70" style={{ width: `${Math.max(4, (c.openTasks / maxOpen) * 100)}%` }} /></span><span className="shrink-0 text-[11px] text-muted-foreground">{t('{n} تسک', { n: c.openTasks })}</span></span>
+                  <span className="flex items-center gap-2"><span className="h-1.5 min-w-0 flex-1"><span className="block h-full rounded-full bg-sky-500/70" style={{ width: `${Math.max(4, (c.minutes / maxMin) * 100)}%` }} /></span><span className="num shrink-0 text-[11px] text-muted-foreground">{Math.floor(c.minutes / 60)}:{String(c.minutes % 60).padStart(2, '0')}</span></span>
                 </span>
               </li>
             ))}
@@ -281,7 +279,7 @@ export function DashboardV2({
       node: (
         <Panel title={t('کارفرماهای منتظرِ پاسخ')} icon={<MessageSquareReply className="size-4 text-muted-foreground" />}>
           {inbox.clientWaiting.length === 0 ? <p className="text-sm text-muted-foreground">{t('کارفرمایی منتظرِ پاسخ نیست.')}</p> : (
-            <ul className="grid divide-y">
+            <ul className="grid divide-y max-h-80 overflow-x-hidden overflow-y-auto">
               {inbox.clientWaiting.map((c) => (
                 <li key={c.rootId} className="grid gap-0.5 py-2">
                   <Link href={`/projects/${c.projectId}?tab=comments`} className="truncate text-sm font-medium hover:underline">{c.excerpt}</Link>
@@ -319,7 +317,7 @@ export function DashboardV2({
       node: (
         <Panel title={t('آنلاین اکنون')}>
           {today.online.length === 0 ? <p className="text-sm text-muted-foreground">{t('کسی آنلاین نیست.')}</p> : (
-            <ul className="space-y-1.5 text-sm">{today.online.map((u) => <li key={u.id}><UserName userId={u.id} name={u.name} size="sm" /></li>)}</ul>
+            <ul className="grid gap-1.5 text-sm max-h-80 overflow-x-hidden overflow-y-auto">{today.online.map((u) => <li key={u.id}><UserName userId={u.id} name={u.name} size="sm" /></li>)}</ul>
           )}
         </Panel>
       ),
@@ -329,7 +327,7 @@ export function DashboardV2({
       node: (
         <Panel title={t('در دسترسِ امروز')}>
           {today.available.length === 0 ? <p className="text-sm text-muted-foreground">{t('هنوز کسی برنامهٔ هفتگی نداده.')}</p> : (
-            <ul className="space-y-1.5 text-sm">{today.available.map((a) => <li key={a.userId}><UserName userId={a.userId} name={a.name} size="sm" /></li>)}</ul>
+            <ul className="grid gap-1.5 text-sm max-h-80 overflow-x-hidden overflow-y-auto">{today.available.map((a) => <li key={a.userId}><UserName userId={a.userId} name={a.name} size="sm" /></li>)}</ul>
           )}
         </Panel>
       ),

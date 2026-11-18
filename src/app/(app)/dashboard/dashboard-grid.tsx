@@ -113,8 +113,11 @@ const UNIT = ROW + GAP;
 
 const EMPTY: Prefs = { order: [], hidden: [], shown: [], sizes: {} };
 
-/** چیدمانِ پیش‌فرض: ترتیب و ستونِ شروعِ هر کارت (روی شبکهٔ چهارستونه). */
-export interface DefaultLayout { order: string[]; cols: Record<string, number>; sizes?: Record<string, WidgetSize> }
+/**
+ * چیدمانِ پیش‌فرض: ترتیب و ستونِ شروعِ هر کارت (روی شبکهٔ چهارستونه)، و اختیاری همان چیزهایی که کاربر
+ * در ویرایش می‌سازد (اندازه، پنهان/نمایش، قد و شروع) — پس چیدمانِ ذخیره‌شدهٔ یک نفر را می‌شود عیناً پیش‌فرض کرد.
+ */
+export type DefaultLayout = Pick<Prefs, 'order'> & Required<Pick<Prefs, 'cols'>> & Partial<Omit<Prefs, 'order' | 'cols'>>;
 
 export function DashboardGrid({ widgets, userId, scope, defaults }: {
   widgets: WidgetDef[];
@@ -128,7 +131,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
 }) {
   const t = useT();
   const key = scope ? `kz-dash-layout-${scope}-${userId}` : `kz-dash-layout-${userId}`;
-  const base = useMemo<Prefs>(() => (defaults ? { ...EMPTY, order: defaults.order, cols: defaults.cols, sizes: defaults.sizes ?? {} } : EMPTY), [defaults]);
+  const base = useMemo<Prefs>(() => (defaults ? { ...EMPTY, ...defaults, sizes: defaults.sizes ?? {} } : EMPTY), [defaults]);
   const [prefs, setPrefs] = useState<Prefs>(base);
   const [open, setOpen] = useState(false);
   /** حالتِ ویرایشِ زنده: کشیدن و رها کردن، اندازه و پنهان کردن روی خودِ کارت. */
