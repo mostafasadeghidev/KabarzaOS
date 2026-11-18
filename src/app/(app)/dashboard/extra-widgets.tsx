@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {
-  ArrowLeft, AtSign, CalendarDays, Download, Flag, Link2, MessagesSquare, Package, Pin,
+  ArrowLeft, AtSign, ListTodo, CalendarDays, Download, Flag, Link2, MessagesSquare, Package, Pin,
  CalendarOff, CalendarSync, ClipboardCheck, DatabaseBackup, FileText, FolderKanban, HandCoins,
   KeyRound, ListChecks, MessageSquarePlus, MessageSquareText, PiggyBank, Play, Receipt, Sparkles, Target, Wallet,
 } from 'lucide-react';
@@ -19,17 +19,8 @@ import { DashboardGrid, type DefaultLayout, type WidgetDef } from './dashboard-g
  * چیدمانِ پیش‌فرضِ کارفرما — اول آنچه منتظرِ تأییدِ اوست و کنارش «پیام به تیم»؛ بعد پروژه‌ها تمام‌عرض؛
  * بعد چک‌لیستِ تحویل و تازه‌ها در یک ستون، صورتِ حساب و جلسات در ستونِ کناری.
  */
-const CLIENT_LAYOUT: DefaultLayout = (() => {
-  const plan: Array<[string, number]> = [
-    ['c-review', 0], ['c-message', 3], ['c-comment', 3],
-    ['c-projects', 0],
-    // ⚠️ جلسات زیرِ صورتِ حساب، نه زیرِ «پیام به تیم»: آنجا ستونِ باریک از «منتظرِ تأیید» بلندتر می‌شد و
-    // بالای «پروژه‌های من» حفره می‌ماند.
-    ['c-qa', 0], ['c-statement', 2], ['c-updates', 0], ['c-meetings', 2],
-    ['c-onboarding', 0],
-  ];
-  return { order: plan.map(([id]) => id), cols: Object.fromEntries(plan) };
-})();
+/* چیدمانِ مالک (۲۰۲۶-۱۱-۱۸، از localStorage ِ خودش) — ستون‌ها روی پایهٔ ۱۲. */
+const CLIENT_LAYOUT: DefaultLayout = {"order": ["c-review", "c-assigned", "c-message", "c-comment", "c-projects", "c-qa", "c-statement", "c-updates", "c-meetings", "c-onboarding"], "cols": {"c-review": 0, "c-message": 9, "c-comment": 9, "c-projects": 0, "c-qa": 0, "c-statement": 6, "c-updates": 0, "c-meetings": 6, "c-onboarding": 0, "c-assigned": 0}, "basis": 12 as const};
 import { QuickNote } from './quick-note';
 import { OnboardingCard } from './onboarding-card';
 import { ClientQaList, ClientTalkCard, ContactTeamForm, HoursGoal, RequestUnitButton, UnitQuickForm, PayRenewalButton, ResumeTimerButton } from './extras-client';
@@ -424,12 +415,14 @@ export function memberExtraWidgets(x: MemberX, userId: number): WidgetDef[] {
 const PAY_LABEL: Record<string, string> = { unpaid: 'پرداخت‌نشده', partial: 'پرداختِ جزئی', paid: 'تسویه‌شده' };
 
 export function ClientDashboardV2({
-  data, extras, review, userId,
+  data, extras, review, assigned = [], userId,
 }: {
   data: MemberDashboard;
   extras: ClientX;
   /** تسک‌های منتظرِ تأییدِ کارفرما (myTasks، بی‌تسکِ خصوصی و پنهان از کارفرما). */
   review: InboxTask[];
+  /** تسک‌هایی که به خودِ کارفرما سپرده شده (myTasks ← active): تأییدِ متن، فرستادنِ محتوا، امضا… */
+  assigned?: InboxTask[];
   userId: number;
 }) {
   const widgets: WidgetDef[] = [];
@@ -459,6 +452,46 @@ export function ClientDashboardV2({
       </Panel>
     ),
   });
+
+  /*
+   * «کارهای شما» — تسک‌هایی که مدیر به نامِ خودِ کارفرما زده. ⚠️ پیش از این فقط در صفحهٔ «تسک‌ها» بود و
+   * کارفرمایی که فقط داشبورد را می‌دید از آن خبر نداشت. با کلیک مودالِ تسک همین‌جا باز می‌شود.
+   */
+  if (assigned.length > 0) {
+    const today = new Date().toISOString().slice(0, 10);
+    const soonIso = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
+    const sorted = [...assigned].sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'));
+    widgets.push({
+      id: 'c-assigned', title: t('کارهای شما'), group: G_ACT, size: 'l', defaultOn: true,
+      hint: t('کارهایی که تیم به خودِ شما سپرده (مثلاً تأییدِ متن، فرستادنِ محتوا یا امضا). سررسیدگذشته قرمز است. با کلیک تسک باز می‌شود.'),
+      node: (
+        <Panel title={t('کارهای شما')} icon={<ListTodo />} action={{ href: '/tasks', label: t('همه') }}>
+          <ExpandableList inPlace className="grid divide-y">
+            {sorted.map((tk) => {
+              const late = !!tk.dueDate && tk.dueDate < today;
+              const soon = !!tk.dueDate && !late && tk.dueDate <= soonIso;
+              return (
+                <li key={tk.id}>
+                  <Link href={`/projects/${tk.projectId}?tab=tasks`} data-open-task={tk.id} className="flex items-center justify-between gap-3 py-2 hover:bg-muted/40">
+                    <span className="grid min-w-0 gap-0.5">
+                      <span className="truncate text-sm font-medium">{tk.title}</span>
+                      <span className="truncate text-xs text-muted-foreground">{tk.projectTitle}{tk.statusName ? <> · {tk.statusName}</> : null}</span>
+                    </span>
+                    {tk.dueDate && (
+                      <span className={cn('num shrink-0 rounded-md px-2 py-0.5 text-xs',
+                        late ? 'bg-destructive/10 text-destructive' : soon ? 'bg-amber-500/12 text-amber-700 dark:text-amber-400' : 'bg-muted text-muted-foreground')}>
+                        {tk.dueDate}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ExpandableList>
+        </Panel>
+      ),
+    });
+  }
 
   if (extras.qa) {
     widgets.push({

@@ -165,7 +165,11 @@ export default async function DashboardPage({
           const [mine, rawCx] = await Promise.all([myTasks(actor), getClientExtras(actor)]);
           const cx = demo ? demoClientExtras(rawCx) : rawCx;
           const rawReview = mine.kind === 'client' ? mine.review : [];
-          const review = demo ? demoMemberTasks({ active: [], waiting: [], review: rawReview }).review : rawReview;
+          const rawAssigned = mine.kind === 'client' ? mine.active : [];
+          const demoed = demo ? demoMemberTasks({ active: rawAssigned, waiting: [], review: rawReview }) : null;
+          const review = demoed ? demoed.review : rawReview;
+          // کارهای سپرده به خودِ کارفرما (نمایشی: بی ردیف‌های «قابلِ برداشتن» که مالِ عضو است).
+          const assigned = demoed ? demoed.active.filter((tk) => !('claimable' in tk && tk.claimable)) : rawAssigned;
           return (
             <PageShell>
               <PageHeader
@@ -173,7 +177,7 @@ export default async function DashboardPage({
                 description={todayLabel()}
                 actions={headerLinks}
               />
-              <ClientDashboardV2 data={own} extras={cx} review={review} userId={actor.id} />
+              <ClientDashboardV2 data={own} extras={cx} review={review} assigned={assigned} userId={actor.id} />
               <LiveRefresh />
             </PageShell>
           );

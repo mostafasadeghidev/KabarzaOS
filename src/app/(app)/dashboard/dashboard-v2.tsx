@@ -21,20 +21,8 @@ import { DashboardGrid, type DefaultLayout, type WidgetDef } from './dashboard-g
  * اندازه، کارت‌های پنهان/نمایش‌داده و قد و شروعِ دستی (heights به پیکسل، offsets به ردیف).
  * کارتی که اینجا نیست (کارتِ تازه) پس از این‌ها و در جای خودکار می‌آید.
  */
-const ADMIN_LAYOUT: DefaultLayout = {
-  order: ['inbox-projects', 'team-today', 'available', 'online', 'inbox-finance', 'client-waiting', 'meetings', 'a-renewals', 'week', 'risk', 'capacity', 'inbox-team', 'a-qa', 'activity', 'note', 'chart-trend', 'chart-members', 'a-payroll', 'a-receivables', 'money', 'a-access', 'a-backup', 'metric-0', 'metric-1', 'metric-2', 'metric-projects', 'chart-status'],
-  hidden: ['a-backup', 'a-access', 'a-receivables', 'money', 'a-payroll'],
-  shown: ['chart-trend', 'online', 'available', 'chart-members'],
-  sizes: { 'inbox-finance': 'm', 'a-receivables': 's', 'a-qa': 's', 'inbox-team': 's', week: 's', risk: 's', note: 'm' },
-  cols: {
-    'inbox-projects': 0, 'team-today': 3, 'a-backup': 2, 'a-access': 3, 'inbox-finance': 0, 'a-payroll': 2, 'a-renewals': 2,
-    'a-receivables': 0, money: 1, 'client-waiting': 2, meetings: 3, week: 0, capacity: 2, 'inbox-team': 2, risk: 1, 'a-qa': 3,
-    activity: 0, note: 2, 'chart-trend': 0, online: 3, available: 3, 'chart-members': 2,
-  },
-  heights: { meetings: 86, risk: 296, week: 296, 'inbox-team': 261, 'a-qa': 261 },
-  // جفت‌هایی که مالک لبهٔ بالایشان را هم‌تراز کرده بود — هم‌ردیف، تا با دادهٔ زیاد از هم جدا نشوند.
-  rows: [['client-waiting', 'meetings'], ['week', 'risk'], ['inbox-team', 'a-qa'], ['chart-trend', 'chart-members']],
-};
+/* چیدمانِ مالک (۲۰۲۶-۱۱-۱۸، از localStorage ِ خودش) — ستون‌ها روی پایهٔ ۱۲. */
+const ADMIN_LAYOUT: DefaultLayout = {"order": ["inbox-projects", "team-today", "available", "online", "inbox-finance", "client-waiting", "meetings", "a-renewals", "week", "risk", "capacity", "activity", "inbox-team", "a-qa", "chart-trend", "chart-members", "note", "metric-2", "a-payroll", "a-receivables", "a-access", "money", "a-backup", "metric-0", "metric-1", "metric-projects", "chart-status"], "hidden": ["a-backup", "money", "chart-status", "a-receivables", "a-access", "a-payroll", "metric-2"], "shown": ["chart-trend", "online", "available", "chart-members"], "sizes": {"inbox-finance": "m", "a-receivables": "s", "a-qa": "s", "inbox-team": "s", "week": "s", "risk": "s", "note": "m"}, "cols": {"inbox-projects": 0, "team-today": 9, "a-backup": 6, "a-access": 9, "inbox-finance": 0, "a-payroll": 0, "a-renewals": 6, "a-receivables": 6, "money": 3, "client-waiting": 6, "meetings": 9, "week": 0, "capacity": 6, "inbox-team": 6, "risk": 3, "a-qa": 9, "activity": 0, "note": 6, "chart-trend": 0, "online": 9, "available": 9, "chart-members": 6, "metric-2": 0}, "heights": {"meetings": 144, "risk": 296, "week": 296, "inbox-team": 277, "a-qa": 277, "online": 197, "client-waiting": 312, "a-renewals": 294, "a-payroll": 268, "a-access": 268, "a-receivables": 268, "activity": 517, "capacity": 293, "inbox-finance": 381, "inbox-projects": 463, "available": 151, "team-today": 248}, "offsets": {"chart-trend": 6}, "rows": [["chart-trend", "chart-members"], ["inbox-finance", "client-waiting"]], "basis": 12 as const};
 import { MemberHoursChart, StatusChart, WeeklyTrendChart } from './charts';
 import type { getDashboard, RiskItem } from '@/server/dashboard';
 import type { getDashboardInbox } from '@/server/dashboard-inbox';
