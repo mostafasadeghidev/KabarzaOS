@@ -240,10 +240,9 @@ export function LiveRefresh() {
 }
 
 /**
- * «پیام و نظر» ِ کارفرما — یک کارت به‌جای دو: پیامِ کلی به تیم (همان «پیام به مدیریت») یا کامنت روی یکی از
- * پروژه‌های بازش (همان addCommentAction ِ تبِ کامنت‌ها؛ گارد، منجمد بودن و اعلان همان‌جاست).
- * چند پروژه: انتخابگرِ دکمه‌ای (زیاد ← فهرستِ کشویی)، پیش‌فرض آخرین انتخاب روی همین مرورگر وگرنه
- * پروژه‌ای با تازه‌ترین گفتگو؛ نامِ پروژهٔ انتخاب‌شده بالای متن پررنگ است تا کامنت اشتباهی نرود.
+ * «نظر روی پروژه» ِ کارفرما — کامنت روی یکی از پروژه‌های بازش، مستقیم از داشبورد (همان addCommentAction ِ
+ * تبِ کامنت‌ها؛ گارد، منجمد بودن و اعلانِ تیم همان‌جاست). «پیام به تیم» کارتِ جدای خودش است (ContactTeamForm).
+ * انتخابِ پروژه با جستجوی زنده؛ پیش‌فرض آخرین انتخاب روی همین مرورگر وگرنه پروژه‌ای با تازه‌ترین گفتگو.
  */
 export function ClientTalkCard({ userId, projects, threads }: {
   userId: number;
@@ -254,88 +253,74 @@ export function ClientTalkCard({ userId, projects, threads }: {
   const router = useRouter();
   const { show } = useToast();
   const key = `kz-client-talk-${userId}`;
-  const [target, setTarget] = useState<number | 'team'>(projects[0]?.id ?? 'team');
+  const [target, setTarget] = useState<number | null>(projects[0]?.id ?? null);
   useEffect(() => {
     try {
       const v = localStorage.getItem(key);
-      if (v === 'team') setTarget('team');
-      else if (v && projects.some((p) => p.id === Number(v))) setTarget(Number(v));
+      if (v && projects.some((p) => p.id === Number(v))) setTarget(Number(v));
     } catch { /* خصوصی */ }
   }, [key, projects]);
-  const pick = (v: number | 'team') => { setTarget(v); try { localStorage.setItem(key, String(v)); } catch { /* پر */ } };
+  const pick = (v: number) => { setTarget(v); try { localStorage.setItem(key, String(v)); } catch { /* پر */ } };
   const [body, setBody] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, start] = useTransition();
-  const project = target === 'team' ? null : projects.find((p) => p.id === target) ?? null;
+  const project = projects.find((p) => p.id === target) ?? null;
   const shownThreads = project ? threads.filter((x) => x.projectId === project.id) : [];
 
   const send = () => {
-    if (!body.trim() && files.length === 0) return;
+    if (!project || (!body.trim() && files.length === 0)) return;
     start(async () => {
       const fd = new FormData();
       fd.set('body', body);
-      let error: string | undefined;
-      if (project) {
-        fd.set('projectId', String(project.id));
-        for (const f of files) fd.append('media', f);
-        error = (await addCommentAction({}, fd)).error;
-      } else {
-        error = (await contactManagementAction({}, fd)).error;
-      }
+      fd.set('projectId', String(project.id));
+      for (const f of files) fd.append('media', f);
+      const { error } = await addCommentAction({}, fd);
       if (error) { show(t(error), 'error'); return; }
       setBody('');
       setFiles([]);
       if (fileRef.current) fileRef.current.value = '';
-      show(project ? t('نظرتان روی پروژه ثبت شد.') : t('پیام فرستاده شد.'), 'success');
+      show(t('نظرتان روی پروژه ثبت شد.'), 'success');
       router.refresh();
     });
   };
 
-  const teamLabel = t('پیامِ کلی به مدیرانِ تیم');
-  const comboOptions = [
-    { value: 0, label: teamLabel },
-    ...projects.map((p) => ({ value: p.id, label: p.title, group: t('پروژه‌ها') })),
-  ];
+  const comboOptions = projects.map((p) => ({ value: p.id, label: p.title }));
   return (
     <div className="kz-form grid gap-2">
       {/*
-        انتخابِ «درباره»: جعبهٔ جستجوی زنده (Combobox ِ مشترک) — پیام به مدیران و همهٔ پروژه‌های بازِ
-        کارفرما در یک فهرست؛ با چند ده پروژه هم با چند حرف پیدا می‌شود.
+        انتخابِ پروژه: جعبهٔ جستجوی زنده (Combobox ِ مشترک) — با چند ده پروژه هم با چند حرف پیدا می‌شود.
+        یک پروژه ← جعبه لازم نیست، فقط نامش پایین‌تر نوشته می‌شود.
       */}
-      {projects.length > 0 && (
+      {projects.length > 1 && (
         <Combobox
           size="sm"
           options={comboOptions}
-          value={{ id: target === 'team' ? 0 : target, label: target === 'team' ? teamLabel : project?.title ?? '' }}
-          onChange={(next) => { if (next.id !== null) pick(next.id === 0 ? 'team' : next.id); }}
+          value={{ id: project?.id ?? null, label: project?.title ?? '' }}
+          onChange={(next) => { if (next.id !== null) pick(next.id); }}
           placeholder={t('پروژه را جستجو کنید…')}
         />
       )}
       <p className="kz-fit-label truncate text-xs text-muted-foreground">
-        {project
-          ? <>{t('نظر روی پروژهٔ')} <b className="text-foreground">{project.title}</b></>
-          : t('پیام به مدیرانِ تیم؛ پاسخ در «پیام‌ها» می‌آید.')}
+        {project && <>{t('نظر روی پروژهٔ')} <b className="text-foreground">{project.title}</b></>}
       </p>
       <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={3}
         className="kz-grow"
-        placeholder={project ? t('نظر، سؤال یا درخواستتان دربارهٔ این پروژه…') : t('سؤال یا درخواستتان را بنویسید…')}
+        placeholder={t('نظر، سؤال یا درخواستتان دربارهٔ این پروژه…')}
         aria-label={t('متنِ پیام')}
       />
       <div className="flex items-center justify-between gap-2">
-        {project ? (
+        {(
           <label className="kz-fit-label flex min-w-0 cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             <Paperclip className="size-3.5 shrink-0" />
             <span className="truncate">{files.length ? t('{n} فایل', { n: files.length }) : t('پیوستِ فایل')}</span>
             <input ref={fileRef} type="file" multiple className="sr-only" onChange={(e) => setFiles([...(e.target.files ?? [])])} />
           </label>
-        ) : (
-          <Link href="/messages" className="kz-fit-label text-xs text-muted-foreground hover:underline">{t('همهٔ پیام‌ها')}</Link>
         )}
-        <Button type="button" size="sm" onClick={send} disabled={pending || (!body.trim() && files.length === 0)}>
+        <Button type="button" size="sm" onClick={send} disabled={pending || !project || (!body.trim() && files.length === 0)}>
           <Send className="size-3.5" />{t('بفرست')}
         </Button>
       </div>
