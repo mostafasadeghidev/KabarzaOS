@@ -6,7 +6,7 @@ import { requireActor } from '@/server/auth';
 import { redirect } from 'next/navigation';
 import {
   addComment, BidError, claimTask, deleteComment, deleteProject, deleteQaItem,
-  lightenProject, removeQaRole, setArchived, setTaskStatus, submitBid,
+  lightenProject, patchTask, removeQaRole, setArchived, setTaskStatus, submitBid,
   toggleCommentStatus, removeProjectMember,
 } from '@/server/projects/service';
 import { ForbiddenError } from '@/domain/access/guard';
@@ -29,6 +29,35 @@ import { format } from '@/domain/money/money';
 export interface TabActionState {
   error?: string;
   ok?: boolean;
+}
+
+/**
+ * ویرایشِ جزئی/گروهیِ تسک از فهرست و برد (۳.۱۶.۰) — هر تسک جدا از همان `updateTask` می‌گذرد، پس
+ * تسکی که اجازه‌اش نیست رد می‌شود و بقیه انجام می‌شوند؛ شمارِ ناموفق‌ها برمی‌گردد.
+ */
+export async function patchTasksAction(
+  taskIds: number[],
+  patch: { priorityTagId?: number | null; assignedTo?: number | null; dueDate?: string | null },
+): Promise<TabActionState & { failed?: number }> {
+  const ids = [...new Set(taskIds.filter((id) => Number.isInteger(id) && id > 0))].slice(0, 200);
+  if (ids.length === 0) return { ok: true };
+  if (patch.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(patch.dueDate)) return { error: 'تاریخ نامعتبر است.' };
+  let actor;
+  try { actor = await requireActor(); } catch { return { error: 'اجازهٔ ویرایشِ تسک ندارید.' }; }
+  const projects = new Set<number>();
+  let failed = 0;
+  let lastError: unknown = null;
+  for (const id of ids) {
+    try { projects.add(await patchTask(actor, id, patch)); } catch (error) { failed++; lastError = error; }
+  }
+  for (const p of projects) revalidatePath(`/projects/${p}`);
+  if (projects.size > 0) revalidatePath('/projects');
+  if (failed === ids.length) {
+    if (lastError instanceof FrozenProjectError) return { error: FROZEN_MESSAGE };
+    if (lastError instanceof ForbiddenError) return { error: 'اجازهٔ ویرایشِ این تسک‌ها را ندارید.' };
+    return { error: 'تغییر ثبت نشد.' };
+  }
+  return { ok: true, failed };
 }
 
 export async function setTaskStatusAction(taskId: number, statusTagId: number | null): Promise<TabActionState> {

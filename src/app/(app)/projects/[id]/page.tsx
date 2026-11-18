@@ -40,7 +40,7 @@ import { countOpenThreads } from '@/domain/projects/threads';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CreatedNotice } from './created-notice';
 import { Thumb } from '@/components/thumb';
-import { CircleAlert } from 'lucide-react';
+import { CircleAlert, FolderKanban } from 'lucide-react';
 import { PageHeader, PageShell, Panel } from '@/components/page-shell';
 import { SiteLinksBody } from '@/components/site-links';
 import { UnitEntriesSection, type UnitSectionData } from './unit-entries-section';
@@ -416,27 +416,24 @@ export default async function ProjectDetailPage({
         </Fact>
       </div>
 
-      {/* خویشاوندیِ پروژه‌ها سطرِ خودش را دارد: عنوان‌ها بلندند و در شبکه نمی‌نشینند. */}
+      {/*
+        خویشاوندیِ پروژه‌ها سطرِ خودش را دارد: عنوان‌ها بلندند و در شبکه نمی‌نشینند.
+        ۳.۱۶.۰ — برچسبِ کم‌رنگ + هر پروژه یک چیپِ پیوندی با آیکون (همان شکلِ چیپ‌های دیگرِ صفحه)؛
+        پیش از این متنِ خاکستری با پیوندِ زیرخط‌دارِ خام بود.
+      */}
       {(detail.meta.parent || detail.meta.children.length > 0) && (
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+        <div className="grid gap-2 text-sm">
           {detail.meta.parent && (
-            <span>
-              ↳ {t("پیروِ پروژهٔ")}:{' '}
-              <Link href={`/projects/${detail.meta.parent.id}`} className="underline">
-                {detail.meta.parent.title}
-              </Link>
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">{t("پیروِ پروژهٔ")}</span>
+              <ProjectChip id={detail.meta.parent.id} title={detail.meta.parent.title} />
+            </div>
           )}
           {detail.meta.children.length > 0 && (
-            <span>
-              {t("زیرپروژه‌ها (تغییر/نگهداری)")}:{' '}
-              {detail.meta.children.map((c, i) => (
-                <span key={c.id}>
-                  {i > 0 && t('، ')}
-                  <Link href={`/projects/${c.id}`} className="underline">{c.title}</Link>
-                </span>
-              ))}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">{t("زیرپروژه‌ها (تغییر/نگهداری)")}</span>
+              {detail.meta.children.map((c) => <ProjectChip key={c.id} id={c.id} title={c.title} />)}
+            </div>
           )}
         </div>
       )}
@@ -663,5 +660,18 @@ function Fact({ label, href, children }: { label: string; href?: string; childre
     <Link href={href} scroll={false} className={`${cls} transition-colors hover:bg-muted/60`}>{body}</Link>
   ) : (
     <div className={cls}>{body}</div>
+  );
+}
+
+/** پیوندِ پروژهٔ خویشاوند — چیپِ گرد با آیکونِ پروژه (۳.۱۶.۰). */
+function ProjectChip({ id, title }: { id: number; title: string }) {
+  return (
+    <Link
+      href={`/projects/${id}`}
+      className="inline-flex max-w-full items-center gap-1.5 rounded-full border bg-card px-2.5 py-0.5 text-xs font-medium transition-colors hover:border-primary/40 hover:text-primary"
+    >
+      <FolderKanban className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+      <span className="truncate">{title}</span>
+    </Link>
   );
 }

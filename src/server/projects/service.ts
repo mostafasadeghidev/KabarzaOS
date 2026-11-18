@@ -2803,6 +2803,13 @@ export async function updateTask(
 
   const nextUnitEntry = await validUnitEntry(before.projectId, input.unitEntryId);
 
+  /*
+   * ⚠️ انجام‌دهندگانِ **پیش از** ذخیره (۳.۱۶.۰). پیش از این بعد از نوشتن حساب می‌شد؛ برای تسکِ بی‌مسئولِ
+   * مستقیم (نقشی یا بی‌صاحب) `taskDoerIds` همان مسئولِ تازه را برمی‌گرداند و او «تازه» به حساب نمی‌آمد —
+   * سپردنِ چنین تسکی به یک نفر هرگز اعلانِ «تسک به شما محول شد» نمی‌فرستاد.
+   */
+  const beforeDoers = before.assignedTo ? [before.assignedTo] : await taskDoerIds(taskId);
+
   await db.update(tasks).set({
     title: input.title,
     description: input.description,
@@ -2861,7 +2868,6 @@ export async function updateTask(
    * مستقیم ندارد و برداشتنِ مسئولِ مستقیم عملاً کار را به صاحبانِ نقش
    * می‌سپارد. خودِ ویرایش‌کننده هم کنار می‌رود.
    */
-  const beforeDoers = before.assignedTo ? [before.assignedTo] : await taskDoerIds(taskId);
   const afterDoers = input.assignedTo ? [input.assignedTo] : await taskDoerIds(taskId);
   const fresh = assignmentDelta({
     after: afterDoers, before: beforeDoers, editorId: actor.id,
@@ -2892,6 +2898,39 @@ export async function updateTask(
   });
 
   return before.projectId;
+}
+
+/**
+ * ویرایشِ جزئیِ تسک (۳.۱۶.۰) — اولویت، مسئول یا ددلاین از روی فهرست/برد، تک‌تک یا گروهی.
+ *
+ * ⚠️ منطقِ تازه‌ای ندارد: حالتِ فعلیِ تسک خوانده، فقط فیلدهای داده‌شده عوض و همان `updateTask` صدا
+ * زده می‌شود — پس همهٔ گاردها (مدیر یا سازنده، منجمد، مسئولِ مجاز، فقط-مدیر برای مسئول)، اعلانِ «تسک
+ * به شما محول شد» و رویداد دقیقاً همان ویرایشِ کامل است. فیلدی که نیامده دست نمی‌خورد.
+ * مسئولِ مستقیم ⇄ نقش: انتخابِ شخص نقش‌ها را برمی‌دارد (همان قاعدهٔ فرم)، «بی‌مسئول» نقش‌ها را نگه می‌دارد.
+ */
+export async function patchTask(
+  actor: Actor,
+  taskId: number,
+  patch: { priorityTagId?: number | null; assignedTo?: number | null; dueDate?: string | null },
+): Promise<number> {
+  const before = await repo.getTask(taskId);
+  if (!before) throw new NotFoundError();
+  const roleTagIds = (await db.select({ id: taskRoles.roleTagId }).from(taskRoles)
+    .where(eq(taskRoles.taskId, taskId))).map((r) => r.id).filter((id): id is number => id !== null);
+  const assignedTo = patch.assignedTo !== undefined ? patch.assignedTo : before.assignedTo;
+  return updateTask(actor, taskId, {
+    title: before.title,
+    description: before.description,
+    statusTagId: before.statusTagId,
+    priorityTagId: patch.priorityTagId !== undefined ? patch.priorityTagId : before.priorityTagId,
+    assignedTo,
+    dueDate: patch.dueDate !== undefined ? (patch.dueDate || null) : before.dueDate,
+    isPrivate: before.isPrivate,
+    dependsOn: before.dependsOn,
+    roleTagIds: patch.assignedTo !== undefined && assignedTo !== null ? [] : roleTagIds,
+    clientHidden: before.clientHidden,
+    area: before.area,
+  });
 }
 
 /**

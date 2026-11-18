@@ -176,6 +176,38 @@ describe('تغییرِ تخصیصِ تسک', () => {
   });
 });
 
+describe('ویرایشِ جزئیِ تسک از فهرست/برد (۳.۱۶.۰)', () => {
+  it('فقط فیلدِ داده‌شده عوض می‌شود؛ بقیه (عنوان، وضعیت، توضیح، نقش) دست نمی‌خورد', async () => {
+    const [t] = await db.insert(tasks).values({
+      projectId, createdBy: dev, title: 'تسکِ ثابت', description: 'متن', assignedTo: null,
+      scope: 'company', statusTagId: doingTag, dueDate: '2026-12-01',
+    }).returning({ id: tasks.id });
+    await db.insert(taskRoles).values({ taskId: t!.id, roleTagId: devRole });
+
+    await projectService.patchTask(actor(owner), t!.id, { dueDate: '2026-12-24' });
+    const [after] = await db.select().from(tasks).where(eq(tasks.id, t!.id));
+    expect(after).toMatchObject({ title: 'تسکِ ثابت', description: 'متن', statusTagId: doingTag, dueDate: '2026-12-24', assignedTo: null });
+    expect(await db.select().from(taskRoles).where(eq(taskRoles.taskId, t!.id))).toHaveLength(1);
+
+    // سپردن به شخص نقش‌ها را برمی‌دارد (همان قاعدهٔ فرم) و مسئولِ تازه اعلان می‌گیرد.
+    await projectService.patchTask(actor(owner), t!.id, { assignedTo: designer });
+    const [assigned] = await db.select().from(tasks).where(eq(tasks.id, t!.id));
+    expect(assigned!.assignedTo).toBe(designer);
+    expect(await db.select().from(taskRoles).where(eq(taskRoles.taskId, t!.id))).toHaveLength(0);
+    expect(await recipients()).toContain(designer);
+  });
+
+  it('⚠️ همان گاردِ ویرایشِ کامل: عضوی که مدیر یا سازنده نیست رد می‌شود', async () => {
+    const [t] = await db.insert(tasks).values({
+      projectId, createdBy: dev, title: 'تسکِ دیگری', assignedTo: dev, scope: 'company',
+    }).returning({ id: tasks.id });
+    await expect(projectService.patchTask(actor(designer, ['projects.view'] as Permission[]), t!.id, { dueDate: '2027-01-01' }))
+      .rejects.toThrow();
+    const [row] = await db.select().from(tasks).where(eq(tasks.id, t!.id));
+    expect(row!.dueDate).toBeNull();
+  });
+});
+
 describe('امضای عضو روی پروژه', () => {
   it('عضوِ تازه اعلان می‌گیرد', async () => {
     await projectService.setMembers(actor(owner), projectId, [

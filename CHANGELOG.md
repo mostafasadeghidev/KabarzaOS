@@ -2,6 +2,33 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.16.0]
+
+### Added
+
+- **Task list you can manage.** A project's Tasks tab now groups tasks by stage, status, priority or assignee (or not at all), and each group can be collapsed.
+  - Status, priority, assignee and deadline can be changed right on the row.
+  - Tick several tasks, or a whole group, and a bulk bar changes their status, priority, assignee or deadline in one go.
+  - The old sub-tabs per status group are replaced by quick filters: Open (default, hides done tasks), Needs review, Mine and All. Old `?view=` links still work.
+  - Every change goes through the same server rules as editing a task, so permissions, frozen projects, "task assigned to you" notifications and the activity log behave exactly as before.
+- **Board you can manage.**
+  - **Columns:** they follow the chosen grouping. Dragging a card to another column changes that field, and a hint says so.
+  - **Height:** each column has a fixed height and scrolls inside, so a long column no longer stretches the page.
+  - **Hiding:** columns can be collapsed to a thin strip, and empty columns are hidden by default.
+  - **Cards:** cards are compact, with a ⋯ menu for status, priority and assignee, which also replaces dragging on touch screens.
+  - The chosen view, grouping and collapsed columns are remembered per project.
+- **Project settings split.** The crowded Manage tab is now two tabs:
+  - **Team & hours:** member availability, member hours and log details.
+  - **Settings:** project code and Telegram group, plus a red-bordered **Danger zone** that holds the data summary, archive, database slimming and delete. Old `?tab=manage` links open Settings.
+
+### Changed
+
+- **Parent and sub-project links** under the project header are now labelled chips with a project icon instead of plain underlined text.
+
+### Fixed
+
+- **Assigning an unassigned or role-based task to a person sent no notification.** The previous assignees were worked out after saving, so the new assignee already counted as one of them and was never treated as new. They are now worked out before saving.
+
 ## [3.15.2]
 
 ### Fixed

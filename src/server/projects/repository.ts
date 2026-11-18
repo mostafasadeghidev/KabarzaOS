@@ -405,6 +405,8 @@ export interface TaskRow {
   assignedTo: number | null;
   assigneeName: string | null;
   /** کارتِ تسک — پورتِ چیپِ اولویت و `task_notes_summary`. */
+  /** شناسهٔ تگِ اولویت — ویرایشِ سریع و گروه‌بندیِ «اولویت» در فهرست/برد (۳.۱۶.۰). */
+  priorityTagId: number | null;
   priorityName: string | null;
   priorityColor: string | null;
   description: string;
@@ -448,6 +450,7 @@ export async function listTasks(projectId: number): Promise<TaskRow[]> {
       assigneeName: assignee.name,
       /** «وابسته به» — پیش از این ستونی مرده بود. */
       dependsOn: tasks.dependsOn,
+      priorityTagId: tasks.priorityTagId,
       priorityName: tagName(locale, priority),
       priorityColor: priority.color,
       description: tasks.description,
