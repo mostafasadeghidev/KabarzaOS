@@ -59,7 +59,8 @@ export async function listCloudConnections(actor: Actor): Promise<CloudConnectio
     defaultQuotaGb: cloudConnections.defaultQuotaGb, isActive: cloudConnections.isActive,
     serviceId: cloudConnections.serviceId, status: cloudConnections.status,
     hasSecret: sql<boolean>`${cloudConnections.secretEnc} <> ''`,
-    grants: sql<number>`(select count(*)::int from ${serviceGrants} where ${serviceGrants.serviceId} = ${cloudConnections.serviceId})`,
+    // ⚠️ نامِ جدول صریح — بی آن Drizzle «"service_id" = "service_id"» می‌نوشت (همیشه درست؛ همهٔ دسترسی‌ها شمرده می‌شد).
+    grants: sql<number>`(select count(*)::int from "service_grants" g where g."service_id" = "cloud_connections"."service_id")`,
   }).from(cloudConnections).orderBy(asc(cloudConnections.id));
   return rows.map((r) => ({ ...r, status: (r.status as CloudStatus | null) ?? null }));
 }

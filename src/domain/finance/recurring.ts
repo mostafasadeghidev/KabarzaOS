@@ -15,6 +15,14 @@ export const UNIT_LABELS: Record<IntervalUnit, string> = {
   year: 'سالانه',
 };
 
+/** نامِ واحد برای فیلدِ «تکرار: هر [n] [ماه]» (۳.۱۵.۰). */
+export const PERIOD_NOUNS: Record<IntervalUnit, string> = {
+  day: 'روز',
+  week: 'هفته',
+  month: 'ماه',
+  year: 'سال',
+};
+
 export type ExpenseKind = 'recurring' | 'once';
 
 export const KIND_LABELS: Record<ExpenseKind, string> = {

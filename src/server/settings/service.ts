@@ -333,7 +333,12 @@ export async function listVendors(actor: Actor) {
       name: vendors.name,
       note: vendors.note,
       isActive: vendors.isActive,
-      expenseCount: sql<number>`(select count(*) from ${recurringExpenses} where ${recurringExpenses.vendorId} = ${vendors.id})::int`,
+      /*
+       * ⚠️ نامِ جدول‌ها صریح نوشته شده: پرس‌وجوی تک‌جدولیِ Drizzle ستون‌های داخلِ `sql` را بی‌نامِ جدول
+       * می‌نویسد («"vendor_id" = "id"») و `id` به خودِ هزینه برمی‌گشت — هر طرف‌حساب تعدادِ کلِ
+       * هزینه‌هایی را می‌گرفت که شناسه‌شان با شناسهٔ طرف‌حسابشان یکی بود (همه «۲» در ۳.۱۴.۱).
+       */
+      expenseCount: sql<number>`(select count(*) from "recurring_expenses" re where re."vendor_id" = "vendors"."id")::int`,
     })
     .from(vendors)
     .orderBy(vendors.name);

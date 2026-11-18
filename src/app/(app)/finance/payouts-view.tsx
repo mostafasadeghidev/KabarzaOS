@@ -10,7 +10,7 @@ import {
 } from './_form/payout-actions';
 import { format, formatIn } from '@/domain/money/money';
 import {
-  BUCKET_LABELS, dueBucket, intervalLabel, KIND_LABELS, UNIT_LABELS,
+  BUCKET_LABELS, dueBucket, intervalLabel, KIND_LABELS, PERIOD_NOUNS, UNIT_LABELS,
   type DueBucket, type IntervalUnit,
 } from '@/domain/finance/recurring';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { IconButton } from '@/components/ui/icon-button';
 import { Input } from '@/components/ui/input';
 import { Field, FieldLabel, FieldDescription } from '@/components/ui/field';
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '@/components/ui/input-group';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -45,7 +46,11 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { SearchInput } from '@/components/ui/search-input';
 import { useSearchParams } from 'next/navigation';
 import { Hint } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import { Amount, useAmountsMasked } from '@/components/amount-privacy';
+import { Lightbox } from '@/components/lightbox';
+import { ReceiptThumb } from './ledger-detail';
+import type { ReceiptView } from './ledger-view';
 
 export interface RequestRow {
   id: number;
@@ -94,6 +99,11 @@ export interface DetachedRow {
   userId?: number | null;
   userName: string | null;
   receiptId: number | null;
+  /** برای دیالوگِ جزئیات (۳.۱۵.۰). */
+  ledgerId?: number | null;
+  accountName?: string | null;
+  ledgerDescription?: string | null;
+  receipts?: ReceiptView[];
 }
 
 /** برچسبِ جهتِ پرداخت — پورتِ `payment_dir_label()`. */
@@ -249,6 +259,12 @@ export function PayoutsView({
   const [payTarget, setPayTarget] = useState<RequestRow | null>(null);
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [editing, setEditing] = useState<RecurringRow | null>(null);
+  /** نوعِ هزینه در فرم — «تکرار» برای «یک‌بار» معنا ندارد و پنهان می‌شود. */
+  const [formKind, setFormKind] = useState<'recurring' | 'once'>('recurring');
+  useEffect(() => { if (expenseOpen) setFormKind(editing?.kind === 'once' ? 'once' : 'recurring'); }, [expenseOpen, editing]);
+  /** پرداختِ بی‌پروژه‌ای که جزئیاتش باز است (۳.۱۵.۰). */
+  const [detached, setDetached] = useState<DetachedRow | null>(null);
+  const [zoom, setZoom] = useState<string | null>(null);
 
   const [payState, payAction] = useActionState<PayoutState, FormData>(payRequestAction, {});
   const { show } = useToast();
@@ -343,6 +359,17 @@ export function PayoutsView({
       key, vendor: v.vendor, vendorId: v.vendorId, code: v.code, total: v.total.toFixed(2),
     }));
   })();
+  /**
+   * ۳.۱۵.۰ — جمعِ هر طرف‌حساب کنارِ نامش **داخلِ** فهرستِ بازشو، نه ردیفی از چیپ زیرِ فیلترها:
+   * آن ردیف همان فیلترِ بالا را تکرار می‌کرد و با زیاد شدنِ طرف‌حساب‌ها چند سطر می‌شد.
+   */
+  const vendorHint = new Map<number, string>();
+  for (const v of vendorSummary) {
+    if (v.vendorId === null) continue;
+    const text = amountsMasked ? '•••••' : `${formatIn(v.total, v.code)} ${v.code}`;
+    const prev = vendorHint.get(v.vendorId);
+    vendorHint.set(v.vendorId, prev ? `${prev} · ${text}` : text);
+  }
 
   return (
     <div className="grid gap-4 md:gap-6">
@@ -543,8 +570,9 @@ export function PayoutsView({
             </TableRow>
           </TableHeader>
           <TableBody>
+            {/* ۳.۱۵.۰ — کلیک روی ردیف جزئیات و همهٔ رسیدها را باز می‌کند. */}
             {detachedPayments.map((p) => (
-              <TableRow key={p.id}>
+              <TableRow key={p.id} className="cursor-pointer" onClick={() => setDetached(p)}>
                 <TableDateCell>{p.paidAt ?? '—'}</TableDateCell>
                 <TableCell><UserName userId={p.userId} name={p.userName ?? '—'} size="sm" /></TableCell>
                 <TableCell>{t(PAY_DIRECTION_LABELS[p.direction] ?? p.direction)}</TableCell>
@@ -552,7 +580,7 @@ export function PayoutsView({
                 <TableCell className="text-muted-foreground">{p.note || '—'}</TableCell>
                 <TableCell>
                   {p.receiptId ? (
-                    <a href={`/api/files/${p.receiptId}`} target="_blank" rel="noopener noreferrer" className="underline">
+                    <a href={`/api/files/${p.receiptId}`} target="_blank" rel="noopener noreferrer" className="underline" onClick={(e) => e.stopPropagation()}>
                       {t("رسید")}
                     </a>
                   ) : '—'}
@@ -586,10 +614,12 @@ export function PayoutsView({
             <div className="w-full sm:w-56" aria-label={tr('طرف‌حساب')}>
               <MultiSelect
                 size="sm"
-                options={vendors.map((v) => ({ value: v.id, label: v.name }))}
+                options={vendors.map((v) => ({ value: v.id, label: v.name, hint: vendorHint.get(v.id) }))}
                 selected={expenseVendors}
                 onChange={setExpenseVendors}
                 placeholder={tr('همهٔ طرف‌حساب‌ها')}
+                summarizeAfter={1}
+                summaryLabel={(n) => tr('{n} طرف‌حساب', { n })}
               />
             </div>
             <NativeSelect
@@ -646,25 +676,6 @@ export function PayoutsView({
               <Amount>{tr('جمعِ معادلِ یورو: {sum}', { sum: format(eurTotal.toFixed(2)) })}</Amount>
               {eurMissing > 0 && ` (${tr('{n} مورد بی‌نرخ', { n: eurMissing })})`}
             </span>
-            {vendorSummary.map((v) => (
-              <Hint key={v.key} label={tr('فیلتر بر اساسِ طرف‌حساب')}>
-              <Button
-                type="button"
-                variant={v.vendorId !== null && expenseVendors.includes(v.vendorId) ? 'secondary' : 'outline'}
-                size="xs"
-                // کلیک طرف‌حساب را به انتخاب‌ها می‌افزاید/برمی‌دارد — چند چیپ با هم.
-                onClick={() => {
-                  const id = v.vendorId;
-                  if (id === null) return;
-                  setExpenseVendors((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
-                }}
-                aria-pressed={v.vendorId !== null && expenseVendors.includes(v.vendorId)}
-                className="rounded-full font-normal"
-              >
-                {v.vendor}: <span className="num">{amountsMasked ? '•••••' : `${formatIn(v.total, v.code)} ${v.code}`}</span>
-              </Button>
-              </Hint>
-            ))}
           </div>
         )}
 
@@ -939,6 +950,54 @@ export function PayoutsView({
         </DialogContent>
       </Dialog>
 
+      {/* ---- جزئیاتِ پرداختِ بی‌پروژه (۳.۱۵.۰) ---- */}
+      <Dialog open={detached !== null} onOpenChange={(open) => { if (!open) setDetached(null); }}>
+        <DialogContent dismissable className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{tr('جزئیاتِ پرداخت')}</DialogTitle>
+            <DialogDescription className="num">#{detached?.id ?? ''}</DialogDescription>
+          </DialogHeader>
+          {detached && (
+            <div className="grid gap-4 text-sm">
+              <Table frame={false}>
+                <TableBody>
+                  {([
+                    [tr('تاریخ'), detached.paidAt ?? '—'],
+                    [tr('طرف'), detached.userName ? <UserName userId={detached.userId ?? null} name={detached.userName} size="sm" /> : '—'],
+                    [tr('نوع'), t(PAY_DIRECTION_LABELS[detached.direction] ?? detached.direction)],
+                    [tr('مبلغ'), <Amount>{`${formatIn(detached.amount, detached.currencyCode)} ${detached.currencyCode ?? ''}`.trim()}</Amount>],
+                    [tr('حساب'), detached.accountName || '—'],
+                    [tr('توضیحات'), detached.note || '—'],
+                    ...(detached.ledgerDescription && detached.ledgerDescription !== detached.note
+                      ? [[tr('شرحِ ردیفِ دفتر'), detached.ledgerDescription]]
+                      : []),
+                    [tr('ردیفِ دفتر'), detached.ledgerId ? <span className="num">#{detached.ledgerId}</span> : '—'],
+                  ] as Array<[string, React.ReactNode]>).map(([label, value]) => (
+                    <TableRow key={label}>
+                      <TableCell className="w-32 ps-0 text-muted-foreground">{label}</TableCell>
+                      <TableCell className="pe-0 break-words whitespace-normal">{value}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="grid gap-2">
+                <p className="text-xs font-medium text-muted-foreground">{tr('رسیدها')}</p>
+                {(detached.receipts ?? []).length === 0 ? (
+                  <p className="text-muted-foreground">{tr('رسیدی پیوست نشده.')}</p>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {(detached.receipts ?? []).map((rc, i) => (
+                      <ReceiptThumb key={rc.id} receipt={rc} index={i + 1} size={64} onZoom={setZoom} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Lightbox src={zoom} onClose={() => setZoom(null)} />
+
       {/* ---- مودالِ هزینه ---- */}
       <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
@@ -972,22 +1031,31 @@ export function PayoutsView({
               </Field>
               <Field>
                 <FieldLabel htmlFor="e-kind">{t("نوع")}</FieldLabel>
-                <NativeSelect id="e-kind" name="kind" containerClassName="w-full" defaultValue={editing?.kind ?? 'recurring'}>
+                <NativeSelect id="e-kind" name="kind" containerClassName="w-full" defaultValue={editing?.kind ?? 'recurring'} onChange={(e) => setFormKind(e.target.value === 'once' ? 'once' : 'recurring')}>
                   <NativeSelectOption value="recurring">{t("دوره‌ای")}</NativeSelectOption>
                   <NativeSelectOption value="once">{t("یک‌بار")}</NativeSelectOption>
                 </NativeSelect>
               </Field>
-              <Field>
-                <FieldLabel htmlFor="e-unit">{t("دوره")}</FieldLabel>
-                <NativeSelect id="e-unit" name="intervalUnit" containerClassName="w-full" defaultValue={editing?.intervalUnit ?? 'month'}>
-                  {(Object.keys(UNIT_LABELS) as IntervalUnit[]).map((u) => (
-                    <NativeSelectOption key={u} value={u}>{t(UNIT_LABELS[u])}</NativeSelectOption>
-                  ))}
-                </NativeSelect>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="e-count">{t("هر چند دوره")}</FieldLabel>
-                <Input id="e-count" name="intervalCount" type="number" className="num" defaultValue={editing?.intervalCount ?? 1} />
+              {/*
+                ۳.۱۵.۰ — «دوره» و «هر چند دوره» یک فیلد شدند: «هر [۱] [ماه]». پیش از این «هر چند دوره = ۱»
+                کنارِ «ماهانه» گنگ بود (۳ یعنی هر سه ماه یک‌بار). برای «یک‌بار» پنهان است ولی مقدارش می‌رود.
+              */}
+              <Field className={cn('sm:col-span-2', formKind === 'once' && 'hidden')}>
+                <FieldLabel htmlFor="e-count">{t("تکرار")}</FieldLabel>
+                <div className="flex items-center gap-2">
+                  <InputGroup className="w-28 shrink-0">
+                    <InputGroupAddon><InputGroupText>{t('هر')}</InputGroupText></InputGroupAddon>
+                    <InputGroupInput
+                      id="e-count" name="intervalCount" type="number" min={1} step={1} dir="ltr"
+                      className="num text-center" defaultValue={editing?.intervalCount ?? 1}
+                    />
+                  </InputGroup>
+                  <NativeSelect id="e-unit" name="intervalUnit" containerClassName="w-full" aria-label={t('دوره')} defaultValue={editing?.intervalUnit ?? 'month'}>
+                    {(Object.keys(PERIOD_NOUNS) as IntervalUnit[]).map((u) => (
+                      <NativeSelectOption key={u} value={u}>{t(PERIOD_NOUNS[u])}</NativeSelectOption>
+                    ))}
+                  </NativeSelect>
+                </div>
               </Field>
             </div>
 
@@ -1014,15 +1082,21 @@ export function PayoutsView({
               </Field>
               <Field>
                 <FieldLabel htmlFor="e-vendor">{t("طرف‌حساب")}</FieldLabel>
-                <SearchableSelect id="e-vendor" name="vendorId" containerClassName="w-full" defaultValue={editing?.vendorId ? String(editing.vendorId) : ''}>
+                {/*
+                  ۳.۱۵.۰ — یک انتخابگر، نه انتخابگر + کادرِ «یا طرف‌حسابِ تازه»: نامِ تازه را همین‌جا
+                  بنویسید و «ساختن» را بزنید (پورتِ `find_or_create`؛ ساختن هنگامِ ذخیره است).
+                */}
+                <SearchableSelect
+                  id="e-vendor" name="vendorId" containerClassName="w-full"
+                  defaultValue={editing?.vendorId ? String(editing.vendorId) : ''}
+                  createName="vendorName" searchPlaceholder={tr('جستجو یا نامِ طرف‌حسابِ تازه…')}
+                >
                   <NativeSelectOption value="">{t("بدون طرف‌حساب")}</NativeSelectOption>
                   {/* ⚠️ غیرفعال پیشنهاد نمی‌شود، مگر همانی که این هزینه دارد — وگرنه ویرایش آن را پاک می‌کرد. */}
                   {vendors
                     .filter((v) => v.isActive !== false || v.id === editing?.vendorId)
                     .map((v) => <NativeSelectOption key={v.id} value={v.id}>{v.name}</NativeSelectOption>)}
                 </SearchableSelect>
-                {/* پورتِ `find_or_create`: طرف‌حسابِ تازه همین‌جا ساخته می‌شود. */}
-                <Input name="vendorName" placeholder={tr('یا طرف‌حسابِ تازه…')} className="h-8 text-xs" />
               </Field>
             </div>
 
@@ -1047,12 +1121,13 @@ export function PayoutsView({
                   <NativeSelectOption value="">{t("— هزینهٔ خودِ شرکت —")}</NativeSelectOption>
                   {members.map((m) => <NativeSelectOption key={m.id} value={m.id}>{m.name}</NativeSelectOption>)}
                 </SearchableSelect>
-                <FieldDescription>{tr("هر بار «ثبت پرداخت» بزنید، سهمِ او به بدهی‌اش اضافه می‌شود.")}</FieldDescription>
               </Field>
               <Field>
                 <FieldLabel htmlFor="e-charge-pct">{t("سهمِ عضو (٪)")}</FieldLabel>
                 <Input id="e-charge-pct" name="chargePct" inputMode="decimal" className="num" defaultValue={editing ? String(Number(editing.chargePct)) : '100'} />
               </Field>
+              {/* ⚠️ توضیح بیرونِ ستون (۳.۱۵.۰): داخلِ ستونِ اول بود و دو کادر را هم‌تراز نمی‌گذاشت. */}
+              <FieldDescription className="-mt-1 sm:col-span-3">{tr("هر بار «ثبت پرداخت» بزنید، سهمِ او به بدهی‌اش اضافه می‌شود.")}</FieldDescription>
             </div>
             {/* ⚠️ پیش از این ویرایش، طرف‌حساب و ارز را بی‌صدا پاک می‌کرد و دسته/یادداشت/فعال ذخیره نمی‌شدند. */}
             <label className="flex items-center gap-2 text-sm">

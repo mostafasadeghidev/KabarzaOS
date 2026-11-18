@@ -160,6 +160,23 @@ describe('دفتر و طرف‌حساب', () => {
     await db.delete(recurringExpenses).where(eq(recurringExpenses.vendorId, id));
   });
 
+  it('⚠️ «هزینه‌ها» ی هر طرف‌حساب شمارِ واقعیِ هزینه‌های خودش است (۳.۱۵.۰)', async () => {
+    // پیش از این زیرپرسش «"vendor_id" = "id"» می‌شد و `id` ِ خودِ هزینه را می‌گرفت.
+    const busy = await service.saveVendor(financeAdmin(), { id: null, name: 'پرکار', note: '', isActive: true });
+    const idle = await service.saveVendor(financeAdmin(), { id: null, name: 'بیکار', note: '', isActive: true });
+    const [cur] = await db.select({ id: currencies.id }).from(currencies).limit(1);
+    const base = { amount: '1', currencyId: cur!.id, startDate: '2026-10-01', nextDueDate: '2026-10-01' };
+    await db.insert(recurringExpenses).values([
+      { ...base, title: 'الف', vendorId: busy }, { ...base, title: 'ب', vendorId: busy }, { ...base, title: 'پ', vendorId: null },
+    ]);
+    const listed = await service.listVendors(financeAdmin());
+    expect(listed.find((v) => v.id === busy)!.expenseCount).toBe(2);
+    expect(listed.find((v) => v.id === idle)!.expenseCount).toBe(0);
+    await db.delete(recurringExpenses);
+    await db.delete(vendors).where(eq(vendors.id, idle));
+    await db.delete(vendors).where(eq(vendors.id, busy));
+  });
+
   it('فهرستِ طرف‌حساب‌ها فقط با مجوزِ مالی', async () => {
     await expect(service.listVendors(admin())).rejects.toBeInstanceOf(ForbiddenError);
   });

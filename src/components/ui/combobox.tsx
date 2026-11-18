@@ -297,6 +297,8 @@ export function MultiSelect({
   size = 'default',
   emptyText,
   disabled,
+  summarizeAfter,
+  summaryLabel,
 }: {
   options: Option[];
   selected: number[];
@@ -309,6 +311,12 @@ export function MultiSelect({
   /** وقتی اصلاً گزینه‌ای تعریف نشده. */
   emptyText?: string;
   disabled?: boolean;
+  /**
+   * بیش از این تعداد انتخاب، به‌جای چیپ‌ها یک خلاصه («۴ طرف‌حساب») با دکمهٔ پاک‌کردن — تا فیلترِ نوارِ
+   * بالای جدول با هر انتخاب یک سطر بلندتر نشود (۳.۱۵.۰). نداده = همیشه چیپ.
+   */
+  summarizeAfter?: number;
+  summaryLabel?: (count: number) => string;
 }) {
   const t = useT();
   const [open, setOpen] = React.useState(false);
@@ -342,7 +350,22 @@ export function MultiSelect({
               disabled && 'pointer-events-none opacity-50',
             )}
           >
-            {selected.map((v) => {
+            {summarizeAfter !== undefined && selected.length > summarizeAfter ? (
+              <span
+                data-slot="multi-select-chip"
+                className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-md bg-muted py-0.5 ps-1.5 pe-0.5 text-xs"
+              >
+                <span className="truncate">{summaryLabel ? summaryLabel(selected.length) : t('{n} مورد', { n: selected.length })}</span>
+                <button
+                  type="button"
+                  aria-label={t('پاک‌کردن')}
+                  onClick={() => onChange([])}
+                  className="rounded-sm p-0.5 text-muted-foreground outline-none hover:bg-background hover:text-foreground focus-visible:ring-[2px] focus-visible:ring-ring/50"
+                >
+                  <XIcon className="size-3" />
+                </button>
+              </span>
+            ) : selected.map((v) => {
               const o = byId.get(v);
               const label = o?.label ?? `#${v}`;
               return (
