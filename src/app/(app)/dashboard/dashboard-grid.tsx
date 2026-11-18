@@ -564,7 +564,10 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
       {/* دکمهٔ «ویرایشِ چیدمان» / «تمام» در نوارِ بالای چسبان — همیشه در دسترس، بی‌آنکه ردیفی از صفحه بگیرد. */}
       <HeaderAction>
         {editing ? (
-          <Button type="button" size="sm" onClick={() => setEditing(false)}><Check className="size-4" />{t('تمام')}</Button>
+          // در حالتِ ویرایش، همان جای مداد یک تیک (بی‌متن) — با زدنش ویرایش تمام می‌شود.
+          <Hint label={t('تمام')}>
+            <Button type="button" size="icon-sm" aria-label={t('تمام')} onClick={() => setEditing(false)}><Check className="size-4" /></Button>
+          </Hint>
         ) : (
           // فقط آیکونِ مداد (درخواستِ مالک)؛ نام در راهنمای شناور و برای صفحه‌خوان می‌ماند.
           <Hint label={t('ویرایشِ چیدمان')}>
