@@ -40,6 +40,10 @@ interface Prefs {
   order: string[]; hidden: string[]; shown: string[]; sizes: Record<string, WidgetSize>;
   /** ستونِ شروعِ هر کارت روی شبکهٔ چهارستونه (۰ = ستونِ اول). نبودن = خودکار (کوتاه‌ترین ستون). */
   cols?: Record<string, number>;
+  /** قدِ دلخواهِ کارت به پیکسل (حداقلِ قد) — با کشیدنِ لبهٔ پایینِ کارت. نبودن = قدِ محتوا. */
+  heights?: Record<string, number>;
+  /** فاصلهٔ اضافهٔ بالای کارت به ردیف (هر ردیف ۲۴ پیکسل) — با کشیدنِ لبهٔ بالای کارت. */
+  offsets?: Record<string, number>;
 }
 const WIDTH: Record<WidgetSize, number> = { s: 1, m: 2, l: 3, xl: 4 };
 interface Pos { c: number; y: number; wd: number; span: number }
@@ -51,6 +55,7 @@ interface Pos { c: number; y: number; wd: number; span: number }
  */
 function placeAll(
   list: Array<{ id: string; size: WidgetSize }>, cols: number, spans: Record<string, number>, prefCols: Record<string, number>,
+  offsets: Record<string, number> = {},
 ): Map<string, Pos> | null {
   const heights = Array<number>(cols).fill(0);
   const out = new Map<string, Pos>();
@@ -58,8 +63,11 @@ function placeAll(
   const hits = (c: number, wd: number, y: number, span: number) =>
     placed.some((p) => p.c < c + wd && c < p.c + p.wd && p.y < y + span && y < p.y + p.span);
   for (const w of list) {
-    const span = spans[w.id];
-    if (!span) return null;
+    const own = spans[w.id];
+    if (!own) return null;
+    // فاصلهٔ بالا جزوِ جای کارت است: کارت از y+off شروع می‌شود و ستون تا انتهای آن پر است.
+    const off = Math.max(0, Math.round(offsets[w.id] ?? 0));
+    const span = own + off;
     const wd = Math.min(cols, WIDTH[w.size]);
     const top = (c: number) => Math.max(...heights.slice(c, c + wd));
     let c: number;
@@ -79,9 +87,8 @@ function placeAll(
       }
     }
     for (let i = c; i < c + wd; i++) heights[i] = Math.max(heights[i]!, y + span);
-    const pos = { c, y, wd, span };
-    placed.push(pos);
-    out.set(w.id, pos);
+    placed.push({ c, y, wd, span });
+    out.set(w.id, { c, y: y + off, wd, span: own });
   }
   return out;
 }
@@ -99,6 +106,9 @@ const ROW = 8;
 const GAP = 16;
 /** نزدیکِ لبهٔ بالا/پایین هنگامِ کشیدن، صفحه خودش اسکرول می‌شود. */
 const EDGE = 120;
+/** فاصله‌ای (پیکسل) که لبهٔ کارت در آن به لبهٔ کارتِ دیگر می‌چسبد. */
+const SNAP = 10;
+const UNIT = ROW + GAP;
 
 const EMPTY: Prefs = { order: [], hidden: [], shown: [], sizes: {} };
 
@@ -126,6 +136,10 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
   /** پیش‌نمایشِ کشیدن: کارتِ کشیده‌شده در کدام ستون و پیش از کدام کارت می‌نشیند. */
   const [preview, setPreview] = useState<{ col: number; before: string | null } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  /** کارتِ انتخاب‌شده در حالتِ ویرایش — نوارِ ابزار و دستگیره‌هایش ثابت دیده می‌شوند (برای لمس). */
+  const [selected, setSelected] = useState<string | null>(null);
+  /** تنظیمِ زنده با دستگیره: قد یا فاصلهٔ بالای یک کارت، و خطِ راهنمای هم‌راستایی (y نسبت به شبکه). */
+  const [adjust, setAdjust] = useState<{ id: string; h?: number; off?: number; guide: number | null } | null>(null);
   /** شمارِ ستون‌های فعلیِ شبکه (۱ گوشی، ۲ متوسط، ۴ پهن) — از خودِ CSS خوانده می‌شود. */
   const [cols, setCols] = useState(1);
   useEffect(() => {
@@ -219,6 +233,8 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
   };
   const visible = ordered.filter(isOn);
   const prefCols = prefs.cols ?? {};
+  const heightOf: Record<string, number> = { ...(prefs.heights ?? {}), ...(adjust?.h !== undefined ? { [adjust.id]: adjust.h } : {}) };
+  const offsetOf: Record<string, number> = { ...(prefs.offsets ?? {}), ...(adjust?.off !== undefined ? { [adjust.id]: adjust.off } : {}) };
   const asList = (ws: WidgetDef[]) => ws.map((w) => ({ id: w.id, size: sizeOf(w) }));
   /** ستونِ نمای فعلی ← ستونِ شبکهٔ چهارستونه (همان چیزی که ذخیره می‌شود). */
   const to4 = (c: number) => (cols === 4 ? c : Math.round((c * 4) / cols));
@@ -234,7 +250,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
     return { list, cols: { ...prefCols, [dragId]: to4(preview.col) } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragId, preview, visible, prefs]);
-  const layout = cols > 1 ? placeAll(asList(shown.list), cols, spans, shown.cols) : null;
+  const layout = cols > 1 ? placeAll(asList(shown.list), cols, spans, shown.cols, offsetOf) : null;
 
   /**
    * «ثابت کردن»: ستونِ فعلیِ **همهٔ** کارت‌ها ذخیره و ترتیب بر اساسِ جای عمودیِ فعلی مرتب می‌شود، تا با
@@ -243,7 +259,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
   const freeze = (): { order: string[]; cols: Record<string, number> } => {
     const ids = ordered.map((x) => x.id);
     if (cols <= 1) return { order: ids, cols: prefCols };
-    const now = placeAll(asList(visible), cols, spans, prefCols);
+    const now = placeAll(asList(visible), cols, spans, prefCols, offsetOf);
     if (!now) return { order: ids, cols: prefCols };
     const out: Record<string, number> = { ...prefCols };
     for (const [id, pos] of now) out[id] = to4(pos.c);
@@ -265,7 +281,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
     const row = (y - rect.top) / (ROW + GAP);
     // چیدمانِ بقیه بی کارتِ کشیده‌شده — ثابت، تا پیش‌نمایش نوسان نکند.
     const others = visible.filter((w) => w.id !== dragId);
-    const base = placeAll(asList(others), cols, spans, prefCols);
+    const base = placeAll(asList(others), cols, spans, prefCols, offsetOf);
     if (!base) return null;
     let before: string | null = null;
     let bestY = Infinity;
@@ -325,6 +341,89 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
     [ids[a], ids[b]] = [ids[b]!, ids[a]!];
     save({ ...prefs, order: ids, cols: f.cols });
   };
+  /**
+   * دستگیرهٔ «بوم»: لبهٔ پایین قدِ کارت را عوض می‌کند و لبهٔ بالا شروعش را پایین‌تر می‌برد.
+   * هنگامِ کشیدن، لبه به لبهٔ بالا/پایینِ کارت‌های دیگر می‌چسبد (SNAP) و خطِ راهنما دیده می‌شود.
+   * ⚠️ کارت‌هایی که در همین ستون‌ها **زیرِ** این کارت‌اند کنار گذاشته می‌شوند: با کشیدن جابه‌جا می‌شوند و
+   * چسبیدن به آن‌ها بی‌معناست.
+   */
+  const startAdjust = (e: React.PointerEvent, w: WidgetDef, mode: 'h' | 'off') => {
+    const grid = gridRef.current;
+    const el = grid?.querySelector<HTMLElement>(`[data-measure="${CSS.escape(w.id)}"]`);
+    if (!grid || !el || cols <= 1) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setSelected(w.id);
+    const startY = e.clientY;
+    const r0 = el.getBoundingClientRect();
+    const g0 = grid.getBoundingClientRect().top;
+    const startOff = offsetOf[w.id] ?? 0;
+    const frozen = freeze();
+    const edges: number[] = [];
+    for (const x of grid.querySelectorAll<HTMLElement>('[data-measure]')) {
+      if (x === el || x.closest('[hidden]')) continue;
+      const r = x.getBoundingClientRect();
+      const sameCols = r.left < r0.right - 1 && r0.left < r.right - 1;
+      if (sameCols && r.top >= r0.top) continue;
+      edges.push(r.top, r.bottom);
+    }
+    let h = r0.height;
+    let off = startOff;
+    const onMove = (ev: PointerEvent) => {
+      const dy = ev.clientY - startY;
+      let guide: number | null = null;
+      if (mode === 'h') {
+        h = Math.max(40, Math.round(r0.height + dy));
+        let best = SNAP + 1;
+        const raw = h;
+        for (const edge of edges) {
+          const d = Math.abs(r0.top + raw - edge);
+          if (d < best) { best = d; h = Math.round(edge - r0.top); guide = edge - g0; }
+        }
+        setAdjust({ id: w.id, h, guide });
+      } else {
+        // شروع روی ردیف‌های ۲۴ پیکسلی است؛ لبهٔ کارتِ دیگر هم روی همین ردیف‌هاست، پس گرد کردن هم‌راستا می‌کند.
+        const natTop = r0.top - startOff * UNIT;
+        off = Math.max(0, Math.round((startOff * UNIT + dy) / UNIT));
+        for (const edge of edges) {
+          const k = Math.round((edge - natTop) / UNIT);
+          if (k >= 0 && Math.abs(natTop + k * UNIT - edge) <= 3 && Math.abs(k * UNIT - (startOff * UNIT + dy)) <= SNAP) { off = k; guide = edge - g0; break; }
+        }
+        setAdjust({ id: w.id, off, guide });
+      }
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      setAdjust(null);
+      if (mode === 'h') save({ ...prefs, ...frozen, heights: { ...(prefs.heights ?? {}), [w.id]: h } });
+      else save({ ...prefs, ...frozen, offsets: { ...(prefs.offsets ?? {}), [w.id]: off } });
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+  /** با صفحه‌کلید: بالا/پایین ۸ پیکسل قد یا یک ردیف شروع. */
+  const keyAdjust = (e: React.KeyboardEvent, w: WidgetDef, mode: 'h' | 'off') => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    const dir = e.key === 'ArrowDown' ? 1 : -1;
+    const f = freeze();
+    if (mode === 'h') {
+      const el = gridRef.current?.querySelector<HTMLElement>(`[data-measure="${CSS.escape(w.id)}"]`);
+      const cur = heightOf[w.id] ?? el?.getBoundingClientRect().height ?? 0;
+      save({ ...prefs, ...f, heights: { ...(prefs.heights ?? {}), [w.id]: Math.max(40, Math.round(cur + dir * ROW)) } });
+    } else {
+      save({ ...prefs, ...f, offsets: { ...(prefs.offsets ?? {}), [w.id]: Math.max(0, (offsetOf[w.id] ?? 0) + dir) } });
+    }
+  };
+  /** قد و شروعِ خودکار (دوبار کلیک روی دستگیره، یا دکمهٔ نوار). */
+  const resetAdjust = (id: string, which: 'h' | 'off' | 'both') => {
+    const heights = { ...(prefs.heights ?? {}) };
+    const offsets = { ...(prefs.offsets ?? {}) };
+    if (which !== 'off') delete heights[id];
+    if (which !== 'h') delete offsets[id];
+    save({ ...prefs, ...freeze(), heights, offsets });
+  };
   const resize = (w: WidgetDef, size: WidgetSize) => save({ ...prefs, order: ordered.map((x) => x.id), sizes: { ...prefs.sizes, [w.id]: size } });
 
   const groups = [...new Set(ordered.map((w) => w.group))];
@@ -336,7 +435,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
         {!editing && !scope && <span className="me-auto hidden text-[11px] text-muted-foreground md:inline">{t('میان‌بُر: j / k ردیفِ بعد و قبل، a یا Enter کنشِ اولِ ردیف.')}</span>}
         {editing ? (
           <>
-            <span className="me-auto text-xs text-muted-foreground">{t('کارت‌ها را از دستگیره بکشید و جای دیگری رها کنید؛ اندازه و پنهان‌کردن روی خودِ کارت است.')}</span>
+            <span className="me-auto text-xs text-muted-foreground">{t('موس را روی کارت ببرید: از دستگیره بکشید تا جابه‌جا شود؛ لبهٔ پایین قد را و لبهٔ بالا شروع را عوض می‌کند و به لبهٔ کارت‌های کناری می‌چسبد.')}</span>
             <Button type="button" size="sm" variant="ghost" onClick={() => save(base)}><RotateCcw className="size-4" />{t('پیش‌فرض')}</Button>
             <Button type="button" size="sm" onClick={() => setEditing(false)}><Check className="size-4" />{t('تمام')}</Button>
           </>
@@ -374,15 +473,20 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
         ref={gridRef}
         data-dash-editing={editing ? '1' : undefined}
         className={cn(
-          'grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4',
+          'relative grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4',
           !layout && 'grid-flow-row-dense',
           measured && 'auto-rows-[8px]',
-          // جای رها کردن زیرِ همهٔ کارت‌ها.
-          editing && 'pb-40',
+          // جای رها کردن زیرِ همهٔ کارت‌ها؛ و بالا جای نوارِ شناورِ ردیفِ اول.
+          editing && 'pt-12 pb-40',
         )}
         onDragOver={onGridDragOver}
         onDrop={onGridDrop}
+        onClick={(e) => { if (e.target === e.currentTarget) setSelected(null); }}
       >
+        {/* خطِ راهنمای هم‌راستایی هنگامِ کشیدنِ لبهٔ کارت. */}
+        {adjust?.guide != null && (
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 z-40 border-t-2 border-dashed border-primary" style={{ top: adjust.guide }} />
+        )}
         {shown.list.map((w) => {
           const pos = layout?.get(w.id);
           return (
@@ -394,19 +498,70 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
             style={pos
               ? { gridColumn: `${pos.c + 1} / span ${pos.wd}`, gridRow: `${pos.y + 1} / span ${pos.span}` }
               : spans[w.id] ? { gridRowEnd: `span ${spans[w.id]}` } : undefined}
+            onClick={editing ? () => setSelected(w.id) : undefined}
             className={cn(
-              'relative grid min-w-0 content-start self-start', !pos && SIZE_CLASS[sizeOf(w)],
-              editing && 'rounded-2xl outline-2 outline-offset-2 outline-dashed outline-primary/30',
+              'group/card relative grid min-w-0 content-start self-start', !pos && SIZE_CLASS[sizeOf(w)],
+              editing && 'rounded-2xl outline-2 outline-offset-2 outline-dashed outline-primary/30 hover:z-20',
+              editing && (selected === w.id || adjust?.id === w.id) && 'z-20 outline-solid outline-primary/70',
               dragId === w.id && 'opacity-50 outline-solid outline-primary',
             )}
           >
-            {/* در حالتِ ویرایش، محتوای کارت کلیک‌پذیر نیست — فقط کنترل‌های چیدمان. */}
-            <div className={cn('grid min-w-0', editing && 'pointer-events-none select-none')}><CardHelpProvider text={w.hint}>{w.node}</CardHelpProvider></div>
+            {/*
+              در حالتِ ویرایش، محتوای کارت کلیک‌پذیر نیست — فقط کنترل‌های چیدمان.
+              قدِ دلخواه (min-height) فقط روی شبکهٔ چندستونه؛ روی گوشی کارت‌ها زیرِ هم و به قدِ محتوا.
+            */}
+            <div
+              className={cn('grid min-w-0', editing && 'pointer-events-none select-none')}
+              style={pos && heightOf[w.id] ? { minHeight: heightOf[w.id] } : undefined}
+            >
+              <CardHelpProvider text={w.hint}>{w.node}</CardHelpProvider>
+            </div>
+            {editing && pos && (
+              <>
+                {/* دستگیرهٔ لبهٔ بالا: شروعِ کارت را پایین‌تر می‌برد (به ردیف‌های ۲۴ پیکسلی). */}
+                <span
+                  role="separator"
+                  aria-orientation="horizontal"
+                  aria-label={t('شروعِ کارت (بکشید؛ دوبار کلیک = خودکار)')}
+                  tabIndex={0}
+                  onPointerDown={(e) => startAdjust(e, w, 'off')}
+                  onKeyDown={(e) => keyAdjust(e, w, 'off')}
+                  onDoubleClick={() => resetAdjust(w.id, 'off')}
+                  className={cn(
+                    'absolute -top-2 left-1/2 z-40 h-3 w-14 -translate-x-1/2 cursor-ns-resize touch-none rounded-full border-2 border-card bg-primary/70 shadow-xs hover:bg-primary',
+                    selected === w.id || adjust?.id === w.id ? 'block' : 'hidden group-hover/card:block',
+                  )}
+                />
+                {/* دستگیرهٔ لبهٔ پایین: قدِ کارت؛ به لبهٔ کارت‌های کناری می‌چسبد. */}
+                <span
+                  role="separator"
+                  aria-orientation="horizontal"
+                  aria-label={t('قدِ کارت (بکشید؛ دوبار کلیک = خودکار)')}
+                  tabIndex={0}
+                  onPointerDown={(e) => startAdjust(e, w, 'h')}
+                  onKeyDown={(e) => keyAdjust(e, w, 'h')}
+                  onDoubleClick={() => resetAdjust(w.id, 'h')}
+                  className={cn(
+                    'absolute -bottom-2 left-1/2 z-40 h-3 w-14 -translate-x-1/2 cursor-ns-resize touch-none rounded-full border-2 border-card bg-primary/70 shadow-xs hover:bg-primary',
+                    selected === w.id || adjust?.id === w.id ? 'block' : 'hidden group-hover/card:block',
+                  )}
+                />
+              </>
+            )}
             {editing && (
-              <div className="order-first mb-2 flex flex-wrap items-center gap-1 rounded-xl border bg-popover p-1 shadow-xs">
+              /*
+                نوارِ شناور بالای کارت (مثلِ ابزارهای طراحی) — جا نمی‌گیرد، پس چیدمانِ حالتِ ویرایش همان
+                چیدمانِ نهایی است و لبه‌هایی که اینجا هم‌راستا می‌شوند بعد از «تمام» هم هم‌راستا می‌مانند.
+                ⚠️ فاصله با padding است نه margin: موس از کارت به نوار که می‌رود، hover قطع نشود.
+              */
+              <div className={cn(
+                'absolute inset-x-0 bottom-full z-30 pb-2',
+                selected === w.id || dragId === w.id ? 'block' : 'hidden group-hover/card:block',
+              )}>
+              <div className="flex flex-wrap items-center gap-1 rounded-xl border bg-popover p-1 shadow-md">
                 <span
                   draggable
-                  onDragStart={(e) => { save({ ...prefs, ...freeze() }); setDragId(w.id); setPreview(null); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', w.id); }}
+                  onDragStart={(e) => { save({ ...prefs, ...freeze() }); setSelected(w.id); setDragId(w.id); setPreview(null); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', w.id); }}
                   onDragEnd={() => { setDragId(null); setPreview(null); }}
                   className="grid size-7 cursor-grab place-items-center rounded-lg text-muted-foreground hover:bg-muted active:cursor-grabbing"
                   aria-label={t('بکشید')}
@@ -432,7 +587,11 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
                 {cols > 1 && <Hint label={t('ستونِ بعدی')}><Button type="button" size="icon-xs" variant="ghost" aria-label={t('ستونِ بعدی')} onClick={() => shiftCol(w.id, 1)}><ChevronLeft className="size-3.5 ltr:rotate-180" /></Button></Hint>}
                 <Hint label={t('بالاتر')}><Button type="button" size="icon-xs" variant="ghost" aria-label={t('بالاتر')} onClick={() => shiftRow(w.id, -1)}><ChevronUp className="size-3.5" /></Button></Hint>
                 <Hint label={t('پایین‌تر')}><Button type="button" size="icon-xs" variant="ghost" aria-label={t('پایین‌تر')} onClick={() => shiftRow(w.id, 1)}><ChevronDown className="size-3.5" /></Button></Hint>
+                {(prefs.heights?.[w.id] !== undefined || prefs.offsets?.[w.id] !== undefined) && (
+                  <Hint label={t('قد و شروعِ خودکار')}><Button type="button" size="icon-xs" variant="ghost" aria-label={t('قد و شروعِ خودکار')} onClick={() => resetAdjust(w.id, 'both')}><RotateCcw className="size-3.5" /></Button></Hint>
+                )}
                 <Button type="button" size="icon-xs" variant="ghost" aria-label={t('پنهان کردن')} onClick={() => toggle(w, false)} className="text-muted-foreground hover:text-destructive"><EyeOff className="size-3.5" /></Button>
+              </div>
               </div>
             )}
           </div>
