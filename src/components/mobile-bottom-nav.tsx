@@ -55,7 +55,8 @@ export function MobileBottomNav({ items, unread }: { items: NavItem[]; unread: n
             <span className={cn('grid h-7 w-11 place-items-center rounded-full transition-colors', on && 'bg-primary/12')}>
               <Icon className="size-[19px]" />
             </span>
-            <span className="max-w-full truncate">{item.label}</span>
+            {/* ⚠️ برچسب کلیدِ ترجمه است (مثلِ سایدبار: t(item.label)) — پیش از این خام بود و در هر زبانی فارسی می‌ماند. */}
+            <span className="max-w-full truncate">{t(item.label)}</span>
             {item.icon === 'messages' && unread > 0 && (
               <span className="num absolute top-0.5 end-2 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] leading-4 text-primary-foreground">
                 <LiveCount initial={unread} live={null} />
