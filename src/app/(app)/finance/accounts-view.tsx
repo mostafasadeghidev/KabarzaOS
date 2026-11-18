@@ -117,7 +117,7 @@ export function AccountsView({
       {accounts.length === 0 ? (
         <EmptyState title={t("حسابی تعریف نشده")} />
       ) : (
-        <Table>
+        <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead>{t("نام")}</TableHead>

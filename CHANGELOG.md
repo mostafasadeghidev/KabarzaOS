@@ -16,7 +16,9 @@ Found by testing the installed app on a phone (450 px wide):
 - **Cut-off tabs.** Profile, My team and Finance tabs scrolled sideways with the last tab half visible. They now move extra tabs under "More", like Settings and project pages.
 - **Smaller fixes.** The "Ctrl+K" hint is hidden on phones, which have no keyboard shortcut. The project filter on the Hours page no longer shrinks until its placeholder is cut.
 - **Reminders arrived after midnight for members abroad.** A member who never picked a time zone used the app's zone (Berlin), so a member in Tehran got the evening "you haven't logged hours today" reminder at 01:30 for the previous day. The app now takes the time zone from the member's device the first time they open it, as most apps do. A zone picked by hand in Profile, including "system default", is never changed (migration 0082).
-- **Wide tables on phones.** List tables (a project's unit entries and members) become one card per row on phones, each value labelled with its column. Week grids (availability and team schedule) keep scrolling sideways, but the member column now stays in place.
+- **Wide tables on phones.** About 25 list tables now become one card per row on phones, each value labelled with its column header and empty values left out. They include the ledger, member payouts, unit entries, expenses, bank accounts, reports, activity, team projects and tasks, absences, project finance and management, QA library and staff access. Before, they scrolled sideways and squeezed project names one word per line. Week grids (availability and team schedule) keep scrolling sideways, but the member column now stays in place. Desktop keeps the tables.
+- **Reports tabs** move extra tabs under "More" on phones instead of a 960 px strip.
+- **Settings → Notifications**: the three Telegram test buttons wrap instead of pushing the page 21 px sideways on phones.
 - **Phone message box hint.** The message box no longer says "Ctrl+Enter to send" on touch devices; the send button is used there.
 
 ## [3.15.0]

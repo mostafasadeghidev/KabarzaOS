@@ -14,7 +14,8 @@ export function TeamAbsences({
   return (
     <Section title={t("مرخصی‌های تیم (۳۰ روزِ اخیر)")}>
       {rows.length === 0 ? <p className="text-sm text-muted-foreground">{t("مرخصی‌ای در این بازه نیست")}</p> : (
-        <Table>
+        // ۳.۱۵.۱ — روی گوشی هر مرخصی یک کارت.
+        <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead>{t("عضو")}</TableHead>
@@ -27,9 +28,9 @@ export function TeamAbsences({
             {rows.map((a) => (
               <TableRow key={a.id}>
                 <TableCell><UserName userId={a.userId} name={a.userName ?? '—'} size="sm" /></TableCell>
-                <TableDateCell>{a.fromDate}</TableDateCell>
-                <TableDateCell>{a.toDate}</TableDateCell>
-                <TableCell>{a.note || '—'}</TableCell>
+                <TableDateCell data-label={t("از")}>{a.fromDate}</TableDateCell>
+                <TableDateCell data-label={t("تا")}>{a.toDate}</TableDateCell>
+                <TableCell data-label={t("توضیح")}>{a.note || '—'}</TableCell>
               </TableRow>
             ))}
           </TableBody>

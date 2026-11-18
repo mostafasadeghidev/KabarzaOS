@@ -63,7 +63,8 @@ export function MembersPanel({ data }: { data: MembersData }) {
           <p className="text-sm text-muted-foreground">{tr('در این بازه ساعتی ثبت نشده.')}</p>
         ) : (
           <>
-            <Table>
+            {/* ۳.۱۵.۱ — روی گوشی هر ردیف یک کارت (جدول افقی می‌لغزید و نام‌ها کلمه‌به‌کلمه می‌شکستند). */}
+            <Table stack>
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr('عضو')}</TableHead>
@@ -77,9 +78,9 @@ export function MembersPanel({ data }: { data: MembersData }) {
                 {data.hours.map((h) => (
                   <TableRow key={h.id}>
                     <TableCell className="font-medium"><UserName userId={h.id} name={h.name} size="sm" /></TableCell>
-                    <TableNumericCell>{h.projects}</TableNumericCell>
-                    <TableNumericCell>{hoursLabel(h.minutes)}</TableNumericCell>
-                    <TableNumericCell>{h.openTasks}</TableNumericCell>
+                    <TableNumericCell data-label={tr('پروژه‌ها')}>{h.projects}</TableNumericCell>
+                    <TableNumericCell data-label={tr('ساعت کاری')}>{hoursLabel(h.minutes)}</TableNumericCell>
+                    <TableNumericCell data-label={tr('تسک باز')}>{h.openTasks}</TableNumericCell>
                     <TableActionsCell>
                       <Button asChild size="sm" variant="ghost">
                         <Link href={`/team/${h.id}?${query}`}>

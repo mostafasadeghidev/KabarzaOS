@@ -442,7 +442,8 @@ export function TelegramSection({ telegram }: {
           <p className="text-xs text-muted-foreground">
             {t('بات را با @BotFather بساز. آزمون‌های زیر پیامی برای کسی نمی‌فرستند مگر آنکه نامشان بگوید.')}
           </p>
-          <div className="flex items-center gap-3">
+          {/* ⚠️ flex-wrap (۳.۱۵.۱): سه دکمه روی گوشی جا نمی‌شدند و صفحه را ۲۱ پیکسل افقی هل می‌دادند. */}
+          <div className="flex flex-wrap items-center gap-2">
             {/*
               سه آزمون، مثلِ نسخهٔ قبلی — و هر سه چیزِ **متفاوتی** را می‌سنجند:
               توکن، مسیرِ ارسال، و کلِ زنجیرهٔ گزارش. یکی‌شان به‌تنهایی

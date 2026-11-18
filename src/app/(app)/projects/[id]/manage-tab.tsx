@@ -203,7 +203,7 @@ function LogDetail({ logs, weekStart }: { logs: LogRow[]; weekStart: number }) {
         (تاریخ وسطِ ستونی پهن)، و ستونِ توضیحاتِ `w-full` همه را در ابتدای ردیف
         به هم می‌چسباند. ستونِ آخر باقیِ عرض را می‌گیرد.
       */}
-      <Table frame={false} className="table-fixed">
+      <Table frame={false} className="table-fixed" stack>
         <TableHeader>
           <TableRow>
             {/*
@@ -643,7 +643,7 @@ export function ManageTab({
         {hours.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("ساعتِ کاری‌ای ثبت نشده.")}</p>
         ) : (
-          <Table frame={false}>
+          <Table frame={false} stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("عضو")}</TableHead>

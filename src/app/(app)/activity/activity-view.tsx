@@ -84,7 +84,8 @@ export function ActivityView({
       {events.length === 0 ? (
         <EmptyState title={filtered ? tr("رویدادی با این فیلتر پیدا نشد") : tr("رویدادی ثبت نشده")} />
       ) : (
-          <Table>
+          // ۳.۱۵.۱ — روی گوشی هر رویداد یک کارت.
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("رویداد")}</TableHead>
@@ -115,14 +116,14 @@ export function ActivityView({
                   }}
                 >
                   <TableCell><Badge variant="secondary">{tr(e.label)}</Badge></TableCell>
-                  <TableCell className="whitespace-normal"><SubjectText subject={e.subject} /></TableCell>
-                  <TableCell>
+                  <TableCell data-label={tr("مورد")} className="whitespace-normal"><SubjectText subject={e.subject} /></TableCell>
+                  <TableCell data-label={tr("کاربر")}>
                     {e.actorName
                       ? <UserName userId={e.actorId} name={e.actorName} size="sm" />
                       : (e.actorType === 'system' ? tr('سامانه') : '—')}
                   </TableCell>
-                  <TableDateCell>{when(e.createdAt, tz)}</TableDateCell>
-                  <TableCell className="w-8 text-muted-foreground">
+                  <TableDateCell data-label={tr("زمان")}>{when(e.createdAt, tz)}</TableDateCell>
+                  <TableCell data-stack-hide className="w-8 text-muted-foreground">
                     <ChevronLeft aria-hidden className="size-4 ltr:-scale-x-100" />
                   </TableCell>
                 </TableRow>

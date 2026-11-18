@@ -95,7 +95,8 @@ export function ProjectBoard({
           </div>
 
           {pg.items.length === 0 ? <p className="text-sm text-muted-foreground">{tr('پروژه‌ای نیست.')}</p> : (
-            <Table>
+            // ۳.۱۵.۱ — روی گوشی هر ردیف یک کارت (جدول افقی می‌لغزید و نام‌ها کلمه‌به‌کلمه می‌شکستند).
+            <Table stack>
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr('نام')}</TableHead>
@@ -121,22 +122,22 @@ export function ProjectBoard({
                     </TableCell>
                     {mode === 'manage' ? (
                       <>
-                        <TableCell>{p.officeName ?? '—'}</TableCell>
-                        <TableDateCell>{p.regDate ?? '—'}</TableDateCell>
+                        <TableCell data-label={tr('دفتر')}>{p.officeName ?? '—'}</TableCell>
+                        <TableDateCell data-label={tr('تاریخ')}>{p.regDate ?? '—'}</TableDateCell>
                       </>
-                    ) : <TableCell>{p.roles && p.roles.length > 0 ? p.roles.join(tr('، ')) : '—'}</TableCell>}
-                    <TableCell>
+                    ) : <TableCell data-label={tr('نقش')}>{p.roles && p.roles.length > 0 ? p.roles.join(tr('، ')) : '—'}</TableCell>}
+                    <TableCell data-label={tr('وضعیت پروژه')}>
                       <ProjectStatus name={p.statusName} group={p.statusGroup} color={p.statusColor} />
                     </TableCell>
-                    {mode === 'manage' && <TableNumericCell>{p.taskTotal ?? 0}</TableNumericCell>}
-                    <TableCell>
+                    {mode === 'manage' && <TableNumericCell data-label={tr('تعداد تسک‌ها')}>{p.taskTotal ?? 0}</TableNumericCell>}
+                    <TableCell data-label={tr('درصد پیشرفت')}>
                       <span className="flex items-center gap-2">
                         <Progress value={p.progress} className="w-20" aria-label={tr('درصد پیشرفت')} />
                         <span className="num text-xs">{p.progress}%</span>
                       </span>
                     </TableCell>
-                    <TableNumericCell>{hoursLabel(p.minutes)}</TableNumericCell>
-                    {mode === 'member' && <TableNumericCell>{p.openTasks ?? 0}</TableNumericCell>}
+                    <TableNumericCell data-label={mode === 'manage' ? tr('زمان کل کار') : tr('ساعت کاری')}>{hoursLabel(p.minutes)}</TableNumericCell>
+                    {mode === 'member' && <TableNumericCell data-label={tr('تسک باز')}>{p.openTasks ?? 0}</TableNumericCell>}
                   </TableRow>
                 ))}
               </TableBody>

@@ -59,7 +59,7 @@ export function BankDirectory({
       {shown.length === 0 ? (
         <p className="text-sm text-muted-foreground">{tr('کاربری یافت نشد')}</p>
       ) : (
-        <Table>
+        <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead>{tr('عضو')}</TableHead>
