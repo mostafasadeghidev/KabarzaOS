@@ -32,6 +32,9 @@ import { myOpenCommentThreads, myTasks } from '@/server/projects/service';
 import { MemberDashboardV2 } from './member-dashboard-v2';
 import { ClientDashboardV2, adminExtraWidgets, memberExtraWidgets } from './extra-widgets';
 import { LiveRefresh } from './extras-client';
+import { DashPrefsProvider } from './dash-prefs';
+import { getDashPrefs } from '@/server/dashboard-prefs';
+import { timerState } from '@/server/timelogs/service';
 import { getAdminExtras, getClientExtras, getMemberExtras } from '@/server/dashboard-extras';
 
 export const generateMetadata = pageTitle('نمای کلی');
@@ -132,7 +135,11 @@ export default async function DashboardPage({
          * کارفرمای خالص فعلاً همان نمای قبلی را می‌بیند.
          */
         if (isMember && classic !== '1') {
-          const [mine, rawThreads, rawMx] = await Promise.all([myTasks(actor), myOpenCommentThreads(actor), getMemberExtras(actor)]);
+          const [mine, rawThreads, rawMx, timer, prefs] = await Promise.all([
+            myTasks(actor), myOpenCommentThreads(actor), getMemberExtras(actor), timerState(actor), getDashPrefs(actor.id),
+          ]);
+          // ⚠️ با تایمرِ روشن (یا در انتظار) کارتِ «ثبتِ ساعت» چیزی ندارد؛ ساخته نشود تا جای خالی نماند.
+          const showLog = !(timer.running || timer.pending);
           const rawTasks = mine.kind === 'member' ? { active: mine.active, waiting: mine.waiting, review: mine.review } : null;
           const tasks = demo && rawTasks ? demoMemberTasks(rawTasks) : rawTasks;
           const threads = demo ? demoComments(rawThreads) : rawThreads;
@@ -144,16 +151,18 @@ export default async function DashboardPage({
                 description={todayLabel()}
                 actions={headerLinks}
               />
+              <DashPrefsProvider initial={prefs} readOnly={!!actor.viewOnly}>
               <MemberDashboardV2
                 data={own}
                 tasks={tasks}
                 comments={threads}
                 userId={actor.id}
                 teamCards={teamCards}
-                timeLog={<DashboardTimeLog actor={actor} part="log" />}
+                timeLog={showLog ? <DashboardTimeLog actor={actor} part="log" /> : null}
                 myWeek={<DashboardTimeLog actor={actor} part="week" />}
                 extra={memberExtraWidgets(mx, actor.id)}
               />
+              </DashPrefsProvider>
               <LiveRefresh />
             </PageShell>
           );
@@ -162,7 +171,7 @@ export default async function DashboardPage({
          * نمونهٔ محلیِ داشبوردِ تازهٔ **کارفرما** — همان شبکهٔ قابلِ ویرایش، با کارت‌های کارفرما.
          */
         if (isClient && !isMember && classic !== '1') {
-          const [mine, rawCx] = await Promise.all([myTasks(actor), getClientExtras(actor)]);
+          const [mine, rawCx, prefs] = await Promise.all([myTasks(actor), getClientExtras(actor), getDashPrefs(actor.id)]);
           const cx = demo ? demoClientExtras(rawCx) : rawCx;
           const rawReview = mine.kind === 'client' ? mine.review : [];
           const rawAssigned = mine.kind === 'client' ? mine.active : [];
@@ -177,7 +186,9 @@ export default async function DashboardPage({
                 description={todayLabel()}
                 actions={headerLinks}
               />
-              <ClientDashboardV2 data={own} extras={cx} review={review} assigned={assigned} userId={actor.id} />
+              <DashPrefsProvider initial={prefs} readOnly={!!actor.viewOnly}>
+                <ClientDashboardV2 data={own} extras={cx} review={review} assigned={assigned} userId={actor.id} />
+              </DashPrefsProvider>
               <LiveRefresh />
             </PageShell>
           );
@@ -226,6 +237,7 @@ export default async function DashboardPage({
             <Link href="/dashboard?classic=1" className="text-xs text-muted-foreground hover:underline">{t('نمای قبلی')}</Link>
           </>}
         />
+        <DashPrefsProvider initial={await getDashPrefs(actor.id)} readOnly={!!actor.viewOnly}>
         <DashboardV2
           data={data}
           inbox={inbox}
@@ -235,6 +247,7 @@ export default async function DashboardPage({
           userId={actor.id}
           extra={adminExtraWidgets(ax)}
         />
+        </DashPrefsProvider>
         <LiveRefresh />
       </PageShell>
     );

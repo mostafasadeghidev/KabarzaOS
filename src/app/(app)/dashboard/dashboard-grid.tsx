@@ -16,11 +16,13 @@ import { ExpandFillProvider } from '@/components/ui/expandable-list';
 import { cn } from '@/lib/utils';
 import { TaskDialog } from '../projects/[id]/task-dialog';
 import { EventDialog } from '../activity/event-dialog';
+import { migrateLegacy, useDashPrefs } from './dash-prefs';
+import type { DashScope } from '@/server/dashboard-prefs';
 
 /**
  * شبکهٔ بنتوی سفارشی (نمونهٔ محلی) — هر کارتِ داشبورد یک «ویجت» است؛ کاربر انتخاب می‌کند کدام‌ها دیده
- * شوند، به چه ترتیب و با چه اندازه‌ای. ترجیح فعلاً در مرورگر (localStorage) — اگر پسندیده شود باید روی
- * کاربر در پایگاه‌داده بنشیند تا روی هر دستگاهی یکی باشد.
+ * شوند، به چه ترتیب و با چه اندازه‌ای. ترجیح روی خودِ کاربر در پایگاه‌داده است (۳.۱۸.۰، dash-prefs.tsx) تا روی
+ * هر دستگاهی یکی باشد؛ پیش از این در localStorage ِ هر مرورگر بود.
  *
  * اندازه‌ها روی شبکهٔ چهارستونه (۲ ستون در عرضِ متوسط، ۱ ستون روی گوشی):
  *  s = یک ستون · m = دو ستون · l = سه ستون · xl = تمام‌عرض
@@ -227,7 +229,14 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
   const t = useT();
   const key = scope ? `kz-dash-layout-${scope}-${userId}` : `kz-dash-layout-${userId}`;
   const base = useMemo<Prefs>(() => (defaults ? upgrade({ ...EMPTY, ...defaults, sizes: defaults.sizes ?? {} }) : { ...EMPTY, basis: BASIS }), [defaults]);
-  const [prefs, setPrefs] = useState<Prefs>(base);
+  /*
+   * ۳.۱۸.۰ — چیدمان روی سرور (users.dashboard_prefs، از راهِ DashPrefsProvider)، نه مرورگر. ⚠️ چیدمانِ
+   * قدیمیِ مرورگر یک بار کوچ داده می‌شود (migrateLegacy) و فقط پس از ذخیرهٔ موفق پاک می‌شود.
+   */
+  const dash = useDashPrefs();
+  const dscope: DashScope = scope === 'member' ? 'member' : scope === 'client' ? 'client' : 'admin';
+  const serverLayout = dash.initial.layouts?.[dscope] as Partial<Prefs> | undefined;
+  const [prefs, setPrefs] = useState<Prefs>(() => (serverLayout ? upgrade({ ...EMPTY, ...serverLayout }) : base));
   const [open, setOpen] = useState(false);
   /** حالتِ ویرایشِ زنده: کشیدن و رها کردن، اندازه و پنهان کردن روی خودِ کارت. */
   const [editing, setEditing] = useState(false);
@@ -324,9 +333,21 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
     return () => document.removeEventListener('dragover', onOver);
   }, [dragId]);
   useEffect(() => {
-    try { const raw = localStorage.getItem(key); if (raw) setPrefs(upgrade({ ...EMPTY, ...JSON.parse(raw) as Partial<Prefs> })); } catch { /* خصوصی */ }
+    if (serverLayout) return;
+    const raw = migrateLegacy(key, dash.readOnly, async (r) => {
+      try { return await dash.saveLayout(dscope, JSON.parse(r)); } catch { return false; }
+    });
+    if (raw) { try { setPrefs(upgrade({ ...EMPTY, ...JSON.parse(raw) as Partial<Prefs> })); } catch { /* خراب */ } }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
-  const save = (p: Prefs) => { setPrefs(p); try { localStorage.setItem(key, JSON.stringify(p)); } catch { /* پر */ } };
+  /** ذخیره روی سرور با کمی درنگ — کشیدنِ لبه ده‌ها تغییر پشتِ هم می‌سازد، نه ده‌ها درخواست. */
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const save = (p: Prefs) => {
+    setPrefs(p);
+    if (dash.readOnly) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => { void dash.saveLayout(dscope, p); }, 400);
+  };
 
   // ترتیب: ترجیحِ کاربر، و ویجت‌های تازه (که در ترجیح نیستند) به ترتیبِ پیش‌فرض در جای خودشان.
   const ordered = useMemo(() => {
@@ -562,7 +583,8 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
   return (
     <div className="grid gap-3">
       {/* دکمهٔ «ویرایشِ چیدمان» / «تمام» در نوارِ بالای چسبان — همیشه در دسترس، بی‌آنکه ردیفی از صفحه بگیرد. */}
-      <HeaderAction>
+      {/* «دیدن به‌جای کاربر»: چیدمانِ همان کاربر دیده می‌شود ولی ویرایش نه. */}
+      {!dash.readOnly && <HeaderAction>
         {editing ? (
           // در حالتِ ویرایش، همان جای مداد یک تیک (بی‌متن) — با زدنش ویرایش تمام می‌شود.
           <Hint label={t('تمام')}>
@@ -574,7 +596,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
             <Button type="button" size="icon-sm" variant="outline" aria-label={t('ویرایشِ چیدمان')} onClick={() => setEditing(true)}><Pencil className="size-4" /></Button>
           </Hint>
         )}
-      </HeaderAction>
+      </HeaderAction>}
       {/* میان‌بُرها فقط در صفِ مدیر کار می‌کنند — داشبوردِ عضو و کارفرما (scope) راهنمایش را نمی‌بینند. */}
       {!editing && !scope && <span className="hidden text-[11px] text-muted-foreground md:inline">{t('میان‌بُر: j / k ردیفِ بعد و قبل، a یا Enter کنشِ اولِ ردیف.')}</span>}
       {/* «فهرستِ کارت‌ها» و «پیش‌فرض» فقط در حالتِ ویرایش. */}

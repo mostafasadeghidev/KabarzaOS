@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Combobox } from '@/components/ui/combobox';
 import { DatePicker } from '@/components/ui/date-picker';
+import { migrateLegacy, useDashPrefs } from './dash-prefs';
 import { Input } from '@/components/ui/input';
 import { Hint } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/toast';
@@ -170,21 +171,25 @@ export function PayRenewalButton({ id, due }: { id: number; due: string }) {
 }
 
 /**
- * هدفِ ساعتِ هفته — نوارِ پیشرفت. ⚠️ هدف فعلاً روی همین مرورگر ذخیره می‌شود (مثلِ یادداشت)؛
- * پیش از انتقال باید به پایگاه‌داده برود.
+ * هدفِ ساعتِ هفته — نوارِ پیشرفت. هدف روی خودِ کاربر در پایگاه‌داده است (۳.۱۸.۰، `dashboard_prefs.hoursGoal`)؛
+ * ⚠️ هدفِ قدیمیِ مرورگر بارِ اول کوچ داده می‌شود. در «دیدن به‌جای کاربر» مداد پنهان است.
  */
 export function HoursGoal({ minutes, userId }: { minutes: number; userId: number }) {
   const t = useT();
+  const dash = useDashPrefs();
   const key = `kz-hours-goal-${userId}`;
-  const [goal, setGoal] = useState(40);
+  const [goal, setGoal] = useState(dash.initial.hoursGoal ?? 40);
   const [editing, setEditing] = useState(false);
   useEffect(() => {
-    try { const v = Number(localStorage.getItem(key)); if (v > 0) setGoal(v); } catch { /* بی‌حافظه */ }
+    if (dash.initial.hoursGoal !== undefined) return;
+    const raw = migrateLegacy(key, dash.readOnly, async (r) => Number(r) > 0 && dash.saveGoal(Math.min(80, Math.round(Number(r)))));
+    if (raw !== null && Number(raw) > 0) setGoal(Math.min(80, Math.round(Number(raw))));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   const save = (v: number) => {
     const n = Math.min(80, Math.max(1, Math.round(v) || 40));
     setGoal(n);
-    try { localStorage.setItem(key, String(n)); } catch { /* بی‌حافظه */ }
+    void dash.saveGoal(n);
   };
   const hours = minutes / 60;
   const pct = Math.min(100, Math.round((hours / goal) * 100));
@@ -205,11 +210,13 @@ export function HoursGoal({ minutes, userId }: { minutes: number; userId: number
           ) : <span className="num text-sm text-muted-foreground">{goal}</span>}
           <span className="text-sm text-muted-foreground">{t('ساعت')}</span>
         </span>
-        <Hint label={t('تغییرِ هدف')}>
-          <button type="button" aria-label={t('تغییرِ هدف')} onClick={() => setEditing(true)} className="rounded p-1 text-muted-foreground hover:text-foreground">
-            <Pencil className="size-3.5" />
-          </button>
-        </Hint>
+        {!dash.readOnly && (
+          <Hint label={t('تغییرِ هدف')}>
+            <button type="button" aria-label={t('تغییرِ هدف')} onClick={() => setEditing(true)} className="rounded p-1 text-muted-foreground hover:text-foreground">
+              <Pencil className="size-3.5" />
+            </button>
+          </Hint>
+        )}
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-muted">
         <div className={cn('h-full rounded-full transition-all', pct >= 100 ? 'bg-emerald-500' : 'bg-primary')} style={{ width: `${pct}%` }} />

@@ -94,6 +94,11 @@ export const users = pgTable('users', {
    * شکلش در `domain/telegram/prefs` (`normalizePrefs`).
    */
   telegramPrefs: jsonb('telegram_prefs').notNull().default({}).$type<Record<string, unknown>>(),
+  /**
+   * ترجیحاتِ داشبورد (۳.۱۸.۰، مهاجرتِ 0083): چیدمانِ هر پنل، «یادداشتِ من» و «هدفِ ساعت» — شکلش در
+   * `server/dashboard-prefs.ts`. پیش از این در localStorage ِ هر مرورگر بود.
+   */
+  dashboardPrefs: jsonb('dashboard_prefs').notNull().default({}).$type<Record<string, unknown>>(),
 
   /**
    * حضورِ زنده — دو مهر: آخرین ضربان (هر تبی) و آخرین ضربانِ تبِ **متمرکز**.
