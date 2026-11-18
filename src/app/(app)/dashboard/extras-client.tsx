@@ -104,7 +104,7 @@ export function ContactTeamForm() {
   const [pending, start] = useTransition();
   return (
     <form
-      className="grid gap-2"
+      className="kz-form grid gap-2"
       onSubmit={(e) => {
         e.preventDefault();
         if (!body.trim()) return;
@@ -121,11 +121,12 @@ export function ContactTeamForm() {
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={3}
+        className="kz-grow"
         placeholder={t('سؤال یا درخواستتان را بنویسید…')}
         aria-label={t('متنِ پیام')}
       />
       <div className="flex items-center justify-between gap-2">
-        <Link href="/messages" className="text-xs text-muted-foreground hover:underline">{t('همهٔ پیام‌ها')}</Link>
+        <Link href="/messages" className="kz-fit-label text-xs text-muted-foreground hover:underline">{t('همهٔ پیام‌ها')}</Link>
         <Button type="submit" size="sm" disabled={pending || !body.trim()}><Send className="size-3.5" />{t('بفرست')}</Button>
       </div>
     </form>
@@ -187,7 +188,7 @@ export function HoursGoal({ minutes, userId }: { minutes: number; userId: number
     <div className="grid gap-2">
       <div className="flex items-end justify-between gap-2">
         <span className="flex items-baseline gap-1">
-          <span className="num text-2xl font-bold">{hours.toFixed(1).replace(/\.0$/, '')}</span>
+          <span className="kz-num num text-2xl font-bold">{hours.toFixed(1).replace(/\.0$/, '')}</span>
           <span className="text-sm text-muted-foreground">{t('از')}</span>
           {editing ? (
             <Input
@@ -209,7 +210,7 @@ export function HoursGoal({ minutes, userId }: { minutes: number; userId: number
       <div className="h-2 overflow-hidden rounded-full bg-muted">
         <div className={cn('h-full rounded-full transition-all', pct >= 100 ? 'bg-emerald-500' : 'bg-primary')} style={{ width: `${pct}%` }} />
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="kz-fit-label text-xs text-muted-foreground">
         {pct >= 100 ? t('هدفِ این هفته کامل شد.') : t('{n} ساعت مانده تا هدف.', { n: Math.max(0, goal - hours).toFixed(1).replace(/\.0$/, '') })}
       </p>
     </div>

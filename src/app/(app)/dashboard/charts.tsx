@@ -62,7 +62,7 @@ export function WeeklyTrendChart({ data }: { data: WeeklyPoint[] }) {
   const hoursConfig = useHoursConfig();
   const { reversed, side } = useAxes();
   return (
-    <ChartContainer config={hoursConfig} className="aspect-auto h-56 w-full [[data-fixed]_&]:h-auto [[data-fixed]_&]:min-h-24 [[data-fixed]_&]:flex-1 [[data-fixed]_&]:basis-0">
+    <ChartContainer config={hoursConfig} className="aspect-auto h-56 w-full [[data-fixed]_&]:h-auto [[data-fixed]_&]:min-h-12 [[data-fixed]_&]:flex-1 [[data-fixed]_&]:basis-0">
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
         <defs>
           <linearGradient id="fillHours" x1="0" y1="0" x2="0" y2="1">
@@ -91,7 +91,7 @@ export function MemberHoursChart({ data }: { data: MemberHours[] }) {
   const hoursConfig = useHoursConfig();
   const { reversed, side } = useAxes();
   return (
-    <ChartContainer config={hoursConfig} className="aspect-auto h-56 w-full [[data-fixed]_&]:h-auto [[data-fixed]_&]:min-h-24 [[data-fixed]_&]:flex-1 [[data-fixed]_&]:basis-0 [&_.recharts-surface]:[direction:ltr]">
+    <ChartContainer config={hoursConfig} className="aspect-auto h-56 w-full [[data-fixed]_&]:h-auto [[data-fixed]_&]:min-h-12 [[data-fixed]_&]:flex-1 [[data-fixed]_&]:basis-0 [&_.recharts-surface]:[direction:ltr]">
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
         <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={GRID} />
         <XAxis type="number" reversed={reversed} tickLine={false} axisLine={false} tick={TICK} />
@@ -116,7 +116,7 @@ export function StatusChart({ data }: { data: StatusSlice[] }) {
   const countConfig = useCountConfig();
   const { reversed, side } = useAxes();
   return (
-    <ChartContainer config={countConfig} className="aspect-auto h-56 w-full [[data-fixed]_&]:h-auto [[data-fixed]_&]:min-h-24 [[data-fixed]_&]:flex-1 [[data-fixed]_&]:basis-0 [&_.recharts-surface]:[direction:ltr]">
+    <ChartContainer config={countConfig} className="aspect-auto h-56 w-full [[data-fixed]_&]:h-auto [[data-fixed]_&]:min-h-12 [[data-fixed]_&]:flex-1 [[data-fixed]_&]:basis-0 [&_.recharts-surface]:[direction:ltr]">
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
         <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={GRID} />
         <XAxis type="number" reversed={reversed} tickLine={false} axisLine={false} allowDecimals={false} tick={TICK} />

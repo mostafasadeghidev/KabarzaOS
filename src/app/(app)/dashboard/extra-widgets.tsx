@@ -63,7 +63,7 @@ function Panel({ title, icon, action, children }: {
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="py-2 text-sm text-muted-foreground">{children}</p>;
+  return <p className="kz-empty py-2 text-sm text-muted-foreground">{children}</p>;
 }
 
 const money = (amount: string, code: string | null) => `${format(amount)} ${code ?? ''}`.trim();
@@ -259,7 +259,7 @@ export function memberExtraWidgets(x: MemberX, userId: number): WidgetDef[] {
         <Panel title={t('ادامهٔ کارِ قبلی')} icon={<Play />}>
           {r.running ? (
             <div className="grid gap-1 rounded-xl bg-emerald-500/10 px-3 py-2.5">
-              <span className="text-xs text-emerald-700 dark:text-emerald-400">{t('تایمر روشن است')}</span>
+              <span className="kz-fit-label text-xs text-emerald-700 dark:text-emerald-400">{t('تایمر روشن است')}</span>
               <span className="truncate text-sm font-medium">{r.running.projectTitle ?? t('ساعتِ عمومی')}</span>
               <Link href="/hours" className="num text-xs text-muted-foreground hover:underline">{hm(r.running.minutes)}</Link>
             </div>
@@ -267,7 +267,7 @@ export function memberExtraWidgets(x: MemberX, userId: number): WidgetDef[] {
             <div className="grid gap-2">
               <span className="grid gap-0.5">
                 <span className="truncate text-sm font-medium">{r.last.projectTitle ?? t('ساعتِ عمومی')}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="kz-fit-label text-xs text-muted-foreground">
                   {t('آخرین بار')} <span className="num">{r.last.logDate}</span> · <span className="num">{hm(r.last.minutes)}</span>
                 </span>
               </span>
@@ -321,12 +321,12 @@ export function memberExtraWidgets(x: MemberX, userId: number): WidgetDef[] {
             <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
               <dt className="text-muted-foreground">{t('امروز')}</dt>
               <dd className="num" dir="ltr">{x.schedule.today.length ? slots(x.schedule.today) : '—'}</dd>
-              <dt className="text-muted-foreground">{t('فردا')}</dt>
-              <dd className="num" dir="ltr">{x.schedule.tomorrow.length ? slots(x.schedule.tomorrow) : '—'}</dd>
+              <dt className="kz-fit-label text-muted-foreground">{t('فردا')}</dt>
+              <dd className="kz-fit-label num" dir="ltr">{x.schedule.tomorrow.length ? slots(x.schedule.tomorrow) : '—'}</dd>
             </dl>
           ) : <Empty>{t('برنامهٔ هفتگی نداده‌اید.')}</Empty>)}
           {x.leave && (x.leave.length === 0
-            ? <p className="text-xs text-muted-foreground">{t('مرخصیِ پیشِ رو ندارید.')}</p>
+            ? <p className="kz-fit-label text-xs text-muted-foreground">{t('مرخصیِ پیشِ رو ندارید.')}</p>
             : (
               <ExpandableList inPlace limit={3} className="grid gap-1">
                 {x.leave.map((a) => (
@@ -348,10 +348,10 @@ export function memberExtraWidgets(x: MemberX, userId: number): WidgetDef[] {
       hint: t('ماندهٔ دریافتیِ شما از پروژه‌ها به تفکیکِ ارز. پیش‌فرض خاموش است تا جلوی چشمِ دیگران نباشد؛ مبلغ با کلیک دیده می‌شود.'),
       node: (
         <Panel title={t('پولِ من')} icon={<PiggyBank />} action={{ href: '/my-money', label: t('جزئیات') }}>
-          {x.money.length === 0 ? <span className="text-lg font-bold"><SecretAmount value="0" /></span> : (
+          {x.money.length === 0 ? <span className="kz-num-sm text-lg font-bold"><SecretAmount value="0" /></span> : (
             <div className="grid gap-1">
               {x.money.map((l) => (
-                <span key={l.currencyCode} className="num text-lg font-bold"><SecretAmount value={money(l.total, l.currencyCode)} /></span>
+                <span key={l.currencyCode} className="kz-num-sm num text-lg font-bold"><SecretAmount value={money(l.total, l.currencyCode)} /></span>
               ))}
             </div>
           )}

@@ -201,6 +201,8 @@ const EDGE = 120;
 /** فاصله‌ای (پیکسل) که لبهٔ کارت در آن به لبهٔ کارتِ دیگر می‌چسبد. */
 const SNAP = 10;
 const UNIT = ROW + GAP;
+/** کمترین قدِ دلخواهِ کارت: سرتیتر + یک ردیف/عدد؛ کمتر از این هیچ کارتی بی‌اسکرول جا نمی‌شود. */
+const MIN_H = 96;
 
 const EMPTY: Prefs = { order: [], hidden: [], shown: [], sizes: {} };
 
@@ -328,7 +330,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
   };
   const visible = ordered.filter(isOn);
   const prefCols = prefs.cols ?? {};
-  const heightOf: Record<string, number> = { ...(prefs.heights ?? {}), ...(adjust?.h !== undefined ? { [adjust.id]: adjust.h } : {}) };
+  const heightOf: Record<string, number> = { ...Object.fromEntries(Object.entries(prefs.heights ?? {}).map(([k, v]) => [k, Math.max(MIN_H, v)])), ...(adjust?.h !== undefined ? { [adjust.id]: adjust.h } : {}) };
   const offsetOf: Record<string, number> = { ...(prefs.offsets ?? {}), ...(adjust?.off !== undefined ? { [adjust.id]: adjust.off } : {}) };
   const asList = (ws: WidgetDef[]) => ws.map((w) => ({ id: w.id, size: sizeOf(w) }));
   /** ستونِ نمای فعلی ← ستونِ شبکهٔ پایه (همان چیزی که ذخیره می‌شود). */
@@ -473,7 +475,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
       const dy = ev.clientY - startY;
       let guide: number | null = null;
       if (mode === 'h') {
-        h = Math.max(40, Math.round(r0.height + dy));
+        h = Math.max(MIN_H, Math.round(r0.height + dy));
         let best = SNAP + 1;
         const raw = h;
         for (const { y: edge } of edges) {
@@ -517,7 +519,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
     if (mode === 'h') {
       const el = gridRef.current?.querySelector<HTMLElement>(`[data-measure="${CSS.escape(w.id)}"]`);
       const cur = heightOf[w.id] ?? el?.getBoundingClientRect().height ?? 0;
-      save({ ...prefs, ...f, heights: { ...(prefs.heights ?? {}), [w.id]: Math.max(40, Math.round(cur + dir * ROW)) } });
+      save({ ...prefs, ...f, heights: { ...(prefs.heights ?? {}), [w.id]: Math.max(MIN_H, Math.round(cur + dir * ROW)) } });
     } else {
       save({ ...prefs, ...f, offsets: { ...(prefs.offsets ?? {}), [w.id]: Math.max(0, (offsetOf[w.id] ?? 0) + dir) } });
     }

@@ -236,9 +236,9 @@ export function DashboardV2({
       node: (
         <Panel title={t('تیمِ امروز')} icon={<Users className="size-4 text-muted-foreground" />} action={{ href: '/availability', label: t('حضور و مرخصی') }}>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-xl bg-emerald-500/10 py-2"><div className="num text-lg font-bold">{today.online.length}</div><div className="kz-fit-label text-[11px] text-muted-foreground">{t('آنلاین')}</div></div>
-            <div className="rounded-xl bg-sky-500/10 py-2"><div className="num text-lg font-bold">{today.timers.length}</div><div className="kz-fit-label text-[11px] text-muted-foreground">{t('تایمر روشن')}</div></div>
-            <div className="rounded-xl bg-amber-500/10 py-2"><div className="num text-lg font-bold">{today.away.length}</div><div className="kz-fit-label text-[11px] text-muted-foreground">{t('مرخصی')}</div></div>
+            <div className="kz-tile rounded-xl bg-emerald-500/10 py-2"><div className="kz-num-sm num text-lg font-bold">{today.online.length}</div><div className="kz-fit-label text-[11px] text-muted-foreground">{t('آنلاین')}</div></div>
+            <div className="kz-tile rounded-xl bg-sky-500/10 py-2"><div className="kz-num-sm num text-lg font-bold">{today.timers.length}</div><div className="kz-fit-label text-[11px] text-muted-foreground">{t('تایمر روشن')}</div></div>
+            <div className="kz-tile rounded-xl bg-amber-500/10 py-2"><div className="kz-num-sm num text-lg font-bold">{today.away.length}</div><div className="kz-fit-label text-[11px] text-muted-foreground">{t('مرخصی')}</div></div>
           </div>
           {today.timers.length > 0 && (
             <ExpandableList inPlace className="grid gap-1.5 text-sm">

@@ -138,7 +138,7 @@ export function DashboardInbox({
           </h2>
           <CardHelp />
         </div>
-        <div className="flex flex-wrap items-center gap-1 empty:hidden">
+        <div className="kz-chips flex flex-wrap items-center gap-1 empty:hidden">
           {/* فیلترِ نوع فقط وقتی کارت بیش از یک نوعِ پُر دارد. */}
           {kinds.filter((k) => counts[k] > 0).length > 1 && tabs.filter((x) => x.key === 'all' || (kinds.includes(x.key as InboxKind) && counts[x.key] > 0)).map((x) => (
             <button

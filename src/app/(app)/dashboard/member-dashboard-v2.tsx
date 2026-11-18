@@ -70,7 +70,7 @@ function Panel({ title, icon, action, children, className }: {
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="py-2 text-sm text-muted-foreground">{children}</p>;
+  return <p className="kz-empty py-2 text-sm text-muted-foreground">{children}</p>;
 }
 
 const taskHref = (tk: InboxTask) =>
@@ -183,7 +183,7 @@ export function MemberDashboardV2({
           action={{ href: '/tasks', label: t('همهٔ تسک‌ها') }}
         >
           {overdue > 0 && (
-            <p className="rounded-lg bg-destructive/8 px-3 py-1.5 text-xs text-destructive">
+            <p className="kz-fit-label rounded-lg bg-destructive/8 px-3 py-1.5 text-xs text-destructive">
               {t('{n} تسک از سررسیدش گذشته است.', { n: overdue })}
             </p>
           )}
@@ -195,7 +195,7 @@ export function MemberDashboardV2({
       id: 'm-waiting', hint: t('کارهایی که تمام کرده و برای بررسی فرستاده‌اید و منتظرِ تأییدِ مدیر یا کارفرما هستند.'), title: t('منتظرِ بررسی'), group: G_WORK, size: 's', defaultOn: true,
       node: (
         <Panel title={t('منتظرِ بررسی')} icon={<Hourglass />}>
-          <p className="-mt-1 text-xs text-muted-foreground">{t('کارهایی که فرستاده‌اید و منتظرِ نظرِ دیگری‌اند.')}</p>
+          <p className="kz-fit-label -mt-1 text-xs text-muted-foreground">{t('کارهایی که فرستاده‌اید و منتظرِ نظرِ دیگری‌اند.')}</p>
           <TaskList items={tasks.waiting} todayIso={todayIso} empty={t('چیزی در صف نیست.')} />
         </Panel>
       ),
@@ -206,7 +206,7 @@ export function MemberDashboardV2({
         id: 'm-team-review', hint: t('کارهایی که اعضای تیم روی پروژه‌های تحتِ مدیریتِ شما برای بررسی فرستاده‌اند.'), title: t('بازبینی‌های تیم'), group: G_WORK, size: 'm', defaultOn: true,
         node: (
           <Panel title={t('بازبینی‌های تیم')} icon={<CheckCircle2 />} action={{ href: '/tasks', label: t('تسک‌ها') }}>
-            <p className="-mt-1 text-xs text-muted-foreground">{t('کارهای تیم روی پروژه‌های تحتِ مدیریتِ شما که منتظرِ تأییدند.')}</p>
+            <p className="kz-fit-label -mt-1 text-xs text-muted-foreground">{t('کارهای تیم روی پروژه‌های تحتِ مدیریتِ شما که منتظرِ تأییدند.')}</p>
             <TaskList items={tasks.review} todayIso={todayIso} empty={t('چیزی منتظرِ تأیید نیست.')} />
           </Panel>
         ),

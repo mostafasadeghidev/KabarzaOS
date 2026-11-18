@@ -86,12 +86,12 @@ function MyWeek({ days, todayMinutes, weekMinutes }: { days: WeekDay[]; todayMin
     >
       <div className="flex items-end justify-between gap-4">
         <div className="grid gap-0.5">
-          <span className="text-xs text-muted-foreground">{t('امروز')}</span>
-          <span className="num text-2xl font-bold tabular-nums">{hhmm(todayMinutes)}</span>
+          <span className="kz-fit-label text-xs text-muted-foreground">{t('امروز')}</span>
+          <span className="kz-num num text-2xl font-bold tabular-nums">{hhmm(todayMinutes)}</span>
         </div>
         <div className="grid gap-0.5 text-end">
-          <span className="text-xs text-muted-foreground">{t('این هفته')}</span>
-          <span className="num text-lg font-semibold tabular-nums">{hhmm(weekMinutes)}</span>
+          <span className="kz-fit-label text-xs text-muted-foreground">{t('این هفته')}</span>
+          <span className="kz-num-sm num text-lg font-semibold tabular-nums">{hhmm(weekMinutes)}</span>
         </div>
       </div>
       {/* هفت ستون: ارتفاع = سهمِ هر روز از پُرترین روز. امروز با رنگِ اصلی، روزهای آینده نقطه‌چین. */}
@@ -115,7 +115,7 @@ function MyWeek({ days, todayMinutes, weekMinutes }: { days: WeekDay[]; todayMin
                   style={!d.future && d.minutes > 0 ? { height: `${Math.max(8, Math.round((d.minutes / max) * 100))}%` } : undefined}
                 />
               </span>
-              <span aria-hidden className={cn('text-[11px] text-muted-foreground', d.today && 'font-bold text-foreground')}>
+              <span aria-hidden className={cn('kz-day text-[11px] text-muted-foreground', d.today && 'font-bold text-foreground')}>
                 {shortDay(d.date)}
               </span>
             </li>
