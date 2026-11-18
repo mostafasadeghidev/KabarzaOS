@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.14.1]
+
+### Fixed
+
+- **Payments in another currency showed the wrong amount in member and client reports.** A payment made in toman and settled against a euro contract was listed as the euro figure with the toman label, e.g. "120.00 IRT" instead of "15,658,800 IRT". The payment lines on a member's report page (and the expense lines on a client's report page) now show the amount actually paid in its own currency, with that currency's decimals, and the settled equivalent in the contract currency underneath ("= 120.00 EUR"). Totals were already correct; only the line display was wrong.
+
 ## [3.14.0]
 
 ### Changed

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { ProjectStatus } from '@/app/(app)/projects/project-status';
-import { format } from '@/domain/money/money';
+import { format, formatIn } from '@/domain/money/money';
 import { hoursLabel } from '@/domain/reports/summary';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableNumericCell, TableRow,
@@ -29,6 +29,9 @@ export interface PaymentLine {
   date: string | null;
   amount: string;
   currencyCode: string | null;
+  /** معادل به ارزِ قرارداد، وقتی پرداخت به ارزِ دیگری بوده (تومان ← یورو). */
+  settledAmount?: string | null;
+  settledCode?: string | null;
   note: string;
   receiptIds: number[] | null;
 }
@@ -51,7 +54,17 @@ function Lines({ lines, showNote }: { lines: PaymentLine[]; showNote: boolean })
         {lines.map((l, i) => (
           <TableRow key={i}>
             <TableCell className="num text-muted-foreground" dir="ltr">{l.date ?? '—'}</TableCell>
-            <TableCell className="num text-muted-foreground">{format(l.amount)} {l.currencyCode ?? ''}</TableCell>
+            {/*
+              ۳.۱۴.۱ — مبلغِ واقعیِ پرداخت با ارزِ خودش و رقمِ اعشارِ همان ارز (تومان بی اعشار)، و اگر به
+              ارزِ دیگری تسویه شده، معادلش کم‌رنگ زیرش — همان عددی که در جمعِ یوروییِ بالای صفحه است.
+            */}
+            <TableCell className="text-muted-foreground">
+              {/* ⚠️ dir=ltr + nowrap: وگرنه روی گوشی «IRR» به خطِ بعد می‌رفت و «=» به تهِ سطرِ راست‌به‌چپ. */}
+              <span dir="ltr" className="num block whitespace-nowrap text-end">{formatIn(l.amount, l.currencyCode)} {l.currencyCode ?? ''}</span>
+              {l.settledAmount && l.settledCode && l.settledCode !== l.currencyCode && (
+                <span dir="ltr" className="num block whitespace-nowrap text-end text-[11px] opacity-80">= {formatIn(l.settledAmount, l.settledCode)} {l.settledCode}</span>
+              )}
+            </TableCell>
             {showNote && <TableCell className="text-muted-foreground">{l.note || '—'}</TableCell>}
             <TableCell className="text-muted-foreground">
               {(l.receiptIds?.length ?? 0) > 0

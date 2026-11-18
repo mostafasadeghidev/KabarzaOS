@@ -869,6 +869,7 @@ export async function getMemberDetail(actor: Actor, userId: number) {
   const today = new Date().toISOString().slice(0, 10);
   const locale = await currentLocale();
   const priority = alias(tags, 'priority_tag');
+  const settledCur = alias(currencies, 'settled_cur');
   const [lineRows, roleRows, avatars, system, slotRows, taskRows] = await Promise.all([
     // ردیف‌های پرداخت با ارز و رسید — پورتِ `payment_lines_html`.
     db.select({
@@ -878,10 +879,12 @@ export async function getMemberDetail(actor: Actor, userId: number) {
       paidAt: projectPayments.paidAt,
       note: projectPayments.note,
       currencyCode: currencies.code,
+      settledCode: settledCur.code,
       receiptIds: ledger.receiptIds,
     })
       .from(projectPayments)
       .leftJoin(currencies, eq(currencies.id, projectPayments.currencyId))
+      .leftJoin(settledCur, eq(settledCur.id, projectPayments.settledCurrencyId))
       .leftJoin(ledger, eq(ledger.id, projectPayments.ledgerId))
       .where(and(eq(projectPayments.userId, userId), eq(projectPayments.direction, 'member_payout')))
       .orderBy(projectPayments.paidAt),
@@ -942,11 +945,17 @@ export async function getMemberDetail(actor: Actor, userId: number) {
     totals: { agreed: agreedEur.toFixed(2), paid: paidEur.toFixed(2), debt: Math.max(0, agreedEur - paidEur).toFixed(2) },
     rateMissing: fx.missing,
     projects: projectRows,
+    /*
+     * ⚠️ مبلغِ **پرداخت‌شده** با ارزِ خودش (۱۵٬۶۵۸٬۸۰۰ IRT)، و معادلِ قراردادی جدا (۱۲۰ EUR). پیش از
+     * ۳.۱۴.۱ عددِ تسویه‌شده (یورو) با ارزِ پرداخت (تومان) کنارِ هم چاپ می‌شد: «120.00 IRT».
+     */
     lines: lineRows.map((l) => ({
       projectId: l.projectId ?? 0,
       date: day(l.paidAt),
-      amount: l.amountSettled ?? l.amount,
+      amount: l.amount,
       currencyCode: l.currencyCode,
+      settledAmount: l.amountSettled,
+      settledCode: l.settledCode,
       note: l.note,
       receiptIds: l.receiptIds,
     })),
@@ -992,16 +1001,18 @@ export async function getClientDetail(actor: Actor, userId: number) {
   const projectIds = rows.map((r) => Number(r.project_id));
 
   // ردیف‌های دریافتی/هزینه در ارزِ **پروژه** (پورتِ `row_value_in`) با رسید.
+  const settledCurrency = alias(currencies, 'settled_currency');
   const payments = projectIds.length === 0 ? [] : await db
     .select({
       projectId: projectPayments.projectId, direction: projectPayments.direction,
       amount: projectPayments.amount, currencyId: projectPayments.currencyId,
       amountSettled: projectPayments.amountSettled, settledCurrencyId: projectPayments.settledCurrencyId,
       paidAt: projectPayments.paidAt, note: projectPayments.note,
-      currencyCode: currencies.code, receiptIds: ledger.receiptIds,
+      currencyCode: currencies.code, settledCode: settledCurrency.code, receiptIds: ledger.receiptIds,
     })
     .from(projectPayments)
     .leftJoin(currencies, eq(currencies.id, projectPayments.currencyId))
+    .leftJoin(settledCurrency, eq(settledCurrency.id, projectPayments.settledCurrencyId))
     .leftJoin(ledger, eq(ledger.id, projectPayments.ledgerId))
     .where(and(inArray(projectPayments.projectId, projectIds), inArray(projectPayments.direction, ['incoming', 'project_expense'])))
     .orderBy(projectPayments.paidAt);
@@ -1062,8 +1073,11 @@ export async function getClientDetail(actor: Actor, userId: number) {
     lines: payments.filter((p) => p.direction === 'project_expense').map((p) => ({
       projectId: p.projectId ?? 0,
       date: day(p.paidAt),
-      amount: p.amountSettled ?? p.amount,
+      // ⚠️ همان اصلاحِ بالا: مبلغ با ارزِ خودش، معادلِ تسویه‌شده جدا.
+      amount: p.amount,
       currencyCode: p.currencyCode,
+      settledAmount: p.amountSettled,
+      settledCode: p.settledCode,
       note: p.note,
       receiptIds: p.receiptIds,
     })),
