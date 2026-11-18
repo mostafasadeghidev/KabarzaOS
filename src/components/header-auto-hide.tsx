@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 
 /**
- * نوارِ بالای چسبان روی گوشی (۳.۱۷.۰) — مثلِ Safari/Chrome ِ گوشی: با پیمایش به پایین کنار می‌رود تا
+ * نوارِ بالای چسبان (۳.۱۷.۰) — `data-stuck` وقتی صفحه پیمایش شده (همهٔ اندازه‌ها)، و روی گوشی — مثلِ Safari/Chrome ِ گوشی: با پیمایش به پایین کنار می‌رود تا
  * صفحهٔ کوچک برای محتوا بماند، و با کمی پیمایش به بالا فوراً برمی‌گردد. روی رایانه همیشه پیداست.
  *
  * ⚠️ فقط ویژگیِ `data-hidden` روی خودِ نوار گذاشته می‌شود؛ حرکت و جای نوارِ تایمر در visual-layer.css است.
@@ -21,6 +21,8 @@ export function HeaderAutoHide() {
       const y = window.scrollY;
       const delta = y - last;
       const menuOpen = header.querySelector('[aria-expanded="true"]') !== null;
+      // چسبیده به لبهٔ بالا (همهٔ اندازه‌ها) — گوشه‌های بالا صاف می‌شوند (visual-layer.css).
+      if (y > 4) header.setAttribute('data-stuck', ''); else header.removeAttribute('data-stuck');
       if (!phone.matches || y < 80 || menuOpen) header.removeAttribute('data-hidden');
       else if (delta > 6) header.setAttribute('data-hidden', '');
       else if (delta < -6) header.removeAttribute('data-hidden');
@@ -28,12 +30,14 @@ export function HeaderAutoHide() {
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
     window.addEventListener('scroll', onScroll, { passive: true });
+    update();
     phone.addEventListener('change', update);
     return () => {
       window.removeEventListener('scroll', onScroll);
       phone.removeEventListener('change', update);
       if (raf) cancelAnimationFrame(raf);
       header.removeAttribute('data-hidden');
+      header.removeAttribute('data-stuck');
     };
   }, []);
   return null;

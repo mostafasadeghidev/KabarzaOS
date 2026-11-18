@@ -899,7 +899,8 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
  */
 [data-slot='sidebar-inset'] > header[data-app-chrome] {
   position: sticky;
-  top: 8px;
+  /* ⚠️ top: 0 (نه 8px): فاصلهٔ بالای نوارِ چسبیده متنِ صفحه را نشان می‌داد؛ حالا نوار به لبه می‌چسبد. */
+  top: 0;
   z-index: 30;
   /*
    * محتوا با محوشدگی از زیرِ نوار رد شود — قاعدهٔ قدیمیِ blur به این نوار نمی‌رسید.
@@ -911,18 +912,20 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
 }
 /*
- * ⚠️ پوششِ فاصلهٔ بالای نوار: سایهٔ توپرِ هم‌رنگِ زمینه، نه شبه‌عنصر. شبه‌عنصرِ `::before` با z-index ِ
- * منفی **روی** زمینه و حاشیهٔ خودِ نوار کشیده می‌شد (ترتیبِ رسمِ لایه‌بندی) و حاشیه و گوشه‌ها را می‌پوشاند.
- * سایه همیشه بیرون و زیرِ نوار است: ۸px کنارها و ~۱۸px بالا را می‌پوشاند و پایین را نه.
+ * نوارِ چسبیده (۳.۱۷.۰): وقتی صفحه پیمایش شده (`data-stuck` از header-auto-hide.tsx)، نوار به لبهٔ بالا
+ * می‌چسبد و گوشه‌ها و حاشیهٔ بالایش صاف می‌شوند — هیچ فاصله‌ای نمی‌ماند که متن از آن دیده شود.
+ * ⚠️ نه سایهٔ توپرِ هم‌رنگِ زمینه: زمینهٔ صفحه درخشش و شیب دارد و تکهٔ یک‌رنگ دورِ گوشه‌ها ناهمخوان بود.
  */
-[data-slot='sidebar-inset'] > header[data-app-chrome] {
-  box-shadow: var(--wp-shadow-1), 0 -10px 0 8px var(--color-background);
+[data-slot='sidebar-inset'] > header[data-app-chrome][data-stuck] {
+  border-top-width: 0;
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
 }
 /* «دیدن به‌جای کاربر» (نوارِ زردِ چسبانِ بالا) — نوارِ اصلی زیرِ آن می‌نشیند. */
-[data-slot='sidebar-inset']:has(> [data-view-as]) > header[data-app-chrome] { top: 48px; }
+[data-slot='sidebar-inset']:has(> [data-view-as]) > header[data-app-chrome] { top: 40px; }
 [data-slot='sidebar-inset'] > [data-timer-banner] {
   position: sticky;
-  top: calc(8px + 3rem + 10px);
+  top: calc(3rem + 8px);
   z-index: 29;
   transition: top 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
