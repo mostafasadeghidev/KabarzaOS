@@ -566,7 +566,10 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
         {editing ? (
           <Button type="button" size="sm" onClick={() => setEditing(false)}><Check className="size-4" />{t('تمام')}</Button>
         ) : (
-          <Button type="button" size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="size-4" />{t('ویرایشِ چیدمان')}</Button>
+          // فقط آیکونِ مداد (درخواستِ مالک)؛ نام در راهنمای شناور و برای صفحه‌خوان می‌ماند.
+          <Hint label={t('ویرایشِ چیدمان')}>
+            <Button type="button" size="icon-sm" variant="outline" aria-label={t('ویرایشِ چیدمان')} onClick={() => setEditing(true)}><Pencil className="size-4" /></Button>
+          </Hint>
         )}
       </HeaderAction>
       {/* میان‌بُرها فقط در صفِ مدیر کار می‌کنند — داشبوردِ عضو و کارفرما (scope) راهنمایش را نمی‌بینند. */}
