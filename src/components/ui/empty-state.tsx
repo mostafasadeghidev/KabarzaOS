@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
+import { EmptyIllustration } from '@/components/ui/empty-illustration';
 import {
-  Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle,
+  Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle,
 } from '@/components/ui/empty';
 
 /**
@@ -31,7 +32,8 @@ export function EmptyState({
   return (
     <Empty className={cn('rounded-xl border bg-card p-6 md:p-10', className)}>
       <EmptyHeader>
-        {icon && <EmptyMedia variant="icon">{icon}</EmptyMedia>}
+        {/* ۳.۱۲.۰ — تصویر به‌جای قابِ سادهٔ آیکون. */}
+        <EmptyIllustration icon={icon} />
         <EmptyTitle className="text-base">{title}</EmptyTitle>
         {description && <EmptyDescription>{description}</EmptyDescription>}
       </EmptyHeader>

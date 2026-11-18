@@ -9,6 +9,7 @@ import { HeaderActionsSlot } from '@/components/header-actions';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { HeaderBreadcrumb } from '@/components/header-breadcrumb';
 import { NavHistory } from '@/components/nav-history';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { UploadProvider } from '@/components/uploads/upload-manager';
 import { FinanceAccountReset } from './finance/account-reset';
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette';
@@ -356,6 +357,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </PresenceProvider>
         {/* صفحه‌ها همان فهرستِ منو است — یعنی همان فیلترِ مجوزِ سمتِ سرور. */}
         <CommandPalette pages={items.map(({ href, label }) => ({ href, label }))} />
+        {/* ۳.۱۲.۰ — منوی پایینِ گوشی + فاصله تا محتوای آخرِ صفحه زیرش پنهان نشود. */}
+        <div aria-hidden className="h-20 md:hidden" />
+        <MobileBottomNav items={items} unread={unreadMessages} />
       </SidebarInset>
     </SidebarProvider>
   );

@@ -12,6 +12,39 @@ import { t } from '@/i18n/server';
  * محتوا و چیدمانِ منطقی از نسخهٔ قبلیِ K-Team.
  */
 
+/**
+ * نمودارِ کوچکِ روند (۳.۱۲.۰) — هفت نقطه، خط + سطحِ محو به رنگِ پالت.
+ * ⚠️ همیشه چپ‌به‌راست (قدیمی ← امروز)، مثلِ بقیهٔ نمودارهای برنامه؛ نقطهٔ آخر (امروز) پررنگ.
+ * فقط تزئینی است (aria-hidden) — عددِ اصلیِ کارت همان خبر را دارد.
+ */
+export function Sparkline({ data, className }: { data: number[]; className?: string }) {
+  if (data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const w = 100, h = 32, pad = 3;
+  const pts = data.map((v, i) => [(i / (data.length - 1)) * w, h - pad - (v / max) * (h - pad * 2)] as const);
+  const line = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = `${line} L${w},${h} L0,${h} Z`;
+  const [lx, ly] = pts[pts.length - 1]!;
+  const id = `spark-${data.join('-')}`;
+  return (
+    <span className={cn('relative block h-10 w-full text-primary', className)} aria-hidden>
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${id})`} />
+      <path d={line} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+    {/* ⚠️ نقطهٔ «امروز» بیرون از svg: نمودار برای پر کردنِ عرض کش می‌آید و دایرهٔ داخلش بیضی می‌شد. */}
+    <span className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current ring-2 ring-card"
+      style={{ left: `${lx}%`, top: `${(ly / h) * 100}%` }} />
+    </span>
+  );
+}
+
 /** کارتِ آماریِ بزرگ — عنوان کوچک، عددِ درشت، بجِ روند، پانوشت. */
 export function MetricCard({
   label,
@@ -20,6 +53,8 @@ export function MetricCard({
   headline,
   hint,
   href,
+  spark,
+  featured = false,
 }: {
   label: string;
   value: string | number;
@@ -28,6 +63,10 @@ export function MetricCard({
   headline?: string;
   hint?: string;
   href?: string | null;
+  /** روندِ ۷ روزه — نمودارِ کوچکِ زیرِ عدد. */
+  spark?: number[];
+  /** کارتِ برجستهٔ چیدمانِ «بنتو» — عددِ درشت‌تر و نمودارِ بلندتر. */
+  featured?: boolean;
 }) {
   const dir = trend === undefined ? null : trend > 0 ? 'up' : trend < 0 ? 'down' : 'flat';
   const TrendIcon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : Minus;
@@ -41,7 +80,7 @@ export function MetricCard({
     <Card className="@container/card h-full">
       <CardHeader>
         <CardDescription className="text-[13px]">{label}</CardDescription>
-        <CardTitle className="num text-2xl font-bold @[250px]/card:text-3xl">{value}</CardTitle>
+        <CardTitle className={cn('num font-bold', featured ? 'text-4xl @[250px]/card:text-5xl' : 'text-2xl @[250px]/card:text-3xl')}>{value}</CardTitle>
         {dir && (
           <CardAction>
             <Badge variant="outline" className="gap-1">
@@ -51,8 +90,13 @@ export function MetricCard({
           </CardAction>
         )}
       </CardHeader>
+      {spark && spark.some((v) => v > 0) && (
+        <div data-sparkline className="px-6">
+          <Sparkline data={spark} className={featured ? 'h-20' : 'h-10'} />
+        </div>
+      )}
       {(headline || hint) && (
-        <CardFooter className="flex-col items-start gap-1 text-sm">
+        <CardFooter className="mt-auto flex-col items-start gap-1 text-sm">
           {headline && (
             <div className="line-clamp-1 flex items-center gap-1.5 font-medium">
               {headline}
