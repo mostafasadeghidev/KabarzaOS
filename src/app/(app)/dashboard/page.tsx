@@ -24,6 +24,9 @@ import { TeamOverviewCards } from '../team/overview-cards';
 import { DashboardTimeLog } from './time-log-card';
 import { pageTitle } from '@/i18n/page-title';
 import { Amount } from '@/components/amount-privacy';
+import { DashboardV2 } from './dashboard-v2';
+import { getDashboardInbox } from '@/server/dashboard-inbox';
+import { taskStatusTags } from '@/server/projects/repository';
 
 export const generateMetadata = pageTitle('نمای کلی');
 
@@ -63,7 +66,7 @@ function trendLine(delta: number, unit: string): string {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ office?: string }>;
+  searchParams: Promise<{ office?: string; classic?: string }>;
 }) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
@@ -78,7 +81,7 @@ export default async function DashboardPage({
   if (!actor) redirect('/login');
 
   // فیلترِ دفتر روی نمودارهای ساعت (پورتِ `kt_office`) — نامعتبر = همه.
-  const { office } = await searchParams;
+  const { office, classic } = await searchParams;
   const officeParam = Number(office);
 
   let data;
@@ -128,6 +131,33 @@ export default async function DashboardPage({
       );
     }
     throw error;
+  }
+
+  /*
+   * نمونهٔ محلیِ داشبوردِ تازه («اول کار، بعد عدد») — `?classic=1` نمای قبلی را نشان می‌دهد تا مقایسه شود.
+   */
+  if (classic !== '1') {
+    const [inbox, statuses, session] = await Promise.all([getDashboardInbox(actor), taskStatusTags(), currentSession()]);
+    const review = statuses.find((s) => s.isReview);
+    const approve = statuses.find((s) => s.group === 'complete' && !s.isClosed) ?? statuses.find((s) => s.group === 'complete');
+    const back = statuses.find((s) => s.group === 'in_progress' && !s.isReview && review && statuses.indexOf(s) > statuses.indexOf(review))
+      ?? statuses.find((s) => s.group === 'in_progress' && !s.isReview);
+    return (
+      <PageShell>
+        <PageHeader
+          title={t('سلام، {name}', { name: session?.name ?? '' })}
+          description={todayLabel()}
+          actions={<Link href="/dashboard?classic=1" className="text-xs text-muted-foreground hover:underline">{t('نمای قبلی')}</Link>}
+        />
+        <DashboardV2
+          data={data}
+          inbox={inbox}
+          approveStatusId={approve?.id ?? null}
+          returnStatusId={back?.id ?? null}
+          canReports={canViewSection(actor, 'reports')}
+        />
+      </PageShell>
+    );
   }
 
   const { actionGroups, progress, today, risk, stats, charts } = data;
