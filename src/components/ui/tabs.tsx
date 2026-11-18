@@ -92,21 +92,32 @@ function animatePanel(list: HTMLElement) {
     node = node.parentElement
   }
   if (!node || node.matches(boundary)) return
-  let sib = real(node.nextElementSibling)
-  for (let n = 0; sib && n < 6; n++, sib = real(sib.nextElementSibling)) {
-    /*
-     * ⚠️ یکدستی: محتوایی که کارت‌های تازه‌سوارش خودشان همین حالا انیمیشنِ ورود (wp-rise) دارند
-     * دوباره انیمیت نمی‌شود — وگرنه «مشخصاتِ شرکت» دو انیمیشنِ روی هم داشت و بقیه یکی.
-     * هر دو دقیقاً یک شکل‌اند (همان مدت، فاصله و منحنی) تا فرقی دیده نشود.
-     */
-    const cardsRising = [sib, ...sib.querySelectorAll<HTMLElement>('[data-slot="card"]')].some((el) =>
-      el.getAnimations?.().some((a) => (a as CSSAnimation).animationName === "wp-rise" && a.playState !== "finished"))
-    if (cardsRising) continue
-    sib.animate?.(
-      [{ opacity: 0, transform: "translateY(8px) scale(0.99)" }, { opacity: 1, transform: "none" }],
-      { duration: 450, delay: n * 40, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "backwards" },
-    )
+  /*
+   * ⚠️ یکدستی: عنصری که خودش همین حالا انیمیشنِ ورودِ کارت (wp-rise) دارد دوباره انیمیت نمی‌شود —
+   * وگرنه «مشخصاتِ شرکت» دو انیمیشنِ روی هم داشت. هر دو دقیقاً یک شکل‌اند (همان مدت، فاصله و منحنی).
+   *
+   * ⚠️ ۳.۱۵.۲: پیش از این بخشی که «کارتِ در حالِ ورود» داشت **کامل** رد می‌شد؛ پس هرچه کنارِ آن
+   * کارت‌ها بود بی‌حرکت می‌ماند — در گزارش‌ها، تبِ «اعضا» کارت‌های بالا می‌آمدند و جدولِ اعضا ثابت بود،
+   * و در «هزینه‌ها» کادرِ فیلتر. حالا به درونِ چنین بخشی می‌رود و هر تکهٔ بی‌انیمیشن را جدا حرکت می‌دهد.
+   */
+  const rising = (el: Element) =>
+    el.getAnimations?.().some((a) => (a as CSSAnimation).animationName === "wp-rise" && a.playState !== "finished") ?? false
+  const hasRising = (el: HTMLElement) =>
+    rising(el) || [...el.querySelectorAll<HTMLElement>('[data-slot="card"]')].some(rising)
+  let step = 0
+  const reveal = (el: HTMLElement, depth: number) => {
+    if (rising(el)) return
+    if (!hasRising(el) || depth >= 4) {
+      el.animate?.(
+        [{ opacity: 0, transform: "translateY(8px) scale(0.99)" }, { opacity: 1, transform: "none" }],
+        { duration: 450, delay: Math.min(step++, 6) * 40, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "backwards" },
+      )
+      return
+    }
+    for (const child of el.children) if (child instanceof HTMLElement && !skip(child)) reveal(child, depth + 1)
   }
+  let sib = real(node.nextElementSibling)
+  for (let n = 0; sib && n < 6; n++, sib = real(sib.nextElementSibling)) reveal(sib, 0)
 }
 
 function useActiveIndicator(list: React.RefObject<HTMLDivElement | null>) {

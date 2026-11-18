@@ -33,9 +33,10 @@ export async function DashboardTimeLog({ actor }: { actor: Actor }) {
   const showLog = !(state.running || state.pending);
 
   return (
-    <div className={cn('grid gap-4', showLog && '@3xl/main:grid-cols-3')}>
+    // ۳.۱۵.۲ — دو کارت هم‌عرض (۱:۱)؛ پیش از این «ثبتِ ساعت» دو سوم بود و «هفتهٔ من» یک سوم.
+    <div className={cn('grid gap-4', showLog && '@3xl/main:grid-cols-2')}>
       {showLog && (
-        <div className="grid @3xl/main:col-span-2">
+        <div className="grid">
           <Panel
             icon={<Clock />}
             title={t('ثبتِ ساعت')}

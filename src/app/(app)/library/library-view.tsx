@@ -96,14 +96,24 @@ export function LibraryView({
    * ⚠️ گروه‌بندی فقط وقتی کسی دنبالِ چیزِ خاصی نیست: در جستجو و فیلترِ دسته،
    * گروه فقط فاصله می‌اندازد.
    */
-  const grouped = !filter.q && !filter.category && categories.length > 1;
-  const groups = grouped
+  const allGroups = !filter.q && !filter.category && categories.length > 1
     ? [...LIBRARY_CATEGORIES, '' as const].map((c) => ({
       key: c || 'none',
       label: c ? tr(CATEGORY_LABELS[c]) : tr('بی‌دسته'),
       list: entries.filter((e) => e.category === c),
     })).filter((g) => g.list.length > 0)
     : [];
+  /*
+   * ⚠️ ۳.۱۵.۲ — گروه‌بندی فقط وقتی گروه‌ها پرند (میانگینِ دست‌کم ۳ مورد): با گروه‌های یک‌تایی هر دسته یک
+   * ردیفِ کامل با یک کارت می‌گرفت و بیشترِ صفحه خالی می‌ماند («آموزش و یادداشت»). آن‌وقت یک شبکهٔ
+   * پیوسته، به ترتیبِ دسته، و نامِ دسته روی خودِ کارت.
+   */
+  const grouped = allGroups.length > 1 && entries.length >= allGroups.length * 3;
+  const groups = grouped ? allGroups : [];
+  const flatList = !grouped && allGroups.length > 1 ? allGroups.flatMap((g) => g.list) : entries;
+  const categoryOf = (e: EntryCard) => (!grouped && allGroups.length > 1
+    ? (e.category ? tr(CATEGORY_LABELS[e.category as keyof typeof CATEGORY_LABELS]) : tr('بی‌دسته'))
+    : undefined);
   const kinds = [
     { key: '', label: 'همه', count: counts.all },
     { key: 'code', label: 'کد', count: counts.code },
@@ -129,7 +139,8 @@ export function LibraryView({
       </div>
 
       {categories.length > 1 && (
-        <nav aria-label={tr('دسته‌ها')} className="-mt-1 flex gap-1.5 overflow-x-auto pb-1">
+        // ⚠️ ۳.۱۵.۲ — از sm به بالا دسته‌ها به خطِ بعد می‌روند؛ روی گوشی سطرِ لغزان بی نوارِ اسکرول.
+        <nav aria-label={tr('دسته‌ها')} className="-mt-1 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
           <CategoryChip active={!filter.category} onClick={() => go({ category: '' })} label={tr('همهٔ دسته‌ها')} />
           {categories.map((c) => (
             <CategoryChip
@@ -246,7 +257,9 @@ export function LibraryView({
         </div>
       ) : (
         <div className="grid gap-3 @xl/main:grid-cols-2 @4xl/main:grid-cols-3 @6xl/main:grid-cols-4">
-          {entries.map((e) => <EntryCardView key={e.id} entry={e} withCover={entries.some((x) => x.coverFileId !== null)} />)}
+          {flatList.map((e) => (
+            <EntryCardView key={e.id} entry={e} category={categoryOf(e)} withCover={flatList.some((x) => x.coverFileId !== null)} />
+          ))}
         </div>
       )}
     </div>
@@ -277,7 +290,7 @@ function CategoryChip({ active, onClick, label, count }: { active: boolean; onCl
  * کارت تصویر دارد، بقیه جای‌نگهدارِ هم‌اندازه می‌گیرند (withCover)، و پانویس
  * با mt-auto همیشه تهِ کارت می‌نشیند.
  */
-function EntryCardView({ entry, withCover }: { entry: EntryCard; withCover: boolean }) {
+function EntryCardView({ entry, withCover, category }: { entry: EntryCard; withCover: boolean; category?: string }) {
   const tr = useT();
   const tz = useTimeZone();
   return (
@@ -292,6 +305,8 @@ function EntryCardView({ entry, withCover }: { entry: EntryCard; withCover: bool
       <div className="flex items-start gap-3">
         {!withCover && <KindIcon kind={entry.kind} />}
         <div className="grid min-w-0 flex-1 gap-1">
+          {/* نامِ دسته — فقط در شبکهٔ پیوسته (۳.۱۵.۲)، که سرتیترِ دسته ندارد. */}
+          {category && <span className="text-[11px] font-medium text-primary">{category}</span>}
           <div className="flex flex-wrap items-center gap-1.5">
             <h3 className="font-semibold group-hover:text-primary" dir="auto">{entry.title}</h3>
             <VersionLabel label={entry.versionLabel} />

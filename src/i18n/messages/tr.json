@@ -5245,5 +5245,7 @@
   "رسیدی پیوست نشده.": "Ekli makbuz yok.",
   "شرحِ ردیفِ دفتر": "Defter kaydı açıklaması",
   "پیام…": "Mesaj…",
-  "پیام… (@ برای منشن)": "Mesaj… (@ ile bahset)"
+  "پیام… (@ برای منشن)": "Mesaj… (@ ile bahset)",
+  "{n} نقش انتخاب شده": "{n} rol seçildi",
+  "نقشی انتخاب نشده": "Rol seçilmedi"
 }

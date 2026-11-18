@@ -872,3 +872,21 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
     -webkit-backdrop-filter: none;
   }
 }
+
+/*
+ * ۳.۱۵.۲ — نوارهای پیامِ بالای صفحه (اتصالِ تلگرام، تایمرِ روشن، هشدارِ فضای ذخیره) همان شکلِ نوارِ
+ * بالا را می‌گیرند: کارتِ شناورِ گرد با فاصله و سایه. پیش از این نوارِ تمام‌عرض با خطِ پایین بودند و
+ * زیرِ نوارِ گردِ بالا ناهمخوان دیده می‌شدند. رنگِ زمینه و مرزِ هر کدام (قرمز/زرد/اصلی) دست نمی‌خورد.
+ */
+[data-slot='sidebar-inset'] > [data-app-chrome]:not(header) {
+  margin: 8px 8px 0 8px;
+  margin-inline-start: 2px;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 1rem;
+  box-shadow: var(--wp-shadow-1);
+}
+[dir='ltr'] [data-slot='sidebar-inset'] > [data-app-chrome]:not(header) { margin-inline-start: 0; }
+@media (max-width: 767px) {
+  [data-slot='sidebar-inset'] > [data-app-chrome]:not(header) { margin-inline-start: 8px; }
+}

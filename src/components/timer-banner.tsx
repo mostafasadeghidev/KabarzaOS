@@ -62,7 +62,7 @@ export function TimerBanner({
   };
 
   if (running) {
-    // Alert ِ shadcn به شکلِ نوار زیرِ سربرگ: بی‌گوشه و فقط مرزِ پایین.
+    // Alert ِ shadcn زیرِ سربرگ؛ شکلِ کارتِ شناورش از visual-layer.css می‌آید (۳.۱۵.۲)، مثلِ نوارِ بالا.
     return (
       <Alert data-app-chrome className="items-center rounded-none border-x-0 border-t-0 bg-primary/5 [&>svg]:translate-y-0">
         <Timer />

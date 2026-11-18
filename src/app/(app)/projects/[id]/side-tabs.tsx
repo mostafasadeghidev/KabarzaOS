@@ -426,10 +426,28 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
       title={t("افزودن چک‌لیست QA")}
       description={tr("آیتم‌های کتابخانهٔ QA برای نقش‌های انتخاب‌شده روی این پروژه می‌نشینند. آیتمِ تکراری دوباره اعمال نمی‌شود.")}
     >
+      {/*
+        ۳.۱۵.۲ — سه لایهٔ جدا: سرسطرِ «نقش‌ها» با انتخابِ همه/پاک‌کردن به شکلِ پیوندِ سبک، کادرِ تیک‌ها،
+        و پایینِ جداشده با خط برای کنشِ اصلی. پیش از این سه دکمهٔ هم‌وزن چسبیده به تیک‌ها بودند.
+      */}
       <form action={formAction} className="grid gap-3">
         <input type="hidden" name="projectId" value={projectId} />
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-medium text-muted-foreground">{t('نقش‌ها')}</span>
+          <span className="flex items-center gap-1 text-xs">
+            {/* چک‌لیستِ QA اغلب برای **همهٔ** نقش‌ها لازم است؛ تیک‌زدنِ ده‌تایی کارِ تکراری بود. */}
+            <Button type="button" size="xs" variant="link" className="h-auto px-1" onClick={() => setAll(true)}>
+              {t('انتخابِ همه')}
+            </Button>
+            <span aria-hidden className="text-muted-foreground">·</span>
+            <Button type="button" size="xs" variant="link" className="h-auto px-1 text-muted-foreground" disabled={picked.size === 0} onClick={() => setAll(false)}>
+              {t('پاک‌کردن')}
+            </Button>
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-x-5 gap-y-2.5 rounded-lg border bg-muted/30 p-3">
           {roles.map((r) => (
             <label key={r.id} className="flex items-center gap-1.5 text-sm">
               <Checkbox
@@ -453,16 +471,12 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
           </label>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" size="sm" disabled={pending}>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+          <span className="text-xs text-muted-foreground">
+            {picked.size === 0 ? t('نقشی انتخاب نشده') : t('{n} نقش انتخاب شده', { n: picked.size })}
+          </span>
+          <Button type="submit" size="sm" disabled={pending || picked.size === 0}>
             {pending ? <><Spinner />{t('در حالِ اعمال…')}</> : t('اعمالِ چک‌لیست')}
-          </Button>
-          {/* چک‌لیستِ QA اغلب برای **همهٔ** نقش‌ها لازم است؛ تیک‌زدنِ ده‌تایی کارِ تکراری بود. */}
-          <Button type="button" size="sm" variant="outline" onClick={() => setAll(true)}>
-            {t('انتخابِ همه')}
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => setAll(false)}>
-            {t('پاک‌کردنِ همه')}
           </Button>
         </div>
       </form>
