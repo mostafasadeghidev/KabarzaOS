@@ -64,7 +64,7 @@ export function TimerBanner({
   if (running) {
     // Alert ِ shadcn زیرِ سربرگ؛ شکلِ کارتِ شناورش از visual-layer.css می‌آید (۳.۱۵.۲)، مثلِ نوارِ بالا.
     return (
-      <Alert data-app-chrome className="items-center rounded-none border-x-0 border-t-0 bg-primary/5 [&>svg]:translate-y-0">
+      <Alert data-app-chrome data-timer-banner className="items-center rounded-none border-x-0 border-t-0 bg-primary/5 [&>svg]:translate-y-0">
         <Timer />
         <AlertDescription className="flex flex-wrap items-center gap-3 text-foreground">
           <span>{t('تایمر روشن')}: <b>{running.projectTitle ?? t('کارِ عمومی')}</b> · <LiveClock from={running.minutes} /></span>
@@ -82,7 +82,7 @@ export function TimerBanner({
 
   if (pending) {
     return (
-      <Alert variant="warning" className="items-center rounded-none border-x-0 border-t-0 [&>svg]:translate-y-0">
+      <Alert variant="warning" data-app-chrome data-timer-banner className="items-center rounded-none border-x-0 border-t-0 [&>svg]:translate-y-0">
         <TriangleAlert />
         <AlertDescription className="flex flex-wrap items-center gap-3 text-foreground">
           <span>

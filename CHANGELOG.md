@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.17.0]
+
+### Added
+
+- **Sticky top bar.** The bar with search and notifications now stays at the top of every page while the content scrolls under it with a soft blur.
+  - On phones it slides away when you scroll down and comes back as soon as you scroll up, so the small screen stays free for content. It always shows near the top of the page and while one of its menus is open.
+  - The running-timer banner sticks just below the bar so a running timer is always visible. Other banners (connect Telegram, storage warning) scroll away with the page.
+  - When an owner is viewing as another user, the bar sits below the yellow banner.
+  - The bar is mostly opaque (92%) with a stronger blur, so text under it does not read through, and a solid page-coloured shadow fills the 8 px gap above and beside it, so content no longer shows above the bar while scrolling and the bar keeps its border and rounded corners.
+
 ## [3.16.0]
 
 ### Added
