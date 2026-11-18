@@ -9,6 +9,7 @@ import { Amount } from '@/components/amount-privacy';
 import { MetricCard } from '@/components/ui/dash';
 import { format } from '@/domain/money/money';
 import { cn } from '@/lib/utils';
+import { CardHelp } from '@/components/ui/card-help';
 import { RecentActivity } from './recent-activity';
 import { DashboardInbox, type InboxExpense } from './inbox';
 import { QuickNote } from './quick-note';
@@ -34,7 +35,7 @@ function Panel({ title, icon, action, children, className }: {
   return (
     <section className={cn('grid h-full content-start gap-3 rounded-2xl border bg-card p-4', className)}>
       <header className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-bold">{icon}{title}</h2>
+        <h2 className="flex items-center gap-2 text-sm font-bold">{icon}{title}<CardHelp /></h2>
         {action && <Link href={action.href} className="text-xs text-muted-foreground hover:text-foreground hover:underline">{action.label}</Link>}
       </header>
       {children}
@@ -97,20 +98,20 @@ export function DashboardV2({
   const widgets: WidgetDef[] = [
     // ── صف‌ها
     {
-      id: 'inbox-projects', title: t('کارهای پروژه'), group: G_ACT, size: 'l', defaultOn: true,
+      id: 'inbox-projects', hint: t('کارهای پروژه که منتظرِ تصمیمِ شماست: تسک‌های در بازبینی (تأیید یا برگشت)، تسک‌های بی‌مسئول، مناقصه‌های با پیشنهادِ تازه و کامنت‌های بی‌پاسخ. کلیدهای j و k بینِ ردیف‌ها می‌روند و a کنشِ اول را می‌زند.'), title: t('کارهای پروژه'), group: G_ACT, size: 'l', defaultOn: true,
       node: <DashboardInbox {...inboxProps} kinds={['review', 'unassigned', 'tenders', 'comments']} title={t('کارهای پروژه')} icon={<FolderKanban className="size-4 text-muted-foreground" />} empty="کارِ پروژه‌ای منتظرِ شما نیست." />,
     },
     {
-      id: 'inbox-finance', title: t('کارهای مالی'), group: G_ACT, size: 'm', defaultOn: true,
+      id: 'inbox-finance', hint: t('کارهای مالیِ منتظرِ شما: درخواست‌های پرداختِ اعضا (تأیید یا رد)، کارکردهای تعدادیِ پرداخت‌نشده و هزینه‌های سررسیدشده یا نزدیک.'), title: t('کارهای مالی'), group: G_ACT, size: 'm', defaultOn: true,
       node: <DashboardInbox {...inboxProps} kinds={['requests', 'units', 'expenses']} title={t('کارهای مالی')} icon={<Wallet className="size-4 text-muted-foreground" />} empty="کارِ مالی‌ای منتظرِ شما نیست." />,
     },
     {
-      id: 'inbox-team', title: t('کارهای تیم'), group: G_ACT, size: 'm', defaultOn: true,
+      id: 'inbox-team', hint: t('اعضای فعالی که دیروز هیچ ساعتی ثبت نکرده‌اند؛ با «یادآوری» برایشان اعلان فرستاده می‌شود.'), title: t('کارهای تیم'), group: G_ACT, size: 'm', defaultOn: true,
       node: <DashboardInbox {...inboxProps} kinds={['nolog']} title={t('کارهای تیم')} icon={<UsersRound className="size-4 text-muted-foreground" />} empty="همه ساعتِ دیروز را ثبت کرده‌اند." />,
     },
     // ── نگاهِ سریع
     ...(inbox.money ? [{
-      id: 'money', title: t('پول در یک نگاه'), group: G_GLANCE, size: 's' as const, defaultOn: true,
+      id: 'money', hint: t('خلاصهٔ پول در یک نگاه: طلب از کارفرماها، بدهی به اعضا و سودِ تخمینیِ پروژه‌های باز. مبلغ‌ها پوشیده‌اند و با کلیک دیده می‌شوند.'), title: t('پول در یک نگاه'), group: G_GLANCE, size: 's' as const, defaultOn: true,
       node: (
         <Panel title={t('پول در یک نگاه')} action={canReports ? { href: '/reports', label: t('گزارش‌ها') } : undefined}>
           <dl className="grid grid-cols-2 gap-2">
@@ -130,7 +131,7 @@ export function DashboardV2({
       ),
     }] : []),
     {
-      id: 'week', title: t('این هفتهٔ من'), group: G_GLANCE, size: 'm', defaultOn: true,
+      id: 'week', hint: t('ددلاینِ پروژه‌ها و سررسیدِ تسک‌های باز از یک هفتهٔ گذشته تا هفت روزِ آینده، روز به روز. عقب‌افتاده‌ها قرمزند.'), title: t('این هفتهٔ من'), group: G_GLANCE, size: 'm', defaultOn: true,
       node: (
         <Panel title={t('این هفتهٔ من')} icon={<CalendarClock className="size-4 text-muted-foreground" />}>
           {inbox.week.length === 0 ? (
@@ -159,7 +160,7 @@ export function DashboardV2({
       ),
     },
     {
-      id: 'risk', title: t('پروژه‌های در خطر'), group: G_GLANCE, size: 'm', defaultOn: true,
+      id: 'risk', hint: t('پروژه‌هایی که نیازِ توجه دارند، هر کدام یک بار با جدی‌ترین دلیلش: ددلاینِ گذشته، ددلاینِ نزدیک، گیر کردن در بازبینی یا راکد ماندن.'), title: t('پروژه‌های در خطر'), group: G_GLANCE, size: 'm', defaultOn: true,
       node: (
         <Panel title={t('پروژه‌های در خطر')} icon={<AlertTriangle className="size-4 text-muted-foreground" />} action={{ href: '/projects', label: t('پروژه‌ها') }}>
           {atRisk.length === 0 ? (
@@ -179,11 +180,11 @@ export function DashboardV2({
       ),
     },
     {
-      id: 'note', title: t('یادداشتِ من'), group: G_GLANCE, size: 's', defaultOn: true,
+      id: 'note', hint: t('یادداشتِ شخصیِ شما که خودکار ذخیره می‌شود و فقط خودتان می‌بینید (فعلاً فقط روی همین مرورگر).'), title: t('یادداشتِ من'), group: G_GLANCE, size: 's', defaultOn: true,
       node: <QuickNote userId={userId} />,
     },
     {
-      id: 'meetings', title: t('جلساتِ این هفته'), group: G_GLANCE, size: 's', defaultOn: true,
+      id: 'meetings', hint: t('جلسه‌های ثبت‌شدهٔ این هفته با روز و ساعت.'), title: t('جلساتِ این هفته'), group: G_GLANCE, size: 's', defaultOn: true,
       node: (
         <Panel title={t('جلساتِ این هفته')} icon={<CalendarDays className="size-4 text-muted-foreground" />} action={{ href: '/meetings', label: t('جلسات') }}>
           {today.meetings.length === 0 ? <p className="text-sm text-muted-foreground">{t('جلسه‌ای ثبت نشده.')}</p> : (
@@ -200,7 +201,7 @@ export function DashboardV2({
       ),
     },
     {
-      id: 'activity', title: t('آخرین رویدادها'), group: G_GLANCE, size: 'm', defaultOn: true,
+      id: 'activity', hint: t('آخرین کارهایی که در برنامه انجام شده: ساختن، ویرایش، تغییرِ وضعیت و… .'), title: t('آخرین رویدادها'), group: G_GLANCE, size: 'm', defaultOn: true,
       node: (
         <Panel title={t('آخرین رویدادها')} action={{ href: '/activity', label: t('رویدادها') }}>
           {today.activity.length === 0 ? <p className="text-sm text-muted-foreground">{t('رویدادی ثبت نشده.')}</p>
@@ -210,7 +211,7 @@ export function DashboardV2({
     },
     // ── تیم
     {
-      id: 'team-today', title: t('تیمِ امروز'), group: G_TEAM, size: 's', defaultOn: true,
+      id: 'team-today', hint: t('وضعیتِ تیم در همین لحظه: چند نفر آنلاین‌اند، چند تایمر روشن است و چه کسانی امروز مرخصی‌اند.'), title: t('تیمِ امروز'), group: G_TEAM, size: 's', defaultOn: true,
       node: (
         <Panel title={t('تیمِ امروز')} icon={<Users className="size-4 text-muted-foreground" />} action={{ href: '/availability', label: t('حضور و مرخصی') }}>
           <div className="grid grid-cols-3 gap-2 text-center">
@@ -232,7 +233,7 @@ export function DashboardV2({
       ),
     },
     ...(inbox.capacity.length > 0 ? [{
-      id: 'capacity', title: t('ظرفیتِ تیم'), group: G_TEAM, size: 'm' as const, defaultOn: true,
+      id: 'capacity', hint: t('بارِ کاریِ هر عضو: تعدادِ تسک‌های باز (نوارِ کهربایی) و ساعتِ ثبت‌شدهٔ هفت روزِ اخیر (نوارِ آبی). برای اینکه بدانید کار را به چه کسی بسپارید.'), title: t('ظرفیتِ تیم'), group: G_TEAM, size: 'm' as const, defaultOn: true,
       node: (
         <Panel title={t('ظرفیتِ تیم')} icon={<Gauge className="size-4 text-muted-foreground" />} action={{ href: '/team', label: t('تیمِ من') }}>
           <p className="-mt-1 text-[11px] text-muted-foreground">{t('تسکِ باز و ساعتِ ۷ روزِ اخیرِ هر عضو — پربارترها بالا.')}</p>
@@ -251,7 +252,7 @@ export function DashboardV2({
       ),
     }] : []),
     {
-      id: 'client-waiting', title: t('کارفرماهای منتظرِ پاسخ'), group: G_TEAM, size: 's', defaultOn: true,
+      id: 'client-waiting', hint: t('رشته‌کامنت‌هایی که آخرین پیامشان از کارفرماست و هنوز کسی از تیم جواب نداده.'), title: t('کارفرماهای منتظرِ پاسخ'), group: G_TEAM, size: 's', defaultOn: true,
       node: (
         <Panel title={t('کارفرماهای منتظرِ پاسخ')} icon={<MessageSquareReply className="size-4 text-muted-foreground" />}>
           {inbox.clientWaiting.length === 0 ? <p className="text-sm text-muted-foreground">{t('کارفرمایی منتظرِ پاسخ نیست.')}</p> : (
@@ -269,27 +270,27 @@ export function DashboardV2({
     },
     // ── کارت‌های قبلی (پیش‌فرض خاموش)
     ...progress.map((card, i) => ({
-      id: `metric-${i}`, title: t(card.label), group: G_OLD, size: 's' as const, defaultOn: false,
+      id: `metric-${i}`, hint: t('عددِ این هفته در مقایسه با هفتهٔ قبل، با نمودارِ کوچکِ روند.'), title: t(card.label), group: G_OLD, size: 's' as const, defaultOn: false,
       node: <MetricCard label={t(card.label)} value={card.value} trend={card.delta} headline={trendLine(card.delta, units[i] ?? '')} hint={t('نسبت به هفتهٔ گذشته')} href={card.href} spark={card.spark} />,
     })),
     {
-      id: 'metric-projects', title: t('پروژه‌های در حال انجام'), group: G_OLD, size: 's', defaultOn: false,
+      id: 'metric-projects', hint: t('تعدادِ پروژه‌های در حالِ انجام، با شمارِ پروژه‌های در مذاکره و تسک‌های باز.'), title: t('پروژه‌های در حال انجام'), group: G_OLD, size: 's', defaultOn: false,
       node: <MetricCard label={t('پروژه‌های در حال انجام')} value={stats.inProgress} headline={t('{n} پروژه در مرحلهٔ مذاکره', { n: stats.lead })} hint={t('{n} تسکِ باز روی همهٔ پروژه‌ها', { n: stats.openTasks })} href="/projects" />,
     },
     {
-      id: 'chart-trend', title: t('روندِ ساعتِ کاریِ تیم'), group: G_OLD, size: 'm', defaultOn: false,
+      id: 'chart-trend', hint: t('مجموعِ ساعتِ کاریِ ثبت‌شدهٔ تیم در هفته‌های اخیر.'), title: t('روندِ ساعتِ کاریِ تیم'), group: G_OLD, size: 'm', defaultOn: false,
       node: <Panel title={t('روندِ ساعتِ کاریِ تیم')}>{charts.weeklyTrend.every((w) => w.hours === 0) ? <p className="text-sm text-muted-foreground">{t('ساعتِ کاری ثبت نشده.')}</p> : <WeeklyTrendChart data={charts.weeklyTrend} />}</Panel>,
     },
     {
-      id: 'chart-status', title: t('وضعیتِ پروژه‌ها'), group: G_OLD, size: 'm', defaultOn: false,
+      id: 'chart-status', hint: t('پروژه‌ها به تفکیکِ وضعیت (مذاکره، در حالِ انجام، تمام‌شده و…).'), title: t('وضعیتِ پروژه‌ها'), group: G_OLD, size: 'm', defaultOn: false,
       node: <Panel title={t('وضعیتِ پروژه‌ها')}>{charts.statusDistribution.length === 0 ? <p className="text-sm text-muted-foreground">{t('پروژه‌ای نیست.')}</p> : <StatusChart data={charts.statusDistribution} />}</Panel>,
     },
     {
-      id: 'chart-members', title: t('ساعتِ کاریِ اعضا (۳۰ روزِ گذشته)'), group: G_OLD, size: 'm', defaultOn: false,
+      id: 'chart-members', hint: t('ساعتِ ثبت‌شدهٔ هر عضو در ۳۰ روزِ گذشته.'), title: t('ساعتِ کاریِ اعضا (۳۰ روزِ گذشته)'), group: G_OLD, size: 'm', defaultOn: false,
       node: <Panel title={t('ساعتِ کاریِ اعضا (۳۰ روزِ گذشته)')}>{charts.memberHours.length === 0 ? <p className="text-sm text-muted-foreground">{t('ساعتِ کاری ثبت نشده.')}</p> : <MemberHoursChart data={charts.memberHours} />}</Panel>,
     },
     {
-      id: 'online', title: t('آنلاین اکنون'), group: G_OLD, size: 's', defaultOn: false,
+      id: 'online', hint: t('اعضایی که همین حالا در برنامه‌اند؛ فعال یا بی‌کار.'), title: t('آنلاین اکنون'), group: G_OLD, size: 's', defaultOn: false,
       node: (
         <Panel title={t('آنلاین اکنون')}>
           {today.online.length === 0 ? <p className="text-sm text-muted-foreground">{t('کسی آنلاین نیست.')}</p> : (
@@ -299,7 +300,7 @@ export function DashboardV2({
       ),
     },
     {
-      id: 'available', title: t('در دسترسِ امروز'), group: G_OLD, size: 's', defaultOn: false,
+      id: 'available', hint: t('اعضایی که طبقِ برنامهٔ هفتگی امروز سرِ کارند و مرخصی نیستند.'), title: t('در دسترسِ امروز'), group: G_OLD, size: 's', defaultOn: false,
       node: (
         <Panel title={t('در دسترسِ امروز')}>
           {today.available.length === 0 ? <p className="text-sm text-muted-foreground">{t('هنوز کسی برنامهٔ هفتگی نداده.')}</p> : (

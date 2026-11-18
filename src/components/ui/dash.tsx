@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { CardHelp } from '@/components/ui/card-help';
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Panel } from '@/components/page-shell';
@@ -79,7 +80,7 @@ export function MetricCard({
   const card = (
     <Card className="@container/card h-full">
       <CardHeader>
-        <CardDescription className="text-[13px]">{label}</CardDescription>
+        <CardDescription className="flex items-center gap-1.5 text-[13px]">{label}<CardHelp /></CardDescription>
         <CardTitle className={cn('num font-bold', featured ? 'text-4xl @[250px]/card:text-5xl' : 'text-2xl @[250px]/card:text-3xl')}>{value}</CardTitle>
         {dir && (
           <CardAction>

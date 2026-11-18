@@ -8,6 +8,7 @@ import { decideRequestAction } from '../finance/_form/payout-actions';
 import { remindTimelogAction } from './_actions';
 import { TaskDialog } from '../projects/[id]/task-dialog';
 import { Button } from '@/components/ui/button';
+import { CardHelp } from '@/components/ui/card-help';
 import { TaskNumber } from '@/components/task-number';
 import { UserName } from '@/components/user-avatar';
 import { Amount } from '@/components/amount-privacy';
@@ -125,7 +126,7 @@ export function DashboardInbox({
     <section className="grid h-full content-start gap-3 rounded-2xl border bg-card p-4">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-bold">
-          {icon}{title}
+          {icon}{title}<CardHelp />
           {counts.all > 0 && <span className="num rounded-full bg-primary/12 px-1.5 text-[11px] text-primary">{counts.all}</span>}
         </h2>
         <div className="flex flex-wrap gap-1">

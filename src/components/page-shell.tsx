@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CardHelp } from '@/components/ui/card-help';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageCrumb } from '@/components/page-crumb';
@@ -267,6 +268,7 @@ export function Panel({
           >
             {icon}
             {title}
+            <CardHelp />
           </h3>
           {description && <div className="text-[13px] text-muted-foreground">{description}</div>}
         </div>

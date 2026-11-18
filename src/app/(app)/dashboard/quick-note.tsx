@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { NotebookPen } from 'lucide-react';
 import { useT } from '@/i18n/client';
+import { CardHelp } from '@/components/ui/card-help';
 
 /**
  * یادداشتِ سریعِ خودِ مدیر (نمونهٔ محلی) — فقط روی همین مرورگر ذخیره می‌شود (localStorage) و کسِ
@@ -28,7 +29,7 @@ export function QuickNote({ userId }: { userId: number }) {
   return (
     <section className="grid content-start gap-2 rounded-2xl border bg-card p-4">
       <header className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-bold"><NotebookPen className="size-4 text-muted-foreground" />{t('یادداشتِ من')}</h2>
+        <h2 className="flex items-center gap-2 text-sm font-bold"><NotebookPen className="size-4 text-muted-foreground" />{t('یادداشتِ من')}<CardHelp /></h2>
         <span className="text-[11px] text-muted-foreground">{saved ? t('ذخیره شد') : t('در حالِ ذخیره…')}</span>
       </header>
       <textarea

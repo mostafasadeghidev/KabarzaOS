@@ -6,6 +6,7 @@ import {
 import { t } from '@/i18n/server';
 import { formatDateTime } from '@/i18n/datetime';
 import { cn } from '@/lib/utils';
+import { CardHelp } from '@/components/ui/card-help';
 import { Thumb } from '@/components/thumb';
 import { DashboardGrid, type WidgetDef } from './dashboard-grid';
 import { QuickNote } from './quick-note';
@@ -33,7 +34,7 @@ function Panel({ title, icon, action, children, className }: {
   return (
     <section className={cn('grid h-full content-start gap-3 rounded-2xl border bg-card p-4', className)}>
       <header className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-bold [&_svg]:size-4 [&_svg]:text-muted-foreground">{icon}{title}</h2>
+        <h2 className="flex items-center gap-2 text-sm font-bold [&>svg]:size-4 [&>svg]:text-muted-foreground">{icon}{title}<CardHelp /></h2>
         {action && <Link href={action.href} className="text-xs text-muted-foreground hover:text-foreground hover:underline">{action.label}</Link>}
       </header>
       {children}
@@ -63,7 +64,7 @@ function TaskRow({ tk, todayIso }: { tk: InboxTask; todayIso: string }) {
     <li>
       <Link href={taskHref(tk)} className="flex items-center gap-3 py-2 hover:bg-muted/40">
         {tk.priorityColor
-          ? <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: tk.priorityColor }} title={tk.priorityName ?? ''} />
+          ? <span className="size-2 shrink-0 rounded-full" style={{ background: tk.priorityColor }} role="img" aria-label={tk.priorityName ?? ''} />
           : <span aria-hidden className="size-2 shrink-0 rounded-full bg-muted" />}
         <span className="grid min-w-0 flex-1 gap-0.5">
           <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
@@ -145,7 +146,7 @@ export function MemberDashboardV2({
 
   if (tasks) {
     widgets.push({
-      id: 'm-tasks', title: t('کارهای من'), group: G_WORK, size: 'l', defaultOn: true,
+      id: 'm-tasks', hint: t('تسک‌های بازی که به شما سپرده شده یا نقشش را برداشته‌اید. سررسیدگذشته‌ها اول و قرمزند، نزدیک‌ها کهربایی. با کلیک خودِ تسک باز می‌شود.'), title: t('کارهای من'), group: G_WORK, size: 'l', defaultOn: true,
       node: (
         <Panel
           title={t('کارهای من')}
@@ -162,7 +163,7 @@ export function MemberDashboardV2({
       ),
     });
     widgets.push({
-      id: 'm-waiting', title: t('منتظرِ بررسی'), group: G_WORK, size: 's', defaultOn: true,
+      id: 'm-waiting', hint: t('کارهایی که تمام کرده و برای بررسی فرستاده‌اید و منتظرِ تأییدِ مدیر یا کارفرما هستند.'), title: t('منتظرِ بررسی'), group: G_WORK, size: 's', defaultOn: true,
       node: (
         <Panel title={t('منتظرِ بررسی')} icon={<Hourglass />}>
           <p className="-mt-1 text-xs text-muted-foreground">{t('کارهایی که فرستاده‌اید و منتظرِ نظرِ دیگری‌اند.')}</p>
@@ -173,7 +174,7 @@ export function MemberDashboardV2({
     // فقط مدیرِ پروژه یا دفتر این دسته را دارد (myTasks برای عضوِ ساده خالی برمی‌گرداند).
     if (tasks.review.length > 0) {
       widgets.push({
-        id: 'm-team-review', title: t('بازبینی‌های تیم'), group: G_WORK, size: 'm', defaultOn: true,
+        id: 'm-team-review', hint: t('کارهایی که اعضای تیم روی پروژه‌های تحتِ مدیریتِ شما برای بررسی فرستاده‌اند.'), title: t('بازبینی‌های تیم'), group: G_WORK, size: 'm', defaultOn: true,
         node: (
           <Panel title={t('بازبینی‌های تیم')} icon={<CheckCircle2 />} action={{ href: '/tasks', label: t('تسک‌ها') }}>
             <p className="-mt-1 text-xs text-muted-foreground">{t('کارهای تیم روی پروژه‌های تحتِ مدیریتِ شما که منتظرِ تأییدند.')}</p>
@@ -185,7 +186,7 @@ export function MemberDashboardV2({
   }
 
   widgets.push({
-    id: 'm-comments', title: t('کامنت‌های باز'), group: G_WORK, size: 'm', defaultOn: true,
+    id: 'm-comments', hint: t('رشته‌کامنت‌های بازِ پروژه‌هایی که در آن‌ها هستید و هنوز بسته نشده‌اند.'), title: t('کامنت‌های باز'), group: G_WORK, size: 'm', defaultOn: true,
     node: (
       <Panel title={t('کامنت‌های باز')} icon={<MessageSquareReply />} action={{ href: '/comments', label: t('همه') }}>
         {comments.length === 0 ? <Empty>{t('کامنتِ بازی روی پروژه‌های شما نیست.')}</Empty> : (
@@ -205,7 +206,7 @@ export function MemberDashboardV2({
   });
 
   widgets.push({
-    id: 'm-week', title: t('این هفتهٔ من'), group: G_WORK, size: 'm', defaultOn: true,
+    id: 'm-week', hint: t('سررسیدِ تسک‌های شما و ددلاینِ پروژه‌هایتان تا هفت روزِ آینده، به‌اضافهٔ عقب‌افتاده‌ها.'), title: t('این هفتهٔ من'), group: G_WORK, size: 'm', defaultOn: true,
     node: (
       <Panel title={t('این هفتهٔ من')} icon={<CalendarClock />}>
         {week.length === 0 ? <Empty>{t('سررسیدی در این هفته ندارید.')}</Empty> : (
@@ -229,7 +230,7 @@ export function MemberDashboardV2({
 
   if (stats) {
     widgets.push({
-      id: 'm-stats', title: t('عددهای من'), group: G_MORE, size: 'm', defaultOn: true,
+      id: 'm-stats', hint: t('شمارِ پروژه‌ها، تسک‌های باز، کامنت‌های نیازمندِ بررسی و پیام‌های خوانده‌نشدهٔ شما. هر کدام به صفحهٔ خودش می‌رود.'), title: t('عددهای من'), group: G_MORE, size: 'm', defaultOn: true,
       node: (
         <Panel title={t('عددهای من')} icon={<Hash />}>
           <div className="grid grid-cols-2 gap-2">
@@ -243,11 +244,11 @@ export function MemberDashboardV2({
     });
   }
 
-  if (timeLog) widgets.push({ id: 'm-log', title: t('ثبتِ ساعت'), group: G_TIME, size: 'm', defaultOn: true, node: timeLog });
-  if (myWeek) widgets.push({ id: 'm-hours', title: t('هفتهٔ من'), group: G_TIME, size: 's', defaultOn: true, node: myWeek });
+  if (timeLog) widgets.push({ id: 'm-log', hint: t('تایمر را روی یک پروژه روشن کنید یا ساعتِ کار را دستی ثبت کنید.'), title: t('ثبتِ ساعت'), group: G_TIME, size: 'm', defaultOn: true, node: timeLog });
+  if (myWeek) widgets.push({ id: 'm-hours', hint: t('ساعتِ کارِ امروز و این هفتهٔ شما، با ستونِ هر روز.'), title: t('هفتهٔ من'), group: G_TIME, size: 's', defaultOn: true, node: myWeek });
 
   widgets.push({
-    id: 'm-meetings', title: t('جلساتِ این هفته'), group: G_TIME, size: 's', defaultOn: true,
+    id: 'm-meetings', hint: t('جلسه‌های این هفتهٔ شما با روز و ساعت.'), title: t('جلساتِ این هفته'), group: G_TIME, size: 's', defaultOn: true,
     node: (
       <Panel title={t('جلساتِ این هفته')} icon={<CalendarDays />} action={{ href: '/meetings', label: t('جلسات') }}>
         {data.meetings.length === 0 ? <Empty>{t('جلسه‌ای ثبت نشده.')}</Empty> : (
@@ -267,7 +268,7 @@ export function MemberDashboardV2({
 
   if (data.member) {
     widgets.push({
-      id: 'm-projects', title: t('پروژه‌های باز من'), group: G_MORE, size: 'xl', defaultOn: true,
+      id: 'm-projects', hint: t('پروژه‌های بازی که در آن‌ها نقش دارید: نقشِ شما، ددلاین، درصدِ پیشرفت، تسک‌های بازِ شما و ساعتی که رویش کار کرده‌اید.'), title: t('پروژه‌های باز من'), group: G_MORE, size: 'xl', defaultOn: true,
       node: (
         <Panel title={t('پروژه‌های باز من')} icon={<FolderKanban />} action={{ href: '/projects', label: t('پروژه‌ها') }}>
           {data.member.rows.length === 0 ? <Empty>{t('پروژهٔ بازی ندارید.')}</Empty> : (
@@ -303,7 +304,7 @@ export function MemberDashboardV2({
 
   if (data.tenders.length > 0) {
     widgets.push({
-      id: 'm-tenders', title: t('مناقصه‌ها'), group: G_MORE, size: 'm', defaultOn: true,
+      id: 'm-tenders', hint: t('پروژه‌هایی در مرحلهٔ مناقصه که با نقش‌های شما جور است و می‌توانید برایشان پیشنهادِ قیمت بدهید.'), title: t('مناقصه‌ها'), group: G_MORE, size: 'm', defaultOn: true,
       node: (
         <Panel title={t('مناقصه‌ها')} icon={<Gavel />}>
           <ul className="grid divide-y">
@@ -326,21 +327,21 @@ export function MemberDashboardV2({
 
   if (data.onboarding) {
     widgets.push({
-      id: 'm-onboarding', title: t('آنبوردینگ'), group: G_MORE, size: 'xl', defaultOn: true,
+      id: 'm-onboarding', hint: t('کارهای شروعِ همکاری که باید در روزهای اول انجام دهید.'), title: t('آنبوردینگ'), group: G_MORE, size: 'xl', defaultOn: true,
       node: <OnboardingCard data={data.onboarding} memberId={userId} />,
     });
   }
 
   if (teamCards) {
     widgets.push({
-      id: 'm-team', title: t('تیمِ من'), group: G_MORE, size: 'xl', defaultOn: true,
+      id: 'm-team', hint: t('خلاصهٔ تیم‌ها یا دفترهایی که مدیرشان هستید.'), title: t('تیمِ من'), group: G_MORE, size: 'xl', defaultOn: true,
       node: <Panel title={t('تیمِ تحتِ مدیریتِ شما')} icon={<UsersRound />}>{teamCards}</Panel>,
     });
   }
 
   if (data.client) {
     widgets.push({
-      id: 'm-client', title: t('پروژه‌های من به‌عنوان کارفرما'), group: G_MORE, size: 'xl', defaultOn: true,
+      id: 'm-client', hint: t('پروژه‌هایی که در آن‌ها کارفرما هستید، با وضعیتِ پرداخت و پیشرفت.'), title: t('پروژه‌های من به‌عنوان کارفرما'), group: G_MORE, size: 'xl', defaultOn: true,
       node: (
         <div className="grid gap-4">
           <ClientBlock data={data.client} unread={data.unread} showUnread={false} money={data.money?.client ?? []} />
@@ -350,7 +351,7 @@ export function MemberDashboardV2({
   }
 
   widgets.push({
-    id: 'm-note', title: t('یادداشتِ من'), group: G_MORE, size: 's', defaultOn: false,
+    id: 'm-note', hint: t('یادداشتِ شخصیِ شما که خودکار ذخیره می‌شود و فقط خودتان می‌بینید.'), title: t('یادداشتِ من'), group: G_MORE, size: 's', defaultOn: false,
     node: <QuickNote userId={userId} />,
   });
 
