@@ -51,7 +51,7 @@ export interface NavItem {
   group: 'operations' | 'data';
 }
 
-const ICONS: Record<NavIcon, typeof FolderKanban> = {
+export const ICONS: Record<NavIcon, typeof FolderKanban> = {
   overview: LayoutDashboard,
   tasks: ListChecks,
   projects: FolderKanban,

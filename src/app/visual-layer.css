@@ -310,6 +310,12 @@ a:focus-visible > [data-slot='card'] {
 [data-slot='table-container'] thead tr { background: oklch(0.5 0.02 70 / 0.05); }
 [data-slot='table-container'] tbody tr { transition: background 0.12s ease; }
 
+/* ---------- تصویرِ حالتِ خالی (۳.۱۲.۰): رنگِ کاشیِ همان بخشِ منو ---------- */
+[data-empty-art][data-hue] { color: oklch(0.5 0.14 var(--wp-ih)); }
+[data-empty-art][data-hue] [data-empty-tile] { background: oklch(0.93 0.05 var(--wp-ih)); }
+.dark [data-empty-art][data-hue] { color: oklch(0.8 0.1 var(--wp-ih)); }
+.dark [data-empty-art][data-hue] [data-empty-tile] { background: oklch(0.32 0.06 var(--wp-ih)); }
+
 /* ---------- کاهشِ حرکت برای کسی که خواسته ---------- */
 @media (prefers-reduced-motion: reduce) {
   [data-slot='card'], [data-button], :is([data-slot='sidebar-menu-button'], [data-sidebar='menu-button']) { transition: none; }

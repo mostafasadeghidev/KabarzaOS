@@ -146,18 +146,26 @@ export default async function DashboardPage({
       {/* پیشرفتِ این هفته — کارت‌های بزرگ با بجِ روند */}
       <section className="flex flex-col gap-3">
         <DashHeading>{t("پیشرفتِ این هفته")}</DashHeading>
-        <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+        {/*
+          ۳.۱۲.۰ — چیدمانِ «بنتو»: کارتِ اول (تسکِ تمام‌شده) بزرگ با نمودارِ بلند، دو کارتِ کوچک
+          کنارش و «پروژه‌های در حالِ انجام» پهن زیرشان. در دوستونه کارتِ بزرگ تمام‌عرض است؛ در گوشی زیرِ هم.
+        */}
+        <div data-bento className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 @5xl/main:grid-rows-[auto_auto]">
           {progress.map((card, i) => (
-            <MetricCard
-              key={card.label}
-              label={t(card.label)}
-              value={card.value}
-              trend={card.delta}
-              headline={trendLine(card.delta, units[i] ?? '')}
-              hint={t("نسبت به هفتهٔ گذشته")}
-              href={card.href}
-            />
+            <div key={card.label} className={i === 0 ? 'grid @xl/main:col-span-2 @5xl/main:row-span-2' : 'grid'}>
+              <MetricCard
+                label={t(card.label)}
+                value={card.value}
+                trend={card.delta}
+                headline={trendLine(card.delta, units[i] ?? '')}
+                hint={t("نسبت به هفتهٔ گذشته")}
+                href={card.href}
+                spark={card.spark}
+                featured={i === 0}
+              />
+            </div>
           ))}
+          <div className="grid @xl/main:col-span-2">
           <MetricCard
             label={t("پروژه‌های در حال انجام")}
             value={stats.inProgress}
@@ -165,6 +173,7 @@ export default async function DashboardPage({
             hint={t('{n} تسکِ باز روی همهٔ پروژه‌ها', { n: stats.openTasks })}
             href="/projects"
           />
+          </div>
         </div>
       </section>
 

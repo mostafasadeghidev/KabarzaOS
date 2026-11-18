@@ -29,7 +29,11 @@ import { actionLabel, listActivity } from '@/server/activity/service';
 
 export interface ActionCard { value: number; label: string; href: string | null }
 export interface ActionGroup { title: string; cards: ActionCard[] }
-export interface ProgressCard { value: string; label: string; delta: number; href: string | null }
+export interface ProgressCard {
+  value: string; label: string; delta: number; href: string | null;
+  /** عددِ هر روز در ۷ روزِ گذشته (قدیمی ← امروز) — نمودارِ کوچکِ کنارِ عدد (۳.۱۲.۰). */
+  spark?: number[];
+}
 export interface RiskItem { id: number; title: string; badge: string; href?: string }
 export interface StatusSlice { status: string; count: number }
 export interface MemberHours { name: string; hours: number }
@@ -243,10 +247,36 @@ export async function getDashboard(actor: Actor, opts: { officeId?: number | nul
     loggedMinutes(week.from, week.to), loggedMinutes(week.prevFrom, week.prevTo),
   ]);
 
+  /*
+   * نمودارِ کوچک (۳.۱۲.۰): همان سه عدد، روزبه‌روز در ۷ روزِ گذشته. یک کوئریِ گروه‌بندی‌شده
+   * برای هر کدام — نه هفت کوئری.
+   */
+  const last7 = Array.from({ length: 7 }, (_, i) => new Date(Date.now() - (6 - i) * 86400000).toISOString().slice(0, 10));
+  const series = (rows: Array<{ d: string; n: number }>) => {
+    const by = new Map(rows.map((r) => [String(r.d).slice(0, 10), Number(r.n)]));
+    return last7.map((d) => by.get(d) ?? 0);
+  };
+  const [tDays, cDays, mDays] = await Promise.all([
+    db.select({ d: sql<string>`${tasks.updatedAt}::date::text`, n })
+      .from(tasks).leftJoin(tags, eq(tags.id, tasks.statusTagId))
+      .where(and(inProjects, isNull(tasks.deletedAt), eq(tags.statusGroup, 'complete'),
+        between(sql`${tasks.updatedAt}::date`, last7[0]!, last7[6]!)))
+      .groupBy(sql`${tasks.updatedAt}::date`),
+    db.select({ d: sql<string>`${comments.closedAt}::date::text`, n })
+      .from(comments)
+      .where(and(inComments, between(sql`${comments.closedAt}::date`, last7[0]!, last7[6]!)))
+      .groupBy(sql`${comments.closedAt}::date`),
+    db.select({ d: sql<string>`${timelogs.logDate}::text`, n: sql<number>`coalesce(sum(${timelogs.minutes}),0)::int` })
+      .from(timelogs)
+      .where(and(ids.length ? inArray(timelogs.projectId, ids) : sql`false`, between(timelogs.logDate, last7[0]!, last7[6]!)))
+      .groupBy(timelogs.logDate),
+  ]);
+
   const progress: ProgressCard[] = [
-    { value: String(tNow), label: 'تسکِ تمام‌شده', delta: tNow - tPrev, href: '/projects' },
-    { value: String(cNow), label: 'کامنتِ حل‌شده', delta: cNow - cPrev, href: null },
-    { value: String(Math.round(mNow / 60)), label: 'ساعتِ کارِ ثبت‌شده', delta: Math.round((mNow - mPrev) / 60), href: '/hours' },
+    { value: String(tNow), label: 'تسکِ تمام‌شده', delta: tNow - tPrev, href: '/projects', spark: series(tDays) },
+    { value: String(cNow), label: 'کامنتِ حل‌شده', delta: cNow - cPrev, href: null, spark: series(cDays) },
+    { value: String(Math.round(mNow / 60)), label: 'ساعتِ کارِ ثبت‌شده', delta: Math.round((mNow - mPrev) / 60), href: '/hours',
+      spark: series(mDays).map((m) => Math.round(m / 6) / 10) },
   ];
 
   /* ---------------- امروز ---------------- */

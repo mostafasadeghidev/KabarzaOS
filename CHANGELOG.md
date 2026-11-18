@@ -2,6 +2,15 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.12.0]
+
+### Added
+
+- **Bento layout for "Progress this week".** On the dashboard, "Tasks completed" is now a large card with a tall trend chart, "Comments resolved" and "Hours logged" sit beside it as smaller cards, and "Projects in progress" runs wide underneath. On a phone the cards stack.
+- **Small trend charts next to the numbers.** The three progress cards show the last seven days as a small line chart in the palette colour, with today marked by a dot, so the trend is visible at a glance.
+- **Illustrations for empty pages.** Instead of a lone sentence, every empty list shows a small illustration with the icon of that section from the menu (calendar for Meetings, folder for Projects, …) in the same colour as its menu tile. It follows the palette and dark mode, and pages that have their own icon keep it.
+- **Bottom navigation bar on phones.** On small screens a bar at the bottom gives one-tap access to Overview, Projects, Tasks and Messages (with the unread count), plus "More", which opens the full menu. It only shows sections the person is allowed to see; a missing one is replaced by the next item of the menu. Toasts and the upload panel sit above it.
+
 ## [3.11.1]
 
 ### Fixed

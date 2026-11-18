@@ -268,7 +268,7 @@ function UploadPanel({ items, open, onToggle, onCancel, onRetry }: {
     <section
       data-upload-panel
       aria-live="polite"
-      className="fixed bottom-4 end-4 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-lg"
+      className="fixed bottom-24 end-4 z-50 md:bottom-4 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-lg"
     >
       <button
         type="button"

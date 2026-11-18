@@ -318,3 +318,18 @@ import returns the plain look above.
 - **Reduced motion and print.** With `prefers-reduced-motion` every entrance,
   slide and shimmer is off. Printing (invoices, reports) drops glows,
   shadows, glass and motion.
+
+- **Bento and sparklines (3.12.0).** "Progress this week" uses a bento grid
+  (`data-bento`): the first card spans two columns and two rows and is
+  `featured` (bigger number, taller chart). `Sparkline` in
+  `components/ui/dash.tsx` draws seven days left to right in `text-primary`;
+  the "today" dot is an element outside the SVG so it stays round when the
+  chart stretches.
+- **Empty illustrations (3.12.0).** `EmptyState` always shows
+  `EmptyIllustration`: two paper cards over a soft blob, with the section's
+  menu icon on a tile. The section comes from the URL; the colour is read
+  from that menu item's `--wp-ih` (`[data-empty-art][data-hue]`), with the
+  palette colour when the sidebar is not on the page.
+- **Bottom navigation on phones (3.12.0).** `MobileBottomNav` (below 768 px):
+  four items from the permitted menu plus "More" (opens the sidebar sheet).
+  Anything fixed to the bottom of the screen on phones sits at `bottom-24`.
