@@ -11,6 +11,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { useT } from '@/i18n/client';
 import { CardHelpProvider } from '@/components/ui/card-help';
 import { Hint } from '@/components/ui/tooltip';
+import { HeaderAction } from '@/components/header-actions';
 import { cn } from '@/lib/utils';
 
 /**
@@ -430,26 +431,24 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
 
   return (
     <div className="grid gap-3">
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {/* میان‌بُرها فقط در صفِ مدیر کار می‌کنند — داشبوردِ عضو و کارفرما (scope) راهنمایش را نمی‌بینند. */}
-        {!editing && !scope && <span className="me-auto hidden text-[11px] text-muted-foreground md:inline">{t('میان‌بُر: j / k ردیفِ بعد و قبل، a یا Enter کنشِ اولِ ردیف.')}</span>}
+      {/* دکمهٔ «ویرایشِ چیدمان» / «تمام» در نوارِ بالای چسبان — همیشه در دسترس، بی‌آنکه ردیفی از صفحه بگیرد. */}
+      <HeaderAction>
         {editing ? (
-          <>
-            <span className="me-auto text-xs text-muted-foreground">{t('موس را روی کارت ببرید: از دستگیره بکشید تا جابه‌جا شود؛ لبهٔ پایین قد را و لبهٔ بالا شروع را عوض می‌کند و به لبهٔ کارت‌های کناری می‌چسبد.')}</span>
-            <Button type="button" size="sm" variant="ghost" onClick={() => save(base)}><RotateCcw className="size-4" />{t('پیش‌فرض')}</Button>
-            <Button type="button" size="sm" onClick={() => setEditing(false)}><Check className="size-4" />{t('تمام')}</Button>
-          </>
+          <Button type="button" size="sm" onClick={() => setEditing(false)}><Check className="size-4" />{t('تمام')}</Button>
         ) : (
-          <>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(true)}>
-              <LayoutGrid className="size-4" />{t('فهرستِ کارت‌ها')}
-            </Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => setEditing(true)}>
-              <Pencil className="size-4" />{t('ویرایشِ چیدمان')}
-            </Button>
-          </>
+          <Button type="button" size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="size-4" />{t('ویرایشِ چیدمان')}</Button>
         )}
-      </div>
+      </HeaderAction>
+      {/* میان‌بُرها فقط در صفِ مدیر کار می‌کنند — داشبوردِ عضو و کارفرما (scope) راهنمایش را نمی‌بینند. */}
+      {!editing && !scope && <span className="hidden text-[11px] text-muted-foreground md:inline">{t('میان‌بُر: j / k ردیفِ بعد و قبل، a یا Enter کنشِ اولِ ردیف.')}</span>}
+      {/* «فهرستِ کارت‌ها» و «پیش‌فرض» فقط در حالتِ ویرایش. */}
+      {editing && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <span className="me-auto text-xs text-muted-foreground">{t('موس را روی کارت ببرید: از دستگیره بکشید تا جابه‌جا شود؛ لبهٔ پایین قد را و لبهٔ بالا شروع را عوض می‌کند و به لبهٔ کارت‌های کناری می‌چسبد.')}</span>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(true)}><LayoutGrid className="size-4" />{t('فهرستِ کارت‌ها')}</Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => save(base)}><RotateCcw className="size-4" />{t('پیش‌فرض')}</Button>
+        </div>
+      )}
 
       {/* حالتِ ویرایش: کارت‌های پنهان برای افزودن با یک کلیک. */}
       {editing && ordered.some((w) => !isOn(w)) && (

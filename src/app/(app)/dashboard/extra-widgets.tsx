@@ -384,7 +384,7 @@ export function ClientDashboardV2({
     node: (
       <Panel title={t('منتظرِ تأییدِ شما')} icon={<ClipboardCheck />} action={{ href: '/tasks', label: t('همه') }}>
         {review.length === 0 ? <Empty>{t('کاری منتظرِ تأییدِ شما نیست.')}</Empty> : (
-          <ul className="grid max-h-[26rem] divide-y overflow-y-auto overscroll-contain">
+          <ul className="grid max-h-[26rem] divide-y overflow-y-auto">
             {review.map((tk) => (
               <li key={tk.id}>
                 <Link href={`/projects/${tk.projectId}?tab=tasks`} className="flex items-center justify-between gap-3 py-2 hover:bg-muted/40">

@@ -117,7 +117,7 @@ function TaskRow({ tk, todayIso }: { tk: InboxTask; todayIso: string }) {
 function TaskList({ items, todayIso, empty }: { items: InboxTask[]; todayIso: string; empty: string }) {
   if (items.length === 0) return <Empty>{empty}</Empty>;
   return (
-    <ul className="grid max-h-[28rem] divide-y overflow-y-auto overscroll-contain">
+    <ul className="grid max-h-[28rem] divide-y overflow-y-auto">
       {items.map((tk) => <TaskRow key={tk.id} tk={tk} todayIso={todayIso} />)}
     </ul>
   );
@@ -218,7 +218,7 @@ export function MemberDashboardV2({
     node: (
       <Panel title={t('کامنت‌های باز')} icon={<MessageSquareReply />} action={{ href: '/comments', label: t('همه') }}>
         {comments.length === 0 ? <Empty>{t('کامنتِ بازی روی پروژه‌های شما نیست.')}</Empty> : (
-          <ul className="grid max-h-[22rem] divide-y overflow-y-auto overscroll-contain">
+          <ul className="grid max-h-[22rem] divide-y overflow-y-auto">
             {comments.slice(0, 12).map((c) => (
               <li key={c.rootId}>
                 <Link href={`/projects/${c.projectId}?tab=comments#c-${c.rootId}`} className="grid gap-0.5 py-2 hover:bg-muted/40">

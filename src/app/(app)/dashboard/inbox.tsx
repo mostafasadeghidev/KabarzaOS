@@ -160,7 +160,7 @@ export function DashboardInbox({
           <p className="text-sm font-medium text-foreground">{t(empty)}</p>
         </div>
       ) : (
-        <ul ref={listRef} data-inbox-list className="grid max-h-[28rem] divide-y overflow-x-hidden overflow-y-auto overscroll-contain">
+        <ul ref={listRef} data-inbox-list className="grid max-h-[28rem] divide-y overflow-x-hidden overflow-y-auto">
           {show_('review') && R.map((r) => (
             <Row
               key={`t${r.id}`}

@@ -17,6 +17,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { PageHeader, PageShell } from '@/components/page-shell';
+import { DEMO_ALLOWED, demoAdminExtras, demoDash, demoInbox } from '@/server/dashboard-demo';
 import Link from 'next/link';
 import { canViewSection } from '@/domain/access/permissions';
 import { hasTeamScope, teamOverview } from '@/server/team/service';
@@ -71,7 +72,7 @@ function trendLine(delta: number, unit: string): string {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ office?: string; classic?: string }>;
+  searchParams: Promise<{ office?: string; classic?: string; demo?: string }>;
 }) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
@@ -86,7 +87,9 @@ export default async function DashboardPage({
   if (!actor) redirect('/login');
 
   // فیلترِ دفتر روی نمودارهای ساعت (پورتِ `kt_office`) — نامعتبر = همه.
-  const { office, classic } = await searchParams;
+  const { office, classic, demo: demoParam } = await searchParams;
+  // دادهٔ نمایشی فقط در حالتِ توسعه (dashboard-demo.ts) — برای دیدنِ کارت‌ها با دادهٔ زیاد.
+  const demo = demoParam === '1' && DEMO_ALLOWED;
   const officeParam = Number(office);
 
   let data;
@@ -188,7 +191,10 @@ export default async function DashboardPage({
    * نمونهٔ محلیِ داشبوردِ تازه («اول کار، بعد عدد») — `?classic=1` نمای قبلی را نشان می‌دهد تا مقایسه شود.
    */
   if (classic !== '1') {
-    const [inbox, statuses, session, ax] = await Promise.all([getDashboardInbox(actor), taskStatusTags(), currentSession(), getAdminExtras(actor)]);
+    const [rawInbox, statuses, session, rawAx] = await Promise.all([getDashboardInbox(actor), taskStatusTags(), currentSession(), getAdminExtras(actor)]);
+    const inbox = demo ? demoInbox(rawInbox) : rawInbox;
+    const ax = demo ? demoAdminExtras(rawAx) : rawAx;
+    if (demo) data = demoDash(data);
     const review = statuses.find((s) => s.isReview);
     const approve = statuses.find((s) => s.group === 'complete' && !s.isClosed) ?? statuses.find((s) => s.group === 'complete');
     const back = statuses.find((s) => s.group === 'in_progress' && !s.isReview && review && statuses.indexOf(s) > statuses.indexOf(review))
@@ -198,7 +204,10 @@ export default async function DashboardPage({
         <PageHeader
           title={t('سلام، {name}', { name: session?.name ?? '' })}
           description={todayLabel()}
-          actions={<Link href="/dashboard?classic=1" className="text-xs text-muted-foreground hover:underline">{t('نمای قبلی')}</Link>}
+          actions={<>
+            {DEMO_ALLOWED && <Link href={demo ? '/dashboard' : '/dashboard?demo=1'} className="text-xs text-muted-foreground hover:underline">{demo ? t('دادهٔ واقعی') : t('دادهٔ نمایشی')}</Link>}
+            <Link href="/dashboard?classic=1" className="text-xs text-muted-foreground hover:underline">{t('نمای قبلی')}</Link>
+          </>}
         />
         <DashboardV2
           data={data}

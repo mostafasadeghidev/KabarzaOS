@@ -62,7 +62,7 @@ export function ClientQaList({ items }: { items: ClientQa[] }) {
     groups.set(i.projectId, g);
   }
   return (
-    <div className="grid max-h-[26rem] gap-3 overflow-y-auto overscroll-contain">
+    <div className="grid max-h-[26rem] gap-3 overflow-y-auto">
       {[...groups.entries()].map(([pid, g]) => (
         <div key={pid} className="grid gap-1">
           <Link href={`/projects/${pid}?tab=qa`} className="truncate text-xs font-medium text-muted-foreground hover:underline">{g.title}</Link>
