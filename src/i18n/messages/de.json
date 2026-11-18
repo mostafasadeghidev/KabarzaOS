@@ -7,7 +7,10 @@
   "امروز هنوز ساعتی ثبت نکرده‌اید.": "Sie haben heute noch keine Zeit erfasst.",
   "انجام نشد": "Nicht erledigt",
   "اول تلگرامِ خودتان را در برنامه وصل کنید (پروفایل ← «اعلان‌ها و تلگرام»)؛ بعد اینجا جواب می‌دهم.": "Verbinden Sie zuerst Ihr eigenes Telegram in der App (Profil → „Benachrichtigungen & Telegram“); dann kann ich hier antworten.",
-  "این {count} کار انجام شود؟": "Diese {count} Aktionen ausführen?",
+  "این {count} کار انجام شود؟": {
+    "one": "Diese {count} Aktion ausführen?",
+    "other": "Diese {count} Aktionen ausführen?"
+  },
   "این دستور فقط برای اعضای تیمِ همین پروژه است که تلگرامشان را در برنامه وصل کرده‌اند.": "Dieser Befehl ist nur für Teammitglieder dieses Projekts, die Telegram in der App verbunden haben.",
   "این دستور فقط در چتِ خصوصی با ربات کار می‌کند.": "Dieser Befehl funktioniert nur im privaten Chat mit dem Bot.",
   "این ویدیوی Loom خوانده نشد. اگر خصوصی است، دسترسی‌اش را «هر کس با لینک» کنید یا خودِ فایل را بفرستید.": "Dieses Loom-Video konnte nicht gelesen werden. Wenn es privat ist, stellen Sie den Zugriff auf „Jeder mit dem Link“ oder senden Sie die Datei selbst.",
@@ -37,7 +40,10 @@
   "دستیار دارد عکس را می‌بیند…": "Der Assistent sieht sich das Bild an…",
   "دستیارِ این گروه فقط برای اعضای تیمِ همین پروژه است.": "Der Assistent dieser Gruppe ist nur für das Team dieses Projekts.",
   "دستیارِ تلگرام": "Telegram-Assistent",
-  "دعوت برای {n} نفر فرستاده شد.": "Einladung an {n} Personen gesendet.",
+  "دعوت برای {n} نفر فرستاده شد.": {
+    "one": "Einladung an {n} Person gesendet.",
+    "other": "Einladung an {n} Personen gesendet."
+  },
   "دعوتِ اعضا به گروهِ تلگرام": "Team in die Telegram-Gruppe eingeladen",
   "دعوتِ دوبارهٔ اعضا": "Team erneut einladen",
   "ربات در گروهِ پروژه": "Der Bot in der Projektgruppe",
@@ -62,7 +68,10 @@
   "عکس از هر ویدیو": "Bilder pro Video",
   "فقط کسی که پرسیده می‌تواند تأیید کند.": "Nur die Person, die gefragt hat, kann bestätigen.",
   "لحظهٔ ویدیو": "Videomoment",
-  "لینکِ عضویت برای {n} عضوِ تیمِ پروژه در تلگرام و برنامه فرستاده شد. ربات فقط اعضای تیمِ همین پروژه را می‌پذیرد.": "Ein Beitrittslink wurde an {n} Teammitglieder in Telegram und in der App gesendet. Der Bot lässt nur das Team dieses Projekts zu.",
+  "لینکِ عضویت برای {n} عضوِ تیمِ پروژه در تلگرام و برنامه فرستاده شد. ربات فقط اعضای تیمِ همین پروژه را می‌پذیرد.": {
+    "one": "Ein Beitrittslink wurde an {n} Teammitglied in Telegram und in der App gesendet. Der Bot lässt nur das Team dieses Projekts zu.",
+    "other": "Ein Beitrittslink wurde an {n} Teammitglieder in Telegram und in der App gesendet. Der Bot lässt nur das Team dieses Projekts zu."
+  },
   "لینکِ ویدیو": "Videolink",
   "مدلِ هوشِ مصنوعیِ شما تصویر نمی‌بیند؛ فقط صدا و متن دیده شد. برای دیدنِ تصویر Gemini (رایگان) یا ChatGPT را وصل کنید.": "Ihr KI-Modell kann keine Bilder sehen; nur Ton und Text wurden genutzt. Um Bilder zu sehen, verbinden Sie Gemini (kostenlos) oder ChatGPT.",
   "مینی‌اپ در BotFather (نامِ کوتاه یا لینک)": "Mini-App in BotFather (Kurzname oder Link)",
@@ -71,14 +80,20 @@
   "وصلِ تلگرام": "Telegram verbinden",
   "ویدیو از تلگرام گرفته نشد؛ دوباره بفرستید.": "Das Video konnte nicht von Telegram geladen werden; senden Sie es erneut.",
   "ویدیو بزرگ‌تر از ۲۰ مگابایت است (سقفِ تلگرام برای ربات)؛ لینکِ Loom یا نسخهٔ کوتاه‌ترش را بفرستید.": "Das Video ist größer als 20 MB (Telegram-Limit für Bots); senden Sie einen Loom-Link oder eine kürzere Version.",
-  "ویدیو بیش از {minutes} دقیقه است؛ فقط {minutes} دقیقهٔ اول دیده شد.": "Das Video ist länger als {minutes} Minuten; nur die ersten {minutes} Minuten wurden angesehen.",
+  "ویدیو بیش از {minutes} دقیقه است؛ فقط {minutes} دقیقهٔ اول دیده شد.": {
+    "one": "Das Video ist länger als {minutes} Minute; nur die erste {minutes} Minute wurde angesehen.",
+    "other": "Das Video ist länger als {minutes} Minuten; nur die ersten {minutes} Minuten wurden angesehen."
+  },
   "ویدیو بیش از ۱۵ دقیقه است؛ فقط ۱۵ دقیقهٔ اول دیده شد.": "Das Video ist länger als 15 Minuten; nur die ersten 15 Minuten wurden angesehen.",
   "ویدیو دیده شد": "Video angesehen",
   "ویدیو، لینکِ Loom، عکس یا ویس را هم با /ask بفرستید یا روی‌شان پاسخ بدهید.": "Videos, Loom-Links, Bilder oder Sprachnachrichten auch mit /ask senden oder darauf antworten.",
   "ویدیو، لینکِ Loom، عکس یا پیامِ صوتی هم بفرستید و بنویسید چه کنم؛ دستیار می‌بیند و می‌شنود و مثلاً موردهای بازبینی و تسک می‌سازد.": "Sie können auch ein Video, einen Loom-Link, ein Bild oder eine Sprachnachricht senden und sagen, was zu tun ist; der Assistent sieht und hört mit und legt z. B. Review-Punkte und Aufgaben an.",
   "پرسش از دستیار": "Assistenten fragen",
   "پرسش یا درخواست از دستیار؛ پاسخ به پیامِ ربات هم همین کار را می‌کند.": "Frage oder Bitte an den Assistenten; eine Antwort auf eine Bot-Nachricht tut dasselbe.",
-  "پیامِ صوتی بیش از {minutes} دقیقه است؛ کوتاه‌ترش را بفرستید.": "Die Sprachnachricht ist länger als {minutes} Minuten; senden Sie eine kürzere.",
+  "پیامِ صوتی بیش از {minutes} دقیقه است؛ کوتاه‌ترش را بفرستید.": {
+    "one": "Die Sprachnachricht ist länger als {minutes} Minute; senden Sie eine kürzere.",
+    "other": "Die Sprachnachricht ist länger als {minutes} Minuten; senden Sie eine kürzere."
+  },
   "پیامِ صوتی بیش از ۱۵ دقیقه است؛ کوتاه‌ترش را بفرستید.": "Die Sprachnachricht ist länger als 15 Minuten; senden Sie eine kürzere.",
   "پیشرفتِ پروژه": "Projektfortschritt",
   "پیوست": "Anhang",
@@ -143,14 +158,26 @@
   "{amount} — «{project}»": "{amount} — „{project}“",
   "{body} — {n} دقیقه مانده": "{body} — noch {n} Minuten",
   "{body} — موعد: {when}": "{body} — fällig: {when}",
-  "{body} — موعد: {when} ({n} دقیقه قبل)": "{body} — fällig: {when} ({n} Minuten vorher)",
+  "{body} — موعد: {when} ({n} دقیقه قبل)": {
+    "by": "n",
+    "one": "{body} — fällig: {when} ({n} Minute vorher)",
+    "other": "{body} — fällig: {when} ({n} Minuten vorher)"
+  },
   "{body} — موعد: {when} (۱ روز قبل)": "{body} — fällig: {when} (1 Tag vorher)",
   "{body} — موعد: {when} (۱ ساعت قبل)": "{body} — fällig: {when} (1 Stunde vorher)",
   "{body} — موعد: {when} (۱۰ دقیقه قبل)": "{body} — fällig: {when} (10 Minuten vorher)",
   "{done} از {total} انجام شده": "{done} von {total} erledigt",
   "{done} از {total} ترجمه شده": "{done} von {total} übersetzt",
-  "{done} از {total} مورد انجام شده": "{done} von {total} Punkten erledigt",
-  "{done}/{total} تسک": "{done}/{total} Aufgaben",
+  "{done} از {total} مورد انجام شده": {
+    "by": "total",
+    "one": "{done} von {total} Punkt erledigt",
+    "other": "{done} von {total} Punkten erledigt"
+  },
+  "{done}/{total} تسک": {
+    "by": "total",
+    "one": "{done}/{total} Aufgabe",
+    "other": "{done}/{total} Aufgaben"
+  },
   "{from} تا {to}": "{from} bis {to}",
   "{hours} روی «{project}» شمرده شد ({date}).": "{hours} auf „{project}“ erfasst ({date}).",
   "{keys} برای ارسال": "{keys} zum Senden",
@@ -159,57 +186,164 @@
   "{member} — {amount} — «{project}»": "{member} — {amount} — „{project}“",
   "{n} {unit} بیشتر از هفتهٔ قبل": "{n} {unit} mehr als letzte Woche",
   "{n} {unit} کمتر از هفتهٔ قبل": "{n} {unit} weniger als letzte Woche",
-  "{n} آیتم اعمال شد — {t} تسک روی پروژه ساخته شد.": "{n} Einträge übernommen – {t} Aufgaben im Projekt erstellt.",
-  "{n} آیتم اعمال شد.": "{n} Einträge angewendet.",
-  "{n} اعلانِ خوانده‌نشده": "{n} ungelesene Benachrichtigungen",
-  "{n} بایت": "{n} Bytes",
-  "{n} پروژه": "{n} Projekte",
-  "{n} پروژه در مرحلهٔ مذاکره": "{n} Projekte in der Verhandlungsphase",
-  "{n} پیشنهاد": "{n} Gebote",
-  "{n} تسک": "{n} Aufgaben",
+  "{n} آیتم اعمال شد — {t} تسک روی پروژه ساخته شد.": {
+    "by": "n",
+    "one": "{n} Eintrag übernommen – {t} Aufgaben im Projekt erstellt.",
+    "other": "{n} Einträge übernommen – {t} Aufgaben im Projekt erstellt."
+  },
+  "{n} آیتم اعمال شد.": {
+    "one": "{n} Eintrag angewendet.",
+    "other": "{n} Einträge angewendet."
+  },
+  "{n} اعلانِ خوانده‌نشده": {
+    "one": "{n} ungelesene Benachrichtigung",
+    "other": "{n} ungelesene Benachrichtigungen"
+  },
+  "{n} بایت": {
+    "one": "{n} Byte",
+    "other": "{n} Bytes"
+  },
+  "{n} پروژه": {
+    "one": "{n} Projekt",
+    "other": "{n} Projekte"
+  },
+  "{n} پروژه در مرحلهٔ مذاکره": {
+    "one": "{n} Projekt in der Verhandlungsphase",
+    "other": "{n} Projekte in der Verhandlungsphase"
+  },
+  "{n} پیشنهاد": {
+    "one": "{n} Gebot",
+    "other": "{n} Gebote"
+  },
+  "{n} تسک": {
+    "one": "{n} Aufgabe",
+    "other": "{n} Aufgaben"
+  },
   "{n} تسکِ این پروژه از همین چک‌لیست ساخته شده است.": "{n} Aufgaben dieses Projekts stammen aus dieser Checkliste.",
-  "{n} تسک باز": "{n} offene Aufgaben",
-  "{n} تسکِ باز روی همهٔ پروژه‌ها": "{n} offene Aufgaben in allen Projekten",
-  "{n} تسکِ جاری": "{n} aktuelle Aufgaben",
+  "{n} تسک باز": {
+    "one": "{n} offene Aufgabe",
+    "other": "{n} offene Aufgaben"
+  },
+  "{n} تسکِ باز روی همهٔ پروژه‌ها": {
+    "one": "{n} offene Aufgabe in allen Projekten",
+    "other": "{n} offene Aufgaben in allen Projekten"
+  },
+  "{n} تسکِ جاری": {
+    "one": "{n} aktuelle Aufgabe",
+    "other": "{n} aktuelle Aufgaben"
+  },
   "{n} تسک در انتظارِ بررسیِ شما": "{n} Aufgaben warten auf Ihre Prüfung",
-  "{n} تسک در ریویو": "{n} Aufgaben in Prüfung",
-  "{n} تسکِ سپرده‌شده به شما": "{n} Ihnen zugewiesene Aufgabe",
+  "{n} تسک در ریویو": {
+    "one": "{n} Aufgabe in Prüfung",
+    "other": "{n} Aufgaben in Prüfung"
+  },
+  "{n} تسکِ سپرده‌شده به شما": {
+    "one": "{n} Ihnen zugewiesene Aufgabe",
+    "other": "{n} Ihnen zugewiesene Aufgaben"
+  },
   "{n} ثانیه": "{n} Sekunden",
-  "{n} ثبت": "{n} Einträge",
+  "{n} ثبت": {
+    "one": "{n} Eintrag",
+    "other": "{n} Einträge"
+  },
   "{n} در انتظارِ بررسی": "{n} zur Prüfung",
-  "{n} در انتظارِ بررسیِ شما": "{n} wartet auf Ihre Prüfung",
-  "{n} دسترسیِ باز": "{n} offene Zugänge",
+  "{n} در انتظارِ بررسیِ شما": {
+    "one": "{n} wartet auf Ihre Prüfung",
+    "other": "{n} warten auf Ihre Prüfung"
+  },
+  "{n} دسترسیِ باز": {
+    "one": "{n} offener Zugang",
+    "other": "{n} offene Zugänge"
+  },
   "{n} دقیقه پیش": "vor {n} Min.",
-  "{n} دقیقه قبل": "{n} Minuten vorher",
+  "{n} دقیقه قبل": {
+    "one": "{n} Minute vorher",
+    "other": "{n} Minuten vorher"
+  },
   "{n} دیرکرد": "{n} überfällig",
-  "{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.": "{n} Zeile(n) haben keinen Kurs zur Basiswährung und zählen hier als null. Kurs in den Einstellungen eintragen.",
-  "{n} ردیف نرخِ تبدیل به ارزِ پروژه ندارد و صفر شمرده شده.": "{n} Zeilen haben keinen Kurs in die Projektwährung und zählen als null.",
+  "{n} ردیف نرخِ تبدیل به ارزِ پایه ندارد و در این ارقام صفر شمرده شده. نرخ را در تنظیمات اضافه کنید.": {
+    "one": "{n} Zeile hat keinen Kurs zur Basiswährung und zählt hier als null. Kurs in den Einstellungen eintragen.",
+    "other": "{n} Zeilen haben keinen Kurs zur Basiswährung und zählen hier als null. Kurs in den Einstellungen eintragen."
+  },
+  "{n} ردیف نرخِ تبدیل به ارزِ پروژه ندارد و صفر شمرده شده.": {
+    "one": "{n} Zeile hat keinen Kurs in die Projektwährung und zählt als null.",
+    "other": "{n} Zeilen haben keinen Kurs in die Projektwährung und zählen als null."
+  },
   "{n} رسید": "{n} Belege",
-  "{n} روز": "{n} Tage",
-  "{n} روز بدونِ فعالیت": "{n} Tage ohne Aktivität",
+  "{n} روز": {
+    "one": "{n} Tag",
+    "other": "{n} Tage"
+  },
+  "{n} روز بدونِ فعالیت": {
+    "one": "{n} Tag ohne Aktivität",
+    "other": "{n} Tage ohne Aktivität"
+  },
   "{n} روز پیش": "vor {n} Tg.",
-  "{n} روز تأخیر": "{n} Tage überfällig",
-  "{n} روز گذشته": "vor {n} Tagen",
-  "{n} روز مانده": "noch {n} Tage",
+  "{n} روز تأخیر": {
+    "one": "{n} Tag überfällig",
+    "other": "{n} Tage überfällig"
+  },
+  "{n} روز گذشته": {
+    "one": "vor {n} Tag",
+    "other": "vor {n} Tagen"
+  },
+  "{n} روز مانده": {
+    "one": "noch {n} Tag",
+    "other": "noch {n} Tage"
+  },
   "{n} ساعت است تایمرتان روشن است.": "Ihr Timer läuft seit {n} Stunden.",
   "{n} ساعت پیش": "vor {n} Std.",
-  "{n} عضو": "{n} Mitglieder",
-  "{n} فایل": "{n} Dateien",
-  "{n} فایل انتخاب شد": "{n} Dateien ausgewählt",
-  "{n} فایل بارگذاری شد.": "{n} Dateien hochgeladen.",
-  "{n} فایلِ دیگر فقط در برنامه": "{n} weitere Datei(en) nur in der App",
-  "{n} فیلدِ دیگر هم ذخیره شد ولی تغییری نکرد.": "{n} weitere Felder wurden gespeichert, aber nicht geändert.",
-  "{n} کارِ آنبوردینگِ {person} با شماست": "{n} Onboarding-Aufgaben für {person} liegen bei Ihnen",
-  "{n} کارِ آنبوردینگ از موعد گذشته است": "{n} Onboarding-Aufgaben sind überfällig",
+  "{n} عضو": {
+    "one": "{n} Mitglied",
+    "other": "{n} Mitglieder"
+  },
+  "{n} فایل": {
+    "one": "{n} Datei",
+    "other": "{n} Dateien"
+  },
+  "{n} فایل انتخاب شد": {
+    "one": "{n} Datei ausgewählt",
+    "other": "{n} Dateien ausgewählt"
+  },
+  "{n} فایل بارگذاری شد.": {
+    "one": "{n} Datei hochgeladen.",
+    "other": "{n} Dateien hochgeladen."
+  },
+  "{n} فایلِ دیگر فقط در برنامه": {
+    "one": "{n} weitere Datei nur in der App",
+    "other": "{n} weitere Dateien nur in der App"
+  },
+  "{n} فیلدِ دیگر هم ذخیره شد ولی تغییری نکرد.": {
+    "one": "{n} weiteres Feld wurde gespeichert, aber nicht geändert.",
+    "other": "{n} weitere Felder wurden gespeichert, aber nicht geändert."
+  },
+  "{n} کارِ آنبوردینگِ {person} با شماست": {
+    "by": "n",
+    "one": "{n} Onboarding-Aufgabe für {person} liegt bei Ihnen",
+    "other": "{n} Onboarding-Aufgaben für {person} liegen bei Ihnen"
+  },
+  "{n} کارِ آنبوردینگ از موعد گذشته است": {
+    "one": "{n} Onboarding-Aufgabe ist überfällig",
+    "other": "{n} Onboarding-Aufgaben sind überfällig"
+  },
   "{n} کیلوبایت": "{n} KB",
   "{n} مگابایت": "{n} MB",
-  "{n} مورد": "{n} Einträge",
+  "{n} مورد": {
+    "one": "{n} Eintrag",
+    "other": "{n} Einträge"
+  },
   "{n} مورد بی‌نرخ": "{n} ohne Kurs",
   "{n} نتیجه در تب‌های دیگر پیدا شد.": "{n} Ergebnisse in anderen Tabs gefunden.",
   "{n} نتیجه در همهٔ پروژه‌ها": "{n} Treffer in allen Projekten",
-  "{n} نسخهٔ قدیمی پاک شد": "{n} alte Kopien entfernt",
+  "{n} نسخهٔ قدیمی پاک شد": {
+    "one": "{n} alte Kopie entfernt",
+    "other": "{n} alte Kopien entfernt"
+  },
   "{n} نفر انتخاب شده": "{n} ausgewählt",
-  "{n} هفته قبل": "vor {n} Wochen",
+  "{n} هفته قبل": {
+    "one": "vor {n} Woche",
+    "other": "vor {n} Wochen"
+  },
   "{name} — برای هر بخش تعیین کنید دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند.": "{name} — lege je Bereich fest: kein Zugriff, nur ansehen oder verwalten.",
   "{name} · کارفرما": "{name} · Kunde",
   "{name} (تازه)": "{name} (neu)",
@@ -220,7 +354,11 @@
   "{names} عضوِ سابق است و سابقه‌اش روی پروژه نگه داشته می‌شود.": "{names} ist ein ehemaliges Mitglied; die Historie im Projekt bleibt erhalten.",
   "{people} عضوِ سابق هنوز دسترسیِ باز دارد — مجموعاً {grants} مورد.": "{people} ehemalige Mitglieder haben noch offene Zugänge — insgesamt {grants}.",
   "{provider} شناسایی شد — داخلِ صفحه پخش می‌شود.": "{provider} erkannt – wird auf der Seite abgespielt.",
-  "{shown} از {total} ردیف": "{shown} von {total} Zeilen",
+  "{shown} از {total} ردیف": {
+    "by": "total",
+    "one": "{shown} von {total} Zeile",
+    "other": "{shown} von {total} Zeilen"
+  },
   "{time} برای «{project}» در تاریخِ {date} ثبت شد.": "{time} für „{project}“ am {date} gebucht.",
   "{time} ثبت شد": "{time} gebucht",
   "{updated} کار با کتابخانه به‌روز شد.": "{updated} Aufgaben aus der Bibliothek aktualisiert.",
@@ -477,7 +615,10 @@
   "ارزهای تعریف‌شده": "Definierte Währungen",
   "ارسال": "Senden",
   "ارسال ایمیل دعوت (اطلاع‌رسانی + لینک تعیین رمز برای کاربر جدید)": "Einladungs-E-Mail senden (Hinweis + Passwort-Link für neue Benutzer)",
-  "ارسال به {n} نفر": "An {n} Personen senden",
+  "ارسال به {n} نفر": {
+    "one": "An {n} Person senden",
+    "other": "An {n} Personen senden"
+  },
   "ارسال به این مقصدها ناموفق بود: {names}": "Senden an diese Ziele fehlgeschlagen: {names}",
   "ارسال به دیسکورد ناموفق بود؛ وبهوک را بررسی کنید.": "Senden an Discord fehlgeschlagen; prüfen Sie den Webhook.",
   "ارسال به دیسکورد ناموفق بود؛ وب‌هوک و بخش‌های فعالِ گزارش را بررسی کنید.": "Senden an Discord fehlgeschlagen; prüfen Sie den Webhook und die aktiven Berichtsabschnitte.",
@@ -501,7 +642,10 @@
   "ارسالِ لینک": "Link senden",
   "ارسال نشد؛ اتصالِ تلگرام یا توکنِ بات را بررسی کنید.": "Nicht gesendet; prüfen Sie die Telegram-Verbindung oder das Bot-Token.",
   "ارسال نشد.": "Es wurde nicht gesendet.",
-  "ارسالِ همگانی به {n} نفر": "Rundsendung an {n} Personen",
+  "ارسالِ همگانی به {n} نفر": {
+    "one": "Rundsendung an {n} Person",
+    "other": "Rundsendung an {n} Personen"
+  },
   "ارسالِ همگانی فقط از مدیر ممکن است.": "Nur eine Führungskraft kann an alle senden.",
   "ارسال و خواندن": "Senden und lesen",
   "ارسال‌شده": "Gesendet",
@@ -792,7 +936,10 @@
   "این پروژه والدِ زیرپروژه‌هاست؛ نمی‌تواند خودش زیرپروژه شود.": "Dieses Projekt ist ein übergeordnetes Projekt; es kann nicht selbst ein Unterprojekt werden.",
   "این پروژه یک مناقصه است": "Dieses Projekt ist eine Ausschreibung",
   "این پشتیبان از نسخه‌ای تازه‌تر از این سرور است؛ اول برنامه را به‌روز کنید.": "Diese Sicherung stammt aus einer neueren Version als dieser Server; aktualisieren Sie zuerst die App.",
-  "این پیام جداگانه برای {n} نفر فرستاده می‌شود.": "Diese Nachricht wird einzeln an {n} Personen gesendet.",
+  "این پیام جداگانه برای {n} نفر فرستاده می‌شود.": {
+    "one": "Diese Nachricht wird einzeln an {n} Person gesendet.",
+    "other": "Diese Nachricht wird einzeln an {n} Personen gesendet."
+  },
   "این پیام حذف شود؟": "Diese Nachricht löschen?",
   "این پیوست حذف شود؟": "Diesen Anhang löschen?",
   "این تسک حذف شود؟": "Diese Aufgabe löschen?",
@@ -956,7 +1103,10 @@
   "باز کردنِ گروه": "Gruppe öffnen",
   "باز ولی بی‌فعالیت": "Geöffnet, aber inaktiv",
   "بازبینی": "Review",
-  "بازبینی با {n} مورد ساخته شد.": "Review mit {n} Punkten erstellt.",
+  "بازبینی با {n} مورد ساخته شد.": {
+    "one": "Review mit {n} Punkt erstellt.",
+    "other": "Review mit {n} Punkten erstellt."
+  },
   "بازبینی پیدا نشد یا دسترسی ندارید.": "Review nicht gefunden oder kein Zugriff.",
   "بازبینیِ تازه": "Neues Review",
   "بازبینیِ تازه در پروژه": "Neues Review im Projekt",
@@ -1083,8 +1233,14 @@
   "برای انجام (Todo)": "Zu erledigen (Todo)",
   "برای این ردیف درخواستِ بازی وجود دارد.": "Zu dieser Zeile gibt es einen offenen Antrag.",
   "برای این ردیف قبلاً درخواست پرداخت ثبت شده است.": "Für diese Zeile besteht bereits eine Zahlungsanforderung.",
-  "برای این سرویس {n} دسترسی ثبت شده و در آنبوردینگ هم به کار رفته.": "Für diesen Dienst wurden {n} Zugänge erfasst, und er wird im Onboarding verwendet.",
-  "برای این سرویس {n} دسترسی ثبت شده.": "Für diesen Dienst wurden {n} Zugänge erfasst.",
+  "برای این سرویس {n} دسترسی ثبت شده و در آنبوردینگ هم به کار رفته.": {
+    "one": "Für diesen Dienst wurde {n} Zugang erfasst, und er wird im Onboarding verwendet.",
+    "other": "Für diesen Dienst wurden {n} Zugänge erfasst, und er wird im Onboarding verwendet."
+  },
+  "برای این سرویس {n} دسترسی ثبت شده.": {
+    "one": "Für diesen Dienst wurde {n} Zugang erfasst.",
+    "other": "Für diesen Dienst wurden {n} Zugänge erfasst."
+  },
   "برای این عضو مرخصی ثبت کنید؛ به او اطلاع داده می‌شود و در بُردِ تیم دیده می‌شود.": "Erfassen Sie Urlaub für dieses Mitglied; es wird benachrichtigt und im Team-Board angezeigt.",
   "برای این کار دسترسی ندارید.": "Dir fehlt die Berechtigung dafür.",
   "برای این کارکرد درخواستِ بازی هست؛ از مسیرِ درخواست پرداخت کنید.": "Für diese Arbeit gibt es einen offenen Antrag; zahlen Sie über den Antrag.",
@@ -1408,12 +1564,18 @@
   "پیامِ آزمایشی فرستاده شد.": "Testnachricht gesendet.",
   "پیام ارسال شد.": "Nachricht gesendet.",
   "پیامِ اول (اختیاری)": "Erste Nachricht (optional)",
-  "پیام به {n} نفر ارسال شد.": "Nachricht an {n} Personen gesendet.",
+  "پیام به {n} نفر ارسال شد.": {
+    "one": "Nachricht an {n} Person gesendet.",
+    "other": "Nachricht an {n} Personen gesendet."
+  },
   "پیام به مدیریت": "Nachricht an die Leitung",
   "پیامِ تازه": "Neue Nachricht",
   "پیامِ تازه از {name} در گروهِ «{where}»": "Neue Nachricht von {name} in der Gruppe „{where}“",
   "پیامِ تازه از مدیریت در گروهِ «{where}»": "Neue Nachricht der Leitung in der Gruppe „{where}“",
-  "پیامِ تازه در برنامه و تلگرام خبر می‌دهد (جمع‌شده، نه یکی‌یکی) و منشن با ایمیل هم می‌رسد. پیام‌ها {days} روز می‌مانند و با سبک‌سازی یا حذفِ پروژه پاک می‌شوند.": "Neue Nachrichten benachrichtigen in der App und per Telegram (gebündelt, nicht einzeln), Erwähnungen auch per E-Mail. Nachrichten bleiben {days} Tage und werden beim Verschlanken oder Löschen des Projekts entfernt.",
+  "پیامِ تازه در برنامه و تلگرام خبر می‌دهد (جمع‌شده، نه یکی‌یکی) و منشن با ایمیل هم می‌رسد. پیام‌ها {days} روز می‌مانند و با سبک‌سازی یا حذفِ پروژه پاک می‌شوند.": {
+    "one": "Neue Nachrichten benachrichtigen in der App und per Telegram (gebündelt, nicht einzeln), Erwähnungen auch per E-Mail. Nachrichten bleiben {days} Tag und werden beim Verschlanken oder Löschen des Projekts entfernt.",
+    "other": "Neue Nachrichten benachrichtigen in der App und per Telegram (gebündelt, nicht einzeln), Erwähnungen auch per E-Mail. Nachrichten bleiben {days} Tage und werden beim Verschlanken oder Löschen des Projekts entfernt."
+  },
   "پیام تستِ K-Team ✅": "K-Team-Testnachricht ✅",
   "پیام تست ارسال شد؛ تلگرام خود را بررسی کنید.": "Testnachricht gesendet; prüfen Sie Ihr Telegram.",
   "پیامِ تست در تلگرامِ شما ارسال شد ✅": "Eine Testnachricht wurde an Ihr Telegram gesendet ✅",
@@ -1432,8 +1594,14 @@
   "پیام یا مخاطبی برای ارسال نبود.": "Keine Nachricht oder kein Empfänger zum Senden.",
   "پیام… (@ برای منشن، {keys} برای ارسال)": "Nachricht… (@ zum Erwähnen, {keys} zum Senden)",
   "پیام‌ها": "Nachrichten",
-  "پیام‌ها {days} روز می‌مانند": "Nachrichten bleiben {days} Tage",
-  "پیام‌ها پس از {days} روز به‌صورت خودکار پاک می‌شوند.": "Nachrichten werden nach {days} Tagen automatisch gelöscht.",
+  "پیام‌ها {days} روز می‌مانند": {
+    "one": "Nachrichten bleiben {days} Tag",
+    "other": "Nachrichten bleiben {days} Tage"
+  },
+  "پیام‌ها پس از {days} روز به‌صورت خودکار پاک می‌شوند.": {
+    "one": "Nachrichten werden nach {days} Tag automatisch gelöscht.",
+    "other": "Nachrichten werden nach {days} Tagen automatisch gelöscht."
+  },
   "پیام‌ها پس از %s روز به‌صورت خودکار پاک می‌شوند.": "Nachrichten werden nach %s Tagen automatisch gelöscht.",
   "پیام‌ها زیاد شد؛ چند دقیقه صبر کنید. تا آن موقع دکمه‌ها کار می‌کنند.": "Zu viele Nachrichten; warten Sie ein paar Minuten. Die Schaltflächen funktionieren weiterhin.",
   "پیام‌های آن برای طرفِ مقابل هم پاک می‌شوند.": "Die Nachrichten werden auch für die andere Seite gelöscht.",
@@ -2576,7 +2744,10 @@
   "ساخت": "Erstellt",
   "ساختِ «{name}»": "„{name}“ anlegen",
   "ساختِ بازبینی": "Review erstellen",
-  "ساختِ بازبینی با {n} مورد": "Review mit {n} Punkten erstellen",
+  "ساختِ بازبینی با {n} مورد": {
+    "one": "Review mit {n} Punkt erstellen",
+    "other": "Review mit {n} Punkten erstellen"
+  },
   "ساختِ بازبینی…": "Review wird erstellt…",
   "ساخت پروژه": "Projekt erstellen",
   "ساختِ پیوندِ اتصال": "Verbindungslink erstellen",
@@ -3117,7 +3288,10 @@
   "کلیدِ ذخیره‌شده پاک می‌شود؛ ربات با بقیهٔ هوشِ مصنوعی‌ها کار می‌کند.": "Der gespeicherte Schlüssel wird gelöscht; der Bot arbeitet mit Ihren anderen KIs weiter.",
   "کلید رمزگذاری‌شده ذخیره می‌شود و دیگر نمایش داده نمی‌شود. فقط ربات و فقط برای پیام‌های خودتان از آن استفاده می‌کند.": "Der Schlüssel wird verschlüsselt gespeichert und nie wieder angezeigt. Nur der Bot nutzt ihn, und nur für Ihre eigenen Nachrichten.",
   "کلیدِ هوشِ مصنوعیِ شما دیگر کار نمی‌کند؛ در پروفایل دوباره وصلش کنید.": "Ihr KI-Schlüssel funktioniert nicht mehr; verbinden Sie ihn im Profil neu.",
-  "کمی صبر کنید — تا ارسالِ بعدی {n} ثانیه مانده.": "Bitte warten — noch {n} Sekunden bis zum nächsten Senden.",
+  "کمی صبر کنید — تا ارسالِ بعدی {n} ثانیه مانده.": {
+    "one": "Bitte warten — noch {n} Sekunde bis zum nächsten Senden.",
+    "other": "Bitte warten — noch {n} Sekunden bis zum nächsten Senden."
+  },
   "کمی صبر کنید؛ پیام‌ها را با کمی فاصله بفرستید.": "Bitte warten Sie einen Moment; senden Sie Ihre Nachrichten mit etwas Abstand.",
   "کنترل کیفیت (QA)": "Qualitätskontrolle (QA)",
   "کنسل": "Storniert",
@@ -4096,7 +4270,11 @@
   "تاریخِ ردیف را روزِ واقعیِ واریز بگذارید؛ نرخ از همان روز خوانده می‌شود.": "Setzen Sie das Zeilendatum auf den tatsächlichen Überweisungstag; der Kurs wird von diesem Tag gelesen.",
   "عددِ دیگری کم شود": "Anderen Betrag abziehen",
   "نرخِ ثبت‌شده برای همین تاریخ ({date}).": "Gespeicherter Kurs für dieses Datum ({date}).",
-  "نزدیک‌ترین نرخِ ثبت‌شده: {date} — {days} روز پیش از تاریخِ پرداخت.": "Nächster gespeicherter Kurs: {date} — {days} Tage vor dem Zahlungsdatum.",
+  "نزدیک‌ترین نرخِ ثبت‌شده: {date} — {days} روز پیش از تاریخِ پرداخت.": {
+    "by": "days",
+    "one": "Nächster gespeicherter Kurs: {date} — {days} Tag vor dem Zahlungsdatum.",
+    "other": "Nächster gespeicherter Kurs: {date} — {days} Tage vor dem Zahlungsdatum."
+  },
   "همین عدد ذخیره می‌شود و با تغییرِ نرخ‌ها عوض نمی‌شود.": "Diese Zahl wird gespeichert und ändert sich nicht mit den Kursen.",
   "نشسته در حساب ({code})": "Auf dem Konto eingegangen ({code})",
   "پرداخت‌شده از حساب ({code})": "Vom Konto bezahlt ({code})",
@@ -4144,7 +4322,11 @@
   "{i} از {n}": "{i} von {n}",
   "افزودنِ پروژه": "Projekt hinzufügen",
   "این ردیف یکی از {n} ردیفِ یک واریز است. «حذف» همهٔ آن‌ها را برمی‌دارد؛ برای حذفِ فقط همین سهم «انصراف» را بزنید.": "Diese Zeile ist eine von {n} Zeilen einer Überweisung. „Löschen“ entfernt alle; um nur diesen Anteil zu löschen, „Abbrechen“ wählen.",
-  "بخشی از یک واریزِ {total} برای {n} پروژه": "Teil einer Überweisung von {total} für {n} Projekte",
+  "بخشی از یک واریزِ {total} برای {n} پروژه": {
+    "by": "n",
+    "one": "Teil einer Überweisung von {total} für {n} Projekt",
+    "other": "Teil einer Überweisung von {total} für {n} Projekte"
+  },
   "برای این تاریخ نرخی ثبت نشده — نرخِ این واریز را بنویسید.": "Für dieses Datum ist kein Kurs gespeichert — Kurs dieser Überweisung eingeben.",
   "برای این پروژه حساب می‌شود: {amount}": "Wird für dieses Projekt gezählt: {amount}",
   "برای تقسیم دست‌کم دو پروژه لازم است.": "Zum Aufteilen sind mindestens zwei Projekte nötig.",
@@ -4273,7 +4455,10 @@
   "اگر برای پروژهٔ خودتان نسخهٔ متفاوتی لازم دارید، از بخشِ «نصب روی پروژه‌ها» نسخهٔ جدا بسازید.": "Wenn Sie für Ihr eigenes Projekt eine andere Version brauchen, erstellen Sie unter \"Auf Projekten installiert\" eine separate Kopie.",
   "این مورد بایگانی شده است: در فهرست و انتخابگرها نمی‌آید و روی پروژهٔ تازه نصب نمی‌شود.": "Dieser Eintrag ist archiviert: Er erscheint nicht in der Liste und in der Auswahl und wird nicht auf neuen Projekten installiert.",
   "این مورد حذف شود؟": "Diesen Eintrag löschen?",
-  "این مورد روی {n} پروژه نصب است. یک کپی برای این پروژه ساخته می‌شود تا تغییرهایش به بقیه نرسد.": "Dieser Eintrag ist auf {n} Projekten installiert. Für dieses Projekt wird eine Kopie erstellt, damit Ihre Änderungen die anderen nicht erreichen.",
+  "این مورد روی {n} پروژه نصب است. یک کپی برای این پروژه ساخته می‌شود تا تغییرهایش به بقیه نرسد.": {
+    "one": "Dieser Eintrag ist auf {n} Projekt installiert. Für dieses Projekt wird eine Kopie erstellt, damit Ihre Änderungen die anderen nicht erreichen.",
+    "other": "Dieser Eintrag ist auf {n} Projekten installiert. Für dieses Projekt wird eine Kopie erstellt, damit Ihre Änderungen die anderen nicht erreichen."
+  },
   "این نسخه بازگردانده شد.": "Diese Version wurde wiederhergestellt.",
   "این نسخه بازگردانده شود؟": "Diese Version wiederherstellen?",
   "این چیست؟": "Was ist das?",
@@ -4320,7 +4505,10 @@
   "راهنماها": "Anleitungen",
   "راهنمای کارفرما": "Kunden-Anleitung",
   "راهنمایی برای این پروژه نیست": "Keine Anleitung für dieses Projekt",
-  "روی {n} پروژه — مشترک.": "Auf {n} Projekten – geteilt.",
+  "روی {n} پروژه — مشترک.": {
+    "one": "Auf {n} Projekt – geteilt.",
+    "other": "Auf {n} Projekten – geteilt."
+  },
   "روی پروژه ثبت شد.": "Auf dem Projekt erfasst.",
   "روی پروژه‌ای نیست": "Auf keinem Projekt",
   "ساخته شد": "Erstellt",
@@ -4342,7 +4530,10 @@
   "مثلاً: گریدِ Masonry برای لیستِ CMS": "z. B. Masonry-Grid für eine CMS-Liste",
   "مراحل": "Schritte",
   "مرتبط": "Verwandt",
-  "مشترک با {n} پروژهٔ دیگر": "Geteilt mit {n} weiteren Projekten",
+  "مشترک با {n} پروژهٔ دیگر": {
+    "one": "Geteilt mit {n} weiteren Projekt",
+    "other": "Geteilt mit {n} weiteren Projekten"
+  },
   "مشخصات": "Details",
   "مقدارهای این پروژه (اختیاری)": "Werte für dieses Projekt (optional)",
   "مقدارهای همین پروژه": "Werte für dieses Projekt",
@@ -4382,7 +4573,10 @@
   "همین جمله روی کارت و بالای صفحه دیده می‌شود.": "Dieser Satz erscheint auf der Karte und oben auf der Seite.",
   "هنوز روی پروژه‌ای ثبت نشده.": "Noch auf keinem Projekt erfasst.",
   "هنوز کدی برای این پروژه ثبت نشده": "Für dieses Projekt ist noch kein Code erfasst",
-  "و {n} پروژهٔ دیگر که به آن دسترسی ندارید.": "und {n} weitere Projekte, auf die Sie keinen Zugriff haben.",
+  "و {n} پروژهٔ دیگر که به آن دسترسی ندارید.": {
+    "one": "und {n} weiteres Projekt, auf das Sie keinen Zugriff haben.",
+    "other": "und {n} weitere Projekte, auf die Sie keinen Zugriff haben."
+  },
   "ویرایشِ موردِ کتابخانهٔ کد": "Code-Bibliothekseintrag bearbeiten",
   "پاک کردنِ فیلترها": "Filter zurücksetzen",
   "پایین‌تر": "Nach unten",
@@ -4414,7 +4608,10 @@
   "کد و راهنمای این پروژه": "Code & Anleitung dieses Projekts",
   "کد، تنظیمات، تصویرها و تاریخچه‌اش برای همیشه پاک می‌شوند.": "Code, Einstellungen, Bilder und Verlauf werden dauerhaft gelöscht.",
   "کدها": "Code",
-  "کدها ({n} تکه)": "Code ({n} Snippets)",
+  "کدها ({n} تکه)": {
+    "one": "Code ({n} Snippet)",
+    "other": "Code ({n} Snippets)"
+  },
   "کدهای اختصاصی، راهنمای کارفرما و یادداشت‌های تیم — هر کدام با جای نصب، تنظیمات و پروژه‌هایی که رویشان نصب است.": "Eigener Code, Kunden-Anleitungen und Team-Notizen – jeweils mit Installationsort, Einstellungen und den Projekten, auf denen sie installiert sind.",
   "کدهای سفارشی‌ای که روی سایتِ این پروژه نصب است — تا نفرِ بعدی بداند چه چیزی کجاست.": "Eigener Code, der auf der Website dieses Projekts installiert ist – damit die nächste Person weiß, was wo ist.",
   "کدی که قبلاً نوشته شده، بی‌کپی به این پروژه هم وصل می‌شود؛ اصلاحِ بعدی‌اش همه‌جا می‌رسد.": "Bereits geschriebener Code wird ohne Kopie mit diesem Projekt verknüpft; jede spätere Korrektur kommt überall an.",
@@ -4463,8 +4660,14 @@
   "کدام حساب را می‌خواهید ببینید؟": "Welches Konto möchten Sie ansehen?",
   "(خالی)": "(leer)",
   "{name} برای «{entry}» پیشنهادِ ویرایش فرستاد": "{name} hat eine Änderung an „{entry}“ vorgeschlagen",
-  "{n} پیشنهادِ ویرایش": "{n} Änderungsvorschläge",
-  "{n} پیشنهادِ ویرایش منتظرِ بررسیِ شماست — در بخشِ «پیشنهادها» بازشان کنید.": "{n} Änderungsvorschläge warten auf deine Prüfung – öffne sie unter „Vorschläge“.",
+  "{n} پیشنهادِ ویرایش": {
+    "one": "{n} Änderungsvorschlag",
+    "other": "{n} Änderungsvorschläge"
+  },
+  "{n} پیشنهادِ ویرایش منتظرِ بررسیِ شماست — در بخشِ «پیشنهادها» بازشان کنید.": {
+    "one": "{n} Änderungsvorschlag wartet auf deine Prüfung – öffne ihn unter „Vorschläge“.",
+    "other": "{n} Änderungsvorschläge warten auf deine Prüfung – öffne sie unter „Vorschläge“."
+  },
   "{status} · {name} · {date}": "{status} · {name} · {date}",
   "این مورد بعد از فرستادنِ پیشنهاد ویرایش شده است. تفاوتِ زیر با نسخهٔ فعلی است؛ اگر تغییری از قلم افتاده، با پذیرفتن برمی‌گردد.": "Dieser Eintrag wurde nach dem Vorschlag bearbeitet. Der Vergleich unten bezieht sich auf die aktuelle Version; Fehlendes kommt beim Annehmen zurück.",
   "این مورد را خودتان می‌توانید مستقیم ویرایش کنید.": "Du kannst diesen Eintrag selbst direkt bearbeiten.",
@@ -4502,7 +4705,10 @@
   "چه چیزی را بهتر کردید و چرا؟": "Was hast du verbessert und warum?",
   "چیزی عوض نشده است.": "Es wurde nichts geändert.",
   "یک پیشنهادِ ویرایش منتظرِ بررسیِ شماست — در بخشِ «پیشنهادها» بازش کنید.": "Ein Änderungsvorschlag wartet auf deine Prüfung – öffne ihn unter „Vorschläge“.",
-  "… {n} خطِ بی‌تغییر": "… {n} unveränderte Zeilen",
+  "… {n} خطِ بی‌تغییر": {
+    "one": "… {n} unveränderte Zeile",
+    "other": "… {n} unveränderte Zeilen"
+  },
   "پیشنهاد پذیرفته و اعمال شد.": "Vorschlag angenommen und übernommen.",
   "پیشنهاد رد شد.": "Vorschlag abgelehnt.",
   "فرستاده نشد.": "Nicht gesendet.",
@@ -4512,7 +4718,10 @@
   "پذیرفتنِ پیشنهادِ ویرایشِ کتابخانه": "Änderungsvorschlag in der Bibliothek angenommen",
   "ردِ پیشنهادِ ویرایشِ کتابخانه": "Änderungsvorschlag in der Bibliothek abgelehnt",
   "پس‌گرفتنِ پیشنهادِ ویرایشِ کتابخانه": "Änderungsvorschlag in der Bibliothek zurückgezogen",
-  "{n} نسخهٔ قبلی": "{n} ältere Versionen",
+  "{n} نسخهٔ قبلی": {
+    "one": "{n} ältere Version",
+    "other": "{n} ältere Versionen"
+  },
   "CMS و لیست‌ها": "CMS und Listen",
   "Cloneable": "Cloneable",
   "Cloneable / Read-only": "Cloneable / Nur lesen",
@@ -4520,7 +4729,10 @@
   "Footer صفحه": "Footer der Seite",
   "Head سایت": "Head der Website",
   "Head صفحه": "Head der Seite",
-  "{n} تصویر": "{n} Bilder",
+  "{n} تصویر": {
+    "one": "{n} Bild",
+    "other": "{n} Bilder"
+  },
   "{p} ({n})": "{p} ({n})",
   "آخرین تغییر:": "Letzte Änderung:",
   "آموزشِ کامل": "Vollständige Anleitung",
@@ -4720,7 +4932,10 @@
   "حقوقِ فعلی": "Aktuelles Gehalt",
   "آخرین پرداخت": "Letzte Zahlung",
   "روزِ {day}": "Tag {day}",
-  "{n} ماه": "{n} Monate",
+  "{n} ماه": {
+    "one": "{n} Monat",
+    "other": "{n} Monate"
+  },
   "ادامهٔ حقوق": "Gehalt fortsetzen",
   "حقوقِ {name}": "Gehalt von {name}",
   "دوره‌هایی که حقوق داشته و پرداخت‌های هر ماه.": "Die Zeiträume mit Gehalt und die Zahlungen jedes Monats.",
@@ -4851,7 +5066,10 @@
   "اتصال قطع شد؛ دوباره تلاش می‌کنیم… {n}٪": "Verbindung unterbrochen; neuer Versuch… {n}%",
   "بارگذاری مدتی است پیش نمی‌رود. اتصال را بررسی کنید و دوباره «بارگذاری و بررسی» را بزنید؛ از همان‌جا ادامه می‌یابد.": "Der Upload kommt seit einer Weile nicht voran. Prüfen Sie die Verbindung und klicken Sie erneut auf „Hochladen und prüfen“; er wird an derselben Stelle fortgesetzt.",
   "این شخص همین حالا به این سرویس دسترسیِ باز دارد؛ همان ردیف را ویرایش کنید.": "Diese Person hat bereits einen offenen Zugang zu diesem Dienst; bearbeiten Sie stattdessen diese Zeile.",
-  "آخرین آزمون موفق — {n} حساب روی سرور": "Letzter Test erfolgreich — {n} Konten auf dem Server",
+  "آخرین آزمون موفق — {n} حساب روی سرور": {
+    "one": "Letzter Test erfolgreich — {n} Konto auf dem Server",
+    "other": "Letzter Test erfolgreich — {n} Konten auf dem Server"
+  },
   "آزمون نشده": "Nicht getestet",
   "ایمیلِ شرکتی": "Firmen-E-Mail",
   "برای وصل شدن، در متغیرهای محیطیِ سرور {url} و {key} را بگذارید و برنامه را دوباره راه بیندازید.": "Zum Verbinden {url} und {key} in den Umgebungsvariablen des Servers setzen und die App neu starten.",
@@ -4877,7 +5095,11 @@
   "پاسخِ سرورِ ایمیل قابلِ فهم نبود.": "Die Antwort des Mailservers war nicht lesbar.",
   "{n} گیگابایت": "{n} GB",
   "aliasها": "Aliasse",
-  "{n} صندوق روی سرور · {m} وصل به عضو": "{n} Postfächer auf dem Server · {m} mit Mitglied verknüpft",
+  "{n} صندوق روی سرور · {m} وصل به عضو": {
+    "by": "n",
+    "one": "{n} Postfach auf dem Server · {m} mit Mitglied verknüpft",
+    "other": "{n} Postfächer auf dem Server · {m} mit Mitglied verknüpft"
+  },
   "ایمیلِ شرکتی وصل نیست؛ در تنظیمات اتصال را بررسی کنید.": "Firmen-E-Mail ist nicht verbunden; Verbindung in den Einstellungen prüfen.",
   "این حساب از برنامه قابلِ تغییر نیست.": "Dieses Konto kann in der App nicht geändert werden.",
   "این حساب روی سرورِ ایمیل پیدا نشد.": "Dieses Konto wurde auf dem Mailserver nicht gefunden.",
@@ -4976,18 +5198,27 @@
   "سطلِ زباله": "Papierkorb",
   "رمزِ مخصوصی که برنامه برای خواندنِ صندوقِ هر کارمند می‌گیرد فقط از این IPها پذیرفته می‌شود: همان شبکه‌ای که برنامه از آن به سرورِ ایمیل وصل است. تا خالی است، اتصالِ صندوق خاموش می‌ماند.": "Das eigene Passwort, das die App zum Lesen jedes Postfachs erhält, gilt nur von diesen IPs – dem Netz, über das die App den Mailserver erreicht. Solange leer, bleibt das Verbinden von Postfächern aus.",
   "اتصالِ صندوق هنوز روشن نیست: مدیرِ کل باید اول «IP های مجاز برای خواندنِ صندوق» را در تنظیماتِ ایمیلِ شرکتی بگذارد.": "Die Postfachverbindung ist noch nicht aktiv: Der Inhaber muss zuerst „Erlaubte IPs zum Lesen der Postfächer“ in den Firmen-E-Mail-Einstellungen setzen.",
-  "{n} پیوست": "{n} Anhänge",
+  "{n} پیوست": {
+    "one": "{n} Anhang",
+    "other": "{n} Anhänge"
+  },
   "ارسال (SMTP)": "Senden (SMTP)",
   "از {date}": "Seit {date}",
   "تنظیم در گوشی یا Outlook": "Auf Telefon oder in Outlook einrichten",
   "دانلود یا ورود": "Herunterladen oder anmelden",
   "دریافت (IMAP)": "Empfangen (IMAP)",
   "رمز همان رمزِ بالاست. بعد از اولین ورود، بهتر است از وب‌میل عوضش کنی.": "Das Passwort ist das obige. Ändern Sie es nach der ersten Anmeldung im Webmail.",
-  "{n} ایمیلِ تازه": "{n} neue E-Mails",
+  "{n} ایمیلِ تازه": {
+    "one": "{n} neue E-Mail",
+    "other": "{n} neue E-Mails"
+  },
   "ایمیلِ تازه": "Neue E-Mail",
   "ایمیلِ تازه از {from}": "Neue E-Mail von {from}",
   "این پشتیبان‌گیری نیمه‌کاره ماند (برنامه دوباره راه افتاد یا سرور جابه‌جا شد). دوباره بگیرید.": "Diese Sicherung wurde nicht beendet (App neu gestartet oder Server umgezogen). Bitte erneut ausführen.",
-  "{n} ماه پیش": "vor {n} Monaten",
+  "{n} ماه پیش": {
+    "one": "vor {n} Monat",
+    "other": "vor {n} Monaten"
+  },
   "آخرین حضور: {when}": "Zuletzt gesehen: {when}",
   "این نسخه از سرور حذف شود؟": "Diese Kopie vom Server löschen?",
   "حذفِ نسخهٔ پشتیبانِ روی سرور": "Sicherungskopie auf dem Server gelöscht",
@@ -5074,8 +5305,15 @@
   "رمزِ فعلی باطل می‌شود؛ هر جا با آن وصل است (مثلاً تنظیمِ SMTP) باید رمزِ تازه را بگذارید. رمزِ تازه در همین صفحه پشتِ دکمهٔ چشم می‌ماند.": "Das aktuelle Passwort wird ungültig; überall, wo es verwendet wird (z. B. SMTP-Einstellungen), musst du das neue eintragen. Das neue Passwort bleibt auf dieser Seite hinter dem Augen-Symbol.",
   "نشانی‌های دیگر:": "Weitere Adressen:",
   "دیدنِ رمزِ صندوقِ بی‌صاحب": "Passwort eines Postfachs ohne Besitzer angesehen",
-  "{n} حساب در گروه · {m} وصل به عضو": "{n} Konten in der Gruppe · {m} mit Mitglied verknüpft",
-  "آخرین آزمون موفق — {n} حساب در گروه": "Letzter Test erfolgreich — {n} Konten in der Gruppe",
+  "{n} حساب در گروه · {m} وصل به عضو": {
+    "by": "n",
+    "one": "{n} Konto in der Gruppe · {m} mit Mitglied verknüpft",
+    "other": "{n} Konten in der Gruppe · {m} mit Mitglied verknüpft"
+  },
+  "آخرین آزمون موفق — {n} حساب در گروه": {
+    "one": "Letzter Test erfolgreich — {n} Konto in der Gruppe",
+    "other": "Letzter Test erfolgreich — {n} Konten in der Gruppe"
+  },
   "آخرین ورود": "Letzte Anmeldung",
   "اتصال به Nextcloud در «تنظیمات ← فضای ابری» است و فقط مالک آن را می‌بیند.": "Die Nextcloud-Verbindung wird unter „Einstellungen → Cloud-Speicher“ eingerichtet; nur der Inhaber sieht sie.",
   "اتصال را در «تنظیمات ← فضای ابری» با دکمهٔ «آزمونِ اتصال» بررسی کنید.": "Prüfe die Verbindung unter „Einstellungen → Cloud-Speicher“ mit „Verbindung testen“.",
@@ -5238,7 +5476,10 @@
   "زنده": "Live",
   "نقطهٔ سبز و «آنلاین اکنون». اگر تیم نمی‌خواهد حضورش دیده شود، خاموشش کنید.": "Der grüne Punkt und „Jetzt online“. Ausschalten, wenn das Team seine Anwesenheit nicht zeigen möchte.",
   "پیام‌ها، اعلان‌ها و شمارِ نخوانده‌ها بی‌درنگ و بدونِ تازه کردنِ صفحه می‌رسند.": "Nachrichten, Benachrichtigungen und ungelesene Zähler kommen sofort an, ohne die Seite neu zu laden.",
-  "{n} طرف‌حساب": "{n} Lieferanten",
+  "{n} طرف‌حساب": {
+    "one": "{n} Lieferant",
+    "other": "{n} Lieferanten"
+  },
   "تکرار": "Wiederholung",
   "جزئیاتِ پرداخت": "Zahlungsdetails",
   "جستجو یا نامِ طرف‌حسابِ تازه…": "Suchen oder neuen Lieferanten eingeben…",
@@ -5246,10 +5487,16 @@
   "شرحِ ردیفِ دفتر": "Buchungstext",
   "پیام…": "Nachricht…",
   "پیام… (@ برای منشن)": "Nachricht… (@ zum Erwähnen)",
-  "{n} نقش انتخاب شده": "{n} Rollen ausgewählt",
+  "{n} نقش انتخاب شده": {
+    "one": "{n} Rolle ausgewählt",
+    "other": "{n} Rollen ausgewählt"
+  },
   "نقشی انتخاب نشده": "Keine Rolle ausgewählt",
   "{n} انتخاب": "{n} ausgewählt",
-  "{n} تسک تغییر کرد.": "{n} Aufgaben geändert.",
+  "{n} تسک تغییر کرد.": {
+    "one": "{n} Aufgabe geändert.",
+    "other": "{n} Aufgaben geändert."
+  },
   "{ok} تسک تغییر کرد؛ {failed} تسک اجازه نداشت.": "{ok} Aufgaben geändert; {failed} nicht erlaubt.",
   "اجازهٔ ویرایشِ این تسک‌ها را ندارید.": "Sie dürfen diese Aufgaben nicht bearbeiten.",
   "انتخابِ همهٔ این گروه": "Ganze Gruppe auswählen",
@@ -5304,7 +5551,10 @@
   "نصف": "Halb",
   "سه‌چهارم": "Drei Viertel",
   "تمام‌عرض": "Volle Breite",
-  "{n} روز دیگر": "in {n} Tagen",
+  "{n} روز دیگر": {
+    "one": "in {n} Tag",
+    "other": "in {n} Tagen"
+  },
   "کارهای منتظر": "Wartende Aufgaben",
   "نگاهِ سریع": "Schnellüberblick",
   "کارت‌های قبلی": "Vorherige Karten",
@@ -5420,14 +5670,23 @@
   "فایل‌های تحویلی و مهمِ پروژه‌هایتان؛ سنجاق‌شده‌ها بالاترند. با کلیک دانلود می‌شود.": "Liefer- und wichtige Dateien Ihrer Projekte; angeheftete stehen oben. Ein Klick lädt sie herunter.",
   "مرحلهٔ بعد": "Nächste Phase",
   "هر پروژه الان در چه مرحله‌ای است، مرحلهٔ بعدی چیست و تا ددلاین چند روز مانده.": "In welcher Phase jedes Projekt gerade ist, was als Nächstes kommt und wie viele Tage bis zur Frist bleiben.",
-  "{n} روز از ددلاین گذشته": "Frist seit {n} Tagen überschritten",
+  "{n} روز از ددلاین گذشته": {
+    "one": "Frist seit {n} Tag überschritten",
+    "other": "Frist seit {n} Tagen überschritten"
+  },
   "ددلاین امروز است": "Frist ist heute",
-  "{n} روز تا ددلاین": "Noch {n} Tage bis zur Frist",
+  "{n} روز تا ددلاین": {
+    "one": "Noch {n} Tag bis zur Frist",
+    "other": "Noch {n} Tage bis zur Frist"
+  },
   "جلساتِ پیشِ رو": "Anstehende Meetings",
   "جلسه‌های هفت روزِ آیندهٔ شما با تیم.": "Ihre Meetings mit dem Team in den nächsten sieben Tagen.",
   "پیام به تیم": "Nachricht an das Team",
   "سؤال یا درخواستتان را مستقیم برای مدیرانِ تیم بفرستید؛ پاسخ در «پیام‌ها» می‌آید.": "Senden Sie Ihre Frage oder Anfrage direkt an die Teamleitung; die Antwort erscheint unter „Nachrichten“.",
-  "{n} پیامِ خوانده‌نشده دارید": "Sie haben {n} ungelesene Nachrichten",
+  "{n} پیامِ خوانده‌نشده دارید": {
+    "one": "Sie haben {n} ungelesene Nachricht",
+    "other": "Sie haben {n} ungelesene Nachrichten"
+  },
   "نظر روی پروژه": "Feedback zum Projekt",
   "نظر، سؤال یا درخواستتان را مستقیم روی یکی از پروژه‌هایتان بنویسید (همان کامنتِ پروژه، با فایل). پروژه را با جستجو انتخاب کنید؛ گفتگوهای اخیرِ همان پروژه زیرش می‌آید.": "Schreiben Sie Ihr Feedback, Ihre Frage oder Anfrage direkt zu einem Ihrer Projekte (als Projektkommentar, mit Datei). Wählen Sie das Projekt per Suche; die letzten Unterhaltungen zu diesem Projekt erscheinen darunter.",
   "کارهای شروعِ همکاری که باید انجام دهید.": "Onboarding-Aufgaben, die Sie erledigen sollten.",
@@ -5443,20 +5702,29 @@
   "مطمئنم": "Ich bin sicher",
   "تغییرِ هدف": "Ziel ändern",
   "هدفِ این هفته کامل شد.": "Das Wochenziel ist erreicht.",
-  "{n} ساعت مانده تا هدف.": "Noch {n} Stunden bis zum Ziel.",
+  "{n} ساعت مانده تا هدف.": {
+    "one": "Noch {n} Stunde bis zum Ziel.",
+    "other": "Noch {n} Stunden bis zum Ziel."
+  },
   "نظرتان روی پروژه ثبت شد.": "Ihr Feedback zum Projekt wurde gespeichert.",
   "پروژه را جستجو کنید…": "Projekt suchen…",
   "نظر روی پروژهٔ": "Feedback zum Projekt",
   "نظر، سؤال یا درخواستتان دربارهٔ این پروژه…": "Ihr Feedback, Ihre Frage oder Anfrage zu diesem Projekt…",
   "پیوستِ فایل": "Datei anhängen",
   "خودِ شما": "Sie selbst",
-  "{n} پاسخ": "{n} Antworten",
+  "{n} پاسخ": {
+    "one": "{n} Antwort",
+    "other": "{n} Antworten"
+  },
   "پاسخِ تازه از تیم": "Neue Antwort vom Team",
   "تسک تأیید شد.": "Aufgabe freigegeben.",
   "تسک برگشت خورد.": "Aufgabe zurückgegeben.",
   "برگشت": "Zurückgeben",
   "کارکردِ پرداخت‌نشده": "Unbezahlte Einheiten",
-  "{n} پیشنهادِ در انتظار": "{n} offene Gebote",
+  "{n} پیشنهادِ در انتظار": {
+    "one": "{n} offenes Gebot",
+    "other": "{n} offene Gebote"
+  },
   "بررسیِ پیشنهادها": "Gebote prüfen",
   "تسکِ بی‌مسئول": "Aufgabe ohne Verantwortlichen",
   "سپردن": "Zuweisen",
@@ -5466,7 +5734,10 @@
   "هزینهٔ سررسیدِ نزدیک": "Bald fällige Ausgabe",
   "تسک‌های بازی که به شما سپرده شده یا نقشش را برداشته‌اید. سررسیدگذشته‌ها اول و قرمزند، نزدیک‌ها کهربایی. با کلیک خودِ تسک باز می‌شود.": "Offene Aufgaben, die Ihnen zugewiesen sind oder deren Rolle Sie übernommen haben. Überfällige stehen zuerst und sind rot, bald fällige bernsteinfarben. Ein Klick öffnet die Aufgabe.",
   "همهٔ تسک‌ها": "Alle Aufgaben",
-  "{n} تسک از سررسیدش گذشته است.": "{n} Aufgaben sind überfällig.",
+  "{n} تسک از سررسیدش گذشته است.": {
+    "one": "{n} Aufgabe ist überfällig.",
+    "other": "{n} Aufgaben sind überfällig."
+  },
   "کارِ بازی ندارید.": "Sie haben keine offenen Aufgaben.",
   "کارهایی که تمام کرده و برای بررسی فرستاده‌اید و منتظرِ تأییدِ مدیر یا کارفرما هستند.": "Arbeiten, die Sie abgeschlossen und zur Prüfung geschickt haben und die auf die Freigabe von Manager oder Kunde warten.",
   "کارهایی که فرستاده‌اید و منتظرِ نظرِ دیگری‌اند.": "Arbeiten, die Sie geschickt haben und die auf die Rückmeldung anderer warten.",
@@ -5488,7 +5759,10 @@
   "جلسه‌های این هفتهٔ شما با روز و ساعت.": "Ihre Meetings dieser Woche mit Tag und Uhrzeit.",
   "پروژه‌های بازی که در آن‌ها نقش دارید: نقشِ شما، ددلاین، درصدِ پیشرفت، تسک‌های بازِ شما و ساعتی که رویش کار کرده‌اید.": "Offene Projekte, in denen Sie eine Rolle haben: Ihre Rolle, Frist, Fortschritt in Prozent, Ihre offenen Aufgaben und die darauf gearbeiteten Stunden.",
   "پروژه‌های باز من": "Meine offenen Projekte",
-  "{n} تسکِ باز": "{n} offene Aufgaben",
+  "{n} تسکِ باز": {
+    "one": "{n} offene Aufgabe",
+    "other": "{n} offene Aufgaben"
+  },
   "{h} ساعت": "{h} Std.",
   "پروژه‌هایی در مرحلهٔ مناقصه که با نقش‌های شما جور است و می‌توانید برایشان پیشنهادِ قیمت بدهید.": "Projekte in der Ausschreibungsphase, die zu Ihren Rollen passen und für die Sie ein Preisgebot abgeben können.",
   "کارهای شروعِ همکاری که باید در روزهای اول انجام دهید.": "Onboarding-Aufgaben, die Sie in den ersten Tagen erledigen sollten.",
