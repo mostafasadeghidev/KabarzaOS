@@ -688,7 +688,6 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
                       onClick={() => resize(w, sz)}
                       aria-pressed={sizeOf(w) === sz}
                       aria-label={t(SIZE_LABEL[sz])}
-                      title={t(SIZE_LABEL[sz])}
                       className={cn('num h-6 min-w-6 rounded-md px-1 text-xs font-semibold', sizeOf(w) === sz ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground')}
                     >
                       {SIZE_SHORT[sz]}
