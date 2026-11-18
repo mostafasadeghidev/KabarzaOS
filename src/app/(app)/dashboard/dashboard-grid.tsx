@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, EyeOff, GripVertical, LayoutGrid, Pencil, Plus, RotateCcw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, EyeOff, GripVertical, LayoutGrid, Pencil, Plus, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -17,7 +17,10 @@ import { cn } from '@/lib/utils';
  * کاربر در پایگاه‌داده بنشیند تا روی هر دستگاهی یکی باشد.
  *
  * اندازه‌ها روی شبکهٔ چهارستونه (۲ ستون در عرضِ متوسط، ۱ ستون روی گوشی):
- *  s = یک خانه · m = دو خانهٔ افقی · l = دو×دو (بلند) · xl = تمام‌عرض
+ *  s = یک ستون · m = دو ستون · l = سه ستون · xl = تمام‌عرض
+ *
+ * ارتفاع از محتوای خودِ کارت می‌آید (چیدمانِ آجری): ردیف‌های ۸ پیکسلی و هر کارت به اندازهٔ قدِ واقعی‌اش
+ * ردیف می‌گیرد — پس کارت‌ها کش نمی‌آیند و دو کارتِ کوتاه در یک ستون زیرِ هم می‌نشینند.
  */
 
 export type WidgetSize = 's' | 'm' | 'l' | 'xl';
@@ -34,10 +37,16 @@ interface Prefs { order: string[]; hidden: string[]; shown: string[]; sizes: Rec
 const SIZE_CLASS: Record<WidgetSize, string> = {
   s: '',
   m: '@xl/main:col-span-2',
-  l: '@xl/main:col-span-2 @5xl/main:row-span-2',
+  l: '@xl/main:col-span-2 @5xl/main:col-span-3',
   xl: '@xl/main:col-span-2 @5xl/main:col-span-4',
 };
 const SIZE_LABEL: Record<WidgetSize, string> = { s: 'کوچک', m: 'متوسط', l: 'بزرگ', xl: 'تمام‌عرض' };
+
+/** ردیفِ پایه و فاصلهٔ شبکه (gap-4) — باید با کلاس‌های شبکه یکی باشد. */
+const ROW = 8;
+const GAP = 16;
+/** نزدیکِ لبهٔ بالا/پایین هنگامِ کشیدن، صفحه خودش اسکرول می‌شود. */
+const EDGE = 120;
 
 const EMPTY: Prefs = { order: [], hidden: [], shown: [], sizes: {} };
 
@@ -50,6 +59,47 @@ export function DashboardGrid({ widgets, userId }: { widgets: WidgetDef[]; userI
   const [editing, setEditing] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  /* چیدمانِ آجری: قدِ هر کارت سنجیده و به تعدادِ ردیفِ ۸ پیکسلی تبدیل می‌شود. */
+  const [spans, setSpans] = useState<Record<string, number>>({});
+  const roRef = useRef<ResizeObserver | null>(null);
+  useEffect(() => () => roRef.current?.disconnect(), []);
+  const measureRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    roRef.current ??= new ResizeObserver((entries) => {
+      setSpans((prev) => {
+        let next = prev;
+        for (const e of entries) {
+          const id = (e.target as HTMLElement).dataset.measure;
+          if (!id) continue;
+          const span = Math.max(1, Math.ceil((e.target.getBoundingClientRect().height + GAP) / (ROW + GAP)));
+          if (prev[id] !== span) { if (next === prev) next = { ...prev }; next[id] = span; }
+        }
+        return next;
+      });
+    });
+    roRef.current.observe(el);
+  }, []);
+  const measured = Object.keys(spans).length > 0;
+
+  /* اسکرولِ خودکار هنگامِ کشیدن: نزدیکِ لبهٔ بالا یا پایین، ظرفِ اسکرول (یا خودِ صفحه) حرکت می‌کند. */
+  useEffect(() => {
+    if (!dragId) return;
+    let scroller: HTMLElement | null = gridRef.current?.parentElement ?? null;
+    while (scroller && !(/(auto|scroll)/.test(getComputedStyle(scroller).overflowY) && scroller.scrollHeight > scroller.clientHeight)) {
+      scroller = scroller.parentElement;
+    }
+    const target: HTMLElement = scroller ?? (document.scrollingElement as HTMLElement);
+    const onOver = (e: DragEvent) => {
+      const y = e.clientY;
+      const h = window.innerHeight;
+      if (y < EDGE) target.scrollBy({ top: -Math.ceil(((EDGE - y) / EDGE) * 40) });
+      else if (y > h - EDGE) target.scrollBy({ top: Math.ceil(((y - (h - EDGE)) / EDGE) * 40) });
+    };
+    document.addEventListener('dragover', onOver);
+    return () => document.removeEventListener('dragover', onOver);
+  }, [dragId]);
   useEffect(() => {
     try { const raw = localStorage.getItem(key); if (raw) setPrefs({ ...EMPTY, ...JSON.parse(raw) as Partial<Prefs> }); } catch { /* خصوصی */ }
   }, [key]);
@@ -99,6 +149,12 @@ export function DashboardGrid({ widgets, userId }: { widgets: WidgetDef[]; userI
     [ids[a], ids[b]] = [ids[b]!, ids[a]!];
     save({ ...prefs, order: ids });
   };
+  /** یک‌کلیکی به اول یا آخرِ داشبورد — برای وقتی که کشیدن در صفحهٔ بلند سخت است. */
+  const moveTo = (id: string, where: 'start' | 'end') => {
+    const ids = ordered.map((x) => x.id).filter((x) => x !== id);
+    if (where === 'start') ids.unshift(id); else ids.push(id);
+    save({ ...prefs, order: ids });
+  };
   const resize = (w: WidgetDef, size: WidgetSize) => save({ ...prefs, order: ordered.map((x) => x.id), sizes: { ...prefs.sizes, [w.id]: size } });
 
   const visible = ordered.filter(isOn);
@@ -144,13 +200,19 @@ export function DashboardGrid({ widgets, userId }: { widgets: WidgetDef[]; userI
       )}
 
       {/* grid-flow-row-dense: کارت‌های کوچک جاهای خالیِ کنارِ کارت‌های بزرگ را پر می‌کنند (بنتو). */}
-      <div className="grid grid-flow-row-dense grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+      <div
+        ref={gridRef}
+        className={cn('grid grid-flow-row-dense grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4', measured && 'auto-rows-[8px]')}
+      >
         {visible.map((w) => (
           <div
             key={w.id}
             data-widget={w.id}
+            ref={measureRef}
+            data-measure={w.id}
+            style={spans[w.id] ? { gridRowEnd: `span ${spans[w.id]}` } : undefined}
             className={cn(
-              'relative grid min-w-0', SIZE_CLASS[sizeOf(w)],
+              'relative grid min-w-0 content-start self-start', SIZE_CLASS[sizeOf(w)],
               editing && 'rounded-2xl outline-2 outline-offset-2 outline-dashed outline-primary/30 transition-transform',
               editing && overId === w.id && dragId !== w.id && 'outline-solid outline-primary',
               dragId === w.id && 'scale-[0.98] opacity-50',
@@ -162,7 +224,7 @@ export function DashboardGrid({ widgets, userId }: { widgets: WidgetDef[]; userI
             {/* در حالتِ ویرایش، محتوای کارت کلیک‌پذیر نیست — فقط کنترل‌های چیدمان. */}
             <div className={cn('grid min-w-0', editing && 'pointer-events-none select-none')}>{w.node}</div>
             {editing && (
-              <div className="absolute inset-x-2 top-2 z-10 flex items-center gap-1 rounded-xl border bg-popover/95 p-1 shadow-md backdrop-blur">
+              <div className="order-first mb-2 flex flex-wrap items-center gap-1 rounded-xl border bg-popover p-1 shadow-xs">
                 <span
                   draggable
                   onDragStart={(e) => { setDragId(w.id); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', w.id); }}
@@ -172,7 +234,7 @@ export function DashboardGrid({ widgets, userId }: { widgets: WidgetDef[]; userI
                 >
                   <GripVertical className="size-4" />
                 </span>
-                <span className="min-w-0 flex-1 truncate px-1 text-xs font-medium">{w.title}</span>
+                <span className="min-w-16 flex-1 truncate px-1 text-xs font-medium">{w.title}</span>
                 <span className="flex items-center rounded-lg bg-muted/60 p-0.5">
                   {(Object.keys(SIZE_LABEL) as WidgetSize[]).map((sz) => (
                     <button
@@ -187,8 +249,10 @@ export function DashboardGrid({ widgets, userId }: { widgets: WidgetDef[]; userI
                     </button>
                   ))}
                 </span>
+                <Button type="button" size="icon-xs" variant="ghost" aria-label={t('ببر اول')} title={t('ببر اول')} onClick={() => moveTo(w.id, 'start')}><ChevronsRight className="size-3.5 ltr:rotate-180" /></Button>
                 <Button type="button" size="icon-xs" variant="ghost" aria-label={t('عقب‌تر')} onClick={() => nudge(w.id, -1)}><ChevronRight className="size-3.5 ltr:rotate-180" /></Button>
                 <Button type="button" size="icon-xs" variant="ghost" aria-label={t('جلوتر')} onClick={() => nudge(w.id, 1)}><ChevronLeft className="size-3.5 ltr:rotate-180" /></Button>
+                <Button type="button" size="icon-xs" variant="ghost" aria-label={t('ببر آخر')} title={t('ببر آخر')} onClick={() => moveTo(w.id, 'end')}><ChevronsLeft className="size-3.5 ltr:rotate-180" /></Button>
                 <Button type="button" size="icon-xs" variant="ghost" aria-label={t('پنهان کردن')} onClick={() => toggle(w, false)} className="text-muted-foreground hover:text-destructive"><EyeOff className="size-3.5" /></Button>
               </div>
             )}
