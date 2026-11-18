@@ -31,7 +31,7 @@ const CLIENT_LAYOUT: DefaultLayout = (() => {
 })();
 import { QuickNote } from './quick-note';
 import { OnboardingCard } from './onboarding-card';
-import { ClientQaList, ContactTeamForm, HoursGoal, PayRenewalButton, ResumeTimerButton } from './extras-client';
+import { ClientQaList, ClientTalkCard, HoursGoal, PayRenewalButton, ResumeTimerButton } from './extras-client';
 import type { getAdminExtras, getClientExtras, getMemberExtras } from '@/server/dashboard-extras';
 import type { MemberDashboard } from '@/server/dashboard-member';
 import type { InboxTask } from '@/server/projects/service';
@@ -535,16 +535,16 @@ export function ClientDashboardV2({
   });
 
   widgets.push({
-    id: 'c-message', title: t('پیام به تیم'), group: G_MORE, size: 's', defaultOn: true,
-    hint: t('سؤال یا درخواستتان را مستقیم برای مدیرانِ تیم بفرستید؛ پاسخ در «پیام‌ها» می‌آید.'),
+    id: 'c-message', title: t('پیام و نظر'), group: G_MORE, size: 's', defaultOn: true,
+    hint: t('نظر یا درخواستتان را مستقیم روی یکی از پروژه‌هایتان بنویسید (همان کامنتِ پروژه، با فایل)، یا پیامِ کلی برای مدیرانِ تیم بفرستید.'),
     node: (
-      <Panel title={t('پیام به تیم')} icon={<MessageSquarePlus />}>
+      <Panel title={t('پیام و نظر')} icon={<MessageSquarePlus />}>
         {data.unread > 0 && (
           <Link href="/messages" className="rounded-lg bg-primary/8 px-3 py-1.5 text-xs text-primary hover:underline">
             {t('{n} پیامِ خوانده‌نشده دارید', { n: data.unread })}
           </Link>
         )}
-        <ContactTeamForm />
+        <ClientTalkCard userId={userId} projects={extras.talk?.projects ?? []} threads={extras.talk?.threads ?? []} />
       </Panel>
     ),
   });

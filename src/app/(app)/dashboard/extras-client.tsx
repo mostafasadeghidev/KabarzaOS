@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { ExpandableList } from '@/components/ui/expandable-list';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Pencil, Play, Send } from 'lucide-react';
+import { Check, Paperclip, Pencil, Play, Send } from 'lucide-react';
 import { startTimerAction } from '../hours/_form/actions';
 import { toggleQaAction } from '../projects/_form/qa-actions';
 import { contactManagementAction } from '../messages/_form/actions';
+import { addCommentAction } from '../projects/_form/tab-actions';
 import { payRecurringAction } from '../finance/_form/payout-actions';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,7 +18,7 @@ import { useToast } from '@/components/ui/toast';
 import { useLiveEvents } from '@/components/live';
 import { useT } from '@/i18n/client';
 import { cn } from '@/lib/utils';
-import type { ClientQa } from '@/server/dashboard-extras';
+import type { ClientQa, TalkProject, TalkThread } from '@/server/dashboard-extras';
 
 /**
  * تکه‌های کلاینتیِ کارت‌های تازهٔ داشبورد (نمونهٔ محلی). هر کدام **همان کنشِ سرورِ صفحهٔ اصلی‌اش**
@@ -235,4 +236,140 @@ export function LiveRefresh() {
   });
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
   return null;
+}
+
+/**
+ * «پیام و نظر» ِ کارفرما — یک کارت به‌جای دو: پیامِ کلی به تیم (همان «پیام به مدیریت») یا کامنت روی یکی از
+ * پروژه‌های بازش (همان addCommentAction ِ تبِ کامنت‌ها؛ گارد، منجمد بودن و اعلان همان‌جاست).
+ * چند پروژه: انتخابگرِ دکمه‌ای (زیاد ← فهرستِ کشویی)، پیش‌فرض آخرین انتخاب روی همین مرورگر وگرنه
+ * پروژه‌ای با تازه‌ترین گفتگو؛ نامِ پروژهٔ انتخاب‌شده بالای متن پررنگ است تا کامنت اشتباهی نرود.
+ */
+export function ClientTalkCard({ userId, projects, threads }: {
+  userId: number;
+  projects: TalkProject[];
+  threads: TalkThread[];
+}) {
+  const t = useT();
+  const router = useRouter();
+  const { show } = useToast();
+  const key = `kz-client-talk-${userId}`;
+  const [target, setTarget] = useState<number | 'team'>(projects[0]?.id ?? 'team');
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(key);
+      if (v === 'team') setTarget('team');
+      else if (v && projects.some((p) => p.id === Number(v))) setTarget(Number(v));
+    } catch { /* خصوصی */ }
+  }, [key, projects]);
+  const pick = (v: number | 'team') => { setTarget(v); try { localStorage.setItem(key, String(v)); } catch { /* پر */ } };
+  const [body, setBody] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [pending, start] = useTransition();
+  const project = target === 'team' ? null : projects.find((p) => p.id === target) ?? null;
+  const shownThreads = project ? threads.filter((x) => x.projectId === project.id) : [];
+
+  const send = () => {
+    if (!body.trim() && files.length === 0) return;
+    start(async () => {
+      const fd = new FormData();
+      fd.set('body', body);
+      let error: string | undefined;
+      if (project) {
+        fd.set('projectId', String(project.id));
+        for (const f of files) fd.append('media', f);
+        error = (await addCommentAction({}, fd)).error;
+      } else {
+        error = (await contactManagementAction({}, fd)).error;
+      }
+      if (error) { show(t(error), 'error'); return; }
+      setBody('');
+      setFiles([]);
+      if (fileRef.current) fileRef.current.value = '';
+      show(project ? t('نظرتان روی پروژه ثبت شد.') : t('پیام فرستاده شد.'), 'success');
+      router.refresh();
+    });
+  };
+
+  const options: Array<{ v: number | 'team'; label: string }> = [
+    ...projects.map((p) => ({ v: p.id, label: p.title })),
+    { v: 'team', label: t('پیامِ کلی به تیم') },
+  ];
+  return (
+    <div className="kz-form grid gap-2">
+      {/* انتخابِ «درباره»: یک پروژه ← دو دکمه؛ چند تا ← دکمه‌ها؛ زیاد ← فهرستِ کشویی. */}
+      {projects.length > 0 && (options.length <= 4 ? (
+        <div className="kz-chips flex flex-wrap gap-1" role="radiogroup" aria-label={t('درباره')}>
+          {options.map((o) => (
+            <button
+              key={String(o.v)}
+              type="button"
+              role="radio"
+              aria-checked={target === o.v}
+              onClick={() => pick(o.v)}
+              className={cn('max-w-full truncate rounded-full border px-2.5 py-0.5 text-xs transition-colors',
+                target === o.v ? 'border-primary bg-primary text-primary-foreground' : 'hover:border-primary/40')}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <select
+          value={String(target)}
+          onChange={(e) => pick(e.target.value === 'team' ? 'team' : Number(e.target.value))}
+          aria-label={t('درباره')}
+          className="h-8 w-full rounded-md border bg-card px-2 text-sm"
+        >
+          {options.map((o) => <option key={String(o.v)} value={String(o.v)}>{o.label}</option>)}
+        </select>
+      ))}
+      <p className="kz-fit-label truncate text-xs text-muted-foreground">
+        {project
+          ? <>{t('نظر روی پروژهٔ')} <b className="text-foreground">{project.title}</b></>
+          : t('پیام به مدیرانِ تیم؛ پاسخ در «پیام‌ها» می‌آید.')}
+      </p>
+      <Textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        rows={3}
+        className="kz-grow"
+        placeholder={project ? t('نظر، سؤال یا درخواستتان دربارهٔ این پروژه…') : t('سؤال یا درخواستتان را بنویسید…')}
+        aria-label={t('متنِ پیام')}
+      />
+      <div className="flex items-center justify-between gap-2">
+        {project ? (
+          <label className="kz-fit-label flex min-w-0 cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+            <Paperclip className="size-3.5 shrink-0" />
+            <span className="truncate">{files.length ? t('{n} فایل', { n: files.length }) : t('پیوستِ فایل')}</span>
+            <input ref={fileRef} type="file" multiple className="sr-only" onChange={(e) => setFiles([...(e.target.files ?? [])])} />
+          </label>
+        ) : (
+          <Link href="/messages" className="kz-fit-label text-xs text-muted-foreground hover:underline">{t('همهٔ پیام‌ها')}</Link>
+        )}
+        <Button type="button" size="sm" onClick={send} disabled={pending || (!body.trim() && files.length === 0)}>
+          <Send className="size-3.5" />{t('بفرست')}
+        </Button>
+      </div>
+      {/* چند رشتهٔ آخرِ همین پروژه — تا ببیند قبلاً چه گفته و جواب آمده یا نه. */}
+      {shownThreads.length > 0 && (
+        <ul className="kz-fit-label grid gap-1 border-t pt-2">
+          {shownThreads.map((x) => (
+            <li key={x.rootId} className="min-w-0">
+              <Link href={`/projects/${x.projectId}?tab=comments`} className="grid gap-0.5 rounded-md px-1 py-1 hover:bg-muted/40">
+                <span className="truncate text-xs">{x.excerpt}</span>
+                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <span>{x.mine ? t('خودِ شما') : t('تیم')}</span>
+                  {x.replies > 0 && <span>· {t('{n} پاسخ', { n: x.replies })}</span>}
+                  {x.done
+                    ? <span className="text-emerald-700 dark:text-emerald-400">· {t('انجام شد')}</span>
+                    : x.lastFromTeam && <span className="text-primary">· {t('پاسخِ تازه از تیم')}</span>}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }

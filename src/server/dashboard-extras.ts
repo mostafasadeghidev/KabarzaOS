@@ -1,7 +1,7 @@
 import 'server-only';
 import { and, desc, eq, gte, inArray, isNull } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { attachments, files, notifications, projectClients, projectQa, projects, tags, tasks, users } from '@/db/schema';
+import { attachments, comments, files, notifications, projectClients, projectQa, projects, tags, tasks, users } from '@/db/schema';
 import { canViewSection, isOwner, type Actor } from '@/domain/access/permissions';
 import { getClientsReport } from '@/server/reports/service';
 import { listSalaries } from '@/server/finance/salaries';
@@ -179,18 +179,27 @@ export async function getMemberExtras(actor: Actor) {
 
 export interface ClientQa { id: number; title: string; description: string; projectId: number; projectTitle: string }
 export interface ClientUpdate { kind: 'task' | 'file'; id: number; title: string; projectId: number; projectTitle: string; at: string }
+/**
+ * «پیام و نظر» ِ کارفرما: پروژه‌هایی که می‌تواند رویشان کامنت بگذارد (غیرِمنجمد) و چند رشتهٔ آخرِ هر کدام.
+ * ⚠️ نامِ نویسنده عمداً برنمی‌گردد — فقط «خودِ شما» یا «تیم» (کارفرما نامِ واقعیِ اعضا را نمی‌بیند؛ viewer-names).
+ */
+export interface TalkProject { id: number; title: string }
+export interface TalkThread {
+  rootId: number; projectId: number; excerpt: string; mine: boolean; createdAt: string;
+  replies: number; lastFromTeam: boolean; done: boolean;
+}
 export interface StatementRow {
   projectId: number; title: string; currencyCode: string | null; totalDue: string; paid: string; remaining: string;
   lastPayment: { paidAt: string; amount: string } | null;
 }
 
 export async function getClientExtras(actor: Actor) {
-  if (!actor.roles.includes('client')) return { qa: null, updates: null, statement: null };
+  if (!actor.roles.includes('client')) return { qa: null, updates: null, statement: null, talk: null };
   const ids = await membershipProjectIds(actor.id, ['client']).catch(() => [] as number[]);
   const active = ids.length ? await repo.nonFrozenProjectIds(ids).catch(() => [] as number[]) : [];
   const since = new Date(Date.now() - 30 * 86400000);
 
-  const [qa, updates, statement] = await Promise.all([
+  const [qa, updates, statement, talk] = await Promise.all([
     // چک‌لیستِ QA ِ کارفرما (role_tag_id تهی) که هنوز تیک نخورده — همان‌جا تیک می‌خورد.
     safe(active.length > 0, async () => {
       const rows = await db
@@ -249,6 +258,39 @@ export async function getClientExtras(actor: Actor) {
         };
       });
     }),
+    // پیام و نظر: پروژه‌های بازِ کارفرما (تازه‌ترین گفتگو اول) و ۳ رشتهٔ آخرِ هر پروژه.
+    safe(true, async () => {
+      if (active.length === 0) return { projects: [] as TalkProject[], threads: [] as TalkThread[] };
+      const [projs, rows] = await Promise.all([
+        db.select({ id: projects.id, title: projects.title, updatedAt: projects.updatedAt }).from(projects).where(inArray(projects.id, active)),
+        db.select({ id: comments.id, parentId: comments.parentId, projectId: comments.projectId, userId: comments.userId, body: comments.body, status: comments.status, createdAt: comments.createdAt })
+          .from(comments)
+          .where(and(inArray(comments.projectId, active), eq(comments.type, 'comment'), isNull(comments.taskId)))
+          .orderBy(desc(comments.id))
+          .limit(500),
+      ]);
+      const lastAt = new Map<number, number>();
+      for (const c of rows) lastAt.set(c.projectId, Math.max(lastAt.get(c.projectId) ?? 0, c.createdAt.getTime()));
+      const ordered = [...projs].sort((a, b) =>
+        (lastAt.get(b.id) ?? b.updatedAt.getTime()) - (lastAt.get(a.id) ?? a.updatedAt.getTime()));
+      const repliesOf = new Map<number, typeof rows>();
+      for (const c of rows) if (c.parentId) repliesOf.set(c.parentId, [...(repliesOf.get(c.parentId) ?? []), c]);
+      const perProject = new Map<number, number>();
+      const threads: TalkThread[] = [];
+      for (const c of rows) {
+        if (c.parentId) continue;
+        const n = perProject.get(c.projectId) ?? 0;
+        if (n >= 3) continue;
+        perProject.set(c.projectId, n + 1);
+        const replies = repliesOf.get(c.id) ?? [];
+        const last = replies[0]; // rows از تازه به کهنه است
+        threads.push({
+          rootId: c.id, projectId: c.projectId, excerpt: c.body.replace(/\s+/g, ' ').slice(0, 140), mine: c.userId === actor.id,
+          createdAt: c.createdAt.toISOString(), replies: replies.length, lastFromTeam: !!last && last.userId !== actor.id, done: c.status === 'done',
+        });
+      }
+      return { projects: ordered.map(({ id, title }) => ({ id, title })), threads };
+    }),
   ]);
-  return { qa, updates, statement };
+  return { qa, updates, statement, talk };
 }
