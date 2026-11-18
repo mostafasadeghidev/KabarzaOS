@@ -8,7 +8,31 @@ import { formatDateTime } from '@/i18n/datetime';
 import { cn } from '@/lib/utils';
 import { CardHelp } from '@/components/ui/card-help';
 import { Thumb } from '@/components/thumb';
-import { DashboardGrid, type WidgetDef } from './dashboard-grid';
+import { DashboardGrid, type DefaultLayout, type WidgetDef, type WidgetSize } from './dashboard-grid';
+
+/**
+ * چیدمانِ پیش‌فرضِ عضو — شروعِ روز اول: «کارهای من» بزرگ، و کنارش ستونِ باریکِ «ادامهٔ کار / هدفِ ساعت /
+ * منتظرِ بررسی». بعد ساعت و برنامه، بعد گفت‌وگوها (کامنت و منشن) و بازبینی، و پروژه‌ها تمام‌عرض در پایین.
+ * ستون‌ها روی شبکهٔ چهارستونه (۰ = اولین ستون از سمتِ شروع). کارتی که برای این عضو ساخته نشده (مثلاً
+ * «بازبینی‌های تیم» برای عضوِ ساده) فقط کنار می‌رود و بقیه جای خود را دارند.
+ */
+const MEMBER_LAYOUT: DefaultLayout = (() => {
+  /*
+   * دو ستونِ اول (۰–۱) کارت‌های متوسط: کارها، ثبتِ ساعت، کامنت و منشن… و دو ستونِ باریکِ آخر (۲ و ۳)
+   * کارت‌های کوچک: ادامهٔ کار، هدف، هفتهٔ من، منتظرِ بررسی، مرخصی، جلسات؛ «عددهای من» زیرِ هر دو.
+   * ⚠️ کارتِ دوستونه در ستونِ ۲ نمی‌نشیند تا وقتی ستونِ باریک بلندتر شد، زیرش حفره نماند.
+   */
+  const plan: Array<[string, number, WidgetSize?]> = [
+    ['m-tasks', 0, 'm'], ['m-resume', 3], ['m-hours', 2], ['m-goal', 3], ['m-waiting', 2], ['m-meetings', 3], ['m-leave', 2],
+    ['m-log', 0], ['m-comments', 0], ['m-mentions', 0], ['m-week', 0], ['m-team-review', 0], ['m-stats', 2],
+    ['m-projects', 0], ['m-tenders', 0], ['m-onboarding', 0], ['m-team', 0], ['m-client', 0],
+  ];
+  return {
+    order: plan.map(([id]) => id),
+    cols: Object.fromEntries(plan.map(([id, c]) => [id, c])),
+    sizes: Object.fromEntries(plan.filter((p) => p[2]).map(([id, , sz]) => [id, sz!])),
+  };
+})();
 import { QuickNote } from './quick-note';
 import { OnboardingCard } from './onboarding-card';
 import { ClientBlock } from './member-dashboard';
@@ -359,5 +383,5 @@ export function MemberDashboardV2({
     node: <QuickNote userId={userId} />,
   });
 
-  return <DashboardGrid widgets={[...widgets, ...extra]} userId={userId} scope="member" />;
+  return <DashboardGrid widgets={[...widgets, ...extra]} userId={userId} scope="member" defaults={MEMBER_LAYOUT} />;
 }

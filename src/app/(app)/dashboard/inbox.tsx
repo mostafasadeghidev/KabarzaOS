@@ -124,12 +124,19 @@ export function DashboardInbox({
 
   return (
     <section className="grid h-full content-start gap-3 rounded-2xl border bg-card p-4">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-sm font-bold">
-          {icon}{title}
-          {counts.all > 0 && <span className="num rounded-full bg-primary/12 px-1.5 text-[11px] text-primary">{counts.all}</span>}
-        </h2>
-        <div className="flex flex-wrap items-center gap-1">
+      {/*
+        راهنما در ردیفِ عنوان، گوشهٔ انتهایی (بالا-چپ در فارسی). ⚠️ پیش از این کنارِ فیلترها بود و وقتی
+        فیلترها در کارتِ باریک به خطِ بعد می‌شکستند، علامتِ سؤال هم با آن‌ها پایین می‌رفت.
+      */}
+      <header className="grid gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 text-sm font-bold">
+            {icon}{title}
+            {counts.all > 0 && <span className="num rounded-full bg-primary/12 px-1.5 text-[11px] text-primary">{counts.all}</span>}
+          </h2>
+          <CardHelp />
+        </div>
+        <div className="flex flex-wrap items-center gap-1 empty:hidden">
           {/* فیلترِ نوع فقط وقتی کارت بیش از یک نوعِ پُر دارد. */}
           {kinds.filter((k) => counts[k] > 0).length > 1 && tabs.filter((x) => x.key === 'all' || (kinds.includes(x.key as InboxKind) && counts[x.key] > 0)).map((x) => (
             <button
@@ -144,8 +151,6 @@ export function DashboardInbox({
               <span className={cn('num', kind === x.key ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{counts[x.key]}</span>
             </button>
           ))}
-          {/* راهنما در گوشهٔ انتهایی (بالا-چپ در فارسی). */}
-          <CardHelp />
         </div>
       </header>
 

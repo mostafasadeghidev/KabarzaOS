@@ -11,7 +11,23 @@ import { CardHelp } from '@/components/ui/card-help';
 import { Amount } from '@/components/amount-privacy';
 import { SecretAmount } from '@/components/secret-amount';
 import { Thumb } from '@/components/thumb';
-import { DashboardGrid, type WidgetDef } from './dashboard-grid';
+import { DashboardGrid, type DefaultLayout, type WidgetDef } from './dashboard-grid';
+
+/**
+ * چیدمانِ پیش‌فرضِ کارفرما — اول آنچه منتظرِ تأییدِ اوست و کنارش «پیام به تیم»؛ بعد پروژه‌ها تمام‌عرض؛
+ * بعد چک‌لیستِ تحویل و تازه‌ها در یک ستون، صورتِ حساب و جلسات در ستونِ کناری.
+ */
+const CLIENT_LAYOUT: DefaultLayout = (() => {
+  const plan: Array<[string, number]> = [
+    ['c-review', 0], ['c-message', 3],
+    ['c-projects', 0],
+    // ⚠️ جلسات زیرِ صورتِ حساب، نه زیرِ «پیام به تیم»: آنجا ستونِ باریک از «منتظرِ تأیید» بلندتر می‌شد و
+    // بالای «پروژه‌های من» حفره می‌ماند.
+    ['c-qa', 0], ['c-statement', 2], ['c-updates', 0], ['c-meetings', 2],
+    ['c-onboarding', 0],
+  ];
+  return { order: plan.map(([id]) => id), cols: Object.fromEntries(plan) };
+})();
 import { QuickNote } from './quick-note';
 import { OnboardingCard } from './onboarding-card';
 import { ClientQaList, ContactTeamForm, HoursGoal, PayRenewalButton, ResumeTimerButton } from './extras-client';
@@ -546,5 +562,5 @@ export function ClientDashboardV2({
     node: <QuickNote userId={userId} />,
   });
 
-  return <DashboardGrid widgets={widgets} userId={userId} scope="client" />;
+  return <DashboardGrid widgets={widgets} userId={userId} scope="client" defaults={CLIENT_LAYOUT} />;
 }
