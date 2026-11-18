@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, LayoutGrid, RotateCcw } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, EyeOff, GripVertical, LayoutGrid, Pencil, Plus, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -46,6 +46,10 @@ export function DashboardGrid({ widgets, userId }: { widgets: WidgetDef[]; userI
   const key = `kz-dash-layout-${userId}`;
   const [prefs, setPrefs] = useState<Prefs>(EMPTY);
   const [open, setOpen] = useState(false);
+  /** حالتِ ویرایشِ زنده: کشیدن و رها کردن، اندازه و پنهان کردن روی خودِ کارت. */
+  const [editing, setEditing] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
   useEffect(() => {
     try { const raw = localStorage.getItem(key); if (raw) setPrefs({ ...EMPTY, ...JSON.parse(raw) as Partial<Prefs> }); } catch { /* خصوصی */ }
   }, [key]);
@@ -74,6 +78,27 @@ export function DashboardGrid({ widgets, userId }: { widgets: WidgetDef[]; userI
     [ids[i], ids[j]] = [ids[j]!, ids[i]!];
     save({ ...prefs, order: ids });
   };
+  /** جابه‌جاییِ زنده: کارتِ کشیده‌شده درست پیش از کارتِ زیرِ نشانگر می‌نشیند (روی خودِ آن، بعدش). */
+  const dropOn = (targetId: string) => {
+    if (!dragId || dragId === targetId) return;
+    const ids = ordered.map((x) => x.id).filter((id) => id !== dragId);
+    const from = ordered.findIndex((x) => x.id === dragId);
+    const to = ordered.findIndex((x) => x.id === targetId);
+    const at = ids.indexOf(targetId) + (from < to ? 1 : 0);
+    ids.splice(at, 0, dragId);
+    save({ ...prefs, order: ids });
+  };
+  /** جلو/عقب بینِ کارت‌های **پیدا** — جایگزینِ کشیدن روی لمس. */
+  const nudge = (id: string, dir: -1 | 1) => {
+    const vis = ordered.filter(isOn).map((x) => x.id);
+    const i = vis.indexOf(id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= vis.length) return;
+    const ids = ordered.map((x) => x.id);
+    const a = ids.indexOf(vis[i]!), b = ids.indexOf(vis[j]!);
+    [ids[a], ids[b]] = [ids[b]!, ids[a]!];
+    save({ ...prefs, order: ids });
+  };
   const resize = (w: WidgetDef, size: WidgetSize) => save({ ...prefs, order: ordered.map((x) => x.id), sizes: { ...prefs.sizes, [w.id]: size } });
 
   const visible = ordered.filter(isOn);
@@ -81,17 +106,93 @@ export function DashboardGrid({ widgets, userId }: { widgets: WidgetDef[]; userI
 
   return (
     <div className="grid gap-3">
-      <div className="flex items-center justify-end gap-3">
-        <span className="hidden text-[11px] text-muted-foreground md:inline">{t('میان‌بُر: j / k ردیفِ بعد و قبل، a یا Enter کنشِ اولِ ردیف.')}</span>
-        <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
-          <LayoutGrid className="size-4" />{t('سفارشی‌سازی')}
-        </Button>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {!editing && <span className="me-auto hidden text-[11px] text-muted-foreground md:inline">{t('میان‌بُر: j / k ردیفِ بعد و قبل، a یا Enter کنشِ اولِ ردیف.')}</span>}
+        {editing ? (
+          <>
+            <span className="me-auto text-xs text-muted-foreground">{t('کارت‌ها را از دستگیره بکشید و جای دیگری رها کنید؛ اندازه و پنهان‌کردن روی خودِ کارت است.')}</span>
+            <Button type="button" size="sm" variant="ghost" onClick={() => save(EMPTY)}><RotateCcw className="size-4" />{t('پیش‌فرض')}</Button>
+            <Button type="button" size="sm" onClick={() => setEditing(false)}><Check className="size-4" />{t('تمام')}</Button>
+          </>
+        ) : (
+          <>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(true)}>
+              <LayoutGrid className="size-4" />{t('فهرستِ کارت‌ها')}
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => setEditing(true)}>
+              <Pencil className="size-4" />{t('ویرایشِ چیدمان')}
+            </Button>
+          </>
+        )}
       </div>
+
+      {/* حالتِ ویرایش: کارت‌های پنهان برای افزودن با یک کلیک. */}
+      {editing && ordered.some((w) => !isOn(w)) && (
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-dashed p-2">
+          <span className="px-1 text-xs text-muted-foreground">{t('افزودنِ کارت:')}</span>
+          {ordered.filter((w) => !isOn(w)).map((w) => (
+            <button
+              key={w.id}
+              type="button"
+              onClick={() => toggle(w, true)}
+              className="flex items-center gap-1 rounded-full border bg-card px-2.5 py-1 text-xs transition-colors hover:border-primary/40 hover:text-primary"
+            >
+              <Plus className="size-3" />{w.title}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* grid-flow-row-dense: کارت‌های کوچک جاهای خالیِ کنارِ کارت‌های بزرگ را پر می‌کنند (بنتو). */}
       <div className="grid grid-flow-row-dense grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         {visible.map((w) => (
-          <div key={w.id} className={cn('grid min-w-0', SIZE_CLASS[sizeOf(w)])}>{w.node}</div>
+          <div
+            key={w.id}
+            data-widget={w.id}
+            className={cn(
+              'relative grid min-w-0', SIZE_CLASS[sizeOf(w)],
+              editing && 'rounded-2xl outline-2 outline-offset-2 outline-dashed outline-primary/30 transition-transform',
+              editing && overId === w.id && dragId !== w.id && 'outline-solid outline-primary',
+              dragId === w.id && 'scale-[0.98] opacity-50',
+            )}
+            onDragOver={(e) => { if (editing && dragId) { e.preventDefault(); setOverId(w.id); } }}
+            onDragLeave={() => setOverId((o) => (o === w.id ? null : o))}
+            onDrop={(e) => { e.preventDefault(); dropOn(w.id); setDragId(null); setOverId(null); }}
+          >
+            {/* در حالتِ ویرایش، محتوای کارت کلیک‌پذیر نیست — فقط کنترل‌های چیدمان. */}
+            <div className={cn('grid min-w-0', editing && 'pointer-events-none select-none')}>{w.node}</div>
+            {editing && (
+              <div className="absolute inset-x-2 top-2 z-10 flex items-center gap-1 rounded-xl border bg-popover/95 p-1 shadow-md backdrop-blur">
+                <span
+                  draggable
+                  onDragStart={(e) => { setDragId(w.id); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', w.id); }}
+                  onDragEnd={() => { setDragId(null); setOverId(null); }}
+                  className="grid size-7 cursor-grab place-items-center rounded-lg text-muted-foreground hover:bg-muted active:cursor-grabbing"
+                  title={t('بکشید')}
+                >
+                  <GripVertical className="size-4" />
+                </span>
+                <span className="min-w-0 flex-1 truncate px-1 text-xs font-medium">{w.title}</span>
+                <span className="flex items-center rounded-lg bg-muted/60 p-0.5">
+                  {(Object.keys(SIZE_LABEL) as WidgetSize[]).map((sz) => (
+                    <button
+                      key={sz}
+                      type="button"
+                      onClick={() => resize(w, sz)}
+                      aria-pressed={sizeOf(w) === sz}
+                      title={t(SIZE_LABEL[sz])}
+                      className={cn('h-6 min-w-6 rounded-md px-1 text-[10px] font-semibold uppercase', sizeOf(w) === sz ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground')}
+                    >
+                      {sz}
+                    </button>
+                  ))}
+                </span>
+                <Button type="button" size="icon-xs" variant="ghost" aria-label={t('عقب‌تر')} onClick={() => nudge(w.id, -1)}><ChevronRight className="size-3.5 ltr:rotate-180" /></Button>
+                <Button type="button" size="icon-xs" variant="ghost" aria-label={t('جلوتر')} onClick={() => nudge(w.id, 1)}><ChevronLeft className="size-3.5 ltr:rotate-180" /></Button>
+                <Button type="button" size="icon-xs" variant="ghost" aria-label={t('پنهان کردن')} onClick={() => toggle(w, false)} className="text-muted-foreground hover:text-destructive"><EyeOff className="size-3.5" /></Button>
+              </div>
+            )}
+          </div>
         ))}
       </div>
       {visible.length === 0 && (
