@@ -103,11 +103,14 @@ function NavGroup({
   pathname,
   unread,
   unreadMail = 0,
+  waiting = 0,
 }: {
   label: string;
   items: NavItem[];
   pathname: string;
   unread: number;
+  /** «منتظرِ شما» ِ داشبورد (نمونه). */
+  waiting?: number;
   /** نخوانده‌های صندوقِ ایمیلِ شرکتی (۳.۲.۰). */
   unreadMail?: number;
 }) {
@@ -171,6 +174,11 @@ function NavGroup({
                             <LiveCount initial={unread} live={null} />
                           </Badge>
                         )}
+                        {item.icon === 'overview' && waiting > 0 && (
+                          <Badge variant="warning" className="ms-auto h-4 min-w-4 justify-center px-1 py-0 text-[10px]">
+                            <span className="num">{waiting > 99 ? '99+' : waiting}</span>
+                          </Badge>
+                        )}
                         {item.icon === 'mail' && unreadMail > 0 && (
                           <Badge className="ms-auto h-4 min-w-4 justify-center px-1 py-0 text-[10px]">
                             <LiveCount initial={unreadMail} live={null} />
@@ -200,6 +208,7 @@ export function AppSidebar({
   pulse,
   unreadMessages,
   unreadMail = 0,
+  waiting = 0,
   onLogout,
   canManageSettings,
   onLocaleChange,
@@ -226,6 +235,8 @@ export function AppSidebar({
   unreadMessages: number;
   /** نخوانده‌های صندوقِ ایمیلِ شرکتی (۳.۲.۰) — مقدارِ اولیه؛ نبض تازه‌اش می‌کند. */
   unreadMail?: number;
+  /** «منتظرِ شما» ِ داشبورد (نمونه). */
+  waiting?: number;
   onLogout: () => void;
   canManageSettings?: boolean;
   onLocaleChange: (locale: Locale) => void | Promise<void>;
@@ -319,6 +330,7 @@ export function AppSidebar({
             pathname={pathname}
             unread={unread}
             unreadMail={unreadMailCount}
+            waiting={waiting}
           />
         ))}
       </SidebarContent>

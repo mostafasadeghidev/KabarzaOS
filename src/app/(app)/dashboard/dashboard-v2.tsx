@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertTriangle, CalendarDays, Clock, Hourglass, TrendingDown, Users } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CalendarDays, Clock, Gauge, Hourglass, MessageSquareReply, TrendingDown, Users } from 'lucide-react';
 import { t } from '@/i18n/server';
 import { UserName } from '@/components/user-avatar';
 import { Amount } from '@/components/amount-privacy';
@@ -7,6 +7,7 @@ import { format } from '@/domain/money/money';
 import { cn } from '@/lib/utils';
 import { RecentActivity } from './recent-activity';
 import { DashboardInbox, type InboxExpense } from './inbox';
+import { QuickNote } from './quick-note';
 import type { getDashboard, RiskItem } from '@/server/dashboard';
 import type { getDashboardInbox } from '@/server/dashboard-inbox';
 
@@ -39,8 +40,9 @@ function Panel({ title, icon, action, children, className }: {
 }
 
 export function DashboardV2({
-  data, inbox, approveStatusId, returnStatusId, canReports,
+  data, inbox, approveStatusId, returnStatusId, canReports, userId,
 }: {
+  userId: number;
   data: Dash;
   inbox: Inbox;
   approveStatusId: number | null;
@@ -60,6 +62,20 @@ export function DashboardV2({
   push(risk.reviewStuck, 'amber', <Clock className="size-4" />);
   push(risk.stalled, 'gray', <TrendingDown className="size-4" />);
 
+  // «این هفتهٔ من» — گروه‌بندی بر پایهٔ روز؛ گذشته‌های باز اول (قرمز).
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const byDay = new Map<string, typeof inbox.week>();
+  for (const w of inbox.week) byDay.set(w.date, [...(byDay.get(w.date) ?? []), w]);
+  const dayLabel = (d: string) => {
+    if (d === todayIso) return t('امروز');
+    const diff = Math.round((Date.parse(`${d}T00:00:00Z`) - Date.parse(`${todayIso}T00:00:00Z`)) / 86400000);
+    if (diff === 1) return t('فردا');
+    if (diff < 0) return t('{n} روز گذشته', { n: -diff });
+    return t('{n} روز دیگر', { n: diff });
+  };
+  const maxOpen = Math.max(1, ...inbox.capacity.map((c) => c.openTasks));
+  const maxMin = Math.max(1, ...inbox.capacity.map((c) => c.minutes));
+
   const expenses: InboxExpense[] = risk.expenseDues.map((e) => ({ ...e }));
   const tone = { red: 'bg-red-500/12 text-red-700 dark:text-red-400', amber: 'bg-amber-500/12 text-amber-700 dark:text-amber-400', gray: 'bg-muted text-muted-foreground' };
 
@@ -71,6 +87,10 @@ export function DashboardV2({
           requests={inbox.requests}
           comments={inbox.comments}
           expenses={expenses}
+          units={inbox.units}
+          tenders={inbox.tenders}
+          unassigned={inbox.unassigned}
+          noLog={inbox.noLog}
           approveStatusId={approveStatusId}
           returnStatusId={returnStatusId}
         />
@@ -132,6 +152,77 @@ export function DashboardV2({
             )}
           </Panel>
         </div>
+      </div>
+
+      <div className="grid gap-4 @5xl/main:grid-cols-3">
+        <Panel title={t('این هفتهٔ من')} icon={<CalendarClock className="size-4 text-muted-foreground" />} className="@5xl/main:col-span-2">
+          {inbox.week.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('ددلاینی در ۷ روزِ آینده نیست.')}</p>
+          ) : (
+            <div className="grid gap-3 @3xl/main:grid-cols-2">
+              {[...byDay].map(([day, items]) => (
+                <div key={day} className="grid content-start gap-1.5">
+                  <h3 className={cn('flex items-center gap-2 text-xs font-semibold', day < todayIso ? 'text-destructive' : day === todayIso ? 'text-primary' : 'text-muted-foreground')}>
+                    {dayLabel(day)}<span className="num font-normal opacity-70">{day}</span>
+                  </h3>
+                  <ul className="grid gap-1">
+                    {items.map((w) => (
+                      <li key={`${w.kind}${w.id}`} className="flex min-w-0 items-center gap-2 text-sm">
+                        <span className={cn('shrink-0 rounded px-1.5 py-px text-[10px]', w.kind === 'project' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>
+                          {w.kind === 'project' ? t('پروژه') : t('تسک')}
+                        </span>
+                        <Link href={w.kind === 'project' ? `/projects/${w.projectId}` : `/projects/${w.projectId}?tab=tasks`} className="min-w-0 truncate hover:underline">{w.title}</Link>
+                        {w.projectTitle && <span className="shrink-0 truncate text-xs text-muted-foreground">· {w.projectTitle}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <QuickNote userId={userId} />
+      </div>
+
+      <div className="grid gap-4 @5xl/main:grid-cols-2">
+        {inbox.capacity.length > 0 && (
+          <Panel title={t('ظرفیتِ تیم')} icon={<Gauge className="size-4 text-muted-foreground" />} action={{ href: '/team', label: t('تیمِ من') }}>
+            <p className="-mt-1 text-[11px] text-muted-foreground">{t('تسکِ باز و ساعتِ ۷ روزِ اخیرِ هر عضو — پربارترها بالا.')}</p>
+            <ul className="grid gap-2">
+              {inbox.capacity.slice(0, 10).map((c) => (
+                <li key={c.userId} className="grid grid-cols-[minmax(0,9rem)_1fr] items-center gap-3 text-sm">
+                  <span className="min-w-0 truncate"><UserName userId={c.userId} name={c.name} size="sm" /></span>
+                  <span className="grid gap-1">
+                    <span className="flex items-center gap-2">
+                      <span className="h-1.5 rounded-full bg-amber-500/70" style={{ width: `${Math.max(4, (c.openTasks / maxOpen) * 100)}%` }} />
+                      <span className="num shrink-0 text-[11px] text-muted-foreground">{t('{n} تسک', { n: c.openTasks })}</span>
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="h-1.5 rounded-full bg-sky-500/70" style={{ width: `${Math.max(4, (c.minutes / maxMin) * 100)}%` }} />
+                      <span className="num shrink-0 text-[11px] text-muted-foreground">{Math.floor(c.minutes / 60)}:{String(c.minutes % 60).padStart(2, '0')}</span>
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        )}
+
+        <Panel title={t('کارفرماهای منتظرِ پاسخ')} icon={<MessageSquareReply className="size-4 text-muted-foreground" />}>
+          {inbox.clientWaiting.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('کارفرمایی منتظرِ پاسخ نیست.')}</p>
+          ) : (
+            <ul className="grid divide-y">
+              {inbox.clientWaiting.map((c) => (
+                <li key={c.rootId} className="grid gap-0.5 py-2">
+                  <Link href={`/projects/${c.projectId}?tab=comments`} className="truncate text-sm font-medium hover:underline">{c.excerpt}</Link>
+                  <span className="truncate text-xs text-muted-foreground">{c.authorName} · {c.projectTitle}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       </div>
 
       <div className="grid gap-4 @5xl/main:grid-cols-2">

@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useTransition } from 'react';
-import { Check, CornerUpLeft, MessageSquare, Receipt, ListChecks, Wallet, X, PartyPopper } from 'lucide-react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { BellRing, Check, Clock, CornerUpLeft, Gavel, MessageSquare, Package, Receipt, ListChecks, UserX, Wallet, X, PartyPopper } from 'lucide-react';
 import { setTaskStatusAction } from '../projects/_form/tab-actions';
 import { decideRequestAction } from '../finance/_form/payout-actions';
+import { remindTimelogAction } from './_actions';
 import { TaskDialog } from '../projects/[id]/task-dialog';
 import { Button } from '@/components/ui/button';
 import { TaskNumber } from '@/components/task-number';
@@ -15,7 +16,7 @@ import { useT } from '@/i18n/client';
 import { formatIn } from '@/domain/money/money';
 import { agoLabel } from '@/domain/people/last-online';
 import { cn } from '@/lib/utils';
-import type { InboxComment, InboxRequest, InboxReviewTask } from '@/server/dashboard-inbox';
+import type { InboxComment, InboxNoLog, InboxRequest, InboxReviewTask, InboxTender, InboxUnassigned, InboxUnit } from '@/server/dashboard-inbox';
 
 /**
  * صفِ کارهای امروز (نمونهٔ محلی ِ داشبوردِ تازه) — هر مورد با کارِ خودش در همان‌جا:
@@ -25,15 +26,19 @@ import type { InboxComment, InboxRequest, InboxReviewTask } from '@/server/dashb
 
 export interface InboxExpense { id: number; title: string; amount: string; due: string; overdue: boolean }
 
-type Kind = 'all' | 'review' | 'requests' | 'comments' | 'expenses';
+type Kind = 'all' | 'review' | 'requests' | 'comments' | 'expenses' | 'units' | 'tenders' | 'unassigned' | 'nolog';
 
 export function DashboardInbox({
-  review, requests, comments, expenses, approveStatusId, returnStatusId,
+  review, requests, comments, expenses, units, tenders, unassigned, noLog, approveStatusId, returnStatusId,
 }: {
   review: InboxReviewTask[];
   requests: InboxRequest[];
   comments: InboxComment[];
   expenses: InboxExpense[];
+  units: InboxUnit[];
+  tenders: InboxTender[];
+  unassigned: InboxUnassigned[];
+  noLog: InboxNoLog[];
   approveStatusId: number | null;
   returnStatusId: number | null;
 }) {
@@ -57,13 +62,50 @@ export function DashboardInbox({
   const Q = requests.filter((r) => !done.has(`r${r.id}`));
   const C = comments;
   const E = expenses;
-  const counts = { all: R.length + Q.length + C.length + E.length, review: R.length, requests: Q.length, comments: C.length, expenses: E.length };
+  const U = units;
+  const T = tenders;
+  const A = unassigned;
+  const N = noLog.filter((m) => !done.has(`n${m.userId}`));
+  const counts = {
+    all: R.length + Q.length + C.length + E.length + U.length + T.length + A.length + N.length,
+    review: R.length, requests: Q.length, comments: C.length, expenses: E.length,
+    units: U.length, tenders: T.length, unassigned: A.length, nolog: N.length,
+  };
+
+  /*
+   * میان‌بُرهای صفحه‌کلید (مثلِ صندوقِ Linear/Gmail): j/k ردیفِ بعد/قبل، a یا Enter اولین کنشِ ردیف.
+   * فقط وقتی تمرکز در فیلدِ تایپ نیست و پنجره‌ای باز نیست.
+   */
+  const listRef = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (e.ctrlKey || e.metaKey || e.altKey || el?.closest('input, textarea, select, [contenteditable=true], [role=dialog]')) return;
+      const rows = [...(listRef.current?.querySelectorAll<HTMLElement>('[data-inbox-row]') ?? [])];
+      if (rows.length === 0) return;
+      const at = rows.indexOf(document.activeElement as HTMLElement);
+      if (e.key === 'j' || e.key === 'k') {
+        e.preventDefault();
+        const next = e.key === 'j' ? Math.min(rows.length - 1, at + 1) : Math.max(0, at === -1 ? 0 : at - 1);
+        rows[next]?.focus();
+      } else if ((e.key === 'a' || e.key === 'Enter') && at !== -1) {
+        e.preventDefault();
+        rows[at]?.querySelector<HTMLElement>('[data-row-actions] button, [data-row-actions] a')?.click();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   const tabs: Array<{ key: Kind; label: string; icon: React.ReactNode }> = [
     { key: 'all', label: 'همه', icon: null },
     { key: 'review', label: 'بازبینی', icon: <ListChecks className="size-3.5" /> },
     { key: 'requests', label: 'پرداخت', icon: <Wallet className="size-3.5" /> },
     { key: 'comments', label: 'کامنت', icon: <MessageSquare className="size-3.5" /> },
     { key: 'expenses', label: 'هزینه', icon: <Receipt className="size-3.5" /> },
+    { key: 'units', label: 'کارکرد', icon: <Package className="size-3.5" /> },
+    { key: 'tenders', label: 'مناقصه', icon: <Gavel className="size-3.5" /> },
+    { key: 'unassigned', label: 'بی‌مسئول', icon: <UserX className="size-3.5" /> },
+    { key: 'nolog', label: 'ساعت', icon: <Clock className="size-3.5" /> },
   ];
   const show_ = (k: Exclude<Kind, 'all'>) => kind === 'all' || kind === k;
 
@@ -95,7 +137,7 @@ export function DashboardInbox({
           <p className="text-xs">{t('هر وقت بازبینی، درخواستِ پرداخت یا کامنتی برسد همین‌جا می‌آید.')}</p>
         </div>
       ) : (
-        <ul className="grid divide-y">
+        <ul ref={listRef} className="grid divide-y">
           {show_('review') && R.map((r) => (
             <Row
               key={`t${r.id}`}
@@ -144,6 +186,46 @@ export function DashboardInbox({
               actions={<Button asChild size="xs" variant="outline"><Link href={`/projects/${c.projectId}?tab=comments`}>{t('پاسخ')}</Link></Button>}
             />
           ))}
+          {show_('units') && U.map((u) => (
+            <Row
+              key={`u${u.id}`}
+              icon={<Package className="size-4" />}
+              tone="blue"
+              title={<span className="flex min-w-0 items-center gap-1.5"><UserName userId={u.userId} name={u.userName ?? '—'} size="sm" /><span className="text-muted-foreground">·</span><Amount><span className="num">{formatIn(u.amount, u.currencyCode)} {u.currencyCode ?? ''}</span></Amount></span>}
+              meta={<>{t('کارکردِ پرداخت‌نشده')}{u.projectTitle ? <> · {u.projectTitle}</> : null} · <span className="num">{u.date}</span></>}
+              actions={<Button asChild size="xs" variant="outline"><Link href="/finance?tab=members">{t('ثبت در حسابداری')}</Link></Button>}
+            />
+          ))}
+          {show_('tenders') && T.map((x) => (
+            <Row
+              key={`d${x.projectId}`}
+              icon={<Gavel className="size-4" />}
+              tone="violet"
+              title={<span className="truncate">{x.title}</span>}
+              meta={<>{t('مناقصه')} · {t('{n} پیشنهادِ در انتظار', { n: x.bids })}</>}
+              actions={<Button asChild size="xs" variant="outline"><Link href={`/projects/${x.projectId}?tab=bids`}>{t('بررسیِ پیشنهادها')}</Link></Button>}
+            />
+          ))}
+          {show_('unassigned') && A.map((a) => (
+            <Row
+              key={`a${a.id}`}
+              icon={<UserX className="size-4" />}
+              tone="gray"
+              title={<button type="button" onClick={() => setOpenTask(a.id)} className="flex min-w-0 items-center gap-1.5 text-start hover:underline"><TaskNumber number={a.number} /><span className="truncate">{a.title}</span></button>}
+              meta={<>{t('تسکِ بی‌مسئول')} · {a.projectTitle}{a.dueDate ? <> · {t('ددلاین')} <span className="num">{a.dueDate}</span></> : null}</>}
+              actions={<Button size="xs" variant="outline" onClick={() => setOpenTask(a.id)}>{t('سپردن')}</Button>}
+            />
+          ))}
+          {show_('nolog') && N.map((m) => (
+            <Row
+              key={`n${m.userId}`}
+              icon={<Clock className="size-4" />}
+              tone="amber"
+              title={<UserName userId={m.userId} name={m.name} size="sm" />}
+              meta={t('دیروز ساعتی ثبت نکرده')}
+              actions={<Button size="xs" variant="outline" disabled={pending} onClick={() => act(`n${m.userId}`, () => remindTimelogAction(m.userId), 'یادآوری فرستاده شد.')}><BellRing className="size-3.5" />{t('یادآوری')}</Button>}
+            />
+          ))}
           {show_('expenses') && E.map((e) => (
             <Row
               key={`e${e.id}`}
@@ -157,6 +239,11 @@ export function DashboardInbox({
         </ul>
       )}
 
+      {counts.all > 0 && (
+        <p className="hidden text-[11px] text-muted-foreground md:block">
+          {t('میان‌بُر: j / k ردیفِ بعد و قبل، a یا Enter کنشِ اولِ ردیف.')}
+        </p>
+      )}
       <TaskDialog taskId={openTask} open={openTask !== null} onOpenChange={(o) => !o && setOpenTask(null)} />
     </section>
   );
@@ -174,13 +261,13 @@ function Row({ icon, tone, title, meta, actions }: {
   icon: React.ReactNode; tone: keyof typeof TONES; title: React.ReactNode; meta: React.ReactNode; actions: React.ReactNode;
 }) {
   return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
+    <li data-inbox-row tabIndex={-1} className="-mx-2 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-2 py-2.5 outline-none focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/40">
       <span className={cn('grid size-8 shrink-0 place-items-center rounded-lg', TONES[tone])}>{icon}</span>
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="min-w-0 text-sm font-medium">{title}</span>
         <span className="truncate text-xs text-muted-foreground">{meta}</span>
       </span>
-      <span className="flex shrink-0 items-center gap-1.5 max-sm:w-full max-sm:justify-end">{actions}</span>
+      <span data-row-actions className="flex shrink-0 items-center gap-1.5 max-sm:w-full max-sm:justify-end">{actions}</span>
     </li>
   );
 }

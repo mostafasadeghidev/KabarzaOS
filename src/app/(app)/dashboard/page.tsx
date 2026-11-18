@@ -155,6 +155,7 @@ export default async function DashboardPage({
           approveStatusId={approve?.id ?? null}
           returnStatusId={back?.id ?? null}
           canReports={canViewSection(actor, 'reports')}
+          userId={actor.id}
         />
       </PageShell>
     );
