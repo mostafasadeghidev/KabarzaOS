@@ -12,6 +12,7 @@ import { addCommentAction } from '../projects/_form/tab-actions';
 import { payRecurringAction } from '../finance/_form/payout-actions';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { Hint } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/toast';
@@ -291,39 +292,26 @@ export function ClientTalkCard({ userId, projects, threads }: {
     });
   };
 
-  const options: Array<{ v: number | 'team'; label: string }> = [
-    ...projects.map((p) => ({ v: p.id, label: p.title })),
-    { v: 'team', label: t('پیامِ کلی به تیم') },
+  const teamLabel = t('پیامِ کلی به مدیرانِ تیم');
+  const comboOptions = [
+    { value: 0, label: teamLabel },
+    ...projects.map((p) => ({ value: p.id, label: p.title, group: t('پروژه‌ها') })),
   ];
   return (
     <div className="kz-form grid gap-2">
-      {/* انتخابِ «درباره»: یک پروژه ← دو دکمه؛ چند تا ← دکمه‌ها؛ زیاد ← فهرستِ کشویی. */}
-      {projects.length > 0 && (options.length <= 4 ? (
-        <div className="kz-chips flex flex-wrap gap-1" role="radiogroup" aria-label={t('درباره')}>
-          {options.map((o) => (
-            <button
-              key={String(o.v)}
-              type="button"
-              role="radio"
-              aria-checked={target === o.v}
-              onClick={() => pick(o.v)}
-              className={cn('max-w-full truncate rounded-full border px-2.5 py-0.5 text-xs transition-colors',
-                target === o.v ? 'border-primary bg-primary text-primary-foreground' : 'hover:border-primary/40')}
-            >
-              {o.label}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <select
-          value={String(target)}
-          onChange={(e) => pick(e.target.value === 'team' ? 'team' : Number(e.target.value))}
-          aria-label={t('درباره')}
-          className="h-8 w-full rounded-md border bg-card px-2 text-sm"
-        >
-          {options.map((o) => <option key={String(o.v)} value={String(o.v)}>{o.label}</option>)}
-        </select>
-      ))}
+      {/*
+        انتخابِ «درباره»: جعبهٔ جستجوی زنده (Combobox ِ مشترک) — پیام به مدیران و همهٔ پروژه‌های بازِ
+        کارفرما در یک فهرست؛ با چند ده پروژه هم با چند حرف پیدا می‌شود.
+      */}
+      {projects.length > 0 && (
+        <Combobox
+          size="sm"
+          options={comboOptions}
+          value={{ id: target === 'team' ? 0 : target, label: target === 'team' ? teamLabel : project?.title ?? '' }}
+          onChange={(next) => { if (next.id !== null) pick(next.id === 0 ? 'team' : next.id); }}
+          placeholder={t('پروژه را جستجو کنید…')}
+        />
+      )}
       <p className="kz-fit-label truncate text-xs text-muted-foreground">
         {project
           ? <>{t('نظر روی پروژهٔ')} <b className="text-foreground">{project.title}</b></>
