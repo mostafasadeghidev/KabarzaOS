@@ -7,6 +7,7 @@ import {
   deleteGroupMessageAction, deleteThreadAction, editMessageAction, leaveThreadAction,
   openThreadAction, replyAction, setGroupLockAction, setMutedAction, type MessageState,
 } from './_form/actions';
+import { useLiveEvents } from '@/components/live';
 import { GroupComposer, MessageBody, ReplyBar, ReplyQuote, SendButton, type ReplyTarget } from './group-parts';
 import { monogram } from '@/domain/files/monogram';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -187,6 +188,15 @@ export function ThreadPane({
    * افکت را دوباره راه می‌انداخت و تایمر هر بار از نو ساخته می‌شد.
    */
   const fpRef = useRef('');
+  const tickRef = useRef<() => void>(() => {});
+  /*
+   * ۳.۱۴.۰ — خبرِ لحظه‌ای: پیامِ تازهٔ همین گفتگو همان لحظه می‌رسد. تا خط برقرار است، پرسیدنِ دوره‌ای
+   * فقط پشتیبان است (هر ۶۰ ثانیه)؛ قطع که شد، همان فاصلهٔ قبلی.
+   */
+  const live = useLiveEvents((kind, data) => {
+    if (kind === 'ready' || (kind === 'm' && Number(data) === threadId)) tickRef.current();
+  });
+  const pollSeconds = live ? 60 : Math.max(3, poll.seconds);
   useEffect(() => {
     if (!poll.enabled) return;
     fpRef.current = '';
@@ -218,8 +228,9 @@ export function ThreadPane({
       } catch { /* شبکهٔ قطع نباید چیزی را بشکند؛ تیکِ بعدی دوباره تلاش می‌کند. */ }
     };
 
+    tickRef.current = () => { void tick(); };
     void tick();
-    const timer = setInterval(() => { void tick(); }, Math.max(3, poll.seconds) * 1000);
+    const timer = setInterval(() => { void tick(); }, pollSeconds * 1000);
     const onVisible = () => { if (!document.hidden) void tick(); };
     document.addEventListener('visibilitychange', onVisible);
 
@@ -228,7 +239,7 @@ export function ThreadPane({
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [threadId, poll.enabled, poll.seconds]);
+  }, [threadId, poll.enabled, pollSeconds]);
 
   // ---- گفتگو: پیمایش تا آخرین پیام ----
   const scrollRef = useRef<HTMLDivElement>(null);

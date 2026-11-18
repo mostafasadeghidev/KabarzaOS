@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.14.0]
+
+### Changed
+
+- **Messages and notifications arrive instantly.** The app used to ask the server every 45 seconds whether anything was new (every few seconds for an open conversation). Now the server tells each open page the moment something changes: a new notification, a new, edited or deleted message, or a conversation read in another tab. The bell, the unread counts in the menu and an open conversation update within a second, without reloading the page. Nothing is sent over this line except "something changed"; the content is still loaded through the usual permission checks, and one member's notifications never signal another member. If the connection drops (a proxy, a new deployment), the page falls back to checking periodically and reconnects by itself.
+- **Simpler live settings.** In Settings → System, "Live presence" and "Live updates" are now one "Live" card with three switches: instant updates, showing who is online, and push notifications. The interval selectors from the WordPress-era version (heartbeat, idle, offline, badge pulse and chat polling seconds) are gone; sensible fixed values are used instead.
+
 ## [3.13.0]
 
 ### Added

@@ -7,9 +7,8 @@ import {
   testTelegramAction, type SystemState,
 } from './_form/actions';
 import {
-  AI_FRAMES_CHOICES, AI_MEDIA_CHOICES, AI_VOICE_CHOICES, CHATPOLL_CHOICES, MAX_PURGE_DAYS, PULSE_CHOICES, type SystemConfig,
+  AI_FRAMES_CHOICES, AI_MEDIA_CHOICES, AI_VOICE_CHOICES, MAX_PURGE_DAYS, type SystemConfig,
 } from '@/domain/settings/system';
-import { IDLE_CHOICES, OFFLINE_CHOICES, PING_CHOICES } from '@/domain/people/presence';
 import { allTimezones } from '@/domain/people/profile';
 import { WEEKDAYS } from '@/domain/availability/weekly';
 import { Button } from '@/components/ui/button';
@@ -39,26 +38,6 @@ function Submit() {
     <Button type="submit" size="sm" disabled={pending}>
       {pending ? <><Spinner />{tr('در حالِ ذخیره…')}</> : tr('ذخیره تنظیمات')}
     </Button>
-  );
-}
-
-/** انتخابِ ثانیه از فهرستِ مجاز — همان مهارِ سمتِ سرور، اینجا هم دیده شود. */
-function Seconds({
-  id, name, value, choices,
-}: {
-  id: string; name: string; value: number; choices: readonly number[];
-}) {
-  const tr = useT();
-  return (
-    <NativeSelect
-      id={id}
-      name={name}
-      defaultValue={value}
-    >
-      {choices.map((c) => (
-        <NativeSelectOption key={c} value={c}>{tr('{n} ثانیه', { n: c })}</NativeSelectOption>
-      ))}
-    </NativeSelect>
   );
 }
 
@@ -306,59 +285,39 @@ export function SystemSection({ config, health, bucket, isOwner, version }: {
         </div>
       </Panel>
 
-      <Panel title={t("حضورِ زنده")}>
-        <label className="flex items-center gap-1.5 text-sm">
-          <Switch name="presenceEnabled" defaultChecked={config.presenceEnabled}
-          />
-          {tr("نمایشِ «چه کسی آنلاین است»")}
-        </label>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Field>
-            <FieldLabel htmlFor="s-ping">{t("فاصلهٔ ضربان")}</FieldLabel>
-            <Seconds id="s-ping" name="presencePing" value={config.presencePing} choices={PING_CHOICES} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="s-idle">{t("فعال ← بی‌فعالیت")}</FieldLabel>
-            <Seconds id="s-idle" name="presenceIdle" value={config.presenceIdle} choices={IDLE_CHOICES} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="s-off">{t("← آفلاین")}</FieldLabel>
-            <Seconds id="s-off" name="presenceOffline" value={config.presenceOffline} choices={OFFLINE_CHOICES} />
-          </Field>
+      {/*
+        ۳.۱۴.۰ — یک کارت به‌جای دو: فقط کلیدِ روشن/خاموش. فاصله‌های ثانیه‌ای (ضربانِ حضور، نبضِ نشان‌ها،
+        پرسیدنِ گفتگو) یادگارِ نسخهٔ وردپرسی بودند که هر درخواست سنگین بود؛ حالا خبرها لحظه‌ای از سرور
+        می‌رسند و آن عددها فقط کاربر را گیج می‌کردند. مقدارهای ثابتشان در `DEFAULT_SYSTEM` است.
+      */}
+      <Panel title={t("زنده")}>
+        <div className="grid gap-1">
+          <label className="flex items-center gap-1.5 text-sm">
+            <Switch name="pulseEnabled" defaultChecked={config.pulseEnabled} />
+            {tr("به‌روزرسانیِ لحظه‌ای")}
+          </label>
+          <p className="text-xs text-muted-foreground">
+            {tr("پیام‌ها، اعلان‌ها و شمارِ نخوانده‌ها بی‌درنگ و بدونِ تازه کردنِ صفحه می‌رسند.")}
+          </p>
         </div>
-      </Panel>
-
-      <Panel title={t("به‌روزرسانیِ زنده")}>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="grid gap-1.5">
-            <label className="flex items-center gap-1.5 text-sm">
-              <Switch name="pulseEnabled" defaultChecked={config.pulseEnabled}
-              />
-              {tr("نبضِ نشان‌ها")}
-            </label>
-            <Seconds id="s-pulse" name="pulseInterval" value={config.pulseInterval} choices={PULSE_CHOICES} />
-          </div>
-          <div className="grid gap-1.5">
-            <label className="flex items-center gap-1.5 text-sm">
-              <Switch name="chatPollEnabled" defaultChecked={config.chatPollEnabled}
-              />
-              {tr("گفت‌وگویِ زنده")}
-            </label>
-            <Seconds
-              id="s-chat" name="chatPollInterval" value={config.chatPollInterval}
-              choices={CHATPOLL_CHOICES}
-            />
-          </div>
-          {/* اعلانِ فوری (۲.۵۶.۰) — خاموش = هیچ دستگاهی پیام نمی‌گیرد، اشتراک‌ها می‌مانند. */}
-          <div className="grid gap-1.5 sm:col-span-2">
-            <label className="flex items-center gap-1.5 text-sm">
-              <Switch name="pushEnabled" defaultChecked={config.pushEnabled} />
-              {tr("اعلانِ فوری روی گوشی و کامپیوتر")}
-            </label>
-            <p className="text-xs text-muted-foreground">
-              {tr("هر کس در «پروفایلِ من» روی دستگاهِ خودش روشنش می‌کند؛ اعلان‌های برنامه حتی وقتی برنامه بسته است می‌رسند.")}
-            </p>
-          </div>
+        <div className="grid gap-1">
+          <label className="flex items-center gap-1.5 text-sm">
+            <Switch name="presenceEnabled" defaultChecked={config.presenceEnabled} />
+            {tr("نمایشِ «چه کسی آنلاین است»")}
+          </label>
+          <p className="text-xs text-muted-foreground">
+            {tr("نقطهٔ سبز و «آنلاین اکنون». اگر تیم نمی‌خواهد حضورش دیده شود، خاموشش کنید.")}
+          </p>
+        </div>
+        {/* اعلانِ فوری (۲.۵۶.۰) — خاموش = هیچ دستگاهی پیام نمی‌گیرد، اشتراک‌ها می‌مانند. */}
+        <div className="grid gap-1">
+          <label className="flex items-center gap-1.5 text-sm">
+            <Switch name="pushEnabled" defaultChecked={config.pushEnabled} />
+            {tr("اعلانِ فوری روی گوشی و کامپیوتر")}
+          </label>
+          <p className="text-xs text-muted-foreground">
+            {tr("هر کس در «پروفایلِ من» روی دستگاهِ خودش روشنش می‌کند؛ اعلان‌های برنامه حتی وقتی برنامه بسته است می‌رسند.")}
+          </p>
         </div>
       </Panel>
 

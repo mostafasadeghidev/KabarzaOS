@@ -5233,5 +5233,9 @@
   "نامِ صفحه": "nome da página",
   "نامِ پروژه": "nome do projeto",
   "پروژه، عضو، کارفرما یا حساب — دستِ‌کم سه حرف": "projeto, membro, cliente ou conta (pelo menos três letras)",
-  "چه چیزی می‌شود جست؟": "O que você pode pesquisar?"
+  "چه چیزی می‌شود جست؟": "O que você pode pesquisar?",
+  "به‌روزرسانیِ لحظه‌ای": "Atualizações instantâneas",
+  "زنده": "Ao vivo",
+  "نقطهٔ سبز و «آنلاین اکنون». اگر تیم نمی‌خواهد حضورش دیده شود، خاموشش کنید.": "O ponto verde e “Online agora”. Desative se a equipe não quiser mostrar a presença.",
+  "پیام‌ها، اعلان‌ها و شمارِ نخوانده‌ها بی‌درنگ و بدونِ تازه کردنِ صفحه می‌رسند.": "Mensagens, notificações e contagens de não lidos chegam na hora, sem recarregar a página."
 }
