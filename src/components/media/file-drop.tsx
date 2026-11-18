@@ -9,6 +9,7 @@ import { useT } from '@/i18n/client';
 import { humanSize, MAX_MEDIA, MAX_MEDIA_TOTAL } from '@/domain/files/upload';
 import { cn } from '@/lib/utils';
 import { Hint } from '@/components/ui/tooltip';
+import { useTouchOnly } from '@/lib/use-touch-only';
 
 const NO_FILES: File[] = [];
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp';
@@ -82,6 +83,7 @@ export function FileDrop({
   unlimited?: boolean;
 }) {
   const t = useT();
+  const touch = useTouchOnly();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -211,12 +213,15 @@ export function FileDrop({
             {busy
               ? <Spinner className={compact ? 'size-5' : 'size-6'} />
               : <ImagePlus className={cn('text-muted-foreground', compact ? 'size-5' : 'size-7')} />}
+            {/* ⚠️ گوشی (۳.۱۷.۲): «رها کنید/بچسبانید» و «Ctrl+V» روی لمس معنا ندارند — «بزنید». */}
             <span className="text-sm font-medium">
               {busy
                 ? t('در حالِ بارگذاری…')
-                : (title ?? (imagesOnly ? t('تصویر را اینجا رها کنید یا بچسبانید') : t('تصویر یا فایل را اینجا رها کنید یا بچسبانید')))}
+                : touch
+                  ? (imagesOnly ? t('برای افزودنِ تصویر بزنید') : t('برای افزودنِ تصویر یا فایل بزنید'))
+                  : (title ?? (imagesOnly ? t('تصویر را اینجا رها کنید یا بچسبانید') : t('تصویر یا فایل را اینجا رها کنید یا بچسبانید')))}
             </span>
-            <span className="text-xs text-muted-foreground">{hint ?? t('Ctrl+V برای اسکرین‌شات، یا کلیک برای انتخابِ فایل')}</span>
+            {!touch && <span className="text-xs text-muted-foreground">{hint ?? t('Ctrl+V برای اسکرین‌شات، یا کلیک برای انتخابِ فایل')}</span>}
           </span>
         </button>
       ) : (

@@ -349,7 +349,7 @@ export function AccessView({ data, focusUser, mailAccounts = false, cloudAccount
               icon={<KeyRound className="size-5" />}
             />
           ) : (
-            <Table>
+            <Table stack>
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr("شخص")}</TableHead>

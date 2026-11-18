@@ -149,25 +149,30 @@ function TaskDialogBody({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        {/*
+          ۳.۱۷.۲ — سرصفحهٔ دوسطری: بالا شماره، پروژه و «کپیِ پیوند»؛ زیرش عنوانِ تمام‌عرض و آغازچین.
+          پیش از این عنوان بینِ شماره و دکمهٔ «کپیِ پیوند» گیر می‌افتاد و روی گوشی در ستونی باریک، سه‌خطی
+          و وسط‌چین می‌شکست.
+        */}
+        <DialogHeader className="gap-1.5 text-start">
+          <div className="flex min-w-0 items-center gap-2 pe-6">
             {/* شمارهٔ تسک (۲.۱۶.۰) — کارفرما null می‌گیرد و نمی‌بیند. */}
             <TaskNumber number={task?.number} className="text-xs" />
-            {task?.isPrivate && <Lock className="size-4 text-muted-foreground" />}
-            <span className="min-w-0 flex-1">{task?.title ?? tr('تسک')}</span>
-            {/* ⚠️ فاصله از دکمهٔ بستن (×) که همان گوشه است. */}
-            {task?.number ? <span className="me-6 shrink-0"><CopyTaskLink projectId={task.projectId} number={task.number} /></span> : null}
-          </DialogTitle>
-          <DialogDescription>
-            {/* نامِ پروژه به‌جای جملهٔ کلی (۲.۶۴.۰) — همان پیوندِ «رفتن به پروژه». */}
-            {task && data?.projectName
-              ? (
-                <Link href={`/projects/${task.projectId}?tab=tasks`} className="font-medium text-foreground hover:underline">
-                  {data.projectName}
-                </Link>
-              )
-              : task ? tr('جزئیات، ویرایش و گفتگوی این تسک.') : tr('در حالِ بارگذاری…')}
-          </DialogDescription>
+            {task?.isPrivate && <Lock className="size-3.5 shrink-0 text-muted-foreground" />}
+            <DialogDescription className="min-w-0 flex-1 truncate">
+              {/* نامِ پروژه به‌جای جملهٔ کلی (۲.۶۴.۰) — همان پیوندِ «رفتن به پروژه». */}
+              {task && data?.projectName
+                ? (
+                  <Link href={`/projects/${task.projectId}?tab=tasks`} className="font-medium text-foreground hover:underline">
+                    {data.projectName}
+                  </Link>
+                )
+                : task ? tr('جزئیات، ویرایش و گفتگوی این تسک.') : tr('در حالِ بارگذاری…')}
+            </DialogDescription>
+            {/* ⚠️ فاصله از دکمهٔ بستن (×) که همان گوشه است — `pe-6` روی همین سطر. */}
+            {task?.number ? <span className="shrink-0"><CopyTaskLink projectId={task.projectId} number={task.number} /></span> : null}
+          </div>
+          <DialogTitle className="text-lg leading-snug break-words" dir="auto">{task?.title ?? tr('تسک')}</DialogTitle>
         </DialogHeader>
 
         {loadError && <p className="text-sm text-destructive">{tr(loadError)}</p>}

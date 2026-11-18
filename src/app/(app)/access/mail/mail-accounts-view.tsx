@@ -116,7 +116,7 @@ export function MailAccountsView({ data, createFor = null }: {
         </Button>
       </div>
 
-      <Table>
+      <Table stack>
         <TableHeader>
           <TableRow>
             <TableHead>{tr('نشانی')}</TableHead>

@@ -98,9 +98,10 @@ export function TeamMatrix({
       <TableBody>
         {rows.map((r) => (
           <TableRow key={r.id}>
-            <TableCell>
-              <UserName userId={r.id} name={r.name} size="sm" nameClassName="font-medium" />
-              {r.roles.length > 0 && <span className="block text-[11px] text-muted-foreground">{r.roles.join(t('، '))}</span>}
+            {/* گوشی (۳.۱۷.۲): ستونِ ثابتِ نام باریک و نام کوتاه‌شده — تا چند روز کنارش دیده شود. */}
+            <TableCell className="max-md:max-w-[8.5rem]">
+              <UserName userId={r.id} name={r.name} size="sm" nameClassName="font-medium max-md:truncate" />
+              {r.roles.length > 0 && <span className="block truncate text-[11px] text-muted-foreground">{r.roles.join(t('، '))}</span>}
             </TableCell>
             {r.cells.map((c, i) => (
               <Hint key={i} label={c.tip || undefined}>
