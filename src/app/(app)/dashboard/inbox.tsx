@@ -26,11 +26,18 @@ import type { InboxComment, InboxNoLog, InboxRequest, InboxReviewTask, InboxTend
 
 export interface InboxExpense { id: number; title: string; amount: string; due: string; overdue: boolean }
 
-type Kind = 'all' | 'review' | 'requests' | 'comments' | 'expenses' | 'units' | 'tenders' | 'unassigned' | 'nolog';
+export type InboxKind = 'review' | 'requests' | 'comments' | 'expenses' | 'units' | 'tenders' | 'unassigned' | 'nolog';
+type Kind = 'all' | InboxKind;
 
 export function DashboardInbox({
   review, requests, comments, expenses, units, tenders, unassigned, noLog, approveStatusId, returnStatusId,
+  kinds, title, icon, empty,
 }: {
+  /** کدام نوع‌ها در این کارت (۳.۱۸ نمونه): «کارهای پروژه»، «کارهای مالی»، «کارهای تیم». */
+  kinds: InboxKind[];
+  title: string;
+  icon?: React.ReactNode;
+  empty: string;
   review: InboxReviewTask[];
   requests: InboxRequest[];
   comments: InboxComment[];
@@ -66,11 +73,11 @@ export function DashboardInbox({
   const T = tenders;
   const A = unassigned;
   const N = noLog.filter((m) => !done.has(`n${m.userId}`));
-  const counts = {
-    all: R.length + Q.length + C.length + E.length + U.length + T.length + A.length + N.length,
+  const per = {
     review: R.length, requests: Q.length, comments: C.length, expenses: E.length,
     units: U.length, tenders: T.length, unassigned: A.length, nolog: N.length,
   };
+  const counts: Record<Kind, number> = { ...per, all: kinds.reduce((sum, k) => sum + per[k], 0) };
 
   /*
    * میان‌بُرهای صفحه‌کلید (مثلِ صندوقِ Linear/Gmail): j/k ردیفِ بعد/قبل، a یا Enter اولین کنشِ ردیف.
@@ -81,7 +88,12 @@ export function DashboardInbox({
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       if (e.ctrlKey || e.metaKey || e.altKey || el?.closest('input, textarea, select, [contenteditable=true], [role=dialog]')) return;
-      const rows = [...(listRef.current?.querySelectorAll<HTMLElement>('[data-inbox-row]') ?? [])];
+      const mine = listRef.current;
+      if (!mine) return;
+      // ⚠️ چند کارتِ صف روی صفحه است: فقط کارتی که تمرکز در آن است؛ اگر هیچ، اولین کارتِ صفحه.
+      const focusedList = (document.activeElement as HTMLElement | null)?.closest('[data-inbox-list]');
+      if (focusedList ? focusedList !== mine : document.querySelector('[data-inbox-list]') !== mine) return;
+      const rows = [...mine.querySelectorAll<HTMLElement>('[data-inbox-row]')];
       if (rows.length === 0) return;
       const at = rows.indexOf(document.activeElement as HTMLElement);
       if (e.key === 'j' || e.key === 'k') {
@@ -107,14 +119,18 @@ export function DashboardInbox({
     { key: 'unassigned', label: 'بی‌مسئول', icon: <UserX className="size-3.5" /> },
     { key: 'nolog', label: 'ساعت', icon: <Clock className="size-3.5" /> },
   ];
-  const show_ = (k: Exclude<Kind, 'all'>) => kind === 'all' || kind === k;
+  const show_ = (k: InboxKind) => kinds.includes(k) && (kind === 'all' || kind === k);
 
   return (
-    <section className="grid gap-3 rounded-2xl border bg-card p-4">
+    <section className="grid h-full content-start gap-3 rounded-2xl border bg-card p-4">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-bold">{t('منتظرِ شما')}</h2>
+        <h2 className="flex items-center gap-2 text-sm font-bold">
+          {icon}{title}
+          {counts.all > 0 && <span className="num rounded-full bg-primary/12 px-1.5 text-[11px] text-primary">{counts.all}</span>}
+        </h2>
         <div className="flex flex-wrap gap-1">
-          {tabs.filter((x) => x.key === 'all' || counts[x.key] > 0).map((x) => (
+          {/* فیلترِ نوع فقط وقتی کارت بیش از یک نوعِ پُر دارد. */}
+          {kinds.filter((k) => counts[k] > 0).length > 1 && tabs.filter((x) => x.key === 'all' || (kinds.includes(x.key as InboxKind) && counts[x.key] > 0)).map((x) => (
             <button
               key={x.key}
               type="button"
@@ -131,13 +147,12 @@ export function DashboardInbox({
       </header>
 
       {counts.all === 0 ? (
-        <div className="grid place-items-center gap-2 py-10 text-center text-muted-foreground">
+        <div className="grid place-items-center gap-2 py-6 text-center text-muted-foreground">
           <PartyPopper className="size-8 text-primary/70" />
-          <p className="text-sm font-medium text-foreground">{t('کاری منتظرِ شما نیست.')}</p>
-          <p className="text-xs">{t('هر وقت بازبینی، درخواستِ پرداخت یا کامنتی برسد همین‌جا می‌آید.')}</p>
+          <p className="text-sm font-medium text-foreground">{t(empty)}</p>
         </div>
       ) : (
-        <ul ref={listRef} className="grid divide-y">
+        <ul ref={listRef} data-inbox-list className="grid max-h-[28rem] divide-y overflow-x-hidden overflow-y-auto overscroll-contain">
           {show_('review') && R.map((r) => (
             <Row
               key={`t${r.id}`}
@@ -239,11 +254,6 @@ export function DashboardInbox({
         </ul>
       )}
 
-      {counts.all > 0 && (
-        <p className="hidden text-[11px] text-muted-foreground md:block">
-          {t('میان‌بُر: j / k ردیفِ بعد و قبل، a یا Enter کنشِ اولِ ردیف.')}
-        </p>
-      )}
       <TaskDialog taskId={openTask} open={openTask !== null} onOpenChange={(o) => !o && setOpenTask(null)} />
     </section>
   );
@@ -261,7 +271,7 @@ function Row({ icon, tone, title, meta, actions }: {
   icon: React.ReactNode; tone: keyof typeof TONES; title: React.ReactNode; meta: React.ReactNode; actions: React.ReactNode;
 }) {
   return (
-    <li data-inbox-row tabIndex={-1} className="-mx-2 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-2 py-2.5 outline-none focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/40">
+    <li data-inbox-row tabIndex={-1} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-2 py-2.5 outline-none focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/40">
       <span className={cn('grid size-8 shrink-0 place-items-center rounded-lg', TONES[tone])}>{icon}</span>
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="min-w-0 text-sm font-medium">{title}</span>
