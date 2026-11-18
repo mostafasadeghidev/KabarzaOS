@@ -4,7 +4,7 @@ import { UserAvatar } from '@/components/user-avatar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowUpRight, ListChecks, Building2, FolderKanban, Landmark, Search, User, type LucideIcon, Package,
+  ArrowUpRight, ListChecks, Building2, FolderKanban, Landmark, Search, User, type LucideIcon, Package, Hash, Lightbulb,
 } from 'lucide-react';
 import { searchAction } from '@/app/(app)/_actions/search';
 import type { SearchHit } from '@/server/search/service';
@@ -20,6 +20,8 @@ import { Kbd } from '@/components/ui/kbd';
 import { Spinner } from '@/components/ui/spinner';
 
 const MIN_QUERY = 3;
+/** «#12» — جستجوی تسک با شماره، بی حدِاقلِ سه حرف (۳.۱۳.۰). */
+const TASK_NUMBER = /^#\s*[0-9۰-۹٠-٩]{1,7}$/;
 
 const KIND_ICON: Record<SearchHit['kind'], LucideIcon> = {
   project: FolderKanban, member: User, client: Building2, account: Landmark, task: ListChecks, unit: Package,
@@ -87,7 +89,7 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
     if (timer.current) clearTimeout(timer.current);
     const q = query.trim();
 
-    if (q.length < MIN_QUERY) {
+    if (q.length < MIN_QUERY && !TASK_NUMBER.test(q)) {
       setHits([]);
       setSearching(false);
       return;
@@ -171,9 +173,14 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
           <CommandInput
             value={query}
             onValueChange={setQuery}
-            placeholder={t("رفتن به صفحه، یا جستجوی پروژه، عضو، کارفرما و حساب…")}
+            placeholder={t("جستجوی تسک (#12)، صفحه، پروژه، عضو، کارفرما و حساب…")}
           />
-          <CommandList className="max-h-80">
+          <CommandList className="max-h-96">
+            {/*
+              راهنما (۳.۱۳.۰) — کاربرِ تازه نمی‌داند پالت چه می‌کند. فقط وقتی کادر خالی است؛ هر نمونه
+              با کلیک در کادر نوشته می‌شود تا کاربر ادامه‌اش را بنویسد.
+            */}
+            {query.trim() === '' && <PaletteHelp onPick={setQuery} />}
             {pageItems.length > 0 && (
               <CommandGroup heading={t("صفحه‌ها")}>{pageItems.map(row)}</CommandGroup>
             )}
@@ -191,8 +198,8 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
             {/* «پیدا نشد» فقط وقتی جستجو تمام شده باشد. */}
             {!searching && nothing && (
               <p className="py-6 text-center text-sm text-muted-foreground">
-                {query.trim().length < MIN_QUERY
-                  ? t("برای جستجوی رکوردها دستِ‌کم سه حرف بنویسید.")
+                {query.trim().length < MIN_QUERY && !TASK_NUMBER.test(query.trim())
+                  ? t("برای جستجوی رکوردها دستِ‌کم سه حرف بنویسید، یا # و شمارهٔ تسک.")
                   : t("چیزی پیدا نشد.")}
               </p>
             )}
@@ -200,6 +207,50 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
         </Command>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * راهنمای پالت (۳.۱۳.۰) — چه چیزهایی را می‌شود جست، با نمونه‌های قابلِ کلیک، و کلیدهای میان‌بر.
+ * ⚠️ نمونه‌ها `CommandItem` نیستند: Enter روی کادرِ خالی باید همان صفحهٔ اول را باز کند، نه نمونه را.
+ */
+function PaletteHelp({ onPick }: { onPick: (q: string) => void }) {
+  const t = useT();
+  const tips: Array<{ icon: LucideIcon; sample: string; insert: string; text: string }> = [
+    { icon: Hash, sample: '#12', insert: '#', text: t('تسکِ شمارهٔ ۱۲ در پروژه‌های شما') },
+    { icon: ListChecks, sample: 'ALZ-12', insert: '', text: t('تسکِ ۱۲ ِ یک پروژهٔ مشخص (کدِ پروژه، خط، شماره)') },
+    { icon: FolderKanban, sample: t('نامِ پروژه'), insert: '', text: t('پروژه، عضو، کارفرما یا حساب — دستِ‌کم سه حرف') },
+    { icon: ArrowUpRight, sample: t('نامِ صفحه'), insert: '', text: t('رفتن مستقیم به یک صفحه، مثلاً «تسک‌ها»') },
+  ];
+  return (
+    <div data-palette-help className="grid gap-1 border-b px-3 py-3">
+      <p className="flex items-center gap-1.5 px-1 pb-1 text-xs font-medium text-muted-foreground">
+        <Lightbulb className="size-3.5" />
+        {t('چه چیزی می‌شود جست؟')}
+      </p>
+      {tips.map((tip) => (
+        <button
+          key={tip.sample}
+          type="button"
+          disabled={!tip.insert}
+          onClick={() => tip.insert && onPick(tip.insert)}
+          className="flex items-center gap-2.5 rounded-md px-1.5 py-1 text-start text-sm enabled:hover:bg-muted disabled:cursor-default"
+        >
+          <tip.icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          {/* ⚠️ فونتِ کد و چپ‌به‌راست فقط برای نمونهٔ لاتین (#12، ALZ-12) — فونتِ کد اتصالِ حروفِ فارسی را می‌شکند. */}
+          {tip.insert !== '' || /^[ -~]+$/.test(tip.sample)
+            ? <code dir="ltr" className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{tip.sample}</code>
+            : <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs">{tip.sample}</span>}
+          <span className="truncate text-muted-foreground">{tip.text}</span>
+        </button>
+      ))}
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 pt-1.5 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1"><Kbd>↑</Kbd><Kbd>↓</Kbd>{t('جابه‌جایی')}</span>
+        <span className="flex items-center gap-1"><Kbd>Enter</Kbd>{t('باز کردن')}</span>
+        <span className="flex items-center gap-1"><Kbd>Esc</Kbd>{t('بستن')}</span>
+        <span className="flex items-center gap-1"><Kbd className="num">Ctrl+K</Kbd>{t('باز کردنِ همین پنجره از هر جا')}</span>
+      </p>
+    </div>
   );
 }
 

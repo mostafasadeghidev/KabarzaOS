@@ -1,10 +1,11 @@
 import { and, eq, ilike, isNull, inArray, or, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { accounts, projects, unitEntries, userRoles, users } from '@/db/schema';
+import { accounts, projectMembers, projects, tasks as tasksTable, unitEntries, userRoles, users } from '@/db/schema';
 import { entryLabel } from '@/domain/projects/unit-entry-name';
 import { can, canViewSection, type Actor } from '@/domain/access/permissions';
 import { visibleScopes } from '@/domain/access/guard';
 import { parseTaskRef } from '@/domain/projects/task-ref';
+import { ltr } from '@/i18n/bidi';
 import { findTaskByRef } from '@/server/projects/task-numbers';
 
 /**
@@ -26,8 +27,49 @@ export interface SearchHit {
   href: string;
 }
 
+/** «#12» — تسک با شماره، بی کدِ پروژه (۳.۱۳.۰). فقط با «#»: عددِ تنها می‌تواند بخشی از نام باشد. */
+const LOCAL_REF = /^#\s*[0-9۰-۹٠-٩]{1,7}$/;
+
+/** حداکثرِ نتیجه برای «#12» — برای مدیرِ کل که روی همهٔ پروژه‌هاست شلوغ نشود. */
+const LOCAL_REF_LIMIT = 8;
+
+/**
+ * «#12» در همهٔ پروژه‌هایی که بیننده می‌بیند (۳.۱۳.۰). ترتیب: تسک‌هایی که مسئولش خودِ اوست، بعد
+ * پروژه‌هایی که عضوشان است، بعد بقیه (تازه‌ترین پروژه اول). ⚠️ هر نامزد از همان گاردِ
+ * `findTaskByRef` می‌گذرد — تسکِ خصوصی، پنهان از کارفرما یا پروژهٔ بی‌دسترسی پیدا نمی‌شود.
+ */
+async function findLocalRefs(actor: Actor, number: number): Promise<SearchHit[]> {
+  const candidates = await db
+    .select({ projectId: tasksTable.projectId, title: projects.title })
+    .from(tasksTable)
+    .innerJoin(projects, eq(projects.id, tasksTable.projectId))
+    .leftJoin(projectMembers, and(eq(projectMembers.projectId, projects.id), eq(projectMembers.userId, actor.id)))
+    .where(and(
+      eq(tasksTable.number, number), isNull(tasksTable.deletedAt), isNull(projects.deletedAt),
+      inArray(projects.scope, visibleScopes(actor)),
+    ))
+    .orderBy(
+      sql`(${tasksTable.assignedTo} = ${actor.id}) desc nulls last`,
+      sql`(${projectMembers.userId} is not null) desc`,
+      sql`${projects.id} desc`,
+    )
+    .limit(LOCAL_REF_LIMIT * 2);
+  const out: SearchHit[] = [];
+  for (const c of candidates) {
+    if (out.length >= LOCAL_REF_LIMIT) break;
+    const t = await findTaskByRef(actor, { kind: 'local', number }, c.projectId);
+    if (t) out.push({ kind: 'task', id: t.taskId, label: `${ltr(t.ref)} · ${t.title} — ${c.title}`, href: `/t/${t.ref}` });
+  }
+  return out;
+}
+
 export async function search(actor: Actor, rawQuery: string): Promise<SearchHit[]> {
   const q = rawQuery.trim();
+  // «#5» کوتاه‌تر از سه حرف است ولی دقیق — فقط تسک‌ها، بی جستجوی نام.
+  if (LOCAL_REF.test(q)) {
+    const ref = parseTaskRef(q);
+    return ref?.kind === 'local' ? findLocalRefs(actor, ref.number) : [];
+  }
   if (q.length < MIN_QUERY_LENGTH) return [];
   const pattern = `%${q}%`;
 
@@ -40,7 +82,7 @@ export async function search(actor: Actor, rawQuery: string): Promise<SearchHit[
   const ref = parseTaskRef(q);
   if (ref?.kind === 'global') {
     tasks.push(findTaskByRef(actor, ref).then((t) => (t ? [{
-      kind: 'task' as const, id: t.taskId, label: `${t.ref} · ${t.title}`, href: `/t/${t.ref}`,
+      kind: 'task' as const, id: t.taskId, label: `${ltr(t.ref)} · ${t.title}`, href: `/t/${t.ref}`,
     }] : [])));
   }
 

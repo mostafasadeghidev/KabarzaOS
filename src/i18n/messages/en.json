@@ -5222,5 +5222,16 @@
   "این آپلود دیگر وجود ندارد؛ دوباره انتخابش کنید.": "This upload no longer exists; choose the file again.",
   "آپلودهای نیمه‌کارهٔ شما زیاد است؛ چندتا را تمام یا لغو کنید.": "You have too many unfinished uploads; finish or cancel some.",
   "ترتیبِ تکه‌ها به‌هم ریخت؛ آپلود از سر گرفته می‌شود.": "The pieces arrived out of order; the upload will resume.",
-  "ارتباط با محلِ ذخیره قطع شد؛ دوباره تلاش می‌شود.": "Lost contact with the storage; trying again."
+  "ارتباط با محلِ ذخیره قطع شد؛ دوباره تلاش می‌شود.": "Lost contact with the storage; trying again.",
+  "باز کردنِ همین پنجره از هر جا": "open this window from anywhere",
+  "برای جستجوی رکوردها دستِ‌کم سه حرف بنویسید، یا # و شمارهٔ تسک.": "Type at least three letters to search records, or # and a task number.",
+  "تسکِ شمارهٔ ۱۲ در پروژه‌های شما": "task number 12 in your projects",
+  "تسکِ ۱۲ ِ یک پروژهٔ مشخص (کدِ پروژه، خط، شماره)": "task 12 of one project (project code, dash, number)",
+  "جابه‌جایی": "move",
+  "جستجوی تسک (#12)، صفحه، پروژه، عضو، کارفرما و حساب…": "Search tasks (#12), pages, projects, members, clients and accounts…",
+  "رفتن مستقیم به یک صفحه، مثلاً «تسک‌ها»": "go straight to a page, e.g. “Tasks”",
+  "نامِ صفحه": "page name",
+  "نامِ پروژه": "project name",
+  "پروژه، عضو، کارفرما یا حساب — دستِ‌کم سه حرف": "a project, member, client or account (at least three letters)",
+  "چه چیزی می‌شود جست؟": "What can you search?"
 }

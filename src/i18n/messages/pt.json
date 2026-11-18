@@ -5222,5 +5222,16 @@
   "این آپلود دیگر وجود ندارد؛ دوباره انتخابش کنید.": "Este envio não existe mais; escolha o arquivo novamente.",
   "آپلودهای نیمه‌کارهٔ شما زیاد است؛ چندتا را تمام یا لغو کنید.": "Você tem muitos envios inacabados; conclua ou cancele alguns.",
   "ترتیبِ تکه‌ها به‌هم ریخت؛ آپلود از سر گرفته می‌شود.": "As partes chegaram fora de ordem; o envio será retomado.",
-  "ارتباط با محلِ ذخیره قطع شد؛ دوباره تلاش می‌شود.": "Conexão com o armazenamento perdida; tentando novamente."
+  "ارتباط با محلِ ذخیره قطع شد؛ دوباره تلاش می‌شود.": "Conexão com o armazenamento perdida; tentando novamente.",
+  "باز کردنِ همین پنجره از هر جا": "abrir esta janela de qualquer lugar",
+  "برای جستجوی رکوردها دستِ‌کم سه حرف بنویسید، یا # و شمارهٔ تسک.": "Digite pelo menos três letras, ou # e um número de tarefa.",
+  "تسکِ شمارهٔ ۱۲ در پروژه‌های شما": "a tarefa nº 12 nos seus projetos",
+  "تسکِ ۱۲ ِ یک پروژهٔ مشخص (کدِ پروژه، خط، شماره)": "a tarefa 12 de um projeto (código, hífen, número)",
+  "جابه‌جایی": "navegar",
+  "جستجوی تسک (#12)، صفحه، پروژه، عضو، کارفرما و حساب…": "Pesquisar tarefas (#12), páginas, projetos, membros, clientes e contas…",
+  "رفتن مستقیم به یک صفحه، مثلاً «تسک‌ها»": "ir direto para uma página, p. ex. “Tarefas”",
+  "نامِ صفحه": "nome da página",
+  "نامِ پروژه": "nome do projeto",
+  "پروژه، عضو، کارفرما یا حساب — دستِ‌کم سه حرف": "projeto, membro, cliente ou conta (pelo menos três letras)",
+  "چه چیزی می‌شود جست؟": "O que você pode pesquisar?"
 }
