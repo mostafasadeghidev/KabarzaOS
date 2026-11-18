@@ -106,7 +106,7 @@ export function DashboardV2({
     approveStatusId, returnStatusId,
   };
   const units = [t('تسک'), t('کامنت'), t('ساعت')];
-  const G_ACT = 'کارهای منتظر', G_GLANCE = 'نگاهِ سریع', G_TEAM = 'تیم', G_OLD = 'کارت‌های قبلی';
+  const G_ACT = t('کارهای منتظر'), G_GLANCE = t('نگاهِ سریع'), G_TEAM = t('تیم'), G_OLD = t('کارت‌های قبلی');
 
   const widgets: WidgetDef[] = [
     // ── صف‌ها

@@ -64,7 +64,7 @@ export function DashboardInbox({
     hide(key, true);
     startTransition(async () => {
       const r = await run();
-      if (r.error) { hide(key, false); show(t(r.error), 'error'); } else show(t(ok), 'success');
+      if (r.error) { hide(key, false); show(t(r.error), 'error'); } else show(ok, 'success'); // ok از پیش ترجمه شده (t در محلِ صدا زدن، تا استخراج‌گر کلید را ببیند)
     });
   };
 
@@ -172,12 +172,12 @@ export function DashboardInbox({
               meta={<>{t('بازبینی')} · <Link href={`/projects/${r.projectId}?tab=tasks&view=review`} className="hover:underline">{r.projectTitle}</Link>{r.assigneeName ? <> · {r.assigneeName}</> : null}{r.since ? <> · <span suppressHydrationWarning>{agoLabel(r.since, t)}</span></> : null}</>}
               actions={<>
                 {approveStatusId && (
-                  <Button size="xs" disabled={pending} onClick={() => act(`t${r.id}`, () => setTaskStatusAction(r.id, approveStatusId), 'تسک تأیید شد.')}>
+                  <Button size="xs" disabled={pending} onClick={() => act(`t${r.id}`, () => setTaskStatusAction(r.id, approveStatusId), t('تسک تأیید شد.'))}>
                     <Check className="size-3.5" />{t('تأیید')}
                   </Button>
                 )}
                 {returnStatusId && (
-                  <Button size="xs" variant="outline" disabled={pending} onClick={() => act(`t${r.id}`, () => setTaskStatusAction(r.id, returnStatusId), 'تسک برگشت خورد.')}>
+                  <Button size="xs" variant="outline" disabled={pending} onClick={() => act(`t${r.id}`, () => setTaskStatusAction(r.id, returnStatusId), t('تسک برگشت خورد.'))}>
                     <CornerUpLeft className="size-3.5" />{t('برگشت')}
                   </Button>
                 )}
@@ -192,10 +192,10 @@ export function DashboardInbox({
               title={<span className="flex min-w-0 items-center gap-1.5"><UserName userId={q.userId} name={q.userName ?? '—'} size="sm" /><span className="text-muted-foreground">·</span><Amount><span className="num">{formatIn(q.amount, q.currencyCode)} {q.currencyCode ?? ''}</span></Amount></span>}
               meta={<>{t('درخواستِ پرداخت')}{q.projectTitle ? <> · {q.projectTitle}</> : null}{q.createdAt ? <> · <span suppressHydrationWarning>{agoLabel(q.createdAt, t)}</span></> : null}</>}
               actions={<>
-                <Button size="xs" disabled={pending} onClick={() => act(`r${q.id}`, () => decideRequestAction(q.id, 'approved'), 'درخواست تأیید شد.')}>
+                <Button size="xs" disabled={pending} onClick={() => act(`r${q.id}`, () => decideRequestAction(q.id, 'approved'), t('درخواست تأیید شد.'))}>
                   <Check className="size-3.5" />{t('تأیید')}
                 </Button>
-                <Button size="xs" variant="outline" disabled={pending} onClick={() => act(`r${q.id}`, () => decideRequestAction(q.id, 'rejected'), 'درخواست رد شد.')}>
+                <Button size="xs" variant="outline" disabled={pending} onClick={() => act(`r${q.id}`, () => decideRequestAction(q.id, 'rejected'), t('درخواست رد شد.'))}>
                   <X className="size-3.5" />{t('رد')}
                 </Button>
               </>}
@@ -248,7 +248,7 @@ export function DashboardInbox({
               tone="amber"
               title={<UserName userId={m.userId} name={m.name} size="sm" />}
               meta={t('دیروز ساعتی ثبت نکرده')}
-              actions={<Button size="xs" variant="outline" disabled={pending} onClick={() => act(`n${m.userId}`, () => remindTimelogAction(m.userId), 'یادآوری فرستاده شد.')}><BellRing className="size-3.5" />{t('یادآوری')}</Button>}
+              actions={<Button size="xs" variant="outline" disabled={pending} onClick={() => act(`n${m.userId}`, () => remindTimelogAction(m.userId), t('یادآوری فرستاده شد.'))}><BellRing className="size-3.5" />{t('یادآوری')}</Button>}
             />
           ))}
           {show_('expenses') && E.map((e) => (

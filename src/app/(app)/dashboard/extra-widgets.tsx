@@ -328,7 +328,7 @@ export function memberExtraWidgets(x: MemberX, userId: number): WidgetDef[] {
   // «ثبتِ کارکرد» — فقط عضوی که دستمزدش روی پروژهٔ بازی تعدادی است.
   if (x.units) {
     const u = x.units;
-    const STATUS: Record<string, string> = { unpaid: 'پرداخت‌نشده', requested: 'درخواست شده', paid: 'پرداخت‌شده' };
+    const UNIT_STATUS_LABELS: Record<string, string> = { unpaid: 'پرداخت‌نشده', requested: 'درخواست شده', paid: 'پرداخت‌شده' };
     out.push({
       id: 'm-units', title: t('ثبتِ کارکرد'), group: G_WORK, size: 'm', defaultOn: true,
       hint: t('کارکردِ پروژه‌های تعدادی را همین‌جا ثبت کنید و برای ردیف‌های پرداخت‌نشده درخواستِ پرداخت بدهید.'),
@@ -348,7 +348,7 @@ export function memberExtraWidgets(x: MemberX, userId: number): WidgetDef[] {
                   <span className="num text-sm" dir="ltr"><Amount>{money(e.amount, e.currencyCode)}</Amount></span>
                   {e.status === 'unpaid'
                     ? <span className="ms-auto"><RequestUnitButton entryId={e.id} projectId={e.projectId} /></span>
-                    : <span className="ms-auto rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{t(STATUS[e.status] ?? e.status)}</span>}
+                    : <span className="ms-auto rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{t(UNIT_STATUS_LABELS[e.status] ?? e.status)}</span>}
                 </li>
               ))}
             </ExpandableList>
