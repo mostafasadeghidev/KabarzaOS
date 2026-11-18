@@ -2,6 +2,14 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.15.2]
+
+### Fixed
+
+- **Tab content animated only in part.** When a tab's content mixed cards with other blocks, only the cards slid in. On Reports → Members the cards moved but the members table did not; on Expenses the filter box and the tables by vendor, month and ledger row did not. Every block of the new tab now slides in together, still without animating a card twice.
+- **Availability board was hard to read.** Seven fixed columns left about 180 px per day, so names, "last seen" and time ranges ran out of their boxes, and ranges like "06:00–18:00" were reordered inside Persian text. Each person now takes two lines: avatar and name, then each time range as its own left-to-right chip. "Last seen" moved to the name's tooltip, and days flow into as many columns as fit (at least 13 rem each).
+- **Code library layout.** Category chips wrap onto more lines on larger screens instead of showing a scrollbar; on phones they still scroll, without a scrollbar. When categories hold only one or two entries each (for example "Notes & tutorials"), the list is now one continuous grid in category order, with the category named on each card, instead of a full row per category that left most of the page empty. Well-filled categories keep their headings.
+
 ## [3.15.1]
 
 ### Fixed

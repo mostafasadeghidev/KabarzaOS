@@ -4,7 +4,7 @@ import { UserName } from '@/components/user-avatar';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { CalendarDays, LayoutGrid, Table2, Timer, TreePalm, Users } from 'lucide-react';
-import { ALL_DAY_SPAN, formatSlots, WEEKDAYS, type Slot } from '@/domain/availability/weekly';
+import { ALL_DAY_SPAN, WEEKDAYS, type Slot } from '@/domain/availability/weekly';
 import type { CellState } from '@/domain/availability/team';
 import type { PresenceState } from '@/domain/people/presence';
 import { PRESENCE_LABELS } from '@/domain/people/presence';
@@ -85,16 +85,25 @@ function LastOnline({ at }: { at: string }) {
   );
 }
 
-function PersonName({ row }: { row: BoardRow }) {
+function PersonName({ row, compact = false }: { row: BoardRow; compact?: boolean }) {
+  const t = useT();
+  const link = (
+    <Link href={`/reports/member/${row.id}`} className={compact ? 'min-w-0 truncate font-medium hover:underline' : 'hover:underline'}>
+      {row.name}
+    </Link>
+  );
+  const away = row.presence === 'offline' && row.lastOnlineAt;
   return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+    <span className={compact ? 'flex min-w-0 items-center gap-1.5' : 'inline-flex items-center gap-1.5 whitespace-nowrap'}>
       {/* ⚠️ حضورِ خاموش ← بی‌نقطه، نه نقطهٔ خاکستریِ گمراه‌کننده. */}
       {row.presence && <PresenceDot state={row.presence} userId={row.id} />}
-      <Thumb id={row.id} title={row.name} fileId={row.avatarFileId} person size={22} className="rounded-full" />
+      <Thumb id={row.id} title={row.name} fileId={row.avatarFileId} person size={22} className="shrink-0 rounded-full" />
       {/* ⚠️ /members/{id} وجود ندارد؛ پروفایلِ عضو در گزارش‌هاست — همان لینکِ کارتِ افراد. */}
-      <Link href={`/reports/member/${row.id}`} className="hover:underline">{row.name}</Link>
-      {/* «آخرین حضور» (۲.۶۴.۰) — فقط برای آفلاین‌ها. */}
-      {row.presence === 'offline' && row.lastOnlineAt && <LastOnline at={row.lastOnlineAt} />}
+      {/* «آخرین حضور» (۲.۶۴.۰) — فقط برای آفلاین‌ها؛ در برد (فشرده) در راهنمای شناورِ نام، در ماتریس کنارِ نام. */}
+      {compact && away ? (
+        <Hint label={<span suppressHydrationWarning>{t('آخرین حضور: {when}', { when: agoLabel(row.lastOnlineAt!, t) })}</span>}>{link}</Hint>
+      ) : link}
+      {!compact && away && <LastOnline at={row.lastOnlineAt!} />}
     </span>
   );
 }
@@ -365,7 +374,11 @@ function ViewLink({
 function BoardColumns({ order, todayIdx, rows }: BoardProps) {
   const tr = useT();
   return (
-    <div className="grid gap-2 @2xl/main:grid-cols-4 @5xl/main:grid-cols-7">
+    /*
+      ⚠️ ۳.۱۵.۲ — ستون‌ها با کمینهٔ ۱۳rem، نه هفت ستونِ ثابت: در عرضِ معمولی هر روز ~۱۸۰ پیکسل می‌شد و
+      نام، «آخرین حضور» و بازه‌ها از کادر بیرون می‌زدند. حالا هر چند روز که جا شود کنارِ هم است.
+    */
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2">
       {order.map((d) => {
         const isToday = d === todayIdx;
         const people = rows.filter((r) => {
@@ -391,15 +404,29 @@ function BoardColumns({ order, todayIdx, rows }: BoardProps) {
             {people.length === 0 ? (
               <p className="text-[11px] text-muted-foreground">{tr("کسی در دسترس نیست")}</p>
             ) : (
-              <ul className="grid gap-1">
-                {people.map((p) => (
-                  <li key={p.id} className="text-xs">
-                    <PersonName row={p} />
-                    <span className="num ms-1 text-muted-foreground">
-                      {formatSlots(p.days[d] ?? [], tr)}
-                    </span>
-                  </li>
-                ))}
+              /*
+                ⚠️ ۳.۱۵.۲ — هر نفر دو خط: آواتار و نام، و زیرش بازه‌ها هر کدام برچسبِ چپ‌به‌راستِ جدا.
+                پیش از این همه در یک خطِ بی‌شکست بود و «06:00–18:00» وسطِ متنِ فارسی جابه‌جا خوانده می‌شد.
+                «آخرین حضور» به راهنمای شناورِ نام رفت.
+              */
+              <ul className="grid gap-2">
+                {people.map((p) => {
+                  const slots = p.days[d] ?? [];
+                  return (
+                    <li key={p.id} className="grid min-w-0 gap-1 text-xs">
+                      <PersonName row={p} compact />
+                      <span className="flex flex-wrap gap-1 ps-7">
+                        {slots.length === 0 ? (
+                          <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{tr('تمام روز')}</span>
+                        ) : slots.map((s, i) => (
+                          <span key={i} dir="ltr" className="num rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
+                            {s.from}–{s.to}
+                          </span>
+                        ))}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
