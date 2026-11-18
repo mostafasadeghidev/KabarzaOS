@@ -50,9 +50,14 @@ const EDGE = 120;
 
 const EMPTY: Prefs = { order: [], hidden: [], shown: [], sizes: {} };
 
-export function DashboardGrid({ widgets, userId }: { widgets: WidgetDef[]; userId: number }) {
+export function DashboardGrid({ widgets, userId, scope }: {
+  widgets: WidgetDef[];
+  userId: number;
+  /** چیدمانِ داشبوردِ عضو جدا از مدیر ذخیره می‌شود. */
+  scope?: string;
+}) {
   const t = useT();
-  const key = `kz-dash-layout-${userId}`;
+  const key = scope ? `kz-dash-layout-${scope}-${userId}` : `kz-dash-layout-${userId}`;
   const [prefs, setPrefs] = useState<Prefs>(EMPTY);
   const [open, setOpen] = useState(false);
   /** حالتِ ویرایشِ زنده: کشیدن و رها کردن، اندازه و پنهان کردن روی خودِ کارت. */

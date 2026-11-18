@@ -241,7 +241,7 @@ export function DashboardV2({
               <li key={c.userId} className="grid grid-cols-[minmax(0,9rem)_1fr] items-center gap-3 text-sm">
                 <span className="min-w-0 truncate"><UserName userId={c.userId} name={c.name} size="sm" /></span>
                 <span className="grid gap-1">
-                  <span className="flex items-center gap-2"><span className="h-1.5 rounded-full bg-amber-500/70" style={{ width: `${Math.max(4, (c.openTasks / maxOpen) * 100)}%` }} /><span className="num shrink-0 text-[11px] text-muted-foreground">{t('{n} تسک', { n: c.openTasks })}</span></span>
+                  <span className="flex items-center gap-2"><span className="h-1.5 rounded-full bg-amber-500/70" style={{ width: `${Math.max(4, (c.openTasks / maxOpen) * 100)}%` }} /><span className="shrink-0 text-[11px] text-muted-foreground">{t('{n} تسک', { n: c.openTasks })}</span></span>
                   <span className="flex items-center gap-2"><span className="h-1.5 rounded-full bg-sky-500/70" style={{ width: `${Math.max(4, (c.minutes / maxMin) * 100)}%` }} /><span className="num shrink-0 text-[11px] text-muted-foreground">{Math.floor(c.minutes / 60)}:{String(c.minutes % 60).padStart(2, '0')}</span></span>
                 </span>
               </li>

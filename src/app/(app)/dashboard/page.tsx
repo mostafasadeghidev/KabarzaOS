@@ -27,6 +27,8 @@ import { Amount } from '@/components/amount-privacy';
 import { DashboardV2 } from './dashboard-v2';
 import { getDashboardInbox } from '@/server/dashboard-inbox';
 import { taskStatusTags } from '@/server/projects/repository';
+import { myOpenCommentThreads, myTasks } from '@/server/projects/service';
+import { MemberDashboardV2 } from './member-dashboard-v2';
 
 export const generateMetadata = pageTitle('نمای کلی');
 
@@ -111,6 +113,32 @@ export default async function DashboardPage({
         const teamCards = managesTeam
           ? <TeamOverviewCards counts={await teamOverview(actor)} withLink />
           : null;
+        /*
+         * نمونهٔ محلیِ داشبوردِ تازهٔ عضو — همان شبکهٔ قابلِ ویرایش، با کارت‌هایی از دسترسیِ خودش.
+         * کارفرمای خالص فعلاً همان نمای قبلی را می‌بیند.
+         */
+        if (isMember && classic !== '1') {
+          const [mine, threads] = await Promise.all([myTasks(actor), myOpenCommentThreads(actor)]);
+          const tasks = mine.kind === 'member' ? { active: mine.active, waiting: mine.waiting, review: mine.review } : null;
+          return (
+            <PageShell>
+              <PageHeader
+                title={t('سلام، {name}', { name: session?.name ?? '' })}
+                description={todayLabel()}
+                actions={<Link href="/dashboard?classic=1" className="text-xs text-muted-foreground hover:underline">{t('نمای قبلی')}</Link>}
+              />
+              <MemberDashboardV2
+                data={own}
+                tasks={tasks}
+                comments={threads}
+                userId={actor.id}
+                teamCards={teamCards}
+                timeLog={<DashboardTimeLog actor={actor} part="log" />}
+                myWeek={<DashboardTimeLog actor={actor} part="week" />}
+              />
+            </PageShell>
+          );
+        }
         return (
           <PageShell>
             <PageHeader title={t("سلام، {name}", { name: session?.name ?? '' })} />

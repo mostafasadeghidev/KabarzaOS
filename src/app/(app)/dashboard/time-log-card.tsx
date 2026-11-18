@@ -24,17 +24,22 @@ import { cn } from '@/lib/utils';
  * روزها) می‌نشیند؛ همان پرسشی که هنگامِ زدنِ تایمر پیش می‌آید: «امروز/این هفته چقدر کار کرده‌ام؟».
  * وقتی تایمر روشن است، «هفتهٔ من» تنها می‌ماند.
  */
-export async function DashboardTimeLog({ actor }: { actor: Actor }) {
+export async function DashboardTimeLog({ actor, part = 'both' }: {
+  actor: Actor;
+  /** داشبوردِ بنتو (نمونهٔ محلی): «ثبتِ ساعت» و «هفتهٔ من» دو کارتِ جدا. */
+  part?: 'both' | 'log' | 'week';
+}) {
   const now = new Date();
   const [projects, state, config] = await Promise.all([loggableTargets(actor), timerState(actor, now), getSystemConfig()]);
   const general = canLogGeneral(actor);
   if (!general && projects.length === 0) return null;
   const week = await myWeek(actor, now, config.weekStart);
-  const showLog = !(state.running || state.pending);
+  const showLog = !(state.running || state.pending) && part !== 'week';
+  if (part === 'log' && !showLog) return null;
 
   return (
     // ۳.۱۵.۲ — دو کارت هم‌عرض (۱:۱)؛ پیش از این «ثبتِ ساعت» دو سوم بود و «هفتهٔ من» یک سوم.
-    <div className={cn('grid gap-4', showLog && '@3xl/main:grid-cols-2')}>
+    <div className={cn('grid gap-4', showLog && part === 'both' && '@3xl/main:grid-cols-2')}>
       {showLog && (
         <div className="grid">
           <Panel
@@ -54,7 +59,7 @@ export async function DashboardTimeLog({ actor }: { actor: Actor }) {
           </Panel>
         </div>
       )}
-      <MyWeek days={week.days} todayMinutes={week.todayMinutes} weekMinutes={week.weekMinutes} />
+      {part !== 'log' && <MyWeek days={week.days} todayMinutes={week.todayMinutes} weekMinutes={week.weekMinutes} />}
     </div>
   );
 }
