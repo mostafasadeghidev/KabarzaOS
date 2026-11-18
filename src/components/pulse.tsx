@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useLiveEvents } from '@/components/live';
 
 /**
  * نبضِ زنده — شمارِ اعلان و پیامِ خوانده‌نشده را بدونِ بارگذاریِ دوبارهٔ صفحه
@@ -13,6 +14,18 @@ import { useEffect, useRef, useState } from 'react';
 export function usePulse(intervalSeconds: number, enabled: boolean) {
   const [counts, setCounts] = useState<{ notif: number; msg: number; mail: number } | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const beatRef = useRef<() => void>(() => {});
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /*
+   * ۳.۱۴.۰ — خبرِ لحظه‌ای: عددها همان لحظه تازه می‌شوند (کمی صبر تا چند خبرِ پشتِ‌سرِهم یکی شوند).
+   * تا خط برقرار است، پرسیدنِ دوره‌ای فقط پشتیبان است — هر ۵ دقیقه.
+   */
+  const live = useLiveEvents(() => {
+    if (debounce.current) clearTimeout(debounce.current);
+    debounce.current = setTimeout(() => beatRef.current(), 400);
+  });
+  const seconds = live ? 300 : intervalSeconds > 0 ? intervalSeconds : 45;
 
   useEffect(() => {
     if (!enabled) return;
@@ -31,8 +44,8 @@ export function usePulse(intervalSeconds: number, enabled: boolean) {
         });
     };
 
+    beatRef.current = beat;
     beat();
-    const seconds = intervalSeconds > 0 ? intervalSeconds : 45;
     timer.current = setInterval(beat, seconds * 1000);
 
     const onVisible = () => { if (document.visibilityState === 'visible') beat(); };
@@ -43,7 +56,7 @@ export function usePulse(intervalSeconds: number, enabled: boolean) {
       if (timer.current) clearInterval(timer.current);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [intervalSeconds, enabled]);
+  }, [seconds, enabled]);
 
   return counts;
 }

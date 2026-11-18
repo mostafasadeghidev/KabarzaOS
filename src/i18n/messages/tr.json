@@ -5233,5 +5233,9 @@
   "نامِ صفحه": "sayfa adı",
   "نامِ پروژه": "proje adı",
   "پروژه، عضو، کارفرما یا حساب — دستِ‌کم سه حرف": "proje, üye, müşteri veya hesap (en az üç harf)",
-  "چه چیزی می‌شود جست؟": "Neler aranabilir?"
+  "چه چیزی می‌شود جست؟": "Neler aranabilir?",
+  "به‌روزرسانیِ لحظه‌ای": "Anında güncelleme",
+  "زنده": "Canlı",
+  "نقطهٔ سبز و «آنلاین اکنون». اگر تیم نمی‌خواهد حضورش دیده شود، خاموشش کنید.": "Yeşil nokta ve “Şu an çevrimiçi”. Ekip varlığının görünmesini istemiyorsa kapatın.",
+  "پیام‌ها، اعلان‌ها و شمارِ نخوانده‌ها بی‌درنگ و بدونِ تازه کردنِ صفحه می‌رسند.": "Mesajlar, bildirimler ve okunmamış sayıları sayfayı yenilemeden anında gelir."
 }
