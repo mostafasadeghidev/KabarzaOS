@@ -11,6 +11,7 @@ export function ViewAsBanner({ name }: { name: string }) {
   return (
     <div
       role="status"
+      data-view-as
       className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-500 px-4 py-1.5 text-sm text-amber-950"
     >
       <Eye className="size-4 shrink-0" aria-hidden />

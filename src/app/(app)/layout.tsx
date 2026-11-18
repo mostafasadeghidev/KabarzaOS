@@ -12,6 +12,7 @@ import { NavHistory } from '@/components/nav-history';
 import { LiveProvider } from '@/components/live';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { TableStackLabels } from '@/components/table-stack-labels';
+import { HeaderAutoHide } from '@/components/header-auto-hide';
 import { UploadProvider } from '@/components/uploads/upload-manager';
 import { FinanceAccountReset } from './finance/account-reset';
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette';
@@ -366,6 +367,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <MobileBottomNav items={items} unread={unreadMessages} />
         {/* ۳.۱۵.۱ — برچسبِ ستون روی خانه‌های جدول‌های پشته‌ای (کارتِ گوشی). */}
         <TableStackLabels />
+        {/* ۳.۱۷.۰ — نوارِ بالای چسبان روی گوشی با پیمایش به پایین کنار می‌رود و با پیمایش به بالا برمی‌گردد. */}
+        <HeaderAutoHide />
       </SidebarInset>
     </SidebarProvider>
     </LiveProvider>
