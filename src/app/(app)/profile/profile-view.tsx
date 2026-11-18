@@ -27,7 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useActionToast } from '@/components/ui/toast';
 import { useSearchParams } from 'next/navigation';
 import { useT, useTimeZone } from '@/i18n/client';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OverflowTabs } from '@/components/ui/overflow-tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { GrantLevel } from '@/domain/access/service-grants';
 import { Switch } from '@/components/ui/switch';
@@ -172,20 +172,14 @@ export function ProfileView({ data }: { data: ProfileData }) {
      * باریک‌تر از ردیف است (موبایل).
      */
     <div className="grid w-fit max-w-full min-w-[min(100%,48rem)] gap-4">
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
-        <div className="overflow-x-auto pb-1.5">
-          {/* ⚠️ min-w-full: ردیفِ تب‌ها هم‌پهنای کادرِ زیرش کشیده می‌شود؛ w-max روی موبایل پیمایش را نگه می‌دارد. */}
-          <TabsList variant="line" className="w-max min-w-full">
-            {visible.map((t) => (
-              <TabsTrigger key={t.key} value={t.key}>
-                <t.icon className="size-3.5" />
-                {tr(t.label)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
+      {/* ۳.۱۵.۱ — OverflowTabs: روی گوشی تبِ آخر نیمه‌بریده دیده می‌شد («ترجی…»)؛ حالا اضافه‌ها زیرِ «بیشتر» می‌روند. */}
+      <OverflowTabs
+        className="pb-1.5"
+        variant="line"
+        value={tab}
+        onValueChange={(v) => setTab(v as typeof tab)}
+        items={visible.map((t) => ({ value: t.key, label: tr(t.label) }))}
+      />
 
       {/*
         ⚠️ w-0 + min-w-full: کادرها در پهنای ظرف سهمی ندارند و فقط کشیده می‌شوند؛

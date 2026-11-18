@@ -83,7 +83,8 @@ export function TeamMatrix({
   const t = useT();
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">{t("عضوی برای نمایش نیست.")}</p>;
   return (
-    <Table frame={frame}>
+    // ۳.۱۵.۱ — جدولِ شبکه‌ای: روزها می‌لغزند، نامِ عضو ثابت می‌ماند.
+    <Table frame={frame} stickyFirst>
       <TableHeader>
         <TableRow>
           <TableHead>{t("عضو")}</TableHead>
@@ -202,7 +203,7 @@ function LogDetail({ logs, weekStart }: { logs: LogRow[]; weekStart: number }) {
         (تاریخ وسطِ ستونی پهن)، و ستونِ توضیحاتِ `w-full` همه را در ابتدای ردیف
         به هم می‌چسباند. ستونِ آخر باقیِ عرض را می‌گیرد.
       */}
-      <Table frame={false} className="table-fixed">
+      <Table frame={false} className="table-fixed" stack>
         <TableHeader>
           <TableRow>
             {/*
@@ -642,7 +643,7 @@ export function ManageTab({
         {hours.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("ساعتِ کاری‌ای ثبت نشده.")}</p>
         ) : (
-          <Table frame={false}>
+          <Table frame={false} stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("عضو")}</TableHead>

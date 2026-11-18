@@ -277,7 +277,8 @@ export function CommandPaletteTrigger() {
       <Search className="size-3.5" />
       <span className="hidden sm:inline">{t("جستجو")}</span>
       {/* کلیدِ میان‌بر با کامپوننتِ رسمی — پیش از این `<kbd>` ِ دستی با کلاس‌های خودمان بود. */}
-      <Kbd className="num text-[10px]">{isMac ? '⌘K' : 'Ctrl+K'}</Kbd>
+      {/* ۳.۱۵.۱ — روی گوشی کیبوردی نیست؛ نشانِ میان‌بر فقط از sm به بالا. */}
+      <Kbd className="num hidden text-[10px] sm:inline-flex">{isMac ? '⌘K' : 'Ctrl+K'}</Kbd>
     </Button>
   );
 }

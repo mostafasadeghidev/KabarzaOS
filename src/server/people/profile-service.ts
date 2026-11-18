@@ -3,7 +3,7 @@ import { companyEmailsOf } from '@/server/corp-mail/directory';
 import { randomBytes } from 'node:crypto';
 
 import { normalizePrefs } from '@/domain/telegram/prefs';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { auditLog, company, files, users } from '@/db/schema';
 import { can, type Actor } from '@/domain/access/permissions';
@@ -146,9 +146,27 @@ export async function saveBankInfo(actor: Actor, input: Partial<BankInfo>) {
 /** منطقهٔ زمانی — نامعتبر به پیش‌فرضِ سامانه برمی‌گردد. */
 export async function saveTimezone(actor: Actor, value: string) {
   const timezone = normalizeTimezone(value);
-  await db.update(users).set({ timezone, updatedAt: new Date() })
+  // انتخابِ دستی ثبت می‌شود تا تشخیصِ خودکار دیگر به آن دست نزند (۳.۱۵.۱).
+  await db.update(users).set({ timezone, timezoneChosenAt: new Date(), updatedAt: new Date() })
     .where(eq(users.id, actor.id));
   return timezone;
+}
+
+/**
+ * منطقهٔ زمانیِ تشخیص‌داده‌شده از دستگاه (۳.۱۵.۱) — روشِ رایجِ اپ‌ها: کاربری که هرگز منطقه انتخاب
+ * نکرده، منطقهٔ دستگاهش را می‌گیرد. پیش از این منطقهٔ سامانه (برلین) برای عضوِ تهرانی حساب می‌شد و
+ * یادآورِ «ساعتِ امروز» ساعت ۰۱:۳۰ بامداد می‌رسید.
+ *
+ * ⚠️ فقط وقتی هنوز انتخابی نشده (`timezone = ''` و `timezone_chosen_at` خالی) — شرط در خودِ UPDATE
+ * است، پس انتخابِ دستی هرگز بازنویسی نمی‌شود. مقدارِ نامعتبر هیچ کاری نمی‌کند.
+ */
+export async function adoptDeviceTimezone(actor: Actor, value: string): Promise<boolean> {
+  const timezone = normalizeTimezone(value);
+  if (!timezone) return false;
+  const rows = await db.update(users).set({ timezone, updatedAt: new Date() })
+    .where(and(eq(users.id, actor.id), eq(users.timezone, ''), isNull(users.timezoneChosenAt)))
+    .returning({ id: users.id });
+  return rows.length > 0;
 }
 
 /* ------------------------------------------------------------------ *

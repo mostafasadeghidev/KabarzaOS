@@ -189,7 +189,7 @@ export function FinanceTab({
             />
           </div>
           {team.members.length > 0 && (
-            <Table>
+            <Table stack>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('عضو')}</TableHead>
@@ -230,7 +230,7 @@ export function FinanceTab({
             description={t("هزینه‌ها و پرداخت‌ها از صفحهٔ «حسابداری» ثبت می‌شوند.")}
           />
         ) : (
-          <Table>
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("شرح")}</TableHead>
@@ -829,7 +829,7 @@ export function BidsTab({
           {tr("مناقصه بسته است — برنده پس از شروعِ کار عوض نمی‌شود.")}
         </p>
       )}
-      <Table>
+      <Table stack>
         <TableHeader>
           <TableRow>
             <TableHead>{t("پیشنهاددهنده")}</TableHead>

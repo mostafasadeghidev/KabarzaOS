@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { currentSession } from '@/server/auth';
+import { getSystemConfig } from '@/server/settings/system-service';
+import { TimezoneDetect } from '@/components/timezone-detect';
 import { direction } from '@/i18n/config';
 import { primeTranslations, getT } from '@/i18n/server';
 import { brandIdentity } from '@/server/setup/public-brand';
@@ -66,8 +68,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // پس ترجمه برای کلِ درخت آماده است بی‌آنکه چیزی پاس داده شود.
   const { locale, messages } = await primeTranslations();
   const session = await currentSession();
-  // منطقهٔ زمانیِ کاربرِ واردشده — تاریخ‌ها به وقتِ او نشان داده می‌شوند، نه UTC.
-  const timeZone = session?.timezone ?? '';
+  /*
+   * منطقهٔ زمانیِ کاربرِ واردشده — تاریخ‌ها به وقتِ او نشان داده می‌شوند.
+   *
+   * ⚠️ ۳.۱۵.۱: کاربرِ بی منطقهٔ شخصی پیش از این `''` می‌گرفت؛ سرور با UTC رندر می‌کرد و گوشی با
+   * منطقهٔ خودش (۰۷:۳۲ در برابرِ ۱۱:۰۲) — خطای ناهمخوانیِ React (#418) در «پیام‌ها» و پرشِ ساعت‌ها پس از
+   * بارگذاری. حالا هر دو طرف منطقهٔ سامانه را می‌گیرند، و در نبودش UTC — همیشه یکسان.
+   */
+  let timeZone = session?.timezone ?? '';
+  if (session && !timeZone) {
+    timeZone = (await getSystemConfig().catch(() => null))?.timezone || 'UTC';
+  }
   // ظاهرِ ذخیره‌شده روی کاربر (مهاجرتِ 0033) — روی هر دستگاهی یکسان.
   const appearance = session?.appearance ?? { theme: '' as const, palette: '' as const };
 
@@ -86,6 +97,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <DirectionProvider dir={direction(locale)}>
           <ThemeProvider initial={appearance} signedIn={session !== null}>
             <TranslationProvider locale={locale} messages={messages} timeZone={timeZone}>
+              {/* ۳.۱۵.۱ — کاربری که هرگز منطقهٔ زمانی انتخاب نکرده، منطقهٔ دستگاهش را می‌گیرد. */}
+              {session && !session.timezone && !session.timezoneChosen && !session.viewAs && <TimezoneDetect />}
               {/*
                 ⚠️ توست در **ریشه** سوار می‌شود، نه در چیدمانِ اپ: صفحهٔ ورود،
                 نصبِ اولیه و پوستهٔ عضوِ سابق (که چیدمانِ اپ را کنار می‌گذارد)

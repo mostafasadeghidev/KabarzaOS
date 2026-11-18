@@ -119,7 +119,8 @@ export function StaffSection({
     <div className="grid grid-cols-1 gap-3">
       {header}
 
-      <Table>
+      {/* ۳.۱۵.۱ — روی گوشی هر همکار یک کارت. */}
+      <Table stack>
         <TableHeader>
           <TableRow>
             <TableHead>{t("همکار")}</TableHead>

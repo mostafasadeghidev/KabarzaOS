@@ -369,7 +369,7 @@ export function LedgerView({
       {entries.length === 0 ? (
         <EmptyState title={t("ردیفی ثبت نشده")} />
       ) : (
-        <Table>
+        <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead numeric>#</TableHead>

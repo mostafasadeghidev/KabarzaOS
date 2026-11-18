@@ -400,7 +400,7 @@ export function PayoutsView({
         {tabRows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("درخواستی در این وضعیت نیست")}</p>
         ) : (
-          <Table>
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("عضو")}</TableHead>
@@ -509,7 +509,7 @@ export function PayoutsView({
         {unpaidUnits.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("موردی نیست.")}</p>
         ) : (
-          <Table>
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("تاریخ")}</TableHead>
@@ -558,7 +558,7 @@ export function PayoutsView({
         title={t("پرداخت‌های بی‌پروژه")}
         description={tr("ردیف‌هایی که با «جداسازی» از پروژهٔ حذف‌شده مانده‌اند؛ پول در دفتر هست و نامِ پروژه در توضیحات.")}
       >
-        <Table>
+        <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead>{t("تاریخ")}</TableHead>
@@ -687,7 +687,7 @@ export function PayoutsView({
         {visibleRecurring.length === 0 ? (
           <EmptyState title={t("هزینهٔ دوره‌ای ثبت نشده")} />
         ) : (
-          <Table>
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("هزینه")}</TableHead>

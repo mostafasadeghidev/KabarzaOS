@@ -614,7 +614,7 @@ export function ThreadPane({
           state={replyState}
           mentionables={thread.group.mentionables}
           canMentionAll={thread.group.canMentionAll}
-          placeholder={tr('پیام… (@ برای منشن، {keys} برای ارسال)', { keys: sendKeys })}
+          placeholder={sendKeys ? tr('پیام… (@ برای منشن، {keys} برای ارسال)', { keys: sendKeys }) : tr('پیام… (@ برای منشن)')}
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}
         />
@@ -649,7 +649,7 @@ export function ThreadPane({
               name="body"
               data-composer
               rows={1}
-              placeholder={tr('پاسخ شما… ({keys} برای ارسال)', { keys: sendKeys })}
+              placeholder={sendKeys ? tr('پاسخ شما… ({keys} برای ارسال)', { keys: sendKeys }) : tr('پاسخ شما…')}
               aria-label={tr('پاسخ شما…')}
               onKeyDown={submitOnModEnter}
               required

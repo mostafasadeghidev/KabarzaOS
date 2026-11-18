@@ -229,7 +229,8 @@ export function TaskBoard({ board, options }: { board: TaskBoardData; options: T
       </div>
 
       {board.rows.length === 0 ? <EmptyState title={tr('موردی یافت نشد.')} /> : (
-        <Table>
+        // ۳.۱۵.۱ — روی گوشی هر ردیف یک کارت (جدول افقی می‌لغزید و نام‌ها کلمه‌به‌کلمه می‌شکستند).
+        <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead>{tr('تسک')}</TableHead>
@@ -244,15 +245,15 @@ export function TaskBoard({ board, options }: { board: TaskBoardData; options: T
             {board.rows.map((task) => (
               <TableRow key={task.id}>
                 <TableCell><TaskTitleButton task={task} onOpen={setOpenId} /></TableCell>
-                <TableCell>
+                <TableCell data-label={tr('پروژه')}>
                   <Link href={`/projects/${task.projectId}`} className="hover:underline">{task.projectTitle ?? '—'}</Link>
                 </TableCell>
-                <TableCell><Assignee task={task} /></TableCell>
-                <TableCell>
+                <TableCell data-label={tr('تخصیص')}><Assignee task={task} /></TableCell>
+                <TableCell data-label={tr('اولویت')}>
                   {task.priorityName ? <TagChip color={task.priorityColor}>{task.priorityName}</TagChip> : '—'}
                 </TableCell>
-                <TableDateCell>{task.dueDate ?? '—'}</TableDateCell>
-                <TableCell>
+                <TableDateCell data-label={tr('ددلاین')}>{task.dueDate ?? '—'}</TableDateCell>
+                <TableCell data-label={tr('وضعیت')}>
                   {task.statusName ? <TagChip color={task.statusColor}>{task.statusName}</TagChip> : '—'}
                 </TableCell>
               </TableRow>

@@ -232,7 +232,8 @@ export async function listInbox(actor: Actor) {
           .map((userId) => ({ userId, name: personLabel(userId, ctx, t) })),
         label: group ? groupLabel(group) : counterpartLabel(ids, ctx, t),
         avatarUserId: group ? null : counterpartAvatarId(ids, ctx),
-        lastBody: lastRow ? plain(lastRow.body, ctx) : '',
+        // ⚠️ همان قاعدهٔ `MESSAGE_FIELDS`: بی CR، وگرنه سرور و مرورگر متنِ متفاوت می‌سازند.
+        lastBody: lastRow ? plain(lastRow.body.replaceAll(String.fromCharCode(13), ''), ctx) : '',
         lastAt: lastRow?.created_at ?? null,
         lastFromName: lastRow ? personLabel(Number(lastRow.from_user_id), ctx, t) : null,
         unread: unread.get(row.threadId) ?? 0,
@@ -251,7 +252,11 @@ export async function listInbox(actor: Actor) {
 /** ستون‌هایی که نمای گفتگو از هر پیام می‌خواند (۲.۶۵.۰). */
 const MESSAGE_FIELDS = {
   id: messages.id,
-  body: messages.body,
+  /*
+   * ⚠️ بی کاراکترِ CR (۳.۱۵.۱): پیامِ نوشته‌شده در ویندوز «CRLF» دارد؛ HTML ِ سرور آن را «LF» می‌کند ولی
+   * React در مرورگر همان «CRLF» را می‌نویسد ← خطای ناهمخوانی (#418) و رندرِ دوبارهٔ کلِ صفحه.
+   */
+  body: sql<string>`replace(${messages.body}, chr(13), '')`,
   createdAt: messages.createdAt,
   fromUserId: messages.fromUserId,
   replyToId: messages.replyToId,

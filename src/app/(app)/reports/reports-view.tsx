@@ -21,7 +21,7 @@ import { OfficeFilter, RangeBar, type OfficeOption } from './report-filters';
 import {
   TablePager, TableSearch, useTableView, type TableView,
 } from '@/components/ui/table-search';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OverflowTabs } from '@/components/ui/overflow-tabs';
 import { Toggle } from '@/components/ui/toggle';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StatCard } from '@/components/stat-card';
@@ -276,18 +276,14 @@ export function ReportsView({
 
   return (
     <div className="grid gap-4">
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
-        <div className="overflow-x-auto pb-1.5">
-          <TabsList variant="line" className="w-max">
-            {visible.map((t) => (
-              <TabsTrigger key={t.key} value={t.key} className="flex-none">
-                {tr(t.label)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
+      {/* ۳.۱۵.۱ — OverflowTabs: روی گوشی نوارِ تب ۹۶۰ پیکسل بود و افقی می‌لغزید؛ اضافه‌ها زیرِ «بیشتر». */}
+      <OverflowTabs
+        className="pb-1.5"
+        variant="line"
+        value={tab}
+        onValueChange={(v) => setTab(v as typeof tab)}
+        items={visible.map((t) => ({ value: t.key, label: tr(t.label) }))}
+      />
 
       {/*
         ⚠️ پیوندِ ساده، نه دکمهٔ جاوااسکریپتی: مرورگر خودش دانلود را می‌گیرد و
@@ -403,7 +399,7 @@ export function ReportsView({
           <p className="text-xs text-muted-foreground">
             {tr("بدهی به تفکیک ارز:")} <span className="num">{byCurrencyTotals(data.members, 'debt') || '—'}</span>
           </p>
-          <Table>
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("عضو")}</TableHead>
@@ -468,7 +464,7 @@ export function ReportsView({
           <p className="text-xs text-muted-foreground">
             {tr("طلب به تفکیک ارز:")} <span className="num">{byCurrencyTotals(data.clients, 'due') || '—'}</span>
           </p>
-          <Table>
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("کارفرما")}</TableHead>
@@ -555,7 +551,7 @@ export function ReportsView({
               </div>
             )}
             {expenseStats.byVendor.length === 0 ? <p className="text-sm text-muted-foreground">{tr("موردی پیدا نشد.")}</p> : (
-              <Table>
+              <Table stack>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{tr("طرف‌حساب")}</TableHead>
@@ -578,7 +574,7 @@ export function ReportsView({
 
           <Section title={tr("به تفکیک ماه")}>
             {expenseStats.byMonth.length === 0 ? <p className="text-sm text-muted-foreground">{tr("موردی پیدا نشد.")}</p> : (
-              <Table>
+              <Table stack>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{tr("ماه")}</TableHead>
@@ -604,7 +600,7 @@ export function ReportsView({
 
           <Section title={tr("ردیف‌های دفتر")}>
             {expenseStats.rows.length === 0 ? <p className="text-sm text-muted-foreground">{tr("ردیفی نیست")}</p> : (
-              <Table>
+              <Table stack>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{tr("تاریخ")}</TableHead>
@@ -633,7 +629,7 @@ export function ReportsView({
 
       {tab === 'accounts' && (
         data.accountsReport.length === 0 ? <EmptyState title={tr("حسابی نیست")} /> : (
-          <Table>
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("حساب")}</TableHead>
@@ -673,7 +669,7 @@ export function ReportsView({
         <div className="grid gap-3">
           <RangeBar tab="hours" presets={filters.hours.presets} range={filters.hours.range} officeIds={filters.officeIds} hours />
           {data.hours.length === 0 ? <EmptyState title={tr("در این بازه ساعتی ثبت نشده")} /> : (
-            <Table>
+            <Table stack>
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr("عضو")}</TableHead>
@@ -709,7 +705,7 @@ export function ReportsView({
 
       {tab === 'projects' && (
         data.projectRows.length === 0 ? <EmptyState title={tr("پروژه‌ای نیست")} /> : (
-          <Table>
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("پروژه")}</TableHead>
@@ -762,7 +758,7 @@ export function ReportsView({
             description={tr("فقط پروژه‌های «تعدادی» ردیفِ کارکرد می‌سازند.")}
           />
         ) : (
-          <Table>
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("عضو")}</TableHead>
@@ -821,7 +817,7 @@ export function ReportsView({
             {data.attendance.leaves.length === 0 ? (
               <p className="text-sm text-muted-foreground">{tr("مرخصی‌ای ثبت نشده.")}</p>
             ) : (
-              <Table>
+              <Table stack>
                 <TableHeader>
                   <TableRow>
                     <TableHead>{tr("عضو")}</TableHead>
@@ -890,7 +886,7 @@ export function ReportsView({
               })}
             </div>
 
-            <Table>
+            <Table stack>
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr("حساب")}</TableHead>

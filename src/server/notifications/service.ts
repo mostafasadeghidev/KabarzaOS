@@ -446,11 +446,17 @@ export async function sendTelegramTestToSelf(actor: Actor, text: string): Promis
   return res?.ok === true;
 }
 
-/** زنگِ کاربر — آخرین اعلان‌ها و شمارِ خوانده‌نشده. */
+/**
+ * زنگِ کاربر — اعلان‌های **خوانده‌نشده** و شمارشان.
+ *
+ * ⚠️ ۳.۱۵.۱: پیش از این ۳۰ اعلانِ آخر، خوانده و نخوانده با هم، می‌آمد و خوانده‌شده فقط کم‌رنگ‌تر بود؛
+ * در حالتِ تیره فرقش دیده نمی‌شد و کاربر گزارش داد «خواندمش ولی هنوز در فهرست است». حالا خوانده‌شده
+ * از زنگوله می‌رود؛ سابقهٔ کامل در صفحهٔ «همهٔ اعلان‌ها» است.
+ */
 export async function listNotifications(actor: Actor, limit = 30) {
   const [rows, unread] = await Promise.all([
     db.select().from(notifications)
-      .where(eq(notifications.userId, actor.id))
+      .where(and(eq(notifications.userId, actor.id), eq(notifications.isRead, false)))
       .orderBy(desc(notifications.id))
       .limit(limit),
     db.select({ n: sql<number>`count(*)::int` })

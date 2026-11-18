@@ -40,7 +40,7 @@ function sessionSecret(): string {
  */
 export async function currentSession(): Promise<
   {
-    actor: Actor; name: string; locale: Locale | null; timezone: string; memberState: MemberState;
+    actor: Actor; name: string; locale: Locale | null; timezone: string; timezoneChosen: boolean; memberState: MemberState;
     /** ظاهرِ ذخیره‌شده روی کاربر؛ خالی = «انتخابی نکرده» (مهاجرتِ 0033). */
     appearance: ReturnType<typeof storedAppearance>;
     /** «دیدن به‌جای کاربر» (۲.۵۳.۰) — نامِ مالکی که واقعاً پشتِ صفحه است. */
@@ -81,6 +81,8 @@ export async function currentSession(): Promise<
     locale: (user.locale as Locale | null) ?? null,
     /** منطقهٔ زمانیِ کاربر — برای نمایشِ تاریخ‌ها؛ خالی یعنی مرورگر. */
     timezone: user.timezone ?? '',
+    /** کاربر خودش منطقه را انتخاب کرده؟ نه ← چیدمان منطقهٔ دستگاه را می‌فرستد (۳.۱۵.۱). */
+    timezoneChosen: user.timezoneChosenAt != null,
     /** برای تشخیصِ عضوِ سابقِ «فقط مالی» در چیدمان (R-PEOPLE-01). */
     memberState: user.memberState as MemberState,
     appearance: storedAppearance(user),

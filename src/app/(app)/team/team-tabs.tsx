@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OverflowTabs } from '@/components/ui/overflow-tabs';
 import { useT } from '@/i18n/client';
 import { TEAM_TABS, type TeamTab } from '@/domain/team/boards';
 
@@ -22,17 +22,15 @@ export function TeamTabs({ tab }: { tab: TeamTab }) {
   const tr = useT();
   const router = useRouter();
   return (
-    <Tabs value={tab} onValueChange={(v) => router.push(`/team?tab=${v}`)}>
-      {/* پیمایشِ افقی به‌جای شکستنِ خط — پنج تب روی موبایل جا نمی‌شوند. */}
-      <div className="overflow-x-auto pb-1.5">
-        <TabsList variant="line" className="w-max">
-          {TEAM_TABS.map((key) => (
-            <TabsTrigger key={key} value={key} className="flex-none">
-              {tr(LABELS[key])}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
-    </Tabs>
+    <>
+      {/* ۳.۱۵.۱ — OverflowTabs: روی گوشی تبِ آخر نیمه‌بریده دیده می‌شد («ترجی…»)؛ حالا اضافه‌ها زیرِ «بیشتر» می‌روند. */}
+      <OverflowTabs
+        className="pb-1.5"
+        variant="line"
+        value={tab}
+        onValueChange={(v) => router.push(`/team?tab=${v}`)}
+        items={TEAM_TABS.map((key) => ({ value: key, label: tr(LABELS[key]) }))}
+      />
+    </>
   );
 }

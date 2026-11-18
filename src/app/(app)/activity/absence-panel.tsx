@@ -127,7 +127,8 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
             {data.listTitle ? tr('مرخصی‌ای ثبت نشده.') : tr('مرخصی‌ای ثبت نکرده‌اید')}
           </p>
         ) : (
-          <Table>
+          // ۳.۱۵.۱ — روی گوشی هر مرخصی یک کارت.
+          <Table stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr('از')}</TableHead>
@@ -139,9 +140,9 @@ export function AbsencePanel({ data }: { data: AbsencePanelData }) {
             <TableBody>
               {data.mine.map((a) => (
                 <TableRow key={a.id}>
-                  <TableDateCell>{a.fromDate}</TableDateCell>
-                  <TableDateCell>{a.toDate}</TableDateCell>
-                  <TableCell>{a.note || '—'}</TableCell>
+                  <TableDateCell data-label={tr('از')}>{a.fromDate}</TableDateCell>
+                  <TableDateCell data-label={tr('تا')}>{a.toDate}</TableDateCell>
+                  <TableCell data-label={tr('توضیح')}>{a.note || '—'}</TableCell>
                   <TableActionsCell>
                       <IconButton
                         variant="ghost"

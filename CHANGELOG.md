@@ -2,6 +2,25 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.15.1]
+
+### Fixed
+
+Found by testing the installed app on a phone (450 px wide):
+
+- **The message box was hidden under the bottom menu.** In an open conversation the bottom menu covered the whole text box; the conversation now ends above the menu.
+- **Tasks on a phone.** The task list was a seven-column table about 710 px wide, so the page scrolled sideways and titles wrapped one word per line. On phones each task is now a card: full title, status, priority and deadline chips, then project and assignee. Wider screens keep the table.
+- **Read notifications stayed in the bell.** The bell listed the last 30 notifications, read or not, and a read one only lost its bold, which is hard to see in dark mode. The bell now lists unread notifications only; reading one removes it, and the full history stays on the notifications page.
+- **Menus were see-through on phones.** A later style rule overrode the phone rule, so the bell and other dropdowns were semi-transparent and page text showed through. They are solid on phones again.
+- **Times jumped after loading, and the Messages page had a React error.** For users without a personal time zone the server rendered times in UTC and the phone in its own zone (07:32 vs 11:02). The page also failed when a message contained Windows line breaks. Both sides now use the app's time zone (UTC if none is set), and line breaks are normalised.
+- **Cut-off tabs.** Profile, My team and Finance tabs scrolled sideways with the last tab half visible. They now move extra tabs under "More", like Settings and project pages.
+- **Smaller fixes.** The "Ctrl+K" hint is hidden on phones, which have no keyboard shortcut. The project filter on the Hours page no longer shrinks until its placeholder is cut.
+- **Reminders arrived after midnight for members abroad.** A member who never picked a time zone used the app's zone (Berlin), so a member in Tehran got the evening "you haven't logged hours today" reminder at 01:30 for the previous day. The app now takes the time zone from the member's device the first time they open it, as most apps do. A zone picked by hand in Profile, including "system default", is never changed (migration 0082).
+- **Wide tables on phones.** About 25 list tables now become one card per row on phones, each value labelled with its column header and empty values left out. They include the ledger, member payouts, unit entries, expenses, bank accounts, reports, activity, team projects and tasks, absences, project finance and management, QA library and staff access. Before, they scrolled sideways and squeezed project names one word per line. Week grids (availability and team schedule) keep scrolling sideways, but the member column now stays in place. Desktop keeps the tables.
+- **Reports tabs** move extra tabs under "More" on phones instead of a 960 px strip.
+- **Settings → Notifications**: the three Telegram test buttons wrap instead of pushing the page 21 px sideways on phones.
+- **Phone message box hint.** The message box no longer says "Ctrl+Enter to send" on touch devices; the send button is used there.
+
 ## [3.15.0]
 
 ### Changed

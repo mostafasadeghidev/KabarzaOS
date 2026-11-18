@@ -140,7 +140,8 @@ export function CatalogSection<T extends { id: number }>({
       ) : (
         // ⚠️ `min-w` فقط در حالتِ ثابت: ستونِ نام باقیِ عرض را می‌گیرد و روی
         // موبایل به صفر می‌رسید؛ حالا جدول پیمایش می‌خورد و نام دیده می‌ماند.
-        <Table className={fixed ? 'min-w-[40rem] table-fixed' : undefined}>
+        // ۳.۱۵.۱ — روی گوشی کارت (`stack`): کمینهٔ ۴۰rem فقط از md به بالا، وگرنه کارت‌ها هم ۶۴۰ پیکسل می‌شدند.
+        <Table stack className={fixed ? 'md:min-w-[40rem] md:table-fixed' : undefined}>
           <TableHeader>
             <TableRow>
               {/*

@@ -16,7 +16,7 @@ import type { MemberAccountRow } from '@/server/finance/member-accounts';
 import { SalariesView } from './salaries-view';
 import type { SalaryPerson } from '@/server/finance/salaries';
 import { useT } from '@/i18n/client';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OverflowTabs } from '@/components/ui/overflow-tabs';
 
 /**
  * ⚠️ «پرداخت‌ها و هزینه‌ها» به دو تب شکست.
@@ -144,18 +144,14 @@ export function FinancePage({
 
   return (
     <div className="grid gap-4">
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        {/* shadcn Tabs (line): پیمایشِ افقی به‌جای شکستنِ خط — در «گزارش‌ها» تب‌ها دو ردیف می‌شدند. */}
-        <div className="overflow-x-auto pb-1.5">
-          <TabsList variant="line" className="w-max">
-            {visible.map((t) => (
-              <TabsTrigger key={t.key} value={t.key} className="flex-none">
-                {tr(t.label)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-      </Tabs>
+      {/* ۳.۱۵.۱ — OverflowTabs: روی گوشی تبِ آخر نیمه‌بریده دیده می‌شد («ترجی…»)؛ حالا اضافه‌ها زیرِ «بیشتر» می‌روند. */}
+      <OverflowTabs
+        className="pb-1.5"
+        variant="line"
+        value={tab}
+        onValueChange={(v) => setTab(v as typeof tab)}
+        items={visible.map((t) => ({ value: t.key, label: tr(t.label) }))}
+      />
 
       {tab === 'ledger' && needsPick && (
         <AccountPicker accounts={props.accounts} onPick={(id) => router.push(`/finance?account=${id}`)} />

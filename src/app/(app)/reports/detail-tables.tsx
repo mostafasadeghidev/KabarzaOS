@@ -104,7 +104,7 @@ export function MemberProjectsTable({
   return (
     <div className="grid gap-2">
       <TableSearch view={view} placeholder={t("جستجوی نام پروژه…")} />
-      <Table>
+      <Table stack>
         <TableHeader>
           <TableRow>
             <TableHead>{t("پروژه")}</TableHead>
@@ -174,7 +174,7 @@ export function ClientProjectsTable({
   return (
     <div className="grid gap-2">
       <TableSearch view={view} placeholder={t("جستجوی نام پروژه…")} />
-      <Table>
+      <Table stack>
         <TableHeader>
           <TableRow>
             <TableHead>{t("پروژه")}</TableHead>

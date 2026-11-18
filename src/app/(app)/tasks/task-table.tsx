@@ -3,7 +3,7 @@
 import { UserName } from '@/components/user-avatar';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Lock, MessageSquare } from 'lucide-react';
+import { CalendarDays, Lock, MessageSquare } from 'lucide-react';
 import type { InboxTask } from '@/server/projects/service';
 import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow } from '@/components/ui/table';
 import { useT } from '@/i18n/client';
@@ -111,6 +111,69 @@ export function TaskTable({
       {visible.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('نتیجه‌ای نیست.')}</p>
       ) : (
+        <>
+        {/*
+          ⚠️ گوشی (۳.۱۵.۱): کارت به‌جای جدول. جدولِ هفت‌ستونه روی صفحهٔ ۴۵۰ پیکسلی ۷۱۰ پیکسل پهن بود؛
+          صفحه افقی می‌لغزید و ستونِ عنوان به ۱۵۰ پیکسل فشرده می‌شد، پس هر کلمهٔ عنوان یک سطر بود.
+          کارت همان داده‌ها را دارد: عنوانِ کامل بالا، چیپ‌ها زیرش، پروژه و مسئول پایین.
+        */}
+        <ul className="grid gap-2 md:hidden">
+          {visible.map((task) => (
+            <li key={task.id}>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setOpenTask(task.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenTask(task.id); } }}
+                className="grid cursor-pointer gap-2 rounded-xl border bg-card p-3 text-sm outline-none transition-colors hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              >
+                <div className="flex min-w-0 items-start gap-1.5">
+                  {task.isPrivate && (
+                    <Lock className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-label={t('خصوصی')} />
+                  )}
+                  <TaskNumber number={task.number} code={projectCodeOf({ id: task.projectId, code: task.projectCode })} />
+                  <span className="min-w-0 font-medium break-words">{task.title}</span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {task.statusName && <TagChip color={task.statusColor}>{task.statusName}</TagChip>}
+                  {task.priorityName && <TagChip color={task.priorityColor}>{task.priorityName}</TagChip>}
+                  {task.dueDate && (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <CalendarDays className="size-3" aria-label={t('ددلاین')} />
+                      <span className="num">{task.dueDate}</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <Link
+                    href={`/projects/${task.projectId}?tab=tasks&view=${task.isReview ? 'review' : 'cur'}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="hover:text-foreground hover:underline"
+                  >
+                    {task.projectTitle}
+                  </Link>
+                  {showAssignee && <Assignee task={task} />}
+                  {task.notesCount > 0 && (
+                    <span className="flex min-w-0 items-center gap-1">
+                      <MessageSquare className="size-3 shrink-0" aria-hidden />
+                      <span className="num">{task.notesCount}</span>
+                    </span>
+                  )}
+                </div>
+
+                {task.claimable && (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <ClaimTaskButton taskId={task.id} projectId={task.projectId} />
+                  </div>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="hidden md:block">
         <Table frame={false}>
           <TableHeader>
             <TableRow>
@@ -199,6 +262,8 @@ export function TaskTable({
             ))}
           </TableBody>
         </Table>
+        </div>
+        </>
       )}
 
       {/* نگاهِ سریع — همان مودالِ صفحهٔ پروژه، با دکمهٔ رفتن به پروژه. */}

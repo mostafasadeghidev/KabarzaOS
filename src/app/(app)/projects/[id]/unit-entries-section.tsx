@@ -169,7 +169,8 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
       {data.units.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("هنوز ردیفی ثبت نشده.")}</p>
       ) : (
-        <Table>
+        // ۳.۱۵.۱ — `stack`: روی گوشی هر ردیف کارت است (نُه ستون افقی می‌لغزید).
+        <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead>{t("نام")}</TableHead>
@@ -237,11 +238,11 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                       </span>
                     )}
                   </TableCell>
-                  <TableDateCell>{u.entryDate}</TableDateCell>
-                  {data.seesAll && <TableCell><UserName userId={u.userId} name={u.userName ?? `#${u.userId}`} /></TableCell>}
-                  <TableNumericCell>{Number(u.quantity)}</TableNumericCell>
-                  <TableNumericCell>{u.minutes > 0 ? hoursLabel(u.minutes) : '—'}</TableNumericCell>
-                  <TableCell>
+                  <TableDateCell data-label={t("تاریخ")}>{u.entryDate}</TableDateCell>
+                  {data.seesAll && <TableCell data-label={t("عضو")}><UserName userId={u.userId} name={u.userName ?? `#${u.userId}`} /></TableCell>}
+                  <TableNumericCell data-label={t("تعداد")}>{Number(u.quantity)}</TableNumericCell>
+                  <TableNumericCell data-label={t("ساعت")}>{u.minutes > 0 ? hoursLabel(u.minutes) : '—'}</TableNumericCell>
+                  <TableCell data-label={t("وضعیتِ کار")}>
                     {/* وضعیتِ کار — مسئول یا صاحبِ ردیف عوضش می‌کند (۲.۲۲.۰). */}
                     {canRename && data.statuses.length > 0 ? (
                       <NativeSelect
@@ -259,7 +260,7 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                       <ProjectStatus name={u.workStatusName} group={u.workStatusGroup} color={u.workStatusColor} />
                     )}
                   </TableCell>
-                  <TableNumericCell>
+                  <TableNumericCell data-label={t("مبلغ")}>
                     {editing?.id === u.id ? (
                       /* ویرایشِ درجا — خالی = برگشت به نرخِ توافقی. */
                       <span className="inline-flex items-center gap-1">
@@ -297,7 +298,7 @@ export function UnitEntriesSection({ data }: { data: UnitSectionData }) {
                       <Amount>{format(u.amount)} {u.currencyCode}</Amount>
                     )}
                   </TableNumericCell>
-                  <TableCell>
+                  <TableCell data-label={t("پرداخت")}>
                     {(() => {
                       // قسط‌ها (۲.۲۵.۰): «بخشی پرداخت‌شده» + پرداخت‌شده/مانده؛ تاریخچه در راهنمای شناور.
                       const label = unitPayLabel(u.status as UnitPayStatus, u.paidAmount ?? 0);

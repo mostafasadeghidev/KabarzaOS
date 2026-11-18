@@ -16,8 +16,23 @@ import { cn } from '@/lib/utils';
 export function Table({
   className,
   frame = true,
+  stack = false,
+  stickyFirst = false,
   ...props
-}: React.HTMLAttributes<HTMLTableElement> & { frame?: boolean }) {
+}: React.HTMLAttributes<HTMLTableElement> & {
+  frame?: boolean;
+  /**
+   * ۳.۱۵.۱ — «جدولِ پشته‌ای» روی گوشی (زیرِ ۷۶۸px): هر ردیف یک کارت، هر خانه یک سطر با برچسبِ
+   * ستونش (از `data-label` ِ خودِ خانه). برای جدول‌های فهرستی که روی گوشی افقی می‌لغزیدند.
+   * خانهٔ اول (بی `data-label`) عنوانِ کارت است. قواعد در globals.css (`table[data-stack]`).
+   */
+  stack?: boolean;
+  /**
+   * ۳.۱۵.۱ — ستونِ اول هنگامِ پیمایشِ افقی ثابت می‌ماند (روشِ رایجِ جدولِ شبکه‌ای مثلِ برنامهٔ
+   * هفتگی): روی گوشی روزها می‌لغزند ولی نامِ عضو دیده می‌شود.
+   */
+  stickyFirst?: boolean;
+}) {
   return (
     /*
       ⚠️ جدولِ مستقل همان سطحِ سفیدِ کارت است (DESIGN.md §۷): گوشهٔ ۱۲ و زمینهٔ
@@ -30,6 +45,8 @@ export function Table({
     >
       <table
         data-slot="table"
+        data-stack={stack || undefined}
+        data-sticky-first={stickyFirst || undefined}
         className={cn(
           'w-full caption-bottom text-sm',
           /*
