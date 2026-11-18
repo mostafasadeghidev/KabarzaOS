@@ -301,7 +301,7 @@ export function MemberDashboardV2({
       node: (
         <Panel title={t('پروژه‌های باز من')} icon={<FolderKanban />} action={{ href: '/projects', label: t('پروژه‌ها') }}>
           {data.member.rows.length === 0 ? <Empty>{t('پروژهٔ بازی ندارید.')}</Empty> : (
-            <ExpandableList inPlace limit={6} className="grid gap-2 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
+            <ExpandableList inPlace limit={6} className="grid gap-2 @lg/kzcard:grid-cols-2 @4xl/kzcard:grid-cols-3">
               {data.member.rows.map((p) => (
                 <li key={p.id}>
                   <Link href={`/projects/${p.id}`} className="grid gap-2 rounded-xl border p-3 transition-colors hover:border-primary/40">

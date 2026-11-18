@@ -39,7 +39,7 @@ export async function DashboardTimeLog({ actor, part = 'both' }: {
 
   return (
     // ۳.۱۵.۲ — دو کارت هم‌عرض (۱:۱)؛ پیش از این «ثبتِ ساعت» دو سوم بود و «هفتهٔ من» یک سوم.
-    <div className={cn('grid gap-4', showLog && part === 'both' && '@3xl/main:grid-cols-2')}>
+    <div className={cn('kz-tl grid gap-4', showLog && part === 'both' && '@3xl/main:grid-cols-2')}>
       {showLog && (
         <div className="grid">
           <Panel
@@ -95,14 +95,14 @@ function MyWeek({ days, todayMinutes, weekMinutes }: { days: WeekDay[]; todayMin
         </div>
       </div>
       {/* هفت ستون: ارتفاع = سهمِ هر روز از پُرترین روز. امروز با رنگِ اصلی، روزهای آینده نقطه‌چین. */}
-      <ul className="grid grid-cols-7 items-end gap-1.5" aria-label={t('ساعتِ هر روزِ این هفته')}>
+      <ul className="kz-bars grid grid-cols-7 items-end gap-1.5" aria-label={t('ساعتِ هر روزِ این هفته')}>
         {days.map((d) => {
           const i = weekdayOfDate(d.date);
           const full = i === null ? d.date : t(WEEKDAYS[i]!);
           return (
             <li key={d.date} className="grid justify-items-center gap-1">
               <span className="sr-only">{full}: {hhmm(d.minutes)}</span>
-              <span aria-hidden className="flex h-16 w-full items-end">
+              <span aria-hidden className="kz-bar-track flex h-16 w-full items-end">
                 <span
                   className={cn(
                     'block w-full rounded-md',

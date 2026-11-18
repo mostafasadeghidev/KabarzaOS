@@ -27,7 +27,7 @@ export function QuickNote({ userId }: { userId: number }) {
   }, [text, saved, key]);
 
   return (
-    <section className="grid content-start gap-2 rounded-2xl border bg-card p-4">
+    <section className="flex h-full min-h-0 flex-col gap-2 rounded-2xl border bg-card p-4">
       <header className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-bold"><NotebookPen className="size-4 text-muted-foreground" />{t('یادداشتِ من')}</h2>
         <span className="flex items-center gap-2"><span className="text-[11px] text-muted-foreground">{saved ? t('ذخیره شد') : t('در حالِ ذخیره…')}</span><CardHelp /></span>
@@ -38,7 +38,7 @@ export function QuickNote({ userId }: { userId: number }) {
         placeholder={t('کارهای خودم، یادداشتِ جلسه، هر چیزی… فقط خودتان می‌بینید.')}
         rows={5}
         dir="auto"
-        className="min-h-28 w-full resize-y rounded-xl border bg-background/50 p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="kz-grow min-h-28 w-full resize-y rounded-xl border bg-background/50 p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
       />
     </section>
   );

@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
  * ردیف می‌گیرد — پس کارت‌ها کش نمی‌آیند و دو کارتِ کوتاه در یک ستون زیرِ هم می‌نشینند.
  */
 
-export type WidgetSize = 's' | 'm' | 'l' | 'xl';
+export type WidgetSize = 's' | 'sm' | 'm' | 'l' | 'xl';
 export interface WidgetDef {
   id: string;
   title: string;
@@ -40,8 +40,13 @@ export interface WidgetDef {
 }
 interface Prefs {
   order: string[]; hidden: string[]; shown: string[]; sizes: Record<string, WidgetSize>;
-  /** ستونِ شروعِ هر کارت روی شبکهٔ چهارستونه (۰ = ستونِ اول). نبودن = خودکار (کوتاه‌ترین ستون). */
+  /**
+   * ستونِ شروعِ هر کارت روی شبکهٔ پایه (۰ = ستونِ اول). نبودن = خودکار (کوتاه‌ترین ستون).
+   * ⚠️ پایه از ۴ ستون به ۱۲ ستونِ ریز رفت (اندازهٔ «یک‌سوم»)؛ چیدمانِ بی basis قدیمی است و ×۳ می‌شود (upgrade).
+   */
   cols?: Record<string, number>;
+  /** پایهٔ ستون‌های cols — ۱۲؛ نبودن = چیدمانِ قدیمیِ چهارستونه. */
+  basis?: 12;
   /**
    * قدِ دلخواهِ کارت به پیکسل — **ثابت**، نه حداقل: با دادهٔ زیاد کارت بلند نمی‌شود و آنچه جا نشد پشتِ
    * «مشاهدهٔ بیشتر» می‌رود (ExpandFillProvider). وگرنه هم‌ترازیِ کاربر با اولین روزِ شلوغ می‌شکست.
@@ -67,7 +72,26 @@ function regroup(rows: string[][] = [], id: string, withId?: string): string[][]
   }
   return out.filter((g) => g.length > 1);
 }
-const WIDTH: Record<WidgetSize, number> = { s: 1, m: 2, l: 3, xl: 4 };
+/**
+ * شبکهٔ پهن ۱۲ ستونِ ریز دارد تا «یک‌سوم» (۴) کنارِ «یک‌چهارم» (۳) جا شود؛ شبکهٔ متوسط ۲ ستون و گوشی ۱.
+ * قدِ هر اندازه روی شبکهٔ پهن برابرِ همان چهارستونهٔ قبلی است (۳ ستونِ ریز + ۲ فاصله = یک ستونِ قدیم).
+ */
+const BASIS = 12;
+const WIDTH12: Record<WidgetSize, number> = { s: 3, sm: 4, m: 6, l: 9, xl: 12 };
+const WIDTH2: Record<WidgetSize, number> = { s: 1, sm: 1, m: 2, l: 2, xl: 2 };
+const widthOf = (size: WidgetSize, cols: number) => (cols >= BASIS ? WIDTH12[size] : Math.min(cols, WIDTH2[size]));
+/** شروع‌های مجاز روی شبکهٔ پهن: مرزِ چهارم‌ها و سوم‌ها — تا کارت‌ها روی خطوطِ معنادار بنشینند، نه هر ستونِ ریز. */
+const STARTS = [0, 3, 4, 6, 8, 9];
+const startsFor = (cols: number, wd: number) =>
+  cols >= BASIS ? STARTS.filter((c) => c <= cols - wd) : Array.from({ length: Math.max(1, cols - wd + 1) }, (_, i) => i);
+/** نزدیک‌ترین شروعِ مجاز. */
+const snapStart = (c: number, cols: number, wd: number) =>
+  startsFor(cols, wd).reduce((a, b) => (Math.abs(b - c) < Math.abs(a - c) ? b : a), 0);
+/** چیدمانِ قدیمیِ چهارستونه (ذخیره‌شده یا پیش‌فرض) ← پایهٔ ۱۲. */
+function upgrade<T extends { cols?: Record<string, number>; basis?: 12 }>(p: T): T {
+  if (p.basis === BASIS || !p.cols) return { ...p, basis: BASIS };
+  return { ...p, basis: BASIS, cols: Object.fromEntries(Object.entries(p.cols).map(([k, v]) => [k, v * 3])) };
+}
 interface Pos { c: number; y: number; wd: number; span: number }
 
 /**
@@ -86,7 +110,10 @@ function placeAll(
   const hits = (c: number, wd: number, y: number, span: number) =>
     placed.some((p) => p.c < c + wd && c < p.c + p.wd && p.y < y + span && y < p.y + p.span);
   const top = (c: number, wd: number) => Math.max(...heights.slice(c, c + wd));
-  const colOf = (id: string, wd: number) => Math.min(Math.max(0, Math.floor(((prefCols[id] ?? 0) * cols) / 4)), cols - wd);
+  const colOf = (id: string, wd: number) => {
+    const c = Math.floor(((prefCols[id] ?? 0) * cols) / BASIS);
+    return cols >= BASIS ? snapStart(c, cols, wd) : Math.min(Math.max(0, c), cols - wd);
+  };
   // گروهِ هم‌ردیف فقط بینِ کارت‌های دیده‌شده با ستونِ انتخابی (کارتِ خودکار جایش از پیش معلوم نیست).
   const inList = new Map(list.map((w) => [w.id, w]));
   const groupOf = new Map<string, Array<{ id: string; size: WidgetSize }>>();
@@ -102,23 +129,36 @@ function placeAll(
     if (group) {
       // همهٔ اعضا با هم، روی پایین‌ترین لبهٔ ستون‌هایشان — یک خطِ شروعِ مشترک.
       if (group.some((g) => !spans[g.id])) return null;
-      const y = Math.max(...group.map((g) => { const wd = Math.min(cols, WIDTH[g.size]); return top(colOf(g.id, wd), wd); }));
-      for (const g of group) {
-        const wd = Math.min(cols, WIDTH[g.size]);
-        const c = colOf(g.id, wd);
+      // ستونِ اعضا بی هم‌پوشانی: با عوض شدنِ اندازه (مثلاً ¼ ← ⅓) شروعِ ذخیره‌شده ممکن است در کارتِ کناری
+      // برود؛ عضوِ بعدی به اولین شروعِ مجازِ بعد از قبلی می‌رود، و اگر جا نبود از گروه بیرون و عادی جا می‌گیرد.
+      const fitted: Array<{ id: string; c: number; wd: number }> = [];
+      let end = 0;
+      const byCol = [...group].sort((a, b) => colOf(a.id, widthOf(a.size, cols)) - colOf(b.id, widthOf(b.size, cols)));
+      for (const g of byCol) {
+        const wd = widthOf(g.size, cols);
+        let c = colOf(g.id, wd);
+        if (c < end) c = startsFor(cols, wd).find((x) => x >= end) ?? -1;
+        if (c < 0) { groupOf.delete(g.id); continue; }
+        fitted.push({ id: g.id, c, wd });
+        end = c + wd;
+      }
+      const y = fitted.length ? Math.max(...fitted.map((g) => top(g.c, g.wd))) : 0;
+      for (const g of fitted) {
+        const { wd, c } = g;
         const span = spans[g.id]!;
         for (let i = c; i < c + wd; i++) heights[i] = Math.max(heights[i]!, y + span);
         placed.push({ c, y, wd, span });
         out.set(g.id, { c, y, wd, span });
       }
-      continue;
+      // خودش بیرون ماند (جا نشد): مثلِ کارتِ عادی همین پایین جا می‌گیرد.
+      if (out.has(w.id)) continue;
     }
     const own = spans[w.id];
     if (!own) return null;
     // فاصلهٔ بالا جزوِ جای کارت است: کارت از y+off شروع می‌شود و ستون تا انتهای آن پر است.
     const off = Math.max(0, Math.round(offsets[w.id] ?? 0));
     const span = own + off;
-    const wd = Math.min(cols, WIDTH[w.size]);
+    const wd = widthOf(w.size, cols);
     let c: number;
     let y: number;
     const pref = prefCols[w.id];
@@ -129,7 +169,7 @@ function placeAll(
     } else {
       // خودکار: پایین‌ترین جای خالیِ ممکن در هر ستون — جاهای خالیِ کنارِ کارت‌های پهن پر می‌شوند.
       c = 0; y = Infinity;
-      for (let i = 0; i <= cols - wd; i++) {
+      for (const i of startsFor(cols, wd)) {
         const tries = [0, ...placed.filter((p) => p.c < i + wd && i < p.c + p.wd).map((p) => p.y + p.span)].sort((a, b) => a - b);
         const fit = tries.find((ty) => !hits(i, wd, ty, span)) ?? top(i, wd);
         if (fit < y) { y = fit; c = i; }
@@ -143,12 +183,15 @@ function placeAll(
 }
 
 const SIZE_CLASS: Record<WidgetSize, string> = {
-  s: '',
-  m: '@xl/main:col-span-2',
-  l: '@xl/main:col-span-2 @5xl/main:col-span-3',
-  xl: '@xl/main:col-span-2 @5xl/main:col-span-4',
+  s: '@5xl/main:col-span-3',
+  sm: '@5xl/main:col-span-4',
+  m: '@xl/main:col-span-2 @5xl/main:col-span-6',
+  l: '@xl/main:col-span-2 @5xl/main:col-span-9',
+  xl: '@xl/main:col-span-2 @5xl/main:col-span-12',
 };
-const SIZE_LABEL: Record<WidgetSize, string> = { s: 'کوچک', m: 'متوسط', l: 'بزرگ', xl: 'تمام‌عرض' };
+const SIZE_LABEL: Record<WidgetSize, string> = { s: 'یک‌چهارم', sm: 'یک‌سوم', m: 'نصف', l: 'سه‌چهارم', xl: 'تمام‌عرض' };
+/** برچسبِ کوتاهِ دکمه‌های اندازه روی نوارِ کارت. */
+const SIZE_SHORT: Record<WidgetSize, string> = { s: '¼', sm: '⅓', m: '½', l: '¾', xl: '1' };
 
 /** ردیفِ پایه و فاصلهٔ شبکه (gap-4) — باید با کلاس‌های شبکه یکی باشد. */
 const ROW = 8;
@@ -179,7 +222,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
 }) {
   const t = useT();
   const key = scope ? `kz-dash-layout-${scope}-${userId}` : `kz-dash-layout-${userId}`;
-  const base = useMemo<Prefs>(() => (defaults ? { ...EMPTY, ...defaults, sizes: defaults.sizes ?? {} } : EMPTY), [defaults]);
+  const base = useMemo<Prefs>(() => (defaults ? upgrade({ ...EMPTY, ...defaults, sizes: defaults.sizes ?? {} }) : { ...EMPTY, basis: BASIS }), [defaults]);
   const [prefs, setPrefs] = useState<Prefs>(base);
   const [open, setOpen] = useState(false);
   /** حالتِ ویرایشِ زنده: کشیدن و رها کردن، اندازه و پنهان کردن روی خودِ کارت. */
@@ -256,7 +299,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
     return () => document.removeEventListener('dragover', onOver);
   }, [dragId]);
   useEffect(() => {
-    try { const raw = localStorage.getItem(key); if (raw) setPrefs({ ...EMPTY, ...JSON.parse(raw) as Partial<Prefs> }); } catch { /* خصوصی */ }
+    try { const raw = localStorage.getItem(key); if (raw) setPrefs(upgrade({ ...EMPTY, ...JSON.parse(raw) as Partial<Prefs> })); } catch { /* خصوصی */ }
   }, [key]);
   const save = (p: Prefs) => { setPrefs(p); try { localStorage.setItem(key, JSON.stringify(p)); } catch { /* پر */ } };
 
@@ -288,8 +331,8 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
   const heightOf: Record<string, number> = { ...(prefs.heights ?? {}), ...(adjust?.h !== undefined ? { [adjust.id]: adjust.h } : {}) };
   const offsetOf: Record<string, number> = { ...(prefs.offsets ?? {}), ...(adjust?.off !== undefined ? { [adjust.id]: adjust.off } : {}) };
   const asList = (ws: WidgetDef[]) => ws.map((w) => ({ id: w.id, size: sizeOf(w) }));
-  /** ستونِ نمای فعلی ← ستونِ شبکهٔ چهارستونه (همان چیزی که ذخیره می‌شود). */
-  const to4 = (c: number) => (cols === 4 ? c : Math.round((c * 4) / cols));
+  /** ستونِ نمای فعلی ← ستونِ شبکهٔ پایه (همان چیزی که ذخیره می‌شود). */
+  const to4 = (c: number) => (cols === BASIS ? c : Math.round((c * BASIS) / cols));
 
   // نمای در حالِ کشیدن: ترتیب و ستونِ پیش‌نمایش؛ وگرنه ترجیحِ ذخیره‌شده.
   const shown = useMemo(() => {
@@ -328,8 +371,9 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
     const colW = (rect.width - GAP * (cols - 1)) / cols;
     const rtl = getComputedStyle(el).direction === 'rtl';
     const rel = rtl ? rect.right - x : x - rect.left;
-    const wd = Math.min(cols, WIDTH[sizeOf(dragged)]);
-    const col = Math.min(Math.max(0, Math.floor(rel / (colW + GAP))), cols - wd);
+    const wd = widthOf(sizeOf(dragged), cols);
+    // مرکزِ کارت زیرِ نشانگر، و بعد نزدیک‌ترین شروعِ مجاز.
+    const col = snapStart(Math.floor(rel / (colW + GAP)) - Math.floor(wd / 2), cols, wd);
     const row = (y - rect.top) / (ROW + GAP);
     // چیدمانِ بقیه بی کارتِ کشیده‌شده — ثابت، تا پیش‌نمایش نوسان نکند.
     const others = visible.filter((w) => w.id !== dragId);
@@ -367,7 +411,8 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
   const shiftCol = (id: string, dir: -1 | 1) => {
     const pos = layout?.get(id);
     if (!pos) return;
-    const c = Math.min(Math.max(0, pos.c + dir), cols - pos.wd);
+    const starts = startsFor(cols, pos.wd);
+    const c = dir > 0 ? (starts.find((x) => x > pos.c) ?? pos.c) : ([...starts].reverse().find((x) => x < pos.c) ?? pos.c);
     if (c === pos.c) return;
     const f = freeze();
     save({ ...prefs, order: f.order, cols: { ...f.cols, [id]: to4(c) } });
@@ -532,7 +577,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
         ref={gridRef}
         data-dash-editing={editing ? '1' : undefined}
         className={cn(
-          'relative grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4',
+          'relative grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-12',
           !layout && 'grid-flow-row-dense',
           measured && 'auto-rows-[8px]',
           // جای رها کردن زیرِ همهٔ کارت‌ها؛ و بالا جای نوارِ شناورِ ردیفِ اول.
@@ -573,7 +618,8 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
               // data-fixed: محتوای کارت خودش را با قدِ کاربر جور می‌کند (.kz-fit در globals.css)؛ آنچه باز هم
               // جا نشد اسکرولِ باریک می‌گیرد، نه بریده شدن.
               data-fixed={pos && heightOf[w.id] ? '' : undefined}
-              className={cn('grid min-w-0', pos && heightOf[w.id] && 'grid-rows-[minmax(0,1fr)] overflow-x-hidden overflow-y-auto [scrollbar-width:thin]', editing && 'pointer-events-none select-none')}
+              // kz-card: ظرفِ عرضِ کارت (و با قدِ ثابت، ظرفِ قد) — محتوا با اندازهٔ خودِ کارت جور می‌شود، نه صفحه.
+              className={cn('kz-card @container/kzcard grid min-w-0', pos && heightOf[w.id] && 'grid-rows-[minmax(0,1fr)] overflow-x-hidden overflow-y-auto [scrollbar-width:thin]', editing && 'pointer-events-none select-none')}
               style={pos && heightOf[w.id] ? { height: heightOf[w.id] } : undefined}
             >
               {/* قدِ ثابت: فهرست‌های داخلِ کارت جای باقی‌مانده را پر می‌کنند و بقیه پشتِ «مشاهدهٔ بیشتر». */}
@@ -642,9 +688,10 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
                       onClick={() => resize(w, sz)}
                       aria-pressed={sizeOf(w) === sz}
                       aria-label={t(SIZE_LABEL[sz])}
-                      className={cn('h-6 min-w-6 rounded-md px-1 text-[10px] font-semibold uppercase', sizeOf(w) === sz ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground')}
+                      title={t(SIZE_LABEL[sz])}
+                      className={cn('num h-6 min-w-6 rounded-md px-1 text-xs font-semibold', sizeOf(w) === sz ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground')}
                     >
-                      {sz}
+                      {SIZE_SHORT[sz]}
                     </button>
                   ))}
                 </span>
