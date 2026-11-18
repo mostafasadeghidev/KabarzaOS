@@ -2,6 +2,18 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.17.2]
+
+### Fixed
+
+Found on the installed app on a phone:
+
+- **Task window title broke into a narrow column.** The title sat between the task number and the "Copy link" button, so on a phone it wrapped into three centred lines. The header now has two rows: number, project and Copy link on top, then the full-width, start-aligned title.
+- **"Ctrl+V" and "drop here" hints on touch screens.** File boxes on phones now say "Tap to add an image or file" instead of drag-and-drop and keyboard-shortcut hints.
+- **Access tables on phones.** The access, cloud-account and mail-account tables scrolled sideways, wrapped service names and cut off account IDs. Each row is now a card on phones.
+- **Availability board on phones.** Seven tall day cards were stacked one after another. Phones now show a row of day chips (today by default, with the number of people) and one day at a time. Each person is one line, with the name on one side and the time ranges on the other, also on larger screens.
+- **Availability and team week grids on phones.** The pinned name column, holding name, roles and "last seen", took more than half the screen, so only one day showed. On phones it is now narrow (shortened name, "last seen" in the tooltip, roles from tablet width up), so two or three days are visible.
+
 ## [3.17.1]
 
 ### Fixed

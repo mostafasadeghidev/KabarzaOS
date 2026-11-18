@@ -222,10 +222,16 @@ export function AvailabilityBoard(props: BoardProps) {
               <TableBody>
                 {shown.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell>
-                      <PersonName row={row} />
+                    {/*
+                      ⚠️ گوشی (۳.۱۷.۲): ستونِ ثابتِ نام باریک — نامِ کوتاه‌شده و «آخرین حضور» در راهنمای شناور؛
+                      نقش‌ها فقط از md. پیش از این نام و نقش و «آخرین حضور» بیش از نیمِ صفحه را می‌گرفتند و
+                      فقط یک روز دیده می‌شد.
+                    */}
+                    <TableCell className="max-md:max-w-[8.5rem]">
+                      <span className="md:hidden"><PersonName row={row} compact /></span>
+                      <span className="hidden md:inline"><PersonName row={row} /></span>
                       {row.roleNames.length > 0 && (
-                        <span className="ms-1 inline-flex gap-1">
+                        <span className="ms-1 hidden gap-1 md:inline-flex">
                           {row.roleNames.map((n) => (
                             <span key={n} className="rounded bg-muted px-1 text-[10px] text-muted-foreground">
                               {n}
@@ -373,11 +379,35 @@ function ViewLink({
  */
 function BoardColumns({ order, todayIdx, rows }: BoardProps) {
   const tr = useT();
+  /**
+   * ۳.۱۷.۲ — گوشی: یک روز در هر لحظه با ردیفِ روزها (پیش‌فرض امروز)، نه هفت کارتِ بلندِ زیرِ هم.
+   * از md به بالا همهٔ روزها کنارِ هم می‌مانند.
+   */
+  const [day, setDay] = useState<number>(todayIdx ?? order[0] ?? 0);
+  const peopleOf = (d: number) => rows.filter((r) => r.days[d] !== undefined && !(d === todayIdx && r.onLeave));
   return (
-    /*
+    <>
+    <div role="tablist" aria-label={tr('روز')} className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
+      {order.map((d) => (
+        <button
+          key={d}
+          type="button"
+          role="tab"
+          aria-selected={day === d}
+          onClick={() => setDay(d)}
+          className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${day === d ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}
+        >
+          {tr(WEEKDAYS[d] ?? '')}
+          {d === todayIdx && day !== d && <span aria-hidden className="size-1.5 rounded-full bg-primary" />}
+          <span className={`num ${day === d ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>{peopleOf(d).length}</span>
+        </button>
+      ))}
+    </div>
+
+    {/*
       ⚠️ ۳.۱۵.۲ — ستون‌ها با کمینهٔ ۱۳rem، نه هفت ستونِ ثابت: در عرضِ معمولی هر روز ~۱۸۰ پیکسل می‌شد و
       نام، «آخرین حضور» و بازه‌ها از کادر بیرون می‌زدند. حالا هر چند روز که جا شود کنارِ هم است.
-    */
+    */}
     <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2">
       {order.map((d) => {
         const isToday = d === todayIdx;
@@ -390,7 +420,7 @@ function BoardColumns({ order, todayIdx, rows }: BoardProps) {
           <div
             key={d}
             data-today-col={isToday || undefined}
-            className={`grid content-start gap-1.5 rounded-lg border p-2 ${
+            className={`grid content-start gap-1.5 rounded-lg border p-2 ${d !== day ? 'max-md:hidden' : ''} ${
               isToday ? 'border-primary/40 bg-[color-mix(in_oklab,var(--color-primary)_6%,var(--color-card))]' : 'bg-card'
             }`}
           >
@@ -413,9 +443,10 @@ function BoardColumns({ order, todayIdx, rows }: BoardProps) {
                 {people.map((p) => {
                   const slots = p.days[d] ?? [];
                   return (
-                    <li key={p.id} className="grid min-w-0 gap-1 text-xs">
-                      <PersonName row={p} compact />
-                      <span className="flex flex-wrap gap-1 ps-7">
+                    // ۳.۱۷.۲ — یک خط: نام یک سو، بازه‌ها سوی دیگر؛ اگر جا نشد بازه‌ها به خطِ بعد می‌روند.
+                    <li key={p.id} className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs">
+                      <span className="min-w-0 flex-1"><PersonName row={p} compact /></span>
+                      <span className="flex flex-wrap justify-end gap-1">
                         {slots.length === 0 ? (
                           <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{tr('تمام روز')}</span>
                         ) : slots.map((s, i) => (
@@ -433,5 +464,6 @@ function BoardColumns({ order, todayIdx, rows }: BoardProps) {
         );
       })}
     </div>
+    </>
   );
 }

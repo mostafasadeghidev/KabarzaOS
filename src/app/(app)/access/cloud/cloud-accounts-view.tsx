@@ -147,7 +147,7 @@ export function CloudAccountsView({ data, isOwner }: { data: Data; isOwner: bool
       {data.accounts.length === 0 ? (
         <EmptyState icon={<Cloud className="size-5" />} title={tr('این گروه هنوز حسابی ندارد')} />
       ) : (
-        <Table>
+        <Table stack>
           <TableHeader>
             <TableRow>
               <TableHead>{tr('حساب')}</TableHead>
