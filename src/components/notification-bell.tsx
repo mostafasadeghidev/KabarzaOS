@@ -163,7 +163,8 @@ export function NotificationBell({
         <DropdownMenuSeparator />
 
         {items.length === 0 ? (
-          <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t("اعلانی ندارید.")}</p>
+          // زنگوله فقط خوانده‌نشده‌ها را دارد (۳.۱۵.۱)؛ خوانده‌شده‌ها در «همهٔ اعلان‌ها» هستند.
+          <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t("اعلانِ خوانده‌نشده‌ای ندارید.")}</p>
         ) : (
           <ul>
             {items.map((n) => (

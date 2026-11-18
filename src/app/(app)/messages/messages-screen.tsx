@@ -50,8 +50,11 @@ export async function MessagesScreen({ threadId = null }: { threadId?: number | 
       ⚠️ ارتفاعِ ثابت (پنجره منهای نوارِ بالای اپ): صندوق و گفتگو باید هر کدام
       خودشان اسکرول بخورند، نه کلِ صفحه — وگرنه گفتگوی بلند کادرِ پاسخ را
       از دیدرس بیرون می‌برد.
+
+      ⚠️ گوشی (۳.۱۵.۱): منهای منوی پایین هم (۵.۵rem = ارتفاعِ منو + فاصله‌اش از لبه). پیش از این قاب تا
+      تهِ صفحه می‌رفت و منوی پایین کادرِ نوشتنِ پیام را کامل می‌پوشاند.
     */
-    <PageShell className="h-[calc(100svh-3rem)] min-h-[32rem] flex-none">
+    <PageShell className="h-[calc(100svh-3rem-5.5rem-env(safe-area-inset-bottom))] min-h-[28rem] flex-none md:h-[calc(100svh-3rem)] md:min-h-[32rem]">
       <MessagesView
         header={{
           title: t("پیام‌ها"),

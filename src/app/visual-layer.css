@@ -860,3 +860,15 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   [data-expandable] > * { filter: none !important; }
   [data-expandable] + button { display: none !important; }
 }
+
+/*
+ * ۳.۱۵.۱ — گوشی، آخرِ فایل عمداً: قاعدهٔ «۲) منوهای کشویی» (بالاتر) بعد از بلوکِ گوشی آمده بود و با همان
+ * وزن آن را باطل می‌کرد؛ منوی زنگوله روی گوشی نیمه‌شفاف بود و متنِ صفحه از پشتش دیده می‌شد.
+ */
+@media (max-width: 767px) {
+  [data-slot='dropdown-menu-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='command'] {
+    background: var(--color-popover);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}

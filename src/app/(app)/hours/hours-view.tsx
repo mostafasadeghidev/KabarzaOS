@@ -325,7 +325,8 @@ export function HoursView({ data }: { data: HoursData }) {
               <FieldLabel htmlFor="f-to" className="text-xs">{t("تا تاریخ")}</FieldLabel>
               <DatePicker id="f-to" name="to" size="sm" className="w-[9.5rem]" defaultValue={data.filter.to} />
             </Field>
-            <Field className="flex-1">
+            {/* ⚠️ کمینهٔ ۱۰rem (۳.۱۵.۱): روی گوشی کنارِ دو تاریخ به ۱۰۰ پیکسل فشرده می‌شد و «نام پروژ» بریده بود؛ حالا به سطرِ بعد می‌رود. */}
+            <Field className="min-w-40 flex-1">
               <FieldLabel htmlFor="f-project" className="text-xs">{t("پروژه")}</FieldLabel>
               <Input
                 id="f-project" name="project" list="hours-project-list" autoComplete="off"

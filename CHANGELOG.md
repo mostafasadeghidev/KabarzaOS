@@ -2,6 +2,20 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.15.1]
+
+### Fixed
+
+Found by testing the installed app on a phone (450 px wide):
+
+- **The message box was hidden under the bottom menu.** In an open conversation the bottom menu covered the whole text box; the conversation now ends above the menu.
+- **Tasks on a phone.** The task list was a seven-column table about 710 px wide, so the page scrolled sideways and titles wrapped one word per line. On phones each task is now a card: full title, status, priority and deadline chips, then project and assignee. Wider screens keep the table.
+- **Read notifications stayed in the bell.** The bell listed the last 30 notifications, read or not, and a read one only lost its bold, which is hard to see in dark mode. The bell now lists unread notifications only; reading one removes it, and the full history stays on the notifications page.
+- **Menus were see-through on phones.** A later style rule overrode the phone rule, so the bell and other dropdowns were semi-transparent and page text showed through. They are solid on phones again.
+- **Times jumped after loading, and the Messages page had a React error.** For users without a personal time zone the server rendered times in UTC and the phone in its own zone (07:32 vs 11:02). The page also failed when a message contained Windows line breaks. Both sides now use the app's time zone (UTC if none is set), and line breaks are normalised.
+- **Cut-off tabs.** Profile, My team and Finance tabs scrolled sideways with the last tab half visible. They now move extra tabs under "More", like Settings and project pages.
+- **Smaller fixes.** The "Ctrl+K" hint is hidden on phones, which have no keyboard shortcut. The project filter on the Hours page no longer shrinks until its placeholder is cut.
+
 ## [3.15.0]
 
 ### Changed

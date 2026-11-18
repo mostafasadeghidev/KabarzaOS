@@ -67,11 +67,14 @@ describe('زنگ و خواندن', () => {
     expect(bell.unread).toBe(bell.items.length);
   });
 
-  it('خواندنِ یک اعلان شمار را کم می‌کند', async () => {
+  it('خواندنِ یک اعلان شمار را کم می‌کند و آن را از زنگوله برمی‌دارد (۳.۱۵.۱)', async () => {
     const before = await service.listNotifications(actor(active));
-    await service.markRead(actor(active), before.items[0]!.id);
+    const read = before.items[0]!.id;
+    await service.markRead(actor(active), read);
     const after = await service.listNotifications(actor(active));
     expect(after.unread).toBe(before.unread - 1);
+    expect(after.items.map((n) => n.id)).not.toContain(read);
+    expect(after.items.every((n) => !n.isRead)).toBe(true);
   });
 
   it('⚠️ کاربرِ دیگر نمی‌تواند اعلانِ من را بخواند', async () => {
@@ -80,7 +83,7 @@ describe('زنگ و خواندن', () => {
     await service.markRead(actor(financeOnly), unreadOne.id);
 
     const after = await service.listNotifications(actor(active));
-    expect(after.items.find((n) => n.id === unreadOne.id)!.isRead).toBe(false);
+    expect(after.items.find((n) => n.id === unreadOne.id)?.isRead).toBe(false);
   });
 
   it('«خواندنِ همه» صفر می‌کند', async () => {
