@@ -32,7 +32,8 @@ const ADMIN_LAYOUT: DefaultLayout = {
     activity: 0, note: 2, 'chart-trend': 0, online: 3, available: 3, 'chart-members': 2,
   },
   heights: { meetings: 86, risk: 296, week: 296, 'inbox-team': 261, 'a-qa': 261 },
-  offsets: { meetings: 1, 'chart-members': 8, 'chart-trend': 6 },
+  // جفت‌هایی که مالک لبهٔ بالایشان را هم‌تراز کرده بود — هم‌ردیف، تا با دادهٔ زیاد از هم جدا نشوند.
+  rows: [['client-waiting', 'meetings'], ['week', 'risk'], ['inbox-team', 'a-qa'], ['chart-trend', 'chart-members']],
 };
 import { MemberHoursChart, StatusChart, WeeklyTrendChart } from './charts';
 import type { getDashboard, RiskItem } from '@/server/dashboard';
@@ -53,7 +54,7 @@ function Panel({ title, icon, action, children, className }: {
   title: string; icon?: React.ReactNode; action?: { href: string; label: string }; children: React.ReactNode; className?: string;
 }) {
   return (
-    <section className={cn('grid h-full content-start gap-3 rounded-2xl border bg-card p-4', className)}>
+    <section className={cn('flex h-full min-h-0 flex-col gap-3 rounded-2xl border bg-card p-4', className)}>
       <header className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-bold">{icon}{title}</h2>
         {action
@@ -190,7 +191,7 @@ export function DashboardV2({
           {atRisk.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('همهٔ پروژه‌ها روی روال‌اند.')}</p>
           ) : (
-            <ExpandableList scrollAt={20} className="grid divide-y">
+            <ExpandableList inPlace className="grid divide-y">
               {atRisk.map((p) => (
                 <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                   <span className={cn('grid size-7 shrink-0 place-items-center rounded-lg', tone[p.tone])}>{p.icon}</span>
@@ -212,7 +213,7 @@ export function DashboardV2({
       node: (
         <Panel title={t('جلساتِ این هفته')} icon={<CalendarDays className="size-4 text-muted-foreground" />} action={{ href: '/meetings', label: t('جلسات') }}>
           {today.meetings.length === 0 ? <p className="text-sm text-muted-foreground">{t('جلسه‌ای ثبت نشده.')}</p> : (
-            <ExpandableList scrollAt={20} className="grid gap-1.5 text-sm">
+            <ExpandableList inPlace className="grid gap-1.5 text-sm">
               {today.meetings.map((m) => (
                 <li key={m.id} className="flex items-center justify-between gap-3">
                   <span className="truncate">{m.title}</span>
@@ -244,7 +245,7 @@ export function DashboardV2({
             <div className="rounded-xl bg-amber-500/10 py-2"><div className="num text-lg font-bold">{today.away.length}</div><div className="text-[11px] text-muted-foreground">{t('مرخصی')}</div></div>
           </div>
           {today.timers.length > 0 && (
-            <ExpandableList scrollAt={20} className="grid gap-1.5 text-sm">
+            <ExpandableList inPlace className="grid gap-1.5 text-sm">
               {today.timers.map((w) => (
                 <li key={w.userId} className="flex items-center justify-between gap-2">
                   <span className="flex min-w-0 items-center gap-1"><UserName userId={w.userId} name={w.name} size="sm" />{w.project && <span className="truncate text-xs text-muted-foreground">· {w.project}</span>}</span>
@@ -261,7 +262,7 @@ export function DashboardV2({
       node: (
         <Panel title={t('ظرفیتِ تیم')} icon={<Gauge className="size-4 text-muted-foreground" />} action={{ href: '/team', label: t('تیمِ من') }}>
           <p className="-mt-1 text-[11px] text-muted-foreground">{t('تسکِ باز و ساعتِ ۷ روزِ اخیرِ هر عضو — پربارترها بالا.')}</p>
-          <ExpandableList scrollAt={20} className="grid gap-2">
+          <ExpandableList inPlace className="grid gap-2">
             {inbox.capacity.map((c) => (
               <li key={c.userId} className="grid grid-cols-[minmax(0,8rem)_minmax(0,1fr)] items-center gap-3 text-sm">
                 <span className="min-w-0 truncate"><UserName userId={c.userId} name={c.name} size="sm" /></span>
@@ -280,7 +281,7 @@ export function DashboardV2({
       node: (
         <Panel title={t('کارفرماهای منتظرِ پاسخ')} icon={<MessageSquareReply className="size-4 text-muted-foreground" />}>
           {inbox.clientWaiting.length === 0 ? <p className="text-sm text-muted-foreground">{t('کارفرمایی منتظرِ پاسخ نیست.')}</p> : (
-            <ExpandableList scrollAt={20} className="grid divide-y">
+            <ExpandableList inPlace className="grid divide-y">
               {inbox.clientWaiting.map((c) => (
                 <li key={c.rootId} className="grid gap-0.5 py-2">
                   <Link href={`/projects/${c.projectId}?tab=comments`} className="truncate text-sm font-medium hover:underline">{c.excerpt}</Link>
@@ -318,7 +319,7 @@ export function DashboardV2({
       node: (
         <Panel title={t('آنلاین اکنون')}>
           {today.online.length === 0 ? <p className="text-sm text-muted-foreground">{t('کسی آنلاین نیست.')}</p> : (
-            <ExpandableList scrollAt={20} className="grid gap-1.5 text-sm">{today.online.map((u) => <li key={u.id}><UserName userId={u.id} name={u.name} size="sm" /></li>)}</ExpandableList>
+            <ExpandableList inPlace className="grid gap-1.5 text-sm">{today.online.map((u) => <li key={u.id}><UserName userId={u.id} name={u.name} size="sm" /></li>)}</ExpandableList>
           )}
         </Panel>
       ),
@@ -328,7 +329,7 @@ export function DashboardV2({
       node: (
         <Panel title={t('در دسترسِ امروز')}>
           {today.available.length === 0 ? <p className="text-sm text-muted-foreground">{t('هنوز کسی برنامهٔ هفتگی نداده.')}</p> : (
-            <ExpandableList scrollAt={20} className="grid gap-1.5 text-sm">{today.available.map((a) => <li key={a.userId}><UserName userId={a.userId} name={a.name} size="sm" /></li>)}</ExpandableList>
+            <ExpandableList inPlace className="grid gap-1.5 text-sm">{today.available.map((a) => <li key={a.userId}><UserName userId={a.userId} name={a.name} size="sm" /></li>)}</ExpandableList>
           )}
         </Panel>
       ),

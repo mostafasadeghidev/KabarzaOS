@@ -57,7 +57,7 @@ function Panel({ title, icon, action, children, className }: {
   title: string; icon?: React.ReactNode; action?: { href: string; label: string }; children: React.ReactNode; className?: string;
 }) {
   return (
-    <section className={cn('grid h-full content-start gap-3 rounded-2xl border bg-card p-4', className)}>
+    <section className={cn('flex h-full min-h-0 flex-col gap-3 rounded-2xl border bg-card p-4', className)}>
       <header className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-bold [&>svg]:size-4 [&>svg]:text-muted-foreground">{icon}{title}</h2>
         {action
@@ -118,7 +118,7 @@ function TaskRow({ tk, todayIso }: { tk: InboxTask; todayIso: string }) {
 function TaskList({ items, todayIso, empty }: { items: InboxTask[]; todayIso: string; empty: string }) {
   if (items.length === 0) return <Empty>{empty}</Empty>;
   return (
-    <ExpandableList scrollAt={20} className="grid divide-y">
+    <ExpandableList inPlace className="grid divide-y">
       {items.map((tk) => <TaskRow key={tk.id} tk={tk} todayIso={todayIso} />)}
     </ExpandableList>
   );
@@ -219,7 +219,7 @@ export function MemberDashboardV2({
     node: (
       <Panel title={t('کامنت‌های باز')} icon={<MessageSquareReply />} action={{ href: '/comments', label: t('همه') }}>
         {comments.length === 0 ? <Empty>{t('کامنتِ بازی روی پروژه‌های شما نیست.')}</Empty> : (
-          <ExpandableList scrollAt={20} className="grid divide-y">
+          <ExpandableList inPlace className="grid divide-y">
             {comments.slice(0, 12).map((c) => (
               <li key={c.rootId}>
                 <Link href={`/projects/${c.projectId}?tab=comments#c-${c.rootId}`} className="grid gap-0.5 py-2 hover:bg-muted/40">

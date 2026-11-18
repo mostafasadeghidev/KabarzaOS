@@ -50,7 +50,7 @@ function Panel({ title, icon, action, children }: {
   title: string; icon?: React.ReactNode; action?: { href: string; label: string }; children: React.ReactNode;
 }) {
   return (
-    <section className="grid h-full content-start gap-3 rounded-2xl border bg-card p-4">
+    <section className="flex h-full min-h-0 flex-col gap-3 rounded-2xl border bg-card p-4">
       <header className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-bold [&>svg]:size-4 [&>svg]:text-muted-foreground">{icon}{title}</h2>
         {action
@@ -83,7 +83,7 @@ export function adminExtraWidgets(x: AdminX): WidgetDef[] {
       node: (
         <Panel title={t('طلب از کارفرماها')} icon={<HandCoins />} action={{ href: '/reports?tab=clients', label: t('گزارش') }}>
           {x.receivables.length === 0 ? <Empty>{t('طلبِ بازی از کارفرماها نیست.')}</Empty> : (
-            <ExpandableList scrollAt={20} className="grid divide-y">
+            <ExpandableList inPlace className="grid divide-y">
               {x.receivables.map((r) => (
                 <li key={r.id} className="flex items-center justify-between gap-3 py-2">
                   <span className="grid min-w-0 gap-0.5">
@@ -114,7 +114,7 @@ export function adminExtraWidgets(x: AdminX): WidgetDef[] {
         <Panel title={t('حقوق و قسط‌ها')} icon={<Wallet />} action={{ href: '/finance?tab=salaries', label: t('حقوق‌ها') }}>
           {x.payroll.length === 0 && (x.loans?.length ?? 0) === 0 ? <Empty>{t('حقوقِ پرداخت‌نشده‌ای نیست.')}</Empty> : (
             <>
-              <ExpandableList scrollAt={20} className="grid divide-y">
+              <ExpandableList inPlace className="grid divide-y">
                 {x.payroll.map((p) => (
                   <li key={`${p.salaryId}-${p.month}`} className="flex items-center justify-between gap-3 py-2">
                     <span className="grid min-w-0 gap-0.5">
@@ -147,7 +147,7 @@ export function adminExtraWidgets(x: AdminX): WidgetDef[] {
       node: (
         <Panel title={t('تمدیدِ اشتراک‌ها')} icon={<CalendarSync />} action={{ href: '/finance?tab=expenses', label: t('هزینه‌ها') }}>
           {x.renewals.length === 0 ? <Empty>{t('تا یک ماهِ آینده تمدیدی نیست.')}</Empty> : (
-            <ExpandableList scrollAt={20} className="grid divide-y">
+            <ExpandableList inPlace className="grid divide-y">
               {x.renewals.map((r) => (
                 <li key={r.id} className="flex items-center justify-between gap-3 py-2">
                   <span className="grid min-w-0 gap-0.5">
@@ -177,7 +177,7 @@ export function adminExtraWidgets(x: AdminX): WidgetDef[] {
       node: (
         <Panel title={t('تیک‌های تازهٔ کارفرما')} icon={<ListChecks />}>
           {x.qaTicks.length === 0 ? <Empty>{t('کارفرما در دو هفتهٔ اخیر چیزی تیک نزده.')}</Empty> : (
-            <ExpandableList scrollAt={20} className="grid divide-y">
+            <ExpandableList inPlace className="grid divide-y">
               {x.qaTicks.map((q) => (
                 <li key={q.id}>
                   <Link href={`/projects/${q.projectId}?tab=qa`} className="grid gap-0.5 py-2 hover:bg-muted/40">
@@ -203,7 +203,7 @@ export function adminExtraWidgets(x: AdminX): WidgetDef[] {
       node: (
         <Panel title={t('هشدارِ دسترسی')} icon={<KeyRound />} action={{ href: '/access', label: t('دسترسی‌ها') }}>
           {x.access.length === 0 ? <Empty>{t('عضوِ سابقی با دسترسیِ باز نیست.')}</Empty> : (
-            <ExpandableList scrollAt={20} className="grid gap-1.5">
+            <ExpandableList inPlace className="grid gap-1.5">
               {x.access.map((r) => (
                 <li key={r.userId} className="flex items-center justify-between gap-2 rounded-lg bg-destructive/6 px-3 py-1.5 text-sm">
                   <span className="truncate">{r.name}</span>
@@ -294,7 +294,7 @@ export function memberExtraWidgets(x: MemberX, userId: number): WidgetDef[] {
       node: (
         <Panel title={t('منشن‌های من')} icon={<AtSign />} action={{ href: '/messages', label: t('پیام‌ها') }}>
           {x.mentions.length === 0 ? <Empty>{t('منشنِ تازه‌ای ندارید.')}</Empty> : (
-            <ExpandableList scrollAt={20} className="grid divide-y">
+            <ExpandableList inPlace className="grid divide-y">
               {x.mentions.map((m) => (
                 <li key={m.id}>
                   <Link href={m.url || '/messages'} className="grid gap-0.5 py-2 hover:bg-muted/40">
@@ -385,7 +385,7 @@ export function ClientDashboardV2({
     node: (
       <Panel title={t('منتظرِ تأییدِ شما')} icon={<ClipboardCheck />} action={{ href: '/tasks', label: t('همه') }}>
         {review.length === 0 ? <Empty>{t('کاری منتظرِ تأییدِ شما نیست.')}</Empty> : (
-          <ExpandableList scrollAt={20} className="grid divide-y">
+          <ExpandableList inPlace className="grid divide-y">
             {review.map((tk) => (
               <li key={tk.id}>
                 <Link href={`/projects/${tk.projectId}?tab=tasks`} className="flex items-center justify-between gap-3 py-2 hover:bg-muted/40">
@@ -462,7 +462,7 @@ export function ClientDashboardV2({
       node: (
         <Panel title={t('صورتِ حساب')} icon={<Receipt />} action={{ href: '/my-money', label: t('جزئیات') }}>
           {extras.statement.length === 0 ? <Empty>{t('حسابی ثبت نشده.')}</Empty> : (
-            <ExpandableList scrollAt={20} className="grid divide-y">
+            <ExpandableList inPlace className="grid divide-y">
               {extras.statement.map((s) => (
                 <li key={s.projectId} className="grid gap-1 py-2">
                   <span className="flex items-center justify-between gap-2">
@@ -493,7 +493,7 @@ export function ClientDashboardV2({
       node: (
         <Panel title={t('تازه‌های پروژه')} icon={<Sparkles />}>
           {extras.updates.length === 0 ? <Empty>{t('در یک ماهِ اخیر خبرِ تازه‌ای نیست.')}</Empty> : (
-            <ExpandableList scrollAt={20} className="grid divide-y">
+            <ExpandableList inPlace className="grid divide-y">
               {extras.updates.map((u) => (
                 <li key={`${u.kind}-${u.id}`}>
                   <Link href={`/projects/${u.projectId}?tab=${u.kind === 'file' ? 'files' : 'tasks'}`} className="flex items-center gap-2 py-2 hover:bg-muted/40">
@@ -521,7 +521,7 @@ export function ClientDashboardV2({
     node: (
       <Panel title={t('جلساتِ پیشِ رو')} icon={<CalendarDays />} action={{ href: '/meetings', label: t('جلسات') }}>
         {data.meetings.length === 0 ? <Empty>{t('جلسه‌ای ثبت نشده.')}</Empty> : (
-          <ExpandableList scrollAt={20} className="grid gap-2">
+          <ExpandableList inPlace className="grid gap-2">
             {data.meetings.map((m) => (
               <li key={m.id} className="grid gap-0.5 rounded-lg bg-muted/40 px-3 py-2">
                 <span className="truncate text-sm font-medium">{m.title}</span>

@@ -12,6 +12,7 @@ import { useT } from '@/i18n/client';
 import { CardHelpProvider } from '@/components/ui/card-help';
 import { Hint } from '@/components/ui/tooltip';
 import { HeaderAction } from '@/components/header-actions';
+import { ExpandFillProvider } from '@/components/ui/expandable-list';
 import { cn } from '@/lib/utils';
 
 /**
@@ -41,10 +42,30 @@ interface Prefs {
   order: string[]; hidden: string[]; shown: string[]; sizes: Record<string, WidgetSize>;
   /** ستونِ شروعِ هر کارت روی شبکهٔ چهارستونه (۰ = ستونِ اول). نبودن = خودکار (کوتاه‌ترین ستون). */
   cols?: Record<string, number>;
-  /** قدِ دلخواهِ کارت به پیکسل (حداقلِ قد) — با کشیدنِ لبهٔ پایینِ کارت. نبودن = قدِ محتوا. */
+  /**
+   * قدِ دلخواهِ کارت به پیکسل — **ثابت**، نه حداقل: با دادهٔ زیاد کارت بلند نمی‌شود و آنچه جا نشد پشتِ
+   * «مشاهدهٔ بیشتر» می‌رود (ExpandFillProvider). وگرنه هم‌ترازیِ کاربر با اولین روزِ شلوغ می‌شکست.
+   * نبودن = قدِ محتوا.
+   */
   heights?: Record<string, number>;
   /** فاصلهٔ اضافهٔ بالای کارت به ردیف (هر ردیف ۲۴ پیکسل) — با کشیدنِ لبهٔ بالای کارت. */
   offsets?: Record<string, number>;
+  /**
+   * گروه‌های «هم‌ردیف»: کارت‌هایی که لبهٔ بالایشان به هم چسبانده شده، همیشه از یک خط شروع می‌کنند
+   * (پایین‌ترین جای ممکنِ همه‌شان). ⚠️ فاصلهٔ نسبی (offsets) برای این کار بس نبود: کارتِ بالاییِ هر
+   * ستون با داده قدِ متفاوتی می‌کشد و دو کارتِ هم‌ردیف از هم جدا می‌شدند.
+   */
+  rows?: string[][];
+}
+
+/** کارت را از گروه‌های هم‌ردیف بیرون می‌آورد و (اختیاری) به گروهِ کارتِ دیگر می‌برد. */
+function regroup(rows: string[][] = [], id: string, withId?: string): string[][] {
+  const out = rows.map((g) => g.filter((x) => x !== id));
+  if (withId) {
+    const g = out.find((x) => x.includes(withId));
+    if (g) g.push(id); else out.push([withId, id]);
+  }
+  return out.filter((g) => g.length > 1);
 }
 const WIDTH: Record<WidgetSize, number> = { s: 1, m: 2, l: 3, xl: 4 };
 interface Pos { c: number; y: number; wd: number; span: number }
@@ -57,33 +78,60 @@ interface Pos { c: number; y: number; wd: number; span: number }
 function placeAll(
   list: Array<{ id: string; size: WidgetSize }>, cols: number, spans: Record<string, number>, prefCols: Record<string, number>,
   offsets: Record<string, number> = {},
+  rows: string[][] = [],
 ): Map<string, Pos> | null {
   const heights = Array<number>(cols).fill(0);
   const out = new Map<string, Pos>();
   const placed: Pos[] = [];
   const hits = (c: number, wd: number, y: number, span: number) =>
     placed.some((p) => p.c < c + wd && c < p.c + p.wd && p.y < y + span && y < p.y + p.span);
+  const top = (c: number, wd: number) => Math.max(...heights.slice(c, c + wd));
+  const colOf = (id: string, wd: number) => Math.min(Math.max(0, Math.floor(((prefCols[id] ?? 0) * cols) / 4)), cols - wd);
+  // گروهِ هم‌ردیف فقط بینِ کارت‌های دیده‌شده با ستونِ انتخابی (کارتِ خودکار جایش از پیش معلوم نیست).
+  const inList = new Map(list.map((w) => [w.id, w]));
+  const groupOf = new Map<string, Array<{ id: string; size: WidgetSize }>>();
+  if (cols > 1) {
+    for (const g of rows) {
+      const members = g.map((id) => inList.get(id)).filter((w): w is { id: string; size: WidgetSize } => !!w && prefCols[w.id] !== undefined);
+      if (members.length > 1) for (const m of members) groupOf.set(m.id, members);
+    }
+  }
   for (const w of list) {
+    if (out.has(w.id)) continue;
+    const group = groupOf.get(w.id);
+    if (group) {
+      // همهٔ اعضا با هم، روی پایین‌ترین لبهٔ ستون‌هایشان — یک خطِ شروعِ مشترک.
+      if (group.some((g) => !spans[g.id])) return null;
+      const y = Math.max(...group.map((g) => { const wd = Math.min(cols, WIDTH[g.size]); return top(colOf(g.id, wd), wd); }));
+      for (const g of group) {
+        const wd = Math.min(cols, WIDTH[g.size]);
+        const c = colOf(g.id, wd);
+        const span = spans[g.id]!;
+        for (let i = c; i < c + wd; i++) heights[i] = Math.max(heights[i]!, y + span);
+        placed.push({ c, y, wd, span });
+        out.set(g.id, { c, y, wd, span });
+      }
+      continue;
+    }
     const own = spans[w.id];
     if (!own) return null;
     // فاصلهٔ بالا جزوِ جای کارت است: کارت از y+off شروع می‌شود و ستون تا انتهای آن پر است.
     const off = Math.max(0, Math.round(offsets[w.id] ?? 0));
     const span = own + off;
     const wd = Math.min(cols, WIDTH[w.size]);
-    const top = (c: number) => Math.max(...heights.slice(c, c + wd));
     let c: number;
     let y: number;
     const pref = prefCols[w.id];
     if (cols > 1 && pref !== undefined) {
       // ستونِ انتخابیِ کاربر: درست زیرِ آخرین کارتِ همان ستون‌ها (ترتیب = جای عمودی).
-      c = Math.min(Math.max(0, Math.floor((pref * cols) / 4)), cols - wd);
-      y = top(c);
+      c = colOf(w.id, wd);
+      y = top(c, wd);
     } else {
       // خودکار: پایین‌ترین جای خالیِ ممکن در هر ستون — جاهای خالیِ کنارِ کارت‌های پهن پر می‌شوند.
       c = 0; y = Infinity;
       for (let i = 0; i <= cols - wd; i++) {
         const tries = [0, ...placed.filter((p) => p.c < i + wd && i < p.c + p.wd).map((p) => p.y + p.span)].sort((a, b) => a - b);
-        const fit = tries.find((ty) => !hits(i, wd, ty, span)) ?? top(i);
+        const fit = tries.find((ty) => !hits(i, wd, ty, span)) ?? top(i, wd);
         if (fit < y) { y = fit; c = i; }
       }
     }
@@ -254,7 +302,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
     return { list, cols: { ...prefCols, [dragId]: to4(preview.col) } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragId, preview, visible, prefs]);
-  const layout = cols > 1 ? placeAll(asList(shown.list), cols, spans, shown.cols, offsetOf) : null;
+  const layout = cols > 1 ? placeAll(asList(shown.list), cols, spans, shown.cols, offsetOf, prefs.rows) : null;
 
   /**
    * «ثابت کردن»: ستونِ فعلیِ **همهٔ** کارت‌ها ذخیره و ترتیب بر اساسِ جای عمودیِ فعلی مرتب می‌شود، تا با
@@ -263,7 +311,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
   const freeze = (): { order: string[]; cols: Record<string, number> } => {
     const ids = ordered.map((x) => x.id);
     if (cols <= 1) return { order: ids, cols: prefCols };
-    const now = placeAll(asList(visible), cols, spans, prefCols, offsetOf);
+    const now = placeAll(asList(visible), cols, spans, prefCols, offsetOf, prefs.rows);
     if (!now) return { order: ids, cols: prefCols };
     const out: Record<string, number> = { ...prefCols };
     for (const [id, pos] of now) out[id] = to4(pos.c);
@@ -285,7 +333,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
     const row = (y - rect.top) / (ROW + GAP);
     // چیدمانِ بقیه بی کارتِ کشیده‌شده — ثابت، تا پیش‌نمایش نوسان نکند.
     const others = visible.filter((w) => w.id !== dragId);
-    const base = placeAll(asList(others), cols, spans, prefCols, offsetOf);
+    const base = placeAll(asList(others), cols, spans, prefCols, offsetOf, prefs.rows);
     if (!base) return null;
     let before: string | null = null;
     let bestY = Infinity;
@@ -363,16 +411,19 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
     const g0 = grid.getBoundingClientRect().top;
     const startOff = offsetOf[w.id] ?? 0;
     const frozen = freeze();
-    const edges: number[] = [];
+    const edges: Array<{ y: number; id: string; top: boolean }> = [];
     for (const x of grid.querySelectorAll<HTMLElement>('[data-measure]')) {
       if (x === el || x.closest('[hidden]')) continue;
       const r = x.getBoundingClientRect();
       const sameCols = r.left < r0.right - 1 && r0.left < r.right - 1;
       if (sameCols && r.top >= r0.top) continue;
-      edges.push(r.top, r.bottom);
+      const xid = x.dataset.measure ?? '';
+      edges.push({ y: r.top, id: xid, top: true }, { y: r.bottom, id: xid, top: false });
     }
     let h = r0.height;
     let off = startOff;
+    /** لبهٔ بالا به لبهٔ بالای کدام کارت چسبید — همان می‌شود گروهِ هم‌ردیف. */
+    let rowWith: string | null = null;
     const onMove = (ev: PointerEvent) => {
       const dy = ev.clientY - startY;
       let guide: number | null = null;
@@ -380,7 +431,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
         h = Math.max(40, Math.round(r0.height + dy));
         let best = SNAP + 1;
         const raw = h;
-        for (const edge of edges) {
+        for (const { y: edge } of edges) {
           const d = Math.abs(r0.top + raw - edge);
           if (d < best) { best = d; h = Math.round(edge - r0.top); guide = edge - g0; }
         }
@@ -389,9 +440,10 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
         // شروع روی ردیف‌های ۲۴ پیکسلی است؛ لبهٔ کارتِ دیگر هم روی همین ردیف‌هاست، پس گرد کردن هم‌راستا می‌کند.
         const natTop = r0.top - startOff * UNIT;
         off = Math.max(0, Math.round((startOff * UNIT + dy) / UNIT));
-        for (const edge of edges) {
+        rowWith = null;
+        for (const { y: edge, id, top } of edges) {
           const k = Math.round((edge - natTop) / UNIT);
-          if (k >= 0 && Math.abs(natTop + k * UNIT - edge) <= 3 && Math.abs(k * UNIT - (startOff * UNIT + dy)) <= SNAP) { off = k; guide = edge - g0; break; }
+          if (k >= 0 && Math.abs(natTop + k * UNIT - edge) <= 3 && Math.abs(k * UNIT - (startOff * UNIT + dy)) <= SNAP) { off = k; guide = edge - g0; rowWith = top ? id : null; break; }
         }
         setAdjust({ id: w.id, off, guide });
       }
@@ -401,7 +453,12 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
       window.removeEventListener('pointerup', onUp);
       setAdjust(null);
       if (mode === 'h') save({ ...prefs, ...frozen, heights: { ...(prefs.heights ?? {}), [w.id]: h } });
-      else save({ ...prefs, ...frozen, offsets: { ...(prefs.offsets ?? {}), [w.id]: off } });
+      else if (rowWith) {
+        // چسبیده به لبهٔ بالای کارتِ دیگر: هم‌ردیف می‌شوند و فاصلهٔ نسبی دیگر لازم نیست.
+        const offsets = { ...(prefs.offsets ?? {}) };
+        delete offsets[w.id];
+        save({ ...prefs, ...frozen, offsets, rows: regroup(prefs.rows, w.id, rowWith) });
+      } else save({ ...prefs, ...frozen, offsets: { ...(prefs.offsets ?? {}), [w.id]: off }, rows: regroup(prefs.rows, w.id) });
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -426,7 +483,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
     const offsets = { ...(prefs.offsets ?? {}) };
     if (which !== 'off') delete heights[id];
     if (which !== 'h') delete offsets[id];
-    save({ ...prefs, ...freeze(), heights, offsets });
+    save({ ...prefs, ...freeze(), heights, offsets, rows: which !== 'h' ? regroup(prefs.rows, id) : prefs.rows });
   };
   const resize = (w: WidgetDef, size: WidgetSize) => save({ ...prefs, order: ordered.map((x) => x.id), sizes: { ...prefs.sizes, [w.id]: size } });
 
@@ -513,10 +570,13 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
               قدِ دلخواه (min-height) فقط روی شبکهٔ چندستونه؛ روی گوشی کارت‌ها زیرِ هم و به قدِ محتوا.
             */}
             <div
-              className={cn('grid min-w-0', editing && 'pointer-events-none select-none')}
-              style={pos && heightOf[w.id] ? { minHeight: heightOf[w.id] } : undefined}
+              className={cn('grid min-w-0', pos && heightOf[w.id] && 'grid-rows-[minmax(0,1fr)] overflow-hidden', editing && 'pointer-events-none select-none')}
+              style={pos && heightOf[w.id] ? { height: heightOf[w.id] } : undefined}
             >
-              <CardHelpProvider text={w.hint}>{w.node}</CardHelpProvider>
+              {/* قدِ ثابت: فهرست‌های داخلِ کارت جای باقی‌مانده را پر می‌کنند و بقیه پشتِ «مشاهدهٔ بیشتر». */}
+              <ExpandFillProvider fill={!!(pos && heightOf[w.id])}>
+                <CardHelpProvider text={w.hint}>{w.node}</CardHelpProvider>
+              </ExpandFillProvider>
             </div>
             {editing && pos && (
               <>
