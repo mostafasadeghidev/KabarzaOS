@@ -102,15 +102,23 @@ const EDGE = 120;
 
 const EMPTY: Prefs = { order: [], hidden: [], shown: [], sizes: {} };
 
-export function DashboardGrid({ widgets, userId, scope }: {
+/** چیدمانِ پیش‌فرض: ترتیب و ستونِ شروعِ هر کارت (روی شبکهٔ چهارستونه). */
+export interface DefaultLayout { order: string[]; cols: Record<string, number> }
+
+export function DashboardGrid({ widgets, userId, scope, defaults }: {
   widgets: WidgetDef[];
   userId: number;
+  /**
+   * چیدمانی که کاربرِ بی‌ترجیح می‌بیند و دکمهٔ «پیش‌فرض» به آن برمی‌گردد. نبودن = ترتیبِ فهرستِ ویجت‌ها و جای خودکار.
+   */
+  defaults?: DefaultLayout;
   /** چیدمانِ داشبوردِ عضو جدا از مدیر ذخیره می‌شود. */
   scope?: string;
 }) {
   const t = useT();
   const key = scope ? `kz-dash-layout-${scope}-${userId}` : `kz-dash-layout-${userId}`;
-  const [prefs, setPrefs] = useState<Prefs>(EMPTY);
+  const base = useMemo<Prefs>(() => (defaults ? { ...EMPTY, order: defaults.order, cols: defaults.cols } : EMPTY), [defaults]);
+  const [prefs, setPrefs] = useState<Prefs>(base);
   const [open, setOpen] = useState(false);
   /** حالتِ ویرایشِ زنده: کشیدن و رها کردن، اندازه و پنهان کردن روی خودِ کارت. */
   const [editing, setEditing] = useState(false);
@@ -329,7 +337,7 @@ export function DashboardGrid({ widgets, userId, scope }: {
         {editing ? (
           <>
             <span className="me-auto text-xs text-muted-foreground">{t('کارت‌ها را از دستگیره بکشید و جای دیگری رها کنید؛ اندازه و پنهان‌کردن روی خودِ کارت است.')}</span>
-            <Button type="button" size="sm" variant="ghost" onClick={() => save(EMPTY)}><RotateCcw className="size-4" />{t('پیش‌فرض')}</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => save(base)}><RotateCcw className="size-4" />{t('پیش‌فرض')}</Button>
             <Button type="button" size="sm" onClick={() => setEditing(false)}><Check className="size-4" />{t('تمام')}</Button>
           </>
         ) : (
@@ -467,7 +475,7 @@ export function DashboardGrid({ widgets, userId, scope }: {
             ))}
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button type="button" variant="ghost" onClick={() => save(EMPTY)}><RotateCcw className="size-4" />{t('بازگشت به پیش‌فرض')}</Button>
+            <Button type="button" variant="ghost" onClick={() => save(base)}><RotateCcw className="size-4" />{t('بازگشت به پیش‌فرض')}</Button>
             <Button type="button" onClick={() => setOpen(false)}>{t('تمام')}</Button>
           </DialogFooter>
         </DialogContent>

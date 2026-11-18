@@ -13,7 +13,28 @@ import { CardHelp } from '@/components/ui/card-help';
 import { RecentActivity } from './recent-activity';
 import { DashboardInbox, type InboxExpense } from './inbox';
 import { QuickNote } from './quick-note';
-import { DashboardGrid, type WidgetDef } from './dashboard-grid';
+import { DashboardGrid, type DefaultLayout, type WidgetDef } from './dashboard-grid';
+
+/**
+ * چیدمانِ پیش‌فرضِ مدیر — از گوشهٔ بالا-راست، به ترتیبِ فوریت: کارِ امروز ← پول ← تیم و برنامه ← مرجع.
+ * ستون‌ها روی شبکهٔ چهارستونه‌اند (۰ = اولین ستون از سمتِ شروع). کارت‌های کوتاه دوتا دوتا زیرِ هم
+ * چیده شده‌اند تا قدِ ستون‌ها نزدیکِ هم بماند (با اندازه‌گیریِ قدِ واقعیِ کارت‌ها در عرضِ ۱۴۰۰).
+ * کارتی که اینجا نیست (مثلاً کارت‌های پیش‌فرض‌خاموش) پس از این‌ها و در جای خودکار می‌آید.
+ */
+const ADMIN_LAYOUT: DefaultLayout = (() => {
+  const plan: Array<[string, number]> = [
+    // کارِ امروز + ستونِ باریکِ وضعیت
+    ['inbox-projects', 0], ['team-today', 3], ['a-backup', 3], ['a-access', 3],
+    // پول
+    ['inbox-finance', 0], ['a-payroll', 2], ['a-renewals', 2], ['a-receivables', 0], ['money', 2],
+    ['client-waiting', 3], ['meetings', 3],
+    // تیم و برنامه
+    ['week', 0], ['capacity', 2], ['inbox-team', 2], ['risk', 0], ['a-qa', 2],
+    // مرجع
+    ['activity', 0], ['note', 2],
+  ];
+  return { order: plan.map(([id]) => id), cols: Object.fromEntries(plan) };
+})();
 import { MemberHoursChart, StatusChart, WeeklyTrendChart } from './charts';
 import type { getDashboard, RiskItem } from '@/server/dashboard';
 import type { getDashboardInbox } from '@/server/dashboard-inbox';
@@ -315,5 +336,5 @@ export function DashboardV2({
     },
   ];
 
-  return <DashboardGrid widgets={[...widgets, ...extra]} userId={userId} />;
+  return <DashboardGrid widgets={[...widgets, ...extra]} userId={userId} defaults={ADMIN_LAYOUT} />;
 }
