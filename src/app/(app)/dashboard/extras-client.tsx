@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ExpandableList } from '@/components/ui/expandable-list';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Pencil, Play, Send } from 'lucide-react';
@@ -62,12 +63,12 @@ export function ClientQaList({ items }: { items: ClientQa[] }) {
     groups.set(i.projectId, g);
   }
   return (
-    <div className="grid max-h-[26rem] gap-3 overflow-y-auto">
-      {[...groups.entries()].map(([pid, g]) => (
-        <div key={pid} className="grid gap-1">
-          <Link href={`/projects/${pid}?tab=qa`} className="truncate text-xs font-medium text-muted-foreground hover:underline">{g.title}</Link>
-          <ul className="grid gap-1">
-            {g.rows.map((i) => (
+    <ExpandableList inPlace className="grid content-start gap-1">
+      {[...groups.entries()].flatMap(([pid, g]) => [
+        <li key={`h${pid}`} data-group-head className="min-w-0 pt-2 first:pt-0">
+          <Link href={`/projects/${pid}?tab=qa`} className="block truncate text-xs font-medium text-muted-foreground hover:underline">{g.title}</Link>
+        </li>,
+        ...g.rows.map((i) => (
               <li key={i.id} className="flex items-start gap-2 rounded-lg px-1 py-1 hover:bg-muted/40">
                 <button
                   type="button"
@@ -89,11 +90,9 @@ export function ClientQaList({ items }: { items: ClientQa[] }) {
                   {i.description && <span className="line-clamp-2 text-xs text-muted-foreground">{i.description}</span>}
                 </span>
               </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
+        )),
+      ])}
+    </ExpandableList>
   );
 }
 

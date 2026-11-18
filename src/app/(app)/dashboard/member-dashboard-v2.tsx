@@ -239,7 +239,7 @@ export function MemberDashboardV2({
     node: (
       <Panel title={t('این هفتهٔ من')} icon={<CalendarClock />}>
         {week.length === 0 ? <Empty>{t('سررسیدی در این هفته ندارید.')}</Empty> : (
-          <ul className="grid gap-1.5">
+          <ExpandableList inPlace className="grid gap-1.5">
             {week.map((w, i) => (
               <li key={`${w.kind}-${w.href}-${i}`}>
                 <Link href={w.href} className="flex items-center gap-2 rounded-lg px-1 py-1 text-sm hover:bg-muted/40">
@@ -251,7 +251,7 @@ export function MemberDashboardV2({
                 </Link>
               </li>
             ))}
-          </ul>
+          </ExpandableList>
         )}
       </Panel>
     ),
@@ -281,7 +281,7 @@ export function MemberDashboardV2({
     node: (
       <Panel title={t('جلساتِ این هفته')} icon={<CalendarDays />} action={{ href: '/meetings', label: t('جلسات') }}>
         {data.meetings.length === 0 ? <Empty>{t('جلسه‌ای ثبت نشده.')}</Empty> : (
-          <ul className="grid gap-2">
+          <ExpandableList inPlace limit={4} className="grid gap-2">
             {data.meetings.map((m) => (
               <li key={m.id} className="grid gap-0.5 rounded-lg bg-muted/40 px-3 py-2">
                 <span className="truncate text-sm font-medium">{m.title}</span>
@@ -289,7 +289,7 @@ export function MemberDashboardV2({
                 {m.projectTitle && <span className="truncate text-xs text-muted-foreground">{m.projectTitle}</span>}
               </li>
             ))}
-          </ul>
+          </ExpandableList>
         )}
       </Panel>
     ),
@@ -301,7 +301,7 @@ export function MemberDashboardV2({
       node: (
         <Panel title={t('پروژه‌های باز من')} icon={<FolderKanban />} action={{ href: '/projects', label: t('پروژه‌ها') }}>
           {data.member.rows.length === 0 ? <Empty>{t('پروژهٔ بازی ندارید.')}</Empty> : (
-            <ul className="grid gap-2 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
+            <ExpandableList inPlace limit={6} className="grid gap-2 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
               {data.member.rows.map((p) => (
                 <li key={p.id}>
                   <Link href={`/projects/${p.id}`} className="grid gap-2 rounded-xl border p-3 transition-colors hover:border-primary/40">
@@ -324,7 +324,7 @@ export function MemberDashboardV2({
                   </Link>
                 </li>
               ))}
-            </ul>
+            </ExpandableList>
           )}
         </Panel>
       ),
@@ -336,7 +336,7 @@ export function MemberDashboardV2({
       id: 'm-tenders', hint: t('پروژه‌هایی در مرحلهٔ مناقصه که با نقش‌های شما جور است و می‌توانید برایشان پیشنهادِ قیمت بدهید.'), title: t('مناقصه‌ها'), group: G_MORE, size: 'm', defaultOn: true,
       node: (
         <Panel title={t('مناقصه‌ها')} icon={<Gavel />}>
-          <ul className="grid divide-y">
+          <ExpandableList inPlace className="grid divide-y">
             {data.tenders.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-3 py-2">
                 <span className="grid min-w-0 gap-0.5">
@@ -348,7 +348,7 @@ export function MemberDashboardV2({
                 </Link>
               </li>
             ))}
-          </ul>
+          </ExpandableList>
         </Panel>
       ),
     });

@@ -328,14 +328,14 @@ export function memberExtraWidgets(x: MemberX, userId: number): WidgetDef[] {
           {x.leave && (x.leave.length === 0
             ? <p className="text-xs text-muted-foreground">{t('مرخصیِ پیشِ رو ندارید.')}</p>
             : (
-              <ul className="grid gap-1">
+              <ExpandableList inPlace limit={3} className="grid gap-1">
                 {x.leave.map((a) => (
                   <li key={a.id} className="flex items-center gap-2 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs">
                     <span className="num" dir="ltr">{a.fromDate === a.toDate ? a.fromDate : `${a.fromDate} → ${a.toDate}`}</span>
                     {a.note && <span className="truncate text-muted-foreground">{a.note}</span>}
                   </li>
                 ))}
-              </ul>
+              </ExpandableList>
             ))}
         </Panel>
       ),
@@ -417,7 +417,7 @@ export function ClientDashboardV2({
     node: (
       <Panel title={t('پروژه‌های من')} icon={<FolderKanban />} action={{ href: '/projects', label: t('پروژه‌ها') }}>
         {rows.length === 0 ? <Empty>{t('پروژه‌ای ندارید.')}</Empty> : (
-          <ul className="grid gap-2 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
+          <ExpandableList inPlace limit={6} className="grid gap-2 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
             {rows.map((p) => (
               <li key={p.id}>
                 <Link href={`/projects/${p.id}`} className="grid gap-2 rounded-xl border p-3 transition-colors hover:border-primary/40">
@@ -449,7 +449,7 @@ export function ClientDashboardV2({
                 </Link>
               </li>
             ))}
-          </ul>
+          </ExpandableList>
         )}
       </Panel>
     ),

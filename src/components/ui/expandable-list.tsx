@@ -21,6 +21,9 @@ import { cn } from '@/lib/utils';
  * داخلی را روشن می‌کند و فهرست را نرم تا ردیف‌های پنهان می‌برد، تا چیدمانِ کارت‌های کناری به هم نریزد.
  * در هر لحظه فقط یک فهرستِ درجا باز است؛ باز کردنِ یکی بقیه را می‌بندد.
  *
+ * سرگروه (`<li data-group-head>`، مثلِ سرِ روز یا نامِ پروژه): در شمارش و limit حساب نمی‌شود — فهرستِ
+ * گروه‌دار را تخت بنویسید (سرگروه و ردیف‌ها هم‌سطح) تا «مشاهدهٔ بیشتر» ردیف‌ها را بشمارد، نه گروه‌ها.
+ *
  * حالتِ «پر کردن» (`ExpandFillProvider`، کارتی با قدِ ثابتِ کاربر): فهرست هر جایی که در کارت مانده
  * می‌گیرد و هر چه جا نشد پشتِ «مشاهدهٔ بیشتر» می‌رود — شمارِ ردیف‌ها از قدِ کارت می‌آید، نه از limit.
  */
@@ -43,17 +46,35 @@ export function ExpandableList({
   limit = 5,
   inPlace = false,
   className,
+  listRef,
+  listProps,
 }: {
   children: React.ReactNode;
   limit?: number;
   /** باز شدن بی بلند شدنِ قاب (اسکرولِ داخلی) — کارت‌های شبکهٔ داشبورد. */
   inPlace?: boolean;
   className?: string;
+  /** دسترسی به خودِ ul (مثلاً میان‌برهای صفحه‌کلیدِ صندوق). */
+  listRef?: React.RefObject<HTMLUListElement | null>;
+  /** ویژگی‌های data-* روی ul. */
+  listProps?: Record<`data-${string}`, string | boolean>;
 }) {
   const t = useT();
   const fill = React.useContext(FillCtx) && inPlace;
   const items = React.Children.toArray(children);
+  const isHead = (x: React.ReactNode) => React.isValidElement<Record<string, unknown>>(x) && !!x.props['data-group-head'];
+  const rowCount = items.filter((x) => !isHead(x)).length;
+  // اندیسِ (در items) ِ اولین ردیفِ بیرون از limit — سرگروه‌ها شمرده نمی‌شوند.
+  let cut = items.length;
+  for (let i = 0, n = 0; i < items.length; i++) {
+    if (isHead(items[i])) continue;
+    if (n++ === limit) { cut = i; break; }
+  }
   const ref = React.useRef<HTMLUListElement>(null);
+  const setRef = (el: HTMLUListElement | null) => {
+    ref.current = el;
+    if (listRef) listRef.current = el;
+  };
   const id = React.useId();
   const [open, setOpen] = React.useState(false);
   /** closed: قدِ بسته (حالتِ limit)؛ hidden: شمارِ ردیف‌هایی که کامل دیده نمی‌شوند؛ firstHidden: جای اولین‌شان. */
@@ -68,8 +89,8 @@ export function ExpandableList({
       if (rows.length === 0 || rows[0]!.offsetHeight === 0) return; // هنوز کشیده نشده؛ ResizeObserver بعداً
       const rel = (el: HTMLElement) => { const r = el.getBoundingClientRect(); return { top: r.top - top, bottom: r.bottom - top, h: r.height }; };
       let closed = ul.scrollHeight;
-      if (!fill && rows.length > limit) {
-        const peek = rel(rows[limit]!);
+      if (!fill && cut < rows.length) {
+        const peek = rel(rows[cut]!);
         // تا نیمهٔ ردیفِ «بعدی» — همان که محو می‌شود.
         closed = peek.top + peek.h * 0.6;
       }
@@ -79,7 +100,10 @@ export function ExpandableList({
       let firstHidden = -1;
       for (const r of rows) {
         const b = rel(r);
-        if (b.bottom > edge + 1) { hidden++; if (firstHidden < 0) firstHidden = b.top; }
+        if (b.bottom > edge + 1) {
+          if (!r.hasAttribute('data-group-head')) hidden++;
+          if (firstHidden < 0) firstHidden = b.top;
+        }
       }
       setM({ closed, full: ul.scrollHeight, hidden, firstHidden: Math.max(0, firstHidden) });
     };
@@ -88,7 +112,7 @@ export function ExpandableList({
     ro.observe(ul);
     for (const c of ul.children) ro.observe(c);
     return () => ro.disconnect();
-  }, [fill, limit, items.length]);
+  }, [fill, cut, items.length]);
 
   // باز شدنِ فهرستِ دیگری این یکی را می‌بندد.
   React.useEffect(() => {
@@ -102,8 +126,8 @@ export function ExpandableList({
     return () => window.removeEventListener(OPEN_EVENT, onOther);
   }, [id, inPlace]);
 
-  const overflowing = fill ? (m?.hidden ?? 0) > 0 || open : items.length > limit;
-  if (!fill && !overflowing) return <ul className={className}>{children}</ul>;
+  const overflowing = fill ? (m?.hidden ?? 0) > 0 || open : rowCount > limit;
+  if (!fill && !overflowing) return <ul ref={setRef} {...listProps} className={className}>{children}</ul>;
 
   const collapsed = !open;
   const toggle = () => {
@@ -125,13 +149,23 @@ export function ExpandableList({
     : m
       ? (collapsed || inPlace ? m.closed : m.full)
       : `${(limit + 0.6) * 1.625}rem`; // پیش از سنجش: تخمینِ ردیفِ ۲۶px ِ RiskList، تا صفحه نپرد.
-  const hiddenCount = fill ? (m?.hidden ?? 0) : items.length - limit;
+  const hiddenCount = m && (fill || m.hidden > 0) ? m.hidden : rowCount - limit;
 
   return (
     <div className={cn('grid gap-2', fill && 'flex min-h-0 flex-1 flex-col')}>
       <ul
-        ref={ref}
+        ref={setRef}
+        {...listProps}
         data-expandable={collapsed ? 'closed' : 'open'}
+        // درجا: فوکوس (Tab یا میان‌برِ صفحه‌کلید) روی ردیفِ پنهان، فهرست را باز می‌کند.
+        onFocus={inPlace && collapsed ? (e) => {
+          const ul = ref.current;
+          if (!ul || e.target === ul) return;
+          if (e.target.getBoundingClientRect().bottom > ul.getBoundingClientRect().bottom + 1) {
+            window.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: id }));
+            setOpen(true);
+          }
+        } : undefined}
         className={cn(
           collapsed || !inPlace ? 'overflow-hidden' : 'overflow-x-hidden overflow-y-auto',
           fill && 'min-h-0 flex-1',
@@ -146,11 +180,12 @@ export function ExpandableList({
       >
         {items.map((item, i) =>
           // ردیف‌های پنهان کمی تار، کنارِ محوشدگی — «متنِ انتها بلور» (فقط حالتِ limit).
-          !fill && i >= limit && React.isValidElement<{ className?: string }>(item)
+          !fill && i >= cut && React.isValidElement<{ className?: string }>(item)
             ? React.cloneElement(item as React.ReactElement<{ className?: string; inert?: boolean }>, {
               className: cn(item.props.className, 'transition-[filter] duration-300', collapsed && 'blur-[1.5px]'),
-              // ردیفِ پنهان با Tab یا صفحه‌خوان گرفته نشود (پیوندِ زیرِ محوشدگی).
-              inert: collapsed || undefined,
+              // ردیفِ پنهان با Tab یا صفحه‌خوان گرفته نشود (پیوندِ زیرِ محوشدگی). درجا: نه —
+              // آنجا فوکوس فهرست را باز می‌کند (میان‌برِ j/k ِ صندوق).
+              inert: (collapsed && !inPlace) || undefined,
             })
             : item)}
       </ul>

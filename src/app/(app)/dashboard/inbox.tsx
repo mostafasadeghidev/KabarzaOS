@@ -17,7 +17,7 @@ import { useT } from '@/i18n/client';
 import { formatIn } from '@/domain/money/money';
 import { agoLabel } from '@/domain/people/last-online';
 import { cn } from '@/lib/utils';
-import { useExpandFill } from '@/components/ui/expandable-list';
+import { ExpandableList } from '@/components/ui/expandable-list';
 import type { InboxComment, InboxNoLog, InboxRequest, InboxReviewTask, InboxTender, InboxUnassigned, InboxUnit } from '@/server/dashboard-inbox';
 
 /**
@@ -53,7 +53,6 @@ export function DashboardInbox({
 }) {
   const t = useT();
   // کارت با قدِ ثابتِ کاربر: فهرست جای باقی‌مانده را می‌گیرد و داخلِ خودش اسکرول می‌خورد (بی سقفِ 28rem).
-  const fill = useExpandFill();
   const { show } = useToast();
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState<Set<string>>(new Set());
@@ -163,7 +162,7 @@ export function DashboardInbox({
           <p className="text-sm font-medium text-foreground">{t(empty)}</p>
         </div>
       ) : (
-        <ul ref={listRef} data-inbox-list className={cn('grid content-start divide-y overflow-x-hidden overflow-y-auto', fill ? 'min-h-0 flex-1' : 'max-h-[28rem]')}>
+        <ExpandableList inPlace listRef={listRef} listProps={{ 'data-inbox-list': true }} className="grid content-start divide-y">
           {show_('review') && R.map((r) => (
             <Row
               key={`t${r.id}`}
@@ -262,7 +261,7 @@ export function DashboardInbox({
               actions={<Button asChild size="xs" variant="outline"><Link href="/finance?tab=expenses">{t('ثبت پرداخت')}</Link></Button>}
             />
           ))}
-        </ul>
+        </ExpandableList>
       )}
 
       <TaskDialog taskId={openTask} open={openTask !== null} onOpenChange={(o) => !o && setOpenTask(null)} />

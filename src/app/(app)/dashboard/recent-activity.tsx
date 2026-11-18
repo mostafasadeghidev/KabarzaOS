@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ExpandableList } from '@/components/ui/expandable-list';
 import { UserAvatar } from '@/components/user-avatar';
 import { useLocale, useT, useTimeZone } from '@/i18n/client';
 import { intlTag } from '@/i18n/config';
@@ -29,8 +30,10 @@ export interface RecentEvent {
  * ⚠️ سمتِ مرورگر عمداً: روز و ساعت پیش از این در منطقهٔ زمانیِ **سرور** نوشته
  * می‌شد، نه کاربر.
  */
-export function RecentActivity({ events, actorHref }: {
+export function RecentActivity({ events, actorHref, expandable = false }: {
   events: RecentEvent[];
+  /** کارتِ داشبورد: یک فهرستِ تخت (سرِ روز + ردیف‌ها) با «مشاهدهٔ بیشتر». */
+  expandable?: boolean;
   /** پیوندِ نام به گزارشِ عضو — فقط برای کسی که گزارش‌ها را می‌بیند. */
   actorHref: boolean;
 }) {
@@ -62,37 +65,48 @@ export function RecentActivity({ events, actorHref }: {
     else groups.push({ key, title: dayTitle(d), items: [e] });
   }
 
+  const row = (e: RecentEvent) => {
+    const where = [e.subject, e.project && e.project !== e.subject ? e.project : null].filter(Boolean).join(' · ');
+    const name = e.actorName ?? t('سامانه');
+    return (
+      <li key={e.id} className="flex items-center gap-2.5 rounded-md py-1.5">
+        <UserAvatar userId={e.actorId} name={name} size="md" presence={false} />
+        <div className="grid min-w-0 flex-1 leading-tight">
+          <span className="truncate text-sm">
+            {actorHref && e.actorId ? (
+              <Link href={`/reports/member/${e.actorId}`} className="font-medium hover:underline">{name}</Link>
+            ) : (
+              <span className="font-medium">{name}</span>
+            )}
+            <span className="text-muted-foreground"> {t(e.label)}</span>
+          </span>
+          {where && <span className="truncate text-xs text-muted-foreground">{where}</span>}
+        </div>
+        <time suppressHydrationWarning dateTime={e.at} className="num shrink-0 self-start pt-0.5 text-xs text-muted-foreground">
+          {time.format(new Date(e.at))}
+        </time>
+      </li>
+    );
+  };
+
+  if (expandable) {
+    return (
+      <ExpandableList inPlace className="grid content-start">
+        {groups.flatMap((g) => [
+          <li key={`h${g.key}`} data-group-head suppressHydrationWarning className="pt-2 pb-0.5 text-xs font-medium text-muted-foreground first:pt-0">{g.title}</li>,
+          ...g.items.map(row),
+        ])}
+      </ExpandableList>
+    );
+  }
+
   return (
     <div className="grid gap-3">
       {groups.map((g) => (
         <section key={g.key} className="grid gap-1">
           {/* ⚠️ «امروز/دیروز» و ساعت به منطقهٔ زمانیِ مرورگر بسته‌اند؛ اولین رندرِ سرور ممکن است فرق کند. */}
           <h4 suppressHydrationWarning className="text-xs font-medium text-muted-foreground">{g.title}</h4>
-          <ul className="grid">
-            {g.items.map((e) => {
-              const where = [e.subject, e.project && e.project !== e.subject ? e.project : null].filter(Boolean).join(' · ');
-              const name = e.actorName ?? t('سامانه');
-              return (
-                <li key={e.id} className="flex items-center gap-2.5 rounded-md py-1.5">
-                  <UserAvatar userId={e.actorId} name={name} size="md" presence={false} />
-                  <div className="grid min-w-0 flex-1 leading-tight">
-                    <span className="truncate text-sm">
-                      {actorHref && e.actorId ? (
-                        <Link href={`/reports/member/${e.actorId}`} className="font-medium hover:underline">{name}</Link>
-                      ) : (
-                        <span className="font-medium">{name}</span>
-                      )}
-                      <span className="text-muted-foreground"> {t(e.label)}</span>
-                    </span>
-                    {where && <span className="truncate text-xs text-muted-foreground">{where}</span>}
-                  </div>
-                  <time suppressHydrationWarning dateTime={e.at} className="num shrink-0 self-start pt-0.5 text-xs text-muted-foreground">
-                    {time.format(new Date(e.at))}
-                  </time>
-                </li>
-              );
-            })}
-          </ul>
+          <ul className="grid">{g.items.map(row)}</ul>
         </section>
       ))}
     </div>

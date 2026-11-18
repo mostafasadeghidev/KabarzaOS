@@ -162,24 +162,20 @@ export function DashboardV2({
           {inbox.week.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('ددلاینی در ۷ روزِ آینده نیست.')}</p>
           ) : (
-            <div className="grid max-h-80 gap-3 overflow-y-auto">
-              {[...byDay].map(([day, items]) => (
-                <div key={day} className="grid content-start gap-1.5">
-                  <h3 className={cn('flex items-center gap-2 text-xs font-semibold', day < todayIso ? 'text-destructive' : day === todayIso ? 'text-primary' : 'text-muted-foreground')}>
-                    {dayLabel(day)}<span className="num font-normal opacity-70">{day}</span>
-                  </h3>
-                  <ul className="grid gap-1">
-                    {items.map((w) => (
+            <ExpandableList inPlace className="grid content-start gap-1">
+              {[...byDay].flatMap(([day, items]) => [
+                <li key={`h${day}`} data-group-head className={cn('flex items-center gap-2 pt-2 text-xs font-semibold first:pt-0', day < todayIso ? 'text-destructive' : day === todayIso ? 'text-primary' : 'text-muted-foreground')}>
+                  {dayLabel(day)}<span className="num font-normal opacity-70">{day}</span>
+                </li>,
+                ...items.map((w) => (
                       <li key={`${w.kind}${w.id}`} className="flex min-w-0 items-center gap-2 text-sm">
                         <span className={cn('shrink-0 rounded px-1.5 py-px text-[10px]', w.kind === 'project' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>{w.kind === 'project' ? t('پروژه') : t('تسک')}</span>
                         <Link href={w.kind === 'project' ? `/projects/${w.projectId}` : `/projects/${w.projectId}?tab=tasks`} className="min-w-0 truncate hover:underline">{w.title}</Link>
                         {w.projectTitle && <span className="shrink-0 truncate text-xs text-muted-foreground">· {w.projectTitle}</span>}
                       </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+                )),
+              ])}
+            </ExpandableList>
           )}
         </Panel>
       ),
@@ -230,7 +226,7 @@ export function DashboardV2({
       node: (
         <Panel title={t('آخرین رویدادها')} action={{ href: '/activity', label: t('رویدادها') }}>
           {today.activity.length === 0 ? <p className="text-sm text-muted-foreground">{t('رویدادی ثبت نشده.')}</p>
-            : <div className="max-h-96 overflow-y-auto"><RecentActivity events={today.activity.slice(0, 10).map((a) => ({ ...a, at: a.at.toISOString() }))} actorHref={canReports} /></div>}
+            : <RecentActivity expandable events={today.activity.slice(0, 10).map((a) => ({ ...a, at: a.at.toISOString() }))} actorHref={canReports} />}
         </Panel>
       ),
     },

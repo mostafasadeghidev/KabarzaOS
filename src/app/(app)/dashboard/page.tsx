@@ -17,7 +17,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { PageHeader, PageShell } from '@/components/page-shell';
-import { DEMO_ALLOWED, demoAdminExtras, demoDash, demoInbox } from '@/server/dashboard-demo';
+import { DEMO_ALLOWED, demoAdminExtras, demoClientExtras, demoComments, demoDash, demoInbox, demoMemberDash, demoMemberExtras, demoMemberTasks } from '@/server/dashboard-demo';
 import Link from 'next/link';
 import { canViewSection } from '@/domain/access/permissions';
 import { hasTeamScope, teamOverview } from '@/server/team/service';
@@ -107,7 +107,7 @@ export default async function DashboardPage({
       const isMember = actor.roles.includes('member');
       if (isClient || isMember) {
         // پورتِ داشبوردِ نسخهٔ قبلی: عضو **و** کارفرما هر دو بخش را می‌بینند اگر هر دو نقش را دارند.
-        const [own, session, managesTeam] = await Promise.all([
+        const [rawOwn, session, managesTeam] = await Promise.all([
           getMemberDashboard(actor),
           currentSession(),
           hasTeamScope(actor),
@@ -116,6 +116,14 @@ export default async function DashboardPage({
          * کارت‌های «تیمِ تحتِ مدیریتِ شما» — پورتِ `team_overview_cards`. ⚠️ فقط
          * روی داشبوردِ عضو (`member_overview`)، همان‌جا که نسخهٔ قبلی می‌گذاشت.
          */
+        const own = demo ? demoMemberDash(rawOwn) : rawOwn;
+        // پیوندِ «دادهٔ نمایشی / واقعی» کنارِ «نمای قبلی» (فقط محلی).
+        const headerLinks = (
+          <>
+            {DEMO_ALLOWED && <Link href={demo ? '/dashboard' : '/dashboard?demo=1'} className="text-xs text-muted-foreground hover:underline">{demo ? t('دادهٔ واقعی') : t('دادهٔ نمایشی')}</Link>}
+            <Link href="/dashboard?classic=1" className="text-xs text-muted-foreground hover:underline">{t('نمای قبلی')}</Link>
+          </>
+        );
         const teamCards = managesTeam
           ? <TeamOverviewCards counts={await teamOverview(actor)} withLink />
           : null;
@@ -124,14 +132,17 @@ export default async function DashboardPage({
          * کارفرمای خالص فعلاً همان نمای قبلی را می‌بیند.
          */
         if (isMember && classic !== '1') {
-          const [mine, threads, mx] = await Promise.all([myTasks(actor), myOpenCommentThreads(actor), getMemberExtras(actor)]);
-          const tasks = mine.kind === 'member' ? { active: mine.active, waiting: mine.waiting, review: mine.review } : null;
+          const [mine, rawThreads, rawMx] = await Promise.all([myTasks(actor), myOpenCommentThreads(actor), getMemberExtras(actor)]);
+          const rawTasks = mine.kind === 'member' ? { active: mine.active, waiting: mine.waiting, review: mine.review } : null;
+          const tasks = demo && rawTasks ? demoMemberTasks(rawTasks) : rawTasks;
+          const threads = demo ? demoComments(rawThreads) : rawThreads;
+          const mx = demo ? demoMemberExtras(rawMx) : rawMx;
           return (
             <PageShell>
               <PageHeader
                 title={t('سلام، {name}', { name: session?.name ?? '' })}
                 description={todayLabel()}
-                actions={<Link href="/dashboard?classic=1" className="text-xs text-muted-foreground hover:underline">{t('نمای قبلی')}</Link>}
+                actions={headerLinks}
               />
               <MemberDashboardV2
                 data={own}
@@ -151,14 +162,16 @@ export default async function DashboardPage({
          * نمونهٔ محلیِ داشبوردِ تازهٔ **کارفرما** — همان شبکهٔ قابلِ ویرایش، با کارت‌های کارفرما.
          */
         if (isClient && !isMember && classic !== '1') {
-          const [mine, cx] = await Promise.all([myTasks(actor), getClientExtras(actor)]);
-          const review = mine.kind === 'client' ? mine.review : [];
+          const [mine, rawCx] = await Promise.all([myTasks(actor), getClientExtras(actor)]);
+          const cx = demo ? demoClientExtras(rawCx) : rawCx;
+          const rawReview = mine.kind === 'client' ? mine.review : [];
+          const review = demo ? demoMemberTasks({ active: [], waiting: [], review: rawReview }).review : rawReview;
           return (
             <PageShell>
               <PageHeader
                 title={t('سلام، {name}', { name: session?.name ?? '' })}
                 description={todayLabel()}
-                actions={<Link href="/dashboard?classic=1" className="text-xs text-muted-foreground hover:underline">{t('نمای قبلی')}</Link>}
+                actions={headerLinks}
               />
               <ClientDashboardV2 data={own} extras={cx} review={review} userId={actor.id} />
               <LiveRefresh />
