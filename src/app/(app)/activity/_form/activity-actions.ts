@@ -8,7 +8,8 @@ import { getActivityEvent, type ActivityEventDetail } from '@/server/activity/se
  * گارد (`activity.view`) در سرویس است؛ شناسهٔ ناموجود `null` برمی‌گرداند.
  */
 export async function activityEventAction(id: number): Promise<ActivityEventDetail | null> {
-  const actor = await requireActor();
+  // فقط خواندن — در «دیدن به‌جای کاربر» هم جزئیاتِ رویداد باز شود.
+  const actor = await requireActor({ allowViewOnly: true });
   if (!Number.isInteger(id) || id <= 0) return null;
   return getActivityEvent(actor, id);
 }

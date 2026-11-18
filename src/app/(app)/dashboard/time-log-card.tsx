@@ -24,17 +24,22 @@ import { cn } from '@/lib/utils';
  * روزها) می‌نشیند؛ همان پرسشی که هنگامِ زدنِ تایمر پیش می‌آید: «امروز/این هفته چقدر کار کرده‌ام؟».
  * وقتی تایمر روشن است، «هفتهٔ من» تنها می‌ماند.
  */
-export async function DashboardTimeLog({ actor }: { actor: Actor }) {
+export async function DashboardTimeLog({ actor, part = 'both' }: {
+  actor: Actor;
+  /** داشبوردِ بنتو (نمونهٔ محلی): «ثبتِ ساعت» و «هفتهٔ من» دو کارتِ جدا. */
+  part?: 'both' | 'log' | 'week';
+}) {
   const now = new Date();
   const [projects, state, config] = await Promise.all([loggableTargets(actor), timerState(actor, now), getSystemConfig()]);
   const general = canLogGeneral(actor);
   if (!general && projects.length === 0) return null;
   const week = await myWeek(actor, now, config.weekStart);
-  const showLog = !(state.running || state.pending);
+  const showLog = !(state.running || state.pending) && part !== 'week';
+  if (part === 'log' && !showLog) return null;
 
   return (
     // ۳.۱۵.۲ — دو کارت هم‌عرض (۱:۱)؛ پیش از این «ثبتِ ساعت» دو سوم بود و «هفتهٔ من» یک سوم.
-    <div className={cn('grid gap-4', showLog && '@3xl/main:grid-cols-2')}>
+    <div className={cn('kz-tl grid gap-4', showLog && part === 'both' && '@3xl/main:grid-cols-2')}>
       {showLog && (
         <div className="grid">
           <Panel
@@ -54,7 +59,7 @@ export async function DashboardTimeLog({ actor }: { actor: Actor }) {
           </Panel>
         </div>
       )}
-      <MyWeek days={week.days} todayMinutes={week.todayMinutes} weekMinutes={week.weekMinutes} />
+      {part !== 'log' && <MyWeek days={week.days} todayMinutes={week.todayMinutes} weekMinutes={week.weekMinutes} />}
     </div>
   );
 }
@@ -81,23 +86,23 @@ function MyWeek({ days, todayMinutes, weekMinutes }: { days: WeekDay[]; todayMin
     >
       <div className="flex items-end justify-between gap-4">
         <div className="grid gap-0.5">
-          <span className="text-xs text-muted-foreground">{t('امروز')}</span>
-          <span className="num text-2xl font-bold tabular-nums">{hhmm(todayMinutes)}</span>
+          <span className="kz-fit-label text-xs text-muted-foreground">{t('امروز')}</span>
+          <span className="kz-num num text-2xl font-bold tabular-nums">{hhmm(todayMinutes)}</span>
         </div>
         <div className="grid gap-0.5 text-end">
-          <span className="text-xs text-muted-foreground">{t('این هفته')}</span>
-          <span className="num text-lg font-semibold tabular-nums">{hhmm(weekMinutes)}</span>
+          <span className="kz-fit-label text-xs text-muted-foreground">{t('این هفته')}</span>
+          <span className="kz-num-sm num text-lg font-semibold tabular-nums">{hhmm(weekMinutes)}</span>
         </div>
       </div>
       {/* هفت ستون: ارتفاع = سهمِ هر روز از پُرترین روز. امروز با رنگِ اصلی، روزهای آینده نقطه‌چین. */}
-      <ul className="grid grid-cols-7 items-end gap-1.5" aria-label={t('ساعتِ هر روزِ این هفته')}>
+      <ul className="kz-bars grid grid-cols-7 items-end gap-1.5" aria-label={t('ساعتِ هر روزِ این هفته')}>
         {days.map((d) => {
           const i = weekdayOfDate(d.date);
           const full = i === null ? d.date : t(WEEKDAYS[i]!);
           return (
             <li key={d.date} className="grid justify-items-center gap-1">
               <span className="sr-only">{full}: {hhmm(d.minutes)}</span>
-              <span aria-hidden className="flex h-16 w-full items-end">
+              <span aria-hidden className="kz-bar-track flex h-16 w-full items-end">
                 <span
                   className={cn(
                     'block w-full rounded-md',
@@ -110,7 +115,7 @@ function MyWeek({ days, todayMinutes, weekMinutes }: { days: WeekDay[]; todayMin
                   style={!d.future && d.minutes > 0 ? { height: `${Math.max(8, Math.round((d.minutes / max) * 100))}%` } : undefined}
                 />
               </span>
-              <span aria-hidden className={cn('text-[11px] text-muted-foreground', d.today && 'font-bold text-foreground')}>
+              <span aria-hidden className={cn('kz-day text-[11px] text-muted-foreground', d.today && 'font-bold text-foreground')}>
                 {shortDay(d.date)}
               </span>
             </li>

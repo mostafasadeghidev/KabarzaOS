@@ -573,3 +573,142 @@
   }
   [dir='rtl'] table[data-sticky-first] tr > :first-child { box-shadow: inset 1px 0 0 var(--color-border); }
 }
+
+
+/*
+ * کارتِ داشبورد با قدِ دلخواهِ کاربر (data-fixed روی بدنهٔ کارت، dashboard-grid.tsx):
+ * محتوای غیرِفهرستی خودش را با آن قد جور می‌کند. ⚠️ بیرون از کلاسِ لایه‌دار عمداً — باید بر
+ * grid-cols-2 ِ Tailwind (لایهٔ utilities) غلبه کند. بی data-fixed هیچ اثری ندارد.
+ *
+ * .kz-fit > شبکهٔ کاشی‌ها: شبکه جای باقی‌ماندهٔ کارت را می‌گیرد، کاشی‌ها هم‌قد می‌شوند، عدد با قدِ
+ * کاشی کوچک/بزرگ می‌شود، برچسب در کاشیِ خیلی کوتاه پنهان می‌شود، و در کارتِ پهن‌وکوتاه همهٔ کاشی‌ها
+ * در یک ردیف می‌نشینند.
+ */
+[data-fixed] .kz-fit {
+  flex: 1 1 0;
+  min-height: 3rem;
+  container: kzfit / size;
+}
+[data-fixed] .kz-fit > * {
+  height: 100%;
+  grid-auto-rows: minmax(0, 1fr);
+}
+[data-fixed] .kz-fit > * > * {
+  min-height: 0;
+  overflow: hidden;
+  container: kztile / size;
+  padding-block: min(0.625rem, 5cqh);
+}
+[data-fixed] .kz-fit-value {
+  font-size: clamp(0.85rem, 42cqh, 1.75rem);
+  line-height: 1.15;
+}
+@container kzfit (min-aspect-ratio: 3 / 1) {
+  .kz-fit > * {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+@container kztile (max-height: 3rem) {
+  .kz-fit-label { display: none; }
+  .kz-fit-value { font-size: clamp(0.85rem, 60cqh, 1.5rem); }
+}
+
+/* کارتِ عدد و روند: در قدِ کم اول نمودارِ کوچک، بعد پانویس کنار می‌روند. */
+[data-fixed] .kz-metric { container: kzmetric / size; }
+@container kzmetric (max-height: 11rem) {
+  [data-sparkline] { display: none; }
+}
+@container kzmetric (max-height: 8rem) {
+  [data-slot='card-footer'] { display: none; }
+}
+
+
+/*
+ * همهٔ کارت‌های داشبورد (.kz-card = بدنهٔ کارت در dashboard-grid.tsx): ظرفِ عرض به نامِ kzcard، و با قدِ
+ * دلخواهِ کاربر (data-fixed) ظرفِ قد هم. پس هر کارت با «اندازه‌ای که کاربر داده» جور می‌شود:
+ *  · پنلِ کارت تمام‌قد و ستونی است؛ تکهٔ «رشدکننده» (فهرست، نمودار، یادداشت، ستون‌های هفته) جای باقی‌مانده را می‌گیرد؛
+ *  · قدِ کم ← تورفتگی و فاصله‌ها کم، برچسب‌های فرعی پنهان؛
+ *  · آنچه باز هم جا نشد اسکرولِ باریکِ خودِ بدنه.
+ */
+[data-fixed].kz-card { container-type: size; }
+[data-fixed] > section,
+[data-fixed] > .kz-metric,
+[data-fixed] > .kz-tl,
+[data-fixed] > .kz-tl > div,
+[data-fixed] > [data-slot='card'] {
+  height: 100%;
+  min-height: 0;
+}
+[data-fixed] > .kz-tl { grid-template-rows: minmax(0, 1fr); }
+[data-fixed] [data-slot='card'] { display: flex; flex-direction: column; }
+/* بدنهٔ Panel ِ مشترک (page-shell): جای باقی‌مانده، ستونی. */
+[data-fixed] .kz-tl [data-slot='card'] > div:last-child {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+[data-fixed] .kz-grow { flex: 1 1 0; min-height: 2.5rem; resize: none; }
+/* ستون‌های «هفتهٔ من»: تمام‌قدِ جای باقی‌مانده. */
+[data-fixed] .kz-bars { flex: 1 1 0; min-height: 2.5rem; align-items: stretch; }
+[data-fixed] .kz-bars > li { grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
+[data-fixed] .kz-bar-track { height: auto; min-height: 0; }
+
+@container kzcard (max-height: 13rem) {
+  .kz-card > section,
+  .kz-card [data-slot='card'] > header { padding: 0.625rem 0.75rem; gap: 0.5rem; }
+  .kz-card [data-slot='card'] > div:last-child { padding: 0.5rem 0.75rem 0.625rem; gap: 0.5rem; }
+}
+@container kzcard (max-height: 9rem) {
+  .kz-card .kz-fit-label { display: none; }
+}
+
+
+/*
+ * عددها و متن‌های کارت با قدِ کارت (cqh = درصدِ قدِ بدنهٔ کارتِ قدِ ثابت). kz-num عددِ اصلی، kz-num-sm عددِ
+ * فرعی؛ kz-day برچسبِ زیرِ ستون‌های هفته که در کارتِ خیلی کوتاه کنار می‌رود.
+ */
+[data-fixed] .kz-num { font-size: clamp(1rem, 12cqh, 1.5rem); line-height: 1.1; }
+[data-fixed] .kz-num-sm { font-size: clamp(0.875rem, 9cqh, 1.125rem); line-height: 1.15; }
+[data-fixed] .kz-bars { min-height: 1rem; gap: 0.25rem 0.375rem; }
+@container kzcard (max-height: 8rem) {
+  .kz-card .kz-day { display: none; }
+  .kz-card .kz-bars > li { gap: 0; }
+}
+
+/* فرمِ «ثبتِ ساعت» در کارتِ کوتاه: برچسبِ فیلد فقط برای صفحه‌خوان، «ثبتِ دستی» کنار (از «همهٔ ثبت‌ها» در دسترس است). */
+@container kzcard (max-height: 10rem) {
+  .kz-card .kz-tl details { display: none; }
+  .kz-card .kz-tl label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+}
+
+/* کارتِ خیلی کوتاه (نزدیکِ کمترین قد): باز هم فشرده‌تر. */
+@container kzcard (max-height: 7rem) {
+  .kz-card > section,
+  .kz-card [data-slot='card'] > header { padding: 0.5rem 0.625rem; gap: 0.375rem; }
+  .kz-card [data-slot='card'] > div:last-child { padding: 0.375rem 0.625rem 0.5rem; gap: 0.375rem; }
+}
+/* پیامِ «خالی» در کارتِ کوتاه: بی‌تورفتگی، یک خط. */
+@container kzcard (max-height: 9rem) {
+  .kz-card .kz-empty { padding-block: 0; font-size: 0.75rem; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+}
+
+/* فرمِ کوچکِ داخلِ کارت (پیام به تیم): متن جای باقی‌مانده را می‌گیرد؛ در کارتِ کوتاه متن و دکمه کنارِ هم. */
+[data-fixed] .kz-form { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
+[data-fixed] textarea.kz-grow { field-sizing: fixed; }
+@container kzcard (max-height: 9rem) {
+  .kz-card .kz-form { flex-direction: row; align-items: stretch; }
+  .kz-card .kz-form > div { flex-shrink: 0; align-self: flex-end; }
+}
+
+/* فیلترهای صندوق در کارتِ قدِ ثابت: یک خط با اسکرولِ افقی، نه چند ردیفِ شکسته که جای فهرست را بخورد. */
+[data-fixed] .kz-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+[data-fixed] .kz-chips > * { flex-shrink: 0; }
+@container kzcard (max-height: 9rem) {
+  .kz-card .kz-tile { padding-block: 0.25rem; }
+}

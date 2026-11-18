@@ -240,7 +240,8 @@ export async function addTaskNoteAction(_prev: TaskFormState, formData: FormData
  * ویرایش فقط وقتی خوانده می‌شوند که واقعاً بتواند ویرایش کند.
  */
 export async function loadTaskAction(taskId: number) {
-  const actor = await requireActor();
+  // فقط خواندن — در «دیدن به‌جای کاربر» هم مودالِ تسک باز شود (داشبورد).
+  const actor = await requireActor({ allowViewOnly: true });
   const detail = await getTaskDetail(actor, taskId);
   /**
    * ⚠️ وضعیت‌ها برای **هر شرکت‌کننده** خوانده می‌شوند، نه فقط مدیر: عضو هم

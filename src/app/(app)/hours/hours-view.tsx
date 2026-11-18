@@ -134,13 +134,14 @@ export function ManualLogForm({ projects, canLogGeneral, today }: {
   const [state, log] = useActionState(logHoursAction, {});
   useActionToast(state);
   return (
-    <form action={log} className="grid gap-3">
-      <div className="grid gap-2 @xl/main:grid-cols-4">
-        <Field className="@xl/main:col-span-2">
+    // ستون‌بندی با عرضِ **خودِ فرم** (container ِ log)، نه صفحه — در کارتِ کوچکِ داشبورد زیرِ هم می‌آید.
+    <form action={log} className="@container/log grid gap-3">
+      <div className="grid gap-2 @xl/log:grid-cols-4">
+        <Field className="@xl/log:col-span-2">
           <FieldLabel htmlFor="log-project">{t("پروژه")}</FieldLabel>
           <ProjectSelect projects={projects} id="log-project" allowGeneral={canLogGeneral} />
         </Field>
-        <Field>
+        <Field className="min-w-0">
           <FieldLabel htmlFor="log-date">{t("تاریخ")}</FieldLabel>
           <DatePicker id="log-date" name="logDate" defaultValue={today} required />
         </Field>

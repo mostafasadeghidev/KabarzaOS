@@ -2,6 +2,51 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.18.0]
+
+### Added
+
+- **New dashboards for managers, members and clients.** The overview is now a grid of cards you can rearrange, built around "what is waiting for me" first and numbers second. Each role has its own layout and default.
+  - **Manager:** project, finance and team to-do inboxes, with approve, send back, assign and remind right on the row. The `j` and `k` keys move between rows and `a` runs the first action. Also:
+    - team today, available and online;
+    - clients waiting for a reply, meetings, this week, projects at risk and team capacity;
+    - latest activity;
+    - money at a glance, receivables, salaries and instalments, subscription renewals;
+    - client QA ticks, access alerts, system health;
+    - hours charts.
+  - **Member:** my work, awaiting review and team reviews, plus:
+    - **tasks I can take**, claimed with one click;
+    - **waiting for my reply**, for new comments and task notes;
+    - **record work entry**, which logs units and requests payment for unit-based work.
+
+    Further cards cover resuming the last timer, log hours, my week, the weekly hours goal, open comments, mentions, leave and schedule, my numbers, open projects and tenders.
+  - **Client:** awaiting your approval, plus:
+    - **your to-dos**, the tasks the team assigned to you;
+    - **comment on a project**, which posts a project comment with files and has a live project search;
+    - **project files**, pinned first, with direct download;
+    - **next stage**, showing current and next status and days to the deadline.
+
+    The client also gets their projects, statement, project updates, the delivery checklist, upcoming meetings and message the team.
+- **Edit the layout on the dashboard itself.** The pencil in the top bar switches to edit mode and the check mark ends it. In edit mode:
+  - drag cards to move them;
+  - pick a size (¼, ⅓, ½, ¾ or full width);
+  - drag the bottom edge to set a fixed height and the top edge to align a card with its neighbours ("same row");
+  - hide and show cards from the card list.
+
+  Every card's content adapts to the size you give it: numbers, charts, week bars and forms shrink, and secondary text steps aside before anything scrolls. Long lists show the first rows, then "Show more" turns on scrolling inside the card and jumps to the hidden rows; only one list is open at a time.
+- **Layouts, "My note" and the weekly hours goal are saved on your account** (migration `0083`), so they follow you to every device. Anything you arranged before this version moves over automatically the first time you open the dashboard.
+- **Tasks and activity open in place.** Task and event links on the dashboard open the task or event window over the dashboard instead of leaving it. "Go to task in project" in the task window jumps to the task itself.
+- **Singular and plural in every language.** Translations can now have one form per count (CLDR plural rules, including Arabic two, few and many), so the app shows "1 day" and "2 days" instead of "1 days". About 580 counted strings were updated in English, Arabic, Kurdish, German, Spanish, French and Portuguese.
+
+### Changed
+
+- When an owner views the app as another user, that user's own dashboard layout is shown read-only, and the task and activity windows now open there too, since loading them is read-only.
+
+### Fixed
+
+- **Phone bottom navigation labels** are now translated; they showed Persian in every language.
+- Several old translations that were singular for every count, or used "(s)", were corrected.
+
 ## [3.17.2]
 
 ### Fixed

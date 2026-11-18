@@ -138,7 +138,7 @@ function MemberBlock({
   );
 }
 
-function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection; unread: number; showUnread: boolean; money: MoneyLines }) {
+export function ClientBlock({ data, unread, showUnread, money }: { data: ClientSection; unread: number; showUnread: boolean; money: MoneyLines }) {
   return (
     <>
       <div className="grid gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">

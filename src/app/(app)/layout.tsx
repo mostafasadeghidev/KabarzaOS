@@ -13,6 +13,7 @@ import { LiveProvider } from '@/components/live';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { TableStackLabels } from '@/components/table-stack-labels';
 import { HeaderAutoHide } from '@/components/header-auto-hide';
+import { inboxCount } from '@/server/dashboard-inbox';
 import { UploadProvider } from '@/components/uploads/upload-manager';
 import { FinanceAccountReset } from './finance/account-reset';
 import { CommandPalette, CommandPaletteTrigger } from '@/components/command-palette';
@@ -249,7 +250,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const primaryRole = actor.roles[0];
-  const [bell, system, unreadMessages, showTgNudge, timer, brand, roleTags, avatars, decimals, unreadMail] = await Promise.all([
+  const [bell, system, unreadMessages, showTgNudge, timer, brand, roleTags, avatars, decimals, unreadMail, waiting] = await Promise.all([
     listNotifications(actor),
     getSystemConfig(),
     unreadMessageCount(actor),
@@ -269,6 +270,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     currencyDecimalsList(),
     // بجِ «ایمیل» (۳.۲.۰) — از پایگاه‌داده، بی درخواست به سرورِ ایمیل.
     mailUnreadCount(actor.id),
+    // ۳.۱۸ (نمونه) — نشانِ «منتظرِ شما» روی «نمای کلی».
+    inboxCount(actor).catch(() => 0),
   ]);
   registerCurrencyDecimals(decimals);
 
@@ -299,6 +302,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         pulse={{ enabled: system.pulseEnabled, interval: system.pulseInterval }}
         unreadMessages={unreadMessages}
         unreadMail={unreadMail}
+        waiting={waiting}
         onLogout={logout}
         canManageSettings={can(actor, 'settings.manage')}
         onLocaleChange={setLocale}

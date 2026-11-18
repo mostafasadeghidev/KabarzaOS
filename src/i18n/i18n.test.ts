@@ -78,6 +78,44 @@ describe('جای‌گذاریِ پارامتر', () => {
   });
 });
 
+describe('مفرد و جمع (Intl.PluralRules)', () => {
+  // ⚠️ پیش از این «1 days to deadline» و «1 projects» نوشته می‌شد — ترجمه فقط یک رشته بود.
+  const en = createTranslator({ '{n} روز تا ددلاین': { one: '{n} day to deadline', other: '{n} days to deadline' } }, 'en');
+
+  it('انگلیسی: ۱ مفرد، بقیه جمع (صفر هم جمع)', () => {
+    expect(en('{n} روز تا ددلاین', { n: 1 })).toBe('1 day to deadline');
+    expect(en('{n} روز تا ددلاین', { n: 3 })).toBe('3 days to deadline');
+    expect(en('{n} روز تا ددلاین', { n: 0 })).toBe('0 days to deadline');
+  });
+
+  it('عربی: شکل‌های دوتایی و چندتایی', () => {
+    const ar = createTranslator({ '{n} پروژه': { one: 'مشروع واحد', two: 'مشروعان', few: '{n} مشاريع', many: '{n} مشروعًا', other: '{n} مشروع' } }, 'ar');
+    expect(ar('{n} پروژه', { n: 1 })).toBe('مشروع واحد');
+    expect(ar('{n} پروژه', { n: 2 })).toBe('مشروعان');
+    expect(ar('{n} پروژه', { n: 5 })).toBe('5 مشاريع');
+    expect(ar('{n} پروژه', { n: 11 })).toBe('11 مشروعًا');
+  });
+
+  it('عددِ رشته‌ای هم شمرده می‌شود و بی‌پارامتر «other» می‌آید', () => {
+    expect(en('{n} روز تا ددلاین', { n: '1' })).toBe('1 day to deadline');
+    expect(en('{n} روز تا ددلاین')).toBe('{n} days to deadline');
+  });
+
+  it('بی n: اولین پارامترِ عددیِ کلید، یا by', () => {
+    const t = createTranslator({
+      '{done} از {total} تسک': { one: '{done} of {total} task', other: '{done} of {total} tasks', by: 'total' },
+      '{days} روز مانده': { one: '{days} day left', other: '{days} days left' },
+    }, 'en');
+    expect(t('{done} از {total} تسک', { done: 3, total: 1 })).toBe('3 of 1 task');
+    expect(t('{days} روز مانده', { days: 1 })).toBe('1 day left');
+  });
+
+  it('فارسی همیشه خودِ کلید است', () => {
+    const fa = createTranslator({ '{n} پروژه': { one: 'x', other: 'y' } }, 'fa');
+    expect(fa('{n} پروژه', { n: 1 })).toBe('1 پروژه');
+  });
+});
+
 describe('R-I18N-02 — ترجمه هیچ‌وقت گم نمی‌شود', () => {
   const fa = load('fa');
   const faKeys = Object.keys(fa);
