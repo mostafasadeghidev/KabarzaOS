@@ -20,7 +20,7 @@ import { DashboardGrid, type DefaultLayout, type WidgetDef } from './dashboard-g
  * بعد چک‌لیستِ تحویل و تازه‌ها در یک ستون، صورتِ حساب و جلسات در ستونِ کناری.
  */
 /* چیدمانِ مالک (۲۰۲۶-۱۱-۱۸، از localStorage ِ خودش) — ستون‌ها روی پایهٔ ۱۲. */
-const CLIENT_LAYOUT: DefaultLayout = {"order": ["c-review", "c-assigned", "c-message", "c-comment", "c-projects", "c-qa", "c-statement", "c-updates", "c-meetings", "c-onboarding"], "cols": {"c-review": 0, "c-message": 9, "c-comment": 9, "c-projects": 0, "c-qa": 0, "c-statement": 6, "c-updates": 0, "c-meetings": 6, "c-onboarding": 0, "c-assigned": 0}, "basis": 12 as const};
+const CLIENT_LAYOUT: DefaultLayout = {"order": ["c-review", "c-assigned", "c-meetings", "c-message", "c-comment", "c-files", "c-updates", "c-projects", "c-stage", "c-qa", "c-statement", "c-note"], "sizes": {"c-assigned": "s", "c-review": "m", "c-projects": "l", "c-stage": "s", "c-updates": "s", "c-statement": "s"}, "cols": {"c-review": 0, "c-message": 9, "c-comment": 9, "c-projects": 0, "c-qa": 0, "c-statement": 9, "c-updates": 6, "c-meetings": 9, "c-onboarding": 0, "c-assigned": 6, "c-files": 0, "c-stage": 9}, "basis": 12 as const, "heights": {"c-assigned": 434, "c-review": 434, "c-files": 317, "c-comment": 389, "c-updates": 317, "c-projects": 187, "c-qa": 382, "c-meetings": 198, "c-message": 151}, "offsets": {"c-projects": 16}, "rows": [["c-projects", "c-stage"]]};
 import { QuickNote } from './quick-note';
 import { OnboardingCard } from './onboarding-card';
 import { ClientQaList, ClientTalkCard, ContactTeamForm, HoursGoal, RequestUnitButton, UnitQuickForm, PayRenewalButton, ResumeTimerButton } from './extras-client';
