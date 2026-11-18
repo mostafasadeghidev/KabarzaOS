@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import {
   CalendarClock, CalendarDays, CheckCircle2, ClipboardCheck, FolderKanban, Gavel, Hourglass, MessageSquareReply,
-  UsersRound, Hash,
+  UsersRound, Hash, Hand,
 } from 'lucide-react';
+import { ClaimTaskButton } from '../tasks/inbox-claim';
 import { t } from '@/i18n/server';
 import { formatDateTime } from '@/i18n/datetime';
 import { cn } from '@/lib/utils';
@@ -200,6 +201,33 @@ export function MemberDashboardV2({
         </Panel>
       ),
     });
+    /*
+     * «کارهای قابلِ برداشتن» — تسک‌های بی‌مسئولی که نقشِ من را می‌خواهند و می‌توانم برشان دارم (claimable از
+     * myTasks؛ همان قاعدهٔ canClaimTask). دکمه همان ClaimTaskButton ِ صندوقِ تسک‌هاست (claimTaskAction).
+     */
+    const claimable = tasks.active.filter((tk) => tk.claimable);
+    if (claimable.length > 0) {
+      widgets.push({
+        id: 'm-claim', hint: t('تسک‌هایی که هنوز مسئول ندارند و نقشِ شما را می‌خواهند. با «برمی‌دارم» به نامِ شما می‌شوند.'), title: t('کارهای قابلِ برداشتن'), group: G_WORK, size: 'm', defaultOn: true,
+        node: (
+          <Panel title={t('کارهای قابلِ برداشتن')} icon={<Hand />} action={{ href: '/tasks', label: t('همهٔ تسک‌ها') }}>
+            <ExpandableList inPlace className="grid divide-y">
+              {claimable.map((tk) => (
+                <li key={tk.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                  <Link href={taskHref(tk)} data-open-task={tk.id} className="grid min-w-0 basis-36 flex-1 gap-0.5 hover:underline">
+                    <span className="truncate text-sm">{tk.title}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {tk.projectTitle}{tk.roles.length ? <> · {tk.roles.map((r) => r.roleName).join(t('، '))}</> : null}{tk.dueDate ? <> · <span className="num">{tk.dueDate}</span></> : null}
+                    </span>
+                  </Link>
+                  <span className="ms-auto"><ClaimTaskButton taskId={tk.id} projectId={tk.projectId} /></span>
+                </li>
+              ))}
+            </ExpandableList>
+          </Panel>
+        ),
+      });
+    }
     // فقط مدیرِ پروژه یا دفتر این دسته را دارد (myTasks برای عضوِ ساده خالی برمی‌گرداند).
     if (tasks.review.length > 0) {
       widgets.push({

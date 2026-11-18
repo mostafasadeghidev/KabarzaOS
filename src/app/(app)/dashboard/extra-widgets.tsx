@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {
-  AtSign, CalendarDays, CalendarOff, CalendarSync, ClipboardCheck, DatabaseBackup, FileText, FolderKanban, HandCoins,
+  ArrowLeft, AtSign, CalendarDays, Download, Flag, Link2, MessagesSquare, Package, Pin,
+ CalendarOff, CalendarSync, ClipboardCheck, DatabaseBackup, FileText, FolderKanban, HandCoins,
   KeyRound, ListChecks, MessageSquarePlus, MessageSquareText, PiggyBank, Play, Receipt, Sparkles, Target, Wallet,
 } from 'lucide-react';
 import { t } from '@/i18n/server';
@@ -31,7 +32,7 @@ const CLIENT_LAYOUT: DefaultLayout = (() => {
 })();
 import { QuickNote } from './quick-note';
 import { OnboardingCard } from './onboarding-card';
-import { ClientQaList, ClientTalkCard, ContactTeamForm, HoursGoal, PayRenewalButton, ResumeTimerButton } from './extras-client';
+import { ClientQaList, ClientTalkCard, ContactTeamForm, HoursGoal, RequestUnitButton, UnitQuickForm, PayRenewalButton, ResumeTimerButton } from './extras-client';
 import type { getAdminExtras, getClientExtras, getMemberExtras } from '@/server/dashboard-extras';
 import type { MemberDashboard } from '@/server/dashboard-member';
 import type { InboxTask } from '@/server/projects/service';
@@ -310,6 +311,62 @@ export function memberExtraWidgets(x: MemberX, userId: number): WidgetDef[] {
     });
   }
 
+  // «کامنت‌هایی که منتظرِ من‌اند» — پاسخ به کامنت‌ها و یادداشتِ تازه روی تسک‌هایم که هنوز ندیده‌ام.
+  if (x.replies && x.replies.length > 0) {
+    const replies = x.replies;
+    out.push({
+      id: 'm-replies', title: t('منتظرِ پاسخِ من'), group: G_WORK, size: 'm', defaultOn: true,
+      hint: t('کامنت‌ها و یادداشت‌های تازه روی پروژه‌ها و تسک‌هایتان که هنوز ندیده‌اید. با کلیک همان‌جا باز می‌شود.'),
+      node: (
+        <Panel title={t('منتظرِ پاسخِ من')} icon={<MessagesSquare />} action={{ href: '/comments', label: t('کامنت‌ها') }}>
+          <ExpandableList inPlace className="grid divide-y">
+            {replies.map((m) => (
+              <li key={m.id}>
+                <Link href={m.url || '/comments'} className="grid gap-0.5 py-2 hover:bg-muted/40">
+                  <span className="truncate text-sm font-medium">{m.title}</span>
+                  {m.body && <span className="line-clamp-2 text-xs text-muted-foreground">{m.body}</span>}
+                </Link>
+              </li>
+            ))}
+          </ExpandableList>
+        </Panel>
+      ),
+    });
+  }
+
+  // «ثبتِ کارکرد» — فقط عضوی که دستمزدش روی پروژهٔ بازی تعدادی است.
+  if (x.units) {
+    const u = x.units;
+    const STATUS: Record<string, string> = { unpaid: 'پرداخت‌نشده', requested: 'درخواست شده', paid: 'پرداخت‌شده' };
+    out.push({
+      id: 'm-units', title: t('ثبتِ کارکرد'), group: G_WORK, size: 'm', defaultOn: true,
+      hint: t('کارکردِ پروژه‌های تعدادی را همین‌جا ثبت کنید و برای ردیف‌های پرداخت‌نشده درخواستِ پرداخت بدهید.'),
+      node: (
+        <Panel title={t('ثبتِ کارکرد')} icon={<Package />} action={{ href: '/my-money', label: t('پولِ من') }}>
+          <UnitQuickForm userId={userId} projects={u.projects} />
+          {u.entries.length > 0 && (
+            <ExpandableList inPlace className="grid divide-y border-t">
+              {u.entries.map((e) => (
+                <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                  <span className="grid min-w-0 basis-36 flex-1 gap-0.5">
+                    <span className="truncate text-sm">{e.name || e.projectTitle}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      <span className="num">{e.entryDate}</span> · {t('{n} عدد', { n: Number(e.quantity) })}{e.name ? <> · {e.projectTitle}</> : null}
+                    </span>
+                  </span>
+                  <span className="num text-sm" dir="ltr"><Amount>{money(e.amount, e.currencyCode)}</Amount></span>
+                  {e.status === 'unpaid'
+                    ? <span className="ms-auto"><RequestUnitButton entryId={e.id} projectId={e.projectId} /></span>
+                    : <span className="ms-auto rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{t(STATUS[e.status] ?? e.status)}</span>}
+                </li>
+              ))}
+            </ExpandableList>
+          )}
+        </Panel>
+      ),
+    });
+  }
+
   if (x.leave || x.schedule) {
     const slots = (s: Array<{ from: string; to: string }>) => s.map((v) => `${v.from}–${v.to}`).join(t('، '));
     out.push({
@@ -510,6 +567,75 @@ export function ClientDashboardV2({
               ))}
             </ExpandableList>
           )}
+        </Panel>
+      ),
+    });
+  }
+
+  // «فایل‌های پروژه» — سنجاق‌شده‌ها اول، بعد تازه‌ترین‌ها؛ گروه به تفکیکِ پروژه، با دانلودِ مستقیم.
+  if (extras.files && extras.files.length > 0) {
+    const byProject = new Map<number, typeof extras.files>();
+    for (const f of extras.files) byProject.set(f.projectId, [...(byProject.get(f.projectId) ?? []), f]);
+    widgets.push({
+      id: 'c-files', title: t('فایل‌های پروژه'), group: G_PROJ, size: 'm', defaultOn: true,
+      hint: t('فایل‌های تحویلی و مهمِ پروژه‌هایتان؛ سنجاق‌شده‌ها بالاترند. با کلیک دانلود می‌شود.'),
+      node: (
+        <Panel title={t('فایل‌های پروژه')} icon={<FileText />}>
+          <ExpandableList inPlace className="grid content-start">
+            {[...byProject.entries()].flatMap(([pid, list]) => [
+              <li key={`h${pid}`} data-group-head className="min-w-0 pt-2 pb-0.5 first:pt-0">
+                <Link href={`/projects/${pid}?tab=files`} className="block truncate text-xs font-medium text-muted-foreground hover:underline">{list[0]!.projectTitle}</Link>
+              </li>,
+              ...list.map((f) => (
+                <li key={f.id} className="min-w-0">
+                  <a href={f.href} target={f.isLink ? '_blank' : undefined} rel={f.isLink ? 'noreferrer' : undefined} className="flex items-center gap-2 rounded-md px-1 py-1.5 hover:bg-muted/40">
+                    {f.pinned ? <Pin className="size-3.5 shrink-0 text-primary" /> : f.isLink ? <Link2 className="size-3.5 shrink-0 text-muted-foreground" /> : <Download className="size-3.5 shrink-0 text-muted-foreground" />}
+                    <span className="min-w-0 flex-1 truncate text-sm">{f.title}</span>
+                    <span className="num shrink-0 text-xs text-muted-foreground">{day(f.at)}</span>
+                  </a>
+                </li>
+              )),
+            ])}
+          </ExpandableList>
+        </Panel>
+      ),
+    });
+  }
+
+  // «مرحلهٔ بعد» — هر پروژهٔ باز: کجاست، قدمِ بعدی چیست و تا ددلاین چقدر مانده.
+  if (extras.stages && extras.stages.length > 0) {
+    const today = new Date().toISOString().slice(0, 10);
+    const left = (d: string) => Math.round((Date.parse(`${d}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
+    widgets.push({
+      id: 'c-stage', title: t('مرحلهٔ بعد'), group: G_PROJ, size: 'm', defaultOn: true,
+      hint: t('هر پروژه الان در چه مرحله‌ای است، مرحلهٔ بعدی چیست و تا ددلاین چند روز مانده.'),
+      node: (
+        <Panel title={t('مرحلهٔ بعد')} icon={<Flag />}>
+          <ExpandableList inPlace className="grid divide-y">
+            {extras.stages.map((s) => {
+              const n = s.deadline ? left(s.deadline) : null;
+              return (
+                <li key={s.projectId} className="min-w-0">
+                  <Link href={`/projects/${s.projectId}`} className="grid gap-1 py-2 hover:bg-muted/40">
+                    <span className="truncate text-sm font-medium">{s.title}</span>
+                    <span className="flex flex-wrap items-center gap-1.5 text-xs">
+                      {s.current && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
+                          <span className="size-1.5 rounded-full" style={{ background: s.current.color ?? 'currentColor' }} />{s.current.name}
+                        </span>
+                      )}
+                      {s.next && <><ArrowLeft className="size-3 text-muted-foreground ltr:rotate-180" /><span className="text-muted-foreground">{s.next}</span></>}
+                      {n !== null && (
+                        <span className={cn('kz-fit-label ms-auto', n < 0 ? 'text-destructive' : n <= 7 ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground')}>
+                          {n < 0 ? t('{n} روز از ددلاین گذشته', { n: -n }) : n === 0 ? t('ددلاین امروز است') : t('{n} روز تا ددلاین', { n })}
+                        </span>
+                      )}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ExpandableList>
         </Panel>
       ),
     });

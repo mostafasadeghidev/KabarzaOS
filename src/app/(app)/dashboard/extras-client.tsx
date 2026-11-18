@@ -9,10 +9,12 @@ import { startTimerAction } from '../hours/_form/actions';
 import { toggleQaAction } from '../projects/_form/qa-actions';
 import { contactManagementAction } from '../messages/_form/actions';
 import { addCommentAction } from '../projects/_form/tab-actions';
+import { addUnitAction, requestUnitAction } from '../projects/[id]/_form/money-actions';
 import { payRecurringAction } from '../finance/_form/payout-actions';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Combobox } from '@/components/ui/combobox';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Hint } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/toast';
@@ -344,5 +346,77 @@ export function ClientTalkCard({ userId, projects, threads }: {
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * «ثبتِ کارکرد» ِ عضوِ تعدادی — ثبتِ سریعِ یک ردیف (همان addUnitAction ِ تبِ مالیِ پروژه، برای خودِ کاربر)
+ * و درخواستِ پرداخت برای ردیف‌های پرداخت‌نشده (requestUnitAction). گارد، نرخ و منجمد بودن همه در سرور.
+ */
+export function UnitQuickForm({ userId, projects }: { userId: number; projects: Array<{ id: number; title: string }> }) {
+  const t = useT();
+  const router = useRouter();
+  const { show } = useToast();
+  const [projectId, setProjectId] = useState<number | null>(projects[0]?.id ?? null);
+  const [quantity, setQuantity] = useState('1');
+  const [note, setNote] = useState('');
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [pending, start] = useTransition();
+  const project = projects.find((p) => p.id === projectId) ?? null;
+  const submit = () => {
+    if (!project || !(Number(quantity) > 0)) return;
+    start(async () => {
+      const fd = new FormData();
+      fd.set('projectId', String(project.id));
+      fd.set('userId', String(userId));
+      fd.set('entryDate', date);
+      fd.set('quantity', quantity);
+      fd.set('note', note);
+      const r = await addUnitAction({}, fd);
+      if (r.error) { show(t(r.error), 'error'); return; }
+      setNote('');
+      setQuantity('1');
+      show(t('کارکرد ثبت شد.'), 'success');
+      router.refresh();
+    });
+  };
+  return (
+    <div className="grid gap-2">
+      {projects.length > 1 && (
+        <Combobox
+          size="sm"
+          options={projects.map((p) => ({ value: p.id, label: p.title }))}
+          value={{ id: project?.id ?? null, label: project?.title ?? '' }}
+          onChange={(next) => { if (next.id !== null) setProjectId(next.id); }}
+          placeholder={t('پروژه را جستجو کنید…')}
+        />
+      )}
+      {projects.length === 1 && project && <p className="truncate text-xs text-muted-foreground">{t('پروژه')}: <b className="text-foreground">{project.title}</b></p>}
+      <div className="flex flex-wrap items-center gap-2">
+        <Input type="number" min={0} step="any" inputMode="decimal" value={quantity} onChange={(e) => setQuantity(e.target.value)} aria-label={t('تعداد')} className="h-8 w-20" />
+        <DatePicker size="sm" value={date} onChange={(v) => setDate(v || date)} aria-label={t('تاریخ')} className="w-36" />
+        <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('توضیح (اختیاری)')} aria-label={t('توضیح')} className="h-8 min-w-24 flex-1" />
+        <Button type="button" size="sm" onClick={submit} disabled={pending || !project || !(Number(quantity) > 0)}>{t('ثبت')}</Button>
+      </div>
+    </div>
+  );
+}
+
+export function RequestUnitButton({ entryId, projectId }: { entryId: number; projectId: number }) {
+  const t = useT();
+  const router = useRouter();
+  const { show } = useToast();
+  const [pending, start] = useTransition();
+  return (
+    <Button
+      type="button" size="xs" variant="outline" disabled={pending}
+      onClick={() => start(async () => {
+        const r = await requestUnitAction(entryId, projectId);
+        if (r.error) show(t(r.error), 'error');
+        else { show(t(r.message ?? 'درخواست ثبت شد.'), 'success'); router.refresh(); }
+      })}
+    >
+      {t('درخواستِ پرداخت')}
+    </Button>
   );
 }

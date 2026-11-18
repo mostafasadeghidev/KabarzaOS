@@ -121,7 +121,7 @@ export function demoMemberDash(d: MemberDash): MemberDash {
 }
 
 /** تسکِ ساختگی با همهٔ فیلدهای ردیفِ صندوق (openTasksForUser + InboxTask). */
-function fakeTask(i: number, opts: { review?: boolean; mine?: boolean }) {
+function fakeTask(i: number, opts: { review?: boolean; mine?: boolean; claim?: boolean }) {
   const due = i % 4 === 3 ? null : dayIso(i - 2);
   return {
     id: id(300 + i), title: task(i), projectId: id(i % 4), projectTitle: proj(i % 4), number: 100 + i, projectCode: ['ALF', 'BET', 'LND', 'GAM'].at(i % 4)!,
@@ -129,7 +129,8 @@ function fakeTask(i: number, opts: { review?: boolean; mine?: boolean }) {
     isReview: !!opts.review, statusGroup: 'active', isPrivate: false, assignedTo: opts.mine ? 1 : id(i), assigneeName: name(i), createdBy: id(i),
     priorityName: i % 3 === 0 ? 'فوری' : null, priorityColor: i % 3 === 0 ? '#e5484d' : null, prioritySort: i % 3 === 0 ? 0 : null,
     notesCount: i % 3, lastNote: i % 3 ? 'نسخهٔ اول را فرستادم' : null,
-    roles: [], claimable: false, mine: !!opts.mine,
+    roles: opts.claim ? [{ roleName: ['طراح', 'برنامه‌نویس', 'سئو'].at(i % 3)!, claimedBy: null, claimedByName: null }] : [],
+    claimable: !!opts.claim, mine: !!opts.mine,
   };
 }
 
@@ -137,7 +138,7 @@ function fakeTask(i: number, opts: { review?: boolean; mine?: boolean }) {
 export function demoMemberTasks<T extends { active: unknown[]; waiting: unknown[]; review: unknown[] }>(x: T): T {
   return {
     ...x,
-    active: [...x.active, ...range(9).map((i) => fakeTask(i, { mine: true }))],
+    active: [...x.active, ...range(9).map((i) => fakeTask(i, { mine: true })), ...range(5).map((i) => ({ ...fakeTask(60 + i, {}), assignedTo: null, assigneeName: null, claimable: true, roles: [{ roleName: ['طراح', 'برنامه‌نویس', 'سئو'].at(i % 3)!, claimedBy: null, claimedByName: null }] }))],
     waiting: [...x.waiting, ...range(3).map((i) => fakeTask(20 + i, { review: true, mine: true }))],
     review: [...x.review, ...range(6).map((i) => fakeTask(40 + i, { review: true }))],
   } as T;
@@ -155,6 +156,14 @@ export function demoMemberExtras(x: MemberX): MemberX {
   return {
     ...x,
     mentions: [...(x.mentions ?? []), ...range(6).map((i) => ({ id: id(i), title: `${name(i)} شما را در #${['عمومی', 'طراحی', 'فنی'].at(i % 3)!} صدا زد`, body: ['این را ببین لطفاً', 'فایل را آپلود کردم', 'کی وقت داری؟', 'تأیید شد', 'نسخهٔ جدید آماده است', 'جلسه ساعتِ ۴'].at(i)!, url: '/messages', createdAt: ago(i * 3 + 1) }))],
+    replies: [...(x.replies ?? []), ...range(7).map((i) => ({ id: id(700 + i), title: i % 2 ? `${name(i)} روی «${task(i)}» یادداشت گذاشت` : `پاسخِ تازه در کامنت‌های ${proj(i)}`, body: ['نسخهٔ دوم را بفرست', 'این قسمت را عوض کردم', 'کی آماده است؟', 'لطفاً ببین', 'تأیید شد', 'فایل را آپلود کن', 'رنگ را تغییر بده'].at(i)!, url: '/comments', createdAt: ago(i * 4 + 1) }))],
+    units: {
+      projects: [...(x.units?.projects ?? []), ...range(3).map((i) => ({ id: id(800 + i), title: `محتوای ${proj(i)}` }))],
+      entries: [...(x.units?.entries ?? []), ...range(7).map((i) => ({
+        id: id(820 + i), projectId: id(800 + (i % 3)), projectTitle: `محتوای ${proj(i % 3)}`, entryDate: dayIso(-i * 3), quantity: String(1 + (i % 4)),
+        amount: String(40 + i * 15), currencyCode: 'EUR', status: (['unpaid', 'unpaid', 'requested'] as const).at(i % 3)!, name: i % 2 ? `پست ${i + 1}` : '',
+      }))],
+    },
     leave: x.leave && [...x.leave, ...range(5).map((i) => ({ ...(x.leave![0] ?? {}), id: id(500 + i), fromDate: dayIso(3 + i * 6), toDate: dayIso(4 + i * 6 + (i % 2)), note: ['سفر', 'کارِ شخصی', '', 'دندان‌پزشکی', 'مرخصیِ سالانه'].at(i)! } as NonNullable<MemberX['leave']>[number]))],
   };
 }
@@ -164,6 +173,15 @@ export function demoClientExtras(x: ClientX): ClientX {
     ...x,
     qa: [...(x.qa ?? []), ...range(9).map((i) => ({ id: id(i), title: ['منو در موبایل درست باز می‌شود', 'فرمِ تماس ایمیل می‌فرستد', 'لوگو در هدر واضح است', 'سرعتِ صفحه قابلِ قبول است', 'متن‌ها غلطِ تایپی ندارند', 'لینک‌های فوتر کار می‌کنند', 'فاوآیکون درست است', 'صفحهٔ ۴۰۴ طراحی شده', 'سئوی پایه انجام شده'].at(i)!, description: i % 2 ? 'روی گوشی و دسکتاپ هر دو بررسی شود.' : '', projectId: id(i % 3), projectTitle: proj(i % 3) }))],
     updates: [...(x.updates ?? []), ...range(10).map((i) => ({ kind: (i % 3 ? 'task' : 'file') as 'task' | 'file', id: id(i), title: i % 3 ? task(i) : `فایلِ ${['لوگو', 'طرحِ صفحهٔ اصلی', 'راهنمای برند', 'گزارشِ سئو'].at(i % 4)!}`, projectId: id(i % 3), projectTitle: proj(i % 3), at: ago(i * 13 + 2) }))],
+    files: [...(x.files ?? []), ...range(9).map((i) => ({
+      id: id(900 + i), projectId: id(i % 3), projectTitle: proj(i % 3), title: ['لوگو-نهایی.svg', 'راهنمای-برند.pdf', 'طرح-صفحه-اصلی.fig', 'گزارش-سئو.pdf', 'فیگما (پیوند)', 'فونت‌ها.zip', 'بنر-کمپین.png', 'قرارداد.pdf', 'محتوای-سایت.docx'].at(i)!,
+      href: '#', isLink: i === 4, pinned: i < 2, mime: null, at: ago(i * 30 + 3),
+    }))],
+    stages: [...(x.stages ?? []), ...range(5).map((i) => ({
+      projectId: id(950 + i), title: proj(i + 1), deadline: dayIso([-3, 0, 5, 18, 40].at(i)!),
+      current: { name: ['طراحی', 'توسعه', 'بازبینی', 'محتوا', 'شروع نشده'].at(i)!, color: ['#7c3aed', '#0ea5e9', '#f59e0b', '#10b981', '#94a3b8'].at(i)!, group: 'in_progress' },
+      next: ['توسعه', 'بازبینی', 'تحویل', 'تحویل', 'طراحی'].at(i)!,
+    }))],
     statement: [...(x.statement ?? []), ...range(5).map((i) => ({ projectId: id(10 + i), title: proj(i + 2), currencyCode: 'EUR', totalDue: String(2000 + i * 500), paid: String(i * 400), remaining: String(2000 + i * 100), lastPayment: i ? { paidAt: dayIso(-i * 12), amount: String(400) } : null }))],
   };
 }

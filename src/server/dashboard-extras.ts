@@ -1,7 +1,7 @@
 import 'server-only';
-import { and, desc, eq, gte, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, ne } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { attachments, comments, files, notifications, projectClients, projectQa, projects, tags, tasks, users } from '@/db/schema';
+import { attachments, comments, currencies, files, notifications, projectClients, projectQa, projects, tags, tasks, unitEntries, users } from '@/db/schema';
 import { canViewSection, isOwner, type Actor } from '@/domain/access/permissions';
 import { getClientsReport } from '@/server/reports/service';
 import { listSalaries } from '@/server/finance/salaries';
@@ -132,11 +132,16 @@ export interface ResumeInfo {
   last: { target: string; projectTitle: string | null; logDate: string; minutes: number } | null;
 }
 export interface MentionRow { id: number; title: string; body: string; url: string; createdAt: string }
+/** «ثبتِ کارکرد»: پروژه‌های تعدادیِ بازِ عضو و ردیف‌های پرداخت‌نشده‌اش. */
+export interface UnitCard {
+  projects: Array<{ id: number; title: string }>;
+  entries: Array<{ id: number; projectId: number; projectTitle: string; entryDate: string; quantity: string; amount: string; currencyCode: string; status: 'unpaid' | 'requested' | 'paid'; name: string }>;
+}
 
 export async function getMemberExtras(actor: Actor) {
   const isMember = actor.roles.includes('member');
   const today = iso(new Date());
-  const [resume, mentions, leave, schedule, money, weekMinutes] = await Promise.all([
+  const [resume, mentions, leave, schedule, money, weekMinutes, units, replies] = await Promise.all([
     safe(isMember, async (): Promise<ResumeInfo> => {
       const [state, logs] = await Promise.all([timerState(actor), myLogs(actor, { perPage: 1 })]);
       const l = logs.rows[0];
@@ -171,8 +176,40 @@ export async function getMemberExtras(actor: Actor) {
     safe(isMember, async () => (await myMoneyTotals(actor)).member),
     // ساعتِ این هفته برای «هدفِ ساعت» — با همان آغازِ هفتهٔ تنظیمات.
     safe(isMember, async () => (await myTotals(actor, new Date(), (await getSystemConfig()).weekStart)).week),
+    /*
+     * «ثبتِ کارکرد» — فقط عضوی که دستمزدش روی دستِ‌کم یک پروژهٔ باز تعدادی است (isUnitMember، از getMyMoney).
+     * ثبت و درخواست با همان اقدام‌های تبِ مالیِ پروژه (addUnitAction / requestUnitAction) — گارد آنجاست.
+     */
+    safe(isMember, async (): Promise<UnitCard | null> => {
+      const mine = (await getMyMoney(actor)).memberProjects.filter((p) => p.isUnitBased);
+      const open = new Set(mine.length ? await repo.nonFrozenProjectIds(mine.map((p) => p.projectId)) : []);
+      const projs = mine.filter((p) => open.has(p.projectId)).map((p) => ({ id: p.projectId, title: p.title }));
+      if (projs.length === 0) return null;
+      const rows = await db
+        .select({
+          id: unitEntries.id, projectId: unitEntries.projectId, projectTitle: projects.title, entryDate: unitEntries.entryDate,
+          quantity: unitEntries.quantity, amount: unitEntries.amount, currencyCode: currencies.code, status: unitEntries.status, name: unitEntries.name,
+        })
+        .from(unitEntries)
+        .innerJoin(projects, eq(projects.id, unitEntries.projectId))
+        .innerJoin(currencies, eq(currencies.id, unitEntries.currencyId))
+        .where(and(eq(unitEntries.userId, actor.id), inArray(unitEntries.projectId, projs.map((p) => p.id)), ne(unitEntries.status, 'paid')))
+        .orderBy(desc(unitEntries.entryDate), desc(unitEntries.id))
+        .limit(12);
+      return { projects: projs, entries: rows };
+    }),
+    // «کامنت‌هایی که منتظرِ من‌اند» — پاسخ و یادداشتِ تازه (اعلانِ خوانده‌نشدهٔ comment / task_note ِ خودم).
+    safe(true, async () => {
+      const rows = await db
+        .select({ id: notifications.id, title: notifications.title, body: notifications.body, url: notifications.url, createdAt: notifications.createdAt })
+        .from(notifications)
+        .where(and(eq(notifications.userId, actor.id), inArray(notifications.type, ['comment', 'task_note']), eq(notifications.isRead, false)))
+        .orderBy(desc(notifications.id))
+        .limit(12);
+      return rows.map<MentionRow>((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
+    }),
   ]);
-  return { resume, mentions, leave, schedule, money, weekMinutes };
+  return { resume, mentions, leave, schedule, money, weekMinutes, units, replies };
 }
 
 /* ───────────────────────────── کارفرما ───────────────────────────── */
@@ -188,18 +225,27 @@ export interface TalkThread {
   rootId: number; projectId: number; excerpt: string; mine: boolean; createdAt: string;
   replies: number; lastFromTeam: boolean; done: boolean;
 }
+/** فایلِ پروژه برای «فایل‌های پروژه» ِ کارفرما (سنجاق‌شده اول). */
+export interface ClientFile {
+  id: number; projectId: number; projectTitle: string; title: string; href: string; isLink: boolean; pinned: boolean; mime: string | null; at: string;
+}
+/** «مرحلهٔ بعد»: وضعیتِ فعلی و بعدیِ هر پروژهٔ باز (از فهرستِ سراسریِ وضعیت‌ها به ترتیب) و ددلاین. */
+export interface ClientStage {
+  projectId: number; title: string; current: { name: string; color: string | null; group: string | null } | null;
+  next: string | null; deadline: string | null;
+}
 export interface StatementRow {
   projectId: number; title: string; currencyCode: string | null; totalDue: string; paid: string; remaining: string;
   lastPayment: { paidAt: string; amount: string } | null;
 }
 
 export async function getClientExtras(actor: Actor) {
-  if (!actor.roles.includes('client')) return { qa: null, updates: null, statement: null, talk: null };
+  if (!actor.roles.includes('client')) return { qa: null, updates: null, statement: null, talk: null, files: null, stages: null };
   const ids = await membershipProjectIds(actor.id, ['client']).catch(() => [] as number[]);
   const active = ids.length ? await repo.nonFrozenProjectIds(ids).catch(() => [] as number[]) : [];
   const since = new Date(Date.now() - 30 * 86400000);
 
-  const [qa, updates, statement, talk] = await Promise.all([
+  const [qa, updates, statement, talk, clientFiles, stages] = await Promise.all([
     // چک‌لیستِ QA ِ کارفرما (role_tag_id تهی) که هنوز تیک نخورده — همان‌جا تیک می‌خورد.
     safe(active.length > 0, async () => {
       const rows = await db
@@ -291,6 +337,49 @@ export async function getClientExtras(actor: Actor) {
       }
       return { projects: ordered.map(({ id, title }) => ({ id, title })), threads };
     }),
+    /*
+     * «فایل‌های پروژه»: فایل‌های خودِ پروژه (نه رسانهٔ تسک/کامنت/بازبینی/آنبوردینگ/کتابخانه) — همان فهرستِ تبِ
+     * فایل‌ها (listAttachments) که کارفرمای پروژه هم می‌بیند. «فایلِ نهایی» پرچمی ندارد؛ سنجاق‌شده‌ها اول.
+     */
+    safe(ids.length > 0, async () => {
+      const rows = await db
+        .select({
+          id: attachments.id, projectId: attachments.projectId, projectTitle: projects.title, label: attachments.label, fileId: attachments.fileId,
+          url: attachments.externalUrl, pinned: attachments.pinned, fileName: files.originalName, mime: files.mime, at: attachments.createdAt,
+        })
+        .from(attachments)
+        .innerJoin(projects, eq(projects.id, attachments.projectId))
+        .leftJoin(files, eq(files.id, attachments.fileId))
+        .where(and(
+          inArray(attachments.projectId, ids), isNull(attachments.taskId), isNull(attachments.commentId), isNull(attachments.reviewId),
+          isNull(attachments.onboardingItemId), isNull(attachments.libraryEntryId),
+        ))
+        .orderBy(desc(attachments.pinned), desc(attachments.createdAt))
+        .limit(30);
+      return rows.map<ClientFile>((r) => ({
+        id: r.id, projectId: r.projectId!, projectTitle: r.projectTitle, title: r.label || r.fileName || r.url || '—',
+        href: r.fileId ? `/api/files/${r.fileId}?dl` : r.url ?? '#', isLink: !r.fileId, pinned: r.pinned, mime: r.mime ?? null, at: r.at.toISOString(),
+      }));
+    }),
+    // «مرحلهٔ بعد» — پروژه‌های بازِ کارفرما با وضعیتِ فعلی و بعدی (منجمد/لغو در «بعدی» نمی‌آیند).
+    safe(active.length > 0, async () => {
+      const [projs, statuses] = await Promise.all([
+        db.select({ id: projects.id, title: projects.title, statusTagId: projects.statusTagId, deadline: projects.deadline })
+          .from(projects).where(inArray(projects.id, active)),
+        repo.statusTags(),
+      ]);
+      const flow = statuses.filter((s) => s.group !== 'cancelled' && s.group !== 'on_hold');
+      return projs.map<ClientStage>((p) => {
+        const cur = statuses.find((s) => s.id === p.statusTagId) ?? null;
+        const at = cur ? flow.findIndex((s) => s.id === cur.id) : -1;
+        const next = at >= 0 && cur?.group !== 'completed' ? flow[at + 1] ?? null : null;
+        return {
+          projectId: p.id, title: p.title, deadline: p.deadline ?? null,
+          current: cur ? { name: cur.name, color: cur.color ?? null, group: cur.group ?? null } : null,
+          next: next?.name ?? null,
+        };
+      }).sort((a, b) => (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999'));
+    }),
   ]);
-  return { qa, updates, statement, talk };
+  return { qa, updates, statement, talk, files: clientFiles, stages };
 }
