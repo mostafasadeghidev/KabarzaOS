@@ -1,28 +1,21 @@
 import Link from 'next/link';
 import { Thumb } from '@/components/thumb';
-import type { ClientSection, MemberDashboard, MemberSection } from '@/server/dashboard-member';
+import type { ClientSection } from '@/server/dashboard-member';
 import { format } from '@/domain/money/money';
 import { SecretAmount } from '@/components/secret-amount';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProjectStatus } from '../projects/project-status';
-import { Table, TableActionsCell, TableActionsHead, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableDateCell, TableNumericCell, TableRow } from '@/components/ui/table';
 import { t } from '@/i18n/server';
-import { formatDateTime } from '@/i18n/datetime';
 import { StatCard } from '@/components/stat-card';
-import { ArrowLeft } from 'lucide-react';
 import { Panel } from '@/components/page-shell';
-import { OnboardingCard } from './onboarding-card';
-import { Item, ItemContent, ItemDescription, ItemTitle } from '@/components/ui/item';
 import { Button } from '@/components/ui/button';
 
 /**
- * داشبوردِ عضو و کارفرما — پورتِ `member_overview()` / `client_overview()`.
- *
- * عضو: کارت‌ها + «پروژه‌های باز شما» (بدونِ قیمت) + مناقصه‌ها.
- * کارفرما: کارت‌ها + جدولِ پروژه‌ها **با** قیمت / وضعیتِ پرداخت / مانده /
- * تعدادِ تسک / پیشرفت / ساعتِ تیم — همان ستون‌های افزونه.
- * هر دو: «جلسات این هفته».
+ * بلوکِ کارفرما (کارت‌ها + جدولِ پروژه‌ها **با** قیمت / وضعیتِ پرداخت / مانده / تعدادِ تسک / پیشرفت /
+ * ساعتِ تیم) — کارتِ «پروژه‌های من» در داشبوردِ تازه از آن استفاده می‌کند.
+ * ⚠️ نمای کاملِ قدیمیِ عضو/کارفرما (MemberDashboardView) در ۳.۱۸.۱ با «نمای قبلی» برداشته شد.
  */
 
 type MoneyLines = Array<{ currencyCode: string; total: string }>;
@@ -72,69 +65,6 @@ function MoneyStat({
         )}
       </CardHeader>
     </Card>
-  );
-}
-
-function MemberBlock({
-  data, unread, afterStats,
-}: { data: MemberSection; unread: number; afterStats?: React.ReactNode }) {
-  return (
-    <>
-      <div className="grid gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-        <StatCard value={data.stats.projects} label={t('پروژه‌ها')} href="/projects" />
-        <StatCard value={data.stats.openTasks} label={t('تسک‌های باز')} href="/tasks" />
-        <StatCard value={data.stats.commentsToReview} label={t('کامنت‌های نیازمند بررسی')} href="/comments" />
-        <StatCard value={unread} label={t('پیام‌های خوانده‌نشده')} href="/messages" />
-        {/*
-          ⚠️ «ماندهٔ دریافتیِ شما» عمداً اینجا نیست (۳.۸.۳، خواستِ مالک): داشبورد صفحهٔ هرروزهٔ کار است
-          و عددِ طلبِ شخصی آنجا حسِ بدی می‌داد و جلوی چشمِ دیگران بود. جایش صفحهٔ «پول من» است.
-          کارتِ کارفرما («ماندهٔ پرداختیِ شما») سرِ جایش می‌ماند.
-        */}
-      </div>
-
-      {/* مدیرِ دفتر: کارتِ تیم درست زیرِ کارت‌های خودش (همان جای `team_overview_cards`). */}
-      {afterStats}
-
-      {/* پورتِ «پروژه‌های باز شما» — فقط بازها؛ بخش وقتی خالی است پنهان می‌ماند. */}
-      {data.rows.length > 0 && (
-        <Panel title={t('پروژه‌های باز شما')}>
-          <Table frame={false}>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('نام')}</TableHead>
-                <TableHead>{t('نقش شما')}</TableHead>
-                <TableHead>{t('تاریخ شروع')}</TableHead>
-                <TableHead>{t('وضعیت پروژه')}</TableHead>
-                <TableHead>{t('ددلاین')}</TableHead>
-                <TableHead numeric>{t('ساعت کاری شما')}</TableHead>
-                <TableHead numeric>{t('تسک‌های باقی‌مانده')}</TableHead>
-                <TableHead numeric>{t('درصد پیشرفت')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.rows.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">
-                    {/* بندانگشتیِ پروژه کنارِ نام — `Projects::thumb_html` (dash-3 #3/#8). */}
-                    <Link href={`/projects/${p.id}`} className="inline-flex items-center gap-2 hover:underline">
-                      <Thumb id={p.id} title={p.title} fileId={p.thumbnailFileId} size={32} />
-                      {p.title}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{p.myRoles.length > 0 ? p.myRoles.join(t('، ')) : '—'}</TableCell>
-                  <TableDateCell>{p.regDate ?? '—'}</TableDateCell>
-                  <TableCell><ProjectStatus name={p.statusName} group={p.statusGroup} color={p.statusColor} /></TableCell>
-                  <TableDateCell>{p.deadline ?? '—'}</TableDateCell>
-                  <TableNumericCell>{hours(p.myMinutes)}</TableNumericCell>
-                  <TableNumericCell>{p.myOpenTasks}</TableNumericCell>
-                  <TableNumericCell>{p.percent}%</TableNumericCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Panel>
-      )}
-    </>
   );
 }
 
@@ -203,107 +133,5 @@ export function ClientBlock({ data, unread, showUnread, money }: { data: ClientS
         )}
       </Panel>
     </>
-  );
-}
-
-export function MemberDashboardView({
-  data, timezone = '', teamCards, timeLog, memberId,
-}: {
-  data: MemberDashboard;
-  /** خودِ کاربر — کارتِ آنبوردینگ کارِ خودش را «خودت» می‌نویسد. */
-  memberId?: number;
-  timezone?: string;
-  teamCards?: React.ReactNode;
-  /** کارتِ «ثبتِ ساعت» — زیرِ مناقصه‌ها، همان جای نسخهٔ قبلی. */
-  timeLog?: React.ReactNode;
-}) {
-  return (
-    <div className="grid gap-4 md:gap-6">
-      {data.member && (
-        <MemberBlock data={data.member} unread={data.unread} afterStats={teamCards} />
-      )}
-      {/* کارفرمای بی‌نقشِ عضو که دفتری را اداره می‌کند — کارت همچنان دیده شود. */}
-      {!data.member && teamCards}
-      {data.client && (
-        <ClientBlock
-          data={data.client}
-          unread={data.unread}
-          showUnread={!data.member}
-          money={data.money?.client ?? []}
-        />
-      )}
-
-      {/* آنبوردینگ — بالای مناقصه‌ها: عضوِ تازه روزهای اول همین را لازم دارد. */}
-      {data.onboarding && <OnboardingCard data={data.onboarding} memberId={memberId ?? 0} />}
-
-      {/* پورتِ «مناقصه‌ها»: پروژه‌هایی که می‌توانید برایشان پیشنهاد قیمت بدهید. */}
-      {data.tenders.length > 0 && (
-        <Panel
-      title={t('مناقصه‌ها')}
-      description={t('پروژه‌هایی که می‌توانید برایشان پیشنهاد قیمت بدهید.')}
-    >
-          <Table frame={false}>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('نام')}</TableHead>
-                <TableHead>{t('نقش‌های شما')}</TableHead>
-                <TableHead numeric>{t('پیشنهاد شما')}</TableHead>
-                <TableActionsHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.tenders.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">
-                    <Link href={`/projects/${p.id}?tab=my-bid`} className="hover:underline">{p.title}</Link>
-                  </TableCell>
-                  <TableCell>{p.roleNames.join(t('، '))}</TableCell>
-                  <TableNumericCell>{p.myBids > 0 ? p.myBids : '—'}</TableNumericCell>
-                  <TableActionsCell>
-                    <Button asChild size="sm" variant="outline">
-                      <Link href={`/projects/${p.id}?tab=my-bid`}>
-                        {p.myBids > 0 ? t('ویرایش پیشنهاد') : t('پیشنهاد بده')}
-                      </Link>
-                    </Button>
-                  </TableActionsCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Panel>
-      )}
-
-      {timeLog}
-
-      {/* پورتِ «جلسات این هفته» — برای هر نقش؛ وقتی خالی است پنهان می‌ماند. */}
-      {data.meetings.length > 0 && (
-        <Panel
-      title={t('جلسات این هفته')}
-      actions={(
-        <Button asChild size="sm" variant="outline">
-          <Link href="/meetings">
-            {t('همهٔ جلسات')}
-            <ArrowLeft className="size-3.5 ltr:rotate-180" aria-hidden />
-          </Link>
-        </Button>
-      )}
-    >
-        <ul className="grid gap-2 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
-          {data.meetings.map((m) => (
-            <Item key={m.id} asChild variant="muted" size="sm" className="px-3">
-              <li>
-                <ItemContent className="gap-0.5">
-                  <ItemTitle>{m.title}</ItemTitle>
-                  <ItemDescription className="num text-xs">{formatDateTime(m.meetAt, timezone)}</ItemDescription>
-                  {m.location && <ItemDescription className="text-xs">{m.location}</ItemDescription>}
-                  {m.projectTitle && <Badge variant="secondary" className="mt-1 w-fit">{m.projectTitle}</Badge>}
-                </ItemContent>
-              </li>
-            </Item>
-          ))}
-        </ul>
-        </Panel>
-      )}
-    </div>
   );
 }
