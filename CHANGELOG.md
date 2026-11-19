@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.18.1]
+
+### Removed
+
+- **"Previous view" on the dashboard.** The link to the old dashboard is gone, and so is the old dashboard itself. The new manager, member and client dashboards are the only ones now.
+
 ## [3.18.0]
 
 ### Added
