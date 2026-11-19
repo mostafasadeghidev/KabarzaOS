@@ -1,21 +1,11 @@
 import { redirect } from 'next/navigation';
-import { RecentActivity } from './recent-activity';
-import { UserName } from '@/components/user-avatar';
 import { currentActor, currentSession } from '@/server/auth';
 import { getDashboard } from '@/server/dashboard';
 import { ForbiddenError } from '@/domain/access/guard';
 import { getMemberDashboard } from '@/server/dashboard-member';
-import { MemberDashboardView } from './member-dashboard';
 import { EmptyState } from '@/components/ui/empty-state';
-import {
-  CardGroup, CompactCard, DashHeading, DashPanel, MetricCard, RiskList,
-} from '@/components/ui/dash';
-import { MemberHoursChart, StatusChart, WeeklyTrendChart } from './charts';
 import { activeLocale, primeTranslations, t } from '@/i18n/server';
 import { intlTag } from '@/i18n/config';
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { PageHeader, PageShell } from '@/components/page-shell';
 import { DEMO_ALLOWED, demoAdminExtras, demoClientExtras, demoComments, demoDash, demoInbox, demoMemberDash, demoMemberExtras, demoMemberTasks } from '@/server/dashboard-demo';
 import Link from 'next/link';
@@ -24,7 +14,6 @@ import { hasTeamScope, teamOverview } from '@/server/team/service';
 import { TeamOverviewCards } from '../team/overview-cards';
 import { DashboardTimeLog } from './time-log-card';
 import { pageTitle } from '@/i18n/page-title';
-import { Amount } from '@/components/amount-privacy';
 import { DashboardV2 } from './dashboard-v2';
 import { getDashboardInbox } from '@/server/dashboard-inbox';
 import { taskStatusTags } from '@/server/projects/repository';
@@ -40,9 +29,8 @@ import { getAdminExtras, getClientExtras, getMemberExtras } from '@/server/dashb
 export const generateMetadata = pageTitle('نمای کلی');
 
 /**
- * داشبورد.
- * ساختار و محتوا ← نسخهٔ قبلیِ K-Team (چهار بلوک)
- * زبانِ بصری ← dashboard-01 رسمیِ shadcn (کارت‌های گرادیانی با بجِ روند)
+ * داشبورد — سه نمای مدیر / عضو / کارفرما (۳.۱۸.۰)، هر سه شبکهٔ کارتِ قابلِ چیدن.
+ * ⚠️ «نمای قبلی» (`?classic=1`) و داشبوردِ کهنهٔ مدیر در ۳.۱۸.۱ به خواستِ مالک برداشته شد.
  */
 
 /**
@@ -58,24 +46,10 @@ function todayLabel(): string {
   }).format(new Date());
 }
 
-function timeLabel(date: Date): string {
-  return new Intl.DateTimeFormat(intlTag(activeLocale()), {
-    weekday: 'short', hour: '2-digit', minute: '2-digit',
-    numberingSystem: 'latn',
-  }).format(date);
-}
-
-/** جملهٔ کوتاهِ وضعیت برای پانوشتِ کارت. */
-function trendLine(delta: number, unit: string): string {
-  if (delta > 0) return t('{n} {unit} بیشتر از هفتهٔ قبل', { n: delta, unit });
-  if (delta < 0) return t('{n} {unit} کمتر از هفتهٔ قبل', { n: Math.abs(delta), unit });
-  return t('بدون تغییر نسبت به هفتهٔ قبل');
-}
-
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ office?: string; classic?: string; demo?: string }>;
+  searchParams: Promise<{ office?: string; demo?: string }>;
 }) {
   /**
    * ⚠️ هر صفحه **خودش** ترجمه را آماده می‌کند و به چیدمان تکیه نمی‌کند:
@@ -90,7 +64,7 @@ export default async function DashboardPage({
   if (!actor) redirect('/login');
 
   // فیلترِ دفتر روی نمودارهای ساعت (پورتِ `kt_office`) — نامعتبر = همه.
-  const { office, classic, demo: demoParam } = await searchParams;
+  const { office, demo: demoParam } = await searchParams;
   // دادهٔ نمایشی فقط در حالتِ توسعه (dashboard-demo.ts) — برای دیدنِ کارت‌ها با دادهٔ زیاد.
   const demo = demoParam === '1' && DEMO_ALLOWED;
   const officeParam = Number(office);
@@ -120,21 +94,18 @@ export default async function DashboardPage({
          * روی داشبوردِ عضو (`member_overview`)، همان‌جا که نسخهٔ قبلی می‌گذاشت.
          */
         const own = demo ? demoMemberDash(rawOwn) : rawOwn;
-        // پیوندِ «دادهٔ نمایشی / واقعی» کنارِ «نمای قبلی» (فقط محلی).
-        const headerLinks = (
-          <>
-            {DEMO_ALLOWED && <Link href={demo ? '/dashboard' : '/dashboard?demo=1'} className="text-xs text-muted-foreground hover:underline">{demo ? t('دادهٔ واقعی') : t('دادهٔ نمایشی')}</Link>}
-            <Link href="/dashboard?classic=1" className="text-xs text-muted-foreground hover:underline">{t('نمای قبلی')}</Link>
-          </>
-        );
+        // پیوندِ «دادهٔ نمایشی / واقعی» (فقط محلی).
+        const headerLinks = DEMO_ALLOWED
+          ? <Link href={demo ? '/dashboard' : '/dashboard?demo=1'} className="text-xs text-muted-foreground hover:underline">{demo ? t('دادهٔ واقعی') : t('دادهٔ نمایشی')}</Link>
+          : null;
         const teamCards = managesTeam
           ? <TeamOverviewCards counts={await teamOverview(actor)} withLink />
           : null;
         /*
-         * نمونهٔ محلیِ داشبوردِ تازهٔ عضو — همان شبکهٔ قابلِ ویرایش، با کارت‌هایی از دسترسیِ خودش.
-         * کارفرمای خالص فعلاً همان نمای قبلی را می‌بیند.
+         * داشبوردِ عضو — همان شبکهٔ قابلِ ویرایش، با کارت‌هایی از دسترسیِ خودش.
+         * ⚠️ «نمای قبلی» (`?classic=1`) در ۳.۱۸.۱ برداشته شد؛ فقط همین داشبورد هست.
          */
-        if (isMember && classic !== '1') {
+        if (isMember) {
           const [mine, rawThreads, rawMx, timer, prefs] = await Promise.all([
             myTasks(actor), myOpenCommentThreads(actor), getMemberExtras(actor), timerState(actor), getDashPrefs(actor.id),
           ]);
@@ -168,40 +139,27 @@ export default async function DashboardPage({
           );
         }
         /*
-         * نمونهٔ محلیِ داشبوردِ تازهٔ **کارفرما** — همان شبکهٔ قابلِ ویرایش، با کارت‌های کارفرما.
+         * داشبوردِ **کارفرما** — همان شبکهٔ قابلِ ویرایش، با کارت‌های کارفرما.
          */
-        if (isClient && !isMember && classic !== '1') {
-          const [mine, rawCx, prefs] = await Promise.all([myTasks(actor), getClientExtras(actor), getDashPrefs(actor.id)]);
-          const cx = demo ? demoClientExtras(rawCx) : rawCx;
-          const rawReview = mine.kind === 'client' ? mine.review : [];
-          const rawAssigned = mine.kind === 'client' ? mine.active : [];
-          const demoed = demo ? demoMemberTasks({ active: rawAssigned, waiting: [], review: rawReview }) : null;
-          const review = demoed ? demoed.review : rawReview;
-          // کارهای سپرده به خودِ کارفرما (نمایشی: بی ردیف‌های «قابلِ برداشتن» که مالِ عضو است).
-          const assigned = demoed ? demoed.active.filter((tk) => !('claimable' in tk && tk.claimable)) : rawAssigned;
-          return (
-            <PageShell>
-              <PageHeader
-                title={t('سلام، {name}', { name: session?.name ?? '' })}
-                description={todayLabel()}
-                actions={headerLinks}
-              />
-              <DashPrefsProvider initial={prefs} readOnly={!!actor.viewOnly}>
-                <ClientDashboardV2 data={own} extras={cx} review={review} assigned={assigned} userId={actor.id} />
-              </DashPrefsProvider>
-              <LiveRefresh />
-            </PageShell>
-          );
-        }
+        const [mine, rawCx, prefs] = await Promise.all([myTasks(actor), getClientExtras(actor), getDashPrefs(actor.id)]);
+        const cx = demo ? demoClientExtras(rawCx) : rawCx;
+        const rawReview = mine.kind === 'client' ? mine.review : [];
+        const rawAssigned = mine.kind === 'client' ? mine.active : [];
+        const demoed = demo ? demoMemberTasks({ active: rawAssigned, waiting: [], review: rawReview }) : null;
+        const review = demoed ? demoed.review : rawReview;
+        // کارهای سپرده به خودِ کارفرما (نمایشی: بی ردیف‌های «قابلِ برداشتن» که مالِ عضو است).
+        const assigned = demoed ? demoed.active.filter((tk) => !('claimable' in tk && tk.claimable)) : rawAssigned;
         return (
           <PageShell>
-            <PageHeader title={t("سلام، {name}", { name: session?.name ?? '' })} />
-            <MemberDashboardView
-              data={own}
-              memberId={actor.id}
-              teamCards={teamCards}
-              timeLog={isMember ? <DashboardTimeLog actor={actor} /> : null}
+            <PageHeader
+              title={t('سلام، {name}', { name: session?.name ?? '' })}
+              description={todayLabel()}
+              actions={headerLinks}
             />
+            <DashPrefsProvider initial={prefs} readOnly={!!actor.viewOnly}>
+              <ClientDashboardV2 data={own} extras={cx} review={review} assigned={assigned} userId={actor.id} />
+            </DashPrefsProvider>
+            <LiveRefresh />
           </PageShell>
         );
       }
@@ -216,309 +174,37 @@ export default async function DashboardPage({
   }
 
   /*
-   * نمونهٔ محلیِ داشبوردِ تازه («اول کار، بعد عدد») — `?classic=1` نمای قبلی را نشان می‌دهد تا مقایسه شود.
+   * داشبوردِ مدیر («اول کار، بعد عدد»).
    */
-  if (classic !== '1') {
-    const [rawInbox, statuses, session, rawAx] = await Promise.all([getDashboardInbox(actor), taskStatusTags(), currentSession(), getAdminExtras(actor)]);
-    const inbox = demo ? demoInbox(rawInbox) : rawInbox;
-    const ax = demo ? demoAdminExtras(rawAx) : rawAx;
-    if (demo) data = demoDash(data);
-    const review = statuses.find((s) => s.isReview);
-    const approve = statuses.find((s) => s.group === 'complete' && !s.isClosed) ?? statuses.find((s) => s.group === 'complete');
-    const back = statuses.find((s) => s.group === 'in_progress' && !s.isReview && review && statuses.indexOf(s) > statuses.indexOf(review))
-      ?? statuses.find((s) => s.group === 'in_progress' && !s.isReview);
-    return (
-      <PageShell>
-        <PageHeader
-          title={t('سلام، {name}', { name: session?.name ?? '' })}
-          description={todayLabel()}
-          actions={<>
-            {DEMO_ALLOWED && <Link href={demo ? '/dashboard' : '/dashboard?demo=1'} className="text-xs text-muted-foreground hover:underline">{demo ? t('دادهٔ واقعی') : t('دادهٔ نمایشی')}</Link>}
-            <Link href="/dashboard?classic=1" className="text-xs text-muted-foreground hover:underline">{t('نمای قبلی')}</Link>
-          </>}
-        />
-        <DashPrefsProvider initial={await getDashPrefs(actor.id)} readOnly={!!actor.viewOnly}>
-        <DashboardV2
-          data={data}
-          inbox={inbox}
-          approveStatusId={approve?.id ?? null}
-          returnStatusId={back?.id ?? null}
-          canReports={canViewSection(actor, 'reports')}
-          userId={actor.id}
-          extra={adminExtraWidgets(ax)}
-        />
-        </DashPrefsProvider>
-        <LiveRefresh />
-      </PageShell>
-    );
-  }
-
-  const { actionGroups, progress, today, risk, stats, charts } = data;
-  const hasRisk =
-    risk.overdue.length + risk.soon.length + risk.stalled.length + risk.openTenders.length
-      + risk.reviewStuck.length + risk.expenseDues.length > 0;
-
-  // ⚠️ خودِ واحد هم ترجمه می‌شود، نه فقط جملهٔ دورش — وگرنه در انگلیسی
-  // «1 fewer تسک than last week» درمی‌آید.
-  const units = [t('تسک'), t('کامنت'), t('ساعت')];
-
+  const [rawInbox, statuses, session, rawAx] = await Promise.all([getDashboardInbox(actor), taskStatusTags(), currentSession(), getAdminExtras(actor)]);
+  const inbox = demo ? demoInbox(rawInbox) : rawInbox;
+  const ax = demo ? demoAdminExtras(rawAx) : rawAx;
+  if (demo) data = demoDash(data);
+  const review = statuses.find((s) => s.isReview);
+  const approve = statuses.find((s) => s.group === 'complete' && !s.isClosed) ?? statuses.find((s) => s.group === 'complete');
+  const back = statuses.find((s) => s.group === 'in_progress' && !s.isReview && review && statuses.indexOf(s) > statuses.indexOf(review))
+    ?? statuses.find((s) => s.group === 'in_progress' && !s.isReview);
   return (
     <PageShell>
-      <PageHeader title={t("داشبورد")} description={todayLabel()} />
-
-      {/* پیشرفتِ این هفته — کارت‌های بزرگ با بجِ روند */}
-      <section className="flex flex-col gap-3">
-        <DashHeading>{t("پیشرفتِ این هفته")}</DashHeading>
-        {/*
-          ۳.۱۲.۰ — چیدمانِ «بنتو»: کارتِ اول (تسکِ تمام‌شده) بزرگ با نمودارِ بلند، دو کارتِ کوچک
-          کنارش و «پروژه‌های در حالِ انجام» پهن زیرشان. در دوستونه کارتِ بزرگ تمام‌عرض است؛ در گوشی زیرِ هم.
-        */}
-        <div data-bento className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 @5xl/main:grid-rows-[auto_auto]">
-          {progress.map((card, i) => (
-            <div key={card.label} className={i === 0 ? 'grid @xl/main:col-span-2 @5xl/main:row-span-2' : 'grid'}>
-              <MetricCard
-                label={t(card.label)}
-                value={card.value}
-                trend={card.delta}
-                headline={trendLine(card.delta, units[i] ?? '')}
-                hint={t("نسبت به هفتهٔ گذشته")}
-                href={card.href}
-                spark={card.spark}
-                featured={i === 0}
-              />
-            </div>
-          ))}
-          <div className="grid @xl/main:col-span-2">
-          <MetricCard
-            label={t("پروژه‌های در حال انجام")}
-            value={stats.inProgress}
-            headline={t('{n} پروژه در مرحلهٔ مذاکره', { n: stats.lead })}
-            hint={t('{n} تسکِ باز روی همهٔ پروژه‌ها', { n: stats.openTasks })}
-            href="/projects"
-          />
-          </div>
-        </div>
-      </section>
-
-      {/* منتظرِ اقدام — گروه‌بندی‌شده، مثلِ نسخهٔ قبلی */}
-      <section className="flex flex-col gap-3">
-        <DashHeading>{t("منتظرِ اقدام")}</DashHeading>
-        <div className="grid gap-4 @3xl/main:grid-cols-3">
-          {actionGroups.map((group) => (
-            <CardGroup key={group.title} title={t(group.title)}>
-              {group.cards.map((card) => (
-                <CompactCard key={card.label} value={card.value} label={t(card.label)} href={card.href} />
-              ))}
-            </CardGroup>
-          ))}
-        </div>
-      </section>
-
-      {/* نمودارها */}
-      <section className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <DashHeading>{t("روند و توزیع")}</DashHeading>
-          {/* فیلترِ دفتر — فقط نمودارهای ساعت را محدود می‌کند (پورتِ `kt_office`). */}
-          {charts.offices.length > 1 && (
-            <form method="get" className="flex items-center gap-2 text-sm">
-              <Label htmlFor="d-office" className="font-normal text-muted-foreground">{t("دفتر")}</Label>
-              <NativeSelect
-                id="d-office" name="office" defaultValue={charts.officeId ?? ''}
-                size="sm"
-              >
-                <NativeSelectOption value="">{t("همهٔ دفترها")}</NativeSelectOption>
-                {charts.offices.map((o) => <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>)}
-              </NativeSelect>
-              <Button type="submit" size="sm">{t("اعمال")}</Button>
-            </form>
-          )}
-        </div>
-        <div className="grid gap-4 @5xl/main:grid-cols-2">
-          <DashPanel title={t("روندِ ساعتِ کاریِ تیم")}>
-            {charts.weeklyTrend.every((w) => w.hours === 0) ? (
-              <p className="text-sm text-muted-foreground">{t("ساعتِ کاری ثبت نشده.")}</p>
-            ) : (
-              <WeeklyTrendChart data={charts.weeklyTrend} />
-            )}
-          </DashPanel>
-          <DashPanel title={t("وضعیتِ پروژه‌ها")}>
-            {charts.statusDistribution.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("پروژه‌ای نیست.")}</p>
-            ) : (
-              <StatusChart data={charts.statusDistribution} />
-            )}
-          </DashPanel>
-          <DashPanel title={t("ساعتِ کاریِ اعضا (۳۰ روزِ گذشته)")} >
-            {charts.memberHours.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("ساعتِ کاری ثبت نشده.")}</p>
-            ) : (
-              <MemberHoursChart data={charts.memberHours} />
-            )}
-          </DashPanel>
-        </div>
-      </section>
-
-      {/* امروز */}
-      <section className="flex flex-col gap-3">
-        <DashHeading>{t("امروز")}</DashHeading>
-        <div className="grid gap-4 @3xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-          <DashPanel title={t("جلساتِ این هفته")}>
-            {today.meetings.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("جلسه‌ای ثبت نشده.")}</p>
-            ) : (
-              <ul className="space-y-1.5 text-sm">
-                {today.meetings.map((m) => (
-                  <li key={m.id} className="flex items-center justify-between gap-3">
-                    <span className="truncate">{m.title}</span>
-                    <span className="num shrink-0 text-xs text-muted-foreground">{timeLabel(m.meetAt)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </DashPanel>
-
-          <DashPanel title={t("در مرخصیِ امروز")}>
-            {today.away.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("همه سرِ کارند.")}</p>
-            ) : (
-              <ul className="space-y-1.5 text-sm">
-                {today.away.map((a) => <li key={a.userId}><UserName userId={a.userId} name={a.name} size="sm" /></li>)}
-              </ul>
-            )}
-          </DashPanel>
-
-          {/*
-            «در دسترسِ امروز» = برنامهٔ هفتگی‌اش امروز را دارد و مرخصی هم نیست.
-            ⚠️ فهرستِ خالی دو معنا دارد و باید تفکیک شود: یا کسی برنامه نداده،
-            یا همه مرخصی‌اند. جملهٔ مبهم بدتر از نبودنش است.
-          */}
-          <DashPanel title={t("در دسترسِ امروز")}>
-            {today.available.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {today.away.length > 0
-                  ? t('کسی خارج از مرخصی برنامه ندارد.')
-                  : t('هنوز کسی برنامهٔ هفتگی نداده.')}
-              </p>
-            ) : (
-              <ul className="space-y-1.5 text-sm">
-                {today.available.map((a) => <li key={a.userId}><UserName userId={a.userId} name={a.name} size="sm" /></li>)}
-              </ul>
-            )}
-          </DashPanel>
-
-          {/* پورتِ پنلِ «زنده»: چه کسی الان کار می‌کند + آخرین رویدادها. */}
-          <DashPanel title={t("در حالِ کار")}>
-            {today.timers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("تایمری روشن نیست.")}</p>
-            ) : (
-              <ul className="space-y-1.5 text-sm">
-                {today.timers.map((w) => (
-                  <li key={w.userId} className="flex items-center justify-between gap-3">
-                    <span className="flex min-w-0 items-center gap-1">
-                      <UserName userId={w.userId} name={w.name} size="sm" />
-                      {w.project ? <span className="truncate text-muted-foreground"> · {w.project}</span> : null}
-                    </span>
-                    <span className="num shrink-0 text-xs text-muted-foreground">{Math.floor(w.minutes / 60)}:{String(w.minutes % 60).padStart(2, '0')}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </DashPanel>
-
-          {/* پورتِ پنلِ «آنلاین اکنون» ِ داشبوردِ مالک: فعال‌ها اول، بعد بی‌کارها. */}
-          <DashPanel title={t("آنلاین اکنون")} action={{ href: '/availability', label: t("حضور و مرخصیِ تیم") }}>
-            {today.online.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("کسی آنلاین نیست.")}</p>
-            ) : (
-              <ul className="space-y-1.5 text-sm">
-                {today.online.map((u) => (
-                  <li key={u.id} className="flex items-center justify-between gap-3">
-                    <UserName userId={u.id} name={u.name} size="sm" />
-                    <span className={`shrink-0 text-xs ${u.state === 'active' ? 'text-emerald-700 dark:text-emerald-500' : 'text-muted-foreground'}`}>
-                      {u.state === 'active' ? t('فعال') : t('بی‌کار')}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </DashPanel>
-
-          <DashPanel title={t("تیم")}>
-            <div className="flex gap-2">
-              <CompactCard value={today.activeTeam} label={t("عضوِ فعال")} />
-              <CompactCard value={today.assignedMembers} label={t("درگیرِ پروژه")} />
-            </div>
-          </DashPanel>
-
-          {/*
-            ⚠️ هفت پنل در شبکهٔ چهارستونه یک خانهٔ خالی جا می‌گذاشت (ردیفِ دوم سه‌تایی). «آخرین رویدادها»
-            دو ستون می‌گیرد و آخر می‌آید: ردیف‌ها پر می‌شوند (۴ + ۴، و در دوستونه ۲+۲+۲+۲) و متنِ رویداد جا دارد.
-          */}
-          <div className="grid @3xl/main:col-span-2">
-            <DashPanel title={t("آخرین رویدادها")} action={{ href: '/activity', label: t("رویدادها") }}>
-              {today.activity.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("رویدادی ثبت نشده.")}</p>
-              ) : (
-                <RecentActivity
-                  events={today.activity.map((a) => ({ ...a, at: a.at.toISOString() }))}
-                  // نامِ کننده به گزارشِ عضو می‌رود (core #388) — فقط برای کسی که گزارش‌ها را می‌بیند.
-                  actorHref={canViewSection(actor, 'reports')}
-                />
-              )}
-            </DashPanel>
-          </div>
-        </div>
-      </section>
-
-      {/* ریسک و نیازمندِ توجه */}
-      <section className="flex flex-col gap-3">
-        <DashHeading>{t("ریسک و نیازمندِ توجه")}</DashHeading>
-        {!hasRisk ? (
-          <DashPanel title={t("وضعیت")}>
-            <p className="text-sm text-muted-foreground">{t("هیچ ریسکی شناسایی نشد.")}</p>
-          </DashPanel>
-        ) : (
-          <div className="grid gap-4 @3xl/main:grid-cols-2">
-            <DashPanel title={t("ددلاینِ گذشته")} action={{ href: '/projects', label: t("پروژه‌ها") }}>
-              <RiskList items={risk.overdue} empty={t("موردی نیست.")} tone="danger" />
-            </DashPanel>
-            <DashPanel title={t("ددلاینِ نزدیک")} action={{ href: '/dashboard/focus?view=deadline_soon', label: t("فهرست") }}>
-              <RiskList items={risk.soon} empty={t("موردی نیست.")} tone="warning" />
-            </DashPanel>
-            <DashPanel title={t("پروژه‌های راکد")}>
-              <RiskList items={risk.stalled} empty={t("موردی نیست.")} />
-            </DashPanel>
-            <DashPanel title={t("مناقصه‌های باز")}>
-              <RiskList items={risk.openTenders} empty={t("موردی نیست.")} />
-            </DashPanel>
-            {/* پورتِ فهرستِ «تسک‌های گیرکرده در ریویو» به تفکیکِ پروژه. */}
-            <DashPanel title={t("تسک‌های گیرکرده در ریویو")} action={{ href: '/dashboard/focus?view=tasks_review', label: t("فهرست") }}>
-              <RiskList items={risk.reviewStuck} empty={t("موردی نیست.")} tone="warning" />
-            </DashPanel>
-            {/* پورتِ فهرستِ سررسیدها (فقط مدیرِ مالی): گذشته‌ها قرمز، ۷ روزِ آینده خاکستری، «+N موردِ دیگر». */}
-            {risk.expenseDues.length > 0 && (
-              <DashPanel title={t("هزینه‌های سررسیدشده/نزدیک")} action={{ href: '/finance?tab=expenses', label: t("هزینه‌ها") }}>
-                {/*
-                  سه ستونِ جدا (۲.۲۵.۰): نام · مبلغ · سررسید. پیش از این مبلغ با « · » به
-                  دنبالِ نام می‌چسبید و در راست‌به‌چپ دو عدد و نام درهم دیده می‌شدند.
-                */}
-                <ul className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-4 gap-y-1.5 text-sm">
-                  {risk.expenseDues.slice(0, 8).map((e) => (
-                    <li key={e.id} className="contents">
-                      <span className="truncate">{e.title}</span>
-                      <span className="num text-end text-muted-foreground" dir="ltr"><Amount>{e.amount}</Amount></span>
-                      <span className={`num text-xs ${e.overdue ? 'text-destructive' : 'text-muted-foreground'}`}>{e.due}</span>
-                    </li>
-                  ))}
-                </ul>
-                {risk.expenseDues.length > 8 && (
-                  <p className="mt-1 text-xs text-muted-foreground">{t('+{n} موردِ دیگر', { n: risk.expenseDues.length - 8 })}</p>
-                )}
-              </DashPanel>
-            )}
-          </div>
-        )}
-      </section>
+      <PageHeader
+        title={t('سلام، {name}', { name: session?.name ?? '' })}
+        description={todayLabel()}
+        actions={<>
+          {DEMO_ALLOWED && <Link href={demo ? '/dashboard' : '/dashboard?demo=1'} className="text-xs text-muted-foreground hover:underline">{demo ? t('دادهٔ واقعی') : t('دادهٔ نمایشی')}</Link>}
+        </>}
+      />
+      <DashPrefsProvider initial={await getDashPrefs(actor.id)} readOnly={!!actor.viewOnly}>
+      <DashboardV2
+        data={data}
+        inbox={inbox}
+        approveStatusId={approve?.id ?? null}
+        returnStatusId={back?.id ?? null}
+        canReports={canViewSection(actor, 'reports')}
+        userId={actor.id}
+        extra={adminExtraWidgets(ax)}
+      />
+      </DashPrefsProvider>
+      <LiveRefresh />
     </PageShell>
   );
 }
