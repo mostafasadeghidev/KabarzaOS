@@ -46,6 +46,7 @@ export function MobileBottomNav({ items, unread }: { items: NavItem[]; unread: n
           <Link
             key={item.href}
             href={item.href}
+            data-tour={`nav-${item.href.slice(1)}`}
             aria-current={on ? 'page' : undefined}
             className={cn(
               'relative flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10.5px] font-medium transition-colors',

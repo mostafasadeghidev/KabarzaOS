@@ -3,13 +3,14 @@
 import { useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import {
-  Briefcase, Building2, Eye, KeyRound, Lock, Mail, MoreVertical, Phone, RotateCcw, Sprout, Trash2, Wallet, XCircle,
+  Briefcase, Building2, Eye, KeyRound, Lock, Mail, MoreVertical, Phone, RotateCcw, Sparkles, Sprout, Trash2, Wallet, XCircle,
 } from 'lucide-react';
 import {
   removePersonAction, setPersonPasswordAction, setStateAction, type PasswordState,
 } from './_form/actions';
 import { canSignIn, stateLabel, type MemberState } from '@/domain/people/offboarding';
 import { startViewAsAction } from '../_actions/view-as';
+import { assignToursAction } from '../_actions/tours';
 import { Thumb } from '@/components/thumb';
 import { PresenceDot } from '@/components/presence';
 import type { PresenceState } from '@/domain/people/presence';
@@ -236,6 +237,16 @@ export function PersonCard({
                   «دیدن به‌جای این کاربر» (۲.۵۳.۰) — فقط مالک، فقط کسی که واردشدنی است.
                   گاردِ اصلی در سرور است (`canViewAs`)؛ این فقط دکمهٔ بی‌حاصل را پنهان می‌کند.
                 */}
+                {/*
+                  «فرستادنِ راهنما» (۳.۱۹.۰) — راهنماهای خوش‌آمدِ نقشِ این کاربر بارِ بعدِ ورودش خودکار باز می‌شود،
+                  حتی اگر قبلاً دیده باشد. گارد در سرور است (مالک یا مدیرِ اعضا).
+                */}
+                {canSignIn(person.memberState, false) && (
+                  <DropdownMenuItem onSelect={() => run(() => assignToursAction([person.id]))}>
+                    <Sparkles className="size-3.5" />
+                    {tr("فرستادنِ راهنما")}
+                  </DropdownMenuItem>
+                )}
                 {isOwner && canSignIn(person.memberState, false) && (
                   <DropdownMenuItem onSelect={() => run(() => startViewAsAction(person.id))}>
                     <Eye className="size-3.5" />

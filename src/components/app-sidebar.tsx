@@ -166,7 +166,8 @@ function NavGroup({
                         تعویضِ زبان همان کهنه را نشان می‌دهد — سایدبار
                         انگلیسی و محتوا فارسی، در یک صفحه. آزموده شد.
                       */}
-                      <Link href={item.href} prefetch={false}>
+                      {/* data-tour: راهنمای تعاملی به منو با همین نام اشاره می‌کند (منوی پایینِ گوشی هم همین را دارد). */}
+                      <Link href={item.href} prefetch={false} data-tour={`nav-${item.href.slice(1)}`}>
                         <Icon />
                         <span>{t(item.label)}</span>
                         {item.icon === 'messages' && unread > 0 && (

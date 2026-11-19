@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 
-import { Bell, ChevronsUpDown, LogOut, Moon, Sun, Monitor, Settings, User } from 'lucide-react';
+import { Bell, ChevronsUpDown, LogOut, Moon, Sun, Monitor, Settings, Sparkles, User } from 'lucide-react';
+import { useTour } from '@/components/tour/tour-provider';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -82,13 +83,14 @@ export function UserMenu({
   onLocaleChange: (locale: Locale) => void | Promise<void>;
 }) {
   const t = useT();
+  const tour = useTour();
   const { theme, setTheme, palette, setPalette } = useTheme();
   const ThemeIcon = THEME_ICON[theme];
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
+        <SidebarMenuButton size="lg" data-tour="user-menu" className="data-[state=open]:bg-sidebar-accent">
           {/*
             تصویرِ پروفایل، اگر گذاشته شده (پورتِ `get_avatar` ِ دکمهٔ حساب)؛
             وگرنه حروفِ اولِ نام. ⚠️ پیش از این همیشه حروف بود و تصویری که
@@ -251,6 +253,14 @@ export function UserMenu({
           کاربر است، و سایدبار از دو آیتمی که به کارِ روزمره ربط ندارند
           سبک می‌شود.
         */}
+        {/* ۳.۱۹.۰ — راهنمای تعاملی: فهرستِ راهنماهای نقشِ کاربر. */}
+        {tour && (
+          <DropdownMenuItem onSelect={() => tour.openPicker()} data-tour="user-menu-tours">
+            <Sparkles className="size-4" />
+            <span>{t('راهنمای برنامه')}</span>
+          </DropdownMenuItem>
+        )}
+
         <DropdownMenuItem asChild>
           <Link href="/profile">
             <User className="size-4" />

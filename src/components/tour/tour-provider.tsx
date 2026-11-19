@@ -1,0 +1,166 @@
+'use client';
+
+import * as React from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { saveTourStateAction } from '@/app/(app)/_actions/tours';
+import { tourById, toursFor } from '@/tours';
+import type { Tour, TourCtx, TourState, TourStep } from '@/tours/types';
+import { TourOverlay } from './tour-overlay';
+import { TourPicker } from './tour-picker';
+
+/**
+ * موتورِ راهنمای تعاملی (۳.۱۹.۰).
+ *
+ *  · راهنما داده است (src/tours)؛ قدم‌ها با `data-tour` به عنصرِ صفحه اشاره می‌کنند.
+ *  · پیشرفت روی سرور است (`users.tour_state`): بعد از رفتن به صفحهٔ دیگر یا بستنِ مرورگر از همان قدم ادامه می‌یابد.
+ *  · بارِ اولِ ورود، راهنمای «خوش‌آمد» ِ نقشِ کاربر (یا راهنمایی که مدیر فرستاده) خودکار شروع می‌شود.
+ *  · ⚠️ در «دیدن به‌جای کاربر» (`disabled`) هیچ راهنمایی خودکار باز نمی‌شود و چیزی ذخیره نمی‌شود.
+ */
+interface TourApi {
+  ctx: TourCtx;
+  state: TourState;
+  /** راهنماهای این کاربر (بر اساسِ نقش). */
+  available: Tour[];
+  start: (id: string) => void;
+  openPicker: () => void;
+  disabled: boolean;
+}
+const TourCtxReact = React.createContext<TourApi | null>(null);
+export function useTour() {
+  return React.useContext(TourCtxReact);
+}
+
+const now = () => new Date().toISOString();
+
+export function TourProvider({ ctx, initial, disabled, children }: {
+  ctx: TourCtx;
+  initial: TourState;
+  disabled: boolean;
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const pathname = usePathname() ?? '/';
+  const [state, setState] = React.useState<TourState>(initial);
+  const [active, setActive] = React.useState<{ id: string; idx: number } | null>(null);
+  const [finished, setFinished] = React.useState<Tour | null>(null);
+  const [picker, setPicker] = React.useState(false);
+  const available = React.useMemo(() => toursFor(ctx), [ctx]);
+
+  const persist = React.useCallback((patch: TourState) => {
+    setState((s) => ({ ...s, ...patch }));
+    if (!disabled) void saveTourStateAction(patch);
+  }, [disabled]);
+
+  const stepsOf = React.useCallback((t: Tour) => t.steps.filter((s) => !s.when || s.when(ctx)), [ctx]);
+
+  const start = React.useCallback((id: string, fromStep?: string) => {
+    const t = tourById(id);
+    if (!t || !t.audience(ctx)) return;
+    const steps = stepsOf(t);
+    if (steps.length === 0) return;
+    const idx = Math.max(0, fromStep ? steps.findIndex((s) => s.id === fromStep) : 0);
+    setFinished(null);
+    setPicker(false);
+    setActive({ id, idx });
+    persist({ active: { id, step: steps[idx]!.id } });
+  }, [ctx, stepsOf, persist]);
+
+  // شروعِ خودکار — یک بار، کمی بعد از بارگذاری تا صفحه سرِ جایش بنشیند.
+  const autoTried = React.useRef(false);
+  React.useEffect(() => {
+    if (disabled || autoTried.current) return;
+    // ⚠️ پرچم داخلِ زمان‌سنج: در حالتِ Strict افکت یک بار بسته و دوباره باز می‌شود؛ پرچمِ بیرونی زمان‌سنجِ
+    // لغوشده را «انجام‌شده» حساب می‌کرد و راهنما هرگز باز نمی‌شد.
+    const id = setTimeout(() => {
+      if (autoTried.current) return;
+      autoTried.current = true;
+      const s = initial;
+      if (s.active && tourById(s.active.id)?.audience(ctx)) { start(s.active.id, s.active.step); return; }
+      const assigned = (s.assigned ?? []).find((t) => tourById(t)?.audience(ctx));
+      if (assigned) { start(assigned); return; }
+      if (s.snoozeUntil && Date.parse(s.snoozeUntil) > Date.now()) return;
+      const welcome = available.find((t) => t.autoStart && !s.done?.[t.id]);
+      if (welcome) start(welcome.id);
+    }, 1200);
+    return () => clearTimeout(id);
+  }, [disabled, initial, ctx, available, start]);
+
+  const tour = active ? tourById(active.id) : null;
+  const steps = tour ? stepsOf(tour) : [];
+  const step: TourStep | null = active && steps[active.idx] ? steps[active.idx]! : null;
+
+  const finish = React.useCallback((t: Tour, completed: boolean) => {
+    setActive(null);
+    const done = { ...(state.done ?? {}), [t.id]: completed ? now() : `skipped:${now()}` };
+    const assigned = (state.assigned ?? []).filter((x) => x !== t.id);
+    persist({ done, assigned, active: null });
+    if (completed) setFinished(t);
+  }, [state, persist]);
+
+  const go = React.useCallback((delta: number) => {
+    if (!active || !tour) return;
+    const idx = active.idx + delta;
+    if (idx < 0) return;
+    if (idx >= steps.length) { finish(tour, true); return; }
+    setActive({ id: active.id, idx });
+    persist({ active: { id: active.id, step: steps[idx]!.id } });
+  }, [active, tour, steps, finish, persist]);
+
+  // قدمِ «کلیک» ِ ناوبری: با رسیدن به مسیرِ خواسته‌شده جلو می‌رود.
+  React.useEffect(() => {
+    if (step?.kind === 'click' && step.advanceOnPath && pathname.startsWith(step.advanceOnPath)) go(1);
+  }, [pathname, step, go]);
+
+  /** «بعداً»: راهنما بسته می‌شود و تا فردا خودکار باز نمی‌شود؛ از فهرست همیشه در دسترس است. */
+  const later = React.useCallback(() => {
+    setActive(null);
+    persist({ active: null, snoozeUntil: new Date(Date.now() + 86400000).toISOString() });
+  }, [persist]);
+
+  const api = React.useMemo<TourApi>(() => ({
+    ctx, state, available, start: (id) => start(id), openPicker: () => setPicker(true), disabled,
+  }), [ctx, state, available, start, disabled]);
+
+  const suggestions = finished
+    ? (finished.next ?? []).map(tourById).filter((t): t is Tour => !!t && t.audience(ctx) && !state.done?.[t.id])
+    : [];
+
+  return (
+    <TourCtxReact.Provider value={api}>
+      {children}
+      {tour && step && (
+        <TourOverlay
+          key={`${tour.id}:${step.id}`}
+          tour={tour}
+          step={step}
+          index={active!.idx}
+          total={steps.length}
+          pathname={pathname}
+          onNext={() => go(1)}
+          onBack={() => go(-1)}
+          onClose={() => finish(tour, false)}
+          onLater={later}
+          onGo={(p) => router.push(p)}
+        />
+      )}
+      {finished && (
+        <TourOverlay
+          key={`done:${finished.id}`}
+          tour={finished}
+          step={null}
+          index={0}
+          total={0}
+          pathname={pathname}
+          suggestions={suggestions}
+          onStart={(id) => start(id)}
+          onNext={() => setFinished(null)}
+          onBack={() => {}}
+          onClose={() => setFinished(null)}
+          onLater={() => setFinished(null)}
+          onGo={(p) => router.push(p)}
+        />
+      )}
+      <TourPicker open={picker} onOpenChange={setPicker} />
+    </TourCtxReact.Provider>
+  );
+}
