@@ -4,7 +4,7 @@ import * as React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { saveTourStateAction } from '@/app/(app)/_actions/tours';
 import { tourById, toursFor } from '@/tours';
-import type { Tour, TourCtx, TourState, TourStep } from '@/tours/types';
+import { onPath, type Tour, type TourCtx, type TourState, type TourStep } from '@/tours/types';
 import { TourOverlay } from './tour-overlay';
 import { TourPicker } from './tour-picker';
 
@@ -108,7 +108,7 @@ export function TourProvider({ ctx, initial, disabled, children }: {
 
   // قدمِ «کلیک» ِ ناوبری: با رسیدن به مسیرِ خواسته‌شده جلو می‌رود.
   React.useEffect(() => {
-    if (step?.kind === 'click' && step.advanceOnPath && pathname.startsWith(step.advanceOnPath)) go(1);
+    if (step?.kind === 'click' && step.advanceOnPath && onPath(pathname, step.advanceOnPath)) go(1);
   }, [pathname, step, go]);
 
   /** «بعداً»: راهنما بسته می‌شود و تا فردا خودکار باز نمی‌شود؛ از فهرست همیشه در دسترس است. */
@@ -120,6 +120,16 @@ export function TourProvider({ ctx, initial, disabled, children }: {
   const api = React.useMemo<TourApi>(() => ({
     ctx, state, available, start: (id) => start(id), openPicker: () => setPicker(true), disabled,
   }), [ctx, state, available, start, disabled]);
+
+  // فقط در توسعه: دسترسیِ اسکریپتِ آزمون به موتور (اجرای پشتِ سرِ همِ همهٔ راهنماها در مرورگر).
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    (window as unknown as { __kzTour?: unknown }).__kzTour = {
+      ids: available.map((t) => t.id),
+      start,
+      active: () => (active ? { id: active.id, idx: active.idx } : null),
+    };
+  }, [available, start, active]);
 
   const suggestions = finished
     ? (finished.next ?? []).map(tourById).filter((t): t is Tour => !!t && t.audience(ctx) && !state.done?.[t.id])

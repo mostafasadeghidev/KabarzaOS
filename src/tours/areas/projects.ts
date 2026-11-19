@@ -5,7 +5,7 @@ import { can, type Tour, type TourCtx, type TourStep } from '../types';
  *
  * ⚠️ هیچ قدمِ «کلیک» روی دکمه‌ای نیست که چیزی ذخیره/ارسال/حذف کند؛ آن‌ها فقط با قدمِ «دیدن» توضیح داده می‌شوند.
  * ⚠️ قدم‌هایی که پنجره (دیالوگ) باز می‌کنند ته‌ِ راهنما می‌آیند: در قدمِ «دیدن» کاربر نمی‌تواند پنجره را ببندد.
- * ⚠️ دکمه‌های تب را `OverflowTabs` می‌سازد؛ تبی که جا نشود زیرِ «بیشتر» می‌رود — متنِ قدم این را می‌گوید.
+ * ⚠️ دکمه‌های تب را `OverflowTabs` می‌سازد؛ تبی که جا نشود زیرِ «بیشتر» می‌رود و موتور خودش اول «بیشتر» را روشن می‌کند.
  */
 
 /** هر کسی که پروژه‌ای می‌بیند (کادر، عضو، مدیرِ تیم/پروژه یا کارفرما). */
@@ -275,7 +275,7 @@ export const tours: Tour[] = [
       },
       {
         id: 'tab-tasks', target: 'project-tab-tasks', kind: 'click', path: '/projects/',
-        title: 'تبِ «تسک‌ها»', body: 'روی «تسک‌ها» بزنید. اگر این تب را نمی‌بینید، از «بیشتر» در انتهای نوارِ تب بازش کنید.',
+        title: 'تبِ «تسک‌ها»', body: 'روی «تسک‌ها» بزنید.',
       },
       {
         id: 'tasks', target: 'tasks-add', path: '/projects/', optional: true,
@@ -284,7 +284,7 @@ export const tours: Tour[] = [
       },
       {
         id: 'tab-comments', target: 'project-tab-comments', kind: 'click', path: '/projects/',
-        title: 'تبِ «کامنت‌ها»', body: 'روی «کامنت‌ها» بزنید. اگر این تب را نمی‌بینید، از «بیشتر» در انتهای نوارِ تب بازش کنید.',
+        title: 'تبِ «کامنت‌ها»', body: 'روی «کامنت‌ها» بزنید.',
       },
       {
         id: 'comments', target: 'comment-input', path: '/projects/', optional: true,
@@ -352,7 +352,7 @@ export const tours: Tour[] = [
       },
       {
         id: 'tabs', target: 'project-tabs', path: '/projects/',
-        title: 'بخش‌های پروژه', body: 'هر بخشِ پروژه یک تب است. اگر این تب را نمی‌بینید، از «بیشتر» در انتهای نوارِ تب بازش کنید.',
+        title: 'بخش‌های پروژه', body: 'هر بخشِ پروژه یک تب است.',
       },
       {
         id: 'tab-tasks', target: 'project-tab-tasks', kind: 'click', path: '/projects/',
@@ -467,7 +467,7 @@ export const tours: Tour[] = [
       ...openProject,
       {
         id: 'tab', target: 'project-tab-files', kind: 'click', path: '/projects/',
-        title: 'تبِ «فایل‌ها»', body: 'روی «فایل‌ها» بزنید. اگر این تب را نمی‌بینید، از «بیشتر» در انتهای نوارِ تب بازش کنید.',
+        title: 'تبِ «فایل‌ها»', body: 'روی «فایل‌ها» بزنید.',
       },
       {
         id: 'link-form', target: 'project-files-link-form', path: '/projects/', optional: true,
@@ -520,7 +520,7 @@ export const tours: Tour[] = [
       ...openProject,
       {
         id: 'tab', target: 'project-tab-qa', kind: 'click', path: '/projects/',
-        title: 'تبِ «QA»', body: 'روی «QA» بزنید. اگر این تب را نمی‌بینید، از «بیشتر» در انتهای نوارِ تب بازش کنید.',
+        title: 'تبِ «QA»', body: 'روی «QA» بزنید.',
       },
       {
         id: 'apply', target: 'project-qa-apply', path: '/projects/', optional: true, when: managesProjects,
@@ -565,7 +565,7 @@ export const tours: Tour[] = [
       ...openProject,
       {
         id: 'tab', target: 'project-tab-reviews', kind: 'click', path: '/projects/',
-        title: 'تبِ «بازبینی‌ها»', body: 'روی «بازبینی‌ها» بزنید. اگر این تب را نمی‌بینید، از «بیشتر» در انتهای نوارِ تب بازش کنید.',
+        title: 'تبِ «بازبینی‌ها»', body: 'روی «بازبینی‌ها» بزنید.',
       },
       {
         id: 'list', target: 'project-reviews-list', path: '/projects/', optional: true,
@@ -623,7 +623,7 @@ export const tours: Tour[] = [
       ...openProject,
       {
         id: 'tab', target: 'project-tab-reviews', kind: 'click', path: '/projects/',
-        title: 'تبِ «بازبینی‌ها»', body: 'روی «بازبینی‌ها» بزنید. اگر این تب را نمی‌بینید، از «بیشتر» در انتهای نوارِ تب بازش کنید.',
+        title: 'تبِ «بازبینی‌ها»', body: 'روی «بازبینی‌ها» بزنید.',
       },
       {
         id: 'new', target: 'project-reviews-new', kind: 'click', path: '/projects/',
@@ -675,7 +675,7 @@ export const tours: Tour[] = [
       ...openProject,
       {
         id: 'tab', target: 'project-tab-finance', kind: 'click', path: '/projects/',
-        title: 'تبِ «مالی»', body: 'روی «مالی» بزنید. اگر این تب را نمی‌بینید، از «بیشتر» در انتهای نوارِ تب بازش کنید.',
+        title: 'تبِ «مالی»', body: 'روی «مالی» بزنید.',
       },
       {
         id: 'who', path: '/projects/',
@@ -724,7 +724,7 @@ export const tours: Tour[] = [
       ...openProject,
       {
         id: 'tab-team', target: 'project-tab-team', kind: 'click', path: '/projects/',
-        title: 'تبِ «تیم و ساعت»', body: 'روی «تیم و ساعت» بزنید. اگر این تب را نمی‌بینید، از «بیشتر» در انتهای نوارِ تب بازش کنید.',
+        title: 'تبِ «تیم و ساعت»', body: 'روی «تیم و ساعت» بزنید.',
       },
       {
         id: 'availability', target: 'project-team-availability', path: '/projects/', optional: true,
@@ -740,7 +740,7 @@ export const tours: Tour[] = [
       },
       {
         id: 'tab-manage', target: 'project-tab-manage', kind: 'click', path: '/projects/',
-        title: 'تبِ «تنظیمات»', body: 'روی «تنظیمات» بزنید. اگر این تب را نمی‌بینید، از «بیشتر» در انتهای نوارِ تب بازش کنید.',
+        title: 'تبِ «تنظیمات»', body: 'روی «تنظیمات» بزنید.',
       },
       {
         id: 'code', target: 'project-settings-code', path: '/projects/', optional: true,

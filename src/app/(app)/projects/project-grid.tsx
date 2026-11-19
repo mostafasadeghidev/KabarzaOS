@@ -148,6 +148,7 @@ export function ProjectGrid({
       <div className="flex flex-wrap items-center gap-2" data-tour="projects-filters">
         {!searching && (
           <OverflowTabs
+            tour="projects-tab"
             className="min-w-0 flex-1 basis-[22rem]"
             value={tab}
             onValueChange={(v) => selectTab(v as typeof tab)}

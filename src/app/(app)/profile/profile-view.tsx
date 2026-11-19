@@ -176,6 +176,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
       {/* data-tour: راهنمای تعاملی — OverflowTabs برچسب نمی‌گیرد، پس قابِ نازکِ دورش؛ min-w-0 همان رفتارِ قبلی را نگه می‌دارد. */}
       <div data-tour="profile-tabs" className="min-w-0">
         <OverflowTabs
+          tour="profile-tab"
           className="pb-1.5"
           variant="line"
           value={tab}

@@ -25,6 +25,7 @@ export function TeamTabs({ tab }: { tab: TeamTab }) {
     <div data-tour="team-tabs">
       {/* ۳.۱۵.۱ — OverflowTabs: روی گوشی تبِ آخر نیمه‌بریده دیده می‌شد («ترجی…»)؛ حالا اضافه‌ها زیرِ «بیشتر» می‌روند. */}
       <OverflowTabs
+        tour="team-tab"
         className="pb-1.5"
         variant="line"
         value={tab}

@@ -321,7 +321,7 @@ export const tours: Tour[] = [
         body: '«پروفایلِ من» و «اعلان‌ها» در همین منوی حسابِ پایینِ سایدبار هستند.',
       },
       {
-        id: 'tab-account', target: 'profile-tabs', kind: 'click', path: '/profile',
+        id: 'tab-account', target: 'profile-tab-account', kind: 'click', path: '/profile',
         title: 'تبِ «حساب کاربری»',
         body: 'روی تبِ «حساب کاربری» بزنید.',
       },
@@ -336,7 +336,7 @@ export const tours: Tour[] = [
         body: 'یک عکس انتخاب کنید؛ پیش‌نمایشش همان‌جا دیده می‌شود. بعد «ذخیره تصویر» را بزنید. این تصویر کنارِ نامتان در همهٔ برنامه می‌آید.',
       },
       {
-        id: 'tab-bank', target: 'profile-tabs', kind: 'click', path: '/profile',
+        id: 'tab-bank', target: 'profile-tab-bank', kind: 'click', path: '/profile',
         title: 'تبِ «حساب بانکی»',
         body: 'روی تبِ «حساب بانکی» بزنید.',
       },
@@ -346,7 +346,7 @@ export const tours: Tour[] = [
         body: '«شماره حساب»، «شماره شبا» و «شماره کارت» را بنویسید و «ذخیره اطلاعات حساب» را بزنید. پرداخت‌ها به همین حساب واریز می‌شود.',
       },
       {
-        id: 'tab-prefs', target: 'profile-tabs', kind: 'click', path: '/profile',
+        id: 'tab-prefs', target: 'profile-tab-prefs', kind: 'click', path: '/profile',
         title: 'تبِ «ترجیحات»',
         body: 'روی تبِ «ترجیحات» بزنید.',
       },
@@ -356,7 +356,7 @@ export const tours: Tour[] = [
         body: 'نامِ شهر یا منطقه را تایپ کنید و از فهرست انتخاب کنید تا ساعت‌ها به وقتِ شما نشان داده شوند؛ خالی یعنی پیش‌فرضِ سامانه. بعد «ذخیره» را بزنید.',
       },
       {
-        id: 'tab-password', target: 'profile-tabs', kind: 'click', path: '/profile',
+        id: 'tab-password', target: 'profile-tab-password', kind: 'click', path: '/profile',
         title: 'تبِ «رمزِ ورود»',
         body: 'روی تبِ «رمزِ ورود» بزنید.',
       },
@@ -383,7 +383,7 @@ export const tours: Tour[] = [
     next: ['personal-notifications', 'personal-profile-ai'],
     steps: [
       {
-        id: 'tab', target: 'profile-tabs', kind: 'click', path: '/profile',
+        id: 'tab', target: 'profile-tab-notify', kind: 'click', path: '/profile',
         title: 'تبِ «اعلان‌ها و تلگرام»',
         body: 'روی تبِ «اعلان‌ها و تلگرام» بزنید.',
       },
@@ -439,7 +439,7 @@ export const tours: Tour[] = [
     order: 48,
     steps: [
       {
-        id: 'tab', target: 'profile-tabs', kind: 'click', path: '/profile',
+        id: 'tab', target: 'profile-tab-mcp', kind: 'click', path: '/profile',
         title: 'تبِ «دستیارِ هوشِ مصنوعی»',
         body: 'روی تبِ «دستیارِ هوشِ مصنوعی» بزنید.',
       },

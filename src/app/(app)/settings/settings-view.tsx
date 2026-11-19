@@ -200,6 +200,7 @@ export function SettingsView({
       {/* data-tour: راهنمای تعاملی روی نوارِ تب‌ها؛ OverflowTabs جزءِ مشترک است و برچسب نمی‌گیرد، پس قابی بی‌ظاهر دورش. */}
       <div data-tour="settings-tabs" className="min-w-0">
       <OverflowTabs
+        tour="settings-tab"
         className="pb-1.5"
         variant="line"
         value={tab}

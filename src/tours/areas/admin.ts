@@ -3,9 +3,8 @@ import { can, type Tour, type TourCtx } from '../types';
 /**
  * راهنماهای بخشِ «admin» — تنظیمات، دسترسیِ همکاران، رویدادها و «دیدن به‌جای کاربر».
  *
- * ⚠️ تب‌های تنظیمات داخلِ جزءِ مشترکِ OverflowTabs اند و تک‌تک برچسب ندارند؛ قدمِ کلیک روی کلِ
- * نوارِ تب‌هاست (`settings-tabs`) و متن می‌گوید کدام تب. اگر تب جا نشود زیرِ «بیشتر» است — موتور
- * تا ۶ ثانیه صبر می‌کند تا کاربر از آن منو انتخاب کند.
+ * ⚠️ قدمِ کلیکِ تب روی خودِ تب است (`settings-tab-<key>`، با `tour` ِ OverflowTabs)؛ اگر تب زیرِ «بیشتر»
+ * رفته باشد موتور اول «بیشتر» را نشان می‌دهد. `settings-tabs` فقط برای قدمِ «دیدنِ» کلِ نوار است.
  * ⚠️ هیچ قدمِ کلیکی ذخیره نمی‌کند: دیالوگ‌ها با «انصراف» بسته می‌شوند (`settings-form-cancel`).
  * ⚠️ title/body لفظی‌اند (نه ساخته‌شده با تابع): استخراج‌گرِ کلیدهای ترجمه فقط رشتهٔ لفظی را می‌بیند.
  */
@@ -78,11 +77,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-currencies',
         kind: 'click',
         path: S,
         title: 'تبِ «ارزها و نرخ‌ها»',
-        body: 'روی تبِ «ارزها و نرخ‌ها» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «ارزها و نرخ‌ها» بزنید.',
       },
       {
         id: 'table',
@@ -152,11 +151,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-tags',
         kind: 'click',
         path: S,
         title: 'تبِ «تگ‌ها»',
-        body: 'روی تبِ «تگ‌ها» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «تگ‌ها» بزنید.',
       },
       {
         id: 'types',
@@ -242,11 +241,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-offices',
         kind: 'click',
         path: S,
         title: 'تبِ «دفاتر»',
-        body: 'روی تبِ «دفاتر» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «دفاتر» بزنید.',
       },
       {
         id: 'table',
@@ -298,11 +297,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-qa',
         kind: 'click',
         path: S,
         title: 'تبِ «کتابخانهٔ QA»',
-        body: 'روی تبِ «کتابخانهٔ QA» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «کتابخانهٔ QA» بزنید.',
       },
       {
         id: 'roles',
@@ -362,11 +361,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-onboarding',
         kind: 'click',
         path: S,
         title: 'تبِ «کتابخانهٔ آنبوردینگ»',
-        body: 'روی تبِ «کتابخانهٔ آنبوردینگ» بزنید؛ اگر نمی‌بینیدش زیرِ «بیشتر» است. این تب فقط وقتی هست که آنبوردینگ در تبِ «سامانه» روشن باشد.',
+        body: 'روی تبِ «کتابخانهٔ آنبوردینگ» بزنید. این تب فقط وقتی هست که آنبوردینگ در تبِ «سامانه» روشن باشد.',
       },
       {
         id: 'roles',
@@ -432,11 +431,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-company',
         kind: 'click',
         path: S,
         title: 'تبِ «مشخصاتِ شرکت»',
-        body: 'روی تبِ «مشخصاتِ شرکت» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «مشخصاتِ شرکت» بزنید.',
       },
       {
         id: 'logo',
@@ -466,11 +465,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-system',
         kind: 'click',
         path: S,
         title: 'تبِ «سامانه»',
-        body: 'روی تبِ «سامانه» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «سامانه» بزنید.',
       },
       {
         id: 'version',
@@ -544,11 +543,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-notify',
         kind: 'click',
         path: S,
         title: 'تبِ «اطلاع‌رسانی»',
-        body: 'روی تبِ «اطلاع‌رسانی» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «اطلاع‌رسانی» بزنید.',
       },
       {
         id: 'mail',
@@ -609,11 +608,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-backup',
         kind: 'click',
         path: S,
         title: 'تبِ «پشتیبان‌گیری»',
-        body: 'روی تبِ «پشتیبان‌گیری» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «پشتیبان‌گیری» بزنید.',
       },
       {
         id: 'status',
@@ -680,11 +679,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-security',
         kind: 'click',
         path: S,
         title: 'تبِ «امنیت»',
-        body: 'روی تبِ «امنیت» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «امنیت» بزنید.',
       },
       {
         id: 'about',
@@ -722,11 +721,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-corpmail',
         kind: 'click',
         path: S,
         title: 'تبِ «ایمیلِ شرکتی»',
-        body: 'روی تبِ «ایمیلِ شرکتی» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «ایمیلِ شرکتی» بزنید.',
       },
       {
         id: 'conn',
@@ -762,11 +761,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-cloud',
         kind: 'click',
         path: S,
         title: 'تبِ «فضای ابری»',
-        body: 'روی تبِ «فضای ابری» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «فضای ابری» بزنید.',
       },
       {
         id: 'conn',
@@ -820,11 +819,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-fiscal',
         kind: 'click',
         path: S,
         title: 'تبِ «دورهٔ مالی»',
-        body: 'روی تبِ «دورهٔ مالی» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «دورهٔ مالی» بزنید.',
       },
       {
         id: 'status',
@@ -869,11 +868,11 @@ export const tours: Tour[] = [
     steps: [
       {
         id: 'open-tab',
-        target: 'settings-tabs',
+        target: 'settings-tab-staff',
         kind: 'click',
         path: S,
         title: 'تبِ «دسترسی همکاران»',
-        body: 'روی تبِ «دسترسی همکاران» بزنید. اگر آن را نمی‌بینید، زیرِ «بیشتر» است.',
+        body: 'روی تبِ «دسترسی همکاران» بزنید.',
       },
       {
         id: 'what',

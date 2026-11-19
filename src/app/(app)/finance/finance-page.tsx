@@ -148,6 +148,7 @@ export function FinancePage({
       {/* قابِ راهنمای تعاملی — OverflowTabs برچسبِ data-tour نمی‌گیرد؛ min-w-0 تا چیدمان مثلِ قبل بماند. */}
       <div data-tour="finance-tabs" className="min-w-0">
       <OverflowTabs
+        tour="finance-tab"
         className="pb-1.5"
         variant="line"
         value={tab}

@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, MousePointerClick, Sparkles, X } from 'lucide-re
 import { useT } from '@/i18n/client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { Tour, TourStep } from '@/tours/types';
+import { onPath, type Tour, type TourStep } from '@/tours/types';
 
 /**
  * لایهٔ راهنما (۳.۱۹.۰): همه‌جا تار و تیره می‌شود جز عنصرِ قدم، با حلقهٔ روشن دورش و کارتِ توضیح کنارش.
@@ -65,7 +65,7 @@ export function TourOverlay({
   const t = useT();
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
-  const wrongPath = !!(step?.path && !pathname.startsWith(step.path));
+  const wrongPath = !!(step?.path && !onPath(pathname, step.path));
   const [el, setEl] = React.useState<HTMLElement | null>(null);
   /** el فقط نگهدارنده است (مثلاً «بیشتر»)، نه خودِ هدف. */
   const [viaHolder, setViaHolder] = React.useState(false);
@@ -125,18 +125,51 @@ export function TourOverlay({
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    // ⚠️ در زبانهٔ پنهان requestAnimationFrame متوقف است؛ زمان‌سنجِ پشتیبان جای عنصر را باز هم به‌روز می‌کند.
+    const iv = setInterval(() => {
+      if (!el.isConnected) {
+        const again = step?.target ? findTarget(step.target) : null;
+        if (again && again !== el) setEl(again);
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      setRect((p) => (p && p.top === r.top && p.left === r.left && p.width === r.width && p.height === r.height
+        ? p : { top: r.top, left: r.left, width: r.width, height: r.height }));
+    }, 250);
+    return () => { cancelAnimationFrame(raf); clearInterval(iv); };
   }, [el, step?.target]);
 
-  // قدمِ «کلیک»: کلیکِ کاربر روی خودِ عنصر راهنما را جلو می‌برد (مگر قدم با رسیدن به مسیر جلو برود).
+  /*
+   * قدمِ «کلیک»: کلیکِ کاربر روی خودِ عنصر راهنما را جلو می‌برد (مگر قدم با رسیدن به مسیر جلو برود).
+   * ⚠️ منوهای کشوییِ Radix با **pointerdown** باز می‌شوند و بلافاصله pointer-events ِ body را می‌بندند؛
+   * پس رویدادِ click اغلب به خودِ دکمه نمی‌رسد و راهنما گیر می‌کرد (زنگولهٔ اعلان‌ها). حالا پس از
+   * pointerdown اگر دکمه «باز» شد (aria-expanded / data-state=open) هم جلو می‌رود؛ `done` جلوی دوبار رفتن را می‌گیرد.
+   */
   React.useEffect(() => {
-    if (!el || viaHolder || step?.kind !== 'click') return;
-    const onClick = (e: MouseEvent) => {
-      if (!(e.target instanceof Node) || !el.contains(e.target)) return;
-      if (!step.advanceOnPath) setTimeout(onNext, 80);
+    if (!el || viaHolder || step?.kind !== 'click' || step.advanceOnPath) return;
+    let done = false;
+    const advance = () => { if (!done) { done = true; setTimeout(onNext, 80); } };
+    // ⚠️ با خودِ برچسب، نه فقط `el`: React ممکن است دکمه را دوباره بسازد و `el` گرهٔ کهنهٔ جداشده بماند —
+    // کلیکِ کاربر روی دکمهٔ تازه دیده نمی‌شد و راهنما گیر می‌کرد («فهرستِ کارت‌ها»).
+    const sel = `[data-tour="${CSS.escape(step.target!)}"]`;
+    const inside = (e: Event) => e.target instanceof Element && (el.contains(e.target) || !!e.target.closest(sel));
+    const onClick = (e: MouseEvent) => { if (inside(e)) advance(); };
+    const onDown = (e: PointerEvent) => {
+      if (!inside(e)) return;
+      setTimeout(() => {
+        const cur = el.isConnected ? el : (document.querySelector<HTMLElement>(sel) ?? el);
+        const opened = cur.getAttribute('aria-expanded') === 'true' || cur.getAttribute('data-state') === 'open'
+          || !!cur.querySelector('[aria-expanded="true"],[data-state="open"]');
+        if (opened) advance();
+      }, 250);
     };
     document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
+    document.addEventListener('pointerdown', onDown, true);
+    return () => {
+      done = true;
+      document.removeEventListener('click', onClick, true);
+      document.removeEventListener('pointerdown', onDown, true);
+    };
   }, [el, viaHolder, step, onNext]);
 
   React.useLayoutEffect(() => {
@@ -219,7 +252,7 @@ export function TourOverlay({
               <span className="truncate">{t(tour.title)}</span>
             </span>
             <span className="flex items-center gap-2">
-              {step && total > 0 && <span className="num text-[11px] text-muted-foreground">{t('{n} از {total}', { n: index + 1, total })}</span>}
+              {step && total > 0 && <span className="text-[11px] tabular-nums text-muted-foreground">{t('{n} از {total}', { n: index + 1, total })}</span>}
               <button type="button" onClick={onClose} aria-label={t('بستنِ راهنما')} className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground">
                 <X className="size-4" />
               </button>

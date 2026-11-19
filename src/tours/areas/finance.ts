@@ -9,8 +9,8 @@ import { can, type Tour, type TourCtx, type TourStep } from '../types';
  *  · بینندهٔ مالی (همکارِ ادمین فقط با finance.view — دکمه‌های ثبت را نمی‌بیند)؛
  *  · مالک (همه‌چیز، به‌علاوهٔ تأیید/ردِ درخواستِ پرداخت).
  *
- * ⚠️ تب‌های صفحهٔ مالی و گزارش‌ها `OverflowTabs` اند و برای هر تب برچسبِ جدا ندارند؛ قدمِ کلیک
- * روی کلِ نوارِ تب است (`finance-tabs` / `reports-tabs`) و متن می‌گوید کدام تب را بزنید.
+ * ⚠️ قدمِ کلیکِ تب روی خودِ تب است (`finance-tab-<key>` / `reports-tab-<key>`، با `tour` ِ OverflowTabs)؛
+ * تبِ زیرِ «بیشتر» را موتور خودش پیدا می‌کند. `finance-tabs` / `reports-tabs` فقط برای قدمِ «دیدنِ» کلِ نوار است.
  * ⚠️ هیچ قدمِ کلیکی روی دکمه‌ای نیست که ذخیره/پرداخت/حذف کند؛ فقط باز کردنِ فرم و «انصراف».
  * ⚠️ متن‌ها رشتهٔ ثابتِ تک‌خطی‌اند (نه template) تا استخراج‌گرِ کلیدهای ترجمه پیدایشان کند.
  */
@@ -34,15 +34,15 @@ const goReports: TourStep = {
 };
 /** کلیک روی تبِ «دفترکل». */
 const ledgerTab: TourStep = {
-  id: 'tab-ledger', target: 'finance-tabs', kind: 'click', path: '/finance',
+  id: 'tab-ledger', target: 'finance-tab-ledger', kind: 'click', path: '/finance',
   title: 'تبِ «دفترکل»', body: 'روی تبِ «دفترکل» بزنید.',
 };
 const reportMembersTab: TourStep = {
-  id: 'tab-members', target: 'reports-tabs', kind: 'click', path: '/reports',
+  id: 'tab-members', target: 'reports-tab-members', kind: 'click', path: '/reports',
   title: 'تبِ «اعضا»', body: 'روی تبِ «اعضا» بزنید.',
 };
 const reportClientsTab: TourStep = {
-  id: 'tab-clients', target: 'reports-tabs', kind: 'click', path: '/reports',
+  id: 'tab-clients', target: 'reports-tab-clients', kind: 'click', path: '/reports',
   title: 'تبِ «مطالبات کارفرما»', body: 'روی تبِ «مطالبات کارفرما» بزنید.',
 };
 
@@ -259,8 +259,8 @@ export const tours: Tour[] = [
     steps: [
       goFinance,
       {
-        id: 'tab-members', target: 'finance-tabs', kind: 'click', path: '/finance',
-        title: 'تبِ «مالی اعضا»', body: 'روی تبِ «مالی اعضا» بزنید؛ روی گوشی شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-members', target: 'finance-tab-members', kind: 'click', path: '/finance',
+        title: 'تبِ «مالی اعضا»', body: 'روی تبِ «مالی اعضا» بزنید.',
       },
       {
         id: 'status', target: 'finance-requests-status',
@@ -306,8 +306,8 @@ export const tours: Tour[] = [
     steps: [
       goFinance,
       {
-        id: 'tab-balances', target: 'finance-tabs', kind: 'click', path: '/finance',
-        title: 'تبِ «حسابِ اعضا»', body: 'روی تبِ «حسابِ اعضا» بزنید؛ روی گوشی شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-balances', target: 'finance-tab-balances', kind: 'click', path: '/finance',
+        title: 'تبِ «حسابِ اعضا»', body: 'روی تبِ «حسابِ اعضا» بزنید.',
       },
       {
         id: 'totals', target: 'finance-balances-totals',
@@ -364,8 +364,8 @@ export const tours: Tour[] = [
     steps: [
       goFinance,
       {
-        id: 'tab-salaries', target: 'finance-tabs', kind: 'click', path: '/finance',
-        title: 'تبِ «حقوق‌ها»', body: 'روی تبِ «حقوق‌ها» بزنید؛ روی گوشی شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-salaries', target: 'finance-tab-salaries', kind: 'click', path: '/finance',
+        title: 'تبِ «حقوق‌ها»', body: 'روی تبِ «حقوق‌ها» بزنید.',
       },
       {
         id: 'queue', target: 'finance-salaries-queue', optional: true,
@@ -417,8 +417,8 @@ export const tours: Tour[] = [
     steps: [
       goFinance,
       {
-        id: 'tab-expenses', target: 'finance-tabs', kind: 'click', path: '/finance',
-        title: 'تبِ «هزینه‌ها»', body: 'روی تبِ «هزینه‌ها» بزنید؛ روی گوشی شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-expenses', target: 'finance-tab-expenses', kind: 'click', path: '/finance',
+        title: 'تبِ «هزینه‌ها»', body: 'روی تبِ «هزینه‌ها» بزنید.',
       },
       {
         id: 'filters', target: 'finance-expense-filters', optional: true,
@@ -471,8 +471,8 @@ export const tours: Tour[] = [
     steps: [
       goFinance,
       {
-        id: 'tab-accounts', target: 'finance-tabs', kind: 'click', path: '/finance',
-        title: 'تبِ «حساب‌های بانکی»', body: 'روی تبِ «حساب‌های بانکی» بزنید؛ روی گوشی شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-accounts', target: 'finance-tab-accounts', kind: 'click', path: '/finance',
+        title: 'تبِ «حساب‌های بانکی»', body: 'روی تبِ «حساب‌های بانکی» بزنید.',
       },
       {
         id: 'table', target: 'finance-accounts-table', optional: true,
@@ -521,8 +521,8 @@ export const tours: Tour[] = [
     steps: [
       goFinance,
       {
-        id: 'tab-vendors', target: 'finance-tabs', kind: 'click', path: '/finance',
-        title: 'تبِ «طرف‌حساب‌ها»', body: 'روی تبِ «طرف‌حساب‌ها» بزنید؛ روی گوشی شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-vendors', target: 'finance-tab-vendors', kind: 'click', path: '/finance',
+        title: 'تبِ «طرف‌حساب‌ها»', body: 'روی تبِ «طرف‌حساب‌ها» بزنید.',
       },
       {
         id: 'list', target: 'finance-vendors',
@@ -556,7 +556,7 @@ export const tours: Tour[] = [
         title: 'تب‌های گزارش', body: 'هر تب یک گزارش است. اگر تبی را نمی‌بینید، مدیر آن را برای شما پنهان کرده است.',
       },
       {
-        id: 'tab-overall', target: 'reports-tabs', kind: 'click', path: '/reports',
+        id: 'tab-overall', target: 'reports-tab-overall', kind: 'click', path: '/reports',
         title: 'تبِ «گزارش کلی»', body: 'روی تبِ «گزارش کلی» بزنید.',
       },
       {
@@ -587,16 +587,16 @@ export const tours: Tour[] = [
         title: 'مطالبات از کارفرما', body: 'برای هر کارفرما: صورتحساب‌شده (قیمتِ پروژه‌ها به‌علاوهٔ هزینه‌های قابلِ بازپرداخت)، دریافتی و طلب. روی نامش بزنید تا ریزِ هر پروژه را ببینید.',
       },
       {
-        id: 'tab-expenses', target: 'reports-tabs', kind: 'click', path: '/reports',
-        title: 'تبِ «هزینه‌ها»', body: 'روی تبِ «هزینه‌ها» بزنید؛ شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-expenses', target: 'reports-tab-expenses', kind: 'click', path: '/reports',
+        title: 'تبِ «هزینه‌ها»', body: 'روی تبِ «هزینه‌ها» بزنید.',
       },
       {
         id: 'expenses', target: 'reports-expenses', optional: true,
         title: 'گزارشِ هزینه‌ها', body: 'بازهٔ زمانی را از بالا انتخاب کنید؛ جمع، میانگینِ ماهانه، و تفکیک به طرف‌حساب و ماه، همراهِ ردیف‌های دفتر.',
       },
       {
-        id: 'tab-accounts', target: 'reports-tabs', kind: 'click', path: '/reports',
-        title: 'تبِ «حساب‌ها و نقدینگی»', body: 'روی تبِ «حساب‌ها و نقدینگی» بزنید؛ شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-accounts', target: 'reports-tab-accounts', kind: 'click', path: '/reports',
+        title: 'تبِ «حساب‌ها و نقدینگی»', body: 'روی تبِ «حساب‌ها و نقدینگی» بزنید.',
       },
       {
         id: 'accounts', target: 'reports-accounts', optional: true,
@@ -667,8 +667,8 @@ export const tours: Tour[] = [
     steps: [
       goReports,
       {
-        id: 'tab-hours', target: 'reports-tabs', kind: 'click', path: '/reports',
-        title: 'تبِ «ساعت کاری»', body: 'روی تبِ «ساعت کاری» بزنید؛ شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-hours', target: 'reports-tab-hours', kind: 'click', path: '/reports',
+        title: 'تبِ «ساعت کاری»', body: 'روی تبِ «ساعت کاری» بزنید.',
       },
       {
         id: 'range', target: 'reports-range', optional: true,
@@ -679,32 +679,32 @@ export const tours: Tour[] = [
         title: 'ساعتِ هر عضو', body: 'ساعت‌های ثبت‌شدهٔ هر عضو در این بازه؛ روی نام بزنید تا ریزِ ساعت‌هایش باز شود.',
       },
       {
-        id: 'tab-projects', target: 'reports-tabs', kind: 'click', path: '/reports',
-        title: 'تبِ «گزارش پروژه‌ها»', body: 'روی تبِ «گزارش پروژه‌ها» بزنید؛ شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-projects', target: 'reports-tab-projects', kind: 'click', path: '/reports',
+        title: 'تبِ «گزارش پروژه‌ها»', body: 'روی تبِ «گزارش پروژه‌ها» بزنید.',
       },
       {
         id: 'projects', target: 'reports-projects', optional: true,
         title: 'پروژه‌ها', body: 'قیمت، دریافتی، هزینه، پرداخت به اعضا و سودِ هر پروژه؛ نامِ پروژه شما را به تبِ مالیِ همان پروژه می‌برد.',
       },
       {
-        id: 'tab-units', target: 'reports-tabs', kind: 'click', path: '/reports',
-        title: 'تبِ «کارکردِ تعدادی»', body: 'روی تبِ «کارکردِ تعدادی» بزنید؛ شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-units', target: 'reports-tab-units', kind: 'click', path: '/reports',
+        title: 'تبِ «کارکردِ تعدادی»', body: 'روی تبِ «کارکردِ تعدادی» بزنید.',
       },
       {
         id: 'units', target: 'reports-units', optional: true,
         title: 'کارکردِ تعدادی', body: 'برای پروژه‌های تعدادی: کارکردِ پرداخت‌شده و پرداخت‌نشدهٔ هر عضو.',
       },
       {
-        id: 'tab-attendance', target: 'reports-tabs', kind: 'click', path: '/reports',
-        title: 'تبِ «حضور و مرخصی»', body: 'روی تبِ «حضور و مرخصی» بزنید؛ شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-attendance', target: 'reports-tab-attendance', kind: 'click', path: '/reports',
+        title: 'تبِ «حضور و مرخصی»', body: 'روی تبِ «حضور و مرخصی» بزنید.',
       },
       {
         id: 'attendance', target: 'reports-attendance', optional: true,
         title: 'حضور و مرخصی', body: 'اول اعضایی که برنامهٔ هفتگی ثبت نکرده‌اند، بعد مرخصی‌های ثبت‌شده.',
       },
       {
-        id: 'tab-closings', target: 'reports-tabs', kind: 'click', path: '/reports',
-        title: 'تبِ «دوره‌های بسته‌شده»', body: 'روی تبِ «دوره‌های بسته‌شده» بزنید؛ شاید زیرِ «بیشتر» باشد.',
+        id: 'tab-closings', target: 'reports-tab-closings', kind: 'click', path: '/reports',
+        title: 'تبِ «دوره‌های بسته‌شده»', body: 'روی تبِ «دوره‌های بسته‌شده» بزنید.',
       },
       {
         id: 'closings', target: 'reports-closings', optional: true,
