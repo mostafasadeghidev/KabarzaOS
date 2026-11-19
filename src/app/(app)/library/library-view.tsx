@@ -125,7 +125,7 @@ export function LibraryView({
     <div className="grid gap-4">
       <div className="overflow-x-auto pb-1.5">
         <Tabs value={filter.kind} onValueChange={(v) => go({ kind: v })}>
-          <TabsList className="w-max">
+          <TabsList className="w-max" data-tour="library-kinds">
             {kinds.map((k) => (
               <TabsTrigger key={k.key || 'all'} value={k.key} className="flex-none px-3">
                 {tr(k.label)}
@@ -140,7 +140,7 @@ export function LibraryView({
 
       {categories.length > 1 && (
         // ⚠️ ۳.۱۵.۲ — از sm به بالا دسته‌ها به خطِ بعد می‌روند؛ روی گوشی سطرِ لغزان بی نوارِ اسکرول.
-        <nav aria-label={tr('دسته‌ها')} className="-mt-1 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
+        <nav data-tour="library-categories" aria-label={tr('دسته‌ها')} className="-mt-1 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
           <CategoryChip active={!filter.category} onClick={() => go({ category: '' })} label={tr('همهٔ دسته‌ها')} />
           {categories.map((c) => (
             <CategoryChip
@@ -154,8 +154,9 @@ export function LibraryView({
         </nav>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3">
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-3" data-tour="library-filters">
         <SearchInput
+          data-tour="library-search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={tr('جستجو در عنوان، توضیح و خودِ کد…')}
@@ -188,6 +189,7 @@ export function LibraryView({
         <Toggle
           size="sm"
           variant="outline"
+          data-tour="library-mine"
           pressed={filter.mine}
           onPressedChange={(v) => go({ mine: v ? '1' : '' })}
         >
@@ -197,6 +199,7 @@ export function LibraryView({
           <Toggle
             size="sm"
             variant="outline"
+            data-tour="library-review"
             pressed={filter.review}
             onPressedChange={(v) => go({ review: v ? '1' : '' })}
           >
@@ -208,6 +211,7 @@ export function LibraryView({
         <Toggle
           size="sm"
           variant="outline"
+          data-tour="library-archived"
           pressed={filter.archived}
           onPressedChange={(v) => go({ archived: v ? '1' : '' })}
         >
@@ -240,7 +244,7 @@ export function LibraryView({
           )}
         </EmptyState>
       ) : grouped ? (
-        <div className="grid gap-6">
+        <div className="grid gap-6" data-tour="library-list">
           {groups.map((g) => (
             <section key={g.key} className="grid gap-2.5" aria-labelledby={`lib-cat-${g.key}`}>
               <h2 id={`lib-cat-${g.key}`} className="flex items-center gap-2 text-sm font-bold">
@@ -256,7 +260,7 @@ export function LibraryView({
           ))}
         </div>
       ) : (
-        <div className="grid gap-3 @xl/main:grid-cols-2 @4xl/main:grid-cols-3 @6xl/main:grid-cols-4">
+        <div className="grid gap-3 @xl/main:grid-cols-2 @4xl/main:grid-cols-3 @6xl/main:grid-cols-4" data-tour="library-list">
           {flatList.map((e) => (
             <EntryCardView key={e.id} entry={e} category={categoryOf(e)} withCover={flatList.some((x) => x.coverFileId !== null)} />
           ))}
@@ -296,6 +300,7 @@ function EntryCardView({ entry, withCover, category }: { entry: EntryCard; withC
   return (
     <Link
       href={`/library/${entry.id}`}
+      data-tour="library-card"
       className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-colors hover:border-primary/40"
     >
       {withCover && (

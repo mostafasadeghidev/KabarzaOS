@@ -54,12 +54,13 @@ export function EventsFilter() {
   const hasFilter = q !== '' || from !== '' || to !== '';
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div data-tour="activity-filter" className="flex flex-wrap items-center gap-2">
       <SearchInput
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder={tr('جستجو: نامِ شخص، پروژه، تسک یا نوعِ رویداد…')}
         aria-label={tr('جستجو در رویدادها')}
+        data-tour="activity-search"
         containerClassName="sm:w-80"
       />
       <DatePicker

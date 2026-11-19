@@ -214,10 +214,10 @@ function ProjectDialogBody({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {isEdit ? <Button variant="outline">{tr("ویرایش")}</Button> : <Button><Plus className="size-4" />{tr("افزودن پروژه")}</Button>}
+        {isEdit ? <Button variant="outline" data-tour="project-edit">{tr("ویرایش")}</Button> : <Button data-tour="projects-add"><Plus className="size-4" />{tr("افزودن پروژه")}</Button>}
       </DialogTrigger>
 
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent data-tour="project-form" className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isEdit ? tr('ویرایشِ پروژه') : tr('افزودن پروژه')}</DialogTitle>
           <DialogDescription>
@@ -246,7 +246,7 @@ function ProjectDialogBody({
             ذخیره بی‌صدا مقادیر را پاک می‌کرد.
           */}
           <Tabs value={formTab} onValueChange={(v) => setFormTab(v as typeof formTab)}>
-            <TabsList variant="line">
+            <TabsList variant="line" data-tour="project-form-tabs">
               {([
                 ['info', tr('اطلاعات')],
                 ...(showBootstrap
@@ -255,7 +255,7 @@ function ProjectDialogBody({
                 // پورتِ تبِ «پیشنهادهای مناقصه» ِ فرمِ ساخت — فقط وقتی مناقصه تیک خورده.
                 ...(showBootstrap && isTender ? ([['tender', tr('پیشنهادهای مناقصه')]] as const) : []),
               ] as ReadonlyArray<readonly [typeof formTab, string]>).map(([key, label]) => (
-                <TabsTrigger key={key} value={key} className="flex-none">
+                <TabsTrigger key={key} value={key} className="flex-none" data-tour={`project-form-tab-${key}`}>
                   {label}
                 </TabsTrigger>
               ))}
@@ -265,7 +265,7 @@ function ProjectDialogBody({
           <div className={formTab === 'info' ? 'grid gap-4' : 'hidden'}>
 
           <LabeledField label={tr("عنوان")} name="title" error={fe.title}>
-            {(id) => <Input id={id} name="title" defaultValue={keep('title')} required autoFocus />}
+            {(id) => <Input id={id} name="title" defaultValue={keep('title')} required autoFocus data-tour="project-form-title" />}
           </LabeledField>
 
           <LabeledField label={tr("توضیحات")} name="description" error={fe.description}>
@@ -281,7 +281,7 @@ function ProjectDialogBody({
             «ذخیرهٔ تغییرات» ثبت می‌شود (← updateProjectAction).
           */}
           {(options.bootstrap || isEdit) && (
-            <div className="grid gap-1.5">
+            <div className="grid gap-1.5" data-tour="project-form-thumb">
               <span className="text-sm font-medium">{tr("تصویرِ شاخص")}</span>
               <p className="text-xs text-muted-foreground">
                 {tr('JPEG، PNG، GIF یا WebP — تا {size}.', { size: humanSize(MAX_SIZE.avatar, tr) })}
@@ -304,7 +304,7 @@ function ProjectDialogBody({
           )}
 
           {/* فیلدهای فشرده — در نسخهٔ قبلی سه‌تا در هر ردیف. */}
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3" data-tour="project-form-dates">
             <LabeledField label={tr("تاریخ ثبت")} name="regDate" error={fe.regDate}>
               {(id) => (
                 <DatePicker id={id} name="regDate" defaultValue={keep('regDate', options.today)} />
@@ -391,7 +391,7 @@ function ProjectDialogBody({
             نوشته می‌شود (مثلاً https://xxx.webflow.io)؛ بی‌طرح، https می‌گیرد.
             تیکِ «نمایش به کارفرما» پیش‌فرض خاموش است.
           */}
-          <div className="grid gap-3 rounded-lg bg-muted/60 p-3">
+          <div className="grid gap-3 rounded-lg bg-muted/60 p-3" data-tour="project-form-urls">
             <div className="grid gap-4 sm:grid-cols-2">
               <LabeledField label={tr("دامنهٔ اصلی")} name="liveUrl" error={fe.liveUrl}>
                 {(id) => (
@@ -417,7 +417,7 @@ function ProjectDialogBody({
             </label>
           </div>
 
-          <div className="rounded-lg bg-muted/60 p-3">
+          <div className="rounded-lg bg-muted/60 p-3" data-tour="project-form-unit">
             <label className="flex items-start gap-2 text-sm font-medium">
               <Checkbox
                 key={`unit-${formKey}`}
@@ -458,7 +458,7 @@ function ProjectDialogBody({
           </div>
 
           {canEditMoney && (
-            <div className="rounded-lg bg-muted/60 p-3">
+            <div className="rounded-lg bg-muted/60 p-3" data-tour="project-form-tender">
               <label className="flex items-start gap-2 text-sm font-medium">
                 <Checkbox
                   key={`tender-${formKey}`}
@@ -589,7 +589,7 @@ function ProjectDialogBody({
             </>
           )}
 
-          <DialogFooter>
+          <DialogFooter data-tour="project-form-save">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               {isEdit ? tr('بستن') : tr('انصراف')}
             </Button>

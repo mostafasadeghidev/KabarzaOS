@@ -136,7 +136,7 @@ export function SalariesView({
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr('جستجوی عضو')} />
           {canManage && (
-            <Button size="sm" onClick={() => setMode({ kind: 'start', userId: null })}>
+            <Button data-tour="finance-salaries-add" size="sm" onClick={() => setMode({ kind: 'start', userId: null })}>
               <Plus className="size-3.5" />{tr('حقوقِ تازه')}
             </Button>
           )}
@@ -144,7 +144,7 @@ export function SalariesView({
       )}
     >
       {queue.length > 0 && (
-        <div className="mb-4 grid gap-2">
+        <div data-tour="finance-salaries-queue" className="mb-4 grid gap-2">
           <h3 className="text-sm font-medium">{tr('پرداخت‌نشده تا این ماه')}</h3>
           <Table>
             <TableHeader>
@@ -194,7 +194,7 @@ export function SalariesView({
           description={tr('برای عضوی که ماهانه حقوق می‌گیرد «حقوقِ تازه» را بزنید.')}
         />
       ) : (
-        <Table>
+        <Table data-tour="finance-salaries-table">
           <TableHeader>
             <TableRow>
               <TableHead>{tr('عضو')}</TableHead>
@@ -234,7 +234,7 @@ export function SalariesView({
                 <TableDateCell>{p.payments[0]?.paidAt ?? '—'}</TableDateCell>
                 <TableActionsCell>
                   {p.periods.length > 0 && (
-                    <Button size="sm" variant="outline" onClick={() => setViewing(p.userId)}>
+                    <Button data-tour="finance-salaries-view" size="sm" variant="outline" onClick={() => setViewing(p.userId)}>
                       <Eye className="size-3.5" />{tr('ریز')}
                     </Button>
                   )}
@@ -273,7 +273,7 @@ export function SalariesView({
                   </Button>
                 )}
               </div>
-              <Table>
+              <Table data-tour="finance-salaries-periods">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{tr('از')}</TableHead>
@@ -378,7 +378,7 @@ export function SalariesView({
 
       {/* ---- فرم‌ها ---- */}
       <Dialog open={mode !== null} onOpenChange={(open) => { if (!open) setMode(null); }}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+        <DialogContent data-tour="finance-salaries-form" className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
           {mode && (mode.kind === 'start' || mode.kind === 'edit') && (
             <PeriodForm
               key={mode.kind === 'edit' ? `e${mode.period.id}` : `s${mode.userId ?? 'new'}`}
@@ -517,8 +517,8 @@ function PeriodForm({
       </div>
 
       <ErrorBox error={state.error} />
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onDone}>{tr('انصراف')}</Button>
+      <DialogFooter data-tour="finance-salaries-submit">
+        <Button data-tour="finance-salaries-cancel" type="button" variant="outline" onClick={onDone}>{tr('انصراف')}</Button>
         <Submit label={tr('ذخیره')} />
       </DialogFooter>
     </form>
@@ -543,8 +543,8 @@ function StopForm({ period, today, onDone }: { period: SalaryPeriodRow; today: s
         <FieldDescription>{tr('اگر حقوقِ همین ماه را هم نمی‌دهید، ماهِ قبل را انتخاب کنید.')}</FieldDescription>
       </Field>
       <ErrorBox error={state.error} />
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onDone}>{tr('انصراف')}</Button>
+      <DialogFooter data-tour="finance-salaries-submit">
+        <Button data-tour="finance-salaries-cancel" type="button" variant="outline" onClick={onDone}>{tr('انصراف')}</Button>
         <Submit label={tr('توقف')} />
       </DialogFooter>
     </form>
@@ -573,8 +573,8 @@ function ChangeForm({ period, today, onDone }: { period: SalaryPeriodRow; today:
         </Field>
       </div>
       <ErrorBox error={state.error} />
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onDone}>{tr('انصراف')}</Button>
+      <DialogFooter data-tour="finance-salaries-submit">
+        <Button data-tour="finance-salaries-cancel" type="button" variant="outline" onClick={onDone}>{tr('انصراف')}</Button>
         <Submit label={tr('ذخیره')} />
       </DialogFooter>
     </form>
@@ -662,8 +662,8 @@ function PayForm({
       </div>
 
       <ErrorBox error={state.error} />
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onDone}>{tr('انصراف')}</Button>
+      <DialogFooter data-tour="finance-salaries-submit">
+        <Button data-tour="finance-salaries-cancel" type="button" variant="outline" onClick={onDone}>{tr('انصراف')}</Button>
         <Submit label={tr('پرداخت')} />
       </DialogFooter>
     </form>

@@ -69,7 +69,7 @@ export function StaffSection({
 
   // ⚠️ «افزودن» در لبهٔ سرِ بخش، مثلِ دکمهٔ «افزودن» ِ بقیهٔ تب‌ها — نه قابِ خط‌چینِ جدا.
   const adder = candidates.length > 0 && (
-    <div className="flex flex-wrap items-center gap-2">
+    <div data-tour="settings-staff-add" className="flex flex-wrap items-center gap-2">
       <SearchableSelect
         size="sm"
         value={pick}
@@ -120,7 +120,7 @@ export function StaffSection({
       {header}
 
       {/* ۳.۱۵.۱ — روی گوشی هر همکار یک کارت. */}
-      <Table stack>
+      <Table data-tour="settings-staff-table" stack>
         <TableHeader>
           <TableRow>
             <TableHead>{t("همکار")}</TableHead>
@@ -156,6 +156,7 @@ export function StaffSection({
                 </TableCell>
                 <TableActionsCell>
                   <Button
+                    data-tour="settings-staff-access"
                     type="button"
                     size="sm"
                     variant="outline"
@@ -166,6 +167,7 @@ export function StaffSection({
                   </Button>
                   {/* ⚠️ برداشتنِ نقش، دسترسی‌های per-user را هم پاک می‌کند. */}
                   <Button
+                    data-tour="settings-staff-remove"
                     type="button"
                     size="sm"
                     variant="ghost"

@@ -145,6 +145,8 @@ export function FinancePage({
   return (
     <div className="grid gap-4">
       {/* ۳.۱۵.۱ — OverflowTabs: روی گوشی تبِ آخر نیمه‌بریده دیده می‌شد («ترجی…»)؛ حالا اضافه‌ها زیرِ «بیشتر» می‌روند. */}
+      {/* قابِ راهنمای تعاملی — OverflowTabs برچسبِ data-tour نمی‌گیرد؛ min-w-0 تا چیدمان مثلِ قبل بماند. */}
+      <div data-tour="finance-tabs" className="min-w-0">
       <OverflowTabs
         className="pb-1.5"
         variant="line"
@@ -152,6 +154,7 @@ export function FinancePage({
         onValueChange={(v) => setTab(v as typeof tab)}
         items={visible.map((t) => ({ value: t.key, label: tr(t.label) }))}
       />
+      </div>
 
       {tab === 'ledger' && needsPick && (
         <AccountPicker accounts={props.accounts} onPick={(id) => router.push(`/finance?account=${id}`)} />

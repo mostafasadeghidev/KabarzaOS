@@ -57,9 +57,9 @@ export function BankDirectory({
     >
 
       {shown.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{tr('کاربری یافت نشد')}</p>
+        <p data-tour="finance-bank-directory" className="text-sm text-muted-foreground">{tr('کاربری یافت نشد')}</p>
       ) : (
-        <Table stack>
+        <Table data-tour="finance-bank-directory" stack>
           <TableHeader>
             <TableRow>
               <TableHead>{tr('عضو')}</TableHead>

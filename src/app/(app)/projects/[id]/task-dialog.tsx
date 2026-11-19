@@ -148,7 +148,7 @@ function TaskDialogBody({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent data-tour="task-dialog" className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         {/*
           ۳.۱۷.۲ — سرصفحهٔ دوسطری: بالا شماره، پروژه و «کپیِ پیوند»؛ زیرش عنوانِ تمام‌عرض و آغازچین.
           پیش از این عنوان بینِ شماره و دکمهٔ «کپیِ پیوند» گیر می‌افتاد و روی گوشی در ستونی باریک، سه‌خطی
@@ -190,12 +190,15 @@ function TaskDialogBody({
                 می‌خواند باید همان‌جا تأیید یا برگرداند؛ پیش از این باید به
                 صفحهٔ پروژه می‌رفت و تسک را دوباره پیدا می‌کرد.
               */}
-              <TaskStatusPicker
-                task={task}
-                options={data?.statuses ?? []}
-                canManage={(data?.detail.canSetStatus ?? false) && (data?.statuses.length ?? 0) > 0}
-                onChanged={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
-              />
+              {/* data-tour: راهنما وضعیت را از همین‌جا نشان می‌دهد. */}
+              <div data-tour="task-status">
+                <TaskStatusPicker
+                  task={task}
+                  options={data?.statuses ?? []}
+                  canManage={(data?.detail.canSetStatus ?? false) && (data?.statuses.length ?? 0) > 0}
+                  onChanged={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
+                />
+              </div>
               {task.assigneeName && (
                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                   {tr('مسئول:')}
@@ -234,11 +237,13 @@ function TaskDialogBody({
               </p>
             )}
             {data?.detail.claimable && (
-              <ClaimTaskButton
-                taskId={task.id}
-                projectId={task.projectId}
-                onDone={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
-              />
+              <div data-tour="task-dialog-claim">
+                <ClaimTaskButton
+                  taskId={task.id}
+                  projectId={task.projectId}
+                  onDone={() => { loadTaskAction(task.id).then(setData).catch(() => {}); }}
+                />
+              </div>
             )}
 
             {/* موردِ بازبینی: از کدام بازبینی، کجای ویدئو و کدام بخشِ سایت — با پیوند به خودِ بازبینی. */}
@@ -280,7 +285,7 @@ function TaskDialogBody({
 
             {/* توضیح با پیوندِ کلیک‌پذیر و ویدئوی لوم/یوتیوب، و تصویرهای تسک زیرش. */}
             {(task.description || data.detail.media.length > 0) && (
-              <div className="grid gap-3 rounded-md bg-muted/40 p-3">
+              <div data-tour="task-dialog-desc" className="grid gap-3 rounded-md bg-muted/40 p-3">
                 <RichText text={task.description} projectId={task.projectId} />
                 <MediaGallery
                   items={data.detail.media}
@@ -295,7 +300,7 @@ function TaskDialogBody({
               در حالتِ دوم کاربر بیرونِ پروژه است و باید راهی به آن داشته
               باشد — بدونِ این دکمه، «نگاهِ سریع» بن‌بست بود.
             */}
-            <div>
+            <div data-tour="task-dialog-goto">
               <Button asChild size="sm" variant="ghost" className="px-0 text-primary hover:bg-transparent">
                 {/* با شماره: مستقیم به خودِ تسک در صفحهٔ پروژه (?task=)، نه فقط فهرستِ تسک‌ها — مودالِ داشبورد هم از همین می‌رود. */}
                 <Link href={task.number ? `/projects/${task.projectId}?task=${task.number}` : `/projects/${task.projectId}?tab=tasks`}>
@@ -311,7 +316,7 @@ function TaskDialogBody({
               می‌گیرد (`referTask`).
             */}
             {canManage && referring && (
-              <form action={referAction} className="grid gap-2 rounded-lg border border-dashed p-3">
+              <form action={referAction} data-tour="task-refer-form" className="grid gap-2 rounded-lg border border-dashed p-3">
                 <input type="hidden" name="taskId" value={task.id} />
                 <input type="hidden" name="toUserId" value={referTo.id ?? ''} />
                 <span className="text-sm font-medium">{tr("ارجاعِ تسک به شخصِ دیگر")}</span>
@@ -333,8 +338,8 @@ function TaskDialogBody({
             )}
 
             {canEdit && (
-              <div className="flex gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => setEditing((e) => !e)}>
+              <div data-tour="task-actions" className="flex gap-2">
+                <Button type="button" size="sm" variant="outline" data-tour="task-edit" onClick={() => setEditing((e) => !e)}>
                   <Pencil className="size-3.5" />
                   {tr("ویرایش تسک")}
                 </Button>
@@ -343,6 +348,7 @@ function TaskDialogBody({
                     type="button"
                     size="sm"
                     variant="outline"
+                    data-tour="task-assign"
                     onClick={() => { setReferring((v) => !v); setEditing(false); }}
                   >
                     <Share2 className="size-3.5" />
@@ -550,7 +556,7 @@ function TaskDialogBody({
               («ذخیرهٔ تغییرات» و «ارسال») زیرِ هم گیج می‌کرد که کدام چه را ذخیره می‌کند.
             */}
             {!editing && (
-            <section className="grid gap-2">
+            <section data-tour="task-notes" className="grid gap-2">
               <h4 className="text-sm font-semibold">{t("گفتگوی تسک")}</h4>
               {data.detail.notes.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("هنوز گفتگویی نیست.")}</p>
@@ -590,12 +596,14 @@ function TaskDialogBody({
                 <input type="hidden" name="taskId" value={task.id} />
                 {/* ⚠️ متن اجباری نیست: یادداشتِ فقط‌اسکرین‌شات هم یادداشت است (سرور هر دو خالی را رد می‌کند). */}
                 {/* شمارِ فایل‌ها از خودِ جعبه — فایل با DataTransfer نشانده می‌شود و رویدادِ فرم نمی‌دهد. */}
-                <FormFileDrop name="media" compact videoLinks onCountChange={setNoteFiles}>
-                  <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} />
-                </FormFileDrop>
+                <div data-tour="task-note-attach">
+                  <FormFileDrop name="media" compact videoLinks onCountChange={setNoteFiles}>
+                    <Textarea name="body" rows={2} placeholder={t("یادداشت/توضیح بنویسید…")} data-tour="task-note-input" />
+                  </FormFileDrop>
+                </div>
                 {noteState.error && <p className="text-xs text-destructive">{tr(noteState.error)}</p>}
                 {noteReady && (
-                  <div className="flex justify-end">
+                  <div data-tour="task-note-send" className="flex justify-end">
                     <SubmitButton label={t("ارسال")} busy={t('در حال ارسال…')} />
                   </div>
                 )}

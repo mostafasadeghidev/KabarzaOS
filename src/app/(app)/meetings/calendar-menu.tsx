@@ -43,7 +43,7 @@ export function CalendarMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="ghost">
+        <Button size="sm" variant="ghost" data-tour="meetings-calendar">
           <CalendarPlus className="size-3.5" />
           {tr("افزودن به تقویم")}
         </Button>

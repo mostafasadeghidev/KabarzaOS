@@ -97,7 +97,7 @@ export function AccountsView({
       <SectionHeader
         title={t("حساب‌های بانکی")}
         actions={canManage ? (
-          <Button size="sm" onClick={() => startEditing(null)}>
+          <Button data-tour="finance-accounts-add" size="sm" onClick={() => startEditing(null)}>
             <Plus className="size-4" />
             {tr("افزودن حساب")}
           </Button>
@@ -117,7 +117,7 @@ export function AccountsView({
       {accounts.length === 0 ? (
         <EmptyState title={t("حسابی تعریف نشده")} />
       ) : (
-        <Table stack>
+        <Table data-tour="finance-accounts-table" stack>
           <TableHeader>
             <TableRow>
               <TableHead>{t("نام")}</TableHead>
@@ -188,7 +188,7 @@ export function AccountsView({
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent data-tour="finance-accounts-form" className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editing ? tr('ویرایش حساب') : tr('افزودن حساب')}</DialogTitle>
             <DialogDescription>
@@ -237,7 +237,7 @@ export function AccountsView({
                   {options.offices.map((o) => <NativeSelectOption key={o.id} value={o.id}>{o.name}</NativeSelectOption>)}
                 </NativeSelect>
               </Field>
-              <Field>
+              <Field data-tour="finance-accounts-opening">
                 <FieldLabel htmlFor="a-opening">{t("مانده اولیه")}</FieldLabel>
                 <Input
                   id="a-opening"
@@ -254,7 +254,7 @@ export function AccountsView({
             </div>
 
             {/* مشخصاتِ بانکی (۲.۱۸.۰) — همه اختیاری؛ IBAN و کارت با رقمِ کنترلی سنجیده می‌شوند. */}
-            <FieldSet variant="box">
+            <FieldSet data-tour="finance-accounts-bank" variant="box">
               <FieldLegend>{t("مشخصاتِ بانکی")}</FieldLegend>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field>
@@ -286,7 +286,7 @@ export function AccountsView({
               <Input id="a-note" name="note" defaultValue={keep('note', editing?.note ?? '')} />
             </Field>
 
-            <FieldSet variant="box">
+            <FieldSet data-tour="finance-accounts-accountants" variant="box">
               <FieldLegend>{t("حسابدارانِ این حساب")}</FieldLegend>
               <FieldDescription>
                 {tr("کسی که فقط مجوزِ دیدنِ مالی دارد، **تنها** حساب‌هایی را می‌بیند که اینجا به او تخصیص یافته‌اند.")}
@@ -320,8 +320,8 @@ export function AccountsView({
             </div>
 
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("انصراف")}</Button>
+            <DialogFooter data-tour="finance-accounts-submit">
+              <Button data-tour="finance-accounts-cancel" type="button" variant="outline" onClick={() => setOpen(false)}>{t("انصراف")}</Button>
               <Save />
             </DialogFooter>
           </form>

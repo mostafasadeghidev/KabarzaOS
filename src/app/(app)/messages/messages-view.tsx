@@ -325,7 +325,7 @@ export function MessagesView({
           <>
             {/* ۲.۶۵.۰ — پیامِ خصوصی به یک همکار؛ مدیر و کارفرما این را ندارند. */}
             {peers.length > 0 && (
-              <Button variant="outline" onClick={() => setPeerOpen(true)}>
+              <Button variant="outline" data-tour="messages-peer" onClick={() => setPeerOpen(true)}>
                 <Users />
                 {tr('پیام به یک عضو')}
               </Button>
@@ -335,19 +335,19 @@ export function MessagesView({
               گیرنده انتخاب کند هم باید بتواند به مدیریت پیام بدهد.
             */}
             {!canBroadcast && (
-              <Button variant="outline" onClick={() => setMgmtOpen(true)}>
+              <Button variant="outline" data-tour="messages-mgmt" onClick={() => setMgmtOpen(true)}>
                 <ShieldQuestion />
                 {tr('پیام به مدیریت')}
               </Button>
             )}
             {channelOptions && (
-              <Button variant="outline" onClick={() => setChannelOpen(true)}>
+              <Button variant="outline" data-tour="messages-channel-new" onClick={() => setChannelOpen(true)}>
                 <Hash />
                 {tr('کانالِ تازه')}
               </Button>
             )}
             {canSend && (
-              <Button onClick={() => setComposeOpen(true)}>
+              <Button data-tour="messages-new" onClick={() => setComposeOpen(true)}>
                 <Plus />
                 {tr('پیام جدید')}
               </Button>
@@ -364,6 +364,7 @@ export function MessagesView({
       <div data-messages-shell className="grid min-h-0 flex-1 overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs @3xl/main:grid-cols-[20rem_minmax(0,1fr)] @5xl/main:grid-cols-[24rem_minmax(0,1fr)]">
         {/* ---- صندوق ---- */}
         <section
+          data-tour="messages-inbox"
           aria-label={tr('صندوق پیام')}
           className={cn('flex min-h-0 flex-col @3xl/main:border-e', openId !== null && 'hidden @3xl/main:flex')}
         >
@@ -371,12 +372,13 @@ export function MessagesView({
             <SearchInput
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              data-tour="messages-search"
               placeholder={tr('جستجوی گفتگو…')}
               aria-label={tr('جستجوی گفتگو…')}
               containerClassName="sm:w-full"
             />
             <Tabs value={box} onValueChange={(v) => setBox(v as typeof box)}>
-              <TabsList className={cn('grid w-full', showPeerTab ? 'grid-cols-3' : 'grid-cols-2')}>
+              <TabsList data-tour="messages-tabs" className={cn('grid w-full', showPeerTab ? 'grid-cols-3' : 'grid-cols-2')}>
                 <TabsTrigger value="all">{tr('همه')}</TabsTrigger>
                 {showPeerTab && <TabsTrigger value="peer">{tr('اعضا')}</TabsTrigger>}
                 <TabsTrigger value="unread">
@@ -409,13 +411,13 @@ export function MessagesView({
               <ul className="grid gap-0.5 p-2">
                 {channelRows.length > 0 && <InboxSection label={tr('کانال‌های تیم')} />}
                 {channelRows.map((row) => (
-                  <li key={row.id}>
+                  <li key={row.id} data-tour="messages-channel-row">
                     <InboxRowButton row={row} open={openId === row.id} onOpen={setOpenId} tz={tz} />
                   </li>
                 ))}
                 {projectRows.length > 0 && <InboxSection label={tr('گروه‌های پروژه')} />}
                 {projectRows.map((row) => (
-                  <li key={row.id}>
+                  <li key={row.id} data-tour="messages-project-row">
                     <InboxRowButton row={row} open={openId === row.id} onOpen={setOpenId} tz={tz} />
                   </li>
                 ))}
@@ -426,7 +428,7 @@ export function MessagesView({
                   کدام را جدا و بی‌خبر از بقیه می‌بیند. قاعده در `groupInbox`.
                 */}
                 {entries.map((entry) => (entry.kind === 'single' ? (
-                  <li key={entry.thread.id}>
+                  <li key={entry.thread.id} data-tour="messages-row">
                     <InboxRowButton row={entry.thread} open={openId === entry.thread.id} onOpen={setOpenId} tz={tz} />
                   </li>
                 ) : (
@@ -447,6 +449,7 @@ export function MessagesView({
 
         {/* ---- گفتگو ---- */}
         <section
+          data-tour="messages-pane"
           aria-label={tr('گفتگو')}
           className={cn('flex min-h-0 flex-col', openId === null && 'hidden @3xl/main:flex')}
         >
@@ -495,7 +498,7 @@ export function MessagesView({
           </DialogHeader>
 
           <form action={mgmtFormAction} className="grid gap-3">
-            <Field>
+            <Field data-tour="messages-mgmt-body">
               <FieldLabel htmlFor="mgmt-body">{tr("متنِ پیام")}</FieldLabel>
               <Textarea
                 id="mgmt-body" name="body" rows={5} required
@@ -526,7 +529,7 @@ export function MessagesView({
               </DialogDescription>
             </DialogHeader>
             <form action={peerFormAction} className="grid gap-3">
-              <Field>
+              <Field data-tour="messages-peer-to">
                 <FieldLabel htmlFor="peer-to">{tr('گیرنده')}</FieldLabel>
                 <SearchableSelect
                   id="peer-to"
@@ -542,7 +545,7 @@ export function MessagesView({
                   ))}
                 </SearchableSelect>
               </Field>
-              <Field>
+              <Field data-tour="messages-peer-body">
                 <FieldLabel htmlFor="peer-body">{tr('متنِ پیام')}</FieldLabel>
                 <Textarea
                   id="peer-body" name="body" rows={5} required

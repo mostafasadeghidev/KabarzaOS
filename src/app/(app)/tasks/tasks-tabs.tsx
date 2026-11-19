@@ -32,7 +32,7 @@ export function TasksTabs({
   const [tab, setTab] = useState<'inbox' | 'quick'>('inbox');
 
   const item = (key: 'inbox' | 'quick', label: string, icon: React.ReactNode, count?: number) => (
-    <TabsTrigger key={key} value={key} className="flex-none">
+    <TabsTrigger key={key} value={key} className="flex-none" data-tour={`tasks-tab-${key}`}>
       {icon}
       {label}
       {count !== undefined && count > 0 && (

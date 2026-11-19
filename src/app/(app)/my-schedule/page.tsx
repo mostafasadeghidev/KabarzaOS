@@ -51,6 +51,8 @@ export default async function MySchedulePage() {
         description={t('روزها و ساعت‌هایی که کار می‌کنید و مرخصی‌هایتان؛ مدیرِ تیم همین را در نمای تیم می‌بیند.')}
       />
 
+      {/* data-tour: راهنمای تعاملی — قابِ برنامهٔ هفتگی و مرخصی (خودِ کامپوننت‌ها مالِ «فعالیت» است). */}
+      <div data-tour="schedule-week">
       <AvailabilityView
         data={{
           mine: toRecord(mineMap),
@@ -60,8 +62,11 @@ export default async function MySchedulePage() {
           today: weekdayIndex(now),
         }}
       />
+      </div>
 
-      <AbsencePanel data={{ mine: myAbsences, targets: me, meId: actor.id, today }} />
+      <div data-tour="schedule-leave">
+        <AbsencePanel data={{ mine: myAbsences, targets: me, meId: actor.id, today }} />
+      </div>
     </PageShell>
   );
 }

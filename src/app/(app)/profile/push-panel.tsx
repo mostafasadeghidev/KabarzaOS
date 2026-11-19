@@ -98,7 +98,7 @@ export function PushPanel() {
   const message = MESSAGES[state];
   return (
     <Panel title={tr('اعلان روی این دستگاه')}>
-      <div className="grid gap-3">
+      <div className="grid gap-3" data-tour="profile-push">
         <p className="text-sm text-muted-foreground">
           {tr('اعلان‌های برنامه روی همین گوشی یا کامپیوتر هم می‌آیند، حتی وقتی برنامه بسته است. هر دستگاه جدا روشن می‌شود.')}
         </p>

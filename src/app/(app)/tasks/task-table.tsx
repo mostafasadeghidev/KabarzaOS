@@ -84,6 +84,7 @@ export function TaskTable({
       {filterable && (
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput
+            data-tour="tasks-inbox-search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={tr('جستجو در تسک‌ها…')}
@@ -123,6 +124,7 @@ export function TaskTable({
               <div
                 role="button"
                 tabIndex={0}
+                data-tour="tasks-inbox-row"
                 onClick={() => setOpenTask(task.id)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenTask(task.id); } }}
                 className="grid cursor-pointer gap-2 rounded-xl border bg-card p-3 text-sm outline-none transition-colors hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50"
@@ -164,7 +166,7 @@ export function TaskTable({
                 </div>
 
                 {task.claimable && (
-                  <div onClick={(e) => e.stopPropagation()}>
+                  <div data-tour="tasks-inbox-claim" onClick={(e) => e.stopPropagation()}>
                     <ClaimTaskButton taskId={task.id} projectId={task.projectId} />
                   </div>
                 )}
@@ -196,6 +198,7 @@ export function TaskTable({
                */
               <TableRow
                 key={task.id}
+                data-tour="tasks-inbox-row"
                 onClick={() => setOpenTask(task.id)}
                 className="cursor-pointer"
               >
@@ -256,7 +259,7 @@ export function TaskTable({
                 <TableDateCell className="text-muted-foreground">{task.dueDate ?? '—'}</TableDateCell>
 
                 <TableActionsCell onClick={(e) => e.stopPropagation()}>
-                  {task.claimable && <ClaimTaskButton taskId={task.id} projectId={task.projectId} />}
+                  {task.claimable && <span data-tour="tasks-inbox-claim"><ClaimTaskButton taskId={task.id} projectId={task.projectId} /></span>}
                 </TableActionsCell>
               </TableRow>
             ))}

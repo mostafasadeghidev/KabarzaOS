@@ -27,7 +27,7 @@ function SubmitButton() {
   const tr = useT();
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" disabled={pending} data-tour="tasks-quick-submit">
       <Plus className="size-4" />
       {pending ? <><Spinner />{tr('در حالِ ثبت…')}</> : tr('ثبتِ تسک')}
     </Button>
@@ -97,6 +97,7 @@ export function QuickTaskForm({
     <div className="grid gap-4 @3xl/main:grid-cols-[minmax(0,32rem)_minmax(0,20rem)]">
       <form
         action={formAction}
+        data-tour="tasks-quick-form"
         className="grid gap-3 rounded-xl border bg-card p-4"
         onSubmit={() => {
           lastSubmit.current = {
@@ -108,7 +109,7 @@ export function QuickTaskForm({
       >
         <input type="hidden" name="projectId" value={project.id ?? ''} />
 
-        <Field>
+        <Field data-tour="tasks-quick-project">
           <FieldLabel htmlFor="q-project">{t("پروژه")}</FieldLabel>
           <Combobox
             id="q-project"
@@ -119,7 +120,7 @@ export function QuickTaskForm({
           />
         </Field>
 
-        <Field>
+        <Field data-tour="tasks-quick-title">
           <FieldLabel htmlFor="q-title">{t("عنوانِ تسک")}</FieldLabel>
           <Input
             id="q-title"
@@ -137,7 +138,7 @@ export function QuickTaskForm({
         {/* ⚠️ تا پروژه انتخاب نشده، گزینه‌ای برای نشان‌دادن نیست. */}
         {project.id !== null && (
           <>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div data-tour="tasks-quick-details" className="grid gap-3 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="q-assignee">{t("مسئول")}</FieldLabel>
                 <SearchableSelect

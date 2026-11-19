@@ -262,7 +262,7 @@ export function LedgerView({
           ⚠️ حسابِ فعلی بزرگ و جلوی چشم (۲.۴۵.۰) — پیش از این فقط متنِ داخلِ یک
           فهرستِ کشویی بود و ردیف در حسابی ثبت می‌شد که کاربر حواسش به آن نبود.
         */}
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+        <div data-tour="finance-ledger-account" className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
           <div className="grid min-w-0">
             <span className="text-xs text-muted-foreground">{tr('حسابِ فعلی')}</span>
             <span className="flex min-w-0 items-center gap-2">
@@ -287,11 +287,11 @@ export function LedgerView({
 
         {canManage && (
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setTransferOpen(true)}>
+            <Button data-tour="finance-transfer-open" size="sm" variant="outline" onClick={() => setTransferOpen(true)}>
               <ArrowLeftRight className="size-4" />
               {tr("انتقال")}
             </Button>
-            <Button size="sm" onClick={() => { setEditing(null); setFormOpen(true); }}>
+            <Button data-tour="finance-entry-add" size="sm" onClick={() => { setEditing(null); setFormOpen(true); }}>
               <Plus className="size-4" />
               {tr("ثبت ردیف جدید")}
             </Button>
@@ -345,7 +345,7 @@ export function LedgerView({
       )}
 
       {/* ⚠️ پنج ستون فقط وقتی جا هست — رقمِ پولی در ستونِ باریک از کارت بیرون می‌زد. */}
-      <div className="grid gap-4 @xl/main:grid-cols-3 @4xl/main:grid-cols-5">
+      <div data-tour="finance-ledger-cards" className="grid gap-4 @xl/main:grid-cols-3 @4xl/main:grid-cols-5">
         {cards.map((c) => (
           <StatCard
             key={c.label}
@@ -369,7 +369,7 @@ export function LedgerView({
       {entries.length === 0 ? (
         <EmptyState title={t("ردیفی ثبت نشده")} />
       ) : (
-        <Table stack>
+        <Table data-tour="finance-ledger-table" stack>
           <TableHeader>
             <TableRow>
               <TableHead numeric>#</TableHead>
@@ -391,7 +391,7 @@ export function LedgerView({
               <TableRow key={e.id}>
                 {/* # و تاریخ جزئیاتِ ردیف را باز می‌کنند (پورتِ کلیک روی #/تاریخ). */}
                 <TableNumericCell className="text-muted-foreground">
-                  <button type="button" className="underline-offset-2 hover:underline" onClick={() => setDetail(e)}>
+                  <button data-tour="finance-entry-open" type="button" className="underline-offset-2 hover:underline" onClick={() => setDetail(e)}>
                     {rowNumber(i)}
                   </button>
                 </TableNumericCell>
@@ -508,7 +508,7 @@ export function LedgerView({
 
       {/* ---- فرمِ ردیف ---- */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent data-tour="finance-entry-dialog" className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex flex-wrap items-center gap-2">
               {editing ? tr('ویرایش ردیف در حسابِ') : tr('ثبت ردیف جدید در حسابِ')}
@@ -556,7 +556,7 @@ export function LedgerView({
           </DialogHeader>
 
           <form action={transferFormAction} className="grid gap-3">
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div data-tour="finance-transfer-fields" className="grid gap-3 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="t-from">{t("از حساب")}</FieldLabel>
                 <SearchableSelect id="t-from" name="fromAccountId" containerClassName="w-full" defaultValue={accountId}>
@@ -596,7 +596,7 @@ export function LedgerView({
             </div>
 
             {/* رسیدِ انتقال (یک فایل) — روی هر دو لِگ می‌نشیند (پورتِ فیلدِ رسیدِ فرمِ انتقال). */}
-            <Field>
+            <Field data-tour="finance-transfer-receipt">
               <FieldLabel htmlFor="t-receipt" className="flex items-center gap-1.5">
                 <Paperclip className="size-3.5" />
                 {t("رسید")}
@@ -616,7 +616,7 @@ export function LedgerView({
               </Alert>
             )}
 
-            <DialogFooter>
+            <DialogFooter data-tour="finance-transfer-submit">
               <Button type="button" variant="outline" onClick={() => setTransferOpen(false)}>{t("انصراف")}</Button>
               <SubmitButton label={t("ثبتِ انتقال")} />
             </DialogFooter>

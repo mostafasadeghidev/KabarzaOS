@@ -88,12 +88,12 @@ export function PeopleGrid({
         <div className="flex gap-1">
           {section.supportsOffboarding && (
             <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-              <TabsList>
-                <TabsTrigger value="active" className="flex-none px-3">
+              <TabsList data-tour="members-tabs">
+                <TabsTrigger value="active" className="flex-none px-3" data-tour="members-tab-active">
                   {section.role === 'member' ? t('اعضای فعال') : t('فعال')}
                   <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{counts.active}</Badge>
                 </TabsTrigger>
-                <TabsTrigger value="former" className="flex-none px-3">
+                <TabsTrigger value="former" className="flex-none px-3" data-tour="members-tab-former">
                   {section.role === 'member' ? t('اعضای سابق') : t('سابق')}
                   <Badge variant="secondary" className="num px-1.5 py-0 text-[10px]">{counts.former}</Badge>
                 </TabsTrigger>
@@ -105,7 +105,7 @@ export function PeopleGrid({
         {/* دکمهٔ اصلیِ صفحه در نوارِ بالا (۲.۳۸.۰). */}
         {canManage && (
           <HeaderAction>
-            <Button size="sm" onClick={openAdd}>
+            <Button size="sm" onClick={openAdd} data-tour="people-add">
               <Plus className="size-4" />
               {t(section.addLabel)}
             </Button>
@@ -113,7 +113,7 @@ export function PeopleGrid({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2" data-tour="people-filters">
         <SearchInput
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -139,7 +139,7 @@ export function PeopleGrid({
           description={query || officeIds.length > 0 ? t('فیلترها را بردارید.') : undefined}
         />
       ) : (
-        <div className="grid gap-3 @3xl/main:grid-cols-3 @xl/main:grid-cols-2">
+        <div className="grid gap-3 @3xl/main:grid-cols-3 @xl/main:grid-cols-2" data-tour="people-grid">
           {pager.slice.map((p) => (
             <PersonCard
               key={p.id}

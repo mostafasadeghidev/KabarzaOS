@@ -29,7 +29,7 @@ export interface OverflowTabItem {
  *  · پیش از سنجش (رندرِ سرور) همهٔ تب‌ها کشیده می‌شوند و قاب سرریز را می‌بُرد.
  */
 export function OverflowTabs({
-  items, value, onValueChange, variant = 'default', className, renderCount,
+  items, value, onValueChange, variant = 'default', className, renderCount, tour,
 }: {
   items: OverflowTabItem[];
   value: string;
@@ -38,6 +38,12 @@ export function OverflowTabs({
   className?: string;
   /** شکلِ عددِ کنارِ تب (Badge، متنِ کم‌رنگ…)؛ پیش‌فرض متنِ کوچک. */
   renderCount?: (count: number, active: boolean) => React.ReactNode;
+  /**
+   * راهنمای تعاملی (۳.۱۹.۰): پیشوندِ برچسبِ هر تب — `tour="project-tab"` ← `data-tour="project-tab-tasks"`.
+   * تبی که زیرِ «بیشتر» رفته روی خودِ آیتمِ منو همان برچسب را دارد، و دکمهٔ «بیشتر» با `data-tour-holds`
+   * می‌گوید چه تب‌هایی در خود دارد؛ موتور اول آن را روشن می‌کند و پس از باز شدنِ منو، خودِ تب را.
+   */
+  tour?: string;
 }) {
   const t = useT();
   const wrap = React.useRef<HTMLDivElement>(null);
@@ -120,7 +126,7 @@ export function OverflowTabs({
       <Tabs value={value} onValueChange={onValueChange} className={measured ? undefined : 'invisible'}>
         <TabsList variant={variant} className="w-max max-w-full">
           {shown.map((item) => (
-            <TabsTrigger key={item.value} value={item.value} className="flex-none px-3">
+            <TabsTrigger key={item.value} value={item.value} className="flex-none px-3" data-tour={tour ? `${tour}-${item.value}` : undefined}>
               {item.label}
               {count(item, item.value === value)}
             </TabsTrigger>
@@ -128,14 +134,20 @@ export function OverflowTabs({
           {hidden.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" className={moreClass} aria-label={t('تب‌های بیشتر')}>
+                <button
+                  type="button"
+                  className={moreClass}
+                  aria-label={t('تب‌های بیشتر')}
+                  data-tour={tour ? `${tour}-more` : undefined}
+                  data-tour-holds={tour ? hidden.map((i) => `${tour}-${i.value}`).join(' ') : undefined}
+                >
                   {t('بیشتر')}
                   <ChevronDown className="size-3.5" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-48">
                 {hidden.map((item) => (
-                  <DropdownMenuItem key={item.value} onSelect={() => onValueChange(item.value)}>
+                  <DropdownMenuItem key={item.value} onSelect={() => onValueChange(item.value)} data-tour={tour ? `${tour}-${item.value}` : undefined}>
                     {item.value === value ? <Check className="size-3.5" /> : <span className="size-3.5" />}
                     <span className="flex-1">{item.label}</span>
                     {item.count !== undefined && <span className="num text-xs text-muted-foreground">{item.count}</span>}

@@ -78,7 +78,7 @@ export default async function ClientReportPage({ params }: { params: Promise<{ i
         </Alert>
       )}
 
-      <div className="grid gap-4 @xl/main:grid-cols-3">
+      <div data-tour="reports-client-cards" className="grid gap-4 @xl/main:grid-cols-3">
         {cards.map((c) => (
           <StatCard key={c.label} label={t(c.label)} value={c.value} tone={c.warn ? 'warning' : 'default'} />
         ))}

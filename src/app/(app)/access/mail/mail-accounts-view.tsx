@@ -110,13 +110,13 @@ export function MailAccountsView({ data, createFor = null }: {
         <p className="flex-1 text-sm text-muted-foreground">
           {tr('{n} صندوق روی سرور · {m} وصل به عضو', { n: data.accounts.length, m: linked })}
         </p>
-        <Button size="sm" onClick={() => setCreating(true)}>
+        <Button size="sm" onClick={() => setCreating(true)} data-tour="access-mail-new">
           <MailPlus className="size-4" />
           {tr('صندوقِ تازه')}
         </Button>
       </div>
 
-      <Table stack>
+      <Table stack data-tour="access-mail-table">
         <TableHeader>
           <TableRow>
             <TableHead>{tr('نشانی')}</TableHead>

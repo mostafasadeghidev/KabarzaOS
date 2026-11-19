@@ -137,14 +137,14 @@ export function MemberAccountsView({
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tr('جستجوی عضو')} />
           {canManage && (
-            <Button size="sm" onClick={() => setForm({ userId: null, kind: 'loan' })}>
+            <Button data-tour="finance-balances-add" size="sm" onClick={() => setForm({ userId: null, kind: 'loan' })}>
               <Plus className="size-3.5" />{tr('ثبتِ جدید')}
             </Button>
           )}
         </div>
       )}
     >
-      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+      <div data-tour="finance-balances-totals" className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
         <span className="text-muted-foreground">{tr('جمعِ بدهی‌ها:')}</span>
         {totals.debt.filter(([, v]) => Math.abs(v) > 0.005).length === 0
           ? <span>—</span>
@@ -171,7 +171,7 @@ export function MemberAccountsView({
           description={tr('قرض، هدیه یا هزینه‌ای که برای عضوی پرداخت کنید اینجا می‌آید.')}
         />
       ) : (
-        <Table>
+        <Table data-tour="finance-balances-table">
           <TableHeader>
             <TableRow>
               <TableHead>{tr('عضو')}</TableHead>
@@ -204,7 +204,7 @@ export function MemberAccountsView({
                 <TableDateCell>{p.lines[0]?.entryDate ?? '—'}</TableDateCell>
                 <TableActionsCell>
                   {p.lines.length > 0 && (
-                    <Button size="sm" variant="outline" onClick={() => setViewing(p.userId)}>
+                    <Button data-tour="finance-balances-view" size="sm" variant="outline" onClick={() => setViewing(p.userId)}>
                       <Eye className="size-3.5" />{tr('ریز')}
                     </Button>
                   )}
@@ -241,7 +241,7 @@ export function MemberAccountsView({
                 </DialogDescription>
               </DialogHeader>
               {canManage && person.active && (
-                <div className="flex flex-wrap gap-1.5">
+                <div data-tour="finance-balances-kinds" className="flex flex-wrap gap-1.5">
                   {KINDS.map((k) => (
                     <Button
                       key={k}
@@ -307,7 +307,7 @@ export function MemberAccountsView({
 
       {/* ---- فرمِ ثبت ---- */}
       <Dialog open={form !== null} onOpenChange={(open) => { if (!open) setForm(null); }}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+        <DialogContent data-tour="finance-balances-form" className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
           {form && (
             <EntryForm
               key={`${form.userId ?? 'new'}-${form.kind}`}
@@ -359,7 +359,7 @@ function EntryForm({
       </DialogHeader>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field>
+        <Field data-tour="finance-balances-kind">
           <FieldLabel htmlFor="ma-kind">{tr('نوع')}</FieldLabel>
           <NativeSelect id="ma-kind" name="kind" containerClassName="w-full" value={kind} onChange={(e) => setKind(e.target.value as MemberAccountKind)}>
             {KINDS.map((k) => <NativeSelectOption key={k} value={k}>{tr(MEMBER_ACCOUNT_LABELS[k])}</NativeSelectOption>)}
@@ -459,8 +459,8 @@ function EntryForm({
         </Alert>
       )}
 
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel}>{tr('انصراف')}</Button>
+      <DialogFooter data-tour="finance-balances-submit">
+        <Button data-tour="finance-balances-cancel" type="button" variant="outline" onClick={onCancel}>{tr('انصراف')}</Button>
         <Submit label={tr('ثبت')} />
       </DialogFooter>
     </form>

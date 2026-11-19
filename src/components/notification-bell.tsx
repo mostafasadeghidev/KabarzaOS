@@ -132,6 +132,7 @@ export function NotificationBell({
     <>
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
+        data-tour="topbar-notifications"
         className="relative rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
         aria-label={shown > 0 ? t('اعلان‌ها ({n} خوانده‌نشده)', { n: shown }) : t('اعلان‌ها')}
       >
@@ -143,7 +144,7 @@ export function NotificationBell({
         )}
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="max-h-96 w-80 overflow-y-auto">
+      <DropdownMenuContent align="end" className="max-h-96 w-80 overflow-y-auto" data-tour="topbar-notifications-menu">
         <DropdownMenuLabel className="flex items-center justify-between">
           {t('اعلان‌ها')}
           {unread > 0 && (
@@ -211,7 +212,7 @@ export function NotificationBell({
           زنگولهٔ نسخهٔ قبلی به `view=notifications`).
         */}
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="justify-center text-xs text-muted-foreground">
+        <DropdownMenuItem asChild className="justify-center text-xs text-muted-foreground" data-tour="topbar-notifications-all">
           <Link href="/notifications">{t('همهٔ اعلان‌ها')}</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

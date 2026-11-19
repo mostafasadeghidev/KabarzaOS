@@ -213,7 +213,7 @@ export function AccessView({ data, focusUser, mailAccounts = false, cloudAccount
         off-boarding نیمه‌تمام است.
       */}
       {data.risks.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm" data-tour="access-risks">
           <ShieldAlert className="size-4 shrink-0 text-destructive" />
           <p className="flex-1">
             {tr('{people} عضوِ سابق هنوز دسترسیِ باز دارد — مجموعاً {grants} مورد.', {
@@ -241,19 +241,19 @@ export function AccessView({ data, focusUser, mailAccounts = false, cloudAccount
         {/* همان نوارِ تبِ صفحه‌های دیگر: پیمایشِ افقی، دکمه‌های بی‌کش. */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1.5">
           <TabsList variant="line" className="w-max">
-            <TabsTrigger value="grants" className="flex-none">{tr("دسترسی‌ها")}</TabsTrigger>
-            <TabsTrigger value="services" className="flex-none">{tr("سرویس‌ها")}</TabsTrigger>
+            <TabsTrigger value="grants" className="flex-none" data-tour="access-tab-grants">{tr("دسترسی‌ها")}</TabsTrigger>
+            <TabsTrigger value="services" className="flex-none" data-tour="access-tab-services">{tr("سرویس‌ها")}</TabsTrigger>
           </TabsList>
           {/* صفحهٔ جدا — هر بار از سرورِ ایمیل می‌خواند. */}
           {(mailAccounts || cloudAccounts) && (
             <div className="ms-auto flex flex-none gap-1">
               {mailAccounts && (
-                <Button size="sm" variant="ghost" asChild className="flex-none">
+                <Button size="sm" variant="ghost" asChild className="flex-none" data-tour="access-mail-link">
                   <Link href="/access/mail"><Mail className="size-4" />{tr("حساب‌های ایمیل")}</Link>
                 </Button>
               )}
               {cloudAccounts && (
-                <Button size="sm" variant="ghost" asChild className="flex-none">
+                <Button size="sm" variant="ghost" asChild className="flex-none" data-tour="access-cloud-link">
                   <Link href="/access/cloud"><Cloud className="size-4" />{tr("فضای ابری")}</Link>
                 </Button>
               )}
@@ -264,7 +264,7 @@ export function AccessView({ data, focusUser, mailAccounts = false, cloudAccount
 
       {tab === 'grants' && (
         <section className="grid gap-3">
-          <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2" data-tour="access-filters">
             <Field>
               <FieldLabel htmlFor="f-person" className="text-xs text-muted-foreground">{tr("شخص")}</FieldLabel>
               <SearchableSelect
@@ -323,7 +323,7 @@ export function AccessView({ data, focusUser, mailAccounts = false, cloudAccount
             </label>
 
             <div className="ms-auto flex items-center gap-2">
-              <Button size="sm" variant="outline" asChild>
+              <Button size="sm" variant="outline" asChild data-tour="access-export">
                 {/* دانلودِ مستقیم؛ نه اکشنِ سرور — فایل از همان مسیرِ گاردشده می‌آید. */}
                 <a href={exportHref} download>
                   <Download className="size-4" />
@@ -333,7 +333,7 @@ export function AccessView({ data, focusUser, mailAccounts = false, cloudAccount
               {/* دکمهٔ اصلیِ صفحه در نوارِ بالا (۲.۳۸.۰)؛ خروجی کنارِ فیلترها می‌ماند. */}
               {data.canManage && (
                 <HeaderAction>
-                  <Button size="sm" onClick={() => openGrant(null)}>
+                  <Button size="sm" onClick={() => openGrant(null)} data-tour="access-add">
                     <Plus className="size-4" />
                     {tr("ثبتِ دسترسی")}
                   </Button>
@@ -349,7 +349,7 @@ export function AccessView({ data, focusUser, mailAccounts = false, cloudAccount
               icon={<KeyRound className="size-5" />}
             />
           ) : (
-            <Table stack>
+            <Table stack data-tour="access-table">
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr("شخص")}</TableHead>
@@ -718,7 +718,7 @@ function GrantDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg" data-tour="access-grant-dialog">
         <DialogHeader>
           <DialogTitle>{editing ? tr('ویرایشِ دسترسی') : tr('ثبتِ دسترسی')}</DialogTitle>
           <DialogDescription className="flex items-start gap-1.5">
@@ -734,7 +734,7 @@ function GrantDialog({
           className="grid gap-3 sm:grid-cols-2"
         >
           {editing && <input type="hidden" name="grantId" value={editing.id} />}
-          <Field>
+          <Field data-tour="access-grant-service">
             <FieldLabel htmlFor="g-service">{tr("سرویس")}</FieldLabel>
             <SearchableSelect
               id="g-service"
@@ -751,7 +751,7 @@ function GrantDialog({
             </SearchableSelect>
           </Field>
 
-          <Field>
+          <Field data-tour="access-grant-person">
             <FieldLabel htmlFor="g-user">{tr("شخص")}</FieldLabel>
             <SearchableSelect
               id="g-user"
@@ -768,7 +768,7 @@ function GrantDialog({
             </SearchableSelect>
           </Field>
 
-          <Field>
+          <Field data-tour="access-grant-level">
             <FieldLabel htmlFor="g-level">{tr("سطحِ دسترسی")}</FieldLabel>
             <NativeSelect id="g-level" name="level" defaultValue={editing?.level ?? 'member'}>
               {GRANT_LEVELS.map((l) => (
@@ -777,7 +777,7 @@ function GrantDialog({
             </NativeSelect>
           </Field>
 
-          <Field>
+          <Field data-tour="access-grant-account">
             <FieldLabel htmlFor="g-account">{tr("شناسهٔ حساب")}</FieldLabel>
             <Input
               id="g-account"
@@ -788,7 +788,7 @@ function GrantDialog({
             />
           </Field>
 
-          <Field className="sm:col-span-2">
+          <Field className="sm:col-span-2" data-tour="access-grant-secret">
             <FieldLabel htmlFor="g-secret">{tr("رمزِ حساب")}</FieldLabel>
             <PasswordInput
               id="g-secret"
@@ -812,7 +812,7 @@ function GrantDialog({
           </Field>
 
           <DialogFooter className="sm:col-span-2">
-            <Button type="button" size="sm" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" size="sm" variant="outline" onClick={() => onOpenChange(false)} data-tour="access-grant-cancel">
               {tr("انصراف")}
             </Button>
             <SaveButton />

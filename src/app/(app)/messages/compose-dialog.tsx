@@ -157,7 +157,7 @@ function ComposeDialogBody({
 
         <form action={formAction} className="grid gap-4">
           {canBroadcast && (
-            <FieldSet>
+            <FieldSet data-tour="messages-compose-audience">
               <FieldLegend variant="label">{tr('به چه کسانی؟')}</FieldLegend>
               <RadioGroup
                 value={mode}
@@ -207,7 +207,7 @@ function ComposeDialogBody({
           )}
 
           {mode === 'pick' && (
-            <FieldSet variant="box">
+            <FieldSet variant="box" data-tour="messages-compose-recipients">
               <FieldLegend>{tr('گیرندگان')}</FieldLegend>
 
               <div className="grid gap-2 sm:grid-cols-2">
@@ -324,7 +324,7 @@ function ComposeDialogBody({
             </FieldSet>
           )}
 
-          <Field>
+          <Field data-tour="messages-compose-body">
             <FieldLabel htmlFor="msg-body">{tr('متن پیام')}</FieldLabel>
             <Textarea
               id="msg-body" name="body" rows={4} required

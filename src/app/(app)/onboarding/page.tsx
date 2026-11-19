@@ -65,7 +65,7 @@ export default async function OnboardingPage() {
         title={t('آنبوردینگ')}
         description={t('کارهای روزهای اولِ اعضای تازه — از کتابخانهٔ هر نقش ساخته می‌شود.')}
         actions={canEditLibrary && (
-          <Button asChild size="sm" variant="outline"><Link href="/settings?tab=onboarding">{t('ویرایشِ کتابخانه')}</Link></Button>
+          <Button asChild size="sm" variant="outline" data-tour="onboarding-library"><Link href="/settings?tab=onboarding">{t('ویرایشِ کتابخانه')}</Link></Button>
         )}
       />
 
@@ -79,7 +79,7 @@ export default async function OnboardingPage() {
         {data.people.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('هنوز آنبوردینگی شروع نشده.')}</p>
         ) : (
-          <Table frame={false}>
+          <Table frame={false} data-tour="onboarding-people">
             <TableHeader>
               <TableRow>
                 <TableHead>{t('عضو')}</TableHead>

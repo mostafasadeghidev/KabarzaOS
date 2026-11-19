@@ -162,7 +162,7 @@ export default async function TeamMemberPage({
       />
 
       {/* پورتِ کارت‌های آمار. */}
-      <div className="grid gap-4 @md/main:grid-cols-2 @xl/main:grid-cols-4">
+      <div className="grid gap-4 @md/main:grid-cols-2 @xl/main:grid-cols-4" data-tour="team-member-stats">
         {stats.map((c) => (
           <StatCard key={c.label} label={t(c.label)} value={c.value} href={c.href} />
         ))}
@@ -173,7 +173,7 @@ export default async function TeamMemberPage({
         {data.openProjects.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("پروژهٔ بازی ندارد.")}</p>
         ) : (
-          <Table>
+          <Table data-tour="team-member-projects">
             <TableHeader>
               <TableRow>
                 <TableHead>{t("پروژه")}</TableHead>
@@ -207,7 +207,7 @@ export default async function TeamMemberPage({
         {data.hoursAllTime.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("هنوز ساعتی ثبت نشده.")}</p>
         ) : (
-          <Table>
+          <Table data-tour="team-member-hours">
             <TableHeader>
               <TableRow>
                 <TableHead>{t("پروژه")}</TableHead>

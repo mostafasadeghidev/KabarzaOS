@@ -69,7 +69,7 @@ export function ReceiptPicker({
   }, [files, multiple]);
 
   return (
-    <FieldSet variant="box">
+    <FieldSet data-tour="finance-receipt" variant="box">
       <FieldLabel htmlFor={inputId} className="flex items-center gap-1.5">
         <Paperclip className="size-3.5" />
         {multiple ? tr('رسیدها') : tr('رسید')}

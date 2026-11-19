@@ -172,7 +172,7 @@ export function BootstrapSections({
 
       <div className={only === "team" ? "grid gap-5" : "hidden"}>
       {/* ------------------------------------------------ اعضا */}
-      <section className="grid gap-2">
+      <section className="grid gap-2" data-tour="project-form-members">
         <SectionTitle hint={tr("نقش، نوعِ دستمزد (قراردادی یا تعدادی) و مبلغ یا نرخِ هر عضو. مبلغ خالی یعنی صفر.")}>{tr("اعضا")}</SectionTitle>
 
         {members.map((row, i) => (
@@ -308,7 +308,7 @@ export function BootstrapSections({
       </section>
 
       {/* ------------------------------------------------ کارفرما */}
-      <section className="grid gap-2">
+      <section className="grid gap-2" data-tour="project-form-clients">
         <SectionTitle hint={tr("کارفرمای نخست، مخاطبِ تسک‌هایی است که به «کارفرما» سپرده می‌شوند.")}>
           {tr("کارفرمایان")}
         </SectionTitle>
@@ -325,7 +325,7 @@ export function BootstrapSections({
 
       <div className={only === "tasks" ? "grid gap-5" : "hidden"}>
       {/* ------------------------------------------------ تسک‌های اولیه */}
-      <section className="grid gap-2">
+      <section className="grid gap-2" data-tour="project-form-tasks">
         <SectionTitle hint={tr("به یک یا چند نقش سپرده می‌شوند، نه به یک فرد.")}>
           {tr("تسک‌های اولیه")}
         </SectionTitle>
@@ -426,7 +426,7 @@ export function BootstrapSections({
       <div className={only === "qa" ? "grid gap-5" : "hidden"}>
       {/* ------------------------------------------------ چک‌لیستِ QA */}
       {options.hasQaLibrary && (
-        <section className="grid gap-2">
+        <section className="grid gap-2" data-tour="project-form-qa">
           <SectionTitle hint={tr("آیتم‌های کتابخانهٔ QA برای نقش‌های انتخاب‌شده کپی می‌شوند.")}>
             {tr("چک‌لیستِ کیفیت")}
           </SectionTitle>
@@ -478,7 +478,7 @@ export function BootstrapSections({
 
       <div className={only === "files" ? "grid gap-5" : "hidden"}>
       {/* ------------------------------------------------ فایل‌های محلی */}
-      <section className="grid gap-2">
+      <section className="grid gap-2" data-tour="project-form-files">
         <SectionTitle hint={tr("پس از ساختِ پروژه آپلود می‌شوند.")}>
           {tr("فایل‌های پروژه")}
         </SectionTitle>
@@ -492,7 +492,7 @@ export function BootstrapSections({
       </section>
 
       {/* ------------------------------------------------ لینک‌ها */}
-      <section className="grid gap-2">
+      <section className="grid gap-2" data-tour="project-form-links">
         <SectionTitle hint={tr("فایل روی سرور آورده نمی‌شود؛ فقط نشانی ذخیره می‌شود.")}>
           {tr("لینک‌های بیرونی")}
         </SectionTitle>

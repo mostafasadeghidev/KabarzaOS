@@ -43,6 +43,7 @@ export function CompanySection({ company, isOwner }: {
         */}
         <Panel title={tr('لوگوی شرکت')}>
           <form
+            data-tour="settings-company-logo"
             action={async (fd) => { setLogoState(await setCompanyLogoAction(fd)); }}
             className="flex flex-wrap items-center gap-3"
           >
@@ -75,7 +76,7 @@ export function CompanySection({ company, isOwner }: {
         </Panel>
 
       <Panel title={tr('مشخصاتِ شرکت')} description={tr("این مشخصات روی فاکتورها چاپ می‌شود.")}>
-        <form action={saveCompany} className="grid gap-3">
+        <form data-tour="settings-company-form" action={saveCompany} className="grid gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <Field>
               <FieldLabel htmlFor="c-name">{tr("نامِ شرکت")}</FieldLabel>

@@ -85,7 +85,7 @@ export function ActivityView({
         <EmptyState title={filtered ? tr("رویدادی با این فیلتر پیدا نشد") : tr("رویدادی ثبت نشده")} />
       ) : (
           // ۳.۱۵.۱ — روی گوشی هر رویداد یک کارت.
-          <Table stack>
+          <Table data-tour="activity-table" stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("رویداد")}</TableHead>
@@ -103,6 +103,7 @@ export function ActivityView({
               {events.map((e) => (
                 <TableRow
                   key={e.id}
+                  data-tour="activity-row"
                   role="button"
                   tabIndex={0}
                   aria-label={tr('جزئیاتِ رویداد')}

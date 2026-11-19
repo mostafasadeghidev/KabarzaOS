@@ -159,7 +159,7 @@ export function McpPanel({ tokens, grants, endpoint, bot }: {
   const current = list.find((g) => g.key === guide) ?? list[0];
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4" data-tour="profile-mcp">
       <Panel title={tr('دستیارِ هوشِ مصنوعی')}>
         <p className="flex items-start gap-2 text-sm text-muted-foreground">
           <Bot className="mt-0.5 size-4 shrink-0" aria-hidden />

@@ -46,7 +46,7 @@ export function AccountPicker({ accounts, onPick }: {
           {t('ردیف‌های تازه در همین حساب ثبت می‌شوند. بعداً از بالای دفترکل عوضش کنید.')}
         </p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div data-tour="finance-account-picker" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {sorted.map((a) => {
           const Icon = a.type === 'personal' ? Wallet : Landmark;
           return (

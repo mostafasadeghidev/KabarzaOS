@@ -282,6 +282,8 @@ export default async function ProjectDetailPage({
 
   return (
     <PageShell>
+      {/* data-tour: قابِ سرصفحه برای راهنمای تعاملی — PageHeader خودش ویژگیِ اضافه نمی‌گیرد. */}
+      <div data-tour="project-header">
       <PageHeader
         back={{ href: '/projects', label: t("پروژه‌ها") }}
         title={project.title}
@@ -303,6 +305,7 @@ export default async function ProjectDetailPage({
             <Hint label={t('کدِ پروژه — تسک‌ها بیرون از پروژه با این کد نوشته می‌شوند (مثلاً {example}).', { example: `${projectCodeOf(project)}-12` })}>
               <span
                 dir="ltr"
+                data-tour="project-code"
                 className="num inline-flex h-8 items-center rounded-md border bg-muted/50 px-2 font-mono text-xs text-muted-foreground"
               >
                 {projectCodeOf(project)}
@@ -369,6 +372,7 @@ export default async function ProjectDetailPage({
         {project.scope === 'private' && <Badge variant="warning">{t("خصوصی")}</Badge>}
         {project.isArchived && <Badge variant="secondary">{t("بایگانی‌شده")}</Badge>}
       </PageHeader>
+      </div>
 
       {/* پورتِ نوارِ فقط‌خواندنیِ پروژهٔ منجمد (بایگانی / لغو / توقف). */}
       {detail.isFrozen && (
@@ -389,13 +393,13 @@ export default async function ProjectDetailPage({
         «تسکِ باز» و «کامنتِ باز» حالا پیوندِ مستقیم به تبِ خودشان‌اند.
         ⚠️ قیمتِ پروژه عمداً اینجا نیست؛ جایش تبِ مالی است.
       */}
-      <div className="flex flex-wrap overflow-hidden rounded-xl border bg-card text-sm">
+      <div className="flex flex-wrap overflow-hidden rounded-xl border bg-card text-sm" data-tour="project-facts">
         <Fact label={t("تاریخ ثبت")}><span className="num">{project.regDate ?? '—'}</span></Fact>
         <Fact label={t("ددلاین")}>
           <span className="num">{project.deadline ?? '—'}</span>
           {deadlineHint && <span className="ms-1 text-xs font-normal text-muted-foreground">({deadlineHint})</span>}
         </Fact>
-        <Fact label={t("درصد پیشرفت")}>
+        <Fact label={t("درصد پیشرفت")} data-tour="project-progress">
           <span className="num">{percent}%</span>
           <span className="ms-1 text-xs font-normal text-muted-foreground tabular-nums">
             ({detail.meta.doneTasks}/{detail.meta.totalTasks})
@@ -532,18 +536,21 @@ export default async function ProjectDetailPage({
             */}
             {(project.liveUrl || project.testUrl)
               && canSeeSiteLinks({ clientOnly, urlsClientVisible: project.urlsClientVisible }) && (
+              <div data-tour="project-info-site">
               <Panel title={t("سایتِ پروژه")}>
                 <SiteLinksBody liveUrl={project.liveUrl} testUrl={project.testUrl} />
               </Panel>
+              </div>
             )}
             {/* کارکردهای پروژهٔ تعدادی — نامِ یکتا، ساعت، مبلغ و پرداخت (۲.۲۱.۰). */}
-            {unitData && <UnitEntriesSection data={unitData} />}
+            {unitData && <div data-tour="project-info-units"><UnitEntriesSection data={unitData} /></div>}
             {/* ⚠️ `Panel`: دکمهٔ «مدیریتِ اعضا» در نوارِ عنوان، نه زیرِ آن (`CardHeader` grid بود و `flex-row` بی‌اثر). */}
             {/*
               ⚠️ فهرستِ تیم فقط برای مدیرِ پروژه — نسخهٔ قبلی تبِ «تیم» را فقط با
               `$can_manage` می‌ساخت (D#84). عضو و کارفرما کارِ خودشان را در تسک‌ها دارند.
             */}
             {canManage && (
+            <div data-tour="project-info-members">
             <Panel title={t("اعضای پروژه")} actions={membersForm && <MembersDialog data={membersForm} />}>
               {members.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("عضوی ثبت نشده")}</p>
@@ -616,9 +623,11 @@ export default async function ProjectDetailPage({
                 </Table>
               )}
             </Panel>
+            </div>
             )}
 
             {/* کارفرمایان — پورتِ چیپ‌های کارفرما؛ اولی «کارفرمای اصلی» (قدیمی‌ترین انتساب). */}
+            <div data-tour="project-info-clients">
             <Panel title={t("کارفرمایان")} actions={clientsForm && <ClientsDialog data={clientsForm} />}>
               {detail.clients.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("کارفرمایی ثبت نشده")}</p>
@@ -635,6 +644,7 @@ export default async function ProjectDetailPage({
                 </ul>
               )}
             </Panel>
+            </div>
           </div>
         }
       />
@@ -648,7 +658,8 @@ export default async function ProjectDetailPage({
  * ⚠️ خطِ جداکننده با `border-s` روی هر خانه جز اولی، تا در راست‌به‌چپ و
  * چپ‌به‌راست هر دو درست بنشیند.
  */
-function Fact({ label, href, children }: { label: string; href?: string; children: React.ReactNode }) {
+// `data-tour` فقط برای راهنمای تعاملی به عنصرِ بیرونی می‌رسد.
+function Fact({ label, href, children, 'data-tour': tour }: { label: string; href?: string; children: React.ReactNode; 'data-tour'?: string }) {
   const body = (
     <>
       <span className="text-xs text-muted-foreground">{label}</span>
@@ -657,9 +668,9 @@ function Fact({ label, href, children }: { label: string; href?: string; childre
   );
   const cls = 'grid min-w-28 flex-1 gap-0.5 border-s px-4 py-2.5 first:border-s-0';
   return href ? (
-    <Link href={href} scroll={false} className={`${cls} transition-colors hover:bg-muted/60`}>{body}</Link>
+    <Link href={href} scroll={false} data-tour={tour} className={`${cls} transition-colors hover:bg-muted/60`}>{body}</Link>
   ) : (
-    <div className={cls}>{body}</div>
+    <div data-tour={tour} className={cls}>{body}</div>
   );
 }
 

@@ -21,12 +21,24 @@ const Z = 2147483000;
 const PAD = 6;
 const GAP = 12;
 
+const visible = (e: HTMLElement) => {
+  const r = e.getBoundingClientRect();
+  return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden';
+};
 function findTarget(name: string): HTMLElement | null {
-  const els = [...document.querySelectorAll<HTMLElement>(`[data-tour="${CSS.escape(name)}"]`)];
-  return els.find((e) => {
-    const r = e.getBoundingClientRect();
-    return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden';
-  }) ?? null;
+  return [...document.querySelectorAll<HTMLElement>(`[data-tour="${CSS.escape(name)}"]`)].find(visible) ?? null;
+}
+/**
+ * عنصری که هدف را «در خود دارد» ولی هنوز نشانش نمی‌دهد — مثلاً دکمهٔ «بیشتر» ِ نوارِ تب که تبِ پنهان را
+ * در منویش دارد (`data-tour-holds`). موتور اول این را روشن می‌کند؛ با باز شدنش هدفِ واقعی پیدا می‌شود.
+ */
+function findHolder(name: string): HTMLElement | null {
+  const exact = [...document.querySelectorAll<HTMLElement>('[data-tour-holds]')]
+    .find((e) => (e.dataset.tourHolds ?? '').split(' ').includes(name) && visible(e));
+  if (exact) return exact;
+  // کشوی منوی گوشی: هر هدفی با این پیشوندها (nav-، sidebar-، user-menu…) داخلِ آن است.
+  return [...document.querySelectorAll<HTMLElement>('[data-tour-holds-prefix]')]
+    .find((e) => (e.dataset.tourHoldsPrefix ?? '').split(' ').some((p) => p && name.startsWith(p)) && visible(e)) ?? null;
 }
 
 type Rect = { top: number; left: number; width: number; height: number };
@@ -55,6 +67,8 @@ export function TourOverlay({
   React.useEffect(() => setMounted(true), []);
   const wrongPath = !!(step?.path && !pathname.startsWith(step.path));
   const [el, setEl] = React.useState<HTMLElement | null>(null);
+  /** el فقط نگهدارنده است (مثلاً «بیشتر»)، نه خودِ هدف. */
+  const [viaHolder, setViaHolder] = React.useState(false);
   const [missing, setMissing] = React.useState(false);
   const [rect, setRect] = React.useState<Rect | null>(null);
   const cardRef = React.useRef<HTMLDivElement>(null);
@@ -62,19 +76,29 @@ export function TourOverlay({
 
   // پیدا کردنِ عنصر — صفحه یا دیالوگ ممکن است هنوز در حالِ باز شدن باشد، پس تا ۶ ثانیه صبر.
   React.useEffect(() => {
-    setEl(null); setMissing(false); setRect(null);
+    setEl(null); setMissing(false); setRect(null); setViaHolder(false);
     if (!step?.target || wrongPath) return;
     let alive = true;
+    let holding: HTMLElement | null = null;
     const t0 = Date.now();
     const tick = () => {
       if (!alive) return;
       const found = findTarget(step.target!);
       if (found) {
         found.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+        setViaHolder(false);
         setEl(found);
         return;
       }
-      if (Date.now() - t0 > 6000) {
+      const holder = findHolder(step.target!);
+      if (holder) {
+        // هدف زیرِ «بیشتر» است: آن را روشن کن و منتظرِ باز شدنش بمان (بی‌سقفِ زمان).
+        if (holder !== holding) { holding = holder; holder.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' }); setViaHolder(true); setEl(holder); }
+        setTimeout(tick, 200);
+        return;
+      }
+      // هدف‌های اختیاری زودتر رها می‌شوند تا کاربری که آن بخش را ندارد منتظر نماند.
+      if (Date.now() - t0 > (step.optional ? 2500 : 6000)) {
         if (step.optional) onNext(); else setMissing(true);
         return;
       }
@@ -106,14 +130,14 @@ export function TourOverlay({
 
   // قدمِ «کلیک»: کلیکِ کاربر روی خودِ عنصر راهنما را جلو می‌برد (مگر قدم با رسیدن به مسیر جلو برود).
   React.useEffect(() => {
-    if (!el || step?.kind !== 'click') return;
+    if (!el || viaHolder || step?.kind !== 'click') return;
     const onClick = (e: MouseEvent) => {
       if (!(e.target instanceof Node) || !el.contains(e.target)) return;
       if (!step.advanceOnPath) setTimeout(onNext, 80);
     };
     document.addEventListener('click', onClick, true);
     return () => document.removeEventListener('click', onClick, true);
-  }, [el, step, onNext]);
+  }, [el, viaHolder, step, onNext]);
 
   React.useLayoutEffect(() => {
     const c = cardRef.current;
@@ -153,7 +177,7 @@ export function TourOverlay({
     pos = { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
   }
 
-  const isClick = step?.kind === 'click' && !wrongPath && !missing && !!hole;
+  const isClick = (step?.kind === 'click' || viaHolder) && !wrongPath && !missing && !!hole;
   const blur = 'bg-black/45 backdrop-blur-[3px]';
 
   const ui = (
@@ -236,7 +260,8 @@ export function TourOverlay({
               </p>
               {isClick && (
                 <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary">
-                  <MousePointerClick className="size-3.5 shrink-0" />{t('روی بخشِ روشن کلیک کنید.')}
+                  <MousePointerClick className="size-3.5 shrink-0" />
+                  {viaHolder ? t('این بخش زیرِ «بیشتر» است؛ اول آن را باز کنید.') : t('روی بخشِ روشن کلیک کنید.')}
                 </p>
               )}
               <div className="mt-3 flex items-center justify-between gap-2">

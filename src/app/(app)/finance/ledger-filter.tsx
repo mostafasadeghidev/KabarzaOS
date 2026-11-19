@@ -88,6 +88,7 @@ export function LedgerFilter({
   return (
     <div className="grid gap-2">
       <form
+        data-tour="finance-ledger-filter"
         onSubmit={(e) => { e.preventDefault(); submit(e.currentTarget); }}
         className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3"
       >
@@ -152,7 +153,7 @@ export function LedgerFilter({
         )}
 
         <Button asChild size="sm" variant="outline" className="ms-auto">
-          <a href={`/finance/export?${params.toString()}&account=${accountId}`}>
+          <a data-tour="finance-ledger-export" href={`/finance/export?${params.toString()}&account=${accountId}`}>
             <Download />
             {tr('خروجی CSV')}
           </a>

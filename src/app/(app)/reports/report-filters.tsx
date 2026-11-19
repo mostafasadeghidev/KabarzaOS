@@ -32,7 +32,7 @@ export function OfficeFilter({
   const tr = useT();
   const clearHref = `/reports?${new URLSearchParams({ tab, ...extra }).toString()}`;
   return (
-    <form method="get" action="/reports" className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3">
+    <form data-tour="reports-office-filter" method="get" action="/reports" className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3">
       <input type="hidden" name="tab" value={tab} />
       {Object.entries(extra).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       <div className="grid min-w-[14rem] gap-1.5">
@@ -81,7 +81,7 @@ export function RangeBar({
   )}`;
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-3">
+    <div data-tour="reports-range" className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-3">
       <div className="flex flex-wrap gap-1">
         {presets.map((p) => (
           <Button

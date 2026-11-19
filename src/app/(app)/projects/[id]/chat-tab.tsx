@@ -152,7 +152,7 @@ export function ChatTab({ projectId, chat, viewerId }: { projectId: number; chat
   }
 
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-2" data-tour="project-chat">
       <TelegramJoin invite={chat.telegramInvite} />
       {/* پیوندِ «پیام‌ها» بالای کادر (۲.۴۳.۳) — کادرِ ارسال آخرین چیزِ صفحه است. */}
       <div className="flex justify-end">

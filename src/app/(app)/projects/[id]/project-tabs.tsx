@@ -238,7 +238,10 @@ export function ProjectTabs({
         (به‌جای پیمایشِ افقی). `pb-1.5` جای خطِ زیرِ تبِ فعال (variant=line) است.
         ⚠️ عدد با `gap` ِ خودِ دکمه فاصله می‌گیرد، نه حاشیهٔ منطقی («تسک‌ها۴» نشود).
       */}
+      {/* راهنما (۳.۱۹.۰): هر تب `project-tab-<کلید>` (همان ?tab=) را از خودِ OverflowTabs می‌گیرد. */}
+      <div data-tour="project-tabs">
       <OverflowTabs
+        tour="project-tab"
         className="pb-1.5"
         variant="line"
         value={tab}
@@ -248,6 +251,7 @@ export function ProjectTabs({
           <span className="num rounded-full bg-muted px-1.5 py-0.5 text-[10px] leading-none text-muted-foreground">{n}</span>
         )}
       />
+      </div>
 
       {/*
         ⚠️ قاعدهٔ عرض یک‌جا و کنارِ خودِ تب نوشته می‌شود: جدول و داده

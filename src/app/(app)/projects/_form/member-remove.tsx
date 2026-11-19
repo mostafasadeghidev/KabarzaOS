@@ -31,7 +31,7 @@ export function MemberRemoveButton({
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex items-center gap-1" data-tour="project-member-remove">
       {error && <span className="text-[11px] text-destructive">{t(error)}</span>}
       <IconButton
         type="button"

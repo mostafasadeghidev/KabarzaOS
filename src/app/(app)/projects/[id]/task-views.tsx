@@ -230,6 +230,7 @@ export function TaskListView({
                 {g.tasks.map((t) => (
                   <li
                     key={t.id}
+                    data-tour="tasks-row"
                     className={cn(
                       'grid cursor-pointer gap-x-3 gap-y-1.5 px-3 py-2 transition-colors hover:bg-muted/40',
                       'grid-cols-[auto_1fr] md:grid-cols-[auto_minmax(0,1fr)_9rem_8rem_10rem_8.5rem] md:items-center',
@@ -433,6 +434,7 @@ export function TaskBoardView({
                 {g.tasks.map((t) => (
                   <article
                     key={t.id}
+                    data-tour="tasks-row"
                     draggable={canDrag && (groupBy === 'status' || groupBy === 'stage' ? t.canSetStatus !== false : true)}
                     onDragStart={(e) => { e.dataTransfer.setData('text/plain', String(t.id)); e.dataTransfer.effectAllowed = 'move'; setDragging(t.id); }}
                     onDragEnd={() => { setDragging(null); setOver(null); }}

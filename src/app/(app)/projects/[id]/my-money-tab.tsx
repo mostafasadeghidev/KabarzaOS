@@ -159,7 +159,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
             کاشی‌های کوچک (۲.۴۳.۲): پیش از این پنج «برچسب: مبلغ» پشتِ هم در یک
             سطر بودند و معلوم نبود هر عدد مالِ کدام برچسب است.
           */}
-          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5" data-tour="project-mymoney-summary">
             {([
               ['مبلغ توافقی شما:', data.agreed, false],
               ['به شما پرداخت‌شده:', data.paid, false],
@@ -248,7 +248,7 @@ export function MyMoneyTab({ data }: { data: MyMoneyData }) {
 
           {/* فرمِ درخواست برای عضو — مدیرِ سراسری پرداخت را خودش در حسابداری ثبت می‌کند. */}
           {!data.asMember ? null : Number(data.available) > 0 ? (
-            <form action={requestPayment} className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3">
+            <form action={requestPayment} className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3" data-tour="project-mymoney-request">
               <input type="hidden" name="projectId" value={data.projectId} />
               <Field>
                 <FieldLabel htmlFor="r-amount">{t("مبلغ")}</FieldLabel>

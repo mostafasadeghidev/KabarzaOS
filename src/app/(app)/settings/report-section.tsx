@@ -45,7 +45,7 @@ export function ReportSection({ config }: { config: ReportConfig }) {
       />
 
       {/* ⚠️ `key`: پس از ذخیره فرم با مقدارِ تازه سوار شود — ریستِ React کلیدها را به مقدارِ اولیه برمی‌گرداند (← system-section). */}
-      <form key={JSON.stringify(config)} action={save} className="grid max-w-4xl gap-4">
+      <form data-tour="settings-report" key={JSON.stringify(config)} action={save} className="grid max-w-4xl gap-4">
         <Panel title={t("محتوا و زمان‌بندی")}>
           <fieldset className="grid gap-2">
             <legend className="text-sm font-medium">{t("بخش‌ها")}</legend>
@@ -102,7 +102,7 @@ export function ReportSection({ config }: { config: ReportConfig }) {
           </p>
         </Panel>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div data-tour="settings-report-actions" className="flex flex-wrap items-center gap-3">
           <Submit />
           <Button
             type="button" size="sm" variant="outline" disabled={pending}

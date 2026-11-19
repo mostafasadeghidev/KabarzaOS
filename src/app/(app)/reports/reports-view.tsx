@@ -277,6 +277,8 @@ export function ReportsView({
   return (
     <div className="grid gap-4">
       {/* ۳.۱۵.۱ — OverflowTabs: روی گوشی نوارِ تب ۹۶۰ پیکسل بود و افقی می‌لغزید؛ اضافه‌ها زیرِ «بیشتر». */}
+      {/* قابِ راهنمای تعاملی — OverflowTabs برچسبِ data-tour نمی‌گیرد؛ min-w-0 تا چیدمان مثلِ قبل بماند. */}
+      <div data-tour="reports-tabs" className="min-w-0">
       <OverflowTabs
         className="pb-1.5"
         variant="line"
@@ -284,6 +286,7 @@ export function ReportsView({
         onValueChange={(v) => setTab(v as typeof tab)}
         items={visible.map((t) => ({ value: t.key, label: tr(t.label) }))}
       />
+      </div>
 
       {/*
         ⚠️ پیوندِ ساده، نه دکمهٔ جاوااسکریپتی: مرورگر خودش دانلود را می‌گیرد و
@@ -298,7 +301,7 @@ export function ReportsView({
         هشت‌تا. کدام نما را بگرداند از تبِ فعال می‌آید.
       */}
       {(activeView || isExportable(tab)) && (
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div data-tour="reports-toolbar" className="flex flex-wrap items-center justify-between gap-2">
           {activeView
             ? <TableSearch view={activeView} placeholder={searchHint} />
             : <span />}
@@ -325,7 +328,7 @@ export function ReportsView({
       )}
 
       {tab === 'overall' && (
-        <div className="grid gap-3">
+        <div data-tour="reports-overall" className="grid gap-3">
         {data.canRecompute && <RecomputeEurButton />}
         {/* ⚠️ نبودِ نرخ بی‌صدا ۱ نمی‌شود (R-MONEY-06) — ولی بی‌صدا هم نمی‌ماند. */}
         {/* پورتِ `rate_banner_html`: نرخ‌هایی که ارقام بر آن‌ها تکیه دارند + هشدارِ کهنه/غایب. */}
@@ -385,7 +388,7 @@ export function ReportsView({
 
       {tab === 'members' && (
         data.members.length === 0 ? <EmptyState title={tr("داده‌ای نیست")} /> : (
-          <div className="grid gap-3">
+          <div data-tour="reports-members" className="grid gap-3">
           {/* پورتِ کارت‌های جمعِ تبِ اعضا: تعهد / پرداختی / بدهی (یورو). */}
           <div className="grid gap-4 @xl/main:grid-cols-3">
             {[
@@ -415,7 +418,7 @@ export function ReportsView({
                 <TableRow key={m.id}>
                   {/* ریز شدن روی یک عضو — پروژه‌به‌پروژه با ردیف‌های پرداخت. */}
                   <TableCell>
-                    <Link href={`/reports/member/${m.id}`} className="hover:underline">
+                    <Link data-tour="reports-member-link" href={`/reports/member/${m.id}`} className="hover:underline">
                       <UserName userId={m.id} name={m.name} size="sm" />
                     </Link>
                     {m.isFormer && <Badge variant="outline" className="ms-1.5 text-[10px]">{tr("سابق")}</Badge>}
@@ -451,7 +454,7 @@ export function ReportsView({
 
       {tab === 'clients' && (
         data.clients.length === 0 ? <EmptyState title={tr("کارفرمایی به پروژه‌ای وصل نیست")} /> : (
-          <div className="grid gap-3">
+          <div data-tour="reports-clients" className="grid gap-3">
           <div className="grid gap-4 @xl/main:grid-cols-3">
             {[
               { label: 'صورتحساب‌شدهٔ کل', value: sum(data.clients, 'billed') },
@@ -479,7 +482,7 @@ export function ReportsView({
                 <TableRow key={c.id}>
                   {/* ریز شدن روی یک کارفرما — مطالبات پروژه‌به‌پروژه. */}
                   <TableCell>
-                    <Link href={`/reports/client/${c.id}`} className="hover:underline">
+                    <Link data-tour="reports-client-link" href={`/reports/client/${c.id}`} className="hover:underline">
                       <UserName userId={c.id} name={c.name} size="sm" />
                     </Link>
                     <span className="num ms-1 text-xs text-muted-foreground">
@@ -507,7 +510,7 @@ export function ReportsView({
       )}
 
       {tab === 'expenses' && (
-        <div className="grid gap-3">
+        <div data-tour="reports-expenses" className="grid gap-3">
           <RangeBar tab="expenses" presets={filters.expenses.presets} range={filters.expenses.range} officeIds={filters.officeIds} />
 
           {/* پورتِ کارت‌های افزونه: جمع (قرمز اگر مثبت)، تعداد، میانگینِ ماهانه از ماه‌های دارای داده. */}
@@ -629,7 +632,7 @@ export function ReportsView({
 
       {tab === 'accounts' && (
         data.accountsReport.length === 0 ? <EmptyState title={tr("حسابی نیست")} /> : (
-          <Table stack>
+          <Table data-tour="reports-accounts" stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("حساب")}</TableHead>
@@ -666,7 +669,7 @@ export function ReportsView({
       )}
 
       {tab === 'hours' && (
-        <div className="grid gap-3">
+        <div data-tour="reports-hours" className="grid gap-3">
           <RangeBar tab="hours" presets={filters.hours.presets} range={filters.hours.range} officeIds={filters.officeIds} hours />
           {data.hours.length === 0 ? <EmptyState title={tr("در این بازه ساعتی ثبت نشده")} /> : (
             <Table stack>
@@ -705,7 +708,7 @@ export function ReportsView({
 
       {tab === 'projects' && (
         data.projectRows.length === 0 ? <EmptyState title={tr("پروژه‌ای نیست")} /> : (
-          <Table stack>
+          <Table data-tour="reports-projects" stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("پروژه")}</TableHead>
@@ -758,7 +761,7 @@ export function ReportsView({
             description={tr("فقط پروژه‌های «تعدادی» ردیفِ کارکرد می‌سازند.")}
           />
         ) : (
-          <Table stack>
+          <Table data-tour="reports-units" stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{tr("عضو")}</TableHead>
@@ -793,7 +796,7 @@ export function ReportsView({
       )}
 
       {tab === 'attendance' && (
-        <div className="grid gap-5">
+        <div data-tour="reports-attendance" className="grid gap-5">
           {/*
             ⚠️ «بدونِ برنامه» اول می‌آید، نه مرخصی‌ها: مرخصی را همه ثبت
             می‌کنند، ولی نداشتنِ برنامه بی‌سروصدا می‌ماند و همان است که
@@ -855,7 +858,7 @@ export function ReportsView({
             description={tr("از تنظیمات ← دورهٔ مالی می‌توانید یک دوره را ببندید.")}
           />
         ) : (
-          <div className="grid gap-3">
+          <div data-tour="reports-closings" className="grid gap-3">
             {/*
               ⚠️ ردیف‌های هر دوره روی **سرور** خوانده می‌شوند، نه همه با هم:
               با ده‌ها دوره و ده‌ها حساب، فرستادنِ همه به مرورگر بی‌جهت است.
@@ -942,7 +945,7 @@ function RecomputeEurButton() {
   const [state, setState] = useState<{ error?: string; message?: string }>({});
   const [pending, startTransition] = useTransition();
   return (
-    <Card className="flex-row flex-wrap items-center gap-3 px-3 py-2 shadow-xs">
+    <Card data-tour="reports-recompute" className="flex-row flex-wrap items-center gap-3 px-3 py-2 shadow-xs">
       <Button
         size="sm"
         variant="outline"

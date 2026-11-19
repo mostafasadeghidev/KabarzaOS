@@ -166,7 +166,7 @@ export function UserMenu({
           بازشونده هم انتخابِ فعلی دیده می‌شود و هم نامِ هر زبان **به خطِ
           خودش** (R-I18N-12) — چیزی که کدِ دوحرفی نمی‌رساند.
         */}
-        <div className="px-2 py-1.5">
+        <div className="px-2 py-1.5" data-tour="user-menu-locale">
           <div className="flex items-center justify-between gap-2">
             <label htmlFor="um-locale" className="text-sm text-muted-foreground">
               {t("زبان")}
@@ -204,7 +204,7 @@ export function UserMenu({
         </div>
 
         {/* ظاهر — کلیک، حالتِ بعدی را می‌گذارد */}
-        <div className="px-2 py-1.5">
+        <div className="px-2 py-1.5" data-tour="user-menu-theme">
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm text-muted-foreground">{t("ظاهر")}</span>
             <Button type="button" variant="ghost" size="xs" onClick={() => setTheme(THEME_NEXT[theme])}>
@@ -219,7 +219,7 @@ export function UserMenu({
           ⚠️ محورِ جدا از روشن/تیره است: انتخابِ «دریا» هر دو حالتِ آن را
           می‌گیرد، نه اینکه جای تیره/روشن بنشیند.
         */}
-        <div className="px-2 py-1.5">
+        <div className="px-2 py-1.5" data-tour="user-menu-palette">
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm text-muted-foreground">{t("پالت")}</span>
             <div className="flex gap-1">
@@ -244,7 +244,8 @@ export function UserMenu({
         </div>
 
         {/* پنهان‌کردنِ مبلغ‌ها (۲.۴۳.۰) — از ۲.۴۳.۲ اینجا، کنارِ بقیهٔ ترجیح‌های نمایش. */}
-        <HideAmountsRow />
+        {/* data-tour: پوستهٔ بی‌ظاهر فقط برای راهنمای تعاملی (ردیف در فایلِ دیگری است). */}
+        <div data-tour="user-menu-hide-amounts"><HideAmountsRow /></div>
 
         <DropdownMenuSeparator />
 
@@ -261,7 +262,7 @@ export function UserMenu({
           </DropdownMenuItem>
         )}
 
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild data-tour="user-menu-profile">
           <Link href="/profile">
             <User className="size-4" />
             <span>{t("پروفایلِ من")}</span>
@@ -269,7 +270,7 @@ export function UserMenu({
         </DropdownMenuItem>
 
         {/* پورتِ آیتمِ «🔔 اعلان‌ها» ِ منوی حساب — فهرستِ کامل، نه فقط زنگوله. */}
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild data-tour="user-menu-notifications">
           <Link href="/notifications">
             <Bell className="size-4" />
             <span>{t("اعلان‌ها")}</span>

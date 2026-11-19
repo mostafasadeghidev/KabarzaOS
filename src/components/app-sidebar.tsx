@@ -98,6 +98,7 @@ const GROUP_LABELS = {
  * ناهمگام می‌کرد.
  */
 function NavGroup({
+  groupKey,
   label,
   items,
   pathname,
@@ -105,6 +106,8 @@ function NavGroup({
   unreadMail = 0,
   waiting = 0,
 }: {
+  /** کلیدِ گروه — فقط برای برچسبِ راهنمای تعاملی (data-tour). */
+  groupKey: 'operations' | 'data';
   label: string;
   items: NavItem[];
   pathname: string;
@@ -142,7 +145,8 @@ function NavGroup({
 
   return (
     <Collapsible open={iconMode || open} onOpenChange={change} className="group/collapsible">
-      <SidebarGroup>
+      {/* data-tour: راهنمای خوش‌آمد به هر گروهِ منو جدا اشاره می‌کند. */}
+      <SidebarGroup data-tour={`sidebar-group-${groupKey}`}>
         <SidebarGroupLabel asChild>
           <CollapsibleTrigger className="w-full cursor-pointer">
             {t(label)}
@@ -322,10 +326,12 @@ export function AppSidebar({
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      {/* data-tour: کلِ منو برای راهنمای خوش‌آمد. */}
+      <SidebarContent data-tour="sidebar-nav">
         {groups.map((group) => (
           <NavGroup
             key={group.key}
+            groupKey={group.key}
             label={GROUP_LABELS[group.key]}
             items={group.items}
             pathname={pathname}
@@ -395,6 +401,8 @@ export function MobileSidebarTrigger({ rtl }: { rtl: boolean }) {
       type="button"
       onClick={toggleSidebar}
       aria-label={t('باز کردنِ منو')}
+      // راهنما (۳.۱۹.۰): روی گوشی منو و منوی کاربر داخلِ کشوست؛ موتور اول این دکمه را روشن می‌کند.
+      data-tour-holds-prefix="nav- sidebar- user-menu"
       className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground md:hidden"
     >
       <Icon className="size-4" aria-hidden />

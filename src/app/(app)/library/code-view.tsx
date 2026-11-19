@@ -124,7 +124,7 @@ export function CopyButton({ text, label, className }: { text: string; label?: s
     }
   };
   return (
-    <Button type="button" size="sm" variant="outline" className={className} onClick={copy}>
+    <Button type="button" size="sm" variant="outline" className={className} onClick={copy} data-tour="library-copy">
       {done ? <Check /> : <Copy />}
       {label ?? tr('کپی')}
     </Button>

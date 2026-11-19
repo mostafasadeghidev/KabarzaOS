@@ -158,6 +158,7 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
         بستن هم نبود؛ حالا × هم هست و جای آن در ردیفِ جستجو خالی مانده.
       */}
       <DialogContent
+        data-tour="topbar-search-dialog"
         className="overflow-hidden p-0 sm:max-w-lg [&_[data-slot=command-input-wrapper]]:pe-10 [&>[data-slot=dialog-close]]:top-3.5"
         dismissable
       >
@@ -171,6 +172,7 @@ export function CommandPalette({ pages }: { pages: Array<{ href: string; label: 
         {/* `loop` — پیمایشِ چرخشی با پیکان‌ها، مثلِ نسخهٔ قبلی. */}
         <Command shouldFilter={false} loop>
           <CommandInput
+            data-tour="topbar-search-input"
             value={query}
             onValueChange={setQuery}
             placeholder={t("جستجوی تسک (#12)، صفحه، پروژه، عضو، کارفرما و حساب…")}
@@ -223,7 +225,7 @@ function PaletteHelp({ onPick }: { onPick: (q: string) => void }) {
     { icon: ArrowUpRight, sample: t('نامِ صفحه'), insert: '', text: t('رفتن مستقیم به یک صفحه، مثلاً «تسک‌ها»') },
   ];
   return (
-    <div data-palette-help className="grid gap-1 border-b px-3 py-3">
+    <div data-palette-help data-tour="topbar-search-help" className="grid gap-1 border-b px-3 py-3">
       <p className="flex items-center gap-1.5 px-1 pb-1 text-xs font-medium text-muted-foreground">
         <Lightbulb className="size-3.5" />
         {t('چه چیزی می‌شود جست؟')}
@@ -268,6 +270,7 @@ export function CommandPaletteTrigger() {
   return (
     <Button
       type="button"
+      data-tour="topbar-search"
       aria-label={t("جستجوی سراسری")}
       onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
       variant="outline"

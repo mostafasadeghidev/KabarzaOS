@@ -51,7 +51,7 @@ export function MembersPanel({ data }: { data: MembersData }) {
       <Section
         title={tr('ساعت کاری تیم در این بازه')}
         actions={(
-          <Button asChild size="sm" variant="outline">
+          <Button asChild size="sm" variant="outline" data-tour="team-export">
             <a href={`/team/export?${query}`}>
               <Download />
               {tr('خروجی CSV')}
@@ -64,7 +64,7 @@ export function MembersPanel({ data }: { data: MembersData }) {
         ) : (
           <>
             {/* ۳.۱۵.۱ — روی گوشی هر ردیف یک کارت (جدول افقی می‌لغزید و نام‌ها کلمه‌به‌کلمه می‌شکستند). */}
-            <Table stack>
+            <Table stack data-tour="team-hours-table">
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr('عضو')}</TableHead>
@@ -140,7 +140,7 @@ function RangeFilter({ data }: { data: MembersData }) {
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+    <div className="flex flex-wrap items-end gap-x-4 gap-y-3" data-tour="team-range">
       <div className="flex flex-wrap items-center gap-2">
         {presets.map((r) => (
           <Button key={r} asChild size="sm" variant={data.range === r ? 'default' : 'outline'}>
@@ -174,7 +174,7 @@ function HoursBars({ rows }: { rows: MembersData['hours'] }) {
   const max = Math.max(0, ...rows.map((r) => r.minutes));
   if (max <= 0) return null;
   return (
-    <ul data-hours-bars className="grid gap-2" aria-label={tr('نمودارِ ساعت کاری')}>
+    <ul data-hours-bars data-tour="team-hours-bars" className="grid gap-2" aria-label={tr('نمودارِ ساعت کاری')}>
       {rows.map((r) => (
         <li key={r.id} className="grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-3 text-sm">
           <UserName userId={r.id} name={r.name} />
@@ -194,9 +194,9 @@ function MemberCards({ members, query }: { members: MembersData['members']; quer
   const list = needle === '' ? members : members.filter((m) => m.name.toLowerCase().includes(needle));
   return (
     <div className="grid gap-3">
-      <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('جستجوی کارمند…')} />
+      <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('جستجوی کارمند…')} data-tour="team-member-search" />
       {list.length === 0 ? <p className="text-sm text-muted-foreground">{tr('موردی پیدا نشد.')}</p> : (
-        <div className="grid gap-2 @xl/main:grid-cols-2 @4xl/main:grid-cols-3">
+        <div className="grid gap-2 @xl/main:grid-cols-2 @4xl/main:grid-cols-3" data-tour="team-member-cards">
           {list.map((m) => (
             <Item key={m.id} asChild variant="outline" size="sm" className="gap-3 p-3">
               <Link href={`/team/${m.id}?${query}`}>

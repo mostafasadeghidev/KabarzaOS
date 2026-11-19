@@ -111,7 +111,7 @@ export function StartTimerForm({ projects, canLogGeneral }: {
   const [state, start] = useActionState(startTimerAction, {});
   useActionToast(state);
   return (
-    <form action={start} className="flex flex-wrap items-end gap-2">
+    <form action={start} className="flex flex-wrap items-end gap-2" data-tour="hours-timer-start">
       <Field className="flex-1">
         <FieldLabel htmlFor="start-project">{t("پروژه")}</FieldLabel>
         <ProjectSelect projects={projects} id="start-project" allowGeneral={canLogGeneral} />
@@ -135,9 +135,9 @@ export function ManualLogForm({ projects, canLogGeneral, today }: {
   useActionToast(state);
   return (
     // ستون‌بندی با عرضِ **خودِ فرم** (container ِ log)، نه صفحه — در کارتِ کوچکِ داشبورد زیرِ هم می‌آید.
-    <form action={log} className="@container/log grid gap-3">
+    <form action={log} className="@container/log grid gap-3" data-tour="hours-manual">
       <div className="grid gap-2 @xl/log:grid-cols-4">
-        <Field className="@xl/log:col-span-2">
+        <Field className="@xl/log:col-span-2" data-tour="hours-manual-project">
           <FieldLabel htmlFor="log-project">{t("پروژه")}</FieldLabel>
           <ProjectSelect projects={projects} id="log-project" allowGeneral={canLogGeneral} />
         </Field>
@@ -145,7 +145,7 @@ export function ManualLogForm({ projects, canLogGeneral, today }: {
           <FieldLabel htmlFor="log-date">{t("تاریخ")}</FieldLabel>
           <DatePicker id="log-date" name="logDate" defaultValue={today} required />
         </Field>
-        <div className="flex items-end gap-2">
+        <div className="flex items-end gap-2" data-tour="hours-manual-time">
           <Field>
             <FieldLabel htmlFor="log-h">{t("ساعت")}</FieldLabel>
             <Input id="log-h" name="hours" type="number" min={0} className="num w-16" defaultValue={0} />
@@ -234,7 +234,7 @@ export function HoursView({ data }: { data: HoursData }) {
             {' '}{t('چون بیش از ۵ ساعت است خودکار ثبت نشده — شاید یادتان رفته متوقفش کنید.')}
           </p>
 
-          <form action={confirm} className="flex flex-wrap items-end gap-2">
+          <form action={confirm} className="flex flex-wrap items-end gap-2" data-tour="hours-pending">
             <Field>
               <FieldLabel htmlFor="pc-h">{t("ساعت")}</FieldLabel>
               <Input
@@ -269,7 +269,9 @@ export function HoursView({ data }: { data: HoursData }) {
         انتخابگرِ پروژه و دکمه (یا توضیح و توقف) در آن است؛ روی موبایل زیرِ هم.
         `minmax(0, …)` نمی‌گذارد محتوای پهن ستون را از عرضش بیرون بزند.
       */}
+      {/* data-tour: راهنمای تعاملی — تایمر و جمعِ این هفته/این ماه. */}
       <div
+        data-tour="hours-summary"
         className={showTimer
           ? 'grid items-stretch gap-4 @3xl/main:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]'
           : 'grid gap-4 @2xl/main:grid-cols-2'}
@@ -278,7 +280,7 @@ export function HoursView({ data }: { data: HoursData }) {
         {showTimer && (
           <Panel icon={<Clock />} title={tr("تایمر")}>
             {data.running ? (
-              <form action={stop} className="grid gap-3">
+              <form action={stop} className="grid gap-3" data-tour="hours-timer-stop">
                 <div className="flex items-center gap-3">
                   <LiveMinutes from={data.running.minutes} />
                   <Badge variant="secondary">{data.running.projectTitle ?? t('کارِ عمومی')}</Badge>
@@ -317,7 +319,7 @@ export function HoursView({ data }: { data: HoursData }) {
       {/* ── فیلترها (پورتِ view_hours): بازه و نامِ پروژه؛ فرمِ GET تا لینک قابلِ اشتراک بماند ── */}
       {/* ⚠️ همان نوارِ فیلترِ دفترکل و گزارش‌ها: قابِ ساده، برچسبِ ریز، کنترل‌های `sm`. */}
       <div className="grid gap-2">
-        <form method="get" action="/hours" className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3">
+        <form method="get" action="/hours" className="flex flex-wrap items-end gap-2 rounded-xl border bg-card p-3" data-tour="hours-filter">
           <Field>
             <FieldLabel htmlFor="f-from" className="text-xs">{t("از تاریخ")}</FieldLabel>
             <DatePicker id="f-from" name="from" size="sm" className="w-[9.5rem]" defaultValue={data.filter.from} />
@@ -357,7 +359,7 @@ export function HoursView({ data }: { data: HoursData }) {
           description={filtered ? undefined : t("با تایمر یا ثبتِ دستی شروع کنید.")}
         />
       ) : (
-        <Table>
+        <Table data-tour="hours-list">
           <TableHeader>
             <TableRow>
               <TableHead>{t("تاریخ")}</TableHead>
@@ -384,7 +386,7 @@ export function HoursView({ data }: { data: HoursData }) {
                   {/* ⚠️ بعد از دو هفته ثبت قفل می‌شود — دکمه هم پنهان. */}
                   {l.editable ? (
                     <>
-                      <IconButton variant="ghost" className="size-8" label={t("ویرایش")} onClick={() => setEditing(l)}>
+                      <IconButton variant="ghost" className="size-8" label={t("ویرایش")} onClick={() => setEditing(l)} data-tour="hours-edit">
                         <Pencil className="size-3.5" />
                       </IconButton>
                       <IconButton
@@ -424,7 +426,7 @@ export function HoursView({ data }: { data: HoursData }) {
       {editing && (
         <Panel title={tr('ویرایشِ ثبتِ {date}', { date: ltr(editing.logDate) })}>
           {/* پورتِ ویرایشِ درون‌خطیِ افزونه: تاریخ، پروژه، ساعت، دقیقه، توضیح. */}
-          <form action={edit} className="flex flex-wrap items-end gap-2">
+          <form action={edit} className="flex flex-wrap items-end gap-2" data-tour="hours-edit-form">
             <input type="hidden" name="logId" value={editing.id} />
             <Field>
               <FieldLabel htmlFor="e-date">{t("تاریخ")}</FieldLabel>

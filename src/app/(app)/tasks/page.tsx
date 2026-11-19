@@ -61,10 +61,10 @@ export default async function MyTasksPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {inbox.active.length > 0 && (
-              <Panel title={t("سپرده‌شده به شما")}><TaskTable rows={inbox.active} empty="" showAssignee={false} /></Panel>
+              <div data-tour="tasks-client-assigned"><Panel title={t("سپرده‌شده به شما")}><TaskTable rows={inbox.active} empty="" showAssignee={false} /></Panel></div>
             )}
             {inbox.review.length > 0 && (
-              <Panel title={t("در انتظارِ بررسی")}><TaskTable rows={inbox.review} empty="" showAssignee={false} /></Panel>
+              <div data-tour="tasks-client-review"><Panel title={t("در انتظارِ بررسی")}><TaskTable rows={inbox.review} empty="" showAssignee={false} /></Panel></div>
             )}
           </div>
         )}
@@ -90,21 +90,28 @@ export default async function MyTasksPage() {
          * زیرِ هم و تمام‌عرض‌اند تا هر ستون جای خودش را داشته باشد.
          */
         <div className="grid grid-cols-1 gap-4">
-          <Panel title={t("تسک‌های جاری شما")}>
-            <TaskTable rows={active} empty={t("تسکِ جاری ندارید.")} filterable />
-          </Panel>
-          <Panel title={t("در انتظارِ بررسی")}>
-            <TaskTable rows={waiting} empty={t("موردی در انتظارِ بررسی نیست.")} />
-          </Panel>
+          {/* data-tour: راهنمای «تسک‌ها» به این بخش‌ها اشاره می‌کند. */}
+          <div data-tour="tasks-inbox-current">
+            <Panel title={t("تسک‌های جاری شما")}>
+              <TaskTable rows={active} empty={t("تسکِ جاری ندارید.")} filterable />
+            </Panel>
+          </div>
+          <div data-tour="tasks-inbox-waiting">
+            <Panel title={t("در انتظارِ بررسی")}>
+              <TaskTable rows={waiting} empty={t("موردی در انتظارِ بررسی نیست.")} />
+            </Panel>
+          </div>
           {/*
             ⚠️ فقط برای مدیر پر می‌شود (سرور تصمیم می‌گیرد): کارهایی که تیم
             روی پروژه‌های تحتِ مدیریتِ او برای بررسی فرستاده. تا امروز تنها
             راهِ دیدنشان بازکردنِ تک‌تکِ پروژه‌ها بود.
           */}
           {review.length > 0 && (
-            <Panel title={t("فرستاده‌شده برای بررسیِ شما")}>
-              <TaskTable rows={review} empty="" />
-            </Panel>
+            <div data-tour="tasks-review-panel">
+              <Panel title={t("فرستاده‌شده برای بررسیِ شما")}>
+                <TaskTable rows={review} empty="" />
+              </Panel>
+            </div>
           )}
         </div>
       )}

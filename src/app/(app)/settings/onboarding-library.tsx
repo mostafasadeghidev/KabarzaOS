@@ -48,7 +48,7 @@ export function OnboardingLibrary({ data, roles }: {
 
   return (
     <div className="grid gap-4">
-      <div className="overflow-x-auto pb-1.5">
+      <div data-tour="settings-onboarding-roles" className="overflow-x-auto pb-1.5">
         <Tabs value={role} onValueChange={setRole}>
           <TabsList className="w-max">
             <TabsTrigger value="all" className="flex-none gap-1.5 px-3">
@@ -69,6 +69,7 @@ export function OnboardingLibrary({ data, roles }: {
       </div>
 
       <CatalogSection
+        tour="onboarding"
         title={tr('کتابخانهٔ آنبوردینگ')}
         description={tr('آیتم‌های «همهٔ نقش‌ها» به هر عضوِ تازه می‌رسند و آیتم‌های هر نقش فقط به کسی که آن نقش را دارد. ویرایشِ آیتم با «همگام‌سازی با کتابخانه» به کارهای انجام‌نشدهٔ هر نفر می‌رسد؛ فایل‌های راهنما بی‌درنگ.')}
         addLabel="افزودن آیتم"
@@ -236,7 +237,7 @@ function ItemFields({ editing, defaultRole, roles, services, people, canCreateSe
         روی آیتمِ کتابخانه می‌نشینند، پس به چک‌لیستِ همه بی‌درنگ می‌رسند.
       */}
       <MediaPicker>
-        <Field>
+        <Field data-tour="settings-onboarding-media">
           <FieldLabel htmlFor="ob-desc">{tr('توضیحات')}</FieldLabel>
           <Textarea id="ob-desc" name="description" rows={3} defaultValue={editing?.description ?? ''} />
         </Field>

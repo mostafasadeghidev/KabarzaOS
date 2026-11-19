@@ -71,12 +71,13 @@ export function ClientQaList({ items }: { items: ClientQa[] }) {
     <ExpandableList inPlace className="grid content-start gap-1">
       {[...groups.entries()].flatMap(([pid, g]) => [
         <li key={`h${pid}`} data-group-head className="min-w-0 pt-2 first:pt-0">
-          <Link href={`/projects/${pid}?tab=qa`} className="block truncate text-xs font-medium text-muted-foreground hover:underline">{g.title}</Link>
+          <Link href={`/projects/${pid}?tab=qa`} data-tour="dash-client-qa-project" className="block truncate text-xs font-medium text-muted-foreground hover:underline">{g.title}</Link>
         </li>,
         ...g.rows.map((i) => (
               <li key={i.id} className="flex items-start gap-2 rounded-lg px-1 py-1 hover:bg-muted/40">
                 <button
                   type="button"
+                  data-tour="dash-client-qa-tick"
                   aria-label={t('تأیید شد')}
                   className="mt-0.5 grid size-4 shrink-0 place-items-center rounded border border-input hover:border-primary"
                   onClick={() => {
@@ -128,11 +129,12 @@ export function ContactTeamForm() {
         rows={3}
         className="kz-grow"
         placeholder={t('سؤال یا درخواستتان را بنویسید…')}
+        data-tour="dash-client-message-input"
         aria-label={t('متنِ پیام')}
       />
       <div className="flex items-center justify-between gap-2">
         <Link href="/messages" className="kz-fit-label text-xs text-muted-foreground hover:underline">{t('همهٔ پیام‌ها')}</Link>
-        <Button type="submit" size="sm" disabled={pending || !body.trim()}><Send className="size-3.5" />{t('بفرست')}</Button>
+        <Button type="submit" size="sm" data-tour="dash-client-message-send" disabled={pending || !body.trim()}><Send className="size-3.5" />{t('بفرست')}</Button>
       </div>
     </form>
   );
@@ -296,7 +298,7 @@ export function ClientTalkCard({ userId, projects, threads }: {
 
   const comboOptions = projects.map((p) => ({ value: p.id, label: p.title }));
   return (
-    <div className="kz-form grid gap-2">
+    <div className="kz-form grid gap-2" data-tour="dash-client-comment">
       {/*
         انتخابِ پروژه: جعبهٔ جستجوی زنده (Combobox ِ مشترک) — با چند ده پروژه هم با چند حرف پیدا می‌شود.
         یک پروژه ← جعبه لازم نیست، فقط نامش پایین‌تر نوشته می‌شود.
@@ -319,17 +321,18 @@ export function ClientTalkCard({ userId, projects, threads }: {
         rows={3}
         className="kz-grow"
         placeholder={t('نظر، سؤال یا درخواستتان دربارهٔ این پروژه…')}
+        data-tour="dash-client-comment-input"
         aria-label={t('متنِ پیام')}
       />
       <div className="flex items-center justify-between gap-2">
         {(
-          <label className="kz-fit-label flex min-w-0 cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <label data-tour="dash-client-comment-attach" className="kz-fit-label flex min-w-0 cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             <Paperclip className="size-3.5 shrink-0" />
             <span className="truncate">{files.length ? t('{n} فایل', { n: files.length }) : t('پیوستِ فایل')}</span>
             <input ref={fileRef} type="file" multiple className="sr-only" onChange={(e) => setFiles([...(e.target.files ?? [])])} />
           </label>
         )}
-        <Button type="button" size="sm" onClick={send} disabled={pending || !project || (!body.trim() && files.length === 0)}>
+        <Button type="button" size="sm" data-tour="dash-client-comment-send" onClick={send} disabled={pending || !project || (!body.trim() && files.length === 0)}>
           <Send className="size-3.5" />{t('بفرست')}
         </Button>
       </div>

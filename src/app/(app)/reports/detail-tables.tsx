@@ -102,7 +102,7 @@ export function MemberProjectsTable({
   const view = useTableView(rows, (r) => r.title, 15);
   const linesOf = (id: number) => lines.filter((l) => l.projectId === id);
   return (
-    <div className="grid gap-2">
+    <div data-tour="reports-member-projects" className="grid gap-2">
       <TableSearch view={view} placeholder={t("جستجوی نام پروژه…")} />
       <Table stack>
         <TableHeader>
@@ -172,7 +172,7 @@ export function ClientProjectsTable({
   const view = useTableView(rows, (r) => r.title, 15);
   const linesOf = (id: number) => lines.filter((l) => l.projectId === id);
   return (
-    <div className="grid gap-2">
+    <div data-tour="reports-client-projects" className="grid gap-2">
       <TableSearch view={view} placeholder={t("جستجوی نام پروژه…")} />
       <Table stack>
         <TableHeader>

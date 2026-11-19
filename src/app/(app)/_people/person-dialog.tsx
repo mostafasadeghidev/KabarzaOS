@@ -104,7 +104,7 @@ function AvatarPicker({ person }: { person: PersonView }) {
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-lg bg-muted/60 p-3">
+    <div className="flex flex-wrap items-end gap-3 rounded-lg bg-muted/60 p-3" data-tour="people-dialog-avatar">
       {preview.url ? (
         <PreviewCircle src={preview.url} size={56} />
       ) : (
@@ -154,7 +154,7 @@ function NewAvatarField() {
   const tr = useT();
   const preview = useImagePreview();
   return (
-    <Field>
+    <Field data-tour="people-dialog-avatar">
       <FieldLabel htmlFor="p-new-avatar">{tr("تصویر پروفایل")}</FieldLabel>
       <div className="flex items-center gap-3">
         {preview.url && <PreviewCircle src={preview.url} size={40} />}
@@ -230,7 +230,7 @@ function PersonDialogBody({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg" data-tour="people-dialog">
         <DialogHeader>
           <DialogTitle>{tr(isEdit ? section.editLabel : section.addLabel)}</DialogTitle>
           <DialogDescription>
@@ -263,7 +263,7 @@ function PersonDialogBody({
             نقش را دارد در فهرست نیست، چون انتخابش هیچ اثری ندارد.
           */}
           {!isEdit && options.candidates.length > 0 && (
-            <Field className="rounded-lg bg-muted/60 p-3">
+            <Field className="rounded-lg bg-muted/60 p-3" data-tour="people-dialog-existing">
               <FieldLabel htmlFor="p-existing">{tr("کاربرِ موجودِ سامانه")}</FieldLabel>
               <Combobox
                 id="p-existing"
@@ -286,7 +286,7 @@ function PersonDialogBody({
             </Field>
           )}
 
-          <Field>
+          <Field data-tour="people-dialog-name">
             <FieldLabel htmlFor="p-name">{tr("نام")}</FieldLabel>
             {/* ⚠️ با انتخابِ کاربرِ موجود، نام و ایمیل از خودِ او می‌آید و
                 دست نمی‌خورد — پس نه پر می‌شود نه اجباری است. */}
@@ -302,7 +302,7 @@ function PersonDialogBody({
             )}
           </Field>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2" data-tour="people-dialog-contact">
             <Field>
               <FieldLabel htmlFor="p-email">{tr("ایمیلِ شخصی")}</FieldLabel>
               <Input
@@ -348,7 +348,7 @@ function PersonDialogBody({
             بدونِ نامِ کاربری ساخته شده بود برای همیشه بی‌نام می‌ماند.
             دیدنِ مقدارِ فعلی خودش همان هشدار است.
           */}
-          <Field>
+          <Field data-tour="people-dialog-username">
             <FieldLabel htmlFor="p-username">{tr("نامِ کاربری (اختیاری)")}</FieldLabel>
             <Input
               id="p-username"
@@ -369,7 +369,7 @@ function PersonDialogBody({
           </Field>
 
           {!person && (
-            <Field>
+            <Field data-tour="people-dialog-password">
               <FieldLabel htmlFor="p-password">{tr("رمزِ ورود (اختیاری)")}</FieldLabel>
               <PasswordInput
                 id="p-password"
@@ -393,7 +393,7 @@ function PersonDialogBody({
             خودش را دارد.
           */}
           {options.canGrantPrivate && (
-            <FieldSet variant="box">
+            <FieldSet variant="box" data-tour="people-dialog-private">
               <FieldLegend>{tr("دسترسیِ ویژه")}</FieldLegend>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox name="privateAccess" value="1"
@@ -408,7 +408,7 @@ function PersonDialogBody({
           )}
 
           {section.supportsTags && (
-          <FieldSet variant="box">
+          <FieldSet variant="box" data-tour="people-dialog-roles">
             <FieldLegend>{tr("نقش‌ها")}</FieldLegend>
             <MultiSelect
               name="tagIds"
@@ -422,7 +422,7 @@ function PersonDialogBody({
           )}
 
           {section.supportsOffices && (
-          <FieldSet variant="box" className="gap-3">
+          <FieldSet variant="box" className="gap-3" data-tour="people-dialog-offices">
             <FieldLegend>{tr("دفاتر")}</FieldLegend>
             <Field>
               <FieldLabel className="text-xs text-muted-foreground">{tr("عضوِ این دفاتر")}</FieldLabel>
@@ -470,13 +470,13 @@ function PersonDialogBody({
           )}
 
           {/* پورتِ چک‌باکسِ «ارسالِ دعوت‌نامه»: تازه → لینکِ تعیینِ رمزِ ۳روزه؛ موجود → آدرسِ داشبورد. */}
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-sm" data-tour="people-dialog-invite">
             <Checkbox name="sendInvite" defaultChecked={!isEdit} />
             {tr("ارسالِ دعوت‌نامه با ایمیل")}
           </label>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter data-tour="people-dialog-footer">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} data-tour="people-dialog-cancel">
               {tr("انصراف")}
             </Button>
             <SubmitButton label={isEdit ? tr('ذخیرهٔ تغییرات') : tr(section.addLabel)} />

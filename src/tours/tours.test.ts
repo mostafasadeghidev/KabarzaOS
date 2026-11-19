@@ -20,6 +20,8 @@ const src = walk('src').map((f) => readFileSync(f, 'utf8')).join('\n');
 /** برچسب‌های ثابت: data-tour="x" یا data-tour={'x'}؛ و پیشوندهای پویا: data-tour={`nav-${…}`} ← «nav-». */
 const fixed = new Set([...src.matchAll(/data-tour=(?:"([^"]+)"|\{'([^']+)'\}|\{"([^"]+)"\})/g)].map((m) => m[1] ?? m[2] ?? m[3]!));
 const prefixes = [...src.matchAll(/data-tour=\{`([^`$]*)\$\{/g)].map((m) => m[1]!);
+// نوارِ تبِ مشترک: <OverflowTabs tour="project-tab" …> ← هر تب «project-tab-<value>».
+prefixes.push(...[...src.matchAll(/<OverflowTabs[^>]*?\stour="([^"]+)"/g)].map((m) => `${m[1]!}-`));
 const exists = (t: string) => fixed.has(t) || prefixes.some((p) => p && t.startsWith(p));
 
 const FA = /[؀-ۿ]/;
