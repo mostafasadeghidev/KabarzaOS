@@ -66,6 +66,19 @@ export function TourOverlay({
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
   const wrongPath = !!(step?.path && !onPath(pathname, step.path));
+  /**
+   * قدمِ «صفحهٔ یک مورد» ('/library/') و کاربر آنجا نیست: نشانیِ مشخصی برای «برو به آنجا» نداریم
+   * (مثلاً فهرست خالی بود و قدمِ اختیاریِ «یکی را باز کنید» رد شد). ⚠️ پیش از این «برو به آنجا» به
+   * '/library/' می‌رفت، Next آن را به فهرست برمی‌گرداند و راهنما برای همیشه گیر می‌کرد.
+   */
+  const noDest = wrongPath && step!.path!.endsWith('/');
+  // قدمِ اختیاری بی‌صدا رد می‌شود — با کمی مکث، چون ممکن است صفحه هنوز در حالِ عوض شدن باشد.
+  React.useEffect(() => {
+    if (!noDest || !step?.optional) return;
+    const id = setTimeout(onNext, 1500);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noDest, step?.id]);
   const [el, setEl] = React.useState<HTMLElement | null>(null);
   /** el فقط نگهدارنده است (مثلاً «بیشتر»)، نه خودِ هدف. */
   const [viaHolder, setViaHolder] = React.useState(false);
@@ -179,6 +192,7 @@ export function TourOverlay({
   });
 
   if (!mounted) return null;
+  if (noDest && step?.optional) return null;
   // در حالِ پیدا کردنِ عنصر (صفحه یا دیالوگ هنوز باز نشده): چیزی نکش — صفحهٔ تار بی‌کارت گیج‌کننده بود.
   if (step?.target && !wrongPath && !missing && !rect) return null;
 
@@ -276,6 +290,20 @@ export function TourOverlay({
               )}
               <div className="mt-3 flex justify-end"><Button type="button" size="sm" onClick={onClose}>{t('تمام')}</Button></div>
             </>
+          ) : noDest ? (
+            step.optional ? null : (
+              <>
+                <h3 className="text-sm font-bold">{t(step.title)}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{t('این قدم در صفحهٔ یک موردِ مشخص است؛ اول یکی را باز کنید.')}</p>
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <button type="button" onClick={onLater} className="text-xs text-muted-foreground hover:underline">{t('بعداً')}</button>
+                  <span className="flex items-center gap-2">
+                    <Button type="button" size="sm" variant="ghost" onClick={onBack}>{t('قبلی')}</Button>
+                    <Button type="button" size="sm" onClick={onNext}>{t('رد شدن')}</Button>
+                  </span>
+                </div>
+              </>
+            )
           ) : wrongPath ? (
             <>
               <h3 className="text-sm font-bold">{t(step.title)}</h3>
