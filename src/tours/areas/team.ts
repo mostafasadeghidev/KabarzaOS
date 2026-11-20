@@ -74,7 +74,7 @@ export const tours: Tour[] = [
       { id: 'menu', target: 'people-card-menu', path: '/members', kind: 'click', title: 'منوی اقدام‌ها', body: 'روی سه‌نقطهٔ گوشهٔ کارتِ یک عضو بزنید تا کارهایی که روی او می‌شود کرد باز شود.' },
       { id: 'access', target: 'people-menu-access', title: 'دسترسی‌های بیرونی', body: 'دفترِ دسترسی‌ها را فقط برای همین شخص باز می‌کند: به کدام سرویس‌های بیرونی حساب دارد.' },
       { id: 'mail', target: 'people-menu-mail', optional: true, title: 'ایمیلِ شرکتی', body: 'برای این عضو صندوقِ ایمیلِ شرکتی می‌سازد یا به صندوقِ موجود وصلش می‌کند.' },
-      { id: 'onboarding', target: 'people-menu-onboarding', optional: true, title: 'آنبوردینگ', body: 'چک‌لیستِ روزهای اولِ این عضو را باز می‌کند.' },
+      { id: 'onboarding', target: 'people-menu-onboarding', optional: true, when: (c) => c.onboarding, title: 'آنبوردینگ', body: 'چک‌لیستِ روزهای اولِ این عضو را باز می‌کند.' },
       { id: 'send-tour', target: 'people-menu-send-tour', optional: true, title: 'فرستادنِ راهنما', body: 'راهنمای خوش‌آمدِ نقشِ این عضو بارِ بعدِ ورودش خودکار باز می‌شود. جزئیاتش در راهنمای «فرستادنِ راهنما به کارمند» است.' },
       { id: 'view-as', target: 'people-menu-view-as', optional: true, when: (c) => c.isOwner, title: 'دیدن به‌جای این کاربر', body: 'برنامه را از چشمِ همین شخص می‌بینید تا بفهمید او دقیقاً چه چیزهایی می‌بیند. در این حالت هیچ تغییری ذخیره نمی‌شود.' },
       { id: 'permissions', target: 'people-menu-permissions', optional: true, when: (c) => c.isOwner, title: 'دسترسی‌ها', body: 'فقط برای همکارِ ادمین: برای هر بخش تعیین می‌کنید دسترسی نداشته باشد، فقط ببیند، یا مدیریت کند.' },
@@ -249,7 +249,7 @@ export const tours: Tour[] = [
     id: 'team-access-mail',
     title: 'حساب‌های ایمیلِ شرکتی',
     description: 'ساختنِ صندوقِ ایمیلِ شرکتی و وصل‌کردنش به عضو.',
-    audience: managesMembers,
+    audience: (c) => managesMembers(c) && c.corpMail,
     order: 341,
     next: ['team-access-cloud'],
     steps: [
@@ -263,7 +263,7 @@ export const tours: Tour[] = [
     id: 'team-access-cloud',
     title: 'حساب‌های فضای ابری',
     description: 'ساختنِ حسابِ فضای ابری برای اعضا و مدیریتِ حجم و رمز.',
-    audience: managesMembers,
+    audience: (c) => managesMembers(c) && c.cloud,
     order: 342,
     steps: [
       { id: 'nav', target: 'nav-access', kind: 'click', advanceOnPath: '/access', title: 'منوی دسترسی‌ها', body: 'روی «دسترسی‌ها» بزنید.' },
@@ -278,7 +278,7 @@ export const tours: Tour[] = [
     id: 'team-onboarding',
     title: 'آنبوردینگِ اعضای تازه',
     description: 'چک‌لیستِ روزهای اولِ اعضای تازه، پیشرفتِ هر نفر و کارهایی که با شماست.',
-    audience: viewsMembers,
+    audience: (c) => viewsMembers(c) && c.onboarding,
     order: 350,
     steps: [
       { id: 'nav', target: 'nav-onboarding', kind: 'click', advanceOnPath: '/onboarding', title: 'منوی آنبوردینگ', body: 'روی «آنبوردینگ» بزنید. اگر این منو را نمی‌بینید، آنبوردینگ در تنظیماتِ سامانه خاموش است.' },

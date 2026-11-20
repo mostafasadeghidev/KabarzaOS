@@ -247,7 +247,7 @@ export const tours: Tour[] = [
       { id: 'dialog', target: 'library-install-dialog', optional: true, title: 'ثبتِ نصب', body: 'پروژه را جستجو و انتخاب کنید.' },
       { id: 'note', target: 'library-install-note', optional: true, title: 'کجای سایت', body: 'بنویسید دقیقاً کجا نصب شده، مثلاً «صفحهٔ قیمت‌ها، داخلِ فرمِ سفارش».' },
       { id: 'values', target: 'library-install-values', optional: true, title: 'مقدارهای این پروژه', body: 'هر مقداری که در این پروژه با پیش‌فرض فرق دارد. نفرِ بعدی دقیقاً همین را لازم دارد.' },
-      { id: 'save', title: 'ذخیره', body: 'با «ذخیره» نصب ثبت می‌شود و مورد در تبِ «کد و راهنما» ی همان پروژه هم می‌آید.' },
+      { id: 'save', target: 'library-install-dialog', optional: true, title: 'ذخیره', body: 'با «ذخیره» نصب ثبت می‌شود و مورد در تبِ «کد و راهنما» ی همان پروژه هم می‌آید.' },
     ],
   },
   {

@@ -28,6 +28,11 @@ export interface TourCtx {
    * «این بخش برای اعضای تیم است» می‌بیند؛ پیش از این راهنمای ساعت به او هم نشان داده می‌شد و گیر می‌کرد.
    */
   usesTimesheet: boolean;
+  /** آنبوردینگ در «تنظیمات ← سامانه» روشن است؛ خاموش = منو، تب و صفحه‌اش نیست، پس راهنمایش هم نه. */
+  onboarding: boolean;
+  /** ایمیلِ شرکتی و فضای ابری وصل‌اند — بی آن‌ها دکمه‌های «حساب‌های ایمیل» / «فضای ابری» در «دسترسی‌ها» نیست. */
+  corpMail: boolean;
+  cloud: boolean;
 }
 
 export const can = (c: TourCtx, p: Permission) => c.perms.includes(p);

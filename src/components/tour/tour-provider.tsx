@@ -106,6 +106,28 @@ export function TourProvider({ ctx, initial, disabled, children }: {
     persist({ active: { id: active.id, step: steps[idx]!.id } });
   }, [active, tour, steps, finish, persist]);
 
+  /**
+   * ردِ قدمِ اختیاریِ ناپیدا، همراهِ قدم‌های اختیاریِ پشتِ سرش که عنصرشان هم الان روی صفحه نیست — یک‌جا.
+   * ⚠️ پیش از این هر کدام جدا صبر می‌کرد: تبِ «بازبینی‌ها» ِ پروژهٔ بی‌بازبینی ده قدمِ پشتِ سرِ هم داشت و کاربر
+   * چند ثانیه صفحهٔ خالی می‌دید. قدمی که مسیرِ دیگری دارد یا هدف ندارد (کارتِ وسط) زنجیر را می‌شکند.
+   */
+  const skipMissing = React.useCallback(() => {
+    if (!active || !tour) return;
+    // «دیده می‌شود» یا زیرِ «بیشتر»/کشوی منو نگه داشته شده (آن هم یعنی قدم معنا دارد).
+    const shown = (name: string) => [...document.querySelectorAll<HTMLElement>(`[data-tour="${CSS.escape(name)}"]`)]
+      .some((e) => e.getBoundingClientRect().width > 0)
+      || [...document.querySelectorAll<HTMLElement>('[data-tour-holds]')].some((e) => (e.dataset.tourHolds ?? '').split(' ').includes(name))
+      || [...document.querySelectorAll<HTMLElement>('[data-tour-holds-prefix]')]
+        .some((e) => e.getBoundingClientRect().width > 0 && (e.dataset.tourHoldsPrefix ?? '').split(' ').some((p) => p && name.startsWith(p)));
+    let idx = active.idx + 1;
+    while (idx < steps.length) {
+      const s = steps[idx]!;
+      if (!s.optional || !s.target || (s.path && !onPath(pathname, s.path)) || shown(s.target)) break;
+      idx++;
+    }
+    go(idx - active.idx);
+  }, [active, tour, steps, pathname, go]);
+
   // قدمِ «کلیک» ِ ناوبری: با رسیدن به مسیرِ خواسته‌شده جلو می‌رود.
   React.useEffect(() => {
     if (step?.kind === 'click' && step.advanceOnPath && onPath(pathname, step.advanceOnPath)) go(1);
@@ -147,6 +169,7 @@ export function TourProvider({ ctx, initial, disabled, children }: {
           total={steps.length}
           pathname={pathname}
           onNext={() => go(1)}
+          onSkip={skipMissing}
           onBack={() => go(-1)}
           onClose={() => finish(tour, false)}
           onLater={later}

@@ -355,7 +355,7 @@ export const tours: Tour[] = [
     id: 'admin-settings-onboarding',
     title: 'کتابخانهٔ آنبوردینگ',
     description: 'کارهای روزهای اولِ عضوِ تازه، با فایلِ راهنما.',
-    audience: settingsUser,
+    audience: (c) => settingsUser(c) && c.onboarding,
     order: 805,
     next: ['admin-settings-system'],
     steps: [

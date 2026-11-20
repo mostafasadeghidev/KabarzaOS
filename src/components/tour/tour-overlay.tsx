@@ -67,7 +67,7 @@ const stop = (e: React.SyntheticEvent) => { e.stopPropagation(); };
 const block = (e: React.SyntheticEvent) => { e.stopPropagation(); e.preventDefault(); };
 
 export function TourOverlay({
-  tour, step, index, total, pathname, suggestions = [], onStart, onNext, onBack, onClose, onLater, onGo,
+  tour, step, index, total, pathname, suggestions = [], onStart, onNext, onSkip, onBack, onClose, onLater, onGo,
 }: {
   tour: Tour;
   /** null = کارتِ پایانِ راهنما. */
@@ -78,6 +78,8 @@ export function TourOverlay({
   suggestions?: Tour[];
   onStart?: (id: string) => void;
   onNext: () => void;
+  /** ردِ قدمِ اختیاریِ ناپیدا (و اختیاری‌های ناپیدای پشتِ سرش، یک‌جا) — نبودن = همان onNext. */
+  onSkip?: () => void;
   onBack: () => void;
   onClose: () => void;
   onLater: () => void;
@@ -97,7 +99,7 @@ export function TourOverlay({
   // قدمِ اختیاری بی‌صدا رد می‌شود — با کمی مکث، چون ممکن است صفحه هنوز در حالِ عوض شدن باشد.
   React.useEffect(() => {
     if (!noDest || !step?.optional) return;
-    const id = setTimeout(onNext, 1500);
+    const id = setTimeout(onSkip ?? onNext, 1500);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [noDest, step?.id]);
@@ -142,7 +144,7 @@ export function TourOverlay({
       // فهرستِ خالی (مثلاً «جلسات» بی جلسه) هر کدام ۲٫۵ ثانیه صفحهٔ خالی نشان می‌داد — ۱۵ ثانیه انتظارِ بی‌نشان.
       const settled = Date.now() - Math.max(lastNav.at, lastNav.click) > 2000;
       if (Date.now() - t0 > (step.optional ? (settled ? 700 : 2500) : 6000)) {
-        if (step.optional) onNext(); else setMissing(true);
+        if (step.optional) (onSkip ?? onNext)(); else setMissing(true);
         return;
       }
       setTimeout(tick, 150);
