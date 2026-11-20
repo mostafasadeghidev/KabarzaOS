@@ -23,6 +23,11 @@ export interface TourCtx {
   isMember: boolean;
   /** کارفرمای خالص (client بدونِ member). */
   isClientOnly: boolean;
+  /**
+   * صفحهٔ «ساعت کاری» برایش باز است (`canUseTimesheet` — همان گاردِ خودِ صفحه). ⚠️ مالکِ بی‌نقشِ عضو آنجا فقط
+   * «این بخش برای اعضای تیم است» می‌بیند؛ پیش از این راهنمای ساعت به او هم نشان داده می‌شد و گیر می‌کرد.
+   */
+  usesTimesheet: boolean;
 }
 
 export const can = (c: TourCtx, p: Permission) => c.perms.includes(p);

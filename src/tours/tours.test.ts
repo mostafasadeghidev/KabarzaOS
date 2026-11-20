@@ -25,7 +25,7 @@ prefixes.push(...[...src.matchAll(/<OverflowTabs[^>]*?\stour="([^"]+)"/g)].map((
 const exists = (t: string) => fixed.has(t) || prefixes.some((p) => p && t.startsWith(p));
 
 const FA = /[؀-ۿ]/;
-const ALL: TourCtx = { roles: ['owner'], perms: [], isOwner: true, managesTeam: true, isPm: true, isMember: true, isClientOnly: false };
+const ALL: TourCtx = { roles: ['owner'], perms: [], isOwner: true, managesTeam: true, isPm: true, isMember: true, isClientOnly: false, usesTimesheet: true };
 
 describe('راهنماها', () => {
   it('شناسهٔ راهنماها یکتاست', () => {

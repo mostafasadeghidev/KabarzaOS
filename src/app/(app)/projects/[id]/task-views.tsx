@@ -230,7 +230,7 @@ export function TaskListView({
                 {g.tasks.map((t) => (
                   <li
                     key={t.id}
-                    data-tour="tasks-row"
+                    data-tour="tasks-item"
                     className={cn(
                       'grid cursor-pointer gap-x-3 gap-y-1.5 px-3 py-2 transition-colors hover:bg-muted/40',
                       'grid-cols-[auto_1fr] md:grid-cols-[auto_minmax(0,1fr)_9rem_8rem_10rem_8.5rem] md:items-center',
@@ -243,7 +243,9 @@ export function TaskListView({
                         <Checkbox aria-label={tr('انتخاب')} checked={selected.has(t.id)} onCheckedChange={(v) => toggle(t.id, v === true)} />
                       ) : <span className="w-4" />}
                     </span>
-                    <span className="flex min-w-0 items-center gap-1.5">
+                    {/* ⚠️ data-tour روی عنوان، نه کلِ ردیف: وسطِ ردیف دکمهٔ وضعیت است و کلیکِ کاربر (به گفتهٔ راهنما
+                        «روی تسک بزنید») منوی وضعیت را باز می‌کرد، نه پنجرهٔ تسک را. */}
+                    <span data-tour="tasks-row" className="flex min-w-0 items-center gap-1.5">
                       <TaskNumber number={t.number} />
                       {t.isPrivate && <Lock className="size-3.5 shrink-0 text-muted-foreground" />}
                       <span className={cn('min-w-0 truncate text-sm font-medium', t.statusGroup === 'complete' && 'text-muted-foreground line-through')}>{t.title}</span>
@@ -434,7 +436,7 @@ export function TaskBoardView({
                 {g.tasks.map((t) => (
                   <article
                     key={t.id}
-                    data-tour="tasks-row"
+                    data-tour="tasks-item"
                     draggable={canDrag && (groupBy === 'status' || groupBy === 'stage' ? t.canSetStatus !== false : true)}
                     onDragStart={(e) => { e.dataTransfer.setData('text/plain', String(t.id)); e.dataTransfer.effectAllowed = 'move'; setDragging(t.id); }}
                     onDragEnd={() => { setDragging(null); setOver(null); }}
@@ -445,7 +447,7 @@ export function TaskBoardView({
                       (dragging === t.id || m.pending) && 'opacity-60',
                     )}
                   >
-                    <div className="flex items-start gap-1.5">
+                    <div data-tour="tasks-row" className="flex items-start gap-1.5">
                       <TaskNumber number={t.number} className="mt-0.5" />
                       {t.isPrivate && <Lock className="mt-0.5 size-3 shrink-0 text-muted-foreground" />}
                       <span className="line-clamp-2 min-w-0 flex-1 font-medium">{t.title}</span>

@@ -5,6 +5,7 @@ import { users } from '@/db/schema';
 import { effectivePermissions, isOwner, type Actor } from '@/domain/access/permissions';
 import { hasTeamScope } from '@/server/team/service';
 import { pmProjectIds } from '@/server/projects/authority';
+import { canUseTimesheet } from '@/server/timelogs/service';
 import type { TourCtx, TourState } from '@/tours/types';
 
 /**
@@ -12,9 +13,10 @@ import type { TourCtx, TourState } from '@/tours/types';
  * ⚠️ نقش‌های «مدیرِ تیم» و «مدیرِ پروژه» نقشِ پایه نیستند (تگ روی دفتر/پروژه‌اند)، پس همین‌جا سنجیده می‌شوند.
  */
 export async function tourCtx(actor: Actor): Promise<TourCtx> {
-  const [managesTeam, pm] = await Promise.all([
+  const [managesTeam, pm, timesheet] = await Promise.all([
     hasTeamScope(actor).catch(() => false),
     pmProjectIds(actor.id).catch(() => [] as number[]),
+    canUseTimesheet(actor).catch(() => false),
   ]);
   return {
     roles: actor.roles,
@@ -24,6 +26,7 @@ export async function tourCtx(actor: Actor): Promise<TourCtx> {
     isPm: pm.length > 0,
     isMember: actor.roles.includes('member'),
     isClientOnly: actor.roles.includes('client') && !actor.roles.includes('member'),
+    usesTimesheet: timesheet,
   };
 }
 

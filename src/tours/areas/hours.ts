@@ -8,8 +8,7 @@ import { can, type Tour, type TourCtx } from '../types';
  */
 
 /** هر که «ساعت کاری» را در منو دارد (پورتِ `canUseTimesheet`: عضو، مالک، مالی، مدیرِ دفتر). */
-const usesHours = (c: TourCtx) =>
-  !c.isClientOnly && (c.isMember || c.isOwner || c.managesTeam || c.roles.includes('finance'));
+const usesHours = (c: TourCtx) => c.usesTimesheet;
 
 /** «برنامهٔ من» در منو: عضو، یا دارندهٔ مجوزِ رویدادها یا اعضا. */
 const usesSchedule = (c: TourCtx) =>

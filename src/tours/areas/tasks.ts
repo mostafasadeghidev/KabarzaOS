@@ -225,11 +225,11 @@ export const tours: Tour[] = [
         title: 'فهرست یا برد', body: '«نمای فهرست» ردیف‌به‌ردیف است و «نمای برد» ستونی. در برد کارت را بکشید و در ستونِ دیگر رها کنید تا وضعیتش عوض شود.',
       },
       {
-        id: 'row', target: 'tasks-row', path: '/projects/', optional: true, when: (c) => !mgr(c),
+        id: 'row', target: 'tasks-item', path: '/projects/', optional: true, when: (c) => !mgr(c),
         title: 'یک تسک', body: 'هر ردیف شماره، عنوان، وضعیت، اولویت، مسئول و ددلاین را نشان می‌دهد. نشانِ گفتگو و گیره یعنی یادداشت یا فایل دارد. اگر کار مالِ شماست، وضعیت را همین‌جا عوض کنید.',
       },
       {
-        id: 'row-mgr', target: 'tasks-row', path: '/projects/', optional: true, when: mgr,
+        id: 'row-mgr', target: 'tasks-item', path: '/projects/', optional: true, when: mgr,
         title: 'یک تسک', body: 'شما وضعیت، اولویت، مسئول و ددلاین را همین‌جا در ردیف عوض می‌کنید. با تیکِ کنارِ ردیف‌ها چند تسک را انتخاب کنید تا نوارِ تغییرِ گروهی پایینِ صفحه بیاید.',
       },
       {

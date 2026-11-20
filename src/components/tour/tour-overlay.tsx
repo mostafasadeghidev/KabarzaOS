@@ -57,6 +57,11 @@ function foreignLayer(target: HTMLElement): HTMLElement | null {
     && (!own || !!(own.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING))) ?? null;
 }
 
+/** زمانِ آخرین عوض شدنِ مسیر — بیرونِ کامپوننت، چون لایه برای هر قدم از نو ساخته می‌شود. */
+const lastNav = { path: '', at: 0, click: 0 };
+// کلیکِ تازه هم یعنی «صفحه هنوز ننشسته» (دیالوگی که با کلیک باز شد شاید هنوز داده می‌گیرد).
+if (typeof document !== 'undefined') document.addEventListener('pointerdown', () => { lastNav.click = Date.now(); }, true);
+
 type Rect = { top: number; left: number; width: number; height: number };
 const stop = (e: React.SyntheticEvent) => { e.stopPropagation(); };
 const block = (e: React.SyntheticEvent) => { e.stopPropagation(); e.preventDefault(); };
@@ -81,6 +86,7 @@ export function TourOverlay({
   const t = useT();
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
+  if (lastNav.path !== pathname) { lastNav.path = pathname; lastNav.at = Date.now(); }
   const wrongPath = !!(step?.path && !onPath(pathname, step.path));
   /**
    * قدمِ «صفحهٔ یک مورد» ('/library/') و کاربر آنجا نیست: نشانیِ مشخصی برای «برو به آنجا» نداریم
@@ -114,7 +120,12 @@ export function TourOverlay({
       if (!alive) return;
       const found = findTarget(step.target!);
       if (found) {
-        found.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+        // ⚠️ عنصرِ داخلِ منو/دیالوگ (لایهٔ ثابت) صفحه را اسکرول نکند: منوی «بیشتر» به دکمه‌اش چسبیده است و با
+        // اسکرولِ صفحه بالا می‌رفت و از دید بیرون می‌شد — کاربر منو را گم می‌کرد و کلیکش جای دیگری می‌نشست.
+        // در لایه فقط «nearest»: اگر در دیدِ صفحه است چیزی تکان نمی‌خورد، و اگر پایینِ اسکرولِ خودِ دیالوگ است همان جلو می‌آید.
+        found.scrollIntoView(found.closest(LAYERS)
+          ? { block: 'nearest', inline: 'nearest' }
+          : { block: 'center', inline: 'nearest', behavior: 'smooth' });
         setViaHolder(false);
         setEl(found);
         return;
@@ -127,7 +138,10 @@ export function TourOverlay({
         return;
       }
       // هدف‌های اختیاری زودتر رها می‌شوند تا کاربری که آن بخش را ندارد منتظر نماند.
-      if (Date.now() - t0 > (step.optional ? 2500 : 6000)) {
+      // ⚠️ اگر صفحه از قبل نشسته است (قدمِ قبلی هم همین‌جا بود)، فقط کمی صبر: چند قدمِ اختیاریِ پشتِ سرِ هم روی
+      // فهرستِ خالی (مثلاً «جلسات» بی جلسه) هر کدام ۲٫۵ ثانیه صفحهٔ خالی نشان می‌داد — ۱۵ ثانیه انتظارِ بی‌نشان.
+      const settled = Date.now() - Math.max(lastNav.at, lastNav.click) > 2000;
+      if (Date.now() - t0 > (step.optional ? (settled ? 700 : 2500) : 6000)) {
         if (step.optional) onNext(); else setMissing(true);
         return;
       }
@@ -266,7 +280,9 @@ export function TourOverlay({
     pos = { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
   }
 
-  const isClick = (step?.kind === 'click' || viaHolder) && !wrongPath && !missing && !!hole;
+  // ⚠️ دکمهٔ غیرفعال (مثلاً «افزودنِ مقصد» پیش از آماده شدنِ کلیدِ پشتیبان): قدمِ «کلیک» کاربر را گیر می‌انداخت.
+  const disabled = !!el && !viaHolder && (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true');
+  const isClick = (step?.kind === 'click' || viaHolder) && !wrongPath && !missing && !!hole && !disabled;
   const blur = 'bg-black/45 backdrop-blur-[3px]';
 
   const ui = (
@@ -361,6 +377,11 @@ export function TourOverlay({
               <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                 {missing ? t('این بخش الان روی صفحه نیست؛ شاید برای نقشِ شما نیست یا هنوز داده‌ای ندارد. می‌توانید به قدمِ بعد بروید.') : t(step.body)}
               </p>
+              {disabled && step.kind === 'click' && !missing && (
+                <p className="mt-2 rounded-lg bg-muted px-2.5 py-1.5 text-xs text-muted-foreground">
+                  {t('این دکمه الان غیرفعال است؛ به قدمِ بعد بروید.')}
+                </p>
+              )}
               {isClick && (
                 <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary">
                   <MousePointerClick className="size-3.5 shrink-0" />
