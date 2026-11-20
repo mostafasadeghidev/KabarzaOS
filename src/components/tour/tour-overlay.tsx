@@ -41,6 +41,22 @@ function findHolder(name: string): HTMLElement | null {
     .find((e) => (e.dataset.tourHoldsPrefix ?? '').split(' ').some((p) => p && name.startsWith(p)) && visible(e)) ?? null;
 }
 
+/** لایه‌های رویِ صفحه: دیالوگ، منو، فهرستِ انتخاب (Radix همه را با data-state=open نشان می‌دهد). */
+const LAYERS = '[role="dialog"][data-state="open"],[role="alertdialog"][data-state="open"],[role="menu"][data-state="open"],[role="listbox"][data-state="open"]';
+/**
+ * پنجره یا منویی باز است که به این قدم ربطی ندارد و **رویِ** هدف است؟ (۳.۱۹.۰)
+ * ⚠️ پیش از این راهنما بی‌توجه ادامه می‌داد: سایهٔ دیالوگ کارتِ روشن را کم‌رنگ می‌کرد و فهرستِ دیالوگ وسطِ قابِ
+ * روشن می‌افتاد (کارتِ «ظرفیتِ تیم» با «جزئیاتِ رویداد» ِ باز).
+ * «رویِ هدف» = لایه‌ای که هدف را در خود ندارد و در DOM بعد از لایهٔ خودِ هدف آمده (پورتال‌ها به ترتیبِ باز شدن
+ * به انتهای body اضافه می‌شوند)؛ پس دیالوگِ پدر در دیالوگ‌های تودرتو «بیگانه» حساب نمی‌شود.
+ */
+function foreignLayer(target: HTMLElement): HTMLElement | null {
+  const own = target.closest<HTMLElement>(LAYERS);
+  return [...document.querySelectorAll<HTMLElement>(LAYERS)].find((l) =>
+    !l.closest('.kz-tour') && !l.contains(target) && visible(l)
+    && (!own || !!(own.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING))) ?? null;
+}
+
 type Rect = { top: number; left: number; width: number; height: number };
 const stop = (e: React.SyntheticEvent) => { e.stopPropagation(); };
 const block = (e: React.SyntheticEvent) => { e.stopPropagation(); e.preventDefault(); };
@@ -185,6 +201,17 @@ export function TourOverlay({
     };
   }, [el, viaHolder, step, onNext]);
 
+  // پنجرهٔ بی‌ربطِ باز: راهنما کنار می‌رود و با بسته شدنش از همان قدم ادامه می‌دهد (خودکار نمی‌بندیم — شاید
+  // کاربر وسطِ نوشتن باشد).
+  const [paused, setPaused] = React.useState(false);
+  React.useEffect(() => {
+    if (!el) { setPaused(false); return; }
+    const check = () => setPaused(!!foreignLayer(el.isConnected ? el : (step?.target ? findTarget(step.target) ?? el : el)));
+    check();
+    const iv = setInterval(check, 250);
+    return () => clearInterval(iv);
+  }, [el, step?.target]);
+
   React.useLayoutEffect(() => {
     const c = cardRef.current;
     // ⚠️ فقط با تغییرِ واقعی — شیءِ تازه در هر رندر حلقهٔ بی‌پایانِ رندر می‌ساخت.
@@ -195,6 +222,21 @@ export function TourOverlay({
   if (noDest && step?.optional) return null;
   // در حالِ پیدا کردنِ عنصر (صفحه یا دیالوگ هنوز باز نشده): چیزی نکش — صفحهٔ تار بی‌کارت گیج‌کننده بود.
   if (step?.target && !wrongPath && !missing && !rect) return null;
+  if (paused && !wrongPath && !missing) {
+    // ⚠️ بی stopPropagation: کلیک روی این نوار «بیرونِ» دیالوگ است و Radix آن را می‌بندد — همان چیزی که می‌خواهیم.
+    return createPortal(
+      <div
+        className="kz-tour fixed inset-x-0 bottom-4 flex justify-center px-4"
+        style={{ zIndex: Z, pointerEvents: 'none' }}
+      >
+        <div role="status" className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-xs text-muted-foreground shadow-lg" style={{ pointerEvents: 'auto' }}>
+          <Sparkles className="size-3.5 shrink-0 text-primary" />
+          {t('راهنما منتظر است؛ این پنجره را ببندید تا ادامه دهیم.')}
+        </div>
+      </div>,
+      document.body,
+    );
+  }
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
