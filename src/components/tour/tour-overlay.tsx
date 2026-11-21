@@ -403,16 +403,31 @@ export function TourOverlay({
               <p className="mt-1 text-sm text-muted-foreground">
                 {suggestions.length ? t('راهنمای بعدی را شروع کنید یا هر وقت خواستید از منوی کاربر ← «راهنمای برنامه» ببینید.') : t('هر وقت خواستید، همهٔ راهنماها در منوی کاربر ← «راهنمای برنامه» هستند.')}
               </p>
+              {/*
+                ⚠️ راهنمای بعدی دکمهٔ **اصلی** است و «تمام» کم‌رنگ: پیش از این «تمام» پررنگ بود و پیشنهادها
+                دکمه‌های کم‌رنگ — کاربر فقط «تمام» را می‌زد و نمی‌فهمید می‌شود راهنمای بعدی را دید (خواستِ مالک).
+              */}
               {suggestions.length > 0 && (
                 <div className="mt-3 grid gap-1.5">
-                  {suggestions.map((s) => (
+                  <Button type="button" className="kz-tour-glow h-auto min-h-9 justify-between gap-2 whitespace-normal py-2 text-start" onClick={() => onStart?.(suggestions[0]!.id)} autoFocus>
+                    <span className="flex min-w-0 flex-col items-start">
+                      <span className="text-[11px] font-normal opacity-80">{t('راهنمای بعدی')}</span>
+                      <span className="font-semibold">{t(suggestions[0]!.title)}</span>
+                    </span>
+                    <ArrowLeft className="size-4 shrink-0 ltr:rotate-180" />
+                  </Button>
+                  {suggestions.slice(1).map((s) => (
                     <Button key={s.id} type="button" variant="outline" size="sm" className="justify-start" onClick={() => onStart?.(s.id)}>
                       <Sparkles className="size-3.5" />{t(s.title)}
                     </Button>
                   ))}
                 </div>
               )}
-              <div className="mt-3 flex justify-end"><Button type="button" size="sm" onClick={onClose}>{t('تمام')}</Button></div>
+              <div className="mt-3 flex justify-end">
+                {suggestions.length > 0
+                  ? <Button type="button" size="sm" variant="ghost" className="text-muted-foreground" onClick={onClose}>{t('فعلاً بس است')}</Button>
+                  : <Button type="button" size="sm" onClick={onClose}>{t('تمام')}</Button>}
+              </div>
             </>
           ) : noDest ? (
             step.optional ? null : (

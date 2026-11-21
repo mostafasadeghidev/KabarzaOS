@@ -153,9 +153,17 @@ export function TourProvider({ ctx, initial, disabled, children }: {
     };
   }, [available, start, active]);
 
-  const suggestions = finished
-    ? (finished.next ?? []).map(tourById).filter((t): t is Tour => !!t && t.audience(ctx) && !state.done?.[t.id])
-    : [];
+  const suggestions = React.useMemo(() => {
+    if (!finished) return [];
+    const fresh = (t: Tour | null | undefined): t is Tour => !!t && t.id !== finished.id && t.audience(ctx) && !state.done?.[t.id];
+    const listed = (finished.next ?? []).map(tourById).filter(fresh);
+    if (listed.length) return listed;
+    // راهنمایی که `next` ندارد هم به بعدی برسد: اولین راهنمای دیده‌نشدهٔ همین کاربر، به ترتیبِ فهرست —
+    // وگرنه کارتِ پایان فقط «تمام» داشت و کاربر راهِ ادامه را نمی‌دید.
+    const i = available.findIndex((t) => t.id === finished.id);
+    const after = [...available.slice(i + 1), ...available.slice(0, Math.max(0, i))].find(fresh);
+    return after ? [after] : [];
+  }, [finished, ctx, state.done, available]);
 
   return (
     <TourCtxReact.Provider value={api}>
