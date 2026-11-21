@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, MousePointerClick, Pointer, Sparkles, X } from '
 import { useT } from '@/i18n/client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { onPath, type Tour, type TourStep } from '@/tours/types';
+import { onPath, type Tour, type TourMeta, type TourStep } from '@/tours/types';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 
 /**
@@ -86,6 +86,50 @@ const smooth = (): ScrollBehavior =>
 if (typeof document !== 'undefined') document.addEventListener('pointerdown', () => { lastNav.click = Date.now(); }, true);
 
 type Rect = { top: number; left: number; width: number; height: number };
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+const focusables = (root: HTMLElement | null | undefined): HTMLElement[] => {
+  if (!root) return [];
+  const all = [...root.querySelectorAll<HTMLElement>(FOCUSABLE)];
+  return (root.matches(FOCUSABLE) ? [root, ...all] : all).filter(visible);
+};
+
+/**
+ * «صفحه عوض شد» — به‌جای چرخشِ دائمی (۳.۱۹.۰، بازبینی): پیش از این جای عنصر در **هر فریم** (rAF) و هر ۲۵۰ms
+ * سنجیده می‌شد و «پنجرهٔ باز» هم هر ۲۵۰ms، تا وقتی راهنما باز بود. حالا فقط با اسکرول، تغییرِ اندازه و تغییرِ DOM.
+ * ⚠️ بعد از هر رویداد چند فریم پشتِ سرِ هم (`burst`) سنجیده می‌شود: باز شدنِ دیالوگ/منو پویانمایی دارد و عنصر
+ * بی رویدادِ تازه چند صد میلی‌ثانیه جابه‌جا می‌شود. زمان‌سنجِ کندِ پشتیبان برای زبانهٔ پنهان (rAF نمی‌چرخد) و
+ * جابه‌جاییِ فقط-CSS است.
+ */
+function watchPage(run: () => void, opts: { el?: HTMLElement | null; burst?: number; fallback?: number } = {}) {
+  const burst = opts.burst ?? 600;
+  let raf = 0;
+  let until = 0;
+  const frame = () => {
+    raf = 0;
+    run();
+    if (Date.now() < until) raf = requestAnimationFrame(frame);
+  };
+  const kick = () => {
+    until = Date.now() + burst;
+    if (!raf) raf = requestAnimationFrame(frame);
+  };
+  window.addEventListener('scroll', kick, true);
+  window.addEventListener('resize', kick);
+  const mo = new MutationObserver(kick);
+  mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-state', 'aria-expanded', 'hidden', 'style', 'class'] });
+  const ro = opts.el && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(kick) : null;
+  if (ro && opts.el) ro.observe(opts.el);
+  const iv = setInterval(run, opts.fallback ?? 1000);
+  kick();
+  return () => {
+    if (raf) cancelAnimationFrame(raf);
+    window.removeEventListener('scroll', kick, true);
+    window.removeEventListener('resize', kick);
+    mo.disconnect();
+    ro?.disconnect();
+    clearInterval(iv);
+  };
+}
 const stop = (e: React.SyntheticEvent) => { e.stopPropagation(); };
 const block = (e: React.SyntheticEvent) => { e.stopPropagation(); e.preventDefault(); };
 
@@ -98,7 +142,7 @@ export function TourOverlay({
   index: number;
   total: number;
   pathname: string;
-  suggestions?: Tour[];
+  suggestions?: TourMeta[];
   onStart?: (id: string) => void;
   onNext: () => void;
   /** ردِ قدمِ اختیاریِ ناپیدا (و اختیاری‌های ناپیدای پشتِ سرش، یک‌جا) — نبودن = همان onNext. */
@@ -131,6 +175,7 @@ export function TourOverlay({
   const [viaHolder, setViaHolder] = React.useState(false);
   const [missing, setMissing] = React.useState(false);
   const [rect, setRect] = React.useState<Rect | null>(null);
+  const [paused, setPaused] = React.useState(false);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const [cardSize, setCardSize] = React.useState({ w: 340, h: 180 });
 
@@ -140,7 +185,9 @@ export function TourOverlay({
     if (!step?.target || wrongPath) return;
     let alive = true;
     let holding: HTMLElement | null = null;
+    let unwatch: (() => void) | null = null;
     const t0 = Date.now();
+    const end = () => { alive = false; unwatch?.(); unwatch = null; };
     const tick = () => {
       if (!alive) return;
       const found = findTarget(step.target!);
@@ -153,13 +200,13 @@ export function TourOverlay({
           : { block: 'center', inline: 'nearest', behavior: smooth() });
         setViaHolder(false);
         setEl(found);
+        end();
         return;
       }
       const holder = findHolder(step.target!);
       if (holder) {
         // هدف زیرِ «بیشتر» است: آن را روشن کن و منتظرِ باز شدنش بمان (بی‌سقفِ زمان).
         if (holder !== holding) { holding = holder; holder.scrollIntoView({ block: 'center', inline: 'nearest', behavior: smooth() }); setViaHolder(true); setEl(holder); }
-        setTimeout(tick, 200);
         return;
       }
       // هدف‌های اختیاری زودتر رها می‌شوند تا کاربری که آن بخش را ندارد منتظر نماند.
@@ -167,46 +214,37 @@ export function TourOverlay({
       // فهرستِ خالی (مثلاً «جلسات» بی جلسه) هر کدام ۲٫۵ ثانیه صفحهٔ خالی نشان می‌داد — ۱۵ ثانیه انتظارِ بی‌نشان.
       const settled = Date.now() - Math.max(lastNav.at, lastNav.click) > 2000;
       if (Date.now() - t0 > (step.optional ? (settled ? 700 : 2500) : 6000)) {
+        end();
         if (step.optional) (onSkip ?? onNext)(); else setMissing(true);
-        return;
       }
-      setTimeout(tick, 150);
     };
     tick();
-    return () => { alive = false; };
+    // ⚠️ بی چرخشِ ۱۵۰ms: هر تغییرِ DOM (باز شدنِ دیالوگ، رسیدنِ داده) دوباره می‌گردد؛ زمان‌سنجِ ۲۵۰ms فقط برای
+    // سقفِ زمانِ «پیدا نشد» است. انتظار پشتِ «بیشتر» هم با همین بیدار می‌شود.
+    if (alive) unwatch = watchPage(tick, { fallback: 250, burst: 0 });
+    return end;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step?.id, step?.target, wrongPath]);
 
   // دنبال کردنِ جای عنصر (اسکرول، باز شدنِ دیالوگ، تغییرِ اندازه).
   React.useEffect(() => {
     if (!el) return;
-    let raf = 0;
-    const loop = () => {
+    return watchPage(() => {
       // عنصر رفت (با کلیک صفحه عوض شد) یا دیگر دیده نمی‌شود — دوباره بگرد.
       // ⚠️ «دیده نمی‌شود» هم: با عوض شدنِ پهنای پنجره (چرخاندنِ گوشی) منوی پایینِ گوشی پنهان و سایدبار پیدا
       // می‌شود؛ راهنما به نسخهٔ پنهان (اندازهٔ صفر) چسبیده می‌ماند و قاب و دست گوشهٔ بالای صفحه می‌نشستند.
       if (!el.isConnected || !visible(el)) {
         const again = step?.target ? findTarget(step.target) : null;
         if (again && again !== el) { setEl(again); return; }
+        if (!el.isConnected) return;
       }
       const r = el.getBoundingClientRect();
       setRect((p) => (p && p.top === r.top && p.left === r.left && p.width === r.width && p.height === r.height
         ? p : { top: r.top, left: r.left, width: r.width, height: r.height }));
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    // ⚠️ در زبانهٔ پنهان requestAnimationFrame متوقف است؛ زمان‌سنجِ پشتیبان جای عنصر را باز هم به‌روز می‌کند.
-    const iv = setInterval(() => {
-      if (!el.isConnected || !visible(el)) {
-        const again = step?.target ? findTarget(step.target) : null;
-        if (again && again !== el) setEl(again);
-        return;
-      }
-      const r = el.getBoundingClientRect();
-      setRect((p) => (p && p.top === r.top && p.left === r.left && p.width === r.width && p.height === r.height
-        ? p : { top: r.top, left: r.left, width: r.width, height: r.height }));
-    }, 250);
-    return () => { cancelAnimationFrame(raf); clearInterval(iv); };
+      // پنجرهٔ بی‌ربطِ باز: راهنما کنار می‌رود و با بسته شدنش از همان قدم ادامه می‌دهد (خودکار نمی‌بندیم — شاید
+      // کاربر وسطِ نوشتن باشد).
+      setPaused(!!foreignLayer(el));
+    }, { el });
   }, [el, step?.target]);
 
   /*
@@ -224,7 +262,7 @@ export function TourOverlay({
     const sel = `[data-tour="${CSS.escape(step.target!)}"]`;
     const inside = (e: Event) => e.target instanceof Element && (el.contains(e.target) || !!e.target.closest(sel));
     const onClick = (e: MouseEvent) => { if (inside(e)) advance(); };
-    const onDown = (e: PointerEvent) => {
+    const onDown = (e: Event) => {
       if (!inside(e)) return;
       setTimeout(() => {
         const cur = el.isConnected ? el : (document.querySelector<HTMLElement>(sel) ?? el);
@@ -233,12 +271,16 @@ export function TourOverlay({
         if (opened) advance();
       }, 250);
     };
+    // ⚠️ کیبورد: منوی Radix با Enter/Space در keydown باز می‌شود و preventDefault می‌کند — click ای در کار نیست.
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') onDown(e); };
     document.addEventListener('click', onClick, true);
     document.addEventListener('pointerdown', onDown, true);
+    document.addEventListener('keydown', onKey, true);
     return () => {
       done = true;
       document.removeEventListener('click', onClick, true);
       document.removeEventListener('pointerdown', onDown, true);
+      document.removeEventListener('keydown', onKey, true);
     };
   }, [el, viaHolder, step, onNext]);
 
@@ -258,16 +300,7 @@ export function TourOverlay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasRect]);
 
-  // پنجرهٔ بی‌ربطِ باز: راهنما کنار می‌رود و با بسته شدنش از همان قدم ادامه می‌دهد (خودکار نمی‌بندیم — شاید
-  // کاربر وسطِ نوشتن باشد).
-  const [paused, setPaused] = React.useState(false);
-  React.useEffect(() => {
-    if (!el) { setPaused(false); return; }
-    const check = () => setPaused(!!foreignLayer(el.isConnected ? el : (step?.target ? findTarget(step.target) ?? el : el)));
-    check();
-    const iv = setInterval(check, 250);
-    return () => clearInterval(iv);
-  }, [el, step?.target]);
+  React.useEffect(() => { if (!el) setPaused(false); }, [el]);
 
   /**
    * کیبورد (بازبینیِ ۳.۱۹.۰): Esc = «بعداً»، و فوکوس روی دکمهٔ اصلیِ کارت تا Enter/Space جلو ببرد.
@@ -286,11 +319,45 @@ export function TourOverlay({
     return () => document.removeEventListener('keydown', onKey);
   }, []);
   const cardShown = !!cardRef.current;
+  /** قدمِ کلیک (با کیبورد): جایی که کاربر باید «بزند» — خودِ هدف یا «بیشتر». */
+  const clickable = !!el && (step?.kind === 'click' || viaHolder) && !wrongPath && !missing
+    && !el.matches(':disabled') && el.getAttribute('aria-disabled') !== 'true';
   React.useEffect(() => {
-    if (!cardShown || document.querySelector(LAYERS)) return;
-    const b = cardRef.current?.querySelector<HTMLElement>('[data-tour-primary]');
-    b?.focus({ preventScroll: true });
-  }, [cardShown, step?.id]);
+    if (!cardShown) return;
+    const layerOpen = !!document.querySelector(LAYERS);
+    /*
+     * قدمِ کلیک: فوکوس روی خودِ هدف (یا اولین دکمه/پیوندِ داخلش) — کاربرِ کیبورد/صفحه‌خوان با Enter همان کلیک را
+     * می‌زند و راهنما جلو می‌رود. هدفِ داخلِ دیالوگ/منوی باز هم مجاز است (داخلِ تلهٔ فوکوسِ خودِ آن است).
+     */
+    if (clickable && el && (!layerOpen || el.closest(LAYERS))) {
+      focusables(el)[0]?.focus({ preventScroll: true });
+      return;
+    }
+    if (layerOpen) return;
+    cardRef.current?.querySelector<HTMLElement>('[data-tour-primary]')?.focus({ preventScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardShown, step?.id, clickable, el]);
+
+  /*
+   * Tab درونِ راهنما می‌ماند (صفحه‌خوان/کیبورد): پس‌زمینه با موس هم قابلِ کلیک نیست، پس با Tab هم نباید به آن
+   * رسید. قدمِ کلیک = کارت + هدف. ⚠️ وقتی دیالوگ/منو باز است کاری نمی‌کنیم — تلهٔ فوکوسِ خودِ Radix است.
+   */
+  const trapRef = React.useRef({ clickable, el });
+  trapRef.current = { clickable, el };
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || document.querySelector(LAYERS)) return;
+      const { clickable: c, el: target } = trapRef.current;
+      const ring = [...(c ? focusables(target) : []), ...focusables(cardRef.current)];
+      if (!ring.length) return;
+      const i = ring.indexOf(document.activeElement as HTMLElement);
+      e.preventDefault();
+      const next = i < 0 ? 0 : (i + (e.shiftKey ? -1 : 1) + ring.length) % ring.length;
+      ring[next]!.focus({ preventScroll: true });
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, []);
 
   React.useLayoutEffect(() => {
     const c = cardRef.current;
@@ -358,18 +425,20 @@ export function TourOverlay({
   const isClick = (step?.kind === 'click' || viaHolder) && !wrongPath && !missing && !!hole && !disabled;
   const blur = 'bg-black/45 backdrop-blur-[3px]';
 
+  const uid = 'kz-tour-card';
   const ui = (
     <div className="kz-tour" style={{ position: 'fixed', inset: 0, zIndex: Z, pointerEvents: 'none' }} dir={getComputedStyle(document.body).direction === 'ltr' ? 'ltr' : 'rtl'}>
       <style>{TOUR_CSS}</style>
       {/* پس‌زمینهٔ تار — چهار تکه دورِ عنصر، یا یکپارچه وقتی عنصری نیست. */}
       {hole ? (
         <>
-          <div className={cn(blur, glideCls)} style={{ position: 'fixed', top: 0, left: 0, right: 0, height: Math.max(0, hole.top), pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
-          <div className={cn(blur, glideCls)} style={{ position: 'fixed', top: hole.top + hole.height, left: 0, right: 0, bottom: 0, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
-          <div className={cn(blur, glideCls)} style={{ position: 'fixed', top: hole.top, left: 0, width: Math.max(0, hole.left), height: hole.height, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
-          <div className={cn(blur, glideCls)} style={{ position: 'fixed', top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
+          <div aria-hidden className={cn(blur, glideCls)} style={{ position: 'fixed', top: 0, left: 0, right: 0, height: Math.max(0, hole.top), pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
+          <div aria-hidden className={cn(blur, glideCls)} style={{ position: 'fixed', top: hole.top + hole.height, left: 0, right: 0, bottom: 0, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
+          <div aria-hidden className={cn(blur, glideCls)} style={{ position: 'fixed', top: hole.top, left: 0, width: Math.max(0, hole.left), height: hole.height, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
+          <div aria-hidden className={cn(blur, glideCls)} style={{ position: 'fixed', top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
           {/* حلقهٔ روشن؛ در قدمِ «دیدن» روی عنصر هم یک لایهٔ شفاف تا کلیک جایی نبرد. */}
           <div
+            aria-hidden
             className={cn('rounded-xl ring-2 ring-primary', glideCls, isClick && 'kz-tour-glow ring-[3px]')}
             style={{ position: 'fixed', ...hole, boxShadow: isClick ? undefined : '0 0 0 4px color-mix(in oklab, var(--primary) 25%, transparent)', pointerEvents: isClick ? 'none' : 'auto' }}
             onPointerDown={isClick ? undefined : block}
@@ -393,7 +462,7 @@ export function TourOverlay({
           })()}
         </>
       ) : (
-        <div className={blur} style={{ position: 'fixed', inset: 0, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
+        <div aria-hidden className={blur} style={{ position: 'fixed', inset: 0, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
       )}
 
       {/* کارتِ توضیح — تا عنصر پیدا نشده (و قدم عنصر دارد) نشان داده نمی‌شود. */}
@@ -401,8 +470,10 @@ export function TourOverlay({
         <div
           ref={cardRef}
           role="dialog"
-          aria-live="polite"
-          aria-label={step ? t(step.title) : t(tour.title)}
+          // ⚠️ بی aria-live: اعلامِ قدم کارِ ناحیهٔ زندهٔ ثابتِ provider است (این کارت برای هر قدم از نو ساخته می‌شود).
+          aria-modal={!isClick}
+          aria-labelledby={`${uid}-t`}
+          aria-describedby={`${uid}-b`}
           // ⚠️ سقفِ ارتفاع: متنِ بلند (آلمانی/فرانسوی) روی گوشیِ افقی از قاب بیرون می‌زد و دکمه‌ها دیده نمی‌شدند.
           className="kz-tour-card kz-tour-in max-h-[calc(100dvh-24px)] w-[min(340px,calc(100vw-24px))] overflow-y-auto rounded-2xl border bg-card p-4 text-card-foreground shadow-2xl"
           style={{ position: 'fixed', ...pos, pointerEvents: 'auto' }}
@@ -426,8 +497,8 @@ export function TourOverlay({
 
           {!step ? (
             <>
-              <h3 className="text-sm font-bold">{t('آفرین! این راهنما تمام شد.')}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <h3 id={`${uid}-t`} className="text-sm font-bold">{t('آفرین! این راهنما تمام شد.')}</h3>
+              <p id={`${uid}-b`} className="mt-1 text-sm text-muted-foreground">
                 {suggestions.length ? t('راهنمای بعدی را شروع کنید یا هر وقت خواستید از منوی کاربر ← «راهنمای برنامه» ببینید.') : t('هر وقت خواستید، همهٔ راهنماها در منوی کاربر ← «راهنمای برنامه» هستند.')}
               </p>
               {/*
@@ -459,8 +530,8 @@ export function TourOverlay({
           ) : noDest ? (
             step.optional ? null : (
               <>
-                <h3 className="text-sm font-bold">{t(step.title)}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{t('این قدم در صفحهٔ یک موردِ مشخص است؛ اول یکی را باز کنید.')}</p>
+                <h3 id={`${uid}-t`} className="text-sm font-bold">{t(step.title)}</h3>
+                <p id={`${uid}-b`} className="mt-1 text-sm text-muted-foreground">{t('این قدم در صفحهٔ یک موردِ مشخص است؛ اول یکی را باز کنید.')}</p>
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <button type="button" onClick={onLater} className="text-xs text-muted-foreground hover:underline">{t('بعداً')}</button>
                   <span className="flex items-center gap-2">
@@ -472,8 +543,8 @@ export function TourOverlay({
             )
           ) : wrongPath ? (
             <>
-              <h3 className="text-sm font-bold">{t(step.title)}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{t('این قدم در صفحهٔ دیگری است. برویم آنجا؟')}</p>
+              <h3 id={`${uid}-t`} className="text-sm font-bold">{t(step.title)}</h3>
+              <p id={`${uid}-b`} className="mt-1 text-sm text-muted-foreground">{t('این قدم در صفحهٔ دیگری است. برویم آنجا؟')}</p>
               <div className="mt-3 flex items-center justify-between gap-2">
                 <button type="button" onClick={onLater} className="text-xs text-muted-foreground hover:underline">{t('بعداً')}</button>
                 <Button type="button" size="sm" data-tour-primary onClick={() => onGo(step.path!)}>{t('برو به آنجا')}</Button>
@@ -481,8 +552,8 @@ export function TourOverlay({
             </>
           ) : (
             <>
-              <h3 className="text-sm font-bold">{t(step.title)}</h3>
-              <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+              <h3 id={`${uid}-t`} className="text-sm font-bold">{t(step.title)}</h3>
+              <p id={`${uid}-b`} className="mt-1 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                 {missing ? t('این بخش الان روی صفحه نیست؛ شاید برای نقشِ شما نیست یا هنوز داده‌ای ندارد. می‌توانید به قدمِ بعد بروید.') : t(step.body)}
               </p>
               {disabled && step.kind === 'click' && !missing && (
@@ -494,6 +565,7 @@ export function TourOverlay({
                 <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary">
                   <MousePointerClick className="size-3.5 shrink-0" />
                   {viaHolder ? t('این بخش زیرِ «بیشتر» است؛ اول آن را باز کنید.') : t('روی همان‌جایی بزنید که دستِ متحرک نشان می‌دهد.')}
+                  <span className="sr-only"> {t('با کیبورد: Enter.')}</span>
                 </p>
               )}
               <div className="mt-3 flex items-center justify-between gap-2">

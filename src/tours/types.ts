@@ -131,3 +131,16 @@ export interface TourState {
   /** «بعداً» — تا این زمان خودکار شروع نشود (ISO). */
   snoozeUntil?: string;
 }
+
+/**
+ * فهرستِ سبکِ راهنماهای یک کاربر (۳.۱۹.۰) — روی سرور ساخته می‌شود و به مرورگر می‌آید.
+ * ⚠️ متنِ همهٔ قدم‌ها (~۳۳۰KB) دیگر در بستهٔ JS ِ هر صفحه نیست: مرورگر فقط همین فهرست را دارد و دادهٔ کاملِ
+ * راهنماها را هنگامِ شروعِ یکی (یا باز شدنِ «راهنمای برنامه») با import ِ پویا می‌گیرد.
+ */
+export interface TourMeta {
+  id: string;
+  title: string;
+  description: string;
+  autoStart?: boolean;
+  next?: string[];
+}

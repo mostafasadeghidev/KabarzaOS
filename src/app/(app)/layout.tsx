@@ -13,6 +13,7 @@ import { LiveProvider } from '@/components/live';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { TourProvider } from '@/components/tour/tour-provider';
 import { getTourState, tourCtx } from '@/server/tours';
+import { catalogFor } from '@/tours';
 import { TableStackLabels } from '@/components/table-stack-labels';
 import { HeaderAutoHide } from '@/components/header-auto-hide';
 import { inboxCount } from '@/server/dashboard-inbox';
@@ -290,7 +291,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // پنجره می‌چسبید.
     // ۳.۱۴.۰ — خطِ خبرهای لحظه‌ای برای کلِ برنامه (نشان‌ها، زنگوله، گفتگوها).
     <LiveProvider enabled={system.pulseEnabled}>
-    <TourProvider ctx={tCtx} initial={tState} disabled={!!actor.viewOnly}>
+    <TourProvider ctx={tCtx} catalog={catalogFor(tCtx)} initial={tState} disabled={!!actor.viewOnly}>
     <SidebarProvider className="mx-auto max-w-(--shell-max)">
       {/* R-I18N-14 — زبانِ **مؤثر** پاس می‌شود: انتخابِ خودِ کاربر، وگرنه
           پیش‌فرضِ سامانه. `system` همین بالا لود شده، پس پرس‌وجوی تازه‌ای

@@ -1,4 +1,4 @@
-import type { Tour, TourCtx } from './types';
+import type { Tour, TourCtx, TourMeta } from './types';
 import { tours as welcome } from './areas/welcome';
 import { tours as projects } from './areas/projects';
 import { tours as tasks } from './areas/tasks';
@@ -15,5 +15,20 @@ export const TOURS: Tour[] = [...welcome, ...projects, ...tasks, ...hours, ...fi
 
 export const tourById = (id: string) => TOURS.find((t) => t.id === id) ?? null;
 
-/** راهنماهایی که این کاربر می‌بیند. */
-export const toursFor = (c: TourCtx) => TOURS.filter((t) => t.audience(c));
+/** قدم‌هایی که این کاربر می‌بیند (`when`). */
+export const stepsFor = (t: Tour, c: TourCtx) => t.steps.filter((s) => !s.when || s.when(c));
+
+/**
+ * راهنماهایی که این کاربر می‌بیند — ⚠️ بی راهنمایی که همهٔ قدم‌هایش با `when` کنار رفته‌اند («شروع» بی‌صدا
+ * کاری نمی‌کرد).
+ */
+export const toursFor = (c: TourCtx) => TOURS.filter((t) => t.audience(c) && stepsFor(t, c).length > 0);
+
+/** فهرستِ سبک برای مرورگر (بی قدم‌ها و بی تابع) — `TourMeta`. */
+export const catalogFor = (c: TourCtx): TourMeta[] => toursFor(c).map((t) => ({
+  id: t.id,
+  title: t.title,
+  description: t.description,
+  ...(t.autoStart ? { autoStart: true } : {}),
+  ...(t.next?.length ? { next: t.next } : {}),
+}));

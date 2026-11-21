@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { saveTourStateAction } from '@/app/(app)/_actions/tours';
-import { tourById, toursFor } from '@/tours';
-import { onPath, type Tour, type TourCtx, type TourPatch, type TourState, type TourStep } from '@/tours/types';
+import { useT } from '@/i18n/client';
+import { onPath, type Tour, type TourCtx, type TourMeta, type TourPatch, type TourState, type TourStep } from '@/tours/types';
 import { TourOverlay } from './tour-overlay';
 import { TourPicker } from './tour-picker';
 
@@ -19,8 +19,8 @@ import { TourPicker } from './tour-picker';
 interface TourApi {
   ctx: TourCtx;
   state: TourState;
-  /** راهنماهای این کاربر (بر اساسِ نقش). */
-  available: Tour[];
+  /** راهنماهای این کاربر (بر اساسِ نقش) — فهرستِ سبکِ سرور. */
+  available: TourMeta[];
   start: (id: string) => void;
   openPicker: () => void;
   disabled: boolean;
@@ -32,8 +32,18 @@ export function useTour() {
 
 const now = () => new Date().toISOString();
 
-export function TourProvider({ ctx, initial, disabled, children }: {
+/**
+ * دادهٔ کاملِ راهنماها با import ِ پویا (۳.۱۹.۰): ~۳۳۰KB متنِ قدم‌ها پیش از این در بستهٔ JS ِ **هر** صفحه بود،
+ * حتی برای کسی که هرگز راهنما باز نمی‌کند. حالا فقط هنگامِ شروعِ یکی — یک بار برای کلِ نشست.
+ */
+type Lib = typeof import('@/tours');
+let libP: Promise<Lib> | null = null;
+const loadLib = () => (libP ??= import('@/tours').catch((e) => { libP = null; throw e; }));
+
+export function TourProvider({ ctx, catalog, initial, disabled, children }: {
   ctx: TourCtx;
+  /** `catalogFor(ctx)` ِ سرور — همان `toursFor`، بی قدم‌ها. */
+  catalog: TourMeta[];
   initial: TourState;
   disabled: boolean;
   children: React.ReactNode;
@@ -44,9 +54,12 @@ export function TourProvider({ ctx, initial, disabled, children }: {
   const [active, setActive] = React.useState<{ id: string; idx: number } | null>(null);
   const [finished, setFinished] = React.useState<Tour | null>(null);
   const [picker, setPicker] = React.useState(false);
+  const [lib, setLib] = React.useState<Lib | null>(null);
   const stepsOf = React.useCallback((t: Tour) => t.steps.filter((s) => !s.when || s.when(ctx)), [ctx]);
-  // ⚠️ راهنمایی که همهٔ قدم‌هایش برای این کاربر با `when` کنار رفته‌اند در فهرست نیاید — «شروع» بی‌صدا کاری نمی‌کرد.
-  const available = React.useMemo(() => toursFor(ctx).filter((t) => stepsOf(t).length > 0), [ctx, stepsOf]);
+  const available = catalog;
+  const known = React.useCallback((id: string) => catalog.some((m) => m.id === id), [catalog]);
+  // «راهنمای برنامه» باز شد: داده را از همین حالا بگیر تا «شروع» بی‌درنگ باشد.
+  React.useEffect(() => { if (picker) loadLib().then(setLib, () => {}); }, [picker]);
 
   /**
    * فقط تغییر فرستاده می‌شود (TourPatch) و سرور آن را اتمی روی مقدارِ پایگاه‌داده ادغام می‌کند؛ اینجا هم
@@ -83,9 +96,17 @@ export function TourProvider({ ctx, initial, disabled, children }: {
     return () => { window.removeEventListener('pagehide', flush); flush(); };
   }, []);
 
-  const start = React.useCallback((id: string, fromStep?: string) => {
-    const t = tourById(id);
-    if (!t || !t.audience(ctx)) return;
+  /** آخرین درخواستِ شروع — اگر کاربر پیش از رسیدنِ داده راهنمای دیگری زد، فقط آخری باز شود. */
+  const wantRef = React.useRef(0);
+  const start = React.useCallback(async (id: string, fromStep?: string) => {
+    if (!known(id)) return;
+    const want = ++wantRef.current;
+    let m: Lib;
+    try { m = await loadLib(); } catch { return; }
+    if (want !== wantRef.current) return;
+    setLib(m);
+    const t = m.tourById(id);
+    if (!t) return;
     const steps = stepsOf(t);
     if (steps.length === 0) return;
     const idx = Math.max(0, fromStep ? steps.findIndex((s) => s.id === fromStep) : 0);
@@ -93,7 +114,7 @@ export function TourProvider({ ctx, initial, disabled, children }: {
     setPicker(false);
     setActive({ id, idx });
     persist({ active: { id, step: steps[idx]!.id } });
-  }, [ctx, stepsOf, persist]);
+  }, [known, stepsOf, persist]);
 
   // شروعِ خودکار — یک بار، کمی بعد از بارگذاری تا صفحه سرِ جایش بنشیند.
   const autoTried = React.useRef(false);
@@ -105,19 +126,19 @@ export function TourProvider({ ctx, initial, disabled, children }: {
       if (autoTried.current) return;
       autoTried.current = true;
       const s = initial;
-      if (s.active && tourById(s.active.id)?.audience(ctx)) { start(s.active.id, s.active.step); return; }
+      if (s.active && known(s.active.id)) { void start(s.active.id, s.active.step); return; }
       // ⚠️ «بعداً» پیش از راهنمای فرستاده‌شده: وگرنه راهنمای مدیر با هر بارگذاری دوباره باز می‌شد و «تا فردا
       // باز نمی‌شود» دروغ بود. (فرستادنِ تازهٔ مدیر خودش «بعداً» را پاک می‌کند.)
       if (s.snoozeUntil && Date.parse(s.snoozeUntil) > Date.now()) return;
-      const assigned = (s.assigned ?? []).find((t) => tourById(t)?.audience(ctx));
-      if (assigned) { start(assigned); return; }
+      const assigned = (s.assigned ?? []).find(known);
+      if (assigned) { void start(assigned); return; }
       const welcome = available.find((t) => t.autoStart && !s.done?.[t.id]);
-      if (welcome) start(welcome.id);
+      if (welcome) void start(welcome.id);
     }, 1200);
     return () => clearTimeout(id);
-  }, [disabled, initial, ctx, available, start]);
+  }, [disabled, initial, known, available, start]);
 
-  const tour = active ? tourById(active.id) : null;
+  const tour = active && lib ? lib.tourById(active.id) : null;
   const steps = tour ? stepsOf(tour) : [];
   const step: TourStep | null = active && steps[active.idx] ? steps[active.idx]! : null;
 
@@ -127,8 +148,11 @@ export function TourProvider({ ctx, initial, disabled, children }: {
     if (completed) setFinished(t);
   }, [persist]);
 
+  /** جهتِ آخرین جابه‌جایی — ردِ قدمِ ناپیدا هم همان سو برود. */
+  const dirRef = React.useRef(1);
   const go = React.useCallback((delta: number) => {
     if (!active || !tour) return;
+    dirRef.current = delta < 0 ? -1 : 1;
     const idx = active.idx + delta;
     if (idx < 0) return;
     if (idx >= steps.length) { finish(tour, true); return; }
@@ -143,6 +167,11 @@ export function TourProvider({ ctx, initial, disabled, children }: {
    */
   const skipMissing = React.useCallback(() => {
     if (!active || !tour) return;
+    /*
+     * ⚠️ «قبلی» روی قدمِ اختیاریِ ناپیدا (مثلاً «فهرستِ اعلان‌ها» وقتی منو بسته است): پیش از این رو به **جلو** رد
+     * می‌شد و کاربر دوباره به همان قدمی برمی‌گشت که از آن «قبلی» زده بود — عقب رفتن ناممکن بود.
+     */
+    if (dirRef.current < 0) { go(active.idx > 0 ? -1 : 1); return; }
     // «دیده می‌شود» یا زیرِ «بیشتر»/کشوی منو نگه داشته شده (آن هم یعنی قدم معنا دارد).
     const shown = (name: string) => [...document.querySelectorAll<HTMLElement>(`[data-tour="${CSS.escape(name)}"]`)]
       .some((e) => e.getBoundingClientRect().width > 0)
@@ -178,7 +207,7 @@ export function TourProvider({ ctx, initial, disabled, children }: {
   }, [persist]);
 
   const api = React.useMemo<TourApi>(() => ({
-    ctx, state, available, start: (id) => start(id), openPicker: () => setPicker(true), disabled,
+    ctx, state, available, start: (id) => { void start(id); }, openPicker: () => setPicker(true), disabled,
   }), [ctx, state, available, start, disabled]);
 
   // فقط در توسعه: دسترسیِ اسکریپتِ آزمون به موتور (اجرای پشتِ سرِ همِ همهٔ راهنماها در مرورگر).
@@ -191,21 +220,32 @@ export function TourProvider({ ctx, initial, disabled, children }: {
     };
   }, [available, start, active]);
 
-  const suggestions = React.useMemo(() => {
+  const suggestions = React.useMemo<TourMeta[]>(() => {
     if (!finished) return [];
-    const fresh = (t: Tour | null | undefined): t is Tour => !!t && t.id !== finished.id && t.audience(ctx) && !state.done?.[t.id];
-    const listed = (finished.next ?? []).map(tourById).filter(fresh);
+    // فهرستِ سبکِ سرور همان مخاطبانِ این کاربر است؛ `next` ِ راهنمایی که برایش نیست خودبه‌خود کنار می‌رود.
+    const fresh = (t: TourMeta | undefined): t is TourMeta => !!t && t.id !== finished.id && !state.done?.[t.id];
+    const listed = (finished.next ?? []).map((id) => available.find((m) => m.id === id)).filter(fresh);
     if (listed.length) return listed;
     // راهنمایی که `next` ندارد هم به بعدی برسد: اولین راهنمای دیده‌نشدهٔ همین کاربر، به ترتیبِ فهرست —
     // وگرنه کارتِ پایان فقط «تمام» داشت و کاربر راهِ ادامه را نمی‌دید.
     const i = available.findIndex((t) => t.id === finished.id);
     const after = [...available.slice(i + 1), ...available.slice(0, Math.max(0, i))].find(fresh);
     return after ? [after] : [];
-  }, [finished, ctx, state.done, available]);
+  }, [finished, state.done, available]);
+
+  /*
+   * صفحه‌خوان (۳.۱۹.۰): ناحیهٔ «زنده» ِ **ثابت** که هر قدم را می‌خواند. ⚠️ کارتِ راهنما برای هر قدم از نو ساخته
+   * می‌شود و ناحیهٔ زنده‌ای که همراهِ محتوایش تازه به صفحه می‌آید را صفحه‌خوان‌ها معمولاً نمی‌خوانند.
+   */
+  const t = useT();
+  const announce = tour && step
+    ? `${t(tour.title)} — ${t('{n} از {total}', { n: active!.idx + 1, total: steps.length })}: ${t(step.title)}. ${t(step.body)}`
+    : finished ? t('آفرین! این راهنما تمام شد.') : '';
 
   return (
     <TourCtxReact.Provider value={api}>
       {children}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">{announce}</div>
       {tour && step && (
         <TourOverlay
           key={`${tour.id}:${step.id}`}
@@ -235,7 +275,7 @@ export function TourProvider({ ctx, initial, disabled, children }: {
             // ⚠️ راهنمای قبلی اغلب داخلِ یک دیالوگ (پنجرهٔ تسک…) تمام می‌شود؛ راهنمای بعدی با آن پنجرهٔ باز
             // «منتظر است» می‌ماند. کاربر خودش «بعدی» را زده، پس پنجره‌های باز بسته شوند (Esc ِ Radix).
             for (let i = 0; i < 3; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-            start(id);
+            void start(id);
           }}
           onNext={() => setFinished(null)}
           onBack={() => {}}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { TOURS } from './index';
+import { catalogFor, TOURS, toursFor } from './index';
 import type { TourCtx } from './types';
 
 /**
@@ -81,4 +81,18 @@ describe('راهنماها', () => {
       });
     });
   }
+});
+
+describe('فهرستِ سبکِ مرورگر (catalogFor)', () => {
+  const NONE: TourCtx = { ...ALL, roles: ['client'], isOwner: false, managesTeam: false, isPm: false, isMember: false, isClientOnly: true, usesTimesheet: false };
+  it.each([['مالک', ALL], ['کارفرما', NONE]] as const)('%s: همان راهنماهای toursFor، بی قدم و بی تابع', (_n, c) => {
+    const cat = catalogFor(c);
+    expect(cat.map((m) => m.id)).toEqual(toursFor(c).map((t) => t.id));
+    // ⚠️ از سرور به مرورگر می‌رود: باید JSON ِ خالص باشد (تابعِ audience/when یا قدم‌ها نه).
+    expect(JSON.parse(JSON.stringify(cat))).toEqual(cat);
+    expect(cat.every((m) => !('steps' in m) && !('audience' in m))).toBe(true);
+  });
+  it('راهنمایی که همهٔ قدم‌هایش برای کاربر کنار رفته در فهرست نیست', () => {
+    for (const t of toursFor(NONE)) expect(t.steps.some((s) => !s.when || s.when(NONE))).toBe(true);
+  });
 });
