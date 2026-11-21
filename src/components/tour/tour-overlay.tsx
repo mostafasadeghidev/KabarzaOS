@@ -79,6 +79,9 @@ const TOUR_CSS = `
 
 /** زمانِ آخرین عوض شدنِ مسیر — بیرونِ کامپوننت، چون لایه برای هر قدم از نو ساخته می‌شود. */
 const lastNav = { path: '', at: 0, click: 0 };
+/** «کاهشِ حرکت» ِ سیستم — اسکرولِ نرم هم مثلِ پویانمایی‌های CSS خاموش شود. */
+const smooth = (): ScrollBehavior =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 // کلیکِ تازه هم یعنی «صفحه هنوز ننشسته» (دیالوگی که با کلیک باز شد شاید هنوز داده می‌گیرد).
 if (typeof document !== 'undefined') document.addEventListener('pointerdown', () => { lastNav.click = Date.now(); }, true);
 
@@ -147,7 +150,7 @@ export function TourOverlay({
         // در لایه فقط «nearest»: اگر در دیدِ صفحه است چیزی تکان نمی‌خورد، و اگر پایینِ اسکرولِ خودِ دیالوگ است همان جلو می‌آید.
         found.scrollIntoView(found.closest(LAYERS)
           ? { block: 'nearest', inline: 'nearest' }
-          : { block: 'center', inline: 'nearest', behavior: 'smooth' });
+          : { block: 'center', inline: 'nearest', behavior: smooth() });
         setViaHolder(false);
         setEl(found);
         return;
@@ -155,7 +158,7 @@ export function TourOverlay({
       const holder = findHolder(step.target!);
       if (holder) {
         // هدف زیرِ «بیشتر» است: آن را روشن کن و منتظرِ باز شدنش بمان (بی‌سقفِ زمان).
-        if (holder !== holding) { holding = holder; holder.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' }); setViaHolder(true); setEl(holder); }
+        if (holder !== holding) { holding = holder; holder.scrollIntoView({ block: 'center', inline: 'nearest', behavior: smooth() }); setViaHolder(true); setEl(holder); }
         setTimeout(tick, 200);
         return;
       }
@@ -265,6 +268,29 @@ export function TourOverlay({
     const iv = setInterval(check, 250);
     return () => clearInterval(iv);
   }, [el, step?.target]);
+
+  /**
+   * کیبورد (بازبینیِ ۳.۱۹.۰): Esc = «بعداً»، و فوکوس روی دکمهٔ اصلیِ کارت تا Enter/Space جلو ببرد.
+   * ⚠️ وقتی دیالوگ یا منویی باز است هیچ‌کدام: Esc مالِ همان پنجره است، و بردنِ فوکوس بیرون از دیالوگِ Radix
+   * آن را می‌بندد (دیالوگی که خودِ راهنما باز کرده بود).
+   */
+  const laterRef = React.useRef(onLater);
+  laterRef.current = onLater;
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector(LAYERS)) return;
+      e.preventDefault();
+      laterRef.current();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+  const cardShown = !!cardRef.current;
+  React.useEffect(() => {
+    if (!cardShown || document.querySelector(LAYERS)) return;
+    const b = cardRef.current?.querySelector<HTMLElement>('[data-tour-primary]');
+    b?.focus({ preventScroll: true });
+  }, [cardShown, step?.id]);
 
   React.useLayoutEffect(() => {
     const c = cardRef.current;
@@ -377,7 +403,8 @@ export function TourOverlay({
           role="dialog"
           aria-live="polite"
           aria-label={step ? t(step.title) : t(tour.title)}
-          className="kz-tour-card kz-tour-in w-[min(340px,calc(100vw-24px))] rounded-2xl border bg-card p-4 text-card-foreground shadow-2xl"
+          // ⚠️ سقفِ ارتفاع: متنِ بلند (آلمانی/فرانسوی) روی گوشیِ افقی از قاب بیرون می‌زد و دکمه‌ها دیده نمی‌شدند.
+          className="kz-tour-card kz-tour-in max-h-[calc(100dvh-24px)] w-[min(340px,calc(100vw-24px))] overflow-y-auto rounded-2xl border bg-card p-4 text-card-foreground shadow-2xl"
           style={{ position: 'fixed', ...pos, pointerEvents: 'auto' }}
           onPointerDown={stop}
           onClick={stop}
@@ -409,7 +436,7 @@ export function TourOverlay({
               */}
               {suggestions.length > 0 && (
                 <div className="mt-3 grid gap-1.5">
-                  <Button type="button" className="kz-tour-glow h-auto min-h-9 justify-between gap-2 whitespace-normal py-2 text-start" onClick={() => onStart?.(suggestions[0]!.id)} autoFocus>
+                  <Button type="button" data-tour-primary className="kz-tour-glow h-auto min-h-9 justify-between gap-2 whitespace-normal py-2 text-start" onClick={() => onStart?.(suggestions[0]!.id)}>
                     <span className="flex min-w-0 flex-col items-start">
                       <span className="text-[11px] font-normal opacity-80">{t('راهنمای بعدی')}</span>
                       <span className="font-semibold">{t(suggestions[0]!.title)}</span>
@@ -426,7 +453,7 @@ export function TourOverlay({
               <div className="mt-3 flex justify-end">
                 {suggestions.length > 0
                   ? <Button type="button" size="sm" variant="ghost" className="text-muted-foreground" onClick={onClose}>{t('فعلاً بس است')}</Button>
-                  : <Button type="button" size="sm" onClick={onClose}>{t('تمام')}</Button>}
+                  : <Button type="button" size="sm" data-tour-primary onClick={onClose}>{t('تمام')}</Button>}
               </div>
             </>
           ) : noDest ? (
@@ -449,7 +476,7 @@ export function TourOverlay({
               <p className="mt-1 text-sm text-muted-foreground">{t('این قدم در صفحهٔ دیگری است. برویم آنجا؟')}</p>
               <div className="mt-3 flex items-center justify-between gap-2">
                 <button type="button" onClick={onLater} className="text-xs text-muted-foreground hover:underline">{t('بعداً')}</button>
-                <Button type="button" size="sm" onClick={() => onGo(step.path!)}>{t('برو به آنجا')}</Button>
+                <Button type="button" size="sm" data-tour-primary onClick={() => onGo(step.path!)}>{t('برو به آنجا')}</Button>
               </div>
             </>
           ) : (
@@ -480,7 +507,7 @@ export function TourOverlay({
                   {isClick ? (
                     <button type="button" onClick={onNext} className="text-xs text-muted-foreground hover:underline">{t('رد شدن')}</button>
                   ) : (
-                    <Button type="button" size="sm" onClick={onNext}>
+                    <Button type="button" size="sm" data-tour-primary onClick={onNext}>
                       {index + 1 >= total ? t('تمام') : t('بعدی')}<ArrowLeft className="size-3.5 ltr:rotate-180" />
                     </Button>
                   )}

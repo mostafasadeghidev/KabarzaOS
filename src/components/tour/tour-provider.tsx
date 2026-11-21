@@ -4,7 +4,7 @@ import * as React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { saveTourStateAction } from '@/app/(app)/_actions/tours';
 import { tourById, toursFor } from '@/tours';
-import { onPath, type Tour, type TourCtx, type TourState, type TourStep } from '@/tours/types';
+import { onPath, type Tour, type TourCtx, type TourPatch, type TourState, type TourStep } from '@/tours/types';
 import { TourOverlay } from './tour-overlay';
 import { TourPicker } from './tour-picker';
 
@@ -44,14 +44,24 @@ export function TourProvider({ ctx, initial, disabled, children }: {
   const [active, setActive] = React.useState<{ id: string; idx: number } | null>(null);
   const [finished, setFinished] = React.useState<Tour | null>(null);
   const [picker, setPicker] = React.useState(false);
-  const available = React.useMemo(() => toursFor(ctx), [ctx]);
+  const stepsOf = React.useCallback((t: Tour) => t.steps.filter((s) => !s.when || s.when(ctx)), [ctx]);
+  // ⚠️ راهنمایی که همهٔ قدم‌هایش برای این کاربر با `when` کنار رفته‌اند در فهرست نیاید — «شروع» بی‌صدا کاری نمی‌کرد.
+  const available = React.useMemo(() => toursFor(ctx).filter((t) => stepsOf(t).length > 0), [ctx, stepsOf]);
 
-  const persist = React.useCallback((patch: TourState) => {
-    setState((s) => ({ ...s, ...patch }));
+  /**
+   * فقط تغییر فرستاده می‌شود (TourPatch) و سرور آن را اتمی روی مقدارِ پایگاه‌داده ادغام می‌کند؛ اینجا هم
+   * همان ادغام روی state ِ محلی. ⚠️ پیش از این کلِ `done`/`assigned` ِ کهنه فرستاده و جایگزین می‌شد.
+   */
+  const persist = React.useCallback((patch: TourPatch) => {
+    setState((s) => ({
+      ...s,
+      ...('active' in patch ? { active: patch.active ?? null } : {}),
+      ...(patch.snoozeUntil !== undefined ? { snoozeUntil: patch.snoozeUntil } : {}),
+      done: patch.done ? { ...(s.done ?? {}), ...patch.done } : s.done,
+      assigned: patch.unassign ? (s.assigned ?? []).filter((x) => x !== patch.unassign) : s.assigned,
+    }));
     if (!disabled) void saveTourStateAction(patch);
   }, [disabled]);
-
-  const stepsOf = React.useCallback((t: Tour) => t.steps.filter((s) => !s.when || s.when(ctx)), [ctx]);
 
   const start = React.useCallback((id: string, fromStep?: string) => {
     const t = tourById(id);
@@ -76,9 +86,11 @@ export function TourProvider({ ctx, initial, disabled, children }: {
       autoTried.current = true;
       const s = initial;
       if (s.active && tourById(s.active.id)?.audience(ctx)) { start(s.active.id, s.active.step); return; }
+      // ⚠️ «بعداً» پیش از راهنمای فرستاده‌شده: وگرنه راهنمای مدیر با هر بارگذاری دوباره باز می‌شد و «تا فردا
+      // باز نمی‌شود» دروغ بود. (فرستادنِ تازهٔ مدیر خودش «بعداً» را پاک می‌کند.)
+      if (s.snoozeUntil && Date.parse(s.snoozeUntil) > Date.now()) return;
       const assigned = (s.assigned ?? []).find((t) => tourById(t)?.audience(ctx));
       if (assigned) { start(assigned); return; }
-      if (s.snoozeUntil && Date.parse(s.snoozeUntil) > Date.now()) return;
       const welcome = available.find((t) => t.autoStart && !s.done?.[t.id]);
       if (welcome) start(welcome.id);
     }, 1200);
@@ -91,11 +103,9 @@ export function TourProvider({ ctx, initial, disabled, children }: {
 
   const finish = React.useCallback((t: Tour, completed: boolean) => {
     setActive(null);
-    const done = { ...(state.done ?? {}), [t.id]: completed ? now() : `skipped:${now()}` };
-    const assigned = (state.assigned ?? []).filter((x) => x !== t.id);
-    persist({ done, assigned, active: null });
+    persist({ done: { [t.id]: completed ? now() : `skipped:${now()}` }, unassign: t.id, active: null });
     if (completed) setFinished(t);
-  }, [state, persist]);
+  }, [persist]);
 
   const go = React.useCallback((delta: number) => {
     if (!active || !tour) return;
@@ -127,6 +137,14 @@ export function TourProvider({ ctx, initial, disabled, children }: {
     }
     go(idx - active.idx);
   }, [active, tour, steps, pathname, go]);
+
+  /**
+   * ⚠️ تابعِ پایدار برای «بعدی»: arrow ِ تازه در هر رندر listener ِ قدمِ «کلیک» را از نو می‌ساخت و اگر رندر بینِ
+   * pointerdown و سنجشِ ۲۵۰ میلی‌ثانیه‌ای می‌افتاد، جلو رفتن گم می‌شد.
+   */
+  const goRef = React.useRef(go);
+  goRef.current = go;
+  const nextStable = React.useCallback(() => goRef.current(1), []);
 
   // قدمِ «کلیک» ِ ناوبری: با رسیدن به مسیرِ خواسته‌شده جلو می‌رود.
   React.useEffect(() => {
@@ -176,7 +194,7 @@ export function TourProvider({ ctx, initial, disabled, children }: {
           index={active!.idx}
           total={steps.length}
           pathname={pathname}
-          onNext={() => go(1)}
+          onNext={nextStable}
           onSkip={skipMissing}
           onBack={() => go(-1)}
           onClose={() => finish(tour, false)}

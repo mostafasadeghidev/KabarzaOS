@@ -77,6 +77,8 @@ export interface SectionConfig {
   onboarding?: boolean;
   /** پیوندِ «ایمیلِ شرکتی» (۲.۶۱.۰) — فقط وقتی سرورِ ایمیل وصل است و بیننده اعضا را اداره می‌کند. */
   corpMail?: boolean;
+  /** «فرستادنِ راهنما» — همان گاردِ سرور (`assignToursAction`: مالک یا مدیرِ اعضا). */
+  sendTour?: boolean;
 }
 
 /**
@@ -242,7 +244,7 @@ export function PersonCard({
                   «فرستادنِ راهنما» (۳.۱۹.۰) — راهنماهای خوش‌آمدِ نقشِ این کاربر بارِ بعدِ ورودش خودکار باز می‌شود،
                   حتی اگر قبلاً دیده باشد. گارد در سرور است (مالک یا مدیرِ اعضا).
                 */}
-                {canSignIn(person.memberState, false) && (
+                {section.sendTour && canSignIn(person.memberState, false) && (
                   <DropdownMenuItem onSelect={() => run(() => assignToursAction([person.id]))} data-tour="people-menu-send-tour">
                     <Sparkles className="size-3.5" />
                     {tr("فرستادنِ راهنما")}

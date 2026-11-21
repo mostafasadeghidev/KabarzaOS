@@ -105,6 +105,21 @@ export interface Tour {
   steps: TourStep[];
 }
 
+/**
+ * تغییرِ پیشرفت که مرورگر می‌فرستد — **فقط آنچه عوض شده**. سرور آن را در یک UPDATE ِ اتمی روی مقدارِ
+ * فعلیِ پایگاه‌داده ادغام می‌کند.
+ * ⚠️ پیش از این کلِ `done` و `assigned` از state ِ مرورگر (که از بارگذاریِ صفحه به‌روز نشده) فرستاده
+ * می‌شد و جایگزین می‌شد: راهنمایی که مدیر در همین فاصله فرستاده بود، یا پیشرفتِ تبِ دیگر، بی‌صدا پاک می‌شد.
+ */
+export interface TourPatch {
+  /** کلیدهای تازهٔ `done` (راهنما ← زمان یا `skipped:زمان`) — با بقیه ادغام می‌شود. */
+  done?: Record<string, string>;
+  active?: { id: string; step: string } | null;
+  snoozeUntil?: string;
+  /** این راهنما از `assigned` برداشته شود (تمام یا رد شد). */
+  unassign?: string;
+}
+
 /** وضعیتِ راهنمای هر کاربر روی سرور (`users.tour_state`). */
 export interface TourState {
   /** راهنماهای تمام‌شده ← زمان (ISO). */

@@ -4,27 +4,32 @@ import { requireActor } from '@/server/auth';
 import { canManageSection, isOwner } from '@/domain/access/permissions';
 import { assignTours, patchTourState } from '@/server/tours';
 import { tourById, TOURS } from '@/tours';
-import type { TourState } from '@/tours/types';
+import type { TourPatch } from '@/tours/types';
 
 /**
  * راهنمای تعاملی (۳.۱۹.۰) — ذخیرهٔ پیشرفتِ خودِ کاربر و فرستادنِ راهنما توسطِ مدیر.
  * ⚠️ requireActor در «دیدن به‌جای کاربر» رد می‌کند؛ موتور هم آنجا اصلاً راهنما شروع نمی‌کند.
  */
 const ID = /^[a-z0-9-]{1,64}$/;
+/** زمانِ ISO، یا `skipped:` + زمان — ⚠️ مقدارِ دلخواه (شیء یا رشتهٔ بلند) فهرستِ راهنما را برای همان کاربر می‌شکست. */
+const STAMP = /^(skipped:)?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
+const isoOk = (v: unknown): v is string => typeof v === 'string' && v.length <= 40 && !Number.isNaN(Date.parse(v));
 
-export async function saveTourStateAction(patch: TourState): Promise<{ error?: string }> {
+export async function saveTourStateAction(patch: TourPatch): Promise<{ error?: string }> {
   try {
-    const actor = await requireActor({ allowOffboarded: true });
-    const clean: TourState = {};
-    if (patch.done) {
-      clean.done = Object.fromEntries(Object.entries(patch.done).filter(([k]) => ID.test(k) && tourById(k)).slice(0, 200));
+    const actor = await requireActor();
+    const clean: TourPatch = {};
+    if (patch.done && typeof patch.done === 'object') {
+      clean.done = Object.fromEntries(Object.entries(patch.done)
+        .filter(([k, v]) => ID.test(k) && !!tourById(k) && typeof v === 'string' && STAMP.test(v)).slice(0, 20));
     }
     if (patch.active === null) clean.active = null;
-    else if (patch.active && ID.test(patch.active.id) && tourById(patch.active.id) && /^[a-z0-9-]{1,64}$/.test(patch.active.step)) {
+    else if (patch.active && typeof patch.active.id === 'string' && typeof patch.active.step === 'string'
+      && ID.test(patch.active.id) && tourById(patch.active.id) && ID.test(patch.active.step)) {
       clean.active = { id: patch.active.id, step: patch.active.step };
     }
-    if (patch.assigned) clean.assigned = patch.assigned.filter((k) => ID.test(k) && tourById(k)).slice(0, 100);
-    if (typeof patch.snoozeUntil === 'string' && !Number.isNaN(Date.parse(patch.snoozeUntil))) clean.snoozeUntil = patch.snoozeUntil;
+    if (isoOk(patch.snoozeUntil)) clean.snoozeUntil = patch.snoozeUntil;
+    if (typeof patch.unassign === 'string' && ID.test(patch.unassign)) clean.unassign = patch.unassign;
     await patchTourState(actor.id, clean);
     return {};
   } catch {
