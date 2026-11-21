@@ -44,6 +44,23 @@ export const can = (c: TourCtx, p: Permission) => c.perms.includes(p);
  */
 export const onPath = (pathname: string, p: string) => (p.endsWith('/') ? pathname.startsWith(p) : pathname === p);
 
+/**
+ * از کدام قدم شروع شود — قدم‌های ناوبریِ آغازین (`click` با `advanceOnPath`) که کاربر **از پیش** به مقصدشان
+ * رسیده رد می‌شوند. ⚠️ پیش از این فقط قدمی رد می‌شد که مسیرش دقیقاً همین صفحه بود: کسی که داخلِ یک پروژه
+ * «QA» و بعد «بازبینی‌ها» را می‌دید، هر بار به فهرستِ پروژه‌ها برگردانده می‌شد تا همان پروژه را دوباره باز کند
+ * (گزارشِ مالک). حالا آخرین قدمِ ناوبریِ پیشوند که مسیرِ فعلی مقصدش است ملاک است: داخلِ پروژه ← هر دو قدمِ
+ * «منوی پروژه‌ها» و «باز کردنِ پروژه» رد می‌شوند.
+ */
+export function arrivedAt(steps: readonly TourStep[], pathname: string): number {
+  let start = 0;
+  for (let i = 0; i < steps.length - 1; i++) {
+    const s = steps[i]!;
+    if (s.kind !== 'click' || !s.advanceOnPath) break;
+    if (onPath(pathname, s.advanceOnPath)) start = i + 1;
+  }
+  return start;
+}
+
 export interface TourStep {
   /** شناسهٔ پایدارِ قدم در همین راهنما (برای ادامه دادن بعد از بارگذاریِ دوباره). */
   id: string;

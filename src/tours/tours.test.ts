@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { catalogFor, TOURS, toursFor } from './index';
+import { arrivedAt } from './types';
 import type { TourCtx } from './types';
 
 /**
@@ -95,4 +96,11 @@ describe('فهرستِ سبکِ مرورگر (catalogFor)', () => {
   it('راهنمایی که همهٔ قدم‌هایش برای کاربر کنار رفته در فهرست نیست', () => {
     for (const t of toursFor(NONE)) expect(t.steps.some((s) => !s.when || s.when(NONE))).toBe(true);
   });
+});
+
+describe('arrivedAt — قدم‌های ناوبریِ آغازین که کاربر از پیش به مقصدشان رسیده', () => {
+  const qa = TOURS.find((t) => t.id === 'projects-qa')!.steps;
+  it('بیرون از پروژه‌ها از اول', () => expect(arrivedAt(qa, '/dashboard')).toBe(0));
+  it('در فهرستِ پروژه‌ها از «باز کردنِ پروژه»', () => expect(arrivedAt(qa, '/projects')).toBe(1));
+  it('داخلِ یک پروژه مستقیم از تبِ QA', () => expect(qa[arrivedAt(qa, '/projects/12')]!.id).toBe('tab'));
 });

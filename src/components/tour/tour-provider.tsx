@@ -4,7 +4,7 @@ import * as React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { saveTourStateAction } from '@/app/(app)/_actions/tours';
 import { useT } from '@/i18n/client';
-import { onPath, type Tour, type TourCtx, type TourMeta, type TourPatch, type TourState, type TourStep } from '@/tours/types';
+import { arrivedAt, onPath, type Tour, type TourCtx, type TourMeta, type TourPatch, type TourState, type TourStep } from '@/tours/types';
 import { TourOverlay } from './tour-overlay';
 import { TourPicker } from './tour-picker';
 
@@ -31,6 +31,7 @@ export function useTour() {
 }
 
 const now = () => new Date().toISOString();
+
 
 /**
  * دادهٔ کاملِ راهنماها با import ِ پویا (۳.۱۹.۰): ~۳۳۰KB متنِ قدم‌ها پیش از این در بستهٔ JS ِ **هر** صفحه بود،
@@ -109,7 +110,7 @@ export function TourProvider({ ctx, catalog, initial, disabled, children }: {
     if (!t) return;
     const steps = stepsOf(t);
     if (steps.length === 0) return;
-    const idx = Math.max(0, fromStep ? steps.findIndex((s) => s.id === fromStep) : 0);
+    const idx = fromStep ? Math.max(0, steps.findIndex((s) => s.id === fromStep)) : arrivedAt(steps, window.location.pathname);
     setFinished(null);
     setPicker(false);
     setActive({ id, idx });
