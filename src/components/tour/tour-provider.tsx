@@ -60,8 +60,28 @@ export function TourProvider({ ctx, initial, disabled, children }: {
       done: patch.done ? { ...(s.done ?? {}), ...patch.done } : s.done,
       assigned: patch.unassign ? (s.assigned ?? []).filter((x) => x !== patch.unassign) : s.assigned,
     }));
-    if (!disabled) void saveTourStateAction(patch);
+    if (disabled) return;
+    /*
+     * ⚠️ جابه‌جاییِ قدم (فقط `active`) با تأخیرِ کوتاه و فقط آخرینش: هر «بعدی» یک server action بود و صفِ
+     * مسیریابِ Next آن‌ها را پشتِ سرِ هم اجرا می‌کند — روی شبکهٔ کند کلیکِ ناوبری در قدمِ «کلیک» معطل می‌ماند.
+     * تمام/رد/«بعداً» بی‌تأخیر می‌روند و قدمِ معلق را هم با خود می‌برند.
+     */
+    const onlyStep = Object.keys(patch).length === 1 && 'active' in patch && !!patch.active;
+    if (pendingStep.current) clearTimeout(pendingStep.current.timer);
+    if (onlyStep) {
+      pendingStep.current = { patch, timer: setTimeout(() => { pendingStep.current = null; void saveTourStateAction(patch); }, 400) };
+      return;
+    }
+    pendingStep.current = null;
+    void saveTourStateAction(patch);
   }, [disabled]);
+  const pendingStep = React.useRef<{ patch: TourPatch; timer: ReturnType<typeof setTimeout> } | null>(null);
+  // بستنِ صفحه پیش از رسیدنِ تأخیر: قدمِ معلق گم نشود.
+  React.useEffect(() => {
+    const flush = () => { const p = pendingStep.current; if (p) { clearTimeout(p.timer); pendingStep.current = null; void saveTourStateAction(p.patch); } };
+    window.addEventListener('pagehide', flush);
+    return () => { window.removeEventListener('pagehide', flush); flush(); };
+  }, []);
 
   const start = React.useCallback((id: string, fromStep?: string) => {
     const t = tourById(id);
@@ -211,7 +231,12 @@ export function TourProvider({ ctx, initial, disabled, children }: {
           total={0}
           pathname={pathname}
           suggestions={suggestions}
-          onStart={(id) => start(id)}
+          onStart={(id) => {
+            // ⚠️ راهنمای قبلی اغلب داخلِ یک دیالوگ (پنجرهٔ تسک…) تمام می‌شود؛ راهنمای بعدی با آن پنجرهٔ باز
+            // «منتظر است» می‌ماند. کاربر خودش «بعدی» را زده، پس پنجره‌های باز بسته شوند (Esc ِ Radix).
+            for (let i = 0; i < 3; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            start(id);
+          }}
           onNext={() => setFinished(null)}
           onBack={() => {}}
           onClose={() => setFinished(null)}
