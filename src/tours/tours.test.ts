@@ -27,6 +27,24 @@ const exists = (t: string) => fixed.has(t) || prefixes.some((p) => p && t.starts
 const FA = /[؀-ۿ]/;
 const ALL: TourCtx = { roles: ['owner'], perms: [], isOwner: true, managesTeam: true, isPm: true, isMember: true, isClientOnly: false, usesTimesheet: true, onboarding: true, corpMail: true, cloud: true };
 
+/**
+ * ⚠️ ترجمه از خودِ دادهٔ راهنما، نه از جستجوی متن: متن‌های خوش‌آمد در جدولی با کلیدهای `hello` / `menu`
+ * بودند و استخراج‌گر (که فقط `title:` / `body:` را می‌شناسد) ندیدشان — کارمندِ انگلیسی‌زبان قدمِ دوم را فارسی دید.
+ */
+describe('هر متنِ راهنما در همهٔ زبان‌ها ترجمه دارد', () => {
+  const texts = new Set<string>();
+  for (const t of TOURS) {
+    texts.add(t.title); texts.add(t.description);
+    for (const s of t.steps) { texts.add(s.title); texts.add(s.body); }
+  }
+  for (const locale of ['en', 'ar', 'ckb', 'de', 'es', 'fr', 'pt', 'tr']) {
+    it(locale, () => {
+      const msgs = JSON.parse(readFileSync(join('src/i18n/messages', `${locale}.json`), 'utf8')) as Record<string, string>;
+      expect([...texts].filter((k) => !msgs[k])).toEqual([]);
+    });
+  }
+});
+
 describe('راهنماها', () => {
   it('شناسهٔ راهنماها یکتاست', () => {
     const ids = TOURS.map((t) => t.id);

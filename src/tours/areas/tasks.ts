@@ -21,8 +21,9 @@ const toProjectTasks: TourStep[] = [
     title: 'منوی «پروژه‌ها»', body: 'روی «پروژه‌ها» بزنید تا فهرستِ پروژه‌هایتان باز شود.',
   },
   {
-    id: 'open-project', target: 'projects-card', kind: 'click', advanceOnPath: '/projects/', path: '/projects',
-    title: 'باز کردنِ یک پروژه', body: 'روی نامِ یکی از پروژه‌ها بزنید تا صفحهٔ آن باز شود.',
+    // ⚠️ دکمهٔ «مشاهده»، نه کلِ کارت: متن می‌گفت «روی نام بزنید» ولی کلِ کارت روشن بود و کاربر نمی‌دانست کجا.
+    id: 'open-project', target: 'projects-card-open', kind: 'click', advanceOnPath: '/projects/', path: '/projects',
+    title: 'باز کردنِ یک پروژه', body: 'روی «مشاهده» ِ یکی از کارت‌ها بزنید تا صفحهٔ آن پروژه باز شود.',
   },
   {
     id: 'tab-tasks', target: 'project-tab-tasks', kind: 'click', path: '/projects/',

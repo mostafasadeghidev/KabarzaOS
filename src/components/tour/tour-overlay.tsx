@@ -2,11 +2,12 @@
 
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowRight, MousePointerClick, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MousePointerClick, Pointer, Sparkles, X } from 'lucide-react';
 import { useT } from '@/i18n/client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { onPath, type Tour, type TourStep } from '@/tours/types';
+import { LocaleSwitcher } from '@/components/locale-switcher';
 
 /**
  * لایهٔ راهنما (۳.۱۹.۰): همه‌جا تار و تیره می‌شود جز عنصرِ قدم، با حلقهٔ روشن دورش و کارتِ توضیح کنارش.
@@ -53,9 +54,28 @@ const LAYERS = '[role="dialog"][data-state="open"],[role="alertdialog"][data-sta
 function foreignLayer(target: HTMLElement): HTMLElement | null {
   const own = target.closest<HTMLElement>(LAYERS);
   return [...document.querySelectorAll<HTMLElement>(LAYERS)].find((l) =>
-    !l.closest('.kz-tour') && !l.contains(target) && visible(l)
+    !l.closest('.kz-tour, .kz-tour-layer') && !l.contains(target) && visible(l)
     && (!own || !!(own.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING))) ?? null;
 }
+
+/**
+ * جای قابِ روشنِ قدمِ قبلی — تا قاب از آنجا به جای تازه **بلغزد** (۳.۱۹.۰، خواستِ مالک: «انیمیشنِ کوچک برای
+ * نشان دادنِ راهنما و منوها»). بیرونِ کامپوننت چون لایه برای هر قدم از نو ساخته می‌شود.
+ */
+let lastHole: { top: number; left: number; width: number; height: number } | null = null;
+/** پویانمایی‌ها؛ با «کاهشِ حرکت» ِ سیستم خاموش می‌شوند. */
+const TOUR_CSS = `
+@keyframes kz-tour-glow { 0%,100% { box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 30%, transparent), 0 0 18px 2px color-mix(in oklab, var(--primary) 45%, transparent); } 50% { box-shadow: 0 0 0 7px color-mix(in oklab, var(--primary) 18%, transparent), 0 0 28px 6px color-mix(in oklab, var(--primary) 60%, transparent); } }
+@keyframes kz-tour-tap { 0%,100% { transform: translate(-30%, -10%) scale(1); } 50% { transform: translate(-30%, -10%) scale(.82); } }
+@keyframes kz-tour-ripple { 0% { transform: translate(-50%,-50%) scale(.4); opacity: .7; } 100% { transform: translate(-50%,-50%) scale(2.2); opacity: 0; } }
+@keyframes kz-tour-in { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
+.kz-tour-glow { animation: kz-tour-glow 1.6s ease-in-out infinite; }
+.kz-tour-tap { animation: kz-tour-tap 1.1s ease-in-out infinite; }
+.kz-tour-ripple { animation: kz-tour-ripple 1.1s ease-out infinite; }
+.kz-tour-in { animation: kz-tour-in .28s cubic-bezier(.2,.8,.2,1) both; }
+.kz-tour-glide { transition: top .38s cubic-bezier(.2,.8,.2,1), left .38s cubic-bezier(.2,.8,.2,1), width .38s cubic-bezier(.2,.8,.2,1), height .38s cubic-bezier(.2,.8,.2,1); }
+@media (prefers-reduced-motion: reduce) { .kz-tour-glow, .kz-tour-tap, .kz-tour-ripple, .kz-tour-in { animation: none; } .kz-tour-glide { transition: none; } }
+`;
 
 /** زمانِ آخرین عوض شدنِ مسیر — بیرونِ کامپوننت، چون لایه برای هر قدم از نو ساخته می‌شود. */
 const lastNav = { path: '', at: 0, click: 0 };
@@ -159,8 +179,10 @@ export function TourOverlay({
     if (!el) return;
     let raf = 0;
     const loop = () => {
-      if (!el.isConnected) {
-        // عنصر رفت (مثلاً با کلیک صفحه عوض شد) — دوباره بگرد.
+      // عنصر رفت (با کلیک صفحه عوض شد) یا دیگر دیده نمی‌شود — دوباره بگرد.
+      // ⚠️ «دیده نمی‌شود» هم: با عوض شدنِ پهنای پنجره (چرخاندنِ گوشی) منوی پایینِ گوشی پنهان و سایدبار پیدا
+      // می‌شود؛ راهنما به نسخهٔ پنهان (اندازهٔ صفر) چسبیده می‌ماند و قاب و دست گوشهٔ بالای صفحه می‌نشستند.
+      if (!el.isConnected || !visible(el)) {
         const again = step?.target ? findTarget(step.target) : null;
         if (again && again !== el) { setEl(again); return; }
       }
@@ -172,7 +194,7 @@ export function TourOverlay({
     raf = requestAnimationFrame(loop);
     // ⚠️ در زبانهٔ پنهان requestAnimationFrame متوقف است؛ زمان‌سنجِ پشتیبان جای عنصر را باز هم به‌روز می‌کند.
     const iv = setInterval(() => {
-      if (!el.isConnected) {
+      if (!el.isConnected || !visible(el)) {
         const again = step?.target ? findTarget(step.target) : null;
         if (again && again !== el) setEl(again);
         return;
@@ -217,6 +239,22 @@ export function TourOverlay({
     };
   }, [el, viaHolder, step, onNext]);
 
+  /**
+   * لغزیدنِ قاب: تا عنصر پیدا شد، یک فریم با جای قبلی کشیده می‌شود و بعد به جای تازه می‌رود (با transition).
+   * ⚠️ transition فقط در همین ۴۵۰ میلی‌ثانیه — وگرنه قاب هنگامِ اسکرول از عنصر عقب می‌ماند.
+   */
+  const [glide, setGlide] = React.useState<'from' | 'moving' | 'done'>(lastHole ? 'from' : 'done');
+  const hasRect = !!rect;
+  React.useEffect(() => {
+    if (!hasRect || glide !== 'from') return;
+    const raf = requestAnimationFrame(() => requestAnimationFrame(() => setGlide('moving')));
+    // پشتیبان: در زبانهٔ پنهان rAF نمی‌چرخد.
+    const t1 = setTimeout(() => setGlide((g) => (g === 'from' ? 'moving' : g)), 60);
+    const t2 = setTimeout(() => setGlide('done'), 450);
+    return () => { cancelAnimationFrame(raf); clearTimeout(t1); clearTimeout(t2); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasRect]);
+
   // پنجرهٔ بی‌ربطِ باز: راهنما کنار می‌رود و با بسته شدنش از همان قدم ادامه می‌دهد (خودکار نمی‌بندیم — شاید
   // کاربر وسطِ نوشتن باشد).
   const [paused, setPaused] = React.useState(false);
@@ -256,17 +294,23 @@ export function TourOverlay({
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const hole = rect && !wrongPath && !missing
+  const realHole = rect && !wrongPath && !missing
     ? { top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2 }
     : null;
+  // فریمِ اولِ قدم با جای قبلی، بعد جای واقعی (لغزیدن).
+  const hole = realHole && glide === 'from' && lastHole ? lastHole : realHole;
+  if (realHole) lastHole = realHole;
+  const glideCls = glide === 'done' ? undefined : 'kz-tour-glide';
+  // جای کارت از جای واقعیِ عنصر، نه جای لغزان.
+  const anchor = realHole;
 
   // جای کارت: زیر، بالا، کنار، یا وسط.
   let pos: React.CSSProperties;
-  if (hole) {
+  if (anchor) {
     const w = cardSize.w, h = cardSize.h;
-    const left = Math.min(Math.max(12, hole.left + hole.width / 2 - w / 2), vw - w - 12);
-    const below = hole.top + hole.height + GAP;
-    const above = hole.top - GAP - h;
+    const left = Math.min(Math.max(12, anchor.left + anchor.width / 2 - w / 2), vw - w - 12);
+    const below = anchor.top + anchor.height + GAP;
+    const above = anchor.top - GAP - h;
     const want = step?.placement;
     if ((want === 'bottom' || !want) && below + h < vh - 8) pos = { top: below, left };
     else if ((want === 'top' || !want) && above > 8) pos = { top: above, left };
@@ -274,12 +318,13 @@ export function TourOverlay({
     else if (above > 8) pos = { top: above, left };
     else {
       // کنارِ عنصر (عنصرِ بلند، مثلاً سایدبار).
-      const top = Math.min(Math.max(12, hole.top + hole.height / 2 - h / 2), vh - h - 12);
-      const side = hole.left > vw - (hole.left + hole.width) ? hole.left - GAP - w : hole.left + hole.width + GAP;
+      const top = Math.min(Math.max(12, anchor.top + anchor.height / 2 - h / 2), vh - h - 12);
+      const side = anchor.left > vw - (anchor.left + anchor.width) ? anchor.left - GAP - w : anchor.left + anchor.width + GAP;
       pos = { top, left: Math.min(Math.max(12, side), vw - w - 12) };
     }
   } else {
-    pos = { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
+    // ⚠️ `translate` نه `transform`: پویانماییِ ورودِ کارت transform را می‌گیرد و وسط‌چینی را به هم می‌زد.
+    pos = { top: '50%', left: '50%', translate: '-50% -50%' };
   }
 
   // ⚠️ دکمهٔ غیرفعال (مثلاً «افزودنِ مقصد» پیش از آماده شدنِ کلیدِ پشتیبان): قدمِ «کلیک» کاربر را گیر می‌انداخت.
@@ -289,20 +334,37 @@ export function TourOverlay({
 
   const ui = (
     <div className="kz-tour" style={{ position: 'fixed', inset: 0, zIndex: Z, pointerEvents: 'none' }} dir={getComputedStyle(document.body).direction === 'ltr' ? 'ltr' : 'rtl'}>
+      <style>{TOUR_CSS}</style>
       {/* پس‌زمینهٔ تار — چهار تکه دورِ عنصر، یا یکپارچه وقتی عنصری نیست. */}
       {hole ? (
         <>
-          <div className={blur} style={{ position: 'fixed', top: 0, left: 0, right: 0, height: Math.max(0, hole.top), pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
-          <div className={blur} style={{ position: 'fixed', top: hole.top + hole.height, left: 0, right: 0, bottom: 0, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
-          <div className={blur} style={{ position: 'fixed', top: hole.top, left: 0, width: Math.max(0, hole.left), height: hole.height, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
-          <div className={blur} style={{ position: 'fixed', top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
+          <div className={cn(blur, glideCls)} style={{ position: 'fixed', top: 0, left: 0, right: 0, height: Math.max(0, hole.top), pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
+          <div className={cn(blur, glideCls)} style={{ position: 'fixed', top: hole.top + hole.height, left: 0, right: 0, bottom: 0, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
+          <div className={cn(blur, glideCls)} style={{ position: 'fixed', top: hole.top, left: 0, width: Math.max(0, hole.left), height: hole.height, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
+          <div className={cn(blur, glideCls)} style={{ position: 'fixed', top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
           {/* حلقهٔ روشن؛ در قدمِ «دیدن» روی عنصر هم یک لایهٔ شفاف تا کلیک جایی نبرد. */}
           <div
-            className={cn('rounded-xl ring-2 ring-primary transition-[top,left,width,height] duration-150', isClick && 'animate-pulse')}
-            style={{ position: 'fixed', ...hole, boxShadow: '0 0 0 4px color-mix(in oklab, var(--primary) 25%, transparent)', pointerEvents: isClick ? 'none' : 'auto' }}
+            className={cn('rounded-xl ring-2 ring-primary', glideCls, isClick && 'kz-tour-glow ring-[3px]')}
+            style={{ position: 'fixed', ...hole, boxShadow: isClick ? undefined : '0 0 0 4px color-mix(in oklab, var(--primary) 25%, transparent)', pointerEvents: isClick ? 'none' : 'auto' }}
             onPointerDown={isClick ? undefined : block}
             onClick={isClick ? undefined : block}
           />
+          {/*
+            قدمِ «کلیک»: دستِ متحرک و موج درست روی جای کلیک — «روی بخشِ روشن کلیک کنید» برای کاربر گنگ بود
+            (کدام بخش؟). وسطِ عنصرهای کوچک؛ برای عنصرِ بزرگ (کارت) نزدیکِ گوشهٔ آغازین تا روی متن ننشیند.
+          */}
+          {isClick && glide !== 'from' && (() => {
+            const big = hole.width > 220 || hole.height > 90;
+            const rtl = getComputedStyle(document.body).direction !== 'ltr';
+            const x = big ? (rtl ? hole.left + hole.width - 48 : hole.left + 48) : hole.left + hole.width / 2;
+            const y = big ? hole.top + 34 : hole.top + hole.height / 2;
+            return (
+              <div aria-hidden style={{ position: 'fixed', left: x, top: y, pointerEvents: 'none' }}>
+                <span className="kz-tour-ripple absolute size-9 rounded-full bg-primary/40" style={{ left: 0, top: 0 }} />
+                <Pointer className="kz-tour-tap absolute size-7 fill-background text-primary drop-shadow-md" style={{ left: 0, top: 0 }} />
+              </div>
+            );
+          })()}
         </>
       ) : (
         <div className={blur} style={{ position: 'fixed', inset: 0, pointerEvents: 'auto' }} onPointerDown={block} onClick={block} />
@@ -315,7 +377,7 @@ export function TourOverlay({
           role="dialog"
           aria-live="polite"
           aria-label={step ? t(step.title) : t(tour.title)}
-          className="kz-tour-card w-[min(340px,calc(100vw-24px))] rounded-2xl border bg-card p-4 text-card-foreground shadow-2xl"
+          className="kz-tour-card kz-tour-in w-[min(340px,calc(100vw-24px))] rounded-2xl border bg-card p-4 text-card-foreground shadow-2xl"
           style={{ position: 'fixed', ...pos, pointerEvents: 'auto' }}
           onPointerDown={stop}
           onClick={stop}
@@ -325,7 +387,9 @@ export function TourOverlay({
               <Sparkles className="size-3.5 shrink-0" />
               <span className="truncate">{t(tour.title)}</span>
             </span>
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-1">
+              {/* زبان همین‌جا: کسی که راهنما را به زبانِ نادرست می‌بیند نباید دنبالِ منوی کاربر بگردد. */}
+              <LocaleSwitcher compact inTour className="h-6 px-1.5" />
               {step && total > 0 && <span className="text-[11px] tabular-nums text-muted-foreground">{t('{n} از {total}', { n: index + 1, total })}</span>}
               <button type="button" onClick={onClose} aria-label={t('بستنِ راهنما')} className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground">
                 <X className="size-4" />
@@ -387,7 +451,7 @@ export function TourOverlay({
               {isClick && (
                 <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary">
                   <MousePointerClick className="size-3.5 shrink-0" />
-                  {viaHolder ? t('این بخش زیرِ «بیشتر» است؛ اول آن را باز کنید.') : t('روی بخشِ روشن کلیک کنید.')}
+                  {viaHolder ? t('این بخش زیرِ «بیشتر» است؛ اول آن را باز کنید.') : t('روی همان‌جایی بزنید که دستِ متحرک نشان می‌دهد.')}
                 </p>
               )}
               <div className="mt-3 flex items-center justify-between gap-2">
