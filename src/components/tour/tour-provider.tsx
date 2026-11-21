@@ -32,6 +32,46 @@ export function useTour() {
 
 const now = () => new Date().toISOString();
 
+const LAYERS = '[role="dialog"][data-state="open"],[role="alertdialog"][data-state="open"],[role="menu"][data-state="open"]';
+/** عنصرِ این برچسب همین الان دیده می‌شود (نه نسخهٔ پنهان، نه دیالوگِ در حالِ بسته شدن). */
+function onScreen(name: string): HTMLElement | null {
+  return [...document.querySelectorAll<HTMLElement>(`[data-tour="${CSS.escape(name)}"]`)].find((e) => {
+    const r = e.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && !e.closest('[data-state="closed"]') && !e.closest('.kz-tour');
+  }) ?? null;
+}
+/**
+ * «جلو بردن» ِ راهنمای **پشتِ سرِ هم** (۳.۱۹.۰، خواستِ مالک): از قدمِ `from`، کلیک‌های آماده‌سازی (باز کردنِ
+ * منو، تب، پنجره، رفتن به صفحه) که نتیجه‌شان همین الان روی صفحه است رد می‌شوند — اگر عنصرِ قدمی جلوتر در همین
+ * رشتهٔ کلیک‌ها (یا قدمِ بعد از آن) دیده می‌شود، کلیک‌های پیش از آن لازم نیست.
+ * مثال: «QA» ← «بازبینی‌ها» داخلِ پروژه؛ «پنجرهٔ تسک» ← «یادداشت‌ها» با پنجرهٔ باز؛ تبِ تنظیماتی که باز است.
+ * ⚠️ قدمِ جلوتر باید «مسیرِ مؤثر» داشته باشد (مسیرِ خودش یا نزدیک‌ترین قدمِ قبلی — بیشترِ قدم‌ها مسیر را از
+ * قدمِ قبل به ارث می‌برند) و در همان مسیر باشیم. قدمِ ناوبری (پیوندِ منو) نشانه نیست: همیشه دیده می‌شود و
+ * دیده شدنش چیزی دربارهٔ کلیک‌های قبلی نمی‌گوید.
+ */
+function fastForward(steps: readonly TourStep[], from: number, pathname: string): number {
+  let end = from;
+  while (end < steps.length && steps[end]!.kind === 'click') end++;
+  let best = from;
+  let path: string | undefined;
+  for (let k = 0; k <= from; k++) path = steps[k]!.path ?? path;
+  for (let j = from + 1; j <= end && j < steps.length; j++) {
+    const s = steps[j]!;
+    path = s.path ?? path;
+    const nav = !!s.advanceOnPath && !s.path;
+    if (s.target && !nav && path && onPath(pathname, path) && onScreen(s.target)) best = j;
+  }
+  // تبی که همین الان انتخاب شده («روی تبِ دفترکل بزنید» وقتی دفترکل باز است) — حتی اگر محتوای تب هنوز چیزی
+  // برای قدمِ بعد نشان ندهد (فهرستِ خالی).
+  while (best < steps.length - 1 && steps[best]!.kind === 'click' && !steps[best]!.advanceOnPath && steps[best]!.target) {
+    const e = onScreen(steps[best]!.target!);
+    const on = e && (e.getAttribute('aria-selected') === 'true' || e.getAttribute('data-state') === 'active' || e.getAttribute('aria-current') === 'page');
+    if (!on) break;
+    best++;
+  }
+  return best;
+}
+
 
 /**
  * دادهٔ کاملِ راهنماها با import ِ پویا (۳.۱۹.۰): ~۳۳۰KB متنِ قدم‌ها پیش از این در بستهٔ JS ِ **هر** صفحه بود،
@@ -99,7 +139,13 @@ export function TourProvider({ ctx, catalog, initial, disabled, children }: {
 
   /** آخرین درخواستِ شروع — اگر کاربر پیش از رسیدنِ داده راهنمای دیگری زد، فقط آخری باز شود. */
   const wantRef = React.useRef(0);
-  const start = React.useCallback(async (id: string, fromStep?: string) => {
+  /**
+   * راهنمای در جریان «پشتِ سرِ هم» شروع شده (از «راهنمای بعدی» ِ کارتِ پایان)؟ فقط آن وقت قدم‌های تکراری رد
+   * می‌شوند. ⚠️ شروع از «راهنمای برنامه» یا خودکار = از اول و کامل (خواستِ مالک: کسی که چند روز بعد برمی‌گردد
+   * باید همهٔ راه را دوباره ببیند).
+   */
+  const chainRef = React.useRef(false);
+  const start = React.useCallback(async (id: string, fromStep?: string, chain = false) => {
     if (!known(id)) return;
     const want = ++wantRef.current;
     let m: Lib;
@@ -110,7 +156,10 @@ export function TourProvider({ ctx, catalog, initial, disabled, children }: {
     if (!t) return;
     const steps = stepsOf(t);
     if (steps.length === 0) return;
-    const idx = fromStep ? Math.max(0, steps.findIndex((s) => s.id === fromStep)) : arrivedAt(steps, window.location.pathname);
+    const here = window.location.pathname;
+    const idx = fromStep ? Math.max(0, steps.findIndex((s) => s.id === fromStep))
+      : chain ? fastForward(steps, arrivedAt(steps, here), here) : 0;
+    chainRef.current = chain;
     setFinished(null);
     setPicker(false);
     setActive({ id, idx });
@@ -154,12 +203,14 @@ export function TourProvider({ ctx, catalog, initial, disabled, children }: {
   const go = React.useCallback((delta: number) => {
     if (!active || !tour) return;
     dirRef.current = delta < 0 ? -1 : 1;
-    const idx = active.idx + delta;
+    let idx = active.idx + delta;
     if (idx < 0) return;
+    // پشتِ سرِ هم: رسیدن به رشتهٔ کلیک‌های آماده‌سازی که نتیجه‌شان روی صفحه است (مثلاً بعد از کارتِ معرفی).
+    if (delta > 0 && chainRef.current && idx < steps.length && steps[idx]!.kind === 'click') idx = fastForward(steps, idx, pathname);
     if (idx >= steps.length) { finish(tour, true); return; }
     setActive({ id: active.id, idx });
     persist({ active: { id: active.id, step: steps[idx]!.id } });
-  }, [active, tour, steps, finish, persist]);
+  }, [active, tour, steps, pathname, finish, persist]);
 
   /**
    * ردِ قدمِ اختیاریِ ناپیدا، همراهِ قدم‌های اختیاریِ پشتِ سرش که عنصرشان هم الان روی صفحه نیست — یک‌جا.
@@ -197,8 +248,12 @@ export function TourProvider({ ctx, catalog, initial, disabled, children }: {
   const nextStable = React.useCallback(() => goRef.current(1), []);
 
   // قدمِ «کلیک» ِ ناوبری: با رسیدن به مسیرِ خواسته‌شده جلو می‌رود.
+  // ⚠️ با «قبلی» روی قدمِ ناوبری‌ای که مسیرش همین صفحه است: رو به عقب ادامه — وگرنه فوراً دوباره جلو می‌رفت و
+  // عقب رفتن از آن ممکن نبود.
   React.useEffect(() => {
-    if (step?.kind === 'click' && step.advanceOnPath && onPath(pathname, step.advanceOnPath)) go(1);
+    if (!active || step?.kind !== 'click' || !step.advanceOnPath || !onPath(pathname, step.advanceOnPath)) return;
+    go(dirRef.current < 0 && active.idx > 0 ? -1 : 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, step, go]);
 
   /** «بعداً»: راهنما بسته می‌شود و تا فردا خودکار باز نمی‌شود؛ از فهرست همیشه در دسترس است. */
@@ -273,10 +328,18 @@ export function TourProvider({ ctx, catalog, initial, disabled, children }: {
           pathname={pathname}
           suggestions={suggestions}
           onStart={(id) => {
-            // ⚠️ راهنمای قبلی اغلب داخلِ یک دیالوگ (پنجرهٔ تسک…) تمام می‌شود؛ راهنمای بعدی با آن پنجرهٔ باز
-            // «منتظر است» می‌ماند. کاربر خودش «بعدی» را زده، پس پنجره‌های باز بسته شوند (Esc ِ Radix).
-            for (let i = 0; i < 3; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-            void start(id);
+            /*
+             * ⚠️ راهنمای قبلی اغلب داخلِ یک دیالوگ (پنجرهٔ تسک…) تمام می‌شود. اگر راهنمای بعدی همان پنجره را لازم
+             * دارد (عنصرش داخلِ آن دیده می‌شود)، باز می‌ماند و قدم‌های «بازش کنید» رد می‌شوند؛ وگرنه پنجره‌های باز
+             * بسته می‌شوند (Esc ِ Radix) تا راهنمای بعدی «منتظر است» نماند.
+             */
+            const next = lib?.tourById(id);
+            const ns = next ? stepsOf(next) : [];
+            const here = window.location.pathname;
+            const j = ns.length ? fastForward(ns, arrivedAt(ns, here), here) : 0;
+            const keep = !!ns[j]?.target && !!onScreen(ns[j]!.target!)?.closest(LAYERS);
+            if (!keep) for (let i = 0; i < 3; i++) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            void start(id, undefined, true);
           }}
           onNext={() => setFinished(null)}
           onBack={() => {}}
