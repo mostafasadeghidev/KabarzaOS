@@ -2,6 +2,12 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.19.1]
+
+### Fixed
+
+- **The sidebar and the top bar now match the palette.** With the Ocean, Forest and Violet palettes both had a slight pink cast, so they did not match the rest of the page. They now take the palette's own tint in light and dark mode. The palette's background glow also shows through them a little more. The top bar turns more solid while content scrolls under it.
+
 ## [3.19.0]
 
 ### Added
