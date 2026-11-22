@@ -7345,5 +7345,7 @@
   "این کارت فقط وقتی موردی برای بررسیِ شما هست دیده می‌شود.": "Esta tarjeta solo aparece cuando hay algo que usted debe revisar.",
   "راهنمای بعدی": "Siguiente guía",
   "فعلاً بس است": "Suficiente por ahora",
-  "با کیبورد: Enter.": "Con el teclado: Intro."
+  "با کیبورد: Enter.": "Con el teclado: Intro.",
+  "بازهٔ ساعت‌های کارمند": "Periodo de horas del miembro",
+  "بازهٔ صفحهٔ قبل اینجا هم هست و می‌توانید عوضش کنید. «مجموع ساعت کاری»، ساعتِ هر پروژه و «کارکرد به تفکیک پروژه» با همین بازه حساب می‌شوند؛ «همه» کلِ زمان را نشان می‌دهد.": "El periodo de la página anterior se mantiene aquí y puedes cambiarlo. «Horas de trabajo totales», las horas de cada proyecto y «Horas por proyecto» usan este periodo; «Todo» muestra todo el tiempo."
 }

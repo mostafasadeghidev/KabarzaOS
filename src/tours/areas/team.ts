@@ -165,6 +165,7 @@ export const tours: Tour[] = [
       { id: 'export', target: 'team-export', path: '/team', optional: true, title: 'خروجی', body: 'با دکمهٔ خروجی جدولِ ساعتِ همین بازه را برای اکسل دانلود می‌کنید.' },
       { id: 'search', target: 'team-member-search', path: '/team', optional: true, title: 'کارکنان تحت مدیریت', body: 'نامِ کارمند را جستجو کنید. روی هر کارت نقش‌ها، ساعت، پروژه‌ها، تسک‌های باز و نشانِ «مرخصی» دیده می‌شود.' },
       { id: 'card', target: 'team-member-cards', path: '/team', kind: 'click', advanceOnPath: '/team/', title: 'صفحهٔ یک کارمند', body: 'روی کارتِ یکی از کارکنان بزنید تا صفحهٔ او باز شود.' },
+      { id: 'member-range', target: 'team-member-range', path: '/team/', optional: true, title: 'بازهٔ ساعت‌های کارمند', body: 'بازهٔ صفحهٔ قبل اینجا هم هست و می‌توانید عوضش کنید. «مجموع ساعت کاری»، ساعتِ هر پروژه و «کارکرد به تفکیک پروژه» با همین بازه حساب می‌شوند؛ «همه» کلِ زمان را نشان می‌دهد.' },
       { id: 'stats', target: 'team-member-stats', path: '/team/', title: 'آمارِ کارمند', body: 'پروژه‌ها، پروژه‌های در حال اجرا، مجموعِ ساعتِ کاری و تسک‌های باز. «پروژه‌ها» و «تسک باز» به فهرستِ کاملشان می‌روند.' },
       { id: 'actions', target: 'team-member-actions', path: '/team/', optional: true, title: 'ویرایش و دسترسی‌ها', body: 'اگر اجازه دارید، از اینجا «دسترسی‌های بیرونی» و «ویرایش عضو» را بی‌آنکه صفحه را عوض کنید باز می‌کنید.' },
       { id: 'projects', target: 'team-member-projects', path: '/team/', optional: true, title: 'پروژه‌های در حال اجرا', body: 'نقشِ او در هر پروژه، درصدِ پیشرفت، ساعتِ خودش و تسک‌های بازش.' },

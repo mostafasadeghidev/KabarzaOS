@@ -46,7 +46,9 @@ export function MembersPanel({ data }: { data: MembersData }) {
   const query = rangeQuery(data);
   return (
     <div className="grid gap-6">
-      <RangeFilter data={data} />
+      <div data-tour="team-range">
+        <RangeFilter range={data.range} from={data.from} to={data.to} base="/team?tab=members" />
+      </div>
 
       <Section
         title={tr('ساعت کاری تیم در این بازه')}
@@ -126,25 +128,30 @@ function rangeQuery(data: Pick<MembersData, 'range' | 'from' | 'to'>): string {
 /**
  * فیلترِ بازه — پورتِ `office_range_filter`: «این هفته / این ماه / همه» و فرمِ
  * «از … تا …». ⚠️ پیش از این بازهٔ دلخواه فقط با ویرایشِ دستیِ آدرس ممکن بود.
+ * `base` = آدرسِ همین صفحه (با پارامترهای ثابتش)؛ در «تیمِ من» و صفحهٔ هر عضو (۳.۱۹.۰) به کار می‌رود.
  */
-function RangeFilter({ data }: { data: MembersData }) {
+export function RangeFilter({ range, from: fromValue, to: toValue, base }: {
+  range: RangeKey; from: string; to: string; base: string;
+}) {
   const tr = useT();
   const router = useRouter();
   const presets = (Object.keys(RANGE_LABELS) as RangeKey[]).filter((r) => r !== 'custom');
+  const href = (params: Record<string, string>) =>
+    `${base}${base.includes('?') ? '&' : '?'}${new URLSearchParams(params).toString()}`;
 
   const apply = (form: FormData) => {
     const from = String(form.get('from') ?? '');
     const to = String(form.get('to') ?? '');
     if (!from || !to) return;
-    router.push(`/team?${new URLSearchParams({ tab: 'members', range: 'custom', from, to }).toString()}`);
+    router.push(href({ range: 'custom', from, to }));
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-x-4 gap-y-3" data-tour="team-range">
+    <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
       <div className="flex flex-wrap items-center gap-2">
         {presets.map((r) => (
-          <Button key={r} asChild size="sm" variant={data.range === r ? 'default' : 'outline'}>
-            <Link href={`/team?tab=members&range=${r}`}>{tr(RANGE_LABELS[r])}</Link>
+          <Button key={r} asChild size="sm" variant={range === r ? 'default' : 'outline'}>
+            <Link href={href({ range: r })}>{tr(RANGE_LABELS[r])}</Link>
           </Button>
         ))}
       </div>
@@ -154,13 +161,13 @@ function RangeFilter({ data }: { data: MembersData }) {
       >
         <div className="grid gap-1">
           <Label htmlFor="team-from" className="text-xs text-muted-foreground">{tr('از')}</Label>
-          <DatePicker id="team-from" name="from" defaultValue={data.range === 'custom' ? data.from : ''} size="sm" className="w-40" />
+          <DatePicker id="team-from" name="from" defaultValue={range === 'custom' ? fromValue : ''} size="sm" className="w-40" />
         </div>
         <div className="grid gap-1">
           <Label htmlFor="team-to" className="text-xs text-muted-foreground">{tr('تا')}</Label>
-          <DatePicker id="team-to" name="to" defaultValue={data.range === 'custom' ? data.to : ''} size="sm" className="w-40" />
+          <DatePicker id="team-to" name="to" defaultValue={range === 'custom' ? toValue : ''} size="sm" className="w-40" />
         </div>
-        <Button type="submit" size="sm" variant={data.range === 'custom' ? 'default' : 'outline'}>
+        <Button type="submit" size="sm" variant={range === 'custom' ? 'default' : 'outline'}>
           {tr('اعمال')}
         </Button>
       </form>

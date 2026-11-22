@@ -676,16 +676,21 @@ export async function teamMember(
   const scope = await teamScope(actor);
   if (!canMonitor(userId, scope.monitorable)) throw new ForbiddenError('office.out_of_scope');
 
+  /**
+   * ⚠️ ساعت‌ها تابعِ بازه‌اند (۳.۱۹.۰): پیش از این فقط سطرِ زیرِ نام بازهٔ «تیمِ من» را می‌شمرد و کارت،
+   * ستون و جدولِ کارکرد «همهٔ زمان» بودند — دو عددِ متفاوت با یک برچسب. «همه» همان کلِ زمان است.
+   * دامنه همیشه اعمال می‌شود (پیش از این بی پروژه، ساعتِ بیرون از دامنه هم در سطرِ بالا می‌آمد).
+   */
   const period = resolveRange(input, new Date());
-  const conditions = [eq(timelogs.userId, userId)];
-  if (scope.projectIds.length > 0) conditions.push(scopedHours(scope));
+  const conditions = [eq(timelogs.userId, userId), scopedHours(scope)];
   if (period.from) conditions.push(gte(timelogs.logDate, period.from));
   if (period.to) conditions.push(lte(timelogs.logDate, period.to));
 
-  const [person, logs, openTasks] = await Promise.all([
+  const [person, hours, openTasks] = await Promise.all([
     db.select({ id: users.id, name: users.name, email: users.email })
       .from(users).where(eq(users.id, userId)),
 
+    // کارکرد به تفکیکِ پروژه در بازه، در دامنهٔ دفترها (پورتِ member_project_hours).
     db.select({
       projectId: timelogs.projectId,
       projectTitle: projects.title,
@@ -694,7 +699,8 @@ export async function teamMember(
       .from(timelogs)
       .leftJoin(projects, eq(projects.id, timelogs.projectId))
       .where(and(...conditions))
-      .groupBy(timelogs.projectId, projects.title),
+      .groupBy(timelogs.projectId, projects.title)
+      .orderBy(sql`sum(${timelogs.minutes}) desc`),
 
     scope.projectIds.length === 0 ? Promise.resolve([]) : db
       .select({
@@ -724,7 +730,7 @@ export async function teamMember(
     sql`coalesce(${tags.isClosed}, false) = false`,
     sql`coalesce(${tags.isReview}, false) = false`,
   );
-  const [roleRows, memberships, hoursAll, matrixRows, system, absenceRows, canLeave, openByProject] = await Promise.all([
+  const [roleRows, memberships, matrixRows, system, absenceRows, canLeave, openByProject] = await Promise.all([
     db.select({ name: tagName(locale) }).from(tagRelations)
       .innerJoin(tags, eq(tags.id, tagRelations.tagId))
       .where(and(eq(tagRelations.objectType, 'user'), eq(tagRelations.objectId, userId), eq(tags.type, 'member_role')))
@@ -742,13 +748,6 @@ export async function teamMember(
       .leftJoin(roleTag, eq(roleTag.id, projectMembers.roleTagId))
       .where(and(eq(projectMembers.userId, userId), inArray(projectMembers.projectId, scope.projectIds), isNull(projects.deletedAt)))
       .orderBy(projects.title),
-    // کارکرد به تفکیکِ پروژه — همهٔ زمان، در دامنهٔ دفترها (پورتِ member_project_hours).
-    db.select({ projectId: timelogs.projectId, projectTitle: projects.title, minutes: sql<number>`coalesce(sum(${timelogs.minutes}), 0)::int` })
-      .from(timelogs)
-      .leftJoin(projects, eq(projects.id, timelogs.projectId))
-      .where(and(eq(timelogs.userId, userId), scopedHours(scope)))
-      .groupBy(timelogs.projectId, projects.title)
-      .orderBy(sql`sum(${timelogs.minutes}) desc`),
     me ? matrixForIds([{ id: me.id, name: me.name }]) : Promise.resolve([]),
     getSystemConfig(),
     listAbsences(actor, userId, { upcomingOnly: true }).catch(() => []),
@@ -774,7 +773,7 @@ export async function teamMember(
     .where(and(inArray(tasks.projectId, openIds), isNull(tasks.deletedAt)))
     .groupBy(tasks.projectId);
   const progressOf = new Map(progressRows.map((r) => [r.projectId, r.total > 0 ? Math.round((r.done / r.total) * 100) : 0]));
-  const minutesOf = new Map(hoursAll.map((h) => [h.projectId, h.minutes]));
+  const minutesOf = new Map(hours.map((h) => [h.projectId, h.minutes]));
   const openTasksOf = new Map(openByProject.map((r) => [r.projectId, r.n]));
   const rolesByProject = new Map<number, string[]>();
   for (const m of memberships) if (m.roleName) rolesByProject.set(m.id, [...(rolesByProject.get(m.id) ?? []), m.roleName]);
@@ -784,14 +783,13 @@ export async function teamMember(
 
   return {
     person: me ? { ...me, roleNames: roleRows.map((r) => r.name), avatarFileId: (await avatarsFor([me.id])).get(me.id) ?? null } : null,
-    logs,
     openTasks,
     period,
     // پورتِ کارت‌های آمارِ افزونه.
     stats: {
       projects: projectIds.length,
       openProjects: openIds.length,
-      minutes: hoursAll.reduce((sum, h) => sum + h.minutes, 0),
+      minutes: hours.reduce((sum, h) => sum + h.minutes, 0),
       openTasks: openByProject.reduce((sum, r) => sum + r.n, 0),
     },
     openProjects: openIds.map((id) => ({
@@ -802,7 +800,7 @@ export async function teamMember(
       minutes: minutesOf.get(id) ?? 0,
       openTasks: openTasksOf.get(id) ?? 0,
     })),
-    hoursAllTime: hoursAll,
+    hours,
     matrix: matrixRows.map((r) => ({ id: r.id, name: r.name, roles: r.roleNames, cells: rowCells(r, order, todayIdx) })),
     dayLabels: order.map((d) => WEEKDAYS[d]!),
     absences: absenceRows,

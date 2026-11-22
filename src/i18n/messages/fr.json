@@ -7330,5 +7330,7 @@
   "این کارت فقط وقتی موردی برای بررسیِ شما هست دیده می‌شود.": "Cette carte n’apparaît que lorsqu’il y a quelque chose à vérifier pour vous.",
   "راهنمای بعدی": "Guide suivant",
   "فعلاً بس است": "Assez pour l’instant",
-  "با کیبورد: Enter.": "Au clavier : Entrée."
+  "با کیبورد: Enter.": "Au clavier : Entrée.",
+  "بازهٔ ساعت‌های کارمند": "Période des heures du membre",
+  "بازهٔ صفحهٔ قبل اینجا هم هست و می‌توانید عوضش کنید. «مجموع ساعت کاری»، ساعتِ هر پروژه و «کارکرد به تفکیک پروژه» با همین بازه حساب می‌شوند؛ «همه» کلِ زمان را نشان می‌دهد.": "La période de la page précédente est reprise ici et vous pouvez la modifier. « Total des heures de travail », les heures de chaque projet et « Heures par projet » utilisent cette période ; « Tout » affiche toute la durée."
 }
