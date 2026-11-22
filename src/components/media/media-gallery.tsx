@@ -30,6 +30,7 @@ const fileUrl = (fileId: number) => `/api/files/${fileId}`;
 /**
  * رسانهٔ تسک، یادداشت یا کامنت: تصویرها بندانگشتی (با بزرگ‌نمایی و قبلی/بعدی)،
  * ویدئوی بارگذاری‌شده پخش‌کنندهٔ خودش را دارد و بقیهٔ فایل‌ها کارتِ دانلود.
+ * تصویر از لایت‌باکس و ویدئو از دکمهٔ گوشه‌اش دانلود می‌شود (۳.۲۰.۱).
  *
  * ⚠️ همهٔ آدرس‌ها از مسیرِ گیت‌شدهٔ `/api/files` است (R-FILE-01) و بندانگشتی
  * نسخهٔ ۴۰۰ پیکسلی (`?thumb`) — صفحه با ده اسکرین‌شاتِ چندمگابایتی سنگین نمی‌شود.
@@ -124,6 +125,17 @@ export function MediaGallery({
             preload="metadata"
             className="max-h-80 w-full rounded-lg border bg-black"
           />
+          {/*
+            ⚠️ دانلودِ ویدئو (۳.۲۰.۱): منوی پخش‌کنندهٔ مرورگر همه‌جا گزینهٔ دانلود
+            ندارد (Safari/iOS هیچ‌وقت)؛ این دکمه همیشه هست.
+          */}
+          <a
+            href={`${fileUrl(item.fileId)}?dl`}
+            aria-label={`${t('دانلود')} — ${item.name}`}
+            className="absolute top-2 start-2 grid size-7 place-items-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+          >
+            <Download className="size-3.5" />
+          </a>
           {removeButton(item, 'absolute top-2 end-2')}
         </div>
       ))}

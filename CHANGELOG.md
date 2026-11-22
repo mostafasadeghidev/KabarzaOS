@@ -2,6 +2,13 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.20.1]
+
+### Fixed
+
+- **Task title stays on the right in right-to-left languages.** An English task title in the task window jumped to the left side. The title now follows the page direction and keeps its own letter order. The same fix applies to library card titles and the "parts" line in a project's library tab.
+- **Images and videos in tasks and comments can be downloaded.** Images could only be zoomed. The zoom view now has a download button that saves the original file with its name. Videos get a download button in their corner, because the browser's player does not always offer one (Safari and iPhone never do). Other zoom views that show stored files, such as receipts and library images, get the same button.
+
 ## [3.20.0]
 
 ### Added
