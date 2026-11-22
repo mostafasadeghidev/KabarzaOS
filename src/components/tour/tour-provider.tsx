@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { saveTourStateAction } from '@/app/(app)/_actions/tours';
 import { useT } from '@/i18n/client';
 import { arrivedAt, onPath, type Tour, type TourCtx, type TourMeta, type TourPatch, type TourState, type TourStep } from '@/tours/types';
-import { TourOverlay } from './tour-overlay';
+import { RELOCALE_KEY, TourOverlay } from './tour-overlay';
 import { TourPicker } from './tour-picker';
 
 /**
@@ -145,7 +145,12 @@ export function TourProvider({ ctx, catalog, initial, disabled, children }: {
    * باید همهٔ راه را دوباره ببیند).
    */
   const chainRef = React.useRef(false);
-  const start = React.useCallback(async (id: string, fromStep?: string, chain = false) => {
+  /**
+   * `rewind`: زبان از روی کارت عوض شد وقتی پنجره/منویی باز بود (مثلاً قدمِ «بستن» ِ پنجرهٔ جستجو). با بارگذاریِ
+   * دوباره آن پنجره بسته است و قدم‌های داخلش ناپیدا — پیش از این همه رد می‌شدند و راهنما یک‌راست «تمام» می‌شد.
+   * حالا از آخرین قدمِ کلیکی که آن را باز می‌کند ادامه می‌دهد.
+   */
+  const start = React.useCallback(async (id: string, fromStep?: string, chain = false, rewind = false) => {
     if (!known(id)) return;
     const want = ++wantRef.current;
     let m: Lib;
@@ -157,8 +162,13 @@ export function TourProvider({ ctx, catalog, initial, disabled, children }: {
     const steps = stepsOf(t);
     if (steps.length === 0) return;
     const here = window.location.pathname;
-    const idx = fromStep ? Math.max(0, steps.findIndex((s) => s.id === fromStep))
+    let idx = fromStep ? Math.max(0, steps.findIndex((s) => s.id === fromStep))
       : chain ? fastForward(steps, arrivedAt(steps, here), here) : 0;
+    if (rewind) {
+      let j = idx;
+      while (j > 0 && steps[j]!.kind !== 'click') j--;
+      if (steps[j]!.kind === 'click') idx = j;
+    }
     chainRef.current = chain;
     setFinished(null);
     setPicker(false);
@@ -176,7 +186,12 @@ export function TourProvider({ ctx, catalog, initial, disabled, children }: {
       if (autoTried.current) return;
       autoTried.current = true;
       const s = initial;
-      if (s.active && known(s.active.id)) { void start(s.active.id, s.active.step); return; }
+      if (s.active && known(s.active.id)) {
+        let rewind = false;
+        try { rewind = sessionStorage.getItem(RELOCALE_KEY) === '1'; sessionStorage.removeItem(RELOCALE_KEY); } catch { /* نه */ }
+        void start(s.active.id, s.active.step, false, rewind);
+        return;
+      }
       // ⚠️ «بعداً» پیش از راهنمای فرستاده‌شده: وگرنه راهنمای مدیر با هر بارگذاری دوباره باز می‌شد و «تا فردا
       // باز نمی‌شود» دروغ بود. (فرستادنِ تازهٔ مدیر خودش «بعداً» را پاک می‌کند.)
       if (s.snoozeUntil && Date.parse(s.snoozeUntil) > Date.now()) return;

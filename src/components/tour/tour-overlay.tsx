@@ -2,12 +2,13 @@
 
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ArrowRight, MousePointerClick, Pointer, Sparkles, X } from 'lucide-react';
-import { useT } from '@/i18n/client';
+import { ArrowLeft, ArrowRight, Check, Languages, MousePointerClick, Pointer, Sparkles, X } from 'lucide-react';
+import { useLocale, useT } from '@/i18n/client';
+import { LOCALES, LOCALE_NAMES, type Locale } from '@/i18n/config';
+import { setLocale } from '@/app/(app)/_actions/locale';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { onPath, type Tour, type TourMeta, type TourStep } from '@/tours/types';
-import { LocaleSwitcher } from '@/components/locale-switcher';
 
 /**
  * لایهٔ راهنما (۳.۱۹.۰): همه‌جا تار و تیره می‌شود جز عنصرِ قدم، با حلقهٔ روشن دورش و کارتِ توضیح کنارش.
@@ -43,6 +44,8 @@ function findHolder(name: string): HTMLElement | null {
 }
 
 /** لایه‌های رویِ صفحه: دیالوگ، منو، فهرستِ انتخاب (Radix همه را با data-state=open نشان می‌دهد). */
+/** پرچمِ «زبان از روی کارتِ راهنما عوض شد و پنجره‌ای باز بود» — provider بعد از بارگذاری عقب می‌رود. */
+export const RELOCALE_KEY = 'kz-tour-relocale';
 const LAYERS = '[role="dialog"][data-state="open"],[role="alertdialog"][data-state="open"],[role="menu"][data-state="open"],[role="listbox"][data-state="open"]';
 /**
  * پنجره یا منویی باز است که به این قدم ربطی ندارد و **رویِ** هدف است؟ (۳.۱۹.۰)
@@ -153,6 +156,22 @@ export function TourOverlay({
   onGo: (path: string) => void;
 }) {
   const t = useT();
+  /*
+   * زبان روی خودِ کارت (۳.۱۹.۰) — فهرستِ درون‌کارتی، نه منوی کشویی: منوی Radix بیرونِ کارت (پورتال) با
+   * تلهٔ فوکوس و «کلیکِ بیرون» ِ دیالوگِ بازِ صفحه (مثلاً پنجرهٔ جستجو) درگیر می‌شد و زبان عوض نمی‌شد
+   * (اسکرین‌شاتِ مالک). داخلِ کارت همان مهارِ pointerdown ِ کارت را دارد و هیچ لایه‌ای را نمی‌بندد.
+   */
+  const locale = useLocale();
+  const [langOpen, setLangOpen] = React.useState(false);
+  const [langBusy, setLangBusy] = React.useState(false);
+  const pickLocale = async (code: Locale) => {
+    if (code === locale) { setLangOpen(false); return; }
+    setLangBusy(true);
+    // پنجره/منوی صفحه با بارگذاریِ دوباره بسته می‌شود — راهنما باید از قدمی ادامه دهد که آن را باز می‌کند.
+    try { if (document.querySelector(LAYERS)) sessionStorage.setItem(RELOCALE_KEY, '1'); } catch { /* حافظهٔ نشست در دسترس نیست */ }
+    await setLocale(code);
+    window.location.reload();
+  };
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
   if (lastNav.path !== pathname) { lastNav.path = pathname; lastNav.at = Date.now(); }
@@ -487,13 +506,45 @@ export function TourOverlay({
             </span>
             <span className="flex items-center gap-1">
               {/* زبان همین‌جا: کسی که راهنما را به زبانِ نادرست می‌بیند نباید دنبالِ منوی کاربر بگردد. */}
-              <LocaleSwitcher compact inTour className="h-6 px-1.5" />
+              <button
+                type="button"
+                onClick={() => setLangOpen((v) => !v)}
+                aria-expanded={langOpen}
+                aria-controls={`${uid}-lang`}
+                aria-label={t('زبان')}
+                disabled={langBusy}
+                className="flex h-6 items-center gap-1 rounded px-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+              >
+                <Languages className="size-3.5" />
+                <span className="text-[11px] font-medium uppercase">{locale}</span>
+              </button>
               {step && total > 0 && <span className="text-[11px] tabular-nums text-muted-foreground">{t('{n} از {total}', { n: index + 1, total })}</span>}
               <button type="button" onClick={onClose} aria-label={t('بستنِ راهنما')} className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground">
                 <X className="size-4" />
               </button>
             </span>
           </div>
+
+          {langOpen && (
+            <div id={`${uid}-lang`} role="group" aria-label={t('زبان')} className="mb-3 grid grid-cols-3 gap-1 rounded-lg border bg-muted/40 p-1.5">
+              {LOCALES.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  aria-pressed={code === locale}
+                  disabled={langBusy}
+                  onClick={() => void pickLocale(code)}
+                  className={cn(
+                    'flex items-center justify-center gap-1 rounded-md px-1.5 py-1 text-xs hover:bg-background disabled:opacity-50',
+                    code === locale && 'bg-background font-semibold text-primary shadow-sm',
+                  )}
+                >
+                  {code === locale && <Check className="size-3" />}
+                  {LOCALE_NAMES[code]}
+                </button>
+              ))}
+            </div>
+          )}
 
           {!step ? (
             <>
