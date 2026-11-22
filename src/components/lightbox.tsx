@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useT } from '@/i18n/client';
 
@@ -10,6 +10,10 @@ import { useT } from '@/i18n/client';
  *
  * چند تصویر (گالریِ تسک و کامنت): با `onPrev`/`onNext` دکمه‌های قبلی/بعدی و
  * کلیدهای جهت فعال می‌شوند و `position` شمارهٔ تصویر را نشان می‌دهد.
+ *
+ * دانلود (۳.۲۰.۱): تصویرِ مسیرِ گیت‌شدهٔ `/api/files` خودکار دکمهٔ دانلود
+ * (`?dl`) می‌گیرد؛ پیش‌نمایشِ محلیِ پیش از بارگذاری (blob) نه. `downloadHref`
+ * آن را صریح تعیین می‌کند و `false` خاموشش می‌کند.
  *
  * ⚠️ فقط تصویر. PDF و فایل‌های دیگر با پیوندِ معمولی (تبِ جدید) باز می‌شوند —
  * همان تفکیکِ `receipt_thumb_ro()`.
@@ -21,6 +25,7 @@ export function Lightbox({
   onPrev,
   onNext,
   position,
+  downloadHref,
 }: {
   src: string | null;
   alt?: string;
@@ -29,8 +34,11 @@ export function Lightbox({
   onNext?: () => void;
   /** مثلاً «2 / 5». */
   position?: string;
+  downloadHref?: string | false;
 }) {
   const t = useT();
+  const dl = downloadHref === false ? null
+    : downloadHref ?? (src && src.startsWith('/api/files/') && !src.includes('?') ? `${src}?dl` : null);
   return (
     <Dialog open={src !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent
@@ -51,6 +59,16 @@ export function Lightbox({
             className="mx-auto max-h-[86vh] w-auto max-w-full cursor-zoom-out object-contain"
             onClick={onClose}
           />
+        )}
+        {dl && (
+          // ⚠️ گوشهٔ آغاز — گوشهٔ پایانی جای دکمهٔ بستن (×) ِ دیالوگ است.
+          <a
+            href={dl}
+            aria-label={t('دانلود')}
+            className="absolute top-3 start-3 z-10 grid size-9 place-items-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
+          >
+            <Download className="size-4" />
+          </a>
         )}
         {(onPrev || onNext) && (
           <div className="pointer-events-none absolute inset-x-3 top-1/2 flex -translate-y-1/2 justify-between">

@@ -244,7 +244,7 @@ function CombinedCode({ groups }: { groups: CombinedGroup[] }) {
               </div>
               <CopyButton text={g.code} label={tr('کپیِ همه ({n})', { n: g.parts.length })} />
             </div>
-            <p className="text-xs text-muted-foreground" dir="auto">{g.parts.map((p) => p.label ? `${p.title} · ${p.label}` : p.title).join('، ')}</p>
+            <p className="text-xs text-muted-foreground"><bdi>{g.parts.map((p) => p.label ? `${p.title} · ${p.label}` : p.title).join('، ')}</bdi></p>
             <CodeView code={g.code} language="html" collapseAt={12} />
           </section>
         ))}

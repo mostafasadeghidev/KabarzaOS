@@ -313,7 +313,7 @@ function EntryCardView({ entry, withCover, category }: { entry: EntryCard; withC
           {/* نامِ دسته — فقط در شبکهٔ پیوسته (۳.۱۵.۲)، که سرتیترِ دسته ندارد. */}
           {category && <span className="text-[11px] font-medium text-primary">{category}</span>}
           <div className="flex flex-wrap items-center gap-1.5">
-            <h3 className="font-semibold group-hover:text-primary" dir="auto">{entry.title}</h3>
+            <h3 className="font-semibold group-hover:text-primary"><bdi>{entry.title}</bdi></h3>
             <VersionLabel label={entry.versionLabel} />
             <StatusBadge status={entry.status} />
             <FreshBadge createdAt={entry.createdAt} updatedAt={entry.updatedAt} changeNote={entry.changeNote} />

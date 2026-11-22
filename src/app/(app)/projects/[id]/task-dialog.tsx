@@ -172,7 +172,12 @@ function TaskDialogBody({
             {/* ⚠️ فاصله از دکمهٔ بستن (×) که همان گوشه است — `pe-6` روی همین سطر. */}
             {task?.number ? <span className="shrink-0"><CopyTaskLink projectId={task.projectId} number={task.number} /></span> : null}
           </div>
-          <DialogTitle className="text-lg leading-snug break-words" dir="auto">{task?.title ?? tr('تسک')}</DialogTitle>
+          {/*
+            ⚠️ نه `dir="auto"` روی خودِ عنوان: عنوانِ انگلیسی در صفحهٔ راست‌به‌چپ به
+            سمتِ چپ می‌پرید. `<bdi>` ترتیبِ حروف را درست نگه می‌دارد و جایِ عنوان
+            تابعِ جهتِ صفحه می‌ماند.
+          */}
+          <DialogTitle className="text-lg leading-snug break-words"><bdi>{task?.title ?? tr('تسک')}</bdi></DialogTitle>
         </DialogHeader>
 
         {loadError && <p className="text-sm text-destructive">{tr(loadError)}</p>}
