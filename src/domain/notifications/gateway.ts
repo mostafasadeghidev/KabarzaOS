@@ -6,7 +6,7 @@
  */
 
 /** دستهٔ اعلان — فقط برای خاموش‌کردنِ **ایمیل** به‌کار می‌رود (R-NOTIF-04). */
-export type NotifyCategory = 'tasks' | 'projects' | 'money' | 'meetings' | 'messages' | 'mail' | 'other';
+export type NotifyCategory = 'tasks' | 'projects' | 'money' | 'meetings' | 'messages' | 'mail' | 'timelog' | 'other';
 
 /**
  * نگاشتِ نوعِ رویداد به دسته.
@@ -67,6 +67,13 @@ const CATEGORY_OF: Record<string, NotifyCategory> = {
   'meeting_soon': 'meetings',
   'reminder': 'meetings',
 
+  /*
+   * یادآوریِ روزانهٔ ثبتِ ساعت (۳.۲۰.۰) — دستهٔ خودش تا ایمیلش جدا خاموش/روشن شود. ⚠️ ایمیلش **پیش‌فرض
+   * خاموش** است (مهاجرتِ ۰۰۸۵ آن را در فهرستِ بی‌صداهای همه می‌گذارد): روزی دو ایمیل برای هر روزِ کاریِ
+   * بی‌ساعت صندوقِ مدیران را پر می‌کرد (خواستِ مالک). زنگِ برنامه و تلگرام مثلِ قبل.
+   */
+  'no_timelog': 'timelog',
+
   // پیام
   'message.received': 'messages',
   // ایمیلِ تازه در صندوقِ شرکتی (۲.۶۳.۰) — دستهٔ خودش تا در تلگرام جدا خاموش شود.
@@ -78,7 +85,7 @@ const CATEGORY_OF: Record<string, NotifyCategory> = {
 
   /**
    * ⚠️ عمداً `other`، پس هیچ‌وقت خاموش نمی‌شوند:
-   *  · `no_timelog` و `timer_running` — یادآورِ کارِ خودِ کاربر.
+   *  · `timer_running` — یادآورِ کارِ خودِ کاربر (`no_timelog` از ۳.۲۰.۰ دستهٔ خودش را دارد).
    *  · `absence_set` — تغییری که **دیگری** در تقویمِ او داده.
    *  · `backup.failed` — پشتیبانِ ناموفق؛ فقط به مالک می‌رسد.
    * این‌ها اگر ساکت شوند کاربر متوجهِ چیزی نمی‌شود که باید بشود.
@@ -101,6 +108,7 @@ export const EMAIL_CATEGORIES: ReadonlyArray<{ key: NotifyCategory; label: strin
   { key: 'money', label: 'مالی' },
   { key: 'meetings', label: 'جلسات و یادآورها' },
   { key: 'messages', label: 'پیام‌های مستقیم' },
+  { key: 'timelog', label: 'یادآوریِ ثبتِ ساعت' },
 ];
 
 /**

@@ -89,6 +89,17 @@ describe('R-NOTIF-04 — خاموش‌کردنِ دسته فقط ایمیل را
     expect(plan.telegram).toBe(true);
   });
 
+  it('یادآوریِ ثبتِ ساعت دستهٔ خودش را دارد و ایمیلش جدا خاموش می‌شود (۳.۲۰.۰)', () => {
+    expect(categoryOf('no_timelog')).toBe('timelog');
+    expect(normalizeMuted(['timelog'])).toEqual(['timelog']);
+    const off = planDelivery('no_timelog', [r({ mutedEmailCategories: ['timelog'] })])[0]!;
+    expect(off).toMatchObject({ email: false, inApp: true, telegram: true });
+    // روشن کردنش در پروفایل = برداشتن از بی‌صداها.
+    expect(planDelivery('no_timelog', [r({ mutedEmailCategories: [] })])[0]!.email).toBe(true);
+    // دیگر دسته‌ها روی آن اثری ندارند.
+    expect(planDelivery('task.assigned', [r({ mutedEmailCategories: ['timelog'] })])[0]!.email).toBe(true);
+  });
+
   it('دستهٔ دیگری خاموش باشد اثری ندارد', () => {
     const plan = planDelivery('task.assigned', [r({ mutedEmailCategories: ['money'] })])[0]!;
     expect(plan.email).toBe(true);

@@ -81,7 +81,8 @@ export const users = pgTable('users', {
   notifyEmail: text('notify_email').notNull().default(''),
   notifyEmailOff: boolean('notify_email_off').notNull().default(false),
   /** دسته‌هایی که کاربر ایمیلشان را **بی‌صدا** کرده (opt-out). */
-  notifyEmailMuted: jsonb('notify_email_muted').notNull().default([]).$type<string[]>(),
+  // ⚠️ پیش‌فرض «یادآوریِ ثبتِ ساعت» بی‌صداست (۳.۲۰.۰، مهاجرتِ ۰۰۸۵) — ایمیلش را کاربر خودش روشن می‌کند.
+  notifyEmailMuted: jsonb('notify_email_muted').notNull().default(['timelog']).$type<string[]>(),
   telegramOff: boolean('telegram_off').notNull().default(false),
   /** ربات تلگرام اجازهٔ کارهای حساس دارد؟ (۲.۱۳.۰) — پیش‌فرض خاموش. */
   aiSensitive: boolean('ai_sensitive').notNull().default(false),
