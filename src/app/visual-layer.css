@@ -9,6 +9,11 @@
  * کارت‌های عددی. جدول و فرم و عددِ مالی ساده و پرکنتراست می‌مانند.
  */
 
+/*
+ * ⚠️ نیمه‌شفاف‌ها با `oklch(from var(--x) l c h / a)`، نه `color-mix(in oklch, var(--x) N%, transparent)` (۳.۱۹.۰):
+ * کروم در آن ترکیب زاویهٔ رنگ (hue) را `none` می‌کرد و آن را صفر — قرمز/صورتی — می‌کشید؛ سایدبار و نوارِ بالا
+ * در پالت‌های دریا/جنگل/ارغوان ته‌رنگِ صورتی داشتند و با صفحه نمی‌خواندند (نظرِ مالک).
+ */
 :root {
   --wp-radius-card: 1.1rem;
   --wp-shadow-1: 0 1px 2px oklch(0.4 0.03 60 / 0.06), 0 6px 18px -6px oklch(0.4 0.05 60 / 0.12), 0 18px 40px -20px oklch(0.45 calc(0.08 * var(--wp-gc)) var(--wp-g1) / 0.14);
@@ -285,7 +290,7 @@ a:focus-visible > [data-slot='card'] {
 [data-slot='dialog-content'], [data-slot='alert-dialog-content'] {
   border-radius: 1.4rem;
   border-color: var(--wp-glass-border);
-  background: color-mix(in oklch, var(--color-card) 88%, transparent);
+  background: oklch(from var(--color-card) l c h / 0.88);
   backdrop-filter: blur(24px) saturate(1.3);
   -webkit-backdrop-filter: blur(24px) saturate(1.3);
   box-shadow: var(--wp-shadow-2);
@@ -293,7 +298,7 @@ a:focus-visible > [data-slot='card'] {
 [data-slot='dropdown-menu-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='command'] {
   border-radius: 0.9rem;
   border-color: var(--wp-glass-border);
-  background: color-mix(in oklch, var(--color-popover) 85%, transparent);
+  background: oklch(from var(--color-popover) l c h / 0.85);
   backdrop-filter: blur(20px) saturate(1.3);
   -webkit-backdrop-filter: blur(20px) saturate(1.3);
   box-shadow: var(--wp-shadow-2);
@@ -301,7 +306,7 @@ a:focus-visible > [data-slot='card'] {
 
 /* ---------- نوارِ بالای محتوا (هدرِ چسبان) ---------- */
 [data-slot='sidebar-inset'] > header {
-  background: color-mix(in oklch, var(--color-background) 70%, transparent);
+  background: oklch(from var(--color-background) l c h / 0.7);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -361,8 +366,8 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
 :is([data-slot='sidebar-menu-button'], [data-sidebar='menu-button']):not([data-active='true']):hover { transform: translateX(0) scale(1.01); }
 
 /* ردیفِ جدول زیرِ ماوس */
-[data-slot='table-container'] tbody tr:hover { background: color-mix(in oklch, var(--color-primary) 5%, transparent); }
-.dark [data-slot='table-container'] tbody tr:hover { background: color-mix(in oklch, var(--color-primary) 7%, transparent); }
+[data-slot='table-container'] tbody tr:hover { background: oklch(from var(--color-primary) l c h / 0.05); }
+.dark [data-slot='table-container'] tbody tr:hover { background: oklch(from var(--color-primary) l c h / 0.07); }
 
 /* ---------- انتقالِ صفحه‌ها (View Transitions): محوشدن + کمی لغزش ---------- */
 ::view-transition-old(root) { animation: 0.18s ease-in both wp-vt-out; }
@@ -469,7 +474,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
  * (۹۷٪) با blur ِ ملایم؛ هنوز کمی عمق دارد ولی متنِ پشت دیده نمی‌شود.
  */
 [data-slot='dropdown-menu-content'], [data-slot='popover-content'], [data-slot='select-content'], [data-slot='command'] {
-  background: color-mix(in oklch, var(--color-popover) 97%, transparent);
+  background: oklch(from var(--color-popover) l c h / 0.97);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -479,7 +484,11 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
  * صفحه، و جدایی فقط با سایه و یک خطِ نازک؛ پنل شناور می‌ماند ولی «تکه‌ای جدا» دیده نمی‌شود.
  */
 [data-slot='sidebar'][data-variant='floating'] [data-slot='sidebar-inner'] {
-  background: color-mix(in oklch, var(--color-background) 94%, transparent);
+  /*
+   * ۷۲٪ (نه ۹۴٪، ۳.۱۹.۰): هالهٔ رنگیِ پالت درست پشتِ سایدبار (گوشهٔ بالا) است؛ تقریباً مات، سایدبار تکه‌ای
+   * رنگ‌پریده کنارِ گوشه‌های رنگی می‌شد و با پالت نمی‌خواند. blur ِ بالاتر خوانایی را نگه می‌دارد.
+   */
+  background: oklch(from var(--color-background) l c h / 0.72);
   border-color: var(--color-border);
   box-shadow: var(--wp-shadow-1);
 }
@@ -498,7 +507,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   margin-inline-start: 2px;
   border: 1px solid var(--color-border);
   border-radius: 1rem;
-  background: color-mix(in oklch, var(--color-background) 94%, transparent);
+  background: oklch(from var(--color-background) l c h / 0.94);
   box-shadow: var(--wp-shadow-1);
 }
 /* چپ‌به‌راست: فاصلهٔ سنجیده‌شده با ۲px ۱۰px می‌شد (راست‌به‌چپ ۸px) ← صفر تا هر دو جهت ۸px باشند. */
@@ -574,7 +583,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
 }
 /* ستونِ فهرست کمی رنگی‌تر از ستونِ گفتگو */
 [data-messages-shell] > :first-child {
-  background: color-mix(in oklch, var(--color-muted) 45%, transparent);
+  background: oklch(from var(--color-muted) l c h / 0.45);
 }
 
 /* ---------- فهرستِ گفتگوها ---------- */
@@ -583,7 +592,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 [data-messages-shell] [data-slot='item']:not([aria-current='true']):hover {
-  background: color-mix(in oklch, var(--color-card) 80%, transparent);
+  background: oklch(from var(--color-card) l c h / 0.8);
   transform: translateX(0) scale(1.01);
 }
 /* گفتگوی باز: کارتِ روشن با نوارِ رنگیِ کنار — خوانا، نه گرادیانِ پر */
@@ -677,7 +686,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   border-radius: 999px;
   border: 1px solid var(--color-border);
   /* ⚠️ هم‌رنگِ کارت روی زمینهٔ کارت گم می‌شد (حالتِ تیره) ← رنگِ muted. */
-  background: color-mix(in oklch, var(--color-muted) 92%, transparent);
+  background: oklch(from var(--color-muted) l c h / 0.92);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: var(--wp-shadow-1);
@@ -756,11 +765,11 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   border-radius: 0.8rem;
   transition: background 0.15s ease;
 }
-[data-hours-bars] > li:hover { background: color-mix(in oklch, var(--color-muted) 70%, transparent); }
+[data-hours-bars] > li:hover { background: oklch(from var(--color-muted) l c h / 0.7); }
 [data-hours-bars] [data-slot='progress'] {
   height: 0.55rem;
   border-radius: 999px;
-  background: color-mix(in oklch, var(--color-foreground) 7%, transparent);
+  background: oklch(from var(--color-foreground) l c h / 0.07);
   animation: wp-bar-from-left 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 [data-hours-bars] > li:nth-child(2) [data-slot='progress'] { animation-delay: 0.06s; }
@@ -782,7 +791,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   text-align: center;
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
-  background: color-mix(in oklch, var(--color-foreground) 6%, transparent);
+  background: oklch(from var(--color-foreground) l c h / 0.06);
   color: var(--color-foreground);
   font-weight: 600;
 }
@@ -795,7 +804,7 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
  */
 [data-slot='table-container'] th[data-today] {
   position: relative;
-  background: color-mix(in oklch, var(--color-primary) 9%, transparent) !important;
+  background: oklch(from var(--color-primary) l c h / 0.09) !important;
   color: var(--color-primary) !important;
   /*
    * ⚠️ وزنِ قلم دست نمی‌خورد: برنامه وزیرمتن را بار نمی‌کند و روی ویندوزِ بی‌وزیرمتن Segoe UI
@@ -819,15 +828,15 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   color: var(--color-primary-foreground);
   font-size: 10px;
   font-weight: 600;
-  box-shadow: 0 3px 8px -4px color-mix(in oklch, var(--color-primary) 80%, transparent);
+  box-shadow: 0 3px 8px -4px oklch(from var(--color-primary) l c h / 0.8);
 }
 [data-slot='table-container'] td[data-today] {
-  background: color-mix(in oklch, var(--color-primary) 4%, transparent) !important;
+  background: oklch(from var(--color-primary) l c h / 0.04) !important;
 }
 /* نمای ستونی (بُرد) */
 [data-today-col] {
-  border-color: color-mix(in oklch, var(--color-primary) 35%, transparent) !important;
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 10%, transparent), var(--wp-shadow-1);
+  border-color: oklch(from var(--color-primary) l c h / 0.35) !important;
+  box-shadow: 0 0 0 3px oklch(from var(--color-primary) l c h / 0.1), var(--wp-shadow-1);
 }
 [data-today-col] h3 > span:first-child > span {
   padding: 0.05rem 0.45rem;
@@ -906,7 +915,8 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
    * محتوا با محوشدگی از زیرِ نوار رد شود — قاعدهٔ قدیمیِ blur به این نوار نمی‌رسید.
    * ⚠️ ۹۲٪ مات (نه ۷۸٪): شیشهٔ کم‌رنگ‌تر متنِ زیرش را خوانا نشان می‌داد و نوار شلوغ دیده می‌شد.
    */
-  background: color-mix(in oklch, var(--color-background) 92%, transparent);
+  /* ۸۰٪ بالای صفحه تا رنگِ پالت از پشتش پیدا باشد (مثلِ سایدبار)؛ چسبیده ۹۲٪ — پایین‌تر. */
+  background: oklch(from var(--color-background) l c h / 0.8);
   backdrop-filter: blur(20px) saturate(1.3);
   -webkit-backdrop-filter: blur(20px) saturate(1.3);
   transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
@@ -917,6 +927,8 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
  * ⚠️ نه سایهٔ توپرِ هم‌رنگِ زمینه: زمینهٔ صفحه درخشش و شیب دارد و تکهٔ یک‌رنگ دورِ گوشه‌ها ناهمخوان بود.
  */
 [data-slot='sidebar-inset'] > header[data-app-chrome][data-stuck] {
+  /* ⚠️ محتوا از زیرش رد می‌شود: ۹۲٪ مات — شیشهٔ کم‌رنگ‌تر متنِ زیرش را خوانا نشان می‌داد و نوار شلوغ دیده می‌شد. */
+  background: oklch(from var(--color-background) l c h / 0.92);
   border-top-width: 0;
   border-start-start-radius: 0;
   border-start-end-radius: 0;
@@ -937,7 +949,8 @@ main :nth-child(n + 8) > [data-slot='card'], main [data-slot='card']:nth-child(n
   }
   [data-slot='sidebar-inset'] > header[data-app-chrome][data-hidden] ~ [data-timer-banner] { top: 8px; }
   /* گوشی بی blur است (بالاتر)؛ زمینه کمی مات‌تر تا متنِ زیرش خوانا نماند. */
-  [data-slot='sidebar-inset'] > header[data-app-chrome] { background: color-mix(in oklch, var(--color-background) 97%, transparent); }
+  [data-slot='sidebar-inset'] > header[data-app-chrome],
+  [data-slot='sidebar-inset'] > header[data-app-chrome][data-stuck] { background: oklch(from var(--color-background) l c h / 0.97); }
 }
 @media (prefers-reduced-motion: reduce) {
   [data-slot='sidebar-inset'] > header[data-app-chrome], [data-slot='sidebar-inset'] > [data-timer-banner] { transition: none; }
