@@ -2,6 +2,16 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.20.0]
+
+### Added
+
+- **Separate email switch for the daily hours reminder.** The "You haven't logged today's hours" reminder now has its own entry in the profile's email list, "Hours logging reminder". Each person can turn its email on or off. It used to be in the "Other" category, whose email could not be turned off, and it sent up to two emails for every working day without hours.
+
+### Changed
+
+- **The hours reminder email is off by default.** It is turned off for every current user and for new users, and anyone who wants it can turn it on in their profile. The reminder still appears in the app's notifications and, if enabled, in Telegram. Database migration `0085`.
+
 ## [3.19.1]
 
 ### Fixed
