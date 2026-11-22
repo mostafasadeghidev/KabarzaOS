@@ -32,7 +32,6 @@ import { shouldShowTelegramNudge } from './_actions/telegram-nudge';
 import { hasTeamScope } from '@/server/team/service';
 import { hasTeamAvailability, seesTeamPresence } from '@/server/availability/service';
 import { NotificationBell } from '@/components/notification-bell';
-import { LocaleSwitcher } from '@/components/locale-switcher';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { roleTagsOf } from '@/server/people/repository';
 import { avatarsFor } from '@/server/files/service';
@@ -347,8 +346,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {/* دکمهٔ اصلیِ صفحه («پروژهٔ جدید»…) — خودِ صفحه با `HeaderAction` اینجا می‌گذاردش. */}
             <HeaderActionsSlot />
             <CommandPaletteTrigger />
-            {/* زبان در دسترسِ همه‌جا (۳.۱۹.۰) — در منوی کاربر پنهان بود و پیدا نمی‌شد. */}
-            <LocaleSwitcher disabled={!!actor.viewOnly} />
             <NotificationBell
               items={bell.items}
               unread={bell.unread}
