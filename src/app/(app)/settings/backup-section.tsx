@@ -116,7 +116,7 @@ export function BackupSection({ view }: { view: BackupView }) {
         <p className="text-sm leading-7 text-muted-foreground">
           {tr('روی سرورِ تازه: Docker را نصب کنید، پروژه را با git clone بگیرید، فایلِ پشتیبان را کنارش بگذارید و این دستور را بزنید. رمزِ پشتیبان پرسیده می‌شود و دیتابیس، فایل‌ها و رازهای داخلی برمی‌گردند:')}
         </p>
-        <pre dir="ltr" className="overflow-x-auto rounded-lg bg-muted px-3 py-2 text-xs">./scripts/restore.sh kabarzaos-YYYY-MM-DD-HHMMSS.kbzbak</pre>
+        <pre data-tour="settings-backup-restore" dir="ltr" className="overflow-x-auto rounded-lg bg-muted px-3 py-2 text-xs">./scripts/restore.sh kabarzaos-YYYY-MM-DD-HHMMSS.kbzbak</pre>
         <p className="text-xs text-muted-foreground">{tr('راهنمای کامل در docs/DEPLOY.md، بخشِ Backups.')}</p>
       </Panel>
     </div>
@@ -136,6 +136,7 @@ function StatusPanel({ view }: { view: BackupView }) {
       title={tr('وضعیتِ پشتیبان‌گیری')}
       actions={(
         <Button
+          data-tour="settings-backup-now"
           type="button" size="sm" disabled={pending || s?.running || !view.hasPassphrase || !view.keyReady}
           onClick={() => startTransition(async () => {
             const result = await startBackupAction();
@@ -196,7 +197,7 @@ function SettingsPanel({ view }: { view: BackupView }) {
   return (
     <Panel title={tr('تنظیمات')}>
       {/* ⚠️ key: پس از ذخیره فرم با مقدارِ تازه سوار شود (تلهٔ ریستِ فرمِ React — ← system-section). */}
-      <form key={JSON.stringify([view.enabled, view.hour, view.retention, view.keepLocal, view.hasPassphrase])} action={action} className="grid gap-4">
+      <form data-tour="settings-backup-settings" key={JSON.stringify([view.enabled, view.hour, view.retention, view.keepLocal, view.hasPassphrase])} action={action} className="grid gap-4">
         <label className="flex items-center gap-1.5 text-sm">
           <Switch name="enabled" defaultChecked={view.enabled} />
           {tr('پشتیبان‌گیریِ خودکارِ روزانه')}
@@ -234,7 +235,7 @@ function SettingsPanel({ view }: { view: BackupView }) {
           </p>
         </div>
 
-        <Field>
+        <Field data-tour="settings-backup-pass">
           <FieldLabel htmlFor="bk-pass">{tr('رمزِ فایلِ پشتیبان')}</FieldLabel>
           <PasswordInput
             id="bk-pass" name="passphrase" autoComplete="new-password" minLength={12}
@@ -275,7 +276,7 @@ function DestinationsPanel({ view }: { view: BackupView }) {
       title={tr('مقصدها')}
       description={tr('هر پشتیبان به همهٔ مقصدهای فعال فرستاده می‌شود؛ اگر یکی در دسترس نبود، بقیه سرِ جایشان‌اند.')}
       actions={(
-        <Button type="button" size="sm" variant="outline" onClick={() => setEditing('new')} disabled={!view.keyReady}>
+        <Button data-tour="settings-backup-add-dest" type="button" size="sm" variant="outline" onClick={() => setEditing('new')} disabled={!view.keyReady}>
           <Plus className="size-3.5" />{tr('افزودنِ مقصد')}
         </Button>
       )}
@@ -350,7 +351,7 @@ function DestinationDialog({ dest, onClose }: { dest: DestinationView | null; on
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent data-tour="settings-backup-dest-form" className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{dest ? tr('ویرایشِ مقصد') : tr('افزودنِ مقصد')}</DialogTitle>
           <DialogDescription>{tr('رمزها و کلیدها رمزگذاری‌شده نگه داشته می‌شوند و دیگر نمایش داده نمی‌شوند.')}</DialogDescription>
@@ -517,7 +518,7 @@ function LocalPanel({ view }: { view: BackupView }) {
       {view.local.length === 0 ? (
         <p className="text-sm text-muted-foreground">{tr('هنوز پشتیبانی روی سرور نیست.')}</p>
       ) : (
-        <Table frame={false}>
+        <Table data-tour="settings-backup-local" frame={false}>
           <TableHeader>
             <TableRow>
               <TableHead>{tr('فایل')}</TableHead>

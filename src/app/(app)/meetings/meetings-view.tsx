@@ -132,9 +132,9 @@ export function MeetingsView({
         {/* ⚠️ تبِ سطحِ صفحه (جلسات / یادآورها)، پس خطی — مثلِ صفحه‌های دیگر. */}
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
           <div className="overflow-x-auto pb-1.5">
-            <TabsList variant="line" className="w-max">
+            <TabsList variant="line" className="w-max" data-tour="meetings-tabs">
               {(['meetings', 'reminders'] as const).map((key) => (
-                <TabsTrigger key={key} value={key} className="flex-none">
+                <TabsTrigger key={key} value={key} className="flex-none" data-tour={`meetings-tab-${key}`}>
                   {key === 'meetings' ? tr('جلسات') : tr('یادآورهای من')}
                 </TabsTrigger>
               ))}
@@ -145,7 +145,7 @@ export function MeetingsView({
         {/* دکمهٔ اصلیِ صفحه در نوارِ بالا (۲.۳۸.۰). */}
         {tab === 'meetings' && canManage && (
           <HeaderAction>
-            <Button size="sm" onClick={() => { setEditing(null); setFormOpen(true); }}>
+            <Button size="sm" data-tour="meetings-new" onClick={() => { setEditing(null); setFormOpen(true); }}>
               <Plus className="size-4" />
               {tr("جلسهٔ جدید")}
             </Button>
@@ -158,7 +158,7 @@ export function MeetingsView({
         meetings.length === 0 ? (
           <EmptyState title={t("جلسه‌ای پیشِ‌رو ندارید.")} />
         ) : (
-          <div className="grid gap-3 @3xl/main:grid-cols-2">
+          <div className="grid gap-3 @3xl/main:grid-cols-2" data-tour="meetings-list">
             {meetings.map((m) => (
               /**
                * ⚠️ کلِ کارت جزئیات را باز می‌کند: توضیحاتِ جلسه روی کارت جا
@@ -168,6 +168,7 @@ export function MeetingsView({
                */
               <Card
                 key={m.id}
+                data-tour="meetings-card"
                 onClick={() => setDetail(m)}
                 className="cursor-pointer gap-2 py-4 transition-colors hover:border-primary/40 hover:bg-muted/30"
               >
@@ -219,6 +220,7 @@ export function MeetingsView({
                       <Button
                         size="sm"
                         variant="outline"
+                        data-tour="meetings-edit"
                         onClick={() => { setEditing(m); setFormOpen(true); }}
                       >
                         {tr("ویرایش")}
@@ -244,7 +246,7 @@ export function MeetingsView({
         )
       ) : (
         <div className="grid max-w-3xl gap-4">
-          <form action={reminderAction} className="grid gap-3 rounded-xl border bg-card p-3">
+          <form action={reminderAction} data-tour="meetings-reminder-form" className="grid gap-3 rounded-xl border bg-card p-3">
             <p className="text-xs text-muted-foreground">
               {tr("یک یادداشت برای زمانی در آینده تنظیم کنید؛ سرِ موعد به شما یادآوری می‌شود.")}
             </p>
@@ -260,7 +262,7 @@ export function MeetingsView({
               </Field>
             </div>
 
-            <fieldset className="grid gap-1.5">
+            <fieldset className="grid gap-1.5" data-tour="meetings-reminder-leads">
               <legend className="text-sm">{t("چه زمانی یادآوری شود؟ (می‌توانید چند مورد را انتخاب کنید)")}</legend>
               <div className="flex flex-wrap gap-3">
                 {LEAD_OPTIONS.map((o) => (
@@ -289,7 +291,7 @@ export function MeetingsView({
           {reminders.length === 0 ? (
             <EmptyState title={t("یادآوری ندارید.")} />
           ) : (
-            <ul className="grid gap-2">
+            <ul className="grid gap-2" data-tour="meetings-reminder-list">
               {/* ردیفِ Item ِ shadcn — سطحِ سفید روی زمینه؛ متن، زمان، و دکمه‌ها در جایگاهِ خودشان. */}
               {reminders.map((r) => (
                 <Item key={r.id} asChild variant="outline" size="sm" className="gap-3 p-3">
@@ -341,7 +343,7 @@ export function MeetingsView({
 
       {/* جزئیاتِ جلسه — خط به خط، نه فشرده در یک کارت. */}
       <Dialog open={detail !== null} onOpenChange={(open) => { if (!open) setDetail(null); }}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg" data-tour="meetings-detail">
           <DialogHeader>
             <DialogTitle>{detail?.title ?? ''}</DialogTitle>
             <DialogDescription>
@@ -371,7 +373,7 @@ export function MeetingsView({
                 )}
               </div>
 
-              <div className="grid gap-1">
+              <div className="grid gap-1" data-tour="meetings-detail-location">
                 <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <MapPin className="size-3.5" />
                   {t('مکان')}
@@ -404,7 +406,7 @@ export function MeetingsView({
                 </dd>
               </div>
 
-              <div className="grid gap-1">
+              <div className="grid gap-1" data-tour="meetings-detail-attendees">
                 <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Users className="size-3.5" />
                   {tr('دعوت‌شدگان ({n})', { n: detail.attendees.length })}

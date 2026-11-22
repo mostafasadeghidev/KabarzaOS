@@ -15,7 +15,7 @@ export function TeamAbsences({
     <Section title={t("مرخصی‌های تیم (۳۰ روزِ اخیر)")}>
       {rows.length === 0 ? <p className="text-sm text-muted-foreground">{t("مرخصی‌ای در این بازه نیست")}</p> : (
         // ۳.۱۵.۱ — روی گوشی هر مرخصی یک کارت.
-        <Table stack>
+        <Table stack data-tour="availability-absences">
           <TableHeader>
             <TableRow>
               <TableHead>{t("عضو")}</TableHead>

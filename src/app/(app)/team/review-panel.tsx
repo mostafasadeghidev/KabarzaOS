@@ -42,7 +42,7 @@ export function ReviewTasks({ tasks }: { tasks: BoardTask[] }) {
       .some((v) => (v ?? '').toLowerCase().includes(needle)));
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3" data-tour="team-review-list">
       <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('جستجو')} />
       {list.length === 0 ? <p className="text-sm text-muted-foreground">{tr('موردی پیدا نشد.')}</p> : (
         <Table>
@@ -106,7 +106,7 @@ export function CommentThreads({
   const tz = useTimeZone();
   if (threads.length === 0) return <EmptyState title={tr('موردی برای بررسی نیست.')} />;
   return (
-    <ItemGroup className="gap-2">
+    <ItemGroup className="gap-2" data-tour="team-comments-list">
       {threads.map((c) => {
         const href = `/projects/${c.projectId}?tab=comments`;
         return (
@@ -159,7 +159,7 @@ function QuickReply({ projectId, parentId }: { projectId: number; parentId: numb
   }, [state, router]);
 
   return (
-    <form ref={formRef} action={action} className="flex items-center gap-2">
+    <form ref={formRef} action={action} className="flex items-center gap-2" data-tour="team-comment-reply">
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="parentId" value={parentId} />
       <Input name="body" required placeholder={tr('پاسخ سریع…')} aria-label={tr('پاسخ سریع…')} className="h-8" />

@@ -318,7 +318,7 @@ export function EntryForm({
       <input type="hidden" name="direction" value={direction} />
 
       {/* ردیفِ ۱ (۲.۲۴.۰): تاریخ · جهت · دسته — دسته بالا، چون پیش‌فرضِ «قابل بازپرداخت» را تعیین می‌کند. */}
-      <div className="grid items-start gap-3 sm:grid-cols-3">
+      <div data-tour="finance-entry-basics" className="grid items-start gap-3 sm:grid-cols-3">
         <Field>
           <FieldLabel htmlFor="l-date">{tr("تاریخ")}</FieldLabel>
           <DatePicker
@@ -371,7 +371,7 @@ export function EntryForm({
 
       {/* ردیفِ ۲: بابت · طرفِ حساب */}
       <div className="grid items-start gap-3 sm:grid-cols-2">
-        <Field>
+        <Field data-tour="finance-entry-project">
           <FieldLabel htmlFor="l-project">{tr("بابت (پروژه)")}</FieldLabel>
           {splitOn ? (
             <p className="flex h-9 items-center justify-between gap-2 rounded-md border border-dashed px-3 text-sm text-muted-foreground">
@@ -400,7 +400,7 @@ export function EntryForm({
           )}
         </Field>
         {shown === 'payer' ? (
-          <Field>
+          <Field data-tour="finance-entry-party">
             <FieldLabel htmlFor="l-payer">{tr("پرداخت‌کننده")}</FieldLabel>
             <Combobox
               id="l-payer"
@@ -414,7 +414,7 @@ export function EntryForm({
             <input type="hidden" name="payerLabel" value={party.payer.label} />
           </Field>
         ) : (
-          <Field>
+          <Field data-tour="finance-entry-party">
             <FieldLabel htmlFor="l-receiver">{tr("دریافت‌کننده")}</FieldLabel>
             <Combobox
               id="l-receiver"
@@ -431,7 +431,7 @@ export function EntryForm({
         )}
       </div>
 
-      <div className="grid items-start gap-3 sm:grid-cols-3">
+      <div data-tour="finance-entry-amount" className="grid items-start gap-3 sm:grid-cols-3">
         <Field>
           {/* «مبلغ» همان عددِ رسیدِ بانکی است (۲.۲۸.۰) — برچسب این را صریح می‌گوید. */}
           <FieldLabel htmlFor="l-amount">
@@ -794,7 +794,7 @@ export function EntryForm({
         </Alert>
       )}
 
-      <DialogFooter>
+      <DialogFooter data-tour="finance-entry-submit">
         <Button type="button" variant="outline" onClick={onCancel}>{tr("انصراف")}</Button>
         <SubmitButton
           // ⚠️ نامِ حساب روی خودِ دکمه (۲.۴۵.۰) — آخرین جایی که چشم پیش از ثبت می‌بیند.

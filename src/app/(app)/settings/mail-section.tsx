@@ -39,7 +39,7 @@ export function MailSection({ smtp }: { smtp: SmtpSettingsView }) {
             {' '}<span dir="ltr" className="font-mono">{smtp.host}:{smtp.port}</span>
           </p>
         ) : (
-          <form action={save} className="grid gap-3">
+          <form data-tour="settings-mail-form" action={save} className="grid gap-3">
             <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
               <Field>
                 <FieldLabel htmlFor="smtp-host">{t('سرور')}</FieldLabel>
@@ -79,7 +79,7 @@ export function MailSection({ smtp }: { smtp: SmtpSettingsView }) {
           </form>
         )}
 
-        <div className="flex items-center gap-3">
+        <div data-tour="settings-mail-test" className="flex items-center gap-3">
           <Button
             type="button" size="sm" variant="outline" disabled={!smtp.enabled || pending}
             onClick={() => start(async () => setState(await sendTestMailAction()))}

@@ -141,7 +141,7 @@ export function FilesTab({
       <Section icon={<Link2 />} title={tr("منابع و لینک‌ها")}>
 
         {canUpload && (
-          <form action={addLink} className="grid gap-2 rounded-xl border bg-card p-3">
+          <form action={addLink} className="grid gap-2 rounded-xl border bg-card p-3" data-tour="project-files-link-form">
             <input type="hidden" name="projectId" value={projectId} />
             <div className="grid gap-2 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
               <Field>
@@ -166,7 +166,7 @@ export function FilesTab({
             {tr("لینکِ فیگما، گوگل‌درایو، سایتِ آزمایشی و … اینجا دیده می‌شوند.")}
           </p>
         ) : (
-          <ul className="grid gap-2 @xl/main:grid-cols-2">
+          <ul className="grid gap-2 @xl/main:grid-cols-2" data-tour="project-files-links">
             {links.map((f) => {
               // برچسبِ کاربر اول؛ وگرنه عنوانِ خوانا از خودِ نشانی، نه نشانیِ خام.
               const title = f.label || linkTitle(f.href);
@@ -214,7 +214,7 @@ export function FilesTab({
         title={tr("پیوست‌ها")}
         // ۳.۹.۰ — همهٔ فایل‌هایی که همین کاربر می‌بیند در یک zip (`/api/projects/<id>/files-zip`)؛ لینک‌ها در «لینک‌ها.txt».
         actions={files.length > 0 && (
-          <Button asChild size="sm" variant="outline">
+          <Button asChild size="sm" variant="outline" data-tour="project-files-zip">
             <a href={`/api/projects/${projectId}/files-zip`} download>
               <FileArchive />
               {tr('دانلودِ همه (zip)')}
@@ -226,6 +226,7 @@ export function FilesTab({
         {canUpload && (
           <form
             ref={uploadForm}
+            data-tour="project-files-upload"
             /*
              * ۳.۱۰.۰ — فایل‌ها به مدیرِ آپلود سپرده می‌شوند (تکه‌تکه، با نوارِ پیشرفت، ادامه پس از قطعی،
              * بی‌وابستگی به ماندن در همین صفحه). بیرون از provider همان اکشنِ قبلی.
@@ -244,12 +245,12 @@ export function FilesTab({
             <input type="hidden" name="projectId" value={projectId} />
             {/* چند فایل هم‌زمان؛ رها کردن، چسباندنِ اسکرین‌شات یا کلیک — مثلِ بازبینی. */}
             {/* با مدیرِ آپلود: سقفِ «هر ارسال ۱۰ فایل / ۵۵ مگ» نیست — هر فایل جدا و تکه‌تکه می‌رود. */}
-            <FormFileDrop name="file" onCountChange={setPickedCount} unlimited={Boolean(uploads)} />
+            <div data-tour="project-files-drop"><FormFileDrop name="file" onCountChange={setPickedCount} unlimited={Boolean(uploads)} /></div>
             {/* برچسبِ اختیاری برای فایل‌های همین بارگذاری (با چند فایل شماره می‌گیرد). */}
             <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
               <Field>
                 <FieldLabel htmlFor="att-label">{t("برچسب (اختیاری)")}</FieldLabel>
-                <Input id="att-label" name="label" placeholder={t("مثلاً: قرارداد امضاشده")} />
+                <Input id="att-label" data-tour="project-files-label" name="label" placeholder={t("مثلاً: قرارداد امضاشده")} />
               </Field>
               <SubmitButton disabled={pickedCount === 0}>
                 <Upload className="size-3.5" />
@@ -269,7 +270,7 @@ export function FilesTab({
             ⚠️ کلِ کارت پیوندِ «باز کردن» است (`AttachmentTrigger`)؛ دانلود و حذف
             دکمه‌های جدای رویش‌اند و کلیکشان فایل را باز نمی‌کند.
           */
-          <ul className="grid gap-2 @xl/main:grid-cols-2">
+          <ul className="grid gap-2 @xl/main:grid-cols-2" data-tour="project-files-list">
             {attachments.map((f) => {
               const Icon = KIND_ICON[f.kind as keyof typeof KIND_ICON] ?? FileText;
               const title = f.title || `#${f.id}`;
@@ -292,7 +293,7 @@ export function FilesTab({
                         {f.size ? <span className="shrink-0">· {humanSize(f.size, tr)}</span> : null}
                       </AttachmentDescription>
                     </AttachmentContent>
-                    <AttachmentActions>
+                    <AttachmentActions data-tour="project-files-actions">
                       {f.kind === 'video' && (
                         <AttachmentAction
                           onClick={() => setPlaying(playing === f.id ? null : f.id)}

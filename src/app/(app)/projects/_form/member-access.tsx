@@ -29,7 +29,7 @@ export function MemberAccessToggle({
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <span className="flex items-center justify-end gap-1">
+    <span className="flex items-center justify-end gap-1" data-tour="project-member-access">
       {error && <span className="text-[11px] text-destructive">{t(error)}</span>}
       <IconButton
         type="button"

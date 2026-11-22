@@ -4,6 +4,7 @@ import { isCorpMailConfigured } from '@/server/corp-mail/jmap';
 import { listPeople } from '@/server/people/service';
 import { getSystemConfig } from '@/server/settings/system-service';
 import { canSeeScope, ForbiddenError } from '@/domain/access/guard';
+import { canManageSection, isOwner } from '@/domain/access/permissions';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PeopleGrid } from './people-grid';
 import type { SectionConfig } from './person-card';
@@ -76,6 +77,8 @@ export async function PeopleSectionPage({ section }: { section: SectionConfig })
           ...section,
           onboarding: section.role === 'member' && (await getSystemConfig()).onboardingEnabled,
           corpMail: section.role === 'member' && data.canManage && isCorpMailConfigured(),
+          // ⚠️ همان گاردِ سرور — مدیرِ دفتر در «کارفرمایانِ دفترِ من» دکمه را می‌دید و همیشه «اجازه ندارید» می‌گرفت.
+          sendTour: isOwner(actor) || canManageSection(actor, 'members'),
         }}
         canManage={data.canManage}
         officeScoped={data.officeScoped}

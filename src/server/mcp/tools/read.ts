@@ -221,7 +221,7 @@ export function registerRead(kit: Kit) {
 
   server.registerTool('team_member', {
     title: 'One team member',
-    description: 'For team managers: one member in detail.',
+    description: 'For team managers: one member in detail; hours are within the range (week|month|all|custom with from/to).',
     inputSchema: { user_id: ID, range: z.string().max(20).optional(), from: DATE.optional(), to: DATE.optional() },
     annotations: RO,
   }, async (a) => j(() => teamMember(actor, a.user_id, { range: a.range, from: a.from, to: a.to })));

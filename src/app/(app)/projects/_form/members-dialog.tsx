@@ -187,10 +187,10 @@ function MembersDialogBody({ data, open, setOpen }: { data: MembersFormData; ope
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">{t("مدیریتِ اعضا")}</Button>
+        <Button size="sm" variant="outline" data-tour="project-members-manage">{t("مدیریتِ اعضا")}</Button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl" data-tour="project-members-dialog">
         <DialogHeader>
           <DialogTitle>{t("اعضای پروژه")}</DialogTitle>
           <DialogDescription>
@@ -385,13 +385,13 @@ function MembersDialogBody({ data, open, setOpen }: { data: MembersFormData; ope
           )}
 
           <div>
-            <Button type="button" variant="outline" size="sm" onClick={() => setRows((rs) => [...rs, blank()])}>
+            <Button type="button" variant="outline" size="sm" onClick={() => setRows((rs) => [...rs, blank()])} data-tour="project-members-add-row">
               <Plus className="size-4" />
               {tr("افزودن عضو")}
             </Button>
           </div>
 
-          <DialogFooter>
+          <DialogFooter data-tour="project-members-save">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("بستن")}</Button>
             <SaveButton />
           </DialogFooter>

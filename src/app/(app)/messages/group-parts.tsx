@@ -163,7 +163,7 @@ export function GroupComposer({
   };
 
   return (
-    <form action={formAction} className="border-t p-3">
+    <form action={formAction} data-tour="messages-composer" className="border-t p-3">
       <input type="hidden" name="threadId" value={threadId} />
       <input type="hidden" name="body" value={toTokens(text, picked)} />
       {replyTo && <ReplyBar target={replyTo} onCancel={onCancelReply} />}
@@ -251,11 +251,11 @@ function CreateChannelDialogBody({ open, onOpenChange, options, onCreated }: {
           </DialogDescription>
         </DialogHeader>
         <form action={action} className="grid gap-3">
-          <Field>
+          <Field data-tour="messages-channel-title">
             <FieldLabel htmlFor="ch-title">{t('نامِ کانال')}</FieldLabel>
             <Input id="ch-title" name="title" required maxLength={80} placeholder={t('مثلاً عمومیِ تیم')} />
           </Field>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2" data-tour="messages-channel-audience">
             <Field>
               <FieldLabel htmlFor="ch-aud">{t('مخاطب')}</FieldLabel>
               <NativeSelect
@@ -289,7 +289,7 @@ function CreateChannelDialogBody({ open, onOpenChange, options, onCreated }: {
             <Textarea id="ch-body" name="body" rows={3} onKeyDown={submitOnModEnter} />
             <FieldDescription>{t('مدیران همیشه عضوِ هر کانال‌اند. عضوِ تازهٔ همان نقش یا دفتر خودکار اضافه می‌شود.')}</FieldDescription>
           </Field>
-          <label className="flex items-start gap-2 text-sm">
+          <label className="flex items-start gap-2 text-sm" data-tour="messages-channel-announce">
             <Checkbox name="announceOnly" className="mt-0.5" />
             {t('فقط اعلان — فقط مدیران در این کانال می‌نویسند')}
           </label>

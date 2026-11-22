@@ -46,6 +46,7 @@ export function MobileBottomNav({ items, unread }: { items: NavItem[]; unread: n
           <Link
             key={item.href}
             href={item.href}
+            data-tour={`nav-${item.href.slice(1)}`}
             aria-current={on ? 'page' : undefined}
             className={cn(
               'relative flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10.5px] font-medium transition-colors',
@@ -68,6 +69,8 @@ export function MobileBottomNav({ items, unread }: { items: NavItem[]; unread: n
       <button
         type="button"
         onClick={() => setOpenMobile(true)}
+        // راهنما (۳.۱۹.۰): منوهای دیگر و منوی کاربر داخلِ کشوی همین دکمه‌اند.
+        data-tour-holds-prefix="nav- sidebar- user-menu"
         className="flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10.5px] font-medium text-muted-foreground hover:text-foreground"
       >
         <span className="grid h-7 w-11 place-items-center rounded-full"><Menu className="size-[19px]" /></span>

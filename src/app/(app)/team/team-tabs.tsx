@@ -22,15 +22,16 @@ export function TeamTabs({ tab }: { tab: TeamTab }) {
   const tr = useT();
   const router = useRouter();
   return (
-    <>
+    <div data-tour="team-tabs">
       {/* ۳.۱۵.۱ — OverflowTabs: روی گوشی تبِ آخر نیمه‌بریده دیده می‌شد («ترجی…»)؛ حالا اضافه‌ها زیرِ «بیشتر» می‌روند. */}
       <OverflowTabs
+        tour="team-tab"
         className="pb-1.5"
         variant="line"
         value={tab}
         onValueChange={(v) => router.push(`/team?tab=${v}`)}
         items={TEAM_TABS.map((key) => ({ value: key, label: tr(LABELS[key]) }))}
       />
-    </>
+    </div>
   );
 }

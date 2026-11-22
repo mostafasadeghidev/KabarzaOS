@@ -25,6 +25,7 @@ import { getSystemConfig } from '@/server/settings/system-service';
 import { canViewSection } from '@/domain/access/permissions';
 import { canSeeScope } from '@/domain/access/guard';
 import { TeamMemberActions } from './member-actions';
+import { RangeFilter } from '../members-panel';
 
 export const generateMetadata = pageTitle('تیمِ من');
 
@@ -131,8 +132,9 @@ export default async function TeamMemberPage({
     }
   }
 
-  const total = data.logs.reduce((sum, l) => sum + l.minutes, 0);
   const today = new Date().toISOString().slice(0, 10);
+  const range = (data.period.range ?? 'week') as RangeKey;
+  const period = { range, from: data.period.from ?? '', to: data.period.to ?? '' };
   const stats = [
     // پورتِ افزونه: کارتِ «پروژه‌ها» به همهٔ پروژه‌های این نفر (هر وضعیتی) می‌رود.
     { label: 'پروژه‌ها', value: String(data.stats.projects), href: `/team/${userId}?show=projects` },
@@ -145,7 +147,8 @@ export default async function TeamMemberPage({
   return (
     <PageShell>
       <PageHeader
-        back={{ href: '/team', label: t("تیمِ من") }}
+        // «برگشت» همان بازه را به فهرست برمی‌گرداند.
+        back={{ href: `/team?${new URLSearchParams({ tab: 'members', range, ...(range === 'custom' ? { from: period.from, to: period.to } : {}) })}`, label: t("تیمِ من") }}
         title={data.person?.name ?? `#${userId}`}
         actions={actions}
         media={data.person && (
@@ -155,14 +158,22 @@ export default async function TeamMemberPage({
           <>
             {data.person?.roleNames.length ? data.person.roleNames.join(t('، ')) : t('عضو')}
             {' · '}
-            {t(RANGE_LABELS[(data.period.range ?? 'week') as RangeKey])} · {t('مجموع')}{' '}
-            <span className="num">{hoursLabel(total)}</span>
+            {range === 'custom' && period.from && period.to
+              ? <span className="num">{period.from} – {period.to}</span>
+              : t(RANGE_LABELS[range])}
+            {' · '}{t('مجموع')}{' '}
+            <span className="num">{hoursLabel(data.stats.minutes)}</span>
           </>
         )}
       />
 
+      {/* بازهٔ ساعت‌ها — همان انتخابگرِ «تیمِ من»؛ کارتِ «مجموع ساعت کاری»، ستونِ ساعتِ پروژه‌ها و جدولِ کارکرد تابعِ آن‌اند. */}
+      <div data-tour="team-member-range">
+        <RangeFilter range={range} from={period.from} to={period.to} base={`/team/${userId}`} />
+      </div>
+
       {/* پورتِ کارت‌های آمار. */}
-      <div className="grid gap-4 @md/main:grid-cols-2 @xl/main:grid-cols-4">
+      <div className="grid gap-4 @md/main:grid-cols-2 @xl/main:grid-cols-4" data-tour="team-member-stats">
         {stats.map((c) => (
           <StatCard key={c.label} label={t(c.label)} value={c.value} href={c.href} />
         ))}
@@ -173,7 +184,7 @@ export default async function TeamMemberPage({
         {data.openProjects.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("پروژهٔ بازی ندارد.")}</p>
         ) : (
-          <Table>
+          <Table data-tour="team-member-projects">
             <TableHeader>
               <TableRow>
                 <TableHead>{t("پروژه")}</TableHead>
@@ -204,10 +215,10 @@ export default async function TeamMemberPage({
       </Section>
 
       <Section title={t("کارکرد به تفکیک پروژه")}>
-        {data.hoursAllTime.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("هنوز ساعتی ثبت نشده.")}</p>
+        {data.hours.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("در این بازه ساعتی ثبت نشده.")}</p>
         ) : (
-          <Table>
+          <Table data-tour="team-member-hours">
             <TableHeader>
               <TableRow>
                 <TableHead>{t("پروژه")}</TableHead>
@@ -215,7 +226,7 @@ export default async function TeamMemberPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.hoursAllTime.map((l) => (
+              {data.hours.map((l) => (
                 <TableRow key={l.projectId ?? 'general'}>
                   <TableCell>
                     {l.projectId ? <Link href={`/projects/${l.projectId}`} className="hover:underline">{l.projectTitle}</Link> : t('کارِ عمومی')}

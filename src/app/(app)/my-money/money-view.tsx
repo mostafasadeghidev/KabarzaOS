@@ -124,13 +124,13 @@ function Row({
   return (
     <Collapsible className="group/row rounded-lg border bg-card">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3">
-        <CollapsibleTrigger className="flex items-center gap-1.5 rounded-sm text-sm font-medium outline-none hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50">
+        <CollapsibleTrigger data-tour="money-row-toggle" className="flex items-center gap-1.5 rounded-sm text-sm font-medium outline-none hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50">
           <ChevronDown className="hidden size-4 group-data-[state=open]/row:block" />
           <ChevronLeft className="size-4 ltr:rotate-180 group-data-[state=open]/row:hidden" />
           {title}
         </CollapsibleTrigger>
         <StatusChip status={status} />
-        <div className="ms-auto flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+        <div className="ms-auto flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" data-tour="money-row-chips">
           {chips.map((c) => (
             <span key={c.label} className="text-muted-foreground">
               {t(c.label)}:{' '}
@@ -138,14 +138,14 @@ function Row({
             </span>
           ))}
           <Button variant="outline" size="sm" asChild>
-            <Link href={href}>
+            <Link href={href} data-tour="money-row-link">
               {t(linkLabel)}
               <ArrowLeft className="size-3.5 ltr:rotate-180" aria-hidden />
             </Link>
           </Button>
         </div>
       </div>
-      <CollapsibleContent className="grid gap-3 border-t bg-muted/30 p-3">{children}</CollapsibleContent>
+      <CollapsibleContent className="grid gap-3 border-t bg-muted/30 p-3" data-tour="money-row-details">{children}</CollapsibleContent>
     </Collapsible>
   );
 }
@@ -180,7 +180,7 @@ export function MyMoneyView({
           {clientProjects.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('پروژه‌ای ندارید')}</p>
           ) : (
-            <div className="grid gap-2">
+            <div className="grid gap-2" data-tour="money-client-list">
               {clientProjects.map((p) => (
                 <Row
                   key={p.projectId}
@@ -226,7 +226,7 @@ export function MyMoneyView({
           actions={(
             // ⚠️ دکمه، نه پیوندِ متنی (۲.۳.۱) — همان شکلِ دکمه‌های دیگرِ برنامه.
             <Button variant="outline" size="sm" asChild>
-              <Link href={bankHref}>
+              <Link href={bankHref} data-tour="money-bank-link">
                 {t('اطلاعاتِ حسابِ بانکی')}
                 <ArrowLeft className="size-3.5 ltr:rotate-180" aria-hidden />
               </Link>
@@ -236,7 +236,7 @@ export function MyMoneyView({
           {memberProjects.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('پروژه‌ای ندارید')}</p>
           ) : (
-            <div className="grid gap-2">
+            <div className="grid gap-2" data-tour="money-member-list">
               {memberProjects.map((p) => (
                 <Row
                   key={p.projectId}
@@ -318,7 +318,7 @@ export function MyMoneyView({
       )}
 
       {isMember && salary && (
-        <div id="salary" className="scroll-mt-20">
+        <div id="salary" className="scroll-mt-20" data-tour="money-salary">
           <Section
             title={t('حقوقِ ماهانه')}
             description={t('حقوقِ کارهای ثابتِ آژانس — جدا از دستمزدِ پروژه‌ها.')}
@@ -367,7 +367,7 @@ export function MyMoneyView({
       )}
 
       {isMember && account && (
-        <div id="account" className="scroll-mt-20">
+        <div id="account" className="scroll-mt-20" data-tour="money-account">
           <Section
             title={t('حسابِ شما با شرکت')}
             description={account.balances.length === 0 ? t('بدهیِ بازی ندارید.') : undefined}

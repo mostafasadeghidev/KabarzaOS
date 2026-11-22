@@ -236,13 +236,13 @@ function ReviewDialogBody({
     <div className="grid gap-4">
       <Field>
         <FieldLabel htmlFor="rv-title">{t('عنوان')}</FieldLabel>
-        <Input id="rv-title" value={info.title} onChange={(e) => set('title', e.target.value)} maxLength={200}
+        <Input id="rv-title" data-tour="project-review-title" value={info.title} onChange={(e) => set('title', e.target.value)} maxLength={200}
           placeholder={t('مثلاً بازبینیِ نسخهٔ موبایل')} autoFocus />
       </Field>
 
       <Field>
         <FieldLabel htmlFor="rv-url">{t('ویدئو')}</FieldLabel>
-        <Input id="rv-url" dir="ltr" value={info.url} onChange={(e) => set('url', e.target.value)}
+        <Input id="rv-url" data-tour="project-review-video" dir="ltr" value={info.url} onChange={(e) => set('url', e.target.value)}
           placeholder="https://www.loom.com/share/…" />
         <FieldDescription>
           {detected
@@ -266,7 +266,7 @@ function ReviewDialogBody({
                 <button type="button" aria-label={t('حذف')} onClick={() => set('video', null)}><X className="size-3.5" /></button>
               </span>
             ) : (
-              <Button type="button" size="xs" variant="outline" onClick={() => videoInput.current?.click()}>
+              <Button type="button" size="xs" variant="outline" onClick={() => videoInput.current?.click()} data-tour="project-review-video-upload">
                 <Upload className="size-3.5" />{t('بارگذاریِ ویدئو')}
               </Button>
             )}
@@ -279,7 +279,7 @@ function ReviewDialogBody({
         فهرستِ همان حالت زیرش باز می‌شود. پیش از این دو کادر کنارِ هم بود و با
         انتخابِ شخص، کادرِ «کلِ تیمِ پروژه» هنوز دیده می‌شد.
       */}
-      <Field>
+      <Field data-tour="project-review-audience-field">
         <FieldLabel htmlFor="rv-audience">{t('مخاطب')}</FieldLabel>
         <NativeSelect
           id="rv-audience" containerClassName="w-full" value={audience}
@@ -315,7 +315,7 @@ function ReviewDialogBody({
       </Field>
 
       {/* ⚠️ پیش‌فرض خاموش — کارفرما فقط وقتی می‌بیند که عمداً روشن شود. */}
-      <label className="flex items-start gap-3 rounded-lg border p-3">
+      <label className="flex items-start gap-3 rounded-lg border p-3" data-tour="project-review-client">
         <Switch checked={info.clientVisible} onCheckedChange={(v) => set('clientVisible', v)} className="mt-0.5" />
         <span className="grid gap-0.5">
           <span className="flex items-center gap-1.5 text-sm font-medium">
@@ -332,12 +332,13 @@ function ReviewDialogBody({
 
       <Field>
         <FieldLabel htmlFor="rv-notes">{t('یادداشت')}</FieldLabel>
-        <Textarea id="rv-notes" rows={3} value={info.notes} onChange={(e) => set('notes', e.target.value)}
+        <Textarea id="rv-notes" data-tour="project-review-notes" rows={3} value={info.notes} onChange={(e) => set('notes', e.target.value)}
           placeholder={t('خلاصهٔ بررسی، پیوندِ فیگما، متنِ پیامِ واتس‌اپ…')} />
       </Field>
 
       {/* تصاویرِ کلیِ بازبینی — در ویرایش، کادرِ «تصاویر» ِ خودِ صفحه همین کار را می‌کند. */}
       {!editing && (
+        <div data-tour="project-review-images">
         <FileDrop
           variant="zone"
           imagesOnly
@@ -346,6 +347,7 @@ function ReviewDialogBody({
           onRemove={(i) => set('images', info.images.filter((_, j) => j !== i))}
           title={t('تصاویرِ بازبینی')}
         />
+        </div>
       )}
     </div>
   );
@@ -404,7 +406,7 @@ function ReviewDialogBody({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl" data-tour="project-review-dialog">
         <DialogHeader>
           <DialogTitle>{editing ? t('ویرایشِ بازبینی') : t('بازبینیِ تازه')}</DialogTitle>
           <DialogDescription>
@@ -426,7 +428,7 @@ function ReviewDialogBody({
 
         {error && <p className="text-sm text-destructive">{t(error)}</p>}
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2" data-tour="project-review-save">
           {busy && <span className="me-auto flex items-center gap-2 text-sm text-muted-foreground"><Spinner />{busy}</span>}
           {/* بستن با دکمه، نه فقط ضربدرِ گوشه (۲.۲۵.۰). */}
           <Button type="button" variant="ghost" disabled={Boolean(busy)} onClick={() => onOpenChange(false)}>

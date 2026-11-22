@@ -120,7 +120,7 @@ export function ProjectGrid({
       <PageHeader title={header.title} description={header.description} actions={header.actions} />
 
       {!searching && relations.length > 1 && (
-        <div className="overflow-x-auto overflow-y-hidden">
+        <div className="overflow-x-auto overflow-y-hidden" data-tour="projects-relations">
           <Tabs value={relation} onValueChange={(v) => selectRelation(v as typeof relation)}>
             <TabsList variant="line" className="w-max">
               <TabsTrigger value="all" className="flex-none">{tr('همه')}</TabsTrigger>
@@ -145,9 +145,10 @@ export function ProjectGrid({
         فعال همیشه پیداست — نه پیمایشِ افقی، نه رفتن زیرِ جستجو. جستجو فقط وقتی کنارِ
         نوارِ تب کمتر از ~۲۲rem جا باشد به ردیفِ بعد می‌رود.
       */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2" data-tour="projects-filters">
         {!searching && (
           <OverflowTabs
+            tour="projects-tab"
             className="min-w-0 flex-1 basis-[22rem]"
             value={tab}
             onValueChange={(v) => selectTab(v as typeof tab)}
@@ -156,6 +157,7 @@ export function ProjectGrid({
           />
         )}
         <SearchInput
+          data-tour="projects-search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           // Enter = بازکردنِ نخستین نتیجه — همان کاری که کاربر بعدش با ماوس می‌کرد.
@@ -176,7 +178,7 @@ export function ProjectGrid({
             <p className="text-xs text-muted-foreground">
               {tr('{n} نتیجه در همهٔ پروژه‌ها', { n: hits.length })}
             </p>
-            <ul className="grid gap-1.5">
+            <ul className="grid gap-1.5" data-tour="projects-search-results">
               {hitPager.slice.map((p) => <SearchHit key={p.id} project={p} />)}
             </ul>
             <CardPager {...hitPager} />
@@ -197,7 +199,7 @@ export function ProjectGrid({
             جبران می‌کند.
           */}
           {/* `key` ِ تب ← با هر تغییرِ تب همهٔ کارت‌ها از نو با انیمیشن می‌آیند، نه فقط تازه‌ها. */}
-          <div key={tab} className="-mb-3 grid gap-x-3 @2xl/main:grid-cols-2 @5xl/main:grid-cols-3">
+          <div key={tab} data-tour="projects-list" className="-mb-3 grid gap-x-3 @2xl/main:grid-cols-2 @5xl/main:grid-cols-3">
             {pager.slice.map((p) => (
               <ProjectCard
                 key={p.id}

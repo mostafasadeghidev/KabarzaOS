@@ -72,7 +72,7 @@ export function StepsEditor({
   });
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3" data-tour="library-form-steps">
       {steps.map((s, i) => {
         const bodyField = (
           <Field>

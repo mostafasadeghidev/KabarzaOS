@@ -252,6 +252,7 @@ export function TasksTab({
       <div className="flex flex-wrap items-center gap-2">
         <Input
           type="search"
+          data-tour="tasks-search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -263,7 +264,7 @@ export function TasksTab({
           className="h-8 w-full sm:w-48"
         />
         <NativeSelect
-          size="sm" aria-label={tr('گروه‌بندی')} containerClassName="w-40"
+          size="sm" aria-label={tr('گروه‌بندی')} containerClassName="w-40" data-tour="tasks-group"
           value={view === 'board' ? boardGroup : groupBy}
           onChange={(e) => setGroupBy(e.target.value as GroupBy | 'none')}
         >
@@ -274,6 +275,7 @@ export function TasksTab({
         </NativeSelect>
         {/* نمای برد — همان تسک‌ها، چیدمانِ ستونی (پورتِ task_kanban). */}
         <ToggleGroup
+          data-tour="tasks-view"
           type="single"
           variant="outline"
           size="sm"
@@ -299,7 +301,7 @@ export function TasksTab({
 
       {/* فیلترِ سریع — جستجو که فعال است کنار می‌رود (جستجو روی همهٔ تسک‌هاست). */}
       {tasks.length > 0 && !found && (
-        <div className="flex flex-wrap gap-1.5">
+        <div data-tour="tasks-filters" className="flex flex-wrap gap-1.5">
           {(['open', 'review', 'mine', 'all'] as Filter[]).filter((f) => f === 'open' || f === 'all' || counts[f] > 0).map((f) => (
             <button
               key={f}

@@ -137,14 +137,14 @@ export function AvailabilityBoard(props: BoardProps) {
   return (
     <div className="grid gap-4">
       {/* ── نوارِ خلاصه ── */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" data-tour="availability-summary">
         <Stat label={t("عضو")} value={props.summary.total} />
         <Stat label={t("برنامه‌دار")} value={props.summary.withSchedule} />
         <Stat label={t("در دسترسِ الان")} value={props.summary.availableNow} accent />
       </div>
 
       {/* ── تعویضِ نما ── */}
-      <div className="flex gap-1">
+      <div className="flex gap-1" data-tour="availability-view">
         <ViewLink href="/availability" active={props.view === 'matrix'} icon="matrix" label={t("ماتریس")} />
         <ViewLink href="/availability?view=board" active={props.view === 'board'} icon="board" label={t("بُرد")} />
       </div>
@@ -153,7 +153,7 @@ export function AvailabilityBoard(props: BoardProps) {
         <BoardColumns {...props} rows={shown} />
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2" data-tour="availability-filters">
             <SearchInput
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -200,7 +200,7 @@ export function AvailabilityBoard(props: BoardProps) {
             // ⚠️ همان جدولِ مشترک (قاب، سرستون، فاصله) — پیش از این جدولِ خامِ
             // خودش را با خانه‌های p-2 و سرستونِ کم‌رنگ‌تر داشت.
             // ۳.۱۵.۱ — جدولِ شبکه‌ای: روزها می‌لغزند، نامِ عضو ثابت می‌ماند.
-            <Table stickyFirst>
+            <Table stickyFirst data-tour="availability-matrix">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("عضو")}</TableHead>
@@ -273,7 +273,7 @@ export function AvailabilityBoard(props: BoardProps) {
       )}
 
       {/* ── پنل‌های کناری ── */}
-      <div className="grid gap-3 @3xl/main:grid-cols-2">
+      <div className="grid gap-3 @3xl/main:grid-cols-2" data-tour="availability-panels">
         <Panel icon={<CalendarDays className="size-4" />} title={t("مرخصیِ امروز")}>
           {props.away.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("امروز کسی مرخصی نیست.")}</p>
@@ -408,7 +408,7 @@ function BoardColumns({ order, todayIdx, rows }: BoardProps) {
       ⚠️ ۳.۱۵.۲ — ستون‌ها با کمینهٔ ۱۳rem، نه هفت ستونِ ثابت: در عرضِ معمولی هر روز ~۱۸۰ پیکسل می‌شد و
       نام، «آخرین حضور» و بازه‌ها از کادر بیرون می‌زدند. حالا هر چند روز که جا شود کنارِ هم است.
     */}
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-2" data-tour="availability-board-days">
       {order.map((d) => {
         const isToday = d === todayIdx;
         const people = rows.filter((r) => {

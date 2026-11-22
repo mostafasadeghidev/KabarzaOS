@@ -141,13 +141,13 @@ export function CloudAccountsView({ data, isOwner }: { data: Data; isOwner: bool
         <Button size="sm" variant="ghost" asChild>
           <a href={conn.baseUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" />{tr('باز کردنِ فضای ابری')}</a>
         </Button>
-        <Button size="sm" onClick={() => setCreating(true)}><UserPlus className="size-4" />{tr('حسابِ تازه')}</Button>
+        <Button size="sm" onClick={() => setCreating(true)} data-tour="access-cloud-new"><UserPlus className="size-4" />{tr('حسابِ تازه')}</Button>
       </div>
 
       {data.accounts.length === 0 ? (
         <EmptyState icon={<Cloud className="size-5" />} title={tr('این گروه هنوز حسابی ندارد')} />
       ) : (
-        <Table stack>
+        <Table stack data-tour="access-cloud-table">
           <TableHeader>
             <TableRow>
               <TableHead>{tr('حساب')}</TableHead>

@@ -639,10 +639,13 @@ export function ManageTab({
       {section === 'team' ? (
         <>
       {canManage && (
+        <div data-tour="project-team-availability">
         <Panel title={t("در دسترس بودنِ اعضای پروژه")}>
           <TeamMatrix rows={matrix} dayLabels={dayLabels} frame={false} />
         </Panel>
+        </div>
       )}
+      <div data-tour="project-team-hours">
       <Panel title={t("ساعت کاری اعضا")}>
         {hours.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("ساعتِ کاری‌ای ثبت نشده.")}</p>
@@ -677,19 +680,20 @@ export function ManageTab({
           </Table>
         )}
       </Panel>
-      {canManage && <LogDetail logs={logs} weekStart={weekStart} />}
+      </div>
+      {canManage && <div data-tour="project-team-logs"><LogDetail logs={logs} weekStart={weekStart} /></div>}
         </>
       ) : (
         <>
-      {canManage && <ProjectCodePanel projectId={projectId} />}
-      {canManage && <TelegramGroupPanel projectId={projectId} />}
+      {canManage && <div data-tour="project-settings-code"><ProjectCodePanel projectId={projectId} /></div>}
+      {canManage && <div data-tour="project-settings-telegram"><TelegramGroupPanel projectId={projectId} /></div>}
 
       {/*
         «منطقهٔ خطر» (۳.۱۶.۰) — کارهای برگشت‌ناپذیر یا سنگین یک‌جا و جدا با مرزِ قرمز، مثلِ تنظیماتِ
         GitHub/Linear. «وضعیتِ پروژه» همین‌جاست چون دقیقاً می‌گوید حذف چه پیامدی دارد.
       */}
       {canManage && (
-        <section className="grid gap-4 rounded-2xl border border-destructive/30 p-3 sm:p-4" aria-labelledby="danger-zone">
+        <section className="grid gap-4 rounded-2xl border border-destructive/30 p-3 sm:p-4" aria-labelledby="danger-zone" data-tour="project-settings-danger">
           <h3 id="danger-zone" className="text-sm font-bold text-destructive">{t('منطقهٔ خطر')}</h3>
           {canManage && impactCounts && (
         <ImpactPanel counts={impactCounts} state={deleteState} totalMinutes={totalMinutes} />

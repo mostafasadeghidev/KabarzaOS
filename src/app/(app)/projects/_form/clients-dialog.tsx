@@ -56,12 +56,12 @@ export function ClientsDialog({ data }: { data: ClientsFormData }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
+        <Button size="sm" variant="outline" data-tour="project-clients-edit">
           <Users className="size-4" />
           {tr('ویرایشِ کارفرمایان')}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" data-tour="project-clients-dialog">
         <DialogHeader>
           <DialogTitle>{tr('کارفرمایانِ پروژه')}</DialogTitle>
           <DialogDescription>

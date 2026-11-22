@@ -142,7 +142,7 @@ export function EntryView({
         description={entry.summary ? <p dir={textDir(entry.summary)}>{entry.summary}</p> : undefined}
         actions={entry.canSuggest ? (
           entry.archived ? undefined : (
-            <Button asChild variant={myPending ? 'outline' : 'default'}>
+            <Button asChild variant={myPending ? 'outline' : 'default'} data-tour="library-entry-suggest">
               <Link href={`/library/${entry.id}/suggest`}>
                 <GitPullRequestArrow />
                 {myPending ? tr('ویرایشِ پیشنهادِ من') : tr('پیشنهادِ ویرایش')}
@@ -151,12 +151,12 @@ export function EntryView({
           )
         ) : entry.canEdit ? (
           <>
-            <Button asChild>
+            <Button asChild data-tour="library-entry-edit">
               <Link href={`/library/${entry.id}/edit`}><Pencil />{tr('ویرایش')}</Link>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <IconButton variant="outline" label={tr('بیشتر')} disabled={pending}>
+                <IconButton variant="outline" label={tr('بیشتر')} disabled={pending} data-tour="library-entry-more">
                   {pending ? <Spinner /> : <MoreHorizontal />}
                 </IconButton>
               </DropdownMenuTrigger>
@@ -228,10 +228,10 @@ export function EntryView({
       )}
 
       <div className="grid items-start gap-6 @5xl/main:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="grid min-w-0 gap-4">
+        <div className="grid min-w-0 gap-4" data-tour="library-entry-content">
           {hasQuick && (
             <Tabs value={mode} onValueChange={(v) => setMode(v as 'guide' | 'quick')}>
-              <TabsList>
+              <TabsList data-tour="library-entry-mode">
                 <TabsTrigger value="guide" className="px-3"><BookOpen />{tr('آموزشِ کامل')}</TabsTrigger>
                 <TabsTrigger value="quick" className="px-3"><Zap />{tr('کارتِ سریع')}</TabsTrigger>
               </TabsList>
@@ -245,7 +245,7 @@ export function EntryView({
           )}
         </div>
 
-        <aside className="grid gap-4">
+        <aside className="grid gap-4" data-tour="library-entry-aside">
           <InstallsPanel entry={entry} projects={projects} />
 
           <Panel title={tr('دربارهٔ این مورد')} icon={<Info />}>
@@ -399,11 +399,11 @@ function InstallsPanel({ entry, projects }: { entry: EntryDetail; projects: Proj
         ? tr('هنوز روی پروژه‌ای ثبت نشده.')
         : total === 1 ? tr('فقط روی یک پروژه — اختصاصی.') : tr('روی {n} پروژه — مشترک.', { n: total })}
       actions={!entry.archived && free.length > 0 ? (
-        <Button size="sm" variant="outline" onClick={() => setEditing('new')}><Plus />{tr('پروژهٔ دیگر')}</Button>
+        <Button size="sm" variant="outline" data-tour="library-install-add" onClick={() => setEditing('new')}><Plus />{tr('پروژهٔ دیگر')}</Button>
       ) : undefined}
     >
       {entry.installList.length > 0 && (
-        <ul className="grid gap-2">
+        <ul className="grid gap-2" data-tour="library-install-list">
           {entry.installList.map((i) => (
             <li key={i.id} className="grid gap-1 rounded-lg bg-muted/60 p-2.5">
               <div className="flex items-start justify-between gap-2">
@@ -484,7 +484,7 @@ export function InstallDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent data-tour="library-install-dialog">
         <DialogHeader>
           <DialogTitle>{install ? tr('نصب روی «{p}»', { p: install.projectTitle }) : tr('ثبتِ نصب روی پروژه')}</DialogTitle>
           <DialogDescription>{tr('بنویسید کجای سایت نصب شده و چه مقدارهایی با پیش‌فرض فرق دارد — نفرِ بعدی دقیقاً همین را لازم دارد.')}</DialogDescription>
@@ -501,11 +501,11 @@ export function InstallDialog({
               </SearchableSelect>
             </div>
           )}
-          <div className="grid gap-1.5">
+          <div className="grid gap-1.5" data-tour="library-install-note">
             <Label htmlFor="install-note">{tr('کجای سایت')}</Label>
             <Textarea id="install-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={tr('مثلاً: صفحهٔ قیمت‌ها، داخلِ فرمِ سفارش')} />
           </div>
-          <div className="grid gap-1.5">
+          <div className="grid gap-1.5" data-tour="library-install-values">
             <Label htmlFor="install-values">{tr('مقدارهای این پروژه (اختیاری)')}</Label>
             <Textarea id="install-values" rows={3} dir="auto" value={values} onChange={(e) => setValues(e.target.value)} placeholder="data-flow-price = 150" />
           </div>
@@ -553,7 +553,7 @@ function HistoryPanel({ entry }: { entry: EntryDetail }) {
 
   return (
     <Panel title={tr('تاریخچه')} icon={<History />} description={tr('نسخهٔ پیش از هر ویرایش نگه داشته می‌شود.')}>
-      <ul className="grid gap-1">
+      <ul className="grid gap-1" data-tour="library-history">
         {entry.revisions.map((r) => (
           <li key={r.id}>
             <button
@@ -647,7 +647,7 @@ function SuggestionsPanel({ entry, openId }: { entry: EntryDetail; openId: numbe
       icon={<GitPullRequestArrow />}
       description={tr('تغییرهایی که همکاران برای این مورد فرستاده‌اند.')}
     >
-      <ul className="grid gap-1">
+      <ul className="grid gap-1" data-tour="library-suggestions">
         {entry.suggestions.map((s) => (
           <li key={s.id}>
             <button

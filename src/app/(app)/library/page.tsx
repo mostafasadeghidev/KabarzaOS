@@ -74,7 +74,7 @@ export default async function LibraryPage({
         title={t('کتابخانهٔ کد')}
         description={t('کدهای اختصاصی، راهنمای کارفرما و یادداشت‌های تیم — هر کدام با جای نصب، تنظیمات و پروژه‌هایی که رویشان نصب است.')}
         actions={(
-          <Button asChild>
+          <Button asChild data-tour="library-new">
             <Link href="/library/new"><Plus />{t('ثبتِ موردِ تازه')}</Link>
           </Button>
         )}

@@ -376,7 +376,7 @@ export function ThreadPane({
   return (
     <>
       {/* سربرگ: طرفِ مقابل (ماسک‌شده) + نشانِ اعلانِ یک‌طرفه — پورتِ `chat.php`. */}
-      <header className="flex items-center gap-3 border-b px-3 py-2.5">
+      <header data-tour="messages-thread-header" className="flex items-center gap-3 border-b px-3 py-2.5">
         {onClose && backButtonClass !== null && (
           <IconButton
             variant="ghost"
@@ -419,6 +419,7 @@ export function ThreadPane({
         {thread.group && (
           <IconButton
             variant="ghost"
+            data-tour="messages-thread-mute"
             label={thread.group.muted ? tr('روشن کردنِ اعلان‌های گروه') : tr('بی‌صدا کردنِ گروه')}
             className="text-muted-foreground"
             disabled={pending}
@@ -431,6 +432,7 @@ export function ThreadPane({
         {thread.group?.canLock && (
           <IconButton
             variant="ghost"
+            data-tour="messages-thread-lock"
             label={thread.group.readOnly === 'locked' ? tr('باز کردنِ قفلِ گروه') : tr('قفل کردنِ گروه')}
             className={thread.group.readOnly === 'locked' ? 'text-amber-700 dark:text-amber-500' : 'text-muted-foreground'}
             aria-pressed={thread.group.readOnly === 'locked'}
@@ -444,6 +446,7 @@ export function ThreadPane({
         {(!thread.group || thread.thread.canDelete) && (
           <IconButton
             variant="ghost"
+            data-tour="messages-thread-delete"
             label={thread.group ? tr('حذفِ گروه') : thread.thread.canDelete ? tr('حذف گفتگو') : tr('حذف از صندوق')}
             className="text-muted-foreground hover:text-destructive"
             disabled={pending}
@@ -457,6 +460,7 @@ export function ThreadPane({
       <div className="relative min-h-0 flex-1">
         <div
           ref={scrollRef}
+          data-tour="messages-thread-list"
           onScroll={(e) => {
             const el = e.currentTarget;
             setAtEnd(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
@@ -541,6 +545,7 @@ export function ThreadPane({
                                   // کادرِ نوشتن آمادهٔ تایپ شود (ساده یا گروهی).
                                   requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('textarea[data-composer]')?.focus());
                                 }}
+                                data-tour="messages-reply-btn"
                                 className="text-muted-foreground/70 hover:text-foreground"
                                 aria-label={tr('پاسخ به این پیام')}
                               >
@@ -552,6 +557,7 @@ export function ThreadPane({
                               <button
                                 type="button"
                                 onClick={() => setEditing({ id: m.id, text: plainForEdit(m.body, thread.mentionNames) })}
+                                data-tour="messages-edit-btn"
                                 className="text-muted-foreground/70 hover:text-foreground"
                                 aria-label={tr('ویرایشِ این پیام')}
                               >
@@ -641,7 +647,7 @@ export function ThreadPane({
           {tr('در این کانال فقط مدیران می‌نویسند.')}
         </p>
       ) : thread.canReply ? (
-        <form data-composer-bar action={replyFormAction} className="border-t p-3">
+        <form data-composer-bar data-tour="messages-composer" action={replyFormAction} className="border-t p-3">
           <input type="hidden" name="threadId" value={thread.thread.id} />
           {replyTo && <ReplyBar target={replyTo} onCancel={() => setReplyTo(null)} />}
           <div className="flex items-end gap-2">

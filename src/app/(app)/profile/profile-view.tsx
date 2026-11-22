@@ -173,13 +173,17 @@ export function ProfileView({ data }: { data: ProfileData }) {
      */
     <div className="grid w-fit max-w-full min-w-[min(100%,48rem)] gap-4">
       {/* ۳.۱۵.۱ — OverflowTabs: روی گوشی تبِ آخر نیمه‌بریده دیده می‌شد («ترجی…»)؛ حالا اضافه‌ها زیرِ «بیشتر» می‌روند. */}
-      <OverflowTabs
-        className="pb-1.5"
-        variant="line"
-        value={tab}
-        onValueChange={(v) => setTab(v as typeof tab)}
-        items={visible.map((t) => ({ value: t.key, label: tr(t.label) }))}
-      />
+      {/* data-tour: راهنمای تعاملی — OverflowTabs برچسب نمی‌گیرد، پس قابِ نازکِ دورش؛ min-w-0 همان رفتارِ قبلی را نگه می‌دارد. */}
+      <div data-tour="profile-tabs" className="min-w-0">
+        <OverflowTabs
+          tour="profile-tab"
+          className="pb-1.5"
+          variant="line"
+          value={tab}
+          onValueChange={(v) => setTab(v as typeof tab)}
+          items={visible.map((t) => ({ value: t.key, label: tr(t.label) }))}
+        />
+      </div>
 
       {/*
         ⚠️ w-0 + min-w-full: کادرها در پهنای ظرف سهمی ندارند و فقط کشیده می‌شوند؛
@@ -192,7 +196,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
         // ⚠️ هر گروه یک پنل است؛ پهنا را ظرفِ بیرونی تعیین می‌کند.
         <div className="grid grid-cols-1 gap-4">
           <Panel title={tr("حساب کاربری")}>
-            <form action={saveAccount} className="grid gap-3">
+            <form action={saveAccount} className="grid gap-3" data-tour="profile-account">
               <Field>
                 <FieldLabel htmlFor="acc-name">{tr("نام")}</FieldLabel>
                 <Input id="acc-name" name="name" defaultValue={data.name} required />
@@ -217,7 +221,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
           </Panel>
 
           <Panel title={tr("تصویر پروفایل")}>
-            <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-wrap items-end gap-3" data-tour="profile-avatar">
               {avatarPreview ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -268,7 +272,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
         ⚠️ رمز در دادهٔ صفحه نیست؛ فقط با دکمهٔ چشم از سرور خوانده و ثبت می‌شود (۲.۵۸.۰).
       */}
       {tab === 'access' && (
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-3" data-tour="profile-access">
           <p className="text-sm text-muted-foreground">
             {tr("سامانه‌هایی که به تو دسترسی داده شده. اگر چیزی اینجا درست نیست، به مدیر بگو.")}
           </p>
@@ -277,14 +281,14 @@ export function ProfileView({ data }: { data: ProfileData }) {
       )}
 
       {tab === 'bank' && (
-        <div>
+        <div data-tour="profile-bank">
           <BankCard bank={data.bank} card={data.bank.card} />
         </div>
       )}
 
       {tab === 'prefs' && (
         <Panel title={tr("ترجیحات")}>
-          <form action={saveTz} className="grid gap-3">
+          <form action={saveTz} className="grid gap-3" data-tour="profile-prefs">
             <Field>
               <FieldLabel htmlFor="p-tz">{tr("منطقهٔ زمانی")}</FieldLabel>
               {/*
@@ -314,7 +318,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
 
       {tab === 'password' && (
         <Panel title={tr("رمزِ ورود")}>
-          <form action={changePw} className="grid gap-3">
+          <form action={changePw} className="grid gap-3" data-tour="profile-password">
             <Field>
               <FieldLabel htmlFor="pw-current">{tr("رمزِ فعلی")}</FieldLabel>
               <PasswordInput id="pw-current" name="current" autoComplete="current-password" />
@@ -354,7 +358,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
       {tab === 'notify' && (
         // ⚠️ تلهٔ ریستِ فرمِ React 19: Switch/Checkbox ِ Radix پس از ذخیره به مقدارِ
         // لحظهٔ بازشدن برمی‌گشتند. key روی ترجیحاتِ ذخیره‌شده فرم را از نو سوار می‌کند.
-        <form key={JSON.stringify(data.notify)} action={saveNotify} className="grid grid-cols-1 gap-4">
+        <form key={JSON.stringify(data.notify)} action={saveNotify} className="grid grid-cols-1 gap-4" data-tour="profile-notify">
           <p className="text-sm text-muted-foreground">
             {tr("زنگِ داخلِ اپ همیشه روشن است. این تنظیمات فقط کانال‌های بیرونی را تعیین می‌کنند.")}
           </p>
@@ -371,7 +375,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
               </p>
             )}
 
-            <label className="flex items-center gap-1.5 text-sm">
+            <label className="flex items-center gap-1.5 text-sm" data-tour="profile-notify-email">
               <Switch name="emailOn" defaultChecked={data.notify.emailOn}
               />
               {tr("دریافتِ اعلان با ایمیل")}
@@ -400,7 +404,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
               )}
             </Field>
 
-            <fieldset className="grid gap-2">
+            <fieldset className="grid gap-2" data-tour="profile-notify-muted">
               <legend className="text-xs text-muted-foreground">
                 {tr("دسته‌هایی که می‌خواهید ایمیلشان را نگیرید:")}
               </legend>
@@ -426,7 +430,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
             <Panel title={tr("تلگرام")}>
             {/* ⚠️ بدونِ توکنِ بات کلِ این پنل نیست؛ دکمه‌ای که همیشه شکست بخورد نشان نمی‌دهیم. */}
             {data.telegram === 'connected' ? (
-              <div className="grid gap-2">
+              <div className="grid gap-2" data-tour="profile-telegram">
                 <p className="text-sm">{tr("اعلان‌های شما به تلگرام هم فرستاده می‌شود.")}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -444,7 +448,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
                 </div>
               </div>
             ) : (
-              <div className="grid gap-2">
+              <div className="grid gap-2" data-tour="profile-telegram">
                 <p className="text-sm text-muted-foreground">
                   {tr("برای دریافتِ اعلان در تلگرام، بات را باز کنید و Start را بزنید.")}
                 </p>
@@ -515,7 +519,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
                     {tr("دریافتِ اعلان در تلگرام")}
                   </label>
                   {/* ⚠️ دسته‌های بالا فقط ایمیل‌اند (R-NOTIF-04)؛ تلگرام دسته‌های خودش را دارد (۲.۴۱.۰). */}
-                  <fieldset className="grid gap-2 rounded-lg border p-3">
+                  <fieldset className="grid gap-2 rounded-lg border p-3" data-tour="profile-telegram-prefs">
                     <legend className="px-1 text-xs font-medium text-muted-foreground">{tr('آنچه در تلگرام بیاید')}</legend>
                     <div className="flex flex-wrap gap-x-4 gap-y-2">
                       {TG_CATEGORIES.map((c) => (
@@ -543,7 +547,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
                     کاری و نه در مرخصی؛ زیرِ هر پیام هم «🔕 دیگر نفرست» هست.
                   */}
                   <input type="hidden" name="tgPrefs" value="1" />
-                  <fieldset className="grid gap-2 rounded-lg border p-3">
+                  <fieldset className="grid gap-2 rounded-lg border p-3" data-tour="profile-telegram-reminders">
                     <legend className="px-1 text-xs font-medium text-muted-foreground">{tr('یادآورهای تلگرام')}</legend>
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <label className="flex items-center gap-1.5">
@@ -580,7 +584,7 @@ export function ProfileView({ data }: { data: ProfileData }) {
             </Panel>
           )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" data-tour="profile-notify-save">
             <Submit>{tr("ذخیره")}</Submit>
           </div>
         </form>

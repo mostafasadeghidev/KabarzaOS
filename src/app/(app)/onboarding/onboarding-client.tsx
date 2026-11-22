@@ -100,7 +100,7 @@ export function TaskRows({ tasks, canDelete = false, showPerson = false, memberI
 
   return (
     <>
-    <ul className="grid gap-2">
+    <ul className="grid gap-2" data-tour="onboarding-tasks">
       {tasks.map((t) => {
         // کارِ بازی که تیکش با دیگری است — برای عضو «در انتظارِ مسئول»، نه «باز».
         const badge = !t.canTick && t.state !== 'done'
@@ -123,6 +123,7 @@ export function TaskRows({ tasks, canDelete = false, showPerson = false, memberI
               <button
                 type="button"
                 onClick={() => setOpenId(t.id)}
+                data-tour="onboarding-task-open"
                 className={cn(
                   'flex w-fit items-center gap-1.5 rounded-sm text-start text-sm font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50',
                   t.state === 'done' && 'text-muted-foreground line-through',
@@ -197,7 +198,7 @@ function TaskDetailDialog({ task, onClose, who, pending, onToggle }: {
     : STATE_BADGE[task.state]);
   return (
     <Dialog open={task !== null} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl" data-tour="onboarding-task-dialog">
         {task && (
           <>
             <DialogHeader>
@@ -291,6 +292,7 @@ export function StartButton({ userId, started }: { userId: number; started: bool
   return (
     <Button
       type="button" size="sm" variant={started ? 'outline' : 'default'} disabled={pending}
+      data-tour="onboarding-sync"
       onClick={() => startTransition(async () => {
         const result = await startOnboardingAction(userId);
         show(tr(result.error ?? result.message ?? '', result.params), result.error ? 'error' : 'success');
@@ -309,7 +311,7 @@ export function StartPicker({ candidates }: { candidates: Array<{ id: number; na
   const [userId, setUserId] = useState('');
   const [pending, startTransition] = useTransition();
   return (
-    <div className="flex flex-wrap items-end gap-2">
+    <div className="flex flex-wrap items-end gap-2" data-tour="onboarding-start">
       <Field className="w-64">
         <FieldLabel htmlFor="ob-start">{tr('عضو')}</FieldLabel>
         <SearchableSelect
@@ -353,7 +355,7 @@ function AddTaskDialogBody({ userId, people, services, today }: {
 
   return (
     <>
-      <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
+      <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)} data-tour="onboarding-add-item">
         <Plus className="size-3.5" />{tr('آیتمِ ویژهٔ این نفر')}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

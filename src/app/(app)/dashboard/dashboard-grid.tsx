@@ -588,12 +588,12 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
         {editing ? (
           // در حالتِ ویرایش، همان جای مداد یک تیک (بی‌متن) — با زدنش ویرایش تمام می‌شود.
           <Hint label={t('تمام')}>
-            <Button type="button" size="icon-sm" aria-label={t('تمام')} onClick={() => setEditing(false)}><Check className="size-4" /></Button>
+            <Button type="button" size="icon-sm" data-tour="dashboard-edit-done" aria-label={t('تمام')} onClick={() => setEditing(false)}><Check className="size-4" /></Button>
           </Hint>
         ) : (
           // فقط آیکونِ مداد (درخواستِ مالک)؛ نام در راهنمای شناور و برای صفحه‌خوان می‌ماند.
           <Hint label={t('ویرایشِ چیدمان')}>
-            <Button type="button" size="icon-sm" variant="outline" aria-label={t('ویرایشِ چیدمان')} onClick={() => setEditing(true)}><Pencil className="size-4" /></Button>
+            <Button type="button" size="icon-sm" variant="outline" data-tour="dashboard-edit" aria-label={t('ویرایشِ چیدمان')} onClick={() => setEditing(true)}><Pencil className="size-4" /></Button>
           </Hint>
         )}
       </HeaderAction>}
@@ -601,16 +601,16 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
       {!editing && !scope && <span className="hidden text-[11px] text-muted-foreground md:inline">{t('میان‌بُر: j / k ردیفِ بعد و قبل، a یا Enter کنشِ اولِ ردیف.')}</span>}
       {/* «فهرستِ کارت‌ها» و «پیش‌فرض» فقط در حالتِ ویرایش. */}
       {editing && (
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2" data-tour="dashboard-edit-bar">
           <span className="me-auto text-xs text-muted-foreground">{t('موس را روی کارت ببرید: از دستگیره بکشید تا جابه‌جا شود؛ لبهٔ پایین قد را و لبهٔ بالا شروع را عوض می‌کند و به لبهٔ کارت‌های کناری می‌چسبد.')}</span>
-          <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(true)}><LayoutGrid className="size-4" />{t('فهرستِ کارت‌ها')}</Button>
-          <Button type="button" size="sm" variant="ghost" onClick={() => save(base)}><RotateCcw className="size-4" />{t('پیش‌فرض')}</Button>
+          <Button type="button" size="sm" variant="ghost" data-tour="dashboard-cards-list" onClick={() => setOpen(true)}><LayoutGrid className="size-4" />{t('فهرستِ کارت‌ها')}</Button>
+          <Button type="button" size="sm" variant="ghost" data-tour="dashboard-reset" onClick={() => save(base)}><RotateCcw className="size-4" />{t('پیش‌فرض')}</Button>
         </div>
       )}
 
       {/* حالتِ ویرایش: کارت‌های پنهان برای افزودن با یک کلیک. */}
       {editing && ordered.some((w) => !isOn(w)) && (
-        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-dashed p-2">
+        <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-dashed p-2" data-tour="dashboard-add-card">
           <span className="px-1 text-xs text-muted-foreground">{t('افزودنِ کارت:')}</span>
           {ordered.filter((w) => !isOn(w)).map((w) => (
             <button
@@ -628,6 +628,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
       {/* grid-flow-row-dense: کارت‌های کوچک جاهای خالیِ کنارِ کارت‌های بزرگ را پر می‌کنند (بنتو). */}
       <div
         ref={gridRef}
+        data-tour="dashboard-grid"
         data-dash-editing={editing ? '1' : undefined}
         className={cn(
           'relative grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-12',
@@ -651,6 +652,8 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
           return (
           <div
             key={w.id}
+            // data-tour: راهنما روی اولین کارتِ دیدنی کلیک می‌خواهد (انتخاب در حالتِ ویرایش).
+            data-tour="dashboard-card"
             data-widget={w.id}
             ref={measureRef}
             data-measure={w.id}
@@ -673,6 +676,8 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
               // data-fixed: محتوای کارت خودش را با قدِ کاربر جور می‌کند (.kz-fit در globals.css)؛ آنچه باز هم
               // جا نشد اسکرولِ باریک می‌گیرد، نه بریده شدن.
               data-fixed={pos && heightOf[w.id] ? '' : undefined}
+              // data-tour: راهنما هر کارت را با شناسه‌اش نشان می‌دهد (مثلاً dash-card-inbox-projects).
+              data-tour={`dash-card-${w.id}`}
               // kz-card: ظرفِ عرضِ کارت (و با قدِ ثابت، ظرفِ قد) — محتوا با اندازهٔ خودِ کارت جور می‌شود، نه صفحه.
               className={cn('kz-card @container/kzcard grid min-w-0', pos && heightOf[w.id] && 'grid-rows-[minmax(0,1fr)] overflow-x-hidden overflow-y-auto [scrollbar-width:thin]', editing && 'pointer-events-none select-none')}
               style={pos && heightOf[w.id] ? { height: heightOf[w.id] } : undefined}
@@ -703,6 +708,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
                   role="separator"
                   aria-orientation="horizontal"
                   aria-label={t('قدِ کارت (بکشید؛ دوبار کلیک = خودکار)')}
+                  data-tour="dashboard-card-height"
                   tabIndex={0}
                   onPointerDown={(e) => startAdjust(e, w, 'h')}
                   onKeyDown={(e) => keyAdjust(e, w, 'h')}
@@ -724,7 +730,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
                 'absolute inset-x-0 bottom-full z-30 pb-2',
                 selected === w.id || dragId === w.id ? 'block' : 'hidden group-hover/card:block',
               )}>
-              <div className="flex flex-wrap items-center gap-1 rounded-xl border bg-popover p-1 shadow-md">
+              <div className="flex flex-wrap items-center gap-1 rounded-xl border bg-popover p-1 shadow-md" data-tour="dashboard-card-toolbar">
                 <span
                   draggable
                   onDragStart={(e) => { save({ ...prefs, ...freeze() }); setSelected(w.id); setDragId(w.id); setPreview(null); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', w.id); }}
@@ -735,7 +741,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
                   <GripVertical className="size-4" />
                 </span>
                 <span className="min-w-16 flex-1 truncate px-1 text-xs font-medium">{w.title}</span>
-                <span className="flex items-center rounded-lg bg-muted/60 p-0.5">
+                <span className="flex items-center rounded-lg bg-muted/60 p-0.5" data-tour="dashboard-card-sizes">
                   {(Object.keys(SIZE_LABEL) as WidgetSize[]).map((sz) => (
                     <button
                       key={sz}
@@ -756,7 +762,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
                 {(prefs.heights?.[w.id] !== undefined || prefs.offsets?.[w.id] !== undefined) && (
                   <Hint label={t('قد و شروعِ خودکار')}><Button type="button" size="icon-xs" variant="ghost" aria-label={t('قد و شروعِ خودکار')} onClick={() => resetAdjust(w.id, 'both')}><RotateCcw className="size-3.5" /></Button></Hint>
                 )}
-                <Button type="button" size="icon-xs" variant="ghost" aria-label={t('پنهان کردن')} onClick={() => toggle(w, false)} className="text-muted-foreground hover:text-destructive"><EyeOff className="size-3.5" /></Button>
+                <Button type="button" size="icon-xs" variant="ghost" data-tour="dashboard-card-hide" aria-label={t('پنهان کردن')} onClick={() => toggle(w, false)} className="text-muted-foreground hover:text-destructive"><EyeOff className="size-3.5" /></Button>
               </div>
               </div>
             )}
@@ -771,7 +777,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg" data-tour="dashboard-cards-dialog">
           <DialogHeader>
             <DialogTitle>{t('سفارشی‌سازیِ داشبورد')}</DialogTitle>
             <DialogDescription>{t('کارت‌ها را روشن یا خاموش کنید، جابه‌جا کنید و اندازه‌شان را بگذارید.')}</DialogDescription>
@@ -803,7 +809,7 @@ export function DashboardGrid({ widgets, userId, scope, defaults }: {
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
             <Button type="button" variant="ghost" onClick={() => save(base)}><RotateCcw className="size-4" />{t('بازگشت به پیش‌فرض')}</Button>
-            <Button type="button" onClick={() => setOpen(false)}>{t('تمام')}</Button>
+            <Button type="button" data-tour="dashboard-cards-close" onClick={() => setOpen(false)}>{t('تمام')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

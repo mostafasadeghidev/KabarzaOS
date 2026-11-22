@@ -73,7 +73,7 @@ export function CloudSection({ connections, fileStore }: { connections: CloudCon
     <Panel
       title={t('فضای ابری')}
       description={t('ساختن، سهمیه و قطعِ حسابِ کارمندان روی Nextcloud ِ خودتان. هر سرور یک اتصال است و می‌شود چند تا داشت.')}
-      actions={<Button size="sm" onClick={() => setEditing('new')}><Plus className="size-4" />{t('اتصالِ تازه')}</Button>}
+      actions={<Button data-tour="settings-cloud-add" size="sm" onClick={() => setEditing('new')}><Plus className="size-4" />{t('اتصالِ تازه')}</Button>}
       className="max-w-3xl"
     >
       <div className="grid gap-3">
@@ -84,7 +84,7 @@ export function CloudSection({ connections, fileStore }: { connections: CloudCon
             description={t('در Nextcloud یک گروه (مثلاً team) و یک کاربرِ جدا بسازید که فقط «مدیرِ همان گروه» باشد، نه ادمینِ کل؛ بعد برای او یک App password بسازید و اینجا بگذارید.')}
           />
         ) : connections.map((c) => (
-          <div key={c.id} className="grid gap-2 rounded-lg border p-3 text-sm">
+          <div key={c.id} data-tour="settings-cloud-conn" className="grid gap-2 rounded-lg border p-3 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{c.name}</span>
               {!c.isActive
@@ -165,7 +165,7 @@ function ConnectionDialog({ value, onClose, onSaved }: {
 
   return (
     <Dialog open={value !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent data-tour="settings-cloud-form" className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Cloud className="size-4" />{conn ? t('ویرایشِ اتصال') : t('اتصالِ تازه')}</DialogTitle>
           <DialogDescription>
@@ -211,7 +211,7 @@ function ConnectionDialog({ value, onClose, onSaved }: {
             {t('روشن')}
           </label>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>{t('انصراف')}</Button>
+            <Button data-tour="settings-cloud-cancel" type="button" variant="ghost" onClick={onClose}>{t('انصراف')}</Button>
             <Button type="submit" disabled={pending}>{t('ذخیره')}</Button>
           </DialogFooter>
         </form>
@@ -268,7 +268,7 @@ function FileStorePanel({ view, connections }: { view: FileStoreView; connection
   };
 
   return (
-    <section className="mt-6 grid gap-3 rounded-lg border p-3 text-sm">
+    <section data-tour="settings-cloud-filestore" className="mt-6 grid gap-3 rounded-lg border p-3 text-sm">
       <h3 className="flex items-center gap-2 font-medium"><HardDrive className="size-4" />{t('محلِ فایل‌های برنامه')}</h3>
       <p className="text-xs text-muted-foreground">
         {t('پیوستِ پروژه‌ها، تسک‌ها، کامنت‌ها، پیام‌ها، رسیدها و آواتارها. برای کاربران فرقی نمی‌کند: همان‌جا در برنامه باز و دانلود می‌شوند. روی فضای ابری، فایل‌ها در پوشهٔ خصوصیِ حسابِ اتصال (KabarzaOS-files) می‌مانند و با کسی share نمی‌شوند.')}

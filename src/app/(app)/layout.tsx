@@ -11,6 +11,9 @@ import { HeaderBreadcrumb } from '@/components/header-breadcrumb';
 import { NavHistory } from '@/components/nav-history';
 import { LiveProvider } from '@/components/live';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
+import { TourProvider } from '@/components/tour/tour-provider';
+import { getTourState, tourCtx } from '@/server/tours';
+import { catalogFor } from '@/tours';
 import { TableStackLabels } from '@/components/table-stack-labels';
 import { HeaderAutoHide } from '@/components/header-auto-hide';
 import { inboxCount } from '@/server/dashboard-inbox';
@@ -212,7 +215,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     items.push({ href: '/library', label: t("کتابخانهٔ کد"), icon: 'library', group: 'operations' });
   }
 
-  if (await hasTeamScope(actor)) {
+  const teamScope = await hasTeamScope(actor);
+  if (teamScope) {
     items.push({ href: '/team', label: t("تیمِ من"), icon: 'team', group: 'operations' });
   }
 
@@ -235,7 +239,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    * «آنبوردینگ» — فقط وقتی در تنظیماتِ سامانه روشن است، و با همان گاردِ
    * «اعضا» (پروندهٔ پرسنلی). عضوِ تازه چک‌لیستش را روی داشبورد می‌بیند، نه اینجا.
    */
-  if (canViewSection(actor, 'members') && (await getSystemConfig()).onboardingEnabled) {
+  const sysCfg = await getSystemConfig();
+  if (canViewSection(actor, 'members') && sysCfg.onboardingEnabled) {
     items.push({ href: '/onboarding', label: t("آنبوردینگ"), icon: 'onboarding', group: 'data' });
   }
 
@@ -250,9 +255,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const primaryRole = actor.roles[0];
-  const [bell, system, unreadMessages, showTgNudge, timer, brand, roleTags, avatars, decimals, unreadMail, waiting] = await Promise.all([
+  const [bell, system, unreadMessages, showTgNudge, timer, brand, roleTags, avatars, decimals, unreadMail, waiting, tCtx, tState] = await Promise.all([
     listNotifications(actor),
-    getSystemConfig(),
+    sysCfg,
     unreadMessageCount(actor),
     shouldShowTelegramNudge(actor),
     // پورتِ `timer_banner()`: تایمرِ روشن/پارک‌شده روی **هر** صفحه دیده می‌شود.
@@ -272,6 +277,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     mailUnreadCount(actor.id),
     // ۳.۱۸ (نمونه) — نشانِ «منتظرِ شما» روی «نمای کلی».
     inboxCount(actor).catch(() => 0),
+    // ۳.۱۹.۰ — راهنمای تعاملی: نقشِ کاربر (برای انتخابِ راهنما) و پیشرفتش.
+    tourCtx(actor, { managesTeam: teamScope, usesTimesheet: showHours, onboarding: sysCfg.onboardingEnabled }),
+    getTourState(actor.id).catch(() => ({})),
   ]);
   registerCurrencyDecimals(decimals);
 
@@ -282,6 +290,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // پنجره می‌چسبید.
     // ۳.۱۴.۰ — خطِ خبرهای لحظه‌ای برای کلِ برنامه (نشان‌ها، زنگوله، گفتگوها).
     <LiveProvider enabled={system.pulseEnabled}>
+    <TourProvider ctx={tCtx} catalog={catalogFor(tCtx)} initial={tState} disabled={!!actor.viewOnly}>
     <SidebarProvider className="mx-auto max-w-(--shell-max)">
       {/* R-I18N-14 — زبانِ **مؤثر** پاس می‌شود: انتخابِ خودِ کاربر، وگرنه
           پیش‌فرضِ سامانه. `system` همین بالا لود شده، پس پرس‌وجوی تازه‌ای
@@ -375,6 +384,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <HeaderAutoHide />
       </SidebarInset>
     </SidebarProvider>
+    </TourProvider>
     </LiveProvider>
   );
 }

@@ -99,6 +99,8 @@ export const users = pgTable('users', {
    * `server/dashboard-prefs.ts`. پیش از این در localStorage ِ هر مرورگر بود.
    */
   dashboardPrefs: jsonb('dashboard_prefs').notNull().default({}).$type<Record<string, unknown>>(),
+  /** راهنمای تعاملی (۳.۱۹.۰، مهاجرتِ 0084): پیشرفتِ کاربر در راهنماها — شکلش `TourState` در src/tours/types.ts. */
+  tourState: jsonb('tour_state').notNull().default({}).$type<Record<string, unknown>>(),
 
   /**
    * حضورِ زنده — دو مهر: آخرین ضربان (هر تبی) و آخرین ضربانِ تبِ **متمرکز**.

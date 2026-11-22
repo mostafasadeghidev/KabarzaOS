@@ -197,7 +197,10 @@ export function SettingsView({
         «بیشتر» می‌روند؛ تبِ فعال همیشه پیداست. پیش از این روی صفحهٔ کوچک پیمایشِ افقی داشت و
         نیمی از تب‌ها پنهان بود بی‌آنکه معلوم باشد.
       */}
+      {/* data-tour: راهنمای تعاملی روی نوارِ تب‌ها؛ OverflowTabs جزءِ مشترک است و برچسب نمی‌گیرد، پس قابی بی‌ظاهر دورش. */}
+      <div data-tour="settings-tabs" className="min-w-0">
       <OverflowTabs
+        tour="settings-tab"
         className="pb-1.5"
         variant="line"
         value={tab}
@@ -205,10 +208,12 @@ export function SettingsView({
         items={TABS.filter((t) => (!t.ownerOnly || data.isOwner) && (t.key !== 'onboarding' || data.onboarding))
           .map((t) => ({ value: t.key, label: tr(t.label) }))}
       />
+      </div>
 
       {tab === 'currencies' && (
         <div className="grid gap-6">
           <CatalogSection
+            tour="currencies"
             title={tr("ارزها")}
             description={tr("ارزِ پیش‌فرض پایهٔ گزارشِ بین‌ارزی است و حذف نمی‌شود.")}
             addLabel="افزودن ارز"
@@ -232,6 +237,7 @@ export function SettingsView({
             rowActions={(c) =>
               c.isDefault ? null : (
                 <IconButton
+                  data-tour="settings-currency-default"
                   variant="ghost"
                   className="size-8"
                   label={tr("تنظیم به‌عنوانِ پیش‌فرض")}
@@ -272,6 +278,7 @@ export function SettingsView({
           />
 
           <CatalogSection
+            tour="rates"
             title={tr("نرخ‌های تبدیل")}
             description={tr("جدیدترین نرخِ هر جفت مبنای تبدیل است.")}
             addLabel="افزودن نرخ"
@@ -325,7 +332,7 @@ export function SettingsView({
 
       {tab === 'tags' && (
         <div className="grid gap-3">
-          <div className="overflow-x-auto overflow-y-hidden">
+          <div data-tour="settings-tag-types" className="overflow-x-auto overflow-y-hidden">
             <Tabs value={tagType} onValueChange={(v) => setTagType(v as TagType)}>
               <TabsList className="w-max">
                 {TAG_TYPES.map((t) => (
@@ -338,6 +345,7 @@ export function SettingsView({
           </div>
 
           <CatalogSection
+            tour="tags"
             title={TAG_TYPES.find((t) => t.key === tagType)!.label}
             description={tr("تگِ در حالِ استفاده حذف نمی‌شود.")}
             addLabel="افزودن تگ"
@@ -421,7 +429,7 @@ export function SettingsView({
                   می‌بود — عملاً غیرقابلِ استفاده.
                 */}
                 {groupChoices(tagType).length > 0 && (
-                  <Field>
+                  <Field data-tour="settings-tag-group">
                     <FieldLabel htmlFor="t-group">{tr(groupFieldLabel(tagType))}</FieldLabel>
                     <NativeSelect
                       id="t-group" name="statusGroup" containerClassName="w-full"
@@ -485,7 +493,7 @@ export function SettingsView({
                   ⚠️ شمارنده `num` نیست: `direction: ltr` روی «۳ از ۸ ترجمه شده»
                   ترتیبِ کلمه‌های فارسی را برعکس می‌کرد.
                 */}
-                <Collapsible className="group/i18n rounded-lg bg-muted/60">
+                <Collapsible data-tour="settings-tag-i18n" className="group/i18n rounded-lg bg-muted/60">
                   <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-sm outline-none hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50">
                     <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/i18n:rotate-180" />
                     <span className="min-w-0 flex-1">{tr("ترجمهٔ نام به زبان‌های دیگر")}</span>
@@ -526,7 +534,7 @@ export function SettingsView({
                   «مدیرِ پروژه» از همان‌جا می‌آید (R-RBAC-12).
                 */}
                 {supportsGrant(tagType) && (
-                  <Field>
+                  <Field data-tour="settings-tag-grant">
                     <FieldLabel htmlFor="t-cap">{tr("دسترسی‌ای که این نقش می‌دهد")}</FieldLabel>
                     <NativeSelect
                       id="t-cap"
@@ -551,6 +559,7 @@ export function SettingsView({
 
       {tab === 'offices' && (
         <CatalogSection
+          tour="offices"
           title={tr("دفاتر")}
           description={tr("دفتر حذف نمی‌شود؛ غیرفعال می‌شود تا ارجاع‌های قدیمی نشکنند.")}
           addLabel="افزودن دفتر"
@@ -613,7 +622,7 @@ export function SettingsView({
             {tr('هنوز نقشِ عضوی تعریف نشده؛ برای آیتم‌های نقش‌دار اول در تبِ «تگ‌ها» نقش بسازید. آیتمِ کارفرما همین حالا هم ساختنی است.')}
           </p>
         ) : (
-          <div className="overflow-x-auto pb-1.5">
+          <div data-tour="settings-qa-roles" className="overflow-x-auto pb-1.5">
             <Tabs value={qaRole} onValueChange={setQaRole}>
               <TabsList className="w-max">
                 <TabsTrigger value="all" className="flex-none gap-1.5 px-3">
@@ -633,6 +642,7 @@ export function SettingsView({
           </div>
         )}
         <CatalogSection
+          tour="qa"
           title={tr("کتابخانهٔ QA")}
           description={tr("آیتمِ «تسک‌ساز» هنگامِ اعمال یک تسکِ واقعی می‌سازد (R-PROJ-18).")}
           addLabel="افزودن آیتم"

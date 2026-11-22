@@ -91,6 +91,7 @@ export function TaskTitleButton({
         type="button"
         className="text-start font-medium hover:underline focus-visible:underline focus-visible:outline-none"
         onClick={() => onOpen(task.id)}
+        data-tour="team-task-open"
       >
         {task.title}
       </button>
@@ -131,7 +132,7 @@ export function TaskBoard({ board, options }: { board: TaskBoardData; options: T
   return (
     <div className="grid gap-3">
       {/* تب‌های وضعیت — شمارش درونِ فیلترهای دیگر (همان `$pre` ِ نسخهٔ قبلی). */}
-      <div className="overflow-x-auto pb-1.5">
+      <div className="overflow-x-auto pb-1.5" data-tour="team-tasks-status">
         <Tabs value={value('tstatus') || 'all'} onValueChange={(v) => go({ tstatus: v === 'all' ? '' : v })}>
           <TabsList className="w-max">
             <TabsTrigger value="all" className="flex-none gap-1.5 px-3">
@@ -148,7 +149,7 @@ export function TaskBoard({ board, options }: { board: TaskBoardData; options: T
         </Tabs>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2" data-tour="team-tasks-filters">
         <SearchableSelect
           size="sm"
           containerClassName="w-full sm:w-52"
@@ -230,7 +231,7 @@ export function TaskBoard({ board, options }: { board: TaskBoardData; options: T
 
       {board.rows.length === 0 ? <EmptyState title={tr('موردی یافت نشد.')} /> : (
         // ۳.۱۵.۱ — روی گوشی هر ردیف یک کارت (جدول افقی می‌لغزید و نام‌ها کلمه‌به‌کلمه می‌شکستند).
-        <Table stack>
+        <Table stack data-tour="team-tasks-table">
           <TableHeader>
             <TableRow>
               <TableHead>{tr('تسک')}</TableHead>

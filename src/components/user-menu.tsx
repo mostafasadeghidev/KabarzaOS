@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 
-import { Bell, ChevronsUpDown, LogOut, Moon, Sun, Monitor, Settings, User } from 'lucide-react';
+import { Bell, ChevronsUpDown, LogOut, Moon, Sun, Monitor, Settings, Sparkles, User } from 'lucide-react';
+import { useTour } from '@/components/tour/tour-provider';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -82,13 +83,14 @@ export function UserMenu({
   onLocaleChange: (locale: Locale) => void | Promise<void>;
 }) {
   const t = useT();
+  const tour = useTour();
   const { theme, setTheme, palette, setPalette } = useTheme();
   const ThemeIcon = THEME_ICON[theme];
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
+        <SidebarMenuButton size="lg" data-tour="user-menu" className="data-[state=open]:bg-sidebar-accent">
           {/*
             تصویرِ پروفایل، اگر گذاشته شده (پورتِ `get_avatar` ِ دکمهٔ حساب)؛
             وگرنه حروفِ اولِ نام. ⚠️ پیش از این همیشه حروف بود و تصویری که
@@ -164,7 +166,7 @@ export function UserMenu({
           بازشونده هم انتخابِ فعلی دیده می‌شود و هم نامِ هر زبان **به خطِ
           خودش** (R-I18N-12) — چیزی که کدِ دوحرفی نمی‌رساند.
         */}
-        <div className="px-2 py-1.5">
+        <div className="px-2 py-1.5" data-tour="user-menu-locale">
           <div className="flex items-center justify-between gap-2">
             <label htmlFor="um-locale" className="text-sm text-muted-foreground">
               {t("زبان")}
@@ -202,7 +204,7 @@ export function UserMenu({
         </div>
 
         {/* ظاهر — کلیک، حالتِ بعدی را می‌گذارد */}
-        <div className="px-2 py-1.5">
+        <div className="px-2 py-1.5" data-tour="user-menu-theme">
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm text-muted-foreground">{t("ظاهر")}</span>
             <Button type="button" variant="ghost" size="xs" onClick={() => setTheme(THEME_NEXT[theme])}>
@@ -217,7 +219,7 @@ export function UserMenu({
           ⚠️ محورِ جدا از روشن/تیره است: انتخابِ «دریا» هر دو حالتِ آن را
           می‌گیرد، نه اینکه جای تیره/روشن بنشیند.
         */}
-        <div className="px-2 py-1.5">
+        <div className="px-2 py-1.5" data-tour="user-menu-palette">
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm text-muted-foreground">{t("پالت")}</span>
             <div className="flex gap-1">
@@ -242,7 +244,8 @@ export function UserMenu({
         </div>
 
         {/* پنهان‌کردنِ مبلغ‌ها (۲.۴۳.۰) — از ۲.۴۳.۲ اینجا، کنارِ بقیهٔ ترجیح‌های نمایش. */}
-        <HideAmountsRow />
+        {/* data-tour: پوستهٔ بی‌ظاهر فقط برای راهنمای تعاملی (ردیف در فایلِ دیگری است). */}
+        <div data-tour="user-menu-hide-amounts"><HideAmountsRow /></div>
 
         <DropdownMenuSeparator />
 
@@ -251,7 +254,15 @@ export function UserMenu({
           کاربر است، و سایدبار از دو آیتمی که به کارِ روزمره ربط ندارند
           سبک می‌شود.
         */}
-        <DropdownMenuItem asChild>
+        {/* ۳.۱۹.۰ — راهنمای تعاملی: فهرستِ راهنماهای نقشِ کاربر. */}
+        {tour && (
+          <DropdownMenuItem onSelect={() => tour.openPicker()} data-tour="user-menu-tours">
+            <Sparkles className="size-4" />
+            <span>{t('راهنمای برنامه')}</span>
+          </DropdownMenuItem>
+        )}
+
+        <DropdownMenuItem asChild data-tour="user-menu-profile">
           <Link href="/profile">
             <User className="size-4" />
             <span>{t("پروفایلِ من")}</span>
@@ -259,7 +270,7 @@ export function UserMenu({
         </DropdownMenuItem>
 
         {/* پورتِ آیتمِ «🔔 اعلان‌ها» ِ منوی حساب — فهرستِ کامل، نه فقط زنگوله. */}
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild data-tour="user-menu-notifications">
           <Link href="/notifications">
             <Bell className="size-4" />
             <span>{t("اعلان‌ها")}</span>

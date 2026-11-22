@@ -26,6 +26,8 @@ export interface VendorRow {
 export function VendorsView({ rows }: { rows: VendorRow[] }) {
   const tr = useT();
   return (
+    // قابِ راهنمای تعاملی — CatalogSection برچسبِ data-tour نمی‌گیرد.
+    <div data-tour="finance-vendors" className="min-w-0">
     <CatalogSection
       title="طرف‌حساب‌ها"
       description="فروشندگان و طرف‌حساب‌های هزینه. طرف‌حسابِ غیرفعال در انتخابگرهای تازه پیشنهاد نمی‌شود."
@@ -72,5 +74,6 @@ export function VendorsView({ rows }: { rows: VendorRow[] }) {
         </div>
       )}
     />
+    </div>
   );
 }

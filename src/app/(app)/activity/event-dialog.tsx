@@ -155,7 +155,7 @@ function ChangeList({ detail, tr, tz }: { detail: ActivityEventDetail; tr: Tr; t
     : mode === 'removed' ? tr('حالتِ پیش از این رویداد') : tr('مقدارهای ثبت‌شده');
 
   return (
-    <div className="grid gap-4">
+    <div data-tour="activity-event-changes" className="grid gap-4">
       <div className="grid gap-2">
         <h3 className="text-sm font-medium">
           {heading}
@@ -203,7 +203,7 @@ function History({
 }: { detail: ActivityEventDetail; tr: Tr; tz: string; onSelect: (id: number) => void }) {
   if (detail.history.length < 2 || !detail.historyOf) return null;
   return (
-    <div className="grid gap-2">
+    <div data-tour="activity-event-history" className="grid gap-2">
       <h3 className="text-sm font-medium">
         {tr('تاریخچهٔ همین {kind}', { kind: tr(detail.historyOf) })}
         <span className="ms-1 text-xs font-normal text-muted-foreground">({detail.history.length})</span>
@@ -278,7 +278,7 @@ export function EventDialog({
 
   return (
     <Dialog open={eventId !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent data-tour="activity-event-dialog" className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex flex-wrap items-center gap-2">
             {detail ? <Badge variant="secondary">{tr(detail.label)}</Badge> : tr('جزئیاتِ رویداد')}
@@ -293,7 +293,7 @@ export function EventDialog({
         ) : (
           <div className={cn('grid gap-4 transition-opacity', detail.id !== eventId && 'opacity-60')}>
             {/* چه کسی، کِی، روی چه چیزی — سه پرسشِ اولِ هر رویداد، هرکدام ردیفِ خودش. */}
-            <dl className="grid gap-2 rounded-md bg-muted/50 p-3 text-sm sm:grid-cols-[7rem_1fr]">
+            <dl data-tour="activity-event-summary" className="grid gap-2 rounded-md bg-muted/50 p-3 text-sm sm:grid-cols-[7rem_1fr]">
               <dt className="text-muted-foreground">{tr('زمان')}</dt>
               <dd className="num font-medium">{formatDateTime(detail.createdAt, tz)}</dd>
               <dt className="text-muted-foreground">{tr('انجام‌دهنده')}</dt>

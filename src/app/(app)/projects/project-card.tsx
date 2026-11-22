@@ -78,7 +78,7 @@ export function ProjectCard({
    *     دلیل `mb-3` است نه `gap-y` ِ شبکه (← project-grid).
    */
   return (
-    <Card className="relative row-span-10 mb-3 grid grid-rows-subgrid gap-0 overflow-clip px-4 py-4 transition-colors hover:border-input">
+    <Card data-tour="projects-card" className="relative row-span-10 mb-3 grid grid-rows-subgrid gap-0 overflow-clip px-4 py-4 transition-colors hover:border-input">
       {/* نوارهای گوشه — بایگانی و مناقصه، مثلِ ribbonهای نسخهٔ قبلی. absolute است و ردیفی نمی‌گیرد. */}
       <div className="absolute top-0 end-0 flex">
         {project.isArchived && (
@@ -106,7 +106,7 @@ export function ProjectCard({
           >
             {project.title}
           </Link>
-          <div className="mt-1">
+          <div className="mt-1" data-tour="projects-card-status">
             <StatusPicker
               projectId={project.id}
               name={project.statusName}
@@ -189,7 +189,7 @@ export function ProjectCard({
         ⚠️ بی‌ددلاین هم خطش می‌ماند: کنارِ کارتی که ددلاین دارد، جای خالی وسطِ
         کارت شبیهِ خطای چیدمان بود؛ «بدون ددلاین» می‌گوید چرا خالی است.
       */}
-      <div className="pt-3">
+      <div className="pt-3" data-tour="projects-card-deadline">
         {bar && urgency ? (
           <div className="grid gap-1">
             <div className="flex items-center justify-between text-[11px]">
@@ -215,7 +215,7 @@ export function ProjectCard({
       </div>
 
       {/* ۶ · دو شمارندهٔ ریویو — تسک و کامنت. */}
-      <div className="flex gap-4 pt-3 text-xs">
+      <div className="flex gap-4 pt-3 text-xs" data-tour="projects-card-review">
         <Hint label={t("تسک‌های نیازمند ریویو")}>
           <Link
             href={`/projects/${project.id}?tab=tasks&view=review`}
@@ -239,7 +239,7 @@ export function ProjectCard({
       </div>
 
       {/* ۷ · پیشرفتِ تسک‌ها. */}
-      <div className="pt-3">
+      <div className="pt-3" data-tour="projects-card-progress">
         <Hint label={t("مشاهدهٔ تسک‌ها")}>
         <Link
           href={`/projects/${project.id}?tab=tasks`}
@@ -266,7 +266,7 @@ export function ProjectCard({
         «جعبه در جعبه» می‌ساخت (DESIGN.md §۵).
       */}
       <div className="flex flex-col pt-3">
-        <div className="flex-1 rounded-lg bg-muted/60 p-2.5">
+        <div className="flex-1 rounded-lg bg-muted/60 p-2.5" data-tour="projects-card-people">
           {project.clients.length === 0 && project.members.length === 0 ? (
             <span className="text-xs text-muted-foreground">{t("هنوز کسی ساین نشده")}</span>
           ) : (
@@ -296,7 +296,7 @@ export function ProjectCard({
       {/* ۹ · افزودنِ سریع — زیرِ جعبهٔ چیپ‌ها، دقیقاً مثلِ نسخهٔ قبلی. */}
       <div>
         {cardOptions && manages && (
-          <div className="pt-3">
+          <div className="pt-3" data-tour="projects-card-quick-add">
             <CardQuickAdd
               projectId={project.id}
               currencyId={project.currencyId}
@@ -309,7 +309,7 @@ export function ProjectCard({
 
       {/* ۱۰ · دکمهٔ مشاهده — ردیفِ آخر. */}
       <div className="flex justify-end pt-3">
-        <Button asChild size="sm" variant="outline">
+        <Button asChild size="sm" variant="outline" data-tour="projects-card-open">
           <Link href={`/projects/${project.id}`}>{t("مشاهده")}</Link>
         </Button>
       </div>

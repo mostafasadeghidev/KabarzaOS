@@ -40,7 +40,7 @@ export function TeamOverviewCards({ counts, withLink = false }: { counts: TeamCo
         </Button>
       )}
     >
-      <div className="grid grid-cols-2 gap-4 @xl/main:grid-cols-3 @5xl/main:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 @xl/main:grid-cols-3 @5xl/main:grid-cols-5" data-tour="team-overview">
         {cards.map((c) => (
           <StatCard key={c.tab} label={t(c.label)} value={c.value} href={`/team?tab=${c.tab}`} />
         ))}

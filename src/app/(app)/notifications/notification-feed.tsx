@@ -48,6 +48,7 @@ export function MarkAllReadButton() {
       type="button"
       variant="outline"
       disabled={pending}
+      data-tour="notifications-read-all"
       onClick={() => start(async () => { await markAllReadAction(); router.refresh(); })}
     >
       {pending ? <Spinner /> : <CheckCheck />}
@@ -85,16 +86,16 @@ export function NotificationFeed({ items, showAll }: { items: FeedItem[]; showAl
         value={showAll ? 'all' : 'unread'}
         onValueChange={(v) => router.push(v === 'all' ? '/notifications?show=all' : '/notifications')}
       >
-        <TabsList>
+        <TabsList data-tour="notifications-tabs">
           <TabsTrigger value="unread" className="flex-none px-3">{tr('خوانده‌نشده‌ها')}</TabsTrigger>
-          <TabsTrigger value="all" className="flex-none px-3">{tr('همه')}</TabsTrigger>
+          <TabsTrigger value="all" className="flex-none px-3" data-tour="notifications-tab-all">{tr('همه')}</TabsTrigger>
         </TabsList>
       </Tabs>
 
       {items.length === 0 ? (
         <EmptyState title={showAll ? tr('اعلانی ندارید.') : tr('اعلانِ خوانده‌نشده‌ای ندارید.')} />
       ) : (
-        <ItemGroup className="gap-2">
+        <ItemGroup className="gap-2" data-tour="notifications-list">
           {items.map((n) => {
             const tone = toneOf(n.type);
             const rows = n.body ? structuredBody(n.type, n.body) : null;
@@ -139,7 +140,7 @@ export function NotificationFeed({ items, showAll }: { items: FeedItem[]; showAl
                   ⚠️ روی موبایل دکمه‌ها سطرِ خودشان را می‌گیرند: کنارِ متن، عنوان
                   را به ستونی دوکلمه‌ای فشرده می‌کردند (دیده شد).
                 */}
-                <ItemActions className="w-full justify-end sm:w-auto sm:self-center">
+                <ItemActions className="w-full justify-end sm:w-auto sm:self-center" data-tour="notifications-actions">
                   {!n.isRead && (
                     <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => read(n)}>
                       <CheckCheck />

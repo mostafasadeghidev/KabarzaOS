@@ -174,7 +174,7 @@ function MeetingFormBody({
         <form key={`${meeting?.id ?? 'new'}-${formKey}`} action={formAction} className="grid gap-3">
           {isEdit && <input type="hidden" name="meetingId" value={meeting.id} />}
 
-          <Field>
+          <Field data-tour="meetings-form-kind">
             <FieldLabel htmlFor="m-kind">{t("نوع جلسه")}</FieldLabel>
             {/* ⚠️ نوع و پروژه/دفتر پس از ساخت عوض نمی‌شوند (پورتِ `Meetings::update()`) —
                 سرور هم آن‌ها را نادیده می‌گیرد؛ اینجا فقط قفل نشان داده می‌شود. */}
@@ -198,7 +198,7 @@ function MeetingFormBody({
           </Field>
 
           {kind === 'project' ? (
-            <Field>
+            <Field data-tour="meetings-form-scope">
               <FieldLabel htmlFor="m-project">{t("پروژه")}</FieldLabel>
               {/*
                 ⚠️ جستجوی زنده، نه فهرستِ کشویی: تیمِ واقعی ده‌ها پروژه دارد و
@@ -226,7 +226,7 @@ function MeetingFormBody({
               />
             </Field>
           ) : (
-            <Field>
+            <Field data-tour="meetings-form-scope">
               <FieldLabel htmlFor="m-office">{t("دفتر (برای جلسهٔ عمومی)")}</FieldLabel>
               <NativeSelect
                 id="m-office"
@@ -244,7 +244,7 @@ function MeetingFormBody({
             </Field>
           )}
 
-          <Field>
+          <Field data-tour="meetings-form-title">
             <FieldLabel htmlFor="m-title">{t("موضوع جلسه")}</FieldLabel>
             <Input
               id="m-title"
@@ -259,7 +259,7 @@ function MeetingFormBody({
           </Field>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field>
+            <Field data-tour="meetings-form-when">
               <FieldLabel htmlFor="m-at">{t("تاریخ و ساعت")}</FieldLabel>
               <DateTimePicker
                 id="m-at"
@@ -272,7 +272,7 @@ function MeetingFormBody({
               )}
             </Field>
 
-            <Field>
+            <Field data-tour="meetings-form-location">
               <FieldLabel htmlFor="m-loc">{t("مکان")}</FieldLabel>
               <Input
                 id="m-loc"
@@ -283,7 +283,7 @@ function MeetingFormBody({
             </Field>
           </div>
 
-          <Field>
+          <Field data-tour="meetings-form-desc">
             <FieldLabel htmlFor="m-desc">{t("توضیحات (اختیاری)")}</FieldLabel>
             <Textarea
               id="m-desc"
@@ -293,7 +293,7 @@ function MeetingFormBody({
             />
           </Field>
 
-          <FieldSet variant="box">
+          <FieldSet variant="box" data-tour="meetings-form-attendees">
             <FieldLegend>{t("دعوت‌شدگان")}</FieldLegend>
             {candidates === null ? (
               <p className="text-xs text-muted-foreground">
@@ -346,7 +346,7 @@ function MeetingFormBody({
           </FieldSet>
 
 
-          <DialogFooter>
+          <DialogFooter data-tour="meetings-form-save">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {tr("انصراف")}
             </Button>

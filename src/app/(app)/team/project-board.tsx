@@ -71,13 +71,13 @@ export function ProjectBoard({
   };
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3" data-tour="team-projects-board">
       {action && <div className="flex justify-end">{action}</div>}
 
       {projects.length === 0 ? <EmptyState title={empty} /> : (
         <>
           {/* فیلترِ یک فهرست → تبِ قرصی (DESIGN.md). */}
-          <div className="overflow-x-auto pb-1.5">
+          <div className="overflow-x-auto pb-1.5" data-tour="team-projects-groups">
             <Tabs value={group ?? 'all'} onValueChange={pick}>
               <TabsList className="w-max">
                 <TabsTrigger value="all" className="flex-none gap-1.5 px-3">
@@ -96,7 +96,7 @@ export function ProjectBoard({
 
           {pg.items.length === 0 ? <p className="text-sm text-muted-foreground">{tr('پروژه‌ای نیست.')}</p> : (
             // ۳.۱۵.۱ — روی گوشی هر ردیف یک کارت (جدول افقی می‌لغزید و نام‌ها کلمه‌به‌کلمه می‌شکستند).
-            <Table stack>
+            <Table stack data-tour="team-projects-table">
               <TableHeader>
                 <TableRow>
                   <TableHead>{tr('نام')}</TableHead>

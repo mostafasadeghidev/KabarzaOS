@@ -84,7 +84,7 @@ function TeamView({ projectId, data }: { projectId: number; data: ProjectLibrary
   ) : undefined;
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4" data-tour="project-library">
       <SectionHeader
         title={tr('کد و راهنمای این پروژه')}
         description={tr('کدهای سفارشی‌ای که روی سایتِ این پروژه نصب است — تا نفرِ بعدی بداند چه چیزی کجاست.')}
@@ -357,7 +357,7 @@ function ClientView({ guides }: { guides: ClientGuide[] }) {
     return <EmptyState icon={<BookOpenText />} title={tr('راهنمایی برای این پروژه نیست')} />;
   }
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3" data-tour="project-guides">
       <SectionHeader
         title={tr('راهنماها')}
         description={tr('چیزهایی که خودتان می‌توانید در سایت عوض کنید، قدم‌به‌قدم.')}

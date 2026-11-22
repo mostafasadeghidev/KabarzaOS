@@ -155,7 +155,7 @@ export function FinanceTab({
     <div className="grid gap-6">
       <div className="flex justify-end">
         {/* فاکتور صفحهٔ جدا دارد تا Ctrl+P سندِ تمیز بدهد. */}
-        <Button asChild size="sm" variant="outline">
+        <Button asChild size="sm" variant="outline" data-tour="project-money-invoice">
           <a href={`/projects/${projectId}/invoice`} target="_blank" rel="noopener noreferrer">
             <FileText />
             {tr("فاکتور")}
@@ -164,7 +164,7 @@ export function FinanceTab({
       </div>
 
       <Section title={t('کارفرما')} description={t('قیمتِ پروژه و آنچه کارفرما پرداخته است.')}>
-        <div className="grid gap-4 @xl/main:grid-cols-3">
+        <div className="grid gap-4 @xl/main:grid-cols-3" data-tour="project-money-client">
           {clientCards.map((c) => (
             <StatCard
               key={c.label}
@@ -179,7 +179,7 @@ export function FinanceTab({
 
       {team && (
         <Section title={t('تیم')} description={t('مبلغِ توافق‌شده با اعضا و آنچه به آنها پرداخت شده است.')}>
-          <div className="grid gap-4 @xl/main:grid-cols-3">
+          <div className="grid gap-4 @xl/main:grid-cols-3" data-tour="project-money-team">
             <StatCard label={t('توافق با اعضا')} value={withCode(team.agreed, team.currencyCode)} />
             <StatCard label={t('پرداخت‌شده به اعضا')} value={withCode(team.paid, team.currencyCode)} />
             <StatCard
@@ -224,6 +224,8 @@ export function FinanceTab({
       )}
 
       <Section title={t('تراکنش‌ها')}>
+        {/* data-tour: قابِ راهنمای تعاملی دورِ فهرستِ تراکنش‌ها. */}
+        <div data-tour="project-money-transactions" className="grid grid-cols-1">
         {payments.length === 0 ? (
           <EmptyState
             title={t("تراکنشی ثبت نشده")}
@@ -286,6 +288,7 @@ export function FinanceTab({
             </TableBody>
           </Table>
         )}
+        </div>
         {payments.length > 0 && (
           <p className="text-xs text-muted-foreground">
             {tr("هزینه‌ها و پرداخت‌ها از صفحهٔ «حسابداری» ثبت می‌شوند.")}
@@ -361,7 +364,7 @@ function QaTaskGroups({ tasks, onOpen }: { tasks: QaTaskRow[]; onOpen: (id: numb
           </Tabs>
         </div>
       )}
-      <ItemGroup className="gap-1.5">
+      <ItemGroup className="gap-1.5" data-tour="project-qa-tasks">
         {current.map((task) => (
           <Item key={task.id} variant="outline" size="sm" className="px-3 py-2">
             <ItemContent>
@@ -430,7 +433,7 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
         ۳.۱۵.۲ — سه لایهٔ جدا: سرسطرِ «نقش‌ها» با انتخابِ همه/پاک‌کردن به شکلِ پیوندِ سبک، کادرِ تیک‌ها،
         و پایینِ جداشده با خط برای کنشِ اصلی. پیش از این سه دکمهٔ هم‌وزن چسبیده به تیک‌ها بودند.
       */}
-      <form action={formAction} className="grid gap-3">
+      <form action={formAction} className="grid gap-3" data-tour="project-qa-apply">
         <input type="hidden" name="projectId" value={projectId} />
 
         <div className="flex items-center justify-between gap-2">
@@ -447,7 +450,7 @@ function ApplyQaForm({ projectId, roles }: { projectId: number; roles: Array<{ i
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-x-5 gap-y-2.5 rounded-lg border bg-muted/30 p-3">
+        <div className="flex flex-wrap gap-x-5 gap-y-2.5 rounded-lg border bg-muted/30 p-3" data-tour="project-qa-audience">
           {roles.map((r) => (
             <label key={r.id} className="flex items-center gap-1.5 text-sm">
               <Checkbox
@@ -624,7 +627,7 @@ export function QaTab({
   const section = (title: string, rows: QaRow[]) =>
     rows.length > 0 && (
       <Section title={t(title)}>
-        <ul className="grid gap-1">
+        <ul className="grid gap-1" data-tour="project-qa-list">
           {rows.map((q) => (
             <li key={q.id} className="flex items-start justify-between gap-3 rounded-lg border bg-card px-3 py-2 text-sm">
               {/*
@@ -685,12 +688,12 @@ export function QaTab({
             </div>
           )}
           <Tabs value={view} onValueChange={(v) => setView(v as typeof view)}>
-            <TabsList variant="line">
-              <TabsTrigger value="tasks" className="flex-none gap-1.5">
+            <TabsList variant="line" data-tour="project-qa-views">
+              <TabsTrigger value="tasks" className="flex-none gap-1.5" data-tour="project-qa-view-tasks">
                 {t('تسک‌ها')}
                 <span className="num text-xs text-muted-foreground">{tasks.length}</span>
               </TabsTrigger>
-              <TabsTrigger value="checklist" className="flex-none gap-1.5">
+              <TabsTrigger value="checklist" className="flex-none gap-1.5" data-tour="project-qa-view-checklist">
                 {t('چک‌لیست')}
                 <span className="num text-xs text-muted-foreground">{qa.length}</span>
               </TabsTrigger>
@@ -837,7 +840,7 @@ export function BidsTab({
   if (bids.length === 0) return <EmptyState title={t("هنوز پیشنهادی ثبت نشده")} />;
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-3" data-tour="project-bids">
       {!isOpen && (
         <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
           {tr("مناقصه بسته است — برنده پس از شروعِ کار عوض نمی‌شود.")}

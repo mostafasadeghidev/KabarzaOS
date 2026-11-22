@@ -31,7 +31,7 @@ export function TeamMemberActions({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2" data-tour="team-member-actions">
       <Button variant="outline" size="sm" asChild>
         <Link href={`/access?user=${person.id}`} prefetch={false}>
           <KeyRound className="size-3.5" />

@@ -248,7 +248,7 @@ export function EntryForm({
 
       {/* ---------- نوع ---------- */}
       {!suggest && <Panel title={tr('این چیست؟')} description={tr('نوع تعیین می‌کند کدام بخش‌ها مهم‌اند و چه کسی آن را می‌بیند.')}>
-        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup">
+        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" data-tour="library-form-kind">
           {LIBRARY_KINDS.map((k) => {
             const Icon = KIND_ICON[k];
             const active = kind === k;
@@ -281,7 +281,7 @@ export function EntryForm({
       {/* ---------- مشخصات ---------- */}
       <Panel title={tr('مشخصات')} icon={<FileText />}>
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem]">
-          <Field>
+          <Field data-tour="library-form-title">
             <FieldLabel htmlFor="lib-title">{tr('عنوان')}</FieldLabel>
             <Input
               id="lib-title"
@@ -380,7 +380,7 @@ export function EntryForm({
           </div>
         </Field>
         {kind === 'guide' && !suggest && (
-          <label className="flex items-start gap-3 rounded-lg bg-muted/60 p-3">
+          <label className="flex items-start gap-3 rounded-lg bg-muted/60 p-3" data-tour="library-form-client">
             <Switch checked={clientVisible} onCheckedChange={setClientVisible} className="mt-0.5" />
             <span className="grid gap-0.5">
               <span className="text-sm font-medium">{tr('کارفرما ببیند')}</span>
@@ -572,7 +572,7 @@ export function EntryForm({
           </Field>
         ) : (
           <MediaPicker>
-            <Field>
+            <Field data-tour="library-form-body">
               <FieldLabel htmlFor="lib-body">{tr('توضیحات')}</FieldLabel>
               <Textarea
                 id="lib-body"
@@ -679,7 +679,7 @@ export function EntryForm({
         </Panel>
       )}
 
-      <div className="sticky bottom-0 z-10 -mx-1 grid gap-2 border-t bg-background/95 px-1 py-3 backdrop-blur sm:flex sm:flex-wrap sm:items-center sm:justify-end">
+      <div data-tour="library-form-save" className="sticky bottom-0 z-10 -mx-1 grid gap-2 border-t bg-background/95 px-1 py-3 backdrop-blur sm:flex sm:flex-wrap sm:items-center sm:justify-end">
         {entry && !suggest && (
           <Input
             value={changeNote}

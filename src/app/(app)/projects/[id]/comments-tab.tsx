@@ -106,6 +106,7 @@ function CommentDelete({ commentId, hasReplies }: { commentId: number; hasReplie
       variant="ghost"
       size="icon-xs"
       className="text-muted-foreground"
+      data-tour="comment-delete"
     >
       <Trash2 className="size-3.5" />
     </Button>
@@ -124,7 +125,7 @@ function StatusToggle({ comment, canToggle }: { comment: CommentItem; canToggle:
   if (!canToggle) return chip;
 
   return (
-    <div className="flex items-center gap-1">
+    <div data-tour="comment-toggle" className="flex items-center gap-1">
       {chip}
       <IconButton
         type="button"
@@ -173,10 +174,13 @@ function Composer({
       <input type="hidden" name="projectId" value={projectId} />
       {parentId !== null && <input type="hidden" name="parentId" value={parentId} />}
       {/* ⚠️ متن اجباری نیست: کامنتِ فقط‌اسکرین‌شات هم کامنت است (سرور هر دو خالی را رد می‌کند). */}
-      <FormFileDrop name="media" compact videoLinks>
-        <Textarea name="body" rows={rows} placeholder={placeholder} />
-      </FormFileDrop>
-      <div className="flex justify-end"><SendButton label={buttonLabel} /></div>
+      {/* data-tour: کادرِ اولِ صفحه (کامنتِ تازه) پیش از کادرهای پاسخ می‌آید، پس راهنما همان را نشان می‌دهد. */}
+      <div data-tour="comment-attach">
+        <FormFileDrop name="media" compact videoLinks>
+          <Textarea name="body" rows={rows} placeholder={placeholder} data-tour="comment-input" />
+        </FormFileDrop>
+      </div>
+      <div data-tour="comment-send" className="flex justify-end"><SendButton label={buttonLabel} /></div>
     </form>
   );
 }
@@ -221,6 +225,7 @@ function Node({
       )}
       style={{ ...tone.style, ...(depth > 0 ? { marginInlineStart: Math.min(depth, 4) * 14 } : {}) }}
       data-author={comment.author?.kind}
+      data-tour="comment-thread"
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="grid min-w-0 flex-1 gap-2">
@@ -268,6 +273,7 @@ function Node({
               type="button"
               variant="ghost"
               size="xs"
+              data-tour="comment-reply"
               onClick={() => setReplying(true)}
               className="text-muted-foreground"
             >
@@ -321,7 +327,7 @@ function ThreadList({
       )}
 
       <Tabs value={bucket} onValueChange={(v) => setBucket(v as typeof bucket)}>
-        <TabsList>
+        <TabsList data-tour="comment-buckets">
           {(['open', 'closed'] as const).map((key) => (
             <TabsTrigger key={key} value={key} className="flex-none px-3">
               {key === 'open' ? t('نیازمند بررسی') : t('انجام‌شده')}

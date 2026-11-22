@@ -2,6 +2,26 @@
 
 Versioning follows [SemVer](https://semver.org/).
 
+## [3.19.0]
+
+### Added
+
+- **Interactive guided tours.** About 90 short guides cover every area and role: welcome and search, projects, tasks, hours, team, finance, messages, the code library, settings, and client pages. Each guide highlights one part of the page and blurs the rest. On "click" steps a moving hand shows where to click, and the guide moves on by itself once you do.
+  - **Starting a guide.** New users get the welcome guide automatically. Every guide is listed in the user menu under "App guide". The finish card offers the next guide as its main button.
+  - **Progress.** Progress is saved per user, so a guide resumes on another page or after the browser is closed. "Later" snoozes it until tomorrow.
+  - **Sending guides.** Managers can send a guide to a team member from the members page.
+  - **Who sees what.** Guides follow the user's role and the features that are turned on (timesheet, onboarding, company mail, cloud storage).
+  - **Getting out of the way.** The guide steps aside while an unrelated dialog or menu is open, then continues from the same step. Optional steps whose element is not on the page are skipped together.
+  - **Guides one after another.** When guides run back to back from "Next guide", setup clicks whose result is already on screen are skipped (the page, the open tab, the open dialog). A guide started later from the menu always runs from the beginning.
+  - **Language.** The tour card has its own language list, which also works over an open dialog.
+  - **Accessibility.** Screen readers announce each step, Tab stays inside the guide, and Enter on a highlighted element does the click.
+  - **Loading.** Guide data loads only when a guide starts.
+- **Range on a team member's page.** Under "My team", a member's page now has the same week / month / all / custom range picker as the team list, and opens with the range picked there. The "Total working hours" card, the hours column of running projects and "Hours by project" all follow it. They used to always show all time, while the line under the name showed the range.
+
+### Fixed
+
+- The hours on a team member's page now always stay within the manager's offices. A manager with no projects in scope could see hours from outside them in the total.
+
 ## [3.18.1]
 
 ### Removed

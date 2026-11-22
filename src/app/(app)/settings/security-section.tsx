@@ -60,7 +60,7 @@ export function SecuritySection({ turnstile }: { turnstile: TurnstileSettingsVie
             {t('کلیدها از متغیرهای محیطیِ {a} و {b} می‌آیند و از اینجا قابلِ تغییر نیستند.', { a: 'TURNSTILE_SITE_KEY', b: 'TURNSTILE_SECRET_KEY' })}
           </p>
         ) : (
-          <form action={save} className="grid gap-3">
+          <form data-tour="settings-security-keys" action={save} className="grid gap-3">
             <p className="text-sm font-medium">{t('۱. کلیدها')}</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field>
@@ -112,7 +112,7 @@ export function SecuritySection({ turnstile }: { turnstile: TurnstileSettingsVie
 
         {/* ۳ — روشن/خاموش */}
         {!turnstile.fromEnv && (
-          <div className="flex items-center gap-3">
+          <div data-tour="settings-security-switch" className="flex items-center gap-3">
             <Switch
               id="ts-on"
               checked={turnstile.enabled}

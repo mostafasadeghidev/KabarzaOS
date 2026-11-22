@@ -64,6 +64,7 @@ export function CatalogSection<T extends { id: number }>({
   canDelete,
   deleteConfirm,
   fixed = false,
+  tour,
 }: {
   title: string;
   description?: string;
@@ -86,6 +87,8 @@ export function CatalogSection<T extends { id: number }>({
    * پهنای ستون‌های خودش را می‌گرفت و با هر تعویض، سرستون‌ها جا عوض می‌کردند.
    */
   fixed?: boolean;
+  /** نامِ این فهرست در راهنمای تعاملی (data-tour = settings-add-<نام> و …)؛ نبودن = «list». */
+  tour?: string;
 }) {
   const tr = useT();
   const { show } = useToast();
@@ -107,6 +110,7 @@ export function CatalogSection<T extends { id: number }>({
       description={description ? tr(description) : undefined}
       actions={(
         <Button
+          data-tour={`settings-add-${tour ?? 'list'}`}
           size="sm"
           onClick={() => { setEditing(null); setOpen(true); }}
         >
@@ -117,7 +121,7 @@ export function CatalogSection<T extends { id: number }>({
     >
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent data-tour={`settings-form-${tour ?? 'list'}`} className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? tr('ویرایش') : tr(addLabel)}</DialogTitle>
           </DialogHeader>
@@ -126,7 +130,7 @@ export function CatalogSection<T extends { id: number }>({
             {editing && <input type="hidden" name="id" value={editing.id} />}
             {renderForm(editing)}
             <DialogFooter>
-              <Button type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
+              <Button data-tour="settings-form-cancel" type="button" size="sm" variant="outline" onClick={() => setOpen(false)}>
                 {tr("انصراف")}
               </Button>
               <SaveButton />
@@ -141,7 +145,7 @@ export function CatalogSection<T extends { id: number }>({
         // ⚠️ `min-w` فقط در حالتِ ثابت: ستونِ نام باقیِ عرض را می‌گیرد و روی
         // موبایل به صفر می‌رسید؛ حالا جدول پیمایش می‌خورد و نام دیده می‌ماند.
         // ۳.۱۵.۱ — روی گوشی کارت (`stack`): کمینهٔ ۴۰rem فقط از md به بالا، وگرنه کارت‌ها هم ۶۴۰ پیکسل می‌شدند.
-        <Table stack className={fixed ? 'md:min-w-[40rem] md:table-fixed' : undefined}>
+        <Table data-tour={`settings-table-${tour ?? 'list'}`} stack className={fixed ? 'md:min-w-[40rem] md:table-fixed' : undefined}>
           <TableHeader>
             <TableRow>
               {/*
@@ -167,6 +171,7 @@ export function CatalogSection<T extends { id: number }>({
                 <TableActionsCell>
                   {rowActions?.(row)}
                   <IconButton
+                    data-tour={`settings-edit-${tour ?? 'list'}`}
                     variant="ghost"
                     className="size-8"
                     label={t("ویرایش")}

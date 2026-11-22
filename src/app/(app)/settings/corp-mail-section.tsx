@@ -53,7 +53,7 @@ export function CorpMailSection({ view }: { view: CorpMailSettingsView }) {
       actions={<Badge variant={badge.variant}>{badge.label}</Badge>}
       className="max-w-3xl"
     >
-      <div className="grid gap-5">
+      <div data-tour="settings-corpmail" className="grid gap-5">
         {/* ۱ — اتصال */}
         <div className="grid gap-2 text-sm">
           {view.configured ? (
@@ -93,7 +93,7 @@ export function CorpMailSection({ view }: { view: CorpMailSettingsView }) {
         </div>
 
         {/* ۲ — تنظیماتِ ساختنِ حساب */}
-        <form action={save} className="grid gap-3">
+        <form data-tour="settings-corpmail-form" action={save} className="grid gap-3">
           <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
             <Field>
               <FieldLabel htmlFor="cm-domain">{t('دامنهٔ نشانی‌ها')}</FieldLabel>

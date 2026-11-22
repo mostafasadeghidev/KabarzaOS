@@ -135,6 +135,8 @@ export function ReviewItemComposer({
   };
 
   return (
+    // data-tour: قابِ راهنمای تعاملی — FileDrop ویژگیِ اضافه نمی‌گیرد.
+    <div data-tour="project-review-item">
     <FileDrop
       files={draft.files}
       onAdd={(added) => setDraft((d) => ({ ...d, files: [...d.files, ...added] }))}
@@ -250,11 +252,12 @@ export function ReviewItemComposer({
       </div>
       {/* پنهان‌کردنِ تک‌مورد فقط وقتی معنا دارد که خودِ بازبینی برای کارفرما آشکار است. */}
       {clientVisible && (
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm" data-tour="project-review-item-hidden">
           <Checkbox checked={draft.clientHidden} onCheckedChange={(v) => set('clientHidden', v === true)} />
           {t('این مورد پنهان از کارفرما')}
         </label>
       )}
     </FileDrop>
+    </div>
   );
 }

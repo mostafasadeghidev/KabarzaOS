@@ -92,13 +92,13 @@ function AddTaskDialogBody({
     <Dialog open={open} onOpenChange={setOpen}>
       {/* دکمهٔ «افزودن» همه‌جا دکمهٔ اصلی است — اینجا outline بود. */}
       <DialogTrigger asChild>
-        <Button size="sm">
+        <Button size="sm" data-tour="tasks-add">
           <Plus className="size-4" />
           {tr("افزودن تسک")}
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent data-tour="task-create-dialog" className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("افزودن تسک جدید")}</DialogTitle>
           <DialogDescription>{t("تسک به همین پروژه اضافه می‌شود.")}</DialogDescription>
@@ -107,7 +107,7 @@ function AddTaskDialogBody({
         <form action={formAction} className="grid gap-3">
           <input type="hidden" name="projectId" value={projectId} />
 
-          <Field>
+          <Field data-tour="task-create-title">
             <FieldLabel htmlFor="nt-title">{t("عنوان تسک")}</FieldLabel>
             <Input id="nt-title" name="title" defaultValue={keep('title')} required autoFocus />
             {state.fieldErrors?.title && (
@@ -116,15 +116,18 @@ function AddTaskDialogBody({
           </Field>
 
           {/* اسکرین‌شات و فایلِ تسک — کادرِ رها/بچسبان (مثلِ بازبینی)، یا چسباندن روی توضیحات. */}
-          <FormFileDrop name="media" videoLinks>
-            <Field>
-              <FieldLabel htmlFor="nt-desc">{t("توضیحات")}</FieldLabel>
-              <Textarea id="nt-desc" name="description" rows={2} defaultValue={keep('description')} />
-            </Field>
-          </FormFileDrop>
+          {/* data-tour: راهنمای «ساختنِ تسک» پیوستِ تصویر/فایل را همین‌جا نشان می‌دهد. */}
+          <div data-tour="task-attach">
+            <FormFileDrop name="media" videoLinks>
+              <Field>
+                <FieldLabel htmlFor="nt-desc">{t("توضیحات")}</FieldLabel>
+                <Textarea id="nt-desc" name="description" rows={2} defaultValue={keep('description')} />
+              </Field>
+            </FormFileDrop>
+          </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field>
+            <Field data-tour="task-create-status">
               <FieldLabel htmlFor="nt-status">{t("وضعیت")}</FieldLabel>
               {/*
                 ⚠️ تسکِ تازه پیش‌فرض «شروع نشده» است، نه بی‌وضعیت: سرور هم
@@ -154,7 +157,7 @@ function AddTaskDialogBody({
               («یکی از دولوپرها برش می‌دارد»).
             */}
             {options.assignees.length > 0 && (
-              <Field>
+              <Field data-tour="task-create-assignee">
                 <FieldLabel htmlFor="nt-assignee">{t("تخصیص به…")}</FieldLabel>
                 <Combobox
                   id="nt-assignee"
@@ -168,7 +171,7 @@ function AddTaskDialogBody({
             )}
 
             {options.roles.length > 0 && (
-              <Field>
+              <Field data-tour="task-create-roles">
                 <FieldLabel htmlFor="nt-roles">{t("تخصیص به نقش")}</FieldLabel>
                 {/*
                   ⚠️ وقتی تسک به **شخص** سپرده شده، نقش معنا ندارد: صاحبش
@@ -192,7 +195,7 @@ function AddTaskDialogBody({
               </Field>
             )}
 
-            <Field>
+            <Field data-tour="task-create-priority">
               <FieldLabel htmlFor="nt-priority">{t("اولویت…")}</FieldLabel>
               <NativeSelect id="nt-priority" name="priorityTagId" containerClassName="w-full" defaultValue={keep('priorityTagId')}>
                 <NativeSelectOption value="">—</NativeSelectOption>
@@ -204,7 +207,7 @@ function AddTaskDialogBody({
 
             {/* پورتِ انتخابگرِ «وابسته به» — تسک‌های همین پروژه. */}
             {(options.tasks?.length ?? 0) > 0 && (
-              <Field>
+              <Field data-tour="task-create-depends">
                 <FieldLabel htmlFor="nt-depends">{t("وابسته به")}</FieldLabel>
                 <Combobox
                   id="nt-depends"
@@ -220,14 +223,14 @@ function AddTaskDialogBody({
 
           {/* ددلاین و «بخش» همیشه کنارِ هم در یک ردیف — همان فیلدهای فرمِ ویرایش. */}
           <div className="grid gap-3 sm:grid-cols-2">
-              <Field>
+              <Field data-tour="task-create-due">
                 <FieldLabel htmlFor="nt-due">{t("ددلاین")}</FieldLabel>
                 <DatePicker id="nt-due" name="dueDate" defaultValue={keep('dueDate')} />
                 {state.fieldErrors?.dueDate && (
                   <FieldError>{tr(state.fieldErrors.dueDate)}</FieldError>
                 )}
               </Field>
-            <Field>
+            <Field data-tour="task-create-area">
               <FieldLabel htmlFor="nt-area">{t("بخش")}</FieldLabel>
               <Input id="nt-area" name="area" defaultValue={keep('area')} placeholder={t("مثلاً هدر، فوتر، صفحهٔ تماس")} maxLength={120} />
             </Field>
@@ -250,7 +253,7 @@ function AddTaskDialogBody({
             کارفرما خصوصی کند حتی مدیرِ پروژه هم نمی‌دیدش.
           */}
           {canManage && (
-            <div className="grid gap-2">
+            <div data-tour="task-create-private" className="grid gap-2">
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox name="isPrivate" value="1" />
                 {tr("تسکِ خصوصی (فقط سازنده، مسئول و مدیران)")}
@@ -264,7 +267,7 @@ function AddTaskDialogBody({
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter data-tour="task-create-submit">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("انصراف")}</Button>
             <SubmitButton />
           </DialogFooter>

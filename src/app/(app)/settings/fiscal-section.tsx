@@ -63,7 +63,7 @@ export function FiscalSection({
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <div className="grid max-w-4xl grid-cols-1 gap-4">
+    <div data-tour="settings-fiscal" className="grid max-w-4xl grid-cols-1 gap-4">
       <Panel title={t("وضعیتِ فعلی")}>
         {lockDate ? (
           <p className="text-sm">
@@ -89,7 +89,7 @@ export function FiscalSection({
             <p className="text-sm text-muted-foreground">{t("حسابی تعریف نشده.")}</p>
           ) : (
             // جدولِ مشترک، نه جدولِ خامِ خودش — همان سرستون و فاصله‌ها.
-            <Table frame={false}>
+            <Table data-tour="settings-fiscal-balances" frame={false}>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("حساب")}</TableHead>
@@ -113,7 +113,7 @@ export function FiscalSection({
         title={t("بستنِ دوره")}
         description={tr("برای هر حساب یک خلاصهٔ ثابت (گردش و موجودیِ پایانی) ذخیره می‌شود و دوره تا این تاریخ قفل می‌گردد. ردیف‌ها پاک نمی‌شوند، فقط فقط‌خواندنی می‌شوند.")}
       >
-        <form action={close} className="grid gap-3">
+        <form data-tour="settings-fiscal-close" action={close} className="grid gap-3">
 
           <Field className="sm:max-w-xs">
             <FieldLabel htmlFor="f-date">{t("تاریخِ بستن")}</FieldLabel>
@@ -151,7 +151,7 @@ export function FiscalSection({
         description={tr("قفل برداشته می‌شود و ردیف‌ها دوباره قابلِ تغییر می‌شوند. خلاصه‌های ثبت‌شده پاک نمی‌شوند.")}
       >
 
-        <div className="flex items-center gap-3">
+        <div data-tour="settings-fiscal-reopen" className="flex items-center gap-3">
           {/* ⚠️ تأییدِ دومرحله‌ای — بازکردن یعنی دادهٔ بسته دوباره قابلِ تغییر است. */}
           {confirming ? (
             <>

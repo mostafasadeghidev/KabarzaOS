@@ -438,7 +438,7 @@ export function ClientDashboardV2({
           <ExpandableList inPlace className="grid divide-y">
             {review.map((tk) => (
               <li key={tk.id}>
-                <Link href={`/projects/${tk.projectId}?tab=tasks`} data-open-task={tk.id} className="flex items-center justify-between gap-3 py-2 hover:bg-muted/40">
+                <Link href={`/projects/${tk.projectId}?tab=tasks`} data-open-task={tk.id} data-tour="dash-client-review-item" className="flex items-center justify-between gap-3 py-2 hover:bg-muted/40">
                   <span className="grid min-w-0 gap-0.5">
                     <span className="truncate text-sm font-medium">{tk.title}</span>
                     <span className="truncate text-xs text-muted-foreground">{tk.projectTitle}</span>
@@ -472,7 +472,7 @@ export function ClientDashboardV2({
               const soon = !!tk.dueDate && !late && tk.dueDate <= soonIso;
               return (
                 <li key={tk.id}>
-                  <Link href={`/projects/${tk.projectId}?tab=tasks`} data-open-task={tk.id} className="flex items-center justify-between gap-3 py-2 hover:bg-muted/40">
+                  <Link href={`/projects/${tk.projectId}?tab=tasks`} data-open-task={tk.id} data-tour="dash-client-assigned-item" className="flex items-center justify-between gap-3 py-2 hover:bg-muted/40">
                     <span className="grid min-w-0 gap-0.5">
                       <span className="truncate text-sm font-medium">{tk.title}</span>
                       <span className="truncate text-xs text-muted-foreground">{tk.projectTitle}{tk.statusName ? <> · {tk.statusName}</> : null}</span>
@@ -510,7 +510,7 @@ export function ClientDashboardV2({
           <ExpandableList inPlace limit={6} className="grid gap-2 @lg/kzcard:grid-cols-2 @4xl/kzcard:grid-cols-3">
             {rows.map((p) => (
               <li key={p.id}>
-                <Link href={`/projects/${p.id}`} className="grid gap-2 rounded-xl border p-3 transition-colors hover:border-primary/40">
+                <Link href={`/projects/${p.id}`} data-tour="dash-client-project" className="grid gap-2 rounded-xl border p-3 transition-colors hover:border-primary/40">
                   <span className="flex min-w-0 items-center gap-2">
                     <Thumb id={p.id} title={p.title} fileId={p.thumbnailFileId} size={32} />
                     <span className="grid min-w-0 gap-0.5">
@@ -525,7 +525,7 @@ export function ClientDashboardV2({
                       </span>
                     </span>
                   </span>
-                  <span className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <span className="h-1.5 overflow-hidden rounded-full bg-muted" data-tour="dash-client-progress">
                     <span className="block h-full rounded-full bg-primary" style={{ width: `${p.percent}%` }} />
                   </span>
                   <span className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">

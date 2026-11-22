@@ -89,7 +89,7 @@ function HealthCard({ health }: { health: SchedulerHealth }) {
   }[ago.unit];
 
   return (
-    <div className={`grid gap-1.5 rounded-xl border p-3 ${tone}`}>
+    <div data-tour="settings-system-health" className={`grid gap-1.5 rounded-xl border p-3 ${tone}`}>
       <p className="flex items-center gap-1.5 text-sm font-medium">
         <Activity className="size-4" />
         {tr('زمان‌بند')}
@@ -163,7 +163,7 @@ function VersionCard({ version }: { version: AppVersionInfo }) {
   const tr = useT();
   const tz = useTimeZone();
   return (
-    <div className="grid gap-1.5 rounded-xl border bg-card p-3">
+    <div data-tour="settings-system-version" className="grid gap-1.5 rounded-xl border bg-card p-3">
       <p className="flex items-center gap-1.5 text-sm font-medium">
         <Info className="size-4" />
         {tr('نسخهٔ برنامه')}
@@ -211,7 +211,7 @@ export function SystemSection({ config, health, bucket, isOwner, version }: {
 
       {/* هر گروهِ فیلد یک پنل است؛ فیلدِ آزاد روی زمینه کنارِ پنل‌ها ناهمسان بود. */}
       <Panel title={t("عمومی")}>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div data-tour="settings-system-general" className="grid gap-3 sm:grid-cols-2">
           <Field>
             <FieldLabel htmlFor="s-locale">{t("زبانِ پیش‌فرضِ پنل")}</FieldLabel>
             <NativeSelect
@@ -265,7 +265,7 @@ export function SystemSection({ config, health, bucket, isOwner, version }: {
           کلیدِ خاموش در FormData نیست، پس اگر برای همکارِ ادمین پنهان بود، ذخیرهٔ
           او بی‌صدا خاموشش می‌کرد.
         */}
-        <div className="grid gap-1">
+        <div data-tour="settings-system-toggles" className="grid gap-1">
           <label className="flex items-center gap-1.5 text-sm">
             <Switch name="ownerTeamView" defaultChecked={config.ownerTeamView} />
             {tr("«تیمِ من» برای مدیرِ کل")}
@@ -291,7 +291,7 @@ export function SystemSection({ config, health, bucket, isOwner, version }: {
         می‌رسند و آن عددها فقط کاربر را گیج می‌کردند. مقدارهای ثابتشان در `DEFAULT_SYSTEM` است.
       */}
       <Panel title={t("زنده")}>
-        <div className="grid gap-1">
+        <div data-tour="settings-system-live" className="grid gap-1">
           <label className="flex items-center gap-1.5 text-sm">
             <Switch name="pulseEnabled" defaultChecked={config.pulseEnabled} />
             {tr("به‌روزرسانیِ لحظه‌ای")}
@@ -323,7 +323,7 @@ export function SystemSection({ config, health, bucket, isOwner, version }: {
 
       {/* ۲.۳۵.۰ — سقف‌های دستیارِ تلگرام؛ هزینه با کلیدِ هوشِ مصنوعیِ خودِ هر کاربر است. */}
       <Panel title={t("دستیارِ تلگرام")}>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div data-tour="settings-system-ai" className="grid gap-3 sm:grid-cols-3">
           <Field>
             <FieldLabel htmlFor="s-ai-voice">{t("سقفِ ویسِ خودِ کاربر")}</FieldLabel>
             <Choice id="s-ai-voice" name="aiVoiceMinutes" value={config.aiVoiceMinutes} choices={AI_VOICE_CHOICES} unit="{n} دقیقه" />
@@ -351,7 +351,7 @@ export function SystemSection({ config, health, bucket, isOwner, version }: {
       </Panel>
 
       <Panel title={t("پیام‌ها")}>
-        <Field className="max-w-xs">
+        <Field data-tour="settings-system-messages" className="max-w-xs">
           <FieldLabel htmlFor="s-purge">{t("پاک‌سازیِ خودکارِ پیام‌ها (روز)")}</FieldLabel>
           <Input
             id="s-purge" name="msgPurgeDays" type="number" min={0} max={MAX_PURGE_DAYS}
@@ -374,7 +374,7 @@ export function SystemSection({ config, health, bucket, isOwner, version }: {
         </div>
       </Panel>
 
-      <div className="flex items-center gap-3">
+      <div data-tour="settings-system-save" className="flex items-center gap-3">
         <Submit />
       </div>
     </form>
@@ -409,7 +409,7 @@ export function TelegramSection({ telegram }: {
                 { env: 'TELEGRAM_BOT_TOKEN' })}
             </p>
           ) : (
-            <form action={saveTelegram} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <form data-tour="settings-telegram-form" action={saveTelegram} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
               <div className="grid gap-1">
                 <Label htmlFor="tg-token" className="text-xs">{t("توکنِ بات")}</Label>
                 <PasswordInput
@@ -443,7 +443,7 @@ export function TelegramSection({ telegram }: {
             {t('بات را با @BotFather بساز. آزمون‌های زیر پیامی برای کسی نمی‌فرستند مگر آنکه نامشان بگوید.')}
           </p>
           {/* ⚠️ flex-wrap (۳.۱۵.۱): سه دکمه روی گوشی جا نمی‌شدند و صفحه را ۲۱ پیکسل افقی هل می‌دادند. */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div data-tour="settings-telegram-tests" className="flex flex-wrap items-center gap-2">
             {/*
               سه آزمون، مثلِ نسخهٔ قبلی — و هر سه چیزِ **متفاوتی** را می‌سنجند:
               توکن، مسیرِ ارسال، و کلِ زنجیرهٔ گزارش. یکی‌شان به‌تنهایی

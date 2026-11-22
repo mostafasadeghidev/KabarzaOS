@@ -114,7 +114,7 @@ export function ReviewsTab({
         title={t('بازبینی‌ها')}
         description={t('ویدئوی لوم و هر بررسیِ دیگرِ پروژه، با موردهایی که هر کدام یک تسک است.')}
         actions={canCreate && (
-          <Button size="sm" onClick={() => setCreating(true)}>
+          <Button size="sm" onClick={() => setCreating(true)} data-tour="project-reviews-new">
             <Plus className="size-4" />
             {t('بازبینیِ تازه')}
           </Button>
@@ -128,12 +128,13 @@ export function ReviewsTab({
           description={canCreate ? t('پیوندِ لوم را بگذارید و موردهایش را یکی‌یکی به تسک تبدیل کنید.') : undefined}
         />
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2">
+        <ul className="grid gap-3 md:grid-cols-2" data-tour="project-reviews-list">
           {reviews.map((r) => (
             <li key={r.id}>
               <button
                 type="button"
                 onClick={() => select(r.id)}
+                data-tour="project-reviews-card"
                 className="grid w-full gap-2.5 rounded-xl border bg-card p-3.5 text-start transition hover:border-primary/40 hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -179,7 +180,7 @@ function AudienceLine({ roles, people = [], clientVisible }: {
 }) {
   const t = useT();
   return (
-    <div className="flex flex-wrap items-center gap-1.5 text-xs">
+    <div className="flex flex-wrap items-center gap-1.5 text-xs" data-tour="project-review-audience">
       <Users className="size-3.5 text-muted-foreground" aria-label={t('مخاطب')} />
       {roles.length === 0 && people.length === 0
         ? <span className="text-muted-foreground">{t('کلِ تیمِ پروژه')}</span>
@@ -318,7 +319,7 @@ function ReviewDetail({
         </div>
         {data.detail.canManage && (
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+            <Button size="sm" variant="outline" onClick={() => setEditing(true)} data-tour="project-review-edit">
               <Pencil className="size-3.5" />{t('ویرایش')}
             </Button>
             <Button
@@ -370,7 +371,7 @@ function ReviewDetail({
             Ctrl+V هر جای صفحه (وقتی در فیلدی تایپ نمی‌کنی)؛ بارگذاری فوری است.
           */}
           {(others.length > 0 || data.detail.canManage) && (
-            <section className="grid gap-2 rounded-xl border p-3">
+            <section className="grid gap-2 rounded-xl border p-3" data-tour="project-review-media">
               <h3 className="flex items-center gap-1.5 text-sm font-semibold">
                 <Images className="size-4 text-muted-foreground" />
                 {t('تصاویر و فایل‌ها')}
@@ -391,7 +392,7 @@ function ReviewDetail({
         </div>
 
         <div className="grid content-start gap-3">
-          <div className="grid gap-1.5 rounded-lg border p-3">
+          <div className="grid gap-1.5 rounded-lg border p-3" data-tour="project-review-progress">
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium">{t('پیشرفت')}</span>
               <span className="text-muted-foreground">
@@ -422,13 +423,13 @@ function ReviewDetail({
               }}
             />
           ) : (
-            <Button size="sm" variant="outline" className="justify-self-start" onClick={() => setAdding(true)}>
+            <Button size="sm" variant="outline" className="justify-self-start" onClick={() => setAdding(true)} data-tour="project-review-add-item">
               <Plus className="size-4" />{t('افزودنِ مورد')}
             </Button>
           ))}
 
           <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-            <TabsList>
+            <TabsList data-tour="project-review-filter">
               <TabsTrigger value="all" className="flex-none px-3">{t('همه')}</TabsTrigger>
               <TabsTrigger value="open" className="flex-none px-3">{t('باز')}</TabsTrigger>
               <TabsTrigger value="done" className="flex-none px-3">{t('انجام‌شده')}</TabsTrigger>
@@ -438,7 +439,7 @@ function ReviewDetail({
           {items.length === 0 ? (
             <EmptyState title={data.detail.items.length === 0 ? t('هنوز موردی ثبت نشده.') : t('موردی نیست.')} />
           ) : (
-            <ul className="grid gap-2">
+            <ul className="grid gap-2" data-tour="project-review-items">
               {items.map((item) => (
                 <ItemRow
                   key={item.id}
@@ -480,7 +481,7 @@ function BackButton({ onBack }: { onBack: () => void }) {
   return (
     <div>
       {/* همان شکلِ دکمهٔ برگشتِ سرصفحه‌ها (۲.۲۵.۰). */}
-      <Button size="sm" variant="outline" onClick={onBack}>
+      <Button size="sm" variant="outline" onClick={onBack} data-tour="project-review-back">
         <ArrowRight className="size-4 ltr:rotate-180" />
         {t('همهٔ بازبینی‌ها')}
       </Button>

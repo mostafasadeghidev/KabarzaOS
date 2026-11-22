@@ -87,7 +87,7 @@ export function MyBidTab({ data }: { data: MyBidData }) {
   const tr = useT();
   const t = useT();
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4" data-tour="project-mybid">
       <SectionHeader icon={<Gavel />} title={tr("پیشنهادِ من")} />
 
       {data.wonRoles.map((role) => (

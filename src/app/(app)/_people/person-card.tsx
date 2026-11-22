@@ -3,13 +3,14 @@
 import { useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import {
-  Briefcase, Building2, Eye, KeyRound, Lock, Mail, MoreVertical, Phone, RotateCcw, Sprout, Trash2, Wallet, XCircle,
+  Briefcase, Building2, Eye, KeyRound, Lock, Mail, MoreVertical, Phone, RotateCcw, Sparkles, Sprout, Trash2, Wallet, XCircle,
 } from 'lucide-react';
 import {
   removePersonAction, setPersonPasswordAction, setStateAction, type PasswordState,
 } from './_form/actions';
 import { canSignIn, stateLabel, type MemberState } from '@/domain/people/offboarding';
 import { startViewAsAction } from '../_actions/view-as';
+import { assignToursAction } from '../_actions/tours';
 import { Thumb } from '@/components/thumb';
 import { PresenceDot } from '@/components/presence';
 import type { PresenceState } from '@/domain/people/presence';
@@ -76,6 +77,8 @@ export interface SectionConfig {
   onboarding?: boolean;
   /** پیوندِ «ایمیلِ شرکتی» (۲.۶۱.۰) — فقط وقتی سرورِ ایمیل وصل است و بیننده اعضا را اداره می‌کند. */
   corpMail?: boolean;
+  /** «فرستادنِ راهنما» — همان گاردِ سرور (`assignToursAction`: مالک یا مدیرِ اعضا). */
+  sendTour?: boolean;
 }
 
 /**
@@ -136,7 +139,7 @@ export function PersonCard({
 
   return (
     // ⚠️ عضوِ سابق با قابِ نقطه‌چین، نه `opacity`: کم‌رنگیِ کلِ کارت ایمیل و تلفن را به ۳٫۶ کنتراست می‌رساند.
-    <Card className={`gap-2 py-4 ${isFormer ? 'border-dashed' : ''}`}>
+    <Card className={`gap-2 py-4 ${isFormer ? 'border-dashed' : ''}`} data-tour="people-card">
       <CardContent className="grid gap-2 px-4">
         <div className="flex items-start gap-3">
           <Thumb id={person.id} title={person.name} fileId={person.avatarFileId} person className="rounded-full" />
@@ -178,14 +181,14 @@ export function PersonCard({
             {person.username && (
               <p className="num text-xs text-muted-foreground" dir="ltr">@{person.username}</p>
             )}
-            {label && <Badge variant="outline" className="mt-0.5">{tr(label)}</Badge>}
+            {label && <Badge variant="outline" className="mt-0.5" data-tour="people-card-state">{tr(label)}</Badge>}
             {/*
               ⚠️ عضوی که رفته ولی حسابش در سرویس‌های بیرونی باز مانده.
               درست همان‌جایی دیده می‌شود که off-boardش کرده‌ای — وگرنه
               هیچ نشانه‌ای نبود که کاری مانده.
             */}
             {person.memberState !== 'active' && person.openGrants > 0 && (
-              <Badge variant="destructive" className="mt-0.5">
+              <Badge variant="destructive" className="mt-0.5" data-tour="people-card-open-grants">
                 {tr('{n} دسترسیِ باز', { n: person.openGrants })}
               </Badge>
             )}
@@ -197,11 +200,12 @@ export function PersonCard({
                 className="rounded-md p-1 text-muted-foreground hover:bg-muted disabled:opacity-60"
                 disabled={pending}
                 aria-label={tr("اقدام‌ها")}
+                data-tour="people-card-menu"
               >
                 <MoreVertical className="size-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => onEdit(person)}>{tr(section.editLabel)}</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onEdit(person)} data-tour="people-menu-edit">{tr(section.editLabel)}</DropdownMenuItem>
                 {/*
                   دفترِ دسترسی‌های بیرونی، فیلترشده روی همین شخص — وقتی روی
                   یک نفر کار می‌کنی نباید مجبور شوی صفحه عوض کنی.
@@ -209,7 +213,7 @@ export function PersonCard({
                   داخلیِ شرکت دسترسی نمی‌گیرد.
                 */}
                 {section.role === 'member' && (
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild data-tour="people-menu-access">
                     <Link href={`/access?user=${person.id}`} prefetch={false}>
                       <KeyRound className="size-3.5" />
                       {tr("دسترسی‌های بیرونی")}
@@ -217,7 +221,7 @@ export function PersonCard({
                   </DropdownMenuItem>
                 )}
                 {section.role === 'member' && section.corpMail && canManage && (
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild data-tour="people-menu-mail">
                     <Link href={`/access/mail?create=${person.id}`} prefetch={false}>
                       <Mail className="size-3.5" />
                       {tr("ایمیلِ شرکتی")}
@@ -225,7 +229,7 @@ export function PersonCard({
                   </DropdownMenuItem>
                 )}
                 {section.onboarding && (
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild data-tour="people-menu-onboarding">
                     <Link href={`/onboarding/${person.id}`} prefetch={false}>
                       <Sprout className="size-3.5" />
                       {tr("آنبوردینگ")}
@@ -236,14 +240,24 @@ export function PersonCard({
                   «دیدن به‌جای این کاربر» (۲.۵۳.۰) — فقط مالک، فقط کسی که واردشدنی است.
                   گاردِ اصلی در سرور است (`canViewAs`)؛ این فقط دکمهٔ بی‌حاصل را پنهان می‌کند.
                 */}
+                {/*
+                  «فرستادنِ راهنما» (۳.۱۹.۰) — راهنماهای خوش‌آمدِ نقشِ این کاربر بارِ بعدِ ورودش خودکار باز می‌شود،
+                  حتی اگر قبلاً دیده باشد. گارد در سرور است (مالک یا مدیرِ اعضا).
+                */}
+                {section.sendTour && canSignIn(person.memberState, false) && (
+                  <DropdownMenuItem onSelect={() => run(() => assignToursAction([person.id]))} data-tour="people-menu-send-tour">
+                    <Sparkles className="size-3.5" />
+                    {tr("فرستادنِ راهنما")}
+                  </DropdownMenuItem>
+                )}
                 {isOwner && canSignIn(person.memberState, false) && (
-                  <DropdownMenuItem onSelect={() => run(() => startViewAsAction(person.id))}>
+                  <DropdownMenuItem onSelect={() => run(() => startViewAsAction(person.id))} data-tour="people-menu-view-as">
                     <Eye className="size-3.5" />
                     {tr("دیدن به‌جای این کاربر")}
                   </DropdownMenuItem>
                 )}
                 {isOwner && person.isStaff && (
-                  <DropdownMenuItem onSelect={() => onAccess(person)}>
+                  <DropdownMenuItem onSelect={() => onAccess(person)} data-tour="people-menu-permissions">
                     <KeyRound className="size-3.5" />
                     {tr("دسترسی‌ها")}
                   </DropdownMenuItem>
@@ -253,7 +267,7 @@ export function PersonCard({
                   نباید رمزِ کسی بی‌خبر عوض شود.
                 */}
                 {canManage && (
-                  <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
+                  <DropdownMenuItem onSelect={() => setPasswordOpen(true)} data-tour="people-menu-password">
                     <Lock className="size-3.5" />
                     {person.hasPassword ? tr("تغییرِ رمزِ ورود") : tr("تعیینِ رمزِ ورود")}
                   </DropdownMenuItem>
@@ -261,19 +275,19 @@ export function PersonCard({
                 {section.supportsOffboarding && <DropdownMenuSeparator />}
 
                 {section.supportsOffboarding && person.memberState !== 'active' && (
-                  <DropdownMenuItem onSelect={() => run(() => setStateAction(person.id, 'active', section.role))}>
+                  <DropdownMenuItem onSelect={() => run(() => setStateAction(person.id, 'active', section.role))} data-tour="people-menu-reactivate">
                     <RotateCcw className="size-3.5" />
                     {tr("بازفعال‌سازی")}
                   </DropdownMenuItem>
                 )}
                 {section.supportsOffboarding && person.memberState !== 'finance' && (
-                  <DropdownMenuItem onSelect={() => run(() => setStateAction(person.id, 'finance', section.role))}>
+                  <DropdownMenuItem onSelect={() => run(() => setStateAction(person.id, 'finance', section.role))} data-tour="people-menu-former">
                     <Wallet className="size-3.5" />
                     {tr("عضو سابق (فقط مالی)")}
                   </DropdownMenuItem>
                 )}
                 {section.supportsOffboarding && person.memberState !== 'locked' && (
-                  <DropdownMenuItem onSelect={() => run(() => setStateAction(person.id, 'locked', section.role))}>
+                  <DropdownMenuItem onSelect={() => run(() => setStateAction(person.id, 'locked', section.role))} data-tour="people-menu-lock">
                     <XCircle className="size-3.5" />
                     {tr("قطع کامل دسترسی")}
                   </DropdownMenuItem>
@@ -283,6 +297,7 @@ export function PersonCard({
                 {canDelete && (
                 <DropdownMenuItem
                   variant="destructive"
+                  data-tour="people-menu-delete"
                   onSelect={async () => {
                     if (await confirm({
                       title: tr('این کاربر حذف شود؟'),
@@ -299,7 +314,7 @@ export function PersonCard({
           )}
         </div>
 
-        <dl className="grid gap-1 text-xs text-muted-foreground">
+        <dl className="grid gap-1 text-xs text-muted-foreground" data-tour="people-card-contacts">
           {/*
             ۳.۱.۰ — دو ایمیل: شخصی (همان ایمیلِ ورود و اعلان) و شرکتی (خودکار از دفترِ
             دسترسی؛ با دادن یا بستنِ صندوق خودش عوض می‌شود). با هر دو می‌شود وارد شد.
@@ -331,7 +346,7 @@ export function PersonCard({
         </dl>
 
         {section.supportsTags && person.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1" data-tour="people-card-tags">
             {person.tags.map((t) => (
               <TagChip key={t.id} color={t.color}>{t.name}</TagChip>
             ))}

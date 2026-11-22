@@ -19,7 +19,7 @@ export function OpenTaskList({
   if (tasks.length === 0) return <p className="text-sm text-muted-foreground">{tr('تسکِ بازی ندارد.')}</p>;
   return (
     <>
-      <ItemGroup className="gap-1.5">
+      <ItemGroup className="gap-1.5" data-tour="team-member-tasks">
         {tasks.map((task) => (
           <Item key={task.id} variant="outline" size="sm" className="px-3 py-2">
             <ItemContent className="flex-row flex-wrap items-baseline gap-x-2 gap-y-0.5">

@@ -66,17 +66,29 @@ describe('کارت‌های اعضا', () => {
 });
 
 describe('پروفایلِ عضو', () => {
-  it('آمار، پروژه‌های در حال اجرا با پیشرفت/ساعت/تسکِ باز، کارکردِ همهٔ زمان، ماتریس، مرخصی', async () => {
+  it('آمار، پروژه‌های در حال اجرا با پیشرفت/ساعت/تسکِ باز، کارکرد با «همه»، ماتریس، مرخصی', async () => {
     const d = await teamMember(manager(), M1, { range: 'all' });
     expect(d.person?.roleNames).toEqual(['دولوپر']);
     expect(d.stats).toEqual({ projects: 2, openProjects: 1, minutes: 120, openTasks: 1 });
     expect(d.openProjects).toEqual([{ id: P_OPEN, title: 'باز', roles: ['دولوپر'], progress: 50, minutes: 90, openTasks: 1 }]);
-    expect(d.hoursAllTime.map((h) => [h.projectTitle, h.minutes])).toEqual([['باز', 90], ['تمام', 30]]);
+    expect(d.hours.map((h) => [h.projectTitle, h.minutes])).toEqual([['باز', 90], ['تمام', 30]]);
     expect(d.matrix).toHaveLength(1);
     expect(d.matrix[0]!.cells).toHaveLength(7);
     expect(d.dayLabels).toHaveLength(7);
     expect(d.canLeave).toBe(true);
     expect(d.absences.map((a) => a.note)).toEqual(['امروز']);
+  });
+
+  it('ساعت‌ها تابعِ بازه‌اند: کارت، ستونِ پروژه و جدولِ کارکرد همه با هم', async () => {
+    const d = await teamMember(manager(), M1, { range: 'custom', from: '2020-01-02', to: '2020-01-31' });
+    expect(d.stats.minutes).toBe(30);
+    expect(d.hours.map((h) => [h.projectTitle, h.minutes])).toEqual([['تمام', 30]]);
+    expect(d.openProjects[0]!.minutes).toBe(0);
+    // تعدادِ پروژه/تسک وضعیتِ همین الان است، نه بازه.
+    expect(d.stats.projects).toBe(2);
+    const week = await teamMember(manager(), M1, { range: 'week' });
+    expect(week.stats.minutes).toBe(0);
+    expect(week.hours).toEqual([]);
   });
 });
 

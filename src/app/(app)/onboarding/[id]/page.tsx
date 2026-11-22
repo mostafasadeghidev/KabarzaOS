@@ -70,7 +70,7 @@ export default async function OnboardingPersonPage({ params }: { params: Promise
         />
       ) : (
         <>
-          <div className="grid gap-4 @2xl/main:grid-cols-3">
+          <div className="grid gap-4 @2xl/main:grid-cols-3" data-tour="onboarding-progress">
             <div className="grid gap-2 rounded-xl border bg-card p-4">
               <span className="text-sm text-muted-foreground">{t('پیشرفت')}</span>
               <span className="num text-2xl font-semibold">{data.progress.percent}%</span>

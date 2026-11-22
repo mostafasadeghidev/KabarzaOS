@@ -382,7 +382,7 @@ export function PayoutsView({
           ? <TableSearch view={requestsView} placeholder={tr('جستجوی عضو یا پروژه…')} />
           : undefined}
       >
-        <Tabs value={status} onValueChange={(v) => setStatus(v as typeof status)}>
+        <Tabs data-tour="finance-requests-status" value={status} onValueChange={(v) => setStatus(v as typeof status)}>
           {/* روی صفحهٔ باریک پیمایشِ افقی، به‌جای بیرون‌زدن از صفحه — مثلِ بقیهٔ نوارهای تب. */}
           <div className="overflow-x-auto overflow-y-hidden">
             <TabsList className="w-max">
@@ -398,9 +398,9 @@ export function PayoutsView({
           </div>
         </Tabs>
         {tabRows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("درخواستی در این وضعیت نیست")}</p>
+          <p data-tour="finance-requests-table" className="text-sm text-muted-foreground">{t("درخواستی در این وضعیت نیست")}</p>
         ) : (
-          <Table stack>
+          <Table data-tour="finance-requests-table" stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("عضو")}</TableHead>
@@ -507,9 +507,9 @@ export function PayoutsView({
         description={tr("ردیف‌های کارکردِ تعدادی که هنوز پرداخت نشده‌اند و درخواستِ بازی ندارند؛ «ثبت در حسابداری» ردیفِ برداشت را می‌نویسد و کارکرد «پرداخت‌شده» می‌شود.")}
       >
         {unpaidUnits.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("موردی نیست.")}</p>
+          <p data-tour="finance-unpaid-units" className="text-sm text-muted-foreground">{t("موردی نیست.")}</p>
         ) : (
-          <Table stack>
+          <Table data-tour="finance-unpaid-units" stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("تاریخ")}</TableHead>
@@ -597,7 +597,7 @@ export function PayoutsView({
       <Section
         title={t("هزینه‌های دوره‌ای")}
         actions={canManage ? (
-          <Button size="sm" onClick={() => { setEditing(null); setExpenseOpen(true); }}>
+          <Button data-tour="finance-expense-add" size="sm" onClick={() => { setEditing(null); setExpenseOpen(true); }}>
             <Plus className="size-4" />
             {tr("افزودن هزینه")}
           </Button>
@@ -605,7 +605,7 @@ export function PayoutsView({
       >
 
         {recurring.filter((r) => r.isActive).length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div data-tour="finance-expense-filters" className="flex flex-wrap items-center gap-2">
             <SearchInput
               value={expenseQuery}
               onChange={(e) => setExpenseQuery(e.target.value)}
@@ -687,7 +687,7 @@ export function PayoutsView({
         {visibleRecurring.length === 0 ? (
           <EmptyState title={t("هزینهٔ دوره‌ای ثبت نشده")} />
         ) : (
-          <Table stack>
+          <Table data-tour="finance-expense-table" stack>
             <TableHeader>
               <TableRow>
                 <TableHead>{t("هزینه")}</TableHead>
@@ -1000,7 +1000,7 @@ export function PayoutsView({
 
       {/* ---- مودالِ هزینه ---- */}
       <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent data-tour="finance-expense-dialog" className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editing ? tr('ویرایش هزینه') : tr('افزودن هزینه')}</DialogTitle>
             <DialogDescription>
@@ -1022,7 +1022,7 @@ export function PayoutsView({
               </Field>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-4">
+            <div data-tour="finance-expense-schedule" className="grid gap-3 sm:grid-cols-4">
               <Field>
                 <FieldLabel htmlFor="e-cur">{t("ارز")}</FieldLabel>
                 <NativeSelect id="e-cur" name="currencyId" containerClassName="w-full" defaultValue={editing?.currencyId ?? currencies.find((c) => c.isDefault)?.id ?? ''}>
@@ -1059,7 +1059,7 @@ export function PayoutsView({
               </Field>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-4">
+            <div data-tour="finance-expense-account" className="grid gap-3 sm:grid-cols-4">
               <Field>
                 <FieldLabel htmlFor="e-start">{t("تاریخ شروع")}</FieldLabel>
                 <DatePicker id="e-start" name="startDate" defaultValue={editing?.nextDueDate ?? today} required />
@@ -1114,7 +1114,7 @@ export function PayoutsView({
               </Field>
             </div>
             {/* اشتراکِ یک عضو (۲.۴۹.۰): هر نوبتِ پرداخت سهمش را در «حسابِ اعضا» بدهکار می‌کند. */}
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div data-tour="finance-expense-charge" className="grid gap-3 sm:grid-cols-3">
               <Field className="sm:col-span-2">
                 <FieldLabel htmlFor="e-charge">{t("به حسابِ عضو")}</FieldLabel>
                 <SearchableSelect id="e-charge" name="chargeUserId" containerClassName="w-full" defaultValue={editing?.chargeUserId ? String(editing.chargeUserId) : ''}>
@@ -1155,7 +1155,7 @@ export function PayoutsView({
               </Alert>
             )}
 
-            <DialogFooter>
+            <DialogFooter data-tour="finance-expense-submit">
               <Button type="button" variant="outline" onClick={() => setExpenseOpen(false)}>{t("انصراف")}</Button>
               <Submit label={t("ذخیره")} />
             </DialogFooter>
